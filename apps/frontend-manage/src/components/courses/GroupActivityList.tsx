@@ -38,6 +38,7 @@ function GroupActivityList({
         <div className="mt-0.5 flex w-full flex-col">
           <ActivityList
             hideActivityType
+            filtersActive={false}
             activities={groupActivities}
             noActivities={false}
             highlightedActivity={highlightedActivity}

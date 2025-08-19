@@ -7,7 +7,6 @@ import {
   GetUserActivitiesDocument,
   PublicationStatus,
   SharingType,
-  SortByType,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -21,22 +20,39 @@ import ActivityList from '../components/activities/overview/ActivityList'
 import ActivityListSearch from '../components/activities/overview/ActivityListSearch'
 import ActivityListSelectAllCheckbox from '../components/activities/overview/ActivityListSelectAllCheckbox'
 import ActivityListSorting from '../components/activities/overview/ActivityListSorting'
-import ActivityOverviewFilters, {
-  ActivityOverviewFilterType,
-} from '../components/activities/overview/ActivityOverviewFilters'
+import ActivityOverviewFilters from '../components/activities/overview/ActivityOverviewFilters'
 import ActivityDetailsModal from '../components/activities/overview/details/ActivityDetailsModal'
 import Pagination from '../components/common/Pagination'
 import Layout from '../components/Layout'
-import { LibrarySortType } from '../lib/hooks/useSortingAndFiltering'
-
-// number of entries per page for pagination
-const PAGE_SIZE = 10
+import useActivitySortingAndFiltering, {
+  ACTIVITY_SORTING_FILTERING_INITIAL,
+} from '../lib/hooks/useActivitySortingAndFiltering'
 
 function Activities() {
   const t = useTranslations()
   const router = useRouter()
 
   const [searchString, setSearchString] = useState('')
+
+  // initialize page size from local storage (if available)
+  const [pageSize, setPageSize] = useState(() => {
+    // only try to access localStorage when on the client
+    if (typeof window !== 'undefined') {
+      try {
+        const storedPageSize = localStorage.getItem('activity-page-size')
+        if (storedPageSize) {
+          return JSON.parse(storedPageSize)
+        }
+      } catch (error) {
+        console.error(
+          'Error parsing stored activity-page-size from localStorage',
+          error
+        )
+      }
+    }
+    return 10
+  })
+
   const [currentPage, setCurrentPage] = useState(1)
   const [batchOperationsOpen, setBatchOperationsOpen] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
@@ -44,21 +60,37 @@ function Activities() {
     [activityId: string]: ActivityInfo
   }>({})
 
-  const [filters, setFilters] = useState<ActivityOverviewFilterType>({
-    status: [],
-    sharingType: [
-      SharingType.Owned,
-      SharingType.Shared,
-      SharingType.Dependency,
-    ],
-    type: undefined,
-    course: undefined,
+  // initialize the sorting and filtering state from local storage (if available)
+  const [storedFiltering, _] = useState(() => {
+    // only try to access localStorage if we're on the client
+    if (typeof window !== 'undefined') {
+      try {
+        const savedFilters = localStorage.getItem(
+          'activities-filtering-sorting'
+        )
+        if (savedFilters) {
+          return JSON.parse(savedFilters)
+        }
+      } catch (error) {
+        console.error('Error loading stored filters from localStorage', error)
+      }
+    }
+    return ACTIVITY_SORTING_FILTERING_INITIAL
   })
 
-  const [sort, setSort] = useState<LibrarySortType>({
-    asc: false,
-    by: SortByType.Modified,
-  })
+  const {
+    filters,
+    sort,
+    handleReset,
+    handleSortByChange,
+    handleSortOrderToggle,
+    toggleStatusFilter,
+    toggleSharingTypeFilter,
+    toggleActivityTypeFilter,
+    toggleCourseFilter,
+    toggleMultiplierFilter,
+    toggleReviewStatusFilter,
+  } = useActivitySortingAndFiltering(storedFiltering)
 
   // get available courses
   const { data: dataCourses } = useQuery(GetUserActivitiesCoursesDocument, {
@@ -86,25 +118,34 @@ function Activities() {
       showOwned: filters.sharingType.includes(SharingType.Owned),
       showShared: filters.sharingType.includes(SharingType.Shared),
       showDependencies: filters.sharingType.includes(SharingType.Dependency),
+      multiplier: filters.multiplier ?? undefined,
+      reviewStatus: filters.reviewStatus ?? undefined,
       sortByType: sort.by,
       sortByAsc: sort.asc,
-      numEntries: PAGE_SIZE,
-      offset: (currentPage - 1) * PAGE_SIZE,
+      numEntries: pageSize,
+      offset: (currentPage - 1) * pageSize,
     },
     fetchPolicy: 'network-only',
   })
   const numOfActivities = dataActivities?.userActivities?.numOfActivities || 0
   const activities = dataActivities?.userActivities?.activities || []
 
+  // on change, store new page size in local storage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('activity-page-size', JSON.stringify(pageSize))
+    }
+  }, [pageSize])
+
   // reset pagination if activities length changes and current page would be out of bounds
   useEffect(() => {
     if (loadingActivities) return
 
-    const maxPage = Math.max(1, Math.ceil(numOfActivities / PAGE_SIZE))
+    const maxPage = Math.max(1, Math.ceil(numOfActivities / pageSize))
     if (currentPage > maxPage) {
       setCurrentPage(maxPage)
     }
-  }, [loadingActivities, numOfActivities, currentPage])
+  }, [loadingActivities, numOfActivities, currentPage, pageSize])
 
   // reset pagination when filters, search, or sorting changes
   useEffect(() => {
@@ -136,6 +177,27 @@ function Activities() {
     })
   }, [activities])
 
+  // if the filters or sorting state changes, save it to local storage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const newState = { filters, sort }
+        // only save if there are actual changes
+        const currentStored = localStorage.getItem(
+          'activities-filtering-sorting'
+        )
+        if (!currentStored || JSON.stringify(newState) !== currentStored) {
+          localStorage.setItem(
+            'activities-filtering-sorting',
+            JSON.stringify(newState)
+          )
+        }
+      } catch (error) {
+        console.error('Error saving filters to localStorage', error)
+      }
+    }
+  }, [filters, sort])
+
   // if passed through the query arguments, open the activity details dialog
   useEffect(() => {
     if (
@@ -151,10 +213,12 @@ function Activities() {
     typeof filters.sharingType === 'undefined' ||
     filters.sharingType.length !== 3 ||
     typeof filters.type !== 'undefined' ||
-    typeof filters.course !== 'undefined'
+    typeof filters.course !== 'undefined' ||
+    typeof filters.multiplier !== 'undefined' ||
+    typeof filters.reviewStatus !== 'undefined'
 
   // compute the number of total pagination pages
-  const totalPages = Math.max(1, Math.ceil(numOfActivities / PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(numOfActivities / pageSize))
 
   return (
     <Layout
@@ -166,7 +230,13 @@ function Activities() {
         <div>
           <ActivityOverviewFilters
             filters={filters}
-            setFilters={setFilters}
+            toggleStatusFilter={toggleStatusFilter}
+            toggleSharingTypeFilter={toggleSharingTypeFilter}
+            toggleActivityTypeFilter={toggleActivityTypeFilter}
+            toggleCourseFilter={toggleCourseFilter}
+            toggleMultiplierFilter={toggleMultiplierFilter}
+            toggleReviewStatusFilter={toggleReviewStatusFilter}
+            handleReset={handleReset}
             availableCourses={dataCourses?.getUserActivitiesCourses ?? []}
             filtersActive={filtersActive}
           />
@@ -185,12 +255,8 @@ function Activities() {
                 <ActivityListSearch setSearchString={setSearchString} />
                 <ActivityListSorting
                   sort={sort}
-                  handleSortByChange={(newSortBy: SortByType) => {
-                    setSort((prev) => ({ ...prev, by: newSortBy }))
-                  }}
-                  handleSortOrderToggle={() => {
-                    setSort((prev) => ({ ...prev, asc: !prev.asc }))
-                  }}
+                  handleSortByChange={handleSortByChange}
+                  handleSortOrderToggle={handleSortOrderToggle}
                 />
               </div>
               {user?.privatePreview &&
@@ -218,23 +284,26 @@ function Activities() {
               ) : (
                 <>
                   <ActivityList
+                    filtersActive={filtersActive}
                     activities={activities}
                     noActivities={!filtersActive && numOfActivities === 0}
                     highlightedActivity={null}
                     selectedActivities={selectedActivities}
                     setSelectedActivities={setSelectedActivities}
+                    handleFilterReset={handleReset}
                     refetchActivities={async () => {
                       await refetchActivities()
                     }}
                   />
 
-                  {activities.length > 0 && totalPages > 1 && (
+                  {activities.length > 0 && (
                     <Pagination
                       totalPages={totalPages}
                       currentPage={currentPage}
                       setCurrentPage={setCurrentPage}
                       numOfObjects={numOfActivities}
-                      PAGE_SIZE={PAGE_SIZE}
+                      pageSize={pageSize}
+                      setPageSize={setPageSize}
                       className="mb-3"
                     />
                   )}
@@ -245,7 +314,8 @@ function Activities() {
         </div>
       </div>
 
-      {router.query.openActivityDetailsId &&
+      {showDetails &&
+      router.query.openActivityDetailsId &&
       router.query.openActivityDetailsType ? (
         <ActivityDetailsModal
           activityId={router.query.openActivityDetailsId as string}

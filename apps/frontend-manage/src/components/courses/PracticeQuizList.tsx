@@ -79,6 +79,7 @@ function PracticeQuizList({
         <div className="mt-0.5 flex w-full flex-col">
           <ActivityList
             hideActivityType
+            filtersActive={false}
             activities={practiceQuizzes}
             noActivities={false}
             highlightedActivity={highlightedActivity}

@@ -51,7 +51,7 @@ function ElementList({
         className={{ root: 'ml-7 text-sm' }}
       >
         <span className="mr-1">
-          {t('manage.questionPool.noQuestionsWarning')}
+          {t('manage.questionPool.noElementsWarning')}
         </span>
         {filtersActive && (
           <span>

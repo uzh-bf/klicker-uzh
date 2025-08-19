@@ -389,8 +389,10 @@ export default {
       week: 'Woche',
       day: 'Tag',
       total: 'Total',
-      reviewed: 'Gereviewt',
-      modifiedAfterReview: 'Nach Review verändert',
+      reviewStatus: 'Review-Status',
+      reviewStatusINCOMPLETE: 'Review ausstehend',
+      reviewStatusREVIEWED: 'Gereviewt',
+      reviewStatusMODIFIED_AFTER_REVIEW: 'Nach Review verändert',
       modifiedAfterReviewInformation:
         'Der Inhalt dieses Objekts wurde nach dem letzten Review verändert. Bitte markieren Sie dieses erneut als gereviewt, wenn Sie mit dem aktualisierten Inhalt einverstanden sind.',
       availableActions: 'Verfügbare Aktionen',
@@ -1061,6 +1063,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       gradingDescription: 'Dokumentation',
       showingResults:
         '{start} bis {end} von {total} Ergebnissen werden angezeigt',
+      NEntriesPerPage: '{N} Ergebnisse pro Seite',
       previousPage: 'Vorherige',
       nextPage: 'Nächste',
     },
@@ -1089,8 +1092,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       activityType: 'Aktivitätstyp',
       noActivitiesAvailable:
         'Bisher sind keine Aktivitäten verfügbar. Sie können neue Aktivitäten einfach durch die Kombination von Elementen in der <link>Bibliothek</link> erstellen.',
-      noActivitiesForFilters:
-        'Für die aktuell ausgewählten Filter bzw. den eingegebenen Suchbegriff konnten keine Aktivitäten gefunden werden. Bitte versuchen Sie es mit anderen Filtern oder einem anderen Suchbegriff.',
+      noActivitiesWarning:
+        'Leider konnten keine Aktivitäten gefunden werden, welche den gewünschten Kriterien entsprechen.',
       liveQuizInfo: '{numOfBlocks} Blöcke, {numOfElements} Element(e)',
       activityInfo: '{numOfStacks} Stack(s), {numOfElements} Element(e)',
       activityDetails: 'Aktivitätsdetails',
@@ -1111,6 +1114,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wenn diese Aktivität einem Kurs zugewiesen ist, auf den Sie Zugriff haben, kann sie aus technischen Gründen nicht vollständig entfernt werden. In diesem Fall erhalten Sie automatisch eine abgeleitete Berechtigung für die Aktivität, nachdem Sie deren Entfernung ausgelöst haben. Sobald der zugehörige Kurs gelöscht oder entfernt wird, wird das Element ebenfalls automatisch entfernt.',
       activityRemovalDependencyAccess:
         'Abgeleitete Zugriffsrechte auf enthaltene Elemente und Ressourcen werden automatisch widerrufen (es sei denn, diese sind technisch erforderlich).',
+      activeFiltersWarning:
+        'Aktuell sind Filter aktiv, welche die angezeigten Aktivitäten beeinflussen können. Um alle Aktivitäten anzuzeigen, können Sie die Filter <reset>zurücksetzen</reset> oder verändern Sie diese auf der rechten Seite.',
       changeActivityName: 'Aktivitätsnamen ändern',
       activityNameChangeSuccess:
         'Der Name der Aktivität wurde erfolgreich geändert.',
@@ -1318,8 +1323,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       activityUsage: 'Aktivitätsnutzung',
       selectActivity: 'Aktivität auswählen...',
       answerFeedbacks: 'Antwortfeedbacks',
-      noQuestionsWarning:
-        'Wir konnten leider keine Fragen finden, welche den gewünschten Kriterien entsprechen.',
+      noElementsWarning:
+        'Wir konnten leider keine Elemente finden, welche den gewünschten Kriterien entsprechen.',
       activeFiltersWarning:
         'Aktuell sind Filter aktiv, welche die angezeigten Elemente beeinflussen können. Um alle Elemente (ausser archivierte) anzuzeigen, können Sie die Filter <reset>zurücksetzen</reset> oder verändern Sie diese auf der rechten Seite.',
       deleteElement: 'Element löschen',

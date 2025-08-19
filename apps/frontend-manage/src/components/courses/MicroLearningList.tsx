@@ -79,6 +79,7 @@ function MicroLearningList({
         <div className="mt-0.5 flex w-full flex-col">
           <ActivityList
             hideActivityType
+            filtersActive={false}
             activities={microLearnings}
             noActivities={false}
             highlightedActivity={highlightedActivity}

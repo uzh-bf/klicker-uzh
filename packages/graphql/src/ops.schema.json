@@ -34378,6 +34378,18 @@
                 "deprecationReason": null
               },
               {
+                "name": "multiplier",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
                 "name": "numEntries",
                 "description": null,
                 "type": {
@@ -34395,6 +34407,18 @@
                 "type": {
                   "kind": "SCALAR",
                   "name": "Int",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "reviewStatus",
+                "description": null,
+                "type": {
+                  "kind": "ENUM",
+                  "name": "ReviewStatus",
                   "ofType": null
                 },
                 "defaultValue": null,
@@ -34585,6 +34609,18 @@
                     "name": "Boolean",
                     "ofType": null
                   }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "multiplier",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
                 },
                 "defaultValue": null,
                 "isDeprecated": false,

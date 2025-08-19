@@ -45,6 +45,7 @@ export async function getUserElements(
     showDependencies = true,
     tagIds,
     activityId,
+    multiplier,
     showUntagged,
     sortByType,
     sortByAsc,
@@ -62,6 +63,7 @@ export async function getUserElements(
     showDependencies?: boolean | null
     tagIds: number[]
     activityId?: string | null
+    multiplier?: number | null
     showUntagged: boolean
     sortByType: SortByType
     sortByAsc: boolean
@@ -102,6 +104,7 @@ export async function getUserElements(
       isArchived: showArchived ? undefined : false,
       tags: showUntagged ? { none: { ownerId: ctx.user.sub } } : undefined,
       AND: [
+        ...(multiplier ? [{ pointsMultiplier: multiplier }] : []),
         ...(hasSampleSolution
           ? [{ options: { path: ['hasSampleSolution'], equals: true } }]
           : []),

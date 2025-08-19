@@ -79,6 +79,7 @@ function LiveQuizList({
         <div className="mt-0.5 flex w-full flex-col">
           <ActivityList
             hideActivityType
+            filtersActive={false}
             activities={liveQuizzes}
             noActivities={false}
             highlightedActivity={highlightedActivity}

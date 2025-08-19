@@ -7,20 +7,24 @@ import { Dispatch, SetStateAction } from 'react'
 import ActivityListEntry from './ActivityListEntry'
 
 function ActivityList({
+  filtersActive,
   activities,
   noActivities,
   hideActivityType = false,
   highlightedActivity,
   selectedActivities,
   setSelectedActivities,
+  handleFilterReset,
   refetchActivities,
 }: {
+  filtersActive: boolean
   activities: ActivityInfo[]
   noActivities: boolean
   hideActivityType?: boolean
   highlightedActivity: string | null
   selectedActivities?: Record<string, ActivityInfo>
   setSelectedActivities?: Dispatch<SetStateAction<Record<string, ActivityInfo>>>
+  handleFilterReset?: () => void
   refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
@@ -30,7 +34,7 @@ function ActivityList({
     return (
       <UserNotification
         data={{ cy: 'no-activities-message' }}
-        className={{ root: 'text-base' }}
+        className={{ root: 'ml-6.5' }}
       >
         {t.rich('manage.activities.noActivitiesAvailable', {
           link: (text) => (
@@ -46,19 +50,24 @@ function ActivityList({
     )
   }
 
-  if (activities.length === 0) {
-    return (
-      <UserNotification
-        data={{ cy: 'no-activities-filtered-message' }}
-        className={{ root: 'text-base' }}
-      >
-        {t('manage.activities.noActivitiesForFilters')}
-      </UserNotification>
-    )
-  }
-
   return (
     <div className="flex flex-col gap-2">
+      {filtersActive && (
+        <UserNotification type="warning" className={{ root: 'ml-6.5' }}>
+          {activities.length === 0 &&
+            t('manage.activities.noActivitiesWarning')}{' '}
+          {t.rich('manage.activities.activeFiltersWarning', {
+            reset: (text) => (
+              <span
+                className="cursor-pointer font-bold underline"
+                onClick={handleFilterReset}
+              >
+                {text}
+              </span>
+            ),
+          })}
+        </UserNotification>
+      )}
       {activities.map((activity) => (
         <ActivityListEntry
           key={`activity-list-entry-${activity.id}`}

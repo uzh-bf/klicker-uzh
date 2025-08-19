@@ -6,7 +6,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { useReducer } from 'react'
 
-export type QuestionPoolFilters = {
+export type LibraryFilters = {
   archive: boolean
   untagged: boolean
   tags: string[]
@@ -15,6 +15,7 @@ export type QuestionPoolFilters = {
   type?: ElementType
   courseId?: string
   activityId?: string
+  multiplier?: number
   sampleSolution: boolean
   answerFeedbacks: boolean
 }
@@ -35,10 +36,11 @@ enum QuestionPoolReducerActionType {
   UNDEFINED = 'UNDEFINED',
   SET_COURSE_ID = 'SET_COURSE_ID',
   SET_ACTIVITY_ID = 'SET_ACTIVITY_ID',
+  SET_MULTIPLIER = 'SET_MULTIPLIER',
 }
 
 type FilterSortType = {
-  filters: QuestionPoolFilters
+  filters: LibraryFilters
   sort: LibrarySortType
 }
 
@@ -51,6 +53,7 @@ type ReducerAction = {
   isUntagged?: boolean
   newValue?: boolean
   name?: string
+  multiplier?: number
   by?: SortByType
 }
 
@@ -68,6 +71,7 @@ export const SORTING_FILTERING_INITIAL: FilterSortType = {
     tags: [],
     courseId: undefined,
     activityId: undefined,
+    multiplier: undefined,
     sampleSolution: false,
     answerFeedbacks: false,
   },
@@ -179,6 +183,19 @@ function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
         },
       }
 
+    case QuestionPoolReducerActionType.SET_MULTIPLIER:
+      return {
+        ...state,
+        filters: {
+          ...state.filters,
+          multiplier:
+            state.filters.multiplier === action.multiplier
+              ? undefined
+              : action.multiplier,
+          sampleSolution: true,
+        },
+      }
+
     case QuestionPoolReducerActionType.TOGGLE_ARCHIVE:
       return {
         ...state,
@@ -218,6 +235,9 @@ function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
             typeof action.newValue !== 'undefined'
               ? action.newValue
               : !state.filters.sampleSolution,
+          multiplier: state.filters.sampleSolution
+            ? undefined
+            : state.filters.multiplier, // reset multiplier if sample solution is disabled
         },
       }
 
@@ -287,6 +307,11 @@ function useSortingAndFiltering(initialValue: FilterSortType) {
       dispatch({
         type: QuestionPoolReducerActionType.SET_ACTIVITY_ID,
         valueOrId: activityId,
+      }),
+    toggleMultiplierFilter: ({ multiplier }: { multiplier?: number }): void =>
+      dispatch({
+        type: QuestionPoolReducerActionType.SET_MULTIPLIER,
+        multiplier,
       }),
     toggleSampleSolutionFilter: (): void =>
       dispatch({
