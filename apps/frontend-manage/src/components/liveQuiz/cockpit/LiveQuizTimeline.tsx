@@ -182,7 +182,7 @@ function LiveQuizTimeline({
             <div className="flex w-full flex-row flex-wrap gap-2 sm:mt-0 sm:w-max">
               <Button
                 primary
-                loading={loading}
+                disabled={loading}
                 className={{
                   root: twMerge(
                     'bg-uzh-red-100 hover:bg-uzh-red-100 h-8 text-white'
@@ -254,10 +254,11 @@ function LiveQuizTimeline({
                 buttonState === 'nextBlock' ||
                 buttonState === 'endQuiz'
               }
-              loading={loading}
+              disabled={loading}
               className={{
                 root: twMerge(
-                  buttonState === 'endQuiz' && 'bg-uzh-red-100',
+                  buttonState === 'endQuiz' &&
+                    'bg-uzh-red-100 hover:bg-uzh-red-100',
                   buttonState === 'blockActive' &&
                     inCooldown &&
                     'text-uzh-red-100 border-uzh-red-100 border bg-white'

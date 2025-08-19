@@ -23,9 +23,13 @@ type BlockResult = {
 function LiveQuizLeaderboard({
   quizId,
   className,
+  showLeaderboardGamifiedQuizHint = false,
+  isPartOfGamifiedCourse = false,
 }: {
   quizId: string
   className?: string
+  showLeaderboardGamifiedQuizHint?: boolean
+  isPartOfGamifiedCourse?: boolean | null
 }): React.ReactElement {
   const t = useTranslations()
   const [blockDelta, setBlockDelta] = useState<BlockResult>(null)
@@ -86,9 +90,14 @@ function LiveQuizLeaderboard({
 
   const leaderboard = data.liveQuizLeaderboard ?? []
   return (
-    <div className={twMerge('space-y-4 pt-4 md:pt-2', className)}>
+    <div
+      className={twMerge(
+        'mx-auto w-max max-w-full space-y-4 pt-4 md:pt-2',
+        className
+      )}
+    >
       <H2>{t('shared.leaderboard.lqLeaderboard')}</H2>
-      <div>
+      <div className="w-200 max-w-full">
         {leaderboard.length && leaderboard.length > 0 ? (
           <Leaderboard
             leaderboard={leaderboard ?? []}
@@ -108,6 +117,17 @@ function LiveQuizLeaderboard({
           />
         )}
       </div>
+      {selfData?.self?.id &&
+      !selfData.self.scopeQuizId &&
+      showLeaderboardGamifiedQuizHint &&
+      !isPartOfGamifiedCourse ? (
+        <UserNotification
+          type="warning"
+          message={t('shared.leaderboard.liveQuizGamifiedNoGamifiedCourse')}
+          className={{ root: 'w-200 -mt-1 max-w-full md:text-base' }}
+        />
+      ) : null}
+
       {blockDelta && (
         <div className="flex flex-row gap-4 text-xl">
           <div>

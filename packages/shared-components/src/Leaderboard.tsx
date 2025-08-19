@@ -108,7 +108,7 @@ function Leaderboard({
   )
 
   return (
-    <div className={twMerge('space-y-4', className?.root)}>
+    <div className={twMerge('w-full space-y-4', className?.root)}>
       {!hidePodium && (
         <Podium
           leaderboard={leaderboard?.slice(0, 3)}

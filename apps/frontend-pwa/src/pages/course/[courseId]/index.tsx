@@ -247,7 +247,7 @@ function CourseOverview({
                   className={{ root: 'md:px-4' }}
                 >
                   <div className="flex flex-col gap-6 overflow-x-auto md:flex-row">
-                    <div className="flex flex-1 flex-col justify-between gap-6">
+                    <div className="flex w-1/2 flex-col justify-between gap-6">
                       <div>
                         <div className="flex w-full flex-col justify-between md:flex-row">
                           <H3
@@ -396,53 +396,51 @@ function CourseOverview({
                     </div>
 
                     {course.isGroupCreationEnabled && (
-                      <div className="flex flex-1 flex-col justify-between gap-8">
-                        <div>
-                          <H3 className={{ root: 'mb-4' }}>
-                            {t('pwa.courses.groupLeaderboard')}
-                          </H3>
+                      <div className="flex w-1/2 flex-1 flex-col justify-between gap-8">
+                        <H3 className={{ root: 'mb-4' }}>
+                          {t('pwa.courses.groupLeaderboard')}
+                        </H3>
 
-                          <Leaderboard
-                            leaderboard={
-                              filteredGroupLeaderboard?.map((entry) => ({
-                                id: entry.id,
-                                username: entry.name,
-                                score: entry.score,
-                                rank: entry.rank,
-                                isMember: entry.isMember ?? false,
-                              })) || []
-                            }
-                            hideAvatars={true}
-                          />
+                        <Leaderboard
+                          leaderboard={
+                            filteredGroupLeaderboard?.map((entry) => ({
+                              id: entry.id,
+                              username: entry.name,
+                              score: entry.score,
+                              rank: entry.rank,
+                              isMember: entry.isMember ?? false,
+                            })) || []
+                          }
+                          hideAvatars={true}
+                        />
 
-                          {!groupLeaderboard ||
-                            (groupLeaderboard.length === 0 && (
-                              <div className="mt-6">
-                                {t('pwa.courses.noGroups')}
-                              </div>
-                            ))}
-                          {groupLeaderboard &&
-                            groupLeaderboard.length !== 0 &&
-                            filteredGroupLeaderboard?.length === 0 && (
-                              <div>{t('pwa.courses.noGroupPoints')}</div>
-                            )}
-
-                          <div className="mb-2 mt-4 text-right text-sm text-slate-600">
-                            <div>
-                              {t('shared.leaderboard.participantCount', {
-                                number:
-                                  groupLeaderboardStatistics?.participantCount ??
-                                  0,
-                              })}
+                        {!groupLeaderboard ||
+                          (groupLeaderboard.length === 0 && (
+                            <div className="mt-6">
+                              {t('pwa.courses.noGroups')}
                             </div>
-                            <div>
-                              {t('shared.leaderboard.averagePoints', {
-                                number:
-                                  groupLeaderboardStatistics?.averageScore?.toFixed(
-                                    2
-                                  ) ?? 0,
-                              })}
-                            </div>
+                          ))}
+                        {groupLeaderboard &&
+                          groupLeaderboard.length !== 0 &&
+                          filteredGroupLeaderboard?.length === 0 && (
+                            <div>{t('pwa.courses.noGroupPoints')}</div>
+                          )}
+
+                        <div className="mb-2 mt-4 text-right text-sm text-slate-600">
+                          <div>
+                            {t('shared.leaderboard.participantCount', {
+                              number:
+                                groupLeaderboardStatistics?.participantCount ??
+                                0,
+                            })}
+                          </div>
+                          <div>
+                            {t('shared.leaderboard.averagePoints', {
+                              number:
+                                groupLeaderboardStatistics?.averageScore?.toFixed(
+                                  2
+                                ) ?? 0,
+                            })}
                           </div>
                         </div>
 
