@@ -247,7 +247,7 @@ function CourseOverview({
                   className={{ root: 'md:px-4' }}
                 >
                   <div className="flex flex-col gap-6 overflow-x-auto md:flex-row">
-                    <div className="flex w-1/2 flex-col justify-between gap-6">
+                    <div className="flex w-full flex-col justify-between gap-6 md:w-1/2">
                       <div>
                         <div className="flex w-full flex-col justify-between md:flex-row">
                           <H3
@@ -396,7 +396,7 @@ function CourseOverview({
                     </div>
 
                     {course.isGroupCreationEnabled && (
-                      <div className="flex w-1/2 flex-1 flex-col justify-between gap-8">
+                      <div className="flex w-full flex-1 flex-col justify-between gap-8 md:w-1/2">
                         <H3 className={{ root: 'mb-4' }}>
                           {t('pwa.courses.groupLeaderboard')}
                         </H3>

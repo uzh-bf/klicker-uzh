@@ -865,9 +865,7 @@ export async function getLiveQuizData(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  if (!id) {
-    return null
-  }
+  if (!id) return null
 
   const quiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id },
@@ -2414,13 +2412,16 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
   }
 
   if (quiz?.status === DB.PublicationStatus.PUBLISHED) {
-    return (
-      quizWithoutSolutions ?? {
-        ...quiz,
-        isPartOfGamifiedCourse: !!quiz.course?.isGamificationEnabled,
-        beforeFirstBlock,
-      }
-    )
+    return quizWithoutSolutions
+      ? {
+          ...quizWithoutSolutions,
+          isPartOfGamifiedCourse: !!quiz.course?.isGamificationEnabled,
+        }
+      : {
+          ...quiz,
+          isPartOfGamifiedCourse: !!quiz.course?.isGamificationEnabled,
+          beforeFirstBlock,
+        }
   }
 
   return null

@@ -1502,6 +1502,7 @@ type LiveQuiz {
   feedbacks: [Feedback!]
   finishedAt: Date
   id: ID!
+  isAssessmentEnabled: Boolean!
   isConfusionFeedbackEnabled: Boolean!
   isGamificationEnabled: Boolean!
   isLiveQAEnabled: Boolean!

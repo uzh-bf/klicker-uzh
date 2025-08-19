@@ -109,6 +109,7 @@ export const LiveQuiz = LiveQuizRef.implement({
     isConfusionFeedbackEnabled: t.exposeBoolean('isConfusionFeedbackEnabled'),
     isModerationEnabled: t.exposeBoolean('isModerationEnabled'),
     isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
+    isAssessmentEnabled: t.exposeBoolean('isAssessmentEnabled'),
     isPartOfGamifiedCourse: t.exposeBoolean('isPartOfGamifiedCourse', {
       nullable: true,
     }),

@@ -81,10 +81,6 @@ function LiveQuizSettingsStep({
           parseInt(String(values.maxBonusPoints)) !== LQ_MAX_BONUS_POINTS ||
           parseInt(String(values.timeToZeroBonus)) !== LQ_TIME_TO_ZERO_BONUS
 
-        // TODO: remove
-        console.log('COURSE ID', values.courseId)
-        console.log('GAMIFICATION', values.isGamificationEnabled)
-
         return (
           <Form className="h-full w-full">
             <CreationFormValidator
