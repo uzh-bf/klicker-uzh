@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.83...v3.3.0-rc.0) (2025-08-19)
+
+
+### Features
+
+* support gamified live quizzes without assignment to gamified course ([#4844](https://github.com/uzh-bf/klicker-uzh/issues/4844)) ([ad3a976](https://github.com/uzh-bf/klicker-uzh/commit/ad3a976b87973abf8dc6a9cc2454829fa08b95be))
+
+
+### Bug Fixes
+
+* **packages/shared-components:** make sure that quote and unnumbered list syntax in slate paragraph text is escaped on conversion to markdown ([#4845](https://github.com/uzh-bf/klicker-uzh/issues/4845)) ([84a35f8](https://github.com/uzh-bf/klicker-uzh/commit/84a35f87b8ce1a2e0ec40ac03da7dcc00971dccc))
+
+
+### Enhancements
+
+* add functionality to filter elements in library by activity usage ([#4841](https://github.com/uzh-bf/klicker-uzh/issues/4841)) ([374223e](https://github.com/uzh-bf/klicker-uzh/commit/374223e13e78cd9c417fe4c4cc62049a968fb1fd))
+* **apps/docs:** add section on gamified live quiz usage without login ([#4846](https://github.com/uzh-bf/klicker-uzh/issues/4846)) ([6dbcc95](https://github.com/uzh-bf/klicker-uzh/commit/6dbcc9581e5ca2819099d0c362f879de86d0c108))
+* **apps/frontend-manage:** add multiplier and review filters to element and activity lists ([#4843](https://github.com/uzh-bf/klicker-uzh/issues/4843)) ([168b92b](https://github.com/uzh-bf/klicker-uzh/commit/168b92be7f8922ced3936b6391d452f67a46b6b0))
+* introduce database view and sorting for activity list ([#4842](https://github.com/uzh-bf/klicker-uzh/issues/4842)) ([1383ed4](https://github.com/uzh-bf/klicker-uzh/commit/1383ed4eb6f7e699f7bf6078e49ebc49230ff2da))
+
 ## [3.3.0-alpha.83](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.82...v3.3.0-alpha.83) (2025-08-17)
 
 
