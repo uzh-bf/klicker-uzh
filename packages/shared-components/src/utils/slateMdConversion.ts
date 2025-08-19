@@ -74,6 +74,18 @@ export const convertToMd = (slateObj: any) => {
         .join('\n')
     }
 
+    // if the line starts with a quote symbol or unnumbered list item, escape it
+    if (line.type === 'paragraph') {
+      line.children = line.children.map((child: any) => {
+        if (child.text.startsWith('>')) {
+          child.text = `\\${child.text}`
+        } else if (child.text.startsWith('-')) {
+          child.text = `\\${child.text}`
+        }
+        return child
+      })
+    }
+
     return serialize(line)
   })
   return result.join('\n')
