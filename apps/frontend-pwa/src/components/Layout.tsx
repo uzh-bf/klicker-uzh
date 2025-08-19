@@ -42,6 +42,7 @@ function Layout({
 }: LayoutProps) {
   const { data: dataParticipant } = useQuery(SelfDocument, {
     variables: { liveQuizId },
+    fetchPolicy: 'cache-and-network',
   })
 
   const pageInFrame =
