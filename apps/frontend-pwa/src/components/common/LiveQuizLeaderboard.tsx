@@ -35,6 +35,7 @@ function LiveQuizLeaderboard({
   const [blockDelta, setBlockDelta] = useState<BlockResult>(null)
 
   const { data: selfData } = useQuery(SelfDocument, {
+    variables: { liveQuizId: quizId },
     fetchPolicy: 'cache-only',
   })
 

@@ -45,7 +45,9 @@ function Index({ id }: { id: string }) {
     GetRunningLiveQuizDocument,
     { variables: { id } }
   )
-  const { data: selfData } = useQuery(SelfDocument)
+  const { data: selfData } = useQuery(SelfDocument, {
+    variables: { liveQuizId: id },
+  })
 
   if (loading) {
     return (

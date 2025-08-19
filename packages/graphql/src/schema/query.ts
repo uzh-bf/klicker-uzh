@@ -118,7 +118,8 @@ export const Query = builder.queryType({
       self: t.field({
         nullable: true,
         type: Participant,
-        resolve: async (_, __, ctx) => ParticipantService.getSelf(ctx),
+        args: { liveQuizId: t.arg.string({ required: false }) },
+        resolve: async (_, args, ctx) => ParticipantService.getSelf(args, ctx),
       }),
 
       selfWithAchievements: t.withAuth(asParticipant).field({

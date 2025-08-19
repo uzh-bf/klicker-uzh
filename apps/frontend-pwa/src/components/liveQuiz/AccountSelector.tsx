@@ -78,6 +78,7 @@ function AccountSelector({
 
   // check if the user is already logged in as a participant or temporary participant of this quiz
   const { data, loading, refetch } = useQuery(SelfDocument, {
+    variables: { liveQuizId: quizId },
     skip: loginState === 'anonymous', // if the user has already opted to participate anonymously, skip the query
   })
   useEffect(() => {

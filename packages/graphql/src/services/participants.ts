@@ -10,7 +10,10 @@ import { sendTeamsNotifications } from '../lib/util.js'
 
 dayjs.extend(isoWeek)
 
-export async function getSelf(ctx: Context) {
+export async function getSelf(
+  { liveQuizId }: { liveQuizId?: string | null },
+  ctx: Context
+) {
   if (!ctx.user?.sub) return null
 
   // if the user is logged in as a participant, return the participant data
@@ -26,9 +29,12 @@ export async function getSelf(ctx: Context) {
 
   // if the user is logged in as a temporary quiz participant, return the corresponding pseudonym
   if (ctx.user.role === DB.UserRole.TEMPORARY_PARTICIPANT) {
+    // outside of live quizzes, temporary participants do not exist
+    if (!liveQuizId) return null
+
     const temporaryParticipantData =
       await ctx.prisma.temporaryLeaderboardEntry.findUnique({
-        where: { id: ctx.user.sub },
+        where: { id: ctx.user.sub, quizId: liveQuizId },
       })
 
     if (!temporaryParticipantData) return null
