@@ -6,6 +6,7 @@ query GetRunningLiveQuiz($id: String!) {
     isConfusionFeedbackEnabled
     isModerationEnabled
     isGamificationEnabled
+    isPartOfGamifiedCourse
     beforeFirstBlock
 
     namespace

@@ -90,9 +90,7 @@ async function submitLiveQuizForm({
           defaultCorrectPoints: parseInt(String(values.defaultCorrectPoints)),
           maxBonusPoints: parseInt(String(values.maxBonusPoints)),
           timeToZeroBonus: parseInt(String(values.timeToZeroBonus)),
-          isGamificationEnabled:
-            values.courseId !== 'no-course-selected' &&
-            values.isGamificationEnabled,
+          isGamificationEnabled: values.isGamificationEnabled,
           isConfusionFeedbackEnabled: values.isConfusionFeedbackEnabled,
           isLiveQAEnabled: values.isLiveQAEnabled,
           isModerationEnabled: values.isModerationEnabled,
@@ -167,9 +165,7 @@ async function submitLiveQuizForm({
           defaultCorrectPoints: parseInt(String(values.defaultCorrectPoints)),
           maxBonusPoints: parseInt(String(values.maxBonusPoints)),
           timeToZeroBonus: parseInt(String(values.timeToZeroBonus)),
-          isGamificationEnabled:
-            values.courseId !== 'no-course-selected' &&
-            values.isGamificationEnabled,
+          isGamificationEnabled: values.isGamificationEnabled,
           isConfusionFeedbackEnabled: values.isConfusionFeedbackEnabled,
           isLiveQAEnabled: values.isLiveQAEnabled,
           isModerationEnabled: values.isModerationEnabled,

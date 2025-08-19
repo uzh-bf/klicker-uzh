@@ -102,7 +102,10 @@ function ActivityDetailsModal({
       fullScreen
       loading={loading}
       title={t('manage.activities.activityDetails')}
-      onClose={onClose}
+      onClose={() => {
+        refetchActivities?.()
+        onClose()
+      }}
       className={{
         content: 'max-w-400 h-max w-[calc(100%-2rem)] lg:overflow-hidden',
       }}
@@ -139,7 +142,6 @@ function ActivityDetailsModal({
                     activityType={activityType}
                     courseId={details.courseId}
                     isReviewed={isReviewed}
-                    refetchActivities={refetchActivities}
                   />
                 )}
 

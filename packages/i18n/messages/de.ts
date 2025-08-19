@@ -239,6 +239,7 @@ export default {
       solution: 'Lösung',
       sampleSolution: 'Musterlösung',
       gamification: 'Gamifizierung',
+      interaction: 'Interaktion',
       basePoints: 'Basispunkte',
       awardedPoints: 'Vergebene Punkte',
       additionalPoints: 'Zusätzliche Punkte',
@@ -458,6 +459,8 @@ export default {
       averagePoints: 'Durchschnittliche Punkte: {number}',
       noPointsCollected:
         'Bisher wurden im Rahmen dieses Live Quizzes noch keine Punkte gesammelt. Sobald sich dies ändert, werden hier Podium und Rangliste angezeigt.',
+      liveQuizGamifiedNoGamifiedCourse:
+        'Dieses Live Quiz ist gamifiziert, aber nicht Teil eines gamifizierten Kurses. Da Sie angemeldet sind, werden Ihre im Quiz gesammelten Punkte automatisch auf dem Leaderboard angezeigt. Sollten Sie dies nicht wünschen, melden Sie sich bitte ab und treten Sie dem Quiz erneut über den Link bei.',
       rank: 'Rang',
       username: 'Nutzername',
       email: 'E-Mail',
@@ -1150,11 +1153,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Basis, Korrektheits- und Bonuspunkte anpassen',
       bonusTime: 'Bonuszeit',
       noActivitiesWillBeUpdated: 'Keine Aktivitäten werden verändert',
-      nActivitiesWillBeUpdated: '{number} Aktivitäten werden verändert',
+      nActivitiesWillBeUpdated: '{number} Aktivitäten werden angepasst',
       multiplierRequiresGamifiedAssessmentCourse:
-        'Ein Multiplikator kann nur für Aktivitäten in gamifizierten oder Assessment-Kursen verwendet werden, da nur in diesen Kursen Punkte gesammelt werden können. Sie haben die Zuweisung zu einem Kurs gewählt, welcher diese Bedingungen nicht erfüllt.',
+        'Ein Multiplikator kann nur für gamifizierte Aktivitäten oder Aktivitäten in Assessment-Kursen definiert werden, da nur in diesen Kursen Punkte gesammelt werden können. Sie haben die Zuweisung zu einem Kurs gewählt, welcher diese Bedingungen nicht erfüllt.',
       liveQuizPointsRequireGamifiedAssessmentCourse:
-        'Die Bepunktung für Live Quizzes kann nur für Aktivitäten in gamifizierten oder Assessment-Kursen angepasst werden, da nur in diesen Kursen Punkte gesammelt werden können. Sie haben die Zuweisung zu einem Kurs gewählt, welcher diese Bedingungen nicht erfüllt.',
+        'Die Bepunktung kann nur für gamifizierte Live Quizzes oder Live Quizzes in Assessment-Kursen angepasst werden, da nur in diesen Kursen Punkte gesammelt werden können. Sie haben die Zuweisung zu einem Kurs gewählt, welcher diese Bedingungen nicht erfüllt.',
       batchNoCoursesAvailable:
         'Es sind keine laufenden oder geplanten Kurse verfügbar zu welchen Sie Ihre Aktivitäten zuweisen könnten. Bitte erstellen Sie zunächst einen entsprechenden Kurs unter "Kurse"',
       batchOperationsInformation: `Abhängig von den ausgewählten Aktionen und den Berechtigungen für die selektierten Aktivitäten gelten die folgenden Regeln:
@@ -1376,7 +1379,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modifyBasePoints: 'Basispunkte ändern',
       awardBasePoints: 'Basispunkte vergeben',
       noElementsWillBeUpdated: 'Keine Elemente werden verändert',
-      nElementsWillBeUpdated: '{number} Elemente werden verändert',
+      nElementsWillBeUpdated: '{number} Elemente werden angepasst',
       batchUpdatesInformation: `Abhängig von den ausgewählten Aktionen und den Berechtigungen für die selektierten Elemente gelten die folgenden Regeln:
 <ul>
 <li>Das Archivieren von Elementen / das Wiederherstellen von Elementen aus dem Archiv ist nur für nicht archivierte respektive archivierte Elemente möglich. Diese Aktion kann nur von Benutzern mit Administratorrechten für die betreffenden Elemente ausgeführt werden.</li>
@@ -1781,8 +1784,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für weitere Informationen zur Studierenden-Ansicht, besuchen Sie die <link>Studierenden-Dokumentation</link>.',
       liveQuizStartNow: 'Jetzt starten',
       liveQuizAdvancedSettings: 'Erweiterte Einstellungen',
+      liveQuizCustomizedGrading: 'Benutzerdefinierte Bewertung',
       liveQuizPointsExplanation:
         'Diese erweiterten Einstellungen ermöglichen es, die Punktevergabe bei einem Live-Quiz zu verändern. Bitte bachten Sie, dass alle Punkteinstellungen und die Illustrationen der Punktevergabe sich auf Elemente mit einem Multiplikator von 1x beziehen. Höhere Multiplikatoren werden auf alle Komponenten ausser den Standardpunkten angewendet. Der auf der Aktivität gesetzte Multiplikator wird in der Illustration bereits mit einbezogen. Die Antwortzeit beginnt abzulaufen sobald der erste Teilnehmer eine vollständig korrekte Antwort abgegeben hat. Für mehr Informationen konsultieren Sie bitte unsere <link>Dokumentation</link>.',
+      liveQuizGamificationDeactivated:
+        'Gamifizierung ist für dieses Live Quiz aktuell nicht aktiviert. Bitte wählen Sie entweder einen gamifizierten Kurs oder aktivieren Sie die Gamifizierung manuell.',
       liveQuizDefaultPoints: 'Standardpunkte',
       liveQuizDefaultPointsTooltip:
         'Teilnehmende in einem Live-Quiz erhalten diese Anzahl Punkte für das Teilnehmen an einer Frage. Wenn keine Musterlösung definiert ist, werden nur Standardpunkte vergeben. Der Standardwert beträgt {defaultValue}.',
