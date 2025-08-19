@@ -73,6 +73,7 @@ export interface ElementStackErrorValues {
 export interface LiveQuizFormValues extends CommonFormValues {
   blocks: ElementBlockFormValues[]
   isGamificationEnabled: boolean
+  isAssessmentEnabled: boolean
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean
   isModerationEnabled: boolean

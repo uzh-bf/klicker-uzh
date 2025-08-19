@@ -266,9 +266,9 @@ function Index() {
     }
   }, [router.query.filterByCourse, router.query.filterByActivity])
 
-  const filtersActive = !!(
+  // since only applying the course filter does not result in a filtering of the elements, no warning should be shown
+  const filtersActiveExceptCourse = !!(
     filters.tags.length > 0 ||
-    filters.courseId ||
     filters.activityId ||
     filters.type ||
     filters.status ||
@@ -278,6 +278,7 @@ function Index() {
     filters.answerFeedbacks ||
     filters.untagged
   )
+  const filtersActive = filtersActiveExceptCourse || !!filters.courseId
 
   return (
     <Layout
@@ -401,7 +402,7 @@ function Index() {
               ) : (
                 <>
                   <ElementList
-                    filtersActive={filtersActive}
+                    filtersActive={filtersActiveExceptCourse}
                     activityWizardOpen={!!creationMode}
                     elements={elements}
                     selectedElements={selectedElements}

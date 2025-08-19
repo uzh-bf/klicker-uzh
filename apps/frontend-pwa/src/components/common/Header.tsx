@@ -337,7 +337,9 @@ function Header({
                         // log out temporary participant for this live quiz
                         const { data } = await logoutTemporaryParticipant({
                           variables: { liveQuizId },
-                          refetchQueries: [{ query: SelfDocument }],
+                          refetchQueries: [
+                            { query: SelfDocument, variables: { liveQuizId } },
+                          ],
                         })
 
                         if (data?.logoutTemporaryParticipant) {

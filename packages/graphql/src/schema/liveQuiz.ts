@@ -88,6 +88,7 @@ export interface ILiveQuiz extends DB.LiveQuiz {
   confusionSummary?: IConfusionSummary | null
   numOfBlocks?: number
   numOfInstances?: number
+  isPartOfGamifiedCourse?: boolean | null
   beforeFirstBlock?: boolean
 }
 
@@ -108,6 +109,10 @@ export const LiveQuiz = LiveQuizRef.implement({
     isConfusionFeedbackEnabled: t.exposeBoolean('isConfusionFeedbackEnabled'),
     isModerationEnabled: t.exposeBoolean('isModerationEnabled'),
     isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
+    isAssessmentEnabled: t.exposeBoolean('isAssessmentEnabled'),
+    isPartOfGamifiedCourse: t.exposeBoolean('isPartOfGamifiedCourse', {
+      nullable: true,
+    }),
 
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
     defaultPoints: t.exposeInt('defaultPoints'),

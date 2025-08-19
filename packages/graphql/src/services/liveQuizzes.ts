@@ -598,10 +598,13 @@ export async function manipulateLiveQuiz(
       })
     : null
 
-  const gamificationSetting = course
+  // activities in gamified courses should always be gamified, otherwise respect user setting
+  const gamificationSetting = course?.isGamificationEnabled
     ? course.isGamificationEnabled
     : isGamificationEnabled
-  const assessmentSetting = course ? course.isAssessmentEnabled : false
+
+  // only activities in assessment courses will be marked as being part of assessment
+  const assessmentSetting = course?.isAssessmentEnabled ?? false
 
   // re-create blocks and link existing instance / create new instances (depending on mode and novelty of the included element)
   const createOrUpdateJSON = {
@@ -862,9 +865,7 @@ export async function getLiveQuizData(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  if (!id) {
-    return null
-  }
+  if (!id) return null
 
   const quiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id },
@@ -2411,7 +2412,16 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
   }
 
   if (quiz?.status === DB.PublicationStatus.PUBLISHED) {
-    return quizWithoutSolutions ?? { ...quiz, beforeFirstBlock }
+    return quizWithoutSolutions
+      ? {
+          ...quizWithoutSolutions,
+          isPartOfGamifiedCourse: !!quiz.course?.isGamificationEnabled,
+        }
+      : {
+          ...quiz,
+          isPartOfGamifiedCourse: !!quiz.course?.isGamificationEnabled,
+          beforeFirstBlock,
+        }
   }
 
   return null
@@ -2460,30 +2470,26 @@ export async function getLiveQuizLeaderboard(
   ctx: Context
 ) {
   const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: {
-      id: quizId,
-    },
+    where: { id: quizId },
     include: {
       leaderboard: {
-        include: {
-          participant: true,
-          sessionParticipation: true,
-        },
+        include: { participant: true, sessionParticipation: true },
       },
+      course: { select: { isGamificationEnabled: true } },
       temporaryLeaderboard: true,
       blocks: true,
     },
   })
 
+  // if the quiz does not exist, return early
   if (!quiz) return []
+
+  // if the quiz is not gamified, return null for the leaderboard
+  if (!quiz.isGamificationEnabled) return null
 
   const participant =
     ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT
-      ? await ctx.prisma.participant.findUnique({
-          where: {
-            id: ctx.user.sub,
-          },
-        })
+      ? await ctx.prisma.participant.findUnique({ where: { id: ctx.user.sub } })
       : null
 
   let participantProfilesVisible =
@@ -2517,7 +2523,12 @@ export async function getLiveQuizLeaderboard(
   const preparedEntries =
     quiz?.leaderboard
       ?.flatMap((entry) => {
-        if (!entry.sessionParticipation?.isActive) return []
+        // if the course is not gamified, the participation is always inactive and this check should be skipped
+        if (
+          quiz.course?.isGamificationEnabled &&
+          !entry.sessionParticipation?.isActive
+        )
+          return []
 
         return {
           id: entry.id,
