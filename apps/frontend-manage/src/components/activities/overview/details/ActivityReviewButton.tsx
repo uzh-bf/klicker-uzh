@@ -14,13 +14,11 @@ function ActivityReviewButton({
   activityType,
   courseId,
   isReviewed,
-  refetchActivities,
 }: {
   activityId: string
   activityType: ActivityType
   courseId?: string | null
   isReviewed: boolean
-  refetchActivities?: () => void
 }) {
   const t = useTranslations()
   const [setActivityReviewStatus, { loading: settingReviewedStatus }] =
@@ -103,7 +101,6 @@ function ActivityReviewButton({
         })
 
         if (res?.setActivityReviewStatus) {
-          refetchActivities?.()
           toast({
             type: 'success',
             message: t('manage.activities.reviewStatusUpdated'),

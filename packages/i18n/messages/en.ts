@@ -1152,9 +1152,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noActivitiesWillBeUpdated: 'No activities will be updated',
       nActivitiesWillBeUpdated: '{number} activities will be updated',
       multiplierRequiresGamifiedAssessmentCourse:
-        'A multiplier can only be used for activities in gamified or assessment courses, as points can only be collected in these courses. You have chosen an assignment to a course that does not meet these requirements.',
+        'A multiplier can only be defined for gamified activities or activities in assessment courses, as points can only be collected in these courses. You have chosen an assignment to a course that does not meet these requirements.',
       liveQuizPointsRequireGamifiedAssessmentCourse:
-        'The scoring for live quizzes can only be adjusted for activities in gamified or assessment courses, as points can only be collected in these courses. You have chosen an assignment to a course that does not meet these requirements.',
+        'The scoring can only be adjusted for gamified live quizzes or live quizzes in assessment courses, as points can only be collected in these courses. You have chosen an assignment to a course that does not meet these requirements.',
       batchNoCoursesAvailable:
         'There are no ongoing or planned courses available to which you could assign your activities. Please create a corresponding course under "Courses" first.',
       batchOperationsInformation: `Depending on the selected actions and the available permissions for the selected activities, the following rules apply:

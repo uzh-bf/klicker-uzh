@@ -1153,11 +1153,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Basis, Korrektheits- und Bonuspunkte anpassen',
       bonusTime: 'Bonuszeit',
       noActivitiesWillBeUpdated: 'Keine Aktivitäten werden verändert',
-      nActivitiesWillBeUpdated: '{number} Aktivitäten werden verändert',
+      nActivitiesWillBeUpdated: '{number} Aktivitäten werden angepasst',
       multiplierRequiresGamifiedAssessmentCourse:
-        'Ein Multiplikator kann nur für Aktivitäten in gamifizierten oder Assessment-Kursen verwendet werden, da nur in diesen Kursen Punkte gesammelt werden können. Sie haben die Zuweisung zu einem Kurs gewählt, welcher diese Bedingungen nicht erfüllt.',
+        'Ein Multiplikator kann nur für gamifizierte Aktivitäten oder Aktivitäten in Assessment-Kursen definiert werden, da nur in diesen Kursen Punkte gesammelt werden können. Sie haben die Zuweisung zu einem Kurs gewählt, welcher diese Bedingungen nicht erfüllt.',
       liveQuizPointsRequireGamifiedAssessmentCourse:
-        'Die Bepunktung für Live Quizzes kann nur für Aktivitäten in gamifizierten oder Assessment-Kursen angepasst werden, da nur in diesen Kursen Punkte gesammelt werden können. Sie haben die Zuweisung zu einem Kurs gewählt, welcher diese Bedingungen nicht erfüllt.',
+        'Die Bepunktung kann nur für gamifizierte Live Quizzes oder Live Quizzes in Assessment-Kursen angepasst werden, da nur in diesen Kursen Punkte gesammelt werden können. Sie haben die Zuweisung zu einem Kurs gewählt, welcher diese Bedingungen nicht erfüllt.',
       batchNoCoursesAvailable:
         'Es sind keine laufenden oder geplanten Kurse verfügbar zu welchen Sie Ihre Aktivitäten zuweisen könnten. Bitte erstellen Sie zunächst einen entsprechenden Kurs unter "Kurse"',
       batchOperationsInformation: `Abhängig von den ausgewählten Aktionen und den Berechtigungen für die selektierten Aktivitäten gelten die folgenden Regeln:
@@ -1379,7 +1379,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modifyBasePoints: 'Basispunkte ändern',
       awardBasePoints: 'Basispunkte vergeben',
       noElementsWillBeUpdated: 'Keine Elemente werden verändert',
-      nElementsWillBeUpdated: '{number} Elemente werden verändert',
+      nElementsWillBeUpdated: '{number} Elemente werden angepasst',
       batchUpdatesInformation: `Abhängig von den ausgewählten Aktionen und den Berechtigungen für die selektierten Elemente gelten die folgenden Regeln:
 <ul>
 <li>Das Archivieren von Elementen / das Wiederherstellen von Elementen aus dem Archiv ist nur für nicht archivierte respektive archivierte Elemente möglich. Diese Aktion kann nur von Benutzern mit Administratorrechten für die betreffenden Elemente ausgeführt werden.</li>
