@@ -236,6 +236,7 @@ export interface IActivityDetails {
   isActivityReviewer: boolean
   isActivityManager: boolean
   courseId?: string | null
+  isGamificationEnabled: boolean
   arePointsAwarded: boolean
   pointsMultiplier: number
   totalBasePoints?: number | null
@@ -258,6 +259,7 @@ export const ActivityDetails = builder.objectType(ActivityDetailsRef, {
     isActivityReviewer: t.exposeBoolean('isActivityReviewer'),
     isActivityManager: t.exposeBoolean('isActivityManager'),
     courseId: t.exposeString('courseId', { nullable: true }),
+    isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
     arePointsAwarded: t.exposeBoolean('arePointsAwarded'),
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
     totalBasePoints: t.exposeInt('totalBasePoints', { nullable: true }),
