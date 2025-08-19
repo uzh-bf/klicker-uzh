@@ -21,6 +21,7 @@ type ActivityDetails {
   id: String!
   isActivityManager: Boolean!
   isActivityReviewer: Boolean!
+  isGamificationEnabled: Boolean!
   name: String!
   pointsMultiplier: Int!
   reviewStatus: ReviewStatus!

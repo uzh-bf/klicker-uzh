@@ -9,6 +9,7 @@ query GetActivityDetails($activityId: String!, $activityType: ActivityType!) {
     isActivityManager
     courseId
 
+    isGamificationEnabled
     arePointsAwarded
     pointsMultiplier
     totalBasePoints

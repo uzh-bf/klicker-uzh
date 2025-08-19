@@ -1,3 +1,5 @@
+import { faCheckSquare, faXmarkSquare } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityDetails,
   ActivityType,
@@ -5,6 +7,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { twMerge } from 'tailwind-merge'
 import ActivityReviewStatus from '../ActivityReviewStatus'
 
 function ActivityInformation({
@@ -41,6 +44,22 @@ function ActivityInformation({
           {
             label: t('manage.activities.activityType'),
             value: t(`shared.types.${activityType}`),
+          },
+          {
+            label: t('shared.generic.gamification'),
+            value: (
+              <FontAwesomeIcon
+                icon={
+                  details.isGamificationEnabled ? faCheckSquare : faXmarkSquare
+                }
+                className={twMerge(
+                  'ml-1',
+                  details.isGamificationEnabled
+                    ? 'text-uzh-darkgreen-100'
+                    : 'text-red-600'
+                )}
+              />
+            ),
           },
           ...(details.arePointsAwarded
             ? [
