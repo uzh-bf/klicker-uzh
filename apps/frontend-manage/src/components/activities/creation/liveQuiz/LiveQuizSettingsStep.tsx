@@ -110,6 +110,7 @@ function LiveQuizSettingsStep({
 
                         if (value === 'no-course-selected') {
                           setFieldValue('isGamificationEnabled', false)
+                          setFieldValue('isAssessmentEnabled', false)
                           setFieldValue('multiplier', '1')
                         } else {
                           const selectedCourse = [

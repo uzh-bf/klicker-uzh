@@ -189,7 +189,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
       expect(liveQuiz6Edited.isGamificationEnabled).toBe(true)
       expect(liveQuiz6Edited.isAssessmentEnabled).toBe(false)
 
-      // Case 4: Manipulate a live quiz with non-gamified course assignment and check that gamification setting is ignored (create and edit)
+      // Case 4: Manipulate a live quiz with non-gamified course assignment and check that gamification setting is set (create and edit)
       const liveQuiz7 = await manipulateLiveQuiz(
         {
           name: uuid(),
@@ -204,7 +204,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
         },
         userOneCtx
       )
-      expect(liveQuiz7.isGamificationEnabled).toBe(false)
+      expect(liveQuiz7.isGamificationEnabled).toBe(true)
       expect(liveQuiz7.isAssessmentEnabled).toBe(false)
 
       const liveQuiz8 = await seedLiveQuiz({ elements: [] }, userOneCtx)
@@ -223,7 +223,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
         },
         userOneCtx
       )
-      expect(liveQuiz8Edited.isGamificationEnabled).toBe(false)
+      expect(liveQuiz8Edited.isGamificationEnabled).toBe(true)
       expect(liveQuiz8Edited.isAssessmentEnabled).toBe(false)
 
       // Case 5: Manipulate a live quiz with assessment enabled course assignment (create and edit)
@@ -326,7 +326,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
           displayName: uuid(),
           blocks: [],
           multiplier: 1,
-          isGamificationEnabled: true,
+          isGamificationEnabled: false, // will be overridden by course setting
           isConfusionFeedbackEnabled,
           isLiveQAEnabled,
           isModerationEnabled,
@@ -336,6 +336,44 @@ describe('Unit tests for assessment configuration functionalities', () => {
       )
       expect(liveQuiz14Edited.isGamificationEnabled).toBe(true)
       expect(liveQuiz14Edited.isAssessmentEnabled).toBe(true)
+
+      // Case 8: Manipulate a live quiz without course assignment and gamification enabled (create and edit)
+      const liveQuiz15 = await manipulateLiveQuiz(
+        {
+          name: uuid(),
+          displayName: uuid(),
+          blocks: [],
+          multiplier: 1,
+          isGamificationEnabled: true,
+          isConfusionFeedbackEnabled,
+          isLiveQAEnabled,
+          isModerationEnabled,
+          courseId: null,
+        },
+        userOneCtx
+      )
+      expect(liveQuiz15.id).not.toBeNull()
+      expect(liveQuiz15.isGamificationEnabled).toBe(true)
+      expect(liveQuiz15.isAssessmentEnabled).toBe(false)
+
+      const liveQuiz16 = await seedLiveQuiz({ elements: [] }, userOneCtx)
+      const liveQuiz16Edited = await manipulateLiveQuiz(
+        {
+          id: liveQuiz16.id,
+          name: uuid(),
+          displayName: uuid(),
+          blocks: [],
+          multiplier: 1,
+          isGamificationEnabled: true,
+          isConfusionFeedbackEnabled,
+          isLiveQAEnabled,
+          isModerationEnabled,
+          courseId: null,
+        },
+        userOneCtx
+      )
+      expect(liveQuiz16Edited.isGamificationEnabled).toBe(true)
+      expect(liveQuiz16Edited.isAssessmentEnabled).toBe(false)
     })
 
     it('Verify that booleans on practice quizzes are set correctly when assigning it to courses', async () => {
