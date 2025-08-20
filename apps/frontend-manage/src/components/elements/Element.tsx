@@ -128,10 +128,7 @@ function Element({
         'deleteElement',
       ],
       isEditor: ['editElement'],
-      isShared: [
-        'duplicateElement',
-        ...(dataUser?.userProfile?.privatePreview ? ['activityLog'] : []),
-      ],
+      isShared: ['duplicateElement', 'activityLog'],
       isRemovable: ['removeElement'],
     },
     isEditor: element.isEditor ?? false,

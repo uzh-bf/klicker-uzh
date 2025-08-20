@@ -123,17 +123,15 @@ function ActivityDetailsModal({
               />
 
               <div className="flex w-full flex-col items-end gap-1.5 lg:w-1/3">
-                {user?.privatePreview && (
-                  <Button
-                    className={{ root: 'h-7 text-sm' }}
-                    onClick={() => setSelectedInstanceId(null)}
-                  >
-                    <Button.Icon icon={faMessage} />
-                    <Button.Label>
-                      {t('shared.comments.viewComments')}
-                    </Button.Label>
-                  </Button>
-                )}
+                <Button
+                  className={{ root: 'h-7 text-sm' }}
+                  onClick={() => setSelectedInstanceId(null)}
+                >
+                  <Button.Icon icon={faMessage} />
+                  <Button.Label>
+                    {t('shared.comments.viewComments')}
+                  </Button.Label>
+                </Button>
 
                 {/* course admins should have the possibility to set an activity's status to reviewed or unset it */}
                 {details.isActivityReviewer && (

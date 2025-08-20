@@ -415,13 +415,8 @@ export async function getUsersPrivatePreview(ctx: ContextWithUser) {
   }
 
   const users = await ctx.prisma.user.findMany({
-    where: {
-      privatePreview: true,
-    },
-    select: {
-      shortname: true,
-      email: true,
-    },
+    where: { privatePreview: true },
+    select: { shortname: true, email: true },
   })
 
   return users.map((user) => ({

@@ -62,73 +62,84 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       active: router.pathname == '/courses',
       data: { cy: 'courses' },
     },
-    ...(user?.privatePreview
-      ? ([
-          {
-            type: 'dropdown',
-            key: 'resources-menubar-item',
-            label: t('manage.general.resources'),
-            icon: faBolt,
-            active:
-              router.pathname == '/resources/answerCollections' ||
-              router.pathname === '/resources/catalog' ||
-              router.pathname === '/resources/userGroups' ||
-              router.pathname === '/resources/mediaLibrary',
-            notification:
-              pendingRequestData &&
-              pendingRequestData.countCatalogSharingRequests !== 0,
-            elements: [
-              {
-                key: 'answer-collections-item',
-                type: 'link',
-                label: t('manage.resources.answerCollections'),
-                onClick: () => router.push('/resources/answerCollections'),
-                data: { cy: 'answer-collections' },
-              },
-              {
-                key: 'catalog-item',
-                type: 'link',
-                label: t('manage.general.catalog'),
-                onClick: () => router.push('/resources/catalog'),
-                notification:
-                  pendingRequestData &&
-                  pendingRequestData.countCatalogSharingRequests !== 0,
-                data: { cy: 'catalog' },
-              },
-              {
-                key: 'user-groups-item',
-                type: 'link',
-                label: t('manage.general.userGroups'),
-                onClick: () => router.push('/resources/userGroups'),
-                data: { cy: 'user-groups' },
-                className: {
-                  label: 'bg-opacity-100',
-                  text: 'mr-8',
-                },
-              },
-              {
-                key: 'media-library-item',
-                type: 'link',
-                disabled: true,
-                label: t('manage.general.mediaLibrary'),
-                onClick: () => router.push('/resources/mediaLibrary'),
-                badge: t('shared.generic.comingSoon'),
-                data: { cy: 'media-library' },
-                className: {
-                  label: 'bg-opacity-100',
-                  text: 'mr-8',
-                  badge: 'bg-green-700 hover:bg-green-800',
-                },
-              },
-            ],
-            data: { cy: 'resources' },
-            className: {
-              icon: 'text-orange-400',
-              content: 'flex flex-col gap-0.5',
-            },
+
+    {
+      type: 'dropdown',
+      key: 'resources-menubar-item',
+      label: t('manage.general.resources'),
+      icon: faBolt,
+      active:
+        router.pathname == '/resources/answerCollections' ||
+        router.pathname === '/resources/catalog' ||
+        router.pathname === '/resources/userGroups' ||
+        router.pathname === '/resources/mediaLibrary',
+      notification:
+        pendingRequestData &&
+        pendingRequestData.countCatalogSharingRequests !== 0,
+      elements: [
+        {
+          key: 'answer-collections-item',
+          type: 'link',
+          label: t('manage.resources.answerCollections'),
+          onClick: () => router.push('/resources/answerCollections'),
+          data: { cy: 'answer-collections' },
+        },
+        {
+          key: 'catalog-item',
+          type: 'link',
+          disabled: !user?.privatePreview,
+          label: t('manage.general.catalog'),
+          onClick: () => router.push('/resources/catalog'),
+          badge: !user?.privatePreview
+            ? t('shared.generic.comingSoon')
+            : undefined,
+          notification:
+            pendingRequestData &&
+            pendingRequestData.countCatalogSharingRequests !== 0,
+          data: { cy: 'catalog' },
+          className: {
+            label: 'bg-opacity-100',
+            text: 'mr-8',
+            badge: 'bg-green-700 hover:bg-green-800',
           },
-        ] as NavigationItemProps[])
-      : []),
+        },
+        {
+          key: 'user-groups-item',
+          type: 'link',
+          disabled: !user?.privatePreview,
+          label: t('manage.general.userGroups'),
+          onClick: () => router.push('/resources/userGroups'),
+          badge: !user?.privatePreview
+            ? t('shared.generic.comingSoon')
+            : undefined,
+          data: { cy: 'user-groups' },
+          className: {
+            label: 'bg-opacity-100',
+            text: 'mr-8',
+            badge: 'bg-green-700 hover:bg-green-800',
+          },
+        },
+        {
+          key: 'media-library-item',
+          type: 'link',
+          disabled: true,
+          label: t('manage.general.mediaLibrary'),
+          onClick: () => router.push('/resources/mediaLibrary'),
+          badge: t('shared.generic.comingSoon'),
+          data: { cy: 'media-library' },
+          className: {
+            label: 'bg-opacity-100',
+            text: 'mr-8',
+            badge: 'bg-green-700 hover:bg-green-800',
+          },
+        },
+      ],
+      data: { cy: 'resources' },
+      className: {
+        icon: 'text-orange-400',
+        content: 'flex flex-col gap-0.5',
+      },
+    },
     ...(user?.publicPreview
       ? [
           {

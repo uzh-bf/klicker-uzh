@@ -109,7 +109,7 @@ function GroupActivityActions({
         'endGroupActivity',
         'gradeGroupActivity',
       ],
-      isShared: [...(user?.privatePreview ? ['activityLog'] : [])],
+      isShared: ['activityLog'],
       isRemovable: ['removeGroupActivity'],
     }
   }, [user?.privatePreview])

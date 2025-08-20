@@ -131,16 +131,14 @@ function CourseOverviewHeader({
             <Button.Label>{t('manage.course.shareCourse')}</Button.Label>
           </Button>
         ) : null}
-        {user?.privatePreview ? (
-          <Button
-            onClick={() => setIsActivityLogOpen(true)}
-            className={{ root: 'h-8' }}
-            data={{ cy: 'course-activity-log-button' }}
-          >
-            <Button.Icon icon={faMessage} />
-            <Button.Label>{t('shared.comments.tooltip')}</Button.Label>
-          </Button>
-        ) : null}
+        <Button
+          onClick={() => setIsActivityLogOpen(true)}
+          className={{ root: 'h-8' }}
+          data={{ cy: 'course-activity-log-button' }}
+        >
+          <Button.Icon icon={faMessage} />
+          <Button.Label>{t('shared.comments.tooltip')}</Button.Label>
+        </Button>
         <QRCodePopover
           triggerStyle="button"
           triggerText={t('manage.course.joinCourse')}

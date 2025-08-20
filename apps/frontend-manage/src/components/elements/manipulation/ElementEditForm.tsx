@@ -7,7 +7,6 @@ import {
   ElementType,
   GetAnswerCollectionsElementsDocument,
   ObjectType,
-  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
@@ -115,10 +114,6 @@ function ElementEditForm({
     fetchPolicy: 'network-only',
   })
   const collections = data?.getAnswerCollectionsElements ?? []
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
-  const user = dataUser?.userProfile
 
   return (
     <Modal
@@ -305,7 +300,7 @@ function ElementEditForm({
                   )}
                 </div>
 
-                {mode === ElementEditMode.EDIT && user?.privatePreview ? (
+                {mode === ElementEditMode.EDIT ? (
                   <Tabs
                     defaultValue="preview"
                     onValueChange={(value) => {

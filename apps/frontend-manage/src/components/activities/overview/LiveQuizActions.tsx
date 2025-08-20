@@ -171,7 +171,7 @@ function LiveQuizActions({
         'embeddingEvaluation',
         'liveQuizEvaluation',
         'useTemplate',
-        ...(user?.privatePreview ? ['activityLog'] : []),
+        'activityLog',
       ],
       isRemovable: ['removeLiveQuiz'],
     }
