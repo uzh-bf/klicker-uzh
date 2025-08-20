@@ -1753,7 +1753,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The name should allow you to distinguish this live quiz from others. It will not be shown to the participants, please use the display name (next field) for this.',
       liveQuizDescField:
         'Here you can enter an optional description of the live quiz. This will be displayed to the students at the beginning of the quiz.',
-      liveQuizDescCourse: 'You can assign your live quiz to a course.',
+      liveQuizDescCourse:
+        'You can assign your live quiz to a course. If your course is gamified or has assessment enabled, these settings will automatically propagate to the activity. For non-gamified courses or live quizzes without course assignment, you may activate gamification separately. For more information, please also refer to the documentation on <link>gamified live quizzes</link>.',
       liveQuizSelectCourse: 'Select course',
       liveQuizNoCourse: 'No course',
       liveQuizEnableGamification:

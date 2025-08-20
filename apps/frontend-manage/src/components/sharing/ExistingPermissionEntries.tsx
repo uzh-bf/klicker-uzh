@@ -32,7 +32,7 @@ function ExistingPermissionEntries({
     newPermissionLevel: PermissionLevel
     newPropagation: boolean
   }) => Promise<void>
-  onPermissionRemoval: (permissionId: number) => Promise<void>
+  onPermissionRemoval: (permissionId: number, isOwn: boolean) => Promise<void>
 }) {
   const permissionLevelSelectItems = usePermissionLevelSelection({ type })
   const t = useTranslations()
@@ -115,14 +115,14 @@ function ExistingPermissionEntries({
         newPropagation: modifyOwnPermissionsModal.newPropagation!,
       })
     } else {
-      await onPermissionRemoval(modifyOwnPermissionsModal.permissionId!)
+      await onPermissionRemoval(modifyOwnPermissionsModal.permissionId!, true)
     }
     setModifyOwnPermissionsModal({ ...modifyOwnPermissionsModal, open: false })
   }
 
   // confirm permission revocation
   const confirmRevocation = async () => {
-    await onPermissionRemoval(revocationModal.permissionId!)
+    await onPermissionRemoval(revocationModal.permissionId!, false)
   }
 
   return (
@@ -204,7 +204,7 @@ function ExistingPermissionEntries({
               <Button
                 basic
                 className={{
-                  root: 'mt-1 px-2 py-2 text-red-600 hover:text-red-800',
+                  root: 'mr-2 mt-1 px-2 py-2 text-red-600 hover:text-red-800',
                 }}
                 onClick={async () => {
                   await handleRemovePermission(

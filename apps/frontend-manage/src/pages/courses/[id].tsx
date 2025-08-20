@@ -174,11 +174,18 @@ function CourseOverviewPage() {
               <Progress
                 isMaxVisible={false}
                 max={100}
-                value={[reviewCompleted, reviewCompletedModified]}
+                value={
+                  reviewCompletedModified > 0
+                    ? [reviewCompleted, reviewCompletedModified]
+                    : [reviewCompleted]
+                }
                 formatter={(value) => `${value}%`}
                 className={{
                   root: 'h-5 w-full',
-                  indicator: ['bg-green-700', 'bg-uzh-red-100'],
+                  indicator:
+                    reviewCompletedModified > 0
+                      ? ['bg-green-700', 'bg-uzh-red-100']
+                      : ['bg-green-700'],
                   background: 'bg-uzh-grey-40',
                 }}
               />
