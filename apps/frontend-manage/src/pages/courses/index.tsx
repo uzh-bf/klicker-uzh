@@ -58,9 +58,9 @@ function CourseSelectionPage() {
     )
   }
 
-  const courses = dataCourses?.userCourses?.filter((course) => {
-    return showArchive ? true : !course.isArchived
-  })
+  const courses = dataCourses?.userCourses?.filter((course) =>
+    showArchive ? true : !course.isArchived
+  )
 
   return (
     <Layout>
@@ -173,7 +173,11 @@ function CourseSelectionPage() {
                     variables: {
                       name: values.name,
                       displayName: values.displayName,
-                      description: values.description,
+                      description:
+                        !values.description?.match(/^(<br>(\n)*)$/g) &&
+                        values.description !== ''
+                          ? values.description
+                          : null,
                       language: values.language,
                       color: values.color,
                       startDate: startDateUTC,

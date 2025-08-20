@@ -839,36 +839,28 @@ export async function renameParticipantGroup(
 
 export async function getParticipantGroups(
   { courseId }: { courseId: string },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
-  // find participant with correspoinding id ctx.user.sub and return all his participant groups with correct id
+  // return early, if no user is authenticated or if the user does not have a participant role
+  if (!ctx.user?.sub || ctx.user?.role !== DB.UserRole.PARTICIPANT) {
+    return []
+  }
+
+  // find participant with corresponding id ctx.user.sub and return all his participant groups with correct id
   const participant = await ctx.prisma.participant.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
+    where: { id: ctx.user.sub },
     include: {
       participantGroups: {
-        where: {
-          course: {
-            id: courseId,
-          },
-        },
+        where: { course: { id: courseId } },
         include: {
           messages: {
-            orderBy: {
-              createdAt: 'desc',
-            },
-            include: {
-              participant: true,
-            },
+            orderBy: { createdAt: 'desc' },
+            include: { participant: true },
           },
           participants: {
             include: {
               leaderboards: {
-                where: {
-                  courseId,
-                  type: DB.LeaderboardType.COURSE,
-                },
+                where: { courseId, type: DB.LeaderboardType.COURSE },
               },
             },
           },
@@ -886,7 +878,7 @@ export async function getParticipantGroups(
       group.participants.map((participant) => ({
         ...participant,
         score: participant.leaderboards[0]?.score ?? 0,
-        isSelf: participant.id === ctx.user.sub,
+        isSelf: participant.id === ctx.user!.sub,
       })),
       [prop('score'), 'desc'],
       [prop('username'), 'asc']
@@ -1889,10 +1881,16 @@ export async function removeGroupActivity(
 
 export async function getCourseGroupActivities(
   { courseId }: { courseId: string },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
+  // if the no participant is logged in, return early
+  if (!ctx.user?.sub || ctx.user.role !== DB.UserRole.PARTICIPANT) return null
+
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: {
+      id: courseId,
+      participations: { some: { participantId: ctx.user.sub } },
+    },
     include: {
       groupActivities: {
         where: {

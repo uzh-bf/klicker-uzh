@@ -109,7 +109,6 @@ const withPermission = SharingService.withPermission
 
 export const Query = builder.queryType({
   fields(t) {
-    const asAuthenticated = { authenticated: true }
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
@@ -724,7 +723,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      participantGroups: t.withAuth(asAuthenticated).field({
+      participantGroups: t.field({
         nullable: true,
         type: [ParticipantGroup],
         args: {
@@ -957,7 +956,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      getCourseOverviewData: t.withAuth(asParticipant).field({
+      getCourseOverviewData: t.field({
         nullable: true,
         type: ParticipantLearningData,
         args: {
@@ -968,7 +967,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      getStudentCourseLeaderboard: t.withAuth(asParticipant).field({
+      getStudentCourseLeaderboard: t.field({
         nullable: true,
         type: StudentCourseLeaderboard,
         args: {
@@ -980,7 +979,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      groupActivities: t.withAuth(asParticipant).field({
+      groupActivities: t.field({
         nullable: true,
         type: [GroupActivity],
         args: {

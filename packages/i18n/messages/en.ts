@@ -713,6 +713,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupLeaderboard: 'Group Leaderboard',
       individualLeaderboardUpdate:
         'The individual leaderboard will be updated hourly.',
+      courseOverviewOnlyWithLogin:
+        "The course overview of this course is only accessible to logged-in participants. Please log in to KlickerUZH and join the course before accessing the course overview. If you are accessing KlickerUZH from an LMS (e.g. OLAT), please visit the 'Manage Account' module to manage your account information.",
+      gamificationOnlyForLoggedInUsers:
+        'Gamification elements at the course level are only accessible to logged-in users and course members.',
       noGroups: "No groups have been created yet. Let's go!",
       noGroupPoints: "No group points have been collected yet. Let's go!",
       groupLeaderboardUpdate:
