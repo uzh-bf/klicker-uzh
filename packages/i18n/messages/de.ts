@@ -1160,6 +1160,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       bonusTime: 'Bonuszeit',
       noActivitiesWillBeUpdated: 'Keine Aktivitäten werden verändert',
       nActivitiesWillBeUpdated: '{number} Aktivitäten werden angepasst',
+      activityContainsNoElements: 'Diese {activity} enthält keine Elemente.',
       multiplierRequiresGamifiedAssessmentCourse:
         'Ein Multiplikator kann nur für gamifizierte Aktivitäten oder Aktivitäten in Assessment-Kursen definiert werden, da nur in diesen Kursen Punkte gesammelt werden können. Sie haben die Zuweisung zu einem Kurs gewählt, welcher diese Bedingungen nicht erfüllt.',
       liveQuizPointsRequireGamifiedAssessmentCourse:

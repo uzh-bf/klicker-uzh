@@ -23,6 +23,7 @@ import {
   ShadcnTableHeader,
   ShadcnTableRow,
   Tooltip,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -47,6 +48,17 @@ function ActivityOverviewTable({
   const router = useRouter()
   const stacks = details.stacks ?? []
   const isLiveQuiz = activityType === ActivityType.LiveQuiz
+
+  if (stacks.length === 0) {
+    return (
+      <UserNotification
+        type="info"
+        message={t('manage.activities.activityContainsNoElements', {
+          activity: t(`shared.types.${activityType}`),
+        })}
+      />
+    )
+  }
 
   return (
     <ShadcnTable className="text-sm">
