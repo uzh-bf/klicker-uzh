@@ -1134,6 +1134,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       editElement: 'Edit Element',
       noElementEditPermissions:
         'You do not have sufficient permissions to edit this element.',
+      deletedElement:
+        'This element has been deleted and can no longer be edited.',
       activityInformation: 'Activity Information',
       activityMultiplier: 'Activity Multiplier',
       reviewCompleted: 'Review completed',
@@ -1155,6 +1157,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       bonusTime: 'Bonus time',
       noActivitiesWillBeUpdated: 'No activities will be updated',
       nActivitiesWillBeUpdated: '{number} activities will be updated',
+      activityContainsNoElements:
+        'This {activity} does not contain any elements.',
       multiplierRequiresGamifiedAssessmentCourse:
         'A multiplier can only be defined for gamified activities or activities in assessment courses, as points can only be collected in these courses. You have chosen an assignment to a course that does not meet these requirements.',
       liveQuizPointsRequireGamifiedAssessmentCourse:
@@ -2560,6 +2564,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       nParticipants: '{number} participants',
       saveDescription: 'Save description',
       noDescriptionNotification: 'No description available.',
+      reviewProgress: 'Review progress',
       activityNotAvailableAssessment:
         '{activityType} are currently not supported in assessment courses.',
       withGroups: 'With Groups',

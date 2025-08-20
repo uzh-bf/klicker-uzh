@@ -21,14 +21,19 @@ query GetActivityDetails($activityId: String!, $activityType: ActivityType!) {
       id
       numOfParticipants
       timeLimit
+      stackTitle
+      stackDescription
       stackPoints
+
       elements {
         basePoints
         correctnessPoints
         bonusPoints
         totalPoints
         hasSampleSolution
+
         isEditor
+        isDeleted
 
         instance {
           id

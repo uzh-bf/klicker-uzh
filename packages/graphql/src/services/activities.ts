@@ -944,6 +944,7 @@ export async function getLiveQuizDetails(
           .hasSampleSolution ??
           false)
       const isEditor = instance.element._count.permissions > 0
+      const isDeleted = instance.element.isDeleted
 
       if (!arePointsAwarded) {
         return {
@@ -953,6 +954,7 @@ export async function getLiveQuizDetails(
           totalPoints: 0,
           hasSampleSolution,
           isEditor,
+          isDeleted,
           instance,
         }
       }
@@ -979,6 +981,7 @@ export async function getLiveQuizDetails(
         totalPoints,
         hasSampleSolution,
         isEditor,
+        isDeleted,
         instance,
       }
     })
@@ -1093,6 +1096,7 @@ function getAsyncActivityPointsElements({
       totalPoints: number
       hasSampleSolution: boolean
       isEditor: boolean
+      isDeleted: boolean
       instance: DB.ElementInstance
     }[]
     stackPoints: number
@@ -1116,6 +1120,7 @@ function getAsyncActivityPointsElements({
         totalPoints: points,
         hasSampleSolution,
         isEditor: !!instance.element.permissions?.[0],
+        isDeleted: instance.element.isDeleted,
         instance,
       })
       acc.stackPoints += points
@@ -1130,6 +1135,8 @@ function getAsyncActivityPointsElements({
       ? stack.elements[0].results.total +
         stack.elements[0].anonymousResults.total
       : 0,
+    stackTitle: stack.displayName,
+    stackDescription: stack.description,
     stackPoints: arePointsAwarded ? stackPoints : null,
     elements,
   }

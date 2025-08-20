@@ -1136,6 +1136,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       editElement: 'Element bearbeiten',
       noElementEditPermissions:
         'Sie haben nicht aussreichende Berechtigungen, um dieses Element zu bearbeiten.',
+      deletedElement:
+        'Dieses Element wurde gelöscht und kann daher nicht mehr bearbeitet werden.',
       activityInformation: 'Aktivitätsinformationen',
       activityMultiplier: 'Aktivitäts-Multiplikator',
       reviewCompleted: 'Review abgeschlossen',
@@ -1158,6 +1160,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       bonusTime: 'Bonuszeit',
       noActivitiesWillBeUpdated: 'Keine Aktivitäten werden verändert',
       nActivitiesWillBeUpdated: '{number} Aktivitäten werden angepasst',
+      activityContainsNoElements: 'Diese {activity} enthält keine Elemente.',
       multiplierRequiresGamifiedAssessmentCourse:
         'Ein Multiplikator kann nur für gamifizierte Aktivitäten oder Aktivitäten in Assessment-Kursen definiert werden, da nur in diesen Kursen Punkte gesammelt werden können. Sie haben die Zuweisung zu einem Kurs gewählt, welcher diese Bedingungen nicht erfüllt.',
       liveQuizPointsRequireGamifiedAssessmentCourse:
@@ -2608,6 +2611,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nParticipants: '{number} Teilnehmende',
       saveDescription: 'Beschreibung speichern',
       noDescriptionNotification: 'Keine Beschreibung vorhanden',
+      reviewProgress: 'Review-Fortschritt',
       activityNotAvailableAssessment:
         '{activityType} werden in Assessment-Kursen leider aktuell noch nicht unterstützt.',
       withGroups: 'Mit Gruppen',

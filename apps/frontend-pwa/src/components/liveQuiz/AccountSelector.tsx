@@ -340,7 +340,7 @@ function AccountSelector({
                           <div className="absolute bottom-0 left-0 right-0 z-10 mx-auto flex w-fit flex-row items-center gap-2.5 rounded-md border-2 border-green-600 bg-white px-2 py-1 text-sm">
                             <FontAwesomeIcon
                               icon={faCheck}
-                              className="h-4 w-4 font-bold text-green-600"
+                              className="h-4 w-4 font-bold text-green-700"
                             />
                             {t('shared.generic.selected')}
                           </div>

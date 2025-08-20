@@ -146,7 +146,7 @@ function InstanceHeader({
       <div className="flex flex-row justify-between">
         <div className="flex flex-row items-center gap-2">
           {correctness === ResponseCorrectnessType.Correct && (
-            <FontAwesomeIcon icon={faCheckDouble} className="text-green-600" />
+            <FontAwesomeIcon icon={faCheckDouble} className="text-green-700" />
           )}
           {correctness === ResponseCorrectnessType.Partial && (
             <FontAwesomeIcon icon={faCheck} className="text-yellow-600" />

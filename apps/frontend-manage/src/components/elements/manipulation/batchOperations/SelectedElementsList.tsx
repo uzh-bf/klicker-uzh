@@ -65,7 +65,7 @@ function SelectedElementsList({
                 {element.actionsApplied ? (
                   <FontAwesomeIcon
                     icon={faCheck}
-                    className="text-green-600"
+                    className="text-green-700"
                     data-cy={`element-batch-check-${element.name}`}
                   />
                 ) : (
