@@ -4,6 +4,7 @@ import {
   ActivityType,
   ChangeActivityNameDocument,
   GetSingleCourseDocument,
+  ReviewStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, FormikTextField, Modal, toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
@@ -121,6 +122,10 @@ function ActivityNameChangeModal({
                         ...activity,
                         name: values.name,
                         displayName: values.displayName,
+                        reviewStatus:
+                          activity.reviewStatus === ReviewStatus.Reviewed
+                            ? ReviewStatus.ModifiedAfterReview
+                            : activity.reviewStatus,
                       }
                     }
                     return activity

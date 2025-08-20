@@ -57,6 +57,8 @@ function ObjectSharingModalWrapper({
           objectType !== ObjectType.CatalogCollection &&
           objectType !== ObjectType.Course
         }
+        refetchElements={refetchElements}
+        refetchActivities={refetchActivities}
       />
       {transferModalOpen && (
         <TransferOwnershipModal

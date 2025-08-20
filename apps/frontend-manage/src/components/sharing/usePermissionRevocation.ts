@@ -16,28 +16,36 @@ function usePermissionRevocation({
   objectType,
   catalogCollectionId,
   onError,
+  refetchElements,
+  refetchActivities,
 }: {
   objectId: string | number
   objectType: ObjectType
   catalogCollectionId?: string
   onError: () => void
+  refetchElements?: () => Promise<void>
+  refetchActivities?: () => Promise<void>
 }): {
   onPermissionRevocation: ({
     permissionId,
+    isOwn,
   }: {
     permissionId: number
+    isOwn: boolean
   }) => Promise<boolean>
   permissionRevoking: boolean
 } {
-  // TODO: add query update
+  // TODO: add query updates
   const [revokeObjectAccess, { loading: revokingObjectAccess }] = useMutation(
     RevokeObjectAccessDocument
   )
 
   const onPermissionRevocation = async ({
     permissionId,
+    isOwn,
   }: {
     permissionId: number
+    isOwn: boolean
   }) => {
     try {
       const res = await revokeObjectAccess({
@@ -95,6 +103,20 @@ function usePermissionRevocation({
       })
 
       if (res.data?.revokeObjectAccess) {
+        // if own permission was revoked, refetch elements and activities depending on object type
+        if (isOwn && objectType === ObjectType.Element) {
+          await refetchElements?.()
+        }
+        if (
+          isOwn &&
+          (objectType === ObjectType.LiveQuiz ||
+            objectType === ObjectType.PracticeQuiz ||
+            objectType === ObjectType.MicroLearning ||
+            objectType === ObjectType.GroupActivity)
+        ) {
+          await refetchActivities?.()
+        }
+
         return true
       } else {
         onError()

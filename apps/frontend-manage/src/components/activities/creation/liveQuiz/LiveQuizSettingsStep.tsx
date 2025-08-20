@@ -129,7 +129,21 @@ function LiveQuizSettingsStep({
                         }
                       }}
                       label={t('shared.generic.course')}
-                      tooltip={t('manage.activityWizard.liveQuizDescCourse')}
+                      tooltip={t.rich(
+                        'manage.activityWizard.liveQuizDescCourse',
+                        {
+                          link: (text) => (
+                            <a
+                              href="https://www.klicker.uzh.ch/tutorials/live_quiz/#what-functionalities-become-available-through-gamified-live-quizzes"
+                              className="text-primary-100 hover:underline"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {text}
+                            </a>
+                          ),
+                        }
+                      )}
                       placeholder={t(
                         'manage.activityWizard.liveQuizSelectCourse'
                       )}

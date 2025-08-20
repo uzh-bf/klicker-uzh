@@ -257,8 +257,9 @@ function DirectSharingForm({
               disabled={!isValid}
               className={{
                 root: twMerge(
-                  'mr-2 p-1.5 hover:text-white',
-                  isValid && 'bg-primary-100 hover:bg-primary-80 text-white',
+                  'mr-2 p-1.5',
+                  isValid &&
+                    'bg-primary-100 hover:bg-primary-80 text-white hover:text-white',
                   isSubmitting && 'hover:cursor-progress'
                 ),
               }}

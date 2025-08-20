@@ -22,6 +22,8 @@ function ObjectSharingModal({
   onOwnershipTransfer,
   isOwner,
   derivedPermissionsAvailable,
+  refetchElements,
+  refetchActivities,
 }: {
   onClose: () => void
   objectId: number | string
@@ -31,6 +33,8 @@ function ObjectSharingModal({
   catalogCollectionId?: string
   isOwner: boolean
   derivedPermissionsAvailable: boolean // flag to conditionally show derived permissions (not defined for certain objects)
+  refetchElements?: () => Promise<void>
+  refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
   const [showDerivedPermissions, setShowDerivedPermissions] = useState(false)
@@ -93,6 +97,8 @@ function ObjectSharingModal({
     objectType,
     catalogCollectionId,
     onError: () => onRemovalFailure(),
+    refetchElements,
+    refetchActivities,
   })
 
   // mutation to create new permission entry for answer collection
@@ -147,9 +153,12 @@ function ObjectSharingModal({
               newPropagation,
             })
           }}
-          onPermissionRemoval={async (permissionId) => {
+          onPermissionRemoval={async (permissionId, isOwn) => {
             try {
-              const success = await onPermissionRevocation({ permissionId })
+              const success = await onPermissionRevocation({
+                permissionId,
+                isOwn,
+              })
               if (success) {
                 toast({
                   type: 'success',
