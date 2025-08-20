@@ -715,6 +715,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupLeaderboard: 'Gruppenleaderboard',
       individualLeaderboardUpdate:
         'Das individuelle Leaderboard wird stündlich aktualisiert.',
+      courseOverviewOnlyWithLogin:
+        'Die Kursübersicht dieses Kurses ist nur für angemeldete Teilnehmer zugänglich. Bitte melden Sie sich zuerst in KlickerUZH an und treten Sie dem Kurs bei, bevor Sie auf die Kursübersicht zugreifen. Sollten Sie aus einem LMS (z.B. OLAT) auf KlickerUZH zugreifen, besuchen Sie bitte den "Manage Account"-Baustein, um Ihre Kontoinformationen zu verwalten.',
+      gamificationOnlyForLoggedInUsers:
+        'Gamifizierungs-Elemente auf Kursebene sind nur für eingeloggte Nutzer und Mitglieder des Kurses zugänglich.',
       noGroups: "Bisher wurden noch keine Gruppen gebildet. Los geht's!",
       noGroupPoints:
         "Bisher hat noch keine Gruppe Punkte erhalten. Los geht's!",

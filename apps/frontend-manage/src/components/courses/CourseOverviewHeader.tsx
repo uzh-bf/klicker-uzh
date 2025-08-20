@@ -211,7 +211,11 @@ function CourseOverviewHeader({
                   id: course.id,
                   name: values.name,
                   displayName: values.displayName,
-                  description: values.description,
+                  description:
+                    !values.description?.match(/^(<br>(\n)*)$/g) &&
+                    values.description !== ''
+                      ? values.description
+                      : null,
                   language: values.language,
                   color: values.color,
                   startDate: startDateUTC,

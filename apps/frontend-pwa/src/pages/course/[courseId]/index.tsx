@@ -1,4 +1,6 @@
 import { useBackgroundQuery, useMutation, useQuery } from '@apollo/client'
+import { faLock } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetCourseGroupActivitiesDocument,
   GetCourseOverviewDataDocument,
@@ -108,9 +110,10 @@ function CourseOverview({
 
   useEffect(() => {
     if (
-      data &&
-      !data.getCourseOverviewData?.course?.isGamificationEnabled &&
-      data.getCourseOverviewData?.course?.description
+      data?.getCourseOverviewData &&
+      (!participation ||
+        (!data.getCourseOverviewData?.course?.isGamificationEnabled &&
+          data.getCourseOverviewData?.course?.description))
     ) {
       setSelectedTab('info')
     }
@@ -166,6 +169,21 @@ function CourseOverview({
     setIsProfileModalOpen((prev) => !prev)
   }
 
+  // if the participant is not logged in and the course has no description, show a notification
+  if (!participation && !course.description) {
+    return (
+      <Layout
+        displayName={t('shared.generic.leaderboard')}
+        course={course ?? undefined}
+      >
+        <UserNotification
+          type="info"
+          message={t('pwa.courses.courseOverviewOnlyWithLogin')}
+        />
+      </Layout>
+    )
+  }
+
   return (
     <Layout
       displayName={t('shared.generic.leaderboard')}
@@ -183,7 +201,18 @@ function CourseOverview({
                       {
                         id: 'leaderboard',
                         value: 'global',
-                        label: t('shared.generic.leaderboard'),
+                        disabled: !participation,
+                        tooltip: !participation
+                          ? t('pwa.courses.gamificationOnlyForLoggedInUsers')
+                          : undefined,
+                        label: participation ? (
+                          t('shared.generic.leaderboard')
+                        ) : (
+                          <div className="flex flex-row items-center gap-2">
+                            <FontAwesomeIcon icon={faLock} />
+                            <span>{t('shared.generic.leaderboard')}</span>
+                          </div>
+                        ),
                         data: { cy: 'student-course-leaderboard-tab' },
                       },
                     ]
@@ -214,7 +243,18 @@ function CourseOverview({
                       {
                         id: 'create',
                         value: 'create',
-                        label: t('pwa.courses.createJoinGroup'),
+                        disabled: !participation,
+                        tooltip: !participation
+                          ? t('pwa.courses.gamificationOnlyForLoggedInUsers')
+                          : undefined,
+                        label: participation ? (
+                          t('pwa.courses.createJoinGroup')
+                        ) : (
+                          <div className="flex flex-row items-center gap-2">
+                            <FontAwesomeIcon icon={faLock} />
+                            <span>{t('pwa.courses.createJoinGroup')}</span>
+                          </div>
+                        ),
                         data: { cy: 'student-course-create-group' },
                       },
                     ]
