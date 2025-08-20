@@ -1,5 +1,7 @@
+import { faClock } from '@fortawesome/free-regular-svg-icons'
 import {
   faCheckSquare,
+  faInfoCircle,
   faMagnifyingGlass,
   faPencil,
   faXmarkSquare,
@@ -10,6 +12,7 @@ import {
   ActivityType,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
+import { Markdown } from '@klicker-uzh/markdown'
 import {
   Button,
   ShadcnTable,
@@ -88,13 +91,41 @@ function ActivityOverviewTable({
             >
               <ShadcnTableCell colSpan={isLiveQuiz ? 4 : 1} className="py-1">
                 <div className="flex items-center font-bold">
-                  {isLiveQuiz
-                    ? t('shared.generic.blockN', {
-                        number: stackIx + 1,
-                      })
-                    : t('shared.generic.stackN', {
-                        number: stackIx + 1,
-                      })}
+                  <span>
+                    {isLiveQuiz
+                      ? t('shared.generic.blockN', {
+                          number: stackIx + 1,
+                        })
+                      : t('shared.generic.stackN', {
+                          number: stackIx + 1,
+                        })}
+                  </span>
+                  {stack.timeLimit ? (
+                    <span className="text-uzh-red-100 ml-5 flex items-center gap-1.5">
+                      <FontAwesomeIcon icon={faClock} />
+                      {`${stack.timeLimit} s`}
+                    </span>
+                  ) : null}
+                  {stack.stackTitle ? (
+                    <span className="font-normal">{`: ${stack.stackTitle}`}</span>
+                  ) : null}
+                  {stack.stackDescription ? (
+                    <Tooltip
+                      tooltip={
+                        <div>
+                          <div className="font-bold">
+                            {t('manage.activityWizard.stackDescription')}:
+                          </div>
+                          <Markdown content={stack.stackDescription} />
+                        </div>
+                      }
+                    >
+                      <FontAwesomeIcon
+                        icon={faInfoCircle}
+                        className="text-primary-100 ml-3"
+                      />
+                    </Tooltip>
+                  ) : null}
                 </div>
               </ShadcnTableCell>
               {details.arePointsAwarded && stack.stackPoints !== null ? (
@@ -214,16 +245,18 @@ function ActivityOverviewTable({
                     </Tooltip>
                     <Tooltip
                       tooltip={
-                        element.isEditor
+                        element.isEditor && !element.isDeleted
                           ? t('manage.activities.editElement')
-                          : t('manage.activities.noElementEditPermissions')
+                          : element.isDeleted
+                            ? t('manage.activities.deletedElement')
+                            : t('manage.activities.noElementEditPermissions')
                       }
                     >
                       <Button
                         basic
                         size="icon"
                         className={{ root: 'h-8 w-8' }}
-                        disabled={!element.isEditor}
+                        disabled={!element.isEditor || element.isDeleted}
                         onClick={() => {
                           router.push({
                             pathname: '/',

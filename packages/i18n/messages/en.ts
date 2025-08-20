@@ -1134,6 +1134,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       editElement: 'Edit Element',
       noElementEditPermissions:
         'You do not have sufficient permissions to edit this element.',
+      deletedElement:
+        'This element has been deleted and can no longer be edited.',
       activityInformation: 'Activity Information',
       activityMultiplier: 'Activity Multiplier',
       reviewCompleted: 'Review completed',

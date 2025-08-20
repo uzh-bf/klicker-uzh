@@ -1136,6 +1136,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       editElement: 'Element bearbeiten',
       noElementEditPermissions:
         'Sie haben nicht aussreichende Berechtigungen, um dieses Element zu bearbeiten.',
+      deletedElement:
+        'Dieses Element wurde gelöscht und kann daher nicht mehr bearbeitet werden.',
       activityInformation: 'Aktivitätsinformationen',
       activityMultiplier: 'Aktivitäts-Multiplikator',
       reviewCompleted: 'Review abgeschlossen',

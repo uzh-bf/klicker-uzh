@@ -18,6 +18,7 @@ interface IActivityInfoElement {
   totalPoints: number
   hasSampleSolution: boolean
   isEditor: boolean
+  isDeleted: boolean
   instance: IElementInstance
 }
 
@@ -33,6 +34,7 @@ export const ActivityInfoElement = builder.objectType(ActivityInfoElementRef, {
     totalPoints: t.exposeInt('totalPoints'),
     hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
     isEditor: t.exposeBoolean('isEditor'),
+    isDeleted: t.exposeBoolean('isDeleted'),
     instance: t.expose('instance', {
       type: ElementInstanceRef,
     }),
@@ -43,6 +45,8 @@ interface IActivityInfoStack {
   id: number
   numOfParticipants?: number | null
   timeLimit?: number | null
+  stackTitle?: string | null
+  stackDescription?: string | null
   stackPoints?: number | null
   elements: IActivityInfoElement[]
 }
@@ -55,6 +59,8 @@ export const ActivityInfoStack = builder.objectType(ActivityInfoStackRef, {
     id: t.exposeInt('id'),
     numOfParticipants: t.exposeInt('numOfParticipants', { nullable: true }),
     timeLimit: t.exposeInt('timeLimit', { nullable: true }),
+    stackTitle: t.exposeString('stackTitle', { nullable: true }),
+    stackDescription: t.exposeString('stackDescription', { nullable: true }),
     stackPoints: t.exposeInt('stackPoints', { nullable: true }),
     elements: t.expose('elements', { type: [ActivityInfoElement] }),
   }),
