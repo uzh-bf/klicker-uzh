@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.3.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-rc.0...v3.3.0) (2025-08-20)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** only validate course group formation deadline date if group creation is enabled ([f6a0340](https://github.com/uzh-bf/klicker-uzh/commit/f6a0340a851b64daff5416059226834e2a6c1344))
+* **apps/frontend-manage:** resolve issues with cache updates on removal of own object permissions and other minor bugfixes ([#4850](https://github.com/uzh-bf/klicker-uzh/issues/4850)) ([bbfd8f7](https://github.com/uzh-bf/klicker-uzh/commit/bbfd8f7a8c5f6102488786cadfb62f05d9690945))
+* ensure that course overview is accessible for all student users with gamification information blocked for non-participants ([#4847](https://github.com/uzh-bf/klicker-uzh/issues/4847)) ([069530d](https://github.com/uzh-bf/klicker-uzh/commit/069530dc9852f93f68a9df77e9593a3ec306e724))
+
+
+### Enhancements
+
+* support find shortcuts on overviews, illustrate course progress, fix deleted element edit operation availability ([#4848](https://github.com/uzh-bf/klicker-uzh/issues/4848)) ([101573a](https://github.com/uzh-bf/klicker-uzh/commit/101573a88d1672218f8e299deb009c9719ea409a))
+
 ## [3.3.0-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.83...v3.3.0-rc.0) (2025-08-19)
 
 
