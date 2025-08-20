@@ -119,9 +119,6 @@ function CourseOverview({
     }
   }, [data])
 
-  // TODO: REMOVE
-  console.log('DESCRIPTION', data?.getCourseOverviewData)
-
   if (
     !data?.getCourseOverviewData ||
     !data.getCourseOverviewData.course ||
