@@ -2611,6 +2611,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nParticipants: '{number} Teilnehmende',
       saveDescription: 'Beschreibung speichern',
       noDescriptionNotification: 'Keine Beschreibung vorhanden',
+      reviewProgress: 'Review-Fortschritt',
       activityNotAvailableAssessment:
         '{activityType} werden in Assessment-Kursen leider aktuell noch nicht unterstützt.',
       withGroups: 'Mit Gruppen',

@@ -5,16 +5,25 @@ import {
   faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetSingleCourseDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetSingleCourseDocument,
+  ReviewStatus,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import useEarliestLatestCourseDates from '@lib/hooks/useEarliestLatestCourseDates'
-import { Button, Prose, TabContent, Tabs } from '@uzh-bf/design-system'
+import {
+  Button,
+  Progress,
+  Prose,
+  TabContent,
+  Tabs,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../components/Layout'
 import CourseCalendarView from '../../components/courses/CourseCalendarView'
@@ -69,6 +78,40 @@ function CourseOverviewPage() {
     }
   }, [router.query.gamificationTab])
 
+  const { reviewCompleted, reviewCompletedModified } = useMemo(() => {
+    if (!data?.course) {
+      return {
+        reviewCompleted: 0,
+        reviewCompletedModified: 0,
+      }
+    }
+
+    const allActivities = [
+      ...(data.course.liveQuizzesInfo ?? []),
+      ...(data.course.practiceQuizzesInfo ?? []),
+      ...(data.course.microLearningsInfo ?? []),
+      ...(data.course.groupActivitiesInfo ?? []),
+    ]
+
+    const totalActivities = allActivities.length
+    const completedActivities = allActivities.filter(
+      (quiz) => quiz.reviewStatus === ReviewStatus.Reviewed
+    ).length
+    const reviewCompletedModified = allActivities.filter(
+      (quiz) => quiz.reviewStatus === ReviewStatus.ModifiedAfterReview
+    ).length
+
+    return {
+      reviewCompleted: Math.round(
+        ((completedActivities + reviewCompletedModified) / totalActivities) *
+          100
+      ),
+      reviewCompletedModified: Math.round(
+        (reviewCompletedModified / totalActivities) * 100
+      ),
+    }
+  }, [data?.course])
+
   if (error) {
     return <div>{error.message}</div>
   }
@@ -112,7 +155,7 @@ function CourseOverviewPage() {
           <div className="font-bold">{t('shared.generic.description')}</div>
           <Prose className={{ root: 'prose-p:m-0 prose-img:m-0' }}>
             {course.description ? (
-              <Ellipsis maxLines={3}>{course.description}</Ellipsis>
+              <Ellipsis maxLines={2}>{course.description}</Ellipsis>
             ) : (
               <div className="flex flex-row items-center gap-2">
                 <FontAwesomeIcon
@@ -123,6 +166,24 @@ function CourseOverviewPage() {
               </div>
             )}
           </Prose>
+          {reviewCompleted > 0 && (
+            <div className="-mt-1 flex flex-row items-center gap-4">
+              <div className="whitespace-nowrap font-bold">
+                {t('manage.course.reviewProgress')}
+              </div>
+              <Progress
+                isMaxVisible={false}
+                max={100}
+                value={[reviewCompleted, reviewCompletedModified]}
+                formatter={(value) => `${value}%`}
+                className={{
+                  root: 'h-5 w-full',
+                  indicator: ['bg-green-700', 'bg-uzh-red-100'],
+                  background: 'bg-uzh-grey-40',
+                }}
+              />
+            </div>
+          )}
         </div>
         <div className="grid grid-cols-2">
           <div className="whitespace-nowrap font-bold">

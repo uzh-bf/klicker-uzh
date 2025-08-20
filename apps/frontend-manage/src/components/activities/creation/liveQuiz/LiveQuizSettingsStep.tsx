@@ -147,7 +147,7 @@ function LiveQuizSettingsStep({
                             className={twMerge(
                               'w-4',
                               values.isGamificationEnabled
-                                ? 'text-green-600'
+                                ? 'text-green-700'
                                 : 'text-red-600'
                             )}
                           />
@@ -173,7 +173,7 @@ function LiveQuizSettingsStep({
                             className={twMerge(
                               'w-4',
                               values.isAssessmentEnabled
-                                ? 'text-green-600'
+                                ? 'text-green-700'
                                 : 'text-red-600'
                             )}
                           />
@@ -228,7 +228,7 @@ function LiveQuizSettingsStep({
                             className={twMerge(
                               'mt-0.75 w-3',
                               customizedGradingEnabled
-                                ? 'text-green-600'
+                                ? 'text-green-700'
                                 : 'text-red-600'
                             )}
                           />

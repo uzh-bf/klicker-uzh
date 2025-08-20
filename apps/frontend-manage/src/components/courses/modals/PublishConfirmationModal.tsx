@@ -101,7 +101,7 @@ function PublishConfirmationModal({
           <div className="flex items-center">
             <FontAwesomeIcon
               icon={faHourglassStart}
-              className="mr-2 text-green-600"
+              className="mr-2 text-green-700"
             />
             <span className="font-medium">
               {t('shared.generic.startAt', {

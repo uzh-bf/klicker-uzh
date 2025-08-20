@@ -2564,6 +2564,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       nParticipants: '{number} participants',
       saveDescription: 'Save description',
       noDescriptionNotification: 'No description available.',
+      reviewProgress: 'Review progress',
       activityNotAvailableAssessment:
         '{activityType} are currently not supported in assessment courses.',
       withGroups: 'With Groups',

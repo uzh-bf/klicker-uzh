@@ -203,7 +203,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
         content: 'border-green-600 mr-1 mt-0.5',
         icon: twMerge(
           '-mx-1',
-          quizzes?.length !== 0 ? 'text-green-600' : 'text-slate-400'
+          quizzes?.length !== 0 ? 'text-green-700' : 'text-slate-400'
         ),
       },
       data: { cy: 'running-live-quiz-dropdown' },
