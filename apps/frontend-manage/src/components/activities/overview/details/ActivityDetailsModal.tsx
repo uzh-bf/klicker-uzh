@@ -13,7 +13,6 @@ import {
   ObjectType,
   PublicationStatus,
   ReviewStatus,
-  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -45,12 +44,6 @@ function ActivityDetailsModal({
     variables: { activityId, activityType },
     fetchPolicy: 'cache-and-network',
   })
-
-  // fetch user for preview flag
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
-  const user = dataUser?.userProfile
 
   const details = detailsData?.activityDetails
   const stacks = detailsData?.activityDetails?.stacks ?? []
