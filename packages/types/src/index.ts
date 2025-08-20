@@ -34,6 +34,7 @@ export enum DisplayMode {
 export enum SortByType {
   TITLE = 'TITLE',
   TYPE = 'TYPE',
+  STATUS = 'STATUS',
   CREATED = 'CREATED',
   MODIFIED = 'MODIFIED',
 }

@@ -298,7 +298,7 @@ describe('Feature test for review functionalities and batch operations', functio
       cy.get('[data-cy="close-activity-details-modal"]').click()
       cy.get(`[data-cy="activity-${activity.type}-${activity.name}"]`).should(
         'contain',
-        messages.shared.generic.reviewed
+        messages.shared.generic.reviewStatusREVIEWED
       )
     }
   }
@@ -326,7 +326,7 @@ describe('Feature test for review functionalities and batch operations', functio
       )
       cy.get(`[data-cy="activity-${activity.type}-${activity.name}"]`).should(
         'contain',
-        messages.shared.generic.reviewed
+        messages.shared.generic.reviewStatusREVIEWED
       )
       cy.get(`[data-cy="actions-${activity.type}-${activity.name}"]`).click()
       cy.get(`[data-cy="activity-information-${activity.name}"]`).click()
@@ -342,7 +342,7 @@ describe('Feature test for review functionalities and batch operations', functio
       cy.get('[data-cy="close-activity-details-modal"]').click()
       cy.get(`[data-cy="activity-${activity.type}-${activity.name}"]`).should(
         'not.contain',
-        messages.shared.generic.reviewed
+        messages.shared.generic.reviewStatusREVIEWED
       )
       cy.get('[data-cy="activities-search-input"]').clear()
     }
@@ -370,7 +370,7 @@ describe('Feature test for review functionalities and batch operations', functio
     cy.get('[data-cy="close-activity-details-modal"]').click()
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.review.liveQuizNoCourse}"]`
-    ).should('contain', messages.shared.generic.reviewed)
+    ).should('contain', messages.shared.generic.reviewStatusREVIEWED)
     cy.get('[data-cy="activities-search-input"]').clear()
 
     // set all activities back to reviewed through the course overview
@@ -404,7 +404,7 @@ describe('Feature test for review functionalities and batch operations', functio
       cy.get(`[data-cy="tab-${activity.tabKey}"]`).click()
       cy.get(`[data-cy="activity-${activity.type}-${activity.name}"]`).should(
         'not.contain',
-        messages.shared.generic.reviewed
+        messages.shared.generic.reviewStatusREVIEWED
       )
       cy.get(`[data-cy="actions-${activity.type}-${activity.name}"]`).click()
       cy.get(`[data-cy="activity-information-${activity.name}"]`).click()
@@ -420,7 +420,7 @@ describe('Feature test for review functionalities and batch operations', functio
       cy.get('[data-cy="close-activity-details-modal"]').click()
       cy.get(`[data-cy="activity-${activity.type}-${activity.name}"]`).should(
         'contain',
-        messages.shared.generic.reviewed
+        messages.shared.generic.reviewStatusREVIEWED
       )
     }
   })
@@ -445,7 +445,10 @@ describe('Feature test for review functionalities and batch operations', functio
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.review.liveQuizNoCourse}"]`
-    ).should('contain', messages.shared.generic.modifiedAfterReview)
+    ).should(
+      'contain',
+      messages.shared.generic.reviewStatusMODIFIED_AFTER_REVIEW
+    )
 
     // edit the live quiz with course assignment
     cy.get('[data-cy="activities"]').click()
@@ -460,7 +463,10 @@ describe('Feature test for review functionalities and batch operations', functio
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.review.liveQuiz}"]`
-    ).should('contain', messages.shared.generic.modifiedAfterReview)
+    ).should(
+      'contain',
+      messages.shared.generic.reviewStatusMODIFIED_AFTER_REVIEW
+    )
 
     // edit the practice quiz
     cy.get('[data-cy="activities"]').click()
@@ -479,7 +485,10 @@ describe('Feature test for review functionalities and batch operations', functio
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get(
       `[data-cy="activity-PRACTICE_QUIZ-${this.data.review.practiceQuiz}"]`
-    ).should('contain', messages.shared.generic.modifiedAfterReview)
+    ).should(
+      'contain',
+      messages.shared.generic.reviewStatusMODIFIED_AFTER_REVIEW
+    )
 
     // edit the micro learning
     cy.get('[data-cy="activities"]').click()
@@ -498,7 +507,10 @@ describe('Feature test for review functionalities and batch operations', functio
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get(
       `[data-cy="activity-MICRO_LEARNING-${this.data.review.microLearning}"]`
-    ).should('contain', messages.shared.generic.modifiedAfterReview)
+    ).should(
+      'contain',
+      messages.shared.generic.reviewStatusMODIFIED_AFTER_REVIEW
+    )
 
     // edit the group activity
     cy.get('[data-cy="activities"]').click()
@@ -517,7 +529,10 @@ describe('Feature test for review functionalities and batch operations', functio
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get(
       `[data-cy="activity-GROUP_ACTIVITY-${this.data.review.groupActivity}"]`
-    ).should('contain', messages.shared.generic.modifiedAfterReview)
+    ).should(
+      'contain',
+      messages.shared.generic.reviewStatusMODIFIED_AFTER_REVIEW
+    )
   })
 
   it('Mark the activities as reviewed again and change the course assignments, verify that the review status is reset', function () {
@@ -542,10 +557,13 @@ describe('Feature test for review functionalities and batch operations', functio
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.review.liveQuizNoCourse}"]`
-    ).should('not.contain', messages.shared.generic.modifiedAfterReview)
+    ).should(
+      'not.contain',
+      messages.shared.generic.reviewStatusMODIFIED_AFTER_REVIEW
+    )
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.review.liveQuizNoCourse}"]`
-    ).should('not.contain', messages.shared.generic.reviewed)
+    ).should('not.contain', messages.shared.generic.reviewStatusREVIEWED)
 
     // assign the live quiz from the first course to no course and verify that the review status is reset
     cy.get('[data-cy="activities"]').click()
@@ -565,10 +583,13 @@ describe('Feature test for review functionalities and batch operations', functio
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.review.liveQuiz}"]`
-    ).should('not.contain', messages.shared.generic.modifiedAfterReview)
+    ).should(
+      'not.contain',
+      messages.shared.generic.reviewStatusMODIFIED_AFTER_REVIEW
+    )
     cy.get(
       `[data-cy="activity-LIVE_QUIZ-${this.data.review.liveQuiz}"]`
-    ).should('not.contain', messages.shared.generic.reviewed)
+    ).should('not.contain', messages.shared.generic.reviewStatusREVIEWED)
 
     // assign the practice quiz from the first course to the second course and verify that the review status is reset
     cy.get('[data-cy="activities"]').click()
@@ -587,10 +608,13 @@ describe('Feature test for review functionalities and batch operations', functio
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get(
       `[data-cy="activity-PRACTICE_QUIZ-${this.data.review.practiceQuiz}"]`
-    ).should('not.contain', messages.shared.generic.modifiedAfterReview)
+    ).should(
+      'not.contain',
+      messages.shared.generic.reviewStatusMODIFIED_AFTER_REVIEW
+    )
     cy.get(
       `[data-cy="activity-PRACTICE_QUIZ-${this.data.review.practiceQuiz}"]`
-    ).should('not.contain', messages.shared.generic.reviewed)
+    ).should('not.contain', messages.shared.generic.reviewStatusREVIEWED)
 
     // assign the microlearning from the first course to the second course and verify that the review status is reset
     cy.get('[data-cy="activities"]').click()
@@ -609,10 +633,13 @@ describe('Feature test for review functionalities and batch operations', functio
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get(
       `[data-cy="activity-MICRO_LEARNING-${this.data.review.microLearning}"]`
-    ).should('not.contain', messages.shared.generic.modifiedAfterReview)
+    ).should(
+      'not.contain',
+      messages.shared.generic.reviewStatusMODIFIED_AFTER_REVIEW
+    )
     cy.get(
       `[data-cy="activity-MICRO_LEARNING-${this.data.review.microLearning}"]`
-    ).should('not.contain', messages.shared.generic.reviewed)
+    ).should('not.contain', messages.shared.generic.reviewStatusREVIEWED)
 
     // assign the group activity from the first course to the second course and verify that the review status is reset
     cy.get('[data-cy="activities"]').click()
@@ -631,10 +658,13 @@ describe('Feature test for review functionalities and batch operations', functio
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get(
       `[data-cy="activity-GROUP_ACTIVITY-${this.data.review.groupActivity}"]`
-    ).should('not.contain', messages.shared.generic.modifiedAfterReview)
+    ).should(
+      'not.contain',
+      messages.shared.generic.reviewStatusMODIFIED_AFTER_REVIEW
+    )
     cy.get(
       `[data-cy="activity-GROUP_ACTIVITY-${this.data.review.groupActivity}"]`
-    ).should('not.contain', messages.shared.generic.reviewed)
+    ).should('not.contain', messages.shared.generic.reviewStatusREVIEWED)
   })
 
   it('Mark the activities as reviewed again, modify a contained element and verify that the review status is updated correctly', function () {
@@ -662,7 +692,7 @@ describe('Feature test for review functionalities and batch operations', functio
     ]) {
       cy.get(`[data-cy="activity-${activity.type}-${activity.name}"]`).should(
         'contain',
-        messages.shared.generic.modifiedAfterReview
+        messages.shared.generic.reviewStatusMODIFIED_AFTER_REVIEW
       )
     }
   })
@@ -677,7 +707,7 @@ describe('Feature test for review functionalities and batch operations', functio
     // login and show archived elements
     cy.loginLecturer()
     cy.wait(1000)
-    cy.get('[data-cy="show-archive-switch"]').first().click()
+    cy.get('[data-cy="show-archive-switch"]').click()
 
     // SC question with solution
     cy.createQuestionSC({
@@ -781,7 +811,7 @@ describe('Feature test for review functionalities and batch operations', functio
 
   it('Verify that selected elements are shown correctly in element batch operations modal', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="show-archive-switch"]').first().click() // show archived elements
+    cy.get('[data-cy="show-archive-switch"]').click() // show archived elements
 
     // select specific elements
     cy.get(`[data-cy="element-checkbox-${this.data.SCML.title}"]`).click()
@@ -837,7 +867,7 @@ describe('Feature test for review functionalities and batch operations', functio
 
   it('Verify that the applied operations are displayed correctly in batch operations modal', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="show-archive-switch"]').first().click() // show archived elements
+    cy.get('[data-cy="show-archive-switch"]').click() // show archived elements
     cy.get('[data-cy="select-all-elements"]').click() // select all
     cy.get('[data-cy="element-batch-operations"]').click()
 
@@ -990,7 +1020,7 @@ describe('Feature test for review functionalities and batch operations', functio
 
   it('Verify that archiving / unarchiving elements works correctly', function () {
     cy.loginLecturer()
-    cy.get('[data-cy="show-archive-switch"]').first().click() // show archived elements
+    cy.get('[data-cy="show-archive-switch"]').click() // show archived elements
     const allElements = [
       this.data.SCML.title,
       this.data.MCML.title,

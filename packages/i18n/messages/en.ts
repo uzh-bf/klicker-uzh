@@ -238,6 +238,7 @@ export default {
       solution: 'Solution',
       sampleSolution: 'Sample solution',
       gamification: 'Gamification',
+      interaction: 'Interaction',
       basePoints: 'Base points',
       awardedPoints: 'Awarded points',
       additionalPoints: 'Additional points',
@@ -387,8 +388,10 @@ export default {
       week: 'Week',
       day: 'Day',
       total: 'Total',
-      reviewed: 'Reviewed',
-      modifiedAfterReview: 'Modified after review',
+      reviewStatus: 'Review Status',
+      reviewStatusINCOMPLETE: 'Review pending',
+      reviewStatusREVIEWED: 'Reviewed',
+      reviewStatusMODIFIED_AFTER_REVIEW: 'Modified after review',
       modifiedAfterReviewInformation:
         'The content of this object was modified after the last review. Please mark it as reviewed again if you agree with the updated content.',
       availableActions: 'Available Actions',
@@ -454,6 +457,8 @@ export default {
       averagePoints: 'Average points: {number}',
       noPointsCollected:
         'No points have been collected in this quiz so far. As soon as this changes, podium and leaderboard will be displayed here.',
+      liveQuizGamifiedNoGamifiedCourse:
+        'This live quiz is gamified but not part of a gamified course. Since you are logged in, any points collected by you in the quiz will be automatically displayed on the leaderboard. If you do not wish to appear on the leaderboard, please log out and rejoin the quiz via the link.',
       rank: 'Rank',
       username: 'Username',
       email: 'Email',
@@ -1038,6 +1043,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       dateModified: 'Modification Date',
       title: 'Title',
       elementType: 'Element Type',
+      activityType: 'Activity Type',
+      status: 'Status',
       searchPlaceholder: 'Search...',
       sortBy: 'Sort by...',
       catalystRequired:
@@ -1057,6 +1064,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       sampleSolutionDescription: 'Sample Solution',
       gradingDescription: 'Documentation',
       showingResults: 'Showing {start} to {end} of {total} results',
+      NEntriesPerPage: '{N} entries per page',
       previousPage: 'Previous',
       nextPage: 'Next',
     },
@@ -1085,8 +1093,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       activityType: 'Activity Type',
       noActivitiesAvailable:
         'Currently, no activities are available. You can easily create new activities by combining elements in the <link>library</link>.',
-      noActivitiesForFilters:
-        'No activities were found for the currently selected filters or the entered search term. Please try with different filters or a different search term.',
+      noActivitiesWarning:
+        'We could not find any activities that meet the desired criteria.',
       liveQuizInfo: '{numOfBlocks} block(s), {numOfElements} element(s)',
       activityInfo: '{numOfStacks} stack(s), {numOfElements} element(s)',
       activityDetails: 'Activity Details',
@@ -1107,6 +1115,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'If this activity is assigned to a course that you have access to, it cannot be completely removed for technical reasons. In this case, you will automatically receive a derived permission on the activity after triggering its removal. Once the associated course is deleted or removed, the element will be automatically removed as well.',
       activityRemovalDependencyAccess:
         'Derived access rights to included elements and resources will be automatically revoked (unless technically required).',
+      activeFiltersWarning:
+        'There are currently active filters that might affect the activities listed here. To view all activities, please <reset>reset</reset> the filters or update them on the right side.',
       changeActivityName: 'Change Activity Name',
       activityNameChangeSuccess:
         'The name of the activity has been successfully changed.',
@@ -1126,6 +1136,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       resetReview: 'Reset Review',
       reviewStatusUpdated: 'Review status updated successfully',
       reviewStatusUpdateFailed: 'Update of review status failed',
+      openElementsInLibrary: 'Open elements in library',
       batchOperations: 'Batch operations ({numActivities} activities)',
       batchOperationsOnlyDraftScheduled:
         'Batch operations can only be performed on draft or scheduled activities.',
@@ -1141,9 +1152,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noActivitiesWillBeUpdated: 'No activities will be updated',
       nActivitiesWillBeUpdated: '{number} activities will be updated',
       multiplierRequiresGamifiedAssessmentCourse:
-        'A multiplier can only be used for activities in gamified or assessment courses, as points can only be collected in these courses. You have chosen an assignment to a course that does not meet these requirements.',
+        'A multiplier can only be defined for gamified activities or activities in assessment courses, as points can only be collected in these courses. You have chosen an assignment to a course that does not meet these requirements.',
       liveQuizPointsRequireGamifiedAssessmentCourse:
-        'The scoring for live quizzes can only be adjusted for activities in gamified or assessment courses, as points can only be collected in these courses. You have chosen an assignment to a course that does not meet these requirements.',
+        'The scoring can only be adjusted for gamified live quizzes or live quizzes in assessment courses, as points can only be collected in these courses. You have chosen an assignment to a course that does not meet these requirements.',
       batchNoCoursesAvailable:
         'There are no ongoing or planned courses available to which you could assign your activities. Please create a corresponding course under "Courses" first.',
       batchOperationsInformation: `Depending on the selected actions and the available permissions for the selected activities, the following rules apply:
@@ -1308,9 +1319,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       selectOrType: 'Select or Type...',
       untagged: 'Untagged',
       noTagsAvailable: 'No tags available',
+      activityUsage: 'Activity Usage',
+      selectActivity: 'Select Activity...',
       answerFeedbacks: 'Answer feedbacks',
-      noQuestionsWarning:
-        'We could not find any questions that meet the desired criteria.',
+      noElementsWarning:
+        'We could not find any elements that meet the desired criteria.',
       activeFiltersWarning:
         'There are currently active filters that might affect the elements shown here. To view all elements (except archived ones), please <reset>reset</reset> the filters or update them on the right side.',
       deleteElement: 'Delete element',
@@ -1757,8 +1770,11 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'For more information on the student view, visit the <link>Student Documentation</link>.',
       liveQuizStartNow: 'Start now',
       liveQuizAdvancedSettings: 'Advanced Settings',
+      liveQuizCustomizedGrading: 'Customized Grading',
       liveQuizPointsExplanation:
         'These advanced settings allow you to change the point allocation in a live quiz. Please note that all point settings and the illustrations of the point allocation refer to elements with a multiplier of 1x. Larger multipliers are applied to all components except from the standard points. The multiplier set on the activity is already included in the illustration. The answer time starts running as soon as the first participant has answered the question completely correctly. For more information, please consult our <link>documentation</link>.',
+      liveQuizGamificationDeactivated:
+        'The gamification is currently not activated for this live quiz. Please select a gamified course or activate gamification manually.',
       liveQuizDefaultPoints: 'Standard points',
       liveQuizDefaultPointsTooltip:
         'Participants in a live quiz receive this number of points for participating in a question. If no sample solution is defined, only standard points are awarded. The default value is {defaultValue}.',

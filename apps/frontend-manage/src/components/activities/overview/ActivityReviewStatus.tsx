@@ -16,14 +16,14 @@ function ActivityReviewStatus({
       {reviewStatus === ReviewStatus.Reviewed ? (
         <div className="mr-3 flex flex-row items-center gap-1.5 text-sm text-green-600">
           <FontAwesomeIcon icon={faCheckDouble} />
-          <span>{t('shared.generic.reviewed')}</span>
+          <span>{t('shared.generic.reviewStatusREVIEWED')}</span>
         </div>
       ) : null}
       {reviewStatus === ReviewStatus.ModifiedAfterReview ? (
         <Tooltip tooltip={t('shared.generic.modifiedAfterReviewInformation')}>
           <div className="text-uzh-red-100 mr-3 flex flex-row items-center gap-1.5 text-sm">
             <FontAwesomeIcon icon={faInfoCircle} />
-            <span>{t('shared.generic.modifiedAfterReview')}</span>
+            <span>{t('shared.generic.reviewStatusMODIFIED_AFTER_REVIEW')}</span>
           </div>
         </Tooltip>
       ) : null}

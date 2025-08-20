@@ -3,7 +3,13 @@ query GetActivityDetails($activityId: String!, $activityType: ActivityType!) {
     id
     name
     displayName
+    status
+    reviewStatus
+    isActivityReviewer
+    isActivityManager
+    courseId
 
+    isGamificationEnabled
     arePointsAwarded
     pointsMultiplier
     totalBasePoints

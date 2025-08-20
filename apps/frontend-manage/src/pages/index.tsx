@@ -12,7 +12,7 @@ import { Button, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import ActivityCreation from '../components/activities/ActivityCreation'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
 import Pagination from '../components/common/Pagination'
@@ -25,14 +25,12 @@ import ElementEditModal, {
   ElementEditMode,
 } from '../components/elements/manipulation/ElementEditModal'
 import RecoveryPrompt from '../components/elements/manipulation/RecoveryPrompt'
-import TagList from '../components/elements/tags/TagList'
+import FilterList from '../components/elements/tags/FilterList'
 import Layout from '../components/Layout'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
 import useSortingAndFiltering, {
   SORTING_FILTERING_INITIAL,
 } from '../lib/hooks/useSortingAndFiltering'
-
-const PAGE_SIZE = 10
 
 function Index() {
   const router = useRouter()
@@ -41,6 +39,26 @@ function Index() {
   // search, filter and pagination states
   const [searchString, setSearchString] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+
+  // initialize page size from local storage (if available)
+  const [pageSize, setPageSize] = useState(() => {
+    // only try to access localStorage when on the client
+    if (typeof window !== 'undefined') {
+      try {
+        const storedPageSize = localStorage.getItem('elements-page-size')
+        if (storedPageSize) {
+          return JSON.parse(storedPageSize)
+        }
+      } catch (error) {
+        console.error(
+          'Error parsing stored elements-page-size from localStorage',
+          error
+        )
+      }
+    }
+    return 10
+  })
+
   const [modificationModalOpen, setModificationModalOpen] = useState(false)
   const [batchOperationsOpen, setBatchOperationsOpen] = useState(false)
 
@@ -85,9 +103,24 @@ function Index() {
     handleTagClick,
     handleReset,
     handleToggleArchive,
+    toggleCourseIdFilter,
+    toggleActivityIdFilter,
+    toggleMultiplierFilter,
     toggleSampleSolutionFilter,
     toggleAnswerFeedbackFilter,
   } = useSortingAndFiltering(storedFiltering)
+
+  const handleResetCleanURL = useCallback(() => {
+    // if a filtering by activity / course is set through the URL, reset it
+    if (router.query.filterByActivity || router.query.filterByCourse) {
+      router.push({ pathname: '/', query: {} }, undefined, {
+        shallow: true,
+      })
+    }
+
+    // reset the filters and sorting
+    handleReset()
+  }, [router.query.filterByCourse, router.query.filterByActivity])
 
   const {
     loading: loadingElements,
@@ -104,27 +137,36 @@ function Index() {
       showShared: filters.sharingType.includes(SharingType.Shared),
       showDependencies: filters.sharingType.includes(SharingType.Dependency),
       tagIds: filters.tags.map((tag) => parseInt(tag, 10)) ?? [],
+      activityId: filters.activityId,
+      multiplier: filters.multiplier,
       showUntagged: filters.untagged,
       sortByType: sort.by,
       sortByAsc: sort.asc,
       showArchived: filters.archive,
-      numEntries: PAGE_SIZE,
-      offset: (currentPage - 1) * PAGE_SIZE,
+      numEntries: pageSize,
+      offset: (currentPage - 1) * pageSize,
     },
     fetchPolicy: 'network-only',
   })
   const numOfElements = dataElements?.userElements?.numOfElements || 0
   const elements = dataElements?.userElements?.elements ?? []
 
+  // on change, store new page size in local storage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('elements-page-size', JSON.stringify(pageSize))
+    }
+  }, [pageSize])
+
   // reset pagination if elements length changes and current page would be out of bounds
   useEffect(() => {
     if (loadingElements) return
 
-    const maxPage = Math.max(1, Math.ceil(numOfElements / PAGE_SIZE))
+    const maxPage = Math.max(1, Math.ceil(numOfElements / pageSize))
     if (currentPage > maxPage) {
       setCurrentPage(maxPage)
     }
-  }, [loadingElements, numOfElements, currentPage])
+  }, [loadingElements, numOfElements, currentPage, pageSize])
 
   // reset pagination when filters, sorting or search changes
   useEffect(() => {
@@ -132,7 +174,7 @@ function Index() {
   }, [filters, sort, searchString])
 
   // compute the number of total pagination pages
-  const totalPages = Math.max(1, Math.ceil(numOfElements / PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(numOfElements / pageSize))
 
   // if the filters or sorting state changes, save it to local storage
   useEffect(() => {
@@ -208,15 +250,35 @@ function Index() {
     }
   }, [router.query.editElementId])
 
-  const filtersActive = !!(
+  // if the library should be filtered by activity, reset the filters and re-set them accordingly
+  useEffect(() => {
+    if (router.query.filterByActivity) {
+      handleReset()
+
+      if (router.query.filterByCourse) {
+        toggleCourseIdFilter({
+          courseId: router.query.filterByCourse as string,
+        })
+      }
+      toggleActivityIdFilter({
+        activityId: router.query.filterByActivity as string,
+      })
+    }
+  }, [router.query.filterByCourse, router.query.filterByActivity])
+
+  // since only applying the course filter does not result in a filtering of the elements, no warning should be shown
+  const filtersActiveExceptCourse = !!(
     filters.tags.length > 0 ||
+    filters.activityId ||
     filters.type ||
     filters.status ||
     filters.sharingType?.length !== 3 ||
+    filters.multiplier ||
     filters.sampleSolution ||
     filters.answerFeedbacks ||
     filters.untagged
   )
+  const filtersActive = filtersActiveExceptCourse || !!filters.courseId
 
   return (
     <Layout
@@ -250,52 +312,28 @@ function Index() {
 
       <div className="flex h-full flex-col gap-4 overflow-y-auto md:flex-row">
         <div>
-          <div className="hidden h-full md:block">
-            <TagList
-              key={creationMode}
-              compact={!!creationMode}
-              filtersActive={filtersActive}
-              activeTags={filters.tags}
-              activeType={filters.type}
-              activeSharingTypes={filters.sharingType}
-              activeStatus={filters.status}
-              showUntagged={filters.untagged}
-              sampleSolution={filters.sampleSolution}
-              answerFeedbacks={filters.answerFeedbacks}
-              handleReset={handleReset}
-              handleTagClick={handleTagClick}
-              toggleSampleSolutionFilter={toggleSampleSolutionFilter}
-              toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
-              handleToggleArchive={handleToggleArchive}
-              isArchiveActive={filters.archive}
-              refetchElements={async () => {
-                await refetchElements()
-              }}
-            />
-          </div>
-          <div className="md:hidden">
-            <TagList
-              compact
-              key={creationMode}
-              filtersActive={filtersActive}
-              activeTags={filters.tags}
-              activeType={filters.type}
-              activeSharingTypes={filters.sharingType}
-              activeStatus={filters.status}
-              showUntagged={filters.untagged}
-              sampleSolution={filters.sampleSolution}
-              answerFeedbacks={filters.answerFeedbacks}
-              handleReset={handleReset}
-              handleTagClick={handleTagClick}
-              toggleSampleSolutionFilter={toggleSampleSolutionFilter}
-              toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
-              handleToggleArchive={handleToggleArchive}
-              isArchiveActive={filters.archive}
-              refetchElements={async () => {
-                await refetchElements()
-              }}
-            />
-          </div>
+          <FilterList
+            key={creationMode}
+            defaultValue={
+              filters.courseId || filters.activityId
+                ? 'used-in-activity'
+                : undefined
+            }
+            filtersActive={filtersActive}
+            filters={filters}
+            handleReset={handleResetCleanURL}
+            handleTagClick={handleTagClick}
+            toggleCourseIdFilter={toggleCourseIdFilter}
+            toggleActivityIdFilter={toggleActivityIdFilter}
+            toggleMultiplierFilter={toggleMultiplierFilter}
+            toggleSampleSolutionFilter={toggleSampleSolutionFilter}
+            toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
+            handleToggleArchive={handleToggleArchive}
+            isArchiveActive={filters.archive}
+            refetchElements={async () => {
+              await refetchElements()
+            }}
+          />
         </div>
 
         <div className="flex w-full flex-1 flex-col overflow-auto">
@@ -364,7 +402,7 @@ function Index() {
               ) : (
                 <>
                   <ElementList
-                    filtersActive={filtersActive}
+                    filtersActive={filtersActiveExceptCourse}
                     activityWizardOpen={!!creationMode}
                     elements={elements}
                     selectedElements={selectedElements}
@@ -396,19 +434,20 @@ function Index() {
                         isUntagged: false,
                       })
                     }
-                    handleFilterReset={handleReset}
+                    handleFilterReset={handleResetCleanURL}
                     refetchElements={async () => {
                       await refetchElements()
                     }}
                   />
 
-                  {elements.length > 0 && totalPages > 1 && (
+                  {elements.length > 0 && (
                     <Pagination
                       totalPages={totalPages}
                       currentPage={currentPage}
                       setCurrentPage={setCurrentPage}
                       numOfObjects={numOfElements}
-                      PAGE_SIZE={PAGE_SIZE}
+                      pageSize={pageSize}
+                      setPageSize={setPageSize}
                       className="mb-3"
                     />
                   )}

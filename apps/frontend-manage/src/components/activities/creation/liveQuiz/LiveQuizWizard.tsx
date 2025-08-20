@@ -79,6 +79,7 @@ interface LiveQuizWizardProps {
     | 'timeToZeroBonus'
     | 'isConfusionFeedbackEnabled'
     | 'isGamificationEnabled'
+    | 'isAssessmentEnabled'
     | 'isLiveQAEnabled'
     | 'isModerationEnabled'
     | 'blocks'
@@ -187,6 +188,7 @@ function LiveQuizWizard({
     maxBonusPoints: LQ_MAX_BONUS_POINTS,
     timeToZeroBonus: LQ_TIME_TO_ZERO_BONUS,
     isGamificationEnabled: false,
+    isAssessmentEnabled: false,
     isConfusionFeedbackEnabled: true,
     isLiveQAEnabled: false,
     isModerationEnabled: true,
@@ -258,6 +260,9 @@ function LiveQuizWizard({
     isGamificationEnabled:
       initialValues?.isGamificationEnabled ??
       formDefaultValues.isGamificationEnabled,
+    isAssessmentEnabled:
+      initialValues?.isAssessmentEnabled ??
+      formDefaultValues.isAssessmentEnabled,
     isConfusionFeedbackEnabled:
       initialValues?.isConfusionFeedbackEnabled ??
       formDefaultValues.isConfusionFeedbackEnabled,

@@ -8,6 +8,8 @@ query GetUserElements(
   $showShared: Boolean
   $showDependencies: Boolean
   $tagIds: [Int!]!
+  $activityId: String
+  $multiplier: Int
   $showUntagged: Boolean!
   $sortByType: SortByType!
   $sortByAsc: Boolean!
@@ -25,6 +27,8 @@ query GetUserElements(
     showShared: $showShared
     showDependencies: $showDependencies
     tagIds: $tagIds
+    activityId: $activityId
+    multiplier: $multiplier
     showUntagged: $showUntagged
     sortByType: $sortByType
     sortByAsc: $sortByAsc

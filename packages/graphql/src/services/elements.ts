@@ -44,6 +44,8 @@ export async function getUserElements(
     showShared = true,
     showDependencies = true,
     tagIds,
+    activityId,
+    multiplier,
     showUntagged,
     sortByType,
     sortByAsc,
@@ -60,6 +62,8 @@ export async function getUserElements(
     showShared?: boolean | null
     showDependencies?: boolean | null
     tagIds: number[]
+    activityId?: string | null
+    multiplier?: number | null
     showUntagged: boolean
     sortByType: SortByType
     sortByAsc: boolean
@@ -100,6 +104,7 @@ export async function getUserElements(
       isArchived: showArchived ? undefined : false,
       tags: showUntagged ? { none: { ownerId: ctx.user.sub } } : undefined,
       AND: [
+        ...(multiplier ? [{ pointsMultiplier: multiplier }] : []),
         ...(hasSampleSolution
           ? [{ options: { path: ['hasSampleSolution'], equals: true } }]
           : []),
@@ -110,6 +115,22 @@ export async function getUserElements(
           ? tagIds.map((id) => ({
               tags: { some: { id } },
             }))
+          : []),
+        ...(activityId
+          ? [
+              {
+                elementInstances: {
+                  some: {
+                    OR: [
+                      { elementBlock: { liveQuizId: activityId } },
+                      { elementStack: { practiceQuizId: activityId } },
+                      { elementStack: { microLearningId: activityId } },
+                      { elementStack: { groupActivityId: activityId } },
+                    ],
+                  },
+                },
+              },
+            ]
           : []),
       ],
       OR: searchString
@@ -196,6 +217,19 @@ export async function getUserElements(
                 },
               ]
             : []),
+          ...(sortByType === SortByType.STATUS
+            ? [
+                {
+                  element: {
+                    status: (sortByAsc ? 'asc' : 'desc') as DB.Prisma.SortOrder,
+                  },
+                },
+              ]
+            : []),
+          // break ties using the modification date
+          {
+            element: { updatedAt: 'desc' as DB.Prisma.SortOrder },
+          },
         ],
         take: numEntries ?? undefined,
         skip: offset ?? undefined,

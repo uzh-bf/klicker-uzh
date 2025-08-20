@@ -1,11 +1,11 @@
 import { useQuery } from '@apollo/client'
 import {
   faArrowUpRightFromSquare,
+  faList,
   faMessage,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ActivityInfo,
   ActivityType,
   ElementInstance,
   GetActivityDetailsDocument,
@@ -18,6 +18,7 @@ import {
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useMemo, useState } from 'react'
 import StudentElementPreviewActivityDetails from '../../../elements/manipulation/StudentElementPreviewActivityDetails'
 import ActivityLog from '../../../sharing/ActivityLog'
@@ -26,19 +27,22 @@ import ActivityOverviewTable from './ActivityOverviewTable'
 import ActivityReviewButton from './ActivityReviewButton'
 
 function ActivityDetailsModal({
-  activity,
+  activityId,
+  activityType,
   onClose,
   refetchActivities,
 }: {
-  activity: ActivityInfo
+  activityId: string
+  activityType: ActivityType
   onClose: () => void
   refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
+  const router = useRouter()
 
   // fetch activity details
   const { data: detailsData, loading } = useQuery(GetActivityDetailsDocument, {
-    variables: { activityId: activity.id, activityType: activity.type },
+    variables: { activityId, activityType },
     fetchPolicy: 'cache-and-network',
   })
 
@@ -50,8 +54,7 @@ function ActivityDetailsModal({
 
   const details = detailsData?.activityDetails
   const stacks = detailsData?.activityDetails?.stacks ?? []
-  const isLiveQuiz = activity.type === ActivityType.LiveQuiz
-  const isReviewed = activity.reviewStatus === ReviewStatus.Reviewed
+  const isReviewed = details?.reviewStatus === ReviewStatus.Reviewed
 
   // check which instances are outdated
   const { data } = useQuery(GetOutdatedElementInstancesDocument, {
@@ -64,18 +67,18 @@ function ActivityDetailsModal({
     fetchPolicy: 'cache-and-network',
   })
 
-  const outdatedInstances = useMemo(
-    () =>
-      [
-        PublicationStatus.Draft,
-        PublicationStatus.Scheduled,
-        PublicationStatus.Template,
-      ].includes(activity.status)
-        ? (data?.getOutdatedElementInstances?.map((instance) => instance.id) ??
+  const outdatedInstances = useMemo(() => {
+    if (!details?.status) return []
+
+    return [
+      PublicationStatus.Draft,
+      PublicationStatus.Scheduled,
+      PublicationStatus.Template,
+    ].includes(details.status)
+      ? (data?.getOutdatedElementInstances?.map((instance) => instance.id) ??
           [])
-        : [],
-    [data?.getOutdatedElementInstances, activity.status]
-  )
+      : []
+  }, [data?.getOutdatedElementInstances, details?.status])
 
   // selected instance id
   const [selectedInstanceId, setSelectedInstanceId] = useState<number | null>(
@@ -99,7 +102,10 @@ function ActivityDetailsModal({
       fullScreen
       loading={loading}
       title={t('manage.activities.activityDetails')}
-      onClose={onClose}
+      onClose={() => {
+        refetchActivities?.()
+        onClose()
+      }}
       className={{
         content: 'max-w-400 h-max w-[calc(100%-2rem)] lg:overflow-hidden',
       }}
@@ -112,14 +118,14 @@ function ActivityDetailsModal({
             <div className="flex flex-col gap-2 lg:flex-row">
               <ActivityInformation
                 details={details}
-                activityType={activity.type}
-                activityReviewStatus={activity.reviewStatus}
+                activityType={activityType}
+                activityReviewStatus={details?.reviewStatus}
               />
 
-              <div className="flex w-full flex-col items-end gap-1 lg:w-1/3">
+              <div className="flex w-full flex-col items-end gap-1.5 lg:w-1/3">
                 {user?.privatePreview && (
                   <Button
-                    className={{ root: 'h-7' }}
+                    className={{ root: 'h-7 text-sm' }}
                     onClick={() => setSelectedInstanceId(null)}
                   >
                     <Button.Icon icon={faMessage} />
@@ -130,20 +136,44 @@ function ActivityDetailsModal({
                 )}
 
                 {/* course admins should have the possibility to set an activity's status to reviewed or unset it */}
-                {activity.isActivityReviewer && (
+                {details.isActivityReviewer && (
                   <ActivityReviewButton
-                    activity={activity}
+                    activityId={details.id}
+                    activityType={activityType}
+                    courseId={details.courseId}
                     isReviewed={isReviewed}
-                    refetchActivities={refetchActivities}
                   />
+                )}
+
+                {/* activity admins can open contained elements in library
+                 -> with less than admin permissions only a selection might be visible, which could be confusing */}
+                {details.isActivityManager && (
+                  <Button
+                    className={{ root: 'h-7 text-sm' }}
+                    onClick={() =>
+                      router.push({
+                        pathname: '/',
+                        query: {
+                          ...(details.courseId
+                            ? { filterByCourse: details.courseId }
+                            : {}),
+                          filterByActivity: details.id,
+                        },
+                      })
+                    }
+                  >
+                    <Button.Icon icon={faList} />
+                    <Button.Label>
+                      {t('manage.activities.openElementsInLibrary')}
+                    </Button.Label>
+                  </Button>
                 )}
               </div>
             </div>
 
             <ActivityOverviewTable
               details={details}
-              activityStatus={activity.status}
-              isLiveQuiz={isLiveQuiz}
+              activityType={activityType}
               outdatedInstances={outdatedInstances}
               selectedInstanceId={selectedInstanceId}
               setSelectedInstanceId={setSelectedInstanceId}
@@ -183,13 +213,13 @@ function ActivityDetailsModal({
             ) : (
               <ActivityLog
                 visible={!selected}
-                objectId={activity.id}
+                objectId={activityId}
                 objectType={
-                  activity.type === ActivityType.LiveQuiz
+                  activityType === ActivityType.LiveQuiz
                     ? ObjectType.LiveQuiz
-                    : activity.type === ActivityType.PracticeQuiz
+                    : activityType === ActivityType.PracticeQuiz
                       ? ObjectType.PracticeQuiz
-                      : activity.type === ActivityType.MicroLearning
+                      : activityType === ActivityType.MicroLearning
                         ? ObjectType.MicroLearning
                         : ObjectType.GroupActivity
                 }

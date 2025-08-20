@@ -85,7 +85,7 @@ function SinglePodium({
         />
       )}
 
-      <div className="absolute bottom-0 mx-auto w-full text-xs text-slate-700 lg:text-lg">
+      <div className="absolute bottom-0 mx-auto w-full text-sm text-slate-700 sm:text-base md:text-lg lg:text-xl">
         {username}
       </div>
     </div>

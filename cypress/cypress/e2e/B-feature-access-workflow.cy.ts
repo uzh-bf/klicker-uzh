@@ -64,6 +64,7 @@ describe('Tests the availability of certain functionalities to catalyst users on
     )
 
     // (private) check that new question type filters are available
+    cy.get('[data-cy="collapse-tag-header-types"]').click()
     cy.get('[data-cy="element-type-filter-SELECTION"]').should(
       privatePreview ? 'exist' : 'not.exist'
     )

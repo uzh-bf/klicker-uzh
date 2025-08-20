@@ -128,7 +128,9 @@ function Index({ id }: { id: string }) {
     GetRunningLiveQuizDocument,
     { variables: { id } }
   )
-  const { data: selfData } = useQuery(SelfDocument)
+  const { data: selfData } = useQuery(SelfDocument, {
+    variables: { liveQuizId: id },
+  })
 
   if (loading) {
     return (
@@ -168,6 +170,7 @@ function Index({ id }: { id: string }) {
     isLiveQAEnabled,
     isConfusionFeedbackEnabled,
     isGamificationEnabled,
+    isPartOfGamifiedCourse,
     course,
   } = data.studentLiveQuiz
 
@@ -261,7 +264,11 @@ function Index({ id }: { id: string }) {
               </div>
             ) : isGamificationEnabled ? (
               <div className={twMerge('min-h-full flex-1 bg-white')}>
-                <LiveQuizLeaderboard quizId={id} />
+                <LiveQuizLeaderboard
+                  showLeaderboardGamifiedQuizHint
+                  isPartOfGamifiedCourse={isPartOfGamifiedCourse}
+                  quizId={id}
+                />
               </div>
             ) : (
               <UserNotification type="info" className={{ root: 'mt-4' }}>

@@ -6,13 +6,16 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { useReducer } from 'react'
 
-export type QuestionPoolFilters = {
+export type LibraryFilters = {
   archive: boolean
   untagged: boolean
   tags: string[]
   sharingType: SharingType[]
   status?: ElementStatus
   type?: ElementType
+  courseId?: string
+  activityId?: string
+  multiplier?: number
   sampleSolution: boolean
   answerFeedbacks: boolean
 }
@@ -31,10 +34,13 @@ enum QuestionPoolReducerActionType {
   ANSWER_FEEDBACKS = 'ANSWER_FEEDBACKS',
   RESET = 'RESET',
   UNDEFINED = 'UNDEFINED',
+  SET_COURSE_ID = 'SET_COURSE_ID',
+  SET_ACTIVITY_ID = 'SET_ACTIVITY_ID',
+  SET_MULTIPLIER = 'SET_MULTIPLIER',
 }
 
 type FilterSortType = {
-  filters: QuestionPoolFilters
+  filters: LibraryFilters
   sort: LibrarySortType
 }
 
@@ -47,6 +53,7 @@ type ReducerAction = {
   isUntagged?: boolean
   newValue?: boolean
   name?: string
+  multiplier?: number
   by?: SortByType
 }
 
@@ -62,6 +69,9 @@ export const SORTING_FILTERING_INITIAL: FilterSortType = {
     archive: false,
     untagged: false,
     tags: [],
+    courseId: undefined,
+    activityId: undefined,
+    multiplier: undefined,
     sampleSolution: false,
     answerFeedbacks: false,
   },
@@ -155,6 +165,37 @@ function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
         },
       }
 
+    case QuestionPoolReducerActionType.SET_COURSE_ID:
+      return {
+        ...state,
+        filters: {
+          ...state.filters,
+          courseId: action.valueOrId as string | undefined,
+        },
+      }
+
+    case QuestionPoolReducerActionType.SET_ACTIVITY_ID:
+      return {
+        ...state,
+        filters: {
+          ...state.filters,
+          activityId: action.valueOrId as string | undefined,
+        },
+      }
+
+    case QuestionPoolReducerActionType.SET_MULTIPLIER:
+      return {
+        ...state,
+        filters: {
+          ...state.filters,
+          multiplier:
+            state.filters.multiplier === action.multiplier
+              ? undefined
+              : action.multiplier,
+          sampleSolution: true,
+        },
+      }
+
     case QuestionPoolReducerActionType.TOGGLE_ARCHIVE:
       return {
         ...state,
@@ -194,6 +235,9 @@ function reducer(state: FilterSortType, action: ReducerAction): FilterSortType {
             typeof action.newValue !== 'undefined'
               ? action.newValue
               : !state.filters.sampleSolution,
+          multiplier: state.filters.sampleSolution
+            ? undefined
+            : state.filters.multiplier, // reset multiplier if sample solution is disabled
         },
       }
 
@@ -253,6 +297,21 @@ function useSortingAndFiltering(initialValue: FilterSortType) {
         isStatusTag,
         isSharingTypeTag,
         isUntagged,
+      }),
+    toggleCourseIdFilter: ({ courseId }: { courseId?: string }): void =>
+      dispatch({
+        type: QuestionPoolReducerActionType.SET_COURSE_ID,
+        valueOrId: courseId,
+      }),
+    toggleActivityIdFilter: ({ activityId }: { activityId?: string }): void =>
+      dispatch({
+        type: QuestionPoolReducerActionType.SET_ACTIVITY_ID,
+        valueOrId: activityId,
+      }),
+    toggleMultiplierFilter: ({ multiplier }: { multiplier?: number }): void =>
+      dispatch({
+        type: QuestionPoolReducerActionType.SET_MULTIPLIER,
+        multiplier,
       }),
     toggleSampleSolutionFilter: (): void =>
       dispatch({

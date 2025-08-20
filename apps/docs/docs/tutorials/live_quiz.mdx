@@ -140,15 +140,147 @@ For your students to be able to join your Live Quiz, they may use one of the fol
 - **Account QR Code:** The same dialogs that contain the direct QR code also provide a QR code that displays a list of all currently running live quizzes in your account to students. If there is only one active live quiz, the QR code will redirect to this quiz. For courses with regular lectures we recommend using this QR code, as it does not require you to update it for each lecture.
 - **Course Participation:** If you assigned all your Live Quizzes to a KlickerUZH course and your students joined this course, active quizzes will be automatically displayed to them on the home screen of the KlickerUZH student app.
 
-<!-- TODO: update this section and re-publish it, once the dependency of gamification on the assignment of live quizzes to a gamified course has been removed.
+## What functionalities become available through gamified Live Quizzes?
 
-## What should I look out for when creating a gamified Live Quiz?
+:::tip
+For lecture series, we recommend creating a course in KlickerUZH with the desired gamification settings. Assigning activities to these courses will automatically propagate the configuration to the quizzes.
+:::
 
-If the quiz is part of a gamified course, participants appear on the leaderboard of the live quiz only if they are already participating in the course leaderboard. If gamification is used in the live quiz, the quiz needs to be ended in order for the participants’ points to be added in the course leaderboard.
+<div
+  style={{
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '2rem',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  }}
+>
+  <figure
+    style={{
+      flex: '1 1 320px',
+      maxWidth: '480px',
+      minWidth: '260px',
+      margin: 0,
+    }}
+  >
+    <img
+      src="/img/live_quiz/lq_gamification_gamified_course.png"
+      alt="Gamified Course Settings"
+      style={{
+        width: '100%',
+        height: 'auto',
+        borderRadius: '8px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        marginBottom: 0,
+      }}
+    />
+    <figcaption
+      style={{
+        textAlign: 'center',
+        marginTop: '0.5rem',
+        fontSize: '0.95em',
+        color: '#555',
+      }}
+    >
+      Live Quiz in a <strong>gamified course</strong>:<br /> Gamification is
+      automatically enabled
+    </figcaption>
+  </figure>
+  <figure
+    style={{
+      flex: '1 1 320px',
+      maxWidth: '480px',
+      minWidth: '260px',
+      margin: 0,
+    }}
+  >
+    <img
+      src="/img/live_quiz/lq_gamification_nongamified_course.png"
+      alt="Non-Gamified Course Settings"
+      style={{
+        width: '100%',
+        height: 'auto',
+        borderRadius: '8px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        marginBottom: 0,
+      }}
+    />
+    <figcaption
+      style={{
+        textAlign: 'center',
+        marginTop: '0.5rem',
+        fontSize: '0.95em',
+        color: '#555',
+      }}
+    >
+      Live Quiz in a <strong>non-gamified course</strong>:<br /> Gamification
+      features can be activated manually
+    </figcaption>
+  </figure>
+</div>
 
-In the following you can find our recommendations for a successful implementation of gamification in Live Quizzes:
+KlickerUZH Live Quizzes are designed for execution in a synchronous lecture setting (in-person, hybrid or remote). By enabling gamification, you can enhance student engagement and motivation through various interactive elements. To create gamified live quizzes, you can choose one of the following options:
 
-- Lecturer encouragement: Motivational encouragement from the lecturer is indeed crucial to foster student participation in gamified challenges.
-- Use countdowns: Use countdowns of, for example, 45 seconds to motivate students by creating a playful environment and giving them a guide through the quiz.
+- Create a new **KlickerUZH course** for your lecture series and **enable gamification**. When assigning new live quizzes to this course, you should directly see that gamification will be enabled. Points collected during these quizzes will be transferred to the course leaderboard after the live quiz has ended.
+- Assign your live quiz to a non-gamified course and **enable gamification separately**. Points collected during these quizzes will only be available on the leaderboard within the quiz context and will not be transferred to the course leaderboard.
+- **Enable gamification on a Live Quiz without course assignment** by selecting the corresponding option. Similar to live quizzes in non-gamified courses, collected points will only be available in the context of this particular quiz.
+
+After starting your gamified live quiz, you can provide your students with the corresponding access information as described in the [execution section](/tutorials/live_quiz/#how-can-i-execute-a-live-quiz). Live Quizzes assigned to a course can also be found directly on the home screen of the student application for logged-in participants of the course. Students can choose between the following options when participating in a gamified live quiz:
+
+<div
+  style={{
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: '2rem',
+    flexWrap: 'wrap',
+  }}
+>
+  <div style={{ flex: '2 1 340px', minWidth: '260px' }}>
+
+    - Students can log in with their regular KlickerUZH account. If your live quiz is part of a gamified course in a lecture series, we recommend having your students join the course before the quiz and then use their KlickerUZH accounts for the collected points to be available on the course leaderboard after the quiz ends. Users accessing the quiz through the home screen of the student application will not be shown this overview dialog.
+    - Students can choose to define a temporary pseudonym and an avatar (optional), which will only be valid for this particular gamified live quiz. Users with temporary pseudonyms appear on the regular quiz leaderboard, but their points cannot be transferred to a course leaderboard. This choice is recommended for one-off gamified quizzes.
+    - As with most KlickerUZH activities, students retain the possibility to participate anonymously in the live quiz. While their responses will be shown alongside other participants' submissions on the live quiz evaluation, they will not appear on the leaderboard or collect points.
+
+  </div>
+  <figure
+    style={{
+      flex: '1 1 320px',
+      maxWidth: '420px',
+      minWidth: '220px',
+      margin: 0,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+    }}
+  >
+    <img
+      src="/img/live_quiz/lq_gamification_choice.png"
+      alt="Account choice dialog for gamified live quiz"
+      style={{
+        width: '100%',
+        height: 'auto',
+        borderRadius: '8px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        marginBottom: 0,
+        maxWidth: '420px',
+      }}
+    />
+    <figcaption
+      style={{
+        textAlign: 'center',
+        marginTop: '0.5rem',
+        fontSize: '0.95em',
+        color: '#555',
+      }}
+    >
+      Account choice dialog for gamified Live Quiz
+    </figcaption>
+  </figure>
+</div>
+
+Additionally, we would like to provide you with the following recommendations for a successful implementation of gamification in Live Quizzes based on lecturer feedback:
+
+- Lecturer encouragement: Motivational encouragement from the lecturer is crucial for fostering student participation in gamified challenges.
+- Use countdowns: Set countdowns for your question blocks in the last step of the creation/editing process to limit the available time and motivate students by creating a playful environment.
 - Try different question styles: Based on our experience, questions with a clear and not too easy answer work well. But we do encourage users to try different types of questions. For example, a guessing question with no obvious answer can activate students and make them engage more with the content.
-- Choose motivational rewards: When implementing gamification, careful consideration should be given to selecting appropriate rewards that align with students' interests and preferences. Rewards do not need to be costly but should be meaningful and incentivize students' engagement and participation (this could also be choosing a song that is played in the break, etc.) -->

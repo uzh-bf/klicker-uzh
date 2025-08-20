@@ -337,7 +337,8 @@ function ActivityListEntry({
 
       {showDetails && (
         <ActivityDetailsModal
-          activity={activity}
+          activityId={activity.id}
+          activityType={activity.type}
           onClose={() => setShowDetails(false)}
           refetchActivities={refetchActivities}
         />
