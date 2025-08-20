@@ -123,7 +123,7 @@ function MicrolearningActions({
         'copyLTIAccessLink',
         'openPreview',
         'openEvaluation',
-        ...(user?.privatePreview ? ['activityLog'] : []),
+        'activityLog',
         ...(user?.publicPreview ? ['analyticsMicroLearning'] : []),
       ],
       isRemovable: ['removeMicroLearning'],

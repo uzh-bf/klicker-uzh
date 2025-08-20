@@ -13,7 +13,6 @@ import {
   ObjectType,
   PublicationStatus,
   ReviewStatus,
-  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -45,12 +44,6 @@ function ActivityDetailsModal({
     variables: { activityId, activityType },
     fetchPolicy: 'cache-and-network',
   })
-
-  // fetch user for preview flag
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
-  const user = dataUser?.userProfile
 
   const details = detailsData?.activityDetails
   const stacks = detailsData?.activityDetails?.stacks ?? []
@@ -123,17 +116,15 @@ function ActivityDetailsModal({
               />
 
               <div className="flex w-full flex-col items-end gap-1.5 lg:w-1/3">
-                {user?.privatePreview && (
-                  <Button
-                    className={{ root: 'h-7 text-sm' }}
-                    onClick={() => setSelectedInstanceId(null)}
-                  >
-                    <Button.Icon icon={faMessage} />
-                    <Button.Label>
-                      {t('shared.comments.viewComments')}
-                    </Button.Label>
-                  </Button>
-                )}
+                <Button
+                  className={{ root: 'h-7 text-sm' }}
+                  onClick={() => setSelectedInstanceId(null)}
+                >
+                  <Button.Icon icon={faMessage} />
+                  <Button.Label>
+                    {t('shared.comments.viewComments')}
+                  </Button.Label>
+                </Button>
 
                 {/* course admins should have the possibility to set an activity's status to reviewed or unset it */}
                 {details.isActivityReviewer && (

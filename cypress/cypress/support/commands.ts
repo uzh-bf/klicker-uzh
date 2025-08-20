@@ -808,44 +808,37 @@ Cypress.Commands.add(
 
 interface DeleteElementArgs {
   elementName: string
-  privatePreview?: boolean
 }
 
-Cypress.Commands.add(
-  'deleteElement',
-  ({ elementName, privatePreview = true }: DeleteElementArgs) => {
-    // find the element in the list (required due to pagination)
-    cy.get('[data-cy="elements-search-input"]')
-      .clear()
-      .type(`${elementName}{enter}`)
+Cypress.Commands.add('deleteElement', ({ elementName }: DeleteElementArgs) => {
+  // find the element in the list (required due to pagination)
+  cy.get('[data-cy="elements-search-input"]')
+    .clear()
+    .type(`${elementName}{enter}`)
 
-    if (privatePreview) {
-      cy.get(`[data-cy="actions-element-${elementName}"]`).first().realClick()
+  cy.get(`[data-cy="actions-element-${elementName}"]`).first().realClick()
+  cy.get(`[data-cy="delete-element-${elementName}"]`).first().click()
+  cy.get(`[data-cy="confirm-deletion-final"]`).click()
+
+  // only click confirmation buttons if they exist
+  cy.get('body').then(($body) => {
+    if ($body.find(`[data-cy="confirm-other-users-access"]`).length > 0) {
+      cy.get(`[data-cy="confirm-other-users-access"]`).click()
     }
+    if ($body.find(`[data-cy="confirm-derived-access"]`).length > 0) {
+      cy.get(`[data-cy="confirm-derived-access"]`).click()
+    }
+    if ($body.find(`[data-cy="confirm-dependency-access"]`).length > 0) {
+      cy.get(`[data-cy="confirm-dependency-access"]`).click()
+    }
+  })
 
-    cy.get(`[data-cy="delete-element-${elementName}"]`).first().click()
-    cy.get(`[data-cy="confirm-deletion-final"]`).click()
+  cy.get('[data-cy="confirmation-modal-confirm"]').click()
+  cy.wait(500)
 
-    // only click confirmation buttons if they exist
-    cy.get('body').then(($body) => {
-      if ($body.find(`[data-cy="confirm-other-users-access"]`).length > 0) {
-        cy.get(`[data-cy="confirm-other-users-access"]`).click()
-      }
-      if ($body.find(`[data-cy="confirm-derived-access"]`).length > 0) {
-        cy.get(`[data-cy="confirm-derived-access"]`).click()
-      }
-      if ($body.find(`[data-cy="confirm-dependency-access"]`).length > 0) {
-        cy.get(`[data-cy="confirm-dependency-access"]`).click()
-      }
-    })
-
-    cy.get('[data-cy="confirmation-modal-confirm"]').click()
-    cy.wait(500)
-
-    // reset the search
-    cy.get('[data-cy="elements-search-input"]').clear()
-  }
-)
+  // reset the search
+  cy.get('[data-cy="elements-search-input"]').clear()
+})
 
 Cypress.Commands.add('deleteAllElements', () => {
   // trigger the deletion of all elements
@@ -1889,10 +1882,7 @@ declare global {
         content,
         userId,
       }: CreateContentArgs): Chainable<void>
-      deleteElement({
-        elementName,
-        privatePreview,
-      }: DeleteElementArgs): Chainable<void>
+      deleteElement({ elementName }: DeleteElementArgs): Chainable<void>
       deleteAllElements(): Chainable<void>
       createLiveQuiz({
         name,

@@ -1,4 +1,3 @@
-import { useQuery } from '@apollo/client'
 import {
   faClock,
   faTrashCan,
@@ -10,7 +9,6 @@ import {
   Course,
   ObjectType,
   PermissionLevel,
-  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Badge, Button, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -79,11 +77,6 @@ function CourseListButton({
   const courseRunning = dayjs(course?.endDate).isAfter(dayjs())
   const [activityLogOpen, setActivityLogOpen] = useState(false)
 
-  // TODO: once the sharing feature is available for all users, remove this feature flag check
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
-
   return (
     <>
       <Button
@@ -135,21 +128,19 @@ function CourseListButton({
               )}
             </div>
 
-            {dataUser?.userProfile?.privatePreview ? (
-              <Button
-                className={{
-                  root: 'h-9 w-9',
-                }}
-                onClick={(e) => {
-                  e?.stopPropagation()
-                  e?.preventDefault()
-                  setActivityLogOpen(true)
-                }}
-                data={{ cy: `activity-log-course-${course?.name}` }}
-              >
-                <Button.Icon withoutLabel icon={faMessage} />
-              </Button>
-            ) : null}
+            <Button
+              className={{
+                root: 'h-9 w-9',
+              }}
+              onClick={(e) => {
+                e?.stopPropagation()
+                e?.preventDefault()
+                setActivityLogOpen(true)
+              }}
+              data={{ cy: `activity-log-course-${course?.name}` }}
+            >
+              <Button.Icon withoutLabel icon={faMessage} />
+            </Button>
 
             {course.isManager ? (
               <>
