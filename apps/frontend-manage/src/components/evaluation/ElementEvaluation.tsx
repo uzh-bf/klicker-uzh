@@ -65,7 +65,6 @@ function ElementEvaluation({
 
   // as soon as the evaluation view becomes available, the results should be shown
   useEffect(() => {
-    console.log('RUNNING USE EFFECT WITH ', requireShowResultsConfirmation)
     if (!requireShowResultsConfirmation) {
       setShowResults(true)
     }
