@@ -31,3 +31,5 @@ ssl/
 
 util/backup/dumps
 trees/
+
+.idea/
