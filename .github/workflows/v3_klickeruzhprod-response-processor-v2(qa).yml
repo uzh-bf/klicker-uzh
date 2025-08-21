@@ -1,8 +1,13 @@
-name: Build and deploy func-response-processor to Function App (Production)
+name: Build and deploy func-response-processor to Function App (QA)
 
 on:
   push:
-    tags: ['v*.*.*']
+    branches:
+      - 'v3'
+      - 'v3*'
+    paths:
+      - 'apps/func-response-processor/**'
+      - '.github/workflows/v3_klickeruzhprod-response-processor**'
   workflow_dispatch:
 
 env:
@@ -77,5 +82,5 @@ jobs:
         id: fa
         with:
           app-name: 'klickeruzhprod-response-processor-v2'
-          slot-name: 'Production'
+          slot-name: 'qa'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
