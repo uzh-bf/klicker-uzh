@@ -1,4 +1,4 @@
-name: Build and deploy func-response-processor to Function App (Production)
+name: Build and deploy func-response-processor-v2 to Function App (Production)
 
 on:
   push:
