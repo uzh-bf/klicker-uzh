@@ -1,8 +1,15 @@
+import { faClock } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementInstanceEvaluation,
+  ElementType,
   LocaleType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
+import { useSessionStorage } from '@uidotdev/usehooks'
+import { Button } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
+import { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ActivityEvaluationType } from './ActivityEvaluation'
 import CSEvaluation from './elements/CSEvaluation'
@@ -18,32 +25,68 @@ import { TextSizeType } from './textSizes'
 interface ElementEvaluationProps {
   currentInstance: ElementInstanceEvaluation
   activeInstance: number
+  activeStack: number
   courseLanguage?: LocaleType | null
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
   showExplanation: boolean
   type: ActivityEvaluationType
+  requireShowResultsConfirmation: boolean
   className?: string
 }
 
 function ElementEvaluation({
   currentInstance,
   activeInstance,
+  activeStack,
   courseLanguage,
   textSize,
   chartType,
   showSolution,
   showExplanation,
   type,
+  requireShowResultsConfirmation,
   className,
 }: ElementEvaluationProps) {
+  const t = useTranslations()
   const hasSolution = currentInstance.hasSampleSolution ?? false
   const hasExplanation =
     (!!currentInstance?.explanation &&
       currentInstance?.explanation !== '' &&
       !currentInstance?.explanation.match(/^(<br>(\n)*)$/g)) ??
     false
+
+  // depending on whether a block is active, the results should only be shown after confirmation
+  const [showResults, setShowResults] = useSessionStorage(
+    `show-results-${activeStack}-${currentInstance.id}`,
+    !requireShowResultsConfirmation
+  )
+
+  // as soon as the evaluation view becomes available, the results should be shown
+  useEffect(() => {
+    console.log('RUNNING USE EFFECT WITH ', requireShowResultsConfirmation)
+    if (!requireShowResultsConfirmation) {
+      setShowResults(true)
+    }
+  }, [currentInstance.id, requireShowResultsConfirmation])
+
+  if (!showResults && currentInstance.type !== ElementType.Content) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center bg-slate-200">
+        <div className="mb-3 flex flex-row items-center gap-2.5 text-xl font-bold">
+          <FontAwesomeIcon icon={faClock} />
+          <span>{t('manage.evaluation.blockActive')}</span>
+        </div>
+        <div className="mb-4 max-w-xl text-center">
+          {t('manage.evaluation.blockActiveInfo')}
+        </div>
+        <Button primary onClick={() => setShowResults(true)}>
+          {t('manage.evaluation.showResults')}
+        </Button>
+      </div>
+    )
+  }
 
   return (
     <div className={twMerge('flex h-full flex-col', className)}>

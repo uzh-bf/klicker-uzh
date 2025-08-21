@@ -4,6 +4,7 @@ fragment EvaluationResults on ActivityEvaluation {
     stackName
     stackDescription
     stackOrder
+    stackActive
 
     instances {
       ... on ChoicesActivityEvaluationData {

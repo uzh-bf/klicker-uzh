@@ -34,6 +34,7 @@ export interface IStackEvaluation {
   stackName?: string | null
   stackDescription?: string | null
   stackOrder: number
+  stackActive: boolean
   instances: IElementInstanceEvaluation[]
 }
 
@@ -259,6 +260,7 @@ export const StackEvaluation = StackEvaluationRef.implement({
     stackName: t.exposeString('stackName', { nullable: true }),
     stackDescription: t.exposeString('stackDescription', { nullable: true }),
     stackOrder: t.exposeInt('stackOrder'),
+    stackActive: t.exposeBoolean('stackActive'),
     instances: t.field({
       type: [ElementInstanceEvaluation],
       resolve: (s) => s.instances,
