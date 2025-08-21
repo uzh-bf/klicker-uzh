@@ -397,6 +397,7 @@ export default {
       modifiedAfterReviewInformation:
         'Der Inhalt dieses Objekts wurde nach dem letzten Review verändert. Bitte markieren Sie dieses erneut als gereviewt, wenn Sie mit dem aktualisierten Inhalt einverstanden sind.',
       availableActions: 'Verfügbare Aktionen',
+      configuration: 'Konfiguration',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -2039,6 +2040,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       replacingElement: 'Element ersetzt',
       creatingElement: 'Element erstellt',
       forGamifiedCourses: 'für gamifizierte Kurse',
+      gamificationDisabled: 'Gamifizierung & Assessment deaktiviert',
+      gamificationDisabledInfo:
+        'Bitte wählen Sie einen gamifizierten oder Assessment-Kurs, oder aktivieren Sie die Gamifizierung für Ihr Live Quiz, um hier die Bepunkungslogik einzusehen.',
       confirmSettings: 'Einstellungen bestätigen',
       settingsNotSaved:
         'Bitte speichern Sie Ihre Änderungen an den Einstellungen, bevor Sie mit der Bearbeitung der Vorlage fortfahren.',

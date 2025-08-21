@@ -1562,6 +1562,33 @@ export async function createLiveQuizFromTemplate(
     return null
   }
 
+  // check if the calling user has sufficient permissions on the course and the course exists
+  const cleanCourseId =
+    typeof courseId === 'string' && courseId !== null && uuidValidate(courseId)
+      ? courseId
+      : undefined
+  const course = cleanCourseId
+    ? await ctx.prisma.course.findUnique({
+        where: {
+          id: cleanCourseId,
+          permissions: { some: { userId: ctx.user.sub } },
+        },
+      })
+    : null
+
+  // if the course should exist, but doesn't, return early
+  if (cleanCourseId && !course) {
+    return null
+  }
+
+  // activities in gamified courses should always be gamified, otherwise respect user setting
+  const gamificationSetting = course?.isGamificationEnabled
+    ? course.isGamificationEnabled
+    : isGamificationEnabled
+
+  // only activities in assessment courses will be marked as being part of assessment
+  const assessmentSetting = course?.isAssessmentEnabled ?? false
+
   // inside a prisma transaction, create all required elements, permissions and the activity
   const newLiveQuiz = await ctx.prisma.$transaction(
     async (prisma) => {
@@ -1831,63 +1858,48 @@ export async function createLiveQuizFromTemplate(
           defaultCorrectPoints: templateLiveQuiz.defaultCorrectPoints,
           maxBonusPoints: templateLiveQuiz.maxBonusPoints,
           timeToZeroBonus: templateLiveQuiz.timeToZeroBonus,
-          isGamificationEnabled: isGamificationEnabled,
+          isGamificationEnabled: gamificationSetting,
+          isAssessmentEnabled: assessmentSetting,
           isConfusionFeedbackEnabled:
             templateLiveQuiz.isConfusionFeedbackEnabled,
           isLiveQAEnabled: templateLiveQuiz.isLiveQAEnabled,
           isModerationEnabled: templateLiveQuiz.isModerationEnabled,
           blocks: {
-            create: liveQuizContent.blocks.map((block) => {
-              return {
-                order: block.order,
-                timeLimit: block.timeLimit,
-                elements: {
-                  create: block.elements.map((entry) => {
-                    const elementData = processElementData(entry.element)
-                    const initialResults =
-                      getInitialInstanceResults(elementData)
+            create: liveQuizContent.blocks.map((block) => ({
+              order: block.order,
+              timeLimit: block.timeLimit,
+              elements: {
+                create: block.elements.map((entry) => {
+                  const elementData = processElementData(entry.element)
+                  const initialResults = getInitialInstanceResults(elementData)
 
-                    return {
-                      elementType: entry.element.type,
-                      order: entry.order,
-                      type: DB.ElementInstanceType.LIVE_QUIZ,
-                      elementData,
-                      options: {
-                        basePoints: entry.element.basePoints,
-                        pointsMultiplier:
-                          templateLiveQuiz.pointsMultiplier *
-                          entry.element.pointsMultiplier,
-                      },
-                      results: initialResults,
-                      anonymousResults: initialResults,
-                      instanceStatistics: {
-                        create: getInitialInstanceStatistics(
-                          DB.ElementInstanceType.LIVE_QUIZ
-                        ),
-                      },
-                      element: {
-                        connect: { id: entry.element.id },
-                      },
-                      owner: {
-                        connect: { id: ctx.user.sub },
-                      },
-                    }
-                  }),
-                },
-              }
-            }),
+                  return {
+                    elementType: entry.element.type,
+                    order: entry.order,
+                    type: DB.ElementInstanceType.LIVE_QUIZ,
+                    elementData,
+                    options: {
+                      basePoints: entry.element.basePoints,
+                      pointsMultiplier:
+                        templateLiveQuiz.pointsMultiplier *
+                        entry.element.pointsMultiplier,
+                    },
+                    results: initialResults,
+                    anonymousResults: initialResults,
+                    instanceStatistics: {
+                      create: getInitialInstanceStatistics(
+                        DB.ElementInstanceType.LIVE_QUIZ
+                      ),
+                    },
+                    element: { connect: { id: entry.element.id } },
+                    owner: { connect: { id: ctx.user.sub } },
+                  }
+                }),
+              },
+            })),
           },
-          owner: {
-            connect: { id: ctx.user.sub },
-          },
-          course:
-            typeof courseId === 'string' &&
-            courseId !== null &&
-            uuidValidate(courseId)
-              ? {
-                  connect: { id: courseId },
-                }
-              : undefined,
+          owner: { connect: { id: ctx.user.sub } },
+          course: course ? { connect: { id: course.id } } : undefined,
         },
       })
 

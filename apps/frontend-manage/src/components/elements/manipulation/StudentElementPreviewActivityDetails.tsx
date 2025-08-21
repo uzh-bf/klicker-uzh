@@ -11,7 +11,6 @@ function StudentElementPreviewActivityDetails({
 }: StudentElementPreviewActivityDetailsProps): React.ReactElement {
   return (
     <StudentElementPreviewWrapper
-      initialFeedbacksExplanation
       values={instance.elementData}
       instance={instance}
     />

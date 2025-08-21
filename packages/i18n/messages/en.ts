@@ -395,6 +395,7 @@ export default {
       modifiedAfterReviewInformation:
         'The content of this object was modified after the last review. Please mark it as reviewed again if you agree with the updated content.',
       availableActions: 'Available Actions',
+      configuration: 'Configuration',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -2017,6 +2018,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       replacingElement: 'element replaced',
       creatingElement: 'element created',
       forGamifiedCourses: 'for gamified courses',
+      gamificationDisabled: 'Gamification & Assessment disabled',
+      gamificationDisabledInfo:
+        'Please select a gamified or assessment course, or enable gamification for your live quiz to view the scoring logic here.',
       confirmSettings: 'Confirm Settings',
       settingsNotSaved:
         'Please save your changes to the settings before continuing to edit the template.',
