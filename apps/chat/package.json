@@ -6,9 +6,9 @@
   "dependencies": {
     "@ai-sdk/anthropic": "2.0.1",
     "@ai-sdk/openai": "2.0.6",
-    "@assistant-ui/react": "0.10.9",
-    "@assistant-ui/react-ai-sdk": "0.10.9",
-    "@assistant-ui/react-markdown": "0.10.3",
+    "@assistant-ui/react": "0.10.43",
+    "@assistant-ui/react-ai-sdk": "1.0.3",
+    "@assistant-ui/react-markdown": "0.10.9",
     "@radix-ui/react-dialog": "1.1.14",
     "@radix-ui/react-progress": "1.1.7",
     "@radix-ui/react-select": "2.2.5",
