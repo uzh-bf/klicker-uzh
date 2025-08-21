@@ -2042,7 +2042,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       forGamifiedCourses: 'für gamifizierte Kurse',
       gamificationDisabled: 'Gamifizierung & Assessment deaktiviert',
       gamificationDisabledInfo:
-        'Bitte wählen Sie einen gamifizierten oder Assessment-Kurs, oder aktivieren Sie die Gamifizierung für Ihr Live Quiz, um hier die Bepunkungslogik einzusehen.',
+        'Bitte wählen Sie einen gamifizierten oder Assessment-Kurs, oder aktivieren Sie die Gamifizierung für Ihr Live Quiz, um hier die Bepunktungslogik einzusehen.',
       confirmSettings: 'Einstellungen bestätigen',
       settingsNotSaved:
         'Bitte speichern Sie Ihre Änderungen an den Einstellungen, bevor Sie mit der Bearbeitung der Vorlage fortfahren.',
