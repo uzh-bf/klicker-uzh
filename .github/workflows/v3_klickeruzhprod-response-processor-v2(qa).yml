@@ -82,5 +82,5 @@ jobs:
         id: fa
         with:
           app-name: 'klickeruzhprod-response-processor-v2'
-          slot-name: 'qa'
+          slot-name: 'Production'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
