@@ -1,4 +1,6 @@
-const BACKEND_URL = process.env.BACKEND_URL
+import { PrismaClient } from '@klicker-uzh/prisma'
+
+const prisma = new PrismaClient()
 
 export async function GET(
   req: Request,
@@ -6,16 +8,22 @@ export async function GET(
 ) {
   try {
     const { threadId } = await params
-    const response = await fetch(
-      `${BACKEND_URL}/api/threads/${threadId}/messages`
+
+    const messages = await prisma.chatMessage.findMany({
+      where: { threadId },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    return Response.json(
+      messages.map((msg) => ({
+        id: msg.id,
+        thread_id: msg.threadId,
+        role: msg.role,
+        content: msg.content,
+        created_at: msg.createdAt.toISOString(),
+        updated_at: msg.updatedAt.toISOString(),
+      }))
     )
-
-    if (!response.ok) {
-      return Response.json([], { status: response.status })
-    }
-
-    const messages = await response.json()
-    return Response.json(messages)
   } catch (error) {
     console.error('Failed to fetch messages:', error)
     return Response.json([], { status: 500 })
@@ -28,29 +36,30 @@ export async function POST(
 ) {
   try {
     const { threadId } = await params
-    const body = await req.json()
+    const { role, content } = await req.json()
 
-    const response = await fetch(
-      `${BACKEND_URL}/api/threads/${threadId}/messages`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      }
-    )
+    const message = await prisma.chatMessage.create({
+      data: {
+        threadId,
+        role,
+        content,
+      },
+    })
 
-    if (!response.ok) {
-      console.error(
-        `Backend returned ${response.status}: ${response.statusText}`
-      )
-      return Response.json(
-        { error: 'Failed to save message' },
-        { status: response.status }
-      )
-    }
+    // update thread's timestamp
+    await prisma.chatThread.update({
+      where: { id: threadId },
+      data: { updatedAt: new Date() },
+    })
 
-    const message = await response.json()
-    return Response.json(message)
+    return Response.json({
+      id: message.id,
+      thread_id: message.threadId,
+      role: message.role,
+      content: message.content,
+      created_at: message.createdAt.toISOString(),
+      updated_at: message.updatedAt.toISOString(),
+    })
   } catch (error) {
     console.error('Failed to save message:', error)
     return Response.json({ error: 'Failed to save message' }, { status: 500 })

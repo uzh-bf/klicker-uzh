@@ -1,11 +1,27 @@
-const BACKEND_URL = process.env.BACKEND_URL
+import { PrismaClient } from '@klicker-uzh/prisma'
+
+const prisma = new PrismaClient()
 
 export async function GET() {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/threads`)
-    const threads = await response.json()
+    const threads = await prisma.chatThread.findMany({
+      include: {
+        _count: {
+          select: { messages: true },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+    })
 
-    return Response.json(threads)
+    return Response.json(
+      threads.map((thread) => ({
+        id: thread.id,
+        title: thread.title,
+        created_at: thread.createdAt.toISOString(),
+        updated_at: thread.updatedAt.toISOString(),
+        message_count: thread._count.messages,
+      }))
+    )
   } catch (error) {
     console.error('Failed to fetch threads:', error)
     return Response.json([], { status: 500 })
@@ -16,14 +32,19 @@ export async function POST(req: Request) {
   try {
     const { title } = await req.json()
 
-    const response = await fetch(`${BACKEND_URL}/api/threads`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title }),
+    const thread = await prisma.chatThread.create({
+      data: {
+        title,
+      },
     })
 
-    const thread = await response.json()
-    return Response.json(thread)
+    return Response.json({
+      id: thread.id,
+      title: thread.title,
+      created_at: thread.createdAt.toISOString(),
+      updated_at: thread.updatedAt.toISOString(),
+      message_count: 0,
+    })
   } catch (error) {
     console.error('Failed to create thread:', error)
     return Response.json({ error: 'Failed to create thread' }, { status: 500 })

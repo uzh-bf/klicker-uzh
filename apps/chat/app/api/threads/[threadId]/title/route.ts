@@ -1,4 +1,6 @@
-const BACKEND_URL = process.env.BACKEND_URL
+import { PrismaClient } from '@klicker-uzh/prisma'
+
+const prisma = new PrismaClient()
 
 export async function PUT(
   req: Request,
@@ -8,18 +10,10 @@ export async function PUT(
     const { threadId } = await params
     const { title } = await req.json()
 
-    const response = await fetch(
-      `${BACKEND_URL}/api/threads/${threadId}/title`,
-      {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title }),
-      }
-    )
-
-    if (!response.ok) {
-      return Response.json({ error: 'Thread not found' }, { status: 404 })
-    }
+    await prisma.chatThread.update({
+      where: { id: threadId },
+      data: { title },
+    })
 
     return Response.json({ message: 'Thread title updated' })
   } catch (error) {

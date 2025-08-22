@@ -1,6 +1,7 @@
 import { getWeather, RAGSearch } from '@/app/tools'
 import { anthropic } from '@ai-sdk/anthropic'
 import { openai } from '@ai-sdk/openai'
+import { PrismaClient } from '@klicker-uzh/prisma'
 import {
   convertToModelMessages,
   stepCountIs,
@@ -11,7 +12,7 @@ import {
 
 export const maxDuration = 30
 
-const BACKEND_URL = process.env.BACKEND_URL
+const prisma = new PrismaClient()
 
 export async function POST(req: Request) {
   const {
@@ -31,30 +32,34 @@ export async function POST(req: Request) {
   // create a new thread if none exists
   if (!currentThreadId && messages.length > 0) {
     try {
-      const response = await fetch(`/api/threads`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: null }),
+      const newThread = await prisma.chatThread.create({
+        data: {
+          title: null,
+        },
       })
-      const newThread = await response.json()
       currentThreadId = newThread.id
     } catch (error) {
       console.error('Failed to create thread:', error)
     }
   }
 
-  // save user message to backend
+  // save user message to database
   if (currentThreadId && messages.length > 0) {
     const lastMessage = messages[messages.length - 1]
     if (lastMessage.role === 'user') {
       try {
-        await fetch(`${BACKEND_URL}/api/threads/${currentThreadId}/messages`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        await prisma.chatMessage.create({
+          data: {
+            threadId: currentThreadId,
             role: lastMessage.role,
             content: [{ type: 'text', text: lastMessage.content }],
-          }),
+          },
+        })
+
+        // update thread's timestamp
+        await prisma.chatThread.update({
+          where: { id: currentThreadId },
+          data: { updatedAt: new Date() },
         })
       } catch (error) {
         console.error('Failed to save user message:', error)
@@ -98,20 +103,22 @@ export async function POST(req: Request) {
       'You are a helpful assistant. After using any tool, always provide a helpful summary or explanation of the results.',
 
     onFinish: async (result) => {
-      // save assistant response to backend
+      // save assistant response to database
       if (currentThreadId && result.text) {
         try {
-          await fetch(
-            `${BACKEND_URL}/api/threads/${currentThreadId}/messages`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                role: 'assistant',
-                content: [{ type: 'text', text: result.text }],
-              }),
-            }
-          )
+          await prisma.chatMessage.create({
+            data: {
+              threadId: currentThreadId,
+              role: 'assistant',
+              content: [{ type: 'text', text: result.text }],
+            },
+          })
+
+          // update thread's timestamp
+          await prisma.chatThread.update({
+            where: { id: currentThreadId },
+            data: { updatedAt: new Date() },
+          })
         } catch (error) {
           console.error('Failed to save assistant message:', error)
         }

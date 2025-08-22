@@ -1,4 +1,6 @@
-const BACKEND_URL = process.env.BACKEND_URL
+import { PrismaClient } from '@klicker-uzh/prisma'
+
+const prisma = new PrismaClient()
 
 export async function GET(
   req: Request,
@@ -6,14 +8,27 @@ export async function GET(
 ) {
   try {
     const { threadId } = await params
-    const response = await fetch(`${BACKEND_URL}/api/threads/${threadId}`)
 
-    if (!response.ok) {
+    const thread = await prisma.chatThread.findUnique({
+      where: { id: threadId },
+      include: {
+        _count: {
+          select: { messages: true },
+        },
+      },
+    })
+
+    if (!thread) {
       return Response.json({ error: 'Thread not found' }, { status: 404 })
     }
 
-    const thread = await response.json()
-    return Response.json(thread)
+    return Response.json({
+      id: thread.id,
+      title: thread.title,
+      created_at: thread.createdAt.toISOString(),
+      updated_at: thread.updatedAt.toISOString(),
+      message_count: thread._count.messages,
+    })
   } catch (error) {
     console.error('Failed to fetch thread:', error)
     return Response.json({ error: 'Failed to fetch thread' }, { status: 500 })
@@ -26,17 +41,14 @@ export async function DELETE(
 ) {
   try {
     const { threadId } = await params
-    const response = await fetch(`${BACKEND_URL}/api/threads/${threadId}`, {
-      method: 'DELETE',
-    })
 
-    if (!response.ok) {
-      return Response.json({ error: 'Thread not found' }, { status: 404 })
-    }
+    await prisma.chatThread.delete({
+      where: { id: threadId },
+    })
 
     return Response.json({ message: 'Thread deleted' })
   } catch (error) {
     console.error('Failed to delete thread:', error)
-    return Response.json({ error: 'Failed to delete thread' }, { status: 500 })
+    return Response.json({ error: 'Thread not found' }, { status: 404 })
   }
 }
