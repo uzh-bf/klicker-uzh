@@ -1293,7 +1293,7 @@ describe('Different live-quiz workflows', function () {
     })
   })
 
-  it('Check out evaluation view of live quiz and its content', function () {
+  it('Check out the evaluation view of the live quiz and its content', function () {
     cy.loginLecturer()
 
     cy.get('[data-cy="activities"]').click()
@@ -1331,6 +1331,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="evaluate-question-select"]').contains(this.data.SC.title)
 
     // navigate forwards and backwards through all questions
+    // results of closed blocks should be shown directly - active blocks require confirmation
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.KP.title).should('exist')
@@ -1344,22 +1345,33 @@ describe('Different live-quiz workflows', function () {
     cy.findByText(this.data.CS.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.CT.content).should('exist')
+
+    // results of active block should only be shown after confirmation
+    // on second visit (after confirmation), no additional measures are required
     cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.SCML.content).should('not.exist')
+    cy.get('[data-cy="show-results-evaluation"]').click()
     cy.findByText(this.data.SCML.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.get('[data-cy="show-results-evaluation"]').click()
     cy.findByText(this.data.MCML.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.get('[data-cy="show-results-evaluation"]').click()
     cy.findByText(this.data.KPML.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.get('[data-cy="show-results-evaluation"]').click()
     cy.findByText(this.data.NRML.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.get('[data-cy="show-results-evaluation"]').click()
     cy.findByText(this.data.FTML.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.get('[data-cy="show-results-evaluation"]').click()
     cy.findByText(this.data.SEML.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.get('[data-cy="show-results-evaluation"]').click()
     cy.findByText(this.data.CSML.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.CT2.content).should('exist')
+    cy.findByText(this.data.CT2.content).should('exist') // content elements are always displayed (even without results confirmation)
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.findByText(this.data.CSML.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click().click().click()

@@ -80,7 +80,11 @@ function ElementEvaluation({
         <div className="mb-4 max-w-xl text-center">
           {t('manage.evaluation.blockActiveInfo')}
         </div>
-        <Button primary onClick={() => setShowResults(true)}>
+        <Button
+          primary
+          onClick={() => setShowResults(true)}
+          data={{ cy: 'show-results-evaluation' }}
+        >
           {t('manage.evaluation.showResults')}
         </Button>
       </div>
