@@ -179,11 +179,7 @@ export async function initializePrisma() {
   try {
     // initialize PrismaClient with the database URL
     const adapter = new PrismaPg({ connectionString: databaseUrl })
-    const prisma = new PrismaClient({
-      adapter,
-      datasources: { db: { url: databaseUrl } },
-      log: ['error', 'warn'],
-    })
+    const prisma = new PrismaClient({ adapter, log: ['error', 'warn'] })
 
     // test database connection
     await prisma.$connect()
