@@ -1,9 +1,11 @@
 import { PrismaClient, UserRole } from '@klicker-uzh/prisma'
+import { PrismaPg } from '@prisma/adapter-pg'
 import JWT from 'jsonwebtoken'
 import readline from 'readline'
 
 async function run(username: string) {
-  const prisma = new PrismaClient()
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+  const prisma = new PrismaClient({ adapter })
 
   const participant = await prisma.participant.findUnique({
     where: {

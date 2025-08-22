@@ -6,6 +6,7 @@ import {
   processElementData,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
+import { PrismaPg } from '@prisma/adapter-pg'
 import Prisma from '../../dist/index.js'
 import {
   COURSE_ID_CALENDAR,
@@ -2407,9 +2408,8 @@ Once this microlearning is published, it will be immediately accessible
   }
 }
 
-const prismaClient = new Prisma.PrismaClient()
-
-// @ts-ignore
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+const prismaClient = new Prisma.PrismaClient({ adapter })
 await seedTest(prismaClient)
   .catch((e) => {
     console.error(e)

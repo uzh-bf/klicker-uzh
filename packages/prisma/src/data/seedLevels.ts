@@ -17,8 +17,7 @@ export async function seedLevels(prisma: Prisma.PrismaClient) {
   }
 }
 
-const prismaClient = new Prisma.PrismaClient()
-
+// const prismaClient = new Prisma.PrismaClient()
 // seedLevels(prismaClient)
 //   .catch((e) => {
 //     console.error(e)

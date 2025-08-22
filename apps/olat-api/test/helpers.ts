@@ -10,6 +10,7 @@ import {
   ElementOptionsNumerical,
 } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { expect } from 'vitest'
 import {
   Course,
@@ -397,10 +398,10 @@ export async function initializePrisma() {
 
   try {
     // initialize PrismaClient with the database URL
+    const adapter = new PrismaPg({ connectionString: databaseUrl })
     const prisma = new PrismaClient({
-      datasources: {
-        db: { url: databaseUrl },
-      },
+      adapter,
+      datasources: { db: { url: databaseUrl } },
       log: ['error', 'warn'],
     })
 

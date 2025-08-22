@@ -17,6 +17,7 @@ import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { EventEmitter } from 'events'
 import { v4 as uuidv4 } from 'uuid'
 import type { ContextWithUser } from '../src/lib/context.js'
@@ -177,10 +178,10 @@ export async function initializePrisma() {
 
   try {
     // initialize PrismaClient with the database URL
+    const adapter = new PrismaPg({ connectionString: databaseUrl })
     const prisma = new PrismaClient({
-      datasources: {
-        db: { url: databaseUrl },
-      },
+      adapter,
+      datasources: { db: { url: databaseUrl } },
       log: ['error', 'warn'],
     })
 

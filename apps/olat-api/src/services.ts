@@ -4,6 +4,7 @@ import {
   PracticeQuiz,
   PrismaClient,
 } from '@klicker-uzh/prisma'
+import { PrismaPg } from '@prisma/adapter-pg'
 import dayjs from 'dayjs'
 import fs from 'fs/promises'
 import path from 'path'
@@ -11,7 +12,8 @@ import { pick } from 'remeda'
 import { fileURLToPath } from 'url'
 import { ActivityOlatConfigurationKey, ActivityType } from './types.js'
 
-const prisma = new PrismaClient()
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+const prisma = new PrismaClient({ adapter })
 
 export async function getCourses(provider: string, providerAccountId: string) {
   const account = await prisma.account.findUnique({

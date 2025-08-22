@@ -1,8 +1,10 @@
 import { PrismaClient, PublicationStatus } from '@klicker-uzh/prisma'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { Redis } from 'ioredis'
 
 async function run() {
-  const prisma = new PrismaClient()
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+  const prisma = new PrismaClient({ adapter })
 
   const redisExec = new Redis({
     family: 4,

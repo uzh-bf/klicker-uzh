@@ -19,6 +19,7 @@ import {
   ElementOptionsNumerical,
   ElementOptionsSelection,
 } from '@klicker-uzh/types'
+import { PrismaPg } from '@prisma/adapter-pg'
 import * as bcrypt from 'bcryptjs'
 import { defineConfig } from 'cypress'
 
@@ -115,12 +116,10 @@ async function connect() {
     throw new Error('DATABASE_URL environment variable is not set')
   }
 
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
   const prisma = new PrismaClient({
-    datasources: {
-      db: {
-        url: process.env.DATABASE_URL,
-      },
-    },
+    adapter,
+    datasources: { db: { url: process.env.DATABASE_URL } },
   })
 
   return prisma

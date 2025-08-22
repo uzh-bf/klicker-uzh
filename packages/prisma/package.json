@@ -8,6 +8,7 @@
     "dist"
   ],
   "dependencies": {
+    "@prisma/adapter-pg": "6.14.0",
     "@prisma/client": "6.14.0"
   },
   "devDependencies": {

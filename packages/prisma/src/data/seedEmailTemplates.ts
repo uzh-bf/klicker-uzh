@@ -27,5 +27,4 @@ export async function seedEmailTemplates(prisma: PrismaClient) {
 }
 
 // const prisma = new PrismaClient()
-
 // await seedEmailTemplates(prisma)

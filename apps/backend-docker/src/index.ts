@@ -10,6 +10,7 @@ import prepareApp from './app.js'
 
 import { createInMemoryCache, type Cache } from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { useServer } from 'graphql-ws/lib/use/ws'
 import { EventEmitter } from 'node:events'
 import { WebSocketServer } from 'ws'
@@ -17,7 +18,9 @@ import { migrate } from './migration.js'
 
 const emitter = new EventEmitter()
 
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
 let prisma = new PrismaClient({
+  adapter,
   log:
     process.env.NODE_ENV === 'development'
       ? ['query', 'info', 'warn', 'error']

@@ -4,13 +4,14 @@ import DirectivePlugin from '@pothos/plugin-directives'
 import PrismaPlugin from '@pothos/plugin-prisma'
 import ScopeAuthPlugin from '@pothos/plugin-scope-auth'
 import ZodPlugin from '@pothos/plugin-zod'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { GraphQLError } from 'graphql'
 import { DateTimeResolver, JSONResolver } from 'graphql-scalars'
+import type { Context, ContextWithUser } from './lib/context.js'
 import './types/app.js'
 
-import type { Context, ContextWithUser } from './lib/context.js'
-
-const prisma = new PrismaClient({})
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+const prisma = new PrismaClient({ adapter })
 
 const builder = new SchemaBuilder<{
   DefaultFieldNullability: false
