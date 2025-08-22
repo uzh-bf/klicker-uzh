@@ -514,7 +514,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   }, [])
 
   for (const data of DATA_TEST.LIVE_QUIZZES) {
-    const liveQuiz = await prismaClient.liveQuiz.upsert({
+    const liveQuiz = await prisma.liveQuiz.upsert({
       where: { id: data.id },
       create: {
         id: data.id,
@@ -1886,7 +1886,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   )
 
   const quizId = '4214338b-c5af-4ff7-84f9-ae5a139d6e5b'
-  await prismaClient.practiceQuiz.upsert({
+  await prisma.practiceQuiz.upsert({
     where: { id: quizId },
     create: {
       id: quizId,
@@ -1921,7 +1921,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   const quizId2 = '58cfd921-2bc1-40a4-a186-846626eb0591'
-  await prismaClient.practiceQuiz.upsert({
+  await prisma.practiceQuiz.upsert({
     where: { id: quizId2 },
     create: {
       id: quizId2,
@@ -1954,7 +1954,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   const quizId3 = '56e51ab4-89e3-4d9d-ae04-dd9e8869fbd2'
-  await prismaClient.practiceQuiz.upsert({
+  await prisma.practiceQuiz.upsert({
     where: { id: quizId3 },
     create: {
       id: quizId3,
@@ -1987,7 +1987,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   })
 
   const microlearningId1 = 'd2f7fcbc-a54c-4518-b094-91d8adbd803f'
-  await prismaClient.microLearning.upsert({
+  await prisma.microLearning.upsert({
     where: { id: microlearningId1 },
     create: {
       id: microlearningId1,
@@ -2024,7 +2024,7 @@ Mehr bla bla...
   })
 
   const microlearningId2 = '6a0b6674-5f9b-40fd-90a4-53d493c210ba'
-  await prismaClient.microLearning.upsert({
+  await prisma.microLearning.upsert({
     where: { id: microlearningId2 },
     create: {
       id: microlearningId2,
@@ -2061,7 +2061,7 @@ Mehr bla bla...
   })
 
   const microlearningId3 = '71702826-e693-451d-ad64-ed763d973fcd'
-  await prismaClient.microLearning.upsert({
+  await prisma.microLearning.upsert({
     where: { id: microlearningId3 },
     create: {
       id: microlearningId3,
@@ -2094,7 +2094,7 @@ Mehr bla bla...
   })
 
   const microlearningId4 = '4a87f88d-5fb9-4eef-afce-9f5ed6edcc38'
-  await prismaClient.microLearning.upsert({
+  await prisma.microLearning.upsert({
     where: { id: microlearningId4 },
     create: {
       id: microlearningId4,
@@ -2129,7 +2129,7 @@ Mehr bla bla...
   })
 
   const microlearningId5 = 'ec13a44b-22ce-4edc-b419-e2d7c07024fe'
-  await prismaClient.microLearning.upsert({
+  await prisma.microLearning.upsert({
     where: { id: microlearningId5 },
     create: {
       id: microlearningId5,
