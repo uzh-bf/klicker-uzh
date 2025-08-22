@@ -2464,6 +2464,7 @@ enum SortByType {
 
 type StackEvaluation {
   instances: [ElementInstanceEvaluation!]!
+  stackActive: Boolean!
   stackDescription: String
   stackId: Int!
   stackName: String

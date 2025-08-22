@@ -3813,8 +3813,8 @@ function computeInstanceEvaluation({
 
 export function computeStackEvaluation(
   stacks: (
-    | (DB.ElementStack & { elements: DB.ElementInstance[] })
-    | (DB.ElementBlock & { elements: DB.ElementInstance[] })
+    | (DB.ElementStack & { elements: DB.ElementInstance[]; active?: boolean })
+    | (DB.ElementBlock & { elements: DB.ElementInstance[]; active?: boolean })
   )[]
 ) {
   return stacks.map((stack) => ({
@@ -3822,7 +3822,7 @@ export function computeStackEvaluation(
     stackName: 'displayName' in stack ? stack.displayName : null,
     stackDescription: 'description' in stack ? stack.description : null,
     stackOrder: stack.order,
-
+    stackActive: stack.active ?? false,
     instances: stack.elements
       .map((instance) => computeInstanceEvaluation({ instance }))
       .filter((instance) => typeof instance !== 'undefined'),

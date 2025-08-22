@@ -42,6 +42,7 @@ interface ActivityEvaluationProps {
   feedbacks?: Feedback[] | null
   confusionFeedbacks?: ConfusionTimestep[] | null
   leaderboard?: LeaderboardCombinedEntry[] | null
+  hideActiveBlockResults?: boolean
   type?: ActivityEvaluationType
 }
 
@@ -54,6 +55,7 @@ function ActivityEvaluation({
   feedbacks,
   confusionFeedbacks,
   leaderboard,
+  hideActiveBlockResults = false,
   type = 'Asynchronous',
 }: ActivityEvaluationProps) {
   const router = useRouter()
@@ -150,8 +152,15 @@ function ActivityEvaluation({
       <div className="flex min-h-0 flex-1 flex-col">
         {instanceResults.length > 0 && typeof activeStack === 'number' && (
           <ElementEvaluation
+            requireShowResultsConfirmation={
+              hideActiveBlockResults &&
+              (stacks.find((stack) => stack.stackOrder === activeStack)
+                ?.stackActive ??
+                true)
+            }
             currentInstance={instanceResults[activeInstance]}
             activeInstance={activeInstance}
+            activeStack={activeStack}
             courseLanguage={courseLanguage}
             textSize={textSize}
             chartType={chartType}

@@ -2416,6 +2416,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       answerRemembered: 'Answer remembered',
       frontSide: 'Front Side',
       backSide: 'Back Side',
+      blockActive: 'Block is active',
+      blockActiveInfo:
+        'The currently selected block has not been closed yet. Participants in your quiz can still submit answers. Please confirm that you want to display the results.',
+      showResults: 'Show Results',
     },
     lecturer: {
       noDataAvailable: 'No data available...',

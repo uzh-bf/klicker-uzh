@@ -2179,7 +2179,7 @@ export async function getLiveQuizEvaluation(
   // compute evaluation
   const blockEvaluations = computeStackEvaluation(
     typeof activeBlockWithResults !== 'undefined'
-      ? [...liveQuiz.blocks, activeBlockWithResults]
+      ? [...liveQuiz.blocks, { ...activeBlockWithResults, active: true }]
       : liveQuiz.blocks
   )
 

@@ -47,7 +47,6 @@ function EvaluationFooter({
 }: EvaluationFooterProps) {
   const t = useTranslations()
   const router = useRouter()
-
   const hasSolution = currentInstance?.hasSampleSolution ?? false
   const hasExplanation =
     currentInstance?.explanation &&
@@ -129,13 +128,11 @@ function EvaluationFooter({
               <Select
                 contentPosition="popper"
                 className={{ trigger: 'w-44 border-slate-400' }}
-                items={ACTIVE_CHART_TYPES[currentInstance.type].map((item) => {
-                  return {
-                    label: t(item.label),
-                    value: item.value,
-                    data: { cy: `change-chart-type-${item.label}` },
-                  }
-                })}
+                items={ACTIVE_CHART_TYPES[currentInstance.type].map((item) => ({
+                  label: t(item.label),
+                  value: item.value,
+                  data: { cy: `change-chart-type-${item.label}` },
+                }))}
                 value={chartType}
                 onChange={(newValue) => setChartType(newValue as ChartType)}
                 data={{ cy: 'change-chart-type' }}
