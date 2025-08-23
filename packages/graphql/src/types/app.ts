@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from '@klicker-uzh/prisma/client'
+import { PrismaClient } from '@klicker-uzh/prisma/client'
 import type {
   ActivityLogModificationDetails,
   AvatarSettings,
@@ -12,7 +12,7 @@ import type {
 } from '@klicker-uzh/types'
 
 export type PrismaMigrationClient = Omit<
-  PrismaClient<Prisma.PrismaClientOptions, never>,
+  PrismaClient,
   '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
 >
 

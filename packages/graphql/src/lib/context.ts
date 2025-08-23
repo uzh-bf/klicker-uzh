@@ -1,5 +1,4 @@
 import {
-  Prisma,
   PrismaClient,
   UserLoginScope,
   UserRole,
@@ -45,7 +44,7 @@ export type PrismaTransactionContextWithUser = Omit<
   'prisma'
 > & {
   prisma: Omit<
-    PrismaClient<Prisma.PrismaClientOptions, never>,
+    PrismaClient,
     '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
   >
 }
