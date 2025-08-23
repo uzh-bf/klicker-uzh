@@ -6,7 +6,7 @@ import {
   ObjectType,
   PermissionLevel,
   PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import { ChoicesElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,

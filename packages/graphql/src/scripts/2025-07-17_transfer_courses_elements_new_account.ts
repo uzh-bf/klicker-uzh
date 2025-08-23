@@ -1,4 +1,4 @@
-import { PrismaClient } from '@klicker-uzh/prisma'
+import { PrismaClient } from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 

@@ -3,7 +3,7 @@ import {
   MicroLearning,
   PracticeQuiz,
   PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import dayjs from 'dayjs'
 import fs from 'fs/promises'

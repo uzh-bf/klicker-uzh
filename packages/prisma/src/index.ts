@@ -1,5 +1,6 @@
 import { PrismaPg } from '@prisma/adapter-pg'
-import { PrismaClient } from './client.js'
+// @ts-ignore - Client files are copied to dist/client during build
+import { PrismaClient } from './client/client.ts'
 
 // TODO: figure out whether using Pool with pg is a good idea for us (or does pgbouncer do that server-side)
 // import { Pool } from 'pg'

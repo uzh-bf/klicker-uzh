@@ -1,6 +1,6 @@
 // pn exec:prod scripts/fixPointsInconsistency.ts
 
-import { PrismaClient } from '@klicker-uzh/prisma'
+import { PrismaClient } from '@klicker-uzh/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Redis } from 'ioredis'
 

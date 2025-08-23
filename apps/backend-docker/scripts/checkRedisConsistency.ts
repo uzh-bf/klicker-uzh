@@ -1,4 +1,4 @@
-import { PrismaClient, PublicationStatus } from '@klicker-uzh/prisma'
+import { PrismaClient, PublicationStatus } from '@klicker-uzh/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Redis } from 'ioredis'
 

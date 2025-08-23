@@ -3,7 +3,7 @@ import {
   ElementStackType,
   ElementType,
   PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import {
   ElementData,
   ElementInstanceResults,

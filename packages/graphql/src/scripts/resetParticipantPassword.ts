@@ -1,4 +1,4 @@
-import { PrismaClient } from '@klicker-uzh/prisma'
+import { PrismaClient } from '@klicker-uzh/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import bcrypt from 'bcryptjs'
 import generatePassword from 'generate-password'

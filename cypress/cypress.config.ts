@@ -7,7 +7,7 @@ import {
   PublicationStatus,
   UserLoginScope,
   UserRole,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import {
   CaseStudyCaseCriterionSolution,
   CaseStudyCaseSolution,

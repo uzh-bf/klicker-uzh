@@ -11,7 +11,7 @@ import {
   PublicationStatus,
   UserLoginScope,
   UserRole,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import { ElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,

@@ -111,7 +111,7 @@ The Types package extends and complements the types generated from Prisma schema
      Element,
      ElementStatus,
      ElementType,
-   } from '@klicker-uzh/prisma'
+   } from '@klicker-uzh/prisma/client'
    ```
 
 2. **JSON Field Types**: Provides structured interfaces for Prisma JSON fields

@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from '@klicker-uzh/prisma'
+import { Prisma, PrismaClient } from '@klicker-uzh/prisma/client'
 import type {
   ActivityLogModificationDetails,
   AvatarSettings,

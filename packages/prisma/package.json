@@ -7,16 +7,6 @@
   "files": [
     "dist"
   ],
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    },
-    "./client": {
-      "types": "./dist/client/client.ts",
-      "default": "./dist/client/client.ts"
-    }
-  },
   "dependencies": {
     "@prisma/adapter-pg": "6.14.0",
     "@prisma/client": "6.14.0",
@@ -105,6 +95,16 @@
   },
   "volta": {
     "extends": "../../package.json"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/client/client.ts",
+      "default": "./dist/client/client.ts"
+    }
   },
   "type": "module"
 }

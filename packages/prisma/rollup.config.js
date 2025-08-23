@@ -35,7 +35,7 @@ const config = defineConfig([
     ],
     external: [
       // Mark Prisma client imports as external (don't bundle them)
-      /^\.\/prisma\/client\//,
+      /^\.\/client/,
       // Exclude node_modules and other external dependencies
       /@klicker-uzh*/,
       /node_modules/,
