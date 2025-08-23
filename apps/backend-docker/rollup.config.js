@@ -24,7 +24,12 @@ const config = defineConfig([
         rootDir: process.env.NODE_ENV === 'test' ? 'instrumented' : 'src',
       }),
     ],
-    external: [/@klicker-uzh*/, /node_modules/], // Exclude node_modules and specific external dependencies
+    external: [
+      // Exclude node_modules but keep @klicker-uzh/prisma as internal
+      /node_modules/,
+      // Only treat specific @klicker-uzh packages as external, excluding prisma
+      /@klicker-uzh\/(?!prisma)/,
+    ],
   },
 ])
 
