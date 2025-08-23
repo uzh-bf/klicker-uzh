@@ -8,14 +8,17 @@
     "dist"
   ],
   "dependencies": {
-    "@prisma/adapter-pg": "6.14.0",
-    "@prisma/client": "6.14.0"
+    "@prisma/client": "6.14.0",
+    "pg": "8.16.3"
   },
   "devDependencies": {
     "@klicker-uzh/transactional": "workspace:*",
     "@pothos/plugin-prisma": "~4.2.1",
+    "@rollup/plugin-node-resolve": "~15.3.0",
+    "@rollup/plugin-typescript": "~12.1.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.16.1",
+    "@types/pg": "^8.15.5",
     "@types/turndown": "^5.0.5",
     "@types/uuid": "^10.0.0",
     "@types/xml2js": "^0.4.14",
@@ -29,6 +32,7 @@
     "p-map": "~7.0.2",
     "prisma": "~6.14.0",
     "prisma-json-types-generator": "~3.5.2",
+    "rollup": "~4.34.2",
     "tsx": "~4.19.1",
     "turndown": "~7.2.0",
     "typescript": "~5.6.3",
@@ -37,38 +41,40 @@
   },
   "peerDependencies": {
     "@klicker-uzh/types": "workspace:*",
-    "@klicker-uzh/util": "workspace:*"
+    "@klicker-uzh/util": "workspace:*",
+    "@prisma/adapter-pg": "^6.14.0"
   },
   "scripts": {
-    "build": "run-s generate build:copy",
+    "build": "run-s generate build:ts build:copy",
     "build:copy": "node src/copy.cjs",
     "build:test": "pnpm run build",
+    "build:ts": "cross-env NODE_ENV=production rollup -c",
     "check": "tsc --noEmit",
-    "generate": "prisma generate --schema=src/prisma/schema",
+    "generate": "prisma generate",
     "prisma:deploy": "doppler run --config dev -- pnpm run prisma:deploy:raw",
     "prisma:deploy:prod": "doppler run --config prd -- pnpm run prisma:deploy:raw",
     "prisma:deploy:qa": "doppler run --config stg -- pnpm run prisma:deploy:raw",
-    "prisma:deploy:raw": "prisma migrate deploy --schema=src/prisma/schema",
+    "prisma:deploy:raw": "prisma migrate deploy",
     "prisma:diff": "doppler run --config dev --command 'prisma migrate diff --from-url \"$PROD_DATABASE_URL\" --to-migrations src/prisma/migrations --shadow-database-url \"postgres://klicker-prod:klicker@localhost:5432/shadow\"'",
-    "prisma:migrate": "doppler run --config dev -- prisma migrate dev --schema=src/prisma/schema",
-    "prisma:migrate:create": "doppler run --config dev -- prisma migrate dev --schema=src/prisma/schema --create-only",
+    "prisma:migrate": "doppler run --config dev -- prisma migrate dev",
+    "prisma:migrate:create": "doppler run --config dev -- prisma migrate dev --create-only",
     "prisma:push": "doppler run --config dev -- pnpm run prisma:push:raw",
     "prisma:push:qa": "doppler run --config stg -- pnpm run prisma:push:raw",
-    "prisma:push:raw": "prisma db push --schema=src/prisma/schema",
+    "prisma:push:raw": "prisma db push",
     "prisma:reset": "doppler run --config dev -- pnpm run prisma:reset:raw",
     "prisma:reset:qa": "doppler run --config stg -- pnpm run prisma:reset:raw",
-    "prisma:reset:raw": "prisma migrate reset --schema=src/prisma/schema --skip-seed",
-    "prisma:reset:seed": "doppler run --config dev -- prisma migrate reset --schema=src/prisma/schema",
+    "prisma:reset:raw": "prisma migrate reset --skip-seed",
+    "prisma:reset:seed": "doppler run --config dev -- prisma migrate reset",
     "prisma:reset:yes": "doppler run --config dev -- pnpm run prisma:reset:raw -f",
     "prisma:resetCypress": "pnpm run prisma:reset:raw",
-    "prisma:resolve:prod": "doppler run --config prd -- prisma migrate resolve --schema=src/prisma/schema",
+    "prisma:resolve:prod": "doppler run --config prd -- prisma migrate resolve",
     "prisma:setup": "run-s prisma:reset prisma:push seed",
     "prisma:setup:raw": "run-s prisma:reset:raw prisma:push:raw seed:raw",
     "prisma:setup:yes": "run-s prisma:reset:yes prisma:push seed",
     "prisma:studio": "doppler run --config dev -- pnpm run prisma:studio:raw",
     "prisma:studio:prod": "doppler run --config prd -- pnpm run prisma:studio:raw",
     "prisma:studio:qa": "doppler run --config stg -- pnpm run prisma:studio:raw",
-    "prisma:studio:raw": "prisma studio --schema=src/prisma/schema",
+    "prisma:studio:raw": "prisma studio",
     "script": "ENV=development doppler run --config dev -- tsx",
     "script:prod": "ENV=production doppler run --config prd -- tsx",
     "script:qa": "ENV=development doppler run --config stg -- tsx",
@@ -87,9 +93,6 @@
   },
   "volta": {
     "extends": "../../package.json"
-  },
-  "prisma": {
-    "seed": "pnpm run seed"
   },
   "type": "module"
 }
