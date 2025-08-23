@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma/dist/client.js'
+import * as DB from '@klicker-uzh/prisma/client'
 import { SharingType as SharingTypeEnum } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { PermissionLevel, SharingType } from './sharing.js'

@@ -1,5 +1,5 @@
 import { PrismaPg } from '@prisma/adapter-pg'
-import { PrismaClient } from './prisma/client/client.js'
+import { PrismaClient } from './client.js'
 
 // TODO: figure out whether using Pool with pg is a good idea for us (or does pgbouncer do that server-side)
 // import { Pool } from 'pg'

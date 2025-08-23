@@ -1,6 +1,6 @@
 import { sendTeamsNotifications } from '@/lib/util'
 import { PrismaAdapter } from '@auth/prisma-adapter'
-import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/dist/client.js'
+import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
 import bcrypt from 'bcryptjs'
 import JWT from 'jsonwebtoken'
 import type { NextAuthOptions, Profile } from 'next-auth'

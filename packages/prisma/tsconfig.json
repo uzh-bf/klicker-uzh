@@ -1,5 +1,5 @@
 {
-  "include": ["**/**/*"],
+  "include": ["src/index.ts", "src/client.ts"],
   "compilerOptions": {
     "baseUrl": ".",
     /* Base Options: */
@@ -29,5 +29,5 @@
     "lib": ["es2022"],
     "rootDir": "."
   },
-  "exclude": ["src/scripts", "dist"]
+  "exclude": ["src/scripts", "src/data", "src/prisma/client", "dist"]
 }

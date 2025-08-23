@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma/dist/client.js'
+import * as DB from '@klicker-uzh/prisma/client'
 import dayjs from 'dayjs'
 import builder from '../builder.js'
 import {

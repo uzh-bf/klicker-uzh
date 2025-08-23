@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma/dist/client.js'
+import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { ActivityType } from './analytics.js'

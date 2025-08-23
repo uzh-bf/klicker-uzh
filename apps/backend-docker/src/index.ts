@@ -1,7 +1,7 @@
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import { prisma as prismaBase } from '@klicker-uzh/prisma'
-import type { PrismaClient } from '@klicker-uzh/prisma/dist/client.js'
+import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { withOptimize } from '@prisma/extension-optimize'
 // import * as Sentry from '@sentry/node'
 // import '@sentry/tracing'

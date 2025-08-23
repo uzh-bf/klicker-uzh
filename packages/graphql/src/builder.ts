@@ -1,5 +1,5 @@
 import { prisma } from '@klicker-uzh/prisma'
-import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/dist/client.js'
+import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
 import SchemaBuilder from '@pothos/core'
 import DirectivePlugin from '@pothos/plugin-directives'
 import PrismaPlugin from '@pothos/plugin-prisma'

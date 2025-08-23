@@ -7,7 +7,18 @@
   "files": [
     "dist"
   ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/client/client.ts",
+      "default": "./dist/client/client.ts"
+    }
+  },
   "dependencies": {
+    "@prisma/adapter-pg": "6.14.0",
     "@prisma/client": "6.14.0",
     "pg": "8.16.3"
   },
@@ -33,6 +44,8 @@
     "prisma": "~6.14.0",
     "prisma-json-types-generator": "~3.5.2",
     "rollup": "~4.34.2",
+    "rollup-plugin-copy": "~3.5.0",
+    "rollup-plugin-delete": "~2.1.0",
     "tsx": "~4.19.1",
     "turndown": "~7.2.0",
     "typescript": "~5.6.3",
@@ -45,8 +58,7 @@
     "@prisma/adapter-pg": "^6.14.0"
   },
   "scripts": {
-    "build": "run-s generate build:ts build:copy",
-    "build:copy": "node src/copy.cjs",
+    "build": "run-s generate build:ts",
     "build:test": "pnpm run build",
     "build:ts": "cross-env NODE_ENV=production rollup -c",
     "check": "tsc --noEmit",

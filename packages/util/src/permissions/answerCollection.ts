@@ -4,7 +4,7 @@
  * - recomputeAnswerCollectionPermissionsUser: recompute derived permissions for a single user.
  * - recomputeAnswerCollectionPermissionsObject: recompute derived permissions for all users.
  */
-import * as DB from '@klicker-uzh/prisma/dist/client.js'
+import * as DB from '@klicker-uzh/prisma/client'
 import { type PrismaTransactionClient } from '../types.js'
 import { updateAccessRequestInstances } from './accessRequest.js'
 import { inversePermissionLevelMap, type UserAccessMap } from './constants.js'

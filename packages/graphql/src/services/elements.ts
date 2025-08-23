@@ -4,7 +4,7 @@ import {
   generateBlobSASQueryParameters,
   StorageSharedKeyCredential,
 } from '@azure/storage-blob'
-import * as DB from '@klicker-uzh/prisma/dist/client.js'
+import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityLogModificationDetails,
   ActivityLogModificationFieldType,

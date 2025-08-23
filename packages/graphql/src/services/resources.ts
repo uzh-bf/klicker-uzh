@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma/dist/client.js'
+import * as DB from '@klicker-uzh/prisma/client'
 import { SharingType } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import type {
