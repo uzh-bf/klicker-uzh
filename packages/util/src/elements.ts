@@ -5,7 +5,7 @@ import {
   ElementType,
   ElementInstanceType as PrismaElementInstanceType,
   ElementType as PrismaElementType,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/dist/client.js'
 import {
   type Choice,
   type ElementData,

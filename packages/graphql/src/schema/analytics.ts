@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/dist/client.js'
 import {
   ActivityFeedback as ActivityFeedbackType,
   ActivityPerformance as ActivityPerformanceType,

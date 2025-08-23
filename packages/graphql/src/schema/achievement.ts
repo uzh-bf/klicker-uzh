@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/dist/client.js'
 import builder from '../builder.js'
 
 export interface IAchievement extends DB.Achievement {}

@@ -1,5 +1,4 @@
 import { getNextBaseConfig } from '@klicker-uzh/next-config'
-import { PrismaPlugin } from '@prisma/nextjs-monorepo-workaround-plugin'
 import createNextIntlPlugin from 'next-intl/plugin'
 
 const withNextIntl = createNextIntlPlugin('./src/types/i18n.ts')
@@ -11,10 +10,6 @@ const nextConfig = {
     NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV,
   }),
   webpack: (config, { isServer }) => {
-    if (isServer) {
-      config.plugins = [...config.plugins, new PrismaPlugin()]
-    }
-
     // Call the base config webpack function if it exists
     const baseConfig = getNextBaseConfig({
       NODE_ENV: process.env.NODE_ENV,

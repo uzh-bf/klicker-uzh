@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/dist/client.js'
 import {
   ActivityLogModificationFieldType as ActivityLogModificationFieldTypeEnum,
   CatalogObject as CatalogObjectInterface,

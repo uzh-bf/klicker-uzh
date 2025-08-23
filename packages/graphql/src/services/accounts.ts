@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/dist/client.js'
 import { DisplayMode } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,

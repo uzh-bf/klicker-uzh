@@ -1,6 +1,6 @@
 import { sendTeamsNotifications } from '@/lib/util'
-import { UserLoginScope, UserRole } from '@klicker-uzh/prisma'
-import { PrismaAdapter } from '@next-auth/prisma-adapter'
+import { PrismaAdapter } from '@auth/prisma-adapter'
+import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/dist/client.js'
 import bcrypt from 'bcryptjs'
 import JWT from 'jsonwebtoken'
 import type { NextAuthOptions, Profile } from 'next-auth'
@@ -9,7 +9,7 @@ import { DefaultJWT, JWTDecodeParams, JWTEncodeParams } from 'next-auth/jwt'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { Provider } from 'next-auth/providers/index'
 
-import prisma from 'src/lib/prisma'
+import { prisma } from '@klicker-uzh/prisma'
 
 export const COOKIE_NAME = 'next-auth.session-token'
 

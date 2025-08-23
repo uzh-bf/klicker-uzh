@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/dist/client.js'
 
 // ! do not modify - required for the import of objects not assigned to any catalogue
 // ! NEEDS TO BE CONSISTENT WITH SAME ID IN SHARING SERVICE

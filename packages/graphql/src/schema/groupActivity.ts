@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/dist/client.js'
 import {
   type GroupActivityClueInput as GroupActivityClueInputType,
   type GroupActivityDecision as GroupActivityDecisionType,

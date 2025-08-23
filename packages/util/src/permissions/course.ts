@@ -5,7 +5,7 @@
  * - recomputeCoursePermissionsObject: recompute derived permissions for all users.
  */
 
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/dist/client.js'
 import { type PrismaTransactionClient } from '../types.js'
 import { updateAccessRequestInstances } from './accessRequest.js'
 import { inversePermissionLevelMap } from './constants.js'

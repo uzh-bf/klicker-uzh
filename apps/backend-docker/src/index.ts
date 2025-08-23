@@ -1,6 +1,7 @@
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
-import { PrismaClient } from '@klicker-uzh/prisma'
+import { prisma as prismaBase } from '@klicker-uzh/prisma'
+import type { PrismaClient } from '@klicker-uzh/prisma/dist/client.js'
 import { withOptimize } from '@prisma/extension-optimize'
 // import * as Sentry from '@sentry/node'
 // import '@sentry/tracing'
@@ -10,7 +11,6 @@ import prepareApp from './app.js'
 
 import { createInMemoryCache, type Cache } from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'
-import { PrismaPg } from '@prisma/adapter-pg'
 import { useServer } from 'graphql-ws/lib/use/ws'
 import { EventEmitter } from 'node:events'
 import { WebSocketServer } from 'ws'
@@ -18,20 +18,13 @@ import { migrate } from './migration.js'
 
 const emitter = new EventEmitter()
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-let prisma = new PrismaClient({
-  adapter,
-  log:
-    process.env.NODE_ENV === 'development'
-      ? ['query', 'info', 'warn', 'error']
-      : ['warn', 'error'],
-})
+let prisma = prismaBase
 
 if (
   process.env.NODE_ENV === 'development' &&
   process.env.PRISMA_OPTIMIZE === 'true'
 ) {
-  prisma = prisma.$extends(
+  prisma = prismaBase.$extends(
     withOptimize({ apiKey: process.env.PRISMA_OPTIMIZE_API_KEY as string })
   ) as PrismaClient
 }

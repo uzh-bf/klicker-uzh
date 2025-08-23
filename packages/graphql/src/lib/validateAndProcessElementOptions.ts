@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/dist/client.js'
 import { ElementOptionsInput } from '@klicker-uzh/types'
 import validateCaseStudyOptions from './validateCaseStudyOptions.js'
 import validateFreeTextOptions from './validateFreeTextOptions.js'
