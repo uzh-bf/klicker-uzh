@@ -119,6 +119,153 @@ pnpm release:beta
 pnpm release:rc
 ```
 
+## Kubernetes Deployment with Kustomize
+
+KlickerUZH uses Kustomize for Kubernetes deployment management, providing a declarative and environment-specific approach to configuration management.
+
+### Deployment Structure
+
+```
+deploy/kustomize/
+├── base/                    # Common base configurations
+│   ├── kustomization.yaml  # Base kustomization file
+│   ├── namespace.yaml      # Namespace definitions
+│   ├── apps/               # Application manifests
+│   │   ├── auth/
+│   │   ├── frontend-pwa/
+│   │   ├── frontend-manage/
+│   │   ├── frontend-control/
+│   │   ├── backend-graphql/
+│   │   └── lti/
+│   ├── redis/              # Redis StatefulSet
+│   └── cron-jobs/          # Scheduled tasks
+└── overlays/               # Environment-specific overlays
+    ├── qa/                 # QA environment
+    │   ├── kustomization.yaml
+    │   ├── .env            # QA environment variables
+    │   ├── secrets.env     # QA secrets (git-ignored)
+    │   └── patches/        # QA-specific patches
+    └── production/         # Production environment
+        ├── kustomization.yaml
+        ├── .env            # Production environment variables
+        ├── secrets.env     # Production secrets (git-ignored)
+        └── patches/        # Production-specific patches
+```
+
+### Deployment Commands
+
+```bash
+# Deploy to QA environment
+kubectl apply -k deploy/kustomize/overlays/qa/
+
+# Deploy to Production environment
+kubectl apply -k deploy/kustomize/overlays/production/
+
+# Preview changes without applying (dry-run)
+kubectl diff -k deploy/kustomize/overlays/qa/
+
+# Preview generated manifests
+kubectl kustomize deploy/kustomize/overlays/qa/
+
+# Deploy with Doppler secrets integration
+doppler run -- kubectl apply -k deploy/kustomize/overlays/qa/
+```
+
+### Environment Management
+
+#### Environment Variables
+Each environment has its own `.env` file containing non-sensitive configuration:
+- `overlays/qa/.env`: QA-specific variables (domains, replica counts, resource limits)
+- `overlays/production/.env`: Production-specific variables (domains, replica counts, resource limits)
+
+#### Secret Management
+Secrets are managed through environment-specific `secrets.env` files (git-ignored):
+- Generated from Doppler: `doppler secrets download --no-file --format env > overlays/qa/secrets.env`
+- Used by Kustomize secretGenerator for automatic secret creation
+- Hash suffixes ensure automatic pod restarts on secret changes
+
+#### Configuration Patching
+Environment-specific configurations are applied through strategic merge patches:
+- `patches/replica-counts.yaml`: Environment-specific replica counts
+- `patches/resources.yaml`: CPU/memory requests and limits
+- `patches/ingress-hosts.yaml`: Environment-specific domains
+- `patches/priority-classes.yaml`: Pod priority settings
+
+### Development Workflow
+
+#### Testing Configuration Changes
+```bash
+# Generate and compare manifests
+kubectl kustomize overlays/qa/ > /tmp/qa-manifests.yaml
+kubectl kustomize overlays/production/ > /tmp/prod-manifests.yaml
+
+# Validate configuration
+kubectl apply -k overlays/qa/ --dry-run=server
+
+# Test in isolated namespace
+kubectl apply -k overlays/qa/ -n klicker-v2-qa-test
+```
+
+#### Adding New Services
+1. Create base manifests in `base/apps/new-service/`
+2. Add service to `base/kustomization.yaml`
+3. Create environment-specific patches in `overlays/*/patches/`
+4. Test with `kubectl kustomize` before applying
+
+#### Updating Image Versions
+```bash
+# Update APP_VERSION in environment files
+echo "APP_VERSION=v3.0.0-alpha.69" >> overlays/qa/.env
+
+# Or use Kustomize image transformation
+cd overlays/qa/
+kustomize edit set image ghcr.io/uzh-bf/klicker-uzh/frontend-pwa:v3.0.0-alpha.69
+```
+
+### Secret Rotation
+```bash
+# Download latest secrets from Doppler
+doppler secrets download --no-file --format env > overlays/production/secrets.env
+
+# Apply updated secrets (triggers automatic pod restart)
+kubectl apply -k overlays/production/
+```
+
+### Monitoring and Troubleshooting
+```bash
+# Check deployment status
+kubectl get pods -n klicker-v2-prod
+kubectl get ingress -n klicker-v2-prod
+
+# View applied configuration
+kubectl get deployment frontend-pwa -n klicker-v2-prod -o yaml
+
+# Check for configuration drift
+kubectl diff -k overlays/production/
+
+# View logs
+kubectl logs -f deployment/backend-graphql -n klicker-v2-prod
+```
+
+### Best Practices
+
+1. **Environment Isolation**: Always test changes in QA before production
+2. **Version Control**: All configuration changes should be committed to Git
+3. **Secret Security**: Never commit `secrets.env` files to version control
+4. **Resource Management**: Monitor resource usage and adjust limits accordingly
+5. **Rollback Strategy**: Use `kubectl rollout undo` for quick rollbacks
+6. **Documentation**: Update this guide when adding new services or changing deployment patterns
+
+### Migration from Helm
+The project is currently migrating from Helm to Kustomize. See @PLANNING.md and @TODO.md for detailed migration progress and tasks.
+
+### CI/CD Integration
+Deployment pipelines use Kustomize commands:
+```bash
+# In GitHub Actions or similar CI/CD
+kubectl apply -k deploy/kustomize/overlays/${ENVIRONMENT}/
+```
+
 ## Architecture
 
 KlickerUZH follows a distributed architecture with separate frontend and backend services. The database schema is defined using Prisma, and GraphQL is used for API communication between the services.
