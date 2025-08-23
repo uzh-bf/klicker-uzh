@@ -7,7 +7,7 @@ import del from 'rollup-plugin-delete'
 const config = defineConfig([
   {
     // Main build configuration
-    input: ['src/index.ts', 'src/client.ts'],
+    input: ['src/index.ts'],
     output: {
       dir: 'dist',
       format: 'esm',
@@ -36,7 +36,6 @@ const config = defineConfig([
     external: [
       // Mark Prisma client imports as external (don't bundle them)
       /^\.\/prisma\/client\//,
-      './client.js',
       // Exclude node_modules and other external dependencies
       /@klicker-uzh*/,
       /node_modules/,
