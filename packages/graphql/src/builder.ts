@@ -31,8 +31,8 @@ const builder = new SchemaBuilder<{
     scope?: UserLoginScope
     catalyst?: boolean
   }
-  // TODO: if we need prisma plugin pothos, reactivate @ts-expect-error
-  // PrismaTypes: PrismaTypes
+  // @ts-expect-error
+  PrismaTypes: PrismaTypes
   Scalars: {
     Date: {
       Input: Date
