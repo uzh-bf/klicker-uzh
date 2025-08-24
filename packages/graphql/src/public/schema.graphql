@@ -1954,6 +1954,8 @@ type Participant {
   email: String
   id: ID!
   isActive: Boolean!
+  isCourseParticipant: Boolean
+  isCourseParticipationActive: Boolean
   isProfilePublic: Boolean
   isSelf: Boolean
   lastLoginAt: Date

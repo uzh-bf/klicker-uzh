@@ -1378,6 +1378,7 @@ export async function deactivateLiveQuizBlock(
   const quiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id: quizId },
     include: {
+      course: true,
       activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
       blocks: { orderBy: { id: 'asc' } },
     },
@@ -1404,21 +1405,76 @@ export async function deactivateLiveQuizBlock(
     } = cachedResults
 
     // filter the leaderboard entries to only include those that have a valid participant id
-    const existingParticipantsLB = (
+    const { regularParticipantLeaderboard, temporaryParticipantLeaderboard } = (
       await Promise.allSettled(
         Object.entries(liveQuizLeaderboard).map(async ([id, score]) => {
           const participant = await ctx.prisma.participant.findUnique({
             where: { id },
+            include: {
+              participations: {
+                where: { courseId: quiz.courseId ?? undefined },
+              },
+            },
           })
 
           if (!participant) return null
-          return [id, score] as [string, string]
+          return {
+            participantId: id,
+            participantUsername: participant.username,
+            participantAvatar: participant.avatar,
+            gamifiedCourseParticipation:
+              !!quiz.courseId &&
+              quiz.course?.isGamificationEnabled &&
+              !!participant.participations?.[0],
+            courseParticipationActive:
+              !!quiz.courseId &&
+              !!participant.participations?.[0] &&
+              participant.participations?.[0].isActive,
+            score,
+          }
         })
       )
-    ).flatMap((result) => {
-      if (result.status !== 'fulfilled' || !result.value) return []
-      return [result.value]
-    })
+    ).reduce<{
+      regularParticipantLeaderboard: { participantId: string; score: number }[]
+      temporaryParticipantLeaderboard: {
+        participantId: string
+        participantUsername: string
+        participantAvatar: string | null
+        score: number
+      }[]
+    }>(
+      (acc, result) => {
+        // filter out failed requests and those which have a valid gamified course participation,
+        // which is not active -> active decision to not be on leaderboard
+        if (
+          result.status !== 'fulfilled' ||
+          !result.value ||
+          (result.value.gamifiedCourseParticipation &&
+            !result.value.courseParticipationActive)
+        ) {
+          return acc
+        }
+
+        if (result.value.gamifiedCourseParticipation) {
+          // active gamified course participation (inactive already filtered) -> regular leaderboard
+          acc.regularParticipantLeaderboard.push({
+            participantId: result.value.participantId,
+            score: parseInt(result.value.score, 10),
+          })
+        } else {
+          // no gamified course participation -> temporary leaderboard
+          acc.temporaryParticipantLeaderboard.push({
+            participantId: result.value.participantId,
+            participantUsername: result.value.participantUsername,
+            participantAvatar: result.value.participantAvatar,
+            score: parseInt(result.value.score, 10),
+          })
+        }
+
+        return acc
+      },
+      { regularParticipantLeaderboard: [], temporaryParticipantLeaderboard: [] }
+    )
 
     // filter temporary leaderboard entries to only include those that have a valid temporary leaderboard entry for this live quiz
     // technically, this should not be required, since all ids should be valid, but it is a safety check
@@ -1428,11 +1484,16 @@ export async function deactivateLiveQuizBlock(
           async ([id, score]) => {
             const tempLeadeboardEntry =
               await ctx.prisma.temporaryLeaderboardEntry.findUnique({
-                where: { id, quizId },
+                where: { id_quizId: { id, quizId } },
               })
 
             if (!tempLeadeboardEntry) return null
-            return [id, score] as [string, string]
+            return {
+              participantId: id,
+              participantUsername: undefined,
+              participantAvatar: undefined,
+              score: parseInt(score, 10),
+            }
           }
         )
       )
@@ -1463,45 +1524,68 @@ export async function deactivateLiveQuizBlock(
         },
         leaderboard: quiz.isGamificationEnabled
           ? {
-              upsert: existingParticipantsLB.map(
-                ([id, score]: [string, string]) => ({
+              upsert: regularParticipantLeaderboard.map(
+                ({ participantId, score }) => ({
                   where: {
                     type_participantId_liveQuizId: {
                       type: DB.LeaderboardType.SESSION,
-                      participantId: id,
+                      participantId,
                       liveQuizId: quizId,
                     },
                   },
                   create: {
                     type: DB.LeaderboardType.SESSION,
-                    participant: { connect: { id } },
-                    score: parseInt(score),
+                    participant: { connect: { id: participantId } },
+                    score: score,
                     sessionParticipation: {
                       connectOrCreate: {
                         where: {
                           courseId_participantId: {
                             courseId: quiz.courseId!,
-                            participantId: id,
+                            participantId,
                           },
                         },
                         create: {
                           course: { connect: { id: quiz.courseId! } },
-                          participant: { connect: { id } },
+                          participant: { connect: { id: participantId } },
                         },
                       },
                     },
                   },
-                  update: { score: parseInt(score) },
+                  update: { score },
                 })
               ),
             }
           : undefined,
-        temporaryLeaderboard: {
-          update: existingTemporaryLB.map(([id, score]: [string, string]) => ({
-            where: { id, quizId },
-            data: { score: parseInt(score) },
-          })),
-        },
+        temporaryLeaderboard: quiz.isGamificationEnabled
+          ? {
+              upsert: [
+                ...temporaryParticipantLeaderboard,
+                ...existingTemporaryLB,
+              ].map(
+                ({
+                  participantId,
+                  participantUsername,
+                  participantAvatar,
+                  score,
+                }) => ({
+                  where: {
+                    id_quizId: {
+                      id: participantId,
+                      quizId,
+                    },
+                  },
+                  create: {
+                    id: participantId,
+                    username: participantUsername ?? '', // fallback should never be used
+                    avatar: participantAvatar ?? undefined,
+                    score,
+                  },
+                  update: { score },
+                })
+              ),
+            }
+          : undefined,
       },
       include: { blocks: { orderBy: { order: 'asc' } } },
     })
@@ -1548,6 +1632,7 @@ export async function endLiveQuiz(
   const quiz = await ctx.prisma.liveQuiz.findFirst({
     where: { id },
     include: {
+      course: true,
       blocks: {
         include: { elements: { orderBy: { order: 'asc' } } },
         orderBy: { id: 'asc' },
@@ -1723,11 +1808,12 @@ export async function endLiveQuiz(
           },
         })
 
-        // if the live quiz is part of a course, update the course leaderboard
+        // if the live quiz is part of a gamified course, update the course leaderboard
         // with the accumulated points and award achievements
         if (quizLB && quiz.courseId) {
           for (const participant of existingParticipants) {
             if (
+              quiz.course?.isGamificationEnabled && // verify that the course is gamified
               typeof participant.score !== 'undefined' &&
               participant.hasParticipation
             ) {

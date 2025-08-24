@@ -99,6 +99,7 @@ function AccountSelector({
     }
 
     // if the user is logged in as a participant, set the login state to 'loggedIn'
+    // depending on whether the user has a participation on the course, a notification / warning will be shown
     if (data.self.role === UserRole.Participant) {
       setLoginState('loggedIn')
     }

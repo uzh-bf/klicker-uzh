@@ -25,11 +25,13 @@ function LiveQuizLeaderboard({
   className,
   showLeaderboardGamifiedQuizHint = false,
   isPartOfGamifiedCourse = false,
+  isBeforeFirstBlock = false,
 }: {
   quizId: string
   className?: string
   showLeaderboardGamifiedQuizHint?: boolean
   isPartOfGamifiedCourse?: boolean | null
+  isBeforeFirstBlock?: boolean
 }): React.ReactElement {
   const t = useTranslations()
   const [blockDelta, setBlockDelta] = useState<BlockResult>(null)
@@ -118,13 +120,48 @@ function LiveQuizLeaderboard({
           />
         )}
       </div>
+
+      {/* live quiz is not part of gamified course, but still gamified, 
+      participant is logged in with standard account, participation not relevant */}
       {selfData?.self?.id &&
-      !selfData.self.scopeQuizId &&
+      !selfData.self.scopeQuizId && // regular user login
       showLeaderboardGamifiedQuizHint &&
-      !isPartOfGamifiedCourse ? (
+      !isPartOfGamifiedCourse &&
+      isBeforeFirstBlock ? (
         <UserNotification
           type="warning"
           message={t('shared.leaderboard.liveQuizGamifiedNoGamifiedCourse')}
+          className={{ root: 'w-200 -mt-1 max-w-full md:text-base' }}
+        />
+      ) : null}
+
+      {/* live quiz is part of gamified course, but user has no participation in course */}
+      {selfData?.self?.id &&
+      !selfData.self.scopeQuizId && // regular user login
+      !selfData.self.isCourseParticipant && // user is not a participant in the course
+      showLeaderboardGamifiedQuizHint &&
+      isPartOfGamifiedCourse &&
+      isBeforeFirstBlock ? (
+        <UserNotification
+          type="warning"
+          message={t(
+            'shared.leaderboard.liveQuizGamifiedCourseNoParticipation'
+          )}
+          className={{ root: 'w-200 -mt-1 max-w-full md:text-base' }}
+        />
+      ) : null}
+
+      {/* // TODO live quiz is part of gamified course, but user has an inactive participation in course */}
+      {selfData?.self?.id &&
+      !selfData.self.scopeQuizId && // regular user login
+      selfData.self.isCourseParticipant && // user is a participant of the course
+      selfData.self.isCourseParticipationActive === false && // but participation is inactive
+      showLeaderboardGamifiedQuizHint &&
+      isPartOfGamifiedCourse &&
+      isBeforeFirstBlock ? (
+        <UserNotification
+          type="warning"
+          message={t('shared.leaderboard.liveQuizCourseParticipationInactive')}
           className={{ root: 'w-200 -mt-1 max-w-full md:text-base' }}
         />
       ) : null}

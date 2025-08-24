@@ -106,6 +106,8 @@ export interface IParticipant
   extends Omit<DB.Participant, 'password' | 'xp' | 'locale'> {
   role?: DB.UserRole
   scopeQuizId?: string | null // live quiz id for which the temporary participant is scoped -> null for regular participants
+  isCourseParticipant?: boolean | null // if a live quiz id is provided, flag if the user is participant of the course
+  isCourseParticipationActive?: boolean | null // if a live quiz id is provided, flag if the user is active in the course (on course leaderboard)
   xp?: number | null
   locale?: DB.Locale | null
   rank?: number
@@ -122,7 +124,16 @@ export const Participant = ParticipantRef.implement({
     id: t.exposeID('id'),
 
     role: t.expose('role', { type: UserRole, nullable: true }),
-    scopeQuizId: t.exposeString('scopeQuizId', { nullable: true }), //
+    scopeQuizId: t.exposeString('scopeQuizId', { nullable: true }),
+    isCourseParticipant: t.exposeBoolean('isCourseParticipant', {
+      nullable: true,
+    }),
+    isCourseParticipationActive: t.exposeBoolean(
+      'isCourseParticipationActive',
+      {
+        nullable: true,
+      }
+    ),
 
     locale: t.expose('locale', { type: LocaleType, nullable: true }),
     email: t.exposeString('email', { nullable: true }),
