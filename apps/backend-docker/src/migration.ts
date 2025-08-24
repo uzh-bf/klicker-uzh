@@ -11,7 +11,7 @@ interface Migration {
 
 const migrations: Migration[] = []
 
-export async function migrate(prisma: PrismaClient) {
+export async function migrate(prisma: InstanceType<typeof PrismaClient>) {
   for (const { id, isIdempotent, migrate } of migrations) {
     const migration = await prisma.migration.findFirst({ where: { id } })
     if (migration === null) {
@@ -24,7 +24,7 @@ export async function migrate(prisma: PrismaClient) {
         console.log(`Migrating ${id} (with transaction)`)
 
         await prisma.$transaction(
-          async (tx) => {
+          async (tx: PrismaMigrationClient) => {
             await migrate(tx)
             await tx.migration.create({ data: { id } })
           },

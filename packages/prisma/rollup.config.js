@@ -6,7 +6,6 @@ import del from 'rollup-plugin-delete'
 
 const config = defineConfig([
   {
-    // Main build configuration
     input: ['src/index.ts'],
     output: {
       dir: 'dist',
@@ -18,11 +17,14 @@ const config = defineConfig([
       del({
         targets: ['dist'],
       }),
-      nodeResolve(),
       typescript({
         tsconfig: './tsconfig.json',
         rootDir: 'src',
+        declaration: true,
+        declarationDir: 'dist',
+        outputToFilesystem: true,
       }),
+      nodeResolve(),
       copy({
         targets: [
           {

@@ -10,7 +10,7 @@ generator client {
 
 // generator pothos {
 //   provider     = "prisma-pothos-types"
-//   clientOutput = "@klicker-uzh/prisma"
+//   clientOutput = "@klicker-uzh/prisma/client"
 //   output       = "../client/pothos.ts"
 // }
 

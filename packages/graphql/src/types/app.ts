@@ -12,7 +12,7 @@ import type {
 } from '@klicker-uzh/types'
 
 export type PrismaMigrationClient = Omit<
-  PrismaClient,
+  InstanceType<typeof PrismaClient>,
   '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
 >
 
