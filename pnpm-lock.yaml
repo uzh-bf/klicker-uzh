@@ -94,7 +94,7 @@ importers:
         version: 15.3.4(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       next-auth:
         specifier: 4.24.11
-        version: 4.24.11(next@15.3.4(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(nodemailer@6.9.15)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        version: 4.24.11(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(nodemailer@6.9.15)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       next-intl:
         specifier: 4.3.4
         version: 4.3.4(next@15.3.4(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)(typescript@5.6.3)
@@ -182,13 +182,13 @@ importers:
     dependencies:
       '@envelop/response-cache':
         specifier: 4.0.8
-        version: 4.0.8(@envelop/core@3.0.6)(graphql@16.9.0)
+        version: 4.0.8(@envelop/core@5.0.3)(graphql@16.9.0)
       '@envelop/response-cache-redis':
         specifier: 2.0.8
-        version: 2.0.8(@envelop/core@3.0.6)(graphql@16.9.0)
+        version: 2.0.8(@envelop/core@5.0.3)(graphql@16.9.0)
       '@envelop/sentry':
         specifier: 5.1.1
-        version: 5.1.1(@envelop/core@3.0.6)(@sentry/node@7.103.0)(graphql@16.9.0)
+        version: 5.1.1(@envelop/core@5.0.3)(@sentry/node@7.103.0)(graphql@16.9.0)
       '@escape.tech/graphql-armor':
         specifier: 1.7.3
         version: 1.7.3
@@ -200,7 +200,7 @@ importers:
         version: 1.9.1(@graphql-tools/utils@10.7.2(graphql@16.9.0))(graphql-yoga@3.9.1(graphql@16.9.0))(graphql@16.9.0)
       '@graphql-yoga/plugin-response-cache':
         specifier: 1.9.1
-        version: 1.9.1(@envelop/core@3.0.6)(graphql-yoga@3.9.1(graphql@16.9.0))(graphql@16.9.0)
+        version: 1.9.1(@envelop/core@5.0.3)(graphql-yoga@3.9.1(graphql@16.9.0))(graphql@16.9.0)
       '@graphql-yoga/redis-event-target':
         specifier: 1.0.0
         version: 1.0.0(ioredis@5.4.1)
@@ -269,7 +269,7 @@ importers:
         version: 9.0.2
       next-auth:
         specifier: 4.24.11
-        version: 4.24.11(next@15.3.4(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(nodemailer@6.9.15)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        version: 4.24.11(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(nodemailer@6.9.15)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       passport:
         specifier: 0.7.0
         version: 0.7.0
@@ -282,7 +282,7 @@ importers:
     devDependencies:
       '@cypress/code-coverage':
         specifier: ~3.14.5
-        version: 3.14.5(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(babel-loader@9.2.1(@babel/core@7.26.0)(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15))))(cypress@14.5.1)(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15)))
+        version: 3.14.5(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(babel-loader@9.2.1(@babel/core@7.26.0)(webpack@5.97.1))(cypress@14.5.1)(webpack@5.97.1)
       '@istanbuljs/nyc-config-typescript':
         specifier: ~1.0.2
         version: 1.0.2(nyc@17.1.0)
@@ -1470,12 +1470,12 @@ importers:
       '@klicker-uzh/util':
         specifier: workspace:*
         version: link:../packages/util
-      '@prisma/adapter-pg':
-        specifier: ~6.14.0
-        version: 6.14.0
       '@testing-library/cypress':
         specifier: ~10.0.3
         version: 10.0.3(cypress@14.5.1)
+      '@types/bcryptjs':
+        specifier: ^2.4.6
+        version: 2.4.6
       '@types/node':
         specifier: ^20.16.1
         version: 20.17.12
@@ -20567,25 +20567,6 @@ snapshots:
     dependencies:
       postcss: 8.5.6
 
-  '@cypress/code-coverage@3.14.5(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(babel-loader@9.2.1(@babel/core@7.26.0)(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15))))(cypress@14.5.1)(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15)))':
-    dependencies:
-      '@babel/core': 7.26.0
-      '@babel/preset-env': 7.26.0(@babel/core@7.26.0)
-      '@cypress/webpack-preprocessor': 6.0.2(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(babel-loader@9.2.1(@babel/core@7.26.0)(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15))))(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15)))
-      babel-loader: 9.2.1(@babel/core@7.26.0)(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15)))
-      chalk: 4.1.2
-      cypress: 14.5.1
-      dayjs: 1.11.13
-      debug: 4.4.0(supports-color@5.5.0)
-      execa: 4.1.0
-      globby: 11.1.0
-      istanbul-lib-coverage: 3.2.2
-      js-yaml: 4.1.0
-      nyc: 15.1.0
-      webpack: 5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15))
-    transitivePeerDependencies:
-      - supports-color
-
   '@cypress/code-coverage@3.14.5(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(babel-loader@9.2.1(@babel/core@7.26.0)(webpack@5.97.1))(cypress@14.5.1)(webpack@5.97.1)':
     dependencies:
       '@babel/core': 7.26.0
@@ -20625,18 +20606,6 @@ snapshots:
       tough-cookie: 5.1.0
       tunnel-agent: 0.6.0
       uuid: 8.3.2
-
-  '@cypress/webpack-preprocessor@6.0.2(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(babel-loader@9.2.1(@babel/core@7.26.0)(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15))))(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15)))':
-    dependencies:
-      '@babel/core': 7.26.0
-      '@babel/preset-env': 7.26.0(@babel/core@7.26.0)
-      babel-loader: 9.2.1(@babel/core@7.26.0)(webpack@5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15)))
-      bluebird: 3.7.1
-      debug: 4.4.1(supports-color@8.1.1)
-      lodash: 4.17.21
-      webpack: 5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15))
-    transitivePeerDependencies:
-      - supports-color
 
   '@cypress/webpack-preprocessor@6.0.2(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(babel-loader@9.2.1(@babel/core@7.26.0)(webpack@5.97.1))(webpack@5.97.1)':
     dependencies:
@@ -21679,9 +21648,9 @@ snapshots:
       '@envelop/types': 5.0.0
       tslib: 2.8.1
 
-  '@envelop/response-cache-redis@2.0.8(@envelop/core@3.0.6)(graphql@16.9.0)':
+  '@envelop/response-cache-redis@2.0.8(@envelop/core@5.0.3)(graphql@16.9.0)':
     dependencies:
-      '@envelop/response-cache': 4.0.8(@envelop/core@3.0.6)(graphql@16.9.0)
+      '@envelop/response-cache': 4.0.8(@envelop/core@5.0.3)(graphql@16.9.0)
       ioredis: 4.28.5
       tslib: 2.8.1
     transitivePeerDependencies:
@@ -21689,9 +21658,9 @@ snapshots:
       - graphql
       - supports-color
 
-  '@envelop/response-cache@4.0.8(@envelop/core@3.0.6)(graphql@16.9.0)':
+  '@envelop/response-cache@4.0.8(@envelop/core@5.0.3)(graphql@16.9.0)':
     dependencies:
-      '@envelop/core': 3.0.6
+      '@envelop/core': 5.0.3
       '@graphql-tools/utils': 8.13.1(graphql@16.9.0)
       '@whatwg-node/fetch': 0.8.8
       fast-json-stable-stringify: 2.1.0
@@ -21699,9 +21668,9 @@ snapshots:
       lru-cache: 6.0.0
       tslib: 2.8.1
 
-  '@envelop/sentry@5.1.1(@envelop/core@3.0.6)(@sentry/node@7.103.0)(graphql@16.9.0)':
+  '@envelop/sentry@5.1.1(@envelop/core@5.0.3)(@sentry/node@7.103.0)(graphql@16.9.0)':
     dependencies:
-      '@envelop/core': 3.0.6
+      '@envelop/core': 5.0.3
       '@sentry/node': 7.103.0
       graphql: 16.9.0
       tslib: 2.8.1
@@ -22828,9 +22797,9 @@ snapshots:
       graphql: 16.9.0
       graphql-yoga: 3.9.1(graphql@16.9.0)
 
-  '@graphql-yoga/plugin-response-cache@1.9.1(@envelop/core@3.0.6)(graphql-yoga@3.9.1(graphql@16.9.0))(graphql@16.9.0)':
+  '@graphql-yoga/plugin-response-cache@1.9.1(@envelop/core@5.0.3)(graphql-yoga@3.9.1(graphql@16.9.0))(graphql@16.9.0)':
     dependencies:
-      '@envelop/response-cache': 4.0.8(@envelop/core@3.0.6)(graphql@16.9.0)
+      '@envelop/response-cache': 4.0.8(@envelop/core@5.0.3)(graphql@16.9.0)
       graphql: 16.9.0
       graphql-yoga: 3.9.1(graphql@16.9.0)
     transitivePeerDependencies:
@@ -29802,7 +29771,7 @@ snapshots:
       '@typescript-eslint/parser': 8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3)
       eslint: 9.30.1(jiti@2.4.2)
       eslint-import-resolver-node: 0.3.9
-      eslint-import-resolver-typescript: 3.7.0(eslint-plugin-import@2.31.0)(eslint@9.30.1(jiti@2.4.2))
+      eslint-import-resolver-typescript: 3.7.0(eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint@9.30.1(jiti@2.4.2)))(eslint@9.30.1(jiti@2.4.2))
       eslint-plugin-import: 2.31.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint-import-resolver-typescript@3.7.0)(eslint@9.30.1(jiti@2.4.2))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@9.30.1(jiti@2.4.2))
       eslint-plugin-react: 7.37.4(eslint@9.30.1(jiti@2.4.2))
@@ -29826,7 +29795,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-import-resolver-typescript@3.7.0(eslint-plugin-import@2.31.0)(eslint@9.30.1(jiti@2.4.2)):
+  eslint-import-resolver-typescript@3.7.0(eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint@9.30.1(jiti@2.4.2)))(eslint@9.30.1(jiti@2.4.2)):
     dependencies:
       '@nolyfill/is-core-module': 1.0.39
       debug: 4.4.1(supports-color@8.1.1)
@@ -29842,14 +29811,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.12.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.7.0)(eslint@9.30.1(jiti@2.4.2)):
+  eslint-module-utils@2.12.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.7.0(eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint@9.30.1(jiti@2.4.2)))(eslint@9.30.1(jiti@2.4.2)))(eslint@9.30.1(jiti@2.4.2)):
     dependencies:
       debug: 3.2.7(supports-color@8.1.1)
     optionalDependencies:
       '@typescript-eslint/parser': 8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3)
       eslint: 9.30.1(jiti@2.4.2)
       eslint-import-resolver-node: 0.3.9
-      eslint-import-resolver-typescript: 3.7.0(eslint-plugin-import@2.31.0)(eslint@9.30.1(jiti@2.4.2))
+      eslint-import-resolver-typescript: 3.7.0(eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint@9.30.1(jiti@2.4.2)))(eslint@9.30.1(jiti@2.4.2))
     transitivePeerDependencies:
       - supports-color
 
@@ -29864,7 +29833,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 9.30.1(jiti@2.4.2)
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.7.0)(eslint@9.30.1(jiti@2.4.2))
+      eslint-module-utils: 2.12.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.7.0(eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint@9.30.1(jiti@2.4.2)))(eslint@9.30.1(jiti@2.4.2)))(eslint@9.30.1(jiti@2.4.2))
       hasown: 2.0.2
       is-core-module: 2.16.1
       is-glob: 4.0.3
@@ -33949,7 +33918,7 @@ snapshots:
 
   neverthrow@3.2.0: {}
 
-  next-auth@4.24.11(next@15.3.4(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(nodemailer@6.9.15)(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
+  next-auth@4.24.11(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(nodemailer@6.9.15)(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
       '@babel/runtime': 7.27.6
       '@panva/hkdf': 1.2.1

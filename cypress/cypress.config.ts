@@ -1,9 +1,9 @@
+import { prisma } from '@klicker-uzh/prisma'
 import {
   AchievementType,
   ElementType,
   ObjectAccess,
   PermissionLevel,
-  PrismaClient,
   PublicationStatus,
   UserLoginScope,
   UserRole,
@@ -19,7 +19,6 @@ import {
   ElementOptionsNumerical,
   ElementOptionsSelection,
 } from '@klicker-uzh/types'
-import { PrismaPg } from '@prisma/adapter-pg'
 import * as bcrypt from 'bcryptjs'
 import { defineConfig } from 'cypress'
 
@@ -111,17 +110,6 @@ const PARTICIPANT_GROUP_IDS_SINGLE = [
   'd9f23367-32b9-45ba-9bd6-06b6d96a5829',
 ]
 
-async function connect() {
-  if (!process.env.DATABASE_URL) {
-    throw new Error('DATABASE_URL environment variable is not set')
-  }
-
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-  const prisma = new PrismaClient({ adapter })
-
-  return prisma
-}
-
 export default defineConfig({
   watchForFileChanges: true,
   projectId: 'y436dx',
@@ -185,14 +173,6 @@ export default defineConfig({
 
       require('@cypress/code-coverage/task')(on, config)
       on('task', {
-        // ! Helper functions
-        // #region
-        async connectToDB() {
-          const prisma = await connect()
-          return prisma
-        },
-        // #endregion
-
         // ! Element creation
         // #region
         async createQuestionChoices({
@@ -232,8 +212,6 @@ export default defineConfig({
           const hasAnswerFeedbacks = choices.every(
             (choice) => typeof choice.feedback !== 'undefined'
           )
-
-          const prisma = await connect()
 
           try {
             const ChoicesQuestion = await prisma.element.create({
@@ -325,8 +303,6 @@ export default defineConfig({
             solutionRanges !== null &&
             solutionRanges.length > 0
 
-          const prisma = await connect()
-
           try {
             const NumericalQuestion = await prisma.element.create({
               data: {
@@ -415,8 +391,6 @@ export default defineConfig({
           const hasSampleSolution =
             typeof solutions !== 'undefined' && solutions.length > 0
 
-          const prisma = await connect()
-
           try {
             const FreeTextQuestion = await prisma.element.create({
               data: {
@@ -490,8 +464,6 @@ export default defineConfig({
           isArchived: boolean
           userId: string
         }) {
-          const prisma = await connect()
-
           try {
             const dbAnswerCollection = await prisma.answerCollection.findFirst({
               where: {
@@ -668,8 +640,6 @@ export default defineConfig({
           isArchived: boolean
           userId: string
         }) {
-          const prisma = await connect()
-
           try {
             const dbAnswerCollection = await prisma.answerCollection.findFirst({
               where: {
@@ -875,8 +845,6 @@ export default defineConfig({
           isArchived: boolean
           userId: string
         }) {
-          const prisma = await connect()
-
           try {
             const ContentElement = await prisma.element.create({
               data: {
@@ -933,8 +901,6 @@ export default defineConfig({
           isArchived: boolean
           userId: string
         }) {
-          const prisma = await connect()
-
           try {
             const Flashcard = await prisma.element.create({
               data: {
@@ -980,8 +946,6 @@ export default defineConfig({
           }
         },
         async deleteElements() {
-          const prisma = await connect()
-
           try {
             await prisma.element.deleteMany({})
             return true
@@ -994,8 +958,6 @@ export default defineConfig({
         // ! Practice Quiz queries / mutations
         // #region
         async getPracticeQuizInfo({ quizName }) {
-          const prisma = await connect()
-
           try {
             const practiceQuizzes = await prisma.practiceQuiz.findMany({
               where: {
@@ -1008,16 +970,14 @@ export default defineConfig({
             }
 
             return {
-              id: practiceQuizzes[0].id,
-              courseId: practiceQuizzes[0].courseId,
+              id: practiceQuizzes[0]!.id,
+              courseId: practiceQuizzes[0]!.courseId,
             }
           } finally {
             await prisma.$disconnect()
           }
         },
         async removeSoftDeletedPracticeQuiz({ quizName }) {
-          const prisma = await connect()
-
           try {
             const practiceQuizzes = await prisma.practiceQuiz.deleteMany({
               where: {
@@ -1040,8 +1000,6 @@ export default defineConfig({
         // ! Microlearning queries / mutations
         // #region
         async getMicroLearningInfo({ mlName }) {
-          const prisma = await connect()
-
           try {
             const microLearnings = await prisma.microLearning.findMany({
               where: {
@@ -1054,16 +1012,14 @@ export default defineConfig({
             }
 
             return {
-              id: microLearnings[0].id,
-              courseId: microLearnings[0].courseId,
+              id: microLearnings[0]!.id,
+              courseId: microLearnings[0]!.courseId,
             }
           } finally {
             await prisma.$disconnect()
           }
         },
         async removeSoftDeletedMicrolearning({ mlName }) {
-          const prisma = await connect()
-
           try {
             const microLearnings = await prisma.microLearning.deleteMany({
               where: {
@@ -1096,8 +1052,6 @@ export default defineConfig({
           entries: string[]
           userId: string
         }) {
-          const prisma = await connect()
-
           try {
             const answerCollection = await prisma.answerCollection.create({
               data: {
@@ -1148,8 +1102,6 @@ export default defineConfig({
         // ! Live Quiz queries / mutations
         // #region
         async removeSoftDeletedLiveQuiz({ lqName }) {
-          const prisma = await connect()
-
           try {
             const liveQuizzes = await prisma.liveQuiz.deleteMany({
               where: {
@@ -1172,8 +1124,6 @@ export default defineConfig({
         // ! Group Activity queries / mutations
         // #region
         async removeSoftDeletedGroupActivity({ gaName }) {
-          const prisma = await connect()
-
           try {
             const groupActivities = await prisma.groupActivity.deleteMany({
               where: {
@@ -1204,8 +1154,6 @@ export default defineConfig({
           activityType: string
           status: PublicationStatus
         }) {
-          const prisma = await connect()
-
           try {
             if (activityType === 'LIVE_QUIZ') {
               const liveQuiz = await prisma.liveQuiz.findFirst({
@@ -1276,8 +1224,6 @@ export default defineConfig({
           publicPreview: boolean
           privatePreview: boolean
         }) {
-          const prisma = await connect()
-
           try {
             const user = await prisma.user.update({
               where: {
@@ -1299,8 +1245,6 @@ export default defineConfig({
         // ! Course Management / PINs
         // #region
         async getCoursePin({ courseName }: { courseName: string }) {
-          const prisma = await connect()
-
           try {
             const course = await prisma.course.findFirst({
               where: {
@@ -1322,8 +1266,6 @@ export default defineConfig({
         // ! Cleanup / Seeding
         // #region
         async seedDatabase() {
-          const prisma = await connect()
-
           try {
             // ? User seeding section (identical to seedUsers logic, different uuids)
             const password = 'abcd'
@@ -1727,8 +1669,6 @@ export default defineConfig({
           }
         },
         async seedActivities() {
-          const prisma = await connect()
-
           try {
             const liveQuizId = 'c4196bea-e0c8-49f2-9669-7fdb78bb030c'
             await prisma.liveQuiz.upsert({
@@ -1861,8 +1801,6 @@ export default defineConfig({
           }
         },
         async cleanupDatabase() {
-          const prisma = await connect()
-
           try {
             // delete all activities
             await prisma.liveQuiz.deleteMany()
