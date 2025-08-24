@@ -252,10 +252,11 @@ function Index({ id }: { id: string }) {
             ) : isGamificationEnabled ? (
               <div className={twMerge('min-h-full flex-1 bg-white')}>
                 <LiveQuizLeaderboard
+                  quizId={id}
+                  courseId={course?.id}
                   isBeforeFirstBlock={beforeFirstBlock ?? false}
                   showLeaderboardGamifiedQuizHint
                   isPartOfGamifiedCourse={isPartOfGamifiedCourse}
-                  quizId={id}
                 />
               </div>
             ) : (
