@@ -19,11 +19,7 @@ function LiveQuizDeletionModal({
   const t = useTranslations()
   const { data: summaryData, loading: summaryLoading } = useQuery(
     GetLiveQuizSummaryDocument,
-    {
-      variables: { quizId },
-      skip: !open,
-      fetchPolicy: 'network-only',
-    }
+    { variables: { quizId }, fetchPolicy: 'network-only' }
   )
 
   const [confirmations, setConfirmations] = useState({
