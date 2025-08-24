@@ -7,7 +7,7 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { PrismaPg } from '@prisma/adapter-pg'
-import Prisma from '../../dist/index.js'
+import * as Prisma from '../client.js'
 import {
   COURSE_ID_CALENDAR,
   COURSE_ID_TEST,

@@ -3,11 +3,13 @@
   "compilerOptions": {
     "baseUrl": ".",
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "target": "es2022",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
+    "module": "node16",
+    "moduleResolution": "node16",
     "resolveJsonModule": true,
+    "allowImportingTsExtensions": false,
     "lib": ["es2022", "dom"],
     "types": [
       "cypress",

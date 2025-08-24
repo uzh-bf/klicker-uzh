@@ -12,12 +12,31 @@ const adapter = new PrismaPg({
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
+// Parse log levels from environment variable, fallback to default levels
+const validLevels = ['query', 'info', 'warn', 'error'] as const
+type PrismaLogLevel = (typeof validLevels)[number]
+
+const getLogLevels = (): Array<PrismaLogLevel> => {
+  const logLevelsEnv = process.env.PRISMA_LOG_LEVELS
+  if (!logLevelsEnv) {
+    return ['warn', 'error']
+  }
+
+  const levels = logLevelsEnv
+    .split(',')
+    .map((level) => level.trim())
+    .filter((level) =>
+      validLevels.includes(level as any)
+    ) as Array<PrismaLogLevel>
+
+  return levels.length > 0 ? levels : ['warn', 'error']
+}
+
 export const prisma =
   globalForPrisma.prisma ||
   new PrismaClient({
     adapter,
-    // TODO:  parametrizing the log levels via env or param
-    log: ['query', 'error', 'warn'],
+    log: getLogLevels(),
   })
 
 if (process.env.NODE_ENV !== 'production') {
