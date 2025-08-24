@@ -1,5 +1,6 @@
 import { sendTeamsNotifications } from '@/lib/util'
 import { PrismaAdapter } from '@auth/prisma-adapter'
+import { prisma } from '@klicker-uzh/prisma'
 import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
 import bcrypt from 'bcryptjs'
 import JWT from 'jsonwebtoken'
@@ -8,8 +9,6 @@ import NextAuth, { Account } from 'next-auth'
 import { DefaultJWT, JWTDecodeParams, JWTEncodeParams } from 'next-auth/jwt'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { Provider } from 'next-auth/providers/index'
-
-import { prisma } from '@klicker-uzh/prisma'
 
 export const COOKIE_NAME = 'next-auth.session-token'
 
@@ -92,7 +91,7 @@ async function createUserAffiliations(
       const domainParts = parts[1]?.split('.')
       if (!domainParts || domainParts.length === 0) continue
 
-      const provider = domainParts[0]
+      const provider = domainParts[0]!
 
       // upsert accounts for every affiliation
       await prisma.account.upsert({

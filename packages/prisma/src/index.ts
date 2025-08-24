@@ -1,8 +1,6 @@
 import { PrismaPg } from '@prisma/adapter-pg'
-// @ts-ignore - Client files are copied to dist/client during build
-import { PrismaClient as client } from './client/client.ts'
-// @ts-ignore - Client files are copied to dist/client during build
-import type { PrismaClient } from './client/client.js'
+import { PrismaClient } from './client.js'
+
 // TODO: figure out whether using Pool with pg is a good idea for us (or does pgbouncer do that server-side)
 // import { Pool } from 'pg'
 // const pool = new Pool(poolConfig)
@@ -16,7 +14,7 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
 export const prisma =
   globalForPrisma.prisma ||
-  new client({
+  new PrismaClient({
     adapter,
     // TODO:  parametrizing the log levels via env or param
     log: ['query', 'error', 'warn'],
