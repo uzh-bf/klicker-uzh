@@ -27,6 +27,7 @@ import EvaluationConfusion from './feedbacks/EvaluationConfusion'
 import EvaluationFeedbacks from './feedbacks/EvaluationFeedbacks'
 import useChartTypeUpdate from './hooks/useChartTypeUpdate'
 import useStackInstanceMap from './hooks/useStackInstanceMap'
+import useStackInstanceUpdates from './hooks/useStackInstanceUpdates'
 import EvaluationNavigation from './navigation/EvaluationNavigation'
 import { sizeReducer, TextSizes } from './textSizes'
 
@@ -110,6 +111,13 @@ function ActivityEvaluation({
     setChartType,
   })
 
+  // automatically switch the active stack based on the active instance
+  useStackInstanceUpdates({
+    activeInstance,
+    stackInstanceMap,
+    setActiveStack,
+  })
+
   if (
     typeof activeStack === 'number' &&
     typeof instanceResults[activeInstance] === 'undefined'
@@ -153,11 +161,9 @@ function ActivityEvaluation({
         {instanceResults.length > 0 && typeof activeStack === 'number' && (
           <ElementEvaluation
             requireShowResultsConfirmation={
-              hideActiveBlockResults &&
-              (stacks.find((stack) => stack.stackOrder === activeStack)
-                ?.stackActive ??
-                true)
+              hideActiveBlockResults && stacks[activeStack]?.stackActive
             }
+            isStackActive={stacks[activeStack]?.stackActive ?? false}
             currentInstance={instanceResults[activeInstance]}
             activeInstance={activeInstance}
             activeStack={activeStack}
@@ -265,6 +271,11 @@ function ActivityEvaluation({
         <EvaluationFooter
           type={type}
           activeStack={activeStack}
+          isStackActive={
+            typeof activeStack === 'number'
+              ? (stacks[activeStack]?.stackActive ?? false)
+              : false
+          }
           textSize={textSize}
           setTextSize={setTextSize}
           showSolution={showSolution}

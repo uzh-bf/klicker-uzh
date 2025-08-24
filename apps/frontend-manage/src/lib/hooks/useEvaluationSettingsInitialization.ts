@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction, useEffect } from 'react'
 
-function useEvaluationInitialization({
+function useEvaluationSettingsInitialization({
   setShowSolution,
   setShowExplanation,
   paramsLoaded,
@@ -31,4 +31,4 @@ function useEvaluationInitialization({
   return null
 }
 
-export default useEvaluationInitialization
+export default useEvaluationSettingsInitialization

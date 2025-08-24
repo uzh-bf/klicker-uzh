@@ -33,6 +33,7 @@ interface ElementEvaluationProps {
   showExplanation: boolean
   type: ActivityEvaluationType
   requireShowResultsConfirmation: boolean
+  isStackActive?: boolean
   className?: string
 }
 
@@ -47,6 +48,7 @@ function ElementEvaluation({
   showExplanation,
   type,
   requireShowResultsConfirmation,
+  isStackActive,
   className,
 }: ElementEvaluationProps) {
   const t = useTranslations()
@@ -142,7 +144,7 @@ function ElementEvaluation({
                   courseLanguage={courseLanguage}
                   textSize={textSize}
                   chartType={chartType}
-                  showSolution={showSolution}
+                  showSolution={!isStackActive && showSolution}
                   showExplanation={showExplanation}
                   type={type}
                 />
