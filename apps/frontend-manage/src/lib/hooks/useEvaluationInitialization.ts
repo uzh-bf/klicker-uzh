@@ -27,10 +27,8 @@ function useEvaluationInitialization({
       if (typeof questionIx === 'string' && questionIx !== null) {
         setActiveInstance(parseInt(questionIx))
         setActiveStack(results[parseInt(questionIx)]?.stackIx ?? 0)
-      } else if (showLeaderboard) {
+      } else if (showLeaderboard || missingInstanceResults) {
         setActiveStack('leaderboard')
-      } else if (missingInstanceResults) {
-        setActiveStack('feedbacks')
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
