@@ -16,7 +16,7 @@
     "@klicker-uzh/util": "workspace:*",
     "@pothos/core": "4.3.0",
     "@pothos/plugin-directives": "4.1.0",
-    "@pothos/plugin-prisma": "4.2.1",
+    "@pothos/plugin-prisma": "4.10.0",
     "@pothos/plugin-scope-auth": "4.1.0",
     "@pothos/plugin-zod": "4.1.0",
     "@prisma/adapter-pg": "6.14.0",
