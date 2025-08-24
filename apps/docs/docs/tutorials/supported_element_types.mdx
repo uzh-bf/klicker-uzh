@@ -7,11 +7,11 @@ import TabItem from '@theme/TabItem'
 
 Based on learning settings or learning goals, you can choose from nine different element types in KlickerUZH (i.e., seven types of questions, content elements, and flashcards). Questions support the definition of a sample solution, which is used for automated grading processes in asynchronous KlickerUZH activities, such as practice quizzes and microlearnings. To use a question in a live quiz setting, you do not have to provide information on the answer correctness, unless you want it to affect the awarded points in gamified settings.
 
-In asynchronous settings, you can additionally provide an explanation of the solution (all question types) and answer feedbacks for SC / MC / Kprime questions. These components will be shown to the students after they have submitted their answer. In live quiz settings, you can choose to display the sample solution and the optional explanation on the lecturer evaluation view.
+In asynchronous settings, you can additionally provide an explanation of the solution (all question types) and answer feedbacks for SC / MC / KPRIM questions. These components will be shown to the students after they have submitted their answer. In live quiz settings, you can choose to display the sample solution and the optional explanation on the lecturer evaluation view.
 
 KlickerUZH supports the following element types:
 
-- **Questions**: [Single Choice (SC)](#single-choice-sc), [Multiple Choice (MC)](#multiple-choice-mc), [Kprime (KP)](#kprime-kp), [Free Text (FT)](#free-text-ft), [Numerical Response (NR)](#numerical-response-nr), [Selection (SE)](#selection-se), and [Case Study (CS)](#case-study-cs)
+- **Questions**: [Single Choice (SC)](#single-choice-sc), [Multiple Choice (MC)](#multiple-choice-mc), [KPRIM (KP)](#kprim-kp), [Free Text (FT)](#free-text-ft), [Numerical Response (NR)](#numerical-response-nr), [Selection (SE)](#selection-se), and [Case Study (CS)](#case-study-cs)
 - **Content**: [Content Element (CT)](#content-element-ct), [Flashcard (FC)](#flashcard-fc)
 
 For a more detailed description on how to create the listed elements in the KlickerUZH lecturer interface, please refer to the documentation on [element management](/tutorials/element_management/) or check out the tooltips for the corresponding fields in the editor directly.
@@ -19,7 +19,7 @@ For a more detailed description on how to create the listed elements in the Klic
 ## Single Choice (SC)
 
 :::info
-For single choice questions, students select exactly one of the available answer options. You should specify the correct answer and may also provide a feedback (per answer option) to be shown in asynchronous activities and an explanation, if desired. These elements can be formatted using the editor, Markdown, or LaTeX syntax, and images can be included as needed. The preview on the right side allows to you inspect the question as it will be shown to the students, optionally including specified answer feedbacks and the explanation (only shown to students in asynchronous activities).
+For single choice questions, students select exactly one of the available answer options. You should specify the correct answer and may also provide a feedback (per answer option) to be shown in asynchronous activities and an explanation, if desired. These elements can be formatted using the editor, Markdown, or LaTeX syntax, and images can be included as needed. The preview on the right side allows you to inspect the question as it will be shown to the students, optionally including specified answer feedbacks and the explanation (only shown to students in asynchronous activities).
 :::
 
 <Tabs>
@@ -38,13 +38,13 @@ This is how it looks from the **lecturer's** perspective.
 
   </TabItem>
   <TabItem value="evaluationBarChart" label="Evaluation (Bar Chart)">
-This is how the bar chart evaluation looks like in the **lecturer's** perspective.
+This is how the bar chart evaluation looks from the **lecturer's** perspective.
 
 ![Single Choice Question - Evaluation Bar Chart](/img/supported_element_types/SC_evaluation_barChart.png)
 
   </TabItem>
   <TabItem value="evaluationTable" label="Evaluation (Table)">
-This is how the table evaluation looks like in the **lecturer's** perspective.
+This is how the table evaluation looks from the **lecturer's** perspective.
 
 ![Single Choice Question - Evaluation Table](/img/supported_element_types/SC_evaluation_table.png)
 
@@ -73,50 +73,50 @@ This is how it looks from the **lecturer's** perspective.
 
   </TabItem>
   <TabItem value="evaluationBarChart" label="Evaluation (Bar Chart)">
-This is how the bar chart evaluation looks like in the **lecturer's** perspective.
+This is how the bar chart evaluation looks from the **lecturer's** perspective.
 
 ![Multiple Choice Question - Evaluation Bar Chart](/img/supported_element_types/MC_evaluation_barChart.png)
 
   </TabItem>
   <TabItem value="evaluationTable" label="Evaluation (Table)">
-This is how the table evaluation looks like in the **lecturer's** perspective.
+This is how the table evaluation looks from the **lecturer's** perspective.
 
 ![Multiple Choice Question - Evaluation Table](/img/supported_element_types/MC_evaluation_table.png)
 
   </TabItem>
 </Tabs>
 
-## Kprime (KP)
+## KPRIM (KP)
 
 :::info
-For Kprime questions, students are presented with exactly four answer options, each of which must be marked as correct or incorrect. You should specify which options are correct and may also provide feedback (per answer option) to be shown in asynchronous activities and an explanation, if desired. These elements can be formatted using the editor, Markdown, or LaTeX syntax, and images can be included as needed. The preview on the right side allows you to inspect the question as it will be shown to students, optionally including specified answer feedbacks and the explanation (only shown to students in asynchronous activities).
+For KPRIM questions, students are presented with exactly four answer options, each of which must be marked as correct or incorrect. You should specify which options are correct and may also provide feedback (per answer option) to be shown in asynchronous activities and an explanation, if desired. These elements can be formatted using the editor, Markdown, or LaTeX syntax, and images can be included as needed. The preview on the right side allows you to inspect the question as it will be shown to students, optionally including specified answer feedbacks and the explanation (only shown to students in asynchronous activities).
 :::
 
 <Tabs>
   <TabItem value="student" label="Student View" default>
-For **students**, Kprime questions are viewed as follows, with the solution, explanation and optional answer feedbacks appearing after submitting their answer in asynchronous activities.
+For **students**, KPRIM questions are viewed as follows, with the solution, explanation and optional answer feedbacks appearing after submitting their answer in asynchronous activities.
 
-![Kprime Question - Student View](/img/supported_element_types/KP_student.png)
+![KPRIM Question - Student View](/img/supported_element_types/KP_student.png)
 
-![Kprime Question - Student View with Feedbacks](/img/supported_element_types/KP_student_sol.png)
+![KPRIM Question - Student View with Feedbacks](/img/supported_element_types/KP_student_sol.png)
 
   </TabItem>
   <TabItem value="lecturer" label="Edit View">
 This is how it looks from the **lecturer's** perspective.
 
-![Kprime Question - Lecturer View](/img/supported_element_types/KP_lecturer.png)
+![KPRIM Question - Lecturer View](/img/supported_element_types/KP_lecturer.png)
 
   </TabItem>
   <TabItem value="evaluationBarChart" label="Evaluation (Bar Chart)">
-This is how the bar chart evaluation looks like in the **lecturer's** perspective.
+This is how the bar chart evaluation looks from the **lecturer's** perspective.
 
-![Kprime Question - Evaluation Bar Chart](/img/supported_element_types/KP_evaluation_barChart.png)
+![KPRIM Question - Evaluation Bar Chart](/img/supported_element_types/KP_evaluation_barChart.png)
 
   </TabItem>
   <TabItem value="evaluationTable" label="Evaluation (Table)">
-This is how the table evaluation looks like in the **lecturer's** perspective.
+This is how the table evaluation looks from the **lecturer's** perspective.
 
-![Kprime Question - Evaluation Table](/img/supported_element_types/KP_evaluation_table.png)
+![KPRIM Question - Evaluation Table](/img/supported_element_types/KP_evaluation_table.png)
 
   </TabItem>
 </Tabs>
@@ -143,13 +143,13 @@ This is how it looks from the **lecturer's** perspective.
 
   </TabItem>
   <TabItem value="evaluationHistogram" label="Evaluation (Histogram)">
-This is how the histogram evaluation looks like in the **lecturer's** perspective.
+This is how the histogram evaluation looks from the **lecturer's** perspective.
 
 ![Numerical Response Question - Evaluation Histogram](/img/supported_element_types/NR_evaluation_histogram.png)
 
   </TabItem>
   <TabItem value="evaluationTable" label="Evaluation (Table)">
-This is how the table evaluation looks like in the **lecturer's** perspective.
+This is how the table evaluation looks from the **lecturer's** perspective.
 
 ![Numerical Response Question - Evaluation Table](/img/supported_element_types/NR_evaluation_table.png)
 
