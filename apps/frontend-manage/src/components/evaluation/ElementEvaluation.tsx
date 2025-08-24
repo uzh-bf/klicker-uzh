@@ -120,8 +120,8 @@ function ElementEvaluation({
                   courseLanguage={courseLanguage}
                   textSize={textSize}
                   chartType={chartType}
-                  showSolution={showSolution}
-                  showExplanation={showExplanation}
+                  showSolution={!isStackActive && showSolution}
+                  showExplanation={!isStackActive && showExplanation}
                   type={type}
                 />
               )}
@@ -132,8 +132,8 @@ function ElementEvaluation({
                   courseLanguage={courseLanguage}
                   textSize={textSize}
                   chartType={chartType}
-                  showSolution={showSolution}
-                  showExplanation={showExplanation}
+                  showSolution={!isStackActive && showSolution}
+                  showExplanation={!isStackActive && showExplanation}
                   type={type}
                 />
               )}
@@ -145,7 +145,7 @@ function ElementEvaluation({
                   textSize={textSize}
                   chartType={chartType}
                   showSolution={!isStackActive && showSolution}
-                  showExplanation={showExplanation}
+                  showExplanation={!isStackActive && showExplanation}
                   type={type}
                 />
               )}
@@ -155,8 +155,8 @@ function ElementEvaluation({
                   instanceEvaluation={currentInstance}
                   textSize={textSize}
                   chartType={chartType}
-                  showSolution={showSolution}
-                  showExplanation={showExplanation}
+                  showSolution={!isStackActive && showSolution}
+                  showExplanation={!isStackActive && showExplanation}
                 />
               )}
             </div>
@@ -171,8 +171,8 @@ function ElementEvaluation({
             activeInstance={activeInstance}
             textSize={textSize}
             chartType={chartType}
-            showSolution={showSolution}
-            showExplanation={showExplanation}
+            showSolution={!isStackActive && showSolution}
+            showExplanation={!isStackActive && showExplanation}
             hasSolution={hasSolution}
             hasExplanation={hasExplanation}
             type={type}

@@ -1,4 +1,5 @@
 import { Dispatch, SetStateAction, useEffect } from 'react'
+import { ActiveStackType } from '../../components/evaluation/ActivityEvaluation'
 
 function useEvaluationSettingsInitialization({
   setShowSolution,
@@ -7,6 +8,7 @@ function useEvaluationSettingsInitialization({
   showSolution,
   showExplanation,
   activeInstance,
+  activeStack,
 }: {
   setShowSolution: Dispatch<SetStateAction<boolean>>
   setShowExplanation: Dispatch<SetStateAction<boolean>>
@@ -14,6 +16,7 @@ function useEvaluationSettingsInitialization({
   showSolution: boolean
   showExplanation: boolean
   activeInstance: number
+  activeStack: ActiveStackType
 }) {
   useEffect(() => {
     // if the question ix is not given as a query parameter, do not set the settings
@@ -26,7 +29,7 @@ function useEvaluationSettingsInitialization({
     setShowExplanation(showExplanation)
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paramsLoaded, showSolution, activeInstance])
+  }, [paramsLoaded, activeStack, showSolution, showExplanation, activeInstance])
 
   return null
 }

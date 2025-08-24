@@ -27,7 +27,6 @@ import EvaluationConfusion from './feedbacks/EvaluationConfusion'
 import EvaluationFeedbacks from './feedbacks/EvaluationFeedbacks'
 import useChartTypeUpdate from './hooks/useChartTypeUpdate'
 import useStackInstanceMap from './hooks/useStackInstanceMap'
-import useStackInstanceUpdates from './hooks/useStackInstanceUpdates'
 import EvaluationNavigation from './navigation/EvaluationNavigation'
 import { sizeReducer, TextSizes } from './textSizes'
 
@@ -76,13 +75,19 @@ function ActivityEvaluation({
     false
   )
 
-  const instanceResults = stacks.flatMap((stack) => stack.instances)
+  const instanceResults = stacks.flatMap((stack, stackIx) =>
+    stack.instances.map((instance) => ({
+      ...instance,
+      stackIx,
+    }))
+  )
 
   // automatically switch to correct instance
   useEvaluationInitialization({
     setActiveInstance,
     setActiveStack,
     questionIx: router.query.questionIx as string | null,
+    results: instanceResults,
     showLeaderboard: router.query.leaderboard === 'true',
     missingInstanceResults: instanceResults.length === 0,
     type,
@@ -98,6 +103,7 @@ function ActivityEvaluation({
     showSolution: router.query.showSolution === 'true',
     showExplanation: router.query.showExplanation === 'true',
     activeInstance,
+    activeStack,
   })
 
   // compute a map between stack and instance indices {stackIx: [instanceIx1, instanceIx2], ...}
@@ -109,13 +115,6 @@ function ActivityEvaluation({
     activeElementType: instanceResults[activeInstance]?.type,
     chartType,
     setChartType,
-  })
-
-  // automatically switch the active stack based on the active instance
-  useStackInstanceUpdates({
-    activeInstance,
-    stackInstanceMap,
-    setActiveStack,
   })
 
   if (
@@ -161,7 +160,7 @@ function ActivityEvaluation({
         {instanceResults.length > 0 && typeof activeStack === 'number' && (
           <ElementEvaluation
             requireShowResultsConfirmation={
-              hideActiveBlockResults && stacks[activeStack]?.stackActive
+              hideActiveBlockResults && stacks[activeStack].stackActive
             }
             isStackActive={stacks[activeStack]?.stackActive ?? false}
             currentInstance={instanceResults[activeInstance]}

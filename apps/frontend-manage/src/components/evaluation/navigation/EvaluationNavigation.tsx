@@ -8,6 +8,7 @@ import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { ActiveStackType, ActivityEvaluationType } from '../ActivityEvaluation'
 import useInstanceArrowNavigation from '../hooks/useInstanceArrowNavigation'
+import useStackInstanceUpdates from '../hooks/useStackInstanceUpdates'
 import InstanceNavigation from './InstanceNavigation'
 import StackNavigation from './StackNavigation'
 
@@ -43,6 +44,13 @@ function EvaluationNavigation({
   const t = useTranslations()
   const { data: user, loading } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
+  })
+
+  // automatically switch the active stack based on the active instance
+  useStackInstanceUpdates({
+    activeInstance,
+    stackInstanceMap,
+    setActiveStack,
   })
 
   // enable navigation using keyboard arrows

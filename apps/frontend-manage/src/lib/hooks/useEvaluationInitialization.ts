@@ -1,3 +1,4 @@
+import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import { Dispatch, SetStateAction, useEffect } from 'react'
 import { ActivityEvaluationType } from '../../components/evaluation/ActivityEvaluation'
 
@@ -5,6 +6,7 @@ function useEvaluationInitialization({
   setActiveInstance,
   setActiveStack,
   questionIx,
+  results,
   showLeaderboard,
   missingInstanceResults,
   type,
@@ -14,6 +16,7 @@ function useEvaluationInitialization({
     SetStateAction<number | 'feedbacks' | 'confusion' | 'leaderboard'>
   >
   questionIx?: string | null
+  results: (ElementInstanceEvaluation & { stackIx: number })[]
   showLeaderboard?: boolean
   missingInstanceResults?: boolean
   type: ActivityEvaluationType
@@ -23,6 +26,7 @@ function useEvaluationInitialization({
     if (type === 'LiveQuiz') {
       if (typeof questionIx === 'string' && questionIx !== null) {
         setActiveInstance(parseInt(questionIx))
+        setActiveStack(results[parseInt(questionIx)]?.stackIx ?? 0)
       } else if (showLeaderboard) {
         setActiveStack('leaderboard')
       } else if (missingInstanceResults) {
@@ -30,7 +34,7 @@ function useEvaluationInitialization({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [type, questionIx, showLeaderboard, missingInstanceResults])
+  }, [type, results, questionIx, showLeaderboard, missingInstanceResults])
 
   return null
 }

@@ -22,6 +22,7 @@ function LiveQuizDeletionModal({
     {
       variables: { quizId },
       skip: !open,
+      fetchPolicy: 'network-only',
     }
   )
 
