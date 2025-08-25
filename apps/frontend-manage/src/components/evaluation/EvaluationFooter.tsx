@@ -105,47 +105,53 @@ function EvaluationFooter({
               <FontAwesomeIcon icon={faFont} size="lg" />
               {t('manage.evaluation.fontSize')}
             </div>
-            <div className="flex flex-row items-center gap-2">
-              <div className="flex flex-col gap-1">
-                {hasSolution && (
-                  <Switch
-                    disabled={isStackActive}
-                    size={hasSolutionAndExplanation ? 'sm' : undefined}
-                    checked={!isStackActive && showSolution}
-                    label={t('manage.evaluation.showSolution')}
-                    onCheckedChange={(newValue) => setShowSolution(newValue)}
-                    className={{
-                      label: twMerge(hasSolutionAndExplanation && 'text-sm'),
-                    }}
-                  />
-                )}
-                {hasExplanation &&
-                  currentInstance.type !== ElementType.Flashcard && (
+            {hasSolution || hasExplanation ? (
+              <div className="flex flex-row items-center gap-2">
+                <div className="flex flex-col gap-1">
+                  {hasSolution && (
                     <Switch
                       disabled={isStackActive}
                       size={hasSolutionAndExplanation ? 'sm' : undefined}
-                      checked={!isStackActive && showExplanation}
-                      label={t('manage.evaluation.showExplanation')}
-                      onCheckedChange={(newValue) =>
-                        setShowExplanation(newValue)
-                      }
+                      checked={!isStackActive && showSolution}
+                      label={t('manage.evaluation.showSolution')}
+                      onCheckedChange={(newValue) => setShowSolution(newValue)}
+                      data={{ cy: 'evaluation-footer-show-solution' }}
                       className={{
                         label: twMerge(hasSolutionAndExplanation && 'text-sm'),
                       }}
                     />
                   )}
+                  {hasExplanation &&
+                    currentInstance.type !== ElementType.Flashcard && (
+                      <Switch
+                        disabled={isStackActive}
+                        size={hasSolutionAndExplanation ? 'sm' : undefined}
+                        checked={!isStackActive && showExplanation}
+                        label={t('manage.evaluation.showExplanation')}
+                        onCheckedChange={(newValue) =>
+                          setShowExplanation(newValue)
+                        }
+                        data={{ cy: 'evaluation-footer-show-explanation' }}
+                        className={{
+                          label: twMerge(
+                            hasSolutionAndExplanation && 'text-sm'
+                          ),
+                        }}
+                      />
+                    )}
+                </div>
+                {isStackActive && (
+                  <Tooltip
+                    tooltip={t('manage.evaluation.solutionHiddenWhileActive')}
+                  >
+                    <FontAwesomeIcon
+                      icon={faTriangleExclamation}
+                      className="text-orange-500"
+                    />
+                  </Tooltip>
+                )}
               </div>
-              {isStackActive && (
-                <Tooltip
-                  tooltip={t('manage.evaluation.solutionHiddenWhileActive')}
-                >
-                  <FontAwesomeIcon
-                    icon={faTriangleExclamation}
-                    className="text-orange-500"
-                  />
-                </Tooltip>
-              )}
-            </div>
+            ) : null}
             {currentInstance?.type &&
             ACTIVE_CHART_TYPES[currentInstance.type].length > 1 ? (
               <Select
