@@ -79,9 +79,19 @@ Provider.onConnect((token, req, res) => {
       !req.query.redirectTo.includes(process.env.COOKIE_DOMAIN as string) &&
       !req.query.redirectTo.includes(process.env.DF_DOMAIN as string)
     ) {
-      throw new Error(
+      // log error
+      const error =
         'COOKIE_DOMAIN or DF_DOMAIN is not part of redirectTo. Please check your configuration.'
-      )
+      console.error(error)
+
+      // remove lti token to avoid issues caused by this cookie
+      res.clearCookie('lti-token', {
+        secure: true,
+        sameSite: 'none',
+        domain: process.env.COOKIE_DOMAIN as string,
+      })
+
+      return
     }
 
     // TODO: treat DF_DOMAIN separately with different secret
@@ -96,9 +106,19 @@ Provider.onConnect((token, req, res) => {
       ) &&
       !process.env.LTI_REDIRECT_URL.includes(process.env.DF_DOMAIN as string)
     ) {
-      throw new Error(
+      // log error
+      const error =
         'COOKIE_DOMAIN or DF_DOMAIN is not part of LTI_REDIRECT_URL. Please check your configuration.'
-      )
+      console.error(error)
+
+      // remove lti token to avoid issues caused by this cookie
+      res.clearCookie('lti-token', {
+        secure: true,
+        sameSite: 'none',
+        domain: process.env.COOKIE_DOMAIN as string,
+      })
+
+      return
     }
 
     // TODO: treat DF_DOMAIN separately with different secret

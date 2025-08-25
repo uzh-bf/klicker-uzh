@@ -8,7 +8,7 @@
     "@klicker-uzh/next-config": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/shared-components": "workspace:*",
-    "@uzh-bf/design-system": "4.0.9",
+    "@uzh-bf/design-system": "4.0.10",
     "axios": "1.7.7",
     "bcryptjs": "2.4.3",
     "js-cookie": "3.0.5",

@@ -12,7 +12,7 @@ The grading logic will first be described on the example of practice quizzes and
 
 ### Multiplier
 
-The point multipliers, which can be specified both on an element and activity level, are combined during the creation of the activity and applied to the total awarded points (including and potential bonuses in live quizzes). If no multipliers were specified, this factor defaults to 1.
+The point multipliers, which can be specified both on an element and activity level, are combined during the creation of the activity and applied to the total awarded points (including any potential bonuses in live quizzes). If no multipliers were specified, this factor defaults to 1.
 
 Multipliers can be used to weigh elements according to their difficulty and reward participation in certain quizzes with more points (e.g. quiz on exam level during the last lecture of the semester vs. an introductory quiz in the first lecture). The same multiplier concept also applies to live quizzes.
 
@@ -26,7 +26,7 @@ $$
 
 ### Grading Multiple Choice Questions
 
-For multiple choice questions with $n$ answer options, all of them can be selected to be correct or incorrect. Each option is considered separately during grading, and every mismatch between the correct solution and the participant’s input is counted as one mistake. The awarded number of points then depends on the percentage of correctly answered questions:
+For multiple choice questions with $n$ answer options, all of them can be selected to be correct or incorrect. Each option is considered separately during grading, and every mismatch between the correct solution and the participant's input is counted as one mistake. The awarded number of points then depends on the percentage of correctly answered options:
 
 $$
 \text{points}_{\text{awarded}} = \text{multiplier} \cdot \begin{cases} 10 & \text{correct} \\ 10 \cdot \left( 1 - 2 \cdot \frac{\text{wrong answers}}{\text{available answers}} \right) & \text{partially correct} \\ 0 & \text{otherwise} \end{cases}
@@ -66,15 +66,31 @@ For numerical questions, you are able to specify a number of solution ranges or 
 
 For free text questions, you can currently specify a selection of correct responses. The implemented simple grading approach compares the participant’s input to this sample solution, ignoring capitalization of letters and leading / trailing whitespaces. Again, full points are awarded for correct answers and no points otherwise (as for single choice questions).
 
+### Grading Selection Questions
+
+In selection questions, students are asked to select a set of correct answer options from a larger answer collection. Through validation during question creation and restrictions when editing the associated collections, KlickerUZH ensures that there are always at least as many correct answer options as there are input fields for the students. Correspondingly, the correctness of a student's submission can simply be defined as the ratio between the number of correctly selected options $$n_c$$ and the number of available input fields $$n_i$$. Selection fields, for which no value was selected by a student, will automatically be evaluated as incorrect answers.
+
+$$
+\text{points}_{\text{awarded}} = 10 \cdot \text{multiplier} \cdot \frac{n_c}{n_i}
+$$
+
+### Grading Case Study Questions
+
+Case study questions are the most complex question type in KlickerUZH, with students having to assess several items with respect to multiple pre-defined criteria (potentially for multiple case descriptions). Similar to the selection question type, the correctness of a student's submission can be defined as the ratio between the number of correct assessments $$n_c$$ and the total number of assessments $$n_a$$. Partial submissions are not possible for case study questions. An assessment of one item with respect to one criterion in the context of one case description is considered to be correct, if it lies within the defined solution range (including its boundaries).
+
+$$
+\text{points}_{\text{awarded}} = 10 \cdot \text{multiplier} \cdot \frac{n_c}{n_a}
+$$
+
 ## Grading in Live Quizzes
 
 During synchronous live quizzes, every participant will usually receive base points for each submitted answer, independent of its correctness (default: 10 points). However, for cases where the participation in a question might be considered to be voluntary, all graded element types additionally have an option to disable these base points (on the corresponding element edit view).
 
 If the submitted answer is correct, additional points will be awarded (default: 5 points). For partially correct answers, these 5 points are multiplied with a correctness factor described in the sections above and rounded to the next integer value. If no sample solution is defined, students will only receive the fixed amount of base points, which is not affected by the choice of multipliers.
 
-To incentivize fast and correct answers during live quizzes, additional bonus points are awarded beyond the mentioned points for answering correctly. Starting time with the first correct answer, players will receive up to 45 bonus points (default setting), depending on the time that passed between the first correct answer and theirs. By default, the slope to zero points is implemented with a duration of 20 seconds.
+To incentivize fast and correct answers during live quizzes, additional bonus points are awarded beyond the mentioned points for answering correctly. Starting from the time of the first correct answer, players will receive up to 45 bonus points (default setting), depending on the time that passed between the first correct answer and theirs. By default, the slope to zero points is implemented with a duration of 20 seconds.
 
-The corresponding resulting point curves for correct and wrong answers during live quizzes, when starting time with the first correct response and assuming enabled base points, are shown in the plot below (not considering multipliers).
+The corresponding resulting point curves for correct and wrong answers during live quizzes, when starting from the time of the first correct response and assuming enabled base points, are shown in the plot below (not considering multipliers).
 
 <div align="center">
   <img
@@ -101,6 +117,6 @@ The number of base points is denoted with $p_b$ (default: 10 points), the number
 
 ### Advanced: Customized Grading
 
-For advanced use cases, it is possible to fully customize the grading logic applied during live quizzes. Through a dedicated modal for advanced settings, which can be opened by clicking onto the settings icon after selecting a gamified course, you can choose a custom parametrization of the grading logic formalized in the previous section. A side-by-side illustration indicates the points awarded for correct or incorrect answers over time. If the option to not award any base points was chosen for a specific question, this setting overrides the live quiz settings for the number of standard points awarded.
+For advanced use cases, it is possible to fully customize the grading logic applied during live quizzes. Through a dedicated modal for advanced settings, which can be opened by clicking on the settings icon after selecting a gamified course, you can choose a custom parametrization of the grading logic formalized in the previous section. A side-by-side illustration indicates the points awarded for correct or incorrect answers over time. If the option to not award any base points was chosen for a specific question, this setting overrides the live quiz settings for the number of standard points awarded.
 
 ![Advanced settings modal for customized point distribution](/img/gamification/live_quiz_customized_grading.png)

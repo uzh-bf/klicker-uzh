@@ -44,7 +44,7 @@ function CancelLiveQuizModal({
   // fetch course information
   const { data, loading: queryLoading } = useQuery(GetLiveQuizSummaryDocument, {
     variables: { quizId },
-    skip: !open,
+    fetchPolicy: 'network-only',
   })
 
   const [cancelLiveQuiz, { loading: quizDeleting }] = useMutation(

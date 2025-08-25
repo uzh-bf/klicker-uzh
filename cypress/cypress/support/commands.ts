@@ -1767,6 +1767,15 @@ Cypress.Commands.add(
   }
 )
 
+// override type command to have minimal delay for faster test workflows
+Cypress.Commands.overwrite<'type', 'element'>(
+  'type',
+  (originalFn, element, text, options = {}) => {
+    options.delay = options.delay ?? 2
+    return originalFn(element, text, options)
+  }
+)
+
 declare global {
   namespace Cypress {
     interface Chainable {
