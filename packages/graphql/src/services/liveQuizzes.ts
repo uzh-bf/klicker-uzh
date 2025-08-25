@@ -2047,6 +2047,7 @@ export async function getLiveQuizSummary(
           feedbacks: true,
           confusionFeedbacks: true,
           leaderboard: true,
+          temporaryLeaderboard: true,
         },
       },
       blocks: { include: { elements: true } },
@@ -2091,7 +2092,8 @@ export async function getLiveQuizSummary(
     numOfResponses: storedResponses,
     numOfFeedbacks: liveQuiz._count.feedbacks,
     numOfConfusionFeedbacks: liveQuiz._count.confusionFeedbacks,
-    numOfLeaderboardEntries: liveQuiz._count.leaderboard,
+    numOfLeaderboardEntries:
+      liveQuiz._count.leaderboard + liveQuiz._count.temporaryLeaderboard,
   }
 }
 

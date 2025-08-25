@@ -33,6 +33,7 @@ interface ElementEvaluationProps {
   showExplanation: boolean
   type: ActivityEvaluationType
   requireShowResultsConfirmation: boolean
+  isStackActive?: boolean
   className?: string
 }
 
@@ -47,6 +48,7 @@ function ElementEvaluation({
   showExplanation,
   type,
   requireShowResultsConfirmation,
+  isStackActive,
   className,
 }: ElementEvaluationProps) {
   const t = useTranslations()
@@ -118,8 +120,8 @@ function ElementEvaluation({
                   courseLanguage={courseLanguage}
                   textSize={textSize}
                   chartType={chartType}
-                  showSolution={showSolution}
-                  showExplanation={showExplanation}
+                  showSolution={!isStackActive && showSolution}
+                  showExplanation={!isStackActive && showExplanation}
                   type={type}
                 />
               )}
@@ -130,8 +132,8 @@ function ElementEvaluation({
                   courseLanguage={courseLanguage}
                   textSize={textSize}
                   chartType={chartType}
-                  showSolution={showSolution}
-                  showExplanation={showExplanation}
+                  showSolution={!isStackActive && showSolution}
+                  showExplanation={!isStackActive && showExplanation}
                   type={type}
                 />
               )}
@@ -142,8 +144,8 @@ function ElementEvaluation({
                   courseLanguage={courseLanguage}
                   textSize={textSize}
                   chartType={chartType}
-                  showSolution={showSolution}
-                  showExplanation={showExplanation}
+                  showSolution={!isStackActive && showSolution}
+                  showExplanation={!isStackActive && showExplanation}
                   type={type}
                 />
               )}
@@ -153,8 +155,8 @@ function ElementEvaluation({
                   instanceEvaluation={currentInstance}
                   textSize={textSize}
                   chartType={chartType}
-                  showSolution={showSolution}
-                  showExplanation={showExplanation}
+                  showSolution={!isStackActive && showSolution}
+                  showExplanation={!isStackActive && showExplanation}
                 />
               )}
             </div>
@@ -169,8 +171,8 @@ function ElementEvaluation({
             activeInstance={activeInstance}
             textSize={textSize}
             chartType={chartType}
-            showSolution={showSolution}
-            showExplanation={showExplanation}
+            showSolution={!isStackActive && showSolution}
+            showExplanation={!isStackActive && showExplanation}
             hasSolution={hasSolution}
             hasExplanation={hasExplanation}
             type={type}
