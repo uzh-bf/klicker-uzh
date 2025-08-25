@@ -115,6 +115,13 @@ describe('Different live-quiz workflows', function () {
       userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionNR({
+      name: this.data.NRML.title,
+      content: this.data.NRML.content,
+      explanation: this.data.NRML.explanation,
+      ...this.data.NRML.options,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionNR({
       name: this.data.NRML2.title,
       content: this.data.NRML2.content,
       explanation: this.data.NRML2.explanation,
@@ -128,6 +135,13 @@ describe('Different live-quiz workflows', function () {
       content: this.data.FT.content,
       explanation: this.data.FT.explanation,
       ...this.data.FT.options,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionFT({
+      name: this.data.FTML.title,
+      content: this.data.FTML.content,
+      explanation: this.data.FTML.explanation,
+      ...this.data.FTML.options,
       userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionFT({
@@ -160,6 +174,17 @@ describe('Different live-quiz workflows', function () {
       userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSE({
+      name: this.data.SEML.title,
+      content: this.data.SEML.content,
+      explanation: this.data.SEML.explanation,
+      numberOfInputs: this.data.SEML.inputs,
+      collectionName: this.data.collection.name,
+      correctAnswers: this.data.collection.options.filter((_, i) =>
+        this.data.SEML.solutions.includes(i)
+      ),
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionSE({
       name: this.data.SEML2.title,
       content: this.data.SEML2.content,
       explanation: this.data.SEML2.explanation,
@@ -183,6 +208,19 @@ describe('Different live-quiz workflows', function () {
       criteria: this.data.CS.criteria,
       cases: this.data.CS.cases,
       solutions: this.data.CS.solutions,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionCS({
+      name: this.data.CSML.title,
+      content: this.data.CSML.content,
+      explanation: this.data.CSML.explanation,
+      collectionName: this.data.collection.name,
+      selectedItems: this.data.collection.options.filter((_, i) =>
+        this.data.CSML.selectedItems.includes(i)
+      ),
+      criteria: this.data.CSML.criteria,
+      cases: this.data.CSML.cases,
+      solutions: this.data.CSML.solutions,
       userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionCS({
