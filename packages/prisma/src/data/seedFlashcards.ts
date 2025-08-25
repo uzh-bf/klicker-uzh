@@ -1,19 +1,21 @@
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
-import Prisma, {
+import {
+  Element,
   ElementInstanceType,
   ElementOrderType,
   ElementStackType,
   ElementType,
+  PrismaClient,
   PublicationStatus,
-} from '../../dist/index.js'
+} from '../client.js'
 import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
 import { prepareFlashcardsFromFile, processQuizInfo } from './helpers.js'
 
 async function seedFlashcardSet(
-  prismaClient: Prisma.PrismaClient,
+  prismaClient: PrismaClient,
   fileName: string,
   quizId: string,
-  elements: Prisma.Element[],
+  elements: Element[],
   userId: string,
   courseId: string
 ) {
@@ -90,7 +92,7 @@ async function seedFlashcardSet(
   return practiceQuiz
 }
 
-export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
+export async function seedFlashcards(prismaClient: PrismaClient) {
   const USER_ID = USER_ID_TEST
   const COURSE_ID = COURSE_ID_TEST
 
@@ -289,7 +291,7 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
 }
 
 // if main module, run this
-const prismaClient = new Prisma.PrismaClient()
+const prismaClient = new PrismaClient()
 // @ts-ignore
 await seedFlashcards(prismaClient)
   .then((res) => {

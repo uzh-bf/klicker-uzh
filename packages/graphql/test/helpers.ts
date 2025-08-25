@@ -1,3 +1,4 @@
+import { prisma } from '@klicker-uzh/prisma'
 import {
   AnswerCollection,
   CatalogCollection,
@@ -11,13 +12,12 @@ import {
   PublicationStatus,
   UserLoginScope,
   UserRole,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import { ElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
-import { PrismaPg } from '@prisma/adapter-pg'
 import { EventEmitter } from 'events'
 import { v4 as uuidv4 } from 'uuid'
 import type { ContextWithUser } from '../src/lib/context.js'
@@ -169,18 +169,15 @@ export function getDatabaseUrl() {
   }
 
   // as a fallback, use default PostgreSQL connection
-  return 'postgresql://klicker-prod:klicker@localhost:5432/klicker-prod'
+  process.env.DATABASE_URL =
+    'postgresql://klicker-prod:klicker@localhost:5432/klicker-prod'
 }
 
 export async function initializePrisma() {
   // configure database
-  const databaseUrl = getDatabaseUrl()
+  getDatabaseUrl()
 
   try {
-    // initialize PrismaClient with the database URL
-    const adapter = new PrismaPg({ connectionString: databaseUrl })
-    const prisma = new PrismaClient({ adapter, log: ['error', 'warn'] })
-
     // test database connection
     await prisma.$connect()
 

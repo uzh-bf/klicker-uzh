@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType, SharingType } from '@klicker-uzh/types'
 import { levelFromXp, recomputeDerivedPermissions } from '@klicker-uzh/util'
 import dayjs from 'dayjs'

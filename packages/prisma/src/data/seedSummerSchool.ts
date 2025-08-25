@@ -1,6 +1,6 @@
-import Prisma from '../../dist/index.js'
+import { PrismaClient } from '../client.js'
 
-async function seedAchievements(prisma: Prisma.PrismaClient) {
+async function seedAchievements(prisma: PrismaClient) {
   // // PERFORMANCE
   // const PERFORMANCE_IDS = [
   //   'ec8d958f-db17-4e41-8891-b7a906f49dc3',
@@ -337,7 +337,7 @@ async function seedAchievements(prisma: Prisma.PrismaClient) {
   // )
 }
 
-const prismaClient = new Prisma.PrismaClient()
+const prismaClient = new PrismaClient()
 
 seedAchievements(prismaClient)
   .catch((e) => {

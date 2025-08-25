@@ -1,4 +1,4 @@
-import { ElementType, ObjectAccess } from '@klicker-uzh/prisma'
+import { ElementType, ObjectAccess } from '@klicker-uzh/prisma/client'
 
 // questions with all possible combinations of sample solutions and answer feedbacks
 export const questionsSLAF = [

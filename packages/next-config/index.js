@@ -26,6 +26,7 @@ function getNextBaseConfig({
       '@klicker-uzh/shared-components',
       '@klicker-uzh/i18n',
       '@klicker-uzh/util',
+      '@klicker-uzh/prisma',
     ],
     eslint: {
       ignoreDuringBuilds: true,

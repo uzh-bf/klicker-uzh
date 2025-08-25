@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'

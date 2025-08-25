@@ -1,4 +1,4 @@
-import { PrismaClient } from '@klicker-uzh/prisma'
+import { PrismaClient } from '@klicker-uzh/prisma/client'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 dayjs.extend(utc)

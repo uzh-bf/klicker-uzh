@@ -1,4 +1,4 @@
-import Prisma from '../../dist/index.js'
+import * as Prisma from '../client.js'
 import * as DATA_TEST from './data/TEST.js'
 
 export async function seedAchievements(prisma: Prisma.PrismaClient) {

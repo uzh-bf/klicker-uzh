@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import builder from '../builder.js'
 import { CourseRef } from './course.js'
 import { ElementInstanceRef } from './element.js'

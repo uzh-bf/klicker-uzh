@@ -4,7 +4,7 @@ import {
   ObjectType,
   PermissionLevel,
   PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'

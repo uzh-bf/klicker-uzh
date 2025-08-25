@@ -1,4 +1,4 @@
-import { ElementOrderType, PrismaClient } from '@klicker-uzh/prisma'
+import { ElementOrderType, PrismaClient } from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
 import { v4 as uuid } from 'uuid'
 import type { ContextWithUser } from '../src/lib/context.js'

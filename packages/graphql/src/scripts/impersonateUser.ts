@@ -1,4 +1,4 @@
-import { PrismaClient, UserLoginScope } from '@klicker-uzh/prisma'
+import { PrismaClient, UserLoginScope } from '@klicker-uzh/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import JWT from 'jsonwebtoken'
 import readline from 'readline'
