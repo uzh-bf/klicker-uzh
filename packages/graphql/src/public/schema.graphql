@@ -2463,12 +2463,15 @@ enum SortByType {
 }
 
 type StackEvaluation {
+  expiresAt: Date
   instances: [ElementInstanceEvaluation!]!
   stackActive: Boolean!
   stackDescription: String
   stackId: Int!
   stackName: String
   stackOrder: Int!
+  status: ElementBlockStatus
+  timeLimit: Int
 }
 
 type StackFeedback {
