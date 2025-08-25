@@ -66,6 +66,8 @@ function LiveQuizCountdown({
   useEffect(() => {
     if (cooldown && !inCooldown) {
       setInCooldown(cooldown)
+    } else if (!cooldown && inCooldown) {
+      setInCooldown(cooldown)
     }
   }, [endTimestamp, cooldown])
 
