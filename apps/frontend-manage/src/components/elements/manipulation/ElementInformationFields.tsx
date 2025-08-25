@@ -96,7 +96,6 @@ function ElementInformationFields({
                 })
               }
 
-              await refetchElements?.()
               setFieldValue('status', newValue as ElementStatus)
               setStatusSaving(false)
             }}
