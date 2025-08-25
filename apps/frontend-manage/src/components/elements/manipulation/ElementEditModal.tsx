@@ -143,8 +143,14 @@ function ElementEditModal({
         Object.keys(formikInitialValues).length === 0
       }
       initialValues={formikInitialValues}
-      onClose={() => {
+      onClose={async () => {
+        // close the modal
         handleSetIsOpen(false)
+
+        // refetch elements here, since element status might have changed and refetch cannot be used there to avoid closing modal
+        await refetchElements?.()
+
+        // remove potential query parameters that open element edit modal on reload
         const {
           editElementId,
           contextActivityId,
