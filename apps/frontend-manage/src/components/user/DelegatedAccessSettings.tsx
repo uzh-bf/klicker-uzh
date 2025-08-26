@@ -117,6 +117,7 @@ function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
                             if (!qData?.userLogins) return qData
 
                             return {
+                              ...qData,
                               userLogins: qData.userLogins.filter(
                                 (login) => login.id !== data.deleteUserLogin!.id
                               ),
@@ -172,6 +173,7 @@ function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
                       if (!qData?.userLogins) return qData
 
                       return {
+                        ...qData,
                         userLogins: [
                           ...qData.userLogins,
                           data.createUserLogin!,

@@ -21,20 +21,15 @@ function useChangeUserGroupName() {
   }) => {
     try {
       await changeUserGroupName({
-        variables: {
-          id: groupId,
-          name: newName,
-        },
-        optimisticResponse: {
-          changeUserGroupName: true,
-        },
+        variables: { id: groupId, name: newName },
+        optimisticResponse: { changeUserGroupName: true },
         update: (cache, { data }) => {
           // check if request was successful
           if (!data?.changeUserGroupName) return
 
           // update members and admins of user group
           cache.updateQuery({ query: GetUserGroupsUserDocument }, (qData) => {
-            if (!qData?.getUserGroupsUser) return
+            if (!qData?.getUserGroupsUser) return qData
 
             return {
               getUserGroupsUser: qData.getUserGroupsUser.map((group) =>

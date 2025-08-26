@@ -63,6 +63,7 @@ function AddUserGroupMember({
                         if (groupId === existingGroup.id) {
                           return {
                             ...existingGroup,
+                            numOfMembers: (existingGroup.numOfMembers ?? 1) + 1,
                             members: [
                               ...(existingGroup.members ?? []),
                               ...(adminMode ? [] : [newUser]),

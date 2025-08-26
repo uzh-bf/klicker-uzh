@@ -233,10 +233,7 @@ function AudienceInteraction({
                 feedback.id === data.deleteFeedbackResponse!.id
                   ? {
                       ...feedback,
-                      responses: feedback.responses?.filter(
-                        (response) =>
-                          response.id !== data.deleteFeedbackResponse!.id
-                      ),
+                      responses: data.deleteFeedbackResponse!.responses,
                     }
                   : feedback
               ),
@@ -265,9 +262,7 @@ function AudienceInteraction({
                 feedback.id === data.respondToFeedback!.id
                   ? {
                       ...feedback,
-                      responses: feedback.responses?.filter(
-                        (response) => response.id !== data.respondToFeedback!.id
-                      ),
+                      responses: data.respondToFeedback!.responses,
                     }
                   : feedback
               ),

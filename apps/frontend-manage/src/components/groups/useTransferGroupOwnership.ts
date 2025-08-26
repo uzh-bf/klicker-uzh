@@ -37,10 +37,10 @@ function useTransferGroupOwnership() {
             return {
               getUserGroupsUser: qData.getUserGroupsUser.map(
                 (existingGroup) => {
-                  const newOwner = group.admins?.find(
+                  const newOwner = existingGroup.admins?.find(
                     (existingAdmin) => existingAdmin.id === newOwnerId
                   )
-                  const newAdmin = group.owner
+                  const newAdmin = existingGroup.owner
 
                   if (!newOwner || !newAdmin) return existingGroup
                   if (existingGroup.id === group.id) {

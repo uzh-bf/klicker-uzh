@@ -198,7 +198,7 @@ function CourseSelectionPage() {
                       cache.updateQuery(
                         { query: GetUserCoursesDocument },
                         (qData) => {
-                          if (!qData?.userCourses) return
+                          if (!qData?.userCourses) return qData
 
                           return {
                             userCourses: [

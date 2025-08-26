@@ -104,7 +104,10 @@ function AnswerCollectionOption({
                         collection.id === collectionId
                           ? {
                               ...collection,
-                              numOfEntries: (collection.numOfEntries ?? 1) - 1,
+                              numOfEntries: Math.max(
+                                (collection.numOfEntries ?? 0) - 1,
+                                0
+                              ),
                             }
                           : collection
                       ),

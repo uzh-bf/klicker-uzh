@@ -47,10 +47,10 @@ function ObjectSharingModalWrapper({
   return (
     <>
       <ObjectSharingModal
-        onClose={() => {
+        onClose={async () => {
           // if an operation related to elements was executed, refetch the element list
           if (objectType === ObjectType.Element) {
-            refetchElements?.()
+            await refetchElements?.()
           }
 
           // if an operation related to activities was executed, refetch the activity list
@@ -60,7 +60,7 @@ function ObjectSharingModalWrapper({
             objectType === ObjectType.MicroLearning ||
             objectType === ObjectType.GroupActivity
           ) {
-            refetchActivities?.()
+            await refetchActivities?.()
           }
 
           onClose()

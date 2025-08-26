@@ -750,7 +750,7 @@ export async function createCourse(
         isOwner: true,
         isManager: true,
         isEditor: true,
-        isShared: true,
+        isShared: false,
         isRemovable: false,
       }
     },

@@ -49,6 +49,7 @@ function AssignmentConfirmationModal({
 
           return {
             getCourseGroups: {
+              ...qData.getCourseGroups,
               groupAssignmentPoolEntries: [],
               participantGroups: data.manualRandomGroupAssignments!,
             },

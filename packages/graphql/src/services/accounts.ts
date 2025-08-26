@@ -969,9 +969,9 @@ export async function changeShortname(
   { shortname }: { shortname: string },
   ctx: ContextWithUser
 ) {
-  // verify that the trimmed shortname does not have a length of more than 10 characters (limit)
+  // verify that the trimmed shortname does not have a length of less than 5 and more than 10 characters (limit)
   const trimmedShortname = shortname.trim()
-  if (trimmedShortname.length > 10) {
+  if (trimmedShortname.length < 5 || trimmedShortname.length > 10) {
     return null
   }
 
