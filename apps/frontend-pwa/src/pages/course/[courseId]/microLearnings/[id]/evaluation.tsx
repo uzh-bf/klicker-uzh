@@ -32,7 +32,6 @@ function MicrolearningEvaluation() {
     skip: !data?.microLearning?.course?.id,
   })
 
-  // TODO: add query update
   const [markMicrolearningCompleted, { loading: markingAsCompleted }] =
     useMutation(MarkMicroLearningCompletedDocument)
 
@@ -150,10 +149,7 @@ function MicrolearningEvaluation() {
               loading={markingAsCompleted}
               onClick={async () => {
                 await markMicrolearningCompleted({
-                  variables: {
-                    courseId: microlearning.course!.id,
-                    id,
-                  },
+                  variables: { courseId: microlearning.course!.id, id },
                 })
                 router.replace('/')
               }}

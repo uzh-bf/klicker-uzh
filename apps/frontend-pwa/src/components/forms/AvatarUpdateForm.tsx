@@ -33,7 +33,6 @@ interface AvatarUpdateFormProps {
 
 function AvatarUpdateForm({ user, onError, onSuccess }: AvatarUpdateFormProps) {
   const t = useTranslations()
-  // TODO: add query update
   const [updateParticipantAvatar] = useMutation(UpdateParticipantAvatarDocument)
 
   return (
@@ -90,7 +89,23 @@ function AvatarUpdateForm({ user, onError, onSuccess }: AvatarUpdateFormProps) {
               'facialHair',
             ]),
           },
-          refetchQueries: [{ query: SelfDocument }],
+          update: (cache, { data }) => {
+            // verify that the avatar update succeeded
+            if (!data?.updateParticipantAvatar) return
+
+            // update the avatar of the user across the app
+            cache.updateQuery({ query: SelfDocument }, (qData) => {
+              if (!qData?.self) return qData
+
+              return {
+                self: {
+                  ...qData.self,
+                  avatar: data.updateParticipantAvatar!.avatar,
+                  avatarSettings: data.updateParticipantAvatar!.avatarSettings,
+                },
+              }
+            })
+          },
         })
 
         if (result.data?.updateParticipantAvatar && !result.errors) {

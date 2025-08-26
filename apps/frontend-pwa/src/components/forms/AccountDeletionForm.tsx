@@ -11,11 +11,9 @@ function AccountDeletionForm() {
   const t = useTranslations()
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
-  // TODO: add query update
   const [deleteParticipantAccount, { loading: deletingAccount }] = useMutation(
     DeleteParticipantAccountDocument
   )
-  // TODO: add query update
   const [logoutParticipant, { loading: loggingOut }] = useMutation(
     LogoutParticipantDocument
   )

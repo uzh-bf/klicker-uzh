@@ -726,9 +726,7 @@ export const Query = builder.queryType({
       participantGroups: t.field({
         nullable: true,
         type: [ParticipantGroup],
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
+        args: { courseId: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await GroupService.getParticipantGroups(args, ctx)
         },

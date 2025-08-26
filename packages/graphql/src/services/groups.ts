@@ -66,17 +66,9 @@ export async function createParticipantGroup(
   const participantGroup = await ctx.prisma.participantGroup.create({
     data: {
       name: name.trim(),
-      code: code,
-      course: {
-        connect: {
-          id: courseId,
-        },
-      },
-      participants: {
-        connect: {
-          id: ctx.user.sub,
-        },
-      },
+      code,
+      course: { connect: { id: courseId } },
+      participants: { connect: { id: ctx.user.sub } },
     },
     include: {
       participants: true,
@@ -103,9 +95,7 @@ export async function joinRandomCourseGroupPool(
 ) {
   // check if group creation is enabled on course
   const course = await ctx.prisma.course.findUnique({
-    where: {
-      id: courseId,
-    },
+    where: { id: courseId },
   })
   if (!course || !course.isGroupCreationEnabled) {
     return false
@@ -114,22 +104,11 @@ export async function joinRandomCourseGroupPool(
   // add the participant to the pool of waiting participants
   const poolEntry = await ctx.prisma.groupAssignmentPoolEntry.upsert({
     where: {
-      courseId_participantId: {
-        courseId,
-        participantId: ctx.user.sub,
-      },
+      courseId_participantId: { courseId, participantId: ctx.user.sub },
     },
     create: {
-      course: {
-        connect: {
-          id: courseId,
-        },
-      },
-      participant: {
-        connect: {
-          id: ctx.user.sub,
-        },
-      },
+      course: { connect: { id: courseId } },
+      participant: { connect: { id: ctx.user.sub } },
     },
     update: {},
   })
@@ -147,15 +126,9 @@ export async function leaveRandomCourseGroupPool(
 ) {
   // check if group creation is enabled on course and if a corresponding pool entry exists
   const course = await ctx.prisma.course.findUnique({
-    where: {
-      id: courseId,
-    },
+    where: { id: courseId },
     include: {
-      groupAssignmentPoolEntries: {
-        where: {
-          participantId: ctx.user.sub,
-        },
-      },
+      groupAssignmentPoolEntries: { where: { participantId: ctx.user.sub } },
     },
   })
   if (
@@ -170,10 +143,7 @@ export async function leaveRandomCourseGroupPool(
   try {
     await ctx.prisma.groupAssignmentPoolEntry.delete({
       where: {
-        courseId_participantId: {
-          courseId,
-          participantId: ctx.user.sub,
-        },
+        courseId_participantId: { courseId, participantId: ctx.user.sub },
       },
     })
     return true
@@ -641,18 +611,11 @@ export async function joinParticipantGroup(
   // find participantgroup with code
   const participantGroup = await ctx.prisma.participantGroup.findUnique({
     where: {
-      courseId_code: {
-        courseId,
-        code,
-      },
+      courseId_code: { courseId, code },
     },
     include: {
       course: true,
-      participants: {
-        include: {
-          leaderboards: true,
-        },
-      },
+      participants: { include: { leaderboards: true } },
     },
   })
 
@@ -686,24 +649,12 @@ export async function joinParticipantGroup(
 
   // otherwise update the participant group with the current participant and return it
   const updatedParticipantGroup = await ctx.prisma.participantGroup.update({
-    where: {
-      courseId_code: {
-        courseId,
-        code,
-      },
-    },
+    where: { courseId_code: { courseId, code } },
     data: {
-      participants: {
-        connect: {
-          id: ctx.user.sub,
-        },
-      },
+      participants: { connect: { id: ctx.user.sub } },
       averageMemberScore: averageMemberScore,
     },
-    include: {
-      participants: true,
-      course: true,
-    },
+    include: { participants: true, course: true },
   })
 
   return updatedParticipantGroup.id
@@ -721,16 +672,8 @@ export async function leaveParticipantGroup(
 ) {
   // find participantgroup with corresponding id
   const participantGroup = await ctx.prisma.participantGroup.findUnique({
-    where: {
-      id: groupId,
-    },
-    include: {
-      participants: {
-        include: {
-          leaderboards: true,
-        },
-      },
-    },
+    where: { id: groupId },
+    include: { participants: { include: { leaderboards: true } } },
   })
 
   // if no participant group with the provided id exists in this course or at all, return null
@@ -738,10 +681,8 @@ export async function leaveParticipantGroup(
 
   // if the participant is the only one in the group, delete the group
   if (participantGroup.participants.length === 1) {
-    await ctx.prisma.participantGroup.delete({
-      where: {
-        id: groupId,
-      },
+    const deletedGroup = await ctx.prisma.participantGroup.delete({
+      where: { id: groupId },
     })
 
     // invalidate graphql response cache
@@ -750,7 +691,7 @@ export async function leaveParticipantGroup(
       id: groupId,
     })
 
-    return null
+    return deletedGroup
   }
 
   // compute new average member score for the group without the participant that is leaving
