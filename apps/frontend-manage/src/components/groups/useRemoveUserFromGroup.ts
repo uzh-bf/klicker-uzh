@@ -5,7 +5,6 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 
 function useRemoveUserFromGroup() {
-  // TODO: add query update
   const [removeUserFromGroup, { loading }] = useMutation(
     RemoveUserFromGroupDocument
   )
@@ -27,10 +26,28 @@ function useRemoveUserFromGroup() {
       },
       update: (cache, { data }) => {
         // check if request was successful
-        const success = data?.removeUserFromGroup
-        if (!success) return
+        if (!data?.removeUserFromGroup) return
 
         // update members and admins of user group
+        cache.updateQuery({ query: GetUserGroupsUserDocument }, (qData) => {
+          if (!qData?.getUserGroupsUser) return qData
+          return {
+            getUserGroupsUser: qData.getUserGroupsUser.map((group) =>
+              group.id === groupId
+                ? {
+                    ...group,
+                    members: group.members?.filter(
+                      (member) => member.id !== userId
+                    ),
+                    admins: group.admins?.filter(
+                      (admin) => admin.id !== userId
+                    ),
+                  }
+                : group
+            ),
+          }
+        })
+
         const userGroups = cache.readQuery({
           query: GetUserGroupsUserDocument,
         })

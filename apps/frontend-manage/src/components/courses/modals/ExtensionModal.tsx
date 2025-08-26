@@ -32,9 +32,7 @@ function ExtensionModal({
   refetchActivities,
 }: ExtensionModalProps) {
   const t = useTranslations()
-  // TODO: add query update
   const [extendMicroLearning] = useMutation(ExtendMicroLearningDocument)
-  // TODO: add query update
   const [extendGroupActivity] = useMutation(ExtendGroupActivityDocument)
 
   return (
@@ -63,10 +61,7 @@ function ExtensionModal({
 
             if (type === 'microLearning') {
               await extendMicroLearning({
-                variables: {
-                  id,
-                  endDate: utcEndDate,
-                },
+                variables: { id, endDate: utcEndDate },
                 optimisticResponse: {
                   __typename: 'Mutation',
                   extendMicroLearning: {
@@ -75,21 +70,40 @@ function ExtensionModal({
                     scheduledEndAt: utcEndDate,
                   },
                 },
-                // TODO: replace with proper cache update
-                refetchQueries: [
-                  {
-                    query: GetSingleCourseDocument,
-                    variables: { courseId: courseId },
-                  },
-                ],
+                update: (cache, { data }) => {
+                  // check if the extension was successful
+                  if (!data?.extendMicroLearning) return
+
+                  // update the end date of the modified microlearning in the cache
+                  cache.updateQuery(
+                    { query: GetSingleCourseDocument, variables: { courseId } },
+                    (qData) => {
+                      if (!qData?.course) return qData
+
+                      return {
+                        course: {
+                          ...qData.course,
+                          microLearningsInfo: (
+                            qData.course.microLearningsInfo ?? []
+                          ).map((ml) =>
+                            ml.id === data.extendMicroLearning!.id
+                              ? {
+                                  ...ml,
+                                  scheduledEndAt:
+                                    data.extendMicroLearning!.scheduledEndAt,
+                                }
+                              : ml
+                          ),
+                        },
+                      }
+                    }
+                  )
+                },
               })
               await refetchActivities?.()
             } else if (type === 'groupActivity') {
               await extendGroupActivity({
-                variables: {
-                  id,
-                  endDate: utcEndDate,
-                },
+                variables: { id, endDate: utcEndDate },
                 optimisticResponse: {
                   __typename: 'Mutation',
                   extendGroupActivity: {
@@ -98,13 +112,35 @@ function ExtensionModal({
                     scheduledEndAt: utcEndDate,
                   },
                 },
-                // TODO: replace with proper cache update
-                refetchQueries: [
-                  {
-                    query: GetSingleCourseDocument,
-                    variables: { courseId: courseId },
-                  },
-                ],
+                update: (cache, { data }) => {
+                  // check if the extension was successful
+                  if (!data?.extendGroupActivity) return
+
+                  // update the end date of the modified group activity in the cache
+                  cache.updateQuery(
+                    { query: GetSingleCourseDocument, variables: { courseId } },
+                    (qData) => {
+                      if (!qData?.course) return qData
+
+                      return {
+                        course: {
+                          ...qData.course,
+                          groupActivitiesInfo: (
+                            qData.course.groupActivitiesInfo ?? []
+                          ).map((ga) =>
+                            ga.id === data.extendGroupActivity!.id
+                              ? {
+                                  ...ga,
+                                  scheduledEndAt:
+                                    data.extendGroupActivity!.scheduledEndAt,
+                                }
+                              : ga
+                          ),
+                        },
+                      }
+                    }
+                  )
+                },
               })
               await refetchActivities?.()
             }

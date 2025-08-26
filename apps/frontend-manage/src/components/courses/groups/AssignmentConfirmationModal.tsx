@@ -1,6 +1,7 @@
 import { useMutation } from '@apollo/client'
 import {
   GetCourseGroupsDocument,
+  GetSingleCourseDocument,
   ManualRandomGroupAssignmentsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast, UserNotification } from '@uzh-bf/design-system'
@@ -14,37 +15,47 @@ function AssignmentConfirmationModal({
   onClose: () => void
 }) {
   const t = useTranslations()
-  // TODO: add query update
   const [
     manualRandomGroupAssignments,
     { loading: randomGroupCreationLoading },
   ] = useMutation(ManualRandomGroupAssignmentsDocument, {
-    refetchQueries: [
-      {
-        query: GetCourseGroupsDocument,
-        variables: { courseId: courseId },
-      },
-    ],
-    // TODO: use update for more efficiency - does not work properly yet
-    // update: (cache, { data }) => {
-    //   const cacheData = cache.readQuery({
-    //     query: GetCourseGroupsDocument,
-    //     variables: { courseId: courseId },
-    //   })
-    //   cache.writeQuery({
-    //     query: GetCourseGroupsDocument,
-    //     variables: { courseId: courseId },
-    //     data: {
-    //       getCourseGroups: {
-    //         ...cacheData?.getCourseGroups,
-    //         groupAssignmentPoolEntries: [],
-    //         participantGroups: [
-    //           ...(data?.manualRandomGroupAssignments?.participantGroups ?? []),
-    //         ],
-    //       },
-    //     },
-    //   })
-    // },
+    update: (cache, { data }) => {
+      // check if the finalization was successful
+      if (!data?.manualRandomGroupAssignments) return
+
+      // update the modified course settings
+      cache.updateQuery(
+        { query: GetSingleCourseDocument, variables: { courseId } },
+        (qData) => {
+          if (!qData?.course) return qData
+
+          return {
+            course: {
+              ...qData.course,
+              randomAssignmentFinalized: true,
+              groupDeadlineDate: new Date(),
+
+              numOfParticipantGroups: data.manualRandomGroupAssignments!.length,
+            },
+          }
+        }
+      )
+
+      // update the course participant groups
+      cache.updateQuery(
+        { query: GetCourseGroupsDocument, variables: { courseId } },
+        (qData) => {
+          if (!qData?.getCourseGroups) return qData
+
+          return {
+            getCourseGroups: {
+              groupAssignmentPoolEntries: [],
+              participantGroups: data.manualRandomGroupAssignments!,
+            },
+          }
+        }
+      )
+    },
   })
 
   return (

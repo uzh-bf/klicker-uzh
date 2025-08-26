@@ -37,7 +37,6 @@ function useObjectSharing({
   }) => Promise<boolean>
   objectSharing: boolean
 } {
-  // TODO: add query update
   const [shareObject, { loading: sharingObject }] =
     useMutation(ShareObjectDocument)
 
@@ -67,32 +66,27 @@ function useObjectSharing({
           propagation,
         },
         update: (cache, { data }) => {
+          // verify that the sharing action was successful
           if (!data?.shareObject) return
 
-          const prevPermissions = cache.readQuery({
-            query: GetObjectPermissionsDocument,
-            variables: { objectId: String(objectId), objectType },
-          })
-
-          if (!prevPermissions?.getObjectPermissions) {
-            return
-          }
-
-          // replace the permission that was just added (if it already exists) and add it otherwise
-          const newPermissions = prevPermissions.getObjectPermissions.filter(
-            (permission) =>
-              permission.permissionId !== data.shareObject!.permissionId
-          )
-          newPermissions.push(data.shareObject)
-
-          cache.writeQuery({
-            query: GetObjectPermissionsDocument,
-            variables: { objectId: String(objectId), objectType },
-            data: {
-              getObjectPermissions: newPermissions,
+          // update the list of permissions for the given object
+          cache.updateQuery(
+            {
+              query: GetObjectPermissionsDocument,
+              variables: { objectId: String(objectId), objectType },
             },
-          })
+            (qData) => {
+              if (!qData?.getObjectPermissions) return qData
+              return {
+                getObjectPermissions: [
+                  ...qData.getObjectPermissions,
+                  data.shareObject!,
+                ],
+              }
+            }
+          )
         },
+        // TODO: evaluate if more evolved and type-dependent cache updates are helpful here performance-wise
         refetchQueries: [
           { query: GetCatalogSharingRequestsDocument },
           {

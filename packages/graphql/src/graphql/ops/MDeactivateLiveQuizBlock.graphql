@@ -1,13 +1,3 @@
 mutation DeactivateLiveQuizBlock($quizId: String!, $blockId: Int!) {
-  deactivateLiveQuizBlock(quizId: $quizId, blockId: $blockId) {
-    id
-    status
-    activeBlock {
-      id
-    }
-    blocks {
-      id
-      status
-    }
-  }
+  deactivateLiveQuizBlock(quizId: $quizId, blockId: $blockId)
 }

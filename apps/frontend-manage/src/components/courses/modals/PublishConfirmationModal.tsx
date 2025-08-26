@@ -40,26 +40,67 @@ function PublishConfirmationModal({
 }: PublishConfirmationModalProps) {
   const t = useTranslations()
 
-  // TODO: add query update
   const [publishMicroLearning, { loading: mlPublishLoading }] = useMutation(
     PublishMicroLearningDocument,
     {
       variables: { id: activityId },
-      // TODO: replace with proper cache update
-      refetchQueries: [
-        { query: GetSingleCourseDocument, variables: { courseId } },
-      ],
+      update(cache, { data }) {
+        cache.updateQuery(
+          { query: GetSingleCourseDocument, variables: { courseId } },
+          (qData) => {
+            const publishedMicro = data?.publishMicroLearning
+            if (!qData?.course?.microLearningsInfo || !publishedMicro)
+              return qData
+
+            return {
+              course: {
+                ...qData.course,
+                microLearningsInfo: qData.course.microLearningsInfo.map(
+                  (micro) =>
+                    micro.id === publishedMicro.id
+                      ? {
+                          ...micro,
+                          status: publishedMicro.status,
+                        }
+                      : micro
+                ),
+              },
+            }
+          }
+        )
+      },
     }
   )
-  // TODO: add query update
+
   const [publishGroupActivity, { loading: gaPublishLoading }] = useMutation(
     PublishGroupActivityDocument,
     {
       variables: { id: activityId },
-      // TODO: replace with proper cache update
-      refetchQueries: [
-        { query: GetSingleCourseDocument, variables: { courseId } },
-      ],
+      update(cache, { data }) {
+        cache.updateQuery(
+          { query: GetSingleCourseDocument, variables: { courseId } },
+          (qData) => {
+            const publishedGa = data?.publishGroupActivity
+            if (!qData?.course?.groupActivitiesInfo || !publishedGa)
+              return qData
+
+            return {
+              course: {
+                ...qData.course,
+                groupActivitiesInfo: qData.course.groupActivitiesInfo.map(
+                  (groupActivity) =>
+                    groupActivity.id === publishedGa.id
+                      ? {
+                          ...groupActivity,
+                          status: publishedGa.status,
+                        }
+                      : groupActivity
+                ),
+              },
+            }
+          }
+        )
+      },
     }
   )
 

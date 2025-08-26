@@ -539,9 +539,7 @@ export async function manualRandomGroupAssignments(
   })
 
   // do nothing if the course does not exist
-  if (!course) {
-    return null
-  }
+  if (!course) return null
 
   try {
     // resolve all groups with a single participant and add them to the pool ids
@@ -558,19 +556,17 @@ export async function manualRandomGroupAssignments(
 
     // if the assignment pool is empty, set the finalization boolean and return course
     if (courseExtendedPool.groupAssignmentPoolEntries.length === 0) {
-      const courseUpdated = await ctx.prisma.course.update({
+      await ctx.prisma.course.update({
         where: { id: courseId },
         data: { randomAssignmentFinalized: true },
       })
 
-      return courseUpdated
+      return []
     }
 
     // if there is only exactly one participant in the pool, return null - do not update course
     // case is already handled in the frontend with a disabled button
-    if (courseExtendedPool.groupAssignmentPoolEntries.length === 1) {
-      return null
-    }
+    if (courseExtendedPool.groupAssignmentPoolEntries.length === 1) return null
 
     // run the final group assignment logic and update the course accordingly
     const groupParticipantIds = splitGroupsFinal({
@@ -601,7 +597,7 @@ export async function manualRandomGroupAssignments(
         participantGroups: { create: newGroups },
         groupAssignmentPoolEntries: { deleteMany: {} },
       },
-      include: { participantGroups: true },
+      include: { participantGroups: { include: { participants: true } } },
     })
 
     // invalidate the cache of the course and the group assignment pool entries
@@ -618,7 +614,7 @@ export async function manualRandomGroupAssignments(
       `Successfully completed random group assignment for course ${course.name} (id: ${course.id}) with ${newGroups.length} new groups.`
     )
 
-    return updatedCourse
+    return updatedCourse.participantGroups
   } catch (e) {
     console.error(e)
     await sendTeamsNotifications(

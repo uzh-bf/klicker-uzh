@@ -25,7 +25,6 @@ import Layout from '../../components/Layout'
 function CourseSelectionPage() {
   const router = useRouter()
   const t = useTranslations()
-  // TODO: add query update
   const [createCourse] = useMutation(CreateCourseDocument)
 
   const [createCourseModal, showCreateCourseModal] = useState(false)
@@ -191,7 +190,25 @@ function CourseSelectionPage() {
                         String(values.preferredGroupSize)
                       ),
                     },
-                    refetchQueries: [{ query: GetUserCoursesDocument }],
+                    update: (cache, { data }) => {
+                      // verify that the course creation was successful
+                      if (!data?.createCourse) return
+
+                      // add the new course to the course list
+                      cache.updateQuery(
+                        { query: GetUserCoursesDocument },
+                        (qData) => {
+                          if (!qData?.userCourses) return
+
+                          return {
+                            userCourses: [
+                              ...qData.userCourses,
+                              data.createCourse!,
+                            ],
+                          }
+                        }
+                      )
+                    },
                   })
 
                   if (result.data?.createCourse) {

@@ -36,14 +36,8 @@ function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
   }>({ open: false, loginId: undefined })
   const { data: userLogins } = useSuspenseQuery(GetUserLoginsDocument)
 
-  // TODO: add query update
-  const [createUserLogin] = useMutation(CreateUserLoginDocument, {
-    refetchQueries: [{ query: GetUserLoginsDocument }],
-  })
-  // TODO: add query update
-  const [deleteUserLogin] = useMutation(DeleteUserLoginDocument, {
-    refetchQueries: [{ query: GetUserLoginsDocument }],
-  })
+  const [createUserLogin] = useMutation(CreateUserLoginDocument)
+  const [deleteUserLogin] = useMutation(DeleteUserLoginDocument)
 
   if (
     typeof userLogins?.userScope === 'undefined' ||
@@ -110,7 +104,27 @@ function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
                   destructive
                   className={{ root: 'h-7 w-7' }}
                   onClick={() =>
-                    deleteUserLogin({ variables: { id: login.id } })
+                    deleteUserLogin({
+                      variables: { id: login.id },
+                      update: (cache, { data }) => {
+                        // verify that the deletion was successful
+                        if (!data?.deleteUserLogin) return
+
+                        // remove the deleted login from the cache
+                        cache.updateQuery(
+                          { query: GetUserLoginsDocument },
+                          (qData) => {
+                            if (!qData?.userLogins) return qData
+
+                            return {
+                              userLogins: qData.userLogins.filter(
+                                (login) => login.id !== data.deleteUserLogin!.id
+                              ),
+                            }
+                          }
+                        )
+                      },
+                    })
                   }
                   data={{ cy: `delete-delegated-login-${login.name}` }}
                 >
@@ -146,6 +160,25 @@ function DelegatedAccessSettings({ shortname }: { shortname?: string }) {
                   name: values.name,
                   password: values.password,
                   scope: values.scope,
+                },
+                update: (cache, { data }) => {
+                  // verify that the creation was successful
+                  if (!data?.createUserLogin) return
+
+                  // update the listed user logins
+                  cache.updateQuery(
+                    { query: GetUserLoginsDocument },
+                    (qData) => {
+                      if (!qData?.userLogins) return qData
+
+                      return {
+                        userLogins: [
+                          ...qData.userLogins,
+                          data.createUserLogin!,
+                        ],
+                      }
+                    }
+                  )
                 },
               })
               setSubmitting(false)

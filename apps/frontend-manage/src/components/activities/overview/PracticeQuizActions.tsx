@@ -141,7 +141,7 @@ function PracticeQuizActions({
       <div>
         {publishModal && (
           <PracticeQuizPublishingModal
-            elementId={practiceQuiz.id}
+            activityId={practiceQuiz.id}
             title={practiceQuiz.name}
             onClose={() => setPublishModal(false)}
             courseId={practiceQuiz.courseId!}

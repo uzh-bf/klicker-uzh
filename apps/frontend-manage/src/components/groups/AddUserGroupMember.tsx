@@ -19,7 +19,6 @@ function AddUserGroupMember({
   loading: boolean
 }) {
   const t = useTranslations()
-  // TODO: add query update
   const [addUserToUserGroup] = useMutation(AddUserToUserGroupDocument)
 
   const onErrorToast = () =>
@@ -53,42 +52,24 @@ function AddUserGroupMember({
               if (!newUser) return
 
               // add the new user as an admin or member to of the group
-              const userGroups = cache.readQuery({
-                query: GetUserGroupsUserDocument,
-              })
+              cache.updateQuery(
+                { query: GetUserGroupsUserDocument },
+                (qData) => {
+                  if (!qData?.getUserGroupsUser) return qData
 
-              if (userGroups?.getUserGroupsUser) {
-                cache.writeQuery({
-                  query: GetUserGroupsUserDocument,
-                  data: {
-                    getUserGroupsUser: userGroups?.getUserGroupsUser.map(
+                  return {
+                    getUserGroupsUser: qData.getUserGroupsUser.map(
                       (existingGroup) => {
                         if (groupId === existingGroup.id) {
                           return {
                             ...existingGroup,
                             members: [
                               ...(existingGroup.members ?? []),
-                              ...(adminMode
-                                ? []
-                                : [
-                                    {
-                                      id: newUser.id,
-                                      shortname: newUser.shortname,
-                                      email: newUser.email,
-                                    },
-                                  ]),
+                              ...(adminMode ? [] : [newUser]),
                             ],
                             admins: [
                               ...(existingGroup.admins ?? []),
-                              ...(adminMode
-                                ? [
-                                    {
-                                      id: newUser.id,
-                                      shortname: newUser.shortname,
-                                      email: newUser.email,
-                                    },
-                                  ]
-                                : []),
+                              ...(adminMode ? [newUser] : []),
                             ],
                           }
                         }
@@ -96,9 +77,9 @@ function AddUserGroupMember({
                         return existingGroup
                       }
                     ),
-                  },
-                })
-              }
+                  }
+                }
+              )
             },
           })
 
@@ -134,14 +115,13 @@ function AddUserGroupMember({
           />
           <Button
             type="submit"
-            loading={isSubmitting}
-            disabled={loading}
+            disabled={loading || isSubmitting}
             className={{ root: 'h-7 whitespace-nowrap text-sm' }}
             data={{
               cy: `add-${adminMode ? 'admin' : 'member'}-group-confirm`,
             }}
           >
-            <Button.Icon icon={faPlus} loading={isSubmitting} />
+            <Button.Icon icon={faPlus} />
             <Button.Label>{t('manage.userGroups.addUser')}</Button.Label>
           </Button>
         </Form>

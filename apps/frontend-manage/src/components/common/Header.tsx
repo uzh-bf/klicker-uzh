@@ -99,7 +99,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
           data: { cy: 'catalog' },
           className: {
             label: 'bg-opacity-100',
-            text: 'mr-8',
+            text: twMerge(!user?.privatePreview ? 'mr-8' : undefined),
             badge: 'bg-green-700 hover:bg-green-800',
           },
         },

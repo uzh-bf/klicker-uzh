@@ -969,9 +969,15 @@ export async function changeShortname(
   { shortname }: { shortname: string },
   ctx: ContextWithUser
 ) {
+  // verify that the trimmed shortname does not have a length of more than 10 characters (limit)
+  const trimmedShortname = shortname.trim()
+  if (trimmedShortname.length > 10) {
+    return null
+  }
+
   // check if the shortname is already taken
   const existingUser = await ctx.prisma.user.findUnique({
-    where: { shortname: shortname.trim() },
+    where: { shortname: trimmedShortname },
   })
 
   if (existingUser && existingUser.id !== ctx.user.sub) {
@@ -985,7 +991,7 @@ export async function changeShortname(
 
   const user = await ctx.prisma.user.update({
     where: { id: ctx.user.sub },
-    data: { shortname: shortname.trim() },
+    data: { shortname: trimmedShortname },
   })
 
   return user

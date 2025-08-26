@@ -47,7 +47,24 @@ function ObjectSharingModalWrapper({
   return (
     <>
       <ObjectSharingModal
-        onClose={onClose}
+        onClose={() => {
+          // if an operation related to elements was executed, refetch the element list
+          if (objectType === ObjectType.Element) {
+            refetchElements?.()
+          }
+
+          // if an operation related to activities was executed, refetch the activity list
+          if (
+            objectType === ObjectType.LiveQuiz ||
+            objectType === ObjectType.PracticeQuiz ||
+            objectType === ObjectType.MicroLearning ||
+            objectType === ObjectType.GroupActivity
+          ) {
+            refetchActivities?.()
+          }
+
+          onClose()
+        }}
         objectId={typeof objectId !== 'undefined' ? objectId : objectUuid!}
         objectType={objectType}
         objectName={objectName}
@@ -68,8 +85,6 @@ function ObjectSharingModalWrapper({
           objectName={objectName}
           isTemplate={isTemplate}
           catalogCollectionId={catalogCollectionId}
-          refetchActivities={refetchActivities}
-          refetchElements={refetchElements}
         />
       )}
     </>

@@ -79,39 +79,29 @@ function ElementEditModal({
     }
   )
 
-  // TODO: add query update
   const [manipulateContentElement] = useMutation(
     ManipulateContentElementDocument
   )
-  // TODO: add query update
   const [manipulateFlashcardElement] = useMutation(
     ManipulateFlashcardElementDocument
   )
-  // TODO: add query update
   const [manipulateChoicesQuestion] = useMutation(
     ManipulateChoicesQuestionDocument
   )
-  // TODO: add query update
   const [manipulateNumericalQuestion] = useMutation(
     ManipulateNumericalQuestionDocument
   )
-  // TODO: add query update
   const [manipulateFreeTextQuestion] = useMutation(
     ManipulateFreeTextQuestionDocument
   )
-  // TODO: add query update
   const [manipulateSelectionQuestion] = useMutation(
     ManipulateSelectionQuestionDocument
   )
-  // TODO: add query update
   const [manipulateCaseStudyQuestion] = useMutation(
     ManipulateCaseStudyQuestionDocument
   )
-  // TODO: add query update
   const [createAnswerCollection] = useMutation(CreateAnswerCollectionDocument)
-  // TODO: add query update
   const [updateElementInstances] = useMutation(UpdateElementInstancesDocument)
-  // TODO: add query update
   const [flagOutdatedElementInstances] = useMutation(
     FlagOutdatedElementInstancesDocument
   )
@@ -163,7 +153,6 @@ function ElementEditModal({
       setUpdateInstances={setUpdateInstances}
       includeTemplateUpdates={includeTemplateUpdates}
       setIncludeTemplateUpdates={setIncludeTemplateUpdates}
-      refetchElements={refetchElements}
       onSubmitElement={async (values) => {
         try {
           switch (values.type) {
@@ -378,9 +367,7 @@ function ElementEditModal({
             elementId !== null &&
             typeof elementId !== 'undefined'
           ) {
-            await flagOutdatedElementInstances({
-              variables: { elementId: elementId },
-            })
+            await flagOutdatedElementInstances({ variables: { elementId } })
           }
 
           return true

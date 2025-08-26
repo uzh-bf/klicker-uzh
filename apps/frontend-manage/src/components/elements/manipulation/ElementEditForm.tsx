@@ -59,7 +59,6 @@ function ElementEditForm({
   setUpdateInstances,
   includeTemplateUpdates,
   setIncludeTemplateUpdates,
-  refetchElements,
 }: {
   // flag to disable inputs (edit mode and read permissions)
   inputsDisabled?: boolean
@@ -85,10 +84,8 @@ function ElementEditForm({
   setUpdateInstances: Dispatch<SetStateAction<boolean>>
   includeTemplateUpdates: boolean
   setIncludeTemplateUpdates: Dispatch<SetStateAction<boolean>>
-  refetchElements?: () => Promise<void>
 }) {
   const t = useTranslations()
-
   const [activeTab, setActiveTab] = useState('preview')
   const [answerCollectionEntries, setAnswerCollectionEntries] = useState<
     { id: number; value: string }[]
@@ -186,7 +183,6 @@ function ElementEditForm({
                       mode={mode}
                       values={values}
                       isSubmitting={isSubmitting}
-                      refetchElements={refetchElements}
                     />
                     <ElementContentInput
                       disabled={inputsDisabled}
