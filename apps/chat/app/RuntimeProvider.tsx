@@ -1,6 +1,9 @@
 'use client'
 
-import { useChatStore } from '@/app/stores/chatStore'
+import {
+  useChatStore,
+  type ExtendedThreadMessageLike,
+} from '@/app/stores/chatStore'
 import { useSettingsStore } from '@/app/stores/settingsStore'
 import { RAGToolUI } from '@/components/assistant-ui/tools-ui/rag-tool-ui'
 import { WeatherToolUI } from '@/components/assistant-ui/tools-ui/weather-tool-ui'
@@ -42,8 +45,14 @@ export function RuntimeProvider({
 
   // function to handle streaming chat response
   const generateChatResponse = useCallback(
-    async (messagesToSend: ThreadMessageLike[], threadId: string) => {
+    async (messagesToSend: ExtendedThreadMessageLike[], threadId: string) => {
       setIsRunning(true)
+
+      const triggerMessage = messagesToSend[messagesToSend.length - 1]
+      const parentId = triggerMessage?.parentId
+
+      // assistant message ID which is also sent to backend to be coherent
+      const assistantMessageId = generateId()
 
       try {
         const response = await fetch('/api/chat', {
@@ -55,13 +64,19 @@ export function RuntimeProvider({
               role: m.role,
               content: Array.isArray(m.content)
                 ? m.content
-                    .map((c) => (c.type === 'text' ? c.text : String(c)))
+                    .map((c: { type?: string; text?: string } | string) =>
+                      typeof c === 'object' && c.type === 'text'
+                        ? c.text || ''
+                        : String(c)
+                    )
                     .join('')
                 : String(m.content),
             })),
             threadId,
             selectedModel,
             systemPrompt,
+            parentId: parentId || undefined,
+            assistantMessageId,
           }),
         })
 
@@ -72,9 +87,6 @@ export function RuntimeProvider({
         const reader = response.body?.getReader()
         const decoder = new TextDecoder()
         let buffer = ''
-
-        // single assistant message that will contain all content parts in order
-        const assistantMessageId = generateId()
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const orderedContentParts: any[] = []
@@ -270,11 +282,12 @@ export function RuntimeProvider({
       }
 
       // add user message to the store
-      const userMessage: ThreadMessageLike = {
+      const userMessage: ExtendedThreadMessageLike = {
         id: generateId(),
         role: 'user',
         content: message.content,
         createdAt: new Date(),
+        parentId: message.parentId,
       }
 
       await addMessage(userMessage)
@@ -303,15 +316,16 @@ export function RuntimeProvider({
     const newMessages = [...messages.slice(0, index)]
 
     // Add the edited message
-    const editedMessage: ThreadMessageLike = {
+    const editedMessage: ExtendedThreadMessageLike = {
       role: 'user',
       content: message.content,
-      id: message.sourceId || generateId(),
+      id: generateId(),
       createdAt: new Date(),
+      parentId: message.parentId,
     }
     newMessages.push(editedMessage)
 
-    // Update the messages in the store first
+    // update the messages in the store
     setMessages(newMessages)
 
     // generate new chat response

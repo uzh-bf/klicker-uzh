@@ -2,9 +2,14 @@
 import { ThreadMessageLike } from '@assistant-ui/react'
 import { create } from 'zustand'
 
+// extended type to include parentId for conversation branching
+export type ExtendedThreadMessageLike = ThreadMessageLike & {
+  parentId?: string | null
+}
+
 export interface Thread {
   id: string
-  messages: ThreadMessageLike[]
+  messages: ExtendedThreadMessageLike[]
   isRunning: boolean
   title?: string
   createdAt: Date
@@ -24,6 +29,7 @@ interface ApiMessage {
   thread_id: string
   role: string
   content: Array<{ type: string; text: string }>
+  parent_id?: string | null
   created_at: string
   updated_at: string
 }
@@ -41,10 +47,13 @@ interface ChatState {
   updateThreadTitle: (threadId: string, title: string) => Promise<void>
 
   // active thread
-  addMessage: (message: ThreadMessageLike) => Promise<string | null>
-  setMessages: (messages: ThreadMessageLike[]) => void
+  addMessage: (message: ExtendedThreadMessageLike) => Promise<string | null>
+  setMessages: (messages: ExtendedThreadMessageLike[]) => void
   setIsRunning: (isRunning: boolean) => void
-  updateMessage: (id: string, updates: Partial<ThreadMessageLike>) => void
+  updateMessage: (
+    id: string,
+    updates: Partial<ExtendedThreadMessageLike>
+  ) => void
   clearMessages: () => void
   setLoading: (loading: boolean) => void
 }
@@ -85,7 +94,7 @@ const convertApiThreadToThread = (apiThread: ApiThread): Thread => ({
 
 const convertApiMessageToMessage = (
   apiMessage: ApiMessage
-): ThreadMessageLike => ({
+): ExtendedThreadMessageLike => ({
   id: apiMessage.id,
   role: apiMessage.role as 'user' | 'assistant',
   content: apiMessage.content.map((item) => ({
@@ -93,6 +102,7 @@ const convertApiMessageToMessage = (
     text: item.text,
   })),
   createdAt: new Date(apiMessage.created_at),
+  parentId: apiMessage.parent_id || undefined,
 })
 
 export const useChatStore = create<ChatState>((set, get) => {

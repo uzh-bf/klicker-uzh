@@ -1,24 +1,26 @@
 model ChatThread {
-  id        String   @id @default(cuid())
-  title     String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id         String      @id @default(cuid())
+  title      String?
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
 
-  messages ChatMessage[]
+  messages   ChatMessage[]
 
   @@map("ChatThread")
 }
 
 model ChatMessage {
-  id       String @id @default(cuid())
-  threadId String @map("thread_id")
-  role     String // 'user' | 'assistant'
-  content  Json   // Array<{ type: string; text: string }>
+  id        String    @id @default(cuid())
+  threadId  String    @map("thread_id")
+  parentId  String?
+  role      String    // 'user' | 'assistant'
+  content   Json      // Array<{ type: string; text: string }>
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
 
-  thread ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
 
+  @@index([parentId])
   @@map("ChatMessage")
 }

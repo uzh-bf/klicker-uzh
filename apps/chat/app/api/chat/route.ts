@@ -20,14 +20,19 @@ export async function POST(req: Request) {
     threadId,
     selectedModel,
     systemPrompt,
+    parentId,
+    assistantMessageId,
   }: {
     messages: Array<{ id: string; role: string; content: string }>
     threadId: string | null
     selectedModel: string
     systemPrompt: string
+    parentId?: string | null
+    assistantMessageId: string
   } = await req.json()
 
   let currentThreadId = threadId
+  let userMessageId: string | null = null
 
   // create a new thread if none exists
   if (!currentThreadId && messages.length > 0) {
@@ -50,11 +55,15 @@ export async function POST(req: Request) {
       try {
         await prisma.chatMessage.create({
           data: {
+            id: lastMessage.id,
             threadId: currentThreadId,
+            parentId: parentId || null,
             role: lastMessage.role,
             content: [{ type: 'text', text: lastMessage.content }],
           },
         })
+
+        userMessageId = lastMessage.id
 
         // update thread's timestamp
         await prisma.chatThread.update({
@@ -108,7 +117,9 @@ export async function POST(req: Request) {
         try {
           await prisma.chatMessage.create({
             data: {
+              id: assistantMessageId,
               threadId: currentThreadId,
+              parentId: userMessageId,
               role: 'assistant',
               content: [{ type: 'text', text: result.text }],
             },
