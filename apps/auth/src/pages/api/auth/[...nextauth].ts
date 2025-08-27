@@ -91,8 +91,8 @@ async function createUserAffiliations(
       const domainParts = parts[1]?.split('.')
       if (!domainParts || domainParts.length === 0) continue
 
-      const provider = domainParts[0]!
-
+      const provider = domainParts[0]
+      if (!provider) continue
       // upsert accounts for every affiliation
       await prisma.account.upsert({
         where: {
