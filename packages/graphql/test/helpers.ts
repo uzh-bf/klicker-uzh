@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals'
 import { prisma } from '@klicker-uzh/prisma'
 import {
   AnswerCollection,
