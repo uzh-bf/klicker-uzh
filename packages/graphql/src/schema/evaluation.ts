@@ -7,7 +7,12 @@ import {
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { CaseStudyCriterionLabels, ElementType } from './elementData.js'
-import { ConfusionTimestepRef, FeedbackRef, IFeedback } from './liveQuiz.js'
+import {
+  ConfusionTimestepRef,
+  ElementBlockStatus,
+  FeedbackRef,
+  IFeedback,
+} from './liveQuiz.js'
 import { LocaleType } from './user.js'
 
 export interface IActivityEvaluation {
@@ -36,6 +41,9 @@ export interface IStackEvaluation {
   stackOrder: number
   stackActive: boolean
   instances: IElementInstanceEvaluation[]
+  status?: DB.ElementBlockStatus | null
+  expiresAt?: Date | null
+  timeLimit?: number | null
 }
 
 export interface IElementInstanceEvaluation {
@@ -261,6 +269,15 @@ export const StackEvaluation = StackEvaluationRef.implement({
     stackDescription: t.exposeString('stackDescription', { nullable: true }),
     stackOrder: t.exposeInt('stackOrder'),
     stackActive: t.exposeBoolean('stackActive'),
+    status: t.expose('status', {
+      type: ElementBlockStatus,
+      nullable: true,
+    }),
+    expiresAt: t.expose('expiresAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+    timeLimit: t.exposeInt('timeLimit', { nullable: true }),
     instances: t.field({
       type: [ElementInstanceEvaluation],
       resolve: (s) => s.instances,

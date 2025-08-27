@@ -221,25 +221,21 @@ function Header({
                   },
                 ]
               : []),
-            ...(course?.id
-              ? [
-                  {
-                    id: 'docs',
-                    type: 'standard' as 'standard',
-                    label: (
-                      <div>
-                        <FontAwesomeIcon
-                          icon={faCircleQuestion}
-                          className="mr-2 w-4"
-                        />
-                        <span>{t('shared.generic.documentation')}</span>
-                      </div>
-                    ),
-                    onClick: () => router.push(`/course/${course.id}/docs`),
-                    data: { cy: 'course-docs' },
-                  },
-                ]
-              : []),
+            {
+              id: 'docs',
+              type: 'standard' as 'standard',
+              label: (
+                <div>
+                  <FontAwesomeIcon
+                    icon={faCircleQuestion}
+                    className="mr-2 w-4"
+                  />
+                  <span>{t('shared.generic.documentation')}</span>
+                </div>
+              ),
+              onClick: () => router.push(`/docs`),
+              data: { cy: 'course-docs' },
+            },
             {
               id: 'languageSwitch',
               label: (

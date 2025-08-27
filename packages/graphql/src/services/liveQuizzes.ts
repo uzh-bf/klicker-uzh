@@ -1233,7 +1233,7 @@ export async function activateLiveQuizBlock(
 
   if (updatedQuiz.activeBlock?.expiresAt) {
     scheduledJobs[blockId] = schedule.scheduleJob(
-      dayjs(updatedQuiz.activeBlock.expiresAt).add(20, 'second').toDate(),
+      dayjs(updatedQuiz.activeBlock.expiresAt).add(10, 'second').toDate(),
       async () => {
         await deactivateLiveQuizBlock({ quizId, blockId }, ctx, true)
         ctx.emitter.emit('invalidate', {

@@ -164,6 +164,7 @@ function ActivityEvaluation({
             }
             isStackActive={stacks[activeStack]?.stackActive ?? false}
             currentInstance={instanceResults[activeInstance]}
+            currentStack={stacks[activeStack]}
             activeInstance={activeInstance}
             activeStack={activeStack}
             courseLanguage={courseLanguage}

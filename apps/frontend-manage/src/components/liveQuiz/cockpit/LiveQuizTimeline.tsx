@@ -89,18 +89,15 @@ function LiveQuizTimeline({
         lastActiveBlockId === blocks[blocks.length - 1].id &&
         activeBlockId === -1
       ) {
-        setInCooldown(false)
         setButtonState('endQuiz')
       } else if (
         // no block is active and no block has been executed yet
         lastActiveBlockId === -1 &&
         activeBlockId === -1
       ) {
-        setInCooldown(false)
         setButtonState('firstBlock')
       } else {
         // no block is active and the last block of the live quiz has not yet been executed
-        setInCooldown(false)
         setButtonState('nextBlock')
       }
     }
@@ -213,8 +210,6 @@ function LiveQuizTimeline({
                 <LiveQuizBlock
                   key={`${block.id}-${block.status}`}
                   block={block}
-                  inCooldown={inCooldown && activeBlockId === block.id}
-                  setInCooldown={setInCooldown}
                   active={activeBlockId === block.id}
                   className="my-auto"
                 />

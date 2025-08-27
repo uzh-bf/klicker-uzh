@@ -3823,6 +3823,9 @@ export function computeStackEvaluation(
     stackDescription: 'description' in stack ? stack.description : null,
     stackOrder: stack.order,
     stackActive: stack.active ?? false,
+    status: 'status' in stack ? stack.status : null,
+    expiresAt: 'expiresAt' in stack ? stack.expiresAt : null,
+    timeLimit: 'timeLimit' in stack ? stack.timeLimit : null,
     instances: stack.elements
       .map((instance) => computeInstanceEvaluation({ instance }))
       .filter((instance) => typeof instance !== 'undefined'),
