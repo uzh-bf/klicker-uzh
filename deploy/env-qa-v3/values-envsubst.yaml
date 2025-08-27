@@ -1,110 +1,110 @@
-dfDomain: '<klicker:klicker-secrets:EMAIL_TYPE>'
+dfDomain: <klicker:klicker-secrets:EMAIL_TYPE>
 
-teamsWebhookUrl: '<klicker:klicker-secrets:TEAMS_WEBHOOK_URL>'
+teamsWebhookUrl: <klicker:klicker-secrets:TEAMS_WEBHOOK_URL>
 
-appSecret: '<klicker:klicker-secrets:APP_SECRET>'
+appSecret: <klicker:klicker-secrets:APP_SECRET>
 
 email:
-  type: '<klicker:klicker-secrets:EMAIL_TYPE>'
-  from: '<klicker:klicker-secrets:EMAIL_FROM>'
-  host: '<klicker:klicker-secrets:EMAIL_HOST>'
-  port: '<klicker:klicker-secrets:EMAIL_PORT>'
-  username: '<klicker:klicker-secrets:EMAIL_USER>'
-  password: '<klicker:klicker-secrets:EMAIL_PASS>'
-  secure: '<klicker:klicker-secrets:EMAIL_SECURE>'
-  requireTLS: '<klicker:klicker-secrets:EMAIL_STARTTLS>'
+  type: <klicker:klicker-secrets:EMAIL_TYPE>
+  from: <klicker:klicker-secrets:EMAIL_FROM>
+  host: <klicker:klicker-secrets:EMAIL_HOST>
+  port: <klicker:klicker-secrets:EMAIL_PORT>
+  username: <klicker:klicker-secrets:EMAIL_USER>
+  password: <klicker:klicker-secrets:EMAIL_PASS>
+  secure: <klicker:klicker-secrets:EMAIL_SECURE>
+  requireTLS: <klicker:klicker-secrets:EMAIL_STARTTLS>
 
 eduId:
-  clientSecret: '<klicker:klicker-secrets:EDUID_CLIENT_SECRET>'
+  clientSecret: <klicker:klicker-secrets:EDUID_CLIENT_SECRET>
 
 auth:
-  replicaCount: '<klicker:klicker-secrets:APP_REPLICAS>'
+  replicaCount: <klicker:klicker-secrets:APP_REPLICAS>
   image:
-    tag: '<klicker:klicker-secrets:APP_VERSION>'
+    tag: <klicker:klicker-secrets:APP_VERSION>
 
 frontendPWA:
-  replicaCount: '<klicker:klicker-secrets:APP_REPLICAS>'
+  replicaCount: <klicker:klicker-secrets:APP_REPLICAS>
   image:
-    tag: '<klicker:klicker-secrets:APP_VERSION>'
+    tag: <klicker:klicker-secrets:APP_VERSION>
 
 frontendManage:
-  replicaCount: '<klicker:klicker-secrets:APP_REPLICAS>'
+  replicaCount: <klicker:klicker-secrets:APP_REPLICAS>
   image:
-    tag: '<klicker:klicker-secrets:APP_VERSION>'
+    tag: <klicker:klicker-secrets:APP_VERSION>
 
 frontendControl:
-  replicaCount: '<klicker:klicker-secrets:APP_REPLICAS>'
+  replicaCount: <klicker:klicker-secrets:APP_REPLICAS>
   image:
-    tag: '<klicker:klicker-secrets:APP_VERSION>'
+    tag: <klicker:klicker-secrets:APP_VERSION>
 
 backendGraphql:
-  replicaCount: '<klicker:klicker-secrets:APP_REPLICAS>'
+  replicaCount: <klicker:klicker-secrets:APP_REPLICAS>
 
   image:
-    tag: '<klicker:klicker-secrets:APP_VERSION>'
+    tag: <klicker:klicker-secrets:APP_VERSION>
 
-  apiDomain: '<klicker:klicker-secrets:API_DOMAIN>'
-  cookieDomain: '<klicker:klicker-secrets:COOKIE_DOMAIN>'
-  databaseUrl: '<klicker:klicker-secrets:DATABASE_URL>'
+  apiDomain: <klicker:klicker-secrets:API_DOMAIN>
+  cookieDomain: <klicker:klicker-secrets:COOKIE_DOMAIN>
+  databaseUrl: <klicker:klicker-secrets:DATABASE_URL>
   debug: true
 
-  appManageSubdomain: '<klicker:klicker-secrets:APP_MANAGE_SUBDOMAIN>'
-  appManageDomain: '<klicker:klicker-secrets:APP_MANAGE_DOMAIN>'
-  appStudentSubdomain: '<klicker:klicker-secrets:APP_STUDENT_SUBDOMAIN>'
-  appStudentDomain: '<klicker:klicker-secrets:APP_STUDENT_DOMAIN>'
-  appControlSubdomain: '<klicker:klicker-secrets:APP_CONTROL_SUBDOMAIN>'
-  appControlDomain: '<klicker:klicker-secrets:APP_CONTROL_DOMAIN>'
+  appManageSubdomain: <klicker:klicker-secrets:APP_MANAGE_SUBDOMAIN>
+  appManageDomain: <klicker:klicker-secrets:APP_MANAGE_DOMAIN>
+  appStudentSubdomain: <klicker:klicker-secrets:APP_STUDENT_SUBDOMAIN>
+  appStudentDomain: <klicker:klicker-secrets:APP_STUDENT_DOMAIN>
+  appControlSubdomain: <klicker:klicker-secrets:APP_CONTROL_SUBDOMAIN>
+  appControlDomain: <klicker:klicker-secrets:APP_CONTROL_DOMAIN>
 
   notifications:
-    url: '<klicker:klicker-secrets:NOTIFICATION_URL>'
-    secret: '<klicker:klicker-secrets:NOTIFICATION_SECRET>'
-    supportEmail: '<klicker:klicker-secrets:NOTIFICATION_SUPPORT_EMAIL>'
+    url: <klicker:klicker-secrets:NOTIFICATION_URL>
+    secret: <klicker:klicker-secrets:NOTIFICATION_SECRET>
+    supportEmail: <klicker:klicker-secrets:NOTIFICATION_SUPPORT_EMAIL>
 
   vapid:
-    publicKey: '<klicker:klicker-secrets:VAPID_PUBLIC_KEY>'
-    privateKey: '<klicker:klicker-secrets:VAPID_PRIVATE_KEY>'
+    publicKey: <klicker:klicker-secrets:VAPID_PUBLIC_KEY>
+    privateKey: <klicker:klicker-secrets:VAPID_PRIVATE_KEY>
 
   redisCache:
-    host: '<klicker:klicker-secrets:REDIS_CACHE_HOST>'
-    port: '<klicker:klicker-secrets:REDIS_CACHE_PORT>'
-    pass: '<klicker:klicker-secrets:REDIS_CACHE_PASS>'
+    host: <klicker:klicker-secrets:REDIS_CACHE_HOST>
+    port: <klicker:klicker-secrets:REDIS_CACHE_PORT>
+    pass: <klicker:klicker-secrets:REDIS_CACHE_PASS>
 
   redisExec:
-    host: '<klicker:klicker-secrets:REDIS_HOST>'
-    port: '<klicker:klicker-secrets:REDIS_PORT>'
-    tls: '<klicker:klicker-secrets:REDIS_TLS>'
-    pass: '<klicker:klicker-secrets:REDIS_PASS>'
+    host: <klicker:klicker-secrets:REDIS_HOST>
+    port: <klicker:klicker-secrets:REDIS_PORT>
+    tls: <klicker:klicker-secrets:REDIS_TLS>
+    pass: <klicker:klicker-secrets:REDIS_PASS>
 
   sentryEnv: qa
-  sentryDSN: '<klicker:klicker-secrets:SENTRY_DSN>'
+  sentryDSN: <klicker:klicker-secrets:SENTRY_DSN>
 
 olatApi:
-  key: '<klicker:klicker-secrets:OLAT_API_KEY>'
+  key: <klicker:klicker-secrets:OLAT_API_KEY>
 
   image:
-    tag: '<klicker:klicker-secrets:APP_VERSION>'
+    tag: <klicker:klicker-secrets:APP_VERSION>
 
 lti:
-  replicaCount: '<klicker:klicker-secrets:APP_REPLICAS>'
+  replicaCount: <klicker:klicker-secrets:APP_REPLICAS>
 
   image:
-    tag: '<klicker:klicker-secrets:APP_VERSION>'
+    tag: <klicker:klicker-secrets:APP_VERSION>
 
-  appSecret: '<klicker:klicker-secrets:APP_SECRET>'
-  clientId: '<klicker:klicker-secrets:LTI_CLIENT_ID>'
-  redirectURL: '<klicker:klicker-secrets:LTI_REDIRECT_URL>'
-  cookieDomain: '<klicker:klicker-secrets:COOKIE_DOMAIN>'
-  encryptionKey: '<klicker:klicker-secrets:APP_SECRET>'
-  name: '<klicker:klicker-secrets:LTI_NAME>'
-  url: '<klicker:klicker-secrets:LTI_URL>'
-  authEndpoint: '<klicker:klicker-secrets:LTI_AUTH_ENDPOINT>'
-  tokenEndpoint: '<klicker:klicker-secrets:LTI_TOKEN_ENDPOINT>'
-  keysEndpoint: '<klicker:klicker-secrets:LTI_KEYS_ENDPOINT>'
+  appSecret: <klicker:klicker-secrets:APP_SECRET>
+  clientId: <klicker:klicker-secrets:LTI_CLIENT_ID>
+  redirectURL: <klicker:klicker-secrets:LTI_REDIRECT_URL>
+  cookieDomain: <klicker:klicker-secrets:COOKIE_DOMAIN>
+  encryptionKey: <klicker:klicker-secrets:APP_SECRET>
+  name: <klicker:klicker-secrets:LTI_NAME>
+  url: <klicker:klicker-secrets:LTI_URL>
+  authEndpoint: <klicker:klicker-secrets:LTI_AUTH_ENDPOINT>
+  tokenEndpoint: <klicker:klicker-secrets:LTI_TOKEN_ENDPOINT>
+  keysEndpoint: <klicker:klicker-secrets:LTI_KEYS_ENDPOINT>
 
   db:
-    type: '<klicker:klicker-secrets:LTI_DB_TYPE>'
-    host: '<klicker:klicker-secrets:LTI_DB_HOST>'
-    port: '<klicker:klicker-secrets:LTI_DB_PORT>'
-    name: '<klicker:klicker-secrets:LTI_DB_NAME>'
-    username: '<klicker:klicker-secrets:LTI_DB_USER>'
-    password: '<klicker:klicker-secrets:LTI_DB_PASS>'
+    type: <klicker:klicker-secrets:LTI_DB_TYPE>
+    host: <klicker:klicker-secrets:LTI_DB_HOST>
+    port: <klicker:klicker-secrets:LTI_DB_PORT>
+    name: <klicker:klicker-secrets:LTI_DB_NAME>
+    username: <klicker:klicker-secrets:LTI_DB_USER>
+    password: <klicker:klicker-secrets:LTI_DB_PASS>
