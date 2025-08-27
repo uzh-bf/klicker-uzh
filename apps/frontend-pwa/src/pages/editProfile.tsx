@@ -82,40 +82,51 @@ function EditProfile({ participantToken, cookiesAvailable }: Props) {
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
-  const apolloClient = initializeApollo()
+  try {
+    const apolloClient = initializeApollo()
+    const { participantToken, cookiesAvailable } = await getParticipantToken({
+      apolloClient,
+      ctx,
+    })
 
-  const { participantToken, cookiesAvailable } = await getParticipantToken({
-    apolloClient,
-    ctx,
-  })
-
-  if (!participantToken) {
-    return {
-      redirect: {
-        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/createAccount`,
-        permanent: false,
-      },
+    if (!participantToken) {
+      return {
+        redirect: {
+          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/createAccount`,
+          permanent: false,
+        },
+      }
     }
-  }
 
-  if (participantToken) {
-    return {
+    if (participantToken) {
+      return {
+        props: {
+          participantToken,
+          cookiesAvailable,
+          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+            .default,
+        },
+      }
+    }
+
+    return addApolloState(apolloClient, {
       props: {
-        participantToken,
         cookiesAvailable,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
+    })
+  } catch (error) {
+    console.error('Error in getServerSideProps on editProfile:', error)
+
+    // redirect to lti error page with redirect back to this page
+    return {
+      redirect: {
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/ltiError?redirectTo=${process.env.NEXT_PUBLIC_PWA_URL}/${ctx.locale}/editProfile`,
+        permanent: false,
+      },
     }
   }
-
-  return addApolloState(apolloClient, {
-    props: {
-      cookiesAvailable,
-      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-        .default,
-    },
-  })
 }
 
 export default EditProfile

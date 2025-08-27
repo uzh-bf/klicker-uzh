@@ -113,47 +113,59 @@ function PracticeQuizPage({
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
-  if (
-    typeof ctx.params?.courseId !== 'string' ||
-    typeof ctx.params?.id !== 'string'
-  ) {
-    return {
-      redirect: {
-        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
-        statusCode: 302,
-      },
+  try {
+    if (
+      typeof ctx.params?.courseId !== 'string' ||
+      typeof ctx.params?.id !== 'string'
+    ) {
+      return {
+        redirect: {
+          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
+          statusCode: 302,
+        },
+      }
     }
-  }
 
-  const apolloClient = initializeApollo()
+    const apolloClient = initializeApollo()
 
-  const { participantToken, cookiesAvailable } = await getParticipantToken({
-    apolloClient,
-    courseId: ctx.params.courseId,
-    ctx,
-  })
+    const { participantToken, cookiesAvailable } = await getParticipantToken({
+      apolloClient,
+      courseId: ctx.params.courseId,
+      ctx,
+    })
 
-  if (participantToken) {
-    return {
+    if (participantToken) {
+      return {
+        props: {
+          participantToken,
+          cookiesAvailable,
+          id: ctx.params.id,
+          courseId: ctx.params.courseId,
+          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+            .default,
+        },
+      }
+    }
+
+    return addApolloState(apolloClient, {
       props: {
-        participantToken,
-        cookiesAvailable,
         id: ctx.params.id,
         courseId: ctx.params.courseId,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
+    })
+  } catch (error) {
+    console.error('Error in getServerSideProps on practice quiz:', error)
+
+    // redirect to lti error page with redirect back to this page
+    return {
+      redirect: {
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/ltiError?redirectTo=${process.env.NEXT_PUBLIC_PWA_URL}/${ctx.locale}/course/${ctx.params?.courseId}/practiceQuizzes/${ctx.params?.id}`,
+        permanent: false,
+      },
     }
   }
-
-  return addApolloState(apolloClient, {
-    props: {
-      id: ctx.params.id,
-      courseId: ctx.params.courseId,
-      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-        .default,
-    },
-  })
 }
 
 export default PracticeQuizPage

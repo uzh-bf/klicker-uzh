@@ -203,46 +203,58 @@ function MicrolearningIntroduction({
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
-  if (
-    typeof ctx.params?.courseId !== 'string' ||
-    typeof ctx.params?.id !== 'string'
-  ) {
+  try {
+    if (
+      typeof ctx.params?.courseId !== 'string' ||
+      typeof ctx.params?.id !== 'string'
+    ) {
+      return {
+        redirect: {
+          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
+          permanent: false,
+        },
+      }
+    }
+
+    const apolloClient = initializeApollo()
+
+    const { participantToken, cookiesAvailable } = await getParticipantToken({
+      apolloClient,
+      courseId: ctx.params.courseId,
+      ctx,
+    })
+
+    if (participantToken) {
+      return {
+        props: {
+          participantToken,
+          cookiesAvailable,
+          id: ctx.params.id,
+          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+            .default,
+        },
+      }
+    }
+
+    return addApolloState(apolloClient, {
+      props: {
+        id: ctx.params.id,
+        courseId: ctx.params.courseId,
+        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+          .default,
+      },
+    })
+  } catch (error) {
+    console.error('Error in getServerSideProps on microlearning:', error)
+
+    // redirect to lti error page with redirect back to this page
     return {
       redirect: {
-        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/ltiError?redirectTo=${process.env.NEXT_PUBLIC_PWA_URL}/${ctx.locale}/course/${ctx.params?.courseId}/microLearnings/${ctx.params?.id}`,
         permanent: false,
       },
     }
   }
-
-  const apolloClient = initializeApollo()
-
-  const { participantToken, cookiesAvailable } = await getParticipantToken({
-    apolloClient,
-    courseId: ctx.params.courseId,
-    ctx,
-  })
-
-  if (participantToken) {
-    return {
-      props: {
-        participantToken,
-        cookiesAvailable,
-        id: ctx.params.id,
-        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-          .default,
-      },
-    }
-  }
-
-  return addApolloState(apolloClient, {
-    props: {
-      id: ctx.params.id,
-      courseId: ctx.params.courseId,
-      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-        .default,
-    },
-  })
 }
 
 export default MicrolearningIntroduction
