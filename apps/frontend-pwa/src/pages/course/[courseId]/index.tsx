@@ -662,7 +662,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       domain: process.env.COOKIE_DOMAIN,
       path: '/',
       httpOnly: true,
-      maxAge: 1000 * 60 * 2, // valid for 2 min
+      maxAge: 60 * 2, // valid for 2 min
       secure:
         process.env.NODE_ENV === 'production' &&
         process.env.COOKIE_DOMAIN !== '127.0.0.1',
@@ -676,8 +676,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     // redirect to lti error page with redirect back to this page
     return {
       redirect: {
-        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/serverError?redirectTo=${process.env.NEXT_PUBLIC_PWA_URL}`,
-        // destination: `${ctx.locale ? `/${ctx.locale}` : ''}/serverError?redirectTo=${process.env.NEXT_PUBLIC_PWA_URL}/${ctx.locale}/course/${ctx.params?.courseId}`, // TODO: re-introduce correct URL
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/serverError?redirectTo=${process.env.NEXT_PUBLIC_PWA_URL}/${ctx.locale}/course/${ctx.params?.courseId}`,
         permanent: false,
       },
     }

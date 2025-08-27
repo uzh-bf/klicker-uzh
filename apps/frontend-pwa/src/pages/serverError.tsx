@@ -7,7 +7,6 @@ import { Button, H1 } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import nookies from 'nookies'
 import Layout from '../components/Layout'
 
 function Index() {
@@ -26,11 +25,9 @@ function Index() {
         </p>
         <Button
           onClick={() => {
-            // reset lti-token cookie that can create issues with authentication
-            nookies.destroy(null, 'lti-token', {
-              domain: process.env.COOKIE_DOMAIN,
-              path: '/',
-            })
+            // remove lti-token cookie by setting it to expire in the past
+            document.cookie =
+              'lti-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
 
             // redirect to page in query parameter, if defined
             if (
