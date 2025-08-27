@@ -37,7 +37,6 @@ function ElementRemovalModal({
   })
 
   // removal mutation
-  // TODO: add query update
   const [removeObject, { loading: removing }] = useMutation(
     RemoveObjectDocument,
     {

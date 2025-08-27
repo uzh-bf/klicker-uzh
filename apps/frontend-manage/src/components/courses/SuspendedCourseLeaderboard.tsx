@@ -48,24 +48,9 @@ function SuspendedCourseLeaderboard({
     },
   })
 
-  // TODO: add query update
   const [updateWeeklyTimelineEntriesCourse, { loading: updateLoading }] =
     useMutation(UpdateWeeklyTimelineEntriesCourseDocument, {
       variables: { courseId },
-      refetchQueries: [
-        {
-          query: GetCourseLeaderboardDocument,
-          variables: {
-            courseId,
-            courseSelection: leaderboardType === 'course',
-            weeklySelection: leaderboardType === 'weekly',
-            customSelection: leaderboardType === 'custom',
-            startDate:
-              leaderboardType === 'weekly' ? weeklyStartDate : customStartDate,
-            endDate: customEndDate,
-          },
-        },
-      ],
     })
 
   const showLastUpdated =

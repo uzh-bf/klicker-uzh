@@ -141,7 +141,7 @@ function PracticeQuizActions({
       <div>
         {publishModal && (
           <PracticeQuizPublishingModal
-            elementId={practiceQuiz.id}
+            activityId={practiceQuiz.id}
             title={practiceQuiz.name}
             onClose={() => setPublishModal(false)}
             courseId={practiceQuiz.courseId!}
@@ -163,7 +163,6 @@ function PracticeQuizActions({
             objectName={practiceQuiz.name}
             objectType={ObjectType.PracticeQuiz}
             isTemplate={isTemplate}
-            isOwner={practiceQuiz.isOwner ?? false}
             onClose={() => setSharingModal(false)}
             refetchActivities={refetchActivities}
           />

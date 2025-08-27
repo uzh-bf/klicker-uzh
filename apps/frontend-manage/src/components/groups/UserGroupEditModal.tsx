@@ -64,8 +64,9 @@ function UserGroupEditModal({
             />
             <Button
               basic
-              primary
-              className={{ root: 'ml-1.5 px-2 py-2 hover:text-white' }}
+              className={{
+                root: 'bg-primary-100 hover:bg-primary-100/90 ml-1.5 px-2 py-2 text-white hover:text-white',
+              }}
               onClick={async () => {
                 await onNameChange({
                   groupId: group.id,
@@ -147,7 +148,7 @@ function UserGroupEditModal({
                       <Button
                         basic
                         disabled={loading}
-                        className={{ root: 'px-1.5 py-[0.35rem]' }}
+                        className={{ root: 'px-1.5 py-[0.35rem] text-sm' }}
                         onClick={async () => {
                           await onOwnershipTransfer({
                             group,
@@ -158,11 +159,7 @@ function UserGroupEditModal({
                           cy: `transfer-group-ownership-${admin.shortname}`,
                         }}
                       >
-                        <Button.Icon
-                          withoutLabel
-                          icon={faUserTie}
-                          className={{ root: 'h-3.5 w-3.5' }}
-                        />
+                        <Button.Icon withoutLabel icon={faUserTie} />
                       </Button>
                     ) : null}
                     <Button
@@ -173,8 +170,6 @@ function UserGroupEditModal({
                         await onDemotion({
                           groupId: group.id,
                           adminId: admin.id!,
-                          adminShortname: admin.shortname,
-                          adminEmail: admin.email,
                         })
                       }}
                       data={{ cy: `demote-group-admin-${admin.shortname}` }}
@@ -269,8 +264,6 @@ function UserGroupEditModal({
                         onPromotion({
                           groupId: group.id,
                           memberId: member.id!,
-                          memberShortname: member.shortname,
-                          memberEmail: member.email,
                         })
                       }}
                       data={{

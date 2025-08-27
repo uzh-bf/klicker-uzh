@@ -35,7 +35,6 @@ function usePermissionRevocation({
   }) => Promise<boolean>
   permissionRevoking: boolean
 } {
-  // TODO: add query updates
   const [revokeObjectAccess, { loading: revokingObjectAccess }] = useMutation(
     RevokeObjectAccessDocument
   )
@@ -55,29 +54,32 @@ function usePermissionRevocation({
           objectType,
         },
         update: (cache, { data }) => {
-          const prevPermissions = cache.readQuery({
-            query: GetObjectPermissionsDocument,
-            variables: { objectId: String(objectId), objectType },
-          })
+          // verify that the revocation was successful
+          if (!data?.revokeObjectAccess) return
 
-          const removedId = data?.revokeObjectAccess
-          if (
-            !prevPermissions?.getObjectPermissions ||
-            typeof removedId === 'undefined'
-          ) {
-            return
-          }
-
-          cache.writeQuery({
-            query: GetObjectPermissionsDocument,
-            variables: { objectId: String(objectId), objectType },
-            data: {
-              getObjectPermissions: prevPermissions.getObjectPermissions.filter(
-                (permission) => permission.permissionId !== removedId
-              ),
+          // update the listed permissions to reflect the revocation
+          cache.updateQuery(
+            {
+              query: GetObjectPermissionsDocument,
+              variables: { objectId: String(objectId), objectType },
             },
-          })
+            (qData) => {
+              if (!qData?.getObjectPermissions) return qData
+
+              return {
+                ...qData,
+                getObjectPermissions: {
+                  ...qData.getObjectPermissions,
+                  permissions: qData.getObjectPermissions.permissions.filter(
+                    (permission) =>
+                      permission.permissionId !== data.revokeObjectAccess
+                  ),
+                },
+              }
+            }
+          )
         },
+        // TODO: evaluate if more evolved and type-dependent cache updates are helpful here performance-wise
         refetchQueries: [
           { query: GetCatalogSharingRequestsDocument },
           {

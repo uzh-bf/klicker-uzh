@@ -46,7 +46,7 @@ function PracticeQuizOverview({
   }
 
   const quizzes = data?.getCoursePublishedPracticeQuizzes
-  const course = quizzes?.[0].course
+  const course = quizzes?.[0]?.course
   if (
     isInactive ||
     !quizzes ||
@@ -115,11 +115,13 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   // if there is no result (e.g., the shortname is not valid)
   const quizzes = result.data.getCoursePublishedPracticeQuizzes
-  const course = quizzes?.[0].course
+  const course = quizzes?.[0]?.course
   if (!result?.data?.getCoursePublishedPracticeQuizzes || !course) {
     return {
       props: {
         isInactive: true,
+        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+          .default,
       },
     }
   }

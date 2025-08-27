@@ -25,7 +25,6 @@ import Layout from '../components/Layout'
 function AdminPanel() {
   const t = useTranslations()
   const { data, loading } = useQuery(GetUsersPrivatePreviewDocument)
-  // TODO: add query update
   const [grantPrivatePreviewAccess] = useMutation(
     GrantPrivatePreviewAccessDocument
   )
@@ -59,6 +58,8 @@ function AdminPanel() {
                   onSubmit={async (values, { resetForm }) => {
                     const { data: success } = await grantPrivatePreviewAccess({
                       variables: { email: values.email },
+                      // performance is not relevant for admin access operations
+                      // prefer additional fetches over potentially outdated data
                       refetchQueries: [
                         { query: GetUsersPrivatePreviewDocument },
                       ],

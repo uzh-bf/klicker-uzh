@@ -109,6 +109,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     return {
       props: {
         isInactive: true,
+        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+          .default,
       },
     }
   }

@@ -9,6 +9,7 @@ import {
   ChangeShortnameDocument,
   CheckShortnameAvailableDocument,
   User,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
 import { Button, Tooltip } from '@uzh-bf/design-system'
@@ -29,7 +30,6 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
     boolean | undefined
   >(true)
 
-  // TODO: add query update
   const [changeShortname] = useMutation(ChangeShortnameDocument)
   const [checkShortnameAvailable] = useLazyQuery(
     CheckShortnameAvailableDocument
@@ -54,6 +54,23 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
 
             const result = await changeShortname({
               variables: { shortname: trimmedShortname },
+              update: (cache, { data }) => {
+                // verify that the change was successful
+                if (!data?.changeShortname) return
+
+                // update the cache with the new user data
+                cache.updateQuery({ query: UserProfileDocument }, (qData) => {
+                  if (!qData?.userProfile) return qData
+
+                  return {
+                    ...qData,
+                    userProfile: {
+                      ...qData.userProfile,
+                      shortname: data.changeShortname!.shortname,
+                    },
+                  }
+                })
+              },
             })
 
             if (!result) {
@@ -75,7 +92,7 @@ function ShortnameSetting({ user }: ShortnameSettingProps) {
             shortname: Yup.string()
               .required(t('manage.settings.shortnameRequired'))
               .min(5, t('manage.settings.shortnameMin'))
-              .max(8, t('manage.settings.shortnameMax'))
+              .max(10, t('manage.settings.shortnameMax'))
               .matches(
                 /^[a-zA-Z0-9]*$/,
                 t('manage.settings.shortnameAlphanumeric')

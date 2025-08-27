@@ -47,7 +47,7 @@ function LiveQuizOverview({
     !data ||
     !data.getCourseRunningLiveQuizzes?.length ||
     data.getCourseRunningLiveQuizzes.length === 0 ||
-    !data.getCourseRunningLiveQuizzes[0].course
+    !data.getCourseRunningLiveQuizzes[0]?.course
   ) {
     return (
       <Layout>
@@ -113,6 +113,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     return {
       props: {
         isInactive: true,
+        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+          .default,
       },
     }
   }

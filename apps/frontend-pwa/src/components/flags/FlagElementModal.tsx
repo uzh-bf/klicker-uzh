@@ -40,7 +40,6 @@ function FlagElementModal({
 }: FlagElementModalProps) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
-  // TODO: add query update
   const [flagElement, { error }] = useMutation(FlagElementDocument)
 
   const flagElementSchema = Yup.object().shape({
@@ -62,51 +61,32 @@ function FlagElementModal({
           elementId: elementId,
           content,
         },
-        optimisticResponse: {
-          __typename: 'Mutation',
-          flagElement: {
-            __typename: 'ElementFeedback',
-            id: -1,
-            upvote: false,
-            downvote: false,
-            feedback: content,
-          },
-        },
-        update(cache, { data: dataFlagging }) {
-          const dataQuery = cache.readQuery({
-            query: GetStackElementFeedbacksDocument,
-            variables: { instanceIds: stackInstanceIds },
-          })
+        update(cache, { data }) {
+          // verify that the flagging operation was successful
+          if (!data?.flagElement) return
 
-          const feedbackIx = dataQuery?.getStackElementFeedbacks?.findIndex(
-            (feedback) => feedback.elementInstanceId === instanceId
-          )
-          let newFeedbacks = [...(dataQuery?.getStackElementFeedbacks ?? [])]
-          if (typeof feedbackIx === 'undefined' || feedbackIx === -1) {
-            newFeedbacks.push({
-              __typename: 'ElementFeedback',
-              id:
-                dataFlagging?.flagElement?.id ??
-                Math.round(Math.random() * -1000000),
-              elementInstanceId: instanceId,
-              upvote: false,
-              downvote: false,
-              feedback: content,
-            })
-          } else {
-            newFeedbacks[feedbackIx] = {
-              ...newFeedbacks[feedbackIx],
-              feedback: content,
-            }
-          }
-
-          cache.writeQuery({
-            query: GetStackElementFeedbacksDocument,
-            variables: { instanceIds: stackInstanceIds },
-            data: {
-              getStackElementFeedbacks: newFeedbacks,
+          // add or replace the element feedback in the corresponding list
+          cache.updateQuery(
+            {
+              query: GetStackElementFeedbacksDocument,
+              variables: { instanceIds: stackInstanceIds },
             },
-          })
+            (qData) => {
+              if (!qData?.getStackElementFeedbacks)
+                return { getStackElementFeedbacks: [data.flagElement!] }
+
+              return {
+                getStackElementFeedbacks: [
+                  ...qData.getStackElementFeedbacks.filter(
+                    (feedback) =>
+                      feedback.elementInstanceId !==
+                      data.flagElement!.elementInstanceId
+                  ),
+                  data.flagElement!,
+                ],
+              }
+            }
+          )
         },
       })
       if (result.data?.flagElement?.id) {

@@ -2114,7 +2114,7 @@ describe('Unit tests for sharing functionalities of courses', () => {
     expect(res8).toBeTruthy()
 
     // verify that all direct permissions are correctly returned
-    const directPermissions = await getCoursePermissions(
+    const { permissions: directPermissions } = await getCoursePermissions(
       { id: course.id },
       userOneCtx
     )

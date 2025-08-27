@@ -312,9 +312,7 @@ export async function deleteFeedbackResponse(
 
   const updatedFeedback = await ctx.prisma.feedback.findUnique({
     where: { id: deletedFeedbackResponse.feedbackId },
-    include: {
-      responses: true,
-    },
+    include: { responses: true },
   })
 
   if (!updatedFeedback) {

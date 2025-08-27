@@ -79,39 +79,29 @@ function ElementEditModal({
     }
   )
 
-  // TODO: add query update
   const [manipulateContentElement] = useMutation(
     ManipulateContentElementDocument
   )
-  // TODO: add query update
   const [manipulateFlashcardElement] = useMutation(
     ManipulateFlashcardElementDocument
   )
-  // TODO: add query update
   const [manipulateChoicesQuestion] = useMutation(
     ManipulateChoicesQuestionDocument
   )
-  // TODO: add query update
   const [manipulateNumericalQuestion] = useMutation(
     ManipulateNumericalQuestionDocument
   )
-  // TODO: add query update
   const [manipulateFreeTextQuestion] = useMutation(
     ManipulateFreeTextQuestionDocument
   )
-  // TODO: add query update
   const [manipulateSelectionQuestion] = useMutation(
     ManipulateSelectionQuestionDocument
   )
-  // TODO: add query update
   const [manipulateCaseStudyQuestion] = useMutation(
     ManipulateCaseStudyQuestionDocument
   )
-  // TODO: add query update
   const [createAnswerCollection] = useMutation(CreateAnswerCollectionDocument)
-  // TODO: add query update
   const [updateElementInstances] = useMutation(UpdateElementInstancesDocument)
-  // TODO: add query update
   const [flagOutdatedElementInstances] = useMutation(
     FlagOutdatedElementInstancesDocument
   )
@@ -143,8 +133,14 @@ function ElementEditModal({
         Object.keys(formikInitialValues).length === 0
       }
       initialValues={formikInitialValues}
-      onClose={() => {
+      onClose={async () => {
+        // close the modal
         handleSetIsOpen(false)
+
+        // refetch elements here, since element status might have changed and refetch cannot be used there to avoid closing modal
+        await refetchElements?.()
+
+        // remove potential query parameters that open element edit modal on reload
         const {
           editElementId,
           contextActivityId,
@@ -157,7 +153,6 @@ function ElementEditModal({
       setUpdateInstances={setUpdateInstances}
       includeTemplateUpdates={includeTemplateUpdates}
       setIncludeTemplateUpdates={setIncludeTemplateUpdates}
-      refetchElements={refetchElements}
       onSubmitElement={async (values) => {
         try {
           switch (values.type) {
@@ -372,9 +367,7 @@ function ElementEditModal({
             elementId !== null &&
             typeof elementId !== 'undefined'
           ) {
-            await flagOutdatedElementInstances({
-              variables: { elementId: elementId },
-            })
+            await flagOutdatedElementInstances({ variables: { elementId } })
           }
 
           return true

@@ -2375,26 +2375,29 @@ export async function getCatalogCollectionPermissions(
   })
 
   if (!catalogCollection) {
-    return []
+    return { isOwner: false, permissions: [] }
   }
 
-  return catalogCollection.directPermissions
-    .map((permission) => ({
-      permissionId: permission.id,
-      userId: permission.user?.id,
-      username: permission.user?.shortname,
-      userEmail: permission.user?.email,
-      userGroupId: permission.userGroup?.id,
-      userGroupName: permission.userGroup?.name,
-      permissionLevel: permission.permissionLevel,
-      isOwn: permission.userId === ctx.user.sub,
-    }))
-    .sort((a, b) => {
-      if (a.username === b.username) {
-        return (a.userGroupName ?? '').localeCompare(b.userGroupName ?? '')
-      }
-      return (a.username ?? '').localeCompare(b.username ?? '')
-    })
+  return {
+    isOwner: catalogCollection.ownerId === ctx.user.sub,
+    permissions: catalogCollection.directPermissions
+      .map((permission) => ({
+        permissionId: permission.id,
+        userId: permission.user?.id,
+        username: permission.user?.shortname,
+        userEmail: permission.user?.email,
+        userGroupId: permission.userGroup?.id,
+        userGroupName: permission.userGroup?.name,
+        permissionLevel: permission.permissionLevel,
+        isOwn: permission.userId === ctx.user.sub,
+      }))
+      .sort((a, b) => {
+        if (a.username === b.username) {
+          return (a.userGroupName ?? '').localeCompare(b.userGroupName ?? '')
+        }
+        return (a.username ?? '').localeCompare(b.username ?? '')
+      }),
+  }
 }
 
 export async function transferCatalogCollectionOwnership(
@@ -2550,10 +2553,16 @@ export async function getAnswerCollectionPermissions(
   })
 
   if (!collection) {
-    return []
+    return { isOwner: false, permissions: [] }
   }
 
-  return mapDirectPermissions(collection.directPermissions, ctx.user.sub)
+  return {
+    isOwner: collection.ownerId === ctx.user.sub,
+    permissions: mapDirectPermissions(
+      collection.directPermissions,
+      ctx.user.sub
+    ),
+  }
 }
 
 export async function getElementPermissions(
@@ -2573,10 +2582,13 @@ export async function getElementPermissions(
   })
 
   if (!element) {
-    return []
+    return { isOwner: false, permissions: [] }
   }
 
-  return mapDirectPermissions(element.directPermissions, ctx.user.sub)
+  return {
+    isOwner: element.ownerId === ctx.user.sub,
+    permissions: mapDirectPermissions(element.directPermissions, ctx.user.sub),
+  }
 }
 
 export async function getCoursePermissions(
@@ -2596,10 +2608,13 @@ export async function getCoursePermissions(
   })
 
   if (!course) {
-    return []
+    return { isOwner: false, permissions: [] }
   }
 
-  return mapDirectPermissions(course.directPermissions, ctx.user.sub)
+  return {
+    isOwner: course.ownerId === ctx.user.sub,
+    permissions: mapDirectPermissions(course.directPermissions, ctx.user.sub),
+  }
 }
 
 export async function getLiveQuizPermissions(
@@ -2619,10 +2634,13 @@ export async function getLiveQuizPermissions(
   })
 
   if (!liveQuiz) {
-    return []
+    return { isOwner: false, permissions: [] }
   }
 
-  return mapDirectPermissions(liveQuiz.directPermissions, ctx.user.sub)
+  return {
+    isOwner: liveQuiz.ownerId === ctx.user.sub,
+    permissions: mapDirectPermissions(liveQuiz.directPermissions, ctx.user.sub),
+  }
 }
 
 export async function getPracticeQuizPermissions(
@@ -2642,10 +2660,16 @@ export async function getPracticeQuizPermissions(
   })
 
   if (!practiceQuiz) {
-    return []
+    return { isOwner: false, permissions: [] }
   }
 
-  return mapDirectPermissions(practiceQuiz.directPermissions, ctx.user.sub)
+  return {
+    isOwner: practiceQuiz.ownerId === ctx.user.sub,
+    permissions: mapDirectPermissions(
+      practiceQuiz.directPermissions,
+      ctx.user.sub
+    ),
+  }
 }
 
 export async function getMicroLearningPermissions(
@@ -2665,10 +2689,16 @@ export async function getMicroLearningPermissions(
   })
 
   if (!microLearning) {
-    return []
+    return { isOwner: false, permissions: [] }
   }
 
-  return mapDirectPermissions(microLearning.directPermissions, ctx.user.sub)
+  return {
+    isOwner: microLearning.ownerId === ctx.user.sub,
+    permissions: mapDirectPermissions(
+      microLearning.directPermissions,
+      ctx.user.sub
+    ),
+  }
 }
 
 export async function getGroupActivityPermissions(
@@ -2688,10 +2718,16 @@ export async function getGroupActivityPermissions(
   })
 
   if (!groupActivity) {
-    return []
+    return { isOwner: false, permissions: [] }
   }
 
-  return mapDirectPermissions(groupActivity.directPermissions, ctx.user.sub)
+  return {
+    isOwner: groupActivity.ownerId === ctx.user.sub,
+    permissions: mapDirectPermissions(
+      groupActivity.directPermissions,
+      ctx.user.sub
+    ),
+  }
 }
 
 function mapDerivedPermissions({

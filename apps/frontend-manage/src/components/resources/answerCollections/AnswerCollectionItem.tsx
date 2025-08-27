@@ -185,7 +185,6 @@ function AnswerCollectionItem({
               objectId={collection.id}
               objectName={collection.name}
               objectType={ObjectType.AnswerCollection}
-              isOwner={collection.isOwner ?? false}
               onClose={() => setSharingModal(false)}
             />
           )}

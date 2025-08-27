@@ -14,7 +14,6 @@ function TagEditForm({
   closeEditMode: () => void
 }) {
   const t = useTranslations()
-  // TODO: add query update
   const [editTag, { loading }] = useMutation(EditTagDocument)
 
   const TagModifierSchema = Yup.object().shape({

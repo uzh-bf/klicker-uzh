@@ -23,7 +23,6 @@ function LeaveUserGroupModal({
   groupName: string
 }) {
   const t = useTranslations()
-  // TODO: add query update
   const [leaveUserGroup, { loading }] = useMutation(LeaveUserGroupDocument)
 
   const onErrorToast = () =>
@@ -53,25 +52,21 @@ function LeaveUserGroupModal({
             },
             update: (cache, { data }) => {
               // check if request was successful
-              const success = data?.leaveUserGroup
-              if (!success) return
+              if (!data?.leaveUserGroup) return
 
               // update list of user groups
-              const userGroups = cache.readQuery({
-                query: GetUserGroupsUserDocument,
-              })
+              cache.updateQuery(
+                { query: GetUserGroupsUserDocument },
+                (qData) => {
+                  if (!qData?.getUserGroupsUser) return
 
-              if (userGroups?.getUserGroupsUser) {
-                cache.writeQuery({
-                  query: GetUserGroupsUserDocument,
-
-                  data: {
-                    getUserGroupsUser: userGroups?.getUserGroupsUser.filter(
+                  return {
+                    getUserGroupsUser: qData.getUserGroupsUser.filter(
                       (group) => group.id !== groupId
                     ),
-                  },
-                })
-              }
+                  }
+                }
+              )
             },
           })
 

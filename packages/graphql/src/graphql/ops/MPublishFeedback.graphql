@@ -6,9 +6,5 @@ mutation PublishFeedback(
   publishFeedback(id: $id, isPublished: $isPublished, liveQuizId: $liveQuizId) {
     id
     isPublished
-    isPinned
-    isResolved
-    content
-    votes
   }
 }

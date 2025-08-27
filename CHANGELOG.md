@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.3.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0...v3.3.1) (2025-08-25)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that element edit modal is not closed on element status change ([#4859](https://github.com/uzh-bf/klicker-uzh/issues/4859)) ([6a44ac2](https://github.com/uzh-bf/klicker-uzh/commit/6a44ac2a1ff1bfd6ee26db0b4f4f8cd765b6229c))
+* **apps/frontend-manage:** ensure that reset time days are loaded correctly during practice quiz editing ([6c3555e](https://github.com/uzh-bf/klicker-uzh/commit/6c3555ea7b79a0dcd83435b07e5df00ed57c8425))
+* **apps/frontend-pwa:** resolve broken image links on student docs ([f82994b](https://github.com/uzh-bf/klicker-uzh/commit/f82994b2bfcc54990a26f1a0fcb9789a502cba3d))
+* **apps/lti:** ensure that lti service does not crash on request domain error ([ab37737](https://github.com/uzh-bf/klicker-uzh/commit/ab3773711bc98f20e206962c4313e6c7f0da18b3))
+* **ci:** change name of v2 response processor workflows ([b9932c6](https://github.com/uzh-bf/klicker-uzh/commit/b9932c6b26a0f2b40275bf9b374f33bd12b8385a))
+* **ci:** update function apps deployment workflows ([b5a1751](https://github.com/uzh-bf/klicker-uzh/commit/b5a1751d3d7ec34d6b4ce6dff66d56e8edf4e84e))
+* **packages/graphql:** ensure that correct number of leaderboard entries is shown when aborting live quiz ([afde000](https://github.com/uzh-bf/klicker-uzh/commit/afde000ced43ef02f21c587bcee7b8f096b03419))
+
+
+### Enhancements
+
+* **apps/docs:** add grading logic description for selection questions and case studies ([#4857](https://github.com/uzh-bf/klicker-uzh/issues/4857)) ([449d428](https://github.com/uzh-bf/klicker-uzh/commit/449d428c018911cbb27b8adcfe3bdd5d29c5884f))
+* **apps/frontend-manage:** hide the sample solution and explanation on live quiz evaluations while the block is active ([#4858](https://github.com/uzh-bf/klicker-uzh/issues/4858)) ([f575f31](https://github.com/uzh-bf/klicker-uzh/commit/f575f31693baa54e4468c1b91002d72ab95c92f9))
+* hide results of active live quiz blocks in live quiz browser evaluations ([#4852](https://github.com/uzh-bf/klicker-uzh/issues/4852)) ([7ed2d26](https://github.com/uzh-bf/klicker-uzh/commit/7ed2d26a7d1c132c3c4348c509adfb877b1a4218))
+* support additional gamification setting on live quiz templates ([#4851](https://github.com/uzh-bf/klicker-uzh/issues/4851)) ([5bde765](https://github.com/uzh-bf/klicker-uzh/commit/5bde76567b4e6147cb524c8873b2f31375fa5532))
+
 ## [3.3.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-rc.0...v3.3.0) (2025-08-20)
 
 

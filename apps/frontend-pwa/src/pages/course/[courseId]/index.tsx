@@ -86,9 +86,10 @@ function CourseOverview({
       variables: { courseId },
     })
 
-  // TODO: add query update
   const [joinCourseLeaderboard] = useMutation(JoinCourseLeaderboardDocument, {
     variables: { courseId },
+    // refetching the leaderboard here makes sense to ensure that the participant
+    // is placed correctly in the leaderboard
     refetchQueries: [
       {
         query: GetStudentCourseLeaderboardDocument,
@@ -97,15 +98,8 @@ function CourseOverview({
     ],
   })
 
-  // TODO: add query update
   const [leaveCourseLeaderboard] = useMutation(LeaveCourseLeaderboardDocument, {
     variables: { courseId },
-    refetchQueries: [
-      {
-        query: GetStudentCourseLeaderboardDocument,
-        variables: { courseId, mode: leaderboardType },
-      },
-    ],
   })
 
   useEffect(() => {

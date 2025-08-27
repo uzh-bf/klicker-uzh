@@ -33,7 +33,6 @@ function AddObjectToCatalogModal({
   onError,
 }: AddObjectToCatalogModalProps) {
   const t = useTranslations()
-  // TODO: add query update
   const [addObjectToCatalog] = useMutation(AddObjectToCatalogDocument)
 
   return (
@@ -87,39 +86,31 @@ function AddObjectToCatalogModal({
                 catalogCollectionId,
               },
               update: (cache, { data }) => {
+                // check if the mutation was successful
                 if (!data?.addObjectToCatalog) return
 
-                const prevObjects = cache.readQuery({
-                  query: GetCatalogObjectsDocument,
-                  variables: {
-                    catalogCollectionId,
+                // update the displayed catalog items
+                cache.updateQuery(
+                  {
+                    query: GetCatalogObjectsDocument,
+                    variables: { catalogCollectionId },
                   },
-                })
+                  (qData) => {
+                    if (!qData?.getCatalogObjects) return qData
 
-                if (!prevObjects?.getCatalogObjects) {
-                  return
-                }
-
-                const newObject = data.addObjectToCatalog
-                const modifiedObjectId = newObject.objectId
-                const modifiedObjectUuid = newObject.objectUuid
-                const newObjects = prevObjects.getCatalogObjects
-                  .filter((obj) =>
-                    typeof obj.objectId !== 'undefined' && obj.objectId !== null
-                      ? obj.objectId !== modifiedObjectId
-                      : obj.objectUuid !== modifiedObjectUuid
-                  )
-                  .concat(newObject)
-
-                cache.writeQuery({
-                  query: GetCatalogObjectsDocument,
-                  variables: {
-                    catalogCollectionId,
-                  },
-                  data: {
-                    getCatalogObjects: newObjects,
-                  },
-                })
+                    const newObject = data.addObjectToCatalog!
+                    return {
+                      getCatalogObjects: qData.getCatalogObjects
+                        .filter((obj) =>
+                          typeof obj.objectId !== 'undefined' &&
+                          obj.objectId !== null
+                            ? obj.objectId !== newObject.objectId
+                            : obj.objectUuid !== newObject.objectUuid
+                        )
+                        .concat(newObject),
+                    }
+                  }
+                )
               },
             })
             const success = !!res.data?.addObjectToCatalog

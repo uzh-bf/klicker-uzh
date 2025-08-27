@@ -9,29 +9,29 @@ import GroupAction from './GroupAction'
 
 function RandomGroupBlock({ courseId }: { courseId: string }) {
   const t = useTranslations()
-  // TODO: add query update
   const [joinRandomCourseGroupPool, { loading }] = useMutation(
     JoinRandomCourseGroupPoolDocument,
     {
       variables: { courseId },
       update: (cache, { data }) => {
-        if ((data?.joinRandomCourseGroupPool ?? false) !== true) return
-        const CourseOverviewData = cache.readQuery({
-          query: GetCourseOverviewDataDocument,
-          variables: { courseId: courseId },
-        })
-        if (!CourseOverviewData) return
-        cache.writeQuery({
-          query: GetCourseOverviewDataDocument,
-          variables: { courseId: courseId },
-          data: {
-            getCourseOverviewData: {
-              id: courseId,
-              ...CourseOverviewData.getCourseOverviewData,
-              inRandomGroupPool: true,
-            },
-          },
-        })
+        // verify that the pool was joined successfully
+        if (!data?.joinRandomCourseGroupPool) return
+
+        // update the course overview data accordingly
+        cache.updateQuery(
+          { query: GetCourseOverviewDataDocument, variables: { courseId } },
+          (qData) => {
+            if (!qData?.getCourseOverviewData) return qData
+
+            return {
+              ...qData,
+              getCourseOverviewData: {
+                ...qData.getCourseOverviewData,
+                inRandomGroupPool: true,
+              },
+            }
+          }
+        )
       },
     }
   )
