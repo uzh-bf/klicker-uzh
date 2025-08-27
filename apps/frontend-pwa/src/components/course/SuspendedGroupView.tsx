@@ -83,9 +83,7 @@ function SuspendedGroupView({
   subscribeActivityList,
 }: SuspendedGroupViewProps) {
   const t = useTranslations()
-  // TODO: add query update
   const [leaveParticipantGroup] = useMutation(LeaveParticipantGroupDocument)
-  // TODO: add query update
   const [addMessageToGroup] = useMutation(AddMessageToGroupDocument)
 
   const { data: groupActivitiesData } = useReadQuery(groupActivityQueryRef)
@@ -171,16 +169,31 @@ function SuspendedGroupView({
                   ? undefined
                   : () => {
                       leaveParticipantGroup({
-                        variables: {
-                          courseId,
-                          groupId: group.id,
+                        variables: { courseId, groupId: group.id },
+                        update: (cache, { data }) => {
+                          // verify that leaving the group was successful
+                          if (!data?.leaveParticipantGroup) return
+
+                          // update the course overview to not list this group anymore
+                          cache.updateQuery(
+                            {
+                              query: GetCourseOverviewDataDocument,
+                              variables: { courseId },
+                            },
+                            (qData) => {
+                              if (!qData?.participantGroups) return qData
+
+                              return {
+                                ...qData,
+                                participantGroups:
+                                  qData.participantGroups.filter(
+                                    (g) =>
+                                      g.id !== data.leaveParticipantGroup!.id
+                                  ),
+                              }
+                            }
+                          )
                         },
-                        refetchQueries: [
-                          {
-                            query: GetCourseOverviewDataDocument,
-                            variables: { courseId: courseId },
-                          },
-                        ],
                       })
 
                       setSelectedTab('global')
@@ -244,7 +257,7 @@ function SuspendedGroupView({
 
                 return (
                   <div
-                    key={message.id}
+                    key={message.content}
                     className={twMerge(
                       'flex w-[80%] flex-col gap-0.5 self-start',
                       ownMessage && 'self-end'
@@ -314,12 +327,39 @@ function SuspendedGroupView({
                 setSubmitting(true)
                 await addMessageToGroup({
                   variables: { groupId: group.id, content: values.content },
-                  refetchQueries: [
-                    {
-                      query: GetCourseOverviewDataDocument,
-                      variables: { courseId },
-                    },
-                  ],
+                  update: (cache, { data }) => {
+                    // verify that posting the message was successful
+                    if (!data?.addMessageToGroup) return
+
+                    // add the message to the chat
+                    cache.updateQuery(
+                      {
+                        query: GetCourseOverviewDataDocument,
+                        variables: { courseId },
+                      },
+                      (qData) => {
+                        if (!qData?.participantGroups) return qData
+
+                        return {
+                          ...qData,
+                          participantGroups: qData.participantGroups.map(
+                            (groups) => {
+                              if (groups.id === group.id) {
+                                return {
+                                  ...groups,
+                                  messages: [
+                                    data.addMessageToGroup!, // new messages need to be added in the beginning due to reverse parsing
+                                    ...(groups.messages ?? []),
+                                  ],
+                                }
+                              }
+                              return groups
+                            }
+                          ),
+                        }
+                      }
+                    )
+                  },
                 })
                 resetForm()
                 setSubmitting(false)

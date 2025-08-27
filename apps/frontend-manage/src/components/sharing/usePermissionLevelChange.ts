@@ -31,7 +31,6 @@ function usePermissionLevelChange({
   }) => Promise<boolean>
   permissionChanging: boolean
 } {
-  // TODO: add query update
   const [changePermissionLevel, { loading: permissionLevelChanging }] =
     useMutation(ChangePermissionLevelDocument)
 
@@ -54,34 +53,38 @@ function usePermissionLevelChange({
           propagation: newPropagation,
         },
         update: (cache, { data }) => {
+          // verify that the permission level change was successful
           if (!data?.changePermissionLevel) return
 
-          const prevPermissions = cache.readQuery({
-            query: GetObjectPermissionsDocument,
-            variables: { objectId: String(objectId), objectType },
-          })
-
-          if (!prevPermissions?.getObjectPermissions) {
-            return
-          }
-
-          cache.writeQuery({
-            query: GetObjectPermissionsDocument,
-            variables: { objectId: String(objectId), objectType },
-            data: {
-              getObjectPermissions: prevPermissions.getObjectPermissions.map(
-                (permission) =>
-                  permission.permissionId === permissionId
-                    ? {
-                        ...permission,
-                        permissionLevel: newPermissionLevel,
-                        propagation: newPropagation,
-                      }
-                    : permission
-              ),
+          // update the permission in the list with the updated permission level
+          cache.updateQuery(
+            {
+              query: GetObjectPermissionsDocument,
+              variables: { objectId: String(objectId), objectType },
             },
-          })
+            (qData) => {
+              if (!qData?.getObjectPermissions) return qData
+
+              return {
+                ...qData,
+                getObjectPermissions: {
+                  ...qData.getObjectPermissions,
+                  permissions: qData.getObjectPermissions.permissions.map(
+                    (permission) =>
+                      permission.permissionId === permissionId
+                        ? {
+                            ...permission,
+                            permissionLevel: newPermissionLevel,
+                            propagation: newPropagation,
+                          }
+                        : permission
+                  ),
+                },
+              }
+            }
+          )
         },
+        // TODO: evaluate if more evolved and type-dependent cache updates are helpful here performance-wise
         refetchQueries: [
           {
             query: GetCatalogObjectsDocument,

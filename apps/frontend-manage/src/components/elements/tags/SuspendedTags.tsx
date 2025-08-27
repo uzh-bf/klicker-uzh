@@ -9,6 +9,7 @@ import { TextField, UserNotification } from '@uzh-bf/design-system'
 import * as JsSearch from 'js-search'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
+import { swapIndices } from 'remeda'
 import UserTag from './UserTag'
 
 interface SuspendedTagsProps {
@@ -39,10 +40,7 @@ function SuspendedTags({
   const t = useTranslations()
 
   const { data, error } = useSuspenseQuery(GetUserTagsDocument)
-  // TODO: add query update
-  const [updateTagOrdering] = useMutation(UpdateTagOrderingDocument, {
-    refetchQueries: [{ query: GetUserTagsDocument }],
-  })
+  const [updateTagOrdering] = useMutation(UpdateTagOrderingDocument)
 
   // setup search
   const [searchQuery, setSearchQuery] = useState('')
@@ -106,6 +104,22 @@ function SuspendedTags({
                   ? async () =>
                       await updateTagOrdering({
                         variables: { originIx: ix, targetIx: ix + 1 },
+                        update: (cache, { data }) => {
+                          // check if the reordering operation was successful
+                          if (!data?.updateTagOrdering) return
+
+                          // exchange the two corresponding tags
+                          cache.updateQuery(
+                            { query: GetUserTagsDocument },
+                            (qData) => ({
+                              userTags: swapIndices(
+                                qData?.userTags ?? [],
+                                ix,
+                                ix + 1
+                              ),
+                            })
+                          )
+                        },
                       })
                   : undefined
               }
@@ -114,6 +128,22 @@ function SuspendedTags({
                   ? async () =>
                       await updateTagOrdering({
                         variables: { originIx: ix, targetIx: ix - 1 },
+                        update: (cache, { data }) => {
+                          // check if the reordering operation was successful
+                          if (!data?.updateTagOrdering) return
+
+                          // exchange the two corresponding tags
+                          cache.updateQuery(
+                            { query: GetUserTagsDocument },
+                            (qData) => ({
+                              userTags: swapIndices(
+                                qData?.userTags ?? [],
+                                ix - 1,
+                                ix
+                              ),
+                            })
+                          )
+                        },
                       })
                   : undefined
               }

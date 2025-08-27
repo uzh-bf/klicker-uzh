@@ -156,7 +156,6 @@ function GroupActivityActions({
             objectName={groupActivity.name}
             objectType={ObjectType.GroupActivity}
             isTemplate={isTemplate}
-            isOwner={groupActivity.isOwner ?? false}
             onClose={() => setSharingModal(false)}
             refetchActivities={refetchActivities}
           />

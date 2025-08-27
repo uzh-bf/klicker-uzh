@@ -15,20 +15,15 @@ function useTransferObjectOwnership({
   objectId,
   catalogCollectionId,
   onError,
-  refetchActivities,
-  refetchElements,
 }: {
   objectType: ObjectType
   objectId: string | number
   catalogCollectionId?: string
   onError: () => void
-  refetchActivities?: () => Promise<void>
-  refetchElements?: () => Promise<void>
 }): {
   onTransfer: (shortnameOrEmail: string) => Promise<boolean>
   transferring: boolean
 } {
-  // TODO: add query update
   const [transferObjectOwnership, { loading: transferringOwnership }] =
     useMutation(TransferObjectOwnershipDocument)
 
@@ -40,6 +35,7 @@ function useTransferObjectOwnership({
           objectType,
           shortnameOrEmail,
         },
+        // TODO: evaluate if more evolved and type-dependent cache updates are helpful here performance-wise
         refetchQueries: [
           // use refetch query instead of cache update, because new owner permissions might also
           // be removed in addition to the added new admin permission for the previous owner
@@ -72,8 +68,6 @@ function useTransferObjectOwnership({
       })
 
       if (res.data?.transferObjectOwnership) {
-        await refetchActivities?.() // if an activity was shared, refetch the activities shown on the activity list
-        await refetchElements?.() // if an element was shared, refetch the elements shown on the element list
         return true
       } else {
         onError()

@@ -742,7 +742,17 @@ export async function createCourse(
         prisma
       )
 
-      return newCourse
+      return {
+        ...newCourse,
+        derivedAccess: false,
+        numSharedUsers: 0,
+        permissionLevel: DB.PermissionLevel.OWNER,
+        isOwner: true,
+        isManager: true,
+        isEditor: true,
+        isShared: false,
+        isRemovable: false,
+      }
     },
     { timeout: 60000 }
   )

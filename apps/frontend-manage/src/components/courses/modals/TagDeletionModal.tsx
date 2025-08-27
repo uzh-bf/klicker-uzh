@@ -18,27 +18,19 @@ function TagDeletionModal({
   refetchElements: () => Promise<void>
 }) {
   const t = useTranslations()
-  // TODO: add query update
   const [deleteTag, { loading: deleting }] = useMutation(DeleteTagDocument, {
-    variables: {
-      id,
-    },
+    variables: { id },
     update: (cache, { data }) => {
       if (!data?.deleteTag) return
 
-      const deletedId = data.deleteTag.id
-      const prevUserTags = cache.readQuery({
-        query: GetUserTagsDocument,
-      })
-      if (!prevUserTags?.userTags) return
+      cache.updateQuery({ query: GetUserTagsDocument }, (qData) => {
+        if (!qData?.userTags) return qData
 
-      cache.writeQuery({
-        query: GetUserTagsDocument,
-        data: {
-          userTags: prevUserTags.userTags.filter(
-            (tag: { id: number }) => tag.id !== deletedId
+        return {
+          userTags: qData.userTags.filter(
+            (tag) => tag.id !== data.deleteTag?.id
           ),
-        },
+        }
       })
     },
     optimisticResponse: {

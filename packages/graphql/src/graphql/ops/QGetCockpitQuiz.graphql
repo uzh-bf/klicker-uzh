@@ -53,6 +53,7 @@ query GetCockpitQuiz($id: String!) {
         content
         positiveReactions
         negativeReactions
+        createdAt
       }
     }
   }

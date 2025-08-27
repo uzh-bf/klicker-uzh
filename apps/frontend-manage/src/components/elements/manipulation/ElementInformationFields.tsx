@@ -27,7 +27,6 @@ interface ElementInformationFieldsProps {
   values: ElementFormTypes
   isSubmitting: boolean
   inputsDisabled?: boolean
-  refetchElements?: () => Promise<void>
 }
 
 function ElementInformationFields({
@@ -37,7 +36,6 @@ function ElementInformationFields({
   values,
   isSubmitting,
   inputsDisabled = false,
-  refetchElements,
 }: ElementInformationFieldsProps) {
   const t = useTranslations()
   const statusOptions = useStatusOptions()
@@ -45,7 +43,6 @@ function ElementInformationFields({
   const { setFieldValue } = useFormikContext()
 
   const [statusSaving, setStatusSaving] = useState(false)
-  // TODO: add query update
   const [changeElementStatus] = useMutation(ChangeElementStatusDocument)
 
   return (

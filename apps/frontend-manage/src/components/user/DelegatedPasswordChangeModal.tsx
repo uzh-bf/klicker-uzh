@@ -16,7 +16,6 @@ function DelegatedPasswordChangeModal({
   onClose: () => void
 }) {
   const t = useTranslations()
-  // TODO: add query update
   const [updateUserLogin] = useMutation(UpdateUserLoginDocument)
 
   if (!loginId) {
@@ -45,10 +44,7 @@ function DelegatedPasswordChangeModal({
         onSubmit={async (values, { setSubmitting }) => {
           setSubmitting(true)
           await updateUserLogin({
-            variables: {
-              id: loginId!,
-              password: values.password,
-            },
+            variables: { id: loginId!, password: values.password },
           })
           setSubmitting(false)
           onClose()
