@@ -206,7 +206,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     // redirect to lti error page with redirect back to this page
     return {
       redirect: {
-        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/serverError?redirectTo=${process.env.NEXT_PUBLIC_PWA_URL}/${ctx.locale}/createAccount`,
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/serverError?redirectTo=${encodeURIComponent(`/${ctx.locale}/createAccount`)}`,
         permanent: false,
       },
     }
