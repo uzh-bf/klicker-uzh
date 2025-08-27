@@ -2520,6 +2520,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       openEvaluation: 'Open Evaluation',
       archiveOnlyPastCourses:
         'Only courses with an end date in the past can be archived.',
+      noDeletionAssessment: 'Courses in assessment mode cannot be deleted.',
       archiveCourse: 'Archive course',
       unarchiveCourse: 'Unarchive course',
       confirmCourseArchive:
@@ -2536,7 +2537,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         '{number} participant(s) of this course will loose their collected points and access to all course materials and activities.',
       noLiveQuizzesDisconnected: 'This course contains no live quizzes.',
       disconnectLiveQuizzes:
-        '{number} live quizze(s) will be disconnected from the course. They can still be accessed through the live quiz list.',
+        '{number} live quizze(s) will be disconnected from the course. They can still be accessed through the activity list.',
       noPracticeQuizzesToDelete: 'This course contains no practice quizzes.',
       deletePracticeQuizzes:
         '{number} practice quizze(s) (including their results) will be irreversibly deleted.',
