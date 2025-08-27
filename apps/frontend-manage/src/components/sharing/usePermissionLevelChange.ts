@@ -67,16 +67,19 @@ function usePermissionLevelChange({
 
               return {
                 ...qData,
-                getObjectPermissions: qData.getObjectPermissions.map(
-                  (permission) =>
-                    permission.permissionId === permissionId
-                      ? {
-                          ...permission,
-                          permissionLevel: newPermissionLevel,
-                          propagation: newPropagation,
-                        }
-                      : permission
-                ),
+                getObjectPermissions: {
+                  ...qData.getObjectPermissions,
+                  permissions: qData.getObjectPermissions.permissions.map(
+                    (permission) =>
+                      permission.permissionId === permissionId
+                        ? {
+                            ...permission,
+                            permissionLevel: newPermissionLevel,
+                            propagation: newPropagation,
+                          }
+                        : permission
+                  ),
+                },
               }
             }
           )

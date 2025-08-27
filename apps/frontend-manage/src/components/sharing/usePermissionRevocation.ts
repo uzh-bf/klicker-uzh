@@ -68,10 +68,13 @@ function usePermissionRevocation({
 
               return {
                 ...qData,
-                getObjectPermissions: qData.getObjectPermissions.filter(
-                  (permission) =>
-                    permission.permissionId !== data.revokeObjectAccess
-                ),
+                getObjectPermissions: {
+                  ...qData.getObjectPermissions,
+                  permissions: qData.getObjectPermissions.permissions.filter(
+                    (permission) =>
+                      permission.permissionId !== data.revokeObjectAccess
+                  ),
+                },
               }
             }
           )

@@ -78,10 +78,13 @@ function useObjectSharing({
             (qData) => {
               if (!qData?.getObjectPermissions) return qData
               return {
-                getObjectPermissions: [
+                getObjectPermissions: {
                   ...qData.getObjectPermissions,
-                  data.shareObject!,
-                ],
+                  permissions: [
+                    ...qData.getObjectPermissions.permissions,
+                    data.shareObject!,
+                  ],
+                },
               }
             }
           )
