@@ -25,15 +25,6 @@ function Index() {
         </p>
         <Button
           onClick={() => {
-            // remove the lti token cookie
-            if (process.env.NEXT_PUBLIC_COOKIE_DOMAIN) {
-              document.cookie = `lti-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${process.env.NEXT_PUBLIC_COOKIE_DOMAIN}; secure; samesite=none`
-            } else {
-              // fallback without domain if env var not available
-              document.cookie =
-                'lti-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none'
-            }
-
             // redirect to page in query parameter, if defined
             if (
               router.query.redirectTo &&
