@@ -17,8 +17,6 @@ import Layout from '../components/Layout'
 function JoinPage() {
   const t = useTranslations()
   const router = useRouter()
-
-  // TODO: add query update
   const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument)
   const [showError, setError] = useState(false)
 
@@ -47,9 +45,7 @@ function JoinPage() {
           onSubmit={async (values, { setSubmitting }) => {
             setSubmitting(true)
             const participant = await joinCourseWithPin({
-              variables: {
-                pin: Number(values.pin.replace(/\s/g, '')),
-              },
+              variables: { pin: Number(values.pin.replace(/\s/g, '')) },
             })
 
             if (participant?.data?.joinCourseWithPin) {

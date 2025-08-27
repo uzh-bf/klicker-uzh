@@ -53,13 +53,9 @@ function FeedbackArea({
   const router = useRouter()
   const quizId = router.query.id as string
 
-  // TODO: add query update
   const [createFeedback] = useMutation(CreateFeedbackDocument)
-  // TODO: add query update
   const [addConfusionTimestep] = useMutation(AddConfusionTimestepDocument)
-  // TODO: add query update
   const [upvoteFeedback] = useMutation(UpvoteFeedbackDocument)
-  // TODO: add query update
   const [voteFeedbackResponse] = useMutation(VoteFeedbackResponseDocument)
 
   const [confusionDifficulty, setConfusionDifficulty] = useState(0)

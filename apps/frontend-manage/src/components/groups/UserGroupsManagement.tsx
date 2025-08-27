@@ -27,7 +27,7 @@ function UserGroupsManagement() {
               data.getUserGroupsUser?.length === 0 ? (
               <UserNotification message={t('manage.userGroups.noGroups')} />
             ) : (
-              <div className="mt-1.5 flex flex-col gap-[0.15rem]">
+              <div className="mt-1.5 flex flex-col gap-2">
                 {data?.getUserGroupsUser?.map((group) => (
                   <UserGroupEntry
                     key={`group-item-${group.id}`}

@@ -20,7 +20,6 @@ function ObjectSharingModal({
   objectName,
   catalogCollectionId,
   onOwnershipTransfer,
-  isOwner,
   derivedPermissionsAvailable,
   refetchElements,
   refetchActivities,
@@ -31,7 +30,6 @@ function ObjectSharingModal({
   objectName: string
   onOwnershipTransfer: () => void
   catalogCollectionId?: string
-  isOwner: boolean
   derivedPermissionsAvailable: boolean // flag to conditionally show derived permissions (not defined for certain objects)
   refetchElements?: () => Promise<void>
   refetchActivities?: () => Promise<void>
@@ -69,7 +67,11 @@ function ObjectSharingModal({
     objectType === ObjectType.GroupActivity
 
   // get all permissions that have already been granted for this object
-  const { permissions, loading: permissionsLoading } = useObjectPermissions({
+  const {
+    permissions,
+    isOwner,
+    loading: permissionsLoading,
+  } = useObjectPermissions({
     objectId,
     objectType,
     skip: !open,

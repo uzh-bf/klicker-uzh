@@ -6,7 +6,6 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 
 function useTransferGroupOwnership() {
-  // TODO: add query update
   const [transferGroupOwnership, { loading }] = useMutation(
     TransferGroupOwnershipDocument
   )
@@ -29,46 +28,37 @@ function useTransferGroupOwnership() {
         },
         update: (cache, { data }) => {
           // check if request was successful
-          const success = data?.transferGroupOwnership
-          if (!success) return
+          if (!data?.transferGroupOwnership) return
 
           // update admins and owner of the group
-          const userGroups = cache.readQuery({
-            query: GetUserGroupsUserDocument,
-          })
-          const newOwner = group.admins?.find(
-            (existingAdmin) => existingAdmin.id === newOwnerId
-          )
-          const newAdmin = group.owner
+          cache.updateQuery({ query: GetUserGroupsUserDocument }, (qData) => {
+            if (!qData?.getUserGroupsUser) return qData
 
-          if (userGroups?.getUserGroupsUser && newOwner && newAdmin) {
-            cache.writeQuery({
-              query: GetUserGroupsUserDocument,
-              data: {
-                getUserGroupsUser: userGroups?.getUserGroupsUser.map(
-                  (existingGroup) => {
-                    if (group.id === existingGroup.id) {
-                      return {
-                        ...existingGroup,
-                        // replace previous admin user through previous owner
-                        admins: existingGroup.admins?.map((existingAdmin) => {
-                          if (existingAdmin.id === newOwner?.id) {
-                            return newAdmin
-                          }
-                          return existingAdmin
-                        }),
-                        // replace owner with new owner
-                        owner: newOwner,
-                        isAdmin: true,
-                        isOwner: false,
-                      }
+            return {
+              getUserGroupsUser: qData.getUserGroupsUser.map(
+                (existingGroup) => {
+                  const newOwner = existingGroup.admins?.find(
+                    (existingAdmin) => existingAdmin.id === newOwnerId
+                  )
+                  const newAdmin = existingGroup.owner
+
+                  if (!newOwner || !newAdmin) return existingGroup
+                  if (existingGroup.id === group.id) {
+                    return {
+                      ...existingGroup,
+                      admins: existingGroup.admins
+                        ?.filter((admin) => admin.id !== newOwnerId)
+                        .concat(newAdmin),
+                      owner: newOwner,
+                      isOwner: false,
+                      isAdmin: true,
                     }
-                    return existingGroup
                   }
-                ),
-              },
-            })
-          }
+                  return existingGroup
+                }
+              ),
+            }
+          })
         },
       })
     } catch (error) {

@@ -1286,10 +1286,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       passwordTooltip:
         'The password is automatically generated. Please write it down before creating the login, it will not be visible anymore afterwards. If you want to change it, you can generate a new one using the button on the right.',
       shortnameRequirements:
-        'The shortname plays an important role across KlickerUZH, as it allows for easy access to courses and other practice quizzes in many places. Please follow the following rules when choosing the shortname: <ul><li>The shortname must be at least 5 and at most 8 characters long.</li><li>The shortname may only consist of letters and numbers.</li></ul>',
+        'The shortname plays an important role across KlickerUZH, as it allows for easy access to courses and other practice quizzes in many places. Please follow the following rules when choosing the shortname: <ul><li>The shortname must be at least 5 and at most 10 characters long.</li><li>The shortname may only consist of letters and numbers.</li></ul>',
       shortnameRequired: 'Please enter a shortname.',
       shortnameMin: 'The shortname must be at least 5 characters long.',
-      shortnameMax: 'The shortname must be at most 8 characters long.',
+      shortnameMax: 'The shortname must be at most 10 characters long.',
       shortnameAlphanumeric:
         'The shortname may only consist of letters and numbers.',
       shortnameTaken: 'The shortname you have chosen is already taken.',

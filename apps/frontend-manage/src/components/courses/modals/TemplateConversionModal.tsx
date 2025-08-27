@@ -63,7 +63,6 @@ function TemplateConversionModal({
   const templateInfo = data?.checkTemplateInfoAvailable
 
   // mutation for template creation
-  // TODO: add query update
   const [createActivityTemplate] = useMutation(CreateActivityTemplateDocument)
 
   // set corresponding confirmation to true if no resources are required

@@ -154,7 +154,6 @@ function CatalogCollectionListItem({
               objectUuid={collection.id}
               objectName={collection.name}
               objectType={ObjectType.CatalogCollection}
-              isOwner={collection.isOwner ?? false}
             />
           )}
           {deletionModal && (

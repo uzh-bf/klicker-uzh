@@ -29,7 +29,6 @@ function MicroLearningEndingModal({
     }
   )
 
-  // TODO: add query update
   const [endMicroLearning, { loading: endingMicroLearning }] = useMutation(
     EndMicroLearningDocument,
     {
@@ -43,33 +42,30 @@ function MicroLearningEndingModal({
           __typename: 'MicroLearning',
         },
       },
-      update(cache, res) {
-        const data = cache.readQuery({
-          query: GetSingleCourseDocument,
-          variables: { courseId },
-        })
+      update(cache, { data }) {
+        cache.updateQuery(
+          { query: GetSingleCourseDocument, variables: { courseId } },
+          (qData) => {
+            const endedMicro = data?.endMicroLearning
+            if (!qData?.course?.microLearningsInfo || !endedMicro) return qData
 
-        const endedMicro = res.data?.endMicroLearning
-        if (!data?.course?.microLearningsInfo || !endedMicro) return
-
-        cache.writeQuery({
-          query: GetSingleCourseDocument,
-          variables: { courseId },
-          data: {
-            course: {
-              ...data.course,
-              microLearningsInfo: data.course.microLearningsInfo.map((micro) =>
-                micro.id === activityId
-                  ? {
-                      ...micro,
-                      scheduledEndAt: endedMicro.scheduledEndAt,
-                      status: endedMicro.status,
-                    }
-                  : micro
-              ),
-            },
-          },
-        })
+            return {
+              course: {
+                ...qData.course,
+                microLearningsInfo: qData.course.microLearningsInfo.map(
+                  (micro) =>
+                    micro.id === endedMicro.id
+                      ? {
+                          ...micro,
+                          scheduledEndAt: endedMicro.scheduledEndAt,
+                          status: endedMicro.status,
+                        }
+                      : micro
+                ),
+              },
+            }
+          }
+        )
       },
     }
   )

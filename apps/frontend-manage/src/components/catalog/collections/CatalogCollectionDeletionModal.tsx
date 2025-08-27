@@ -40,9 +40,10 @@ function CatalogCollectionDeletionModal({
           await deleteCatalogCollection({
             variables: { catalogCollectionId },
             update: (cache, { data }) => {
-              const success = data?.deleteCatalogCollection
-              if (!success) return
+              // check if the deletion was successful
+              if (!data?.deleteCatalogCollection) return
 
+              // remove the catalog collection from the list
               cache.updateQuery(
                 { query: GetCatalogCollectionsListDocument },
                 (data) => {

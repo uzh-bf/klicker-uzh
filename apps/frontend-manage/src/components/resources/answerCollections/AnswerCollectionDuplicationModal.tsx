@@ -19,7 +19,6 @@ function AnswerCollectionDuplicationModal({
   onSuccess: () => void
 }) {
   const t = useTranslations()
-  // TODO: add query update
   const [duplicateAnswerCollection, { loading }] = useMutation(
     DuplicateAnswerCollectionDocument
   )
@@ -56,23 +55,23 @@ function AnswerCollectionDuplicationModal({
           const result = await duplicateAnswerCollection({
             variables: { id: collectionId },
             update: (cache, { data }) => {
+              // check if the duplication was successful
               if (!data?.duplicateAnswerCollection) return
 
-              const queryData = cache.readQuery({
-                query: GetAnswerCollectionsInfoDocument,
-              })
-              const previousCollections = queryData?.getAnswerCollectionsInfo
-              if (!previousCollections) return
+              // update the list of answer collections with the duplicate
+              cache.updateQuery(
+                { query: GetAnswerCollectionsInfoDocument },
+                (qData) => {
+                  if (!qData?.getAnswerCollectionsInfo) return qData
 
-              cache.writeQuery({
-                query: GetAnswerCollectionsInfoDocument,
-                data: {
-                  getAnswerCollectionsInfo: [
-                    ...previousCollections,
-                    data.duplicateAnswerCollection,
-                  ],
-                },
-              })
+                  return {
+                    getAnswerCollectionsInfo: [
+                      ...qData.getAnswerCollectionsInfo,
+                      data.duplicateAnswerCollection!,
+                    ],
+                  }
+                }
+              )
             },
           })
 

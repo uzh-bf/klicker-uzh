@@ -13,8 +13,6 @@ function TransferOwnershipModal({
   objectName,
   isTemplate = false,
   catalogCollectionId,
-  refetchActivities,
-  refetchElements,
 }: {
   onClose: () => void
   objectId: number | string
@@ -22,11 +20,8 @@ function TransferOwnershipModal({
   objectName: string
   isTemplate?: boolean
   catalogCollectionId?: string
-  refetchActivities?: () => Promise<void>
-  refetchElements?: () => Promise<void>
 }) {
   const t = useTranslations()
-
   const onTransferFailure = () =>
     toast({
       type: 'error',
@@ -38,8 +33,6 @@ function TransferOwnershipModal({
     objectId,
     catalogCollectionId,
     onError: onTransferFailure,
-    refetchActivities,
-    refetchElements,
   })
 
   const activityTemplate =

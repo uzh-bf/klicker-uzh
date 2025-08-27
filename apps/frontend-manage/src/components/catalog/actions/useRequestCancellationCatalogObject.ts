@@ -17,7 +17,6 @@ function useRequestCancellationCatalogObject({
   catalogCollectionId?: string
   onError: () => void
 }) {
-  // TODO: add query update
   const [cancelObjectSharingRequest, { loading: cancellingSharingRequest }] =
     useMutation(CancelObjectSharingRequestDocument)
 
@@ -29,42 +28,27 @@ function useRequestCancellationCatalogObject({
           cancelObjectSharingRequest: true,
         },
         update: (cache, { data }) => {
-          // check if request was successful
-          const cancelledCollection = data?.cancelObjectSharingRequest
-          if (!cancelledCollection) return
+          // check if cancellation was successful
+          if (!data?.cancelObjectSharingRequest) return
 
-          // update list of catalog objects
-          const catalogObjects = cache.readQuery({
-            query: GetCatalogObjectsDocument,
-            variables: {
-              catalogCollectionId,
+          // update the cache
+          cache.updateQuery(
+            {
+              query: GetCatalogObjectsDocument,
+              variables: { catalogCollectionId },
             },
-          })
-
-          if (catalogObjects?.getCatalogObjects) {
-            const updatedObjects = catalogObjects?.getCatalogObjects.map(
-              (obj) => {
-                if (
+            (qData) => {
+              if (!qData?.getCatalogObjects) return qData
+              return {
+                getCatalogObjects: qData.getCatalogObjects.map((obj) =>
                   (typeof objectId === 'number' && obj.objectId === objectId) ||
                   (typeof objectId === 'string' && obj.objectUuid === objectId)
-                ) {
-                  return { ...obj, isRequested: false }
-                }
-
-                return obj
+                    ? { ...obj, isRequested: false }
+                    : obj
+                ),
               }
-            )
-
-            cache.writeQuery({
-              query: GetCatalogObjectsDocument,
-              variables: {
-                catalogCollectionId,
-              },
-              data: {
-                getCatalogObjects: updatedObjects,
-              },
-            })
-          }
+            }
+          )
         },
       })
 

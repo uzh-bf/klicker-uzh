@@ -42,7 +42,6 @@ function LiveQuizTemplate({ template }: { template: ActivityTemplate }) {
     useProcessLiveQuizTemplateBlocksData()
 
   // mutation for submission
-  // TODO: add query update
   const [createLiveQuizFromTemplate, { loading: creatingLiveQuiz }] =
     useMutation(CreateLiveQuizFromTemplateDocument)
 

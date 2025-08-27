@@ -9,6 +9,7 @@ mutation FlagElement(
     content: $content
   ) {
     id
+    elementInstanceId
     upvote
     downvote
     feedback

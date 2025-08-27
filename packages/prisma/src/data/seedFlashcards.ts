@@ -1,4 +1,8 @@
-import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import {
+  getInitialInstanceResults,
+  processElementData,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
 import Prisma, {
   ElementInstanceType,
   ElementOrderType,
@@ -18,65 +22,49 @@ async function seedFlashcardSet(
   courseId: string
 ) {
   const quizInfo = await processQuizInfo(fileName)
-
-  const initialResults = {
-    CORRECT: 0,
-    PARTIAL: 0,
-    INCORRECT: 0,
-    total: 0,
-  }
   const practiceQuiz = await prismaClient.practiceQuiz.upsert({
-    where: {
-      id: quizId,
-    },
+    where: { id: quizId },
     create: {
       id: quizId,
       name: quizInfo.title,
       displayName: quizInfo.title,
       description: quizInfo.description,
       ownerId: userId,
-      courseId: courseId,
-      status: PublicationStatus.PUBLISHED,
+      courseId,
+      status: PublicationStatus.DRAFT,
       orderType: ElementOrderType.SPACED_REPETITION,
+      isGamificationEnabled: true,
+      isAssessmentEnabled: false,
       stacks: {
-        create: elements.map((el, ix) => ({
-          order: ix,
-          type: ElementStackType.PRACTICE_QUIZ,
-          course: {
-            connect: {
-              id: courseId,
-            },
-          },
-          elements: {
-            createMany: {
-              data: [
-                {
-                  order: ix,
-                  type: ElementInstanceType.PRACTICE_QUIZ,
-                  elementType: ElementType.FLASHCARD,
-                  elementData: el,
-                  options: {
-                    resetTimeDays: 7,
+        create: elements.map((el, ix) => {
+          const elementData = processElementData(el)
+          const initialResults = getInitialInstanceResults(elementData)
+
+          return {
+            order: ix,
+            type: ElementStackType.PRACTICE_QUIZ,
+            elements: {
+              createMany: {
+                data: [
+                  {
+                    order: ix,
+                    type: ElementInstanceType.PRACTICE_QUIZ,
+                    elementType: ElementType.FLASHCARD,
+                    elementData,
+                    options: { resetTimeDays: 7 },
+                    results: initialResults,
+                    anonymousResults: initialResults,
+                    ownerId: el.ownerId,
+                    elementId: el.id,
                   },
-                  results: initialResults,
-                  anonymousResults: initialResults,
-                  ownerId: el.ownerId,
-                  elementId: el.id,
-                },
-              ],
+                ],
+              },
             },
-          },
-        })),
+          }
+        }),
       },
     },
     update: {},
-    include: {
-      stacks: {
-        include: {
-          elements: true,
-        },
-      },
-    },
   })
 
   await recomputeDerivedPermissions(
@@ -93,111 +81,33 @@ async function seedFlashcardSet(
 export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
   const USER_ID = USER_ID_TEST
   const COURSE_ID = COURSE_ID_TEST
+  const COURSE_TAG_NAME = 'BF1 Flashcards'
 
   const formulaTag = await prismaClient.tag.upsert({
-    where: {
-      ownerId_name: {
-        ownerId: USER_ID,
-        name: 'Formula',
-      },
-    },
-    create: {
-      name: 'Formula',
-      owner: {
-        connect: {
-          id: USER_ID,
-        },
-      },
-    },
+    where: { ownerId_name: { ownerId: USER_ID, name: 'Formula' } },
+    create: { name: 'Formula', owner: { connect: { id: USER_ID } } },
+    update: {},
+  })
+
+  const courseTag = await prismaClient.tag.upsert({
+    where: { ownerId_name: { ownerId: USER_ID, name: COURSE_TAG_NAME } },
+    create: { name: COURSE_TAG_NAME, owner: { connect: { id: USER_ID } } },
     update: {},
   })
 
   const FORMULA_TAG_ID = formulaTag.id
-
-  const flashcards1 = await prepareFlashcardsFromFile(
-    prismaClient,
-    'data/BF2_FC_Modul_1.xml',
-    USER_ID,
-    FORMULA_TAG_ID
-  )
-  await seedFlashcardSet(
-    prismaClient,
-    'data/BF2_FC_Modul_1.xml',
-    '165b31d7-30d8-4be4-874d-56d379cf7bea',
-    flashcards1,
-    USER_ID,
-    COURSE_ID
-  )
-
-  const flashcards2 = await prepareFlashcardsFromFile(
-    prismaClient,
-    'data/BF2_FC_Modul_2.xml',
-    USER_ID,
-    FORMULA_TAG_ID
-  )
-  await seedFlashcardSet(
-    prismaClient,
-    'data/BF2_FC_Modul_2.xml',
-    'aea11c66-c8f4-4cbc-b3da-b54ccd38dc42',
-    flashcards2,
-    USER_ID,
-    COURSE_ID
-  )
-
-  const flashcards3 = await prepareFlashcardsFromFile(
-    prismaClient,
-    'data/BF2_FC_Modul_3.xml',
-    USER_ID,
-    FORMULA_TAG_ID
-  )
-  await seedFlashcardSet(
-    prismaClient,
-    'data/BF2_FC_Modul_3.xml',
-    'e6e86ea0-ed35-4aee-8c1b-77f66f603b78',
-    flashcards3,
-    USER_ID,
-    COURSE_ID
-  )
-
-  const flashcards4 = await prepareFlashcardsFromFile(
-    prismaClient,
-    'data/BF2_FC_Modul_4.xml',
-    USER_ID,
-    FORMULA_TAG_ID
-  )
-  await seedFlashcardSet(
-    prismaClient,
-    'data/BF2_FC_Modul_4.xml',
-    'dd24f312-58fb-4279-a1ab-61120b8fc67d',
-    flashcards4,
-    USER_ID,
-    COURSE_ID
-  )
-
-  const flashcards5 = await prepareFlashcardsFromFile(
-    prismaClient,
-    'data/BF2_FC_Modul_5.xml',
-    USER_ID,
-    FORMULA_TAG_ID
-  )
-  await seedFlashcardSet(
-    prismaClient,
-    'data/BF2_FC_Modul_5.xml',
-    '2d5fd2be-738f-4d71-8841-e356e3222825',
-    flashcards5,
-    USER_ID,
-    COURSE_ID
-  )
+  const COURSE_TAG_ID = courseTag.id
 
   // const flashcards1 = await prepareFlashcardsFromFile(
   //   prismaClient,
-  //   'data/FC_Modul_1.xml',
-  //   USER_ID
+  //   'data/BF2_FC_Modul_1.xml',
+  //   USER_ID,
+  //   FORMULA_TAG_ID
   // )
   // await seedFlashcardSet(
   //   prismaClient,
-  //   'data/FC_Modul_1.xml',
-  //   'e0c331b1-b66e-4fc2-b352-ba14c22c294c',
+  //   'data/BF2_FC_Modul_1.xml',
+  //   '165b31d7-30d8-4be4-874d-56d379cf7bea',
   //   flashcards1,
   //   USER_ID,
   //   COURSE_ID
@@ -205,13 +115,14 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
 
   // const flashcards2 = await prepareFlashcardsFromFile(
   //   prismaClient,
-  //   'data/FC_Modul_2.xml',
-  //   USER_ID
+  //   'data/BF2_FC_Modul_2.xml',
+  //   USER_ID,
+  //   FORMULA_TAG_ID
   // )
   // await seedFlashcardSet(
   //   prismaClient,
-  //   'data/FC_Modul_2.xml',
-  //   '36eba4d8-fa0d-46bc-b916-b53ba56637b8',
+  //   'data/BF2_FC_Modul_2.xml',
+  //   'aea11c66-c8f4-4cbc-b3da-b54ccd38dc42',
   //   flashcards2,
   //   USER_ID,
   //   COURSE_ID
@@ -219,13 +130,14 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
 
   // const flashcards3 = await prepareFlashcardsFromFile(
   //   prismaClient,
-  //   'data/FC_Modul_3.xml',
-  //   USER_ID
+  //   'data/BF2_FC_Modul_3.xml',
+  //   USER_ID,
+  //   FORMULA_TAG_ID
   // )
   // await seedFlashcardSet(
   //   prismaClient,
-  //   'data/FC_Modul_3.xml',
-  //   '9bdb2760-e631-4e00-9604-9d807a4f47a2',
+  //   'data/BF2_FC_Modul_3.xml',
+  //   'e6e86ea0-ed35-4aee-8c1b-77f66f603b78',
   //   flashcards3,
   //   USER_ID,
   //   COURSE_ID
@@ -233,13 +145,14 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
 
   // const flashcards4 = await prepareFlashcardsFromFile(
   //   prismaClient,
-  //   'data/FC_Modul_4.xml',
-  //   USER_ID
+  //   'data/BF2_FC_Modul_4.xml',
+  //   USER_ID,
+  //   FORMULA_TAG_ID
   // )
   // await seedFlashcardSet(
   //   prismaClient,
-  //   'data/FC_Modul_4.xml',
-  //   'e0760993-18e1-467a-b84f-591c1b81e727',
+  //   'data/BF2_FC_Modul_4.xml',
+  //   'dd24f312-58fb-4279-a1ab-61120b8fc67d',
   //   flashcards4,
   //   USER_ID,
   //   COURSE_ID
@@ -247,54 +160,136 @@ export async function seedFlashcards(prismaClient: Prisma.PrismaClient) {
 
   // const flashcards5 = await prepareFlashcardsFromFile(
   //   prismaClient,
-  //   'data/FC_Modul_5.xml',
-  //   USER_ID
+  //   'data/BF2_FC_Modul_5.xml',
+  //   USER_ID,
+  //   FORMULA_TAG_ID
   // )
   // await seedFlashcardSet(
   //   prismaClient,
-  //   'data/FC_Modul_5.xml',
-  //   '1c699242-3740-4c05-b853-86e8d824997e',
+  //   'data/BF2_FC_Modul_5.xml',
+  //   '2d5fd2be-738f-4d71-8841-e356e3222825',
   //   flashcards5,
   //   USER_ID,
   //   COURSE_ID
   // )
 
-  // const flashcards6 = await prepareFlashcardsFromFile(
-  //   prismaClient,
-  //   'data/FC_Modul_6.xml',
-  //   USER_ID
-  // )
-  // await seedFlashcardSet(
-  //   prismaClient,
-  //   'data/FC_Modul_6.xml',
-  //   '35334e99-331d-481e-bd32-c84cddaf8764',
-  //   flashcards6,
-  //   USER_ID,
-  //   COURSE_ID
-  // )
+  const flashcards1 = await prepareFlashcardsFromFile(
+    prismaClient,
+    'data/FC_Modul_1.xml',
+    USER_ID,
+    FORMULA_TAG_ID,
+    COURSE_TAG_ID
+  )
+  await seedFlashcardSet(
+    prismaClient,
+    'data/FC_Modul_1.xml',
+    'a0cad323-81f5-4cda-8594-058b5242f790',
+    flashcards1,
+    USER_ID,
+    COURSE_ID
+  )
 
-  // const flashcards7 = await prepareFlashcardsFromFile(
-  //   prismaClient,
-  //   'data/FC_Modul_7.xml',
-  //   USER_ID
-  // )
-  // await seedFlashcardSet(
-  //   prismaClient,
-  //   'data/FC_Modul_7.xml',
-  //   'd6a1f040-a78a-43ac-8778-bfc0f5b6e86c',
-  //   flashcards7,
-  //   USER_ID,
-  //   COURSE_ID
-  // )
+  const flashcards2 = await prepareFlashcardsFromFile(
+    prismaClient,
+    'data/FC_Modul_2.xml',
+    USER_ID,
+    FORMULA_TAG_ID,
+    COURSE_TAG_ID
+  )
+  await seedFlashcardSet(
+    prismaClient,
+    'data/FC_Modul_2.xml',
+    '9d1264c9-4286-4850-b350-b26a7f8bf2cf',
+    flashcards2,
+    USER_ID,
+    COURSE_ID
+  )
+
+  const flashcards3 = await prepareFlashcardsFromFile(
+    prismaClient,
+    'data/FC_Modul_3.xml',
+    USER_ID,
+    FORMULA_TAG_ID,
+    COURSE_TAG_ID
+  )
+  await seedFlashcardSet(
+    prismaClient,
+    'data/FC_Modul_3.xml',
+    '1e829703-f67e-4524-863a-432e6fa6c2ab',
+    flashcards3,
+    USER_ID,
+    COURSE_ID
+  )
+
+  const flashcards4 = await prepareFlashcardsFromFile(
+    prismaClient,
+    'data/FC_Modul_4.xml',
+    USER_ID,
+    FORMULA_TAG_ID,
+    COURSE_TAG_ID
+  )
+  await seedFlashcardSet(
+    prismaClient,
+    'data/FC_Modul_4.xml',
+    'a6ab0933-5d70-45e9-afeb-af87285975c2',
+    flashcards4,
+    USER_ID,
+    COURSE_ID
+  )
+
+  const flashcards5 = await prepareFlashcardsFromFile(
+    prismaClient,
+    'data/FC_Modul_5.xml',
+    USER_ID,
+    FORMULA_TAG_ID,
+    COURSE_TAG_ID
+  )
+  await seedFlashcardSet(
+    prismaClient,
+    'data/FC_Modul_5.xml',
+    '0cc5dbb8-699a-42e4-9634-2f40ea40a4e4',
+    flashcards5,
+    USER_ID,
+    COURSE_ID
+  )
+
+  const flashcards6 = await prepareFlashcardsFromFile(
+    prismaClient,
+    'data/FC_Modul_6.xml',
+    USER_ID,
+    FORMULA_TAG_ID,
+    COURSE_TAG_ID
+  )
+  await seedFlashcardSet(
+    prismaClient,
+    'data/FC_Modul_6.xml',
+    '58fb31fe-444a-44f7-b0e4-6f956ff7f1da',
+    flashcards6,
+    USER_ID,
+    COURSE_ID
+  )
+
+  const flashcards7 = await prepareFlashcardsFromFile(
+    prismaClient,
+    'data/FC_Modul_7.xml',
+    USER_ID,
+    FORMULA_TAG_ID,
+    COURSE_TAG_ID
+  )
+  await seedFlashcardSet(
+    prismaClient,
+    'data/FC_Modul_7.xml',
+    '422f57ba-c25c-4ed8-be13-b7e3c7d560d3',
+    flashcards7,
+    USER_ID,
+    COURSE_ID
+  )
 }
 
 // if main module, run this
 const prismaClient = new Prisma.PrismaClient()
 // @ts-ignore
 await seedFlashcards(prismaClient)
-  .then((res) => {
-    console.log('res', res)
-  })
   .catch((err) => {
     console.error(err)
   })
