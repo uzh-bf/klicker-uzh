@@ -368,7 +368,6 @@ function Element({
           objectId={element.id}
           objectName={element.name}
           objectType={ObjectType.Element}
-          isOwner={element.isOwner ?? false}
           onClose={() => setSharingModalOpen(false)}
           refetchElements={refetchElements}
         />

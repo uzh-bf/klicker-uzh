@@ -61,12 +61,10 @@ function JoinCourse({
   const { loading: loadingParticipant, data: dataParticipant } =
     useQuery(SelfDocument)
 
-  // TODO: add query update
   const [createParticipantAccount] = useMutation(
     CreateParticipantAccountDocument,
     { refetchQueries: [{ query: SelfDocument }] }
   )
-  // TODO: add query update
   const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument)
 
   if (loadingParticipant || courseLoading) {

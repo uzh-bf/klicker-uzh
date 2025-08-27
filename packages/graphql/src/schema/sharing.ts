@@ -148,6 +148,19 @@ export const PermissionInfo = PermissionInfoRef.implement({
   }),
 })
 
+interface IPermissionsList {
+  isOwner: boolean
+  permissions: IPermissionInfo[]
+}
+export const PermissionsListRef =
+  builder.objectRef<IPermissionsList>('PermissionsList')
+export const PermissionsList = PermissionsListRef.implement({
+  fields: (t) => ({
+    isOwner: t.exposeBoolean('isOwner'),
+    permissions: t.expose('permissions', { type: [PermissionInfo] }),
+  }),
+})
+
 interface IDerivedPermissionInfo {
   permissionId: number
   permissionLevel: DB.PermissionLevel

@@ -1384,10 +1384,10 @@ export async function deactivateLiveQuizBlock(
     },
   })
 
-  if (!quiz || !quiz.activeBlock) return null
+  if (!quiz || !quiz.activeBlock) return false
 
   // if the block is not the active one, return early
-  if (quiz.activeBlockId !== blockId) return quiz
+  if (quiz.activeBlockId !== blockId) return false
 
   try {
     const cachedResults = await getCachedBlockResults({
@@ -1395,7 +1395,7 @@ export async function deactivateLiveQuizBlock(
       activeBlock: quiz.activeBlock,
     })
 
-    if (!cachedResults) return null
+    if (!cachedResults) return false
 
     const {
       instanceResults,
@@ -1612,7 +1612,7 @@ export async function deactivateLiveQuizBlock(
       activeInstanceIds,
     })
 
-    return updatedQuiz
+    return true
   } catch (error: any) {
     await sendTeamsNotifications(
       'graphql/deactivateLiveQuizBlock',

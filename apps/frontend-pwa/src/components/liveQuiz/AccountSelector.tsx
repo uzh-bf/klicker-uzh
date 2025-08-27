@@ -71,7 +71,6 @@ function AccountSelector({
   >(`login-state-${quizId}`, undefined)
   const [api, setApi] = useState<CarouselApi>()
 
-  // TODO: add query update
   const [loginTemporaryParticipant, { loading: loggingIn }] = useMutation(
     LoginTemporaryParticipantDocument
   )
@@ -196,6 +195,7 @@ function AccountSelector({
                 pseudonym: values.pseudonym,
                 avatar: values.avatar !== '' ? values.avatar : undefined,
               },
+              // refetch is required here to ensure up-to-date data with temporary leaderboard entry
               refetchQueries: [{ query: SelfDocument }],
             })
 

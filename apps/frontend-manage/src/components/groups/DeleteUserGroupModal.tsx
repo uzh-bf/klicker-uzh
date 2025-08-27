@@ -22,7 +22,6 @@ function DeleteUserGroupModal({
   groupName: string
 }) {
   const t = useTranslations()
-  // TODO: add query update
   const [deleteUserGroup, { loading }] = useMutation(DeleteUserGroupDocument)
 
   const [confirmations, setConfirmations] = useState({
@@ -64,27 +63,24 @@ function DeleteUserGroupModal({
       onPrimaryAction={async () => {
         try {
           const { data: success } = await deleteUserGroup({
-            variables: {
-              groupId,
-            },
+            variables: { groupId },
             update: (cache, { data }) => {
               // check if request was successful
-              const success = data?.deleteUserGroup
-              if (!success) return
+              if (!data?.deleteUserGroup) return
+
               // update list of user groups
-              const userGroups = cache.readQuery({
-                query: GetUserGroupsUserDocument,
-              })
-              if (userGroups?.getUserGroupsUser) {
-                cache.writeQuery({
-                  query: GetUserGroupsUserDocument,
-                  data: {
-                    getUserGroupsUser: userGroups?.getUserGroupsUser.filter(
+              cache.updateQuery(
+                { query: GetUserGroupsUserDocument },
+                (qData) => {
+                  if (!qData?.getUserGroupsUser) return qData
+
+                  return {
+                    getUserGroupsUser: qData.getUserGroupsUser.filter(
                       (group) => group.id !== groupId
                     ),
-                  },
-                })
-              }
+                  }
+                }
+              )
             },
           })
           if (success?.deleteUserGroup) {

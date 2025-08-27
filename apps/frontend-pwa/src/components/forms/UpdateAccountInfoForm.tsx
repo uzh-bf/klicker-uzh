@@ -31,7 +31,6 @@ function UpdateAccountInfoForm({
   onSuccess,
 }: UpdateAccountInfoFormProps) {
   const t = useTranslations()
-  // TODO: add query update
   const [updateParticipantProfile] = useMutation(
     UpdateParticipantProfileDocument
   )

@@ -16,31 +16,32 @@ import LiveQuizTimeline from '../../../components/liveQuiz/cockpit/LiveQuizTimel
 function Cockpit() {
   const router = useRouter()
 
-  // TODO: add query update
   const [activateLiveQuizBlock, { loading: activatingBlock }] = useMutation(
     ActivateLiveQuizBlockDocument
   )
-  // TODO: add query update
   const [deactivateLiveQuizBlock, { loading: deactivatingBlock }] = useMutation(
     DeactivateLiveQuizBlockDocument
   )
-  // TODO: add query update
+
   const [endLiveQuiz, { loading: endingLiveQuiz }] = useMutation(
     EndLiveQuizDocument,
     {
-      update(cache, res) {
-        const data = cache.readQuery({
-          query: GetUserRunningLiveQuizzesDocument,
-        })
-        cache.writeQuery({
-          query: GetUserRunningLiveQuizzesDocument,
-          data: {
-            userRunningLiveQuizzes:
-              data?.userRunningLiveQuizzes?.filter(
-                (q) => q.id !== res.data?.endLiveQuiz?.id
-              ) ?? [],
-          },
-        })
+      update(cache, { data }) {
+        // verify that the live quiz has ended successfully
+        if (!data?.endLiveQuiz) return
+
+        // update the list of running live quizzes
+        cache.updateQuery(
+          { query: GetUserRunningLiveQuizzesDocument },
+          (qData) => {
+            if (!qData?.userRunningLiveQuizzes) return qData
+            return {
+              userRunningLiveQuizzes: qData.userRunningLiveQuizzes.filter(
+                (q) => q.id !== data.endLiveQuiz!.id
+              ),
+            }
+          }
+        )
       },
     }
   )
@@ -95,11 +96,19 @@ function Cockpit() {
           handleOpenBlock={(blockId: number) => {
             activateLiveQuizBlock({
               variables: { quizId: id, blockId },
+              // high stakes mutation where cache updates are hard due to cached and db data
+              refetchQueries: [
+                { query: GetCockpitQuizDocument, variables: { id } },
+              ],
             })
           }}
           handleCloseBlock={(blockId: number) => {
             deactivateLiveQuizBlock({
               variables: { quizId: id, blockId },
+              // high stakes mutation where cache updates are hard due to cached and db data
+              refetchQueries: [
+                { query: GetCockpitQuizDocument, variables: { id } },
+              ],
             })
           }}
           startedAt={startedAt}

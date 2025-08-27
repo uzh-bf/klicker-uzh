@@ -297,7 +297,6 @@ function LiveQuizActions({
             objectName={liveQuiz.name}
             objectType={ObjectType.LiveQuiz}
             isTemplate={isTemplate}
-            isOwner={liveQuiz.isOwner ?? false}
             onClose={() => setSharingModal(false)}
             refetchActivities={refetchActivities}
           />

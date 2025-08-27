@@ -183,21 +183,13 @@ export async function getParticipations(
     include: {
       participations: {
         include: {
-          subscriptions: endpoint
-            ? {
-                where: { endpoint },
-              }
-            : undefined,
+          subscriptions: endpoint ? { where: { endpoint } } : undefined,
           course: {
             include: {
               microLearnings: {
                 where: {
-                  scheduledStartAt: {
-                    lt: new Date(),
-                  },
-                  scheduledEndAt: {
-                    gt: new Date(),
-                  },
+                  scheduledStartAt: { lt: new Date() },
+                  scheduledEndAt: { gt: new Date() },
                   status: DB.PublicationStatus.PUBLISHED,
                   isDeleted: false,
                 },
@@ -208,11 +200,7 @@ export async function getParticipations(
             },
           },
         },
-        orderBy: {
-          course: {
-            displayName: 'asc',
-          },
-        },
+        orderBy: { course: { displayName: 'asc' } },
       },
     },
   })
@@ -232,10 +220,7 @@ export async function getParticipation(
 
   const participation = await ctx.prisma.participation.findUnique({
     where: {
-      courseId_participantId: {
-        courseId,
-        participantId: ctx.user.sub,
-      },
+      courseId_participantId: { courseId, participantId: ctx.user.sub },
     },
   })
 
@@ -497,21 +482,14 @@ export async function bookmarkElementStack(
 ) {
   const participation = await ctx.prisma.participation.update({
     where: {
-      courseId_participantId: {
-        courseId,
-        participantId: ctx.user.sub,
-      },
+      courseId_participantId: { courseId, participantId: ctx.user.sub },
     },
     data: {
       bookmarkedElementStacks: {
-        [bookmarked ? 'connect' : 'disconnect']: {
-          id: stackId,
-        },
+        [bookmarked ? 'connect' : 'disconnect']: { id: stackId },
       },
     },
-    include: {
-      bookmarkedElementStacks: true,
-    },
+    include: { bookmarkedElementStacks: true },
   })
 
   return participation.bookmarkedElementStacks.map((stack) => stack.id)
@@ -683,17 +661,12 @@ export async function rateElement(
             elementInstanceId: elementInstanceId,
           },
         },
-        data: {
-          upvote: rating === 1,
-          downvote: rating === -1,
-        },
+        data: { upvote: rating === 1, downvote: rating === -1 },
       })
 
       // update instance statistics (decrement by previous feedback first to only count last feedback)
       await prisma.instanceStatistics.update({
-        where: {
-          elementInstanceId: elementInstanceId,
-        },
+        where: { elementInstanceId: elementInstanceId },
         data: {
           upvoteCount: {
             increment: Number(rating === 1) - Number(prevFeedback.upvote),
@@ -709,36 +682,18 @@ export async function rateElement(
         data: {
           upvote: rating === 1,
           downvote: rating === -1,
-          elementInstance: {
-            connect: {
-              id: elementInstanceId,
-            },
-          },
-          element: {
-            connect: {
-              id: elementId,
-            },
-          },
-          participant: {
-            connect: {
-              id: ctx.user.sub,
-            },
-          },
+          elementInstance: { connect: { id: elementInstanceId } },
+          element: { connect: { id: elementId } },
+          participant: { connect: { id: ctx.user.sub } },
         },
       })
 
       // update instance statistics
       await prisma.instanceStatistics.update({
-        where: {
-          elementInstanceId: elementInstanceId,
-        },
+        where: { elementInstanceId: elementInstanceId },
         data: {
-          upvoteCount: {
-            increment: Number(rating === 1),
-          },
-          downvoteCount: {
-            increment: Number(rating === -1),
-          },
+          upvoteCount: { increment: Number(rating === 1) },
+          downvoteCount: { increment: Number(rating === -1) },
         },
       })
     }

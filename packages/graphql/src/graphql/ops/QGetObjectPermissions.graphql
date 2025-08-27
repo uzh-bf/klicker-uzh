@@ -1,5 +1,8 @@
 query GetObjectPermissions($objectId: String!, $objectType: ObjectType!) {
   getObjectPermissions(objectId: $objectId, objectType: $objectType) {
-    ...PermissionInfoData
+    isOwner
+    permissions {
+      ...PermissionInfoData
+    }
   }
 }

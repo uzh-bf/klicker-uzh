@@ -21,6 +21,7 @@ mutation RespondToFeedback(
       content
       positiveReactions
       negativeReactions
+      createdAt
     }
   }
 }
