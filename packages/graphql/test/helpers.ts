@@ -20,6 +20,7 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
+import { Repeater } from 'graphql-yoga'
 import { v4 as uuidv4 } from 'uuid'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { createAnswerCollection } from '../src/services/resources.js'
@@ -97,7 +98,10 @@ export async function testInitialization(prisma: PrismaClient, emitter) {
     prisma,
     emitter,
     redisExec: jest.fn() as unknown as ContextWithUser['redisExec'],
-    pubSub: { publish: jest.fn(), subscribe: jest.fn() },
+    pubSub: {
+      publish: jest.fn(),
+      subscribe: jest.fn().mockReturnValue(new Repeater(() => {})),
+    } as ContextWithUser['pubSub'],
     req: {} as any,
     res: {} as any,
   }
