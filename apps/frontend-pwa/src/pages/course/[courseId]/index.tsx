@@ -658,7 +658,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     console.error('Error in getServerSideProps on course overview:', error)
 
     // TODO: remove setting of fake cookie to test removal
-    nookies.set(ctx, 'lti-tokenv2', 'asdf', {
+    nookies.set(ctx, 'lti-token', 'asdf', {
       domain: process.env.COOKIE_DOMAIN,
       path: '/',
       httpOnly: true,
@@ -677,6 +677,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     return {
       redirect: {
         destination: `${ctx.locale ? `/${ctx.locale}` : ''}/serverError?redirectTo=${process.env.NEXT_PUBLIC_PWA_URL}`,
+        // destination: `${ctx.locale ? `/${ctx.locale}` : ''}/serverError?redirectTo=${process.env.NEXT_PUBLIC_PWA_URL}/${ctx.locale}/course/${ctx.params?.courseId}`, // TODO: re-introduce correct URL
         permanent: false,
       },
     }
