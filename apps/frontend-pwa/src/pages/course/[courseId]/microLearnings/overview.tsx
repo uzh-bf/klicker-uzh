@@ -44,7 +44,7 @@ function MicroLearningsOverview({
   }
 
   const microlearnings = data?.getCoursePublishedMicroLearnings
-  const course = microlearnings?.[0] ? microlearnings?.[0].course : undefined
+  const course = microlearnings?.[0]?.course
   if (
     isInactive ||
     !microlearnings ||
