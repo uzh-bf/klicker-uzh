@@ -1,110 +1,110 @@
-dfDomain: <EMAIL_TYPE>
+dfDomain: <path:keyvaultp19gA04dNy#EMAIL_TYPE>
 
-teamsWebhookUrl: <TEAMS_WEBHOOK_URL>
+teamsWebhookUrl: <path:keyvaultp19gA04dNy#TEAMS_WEBHOOK_URL>
 
-appSecret: <APP_SECRET>
+appSecret: <path:keyvaultp19gA04dNy#APP_SECRET>
 
 email:
-  type: <EMAIL_TYPE>
-  from: <EMAIL_FROM>
-  host: <EMAIL_HOST>
-  port: <EMAIL_PORT>
-  username: <EMAIL_USER>
-  password: <EMAIL_PASS>
-  secure: <EMAIL_SECURE>
-  requireTLS: <EMAIL_STARTTLS>
+  type: <path:keyvaultp19gA04dNy#EMAIL_TYPE>
+  from: <path:keyvaultp19gA04dNy#EMAIL_FROM>
+  host: <path:keyvaultp19gA04dNy#EMAIL_HOST>
+  port: <path:keyvaultp19gA04dNy#EMAIL_PORT>
+  username: <path:keyvaultp19gA04dNy#EMAIL_USER>
+  password: <path:keyvaultp19gA04dNy#EMAIL_PASS>
+  secure: <path:keyvaultp19gA04dNy#EMAIL_SECURE>
+  requireTLS: <path:keyvaultp19gA04dNy#EMAIL_STARTTLS>
 
 eduId:
-  clientSecret: <EDUID_CLIENT_SECRET>
+  clientSecret: <path:keyvaultp19gA04dNy#EDUID_CLIENT_SECRET>
 
 auth:
-  replicaCount: <APP_REPLICAS>
+  replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
   image:
-    tag: <APP_VERSION>
+    tag: <path:keyvaultp19gA04dNy#APP_VERSION>
 
 frontendPWA:
-  replicaCount: <APP_REPLICAS>
+  replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
   image:
-    tag: <APP_VERSION>
+    tag: <path:keyvaultp19gA04dNy#APP_VERSION>
 
 frontendManage:
-  replicaCount: <APP_REPLICAS>
+  replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
   image:
-    tag: <APP_VERSION>
+    tag: <path:keyvaultp19gA04dNy#APP_VERSION>
 
 frontendControl:
-  replicaCount: <APP_REPLICAS>
+  replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
   image:
-    tag: <APP_VERSION>
+    tag: <path:keyvaultp19gA04dNy#APP_VERSION>
 
 backendGraphql:
-  replicaCount: <APP_REPLICAS>
+  replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
 
   image:
-    tag: <APP_VERSION>
+    tag: <path:keyvaultp19gA04dNy#APP_VERSION>
 
-  apiDomain: <API_DOMAIN>
-  cookieDomain: <COOKIE_DOMAIN>
-  databaseUrl: <DATABASE_URL>
+  apiDomain: <path:keyvaultp19gA04dNy#API_DOMAIN>
+  cookieDomain: <path:keyvaultp19gA04dNy#COOKIE_DOMAIN>
+  databaseUrl: <path:keyvaultp19gA04dNy#DATABASE_URL>
   debug: true
 
-  appManageSubdomain: <APP_MANAGE_SUBDOMAIN>
-  appManageDomain: <APP_MANAGE_DOMAIN>
-  appStudentSubdomain: <APP_STUDENT_SUBDOMAIN>
-  appStudentDomain: <APP_STUDENT_DOMAIN>
-  appControlSubdomain: <APP_CONTROL_SUBDOMAIN>
-  appControlDomain: <APP_CONTROL_DOMAIN>
+  appManageSubdomain: <path:keyvaultp19gA04dNy#APP_MANAGE_SUBDOMAIN>
+  appManageDomain: <path:keyvaultp19gA04dNy#APP_MANAGE_DOMAIN>
+  appStudentSubdomain: <path:keyvaultp19gA04dNy#APP_STUDENT_SUBDOMAIN>
+  appStudentDomain: <path:keyvaultp19gA04dNy#APP_STUDENT_DOMAIN>
+  appControlSubdomain: <path:keyvaultp19gA04dNy#APP_CONTROL_SUBDOMAIN>
+  appControlDomain: <path:keyvaultp19gA04dNy#APP_CONTROL_DOMAIN>
 
   notifications:
-    url: <NOTIFICATION_URL>
-    secret: <NOTIFICATION_SECRET>
-    supportEmail: <NOTIFICATION_SUPPORT_EMAIL>
+    url: <path:keyvaultp19gA04dNy#NOTIFICATION_URL>
+    secret: <path:keyvaultp19gA04dNy#NOTIFICATION_SECRET>
+    supportEmail: <path:keyvaultp19gA04dNy#NOTIFICATION_SUPPORT_EMAIL>
 
   vapid:
-    publicKey: <VAPID_PUBLIC_KEY>
-    privateKey: <VAPID_PRIVATE_KEY>
+    publicKey: <path:keyvaultp19gA04dNy#VAPID_PUBLIC_KEY>
+    privateKey: <path:keyvaultp19gA04dNy#VAPID_PRIVATE_KEY>
 
   redisCache:
-    host: <REDIS_CACHE_HOST>
-    port: <REDIS_CACHE_PORT>
-    pass: <REDIS_CACHE_PASS>
+    host: <path:keyvaultp19gA04dNy#REDIS_CACHE_HOST>
+    port: <path:keyvaultp19gA04dNy#REDIS_CACHE_PORT>
+    pass: <path:keyvaultp19gA04dNy#REDIS_CACHE_PASS>
 
   redisExec:
-    host: <REDIS_HOST>
-    port: <REDIS_PORT>
-    tls: <REDIS_TLS>
-    pass: <REDIS_PASS>
+    host: <path:keyvaultp19gA04dNy#REDIS_HOST>
+    port: <path:keyvaultp19gA04dNy#REDIS_PORT>
+    tls: <path:keyvaultp19gA04dNy#REDIS_TLS>
+    pass: <path:keyvaultp19gA04dNy#REDIS_PASS>
 
   sentryEnv: qa
-  sentryDSN: <SENTRY_DSN>
+  sentryDSN: <path:keyvaultp19gA04dNy#SENTRY_DSN>
 
 olatApi:
-  key: <OLAT_API_KEY>
+  key: <path:keyvaultp19gA04dNy#OLAT_API_KEY>
 
   image:
-    tag: <APP_VERSION>
+    tag: <path:keyvaultp19gA04dNy#APP_VERSION>
 
 lti:
-  replicaCount: <APP_REPLICAS>
+  replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
 
   image:
-    tag: <APP_VERSION>
+    tag: <path:keyvaultp19gA04dNy#APP_VERSION>
 
-  appSecret: <APP_SECRET>
-  clientId: <LTI_CLIENT_ID>
-  redirectURL: <LTI_REDIRECT_URL>
-  cookieDomain: <COOKIE_DOMAIN>
-  encryptionKey: <APP_SECRET>
-  name: <LTI_NAME>
-  url: <LTI_URL>
-  authEndpoint: <LTI_AUTH_ENDPOINT>
-  tokenEndpoint: <LTI_TOKEN_ENDPOINT>
-  keysEndpoint: <LTI_KEYS_ENDPOINT>
+  appSecret: <path:keyvaultp19gA04dNy#APP_SECRET>
+  clientId: <path:keyvaultp19gA04dNy#LTI_CLIENT_ID>
+  redirectURL: <path:keyvaultp19gA04dNy#LTI_REDIRECT_URL>
+  cookieDomain: <path:keyvaultp19gA04dNy#COOKIE_DOMAIN>
+  encryptionKey: <path:keyvaultp19gA04dNy#APP_SECRET>
+  name: <path:keyvaultp19gA04dNy#LTI_NAME>
+  url: <path:keyvaultp19gA04dNy#LTI_URL>
+  authEndpoint: <path:keyvaultp19gA04dNy#LTI_AUTH_ENDPOINT>
+  tokenEndpoint: <path:keyvaultp19gA04dNy#LTI_TOKEN_ENDPOINT>
+  keysEndpoint: <path:keyvaultp19gA04dNy#LTI_KEYS_ENDPOINT>
 
   db:
-    type: <LTI_DB_TYPE>
-    host: <LTI_DB_HOST>
-    port: <LTI_DB_PORT>
-    name: <LTI_DB_NAME>
-    username: <LTI_DB_USER>
-    password: <LTI_DB_PASS>
+    type: <path:keyvaultp19gA04dNy#LTI_DB_TYPE>
+    host: <path:keyvaultp19gA04dNy#LTI_DB_HOST>
+    port: <path:keyvaultp19gA04dNy#LTI_DB_PORT>
+    name: <path:keyvaultp19gA04dNy#LTI_DB_NAME>
+    username: <path:keyvaultp19gA04dNy#LTI_DB_USER>
+    password: <path:keyvaultp19gA04dNy#LTI_DB_PASS>
