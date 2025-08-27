@@ -7,6 +7,7 @@ import useParticipantToken from '@lib/useParticipantToken'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import nookies from 'nookies'
 import Layout from '../../components/Layout'
 import LinkButton from '../../components/common/LinkButton'
 
@@ -86,70 +87,91 @@ function Join({
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
-  if (typeof ctx.params?.shortname !== 'string') {
-    return {
-      redirect: {
-        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
-        statusCode: 302,
-      },
+  try {
+    if (typeof ctx.params?.shortname !== 'string') {
+      return {
+        redirect: {
+          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
+          statusCode: 302,
+        },
+      }
     }
-  }
 
-  const apolloClient = initializeApollo()
+    const apolloClient = initializeApollo()
+    const result = await apolloClient.query({
+      query: GetShortnameQuizzesDocument,
+      variables: {
+        shortname: ctx.params.shortname,
+      },
+    })
 
-  const result = await apolloClient.query({
-    query: GetShortnameQuizzesDocument,
-    variables: {
-      shortname: ctx.params.shortname,
-    },
-  })
+    // if there is no result (e.g., the shortname is not valid)
+    if (!result?.data?.shortnameQuizzes) {
+      return {
+        props: {
+          isInactive: true,
+          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+            .default,
+        },
+      }
+    }
 
-  // if there is no result (e.g., the shortname is not valid)
-  if (!result?.data?.shortnameQuizzes) {
-    return {
+    // if only a single live quiz is running, redirect directly to the corresponding quiz page
+    // or if linkTo is set, redirect to the specified link
+    if (result.data.shortnameQuizzes.length === 1) {
+      return {
+        redirect: {
+          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/session/${result.data.shortnameQuizzes[0].id}`,
+          permanent: false,
+        },
+      }
+    }
+
+    const { participantToken, cookiesAvailable } = await getParticipantToken({
+      apolloClient,
+      ctx,
+    })
+
+    if (participantToken) {
+      return {
+        props: {
+          participantToken,
+          cookiesAvailable,
+          shortname: ctx.params.shortname,
+          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+            .default,
+        },
+      }
+    }
+
+    return addApolloState(apolloClient, {
       props: {
-        isInactive: true,
-        messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-          .default,
-      },
-    }
-  }
-
-  // if only a single live quiz is running, redirect directly to the corresponding quiz page
-  // or if linkTo is set, redirect to the specified link
-  if (result.data.shortnameQuizzes.length === 1) {
-    return {
-      redirect: {
-        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/session/${result.data.shortnameQuizzes[0].id}`,
-        permanent: false,
-      },
-    }
-  }
-
-  const { participantToken, cookiesAvailable } = await getParticipantToken({
-    apolloClient,
-    ctx,
-  })
-
-  if (participantToken) {
-    return {
-      props: {
-        participantToken,
-        cookiesAvailable,
         shortname: ctx.params.shortname,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
+    })
+  } catch (error) {
+    console.error('Error in getServerSideProps on join page:', error)
+
+    // remove the lti-token, if it is defined
+    try {
+      nookies.destroy(ctx, 'lti-token', {
+        domain: process.env.COOKIE_DOMAIN,
+        path: '/',
+      })
+    } catch (nookiesError) {
+      console.error(nookiesError)
+    }
+
+    // redirect to lti error page with redirect back to this page
+    return {
+      redirect: {
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/serverError?redirectTo=${encodeURIComponent(`/${ctx.locale}/join/${ctx.params?.shortname}`)}`,
+        permanent: false,
+      },
     }
   }
-
-  return addApolloState(apolloClient, {
-    props: {
-      shortname: ctx.params.shortname,
-      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-        .default,
-    },
-  })
 }
 
 export default Join

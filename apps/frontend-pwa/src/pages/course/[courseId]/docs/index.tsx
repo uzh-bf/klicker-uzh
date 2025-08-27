@@ -4,6 +4,7 @@ import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import nookies from 'nookies'
 import DocsLayout from '../../../../components/docs/DocsLayout'
 
 interface Props {
@@ -35,42 +36,64 @@ function Landing({ participantToken, cookiesAvailable }: Props) {
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
-  if (typeof ctx.params?.courseId !== 'string') {
-    return {
-      redirect: {
-        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
-        statusCode: 302,
-      },
+  try {
+    if (typeof ctx.params?.courseId !== 'string') {
+      return {
+        redirect: {
+          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
+          statusCode: 302,
+        },
+      }
     }
-  }
 
-  const apolloClient = initializeApollo()
+    const apolloClient = initializeApollo()
 
-  const { participantToken, cookiesAvailable } = await getParticipantToken({
-    apolloClient,
-    courseId: ctx.params.courseId,
-    ctx,
-  })
+    const { participantToken, cookiesAvailable } = await getParticipantToken({
+      apolloClient,
+      courseId: ctx.params.courseId,
+      ctx,
+    })
 
-  if (participantToken) {
-    return {
+    if (participantToken) {
+      return {
+        props: {
+          cookiesAvailable,
+          participantToken,
+          courseId: ctx.params.courseId,
+          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+            .default,
+        },
+      }
+    }
+
+    return addApolloState(apolloClient, {
       props: {
-        cookiesAvailable,
-        participantToken,
         courseId: ctx.params.courseId,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
+    })
+  } catch (error) {
+    console.error('Error in getServerSideProps on course docs:', error)
+
+    // remove the lti-token, if it is defined
+    try {
+      nookies.destroy(ctx, 'lti-token', {
+        domain: process.env.COOKIE_DOMAIN,
+        path: '/',
+      })
+    } catch (nookiesError) {
+      console.error(nookiesError)
+    }
+
+    // redirect to lti error page with redirect back to this page
+    return {
+      redirect: {
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/serverError?redirectTo=${encodeURIComponent(`/${ctx.locale}/course/${ctx.params?.courseId}/docs`)}`,
+        permanent: false,
+      },
     }
   }
-
-  return addApolloState(apolloClient, {
-    props: {
-      courseId: ctx.params.courseId,
-      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-        .default,
-    },
-  })
 }
 
 export default Landing

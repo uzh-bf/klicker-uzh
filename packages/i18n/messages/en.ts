@@ -922,6 +922,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       loggedInAs: 'Logged in as',
       temporaryPseudonym: 'temporary pseudonym',
     },
+    serverError: {
+      warning: 'An unexpected error has occurred',
+      serverSideError:
+        'An unexpected error occurred while processing your request. Please reset your cookies and try again. If the problem persists, contact your course instructor.',
+      tryAgain: 'Try Again',
+    },
     avatar: {
       hair: 'Hair',
       hairColor: 'Hair Color',
