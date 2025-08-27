@@ -96,7 +96,8 @@
     "script": "ENV=development doppler run --config dev -- tsx",
     "script:prod": "ENV=production doppler run --config prd -- tsx",
     "script:stg": "ENV=development doppler run --config stg -- tsx",
-    "test": "bash ./run-tests.sh"
+    "test": "NODE_OPTIONS='--experimental-vm-modules' jest --verbose --runInBand",
+    "test:docker": "bash ./run-tests.sh"
   },
   "engines": {
     "node": "=20"
