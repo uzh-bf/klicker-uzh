@@ -1,4 +1,4 @@
-import { UserRole } from '@klicker-uzh/prisma'
+import { UserRole } from '@klicker-uzh/prisma/client'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getToken } from 'next-auth/jwt'
 import crypto from 'node:crypto'

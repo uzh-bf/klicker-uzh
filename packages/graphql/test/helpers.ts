@@ -1,3 +1,5 @@
+import { jest } from '@jest/globals'
+import { prisma } from '@klicker-uzh/prisma'
 import {
   AnswerCollection,
   CatalogCollection,
@@ -11,13 +13,14 @@ import {
   PublicationStatus,
   UserLoginScope,
   UserRole,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import { ElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
+import { Repeater } from 'graphql-yoga'
 import { v4 as uuidv4 } from 'uuid'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { createAnswerCollection } from '../src/services/resources.js'
@@ -95,7 +98,10 @@ export async function testInitialization(prisma: PrismaClient, emitter) {
     prisma,
     emitter,
     redisExec: jest.fn() as unknown as ContextWithUser['redisExec'],
-    pubSub: { publish: jest.fn(), subscribe: jest.fn() },
+    pubSub: {
+      publish: jest.fn(),
+      subscribe: jest.fn().mockReturnValue(new Repeater(() => {})),
+    } as ContextWithUser['pubSub'],
     req: {} as any,
     res: {} as any,
   }
@@ -168,22 +174,15 @@ export function getDatabaseUrl() {
   }
 
   // as a fallback, use default PostgreSQL connection
-  return 'postgresql://klicker-prod:klicker@localhost:5432/klicker-prod'
+  process.env.DATABASE_URL =
+    'postgresql://klicker-prod:klicker@localhost:5432/klicker-prod'
 }
 
 export async function initializePrisma() {
   // configure database
-  const databaseUrl = getDatabaseUrl()
+  getDatabaseUrl()
 
   try {
-    // initialize PrismaClient with the database URL
-    const prisma = new PrismaClient({
-      datasources: {
-        db: { url: databaseUrl },
-      },
-      log: ['error', 'warn'],
-    })
-
     // test database connection
     await prisma.$connect()
 
