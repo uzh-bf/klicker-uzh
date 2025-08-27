@@ -26,11 +26,18 @@ function Index() {
         <Button
           onClick={() => {
             // redirect to page in query parameter, if defined
+            const redirectTo = router.query.redirectTo
             if (
-              router.query.redirectTo &&
-              typeof router.query.redirectTo === 'string'
+              redirectTo &&
+              typeof redirectTo === 'string' &&
+              redirectTo.startsWith('/') &&
+              !redirectTo.startsWith('//') && // prevent protocol-relative
+              !redirectTo.includes('://') // prevent absolute URLs
             ) {
-              router.push(router.query.redirectTo)
+              router.push(redirectTo)
+            } else {
+              // fallback, navigate to home page
+              router.push('/')
             }
           }}
           className={{ root: 'h-8' }}
