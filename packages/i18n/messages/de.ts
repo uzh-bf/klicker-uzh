@@ -921,10 +921,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       loggedInAs: 'Angemeldet als',
       temporaryPseudonym: 'temporäres Pseudonym',
     },
-    lti: {
-      loginFailedTitle: 'Fehler bei Anmeldung aufgetreten',
-      loginFailedDescription:
-        'Beim Anmeldeprozess ist ein Fehler aufgetreten. Bitte setzen Sie Ihre Cookies zurück und versuchen Sie es erneut. Wenn das Problem weiterhin besteht, wenden Sie sich an Ihren Kursleiter.',
+    serverError: {
+      warning: 'Ein unerwarteter Fehler ist aufgetreten',
+      serverSideError:
+        'Ein unerwarteter Fehler ist bei Ihrer Anfrage aufgetreten. Bitte setzen Sie Ihre Cookies zurück und versuchen Sie es erneut. Wenn das Problem weiterhin besteht, wenden Sie sich an Ihren Kursleiter.',
       tryAgain: 'Erneut versuchen',
     },
     avatar: {

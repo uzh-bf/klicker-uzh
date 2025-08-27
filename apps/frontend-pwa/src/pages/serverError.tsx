@@ -19,10 +19,10 @@ function Index() {
       <div className="flex h-full flex-col items-center justify-center text-center">
         <div className="flex flex-row items-center gap-4 text-red-600">
           <FontAwesomeIcon icon={faExclamationCircle} size="3x" />
-          <H1 className={{ root: 'mb-0' }}>{t('pwa.lti.loginFailedTitle')}</H1>
+          <H1 className={{ root: 'mb-0' }}>{t('pwa.serverError.warning')}</H1>
         </div>
-        <p className="max-w-120 my-4 text-gray-600">
-          {t('pwa.lti.loginFailedDescription')}
+        <p className="max-w-140 my-4 text-gray-600">
+          {t('pwa.serverError.serverSideError')}
         </p>
         <Button
           onClick={() => {
@@ -44,7 +44,7 @@ function Index() {
           className={{ root: 'h-8' }}
         >
           <Button.Icon icon={faArrowsRotate} />
-          <Button.Label>{t('pwa.lti.tryAgain')}</Button.Label>
+          <Button.Label>{t('pwa.serverError.tryAgain')}</Button.Label>
         </Button>
       </div>
     </Layout>
@@ -62,4 +62,4 @@ export async function getStaticProps({ locale }: GetStaticPropsContext) {
 export default Index
 
 // TODO: remove
-// https://pwa.klicker.com/ltiError?redirectTo=https://pwa.klicker.com/createAccount
+// https://pwa.klicker.com/serverError?redirectTo=https://pwa.klicker.com/createAccount
