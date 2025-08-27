@@ -21,6 +21,7 @@ import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import nookies from 'nookies'
 import Layout from '../../../../../components/Layout'
 import PreviewMessage from '../../../../../components/common/PreviewMessage'
 import MicroLearningSubscriber from '../../../../../components/microLearning/MicroLearningSubscriber'
@@ -246,6 +247,16 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     })
   } catch (error) {
     console.error('Error in getServerSideProps on microlearning:', error)
+
+    // remove the lti-token, if it is defined
+    try {
+      nookies.destroy(ctx, 'lti-token', {
+        domain: process.env.COOKIE_DOMAIN,
+        path: '/',
+      })
+    } catch (nookiesError) {
+      console.error(nookiesError)
+    }
 
     // redirect to lti error page with redirect back to this page
     return {

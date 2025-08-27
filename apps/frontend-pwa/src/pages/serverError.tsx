@@ -52,6 +52,3 @@ export async function getStaticProps({ locale }: GetStaticPropsContext) {
 }
 
 export default Index
-
-// TODO: remove
-// https://pwa.klicker.com/serverError?redirectTo=https://pwa.klicker.com/createAccount

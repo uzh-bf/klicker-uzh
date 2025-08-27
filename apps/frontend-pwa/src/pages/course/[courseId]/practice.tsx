@@ -7,6 +7,7 @@ import useParticipantToken from '@lib/useParticipantToken'
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import nookies from 'nookies'
 import { useState } from 'react'
 import Layout from '../../../components/Layout'
 import Footer from '../../../components/common/Footer'
@@ -121,6 +122,16 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     })
   } catch (error) {
     console.error('Error in getServerSideProps on practice:', error)
+
+    // remove the lti-token, if it is defined
+    try {
+      nookies.destroy(ctx, 'lti-token', {
+        domain: process.env.COOKIE_DOMAIN,
+        path: '/',
+      })
+    } catch (nookiesError) {
+      console.error(nookiesError)
+    }
 
     // redirect to lti error page with redirect back to this page
     return {

@@ -624,9 +624,6 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    // TODO: REMOVE FAKE ERROR
-    throw new Error('Test error')
-
     const apolloClient = initializeApollo()
 
     const { participantToken, cookiesAvailable } = await getParticipantToken({
@@ -656,25 +653,6 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     })
   } catch (error) {
     console.error('Error in getServerSideProps on course overview:', error)
-
-    // TODO: remove setting of fake cookie to test removal
-    nookies.set(ctx, 'lti-token', 'asdf', {
-      domain: process.env.COOKIE_DOMAIN,
-      path: '/',
-      httpOnly: true,
-      maxAge: 60 * 2, // valid for 2 min
-      secure:
-        process.env.NODE_ENV === 'production' &&
-        process.env.COOKIE_DOMAIN !== '127.0.0.1',
-      sameSite:
-        process.env.NODE_ENV === 'development' ||
-        process.env.COOKIE_DOMAIN === '127.0.0.1'
-          ? 'lax'
-          : 'none',
-    })
-
-    // wait for 10 seconds
-    await new Promise((resolve) => setTimeout(resolve, 10000)) // TODO: REMOVE
 
     // remove the lti-token, if it is defined
     try {

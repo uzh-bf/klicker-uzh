@@ -9,6 +9,7 @@ import { H2, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import nookies from 'nookies'
 import Layout from '../../../../components/Layout'
 import LinkButton from '../../../../components/common/LinkButton'
 
@@ -169,6 +170,16 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       'Error in getServerSideProps on microlearnings overview page:',
       error
     )
+
+    // remove the lti-token, if it is defined
+    try {
+      nookies.destroy(ctx, 'lti-token', {
+        domain: process.env.COOKIE_DOMAIN,
+        path: '/',
+      })
+    } catch (nookiesError) {
+      console.error(nookiesError)
+    }
 
     // redirect to lti error page with redirect back to this page
     return {
