@@ -2,7 +2,7 @@ import {
   gradeQuestionFreeText,
   gradeQuestionNumerical,
 } from '@klicker-uzh/grading'
-import { ElementType, PrismaClient } from '@klicker-uzh/prisma'
+import { ElementType, PrismaClient } from '@klicker-uzh/prisma/client'
 import { AllElementTypeData, QuestionResultsOpen } from '@klicker-uzh/types'
 import { error } from 'console'
 import { createHash } from 'node:crypto'

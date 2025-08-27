@@ -3,7 +3,7 @@
  * - updateAccessRequestInstances: removes invalid requests for users who lost admin/owner rights and upserts valid pending requests (optionally scoped to a specific user).
  */
 
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import { type PrismaTransactionClient } from '../types.js'
 
 /**

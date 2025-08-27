@@ -1,7 +1,7 @@
 import { xpForLevel } from '@klicker-uzh/util'
-import Prisma from '../../dist/index.js'
+import { PrismaClient } from '../client.js'
 
-export async function seedLevels(prisma: Prisma.PrismaClient) {
+export async function seedLevels(prisma: PrismaClient) {
   for (let index of [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]) {
     await prisma.level.upsert({
       where: { index },
@@ -17,8 +17,7 @@ export async function seedLevels(prisma: Prisma.PrismaClient) {
   }
 }
 
-const prismaClient = new Prisma.PrismaClient()
-
+// const prismaClient = new Prisma.PrismaClient()
 // seedLevels(prismaClient)
 //   .catch((e) => {
 //     console.error(e)

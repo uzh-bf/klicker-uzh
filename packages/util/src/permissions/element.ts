@@ -5,7 +5,7 @@
  * - recomputeElementPermissionsObject: recompute derived permissions for all users.
  */
 
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import { type PrismaTransactionClient } from '../types.js'
 import { updateAccessRequestInstances } from './accessRequest.js'
 import {

@@ -8,7 +8,7 @@
  * - propagateActivityToElementsUser & propagateActivityToElements: trigger element-level permission recompute within an activity (user-scoped or object-scoped).
  */
 
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import { type PrismaTransactionClient } from '../types.js'
 import {
   inversePermissionLevelMap,

@@ -24,7 +24,7 @@ const config = defineConfig([
         rootDir: process.env.NODE_ENV === 'test' ? 'instrumented' : 'src',
       }),
     ],
-    external: [/@klicker-uzh*/, /node_modules/], // Exclude node_modules and specific external dependencies
+    external: [/@klicker-uzh*/, /node_modules/],
   },
 ])
 

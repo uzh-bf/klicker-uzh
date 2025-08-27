@@ -4,7 +4,7 @@ import {
   ElementType,
   PermissionLevel,
   PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import { ElementInstanceOptions, ElementOptions } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,

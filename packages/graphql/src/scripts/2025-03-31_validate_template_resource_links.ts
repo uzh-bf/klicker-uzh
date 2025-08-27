@@ -1,4 +1,4 @@
-import { ElementType, PrismaClient } from '@klicker-uzh/prisma'
+import { ElementType, PrismaClient } from '@klicker-uzh/prisma/client'
 import { CaseStudyElementData, SelectionElementData } from '@klicker-uzh/types'
 
 async function run() {

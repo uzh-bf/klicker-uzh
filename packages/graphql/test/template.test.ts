@@ -5,7 +5,7 @@ import {
   PermissionLevel,
   PrismaClient,
   PublicationStatus,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import { ActivityType } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,

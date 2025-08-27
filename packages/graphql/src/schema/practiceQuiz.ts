@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import {
   CaseStudyCaseResponse as CaseStudyCaseResponseType,
   CaseStudyCriterionResponse as CaseStudyCriterionResponseType,

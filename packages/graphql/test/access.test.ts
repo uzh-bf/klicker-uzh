@@ -6,7 +6,7 @@ import {
   PermissionLevel,
   PrismaClient,
   PublicationStatus,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,

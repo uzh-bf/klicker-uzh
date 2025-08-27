@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType, SharingType, SortByType } from '@klicker-uzh/types'
 import {
   PrismaTransactionClient,
