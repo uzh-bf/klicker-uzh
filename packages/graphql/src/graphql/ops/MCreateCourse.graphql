@@ -44,6 +44,7 @@ mutation CreateCourse(
     isGamificationEnabled
     isAssessmentEnabled
     isGroupCreationEnabled
+    randomAssignmentFinalized
     createdAt
     updatedAt
 
