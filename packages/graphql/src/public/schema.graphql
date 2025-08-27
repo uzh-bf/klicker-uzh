@@ -2091,6 +2091,11 @@ enum PermissionLevel {
   WRITE
 }
 
+type PermissionsList {
+  isOwner: Boolean!
+  permissions: [PermissionInfo!]!
+}
+
 type PracticeQuiz {
   availableFrom: Date
   course: Course
@@ -2184,7 +2189,7 @@ type Query {
   getMicroLearningEvaluation(id: String!): ActivityEvaluation
   getMicroLearningSummary(id: String!): ActivitySummary
   getObjectActivity(objectId: String!, objectType: ObjectType!): [ActivityLogEntry!]
-  getObjectPermissions(objectId: String!, objectType: ObjectType!): [PermissionInfo!]
+  getObjectPermissions(objectId: String!, objectType: ObjectType!): PermissionsList
   getOutdatedElementInstances(instanceIds: [Int!]!): [ElementInstanceVersionInfo!]
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]

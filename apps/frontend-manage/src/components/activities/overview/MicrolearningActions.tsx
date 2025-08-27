@@ -172,7 +172,6 @@ function MicrolearningActions({
             objectName={microLearning.name}
             objectType={ObjectType.MicroLearning}
             isTemplate={isTemplate}
-            isOwner={microLearning.isOwner ?? false}
             onClose={() => setSharingModal(false)}
             refetchActivities={refetchActivities}
           />

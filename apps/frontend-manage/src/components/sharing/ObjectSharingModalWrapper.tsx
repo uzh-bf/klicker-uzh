@@ -11,7 +11,6 @@ interface ObjectSharingModalBaseProps {
   isTemplate?: boolean
   courseId?: string
   catalogCollectionId?: string
-  isOwner: boolean
   onClose: () => void
   refetchActivities?: () => Promise<void>
   refetchElements?: () => Promise<void>
@@ -33,7 +32,6 @@ function ObjectSharingModalWrapper({
   objectType,
   isTemplate = false,
   catalogCollectionId,
-  isOwner,
   onClose,
   refetchActivities,
   refetchElements,
@@ -68,7 +66,6 @@ function ObjectSharingModalWrapper({
         objectId={typeof objectId !== 'undefined' ? objectId : objectUuid!}
         objectType={objectType}
         objectName={objectName}
-        isOwner={isOwner}
         onOwnershipTransfer={() => setTransferModalOpen(true)}
         derivedPermissionsAvailable={
           objectType !== ObjectType.CatalogCollection &&

@@ -310,7 +310,6 @@ function CatalogObjectItem({
             objectName={object.name}
             objectType={object.objectType}
             catalogCollectionId={catalogCollectionId}
-            isOwner={object.isOwner}
             onClose={() => setSharingModal(false)}
           />
         ) : (
@@ -319,7 +318,6 @@ function CatalogObjectItem({
             objectName={object.name}
             objectType={object.objectType}
             catalogCollectionId={catalogCollectionId}
-            isOwner={object.isOwner}
             onClose={() => setSharingModal(false)}
           />
         )

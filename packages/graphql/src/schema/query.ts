@@ -92,7 +92,7 @@ import {
   DerivedPermissionOriginInformation,
   ObjectSharingRequest,
   ObjectType,
-  PermissionInfo,
+  PermissionsList,
   UserGroup,
 } from './sharing.js'
 import {
@@ -1511,7 +1511,7 @@ export const Query = builder.queryType({
 
       getObjectPermissions: t.withAuth(asUser).field({
         nullable: true,
-        type: [PermissionInfo],
+        type: PermissionsList,
         args: {
           objectId: t.arg.string({ required: true }),
           objectType: t.arg({ type: ObjectType, required: true }),

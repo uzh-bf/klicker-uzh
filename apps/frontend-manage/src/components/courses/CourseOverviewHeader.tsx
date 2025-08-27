@@ -266,7 +266,6 @@ function CourseOverviewHeader({
           objectUuid={course.id}
           objectName={course.name}
           objectType={ObjectType.Course}
-          isOwner={course.isOwner ?? false}
           onClose={() => setSharingModal(false)}
         />
       ) : null}

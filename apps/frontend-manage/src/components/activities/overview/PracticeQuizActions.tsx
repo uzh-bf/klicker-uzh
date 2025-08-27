@@ -163,7 +163,6 @@ function PracticeQuizActions({
             objectName={practiceQuiz.name}
             objectType={ObjectType.PracticeQuiz}
             isTemplate={isTemplate}
-            isOwner={practiceQuiz.isOwner ?? false}
             onClose={() => setSharingModal(false)}
             refetchActivities={refetchActivities}
           />
