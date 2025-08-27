@@ -30,6 +30,7 @@ import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import nookies from 'nookies'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
@@ -655,6 +656,22 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     })
   } catch (error) {
     console.error('Error in getServerSideProps on course overview:', error)
+
+    // TODO: remove setting of fake cookie to test removal
+    nookies.set(ctx, 'lti-tokenv2', 'asdf', {
+      domain: process.env.COOKIE_DOMAIN,
+      path: '/',
+      httpOnly: true,
+      maxAge: 1000 * 60 * 2, // valid for 2 min
+      secure:
+        process.env.NODE_ENV === 'production' &&
+        process.env.COOKIE_DOMAIN !== '127.0.0.1',
+      sameSite:
+        process.env.NODE_ENV === 'development' ||
+        process.env.COOKIE_DOMAIN === '127.0.0.1'
+          ? 'lax'
+          : 'none',
+    })
 
     // redirect to lti error page with redirect back to this page
     return {

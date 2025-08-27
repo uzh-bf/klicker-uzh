@@ -26,9 +26,15 @@ function Index() {
         </p>
         <Button
           onClick={() => {
-            // TODO: remove this branch before merging, if the approach does not work to reset the lti token cookie
-            // reset cookies
+            // TODO: remove this, if it does not work as desired
+            // reset lti-token cookie that can create issues with authentication
             nookies.destroy(null, 'lti-token', {
+              domain: process.env.COOKIE_DOMAIN,
+              path: '/',
+            })
+
+            // TODO: remove - test code to determine if cookies can be removed through client
+            nookies.destroy(null, 'lti-tokenv2', {
               domain: process.env.COOKIE_DOMAIN,
               path: '/',
             })
