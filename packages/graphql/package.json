@@ -49,6 +49,7 @@
     "@graphql-tools/utils": "~10.5.5",
     "@graphql-typed-document-node/core": "~3.2.0",
     "@istanbuljs/nyc-config-typescript": "~1.0.2",
+    "@jest/globals": "~29.0.0",
     "@parcel/watcher": "~2.4.1",
     "@rollup/plugin-node-resolve": "~15.3.0",
     "@rollup/plugin-typescript": "~12.1.2",
