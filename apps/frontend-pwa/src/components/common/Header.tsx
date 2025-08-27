@@ -78,6 +78,8 @@ function Header({
           alt="KlickerUZH Logo"
           width={35}
           height={35}
+          onClick={() => router.push('/')}
+          className="cursor-pointer"
         />
 
         {title && course?.displayName && (

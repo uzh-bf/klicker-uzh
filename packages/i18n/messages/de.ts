@@ -2566,6 +2566,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       openEvaluation: 'Evaluation öffnen',
       archiveOnlyPastCourses:
         'Nur Kurse mit einem Enddatum in der Vergangenheit können archiviert werden.',
+      noDeletionAssessment:
+        'Kurse im Assessment-Modus können nicht gelöscht werden.',
       archiveCourse: 'Kurs archivieren',
       unarchiveCourse: 'Kurs wiederherstellen',
       confirmCourseArchive:
@@ -2582,7 +2584,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '{number} Teilnehmende(r) dieses Kurses verlieren ihre gesammelten Punkte und den Zugriff auf alle Kursmaterialien und Aktivitäten.',
       noLiveQuizzesDisconnected: 'Dieser Kurs enthält keine Live-Quizzes.',
       disconnectLiveQuizzes:
-        '{number} Live-Quizz(es) werden vom Kurs getrennt. Sie können weiterhin über die Live-Quiz Liste aufgerufen werden.',
+        '{number} Live-Quizz(es) werden vom Kurs getrennt. Sie können weiterhin über die Aktivitätenliste aufgerufen werden.',
       noPracticeQuizzesToDelete: 'Dieser Kurs enthält keine Übungs-Quizzes.',
       deletePracticeQuizzes:
         '{number} Übungs-Quizz(es) (inklusive deren Resultate) werden unwiderruflich gelöscht.',

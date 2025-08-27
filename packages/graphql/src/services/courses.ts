@@ -1083,7 +1083,7 @@ export async function deleteCourse(
   // live quizzes, which are only disconnected from the course need to be handled separately
   // elements that are contained in asynchronous activities (cascading delete) need to be updated manually
   const course = await ctx.prisma.course.findUnique({
-    where: { id },
+    where: { id, isAssessmentEnabled: false },
     include: {
       liveQuizzes: true,
       practiceQuizzes: { include: { stacks: { include: { elements: true } } } },
