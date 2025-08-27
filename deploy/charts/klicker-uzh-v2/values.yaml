@@ -318,6 +318,7 @@ olatApi:
   replicaCount: 1
 
   image:
+    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api
     pullPolicy: Always
 
