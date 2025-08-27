@@ -20,28 +20,28 @@ eduId:
 auth:
   replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
   image:
-    tag: <path:keyvaultp19gA04dNy#APP_VERSION>
+    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
 
 frontendPWA:
   replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
   image:
-    tag: <path:keyvaultp19gA04dNy#APP_VERSION>
+    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
 
 frontendManage:
   replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
   image:
-    tag: <path:keyvaultp19gA04dNy#APP_VERSION>
+    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
 
 frontendControl:
   replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
   image:
-    tag: <path:keyvaultp19gA04dNy#APP_VERSION>
+    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
 
 backendGraphql:
   replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
 
   image:
-    tag: <path:keyvaultp19gA04dNy#APP_VERSION>
+    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
 
   apiDomain: <path:keyvaultp19gA04dNy#API_DOMAIN>
   cookieDomain: <path:keyvaultp19gA04dNy#COOKIE_DOMAIN>
@@ -82,13 +82,13 @@ olatApi:
   key: <path:keyvaultp19gA04dNy#OLAT_API_KEY>
 
   image:
-    tag: <path:keyvaultp19gA04dNy#APP_VERSION>
+    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
 
 lti:
   replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
 
   image:
-    tag: <path:keyvaultp19gA04dNy#APP_VERSION>
+    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
 
   appSecret: <path:keyvaultp19gA04dNy#APP_SECRET>
   clientId: <path:keyvaultp19gA04dNy#LTI_CLIENT_ID>
