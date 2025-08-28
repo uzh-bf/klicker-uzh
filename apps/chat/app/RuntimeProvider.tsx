@@ -310,7 +310,9 @@ export function RuntimeProvider({
 
   const onNew = useCallback(
     async (message: AppendMessage) => {
-      let threadId = activeThreadId
+      const { activeThreadId: currentActiveThreadId } = useChatStore.getState()
+
+      let threadId = currentActiveThreadId
 
       // create a new thread if none exists
       if (!threadId) {
@@ -340,59 +342,71 @@ export function RuntimeProvider({
       // generate chat response
       await generateChatResponse(currentMessages, threadId)
     },
-    [activeThreadId, createThread, addMessage, generateChatResponse]
+    [createThread, addMessage, generateChatResponse]
   )
 
-  const onEdit = async (message: AppendMessage) => {
-    if (!activeThreadId) {
-      console.error('No active thread for edit')
-      return
-    }
+  const onEdit = useCallback(
+    async (message: AppendMessage) => {
+      const { activeThreadId: threadId, threads } = useChatStore.getState()
 
-    const parentId = message.parentId
+      if (!threadId) {
+        console.error('No active thread for edit')
+        return
+      }
 
-    // create the edited message as a new branch
-    const editedMessage: ExtendedThreadMessageLike = {
-      role: 'user',
-      content: message.content,
-      id: generateId(),
-      createdAt: new Date(),
-      parentId: parentId,
-    }
+      const active = threads.find((t) => t.id === threadId)
 
-    // keep messages up to previous assistant message
-    const parentIndex = parentId
-      ? messages.findIndex((m) => m.id === parentId)
-      : -1
-    const newCurrentPath =
-      parentIndex >= 0
-        ? [...messages.slice(0, parentIndex + 1), editedMessage]
+      const parentId = message.parentId
+
+      const editedMessage: ExtendedThreadMessageLike = {
+        role: 'user',
+        content: message.content,
+        id: generateId(),
+        createdAt: new Date(),
+        parentId: parentId,
+      }
+
+      // keep messages up to previous assistant message (use current path from store)
+      const parentIndex =
+        parentId && active
+          ? active.messages.findIndex((m) => m.id === parentId)
+          : -1
+      const newCurrentPath =
+        parentIndex >= 0 && active
+          ? [...active.messages.slice(0, parentIndex + 1), editedMessage]
+          : [editedMessage]
+
+      const updatedAllMessages = active
+        ? [...active.allMessages, editedMessage]
         : [editedMessage]
 
-    const updatedAllMessages = activeThread
-      ? [...activeThread.allMessages, editedMessage]
-      : [editedMessage]
+      // update thread with both current path and full tree
+      useChatStore.setState((state) => ({
+        threads: state.threads.map((thread) =>
+          thread.id === threadId
+            ? {
+                ...thread,
+                messages: newCurrentPath,
+                allMessages: updatedAllMessages,
+              }
+            : thread
+        ),
+      }))
 
-    // update thread with both current path and full tree
-    useChatStore.setState((state) => ({
-      threads: state.threads.map((thread) =>
-        thread.id === activeThreadId
-          ? {
-              ...thread,
-              messages: newCurrentPath,
-              allMessages: updatedAllMessages,
-            }
-          : thread
-      ),
-    }))
-
-    // generate new chat response
-    await generateChatResponse(newCurrentPath, activeThreadId)
-  }
+      // generate new chat response
+      await generateChatResponse(newCurrentPath, threadId)
+    },
+    [generateChatResponse]
+  )
 
   const onCancel = useCallback(async () => {
     setIsRunning(false)
   }, [setIsRunning])
+
+  const convertMessage = useCallback(
+    (message: ThreadMessageLike) => message,
+    []
+  )
 
   const runtime = useExternalStoreRuntime({
     messages,
@@ -401,7 +415,7 @@ export function RuntimeProvider({
     onNew,
     onEdit,
     onCancel,
-    convertMessage: (message: ThreadMessageLike) => message,
+    convertMessage,
   })
 
   return (
