@@ -1,5 +1,32 @@
-heartbeats:
-  dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
+teamsWebhookUrl: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+notifications:
+  url: ''
+  secret: ''
+  supportEmail: ''
+
+email:
+  type: ''
+  from: ''
+  host: ''
+  port: ''
+  username: ''
+  password: ''
+  secure: 'false'
+  requireTLS: 'true'
+
+eduId:
+  clientSecret: ''
 
 blobStorage:
   accountName: ''
@@ -20,19 +47,13 @@ cron:
   token: ""
 
 auth:
-  priorityClassName: staging-workload
+  priorityClassName: production-workload
 
-  replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
+  replicaCount: 1
+
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth
     pullPolicy: Always
-    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   service:
     type: ClusterIP
@@ -43,29 +64,22 @@ auth:
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
       cert-manager.io/cluster-issuer: letsencrypt
-    className: haproxy
-    hosts:
-      - host: auth.klicker-qa.example.df-app.ch
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-    tls:
-      - secretName: klicker-prod-frontend-auth-tls
-        hosts:
-          - auth.klicker-qa.example.df-app.ch
-
-  strategy:
-    type: RollingUpdate
-    # type: Recreate
 
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
-    limits:
       cpu: 200m
       memory: 200Mi
-  
+    limits:
+      cpu: 400m
+      memory: 400Mi
+
+  autoscaling:
+    enabled: false
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
   nodeSelector: {}
 
   tolerations: []
@@ -73,50 +87,38 @@ auth:
   affinity: {}
 
 frontendPWA:
-  priorityClassName: staging-workload
+  priorityClassName: production-workload
 
-  replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
+  replicaCount: 3
+
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa
     pullPolicy: Always
-    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
+
+  service:
+    type: ClusterIP
+    port: 3000
 
   ingress:
     enabled: true
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
       cert-manager.io/cluster-issuer: letsencrypt
-    className: haproxy
-    hosts:
-      - host: pwa.klicker-qa.example.df-app.ch
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-    tls:
-      - secretName: klicker-qa-frontend-pwa-tls
-        hosts:
-          - pwa.klicker-qa.example.df-app.ch
-
-  service:
-    type: ClusterIP
-    port: 3000
-
-  strategy:
-    type: Recreate
 
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
-    limits:
       cpu: 200m
       memory: 200Mi
+    limits:
+      cpu: 1000m
+      memory: 1000Mi
+
+  autoscaling:
+    enabled: false
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -125,17 +127,32 @@ frontendPWA:
   affinity: {}
 
 frontendManage:
-  priorityClassName: staging-workload
+  priorityClassName: production-workload
 
-  replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
+  replicaCount: 2
+
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage
     pullPolicy: Always
-    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
-  
+
   service:
     type: ClusterIP
     port: 3000
+
+  ingress:
+    enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 256m
+      cert-manager.io/cluster-issuer: letsencrypt
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 200Mi
+    limits:
+      cpu: 1000m
+      memory: 1000Mi
+
   autoscaling:
     enabled: false
     minReplicas: 1
@@ -143,33 +160,6 @@ frontendManage:
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
 
-  ingress:
-    enabled: true
-    annotations:
-      nginx.ingress.kubernetes.io/proxy-body-size: 256m
-      cert-manager.io/cluster-issuer: letsencrypt
-    className: haproxy
-    hosts:
-      - host: manage.klicker-qa.example.df-app.ch
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-    tls:
-      - secretName: klicker-qa-frontend-manage-tls
-        hosts:
-          - manage.klicker-qa.example.df-app.ch
-
-  strategy:
-    type: Recreate
-
-  resources:
-    requests:
-      cpu: 50m
-      memory: 50Mi
-    limits:
-      cpu: 200m
-      memory: 200Mi
-  
   nodeSelector: {}
 
   tolerations: []
@@ -177,17 +167,31 @@ frontendManage:
   affinity: {}
 
 frontendControl:
-  priorityClassName: staging-workload
+  priorityClassName: production-workload
 
-  replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
+  replicaCount: 1
+
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control
     pullPolicy: Always
-    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
-  
+
   service:
     type: ClusterIP
     port: 3000
+
+  ingress:
+    enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 256m
+      cert-manager.io/cluster-issuer: letsencrypt
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 200Mi
+    limits:
+      cpu: 1000m
+      memory: 1000Mi
 
   autoscaling:
     enabled: false
@@ -196,33 +200,6 @@ frontendControl:
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
 
-  ingress:
-    enabled: true
-    annotations:
-      nginx.ingress.kubernetes.io/proxy-body-size: 256m
-      cert-manager.io/cluster-issuer: letsencrypt
-    className: haproxy
-    hosts:
-      - host: control.klicker-qa.example.df-app.ch
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-    tls:
-      - secretName: klicker-qa-frontend-control-tls
-        hosts:
-          - control.klicker-qa.example.df-app.ch
-
-  strategy:
-    type: Recreate
-
-  resources:
-    requests:
-      cpu: 50m
-      memory: 50Mi
-    limits:
-      cpu: 200m
-      memory: 200Mi
-  
   nodeSelector: {}
 
   tolerations: []
@@ -230,107 +207,31 @@ frontendControl:
   affinity: {}
 
 backendGraphql:
-  priorityClassName: staging-workload
+  priorityClassName: production-workload
 
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
-
-  replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
+  replicaCount: 3
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker
     pullPolicy: Always
-    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
 
   service:
     type: ClusterIP
     port: 3000
-
-  apiDomain: <path:keyvaultp19gA04dNy#API_DOMAIN>
-  cookieDomain: <path:keyvaultp19gA04dNy#COOKIE_DOMAIN>
-  databaseUrl: <path:keyvaultp19gA04dNy#DATABASE_URL>
-  debug: true
-
-  appManageSubdomain: <path:keyvaultp19gA04dNy#APP_MANAGE_SUBDOMAIN>
-  appManageDomain: <path:keyvaultp19gA04dNy#APP_MANAGE_DOMAIN>
-  appStudentSubdomain: <path:keyvaultp19gA04dNy#APP_STUDENT_SUBDOMAIN>
-  appStudentDomain: <path:keyvaultp19gA04dNy#APP_STUDENT_DOMAIN>
-  appControlSubdomain: <path:keyvaultp19gA04dNy#APP_CONTROL_SUBDOMAIN>
-  appControlDomain: <path:keyvaultp19gA04dNy#APP_CONTROL_DOMAIN>
-
-  notifications:
-    url: <path:keyvaultp19gA04dNy#NOTIFICATION_URL>
-    secret: <path:keyvaultp19gA04dNy#NOTIFICATION_SECRET>
-    supportEmail: <path:keyvaultp19gA04dNy#NOTIFICATION_SUPPORT_EMAIL>
-
-  vapid:
-    publicKey: <path:keyvaultp19gA04dNy#VAPID_PUBLIC_KEY>
-    privateKey: <path:keyvaultp19gA04dNy#VAPID_PRIVATE_KEY>
-
-  redisCache:
-    host: <path:keyvaultp19gA04dNy#REDIS_CACHE_HOST>
-    port: <path:keyvaultp19gA04dNy#REDIS_CACHE_PORT>
-    pass: <path:keyvaultp19gA04dNy#REDIS_CACHE_PASS>
-
-  redisExec:
-    host: <path:keyvaultp19gA04dNy#REDIS_HOST>
-    port: <path:keyvaultp19gA04dNy#REDIS_PORT>
-    tls: <path:keyvaultp19gA04dNy#REDIS_TLS>
-    pass: <path:keyvaultp19gA04dNy#REDIS_PASS>
-
-  sentryEnv: qa
-  sentryDSN: <path:keyvaultp19gA04dNy#SENTRY_DSN>
 
   ingress:
     enabled: true
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
       cert-manager.io/cluster-issuer: letsencrypt
-    className: haproxy
-    hosts:
-      - host: backend-sls.klicker-qa.example.df-app.ch
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-    tls:
-      - secretName: klicker-qa-backend-graphql-tls
-        hosts:
-          - backend-sls.klicker-qa.example.df-app.ch
-
-  strategy:
-    type: Recreate
 
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
-    limits:
       cpu: 200m
       memory: 200Mi
-  
-  nodeSelector: {}
-
-  tolerations: []
-
-  affinity: {}
-
-olatApi:
-  priorityClassName: staging-workload
-
-  key: <path:keyvaultp19gA04dNy#OLAT_API_KEY>
-
-  image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/olat-api
-    pullPolicy: Always
-    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
-  
-  service:
-    type: ClusterIP
-    port: 3000
+    limits:
+      cpu: 1000m
+      memory: 1000Mi
 
   autoscaling:
     enabled: false
@@ -339,33 +240,6 @@ olatApi:
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
 
-  ingress:
-    enabled: true
-    annotations:
-      nginx.ingress.kubernetes.io/proxy-body-size: 256m
-      cert-manager.io/cluster-issuer: letsencrypt
-    className: haproxy
-    hosts:
-      - host: olat-api.klicker-qa.example.df-app.ch
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-    tls:
-      - secretName: klicker-qa-olat-api-tls
-        hosts:
-          - olat-api.klicker-qa.example.df-app.ch
-
-  strategy:
-    type: Recreate
-
-  resources:
-    requests:
-      cpu: 50m
-      memory: 50Mi
-    limits:
-      cpu: 200m
-      memory: 200Mi
-  
   nodeSelector: {}
 
   tolerations: []
@@ -373,84 +247,110 @@ olatApi:
   affinity: {}
 
 lti:
-  priorityClassName: staging-workload
+  priorityClassName: production-workload
 
-  replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
+  replicaCount: 2
 
-  image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/lti
-    pullPolicy: Always
-    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
+  appSecret: ''
 
-  service:
-    type: ClusterIP
-    port: 4000
-
-  appSecret: <path:keyvaultp19gA04dNy#APP_SECRET>
-  clientId: <path:keyvaultp19gA04dNy#LTI_CLIENT_ID>
-  redirectURL: <path:keyvaultp19gA04dNy#LTI_REDIRECT_URL>
-  cookieDomain: <path:keyvaultp19gA04dNy#COOKIE_DOMAIN>
-  encryptionKey: <path:keyvaultp19gA04dNy#APP_SECRET>
-  name: <path:keyvaultp19gA04dNy#LTI_NAME>
-  url: <path:keyvaultp19gA04dNy#LTI_URL>
-  authEndpoint: <path:keyvaultp19gA04dNy#LTI_AUTH_ENDPOINT>
-  tokenEndpoint: <path:keyvaultp19gA04dNy#LTI_TOKEN_ENDPOINT>
-  keysEndpoint: <path:keyvaultp19gA04dNy#LTI_KEYS_ENDPOINT>
+  clientId:
+  redirectURL:
+  cookieDomain:
+  encryptionKey:
+  url:
+  name:
+  authEndpoint:
+  tokenEndpoint:
+  keysEndpoint:
   port: 4000
 
   devMode: 'true'
   ltiaas: 'false'
 
   db:
-    type: <path:keyvaultp19gA04dNy#LTI_DB_TYPE>
-    host: <path:keyvaultp19gA04dNy#LTI_DB_HOST>
-    port: <path:keyvaultp19gA04dNy#LTI_DB_PORT>
-    name: <path:keyvaultp19gA04dNy#LTI_DB_NAME>
-    username: <path:keyvaultp19gA04dNy#LTI_DB_USER>
-    password: <path:keyvaultp19gA04dNy#LTI_DB_PASS>
+    type: postgres
+    host: ''
+    port: 5432
+    name: ''
+    username: ''
+    password: ''
+    connectionString: ''
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/lti
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 4000
+
   ingress:
     enabled: true
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
       cert-manager.io/cluster-issuer: letsencrypt
-    className: haproxy
-    hosts:
-      - host: lti.klicker-qa.example.df-app.ch
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-    tls:
-      - secretName: klicker-qa-lti-tls
-        hosts:
-          - lti.klicker-qa.example.df-app.ch
-  
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 200Mi
+    limits:
+      cpu: 500m
+      memory: 500Mi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
   nodeSelector: {}
 
   tolerations: []
 
   affinity: {}
 
-redis:
-  priorityClassName: staging-workload
-  architecture: standalone
-  auth:
+olatApi:
+  key: ''
+  priorityClassName: production-workload
+
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/olat-api
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  ingress:
+    enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 256m
+      cert-manager.io/cluster-issuer: letsencrypt
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 200Mi
+    limits:
+      cpu: 1000m
+      memory: 1000Mi
+
+  autoscaling:
     enabled: false
+    minReplicas: 1
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
 
-dfDomain: <path:keyvaultp19gA04dNy#EMAIL_TYPE>
+  nodeSelector: {}
 
-teamsWebhookUrl: <path:keyvaultp19gA04dNy#TEAMS_WEBHOOK_URL>
+  tolerations: []
 
-appSecret: <path:keyvaultp19gA04dNy#APP_SECRET>
+  affinity: {}
 
-email:
-  type: <path:keyvaultp19gA04dNy#EMAIL_TYPE>
-  from: <path:keyvaultp19gA04dNy#EMAIL_FROM>
-  host: <path:keyvaultp19gA04dNy#EMAIL_HOST>
-  port: <path:keyvaultp19gA04dNy#EMAIL_PORT>
-  username: <path:keyvaultp19gA04dNy#EMAIL_USER>
-  password: <path:keyvaultp19gA04dNy#EMAIL_PASS>
-  secure: <path:keyvaultp19gA04dNy#EMAIL_SECURE>
-  requireTLS: <path:keyvaultp19gA04dNy#EMAIL_STARTTLS>
-
-eduId:
-  clientSecret: <path:keyvaultp19gA04dNy#EDUID_CLIENT_SECRET>
+heartbeats:
+  dailyGroupScores:
