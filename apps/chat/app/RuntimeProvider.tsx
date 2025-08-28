@@ -208,7 +208,21 @@ export function RuntimeProvider({
                   if (existingToolCall) {
                     existingToolCall.result = jsonData.output
 
-                    const assistantMessage: ThreadMessageLike = {
+                    const assistantMessage: ExtendedThreadMessageLike = {
+                      id: assistantMessageId,
+                      role: 'assistant',
+                      content: orderedContentParts,
+                      createdAt: new Date(),
+                    }
+
+                    setMessages([...messagesToSend, assistantMessage])
+                  }
+                } else if (jsonData.type === 'tool-output-error') {
+                  const existingToolCall = toolCallsMap.get(jsonData.toolCallId)
+                  if (existingToolCall) {
+                    existingToolCall.result = `Error: ${jsonData.errorText || 'Tool execution failed'}`
+
+                    const assistantMessage: ExtendedThreadMessageLike = {
                       id: assistantMessageId,
                       role: 'assistant',
                       content: orderedContentParts,

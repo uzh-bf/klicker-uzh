@@ -6,12 +6,14 @@ type WeatherArgs = {
   location: string
 }
 
-type WeatherResult = {
-  result: {
-    temp: number
-    humidity: string
-  }
-}
+type WeatherResult =
+  | {
+      result: {
+        temp: number
+        humidity: string
+      }
+    }
+  | string
 
 export const WeatherToolUI = makeAssistantToolUI<WeatherArgs, WeatherResult>({
   toolName: 'getWeather',
@@ -30,12 +32,24 @@ export const WeatherToolUI = makeAssistantToolUI<WeatherArgs, WeatherResult>({
     if (status.type === 'incomplete' && status.reason === 'error') {
       return (
         <div className="rounded-lg bg-red-50 p-4 text-red-800">
-          Failed to get weather for {args.location}
+          <div className="font-semibold">Error getting weather</div>
+          <div className="text-sm">
+            Failed to get weather for {args.location}
+          </div>
         </div>
       )
     }
 
-    if (!result || !result.result) {
+    if (typeof result === 'string' && result.startsWith('Error:')) {
+      return (
+        <div className="rounded-lg bg-red-50 p-4 text-red-800">
+          <div className="font-semibold">Weather Error</div>
+          <div className="text-sm">{result}</div>
+        </div>
+      )
+    }
+
+    if (!result || typeof result === 'string' || !result.result) {
       return (
         <div className="flex items-center gap-2 rounded-lg bg-blue-50 p-4">
           <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
@@ -55,13 +69,17 @@ export const WeatherToolUI = makeAssistantToolUI<WeatherArgs, WeatherResult>({
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center gap-2">
             <span className="text-2xl font-bold text-blue-800">
-              {result?.result?.temp || 'N/A'}
+              {typeof result === 'object' && result?.result?.temp
+                ? result.result.temp
+                : 'N/A'}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <Droplets className="h-4 w-4 text-blue-600" />
             <span className="text-sm text-blue-700">
-              {result?.result?.humidity || 'N/A'}
+              {typeof result === 'object' && result?.result?.humidity
+                ? result.result.humidity
+                : 'N/A'}
             </span>
           </div>
         </div>
