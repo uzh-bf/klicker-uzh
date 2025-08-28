@@ -1,15 +1,13 @@
 import {
   ActionBarPrimitive,
-  BranchPickerPrimitive,
   ComposerPrimitive,
   MessagePrimitive,
   ThreadPrimitive,
+  useMessage,
 } from '@assistant-ui/react'
 import {
   ArrowDownIcon,
   CheckIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   CopyIcon,
   PencilIcon,
   RefreshCwIcon,
@@ -17,6 +15,7 @@ import {
 } from 'lucide-react'
 import type { FC } from 'react'
 
+import { BranchPicker } from '@/components/assistant-ui/branch-picker'
 import { MarkdownText } from '@/components/assistant-ui/markdown-text'
 import { TooltipIconButton } from '@/components/assistant-ui/tooltip-icon-button'
 import { Button } from '@/components/ui/button'
@@ -235,25 +234,14 @@ const AssistantActionBar: FC = () => {
       </ActionBarPrimitive.Reload>
 
       {/* Branch switching controls */}
-      <BranchPickerPrimitive.Root className="flex items-center gap-1">
-        <BranchPickerPrimitive.Previous asChild>
-          <TooltipIconButton tooltip="Previous branch">
-            <ChevronLeftIcon />
-          </TooltipIconButton>
-        </BranchPickerPrimitive.Previous>
-
-        <span className="flex items-center whitespace-nowrap px-1 text-xs">
-          <BranchPickerPrimitive.Number /> / <BranchPickerPrimitive.Count />
-        </span>
-
-        <BranchPickerPrimitive.Next asChild>
-          <TooltipIconButton tooltip="Next branch">
-            <ChevronRightIcon />
-          </TooltipIconButton>
-        </BranchPickerPrimitive.Next>
-      </BranchPickerPrimitive.Root>
+      <BranchPickerWrapper />
     </ActionBarPrimitive.Root>
   )
+}
+
+const BranchPickerWrapper: FC = () => {
+  const message = useMessage()
+  return <BranchPicker messageId={message.id} />
 }
 
 const CircleStopIcon = () => {

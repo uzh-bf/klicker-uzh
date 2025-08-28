@@ -143,11 +143,12 @@ export function RuntimeProvider({
                     }
                   }
 
-                  const assistantMessage: ThreadMessageLike = {
+                  const assistantMessage: ExtendedThreadMessageLike = {
                     id: assistantMessageId,
                     role: 'assistant',
                     content: orderedContentParts,
                     createdAt: new Date(),
+                    parentId: triggerMessage.id,
                   }
 
                   setMessages([...messagesToSend, assistantMessage])
@@ -178,11 +179,12 @@ export function RuntimeProvider({
                   toolCallsMap.set(jsonData.toolCallId, toolCall)
                   orderedContentParts.push(toolCall)
 
-                  const assistantMessage: ThreadMessageLike = {
+                  const assistantMessage: ExtendedThreadMessageLike = {
                     id: assistantMessageId,
                     role: 'assistant',
                     content: orderedContentParts,
                     createdAt: new Date(),
+                    parentId: triggerMessage.id,
                   }
 
                   setMessages([...messagesToSend, assistantMessage])
@@ -193,11 +195,12 @@ export function RuntimeProvider({
                     existingToolCall.args = jsonData.input
                     existingToolCall.result = 'Executing...'
 
-                    const assistantMessage: ThreadMessageLike = {
+                    const assistantMessage: ExtendedThreadMessageLike = {
                       id: assistantMessageId,
                       role: 'assistant',
                       content: orderedContentParts,
                       createdAt: new Date(),
+                      parentId: triggerMessage.id,
                     }
 
                     setMessages([...messagesToSend, assistantMessage])
@@ -213,6 +216,7 @@ export function RuntimeProvider({
                       role: 'assistant',
                       content: orderedContentParts,
                       createdAt: new Date(),
+                      parentId: triggerMessage.id,
                     }
 
                     setMessages([...messagesToSend, assistantMessage])
@@ -227,6 +231,7 @@ export function RuntimeProvider({
                       role: 'assistant',
                       content: orderedContentParts,
                       createdAt: new Date(),
+                      parentId: triggerMessage.id,
                     }
 
                     setMessages([...messagesToSend, assistantMessage])
@@ -263,14 +268,35 @@ export function RuntimeProvider({
           }
 
           if (orderedContentParts.length > 0) {
-            const finalAssistantMessage: ThreadMessageLike = {
+            const finalAssistantMessage: ExtendedThreadMessageLike = {
               id: assistantMessageId,
               role: 'assistant',
               content: orderedContentParts,
               createdAt: new Date(),
+              parentId: triggerMessage.id,
             }
 
-            setMessages([...messagesToSend, finalAssistantMessage])
+            const newCurrentPath = [...messagesToSend, finalAssistantMessage]
+
+            // get current thread state to update allMessages
+            const { threads } = useChatStore.getState()
+            const activeThread = threads.find((t) => t.id === threadId)
+            const updatedAllMessages = activeThread
+              ? [...activeThread.allMessages, finalAssistantMessage]
+              : newCurrentPath
+
+            // update both current path and full tree
+            useChatStore.setState((state) => ({
+              threads: state.threads.map((thread) =>
+                thread.id === threadId
+                  ? {
+                      ...thread,
+                      messages: newCurrentPath,
+                      allMessages: updatedAllMessages,
+                    }
+                  : thread
+              ),
+            }))
           }
         }
       } catch (error) {
@@ -301,7 +327,7 @@ export function RuntimeProvider({
         role: 'user',
         content: message.content,
         createdAt: new Date(),
-        parentId: message.parentId,
+        parentId: message.parentId || null,
       }
 
       await addMessage(userMessage)
@@ -323,27 +349,45 @@ export function RuntimeProvider({
       return
     }
 
-    // Find the index where to insert the edited message
-    const index = messages.findIndex((m) => m.id === message.parentId) + 1
+    const parentId = message.parentId
 
-    // Keep messages up to the parent
-    const newMessages = [...messages.slice(0, index)]
-
-    // Add the edited message
+    // create the edited message as a new branch
     const editedMessage: ExtendedThreadMessageLike = {
       role: 'user',
       content: message.content,
       id: generateId(),
       createdAt: new Date(),
-      parentId: message.parentId,
+      parentId: parentId,
     }
-    newMessages.push(editedMessage)
 
-    // update the messages in the store
-    setMessages(newMessages)
+    // keep messages up to previous assistant message
+    const parentIndex = parentId
+      ? messages.findIndex((m) => m.id === parentId)
+      : -1
+    const newCurrentPath =
+      parentIndex >= 0
+        ? [...messages.slice(0, parentIndex + 1), editedMessage]
+        : [editedMessage]
+
+    const updatedAllMessages = activeThread
+      ? [...activeThread.allMessages, editedMessage]
+      : [editedMessage]
+
+    // update thread with both current path and full tree
+    useChatStore.setState((state) => ({
+      threads: state.threads.map((thread) =>
+        thread.id === activeThreadId
+          ? {
+              ...thread,
+              messages: newCurrentPath,
+              allMessages: updatedAllMessages,
+            }
+          : thread
+      ),
+    }))
 
     // generate new chat response
-    await generateChatResponse(newMessages, activeThreadId)
+    await generateChatResponse(newCurrentPath, activeThreadId)
   }
 
   const onCancel = useCallback(async () => {

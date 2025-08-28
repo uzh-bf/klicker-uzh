@@ -9,7 +9,8 @@ export type ExtendedThreadMessageLike = ThreadMessageLike & {
 
 export interface Thread {
   id: string
-  messages: ExtendedThreadMessageLike[]
+  messages: ExtendedThreadMessageLike[] // current branch
+  allMessages: ExtendedThreadMessageLike[] // all messages in the thread
   isRunning: boolean
   title?: string
   createdAt: Date
@@ -56,10 +57,134 @@ interface ChatState {
   ) => void
   clearMessages: () => void
   setLoading: (loading: boolean) => void
+
+  // tree navigation
+  switchToBranch: (leafId: string) => void
+  getMessageBranches: (messageId: string) => ExtendedThreadMessageLike[]
 }
 
 const generateThreadId = () =>
   `thread-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+// tree traversal helpers
+const getPathToLeaf = (
+  messages: ExtendedThreadMessageLike[],
+  leafId: string
+): ExtendedThreadMessageLike[] => {
+  const messageMap = new Map(messages.map((m) => [m.id, m]))
+  const path: ExtendedThreadMessageLike[] = []
+
+  let current = messageMap.get(leafId)
+
+  // build path from leaf to root
+  while (current) {
+    path.unshift(current)
+
+    if (current.parentId) {
+      const parent = messageMap.get(current.parentId)
+      current = parent
+    } else {
+      current = undefined
+    }
+  }
+
+  return path
+}
+
+const getBranches = (
+  messages: ExtendedThreadMessageLike[],
+  messageId: string
+): ExtendedThreadMessageLike[] => {
+  const message = messages.find((m) => m.id === messageId)
+  if (!message) {
+    return []
+  }
+
+  let targetMessage = message
+
+  // get corresponding user message
+  if (message.role === 'assistant' && message.parentId) {
+    const userMessage = messages.find((m) => m.id === message.parentId)
+    if (userMessage && userMessage.role === 'user') {
+      targetMessage = userMessage
+    }
+  }
+
+  // find all siblings of the target user message
+  const userSiblings = messages.filter(
+    (m) =>
+      m.parentId === targetMessage.parentId &&
+      m.role === targetMessage.role &&
+      m.id !== targetMessage.id
+  )
+
+  const allUserMessages = [targetMessage, ...userSiblings].sort(
+    (a, b) =>
+      new Date(a.createdAt || 0).getTime() -
+      new Date(b.createdAt || 0).getTime()
+  )
+
+  return allUserMessages
+}
+
+const findLeafMessages = (
+  messages: ExtendedThreadMessageLike[]
+): ExtendedThreadMessageLike[] => {
+  const parentIds = new Set<string>()
+  messages.forEach((m) => {
+    if (m.parentId) parentIds.add(m.parentId)
+  })
+
+  // get all messages that are not parents
+  return messages.filter(
+    (m) => typeof m.id === 'string' && !parentIds.has(m.id)
+  )
+}
+
+const findBranchLeaf = (
+  messages: ExtendedThreadMessageLike[],
+  startMessageId: string
+): ExtendedThreadMessageLike | null => {
+  const messageMap = new Map(messages.map((m) => [m.id, m]))
+  let current = messageMap.get(startMessageId)
+
+  if (!current) return null
+
+  // parentId -> children[] map
+  const childrenMap: Map<string, ExtendedThreadMessageLike[]> = new Map()
+  for (const m of messages) {
+    if (m.parentId) {
+      const arr = childrenMap.get(m.parentId) || []
+      arr.push(m)
+      childrenMap.set(m.parentId, arr)
+    }
+  }
+
+  // traverse down using the childrenMap
+  while (current) {
+    const id = typeof current.id === 'string' ? current.id : undefined
+    const children: ExtendedThreadMessageLike[] = id
+      ? childrenMap.get(id) || []
+      : []
+    if (children.length === 0) return current
+    if (children.length === 1) {
+      current = children[0]
+      continue
+    }
+
+    // pick most recent child
+    let latest = children[0]
+    for (let i = 1; i < children.length; i++) {
+      const c = children[i]
+      if (new Date(c.createdAt || 0) > new Date(latest.createdAt || 0)) {
+        latest = c
+      }
+    }
+    current = latest
+  }
+
+  return null
+}
 
 // API functions
 const apiCall = async (url: string, options: RequestInit = {}) => {
@@ -88,6 +213,7 @@ const convertApiThreadToThread = (apiThread: ApiThread): Thread => ({
   id: apiThread.id,
   title: apiThread.title,
   messages: [],
+  allMessages: [],
   isRunning: false,
   createdAt: new Date(apiThread.created_at),
 })
@@ -138,6 +264,7 @@ export const useChatStore = create<ChatState>((set, get) => {
         const newThread: Thread = {
           id: threadId,
           messages: [],
+          allMessages: [],
           isRunning: false,
           createdAt: new Date(),
         }
@@ -178,20 +305,41 @@ export const useChatStore = create<ChatState>((set, get) => {
 
         set({ activeThreadId: threadId })
 
-        if (existingThread && existingThread.messages.length > 0) {
+        if (existingThread && existingThread.allMessages.length > 0) {
           set({ isLoading: false })
           return
         }
 
-        // Load messages for the thread
+        // Load ALL messages for the thread
         const apiMessages: ApiMessage[] = await apiCall(
           `/threads/${threadId}/messages`
         )
-        const messages = apiMessages.map(convertApiMessageToMessage)
+        const allMessages = apiMessages.map(convertApiMessageToMessage)
+
+        // find latest leaf message to set as current path
+        const leafMessages = findLeafMessages(allMessages)
+        const latestLeaf = leafMessages.reduce(
+          (latest, current) =>
+            new Date(current.createdAt || 0) > new Date(latest.createdAt || 0)
+              ? current
+              : latest,
+          leafMessages[0]
+        )
+
+        // get the path from root to latest leaf
+        const currentPath = latestLeaf?.id
+          ? getPathToLeaf(allMessages, latestLeaf.id)
+          : allMessages
 
         set((state) => ({
           threads: state.threads.map((thread) =>
-            thread.id === threadId ? { ...thread, messages } : thread
+            thread.id === threadId
+              ? {
+                  ...thread,
+                  allMessages,
+                  messages: currentPath,
+                }
+              : thread
           ),
           isLoading: false,
         }))
@@ -270,7 +418,11 @@ export const useChatStore = create<ChatState>((set, get) => {
       set((state) => ({
         threads: state.threads.map((thread) =>
           thread.id === currentThreadId
-            ? { ...thread, messages: [...thread.messages, message] }
+            ? {
+                ...thread,
+                messages: [...thread.messages, message],
+                allMessages: [...thread.allMessages, message],
+              }
             : thread
         ),
       }))
@@ -357,6 +509,44 @@ export const useChatStore = create<ChatState>((set, get) => {
 
     setLoading: (loading) => {
       set({ isLoading: loading })
+    },
+
+    switchToBranch: (leafId) => {
+      const state = get()
+      const activeThread = state.threads.find(
+        (t) => t.id === state.activeThreadId
+      )
+      if (!activeThread) return
+
+      const allMessages = activeThread.allMessages
+
+      const actualLeaf = findBranchLeaf(allMessages, leafId)
+      const targetLeafId = actualLeaf?.id || leafId
+
+      const pathMessages = getPathToLeaf(allMessages, targetLeafId)
+
+      // update thread with new path
+      set((state) => ({
+        threads: state.threads.map((thread) =>
+          thread.id === state.activeThreadId
+            ? {
+                ...thread,
+                messages: pathMessages,
+              }
+            : thread
+        ),
+      }))
+    },
+
+    getMessageBranches: (messageId) => {
+      const state = get()
+      const activeThread = state.threads.find(
+        (t) => t.id === state.activeThreadId
+      )
+
+      if (!activeThread) return []
+
+      return getBranches(activeThread.allMessages, messageId)
     },
   }
 })
