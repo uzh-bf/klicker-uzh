@@ -90,6 +90,9 @@ export async function POST(req: Request) {
     }
   }
 
+  // track partial content for cancelled streams
+  let partialContent = ''
+
   // convert to UIMessage format
   const uiMessages: UIMessage[] = messages.map((msg) => ({
     id: msg.id,
@@ -110,6 +113,14 @@ export async function POST(req: Request) {
     system:
       systemPrompt ||
       'You are a helpful assistant. After using any tool, always provide a helpful summary or explanation of the results.',
+
+    abortSignal: req.signal,
+
+    onChunk: ({ chunk }) => {
+      if (chunk.type === 'text-delta' && chunk.text) {
+        partialContent += chunk.text
+      }
+    },
 
     onFinish: async (result) => {
       // save assistant response to database
@@ -134,6 +145,36 @@ export async function POST(req: Request) {
           console.error('Failed to save assistant message:', error)
         }
       }
+    },
+
+    onAbort: async () => {
+      // save partial message
+      if (currentThreadId && partialContent.trim()) {
+        try {
+          await prisma.chatMessage.create({
+            data: {
+              id: assistantMessageId,
+              threadId: currentThreadId,
+              parentId: userMessageId,
+              role: 'assistant',
+              content: [{ type: 'text', text: partialContent }],
+            },
+          })
+
+          // update thread's timestamp
+          await prisma.chatThread.update({
+            where: { id: currentThreadId },
+            data: { updatedAt: new Date() },
+          })
+        } catch (error) {
+          console.error('Failed to save partial message:', error)
+        }
+      }
+    },
+
+    onError: async (error) => {
+      // handle error
+      console.error('ERRORRRR:', error)
     },
   })
   return result.toUIMessageStreamResponse()

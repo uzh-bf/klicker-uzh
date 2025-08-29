@@ -13,7 +13,7 @@ import {
   type AppendMessage,
   type ThreadMessageLike,
 } from '@assistant-ui/react'
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
 export function RuntimeProvider({
   children,
@@ -38,6 +38,9 @@ export function RuntimeProvider({
   const currentModeOption = modeOptions.find((mode) => mode.id === selectedMode)
   const systemPrompt = currentModeOption?.systemPrompt || ''
 
+  // AbortController to handle request cancellation
+  const abortControllerRef = useRef<AbortController | null>(null)
+
   // load threads on mount
   useEffect(() => {
     useChatStore.getState().loadThreads()
@@ -46,6 +49,9 @@ export function RuntimeProvider({
   // function to handle streaming chat response
   const generateChatResponse = useCallback(
     async (messagesToSend: ExtendedThreadMessageLike[], threadId: string) => {
+      const abortController = new AbortController()
+      abortControllerRef.current = abortController
+
       setIsRunning(true)
 
       const triggerMessage = messagesToSend[messagesToSend.length - 1]
@@ -58,6 +64,7 @@ export function RuntimeProvider({
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: abortController.signal,
           body: JSON.stringify({
             messages: messagesToSend.map((m) => ({
               id: m.id,
@@ -300,9 +307,14 @@ export function RuntimeProvider({
           }
         }
       } catch (error) {
-        console.error('Chat error:', error)
+        if (error instanceof Error && error.name === 'AbortError') {
+          // do nothing - chat was aborted
+        } else {
+          console.error('Chat error:', error)
+        }
       } finally {
         setIsRunning(false)
+        abortControllerRef.current = null
       }
     },
     [setMessages, setIsRunning, selectedModel, systemPrompt]
@@ -444,6 +456,9 @@ export function RuntimeProvider({
   )
 
   const onCancel = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
     setIsRunning(false)
   }, [setIsRunning])
 
