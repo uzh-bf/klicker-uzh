@@ -52,6 +52,8 @@ export async function POST(req: Request) {
   if (currentThreadId && messages.length > 0) {
     const lastMessage = messages[messages.length - 1]
     if (lastMessage.role === 'user') {
+      userMessageId = lastMessage.id
+
       try {
         await prisma.chatMessage.create({
           data: {
@@ -62,8 +64,6 @@ export async function POST(req: Request) {
             content: [{ type: 'text', text: lastMessage.content }],
           },
         })
-
-        userMessageId = lastMessage.id
 
         // update thread's timestamp
         await prisma.chatThread.update({

@@ -174,6 +174,8 @@ const UserActionBar: FC = () => {
           <PencilIcon />
         </TooltipIconButton>
       </ActionBarPrimitive.Edit>
+
+      <BranchPickerWrapper />
     </ActionBarPrimitive.Root>
   )
 }
@@ -233,7 +235,6 @@ const AssistantActionBar: FC = () => {
         </TooltipIconButton>
       </ActionBarPrimitive.Reload>
 
-      {/* Branch switching controls */}
       <BranchPickerWrapper />
     </ActionBarPrimitive.Root>
   )

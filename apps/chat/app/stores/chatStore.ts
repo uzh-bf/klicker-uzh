@@ -100,31 +100,22 @@ const getBranches = (
     return []
   }
 
-  let targetMessage = message
-
-  // get corresponding user message
-  if (message.role === 'assistant' && message.parentId) {
-    const userMessage = messages.find((m) => m.id === message.parentId)
-    if (userMessage && userMessage.role === 'user') {
-      targetMessage = userMessage
-    }
-  }
-
-  // find all siblings of the target user message
-  const userSiblings = messages.filter(
+  // find all siblings of the given message
+  const siblings = messages.filter(
     (m) =>
-      m.parentId === targetMessage.parentId &&
-      m.role === targetMessage.role &&
-      m.id !== targetMessage.id
+      m.parentId === message.parentId &&
+      m.role === message.role &&
+      m.id !== message.id
   )
 
-  const allUserMessages = [targetMessage, ...userSiblings].sort(
+  // return all messages (current + siblings) sorted by creation time
+  const allMessages = [message, ...siblings].sort(
     (a, b) =>
       new Date(a.createdAt || 0).getTime() -
       new Date(b.createdAt || 0).getTime()
   )
 
-  return allUserMessages
+  return allMessages
 }
 
 const findLeafMessages = (

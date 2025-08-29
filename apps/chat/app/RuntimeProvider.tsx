@@ -399,6 +399,50 @@ export function RuntimeProvider({
     [generateChatResponse]
   )
 
+  const onReload = useCallback(
+    async (parentId: string | null) => {
+      const { activeThreadId: threadId, threads } = useChatStore.getState()
+
+      if (!threadId) {
+        console.error('No active thread for reload')
+        return
+      }
+
+      const active = threads.find((t) => t.id === threadId)
+      if (!active) {
+        console.error('Active thread not found')
+        return
+      }
+
+      const parentIndex = parentId
+        ? active.messages.findIndex((m) => m.id === parentId)
+        : -1
+
+      if (parentId && parentIndex === -1) {
+        console.error('Parent message not found for reload')
+        return
+      }
+
+      const truncatedPath =
+        parentIndex >= 0 ? active.messages.slice(0, parentIndex + 1) : []
+
+      // update thread with truncated message history
+      useChatStore.setState((state) => ({
+        threads: state.threads.map((thread) =>
+          thread.id === threadId
+            ? {
+                ...thread,
+                messages: truncatedPath,
+              }
+            : thread
+        ),
+      }))
+
+      await generateChatResponse(truncatedPath, threadId)
+    },
+    [generateChatResponse]
+  )
+
   const onCancel = useCallback(async () => {
     setIsRunning(false)
   }, [setIsRunning])
@@ -414,6 +458,7 @@ export function RuntimeProvider({
     setMessages,
     onNew,
     onEdit,
+    onReload,
     onCancel,
     convertMessage,
   })
