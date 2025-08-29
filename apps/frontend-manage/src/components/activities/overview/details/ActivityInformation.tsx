@@ -69,6 +69,12 @@ function ActivityInformation({
                 },
               ]
             : []),
+          {
+            label: t('shared.generic.owner'),
+            value: details.ownerEmail
+              ? `${details.ownerShortname} (${details.ownerEmail})`
+              : details.ownerShortname,
+          },
         ].map(({ label, value }) => (
           <div key={label}>
             <span className="font-bold">{label}:</span> {value}
