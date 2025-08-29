@@ -1,4 +1,4 @@
-dfDomain: bf-app.ch
+dfDomain: example.df-app.ch
 
 email:
   type: SMTP
