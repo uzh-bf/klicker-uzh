@@ -1,110 +1,81 @@
-dfDomain: <path:keyvaultp19gA04dNy#EMAIL_TYPE>
-
-teamsWebhookUrl: <path:keyvaultp19gA04dNy#TEAMS_WEBHOOK_URL>
-
-appSecret: <path:keyvaultp19gA04dNy#APP_SECRET>
+dfDomain: bf-app.ch
 
 email:
-  type: <path:keyvaultp19gA04dNy#EMAIL_TYPE>
-  from: <path:keyvaultp19gA04dNy#EMAIL_FROM>
-  host: <path:keyvaultp19gA04dNy#EMAIL_HOST>
-  port: <path:keyvaultp19gA04dNy#EMAIL_PORT>
-  username: <path:keyvaultp19gA04dNy#EMAIL_USER>
-  password: <path:keyvaultp19gA04dNy#EMAIL_PASS>
-  secure: <path:keyvaultp19gA04dNy#EMAIL_SECURE>
-  requireTLS: <path:keyvaultp19gA04dNy#EMAIL_STARTTLS>
+  type: SMTP
+  from: '"Team KlickerUZH" <noreply-klicker@df.uzh.ch>'
+  port: '1025'
+  username: username
+  secure: 'false'
+  requireTLS: 'false'
 
-eduId:
-  clientSecret: <path:keyvaultp19gA04dNy#EDUID_CLIENT_SECRET>
+blobStorage:
+  accountName: klickeruzhdevimages
+
+cron:
+  token: abcd
 
 auth:
-  replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
+  replicaCount: 1
   image:
-    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
+    tag: v3
 
 frontendPWA:
-  replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
   image:
-    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
+    tag: v3
 
 frontendManage:
-  replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
   image:
-    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
+    tag: v3
 
 frontendControl:
-  replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
   image:
-    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
+    tag: v3
 
 backendGraphql:
-  replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
-
   image:
-    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
+    tag: v3
+  apiDomain: api.klicker-qa.example.df-app.ch
+  cookieDomain: .klicker-qa.example.df-app.ch
 
-  apiDomain: <path:keyvaultp19gA04dNy#API_DOMAIN>
-  cookieDomain: <path:keyvaultp19gA04dNy#COOKIE_DOMAIN>
-  databaseUrl: <path:keyvaultp19gA04dNy#DATABASE_URL>
-  debug: true
-
-  appManageSubdomain: <path:keyvaultp19gA04dNy#APP_MANAGE_SUBDOMAIN>
-  appManageDomain: <path:keyvaultp19gA04dNy#APP_MANAGE_DOMAIN>
-  appStudentSubdomain: <path:keyvaultp19gA04dNy#APP_STUDENT_SUBDOMAIN>
-  appStudentDomain: <path:keyvaultp19gA04dNy#APP_STUDENT_DOMAIN>
-  appControlSubdomain: <path:keyvaultp19gA04dNy#APP_CONTROL_SUBDOMAIN>
-  appControlDomain: <path:keyvaultp19gA04dNy#APP_CONTROL_DOMAIN>
+  appManageSubdomain: manage
+  appManageDomain: manage.klicker-qa.example.df-app.ch
+  appStudentSubdomain: pwa
+  appStudentDomain: pwa.klicker-qa.example.df-app.ch
+  appControlSubdomain: control
+  appControlDomain: control.klicker-qa.example.df-app.ch
 
   notifications:
-    url: <path:keyvaultp19gA04dNy#NOTIFICATION_URL>
-    secret: <path:keyvaultp19gA04dNy#NOTIFICATION_SECRET>
-    supportEmail: <path:keyvaultp19gA04dNy#NOTIFICATION_SUPPORT_EMAIL>
-
-  vapid:
-    publicKey: <path:keyvaultp19gA04dNy#VAPID_PUBLIC_KEY>
-    privateKey: <path:keyvaultp19gA04dNy#VAPID_PRIVATE_KEY>
+    supportEmail: klicker.support@uzh.ch
 
   redisCache:
-    host: <path:keyvaultp19gA04dNy#REDIS_CACHE_HOST>
-    port: <path:keyvaultp19gA04dNy#REDIS_CACHE_PORT>
-    pass: <path:keyvaultp19gA04dNy#REDIS_CACHE_PASS>
+    port: 6379
+    tls: false
 
   redisExec:
-    host: <path:keyvaultp19gA04dNy#REDIS_HOST>
-    port: <path:keyvaultp19gA04dNy#REDIS_PORT>
-    tls: <path:keyvaultp19gA04dNy#REDIS_TLS>
-    pass: <path:keyvaultp19gA04dNy#REDIS_PASS>
+    port: 6379
+    tls: true
 
-  sentryEnv: qa
-  sentryDSN: <path:keyvaultp19gA04dNy#SENTRY_DSN>
+  sentryEnv: production
 
 olatApi:
-  key: <path:keyvaultp19gA04dNy#OLAT_API_KEY>
-
   image:
-    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
+    tag: v3
 
 lti:
-  replicaCount: <path:keyvaultp19gA04dNy#APP_REPLICAS>
-
+  replicaCount: 4
   image:
-    tag: <path:keyvaultp19gA04dNy#APP-VERSION>
+    tag: v3
 
-  appSecret: <path:keyvaultp19gA04dNy#APP_SECRET>
-  clientId: <path:keyvaultp19gA04dNy#LTI_CLIENT_ID>
-  redirectURL: <path:keyvaultp19gA04dNy#LTI_REDIRECT_URL>
-  cookieDomain: <path:keyvaultp19gA04dNy#COOKIE_DOMAIN>
-  encryptionKey: <path:keyvaultp19gA04dNy#APP_SECRET>
-  name: <path:keyvaultp19gA04dNy#LTI_NAME>
-  url: <path:keyvaultp19gA04dNy#LTI_URL>
-  authEndpoint: <path:keyvaultp19gA04dNy#LTI_AUTH_ENDPOINT>
-  tokenEndpoint: <path:keyvaultp19gA04dNy#LTI_TOKEN_ENDPOINT>
-  keysEndpoint: <path:keyvaultp19gA04dNy#LTI_KEYS_ENDPOINT>
+  redirectURL: https://lti.klicker-qa.example.df-app.ch
+  cookieDomain: .klicker-qa.example.df-app.ch
+  name: OLAT UZH
+  url: https://lms.uzh.ch
+  authEndpoint: https://lms.uzh.ch/lti/auth
+  tokenEndpoint: https://lms.uzh.ch/lti/token
+  keysEndpoint: https://lms.uzh.ch/lti/keys
 
   db:
-    type: <path:keyvaultp19gA04dNy#LTI_DB_TYPE>
-    host: <path:keyvaultp19gA04dNy#LTI_DB_HOST>
-    port: <path:keyvaultp19gA04dNy#LTI_DB_PORT>
-    name: <path:keyvaultp19gA04dNy#LTI_DB_NAME>
-    username: <path:keyvaultp19gA04dNy#LTI_DB_USER>
-    password: <path:keyvaultp19gA04dNy#LTI_DB_PASS>
+    type: postgres
+    port: 5432
+    name: klicker-qa-lti
+    username: dbklickerlti
