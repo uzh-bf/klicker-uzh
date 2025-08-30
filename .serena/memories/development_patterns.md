@@ -244,7 +244,6 @@ pnpm prisma:migrate
 2. **Create Component**: Follow naming conventions
 3. **Add GraphQL**: Define operations if needed
 4. **Test Component**: Unit and integration tests
-5. **Document**: Add to Storybook if shared
 
 ## Common Anti-Patterns to Avoid
 

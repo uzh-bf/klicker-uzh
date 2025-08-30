@@ -44,14 +44,6 @@
 - **Seeding**: Comprehensive test data seeding
 - **Analytics**: Separate analytics models and queries
 
-## Caching & Performance
-
-- **Application Cache**: Redis for query caching and rate limiting
-- **Execution Cache**: Dedicated Redis for live quiz execution
-- **CDN**: Azure CDN for static assets
-- **Build Caching**: Turbo build cache
-- **Container Caching**: Docker layer caching in CI/CD
-
 ## Development Tools
 
 ### Package Management
@@ -146,19 +138,9 @@
 - **Docker**: Containerization for all services and dependencies
 - **Docker Compose**: Local development service orchestration
 
-### Monitoring & Observability
-
-- **Health Checks**: Application health endpoints
-- **Resource Monitoring**: Kubernetes resource monitoring
-- **Performance Metrics**: Application performance tracking
-- **Error Tracking**: Comprehensive error logging and alerting
-
 ### Security Infrastructure
 
 - **Secret Management**: Doppler centralized secret storage
-- **Access Control**: Kubernetes RBAC and network policies
-- **Certificate Management**: Automated SSL/TLS certificate management
-- **Security Scanning**: Automated vulnerability scanning in CI/CD
 
 ## Integration Technologies
 
@@ -167,7 +149,6 @@
 - **Edu-ID**: Swiss educational identity federation
 - **LTI**: Learning Tools Interoperability for LMS integration
 - **Magic Links**: Passwordless authentication via email
-- **SAML/OpenID**: Standards-based authentication protocols
 
 ### External Integrations
 
@@ -190,7 +171,6 @@
 - **Local Development**: Node.js with development tools
 - **Hot Reload**: Live reloading for rapid development
 - **Debug Support**: Source maps and debugging tools
-- **Performance Tools**: Profiling and monitoring in development
 
 ## Version Control & Release
 
@@ -215,7 +195,6 @@
 - **Build Optimization**: Turbo build caching and parallelization
 - **Bundle Optimization**: Next.js automatic code splitting
 - **Query Optimization**: GraphQL query batching and caching
-- **CDN**: Content delivery network for static assets
 
 ### Infrastructure Scaling
 
@@ -230,7 +209,6 @@
 
 - **Analytics Models**: Dedicated database models for analytics
 - **Reporting**: Business intelligence and usage analytics
-- **Performance Tracking**: Application and infrastructure metrics
 - **User Analytics**: Learning progress and engagement metrics
 
 This comprehensive technology stack provides a robust, scalable, and maintainable platform for educational technology delivery.

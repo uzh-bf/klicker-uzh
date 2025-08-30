@@ -10,7 +10,6 @@ KlickerUZH implements a comprehensive authentication and authorization system su
 
 - **Primary Method**: Swiss educational identity federation
 - **Service**: Dedicated authentication frontend (`apps/auth`)
-- **Protocol**: OpenID Connect / SAML integration
 - **User Type**: Lecturers and educational staff
 - **Configuration**: Environment-specific client secrets
 
@@ -26,7 +25,6 @@ KlickerUZH implements a comprehensive authentication and authorization system su
 
 - **Purpose**: Integration with Learning Management Systems
 - **Operation**: `MLoginParticipantWithLti`
-- **Standards**: LTI 1.3 compliance
 - **Integration**: OLAT, Moodle, Canvas support
 - **Context**: Course-specific authentication
 
@@ -153,8 +151,7 @@ enum PermissionLevel {
 
 - **Input Validation**: Sanitize all user inputs
 - **SQL Injection**: Prisma ORM prevents SQL injection
-- **XSS Prevention**: Output encoding and CSP headers
-- **CSRF Protection**: Token-based request validation
+- **Type Safety**: TypeScript prevents many runtime errors
 
 ## Access Control Patterns
 
@@ -175,20 +172,6 @@ enum PermissionLevel {
 - **Opt-in System**: `MJoinCourseLeaderboard`, `MLeaveCourseLeaderboard`
 - **Privacy Control**: Users control visibility
 - **Anonymous Options**: Participate without public ranking
-
-## Integration Security
-
-### LTI Security
-
-- **OAuth 1.0/2.0**: Secure LTI authentication
-- **Deep Linking**: Secure content integration
-- **Key Management**: Secure key rotation
-
-### External Services
-
-- **API Keys**: Secure external API authentication
-- **Webhooks**: Validate incoming webhook signatures
-- **Third-Party**: Vendor security assessments
 
 ## Development vs Production Security
 
