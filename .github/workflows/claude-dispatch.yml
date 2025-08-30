@@ -28,22 +28,22 @@ jobs:
 
       - name: Run Claude Code
         id: claude
-        uses: anthropics/claude-code-action@eap
+        uses: anthropics/claude-code-action@v1
         with:
-          mode: 'remote-agent'
+          # Claude arguments including MCP config and allowed tools
+          claude_args: |
+            --model claude-opus-4-1-20250805
+            --mcp-config .github/mcp-config.json
+            --allowedTools Bash(pnpm:*)
+            --allowedTools mcp__serena__*
+            --allowedTools mcp__context7__*
+            --allowedTools mcp__sequential-thinking__*
+            --system-prompt "You are operating in remote agent mode with full MCP server access. Use serena MCP for semantic code analysis and project understanding. Use context7 MCP for up-to-date library documentation. Use sequential-thinking MCP for complex problem breakdown and structured analysis. Always leverage these MCP tools to provide deeper insights."
 
-          # Optional: Specify an API key, otherwise we'll use your Claude account automatically
-          # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-
-          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
-          # model: "claude-opus-4-20250514"
-
-          # Optional: Allow Claude to run specific commands
-          # allowed_tools: |
-          # Bash(npm run lint)
-          # Bash(npm run test)
-          # Bash(npm run build)
-
-          # Optional: Custom environment variables for Claude
-          # claude_env: |
-          #   NODE_ENV: test
+          # Custom environment variables for MCP servers
+          settings: |
+            {
+              "env": {
+                "CONTEXT7_API_KEY": "${{ secrets.CONTEXT7_API_KEY }}"
+              }
+            }

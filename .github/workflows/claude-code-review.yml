@@ -22,15 +22,12 @@ jobs:
 
       - name: Run Claude Code Review
         id: claude-review
-        uses: anthropics/claude-code-action@beta
+        uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
-          # Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
-          model: 'claude-opus-4-1-20250805'
-
-          # Direct prompt for automated review (no @claude mention needed)
-          direct_prompt: |
+          # Prompt for automated review (no @claude mention needed)
+          prompt: |
             <role>
             You are a senior software architect conducting a focused code review. You provide concise, constructive feedback with actionable implementation guidance. You understand this project uses Cypress e2e tests for user flows and only uses unit tests for critical isolated logic.
             </role>
@@ -116,7 +113,7 @@ jobs:
             [Maximum 3 critical issues not already identified]
             - Issue: [one line] → Fix: [specific action]
 
-            ### 📚 Documentation Gaps  
+            ### 📚 Documentation Gaps
             [Maximum 2 VERIFIED gaps with structure proposals]
             - Verified missing: [what's actually not in apps/docs/X] → Add to: [specific location]
               ```
@@ -217,8 +214,23 @@ jobs:
           # Use sticky comments to make Claude reuse the same comment on subsequent pushes to the same PR
           use_sticky_comment: true
 
-          # Add specific tools for running tests or linting
-          # allowed_tools: "Bash(pnpm run check),Bash(npm run lint),Bash(npm run typecheck)"
+          # Claude arguments including MCP config and allowed tools
+          claude_args: |
+            --model claude-opus-4-1-20250805
+            --mcp-config .github/mcp-config.json
+            --allowedTools Bash(pnpm:*)
+            --allowedTools mcp__serena__*
+            --allowedTools mcp__context7__*
+            --allowedTools mcp__sequential-thinking__*
+            --system-prompt "You are operating in remote agent mode with full MCP server access. Use serena MCP for semantic code analysis and project understanding. Use context7 MCP for up-to-date library documentation. Use sequential-thinking MCP for complex problem breakdown and structured analysis. Always leverage these MCP tools to provide deeper insights."
+
+          # Custom environment variables for MCP servers
+          settings: |
+            {
+              "env": {
+                "CONTEXT7_API_KEY": "${{ secrets.CONTEXT7_API_KEY }}"
+              }
+            }
 
         # Skip review for certain conditions
         if: |
