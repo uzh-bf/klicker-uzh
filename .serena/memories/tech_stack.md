@@ -2,213 +2,144 @@
 
 ## Frontend Technologies
 
-- **Framework**: Next.js 15 with React 18
+- **Framework**: Next.js with React
 - **Language**: TypeScript with strict mode
-- **Styling**: TailwindCSS with tailwind-merge
-- **State Management**: Apollo Client for GraphQL
+- **Styling**: TailwindCSS with design system integration
+- **State Management**: Apollo Client for GraphQL state
 - **Forms**: Formik with Yup validation
-- **Data Visualization**: Recharts
-- **Internationalization**: next-intl
-- **Rich Text Editing**: Slate.js
-- **Component Library**: @uzh-bf/design-system
+- **Data Visualization**: Recharts for analytics
+- **Internationalization**: next-intl for multi-language support
+- **Rich Text**: Slate.js for content editing
+- **Component Library**: @uzh-bf/design-system (custom)
 - **Testing**: Cypress for E2E, Jest for unit tests
-- **Development**: Hot reload with Next.js dev server
 
 ## Backend Technologies
 
-- **Runtime**: Node.js 20
+- **Runtime**: Node.js LTS
 - **API**: GraphQL with Pothos GraphQL schema builder
 - **Database**: PostgreSQL with Prisma ORM
-- **Caching**: Redis (dual instances - execution & cache)
-- **Queue**: Azure Service Bus for message queuing
-- **Authentication**: JWT with Edu-ID integration
+- **Caching**: Redis (dual instances for execution and general caching)
+- **Message Queue**: Azure Service Bus
+- **Authentication**: JWT with educational identity integration
 - **Real-time**: GraphQL subscriptions with WebSockets
 - **File Storage**: Azure Blob Storage
-- **Email**: Transactional email templates
+- **Email**: Transactional email service integration
 
 ## Serverless & Cloud Functions
 
-- **Azure Functions**: Response processing services
-  - func-incoming-responses: Real-time response handling
-  - func-response-processor: Asynchronous response processing
-- **Triggers**: HTTP triggers, Service Bus triggers
-- **Runtime**: Node.js runtime in Azure Functions
+- **Platform**: Azure Functions for response processing
+- **Triggers**: HTTP triggers and Service Bus message triggers
 - **Scaling**: Event-driven autoscaling
+- **Services**:
+  - Real-time response handling
+  - Asynchronous response processing and scoring
 
 ## Database & Data Management
 
-- **Primary Database**: PostgreSQL 15
+- **Primary Database**: PostgreSQL (latest stable)
 - **ORM**: Prisma with type-safe database access
-- **Migrations**: Prisma migrate with version control
-- **Schema Organization**: Multi-file schema organization by domain
-- **Seeding**: Comprehensive test data seeding
-- **Analytics**: Separate analytics models and queries
+- **Migrations**: Version-controlled schema migrations
+- **Schema Design**: Multi-file organization by business domain
+- **Test Data**: Comprehensive seeding system
+- **Analytics**: Dedicated analytics models and aggregations
 
-## Development Tools
+## Development Tools & Workflow
 
-### Package Management
+### Package Management & Build
 
-- **Package Manager**: pnpm with workspaces
-- **Monorepo**: Organized as monorepo with shared packages
-- **Build Tool**: Turbo for monorepo builds and caching
-- **Dependency Management**: Shared dependencies via workspace
+- **Package Manager**: pnpm with workspace support
+- **Monorepo**: Multi-package workspace architecture
+- **Build System**: Turbo for monorepo builds and caching
+- **Bundling**: Next.js built-in bundling and optimization
 
 ### Code Quality & Testing
 
-- **Linting**: ESLint with Next.js configuration
-- **Formatting**: Prettier with organize-imports plugin
-- **Type Checking**: TypeScript in strict mode across all packages
-- **Git Hooks**: Husky with lint-staged for pre-commit checks
-- **Testing Frameworks**:
-  - Cypress: E2E testing with real browser automation
-  - Jest: Unit testing for business logic
-  - Vitest: Fast unit testing for some packages
+- **Linting**: ESLint with framework-specific configurations
+- **Formatting**: Prettier with import organization
+- **Type Checking**: TypeScript strict mode across all packages
+- **Git Hooks**: Husky with lint-staged for pre-commit validation
+- **Testing Stack**:
+  - Cypress: End-to-end testing with real browser automation
+  - Jest: Unit testing for business logic and utilities
   - Testing Library: React component testing utilities
 
 ### Environment & Configuration
 
-- **Environment Management**: Doppler for centralized secret management
-- **Configuration**: Environment-specific .env files
-- **Secrets**: Doppler integration with automatic secret injection
-- **Local Setup**: Automated development environment preparation
+- **Secret Management**: Doppler for centralized configuration
+- **Environment Configuration**: Multiple environment support
+- **Local Development**: Custom domain setup with HTTPS
+- **Container Support**: Docker Compose for service orchestration
 
 ## Local Development Infrastructure
 
-### Reverse Proxy & Routing
+### Reverse Proxy & Networking
 
 - **Reverse Proxy**: Traefik with dynamic service discovery
-- **Custom Domains**: \*.klicker.com (api, pwa, manage, control, auth)
-- **SSL/TLS**: mkcert for trusted local HTTPS certificates
-- **Platform Support**: Separate configurations for macOS, WSL, Docker
+- **Local Domains**: Custom domain setup (\*.klicker.com)
+- **SSL/TLS**: mkcert for trusted local certificates
+- **Platform Support**: macOS, WSL, and containerized environments
 
 ### Development Services
 
-- **Container Orchestration**: Docker Compose with service definitions
-- **Database**: PostgreSQL 15 container with persistent volumes
-- **Cache Layer**: Dual Redis instances (execution + caching)
-- **Email Testing**: MailHog for SMTP testing
-- **Service Discovery**: Automatic Traefik service registration
-
-### Local Development Tools
-
-- **Setup Scripts**: Platform-aware setup automation
-- **Database Management**: Automated backup/restore functionality
-- **Schema Synchronization**: Cross-package schema sync utilities
-- **Live Reload**: Hot reload for all frontend applications
+- **Database**: Containerized PostgreSQL with persistent storage
+- **Cache**: Redis instances for different use cases
+- **Email Testing**: Local SMTP service for development
+- **Monitoring**: Service discovery and health checking
 
 ## CI/CD & Deployment
 
-### GitHub Actions
+### Continuous Integration
 
-- **Quality Checks**: Automated linting, formatting, type checking
-- **Testing**: Cypress E2E tests with PostgreSQL + Redis services
-- **Security**: CodeQL analysis and SonarCloud integration
-- **Code Review**: AI-assisted code review with Claude
-- **Release Management**: Automated versioning and releases
+- **Platform**: GitHub Actions
+- **Quality Gates**: Automated linting, formatting, and type checking
+- **Testing**: Comprehensive E2E testing with service dependencies
+- **Security**: Static analysis and vulnerability scanning
+- **Code Review**: AI-assisted code review integration
 
-### Container Registry & Images
+### Container & Deployment
 
-- **Registry**: GitHub Container Registry (ghcr.io)
-- **Multi-Architecture**: Support for different CPU architectures
-- **Optimization**: Multi-stage builds with layer caching
-- **Tagging**: Environment-specific image tags (v3, qa, latest)
+- **Registry**: GitHub Container Registry
+- **Orchestration**: Kubernetes with Helm charts
+- **Environments**: Separate QA and production deployments
+- **Scaling**: Horizontal Pod Autoscaling based on metrics
+- **Configuration**: Environment-specific value management
 
-### Kubernetes Orchestration
-
-- **Container Orchestration**: Kubernetes with custom configurations
-- **Package Management**: Helm charts for application deployment
-- **Environment Management**: Separate configurations for qa/prod
-- **Service Discovery**: Kubernetes native service discovery
-- **Load Balancing**: Kubernetes ingress controllers
-
-### Deployment Infrastructure
-
-- **Cluster Management**: Kubernetes cluster with namespace isolation
-- **Scaling**: Horizontal Pod Autoscaling (HPA) based on metrics
-- **Priority Management**: Pod priority classes for critical workloads
-- **Scheduled Tasks**: CronJobs for maintenance and processing
-- **Configuration**: ConfigMaps and Secrets for environment management
-
-## Infrastructure & DevOps
-
-### Orchestration Tools
-
-- **Helm**: Kubernetes package manager with templated deployments
-- **Helmfile**: Environment-specific Helm deployment orchestration
-- **Docker**: Containerization for all services and dependencies
-- **Docker Compose**: Local development service orchestration
-
-### Security Infrastructure
-
-- **Secret Management**: Doppler centralized secret storage
-
-## Integration Technologies
+## Integration & External Services
 
 ### Authentication Systems
 
-- **Edu-ID**: Swiss educational identity federation
+- **Educational Identity**: Swiss Edu-ID federation integration
 - **LTI**: Learning Tools Interoperability for LMS integration
-- **Magic Links**: Passwordless authentication via email
+- **Magic Links**: Email-based passwordless authentication
 
-### External Integrations
+### Third-party Integrations
 
-- **OLAT**: Learning Management System integration
-- **Teams**: Microsoft Teams webhook notifications
-- **Push Notifications**: Web push notifications with VAPID
+- **Learning Management Systems**: OLAT, Moodle, Canvas support
+- **Communication**: Microsoft Teams webhook integration
+- **Push Notifications**: Web push with VAPID keys
 - **Email Services**: SMTP integration for notifications
 
-## Platform & Runtime
+## Architecture Patterns
 
-### Production Runtime
+### API Design
 
-- **Container Runtime**: Docker containers in Kubernetes
-- **Node.js**: LTS version with performance optimizations
-- **Process Management**: Container-managed process lifecycle
-- **Resource Management**: Kubernetes resource quotas and limits
+- **GraphQL-First**: All client-server communication via GraphQL
+- **Type Safety**: End-to-end type safety from database to frontend
+- **Real-time**: WebSocket subscriptions for live features
+- **Caching**: Multi-layer caching strategy
 
-### Development Runtime
+### Data Architecture
 
-- **Local Development**: Node.js with development tools
-- **Hot Reload**: Live reloading for rapid development
-- **Debug Support**: Source maps and debugging tools
+- **Database-First**: Prisma schema as single source of truth
+- **Event-Driven**: Message queues for async processing
+- **Microservices**: Function-based services for specific concerns
+- **Monorepo**: Shared code via internal packages
 
-## Version Control & Release
+### Security & Performance
 
-### Git Workflow
+- **Authentication**: Multi-method authentication support
+- **Authorization**: Role-based access control with permissions
+- **Performance**: Build optimization and runtime performance tuning
+- **Scalability**: Horizontal scaling and load distribution
 
-- **Branching**: GitFlow with v3 as main production branch
-- **Quality Gates**: Automated checks before merge
-- **Release Management**: Automated changelog generation
-- **Tagging**: Semantic versioning with git tags
-
-### Deployment Pipeline
-
-- **Continuous Integration**: Automated testing and quality checks
-- **Continuous Deployment**: Automated deployment to environments
-- **Environment Promotion**: QA → Production deployment workflow
-- **Rollback Strategy**: Container-based rollback capabilities
-
-## Performance & Scaling
-
-### Application Performance
-
-- **Build Optimization**: Turbo build caching and parallelization
-- **Bundle Optimization**: Next.js automatic code splitting
-- **Query Optimization**: GraphQL query batching and caching
-
-### Infrastructure Scaling
-
-- **Auto-Scaling**: Kubernetes HPA for demand-based scaling
-- **Load Distribution**: Multi-pod deployment with load balancing
-- **Resource Efficiency**: Container resource optimization
-- **Cache Strategy**: Multi-layer caching for performance
-
-## Analytics & Reporting
-
-### Data Processing
-
-- **Analytics Models**: Dedicated database models for analytics
-- **Reporting**: Business intelligence and usage analytics
-- **User Analytics**: Learning progress and engagement metrics
-
-This comprehensive technology stack provides a robust, scalable, and maintainable platform for educational technology delivery.
+For specific versions and detailed configuration, refer to package.json files and configuration files in the respective packages.

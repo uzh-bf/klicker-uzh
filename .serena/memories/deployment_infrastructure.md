@@ -1,201 +1,191 @@
 # Deployment Infrastructure
 
-## Overview
+## Deployment Architecture
 
-KlickerUZH uses a sophisticated deployment infrastructure with multiple environments and technologies:
+KlickerUZH employs a multi-layered deployment strategy with containerized applications, orchestrated infrastructure, and environment-specific configurations.
 
-- **Kubernetes** with Helm charts for orchestration
-- **Docker** containers for all services
-- **Azure Functions** for serverless components
-- **Environment-specific configurations** for dev, qa, and production
-- **Doppler** for secrets management
+## Container Strategy
 
-## Kubernetes Deployment
+### Containerization Approach
 
-### Helm Charts
+- **Application Containers**: All services packaged as Docker containers
+- **Registry Management**: GitHub Container Registry for centralized image storage
+- **Multi-Architecture**: Support for different deployment target architectures
+- **Image Optimization**: Multi-stage builds with layer caching
 
-- **Location**: `deploy/charts/klicker-uzh-v2/`
-- **Chart Structure**:
-  - `Chart.yaml`: Chart metadata and dependencies
-  - `templates/`: Kubernetes resource templates
-  - `values.yaml`: Default configuration values
+### Container Organization
 
-### Key Templates
+- **Service Separation**: Individual containers for each microservice
+- **Shared Dependencies**: Common base images for consistency
+- **Environment Variants**: Environment-specific container configurations
+- **Version Management**: Semantic versioning with image tags
 
-- **Deployments**: `deployment-app.yaml` for main application
-- **Services**: `service-app.yaml` for service discovery
-- **Ingresses**: Multiple ingress files for different frontend apps
-  - `ingress-backend-graphql.yaml`
-  - `ingress-frontend-pwa.yaml`
-  - `ingress-frontend-manage.yaml`
-  - `ingress-frontend-control.yaml`
-  - `ingress-auth.yaml`
-  - `ingress-lti.yaml`
-  - `ingress-olat-api.yaml`
-- **ConfigMaps**: Environment-specific configurations
-- **Secrets**: Secure credential management
-- **HPA**: `hpa-app.yaml` for horizontal pod autoscaling
-- **CronJobs**: Automated tasks
-  - `cron-async-activity-publications.yaml`
-  - `cron-final-random-groups-creation.yaml`
-  - `cron-daily-timeline-updates.yaml`
-  - `cron-daily-push-notifications-check.yaml`
-  - `cron-running-random-groups-creation.yaml`
-  - `cron-daily-group-scores.yaml`
+## Orchestration Platform
 
-### Environment Management
+### Kubernetes Infrastructure
 
-- **Production**: `deploy/env-prod-v3/`
-- **QA**: `deploy/env-qa-v3/`
+Container orchestration using Kubernetes:
 
-Each environment has:
+- **Cluster Management**: Multi-node cluster with high availability
+- **Namespace Isolation**: Environment separation with dedicated namespaces
+- **Resource Management**: CPU, memory, and storage allocation
+- **Service Discovery**: Native Kubernetes service discovery patterns
 
-- `values.yaml`: Environment-specific values
-- `values-envsubst.yaml`: Template values with environment variable substitution
-- `helmfile.yaml`: Helmfile configuration for deployment orchestration
-- `doppler.yaml`: Doppler secrets configuration
+### Helm Package Management
 
-## Docker Configuration
+Infrastructure as Code using Helm:
 
-### Local Development
+- **Chart Organization**: Structured Helm charts for application deployment
+- **Template Management**: Reusable templates with environment customization
+- **Dependency Management**: Chart dependencies and version coordination
+- **Release Management**: Versioned deployments with rollback capabilities
 
-- **File**: `docker-compose.yml` at repository root
-- **Services**:
-  - `reverse_proxy_docker`: Traefik reverse proxy for containerized setup
-  - `reverse_proxy_macos`: Traefik for macOS host networking
-  - `reverse_proxy_wsl`: Traefik for WSL environments
-  - `postgres`: PostgreSQL 15 database
-  - `redis_exec`: Redis for live quiz execution
-  - `redis_cache`: Redis for caching and rate limiting
-  - `mailhog`: SMTP server for development
+## Environment Management
 
-### Production Services
+### Multi-Environment Strategy
 
-All applications have containerized versions:
+- **Production Environment**: Performance-optimized stable deployments
+- **QA Environment**: Feature testing with debugging capabilities
+- **Development Support**: Local development environment integration
 
-- `auth`: Authentication service (ghcr.io/uzh-bf/klicker-uzh/auth:v3)
-- `frontend_pwa`: Student frontend
-- `frontend_manage`: Lecturer frontend
-- `frontend_control`: Controller frontend
-- `backend`: Main GraphQL backend
+### Configuration Management
 
-### Container Registry
+- **Environment-Specific Values**: Separate configuration per environment
+- **Template-Based Configuration**: Dynamic configuration with variable substitution
+- **Secret Management**: Secure credential and sensitive data handling
+- **Configuration Validation**: Automated validation before deployment
 
-- **Registry**: GitHub Container Registry (ghcr.io)
-- **Organization**: uzh-bf/klicker-uzh
-- **Tagging**: Version-based (v3, qa, prod variants)
+## Service Architecture
 
-## Environment Configuration
+### Application Services
 
-### Environment Files Structure
+- **Frontend Applications**: Static site generation with CDN integration
+- **Backend Services**: API services with horizontal scaling
+- **Function Services**: Serverless functions for specific tasks
+- **Authentication Services**: Identity and access management
 
-Only Next.js applications use environment files during Docker build:
+### Infrastructure Services
 
-```
-apps/frontend-*/
-├── .env.development
-├── .env.test
-├── .env.qa
-└── .env.production
-```
+- **Database Services**: Managed database with backup and recovery
+- **Cache Layer**: Redis clusters for performance and session management
+- **Message Queues**: Asynchronous processing and event handling
+- **Monitoring Services**: Observability and performance monitoring
 
-Other services (backend, functions) receive their configuration through:
-
-- Kubernetes ConfigMaps
-- Kubernetes Secrets
-- Doppler secret injection
-- Runtime environment variables
-
-### Template Files
-
-- `packages/graphql/.env.template`
-- `apps/backend-docker/.env.template`
-- `apps/backend-docker/.env.cypress` (for testing)
-
-## Azure Functions
-
-### Response Processing Services
-
-- **func-responses**: Handles incoming student responses
-- **func-response-processor**: Processes queued responses for scoring
-
-### Configuration
-
-- Separate Azure Function deployments
-- Integration with main backend through message queues
-- Scalable processing for high-volume quiz responses
-
-## Secrets Management
-
-### Doppler Integration
-
-- **Configuration**: `deploy/doppler.yaml`
-- **Per-environment**: Separate Doppler configs for qa/prod
-- **Local Development**: `doppler run --config dev -- pnpm dev`
-
-### Secret Types
-
-- Database connection strings
-- Redis authentication
-- API keys and tokens
-- Azure blob storage credentials
-- VAPID keys for push notifications
-- Webhook URLs
-
-## Network Architecture
-
-### Ingress Controllers
-
-- **Traffic Routing**: Kubernetes ingress controllers route external traffic to services
-- **Load Balancing**: Handled by Kubernetes services
-- **Service Discovery**: Kubernetes native service discovery
-
-### External Dependencies
-
-- **PostgreSQL**: Managed database service
-- **Redis**: Managed Redis instances (cache + exec)
-- **Blob Storage**: Azure Blob Storage for file uploads
-- **Email Services**: External SMTP for notifications
-
-## Monitoring and Scaling
+## Scaling and Performance
 
 ### Horizontal Pod Autoscaling
 
-- **HPA Configuration**: `hpa-app.yaml`
-- **Metrics**: CPU and memory-based scaling
-- **Target**: Maintain performance under load
+Automatic scaling based on metrics:
 
-### Priority Classes
+- **CPU-Based Scaling**: Scale based on CPU utilization
+- **Memory-Based Scaling**: Scale based on memory consumption
+- **Custom Metrics**: Application-specific scaling triggers
+- **Scaling Policies**: Controlled scaling behavior and limits
 
-- **Production**: `priority-production.yaml`
-- **Staging**: `priority-staging.yaml`
-- **Resource Management**: Ensures critical workloads get priority
+### Resource Management
 
-## Local Development Infrastructure
+- **Resource Quotas**: Environment-specific resource allocation
+- **Priority Classes**: Workload prioritization for resource contention
+- **Quality of Service**: Performance guarantees for critical services
+- **Resource Optimization**: Efficient resource utilization patterns
 
-```
-util/
-├── traefik/           # Local reverse proxy
-│   ├── Dockerfile     # Traefik container
-│   ├── Dockerfile.wsl # WSL-specific build
-│   ├── rules_docker.yaml # Docker routing rules
-│   ├── rules_wsl.yaml    # WSL routing rules
-│   └── ssl/          # mkcert certificates
-├── _prepare_local_prod.sh # Local environment setup
-├── _restore-db-dev.sh    # Database restore script
-├── _restore-redis-dev.sh # Redis restore script
-└── sync-schema.sh    # Schema synchronization
-```
+## Deployment Patterns
 
-### Platform Detection
+### Rolling Updates
 
-- **macOS**: Uses host networking with `host.docker.internal`
-- **WSL**: Uses separate Docker configuration
-- **Docker**: Full containerized setup
+Zero-downtime deployment strategy:
 
-### Reverse Proxy Configuration
+- **Gradual Rollout**: Progressive deployment with health checking
+- **Rollback Capability**: Quick rollback for deployment issues
+- **Health Validation**: Automated health checking during deployment
+- **Traffic Management**: Controlled traffic routing during updates
 
-- **Traefik**: Used for local development routing
-- **Rules**: `util/traefik/rules_docker.yaml` and `util/traefik/rules_wsl.yaml`
-- **SSL**: Local HTTPS with mkcert certificates
-- **Domains**: Custom local domains (\*.klicker.com)
+### Blue-Green Deployments
+
+Environment switching for critical updates:
+
+- **Environment Isolation**: Separate environments for current and next versions
+- **Traffic Switching**: Instant traffic cutover between environments
+- **Validation Process**: Comprehensive validation before cutover
+- **Risk Mitigation**: Immediate rollback capability
+
+## Infrastructure as Code
+
+### Automation Strategy
+
+- **Declarative Configuration**: Infrastructure defined as code
+- **Version Control**: All infrastructure changes tracked in git
+- **Automated Deployment**: CI/CD pipeline integration
+- **Drift Detection**: Monitoring for configuration drift
+
+### Template Management
+
+- **Modular Templates**: Reusable infrastructure components
+- **Environment Parameterization**: Environment-specific customization
+- **Validation Framework**: Automated template validation
+- **Documentation**: Self-documenting infrastructure code
+
+## Security and Compliance
+
+### Security Layers
+
+- **Network Security**: Network policies and traffic isolation
+- **Identity Management**: Service-to-service authentication
+- **Secret Security**: Encrypted secret storage and rotation
+- **Container Security**: Image scanning and vulnerability assessment
+
+### Compliance Requirements
+
+- **Data Protection**: GDPR compliance and data handling
+- **Audit Logging**: Comprehensive audit trail for all changes
+- **Access Control**: Role-based access to infrastructure
+- **Backup and Recovery**: Data protection and disaster recovery
+
+## Monitoring and Observability
+
+### Infrastructure Monitoring
+
+- **Cluster Health**: Kubernetes cluster monitoring and alerting
+- **Resource Utilization**: Performance and resource usage tracking
+- **Service Health**: Application and service health monitoring
+- **Error Tracking**: Error detection and alerting
+
+### Application Observability
+
+- **Performance Metrics**: Application performance monitoring
+- **Distributed Tracing**: Request tracing across services
+- **Log Aggregation**: Centralized logging and analysis
+- **Business Metrics**: Domain-specific metrics and KPIs
+
+## Local Development Integration
+
+### Development Environment
+
+Local development mirrors production:
+
+- **Container Compatibility**: Same container images for development
+- **Service Discovery**: Similar networking and service patterns
+- **Configuration Consistency**: Shared configuration patterns
+- **Testing Integration**: Production-like testing environment
+
+## Disaster Recovery
+
+### Backup Strategy
+
+- **Data Backup**: Automated database and persistent storage backup
+- **Configuration Backup**: Infrastructure configuration backup
+- **Recovery Testing**: Regular disaster recovery testing
+- **RTO/RPO Objectives**: Defined recovery time and point objectives
+
+### High Availability
+
+- **Multi-Zone Deployment**: Geographic distribution for resilience
+- **Service Redundancy**: Multiple instances for critical services
+- **Failover Automation**: Automatic failover for service failures
+- **Load Distribution**: Traffic distribution across availability zones
+
+For specific deployment configurations and templates, refer to:
+
+- `deploy/` directory for Helm charts and environment configurations
+- `docker-compose.yml` for local development service definitions
+- Environment-specific configuration files in `deploy/env-*/`

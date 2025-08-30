@@ -1,262 +1,226 @@
 # Local Development Setup
 
-## Overview
+## Development Architecture
 
-KlickerUZH uses a sophisticated local development setup with custom domains, HTTPS certificates, and a Traefik reverse proxy to closely mirror the production environment.
+KlickerUZH uses a sophisticated local development environment that closely mirrors production with custom domains, HTTPS certificates, and microservice architecture.
 
-## Architecture
+## Core Principles
 
-- **Reverse Proxy**: Traefik handles routing between services
-- **Custom Domains**: \*.klicker.com domains for all services
-- **HTTPS**: Local certificates generated with mkcert
-- **Docker Services**: PostgreSQL, Redis, and reverse proxy in containers
-- **Host Applications**: Next.js/Node.js apps running on host system
+### Production Parity
 
-## Domain Configuration
+- **Custom Domains**: All services use branded local domains instead of localhost
+- **HTTPS by Default**: Local SSL certificates for secure development
+- **Service Discovery**: Reverse proxy routing between services
+- **Container Services**: Database and cache services in containers
+- **Host Applications**: Frontend and backend applications on host system
 
-### Local Domains (add to /etc/hosts)
+### Service Architecture
 
-```
-127.0.0.1	api.klicker.com
-127.0.0.1	pwa.klicker.com
-127.0.0.1	manage.klicker.com
-127.0.0.1	control.klicker.com
-127.0.0.1	auth.klicker.com
-127.0.0.1	func-responses.klicker.com
-127.0.0.1	func-response-processor.klicker.com
-```
+- **Reverse Proxy**: Central routing for all local services
+- **Multi-Service**: Separate services for different concerns
+- **Database Layer**: PostgreSQL for persistent data
+- **Cache Layer**: Multiple Redis instances for different purposes
+- **Authentication**: Integrated authentication services
 
-### Service Mapping
+## Environment Components
 
-| Domain                              | Service            | Port | Description         |
-| ----------------------------------- | ------------------ | ---- | ------------------- |
-| api.klicker.com                     | Backend Docker     | 3000 | GraphQL API         |
-| pwa.klicker.com                     | Frontend PWA       | 3001 | Student interface   |
-| manage.klicker.com                  | Frontend Manage    | 3002 | Lecturer interface  |
-| control.klicker.com                 | Frontend Control   | 3003 | Mobile controller   |
-| auth.klicker.com                    | Auth Service       | 3010 | Authentication      |
-| func-responses.klicker.com          | Incoming Responses | 7072 | Live quiz responses |
-| func-response-processor.klicker.com | Response Processor | 7073 | Response processing |
+### Domain Strategy
 
-## HTTPS Setup
+Local development uses custom domain configuration:
 
-### mkcert Installation
+- All services accessible via \*.klicker.com domains
+- Requires host file configuration for domain resolution
+- SSL certificates generated for trusted local development
+- Service-specific subdomains for different applications
 
-```bash
-# macOS
-brew install mkcert
+### Infrastructure Services
 
-# Linux
-curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/amd64"
-chmod +x mkcert-v*-linux-amd64
-sudo cp mkcert-v*-linux-amd64 /usr/local/bin/mkcert
+Core infrastructure runs in containers:
 
-# Windows
-choco install mkcert
-# or download from GitHub releases
-```
+- **Database**: PostgreSQL with persistent storage
+- **Cache**: Redis instances for different use cases
+- **Reverse Proxy**: Traefik for dynamic service routing
+- **Development Tools**: Email testing and monitoring services
 
-### Certificate Generation
+### Application Services
 
-```bash
-# Install the local CA
-mkcert -install
+Applications run on host system for development:
 
-# Create SSL directory and generate certificates
-mkdir -p util/traefik/ssl
-cd util/traefik/ssl
-mkcert klicker.com "*.klicker.com"
+- **Frontend Applications**: Next.js development servers
+- **Backend Services**: Node.js applications with hot reload
+- **Function Apps**: Local Azure Functions runtime
+- **Authentication**: Dedicated authentication service
 
-# This creates:
-# - klicker.com+1.pem (certificate)
-# - klicker.com+1-key.pem (private key)
-```
+## Platform Support
 
-## Docker Configuration
+### Cross-Platform Development
 
-### Platform-Specific Services
+Development environment adapts to different platforms:
 
-**macOS**:
+- **macOS**: Native Docker Desktop integration with host networking
+- **WSL**: Windows Subsystem for Linux with Docker configuration
+- **Linux**: Direct Docker setup with network configuration
 
-```bash
-docker compose up -d postgres redis_exec redis_cache reverse_proxy_macos
-```
+### Certificate Management
 
-**WSL**:
+HTTPS certificate setup varies by platform:
 
-```bash
-docker compose up -d postgres redis_exec redis_cache reverse_proxy_wsl
-```
+- **mkcert Integration**: Trusted certificate generation
+- **Platform-Specific**: OS-specific certificate trust
+- **Automatic Renewal**: Development certificate management
 
-### Traefik Configuration
+## Configuration Management
 
-Traefik is configured via `util/traefik/rules_docker.yaml` with:
+### Environment Variables
 
-- HTTP (port 80) and HTTPS (port 443) entrypoints
-- Automatic routing to local services
-- SSL certificate mounting from util/traefik/ssl/
-- Dashboard accessible at http://localhost:8080
+Development configuration through multiple sources:
 
-## Database Setup
+- **Doppler Integration**: Centralized secret management (recommended)
+- **Local Environment Files**: Package-specific configuration
+- **Docker Environment**: Container-specific variables
+- **Runtime Configuration**: Dynamic configuration loading
 
-### PostgreSQL Configuration
+### Service Configuration
 
-- **Container**: postgres:15
-- **Port**: 5432
-- **Database**: klickerv3
-- **User**: postgres
-- **Password**: (configured in Doppler)
+Each service maintains its own configuration:
 
-### Redis Configuration
+- **Database Connection**: Automatic service discovery
+- **API Endpoints**: Internal service communication
+- **Authentication**: Development authentication providers
+- **Feature Flags**: Development-specific feature toggles
 
-- **Execution Cache**: redis_exec (port 6379)
-- **General Cache**: redis_cache (port 6380)
+## Development Modes
 
-### Initial Database Setup
+### Full Development Mode
 
-```bash
-# Setup database with migrations
-pnpm run prisma:setup
+Complete development environment with external integrations:
 
-# Or reset existing database
-pnpm run prisma:reset
+- All services running with external dependencies
+- Real authentication providers
+- External service integrations
+- Production-like data flow
 
-# Deploy specific migrations
-pnpm run prisma:deploy
-```
+### Offline Development Mode
 
-## Environment Management
+Self-contained development without external dependencies:
 
-### Doppler Configuration
+- Mock external services
+- Local authentication
+- Simplified data flows
+- Faster startup and iteration
 
-Doppler configs in `doppler.yaml`:
+### Infrastructure-Only Mode
 
-- `dev`: Main development config
-- `dev_cypress`: Cypress testing config
-- `dev_lti`: LTI integration config
-- `dev_cleverreach`: CleverReach integration config
+Minimal setup for specific development needs:
 
-### Key Environment Variables
+- Database and cache services only
+- Manual application startup
+- Selective service activation
+- Resource optimization
 
-```bash
-# API Configuration
-API_DOMAIN=https://api.klicker.com
-APP_SECRET=<secret>
+### Production Data Mode
 
-# Database
-DATABASE_URL=postgresql://postgres:<password>@localhost:5432/klickerv3
+Development with production-like data:
 
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-
-# Service Bus (for Azure functions)
-SERVICE_BUS_CONNECTION_STRING=<connection_string>
-
-# Node Environment
-NODE_ENV=development
-```
-
-## Development Users
-
-### Default Accounts
-
-**Lecturer Account** (for manage.klicker.com):
-
-- Username: `lecturer`
-- Password: `abcd`
-
-**Student Account** (for pwa.klicker.com):
-
-- Username: `testuser1`
-- Password: `abcd`
+- Production data dumps
+- Realistic data volumes
+- Complex relationships
+- Performance testing capabilities
 
 ## Development Workflow
 
-### Standard Development
+### Environment Preparation
 
-```bash
-# 1. Start infrastructure
-pnpm run dev:prepare-prod
-# OR for full setup with Doppler
-pnpm dev
+Initial setup process:
 
-# 2. Access applications
-open https://manage.klicker.com    # Lecturer interface
-open https://pwa.klicker.com       # Student interface
-open https://control.klicker.com   # Mobile controller
-```
+1. Domain configuration in system hosts file
+2. SSL certificate generation and trust
+3. Docker service initialization
+4. Database schema setup and seeding
+5. Application dependency installation
 
-### Production Data Development
+### Daily Development
 
-```bash
-# Prepare environment with production dumps
-./util/_prepare_local_prod.sh
+Standard development cycle:
 
-# This script:
-# 1. Resets docker compose with volumes
-# 2. Loads postgres dump from util/dump.tar
-# 3. Loads redis dump from util/redis.dump
-# 4. Applies prisma migrations
-```
+1. Infrastructure service startup
+2. Application service activation
+3. Development server initialization
+4. Real-time development with hot reload
+5. Automated quality checks
 
-## Troubleshooting
+### Testing Integration
+
+Development environment supports testing:
+
+- Test database with seeded data
+- Isolated test execution
+- E2E testing with real services
+- Performance testing capabilities
+
+## Service Discovery
+
+### Automatic Routing
+
+Reverse proxy handles service routing:
+
+- Dynamic service registration
+- Load balancing between instances
+- Health checking and failover
+- SSL termination and certificate management
+
+### Development Access
+
+Services accessible through consistent patterns:
+
+- Web applications via branded domains
+- API services through consistent endpoints
+- Development tools via standard ports
+- Monitoring and debugging interfaces
+
+## Data Management
+
+### Database Setup
+
+Local database configuration:
+
+- Automated schema deployment
+- Test data seeding
+- Migration management
+- Development user accounts
+
+### Cache Management
+
+Redis configuration for development:
+
+- Separate instances for different purposes
+- Development-appropriate persistence
+- Cache invalidation patterns
+- Performance optimization
+
+## Troubleshooting Patterns
 
 ### Common Issues
 
-1. **Certificate Issues**
+Development environment troubleshooting:
 
-   - Ensure mkcert is installed and CA is trusted
-   - Regenerate certificates if expired
-   - Check browser certificate warnings
+- **Domain Resolution**: Host file configuration and DNS caching
+- **Certificate Issues**: SSL certificate trust and renewal
+- **Port Conflicts**: Service port allocation and conflicts
+- **Container Issues**: Docker service management and networking
 
-2. **Domain Resolution**
+### Diagnostic Tools
 
-   - Verify /etc/hosts entries
-   - Clear DNS cache: `sudo dscacheutil -flushcache` (macOS)
+Built-in diagnostic capabilities:
 
-3. **Port Conflicts**
+- Service health checking
+- Connection testing utilities
+- Log aggregation and analysis
+- Performance monitoring
 
-   - Check for services using ports 80, 443, 3000-3010
-   - Kill conflicting processes: `lsof -i :PORT`
+For specific configuration files and current setup scripts, refer to:
 
-4. **Docker Issues**
-   - Ensure Docker is running
-   - Reset volumes: `docker compose down -v`
-   - Check container logs: `docker compose logs SERVICE_NAME`
-
-### Verification
-
-```bash
-# Test domain resolution
-ping api.klicker.com
-
-# Test HTTPS certificates
-curl -I https://manage.klicker.com
-
-# Check running services
-docker compose ps
-
-# Test database connection
-pnpm --filter @klicker-uzh/prisma prisma:studio
-```
-
-## Platform Considerations
-
-### macOS
-
-- Uses `reverse_proxy_macos` Docker service
-- Native Docker Desktop integration
-- mkcert integrates with Keychain
-
-### WSL (Windows Subsystem for Linux)
-
-- Uses `reverse_proxy_wsl` Docker service
-- May require Docker Desktop with WSL2 backend
-- Network configuration might need adjustments
-
-### Linux
-
-- Similar to WSL configuration
-- May need manual certificate trust setup
-- Ensure Docker permissions are configured
+- `docker-compose.yml` for service definitions
+- `util/traefik/` for reverse proxy configuration
+- Package-specific configuration files
+- Platform-specific setup scripts in `util/` directory

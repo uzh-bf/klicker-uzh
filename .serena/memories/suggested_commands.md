@@ -1,209 +1,171 @@
-# Suggested Commands for Development
+# Development Command Patterns
 
-## Local Development Setup
+## Command Structure
 
-### Initial Setup (One-time)
+KlickerUZH uses pnpm workspaces with Turbo for monorepo management. Commands can be run at the root level for global operations or within specific packages for targeted actions.
 
-```bash
-# 1. Add local domains to /etc/hosts (requires sudo)
-sudo vim /etc/hosts
-# Add these lines:
-127.0.0.1	api.klicker.com
-127.0.0.1	pwa.klicker.com
-127.0.0.1	manage.klicker.com
-127.0.0.1	control.klicker.com
-127.0.0.1	auth.klicker.com
-127.0.0.1	func-responses.klicker.com
-127.0.0.1	func-response-processor.klicker.com
+## Common Command Categories
 
-# 2. Install mkcert for local HTTPS
-# macOS:
-brew install mkcert
-# Other platforms: https://github.com/FiloSottile/mkcert#installation
+### Environment Setup (One-time)
 
-# 3. Setup mkcert and generate certificates
-mkcert -install
-mkdir -p util/traefik/ssl
-cd util/traefik/ssl
-mkcert klicker.com "*.klicker.com"
-cd ../../..
+Essential setup for new developers:
 
-# 4. Install dependencies
-pnpm install
+- Local domain configuration (\*.klicker.com)
+- HTTPS certificate generation (mkcert)
+- Dependency installation
+- Database initialization
+- Docker service setup
 
-# 5. Setup database (first time)
-pnpm run prisma:setup
-```
+### Development Workflow
 
-### Starting Development
+#### Starting Development
 
-```bash
-# Option 1: Full development environment with Doppler
-pnpm dev
+Multiple development modes available:
 
-# Option 2: Offline development (no external services)
-pnpm dev:offline
+- **Full environment**: With external services and secret management
+- **Offline mode**: Self-contained without external dependencies
+- **Infrastructure-only**: Database, cache, and proxy services
+- **Production data**: Using production data dumps for testing
 
-# Option 3: Start only infrastructure (DB, Redis, reverse proxy)
-pnpm run dev:prepare-prod
+#### Code Quality
 
-# Option 4: Use production data dumps (if available)
-./util/_prepare_local_prod.sh
-```
+Quality assurance commands run at root or package level:
 
-### Platform-Specific Commands
+- **Formatting**: Check and apply code formatting
+- **Linting**: Code quality and style validation
+- **Type Checking**: TypeScript validation across packages
 
-```bash
-# macOS Docker setup
-docker compose up -d postgres redis_exec redis_cache reverse_proxy_macos
+#### Building & Testing
 
-# WSL Docker setup
-docker compose up -d postgres redis_exec redis_cache reverse_proxy_wsl
-```
+Build and test commands support both development and production:
 
-## Essential Development Commands
-
-### Code Quality & Validation
-
-```bash
-# Run all checks (format, lint, syncpack)
-pnpm run check
-
-# Format code
-pnpm format
-
-# Check formatting only
-pnpm format:check
-
-# Run linting
-pnpm lint
-
-# Type checking (in specific packages)
-cd apps/frontend-manage && pnpm check
-```
-
-### Building & Testing
-
-```bash
-# Build all packages
-pnpm build
-
-# Build for testing
-pnpm build:test
-
-# Run tests
-pnpm test:run           # Run all tests
-pnpm test:watch         # Watch mode
-cd cypress && pnpm cypress open  # Open Cypress UI
-```
+- **Build**: Compile all packages with optimization
+- **Test**: Unit tests, E2E tests, and comprehensive test suites
+- **Validation**: Pre-deployment checks and validation
 
 ### Database Management
 
-```bash
-# Deploy Prisma migrations
-pnpm run prisma:deploy
+Database operations follow Prisma patterns:
 
-# Create new migration
-pnpm run prisma:migrate
-
-# Reset database
-pnpm run prisma:reset
-
-# Open Prisma Studio (database GUI)
-pnpm run prisma:studio
-
-# Sync Prisma schema between packages
-pnpm run prisma:sync
-# OR
-./util/sync-schema.sh
-```
+- **Migrations**: Schema change management
+- **Seeding**: Test data and development data setup
+- **Studio**: Visual database exploration
+- **Schema Sync**: Synchronization across packages
 
 ### Release Management
 
-```bash
-# Create releases
-pnpm release        # Standard release
-pnpm release:alpha  # Alpha release
-pnpm release:beta   # Beta release
-pnpm release:rc     # Release candidate
+Structured release process with versioning:
 
-# Dry run (preview)
-pnpm release:dry
-```
+- **Standard releases**: Production-ready versions
+- **Pre-releases**: Alpha, beta, and release candidate versions
+- **Dry runs**: Preview release changes without execution
 
-### Utility Commands
+## Package-Specific Operations
 
-```bash
-# List tasks/scripts in a package
-pnpm run --filter @klicker-uzh/frontend-manage
+### Workspace Commands
 
-# Run command in specific package
-pnpm --filter @klicker-uzh/graphql dev
+Commands can target specific packages:
 
-# Clean and rebuild
-pnpm prune
-pnpm install
-pnpm build
-```
+- Use `--filter` flag for package-specific operations
+- Package names follow `@klicker-uzh/{package-name}` pattern
+- Common packages: frontend-manage, graphql, prisma, shared-components
 
-## System Commands (macOS/Darwin)
+### Service Operations
 
-### File Operations
+Different applications have specific development patterns:
 
-```bash
-ls -la              # List files with details
-find . -name "*.ts" # Find TypeScript files
-grep -r "pattern"   # Search in files
-cat filename        # View file contents
-```
+- **Frontend apps**: Next.js development with hot reload
+- **Backend services**: GraphQL development with type generation
+- **Functions**: Azure Functions local development
 
-### Git Operations
+## Local Development Environment
 
-```bash
-git status
-git diff
-git log --oneline -10
-git checkout v3     # Main branch
-```
+### Service Architecture
 
-### Process Management
+Local development uses custom domain setup:
 
-```bash
-lsof -i :3000       # Check port usage
-ps aux | grep node  # Find Node processes
-kill -9 PID         # Force kill process
-```
+- **Reverse Proxy**: Traefik handles routing between services
+- **Custom Domains**: \*.klicker.com for all services
+- **HTTPS**: Local certificates for production-like setup
+- **Docker Services**: Database, cache, and infrastructure services
 
-## Local Development URLs
+### Platform Considerations
 
-Access the applications via these local domains:
+Development setup varies by platform:
 
-- **API/Backend**: https://api.klicker.com
-- **Student PWA**: https://pwa.klicker.com
-- **Lecturer Management**: https://manage.klicker.com
-- **Mobile Control**: https://control.klicker.com
-- **Authentication**: https://auth.klicker.com
-- **Traefik Dashboard**: http://localhost:8080
+- **macOS**: Native Docker Desktop integration
+- **WSL**: Windows Subsystem for Linux configuration
+- **Linux**: Direct Docker configuration
 
-## Default Development Users
+## Command Discovery
 
-- **Manage Interface**: username `lecturer`, password `abcd`
-- **PWA Interface**: username `testuser1`, password `abcd`
+### Finding Available Commands
+
+- **Root package.json**: Global scripts and orchestration commands
+- **Package-specific**: Each package defines its own scripts
+- **Turbo configuration**: Build and development task definitions
+- **Docker Compose**: Service management commands
+
+### Common Script Names
+
+Standard script naming patterns across packages:
+
+- `dev`: Development mode
+- `build`: Production build
+- `test`: Run tests
+- `check`: Quality checks (types, format, lint)
+- `clean`: Clean build artifacts
 
 ## Environment Variables
 
-- Uses Doppler for secret management
-- Local development configs in doppler.yaml
-- Override with .env files if needed
+### Configuration Management
 
-## Common Ports
+- **Doppler**: Centralized secret management (preferred)
+- **Environment Files**: Package-specific configuration
+- **Docker Environment**: Container-specific variables
+- **Development Overrides**: Local development customization
 
-- 80/443: Traefik reverse proxy
-- 3000: Backend GraphQL API
-- 3001: Frontend PWA
-- 3002: Frontend Manage
-- 3003: Frontend Control
-- 3010: Auth service
-- 5432: PostgreSQL
-- 6379: Redis
-- 8080: Traefik dashboard
+### Access Patterns
+
+Different services access configuration differently:
+
+- **Frontend**: Build-time environment variables
+- **Backend**: Runtime configuration injection
+- **Functions**: Azure Functions configuration
+- **Docker**: Container environment variables
+
+## Default Development Data
+
+Standard test accounts are available for development:
+
+- **Lecturer accounts**: For management interface testing
+- **Student accounts**: For student interface testing
+- **Course data**: Pre-seeded courses and activities
+- **Element library**: Test questions and content
+
+## Troubleshooting Commands
+
+### System Diagnostics
+
+Common diagnostic operations:
+
+- **Port checking**: Identify port conflicts
+- **Service status**: Check running services
+- **Log access**: Service and application logs
+- **Database connectivity**: Connection testing
+
+### Reset Operations
+
+When development environment needs cleanup:
+
+- **Docker reset**: Clean container state
+- **Database reset**: Fresh database with migrations
+- **Cache clearing**: Clear build and runtime caches
+- **Dependency refresh**: Clean install of dependencies
+
+For specific command syntax and current script definitions, refer to:
+
+- Root `package.json` for global scripts
+- Individual package `package.json` files for package-specific commands
+- `docker-compose.yml` for service management
+- `turbo.json` for build orchestration

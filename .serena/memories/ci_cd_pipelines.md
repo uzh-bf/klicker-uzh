@@ -1,228 +1,182 @@
 # CI/CD Pipelines
 
-## Overview
+## Pipeline Architecture
 
-KlickerUZH uses GitHub Actions for comprehensive CI/CD automation with separate workflows for different services, environments, and quality checks. The workflows are organized in `.github/workflows/` and follow clear naming patterns.
+KlickerUZH uses GitHub Actions for comprehensive CI/CD automation with workflows organized by function and environment. All workflows are located in `.github/workflows/` and follow consistent patterns.
 
-## Workflow Naming Convention
+## Workflow Categories
 
-### Version-Specific Deployments
+### Quality Assurance Pipelines
 
-- **v3\_[service]-[environment].yml**: Production and QA deployments
-- **Examples**:
-  - `v3_backend-docker.yml`: Backend production deployment
-  - `v3_frontend-manage-docker-qa.yml`: Frontend manage QA deployment
-  - `v3_klickeruzhprod-responses.yml`: Response service production
+Automated code quality validation runs on all pull requests and pushes:
 
-### Quality Checks
-
-- **check-[type].yml**: Code quality validation
-- **test-[service].yml**: Service-specific testing
-
-### Special Workflows
-
-- **claude.yml**: AI-assisted code review and automation
-- **release.yml**: Automated release management
-- **codeql-analysis.yml**: Security analysis
-
-## Core Quality Check Workflows
-
-### Code Quality Pipelines
-
-1. **check-types.yml**: TypeScript type checking
-
-   - Runs on all TypeScript files
-   - Validates type safety across packages
-   - Prevents type errors in production
-
-2. **check-lint.yml**: ESLint validation
-
-   - Enforces code style consistency
-   - Identifies potential bugs and anti-patterns
-   - Runs on JavaScript/TypeScript files
-
-3. **check-format.yml**: Prettier formatting
-   - Ensures consistent code formatting
-   - Validates against .prettierrc.mjs configuration
-   - Auto-formatting validation
+- **Type Checking**: TypeScript validation across all packages
+- **Linting**: Code style and potential error detection
+- **Formatting**: Consistent code formatting validation
+- **Security Analysis**: Static analysis for vulnerabilities
+- **Code Quality**: Technical debt and maintainability metrics
 
 ### Testing Workflows
 
-1. **cypress-testing.yml**: End-to-end testing
+Comprehensive testing strategy with different scopes:
 
-   - **Services**: PostgreSQL 15, Redis (cache + exec)
-   - **Triggers**: Push to v3 branches, PRs affecting core paths
-   - **Platform**: Ubuntu latest (can use self-hosted)
-   - **Database Setup**: Automated seeding and migration
+- **End-to-End Testing**: Cypress tests with full database and service setup
+- **Package Testing**: Unit tests for specific packages (grading, GraphQL, APIs)
+- **Integration Testing**: Service integration and API validation
 
-2. **test-grading.yml**: Grading package tests
+### Deployment Pipelines
 
-   - Unit tests for scoring algorithms
-   - XP calculation validation
-   - Critical business logic testing
+Environment-specific deployment workflows:
 
-3. **test-graphql.yml**: GraphQL package tests
-
-   - Resolver testing
-   - Schema validation
-   - API integration tests
-
-4. **test-olat-api.yml**: OLAT API integration tests
-   - LTI integration validation
-   - External API communication tests
-
-## Service Deployment Workflows
-
-### Backend Services
-
-- **v3_backend-docker.yml**: Main GraphQL backend
-- **v3_klickeruzhprod-responses.yml**: Response handling service
-- **v3_klickeruzhprod-response-processor.yml**: Response processing
-- **v3_auth-prod.yml** / **v3_auth-qa.yml**: Authentication service
-
-### Frontend Applications
-
-- **v3_frontend-manage-docker-prod.yml** / **v3_frontend-manage-docker-qa.yml**: Lecturer frontend
-- **v3_frontend-pwa-docker-prod.yml** / **v3_frontend-pwa-docker-qa.yml**: Student frontend
-- **v3_frontend-control-docker-prod.yml** / **v3_frontend-control-docker-qa.yml**: Controller frontend
-
-### Additional Services
-
-- **v3_lti-prod.yml** / **v3_lti-qa.yml**: LTI integration service
-- **v3_olat-api-prod.yml** / **v3_olat-api-qa.yml**: OLAT API service
-- **v3_analytics-prod.yml** / **v3_analytics-qa.yml**: Analytics service
-
-## Special Workflows
+- **Production Deployments**: Triggered by main branch changes
+- **QA Deployments**: Automatic deployment for feature branches
+- **Service-Specific**: Individual workflows for each microservice
+- **Infrastructure**: Database migrations and infrastructure updates
 
 ### AI-Assisted Development
 
-1. **claude.yml**: Claude AI integration
+Automated development assistance:
 
-   - Automated code review
-   - Intelligent suggestions
-   - Development assistance
+- **Code Review**: AI-powered code review and suggestions
+- **Documentation**: Automated documentation updates
+- **Issue Management**: Intelligent issue triage and labeling
 
-2. **claude-code-review.yml**: AI-powered code review
+## Trigger Patterns
 
-   - Automated PR analysis
-   - Quality suggestions
-   - Best practice recommendations
+### Branch-Based Triggers
 
-3. **claude-dispatch.yml**: Claude workflow dispatch
-   - Manual AI assistance triggers
-   - On-demand code analysis
+- **Production**: Main branch (v3) pushes trigger production deployments
+- **QA**: Feature branches (v3\*) trigger QA deployments
+- **Quality Checks**: All branches trigger validation workflows
 
-### Release Management
+### Path-Based Filtering
 
-1. **release.yml**: Automated releases
-   - Version bumping
-   - Changelog generation
-   - Tag creation and publishing
-   - Multi-package coordination
+Workflows trigger based on changed files:
 
-### Security & Analysis
+- Service-specific paths trigger relevant deployments
+- Shared package changes trigger affected service rebuilds
+- Configuration changes trigger infrastructure updates
 
-1. **codeql-analysis.yml**: GitHub CodeQL security scanning
+### Event-Based Triggers
 
-   - Static analysis for vulnerabilities
-   - Security pattern detection
-   - Automated security reports
+- **Pull Request Events**: Automated review and testing
+- **Issue Events**: Issue management and triage
+- **Release Events**: Automated release and deployment
+- **Manual Dispatch**: On-demand workflow execution
 
-2. **v3_sonarcloud.yml**: SonarCloud code quality analysis
-   - Code coverage analysis
-   - Code smell detection
-   - Security vulnerability scanning
-   - Technical debt tracking
+## Container Registry Strategy
 
-## Workflow Triggers
+### Image Management
 
-### Common Trigger Patterns
-
-```yaml
-# Production deployments
-on:
-  push:
-    branches: [v3]
-    paths:
-      - 'apps/specific-service/**'
-      - 'packages/**'
-
-# QA deployments
-on:
-  push:
-    branches: [v3*]
-  pull_request:
-    branches: [v3]
-
-# Quality checks
-on:
-  push:
-    branches: [v3, v3*]
-  pull_request:
-    branches: [v3, v3*]
-    paths:
-      - '**/*.{ts,tsx,js,jsx}'
-```
-
-### Environment-Based Triggers
-
-- **Production**: Only on main v3 branch pushes
-- **QA**: On v3 feature branches and PRs
-- **Testing**: On any v3 branch changes
-- **Quality Checks**: On all relevant file changes
-
-## Container Registry Integration
-
-### GitHub Container Registry (ghcr.io)
-
-- **Registry**: `ghcr.io/uzh-bf/klicker-uzh`
-- **Authentication**: GitHub token-based
-- **Multi-arch**: Support for different architectures
+- **Registry**: GitHub Container Registry integration
+- **Multi-Architecture**: Support for different deployment targets
 - **Caching**: Layer caching for faster builds
+- **Security**: Vulnerability scanning and access control
 
-### Image Tagging Strategy
+### Tagging Strategy
 
-- **Staging/Testing**: Branches with `v3` or `v3-` prefix → built for staging environments
-- **Production**: Git tags → built for production deployment
-- **No intermediate tagging**: Only branch-based and tag-based builds
+- **Environment Tags**: Environment-specific image tags
+- **Version Tags**: Semantic versioning for releases
+- **Branch Tags**: Feature branch identification
+- **Latest Tags**: Current production versions
 
 ## Environment Management
 
-### Secrets Management
+### Environment Isolation
 
-- **GitHub Secrets**: Sensitive deployment data
-- **Doppler Integration**: Environment variable management
-- **Per-Environment**: Separate secret sets for qa/prod
+- **Production**: Stable, performance-optimized deployments
+- **QA**: Feature testing with debugging capabilities
+- **Development**: Local development support
 
-### Environment Variables
+### Secret Management
 
-```yaml
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: uzh-bf/klicker-uzh
-  ENVIRONMENT: ${{ github.ref == 'refs/heads/v3' && 'prod' || 'qa' }}
-```
+- **GitHub Secrets**: Sensitive deployment credentials
+- **Environment Variables**: Service-specific configuration
+- **External Secrets**: Integration with external secret services
 
-### Deployment Contexts
+### Configuration Strategy
 
-- **Production**: Full feature set, performance optimized
-- **QA**: Feature testing, debugging enabled
-- **Development**: Hot reload, development tools
+- **Environment-Specific**: Separate configuration per environment
+- **Template-Based**: Configuration templates with variable substitution
+- **Validation**: Configuration validation before deployment
 
-## Development Workflow
+## Quality Gates
 
-### Pull Request Process
+### Automated Checks
 
-1. **Feature Branch**: Create feature branch from v3
-2. **Quality Checks**: Automated linting, formatting, type checking
-3. **Testing**: Cypress E2E tests, unit tests
-4. **Code Review**: Manual + AI-assisted review
-5. **QA Deployment**: Automatic deployment to QA environment
-6. **Production**: Manual approval for production deployment
+All deployments must pass:
+
+- Code quality validation (linting, formatting, types)
+- Comprehensive test suites (unit, integration, E2E)
+- Security scanning and vulnerability assessment
+- Performance regression testing
+
+### Manual Approval
+
+Production deployments require:
+
+- Code review approval
+- QA environment validation
+- Manual deployment approval for critical services
+
+## Deployment Strategy
+
+### Service Deployment
+
+- **Independent Services**: Each service deploys independently
+- **Dependency Management**: Automatic coordination between dependent services
+- **Rolling Updates**: Zero-downtime deployment patterns
+- **Rollback Capability**: Quick rollback for deployment issues
+
+### Infrastructure Updates
+
+- **Database Migrations**: Automated schema updates
+- **Configuration Updates**: Environment configuration management
+- **Dependency Updates**: Automated dependency updates with testing
+
+## Monitoring & Observability
+
+### Build Monitoring
+
+- **Build Status**: Real-time build and deployment status
+- **Performance Metrics**: Build time and resource usage tracking
+- **Failure Analysis**: Automated failure detection and reporting
+
+### Deployment Tracking
+
+- **Deployment History**: Complete deployment audit trail
+- **Environment Status**: Current deployed versions per environment
+- **Health Checks**: Post-deployment validation and monitoring
+
+## Development Workflow Integration
+
+### Pull Request Workflow
+
+1. **Quality Checks**: Automated validation on PR creation
+2. **Testing**: Comprehensive test suite execution
+3. **Review**: Manual and AI-assisted code review
+4. **QA Deployment**: Automatic deployment for testing
+5. **Approval**: Manual approval for production deployment
 
 ### Hotfix Process
 
-1. **Emergency Branch**: Direct branch from v3
-2. **Fast-Track Testing**: Essential tests only
-3. **Immediate Deployment**: Skip QA for critical fixes
-4. **Post-Deployment**: Retroactive testing and validation
+1. **Emergency Branch**: Direct branching from production
+2. **Fast-Track Testing**: Essential validation only
+3. **Expedited Review**: Streamlined review process
+4. **Immediate Deployment**: Skip QA for critical fixes
+
+## Performance Optimization
+
+### Build Optimization
+
+- **Caching**: Aggressive caching of dependencies and build artifacts
+- **Parallel Execution**: Concurrent workflow execution
+- **Resource Management**: Efficient resource allocation
+
+### Deployment Efficiency
+
+- **Incremental Builds**: Build only changed components
+- **Smart Triggers**: Trigger only necessary workflows
+- **Resource Scheduling**: Optimal resource utilization
+
+For specific workflow configurations and current implementations, refer to `.github/workflows/` directory in the repository.

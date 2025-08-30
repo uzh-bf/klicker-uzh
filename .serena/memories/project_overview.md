@@ -40,7 +40,7 @@ The project uses a sophisticated local development setup that closely mirrors pr
 - **Docker Services**: PostgreSQL, Redis, and reverse proxy run in containers
 - **Host Applications**: Frontend and backend apps run directly on the host system
 
-### Local URLs
+### Local Service URLs
 
 - Student Interface: https://pwa.klicker.com
 - Lecturer Interface: https://manage.klicker.com
@@ -59,9 +59,11 @@ PostgreSQL database managed with Prisma ORM, organized around:
 - Analytics and feedback
 - Activity logging for tracking changes
 
-## Environment
+## Technology Foundation
 
-- **Platform**: Darwin (macOS)
-- **Node Version**: 20.18.1
-- **Package Manager**: pnpm 9.15.4
-- **Repository Branch**: v3 (main branch)
+- **Runtime**: Node.js LTS versions
+- **Package Manager**: pnpm with workspace support
+- **Main Branch**: v3 (production branch)
+- **Development Platform**: Cross-platform support (macOS, Linux, WSL)
+
+For current versions and specific environment details, refer to package.json files and development documentation in the repository.

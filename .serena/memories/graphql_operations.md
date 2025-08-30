@@ -2,276 +2,149 @@
 
 ## Overview
 
-KlickerUZH has an extensive GraphQL API with 200+ operations organized in a clear, structured way. The GraphQL operations are located in `packages/graphql/src/graphql/ops/` and follow consistent naming conventions.
+KlickerUZH has an extensive GraphQL API with 200+ operations organized in `packages/graphql/src/graphql/ops/`. The operations follow consistent naming conventions and are organized by business domain.
 
 ## Operation Naming Conventions
 
 ### Prefixes
 
-- **Q**: Queries (read operations)
-- **M**: Mutations (write operations)
-- **S**: Subscriptions (real-time operations)
-- **F**: Fragments (reusable GraphQL fragments)
+- **Q**: Queries (read operations) - e.g., `QGetUserCourses`
+- **M**: Mutations (write operations) - e.g., `MCreateCourse`
+- **S**: Subscriptions (real-time operations) - e.g., `SFeedbackCreated`
+- **F**: Fragments (reusable GraphQL fragments) - e.g., `FElementData`
 
-### Examples
+### Naming Patterns
 
-- `QGetUserCourses` - Query to get user's courses
-- `MCreateCourse` - Mutation to create a new course
-- `SFeedbackCreated` - Subscription for when feedback is created
-- `FElementData` - Fragment for element data
+Operations use clear, descriptive names that follow the pattern:
 
-## Core Operation Categories
+- `{Prefix}{Action}{DomainObject}` for CRUD operations
+- `{Prefix}{DomainConcept}{Action}` for domain-specific actions
 
-### User & Account Management
+## Operation Categories
 
-- **QUserProfile**: Get current user profile
-- **QSelf**: Get current user basic info
-- **MChangeUserLocale**: Change user's locale preference
-- **MChangeShortname**: Update user shortname
-- **MUpdateUserLogin**: Update login credentials
-- **MCreateUserLogin**: Create new user login
-- **MDeleteUserLogin**: Remove user login
+### Core Business Domains
 
-### Course Management
+- **User & Account Management**: User profiles, authentication, preferences
+- **Course Management**: Course CRUD, enrollment, settings
+- **Live Quiz Operations**: Real-time quiz execution and management
+- **Practice Quiz Operations**: Self-paced learning activities
+- **Microlearning Operations**: Scheduled learning with notifications
+- **Group Activities**: Collaborative activities for participant groups
+- **Element/Question Management**: Question and content element CRUD
+- **Participant Operations**: Student accounts and course participation
+- **Feedback & Communication**: Quiz feedback and Q&A functionality
+- **Analytics & Reporting**: Performance metrics and analytics
+- **Permission & Sharing**: Access control and content sharing
+- **Catalog Operations**: Public content catalog and sharing
 
-- **QGetUserCourses**: List user's courses
-- **QGetSingleCourse**: Get detailed course information
-- **MCreateCourse**: Create new course
-- **MDeleteCourse**: Delete course
-- **MUpdateCourseSettings**: Update course configuration
-- **MToggleArchiveCourse**: Archive/unarchive course
-- **QGetCourseOverviewData**: Course dashboard data
+## GraphQL Patterns
 
-### Live Quiz Operations
+### Query Patterns
 
-- **QGetRunningLiveQuiz**: Get active live quiz
-- **QGetSingleLiveQuiz**: Get specific live quiz details
-- **MCreateLiveQuiz**: Create new live quiz
-- **MStartLiveQuiz**: Start live quiz execution
-- **MEndLiveQuiz**: End live quiz
-- **MCancelLiveQuiz**: Cancel live quiz
-- **MEditLiveQuiz**: Modify live quiz settings
-- **MActivateSessionBlock**: Activate quiz block
-- **SRunningLiveQuizUpdated**: Real-time quiz updates
+- **List Operations**: Paginated results with optional filtering
+- **Detail Operations**: Full object data with nested relations
+- **Permission-aware**: Different data based on user permissions
 
-### Practice Quiz Operations
+### Mutation Patterns
 
-- **QGetPracticeQuizList**: List available practice quizzes
-- **QGetSinglePracticeQuiz**: Get specific practice quiz
-- **MCreatePracticeQuiz**: Create new practice quiz
-- **MEditPracticeQuiz**: Modify practice quiz
-- **MPublishPracticeQuiz**: Make practice quiz available
-- **MUnpublishPracticeQuiz**: Remove practice quiz availability
-- **MDeletePracticeQuiz**: Delete practice quiz
+- **CRUD Operations**: Standard create, read, update, delete
+- **State Transitions**: Activity lifecycle operations (start, end, publish)
+- **Bulk Operations**: Operations affecting multiple objects
 
-### Microlearning Operations
+### Subscription Patterns
 
-- **QGetSingleMicroLearning**: Get microlearning details
-- **MCreateMicroLearning**: Create new microlearning
-- **MEditMicroLearning**: Modify microlearning
-- **MPublishMicroLearning**: Publish microlearning
-- **MUnpublishMicroLearning**: Unpublish microlearning
-- **MExtendMicroLearning**: Extend microlearning deadline
-- **SMicroLearningEnded**: Subscription for microlearning completion
+- **Real-time Updates**: Live quiz state changes
+- **Event Notifications**: Feedback creation, activity completion
+- **Multi-user Coordination**: Group activity synchronization
 
-### Group Activities
+## Fragment Strategy
 
-- **QGetGroupActivity**: Get group activity details
-- **MCreateGroupActivity**: Create group activity
-- **MEditGroupActivity**: Modify group activity
-- **MStartGroupActivity**: Start group activity
-- **MEndGroupActivity**: End group activity
-- **MPublishGroupActivity**: Publish group activity
-- **MUnpublishGroupActivity**: Unpublish group activity
-- **SGroupActivityStarted**: Real-time group activity updates
+### Fragment Types
 
-### Element/Question Management
+- **Complete Data**: Full object data with all relations
+- **Public Data**: Data safe for student consumption (without solutions)
+- **Summary Data**: Basic information for lists and previews
+- **Permission-specific**: Different fragments for different user roles
 
-- **QGetUserElements**: List user's elements
-- **QGetSingleElement**: Get specific element
-- **MDeleteElement**: Delete element
-- **MChangeElementStatus**: Update element status
-- **MManipulateChoicesQuestion**: Edit multiple choice questions
-- **MManipulateNumericalQuestion**: Edit numerical questions
-- **MManipulateFreeTextQuestion**: Edit free text questions
-- **MManipulateContentElement**: Edit content elements
-- **MManipulateFlashcardElement**: Edit flashcard elements
-- **MManipulateSelectionQuestion**: Edit selection questions
-- **MManipulateCaseStudyQuestion**: Edit case study questions
+### Reuse Patterns
 
-### Participant Operations
+Fragments are extensively used to:
 
-- **MCreateParticipantAccount**: Create participant account
-- **MLoginParticipant**: Participant login
-- **MLogoutParticipant**: Participant logout
-- **MUpdateParticipantProfile**: Update participant profile
-- **MJoinCourseWithPin**: Join course using PIN
-- **QParticipations**: Get participant's course participations
+- Share common field selections across operations
+- Maintain consistency in data fetching
+- Support different permission levels for the same data
 
-### Feedback & Communication
+## Real-time Architecture
 
-- **QGetFeedbacks**: Get quiz feedbacks
-- **MCreateFeedback**: Create new feedback
-- **MResolveFeedback**: Mark feedback as resolved
-- **MDeleteFeedback**: Delete feedback
-- **MUpvoteFeedback**: Upvote feedback
-- **MPinFeedback**: Pin important feedback
-- **SFeedbackCreated**: Real-time feedback creation
-- **SFeedbackAdded**: Real-time feedback addition
-- **SFeedbackUpdated**: Real-time feedback updates
+### Subscription Management
 
-### Analytics & Reporting
+- **Connection Lifecycle**: Proper subscription setup and teardown
+- **Event Filtering**: Server-side filtering to reduce client load
+- **Error Handling**: Graceful degradation for connection issues
 
-- **QGetCourseActivityAnalytics**: Course activity analytics
-- **QGetActivityAnalytics**: General activity analytics
-- **QGetCoursePerformanceAnalytics**: Performance metrics
-- **QGetLiveQuizEvaluation**: Live quiz evaluation results
-- **QGetPracticeQuizEvaluation**: Practice quiz evaluation
-- **QGetMicroLearningEvaluation**: Microlearning evaluation
+### Use Cases
 
-### Permission & Sharing
-
-- **QGetObjectPermissions**: Get object permission details
-- **MShareObject**: Share object with users
-- **MRevokeObjectAccess**: Remove object access
-- **MTransferObjectOwnership**: Transfer object ownership
-- **QGetDerivedPermissionOrigin**: Get permission inheritance
-
-### Catalog Operations
-
-- **QGetCatalogObjects**: Browse catalog objects
-- **QGetCatalogElements**: Browse catalog elements
-- **MAddObjectToCatalog**: Add object to catalog
-- **MRequestCatalogObject**: Request catalog object access
-- **MImportCatalogObject**: Import from catalog
-- **MCopyCatalogObjectToAccount**: Copy catalog object
-
-## Fragment Usage
-
-### Common Fragments
-
-- **FElementData**: Complete element data with solutions
-- **FElementDataWithoutSolutions**: Element data for students
-- **FElementDataInfo**: Basic element information
-- **FPracticeQuizData**: Complete practice quiz data
-- **FPracticeQuizDataWithoutSolutions**: Practice quiz for students
-- **FMicroLearningData**: Complete microlearning data
-- **FMicroLearningDataWithoutSolutions**: Microlearning for students
-- **FEvaluationResults**: Evaluation and analytics data
-- **FActivityInfoData**: Basic activity information
-- **FCatalogObjectData**: Catalog object data
-
-## Real-time Subscriptions
-
-### Live Quiz Subscriptions
-
-- **SRunningLiveQuizUpdated**: Live quiz state changes
-- **SLiveQuizSettingsChanged**: Quiz settings updates
-
-### Feedback Subscriptions
-
-- **SFeedbackCreated**: New feedback created
-- **SFeedbackAdded**: Feedback added to quiz
-- **SFeedbackUpdated**: Feedback modified
-- **SFeedbackRemoved**: Feedback deleted
-- **SFeedbackPinned**: Feedback pinned/unpinned
-
-### Group Activity Subscriptions
-
-- **SGroupActivityStarted**: Group activity started
-- **SGroupActivityEnded**: Group activity ended
-- **SSingleGroupActivityEnded**: Single group's activity ended
-
-### Microlearning Subscriptions
-
-- **SMicroLearningEnded**: Microlearning session completed
+- Live quiz real-time updates during active sessions
+- Feedback system for instructor-student communication
+- Group activity coordination and progress tracking
+- Microlearning completion notifications
 
 ## Schema Organization
 
 ### Type System
 
-- **Scalars**: Custom scalars for dates, JSON, etc.
-- **Enums**: Status types, user roles, element types
-- **Interfaces**: Common interfaces for activities
-- **Unions**: Polymorphic result types
-- **Input Types**: Mutation input parameters
+- **Scalars**: Custom scalars for dates, JSON, and domain-specific data
+- **Enums**: Status types, user roles, element types, permission levels
+- **Interfaces**: Common patterns across activity types
+- **Unions**: Polymorphic result types for diverse data
 
-### Key Domain Objects
+### Domain Object Hierarchy
 
-- **User**: Lecturer accounts and profiles
-- **Participant**: Student accounts and participation
-- **Course**: Course structure and settings
-- **Element**: Questions and content elements
-- **Activity**: All activity types (LiveQuiz, PracticeQuiz, etc.)
-- **Session**: Live quiz sessions and blocks
-- **Response**: Student responses and evaluations
+- **User/Participant**: Authentication and profile management
+- **Course**: Container for all learning activities
+- **Activities**: Polymorphic activity types with shared interfaces
+- **Elements**: Question and content types with type-specific options
+- **Responses**: Student interaction tracking and evaluation
 
-## Development Patterns
-
-### Operation Implementation
-
-1. **GraphQL Operation File**: Define operation in `.graphql` file
-2. **TypeScript Types**: Generated from schema
-3. **Resolver Implementation**: Business logic in services
-4. **Authentication**: Role-based access control
-5. **Validation**: Input validation and sanitization
-
-### Error Handling
-
-- **Structured Errors**: Consistent error response format
-- **Error Codes**: Specific error identification
-- **Client Handling**: GraphQL error propagation
-
-### Performance Optimization
-
-- **DataLoader**: Batch database queries
-- **Query Complexity**: Prevent expensive operations
-- **Caching**: Redis-based query caching
-- **Pagination**: Cursor-based pagination
-
-## Usage Examples
+## Development Integration
 
 ### Client-Side Usage
 
 ```typescript
-// Query example
-const { data } = useQuery(QGetUserCourses)
+// Standard query pattern
+const { data, loading, error } = useQuery(QSomeOperation)
 
-// Mutation example
-const [createCourse] = useMutation(MCreateCourse, {
-  refetchQueries: [{ query: QGetUserCourses }],
+// Mutation with optimistic updates
+const [mutate] = useMutation(MSomeAction, {
+  refetchQueries: [{ query: QRelatedData }],
 })
 
-// Subscription example
-const { data } = useSubscription(SFeedbackCreated, {
-  variables: { sessionId },
+// Real-time subscription
+const { data } = useSubscription(SSomeUpdates, {
+  variables: { contextId },
 })
 ```
 
-### Common Query Patterns
+### Type Safety
 
-- **List Operations**: Paginated results with filters
-- **Detail Operations**: Full object data with relations
-- **Nested Operations**: Related data in single query
-- **Conditional Operations**: Field selection based on permissions
+- Generated TypeScript types from GraphQL schema
+- Compile-time verification of query structure
+- IDE autocompletion and error checking
 
 ## Best Practices
 
 ### Operation Design
 
-- **Single Responsibility**: One operation per business action
-- **Consistent Naming**: Follow prefix conventions
-- **Input Validation**: Validate all mutation inputs
-- **Permission Checks**: Implement proper authorization
+- Single responsibility per operation
+- Consistent permission checking in resolvers
+- Proper input validation and sanitization
+- Error handling with structured error responses
 
-### Fragment Usage
+### Performance Considerations
 
-- **Reusable Fragments**: Share common field selections
-- **Type-specific**: Fragments for specific object types
-- **Permission-aware**: Different fragments for different user roles
+- DataLoader pattern for N+1 query prevention
+- Appropriate use of fragments to minimize over-fetching
+- Subscription scope limiting to prevent performance issues
+- Query complexity analysis to prevent expensive operations
 
-### Subscription Management
-
-- **Connection Management**: Proper connection lifecycle
-- **Error Handling**: Graceful degradation
-- **Performance**: Limit subscription scope
+For the complete list of operations and their detailed implementations, refer to `packages/graphql/src/graphql/ops/` in the codebase.

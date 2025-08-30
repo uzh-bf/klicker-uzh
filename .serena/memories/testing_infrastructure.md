@@ -1,170 +1,204 @@
 # Testing Infrastructure
 
-## Overview
+## Testing Philosophy
 
-KlickerUZH uses a comprehensive testing strategy with different types of tests:
+KlickerUZH employs a comprehensive testing strategy that prioritizes user-centric testing while maintaining critical business logic validation:
 
-- **Cypress** for end-to-end (E2E) testing
-- **Jest** for unit testing in packages
-- **GitHub Actions** for automated CI testing
+- **End-to-End Focus**: Cypress E2E tests for complete user workflows
+- **Business Logic Testing**: Unit tests for critical algorithms and calculations
+- **Integration Testing**: GraphQL operations and service integrations
+- **Continuous Integration**: Automated testing in all environments
 
-## Cypress E2E Testing
+## Testing Stack
 
-### Configuration
+### Cypress E2E Testing
 
-- Main config: `cypress/cypress.config.ts`
-- Extensive configuration with database seeding and test data
-- Supports both component and E2E testing
-- Custom commands and utilities
+Primary testing approach for user-facing functionality:
 
-### Test Data Setup
+- **Configuration**: Centralized config with database seeding
+- **Test Data**: Consistent seeded data for reliable test scenarios
+- **Multi-User Testing**: Support for different user roles and permissions
+- **Real-Time Features**: Testing of live quiz and subscription functionality
 
-The cypress config includes seeded test data with specific IDs:
+#### E2E Test Scope
 
-- **Users**: TEST (76047345-3801-4628-ae7b-adbebcfe8821) through TEST7
-- **Courses**: TEST courses with specific IDs
-- **Participants**: Array of participant IDs for testing scenarios
+- Complete user journeys (registration, course enrollment, quiz participation)
+- Authentication flows across different methods
+- Live quiz real-time interactions
+- Group activity collaboration
+- Permission and access control validation
+- Multi-device and responsive behavior
 
-### Test Structure
+### Jest Unit Testing
 
-- Tests located in `cypress/` directory
-- Uses Prisma client for database operations during tests
-- Includes custom element type definitions and test utilities
-- Supports authentication testing with multiple user types
+Focused on critical business logic and utilities:
 
-### Running Cypress Tests
+- **Package-Level**: Each package maintains its own test suite
+- **Algorithm Testing**: Scoring, grading, and XP calculation validation
+- **Utility Functions**: Common functions and helpers
+- **GraphQL Resolvers**: Business logic validation
+
+#### Unit Test Focus Areas
+
+- Mathematical calculations (scoring algorithms)
+- Data transformation utilities
+- Validation functions
+- Permission checking logic
+- Complex business rules
+
+### Integration Testing
+
+Service and API integration validation:
+
+- **GraphQL Operations**: End-to-end API testing
+- **External Integrations**: LTI, authentication providers
+- **Database Operations**: Data integrity and migration testing
+- **Message Queue Processing**: Asynchronous operation validation
+
+## Test Environment Setup
+
+### Local Testing
+
+Local test environment mirrors production:
+
+- **Database**: PostgreSQL with consistent test data
+- **Cache Layer**: Redis instances for execution and caching
+- **Service Dependencies**: All required services running locally
+- **Authentication**: Test accounts and authentication flows
+
+### CI/CD Testing
+
+Automated testing in GitHub Actions:
+
+- **Service Orchestration**: Docker Compose setup for all dependencies
+- **Database Seeding**: Automated test data generation
+- **Multi-Environment**: Testing across different configurations
+- **Artifact Management**: Test results and failure analysis
+
+## Test Data Strategy
+
+### Data Consistency
+
+- **Seeded Data**: Predictable test data for reliable scenarios
+- **User Accounts**: Standard test accounts for different roles
+- **Course Structures**: Pre-built courses and activities for testing
+- **Content Library**: Test elements and questions across all types
+
+### Data Isolation
+
+- **Test Isolation**: Each test suite operates with clean state
+- **Database Reset**: Automated cleanup between test runs
+- **Parallel Testing**: Safe parallel execution without data conflicts
+
+## Testing Patterns
+
+### E2E Testing Patterns
+
+```cypress
+// Standard test structure
+describe('Feature Name', () => {
+  beforeEach(() => {
+    // Database seeding and user authentication
+  })
+
+  it('should complete user workflow', () => {
+    // Page navigation and user interactions
+    // Assertions for expected outcomes
+  })
+})
+```
+
+### Unit Testing Patterns
+
+```typescript
+// Business logic testing
+describe('GradingService', () => {
+  it('should calculate correct scores', () => {
+    // Arrange: Setup test data
+    // Act: Execute function
+    // Assert: Validate results
+  })
+})
+```
+
+## Test Categories
+
+### User Journey Testing
+
+- **Student Experience**: Registration, course participation, quiz completion
+- **Instructor Workflow**: Course creation, quiz management, analytics
+- **Authentication**: Login flows, permission validation
+- **Collaboration**: Group activities and multi-user interactions
+
+### Feature Testing
+
+- **Live Quiz Functionality**: Real-time quiz execution and participation
+- **Practice Quiz System**: Self-paced learning with spaced repetition
+- **Microlearning**: Scheduled learning activities
+- **Content Management**: Question and content creation workflow
+
+### System Testing
+
+- **Performance**: Load testing for concurrent users
+- **Security**: Authentication and authorization validation
+- **Integration**: External service integration testing
+- **Data Integrity**: Database consistency and migration testing
+
+## Quality Gates
+
+### Test Requirements
+
+All features must include:
+
+- E2E tests covering primary user workflows
+- Unit tests for complex business logic
+- Integration tests for external dependencies
+- Error handling and edge case validation
+
+### Coverage Metrics
+
+- **Functional Coverage**: All user-facing features tested
+- **Critical Path Coverage**: Essential workflows thoroughly tested
+- **Error Path Coverage**: Error conditions and edge cases
+- **Regression Coverage**: Historical bug prevention
+
+## Test Execution
+
+### Local Development
 
 ```bash
+# E2E testing
 cd cypress && pnpm cypress open    # Interactive mode
-pnpm test:cypress                  # Headless mode
+pnpm test:cypress                  # Headless execution
+
+# Unit testing
+pnpm test:run                      # All package tests
+pnpm test:watch                    # Development mode
 ```
 
-### Key Features
+### Continuous Integration
 
-- Database reset and seeding for consistent test state
-- Support for testing all element types (SC, MC, KPRIM, FREE_TEXT, NUMERICAL, CONTENT, FLASHCARD, SELECTION, CASE_STUDY)
-- Authentication testing with different user roles
-- Live quiz testing with real-time features
-- Group activity testing
-- Permission and access control testing
+- **Parallel Execution**: Tests run concurrently for faster feedback
+- **Service Dependencies**: Automated setup of required services
+- **Result Reporting**: Detailed test results and failure analysis
+- **Artifact Storage**: Screenshots and videos for failed tests
 
-## Jest Unit Testing
+## Test Maintenance
 
-### Package-Level Testing
+### Data Management
 
-Each package in `packages/` can have its own Jest configuration:
+- **Test Data Evolution**: Maintain test data as features evolve
+- **Schema Migrations**: Update test data for database changes
+- **User Management**: Maintain test accounts and permissions
 
-- Tests located in package-specific directories
-- Focus on business logic and utility functions
-- GraphQL resolver testing
-- Grading logic testing
+### Test Reliability
 
-### Common Test Patterns
+- **Flaky Test Prevention**: Robust selectors and wait conditions
+- **Environment Consistency**: Standardized test environments
+- **Failure Analysis**: Systematic investigation of test failures
 
-```bash
-pnpm test:run      # Run all tests
-pnpm test:watch    # Watch mode for development
-```
+For specific test configurations and current test suites, refer to:
 
-## GitHub Actions CI
-
-### Cypress Testing Workflow
-
-- **File**: `.github/workflows/cypress-testing.yml`
-- **Triggers**: Push to v3 branches, PRs affecting apps/packages/cypress
-- **Services**: PostgreSQL 15, Redis (cache and exec)
-- **Platform**: Ubuntu latest (can use self-hosted)
-
-### Test Services Setup
-
-```yaml
-services:
-  postgres:
-    image: postgres:15
-    env:
-      POSTGRES_USER: klicker-prod
-      POSTGRES_PASSWORD: klicker
-      POSTGRES_DB: klicker-prod
-  redis_cache:
-    image: redis:7
-    ports:
-      - 6380:6379
-  redis_exec:
-    image: redis:7
-```
-
-### Additional Test Workflows
-
-- **check-types.yml**: TypeScript type checking across all packages
-- **check-lint.yml**: ESLint checks
-- **check-format.yml**: Prettier formatting checks
-- **test-grading.yml**: Specific grading package tests
-- **test-graphql.yml**: GraphQL package tests
-- **test-olat-api.yml**: OLAT API tests
-
-## Testing Best Practices
-
-### Test Commands by Context
-
-```bash
-# Root level
-pnpm test:run              # All tests
-pnpm check                 # Types + format + lint
-
-# Package level (in specific package)
-pnpm test                  # Package-specific tests
-pnpm test:watch            # Watch mode
-
-# Cypress specific
-cd cypress
-pnpm cypress open          # Interactive testing
-pnpm cypress run           # Headless CI mode
-```
-
-### Test Data Management
-
-- Use seeded test data for consistent scenarios
-- Reset database state between test suites
-- Include realistic test data for complex scenarios (courses, quizzes, participants)
-
-### Testing Scope
-
-- **Unit Tests**: Business logic, utilities, pure functions
-- **Integration Tests**: GraphQL operations, database queries
-- **E2E Tests**: Complete user workflows, real-time features, authentication flows
-
-### Database Testing
-
-- Tests use the same PostgreSQL setup as production
-- Prisma migrations applied before testing
-- Database seeding with realistic test data
-- Clean state management between test runs
-
-## Troubleshooting
-
-### Common Issues
-
-- Database connection issues: Check PostgreSQL service status
-- Redis connection: Ensure both cache and exec Redis instances are running
-- Test data conflicts: Verify database is properly reset between runs
-- Environment variables: Ensure test environment configuration is correct
-
-### Local Test Setup
-
-```bash
-# Prepare test environment
-pnpm dev:prepare-prod
-
-# Run specific test suites
-cd cypress && pnpm cypress open
-pnpm test:run -w @klicker-uzh/grading
-```
-
-## Test Coverage
-
-- Focus on critical business logic
-- Authentication and authorization flows
-- Live quiz real-time functionality
-- Grading and scoring algorithms
-- Database migrations and data integrity
-- GraphQL API endpoints
+- `cypress/` directory for E2E test specifications
+- Individual package `__tests__/` directories for unit tests
+- `.github/workflows/` for CI testing configurations
