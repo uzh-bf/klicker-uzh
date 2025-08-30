@@ -4,113 +4,120 @@
 
 ```
 klicker-uzh/
-├── apps/                    # Application packages
-│   ├── frontend-pwa/       # Student-facing web app
-│   ├── frontend-manage/    # Lecturer administration interface
-│   ├── frontend-control/   # Mobile controller for live quizzes
-│   ├── auth/              # Authentication service
-│   ├── backend-docker/    # Main GraphQL backend
-│   ├── func-incoming-responses/  # Azure function for responses
-│   ├── func-response-processor/  # Response processing service
-│   ├── olat-api/          # LMS integration API
-│   ├── analytics/         # Analytics service
-│   ├── lti/              # LTI integration
-│   ├── docs/             # Documentation website
-│   └── office-addin/     # PowerPoint integration
-├── packages/              # Shared packages
-│   ├── prisma/           # Database schema & migrations
-│   ├── graphql/          # GraphQL schema & business logic
-│   ├── grading/          # Scoring logic
-│   ├── types/            # TypeScript type definitions
-│   ├── util/             # Utility functions
-│   ├── i18n/             # Internationalization
+├── .github/               # CI/CD workflows and automation
+├── apps/                  # Application packages
+│   ├── frontend-pwa/     # Student-facing web app
+│   ├── frontend-manage/  # Lecturer administration interface
+│   ├── frontend-control/ # Mobile controller for live quizzes
+│   ├── auth/             # Authentication service
+│   ├── backend-docker/   # Main GraphQL backend
+│   ├── func-*/           # Azure Functions
+│   ├── olat-api/         # LMS integration API
+│   ├── analytics/        # Analytics service
+│   └── lti/              # LTI integration
+├── packages/             # Shared packages
+│   ├── prisma/          # Database schema & migrations
+│   ├── graphql/         # GraphQL schema & business logic
+│   ├── grading/         # Scoring logic
+│   ├── types/           # TypeScript type definitions
+│   ├── util/            # Utility functions
+│   ├── i18n/            # Internationalization
 │   ├── shared-components/ # Shared React components
-│   ├── markdown/         # Markdown renderer
-│   ├── transactional/    # Email templates
-│   └── next-config/      # Shared Next.js config
-├── cypress/              # E2E tests
-├── deploy/               # Kubernetes/Helm deployment
-├── util/                 # Utility scripts
-├── bruno/                # API testing collections
-└── email/                # Email templates
+│   └── markdown/        # Markdown renderer
+├── cypress/             # E2E tests
+├── deploy/              # Kubernetes/Helm deployment configs
+├── util/                # Development utility scripts
+└── bruno/               # API testing collections
 ```
 
 ## Key Configuration Files
 
-- package.json # Root package with scripts
-- pnpm-workspace.yaml # Workspace configuration
-- turbo.json # Turbo build configuration
-- doppler.yaml # Environment management
-- docker-compose.yml # Local development services
-- .prettierrc.mjs # Code formatting
-- .lintstagedrc.mjs # Pre-commit hooks
-- CLAUDE.md # AI assistance guidelines
+- **package.json**: Root package with monorepo scripts
+- **pnpm-workspace.yaml**: Workspace configuration
+- **turbo.json**: Turbo build configuration
+- **doppler.yaml**: Environment management
+- **docker-compose.yml**: Local development services
+- **.prettierrc.mjs**: Code formatting rules
+- **CLAUDE.md**: AI assistance guidelines
 
-## Frontend App Structure (e.g., frontend-manage)
+## Frontend Application Structure
 
 ```
-apps/frontend-manage/
+apps/frontend-*/
 ├── src/
-│ ├── components/ # React components by feature
-│ │ ├── activities/ # Activity management
-│ │ ├── analytics/ # Analytics components
-│ │ ├── courses/ # Course management
-│ │ ├── evaluation/ # Evaluation components
-│ │ ├── questions/ # Question management
-│ │ └── sharing/ # Permissions & activity logs
-│ ├── pages/ # Next.js pages (routes)
-│ ├── lib/ # Utilities and hooks
-│ │ ├── hooks/ # Custom React hooks
-│ │ └── utils/ # Helper functions
-│ └── types/ # TypeScript definitions
-├── public/ # Static assets
-└── package.json # Package dependencies
+│   ├── pages/       # Next.js pages (routes)
+│   ├── components/  # React components organized by feature
+│   ├── lib/         # Utilities and custom hooks
+│   └── types/       # TypeScript definitions
+├── public/          # Static assets
+└── package.json     # Dependencies
 ```
 
-## Package Structure (e.g., graphql)
+## Shared Package Structure
 
 ```
-packages/graphql/
-├── src/
-│   ├── schema/         # GraphQL type definitions
-│   ├── services/       # Business logic services
-│   │   ├── accounts.ts
-│   │   ├── activities.ts
-│   │   ├── courses.ts
-│   │   └── ...
-│   ├── graphql/
-│   │   └── ops/       # GraphQL operations
-│   └── lib/           # Utilities
-└── package.json
+packages/{package}/
+├── src/             # Source code
+├── __tests__/       # Unit tests (if applicable)
+└── package.json     # Package dependencies
 ```
 
 ## Database Schema Organization
 
 ```
 packages/prisma/src/prisma/schema/
-├── datasource.prisma # DB connection config
-├── js.prisma # Prisma client config
-├── user.prisma # User & auth models
-├── participant.prisma # Student models
-├── element.prisma # Question/content models
-├── quiz.prisma # Activity models
-├── course.prisma # Course models
-├── sharing.prisma # Permissions & access
-├── response.prisma # Response tracking
-├── resources.prisma # Resource models
-├── gamification.prisma # Leaderboards & achievements
-├── other.prisma # Other models
-└── analytics.prisma # Analytics models
+├── datasource.prisma    # Database connection
+├── user.prisma         # User & authentication
+├── participant.prisma  # Student accounts
+├── element.prisma      # Questions & content
+├── quiz.prisma         # Activities
+├── course.prisma       # Course management
+├── sharing.prisma      # Permissions & access
+└── *.prisma           # Other domain models
+```
+
+## GraphQL Structure
+
+```
+packages/graphql/src/
+├── schema/          # GraphQL type definitions
+├── services/        # Business logic implementation
+├── graphql/ops/     # GraphQL operations (200+ files)
+│   ├── Q*.graphql  # Queries
+│   ├── M*.graphql  # Mutations
+│   ├── S*.graphql  # Subscriptions
+│   └── F*.graphql  # Fragments
+└── lib/             # Utilities
+```
+
+## Deployment Structure
+
+```
+deploy/
+├── charts/          # Helm charts for Kubernetes
+├── env-prod-v3/     # Production environment config
+├── env-qa-v3/       # QA environment config
+└── doppler.yaml     # Secret management
 ```
 
 ## Testing Structure
 
-- Unit tests: Co-located in **tests** folders
-- E2E tests: cypress/cypress/e2e/
-- Test data: packages/prisma/src/data/
+- **Unit tests**: Co-located `__tests__/` folders
+- **E2E tests**: `cypress/` directory
+- **Test data**: Prisma seed files
+
+## Local Development
+
+```
+util/
+├── traefik/         # Local reverse proxy configuration
+├── _prepare_local_prod.sh # Environment setup script
+└── sync-schema.sh   # Schema synchronization
+```
 
 ## Build Outputs
 
-- Next.js apps: .next/ directories
-- Backend: dist/ directories
-- Turbo cache: .turbo/
+- **Next.js apps**: `.next/` directories
+- **Backend services**: `dist/` directories
+- **Turbo cache**: `.turbo/` (build cache)
+- **Docker images**: Built to GitHub Container Registry

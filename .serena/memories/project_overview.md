@@ -30,6 +30,24 @@ The project follows a monorepo structure using pnpm workspaces and Turbo for bui
 - **Shared Components** (`packages/shared-components`): Shared React components
 - **Markdown** (`packages/markdown`): Markdown rendering component
 
+## Local Development Environment
+
+The project uses a sophisticated local development setup that closely mirrors production:
+
+- **Custom Domains**: All services use \*.klicker.com local domains (not localhost)
+- **HTTPS by Default**: Local HTTPS certificates generated with mkcert
+- **Traefik Reverse Proxy**: Routes requests to appropriate services
+- **Docker Services**: PostgreSQL, Redis, and reverse proxy run in containers
+- **Host Applications**: Frontend and backend apps run directly on the host system
+
+### Local URLs
+
+- Student Interface: https://pwa.klicker.com
+- Lecturer Interface: https://manage.klicker.com
+- Mobile Controller: https://control.klicker.com
+- GraphQL API: https://api.klicker.com
+- Authentication: https://auth.klicker.com
+
 ## Database Structure
 
 PostgreSQL database managed with Prisma ORM, organized around:
@@ -40,3 +58,10 @@ PostgreSQL database managed with Prisma ORM, organized around:
 - Permissions and sharing
 - Analytics and feedback
 - Activity logging for tracking changes
+
+## Environment
+
+- **Platform**: Darwin (macOS)
+- **Node Version**: 20.18.1
+- **Package Manager**: pnpm 9.15.4
+- **Repository Branch**: v3 (main branch)
