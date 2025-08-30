@@ -99,11 +99,10 @@ enum PermissionLevel {
 ### Permission Operations
 
 - **Grant Access**: `MShareObject`
-- **Change Level**: `QChangePermissionLevel`
+- **Change Level**: `MChangePermissionLevel`
 - **Revoke Access**: `MRevokeObjectAccess`
 - **Transfer Ownership**: `MTransferObjectOwnership`
 - **Check Permissions**: `QGetObjectPermissions`
-
 ### Access Requests
 
 - **Request System**: `MRequestCatalogObject`
