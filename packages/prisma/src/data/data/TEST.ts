@@ -1,7 +1,10 @@
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
-import Prisma from '../../../dist/index.js'
-import { AchievementType } from '../../prisma/client/index.js'
-const { ElementType, PublicationStatus } = Prisma
+import {
+  AchievementType,
+  ElementType,
+  ObjectAccess,
+  PublicationStatus,
+} from '../../client.js'
 
 export const PUBLIC_CATALOG_COLLECTION_ID =
   '64b6eb55-e76d-42bf-b382-5cff2f5bee74'
@@ -71,32 +74,32 @@ export const CATALOG_ASSIGNMENTS = [
   {
     answerCollectionName: ANSWER_COLLECTIONS[0]!.name,
     catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
-    access: Prisma.ObjectAccess.PUBLIC,
+    access: ObjectAccess.PUBLIC,
   },
   {
     answerCollectionName: ANSWER_COLLECTIONS[2]!.name,
     catalogCollectionId: MISSING_CATALOG_COLLECTION_ID,
-    access: Prisma.ObjectAccess.RESTRICTED,
+    access: ObjectAccess.RESTRICTED,
   },
   {
     answerCollectionName: ANSWER_COLLECTIONS[0]!.name,
     catalogCollectionId: RESTRICTED_CATALOG_COLLECTION_ID,
-    access: Prisma.ObjectAccess.PUBLIC,
+    access: ObjectAccess.PUBLIC,
   },
   {
     answerCollectionName: ANSWER_COLLECTIONS[2]!.name,
     catalogCollectionId: RESTRICTED_CATALOG_COLLECTION_ID,
-    access: Prisma.ObjectAccess.RESTRICTED,
+    access: ObjectAccess.RESTRICTED,
   },
   {
     answerCollectionName: ANSWER_COLLECTIONS[0]!.name,
     catalogCollectionId: PUBLIC_CATALOG_COLLECTION_ID,
-    access: Prisma.ObjectAccess.PUBLIC,
+    access: ObjectAccess.PUBLIC,
   },
   {
     answerCollectionName: ANSWER_COLLECTIONS[2]!.name,
     catalogCollectionId: PUBLIC_CATALOG_COLLECTION_ID,
-    access: Prisma.ObjectAccess.RESTRICTED,
+    access: ObjectAccess.RESTRICTED,
   },
 ]
 
@@ -761,6 +764,7 @@ export const LIVE_QUIZZES = [
     displayName: 'Test mit Multiplier',
     description: 'Test description for test quiz with multiplier.',
     isGamificationEnabled: true,
+    isAssessmentEnabled: false,
     pointsMultiplier: 2,
     blocks: [
       {
@@ -781,6 +785,7 @@ export const LIVE_QUIZZES = [
     isLiveQAEnabled: true,
     isConfusionFeedbackEnabled: true,
     isGamificationEnabled: true,
+    isAssessmentEnabled: false,
     status: PublicationStatus.DRAFT,
     defaultPoints: 50,
     defaultCorrectPoints: 100,
@@ -805,6 +810,7 @@ export const LIVE_QUIZZES = [
     isLiveQAEnabled: true,
     isConfusionFeedbackEnabled: true,
     isGamificationEnabled: true,
+    isAssessmentEnabled: false,
     status: PublicationStatus.TEMPLATE,
     defaultPoints: 50,
     defaultCorrectPoints: 100,
@@ -851,6 +857,7 @@ export const LIVE_QUIZZES = [
     isLiveQAEnabled: true,
     isConfusionFeedbackEnabled: true,
     isGamificationEnabled: true,
+    isAssessmentEnabled: false,
     status: PublicationStatus.SCHEDULED,
     blocks: [
       {
@@ -871,6 +878,7 @@ export const LIVE_QUIZZES = [
     isLiveQAEnabled: true,
     isConfusionFeedbackEnabled: true,
     isGamificationEnabled: true,
+    isAssessmentEnabled: false,
     status: PublicationStatus.DRAFT,
     blocks: [
       {

@@ -2,24 +2,32 @@
 import type { JestConfigWithTsJest } from 'ts-jest'
 
 const jestConfig: JestConfigWithTsJest = {
+  preset: 'ts-jest/presets/default-esm',
   extensionsToTreatAsEsm: ['.ts'],
   silent: false,
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
-    '^@klicker-uzh/types$': '<rootDir>/../types/src',
-    '^@klicker-uzh/grading$': '<rootDir>/../grading/src',
-    '^@klicker-uzh/util$': '<rootDir>/../util/src',
+    '^@klicker-uzh/prisma$': '<rootDir>/../prisma/src/index.ts',
+    '^@klicker-uzh/prisma/client$': '<rootDir>/../prisma/dist/client.js',
+    '^@klicker-uzh/types$': '<rootDir>/../types/src/index.ts',
+    '^@klicker-uzh/grading$': '<rootDir>/../grading/src/index.ts',
+    '^@klicker-uzh/util$': '<rootDir>/../util/src/index.ts',
   },
   transform: {
-    // '^.+\\.[tj]sx?$' to process ts,js,tsx,jsx with `ts-jest`
-    // '^.+\\.m?[tj]sx?$' to process ts,js,tsx,jsx,mts,mjs,mtsx,mjsx with `ts-jest`
     '^.+\\.tsx?$': [
       'ts-jest',
       {
         useESM: true,
+        isolatedModules: true,
+        tsconfig: {
+          module: 'ESNext',
+          target: 'ESNext',
+        },
       },
     ],
   },
+  // Allow transformation of @klicker-uzh and prisma packages
+  transformIgnorePatterns: ['node_modules/(?!(@klicker-uzh|@prisma|.prisma)/)'],
 }
 
 export default jestConfig

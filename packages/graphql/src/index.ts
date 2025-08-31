@@ -1,17 +1,16 @@
 export { default as enhanceContext } from './lib/context.js'
-export * from './services/tasks.js'
 
 import builder from './builder.js'
 
 import './schema/achievement.js'
 import './schema/activities.js'
 import './schema/course.js'
+import './schema/element.js'
 import './schema/elementData.js'
 import './schema/evaluation.js'
 import './schema/groupActivity.js'
 import './schema/microLearning.js'
 import './schema/participant.js'
-import './schema/question.js'
 import './schema/resource.js'
 import './schema/sharing.js'
 import './schema/template.js'
@@ -34,6 +33,17 @@ import './schema/subscription.js'
 //     },
 //   })
 // }
+
+export {
+  finalRandomGroupAssignments,
+  runningRandomGroupAssignments,
+  updateGroupAverageScores,
+} from './services/groups.js'
+export {
+  sendPushNotifications,
+  sendTeamsNotifications,
+} from './services/notifications.js'
+export { updateWeeklyTimelineEntries } from './services/participants.js'
 
 export const schema = builder.toSchema({
   schemaDirectives: {

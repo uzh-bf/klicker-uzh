@@ -1,76 +1,43 @@
 import { useQuery } from '@apollo/client'
-import { faClipboard } from '@fortawesome/free-regular-svg-icons'
-import { GetLiveQuizHmacDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal, Switch, toast } from '@uzh-bf/design-system'
+import { GetLiveQuizEmbeddingInfoDocument } from '@klicker-uzh/graphql/dist/ops'
+import { routing } from '@klicker-uzh/i18n'
+import { Modal, Select, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useState } from 'react'
-
-function HMACLink({
-  quizId,
-  hmac,
-  params,
-  identifier,
-}: {
-  quizId: string
-  hmac: string
-  params: string
-  identifier: string
-}) {
-  const t = useTranslations()
-  const link = `${
-    process.env.NEXT_PUBLIC_MANAGE_URL
-  }/quizzes/${quizId}/evaluation?hmac=${hmac}${params ? `&${params}` : ''}`
-
-  return (
-    <div className="bg-accent flex max-w-full flex-row items-center justify-between gap-3 rounded px-2 py-1">
-      <Link href={link} legacyBehavior passHref>
-        <a
-          data-cy={`open-embedding-link-${identifier}`}
-          className="max-w-[calc(100%-3.5rem)] break-words text-sm"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {link}
-        </a>
-      </Link>
-      <Button
-        onClick={() => {
-          navigator?.clipboard?.writeText(link)
-          toast({
-            type: 'success',
-            message: t('manage.liveQuizzes.embeddingLinkCopied'),
-          })
-        }}
-        data={{ cy: `copy-embed-link-live-quiz-${quizId}` }}
-      >
-        <Button.Icon withoutLabel icon={faClipboard} />
-      </Button>
-    </div>
-  )
-}
+import HMACLink from './HMACLink'
 
 function EmbeddingModal({
   onClose,
   quizId,
-  elements,
+  isGamificationEnabled,
 }: {
   onClose: () => void
   quizId: string
-  elements?: { id: number; name: string }[]
+  isGamificationEnabled: boolean
 }) {
   const t = useTranslations()
   const [showSolution, setShowSolution] = useState(false)
   const [showExplanation, setShowExplanation] = useState(false)
-  const { data, loading } = useQuery(GetLiveQuizHmacDocument, {
+  const router = useRouter()
+  const { data, loading } = useQuery(GetLiveQuizEmbeddingInfoDocument, {
     variables: { id: quizId },
-    skip: !open,
+    fetchPolicy: 'cache-and-network',
   })
+
+  // language state for links
+  type LocaleType = (typeof routing.locales)[number]
+  const [language, setLanguage] = useState(
+    router.locale &&
+      (routing.locales as readonly string[]).includes(router.locale)
+      ? (router.locale as LocaleType)
+      : 'en'
+  )
 
   return (
     <Modal
       open
-      loading={loading || !data?.liveQuizHMAC}
+      loading={loading}
       title={t('manage.liveQuizzes.evaluationLinksEmbedding')}
       onClose={onClose}
       primaryLabel={t('shared.generic.close')}
@@ -85,8 +52,9 @@ function EmbeddingModal({
           label={t('manage.evaluation.showSolution')}
           checked={showSolution}
           onCheckedChange={(val) => setShowSolution(val)}
+          data={{ cy: 'embedding-show-solution-switch' }}
         />
-        <div className="pl-15 mb-3 text-sm">
+        <div className="pl-13 mb-3 text-sm">
           {t('manage.evaluation.showSolutionInfo')}
         </div>
         <Switch
@@ -94,9 +62,21 @@ function EmbeddingModal({
           label={t('manage.evaluation.showExplanation')}
           checked={showExplanation}
           onCheckedChange={(val) => setShowExplanation(val)}
+          data={{ cy: 'embedding-show-explanation-switch' }}
         />
-        <div className="pl-15 text-sm">
+        <div className="pl-13 mb-3 text-sm">
           {t('manage.evaluation.showExplanationInfo')}
+        </div>
+        <div className="pl-13">
+          <div className="font-bold">{t('shared.generic.language')}</div>
+          <Select
+            value={language}
+            onChange={(newValue) => setLanguage(newValue as LocaleType)}
+            items={[
+              { label: t('shared.generic.english'), value: 'en' },
+              { label: t('shared.generic.german'), value: 'de' },
+            ]}
+          />
         </div>
       </div>
 
@@ -105,37 +85,42 @@ function EmbeddingModal({
           <div className="w-30 font-bold">{t('shared.generic.evaluation')}</div>
           <HMACLink
             quizId={quizId}
-            hmac={data?.liveQuizHMAC ?? ''}
+            hmac={data?.getLiveQuizEmbeddingInfo?.hmac ?? ''}
             params=""
             identifier="generic-evaluation"
+            language={language}
           />
         </div>
-        {elements?.map((element, ix) => {
+        {data?.getLiveQuizEmbeddingInfo?.instances?.map((instance, ix) => {
           return (
-            <div key={element.id}>
+            <div key={instance.id}>
               <div className="line-clamp-1 font-bold">
-                {ix + 1} {element.name}
+                {ix + 1} {instance.name}
               </div>
               <HMACLink
                 quizId={quizId}
-                hmac={data?.liveQuizHMAC ?? ''}
+                hmac={data?.getLiveQuizEmbeddingInfo?.hmac ?? ''}
                 params={`questionIx=${ix}&hideControls=true&showSolution=${showSolution}&showExplanation=${showExplanation}`}
                 identifier={`question-${ix}`}
+                language={language}
               />
             </div>
           )
         })}
-        <div>
-          <div className="w-30 font-bold">
-            {t('shared.generic.leaderboard')}:
+        {isGamificationEnabled && (
+          <div>
+            <div className="w-30 font-bold">
+              {t('shared.generic.leaderboard')}:
+            </div>
+            <HMACLink
+              quizId={quizId}
+              hmac={data?.getLiveQuizEmbeddingInfo?.hmac ?? ''}
+              params="leaderboard=true&hideControls=true"
+              identifier="leaderboard"
+              language={language}
+            />
           </div>
-          <HMACLink
-            quizId={quizId}
-            hmac={data?.liveQuizHMAC ?? ''}
-            params={`leaderboard=true&hideControls=true`}
-            identifier="leaderboard"
-          />
-        </div>
+        )}
       </div>
     </Modal>
   )

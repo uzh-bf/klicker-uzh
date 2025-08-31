@@ -7,6 +7,7 @@ import {
   ElementType,
   GetUserRunningLiveQuizzesDocument,
   LiveQuiz,
+  PublicationStatus,
   StartLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -23,7 +24,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
-import { ElementSelectCourse } from '../../ElementCreation'
+import { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
 import WizardLayout, { LiveQuizFormValues } from '../WizardLayout'
 import LiveQuizDescriptionStep from './LiveQuizDescriptionStep'
@@ -54,6 +55,7 @@ export interface LiveQuizWizardStepProps {
   validationSchema: any
   gamifiedCourses?: ElementSelectCourse[]
   nonGamifiedCourses?: ElementSelectCourse[]
+  assessmentCourses?: ElementSelectCourse[]
   onSubmit?: (newValues: LiveQuizFormValues) => void
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
   onNextStep?: (newValues: LiveQuizFormValues) => void
@@ -77,6 +79,7 @@ interface LiveQuizWizardProps {
     | 'timeToZeroBonus'
     | 'isConfusionFeedbackEnabled'
     | 'isGamificationEnabled'
+    | 'isAssessmentEnabled'
     | 'isLiveQAEnabled'
     | 'isModerationEnabled'
     | 'blocks'
@@ -108,9 +111,10 @@ function LiveQuizWizard({
   )
   const formRef = useRef<FormikProps<LiveQuizFormValues>>(null)
 
-  const { gamifiedCourses, nonGamifiedCourses } = useCoursesGamificationSplit({
-    courseSelection: courses,
-  })
+  const { gamifiedCourses, nonGamifiedCourses, assessmentCourses } =
+    useCoursesGamificationSplit({
+      courseSelection: courses,
+    })
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.activityWizard.activityName')),
@@ -184,6 +188,7 @@ function LiveQuizWizard({
     maxBonusPoints: LQ_MAX_BONUS_POINTS,
     timeToZeroBonus: LQ_TIME_TO_ZERO_BONUS,
     isGamificationEnabled: false,
+    isAssessmentEnabled: false,
     isConfusionFeedbackEnabled: true,
     isLiveQAEnabled: false,
     isModerationEnabled: true,
@@ -255,6 +260,9 @@ function LiveQuizWizard({
     isGamificationEnabled:
       initialValues?.isGamificationEnabled ??
       formDefaultValues.isGamificationEnabled,
+    isAssessmentEnabled:
+      initialValues?.isAssessmentEnabled ??
+      formDefaultValues.isAssessmentEnabled,
     isConfusionFeedbackEnabled:
       initialValues?.isConfusionFeedbackEnabled ??
       formDefaultValues.isConfusionFeedbackEnabled,
@@ -267,32 +275,13 @@ function LiveQuizWizard({
 
   const [editLiveQuiz] = useMutation(EditLiveQuizDocument)
   const [createLiveQuiz, { data }] = useMutation(CreateLiveQuizDocument)
-  const [startLiveQuiz] = useMutation(StartLiveQuizDocument, {
-    update(cache, res) {
-      const data = cache.readQuery({
-        query: GetUserRunningLiveQuizzesDocument,
-      })
-      cache.writeQuery({
-        query: GetUserRunningLiveQuizzesDocument,
-        data: {
-          userRunningLiveQuizzes: res.data?.startLiveQuiz
-            ? [
-                ...(data?.userRunningLiveQuizzes ?? []),
-                {
-                  id: res.data?.startLiveQuiz?.id,
-                  name: res.data.startLiveQuiz.name ?? '',
-                },
-              ]
-            : (data?.userRunningLiveQuizzes ?? []),
-        },
-      })
-    },
-  })
+  const [startLiveQuiz] = useMutation(StartLiveQuizDocument)
 
   const handleSubmit = useCallback(
     async (values: LiveQuizFormValues) => {
       submitLiveQuizForm({
         id: initialValues?.id,
+        previousCourseId: initialValues?.course?.id,
         editMode,
         values,
         createLiveQuiz,
@@ -344,7 +333,11 @@ function LiveQuizWizard({
           )}
           name={formData.name}
           editMode={editMode}
-          viewElementHref="/activities"
+          viewElementHref={
+            formData.courseId && formData.courseId !== 'no-course-selected'
+              ? `/courses/${formData.courseId}?tab=liveQuizzes`
+              : '/activities'
+          }
           onRestartForm={() => {
             setIsWizardCompleted(false)
             closeWizard()
@@ -358,8 +351,37 @@ function LiveQuizWizard({
               data={{ cy: 'quick-start' }}
               onClick={async () => {
                 await startLiveQuiz({
-                  variables: {
-                    id: data.createLiveQuiz!.id,
+                  variables: { id: data.createLiveQuiz!.id },
+                  update(cache, { data: res }) {
+                    // return early if the mutation failed
+                    if (!res?.startLiveQuiz) return
+
+                    cache.updateQuery(
+                      { query: GetUserRunningLiveQuizzesDocument },
+                      (data) => {
+                        // if no data is present, return early
+                        if (!data?.userRunningLiveQuizzes) return data
+
+                        // add the new live quiz to the existing list
+                        return {
+                          userRunningLiveQuizzes: [
+                            ...data.userRunningLiveQuizzes,
+                            {
+                              id: res.startLiveQuiz!.id,
+                              name: res.startLiveQuiz!.name,
+                            },
+                          ],
+                        }
+                      }
+                    )
+                  },
+                  optimisticResponse: {
+                    startLiveQuiz: {
+                      __typename: 'LiveQuizMeta',
+                      id: data.createLiveQuiz!.id,
+                      name: data.createLiveQuiz!.name,
+                      status: PublicationStatus.Published,
+                    },
                   },
                 })
                 router.push(`/quizzes/${data.createLiveQuiz!.id}/cockpit`)
@@ -421,6 +443,7 @@ function LiveQuizWizard({
           validationSchema={settingsValidationSchema}
           gamifiedCourses={gamifiedCourses}
           nonGamifiedCourses={nonGamifiedCourses}
+          assessmentCourses={assessmentCourses}
           setStepValidity={setStepValidity}
           onNextStep={(newValues: Partial<LiveQuizFormValues>) => {
             setFormData((prev) => ({ ...prev, ...newValues }))

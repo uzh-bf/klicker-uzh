@@ -22,6 +22,9 @@ model Account {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String @db.Uuid
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
   @@unique([provider, providerAccountId])
 }
 
@@ -33,6 +36,9 @@ model Session {
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 }
 
 model VerificationToken {
@@ -84,8 +90,6 @@ model User {
   lastLoginAt         DateTime?
   deletionToken       String?
   deletionRequestedAt DateTime?
-  loginToken          String?
-  loginTokenExpiresAt DateTime?
 
   locale Locale @default(en)
 

@@ -71,29 +71,50 @@ function AnswerCollectionOption({
           await deleteAnswerCollectionEntry({
             variables: { id: entry.id, collectionId },
             update: (cache, { data }) => {
+              // check if deletion was successful
               if (!data?.deleteAnswerCollectionEntry) return
 
-              const collectionData = cache.readQuery({
-                query: GetSingleAnswerCollectionDocument,
-                variables: { id: collectionId },
-              })
-              const collection = collectionData?.getSingleAnswerCollection
-              if (!collection) return
-
-              cache.writeQuery({
-                query: GetSingleAnswerCollectionDocument,
-                variables: { id: collectionId },
-                data: {
-                  getSingleAnswerCollection: {
-                    ...collection,
-                    entries: collection.entries?.filter(
-                      (e) => e.id !== entry.id
-                    ),
-                  },
+              // update the cache for the answer collection that was edited
+              cache.updateQuery(
+                {
+                  query: GetSingleAnswerCollectionDocument,
+                  variables: { id: collectionId },
                 },
-              })
+                (qData) => {
+                  if (!qData?.getSingleAnswerCollection) return qData
+                  return {
+                    getSingleAnswerCollection: {
+                      ...qData.getSingleAnswerCollection,
+                      entries: qData.getSingleAnswerCollection.entries?.filter(
+                        (e) => e.id !== data.deleteAnswerCollectionEntry
+                      ),
+                    },
+                  }
+                }
+              )
+
+              // decrease the count of entries on the overview
+              cache.updateQuery(
+                { query: GetAnswerCollectionsInfoDocument },
+                (qData) => {
+                  if (!qData?.getAnswerCollectionsInfo) return qData
+                  return {
+                    getAnswerCollectionsInfo:
+                      qData.getAnswerCollectionsInfo.map((collection) =>
+                        collection.id === collectionId
+                          ? {
+                              ...collection,
+                              numOfEntries: Math.max(
+                                (collection.numOfEntries ?? 0) - 1,
+                                0
+                              ),
+                            }
+                          : collection
+                      ),
+                  }
+                }
+              )
             },
-            refetchQueries: [{ query: GetAnswerCollectionsInfoDocument }],
           })
 
           // if the answer collection is edited inline (in a question context), refetch the selection
@@ -150,31 +171,37 @@ function AnswerCollectionOption({
                     collectionId,
                   },
                   update: (cache, { data }) => {
+                    // check if the update of the answer collection entry was successful
                     if (!data?.editAnswerCollectionEntry) return
 
-                    const collectionData = cache.readQuery({
-                      query: GetSingleAnswerCollectionDocument,
-                      variables: { id: collectionId },
-                    })
-                    const collection = collectionData?.getSingleAnswerCollection
-                    if (!collection) return
-
-                    cache.writeQuery({
-                      query: GetSingleAnswerCollectionDocument,
-                      variables: { id: collectionId },
-                      data: {
-                        getSingleAnswerCollection: {
-                          ...collection,
-                          entries: collection.entries?.map((e) => {
-                            if (e.id === entry.id) {
-                              return { ...e, value: values.value }
-                            }
-
-                            return e
-                          }),
-                        },
+                    // update the entry in the cached answer collection
+                    cache.updateQuery(
+                      {
+                        query: GetSingleAnswerCollectionDocument,
+                        variables: { id: collectionId },
                       },
-                    })
+                      (qData) => {
+                        if (!qData?.getSingleAnswerCollection) return qData
+
+                        return {
+                          getSingleAnswerCollection: {
+                            ...qData.getSingleAnswerCollection,
+                            entries:
+                              qData.getSingleAnswerCollection.entries?.map(
+                                (entry) =>
+                                  entry.id ===
+                                  data.editAnswerCollectionEntry!.id
+                                    ? {
+                                        ...entry,
+                                        value:
+                                          data.editAnswerCollectionEntry!.value,
+                                      }
+                                    : entry
+                              ),
+                          },
+                        }
+                      }
+                    )
                   },
                 })
               }

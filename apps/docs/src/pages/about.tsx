@@ -29,7 +29,7 @@ const PEOPLE: {
   },
   {
     name: 'Patrick Aldover',
-    role: 'Project Developer',
+    role: 'Project Maintainer',
     info: 'https://www.df.uzh.ch/en/people/staff/teaching-center/patrick-aldover.html',
     github: 'https://github.com/jabbadizzleCode',
   },
@@ -61,6 +61,13 @@ const PEOPLE: {
       'https://www.df.uzh.ch/contacts/df/student-assistants/jalsbach/photo/20220504_Alsbach-Jannis-006.jpg.jpg',
     info: 'https://www.df.uzh.ch/en/people/student-assistants/jannis-alsbach.html',
     github: 'https://github.com/TheHummel',
+  },
+  {
+    name: 'Ioannis Dougas',
+    role: 'Contributor (Content)',
+    imageUrl:
+      'https://www.df.uzh.ch/contacts/df/student-assistants/idougas/photo/20221012_Dougas_Ioannis.jpg.jpg',
+    info: 'https://www.df.uzh.ch/en/people/student-assistants/ioannis-dougas.html',
   },
   {
     name: 'Selina De Pizzol',

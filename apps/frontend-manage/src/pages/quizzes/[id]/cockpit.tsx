@@ -4,21 +4,17 @@ import {
   DeactivateLiveQuizBlockDocument,
   EndLiveQuizDocument,
   GetCockpitQuizDocument,
-  GetUserActivitiesDocument,
-  GetUserLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
 import AudienceInteraction from '../../../components/interaction/AudienceInteraction'
 import Layout from '../../../components/Layout'
 import LiveQuizTimeline from '../../../components/liveQuiz/cockpit/LiveQuizTimeline'
 
 function Cockpit() {
   const router = useRouter()
-  const [isEvaluationPublic, setEvaluationPublic] = useState(false)
 
   const [activateLiveQuizBlock, { loading: activatingBlock }] = useMutation(
     ActivateLiveQuizBlockDocument
@@ -26,27 +22,27 @@ function Cockpit() {
   const [deactivateLiveQuizBlock, { loading: deactivatingBlock }] = useMutation(
     DeactivateLiveQuizBlockDocument
   )
+
   const [endLiveQuiz, { loading: endingLiveQuiz }] = useMutation(
     EndLiveQuizDocument,
     {
-      update(cache, res) {
-        const data = cache.readQuery({
-          query: GetUserRunningLiveQuizzesDocument,
-        })
-        cache.writeQuery({
-          query: GetUserRunningLiveQuizzesDocument,
-          data: {
-            userRunningLiveQuizzes:
-              data?.userRunningLiveQuizzes?.filter(
-                (q) => q.id !== res.data?.endLiveQuiz?.id
-              ) ?? [],
-          },
-        })
+      update(cache, { data }) {
+        // verify that the live quiz has ended successfully
+        if (!data?.endLiveQuiz) return
+
+        // update the list of running live quizzes
+        cache.updateQuery(
+          { query: GetUserRunningLiveQuizzesDocument },
+          (qData) => {
+            if (!qData?.userRunningLiveQuizzes) return qData
+            return {
+              userRunningLiveQuizzes: qData.userRunningLiveQuizzes.filter(
+                (q) => q.id !== data.endLiveQuiz!.id
+              ),
+            }
+          }
+        )
       },
-      refetchQueries: [
-        { query: GetUserLiveQuizzesDocument },
-        { query: GetUserActivitiesDocument },
-      ],
     }
   )
 
@@ -72,17 +68,13 @@ function Cockpit() {
 
   const {
     id,
+    name,
     isLiveQAEnabled,
+    isGamificationEnabled,
     isConfusionFeedbackEnabled,
     isModerationEnabled,
-    isGamificationEnabled,
-    namespace,
-    name,
-    displayName,
-    status,
     startedAt,
     course,
-    activeBlock,
     blocks,
     confusionSummary,
     feedbacks,
@@ -92,8 +84,11 @@ function Cockpit() {
     <Layout>
       <div className="mb-8 print:hidden">
         <LiveQuizTimeline
-          blocks={blocks ?? []}
+          quizId={id}
+          isGamificationEnabled={isGamificationEnabled}
           quizName={name}
+          blocks={blocks ?? []}
+          language={course?.language ?? null}
           handleEndLiveQuiz={() => {
             endLiveQuiz({ variables: { id: id } })
             router.push('/activities')
@@ -101,18 +96,21 @@ function Cockpit() {
           handleOpenBlock={(blockId: number) => {
             activateLiveQuizBlock({
               variables: { quizId: id, blockId },
+              // high stakes mutation where cache updates are hard due to cached and db data
+              refetchQueries: [
+                { query: GetCockpitQuizDocument, variables: { id } },
+              ],
             })
           }}
           handleCloseBlock={(blockId: number) => {
             deactivateLiveQuizBlock({
               variables: { quizId: id, blockId },
+              // high stakes mutation where cache updates are hard due to cached and db data
+              refetchQueries: [
+                { query: GetCockpitQuizDocument, variables: { id } },
+              ],
             })
           }}
-          handleTogglePublicEvaluation={() =>
-            setEvaluationPublic(!isEvaluationPublic)
-          }
-          isEvaluationPublic={isEvaluationPublic}
-          quizId={id}
           startedAt={startedAt}
           loading={activatingBlock || deactivatingBlock || endingLiveQuiz}
         />
@@ -125,7 +123,6 @@ function Cockpit() {
         isLiveQAEnabled={isLiveQAEnabled}
         isConfusionFeedbackEnabled={isConfusionFeedbackEnabled}
         isModerationEnabled={isModerationEnabled}
-        isGamificationEnabled={isGamificationEnabled}
         quizId={id}
         liveQuizName={name}
       />

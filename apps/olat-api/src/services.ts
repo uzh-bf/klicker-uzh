@@ -1,16 +1,15 @@
+import { prisma } from '@klicker-uzh/prisma'
 import {
   LiveQuiz,
   MicroLearning,
   PracticeQuiz,
-  PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
+import dayjs from 'dayjs'
 import fs from 'fs/promises'
 import path from 'path'
 import { pick } from 'remeda'
 import { fileURLToPath } from 'url'
 import { ActivityOlatConfigurationKey, ActivityType } from './types.js'
-
-const prisma = new PrismaClient()
 
 export async function getCourses(provider: string, providerAccountId: string) {
   const account = await prisma.account.findUnique({
@@ -23,21 +22,20 @@ export async function getCourses(provider: string, providerAccountId: string) {
     select: {
       user: {
         select: {
-          courses: {
-            select: {
-              id: true,
-              name: true,
-            },
+          // find all shared non-archived courses (permission level irrelevant - read permissions are sufficient)
+          objects: {
+            where: { courseId: { not: null }, course: { isArchived: false } },
+            select: { course: { select: { id: true, name: true } } },
           },
         },
       },
     },
   })
 
-  const courses = account?.user?.courses ?? []
-  if (courses.length === 0) {
-    return []
-  }
+  const courses =
+    account?.user?.objects
+      .map((object) => object.course)
+      .filter((course) => !!course) ?? []
 
   return courses.map((course) => ({
     id: course.id,
@@ -86,79 +84,66 @@ export async function getCourseActivityTypes(
         providerAccountId: providerAccountId,
       },
     },
-    select: {
-      userId: true,
-    },
+    select: { userId: true },
   })
   if (!account) return null
 
   const course = await prisma.course.findUnique({
-    where: { id: courseID, ownerId: account.userId },
+    where: {
+      id: courseID,
+      permissions: { some: { userId: account.userId } }, // user has at least read permissions on course
+    },
     select: {
       isGamificationEnabled: true,
-      liveQuizzes: true,
-      practiceQuizzes: true,
-      microLearnings: true,
+      liveQuizzes: { where: { isDeleted: false } },
+      practiceQuizzes: { where: { isDeleted: false } },
+      microLearnings: { where: { isDeleted: false } },
     },
   })
   if (!course) return null
-
-  const isGamificationEnabled = course.isGamificationEnabled
-  const liveQuizzes = course.liveQuizzes ?? []
-  const practiceQuizzes = course.practiceQuizzes ?? []
-  const microLearnings = course.microLearnings ?? []
-
-  const mapOverview: Record<
-    string,
-    LiveQuiz[] | PracticeQuiz[] | MicroLearning[]
-  > = {
-    'live-quizzes': liveQuizzes,
-    'practice-quizzes': practiceQuizzes,
-    'micro-learnings': microLearnings,
-  }
 
   const mapSubselection: Record<
     string,
     LiveQuiz[] | PracticeQuiz[] | MicroLearning[]
   > = {
-    'live-quiz': liveQuizzes,
-    'practice-quiz': practiceQuizzes,
-    'micro-learning': microLearnings,
+    'live-quiz': course.liveQuizzes ?? [],
+    'practice-quiz': course.practiceQuizzes ?? [],
+    'micro-learning': course.microLearnings ?? [],
   }
   const activityKeysGamification = ['course-leaderboard']
 
   const availableActivityTypes = activityTypes.flatMap(
-    ({ id, title, olatConfigurationKey, isSubselectionRequired }) => {
-      // Overview activities: show count in title
-      if (olatConfigurationKey in mapOverview) {
-        const count = mapOverview[olatConfigurationKey]!.length || 0
+    ({
+      id,
+      title_de: titleDE,
+      title_en: titleEN,
+      title_fr: titleFR,
+      title_it: titleIT,
+      olatConfigurationKey,
+      isSubselectionRequired,
+    }) => {
+      // Subselection activities: only include if they have items
+      if (olatConfigurationKey in mapSubselection) {
         return {
           id,
-          title: `${title} (${count})`,
+          title_de: titleDE,
+          title_en: titleEN,
+          title_fr: titleFR,
+          title_it: titleIT,
           olatConfigurationKey,
           isSubselectionRequired,
         }
       }
 
-      // Subselection activities: only include if they have items
-      if (olatConfigurationKey in mapSubselection) {
-        const count = mapSubselection[olatConfigurationKey]!.length || 0
-        return count > 0
-          ? {
-              id,
-              title,
-              olatConfigurationKey,
-              isSubselectionRequired,
-            }
-          : []
-      }
-
       // Gamification activities: only include if gamification is enabled
       if (activityKeysGamification.includes(olatConfigurationKey)) {
-        return isGamificationEnabled
+        return course.isGamificationEnabled
           ? {
               id,
-              title,
+              title_de: titleDE,
+              title_en: titleEN,
+              title_fr: titleFR,
+              title_it: titleIT,
               olatConfigurationKey,
               isSubselectionRequired,
             }
@@ -168,7 +153,10 @@ export async function getCourseActivityTypes(
       // All other activities: always include
       return {
         id,
-        title,
+        title_de: titleDE,
+        title_en: titleEN,
+        title_fr: titleFR,
+        title_it: titleIT,
         olatConfigurationKey,
         isSubselectionRequired,
       }
@@ -191,43 +179,89 @@ export async function getActivities(
         providerAccountId: providerAccountId,
       },
     },
-    select: {
-      userId: true,
-    },
+    select: { userId: true },
   })
   if (!account) return null
 
   const course = await prisma.course.findUnique({
-    where: { id: courseID, ownerId: account.userId },
+    where: {
+      id: courseID,
+      permissions: { some: { userId: account.userId } }, // user has at least read permissions on course
+    },
     select: {
       liveQuizzes:
         activityTypeKey === 'live-quiz'
           ? {
+              where: { isDeleted: false },
               select: { id: true, name: true },
+              orderBy: { name: 'asc' }, // order alphabetically by name
             }
           : false,
       practiceQuizzes:
         activityTypeKey === 'practice-quiz'
           ? {
-              select: { id: true, name: true },
+              where: { isDeleted: false },
+              select: { id: true, name: true, availableFrom: true },
+              orderBy: [{ availableFrom: 'asc' }, { name: 'asc' }], // order by availability date and then alphabetically by name
             }
           : false,
       microLearnings:
         activityTypeKey === 'micro-learning'
           ? {
-              select: { id: true, name: true },
+              where: { isDeleted: false },
+              select: {
+                id: true,
+                name: true,
+                scheduledStartAt: true,
+                scheduledEndAt: true,
+              },
+              orderBy: [{ scheduledStartAt: 'asc' }, { name: 'asc' }], // order by scheduled start date and then alphabetically by name
             }
           : false,
     },
   })
   if (!course) return null
 
-  const activities =
-    course.liveQuizzes ?? course.practiceQuizzes ?? course.microLearnings ?? []
-
-  const activityDetails = activities.map((activity) => ({
-    id: activity.id,
-    title: activity.name,
+  const liveQuizzes = (course.liveQuizzes ?? []).map((lq) => ({
+    id: lq.id,
+    title_de: lq.name,
+    title_en: lq.name,
+    title_fr: lq.name,
+    title_it: lq.name,
   }))
-  return activityDetails
+  const practiceQuizzes = (course.practiceQuizzes ?? []).map((pq) => ({
+    id: pq.id,
+    title_de: pq.availableFrom
+      ? `${pq.name} (verfügbar ab ${dayjs(pq.availableFrom).format('DD.MM.YYYY')})`
+      : pq.name,
+    title_en: pq.availableFrom
+      ? `${pq.name} (available from ${dayjs(pq.availableFrom).format('DD.MM.YYYY')})`
+      : pq.name,
+    title_fr: pq.availableFrom
+      ? `${pq.name} (disponible à partir du ${dayjs(pq.availableFrom).format('DD.MM.YYYY')})`
+      : pq.name,
+    title_it: pq.availableFrom
+      ? `${pq.name} (disponibile da ${dayjs(pq.availableFrom).format('DD.MM.YYYY')})`
+      : pq.name,
+  }))
+  const microLearnings = (course.microLearnings ?? []).map((ml) => ({
+    id: ml.id,
+    title_de: `${ml.name} (Start: ${dayjs(ml.scheduledStartAt).format('DD.MM.YYYY')} - Ende: ${dayjs(ml.scheduledEndAt).format('DD.MM.YYYY')})`,
+    title_en: `${ml.name} (Start: ${dayjs(ml.scheduledStartAt).format('DD.MM.YYYY')} - End: ${dayjs(ml.scheduledEndAt).format('DD.MM.YYYY')})`,
+    title_fr: `${ml.name} (Début: ${dayjs(ml.scheduledStartAt).format('DD.MM.YYYY')} - Fin: ${dayjs(ml.scheduledEndAt).format('DD.MM.YYYY')})`,
+    title_it: `${ml.name} (Inizio: ${dayjs(ml.scheduledStartAt).format('DD.MM.YYYY')} - Fine: ${dayjs(ml.scheduledEndAt).format('DD.MM.YYYY')})`,
+  }))
+
+  return [
+    {
+      id: 'overview',
+      title_de: 'Übersicht',
+      title_en: 'Overview',
+      title_fr: "Vue d'ensemble",
+      title_it: 'Panoramica',
+    },
+    ...liveQuizzes,
+    ...practiceQuizzes,
+    ...microLearnings,
+  ]
 }

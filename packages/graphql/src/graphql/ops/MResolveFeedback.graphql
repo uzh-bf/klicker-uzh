@@ -5,10 +5,6 @@ mutation ResolveFeedback(
 ) {
   resolveFeedback(id: $id, isResolved: $isResolved, liveQuizId: $liveQuizId) {
     id
-    isPublished
-    isPinned
     isResolved
-    content
-    votes
   }
 }

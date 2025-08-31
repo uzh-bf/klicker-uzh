@@ -2,8 +2,6 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   CancelLiveQuizDocument,
   GetLiveQuizSummaryDocument,
-  GetUserActivitiesDocument,
-  GetUserLiveQuizzesDocument,
   GetUserRunningLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
@@ -46,31 +44,32 @@ function CancelLiveQuizModal({
   // fetch course information
   const { data, loading: queryLoading } = useQuery(GetLiveQuizSummaryDocument, {
     variables: { quizId },
-    skip: !open,
+    fetchPolicy: 'network-only',
   })
 
   const [cancelLiveQuiz, { loading: quizDeleting }] = useMutation(
     CancelLiveQuizDocument,
     {
       variables: { id: quizId },
-      update(cache, res) {
-        const data = cache.readQuery({
-          query: GetUserRunningLiveQuizzesDocument,
-        })
-        cache.writeQuery({
-          query: GetUserRunningLiveQuizzesDocument,
-          data: {
-            userRunningLiveQuizzes:
-              data?.userRunningLiveQuizzes?.filter(
-                (q) => q.id !== res.data?.cancelLiveQuiz?.id
-              ) ?? [],
-          },
-        })
+      update(cache, { data: res }) {
+        // return early if the mutation failed
+        if (!res?.cancelLiveQuiz) return
+
+        cache.updateQuery(
+          { query: GetUserRunningLiveQuizzesDocument },
+          (data) => {
+            // if no data is present, return early
+            if (!data?.userRunningLiveQuizzes) return data
+
+            // remove the cancelled live quiz from the existing list
+            return {
+              userRunningLiveQuizzes: data.userRunningLiveQuizzes.filter(
+                (q) => q.id !== res.cancelLiveQuiz!.id
+              ),
+            }
+          }
+        )
       },
-      refetchQueries: [
-        { query: GetUserLiveQuizzesDocument },
-        { query: GetUserActivitiesDocument },
-      ],
     }
   )
 

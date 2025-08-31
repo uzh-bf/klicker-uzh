@@ -1,3 +1,26 @@
+heartbeats:
+  dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
+
+hatchet:
+  client:
+    tlsStrategy: 'none'
+    apiUrl: 'hatchet-qa-api:8080'
+    hostPort: 'hatchet-grpc:7070'
+  workers:
+    general:
+      replicaCount: 1
+      priorityClassName: staging-workload
+      image:
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general
+        pullPolicy: Always
+
+    responseProcessor:
+      replicaCount: 1
+      priorityClassName: staging-workload
+      image:
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
+        pullPolicy: Always
+
 auth:
   priorityClassName: staging-workload
 
@@ -32,6 +55,9 @@ frontendPWA:
 
   autoscaling:
     enabled: false
+
+  image:
+    tag: deploy-hatchet
 
   ingress:
     hosts:
@@ -121,6 +147,12 @@ backendGraphql:
   appStudentSubdomain: pwa
   appControlSubdomain: control
 
+  # Enable dual Redis mode for parallel testing
+  dualRedisMode: true
+
+  # Preserve Redis data after quiz ends for comparison
+  preserveRedisForComparison: true
+
   ingress:
     hosts:
       - host: backend-sls.klicker-qa.bf-app.ch
@@ -184,6 +216,43 @@ lti:
       - secretName: klicker-qa-lti-tls
         hosts:
           - lti.klicker-qa.bf-app.ch
+
+responseApi:
+  corsAllowedOrigins: 'https://pwa.klicker-qa.bf-app.ch'
+
+  priorityClassName: staging-workload
+
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/response-api
+    tag: deploy-hatchet
+    pullPolicy: Always
+
+  autoscaling:
+    enabled: false
+
+  ingress:
+    hosts:
+      - host: response-api.klicker-qa.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-qa-response-api-tls
+        hosts:
+          - response-api.klicker-qa.bf-app.ch
+
+  strategy:
+    type: Recreate
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
 
 redis:
   priorityClassName: staging-workload

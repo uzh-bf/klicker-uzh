@@ -53,6 +53,7 @@ COPY --from=builder /app/packages/grading/dist/ /app/packages/grading/dist/
 COPY --from=builder /app/packages/graphql/dist/ /app/packages/graphql/dist/
 COPY --from=builder /app/packages/types/dist/ /app/packages/types/dist/
 COPY --from=builder /app/packages/util/dist/ /app/packages/util/dist/
+COPY --from=builder /app/packages/hatchet-tasks/dist/ /app/packages/hatchet-tasks/dist/
 COPY --from=builder /app/apps/backend-docker/dist/ /app/apps/backend-docker/dist/
 
 USER nodejs

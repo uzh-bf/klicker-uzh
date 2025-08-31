@@ -1,5 +1,6 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import {
+  ActivityType,
   ElementInstanceResults,
   type ElementStackInput,
   ResponseCorrectness,
@@ -26,9 +27,11 @@ import {
   splitGroupsFinal,
   splitGroupsRunning,
 } from '../lib/randomizedGroups.js'
-import { sendTeamsNotifications, shuffle } from '../lib/util.js'
+import { shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
+import { getPermissionBooleans } from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
+import { sendTeamsNotifications } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import {
   type RespondToElementStackInput,
@@ -39,7 +42,7 @@ import {
   updateSelectionResults,
 } from './stacks.js'
 
-const POINTS_PER_GROUP_ACTIVITY_ELEMENT = 25
+export const POINTS_PER_GROUP_ACTIVITY_ELEMENT = 25
 
 export async function createParticipantGroup(
   {
@@ -65,17 +68,9 @@ export async function createParticipantGroup(
   const participantGroup = await ctx.prisma.participantGroup.create({
     data: {
       name: name.trim(),
-      code: code,
-      course: {
-        connect: {
-          id: courseId,
-        },
-      },
-      participants: {
-        connect: {
-          id: ctx.user.sub,
-        },
-      },
+      code,
+      course: { connect: { id: courseId } },
+      participants: { connect: { id: ctx.user.sub } },
     },
     include: {
       participants: true,
@@ -102,9 +97,7 @@ export async function joinRandomCourseGroupPool(
 ) {
   // check if group creation is enabled on course
   const course = await ctx.prisma.course.findUnique({
-    where: {
-      id: courseId,
-    },
+    where: { id: courseId },
   })
   if (!course || !course.isGroupCreationEnabled) {
     return false
@@ -113,22 +106,11 @@ export async function joinRandomCourseGroupPool(
   // add the participant to the pool of waiting participants
   const poolEntry = await ctx.prisma.groupAssignmentPoolEntry.upsert({
     where: {
-      courseId_participantId: {
-        courseId,
-        participantId: ctx.user.sub,
-      },
+      courseId_participantId: { courseId, participantId: ctx.user.sub },
     },
     create: {
-      course: {
-        connect: {
-          id: courseId,
-        },
-      },
-      participant: {
-        connect: {
-          id: ctx.user.sub,
-        },
-      },
+      course: { connect: { id: courseId } },
+      participant: { connect: { id: ctx.user.sub } },
     },
     update: {},
   })
@@ -146,15 +128,9 @@ export async function leaveRandomCourseGroupPool(
 ) {
   // check if group creation is enabled on course and if a corresponding pool entry exists
   const course = await ctx.prisma.course.findUnique({
-    where: {
-      id: courseId,
-    },
+    where: { id: courseId },
     include: {
-      groupAssignmentPoolEntries: {
-        where: {
-          participantId: ctx.user.sub,
-        },
-      },
+      groupAssignmentPoolEntries: { where: { participantId: ctx.user.sub } },
     },
   })
   if (
@@ -169,10 +145,7 @@ export async function leaveRandomCourseGroupPool(
   try {
     await ctx.prisma.groupAssignmentPoolEntry.delete({
       where: {
-        courseId_participantId: {
-          courseId,
-          participantId: ctx.user.sub,
-        },
+        courseId_participantId: { courseId, participantId: ctx.user.sub },
       },
     })
     return true
@@ -463,7 +436,7 @@ export async function finalRandomGroupAssignments(
         }
 
         await EmailService.sendEmail({
-          to: course.owner.email,
+          to: course.notificationEmail ?? course.owner.email,
           subject: `KlickerUZH - Group Creation for Course ${course.name}`,
           text: `The automated random group creation for your course ${course.name} has failed. Please refer to the course overview for more details and to change the group creation deadline: ${courseGroupsOverviewLink}.`,
           html: emailHtml,
@@ -546,9 +519,7 @@ export async function manualRandomGroupAssignments(
   })
 
   // do nothing if the course does not exist
-  if (!course) {
-    return null
-  }
+  if (!course) return null
 
   try {
     // resolve all groups with a single participant and add them to the pool ids
@@ -566,19 +537,17 @@ export async function manualRandomGroupAssignments(
 
     // if the assignment pool is empty, set the finalization boolean and return course
     if (courseExtendedPool.groupAssignmentPoolEntries.length === 0) {
-      const courseUpdated = await ctx.prisma.course.update({
+      await ctx.prisma.course.update({
         where: { id: courseId },
         data: { randomAssignmentFinalized: true },
       })
 
-      return courseUpdated
+      return []
     }
 
     // if there is only exactly one participant in the pool, return null - do not update course
     // case is already handled in the frontend with a disabled button
-    if (courseExtendedPool.groupAssignmentPoolEntries.length === 1) {
-      return null
-    }
+    if (courseExtendedPool.groupAssignmentPoolEntries.length === 1) return null
 
     // run the final group assignment logic and update the course accordingly
     const groupParticipantIds = splitGroupsFinal({
@@ -604,12 +573,12 @@ export async function manualRandomGroupAssignments(
     const updatedCourse = await ctx.prisma.course.update({
       where: { id: courseId },
       data: {
-        groupDeadlineDate: dayjs().subtract(1, 'day').toDate(),
+        groupDeadlineDate: new Date(),
         randomAssignmentFinalized: true,
         participantGroups: { create: newGroups },
         groupAssignmentPoolEntries: { deleteMany: {} },
       },
-      include: { participantGroups: true },
+      include: { participantGroups: { include: { participants: true } } },
     })
 
     // invalidate the cache of the course and the group assignment pool entries
@@ -626,7 +595,7 @@ export async function manualRandomGroupAssignments(
       `Successfully completed random group assignment for course ${course.name} (id: ${course.id}) with ${newGroups.length} new groups.`
     )
 
-    return updatedCourse
+    return updatedCourse.participantGroups
   } catch (e) {
     console.error(e)
     await sendTeamsNotifications(
@@ -653,18 +622,11 @@ export async function joinParticipantGroup(
   // find participantgroup with code
   const participantGroup = await ctx.prisma.participantGroup.findUnique({
     where: {
-      courseId_code: {
-        courseId,
-        code,
-      },
+      courseId_code: { courseId, code },
     },
     include: {
       course: true,
-      participants: {
-        include: {
-          leaderboards: true,
-        },
-      },
+      participants: { include: { leaderboards: true } },
     },
   })
 
@@ -698,24 +660,12 @@ export async function joinParticipantGroup(
 
   // otherwise update the participant group with the current participant and return it
   const updatedParticipantGroup = await ctx.prisma.participantGroup.update({
-    where: {
-      courseId_code: {
-        courseId,
-        code,
-      },
-    },
+    where: { courseId_code: { courseId, code } },
     data: {
-      participants: {
-        connect: {
-          id: ctx.user.sub,
-        },
-      },
+      participants: { connect: { id: ctx.user.sub } },
       averageMemberScore: averageMemberScore,
     },
-    include: {
-      participants: true,
-      course: true,
-    },
+    include: { participants: true, course: true },
   })
 
   return updatedParticipantGroup.id
@@ -733,16 +683,8 @@ export async function leaveParticipantGroup(
 ) {
   // find participantgroup with corresponding id
   const participantGroup = await ctx.prisma.participantGroup.findUnique({
-    where: {
-      id: groupId,
-    },
-    include: {
-      participants: {
-        include: {
-          leaderboards: true,
-        },
-      },
-    },
+    where: { id: groupId },
+    include: { participants: { include: { leaderboards: true } } },
   })
 
   // if no participant group with the provided id exists in this course or at all, return null
@@ -750,10 +692,8 @@ export async function leaveParticipantGroup(
 
   // if the participant is the only one in the group, delete the group
   if (participantGroup.participants.length === 1) {
-    await ctx.prisma.participantGroup.delete({
-      where: {
-        id: groupId,
-      },
+    const deletedGroup = await ctx.prisma.participantGroup.delete({
+      where: { id: groupId },
     })
 
     // invalidate graphql response cache
@@ -762,7 +702,7 @@ export async function leaveParticipantGroup(
       id: groupId,
     })
 
-    return null
+    return deletedGroup
   }
 
   // compute new average member score for the group without the participant that is leaving
@@ -847,36 +787,28 @@ export async function renameParticipantGroup(
 
 export async function getParticipantGroups(
   { courseId }: { courseId: string },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
-  // find participant with correspoinding id ctx.user.sub and return all his participant groups with correct id
+  // return early, if no user is authenticated or if the user does not have a participant role
+  if (!ctx.user?.sub || ctx.user?.role !== DB.UserRole.PARTICIPANT) {
+    return []
+  }
+
+  // find participant with corresponding id ctx.user.sub and return all his participant groups with correct id
   const participant = await ctx.prisma.participant.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
+    where: { id: ctx.user.sub },
     include: {
       participantGroups: {
-        where: {
-          course: {
-            id: courseId,
-          },
-        },
+        where: { course: { id: courseId } },
         include: {
           messages: {
-            orderBy: {
-              createdAt: 'desc',
-            },
-            include: {
-              participant: true,
-            },
+            orderBy: { createdAt: 'desc' },
+            include: { participant: true },
           },
           participants: {
             include: {
               leaderboards: {
-                where: {
-                  courseId,
-                  type: DB.LeaderboardType.COURSE,
-                },
+                where: { courseId, type: DB.LeaderboardType.COURSE },
               },
             },
           },
@@ -894,7 +826,7 @@ export async function getParticipantGroups(
       group.participants.map((participant) => ({
         ...participant,
         score: participant.leaderboards[0]?.score ?? 0,
-        isSelf: participant.id === ctx.user.sub,
+        isSelf: participant.id === ctx.user!.sub,
       })),
       [prop('score'), 'desc'],
       [prop('username'), 'asc']
@@ -939,18 +871,19 @@ export async function manipulateGroupActivity(
   ctx: ContextWithUser
 ) {
   // in EDIT mode - validate that the group activity exists and is not published, remove the old clues
+  let existingActivity: DB.GroupActivity | null = null
   if (id) {
-    const existingActiity = await ctx.prisma.groupActivity.findUnique({
+    existingActivity = await ctx.prisma.groupActivity.findUnique({
       where: { id, isDeleted: false },
     })
 
-    if (!existingActiity) {
+    if (!existingActivity) {
       throw new GraphQLError('Group Activity not found')
     }
     if (
-      existingActiity.status === DB.PublicationStatus.SCHEDULED ||
-      existingActiity.status === DB.PublicationStatus.PUBLISHED ||
-      existingActiity.status === DB.PublicationStatus.GRADED
+      existingActivity.status === DB.PublicationStatus.SCHEDULED ||
+      existingActivity.status === DB.PublicationStatus.PUBLISHED ||
+      existingActivity.status === DB.PublicationStatus.GRADED
     ) {
       throw new GraphQLError('Can only edit draft group activities')
     }
@@ -960,6 +893,16 @@ export async function manipulateGroupActivity(
       where: { id },
       data: { clues: { deleteMany: {} } },
     })
+  }
+
+  // get the course to which the practice quiz should be assigned
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    select: { isGamificationEnabled: true, isAssessmentEnabled: true },
+  })
+
+  if (!course) {
+    throw new GraphQLError('Course not found')
   }
 
   // get required splits of instances based on provided stacks values
@@ -1004,6 +947,14 @@ export async function manipulateGroupActivity(
     scheduledEndAt: endDate,
     pointsMultiplier: multiplier,
     areInstancesOutdated: anyInstanceOutdated,
+    isGamificationEnabled: course.isGamificationEnabled,
+    isAssessmentEnabled: course.isAssessmentEnabled,
+    reviewStatus:
+      existingActivity?.courseId !== courseId
+        ? DB.ReviewStatus.INCOMPLETE
+        : existingActivity?.reviewStatus === DB.ReviewStatus.REVIEWED
+          ? DB.ReviewStatus.MODIFIED_AFTER_REVIEW
+          : undefined,
     clues: {
       connectOrCreate: [
         ...clues.map((clue) => ({
@@ -1089,9 +1040,39 @@ export async function manipulateGroupActivity(
           owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
         },
         update: createOrUpdateJSON,
+        include: {
+          templateInfo: true,
+          permissions: {
+            where: { userId: ctx.user.sub },
+            include: { directPermission: true },
+            take: 1,
+          },
+          course: {
+            include: {
+              _count: {
+                select: {
+                  participantGroups: true,
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          stacks: { include: { _count: { select: { elements: true } } } },
+          _count: { select: { permissions: true } },
+        },
       })
 
-      // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
+      // enforce derived permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
       if (unlinkedElementIds.length > 0) {
         for (const elementId of unlinkedElementIds) {
           await recomputeDerivedPermissions({ elementId }, prisma)
@@ -1109,7 +1090,62 @@ export async function manipulateGroupActivity(
     { timeout: 60000 }
   )
 
-  return activity
+  const permissionLevel =
+    activity.permissions[0]?.permissionLevel ?? DB.PermissionLevel.OWNER
+  const derived = activity.permissions[0]?.derived ?? false
+  const {
+    isOwner,
+    isManager,
+    isEditor,
+    isExecutor,
+    isShared,
+    isRemovable,
+    sharingType,
+  } = getPermissionBooleans({
+    permissionLevel,
+    derived,
+    directGroupPermission:
+      activity.permissions[0]?.directPermission &&
+      activity.permissions[0].directPermission.userGroupId !== null,
+  })
+
+  return {
+    id: activity.id,
+    templateId: activity.templateInfo?.id ?? null,
+    name: activity.name,
+    displayName: activity.displayName,
+    reviewStatus: activity.reviewStatus,
+    type: ActivityType.GROUP_ACTIVITY,
+    status: activity.status,
+    courseId: activity.course?.id,
+    courseName: activity.course?.name,
+    courseLanguage: activity.course?.language,
+    courseStartDate: activity.course?.startDate,
+    numOfStacks: activity.stacks.length,
+    numOfElements: activity.stacks.reduce(
+      (acc, block) => acc + block._count.elements,
+      0
+    ),
+    scheduledStartAt: activity.scheduledStartAt,
+    scheduledEndAt: activity.scheduledEndAt,
+    groupDeadlineDate: activity.course.groupDeadlineDate,
+    numOfParticipantGroups: activity.course._count.participantGroups,
+    permissionLevel,
+    derivedAccess: derived,
+    areInstancesOutdated: activity.areInstancesOutdated,
+    isGamificationEnabled: activity.isGamificationEnabled,
+    isAssessmentEnabled: activity.isAssessmentEnabled,
+    numSharedUsers: id ? activity._count.permissions - 1 : 0,
+    isOwner,
+    isManager,
+    isEditor,
+    isExecutor,
+    isShared,
+    isRemovable,
+    isActivityReviewer: activity.course._count.permissions > 0,
+    sharingType,
+    updatedAt: activity.updatedAt,
+  }
 }
 
 export async function updateGroupAverageScores(
@@ -2011,10 +2047,16 @@ export async function removeGroupActivity(
 
 export async function getCourseGroupActivities(
   { courseId }: { courseId: string },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
+  // if the no participant is logged in, return early
+  if (!ctx.user?.sub || ctx.user.role !== DB.UserRole.PARTICIPANT) return null
+
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: {
+      id: courseId,
+      participations: { some: { participantId: ctx.user.sub } },
+    },
     include: {
       groupActivities: {
         where: {
@@ -2062,10 +2104,31 @@ export async function changeGroupActivityName(
   { id, name, displayName }: { id: string; name: string; displayName: string },
   ctx: ContextWithUser
 ) {
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id },
+  })
+
+  if (!groupActivity) return false
+
+  // if both name and displayname remain unchanged, skip the update
+  if (
+    groupActivity.name === name &&
+    groupActivity.displayName === displayName
+  ) {
+    return true
+  }
+
   try {
     await ctx.prisma.groupActivity.update({
       where: { id },
-      data: { name, displayName },
+      data: {
+        name,
+        displayName,
+        reviewStatus:
+          groupActivity.reviewStatus === DB.ReviewStatus.REVIEWED
+            ? DB.ReviewStatus.MODIFIED_AFTER_REVIEW
+            : undefined,
+      },
     })
 
     ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })

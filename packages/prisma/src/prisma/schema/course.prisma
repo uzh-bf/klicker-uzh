@@ -4,17 +4,20 @@ model Course {
   isArchived Boolean @default(false)
   pinCode    Int     @unique
 
-  name                  String
-  displayName           String
-  description           String?
-  color                 String   @default("#eaa07d")
-  startDate             DateTime
-  endDate               DateTime
-  notificationEmail     String?
-  isGamificationEnabled Boolean  @default(true)
-  areAnalyticsValid     Boolean  @default(false)
+  name                   String
+  displayName            String
+  description            String?
+  language               Locale   @default(en)
+  color                  String   @default("#eaa07d")
+  startDate              DateTime
+  endDate                DateTime
+  notificationEmail      String?
+  isGroupCreationEnabled Boolean  @default(true)
+  areAnalyticsValid      Boolean  @default(false)
 
-  isGroupCreationEnabled    Boolean  @default(true)
+  isGamificationEnabled Boolean @default(true)
+  isAssessmentEnabled   Boolean @default(false)
+
   groupDeadlineDate         DateTime
   preferredGroupSize        Int      @default(3)
   maxGroupSize              Int      @default(5)

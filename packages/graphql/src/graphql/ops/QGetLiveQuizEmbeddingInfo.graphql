@@ -1,0 +1,10 @@
+query GetLiveQuizEmbeddingInfo($id: String!) {
+  getLiveQuizEmbeddingInfo(id: $id) {
+    id
+    hmac
+    instances {
+      id
+      name
+    }
+  }
+}

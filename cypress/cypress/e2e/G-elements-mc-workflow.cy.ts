@@ -3,6 +3,12 @@ import messages from '../../../packages/i18n/messages/en'
 describe('Test creation and editing functionalities, validation, etc. for Multiple Choice elements', function () {
   before(() => {
     cy.seed()
+
+    // set browser language to english (independent of local machine setting
+    Cypress.automation('remote:debugger:protocol', {
+      command: 'Emulation.setLocaleOverride',
+      params: { locale: 'en' },
+    })
   })
 
   after(() => {
@@ -122,15 +128,14 @@ describe('Test creation and editing functionalities, validation, etc. for Multip
     cy.wait(500)
 
     // verify that question is correctly created
-    cy.get(`[data-cy="element-item-${this.data.MC.title}"]`).contains(
-      this.data.MC.content
-    )
-    cy.get(`[data-cy="element-item-${this.data.MC.title}"]`).contains(
-      this.data.MC.title
-    )
-    cy.get(`[data-cy="element-item-${this.data.MC.title}"]`).contains(
-      messages.shared.READY.statusLabel
-    )
+    cy.validateElement({
+      element: this.data.MC.title,
+      contains: [
+        this.data.MC.content,
+        this.data.MC.title,
+        messages.shared.READY.statusLabel,
+      ],
+    })
     cy.get(`[data-cy="edit-element-${this.data.MC.title}"]`).click()
     cy.get('[data-cy="mc-0-answer-option-0"]').should('exist')
     cy.get('[data-cy="mc-0-answer-option-1"]').should('exist')
@@ -224,12 +229,10 @@ describe('Test creation and editing functionalities, validation, etc. for Multip
     cy.wait(1000)
 
     // verify that the updated content of the MC question is correctly displayed
-    cy.get(`[data-cy="element-item-${this.data.MC.titleEdited}"]`).contains(
-      this.data.MC.titleEdited
-    )
-    cy.get(`[data-cy="element-item-${this.data.MC.titleEdited}"]`).contains(
-      this.data.MC.contentEdited
-    )
+    cy.validateElement({
+      element: this.data.MC.titleEdited,
+      contains: [this.data.MC.contentEdited, this.data.MC.titleEdited],
+    })
   })
 
   it('Edit the multiple choice question again and add answer feedbacks', function () {

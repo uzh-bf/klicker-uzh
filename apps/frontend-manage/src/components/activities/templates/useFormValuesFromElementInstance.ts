@@ -1,6 +1,6 @@
 import { ElementInstance } from '@klicker-uzh/graphql/dist/ops'
 import { useMemo } from 'react'
-import { ElementFormTypes } from '../../questions/manipulation/types'
+import { ElementFormTypes } from '../../elements/manipulation/types'
 import extractFormValuesFromElementInstance from './extractFormValuesFromElementInstance'
 
 // memoized version of the form value from instance extraction function

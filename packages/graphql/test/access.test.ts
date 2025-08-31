@@ -7,7 +7,7 @@ import {
   PermissionLevel,
   PrismaClient,
   PublicationStatus,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
@@ -53,7 +53,6 @@ describe('Unit tests for object access validation', () => {
   let userThreeCtx: ContextWithUser
   let userFourCtx: ContextWithUser
   let userFiveCtx: ContextWithUser
-  let userSixCtx: ContextWithUser
 
   beforeAll(async () => {
     const {
@@ -3545,7 +3544,7 @@ describe('Unit tests for object access validation', () => {
         permissionLevel: PermissionLevel.ADMIN,
       },
     })
-    const permission4 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         catalogCollectionId: publicCatalog.id,
         userId: userFour.id,
@@ -3588,7 +3587,7 @@ describe('Unit tests for object access validation', () => {
         permissionLevel: PermissionLevel.ADMIN,
       },
     })
-    const groupPermission2 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         catalogCollectionId: publicCatalog.id,
         userGroupId: userGroup2.id,
@@ -4090,7 +4089,7 @@ describe('Unit tests for object access validation', () => {
         permissionLevel: PermissionLevel.ADMIN,
       },
     })
-    const permission4 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         catalogCollectionId: publicCatalog.id,
         userId: userFour.id,
@@ -4133,7 +4132,7 @@ describe('Unit tests for object access validation', () => {
         permissionLevel: PermissionLevel.ADMIN,
       },
     })
-    const groupPermission2 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         catalogCollectionId: publicCatalog.id,
         userGroupId: userGroup2.id,

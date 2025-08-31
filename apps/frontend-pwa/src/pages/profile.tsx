@@ -1,9 +1,6 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useQuery } from '@apollo/client'
 import { faPencil } from '@fortawesome/free-solid-svg-icons'
-import {
-  LogoutParticipantDocument,
-  SelfWithAchievementsDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { SelfWithAchievementsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
@@ -16,9 +13,6 @@ import ProfileData from '../components/participant/ProfileData'
 const Profile = () => {
   const t = useTranslations()
   const { data, loading } = useQuery(SelfWithAchievementsDocument)
-  const [logoutParticipant, { loading: loggingOut }] = useMutation(
-    LogoutParticipantDocument
-  )
   const router = useRouter()
 
   if (loading || !data?.selfWithAchievements)
@@ -32,7 +26,6 @@ const Profile = () => {
     )
 
   const { participant, achievements } = data.selfWithAchievements
-  const pageInFrame = window && window?.location !== window?.parent.location
 
   return (
     <Layout

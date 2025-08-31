@@ -1,5 +1,5 @@
-import * as DB from '@klicker-uzh/prisma'
-import { type ElementStackInput } from '@klicker-uzh/types'
+import * as DB from '@klicker-uzh/prisma/client'
+import { ActivityType, type ElementStackInput } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
   propagateActivityToElements,
@@ -9,6 +9,7 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import { getPermissionBooleans } from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { computeStackEvaluation } from './stacks.js'
 
@@ -191,8 +192,9 @@ export async function manipulateMicroLearning(
   ctx: ContextWithUser
 ) {
   // in EDIT mode - validate that the microlearning exists and is not published
+  let existingActivity: DB.MicroLearning | null = null
   if (id) {
-    const existingActivity = await ctx.prisma.microLearning.findUnique({
+    existingActivity = await ctx.prisma.microLearning.findUnique({
       where: {
         id,
         isDeleted: false,
@@ -208,6 +210,16 @@ export async function manipulateMicroLearning(
     ) {
       throw new GraphQLError('Cannot edit a published or ended microlearning')
     }
+  }
+
+  // get the course to which the microlearning should be assigned
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    select: { isGamificationEnabled: true, isAssessmentEnabled: true },
+  })
+
+  if (!course) {
+    throw new GraphQLError('Course not found')
   }
 
   // get required splits of instances based on provided stacks values
@@ -253,6 +265,14 @@ export async function manipulateMicroLearning(
     scheduledStartAt: dayjs(startDate).toDate(),
     scheduledEndAt: dayjs(endDate).toDate(),
     areInstancesOutdated: anyInstanceOutdated,
+    isGamificationEnabled: course.isGamificationEnabled,
+    isAssessmentEnabled: course.isAssessmentEnabled,
+    reviewStatus:
+      existingActivity?.courseId !== courseId
+        ? DB.ReviewStatus.INCOMPLETE
+        : existingActivity?.reviewStatus === DB.ReviewStatus.REVIEWED
+          ? DB.ReviewStatus.MODIFIED_AFTER_REVIEW
+          : undefined,
     stacks: {
       create: stacks.map((stack) => {
         return {
@@ -325,19 +345,36 @@ export async function manipulateMicroLearning(
         },
         update: createOrUpdateJSON,
         include: {
-          course: true,
-          stacks: {
+          templateInfo: true,
+          permissions: {
+            where: { userId: ctx.user.sub },
+            include: { directPermission: true },
+            take: 1,
+          },
+          course: {
             include: {
-              elements: {
-                orderBy: {
-                  order: 'asc',
+              _count: {
+                select: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
                 },
               },
             },
-            orderBy: {
-              order: 'asc',
-            },
           },
+          stacks: {
+            include: { _count: { select: { elements: true } } },
+            orderBy: { order: 'asc' },
+          },
+          _count: { select: { permissions: true } },
         },
       })
 
@@ -363,7 +400,60 @@ export async function manipulateMicroLearning(
     id,
   })
 
-  return activity
+  const permissionLevel =
+    activity.permissions[0]?.permissionLevel ?? DB.PermissionLevel.OWNER
+  const derived = activity.permissions[0]?.derived ?? false
+  const {
+    isOwner,
+    isManager,
+    isEditor,
+    isExecutor,
+    isShared,
+    isRemovable,
+    sharingType,
+  } = getPermissionBooleans({
+    permissionLevel,
+    derived,
+    directGroupPermission:
+      activity.permissions[0]?.directPermission &&
+      activity.permissions[0].directPermission.userGroupId !== null,
+  })
+
+  return {
+    id: activity.id,
+    templateId: activity.templateInfo?.id ?? null,
+    name: activity.name,
+    displayName: activity.displayName,
+    reviewStatus: activity.reviewStatus,
+    type: ActivityType.MICRO_LEARNING,
+    status: activity.status,
+    courseId: activity.course?.id,
+    courseName: activity.course?.name,
+    courseLanguage: activity.course?.language,
+    courseStartDate: activity.course?.startDate,
+    numOfStacks: activity.stacks.length,
+    numOfElements: activity.stacks.reduce(
+      (acc, block) => acc + block._count.elements,
+      0
+    ),
+    scheduledStartAt: activity.scheduledStartAt,
+    scheduledEndAt: activity.scheduledEndAt,
+    permissionLevel,
+    derivedAccess: derived,
+    areInstancesOutdated: activity.areInstancesOutdated,
+    isGamificationEnabled: activity.isGamificationEnabled,
+    isAssessmentEnabled: activity.isAssessmentEnabled,
+    numSharedUsers: id ? activity._count.permissions - 1 : 0,
+    isOwner,
+    isManager,
+    isEditor,
+    isExecutor,
+    isShared,
+    isRemovable,
+    isActivityReviewer: activity.course._count.permissions > 0,
+    sharingType,
+    updatedAt: activity.updatedAt,
+  }
 }
 
 export async function publishMicroLearning(
@@ -567,10 +657,31 @@ export async function changeMicroLearningName(
   { id, name, displayName }: { id: string; name: string; displayName: string },
   ctx: ContextWithUser
 ) {
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: { id },
+  })
+
+  if (!microLearning) return false
+
+  // if both name and displayname remain unchanged, skip the update
+  if (
+    microLearning.name === name &&
+    microLearning.displayName === displayName
+  ) {
+    return true
+  }
+
   try {
     await ctx.prisma.microLearning.update({
       where: { id },
-      data: { name, displayName },
+      data: {
+        name,
+        displayName,
+        reviewStatus:
+          microLearning.reviewStatus === DB.ReviewStatus.REVIEWED
+            ? DB.ReviewStatus.MODIFIED_AFTER_REVIEW
+            : undefined,
+      },
     })
 
     ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })

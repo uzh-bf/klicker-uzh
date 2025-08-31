@@ -1,7 +1,9 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import {
   ActivityInfo,
   ActivityType,
+  DeleteLiveQuizDocument,
+  GetSingleCourseDocument,
   ObjectType,
   PublicationStatus,
   UserProfileDocument,
@@ -19,7 +21,6 @@ import EmbeddingModal from '../../liveQuiz/EmbeddingModal'
 import ActivityLogDialog from '../../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../../sharing/ObjectSharingModalWrapper'
 import useAvailableActions from '../actions/useAvailableActions'
-import useDeleteLiveQuiz from '../actions/useDeleteLiveQuiz'
 import useLiveQuizActions from '../actions/useLiveQuizActions'
 import useStartLiveQuiz from '../actions/useStartLiveQuiz'
 import ActivityActions from './ActivityActions'
@@ -83,11 +84,15 @@ function LiveQuizActions({
   isTemplate,
   sharingModal,
   setSharingModal,
+  setShowDetails,
+  refetchActivities,
 }: {
   liveQuiz: ActivityInfo
   isTemplate: boolean
   sharingModal: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
+  setShowDetails: Dispatch<SetStateAction<boolean>>
+  refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
   const [activityLogOpen, setActivityLogOpen] = useState(false)
@@ -108,8 +113,45 @@ function LiveQuizActions({
     id: liveQuiz.id,
     name: liveQuiz.name,
   })
-  const { onDelete, deleting } = useDeleteLiveQuiz({ id: liveQuiz.id })
 
+  const [deleteLiveQuiz, { loading: deleting }] = useMutation(
+    DeleteLiveQuizDocument,
+    {
+      variables: { id: liveQuiz.id },
+      optimisticResponse: {
+        __typename: 'Mutation',
+        deleteLiveQuiz: {
+          id: liveQuiz.id,
+          __typename: 'LiveQuiz',
+        },
+      },
+      update: (cache, { data: res }) => {
+        // if the live quiz is not part of a course or the mutation was not successful, return early
+        if (!liveQuiz.courseId || !res?.deleteLiveQuiz?.id) return
+
+        // change the status of the live quiz on the course overview back to draft
+        cache.updateQuery(
+          {
+            query: GetSingleCourseDocument,
+            variables: { courseId: liveQuiz.courseId! },
+          },
+          (data) => {
+            if (!data?.course) return data
+
+            return {
+              course: {
+                ...data.course,
+                liveQuizzesInfo:
+                  data.course.liveQuizzesInfo?.filter(
+                    (lq) => lq.id !== res.deleteLiveQuiz!.id
+                  ) ?? [],
+              },
+            }
+          }
+        )
+      },
+    }
+  )
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
   })
@@ -138,7 +180,7 @@ function LiveQuizActions({
         'embeddingEvaluation',
         'liveQuizEvaluation',
         'useTemplate',
-        ...(user?.privatePreview ? ['activityLog'] : []),
+        'activityLog',
       ],
       isRemovable: ['removeLiveQuiz'],
     }
@@ -181,6 +223,7 @@ function LiveQuizActions({
         activityId={liveQuiz.id}
         activityName={liveQuiz.name}
         activityType={liveQuiz.type}
+        openActivityDetailsModal={() => setShowDetails(true)}
       />
       <div>
         {schedulingModal && (
@@ -197,7 +240,10 @@ function LiveQuizActions({
           <LiveQuizDeletionModal
             quizId={liveQuiz.id}
             onClose={() => setDeletionModal(false)}
-            onDelete={onDelete}
+            onDelete={async () => {
+              await deleteLiveQuiz()
+              await refetchActivities?.()
+            }}
             deleting={deleting}
           />
         )}
@@ -206,6 +252,7 @@ function LiveQuizActions({
           <TemplateDeletionModal
             activityId={liveQuiz.id}
             activityType={ActivityType.LiveQuiz}
+            courseId={liveQuiz.courseId}
             onClose={() => setTemplateDeletionModal(false)}
             onSuccess={() =>
               toast({
@@ -221,6 +268,7 @@ function LiveQuizActions({
                 options: { duration: 4500 },
               })
             }
+            refetchActivities={refetchActivities}
           />
         )}
         {templateEditingModal && (
@@ -242,12 +290,14 @@ function LiveQuizActions({
                 options: { duration: 4500 },
               })
             }
+            refetchActivities={refetchActivities}
           />
         )}
 
         {qrModal && (
           <LiveQuizQRModal
             quizId={liveQuiz.id}
+            language={liveQuiz.courseLanguage}
             onClose={() => setQRModal(false)}
           />
         )}
@@ -257,12 +307,7 @@ function LiveQuizActions({
             key={liveQuiz.id}
             onClose={() => setEmbeddingModal(false)}
             quizId={liveQuiz.id}
-            elements={liveQuiz.stacks.flatMap((stack) =>
-              stack.elements.map((instance) => ({
-                id: instance.id,
-                name: instance.name,
-              }))
-            )}
+            isGamificationEnabled={liveQuiz.isGamificationEnabled ?? false}
           />
         )}
 
@@ -272,8 +317,8 @@ function LiveQuizActions({
             objectName={liveQuiz.name}
             objectType={ObjectType.LiveQuiz}
             isTemplate={isTemplate}
-            isOwner={liveQuiz.isOwner ?? false}
             onClose={() => setSharingModal(false)}
+            refetchActivities={refetchActivities}
           />
         ) : null}
 
@@ -284,6 +329,7 @@ function LiveQuizActions({
             title={liveQuiz.name}
             isModalOpen={removalModal}
             setModalOpen={setRemovalModal}
+            refetchActivities={refetchActivities}
           />
         )}
 
@@ -307,6 +353,7 @@ function LiveQuizActions({
                 message: t('manage.template.templateCreationError'),
               })
             }
+            refetchActivities={refetchActivities}
           />
         )}
 

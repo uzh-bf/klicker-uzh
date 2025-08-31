@@ -79,11 +79,15 @@ function MicrolearningActions({
   isTemplate,
   sharingModal,
   setSharingModal,
+  setShowDetails,
+  refetchActivities,
 }: {
   microLearning: ActivityInfo
   isTemplate: boolean
   sharingModal: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
+  setShowDetails: Dispatch<SetStateAction<boolean>>
+  refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
   const [publishModal, setPublishModal] = useState(false)
@@ -119,7 +123,7 @@ function MicrolearningActions({
         'copyLTIAccessLink',
         'openPreview',
         'openEvaluation',
-        ...(user?.privatePreview ? ['activityLog'] : []),
+        'activityLog',
         ...(user?.publicPreview ? ['analyticsMicroLearning'] : []),
       ],
       isRemovable: ['removeMicroLearning'],
@@ -136,6 +140,7 @@ function MicrolearningActions({
     setExtensionModal,
     setSharingModal,
     setActivityLogOpen,
+    refetchActivities,
   })
 
   const availableActions = useAvailableActions({
@@ -158,6 +163,7 @@ function MicrolearningActions({
         activityId={microLearning.id}
         activityName={microLearning.name}
         activityType={microLearning.type}
+        openActivityDetailsModal={() => setShowDetails(true)}
       />
       <div>
         {sharingModal && microLearning.isManager ? (
@@ -166,8 +172,8 @@ function MicrolearningActions({
             objectName={microLearning.name}
             objectType={ObjectType.MicroLearning}
             isTemplate={isTemplate}
-            isOwner={microLearning.isOwner ?? false}
             onClose={() => setSharingModal(false)}
+            refetchActivities={refetchActivities}
           />
         ) : null}
         {publishModal && (
@@ -179,6 +185,7 @@ function MicrolearningActions({
             endAt={microLearning.scheduledEndAt}
             title={microLearning.name}
             courseId={microLearning.courseId!}
+            refetchActivities={refetchActivities}
           />
         )}
 
@@ -189,6 +196,7 @@ function MicrolearningActions({
             title={microLearning.name}
             isModalOpen={removalModal}
             setModalOpen={setRemovalModal}
+            refetchActivities={refetchActivities}
           />
         )}
         {deletionModal && (
@@ -196,6 +204,7 @@ function MicrolearningActions({
             onClose={() => setDeletionModal(false)}
             activityId={microLearning.id}
             courseId={microLearning.courseId!}
+            refetchActivities={refetchActivities}
           />
         )}
 
@@ -204,6 +213,7 @@ function MicrolearningActions({
             onClose={() => setEndingModal(false)}
             activityId={microLearning.id}
             courseId={microLearning.courseId!}
+            refetchActivities={refetchActivities}
           />
         )}
         {extensionModal && (
@@ -215,6 +225,7 @@ function MicrolearningActions({
             title={t('manage.course.extendMicroLearning')}
             description={t('manage.course.extendMicroLearningDescription')}
             onClose={() => setExtensionModal(false)}
+            refetchActivities={refetchActivities}
           />
         )}
 

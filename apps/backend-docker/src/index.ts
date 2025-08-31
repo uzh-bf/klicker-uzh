@@ -1,48 +1,31 @@
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
-import {
-  endExpiredGroupActivity,
-  endExpiredMicroLearning,
-  enhanceContext,
-  publishScheduledGroupActivity,
-  publishScheduledLiveQuiz,
-  publishScheduledMicroLearning,
-  publishScheduledPracticeQuiz,
-  schema,
-} from '@klicker-uzh/graphql'
-import { PrismaClient } from '@klicker-uzh/prisma'
+import { enhanceContext, schema } from '@klicker-uzh/graphql'
+import { prisma as prismaBase } from '@klicker-uzh/prisma'
 import { withOptimize } from '@prisma/extension-optimize'
 // import * as Sentry from '@sentry/node'
 // import '@sentry/tracing'
-import { createPubSub } from 'graphql-yoga'
-import { Redis } from 'ioredis'
-import prepareApp from './app.js'
-
 import { createInMemoryCache, type Cache } from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'
-import { Hatchet } from '@hatchet-dev/typescript-sdk'
+import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
 import { useServer } from 'graphql-ws/lib/use/ws'
+import { createPubSub } from 'graphql-yoga'
+import { Redis } from 'ioredis'
 import { EventEmitter } from 'node:events'
 import { WebSocketServer } from 'ws'
+import prepareApp from './app.js'
 import { migrate } from './migration.js'
 
 const emitter = new EventEmitter()
 
-// ! Prisma setup
-// #region
-let prisma = new PrismaClient({
-  log:
-    process.env.NODE_ENV === 'development'
-      ? ['query', 'info', 'warn', 'error']
-      : ['warn', 'error'],
-})
+let prisma = prismaBase
 
 if (
   process.env.NODE_ENV === 'development' &&
   process.env.PRISMA_OPTIMIZE === 'true'
 ) {
-  prisma = prisma.$extends(
+  prisma = prismaBase.$extends(
     withOptimize({ apiKey: process.env.PRISMA_OPTIMIZE_API_KEY as string })
-  ) as PrismaClient
+  ) as typeof prisma
 }
 // #endregion
 
@@ -107,45 +90,18 @@ emitter.on('invalidate', (resource) => {
 })
 // #endregion
 
-// ! Initialize Hatchet and tasks
-// #region
-const validLogLevels = ['INFO', 'OFF', 'DEBUG', 'WARN', 'ERROR']
-const hatchet = Hatchet.init({
-  token: process.env.HATCHET_CLIENT_TOKEN,
-  log_level:
-    typeof process.env.HATCHET_LOG_LEVEL !== 'undefined' &&
-    validLogLevels.some(
-      (logLevel) => logLevel === process.env.HATCHET_LOG_LEVEL
-    )
-      ? (process.env.HATCHET_LOG_LEVEL as
-          | 'INFO'
-          | 'OFF'
-          | 'DEBUG'
-          | 'WARN'
-          | 'ERROR')
-      : 'INFO',
-})
-
-// initialize tasks to be able to call / schedule them inside service functions
-// ? for the context to correctly accept them, update the context type in the context.ts file
-const publishScheduledMicroLearningTask = publishScheduledMicroLearning(hatchet)
-const publishScheduledPracticeQuizTask = publishScheduledPracticeQuiz(hatchet)
-const publishScheduledGroupActivityTask = publishScheduledGroupActivity(hatchet)
-const publishScheduledLiveQuizTask = publishScheduledLiveQuiz(hatchet)
-const endExpiredMicroLearningTask = endExpiredMicroLearning(hatchet)
-const endExpiredGroupActivityTask = endExpiredGroupActivity(hatchet)
-const tasks = {
-  publishScheduledMicroLearningTask,
-  publishScheduledPracticeQuizTask,
-  publishScheduledGroupActivityTask,
-  publishScheduledLiveQuizTask,
-  endExpiredMicroLearningTask,
-  endExpiredGroupActivityTask,
-}
-// #endregion
-
 // ! PubSub setup
 const pubSub = createPubSub({ eventTarget })
+
+// initialize tasks to be able to call / schedule them inside service functions
+const tasks = prepareHatchetTasks({
+  hatchet: hatchetClient,
+  pubSub,
+  emitter,
+  redisCache,
+  redisExec,
+})
+// #endregion
 
 // ! Server and context setup
 // #region
@@ -157,7 +113,7 @@ migrate(prisma).then(() => {
     pubSub,
     cache,
     emitter,
-    hatchet,
+    hatchet: hatchetClient,
     tasks,
   })
 

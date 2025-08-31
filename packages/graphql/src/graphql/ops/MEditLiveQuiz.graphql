@@ -32,26 +32,6 @@ mutation EditLiveQuiz(
     isLiveQAEnabled: $isLiveQAEnabled
     isModerationEnabled: $isModerationEnabled
   ) {
-    id
-    name
-    displayName
-    description
-    blocks {
-      id
-      status
-      timeLimit
-      elements {
-        id
-        ...ElementDataInfo
-      }
-    }
-    course {
-      id
-    }
-    pointsMultiplier
-    isGamificationEnabled
-    isConfusionFeedbackEnabled
-    isLiveQAEnabled
-    isModerationEnabled
+    ...ActivityInfoData
   }
 }

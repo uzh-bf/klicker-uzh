@@ -1,31 +1,10 @@
 [
   {
-    "id": "LIVE_QUIZZES",
-    "title": "Live Quiz Overview",
-    "path": "/liveQuizzes",
-    "olatConfigurationKey": "live-quizzes",
-    "isSubselectionRequired": false,
-    "isEmailTransferRequired": false
-  },
-  {
-    "id": "PRACTICE_QUIZZES",
-    "title": "Practice Quiz Overview",
-    "path": "/practiceQuizzes",
-    "olatConfigurationKey": "practice-quizzes",
-    "isSubselectionRequired": false,
-    "isEmailTransferRequired": false
-  },
-  {
-    "id": "MICRO_LEARNINGS",
-    "title": "Micro Learning Overview",
-    "path": "/microLearnings",
-    "olatConfigurationKey": "micro-learnings",
-    "isSubselectionRequired": false,
-    "isEmailTransferRequired": false
-  },
-  {
     "id": "MANAGE_ACCOUNT",
-    "title": "Manage Account",
+    "title_de": "Konto verwalten",
+    "title_en": "Manage Account",
+    "title_fr": "Gérer le compte",
+    "title_it": "Gestire l'account",
     "path": "/createAccount",
     "olatConfigurationKey": "manage-account",
     "isSubselectionRequired": false,
@@ -33,7 +12,10 @@
   },
   {
     "id": "DOCS",
-    "title": "Documentation",
+    "title_de": "Dokumentation",
+    "title_en": "Documentation",
+    "title_fr": "Documentation",
+    "title_it": "Documentazione",
     "path": "/docs",
     "olatConfigurationKey": "docs",
     "isSubselectionRequired": false,
@@ -41,31 +23,43 @@
   },
   {
     "id": "LIVE_QUIZ",
-    "title": "Live Quiz",
-    "path": "/liveQuiz",
+    "title_de": "Live Quiz",
+    "title_en": "Live Quiz",
+    "title_fr": "Live Quiz",
+    "title_it": "Live Quiz",
+    "path": "/liveQuizzes",
     "olatConfigurationKey": "live-quiz",
     "isSubselectionRequired": true,
     "isEmailTransferRequired": false
   },
   {
     "id": "PRACTICE_QUIZ",
-    "title": "Practice Quiz",
-    "path": "/quiz",
+    "title_de": "Übungsquiz",
+    "title_en": "Practice Quiz",
+    "title_fr": "Practice Quiz",
+    "title_it": "Practice Quiz",
+    "path": "/practiceQuizzes",
     "olatConfigurationKey": "practice-quiz",
     "isSubselectionRequired": true,
     "isEmailTransferRequired": false
   },
   {
     "id": "MICRO_LEARNING",
-    "title": "Micro Learning",
-    "path": "/microlearning",
+    "title_de": "Microlearning",
+    "title_en": "Microlearning",
+    "title_fr": "Microlearning",
+    "title_it": "Microlearning",
+    "path": "/microLearnings",
     "olatConfigurationKey": "micro-learning",
     "isSubselectionRequired": true,
     "isEmailTransferRequired": false
   },
   {
     "id": "COURSE_LEADERBOARD",
-    "title": "Course Leaderboard",
+    "title_de": "Kurs-Rangliste",
+    "title_en": "Course Leaderboard",
+    "title_fr": "Classement du cours",
+    "title_it": "Classifica del corso",
     "path": "/",
     "olatConfigurationKey": "course-leaderboard",
     "isSubselectionRequired": false,

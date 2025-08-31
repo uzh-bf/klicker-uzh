@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityLogModificationFieldType as ActivityLogModificationFieldTypeEnum,
   CatalogObject as CatalogObjectInterface,
@@ -145,6 +145,19 @@ export const PermissionInfo = PermissionInfoRef.implement({
     permissionLevel: t.expose('permissionLevel', { type: PermissionLevel }),
     propagation: t.exposeBoolean('propagation', { nullable: true }),
     isOwn: t.exposeBoolean('isOwn', { nullable: true }),
+  }),
+})
+
+interface IPermissionsList {
+  isOwner: boolean
+  permissions: IPermissionInfo[]
+}
+export const PermissionsListRef =
+  builder.objectRef<IPermissionsList>('PermissionsList')
+export const PermissionsList = PermissionsListRef.implement({
+  fields: (t) => ({
+    isOwner: t.exposeBoolean('isOwner'),
+    permissions: t.expose('permissions', { type: [PermissionInfo] }),
   }),
 })
 

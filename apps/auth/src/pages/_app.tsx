@@ -1,8 +1,8 @@
-import { getMessageFallback, onError } from '@klicker-uzh/i18n'
+import { getMessageFallback, onError, routing } from '@klicker-uzh/i18n'
 import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
 import { Toaster } from '@uzh-bf/design-system'
 import { SessionProvider } from 'next-auth/react'
-import { NextIntlClientProvider } from 'next-intl'
+import { Locale, NextIntlClientProvider } from 'next-intl'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
 
@@ -14,6 +14,11 @@ export default function App({
 }: AppProps) {
   const { locale } = useRouter()
 
+  // ensure locale is one of the supported locales
+  const validLocale = routing.locales.includes(locale as Locale)
+    ? (locale as (typeof routing.locales)[number])
+    : routing.defaultLocale
+
   return (
     <div
       id="__app"
@@ -22,7 +27,7 @@ export default function App({
       <NextIntlClientProvider
         timeZone="Europe/Zurich"
         messages={pageProps.messages}
-        locale={locale}
+        locale={validLocale}
         onError={onError}
         getMessageFallback={getMessageFallback}
       >

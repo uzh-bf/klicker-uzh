@@ -30,25 +30,29 @@ function StartModal({
           status: PublicationStatus.Published,
         },
       },
-      update(cache) {
-        const data = cache.readQuery({
-          query: GetUnassignedLiveQuizzesDocument,
-        })
-        cache.writeQuery({
-          query: GetUnassignedLiveQuizzesDocument,
-          data: {
-            unassignedLiveQuizzes:
-              data?.unassignedLiveQuizzes?.map((quiz) =>
+      update(cache, { data: res }) {
+        // check if the request was successful
+        const success = !!res?.startLiveQuiz?.id
+        if (!success) return
+
+        // update the cache with the updated state for the started live quiz
+        cache.updateQuery(
+          { query: GetUnassignedLiveQuizzesDocument },
+          (data) => {
+            if (!data?.unassignedLiveQuizzes) return
+
+            return {
+              unassignedLiveQuizzes: data.unassignedLiveQuizzes.map((quiz) =>
                 quiz.id === quizId
                   ? {
-                      id: quizId,
-                      name: quizName,
+                      ...quiz,
                       status: PublicationStatus.Published,
                     }
                   : quiz
-              ) ?? [],
-          },
-        })
+              ),
+            }
+          }
+        )
       },
     }
   )
@@ -60,9 +64,7 @@ function StartModal({
       primaryLabel={t('shared.generic.start')}
       onPrimaryAction={async () => {
         try {
-          await startLiveQuiz({
-            variables: { id: quizId },
-          })
+          await startLiveQuiz({ variables: { id: quizId } })
           router.push(`/session/${quizId}`)
         } catch (error) {
           onClose()

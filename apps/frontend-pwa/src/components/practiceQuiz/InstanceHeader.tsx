@@ -83,46 +83,39 @@ function InstanceHeader({
         rateElement: {
           __typename: 'ElementFeedback',
           id: 0,
+          elementInstanceId: instanceId,
           upvote,
           downvote: !upvote,
+          feedback: feedbackValue ?? null,
         },
       },
-      update(cache, { data: dataRating }) {
-        const dataQuery = cache.readQuery({
-          query: GetStackElementFeedbacksDocument,
-          variables: { instanceIds: stackInstanceIds },
-        })
+      update(cache, { data }) {
+        // verify that the rating operation was successful
+        if (!data?.rateElement) return
 
-        const feedbackIx = dataQuery?.getStackElementFeedbacks?.findIndex(
-          (feedback) => feedback.elementInstanceId === instanceId
-        )
-        let newFeedbacks = [...(dataQuery?.getStackElementFeedbacks ?? [])]
-        if (typeof feedbackIx === 'undefined' || feedbackIx === -1) {
-          newFeedbacks.push({
-            __typename: 'ElementFeedback',
-            id:
-              dataRating?.rateElement?.id ??
-              Math.round(Math.random() * -1000000),
-            elementInstanceId: instanceId,
-            upvote,
-            downvote: !upvote,
-            feedback: null,
-          })
-        } else {
-          newFeedbacks[feedbackIx] = {
-            ...newFeedbacks[feedbackIx],
-            upvote,
-            downvote: !upvote,
-          }
-        }
-
-        cache.writeQuery({
-          query: GetStackElementFeedbacksDocument,
-          variables: { instanceIds: stackInstanceIds },
-          data: {
-            getStackElementFeedbacks: newFeedbacks,
+        // add or replace the element feedback in the corresponding list
+        cache.updateQuery(
+          {
+            query: GetStackElementFeedbacksDocument,
+            variables: { instanceIds: stackInstanceIds },
           },
-        })
+          (qData) => {
+            if (!qData?.getStackElementFeedbacks) {
+              return { getStackElementFeedbacks: [data.rateElement!] }
+            }
+
+            return {
+              getStackElementFeedbacks: [
+                ...qData.getStackElementFeedbacks.filter(
+                  (feedback) =>
+                    feedback.elementInstanceId !==
+                    data.rateElement!.elementInstanceId
+                ),
+                data.rateElement!,
+              ],
+            }
+          }
+        )
       },
     })
 
@@ -145,7 +138,7 @@ function InstanceHeader({
       <div className="flex flex-row justify-between">
         <div className="flex flex-row items-center gap-2">
           {correctness === ResponseCorrectnessType.Correct && (
-            <FontAwesomeIcon icon={faCheckDouble} className="text-green-600" />
+            <FontAwesomeIcon icon={faCheckDouble} className="text-green-700" />
           )}
           {correctness === ResponseCorrectnessType.Partial && (
             <FontAwesomeIcon icon={faCheck} className="text-yellow-600" />

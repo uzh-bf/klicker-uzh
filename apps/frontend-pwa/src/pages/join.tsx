@@ -45,9 +45,7 @@ function JoinPage() {
           onSubmit={async (values, { setSubmitting }) => {
             setSubmitting(true)
             const participant = await joinCourseWithPin({
-              variables: {
-                pin: Number(values.pin.replace(/\s/g, '')),
-              },
+              variables: { pin: Number(values.pin.replace(/\s/g, '')) },
             })
 
             if (participant?.data?.joinCourseWithPin) {

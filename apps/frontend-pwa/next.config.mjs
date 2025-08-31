@@ -1,5 +1,8 @@
 import withPWAInit from '@ducanh2912/next-pwa'
 import { getNextBaseConfig, getNextPWAConfig } from '@klicker-uzh/next-config'
+import createNextIntlPlugin from 'next-intl/plugin'
+
+const withNextIntl = createNextIntlPlugin('./src/types/i18n.ts')
 
 let nextConfig = {
   ...getNextBaseConfig({
@@ -16,4 +19,5 @@ if (process.env.NODE_ENV !== 'test') {
   nextConfig = withPWA(nextConfig)
 }
 
+nextConfig = withNextIntl(nextConfig)
 export default nextConfig

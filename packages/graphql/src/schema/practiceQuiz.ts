@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import {
   CaseStudyCaseResponse as CaseStudyCaseResponseType,
   CaseStudyCriterionResponse as CaseStudyCriterionResponseType,
@@ -13,9 +13,9 @@ import {
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { CourseRef, type ICourse } from './course.js'
+import { ElementInstanceRef, InstanceEvaluation } from './element.js'
 import { ElementType } from './elementData.js'
 import { IStackFeedback } from './evaluation.js'
-import { ElementInstanceRef, InstanceEvaluation } from './question.js'
 
 export const ElementOrderType = builder.enumType('ElementOrderType', {
   values: Object.values(DB.ElementOrderType),
@@ -23,6 +23,10 @@ export const ElementOrderType = builder.enumType('ElementOrderType', {
 
 export const PublicationStatus = builder.enumType('PublicationStatus', {
   values: Object.values(DB.PublicationStatus),
+})
+
+export const ReviewStatus = builder.enumType('ReviewStatus', {
+  values: Object.values(DB.ReviewStatus),
 })
 
 export const ElementStackType = builder.enumType('ElementStackType', {
@@ -170,14 +174,26 @@ export const ElementStack = ElementStackRef.implement({
 })
 
 export interface IPracticeQuiz
-  extends Omit<
+  extends Pick<
     DB.PracticeQuiz,
     | 'startedCount'
     | 'completedCount'
     | 'repeatedCount'
     | 'areInstancesOutdated'
     | 'scheduledPublicationTaskId'
-    | 'scheduledCompletionTaskId'
+    | 'id'
+    | 'name'
+    | 'displayName'
+    | 'description'
+    | 'templateName'
+    | 'pointsMultiplier'
+    | 'resetTimeDays'
+    | 'orderType'
+    | 'status'
+    | 'availableFrom'
+    | 'courseId'
+    | 'createdAt'
+    | 'updatedAt'
   > {
   course?: ICourse
   stacks?: IElementStack[]

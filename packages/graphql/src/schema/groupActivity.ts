@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import {
   type GroupActivityClueInput as GroupActivityClueInputType,
   type GroupActivityDecision as GroupActivityDecisionType,
@@ -10,6 +10,10 @@ import {
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { type ICourse, CourseRef } from './course.js'
+import {
+  ChoicesResponseObject,
+  SingleQuestionResponseCaseStudyCase,
+} from './element.js'
 import { ElementType } from './elementData.js'
 import {
   type IParticipant,
@@ -22,10 +26,6 @@ import {
   ElementStackRef,
   PublicationStatus,
 } from './practiceQuiz.js'
-import {
-  ChoicesResponseObject,
-  SingleQuestionResponseCaseStudyCase,
-} from './question.js'
 
 export const ParameterType = builder.enumType('ParameterType', {
   values: Object.values(DB.ParameterType),

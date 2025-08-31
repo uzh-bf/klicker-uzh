@@ -1,3 +1,0 @@
-mutation LoginUserToken($shortname: String!, $token: String!) {
-  loginUserToken(shortname: $shortname, token: $token)
-}

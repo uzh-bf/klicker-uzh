@@ -35,6 +35,17 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+      postgres_hatchet:
+        image: postgres:15
+        env:
+          POSTGRES_USER: hatchet
+          POSTGRES_PASSWORD: hatchet
+          POSTGRES_DB: hatchet
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
       redis_cache:
         image: redis:7
         options: >-
@@ -53,6 +64,23 @@ jobs:
         image: redis:7
         ports:
           - 6379:6379
+      hatchet:
+        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:latest
+        ports:
+          - '8888:8888'
+          - '7077:7077'
+        env:
+          DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
+          SERVER_AUTH_COOKIE_DOMAIN: hatchet
+          SERVER_AUTH_COOKIE_INSECURE: 't'
+          SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
+          SERVER_GRPC_INSECURE: 't'
+          SERVER_GRPC_BROADCAST_ADDRESS: hatchet:7077
+          SERVER_GRPC_PORT: '7077'
+          SERVER_URL: http://hatchet:8888
+          SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
+          SERVER_DEFAULT_ENGINE_VERSION: 'V1'
+
     # strategy:
     #   fail-fast: false # https://github.com/cypress-io/github-action/issues/48
     #   matrix:
@@ -97,23 +125,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-turbo-
 
-      - name: Install bun
-        run: pnpm add -g bun@1.0.7
-
       - name: Install dependencies
         run: pnpm install
 
       # - name: Install azure-functions-core-tools
       #   run: npm i -g azure-functions-core-tools@4 --unsafe-perm true
 
-      - name: Prepare .env and local.settings.json files
+      - name: Prepare .env files
         run: |
           mv apps/backend-docker/.env.cypress apps/backend-docker/.env
-          echo "$FUNC_RESPONSES_SETTINGS" > apps/func-incoming-responses/local.settings.json
-          echo "$FUNC_RESPONSE_PROCESSOR_SETTINGS" > apps/func-response-processor/local.settings.json
-        env:
-          FUNC_RESPONSES_SETTINGS: ${{ secrets.FUNC_RESPONSES_SETTINGS }}
-          FUNC_RESPONSE_PROCESSOR_SETTINGS: ${{ secrets.FUNC_RESPONSE_PROCESSOR_SETTINGS }}
+          ./_create_hatchet_token.sh
 
       - name: Build all packages and apps
         run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test

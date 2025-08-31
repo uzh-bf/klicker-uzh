@@ -6,7 +6,7 @@ import {
   ObjectType,
   PermissionLevel,
   PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
@@ -311,7 +311,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
 
     // seed a template, owned by user 1 and shared with user 4
     const activityId = '066eb3c2-b6dd-4f9a-92d0-3da45224cfc6'
-    const template = await prisma.activityTemplate.create({
+    await prisma.activityTemplate.create({
       data: {
         description: 'Description',
         instructions: 'Instructions',
@@ -986,6 +986,7 @@ describe('Unit tests for resource management (e.g. answer collections)', () => {
       { id: firstEntry.id, collectionId: AC1!.id },
       userOneCtx
     )
+    expect(failure1).toBeNull()
 
     // delete the first element, create a second element owned by user 2 and link it again to the first answer collection entry
     await prisma.element.delete({

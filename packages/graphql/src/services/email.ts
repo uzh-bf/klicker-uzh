@@ -1,4 +1,4 @@
-import { PrismaClient } from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import nodemailer from 'nodemailer'
 
 type AVAILABLE_EMAIL_TEMPLATES =
@@ -51,7 +51,7 @@ export async function hydrateTemplate(
     templateName: AVAILABLE_EMAIL_TEMPLATES
     variables?: Record<string, string>
   },
-  prisma: PrismaClient
+  prisma: DB.PrismaClient
 ) {
   let template
 

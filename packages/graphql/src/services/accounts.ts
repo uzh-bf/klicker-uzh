@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import { DisplayMode } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
@@ -7,13 +7,12 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
-import dayjs from 'dayjs'
 import type { CookieOptions } from 'express'
 import JWT from 'jsonwebtoken'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { sendTeamsNotifications } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
+import { sendTeamsNotifications } from './notifications.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -24,62 +23,6 @@ const COOKIE_SETTINGS: CookieOptions = {
     process.env.NODE_ENV === 'production' &&
     process.env.COOKIE_DOMAIN !== '127.0.0.1',
   sameSite: 'lax',
-}
-
-interface LoginUserTokenArgs {
-  shortname: string
-  token: string
-}
-
-export async function loginUserToken(
-  { shortname, token }: LoginUserTokenArgs,
-  ctx: Context
-) {
-  const user = await ctx.prisma.user.findUnique({
-    where: { shortname: shortname.trim() },
-  })
-
-  if (!user) {
-    await sendTeamsNotifications(
-      'graphql/loginUserToken',
-      `LOGIN FAILED: User with shortname ${shortname} not found.`
-    )
-    return null
-  }
-
-  const isLoginValid =
-    token === user.loginToken &&
-    dayjs(user.loginTokenExpiresAt).isAfter(dayjs())
-
-  if (!isLoginValid) return null
-
-  ctx.prisma.user.update({
-    where: { id: user.id },
-    data: { lastLoginAt: new Date() },
-  })
-
-  const jwt = JWT.sign(
-    {
-      sub: user.id,
-      role: user.role,
-      scope: DB.UserLoginScope.SESSION_EXEC,
-    },
-    // TODO: use structured configuration approach
-    process.env.APP_SECRET as string,
-    {
-      algorithm: 'HS256',
-      expiresIn: '4w',
-    }
-  )
-
-  ctx.res.cookie('next-auth.session-token', jwt, {
-    ...COOKIE_SETTINGS,
-    maxAge: 1000 * 60 * 60 * 24 * 30,
-  })
-
-  ctx.res.cookie('NEXT_LOCALE', user.locale, COOKIE_SETTINGS)
-
-  return user.id
 }
 
 export async function logoutUser(_: any, ctx: ContextWithUser) {
@@ -445,37 +388,6 @@ export async function logoutTemporaryParticipant(
   return true
 }
 
-export async function generateLoginToken(ctx: ContextWithUser) {
-  const expirationDate = dayjs().add(10, 'minute').toDate()
-  const loginToken = Math.floor(
-    100000000 + Math.random() * 900000000
-  ).toString()
-
-  const user = await ctx.prisma.user.update({
-    where: { id: ctx.user.sub },
-    data: { loginToken: loginToken, loginTokenExpiresAt: expirationDate },
-  })
-
-  return user
-}
-
-export async function getLoginToken(ctx: ContextWithUser) {
-  const user = await ctx.prisma.user.findUnique({
-    where: { id: ctx.user.sub },
-  })
-
-  if (!user) return null
-
-  if (
-    !user.loginTokenExpiresAt ||
-    dayjs(user.loginTokenExpiresAt).isBefore(dayjs())
-  ) {
-    return null
-  }
-
-  return user
-}
-
 export async function changeUserLocale(
   { locale }: { locale: DB.Locale },
   ctx: ContextWithUser
@@ -503,13 +415,8 @@ export async function getUsersPrivatePreview(ctx: ContextWithUser) {
   }
 
   const users = await ctx.prisma.user.findMany({
-    where: {
-      privatePreview: true,
-    },
-    select: {
-      shortname: true,
-      email: true,
-    },
+    where: { privatePreview: true },
+    select: { shortname: true, email: true },
   })
 
   return users.map((user) => ({
@@ -981,7 +888,7 @@ interface UserLoginProps {
 }
 
 export async function createUserLogin(
-  { password, name, scope }: UserLoginProps,
+  { password, name }: UserLoginProps,
   ctx: ContextWithUser
 ) {
   // verify that the user is account owner
@@ -1062,9 +969,15 @@ export async function changeShortname(
   { shortname }: { shortname: string },
   ctx: ContextWithUser
 ) {
+  // verify that the trimmed shortname does not have a length of less than 5 and more than 10 characters (limit)
+  const trimmedShortname = shortname.trim()
+  if (trimmedShortname.length < 5 || trimmedShortname.length > 10) {
+    return null
+  }
+
   // check if the shortname is already taken
   const existingUser = await ctx.prisma.user.findUnique({
-    where: { shortname: shortname.trim() },
+    where: { shortname: trimmedShortname },
   })
 
   if (existingUser && existingUser.id !== ctx.user.sub) {
@@ -1078,7 +991,7 @@ export async function changeShortname(
 
   const user = await ctx.prisma.user.update({
     where: { id: ctx.user.sub },
-    data: { shortname: shortname.trim() },
+    data: { shortname: trimmedShortname },
   })
 
   return user

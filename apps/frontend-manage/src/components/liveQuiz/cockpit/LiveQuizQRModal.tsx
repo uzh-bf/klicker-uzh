@@ -1,16 +1,18 @@
 import { useQuery } from '@apollo/client'
-import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
+import { LocaleType, UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import QR from '@pages/qr/[...args]'
-import { Button, H3, Modal, Prose } from '@uzh-bf/design-system'
+import { Button, H4, Modal, Prose } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import React from 'react'
 
 function LiveQuizQRModal({
   quizId,
+  language,
   onClose,
 }: {
   quizId: string
+  language?: LocaleType | null
   onClose: () => void
 }): React.ReactElement {
   const t = useTranslations()
@@ -19,8 +21,8 @@ function LiveQuizQRModal({
   })
 
   const shortname = data?.userProfile?.shortname
-  const accountRelativeLink = `/join/${shortname}`
-  const quizRelativeLink = `/session/${quizId}`
+  const accountRelativeLink = `${language ? `/${language}` : ''}/join/${shortname}`
+  const quizRelativeLink = `${language ? `/${language}` : ''}/session/${quizId}`
 
   return (
     <Modal
@@ -32,8 +34,8 @@ function LiveQuizQRModal({
       <div className="flex flex-col gap-8 md:flex-row">
         <div className="flex flex-1 flex-col justify-between">
           <div>
-            <H3>{t('manage.cockpit.qrCodeAccountLinkTitle')}</H3>
-            <Prose className={{ root: 'leading-6' }}>
+            <H4>{t('manage.cockpit.qrCodeAccountLinkTitle')}</H4>
+            <Prose className={{ root: 'prose-sm max-w-full leading-5' }}>
               {t('manage.cockpit.qrCodeAccountLinkDescription')}
             </Prose>
           </div>
@@ -59,8 +61,8 @@ function LiveQuizQRModal({
         </div>
         <div className="flex flex-1 flex-col justify-between">
           <div>
-            <H3>{t('manage.cockpit.qrCodeDirectLinkTitle')}</H3>
-            <Prose className={{ root: 'leading-6' }}>
+            <H4>{t('manage.cockpit.qrCodeDirectLinkTitle')}</H4>
+            <Prose className={{ root: 'prose-sm max-w-full leading-5' }}>
               {t('manage.cockpit.qrCodeDirectLinkDescription')}
             </Prose>
           </div>

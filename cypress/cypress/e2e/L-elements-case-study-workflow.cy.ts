@@ -20,6 +20,12 @@ type CriterionDataType = {
 describe('Test creation and editing functionalities, validation, etc. for case study elements', function () {
   before(() => {
     cy.seed()
+
+    // set browser language to english (independent of local machine setting
+    Cypress.automation('remote:debugger:protocol', {
+      command: 'Emulation.setLocaleOverride',
+      params: { locale: 'en' },
+    })
   })
 
   after(() => {
@@ -254,15 +260,14 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get('[data-cy="save-new-question"]').click()
     cy.wait(500)
 
-    cy.get(`[data-cy="element-item-${this.data.CS.title}"]`).contains(
-      this.data.CS.content
-    )
-    cy.get(`[data-cy="element-item-${this.data.CS.title}"]`).contains(
-      this.data.CS.title
-    )
-    cy.get(`[data-cy="element-item-${this.data.CS.title}"]`).contains(
-      messages.shared.READY.statusLabel
-    )
+    cy.validateElement({
+      element: this.data.CS.title,
+      contains: [
+        this.data.CS.content,
+        this.data.CS.title,
+        messages.shared.READY.statusLabel,
+      ],
+    })
   })
 
   it('Verify that the correct content has been saved', function () {
@@ -1432,9 +1437,10 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get('[data-cy="save-new-question"]').click()
     cy.wait(500)
 
-    cy.get(`[data-cy="element-item-${this.data.CS_INLINE.title}"]`).contains(
-      this.data.CS_INLINE.content
-    )
+    cy.validateElement({
+      element: this.data.CS_INLINE.title,
+      contains: [this.data.CS_INLINE.title, this.data.CS_INLINE.content],
+    })
   })
 
   it('Verify that a new answer collection was created when creating the case study', function () {
@@ -1476,9 +1482,13 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.wait(500)
 
     // verify the changes were saved
-    cy.get(
-      `[data-cy="element-item-${this.data.CS_INLINE.titleEdited}"]`
-    ).contains(this.data.CS_INLINE.contentEdited)
+    cy.validateElement({
+      element: this.data.CS_INLINE.titleEdited,
+      contains: [
+        this.data.CS_INLINE.titleEdited,
+        this.data.CS_INLINE.contentEdited,
+      ],
+    })
   })
 
   it('Verify that all changes to the inline created case study have been saved correctly', function () {

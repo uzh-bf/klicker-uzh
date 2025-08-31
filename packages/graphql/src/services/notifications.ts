@@ -1,7 +1,7 @@
-import * as DB from '@klicker-uzh/prisma'
-import { GraphQLError } from 'graphql'
 // import webpush, { WebPushError } from 'web-push'
-import type { Context, ContextWithUser } from '../lib/context.js'
+import type { PrismaClient } from '@klicker-uzh/prisma/client'
+import axios from 'axios'
+import type { ContextWithUser } from '../lib/context.js'
 
 interface SubscriptionObjectInput {
   endpoint: string
@@ -47,9 +47,7 @@ export async function subscribeToPush(
         },
       },
     },
-    include: {
-      subscriptions: true,
-    },
+    include: { subscriptions: true },
   })
 }
 
@@ -82,13 +80,69 @@ export async function unsubscribeFromPush(
   }
 }
 
-export async function sendPushNotifications(prisma: DB.PrismaClient) {
+//TODO: how to address translation of the message when switching to multi language support?
+//E.g., store the language on the course entity and use it here to translate the message or
+// store the language on the user subscription entity and use this language when sending to the specific user?
+// export async function sendPushNotificationsToSubscribers(
+//   microLearning: DB.MicroLearning & {
+//     course: null | (DB.Course & { subscriptions: PushSubscription[] })
+//   },
+//   ctx: Context
+// ) {
+//   for (let sub of microLearning.course?.subscriptions ?? []) {
+//     try {
+//       const formattedDate = formatDate(microLearning.scheduledEndAt)
+//       await webpush.sendNotification(
+//         {
+//           endpoint: sub.endpoint,
+//           keys: {
+//             auth: sub.auth,
+//             p256dh: sub.p256dh,
+//           },
+//         },
+//         JSON.stringify({
+//           message: `Microlearning ${microLearning.displayName} for ${
+//             microLearning.course?.displayName ?? ''
+//           } is available until ${formattedDate.date} at ${formattedDate.time}.`,
+//           title: `KlickerUZH - New Microlearning available for the course ${
+//             microLearning.course?.name ?? ''
+//           }`,
+//         })
+//       )
+//     } catch (error) {
+//       console.error(
+//         'An error occured while trying to send the push notification: ',
+//         error
+//       )
+//       if (error instanceof WebPushError && error.statusCode === 410) {
+//         try {
+//           // subscription has expired or is no longer valid
+//           // remove it from the database
+//           await ctx.prisma.pushSubscription.delete({
+//             where: {
+//               id: sub.id,
+//             },
+//           })
+//         } catch (error) {
+//           console.error(
+//             'An error occured while trying to remove the expired subscription from the database: ',
+//             error
+//           )
+//         }
+//       } else {
+//         throw error
+//       }
+//     }
+//   }
+// }
+
+export async function sendPushNotifications(prisma: PrismaClient) {
   if (
     !process.env.VAPID_PUBLIC_KEY ||
     !process.env.VAPID_PRIVATE_KEY ||
     !process.env.NOTIFICATION_SUPPORT_MAIL
   ) {
-    throw new GraphQLError('VAPID keys or support email not available.')
+    throw new Error('VAPID keys or support email not available.')
   }
 
   // webpush.setVapidDetails(
@@ -151,58 +205,21 @@ export async function sendPushNotifications(prisma: DB.PrismaClient) {
   return true
 }
 
-//TODO: how to address translation of the message when switching to multi language support?
-//E.g., store the language on the course entity and use it here to translate the message or
-// store the language on the user subscription entity and use this language when sending to the specific user?
-async function sendPushNotificationsToSubscribers(
-  microLearning: DB.MicroLearning & {
-    course: null | (DB.Course & { subscriptions: PushSubscription[] })
-  },
-  ctx: Context
-) {
-  // for (let sub of microLearning.course?.subscriptions ?? []) {
-  //   try {
-  //     const formattedDate = formatDate(microLearning.scheduledEndAt)
-  //     await webpush.sendNotification(
-  //       {
-  //         endpoint: sub.endpoint,
-  //         keys: {
-  //           auth: sub.auth,
-  //           p256dh: sub.p256dh,
-  //         },
-  //       },
-  //       JSON.stringify({
-  //         message: `Microlearning ${microLearning.displayName} for ${
-  //           microLearning.course?.displayName ?? ''
-  //         } is available until ${formattedDate.date} at ${formattedDate.time}.`,
-  //         title: `KlickerUZH - New Microlearning available for the course ${
-  //           microLearning.course?.name ?? ''
-  //         }`,
-  //       })
-  //     )
-  //   } catch (error) {
-  //     console.error(
-  //       'An error occured while trying to send the push notification: ',
-  //       error
-  //     )
-  //     if (error instanceof WebPushError && error.statusCode === 410) {
-  //       try {
-  //         // subscription has expired or is no longer valid
-  //         // remove it from the database
-  //         await ctx.prisma.pushSubscription.delete({
-  //           where: {
-  //             id: sub.id,
-  //           },
-  //         })
-  //       } catch (error) {
-  //         console.error(
-  //           'An error occured while trying to remove the expired subscription from the database: ',
-  //           error
-  //         )
-  //       }
-  //     } else {
-  //       throw error
-  //     }
-  // }
-  // }
+export async function sendTeamsNotifications(scope: string, text: string) {
+  if (process.env.TEAMS_WEBHOOK_URL) {
+    try {
+      return await axios.post(process.env.TEAMS_WEBHOOK_URL, {
+        '@context': 'https://schema.org/extensions',
+        '@type': 'MessageCard',
+        themeColor: '0076D7',
+        title: scope,
+        text: `[${process.env.NODE_ENV}:${scope}] ${text}`,
+      })
+    } catch (error) {
+      console.error('Failed to send Teams notification:', error)
+      return null
+    }
+  }
+
+  return null
 }

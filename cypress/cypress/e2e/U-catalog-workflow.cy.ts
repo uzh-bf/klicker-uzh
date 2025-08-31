@@ -3,6 +3,12 @@ import messages from '../../../packages/i18n/messages/en'
 describe('Test all functionalities of catalog collections and objects contained therein', function () {
   before(() => {
     cy.seed()
+
+    // set browser language to english (independent of local machine setting
+    Cypress.automation('remote:debugger:protocol', {
+      command: 'Emulation.setLocaleOverride',
+      params: { locale: 'en' },
+    })
   })
 
   after(() => {
@@ -236,7 +242,8 @@ describe('Test all functionalities of catalog collections and objects contained 
       collectionName: this.data.AC2.name,
       userId: Cypress.env('LECTURER_IND_ID'),
     })
-    cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).should('exist')
+    cy.validateElement({ element: this.data.SEML.title })
+
     cy.createQuestionSE({
       name: this.data.SEML2.title,
       content: this.data.SEML2.content,
@@ -244,7 +251,7 @@ describe('Test all functionalities of catalog collections and objects contained 
       collectionName: this.data.AC2.name,
       userId: Cypress.env('LECTURER_IND_ID'),
     })
-    cy.get(`[data-cy="element-item-${this.data.SEML2.title}"]`).should('exist')
+    cy.validateElement({ element: this.data.SEML2.title })
   })
 
   it('Create the questions that will be required for this test workflow', function () {

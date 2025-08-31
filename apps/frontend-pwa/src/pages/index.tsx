@@ -11,6 +11,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import {
   ParticipationsDocument,
+  SelfDocument,
   SubscribeToPushDocument,
   UnsubscribeFromPushDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -20,14 +21,34 @@ import { H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import useStudentOverviewSplit from '~/lib/hooks/useStudentOverviewSplit'
+import { useRouter } from 'next/router'
+import { useEffect } from 'react'
 import CourseElement from '../components/CourseElement'
 import Layout from '../components/Layout'
 import LinkButton from '../components/common/LinkButton'
 import MicroLearningListSubscriber from '../components/microLearning/MicroLearningListSubscriber'
+import useStudentOverviewSplit from '../lib/hooks/useStudentOverviewSplit'
 
 function Index() {
+  const router = useRouter()
   const t = useTranslations()
+
+  // fetch user info for locale
+  const { data: selfData } = useQuery(SelfDocument, {
+    fetchPolicy: 'cache-and-network',
+  })
+
+  // redirect to stored locale if different
+  useEffect(() => {
+    if (
+      selfData?.self?.locale &&
+      router.locale &&
+      selfData.self.locale !== router.locale
+    ) {
+      // Only redirect if not already at correct locale
+      router.replace(`/${selfData.self.locale}`)
+    }
+  }, [selfData?.self?.locale, router.locale])
 
   // const { stickyValue: hasSeenSurvey, setValue: setHasSeenSurvey } =
   //   useStickyState('hasSeenSurvey', 'false')
@@ -210,7 +231,11 @@ function Index() {
               {activeMicrolearning.map((micro) => (
                 <LinkButton
                   icon={micro.isCompleted ? faCheck : faBookOpenReader}
-                  href={micro.isCompleted ? '' : `/microlearning/${micro.id}/`}
+                  href={
+                    micro.isCompleted
+                      ? ''
+                      : `/course/${micro.courseId}/microLearnings/${micro.id}/`
+                  }
                   key={micro.id}
                   disabled={micro.isCompleted}
                   className={{

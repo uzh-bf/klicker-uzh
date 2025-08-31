@@ -1,25 +1,21 @@
-import { useQuery } from '@apollo/client'
-import {
-  faClock,
-  faTrashCan,
-  IconDefinition,
-} from '@fortawesome/free-regular-svg-icons'
+import { faClock, IconDefinition } from '@fortawesome/free-regular-svg-icons'
 import { faCheck, faMessage, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   Course,
   ObjectType,
   PermissionLevel,
-  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Badge, Button, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import AssessmentBadge from '../activities/overview/AssessmentBadge'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectPermissionLevel from '../sharing/ObjectPermissionLevel'
 import CourseArchiveButton from './CourseArchiveButton'
+import CourseDeletionButton from './CourseDeletionButton'
 
 interface CourseListButtonProps {
   course?: Pick<
@@ -33,6 +29,7 @@ interface CourseListButtonProps {
     | 'isArchived'
     | 'isManager'
     | 'isRemovable'
+    | 'isAssessmentEnabled'
   >
   onClick: () => void
   icon?: IconDefinition
@@ -76,11 +73,6 @@ function CourseListButton({
     : false
   const courseRunning = dayjs(course?.endDate).isAfter(dayjs())
   const [activityLogOpen, setActivityLogOpen] = useState(false)
-
-  // TODO: once the sharing feature is available for all users, remove this feature flag check
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
 
   return (
     <>
@@ -127,26 +119,25 @@ function CourseListButton({
                   {t('shared.generic.ended')}
                 </Badge>
               )}
+              {course.isAssessmentEnabled && <AssessmentBadge />}
               {course.isArchived && (
                 <Badge>{t('shared.generic.archived')}</Badge>
               )}
             </div>
 
-            {dataUser?.userProfile?.privatePreview ? (
-              <Button
-                className={{
-                  root: 'h-9 w-9',
-                }}
-                onClick={(e) => {
-                  e?.stopPropagation()
-                  e?.preventDefault()
-                  setActivityLogOpen(true)
-                }}
-                data={{ cy: `activity-log-course-${course?.name}` }}
-              >
-                <Button.Icon withoutLabel icon={faMessage} />
-              </Button>
-            ) : null}
+            <Button
+              className={{
+                root: 'h-9 w-9',
+              }}
+              onClick={(e) => {
+                e?.stopPropagation()
+                e?.preventDefault()
+                setActivityLogOpen(true)
+              }}
+              data={{ cy: `activity-log-course-${course?.name}` }}
+            >
+              <Button.Icon withoutLabel icon={faMessage} />
+            </Button>
 
             {course.isManager ? (
               <>
@@ -171,22 +162,25 @@ function CourseListButton({
                     showArchiveModal={showArchiveModal}
                   />
                 )}
-                <Button
-                  className={{
-                    root: 'h-9 w-9 border-red-600 text-red-600 hover:text-red-600',
-                  }}
-                  onClick={(e) => {
-                    e?.stopPropagation()
-                    e?.preventDefault()
-                    showDeletionModal?.({
-                      open: true,
-                      courseId: course.id,
-                    })
-                  }}
-                  data={{ cy: `delete-course-${course.name}` }}
-                >
-                  <Button.Icon withoutLabel icon={faTrashCan} />
-                </Button>
+                {course.isAssessmentEnabled ? (
+                  <Tooltip
+                    tooltip={t('manage.courseList.noDeletionAssessment')}
+                  >
+                    <CourseDeletionButton
+                      id={course.id}
+                      name={course.name}
+                      showDeletionModal={showDeletionModal}
+                      isAssessmentEnabled={course.isAssessmentEnabled}
+                    />
+                  </Tooltip>
+                ) : (
+                  <CourseDeletionButton
+                    id={course.id}
+                    name={course.name}
+                    showDeletionModal={showDeletionModal}
+                    isAssessmentEnabled={course.isAssessmentEnabled}
+                  />
+                )}
               </>
             ) : null}
             {course.isRemovable ? (

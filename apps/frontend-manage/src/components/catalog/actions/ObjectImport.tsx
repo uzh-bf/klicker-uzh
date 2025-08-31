@@ -167,7 +167,6 @@ function ObjectImport({
         {filteredObjects.length === 0 &&
         filteredCatalogCollections.length === 0 ? (
           <UserNotification
-            type="info"
             message={t('manage.catalog.noObjectsFoundInCatalog')}
             className={{ root: 'mt-2' }}
           />

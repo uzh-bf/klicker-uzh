@@ -25,6 +25,12 @@ const synchronousEndDate = getDatetimeValidationString(3, '20') + ', 14:00'
 describe('Create and solve a group activity', function () {
   before(() => {
     cy.seed()
+
+    // set browser language to english (independent of local machine setting
+    Cypress.automation('remote:debugger:protocol', {
+      command: 'Emulation.setLocaleOverride',
+      params: { locale: 'en' },
+    })
   })
 
   after(() => {
@@ -181,21 +187,29 @@ describe('Create and solve a group activity', function () {
     )
 
     // set the start date of the group activity to 2 months in the future at 12:30
-    cy.setDatetime('select-start-date', 'availability-section-header', {
-      monthDelta: 1,
-      day: 10,
-      hour: 12,
-      minute: 30,
-      validation: startDate1,
+    cy.setDatetime({
+      cyString: 'select-start-date',
+      deselectorString: 'availability-section-header',
+      datetime: {
+        monthDelta: 1,
+        day: 10,
+        hour: 12,
+        minute: 30,
+        validation: startDate1,
+      },
     })
 
     // set the end date of the group activity to 3 months in the future at 14:00
-    cy.setDatetime('select-end-date', 'availability-section-header', {
-      monthDelta: 2,
-      day: 20,
-      hour: 14,
-      minute: 0,
-      validation: endDate1,
+    cy.setDatetime({
+      cyString: 'select-end-date',
+      deselectorString: 'availability-section-header',
+      datetime: {
+        monthDelta: 2,
+        day: 20,
+        hour: 14,
+        minute: 0,
+        validation: endDate1,
+      },
     })
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="back-activity-creation"]').click()
@@ -417,21 +431,29 @@ describe('Create and solve a group activity', function () {
     )
 
     // set the start date of the group activity to 1 month in the past at 12:30 (from previous 2 months in the future)
-    cy.setDatetime('select-start-date', 'availability-section-header', {
-      monthDelta: -3,
-      day: 10,
-      hour: 12,
-      minute: 30,
-      validation: runningStartDate,
+    cy.setDatetime({
+      cyString: 'select-start-date',
+      deselectorString: 'availability-section-header',
+      datetime: {
+        monthDelta: -3,
+        day: 10,
+        hour: 12,
+        minute: 30,
+        validation: runningStartDate,
+      },
     })
 
     // set the end date of the group activity to 2 months in the future at 14:00 (from previous 3 months in the future)
-    cy.setDatetime('select-end-date', 'availability-section-header', {
-      monthDelta: -1,
-      day: 20,
-      hour: 14,
-      minute: 0,
-      validation: runningEndDate,
+    cy.setDatetime({
+      cyString: 'select-end-date',
+      deselectorString: 'availability-section-header',
+      datetime: {
+        monthDelta: -1,
+        day: 20,
+        hour: 14,
+        minute: 0,
+        validation: runningEndDate,
+      },
     })
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -497,24 +519,13 @@ describe('Create and solve a group activity', function () {
     ).should('exist')
 
     // add another question to the group activity
-    const dataTransfer = new DataTransfer()
-    cy.get(`[data-cy="element-item-${this.data.SCML.title}"]`)
-      .contains(this.data.SCML.title)
-      .trigger('dragstart', {
-        dataTransfer,
-      })
-    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
-      dataTransfer,
+    cy.dragAndDropElement({
+      element: this.data.SCML.title,
+      target: 'drop-elements-stack-0',
     })
-
-    const dataTransfer2 = new DataTransfer()
-    cy.get(`[data-cy="element-item-${this.data.CT.title}"]`)
-      .contains(this.data.CT.title)
-      .trigger('dragstart', {
-        dataTransfer2,
-      })
-    cy.get('[data-cy="drop-elements-stack-0"]').trigger('drop', {
-      dataTransfer2,
+    cy.dragAndDropElement({
+      element: this.data.CT.title,
+      target: 'drop-elements-stack-0',
     })
 
     // verify that the contained questions are correct
@@ -837,12 +848,16 @@ describe('Create and solve a group activity', function () {
     ).click()
 
     // change the end date and check if the changes are saved
-    cy.setDatetime('extend-activity-date', 'extension-modal-description', {
-      monthDelta: 6,
-      day: 15,
-      hour: 18,
-      minute: 50,
-      validation: extensionDate,
+    cy.setDatetime({
+      cyString: 'extend-activity-date',
+      deselectorString: 'extension-modal-description',
+      datetime: {
+        monthDelta: 6,
+        day: 15,
+        hour: 18,
+        minute: 50,
+        validation: extensionDate,
+      },
     })
     cy.get('[data-cy="extend-activity-confirm"]').click()
     cy.wait(1000) // wait for the extension to be processed and stored
@@ -852,12 +867,16 @@ describe('Create and solve a group activity', function () {
       `[data-cy="extend-group-activity-${this.data.running.name}"]`
     ).click()
     cy.get('[data-cy="extend-activity-confirm"]').should('not.be.disabled')
-    cy.setDatetime('extend-activity-date', 'extension-modal-description', {
-      monthDelta: -12,
-      day: 15,
-      hour: 12,
-      minute: 0,
-      validation: getDatetimeValidationString(-4, '15') + ', 12:00',
+    cy.setDatetime({
+      cyString: 'extend-activity-date',
+      deselectorString: 'extension-modal-description',
+      datetime: {
+        monthDelta: -12,
+        day: 15,
+        hour: 12,
+        minute: 0,
+        validation: getDatetimeValidationString(-4, '15') + ', 12:00',
+      },
     })
     cy.get('[data-cy="extend-activity-confirm"]').should('be.disabled')
     cy.get('[data-cy="extend-activity-cancel"]').click()
@@ -1581,28 +1600,28 @@ describe('Create and solve a group activity', function () {
     data: any
   ) {
     cy.get(`[data-cy="activity-name-${activityName}"]`).click()
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-0"]').contains(
       data.SCML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-1"]').contains(
       data.MCML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-2"]').contains(
       data.KPML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-3"]').contains(
       data.NRML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-4"]').contains(
       data.FTML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-5"]').contains(
       data.SEML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-6"]').contains(
       data.CSML.title.substring(0, 20)
     )
-    cy.get('[data-cy="activity-details-modal"]').contains(
+    cy.get('[data-cy="stack-0-instance-7"]').contains(
       data.CT.title.substring(0, 20)
     )
     cy.get('[data-cy="close-activity-details-modal"]').click()
@@ -1718,8 +1737,8 @@ describe('Create and solve a group activity', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -1771,8 +1790,8 @@ describe('Create and solve a group activity', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -1879,8 +1898,8 @@ describe('Create and solve a group activity', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -1992,8 +2011,8 @@ describe('Create and solve a group activity', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title })
     })
 
     // open the activity overview and check the actions on all shared activities
@@ -2180,8 +2199,8 @@ describe('Create and solve a group activity', function () {
       data.SEML.title,
       data.CSML.title,
       data.CT.title,
-    ]).each((element) => {
-      cy.get(`[data-cy="element-item-${element}"]`).should('not.exist')
+    ]).each((element: string) => {
+      cy.validateElement({ element, shouldExist: false })
     })
 
     // previously shared group activities should no longer be visible
@@ -2813,6 +2832,105 @@ describe('Create and solve a group activity', function () {
       ).should('not.exist')
       cy.get(`[data-cy="close-share-object"]`).click()
     })
+  })
+  // #endregion
+
+  // ! Part 6: Activity Details Points
+  // #region
+  it('Create a group activity to check the activity preview', function () {
+    cy.loginLecturer()
+    cy.createGroupActivity({
+      name: this.data.details.name,
+      displayName: this.data.details.displayName,
+      task: this.data.details.task,
+      courseName: this.data.details.courseName,
+      multiplier: messages.manage.activityWizard.multiplier2,
+      scheduledStartDate: {
+        monthDelta: 1,
+        day: 10,
+        hour: 12,
+        minute: 30,
+        validation: synchronousStartDate,
+      }, // 2 months in the future at 12:30
+      scheduledEndDate: {
+        monthDelta: 2,
+        day: 20,
+        hour: 14,
+        minute: 0,
+        validation: synchronousEndDate,
+      }, // 3 months in the future at 14:00
+      clues: this.data.synchronous.clues,
+      stack: {
+        elements: [
+          this.data.SCML.title,
+          this.data.MCML.title,
+          this.data.KPML.title,
+          this.data.NRML.title,
+          this.data.FTML.title,
+          this.data.SEML.title,
+          this.data.CSML.title,
+        ],
+      },
+    })
+    cy.get('[data-cy="open-activity-overview"]').click()
+  })
+
+  it('Check points calculation for group activity', function () {
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="activity-GROUP_ACTIVITY-${this.data.details.name}"]`
+    ).should('exist')
+
+    cy.get(`[data-cy="activity-name-${this.data.details.name}"]`).click()
+    cy.assertAsynchronousActivityPoints({ totalPoints: 450 })
+
+    cy.get('[data-cy="activity-details-stack-header-0"]').contains('450 P.')
+    cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
+    cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.MCML.title)
+    cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.KPML.title)
+    cy.get('[data-cy="stack-0-instance-3"]').contains(this.data.NRML.title)
+    cy.get('[data-cy="stack-0-instance-4"]').contains(this.data.FTML.title)
+    cy.get('[data-cy="stack-0-instance-5"]').contains(this.data.SEML.title)
+    cy.get('[data-cy="stack-0-instance-6"]').contains(this.data.CSML.title)
+
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 100,
+      stackIx: 0,
+      instanceIx: 0,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 50,
+      stackIx: 0,
+      instanceIx: 1,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 50,
+      stackIx: 0,
+      instanceIx: 2,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 150,
+      stackIx: 0,
+      instanceIx: 3,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 50,
+      stackIx: 0,
+      instanceIx: 4,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 0,
+      stackIx: 0,
+      instanceIx: 5,
+    })
+    cy.assertAsynchronousInstancePoints({
+      totalPoints: 50,
+      stackIx: 0,
+      instanceIx: 6,
+    })
+
+    cy.get('[data-cy="close-activity-details-modal"]').click()
   })
   // #endregion
 })

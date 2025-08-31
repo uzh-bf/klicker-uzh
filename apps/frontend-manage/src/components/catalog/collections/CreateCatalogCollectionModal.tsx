@@ -56,25 +56,19 @@ function CreateCatalogCollectionModal({
                 access: values.access as ObjectAccess,
               },
               update: (cache, { data }) => {
+                // check if the creation was successful
                 if (!data?.createCatalogCollection) return
 
-                const prevCollections = cache.readQuery({
-                  query: GetCatalogCollectionsListDocument,
-                })
-
-                if (!prevCollections?.getCatalogCollectionsList) {
-                  return
-                }
-
-                cache.writeQuery({
-                  query: GetCatalogCollectionsListDocument,
-                  data: {
+                // update the cached list of catalog collections
+                cache.updateQuery(
+                  { query: GetCatalogCollectionsListDocument },
+                  (qData) => ({
                     getCatalogCollectionsList: [
-                      ...(prevCollections.getCatalogCollectionsList ?? []),
-                      data.createCatalogCollection,
+                      ...(qData?.getCatalogCollectionsList ?? []),
+                      data.createCatalogCollection!,
                     ],
-                  },
-                })
+                  })
+                )
               },
             })
 

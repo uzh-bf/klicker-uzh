@@ -7,6 +7,7 @@ import {
   faUpRightFromSquare,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { LocaleType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H1 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -20,26 +21,26 @@ import LiveQuizQRModal from './LiveQuizQRModal'
 import RuntimeCounter from './RuntimeCounter'
 
 interface LiveQuizTimelineProps {
+  quizId: string
+  isGamificationEnabled: boolean
   blocks?: QuizTimelineBlock[]
   quizName: string
+  language?: LocaleType | null
   handleEndLiveQuiz: () => void
-  handleTogglePublicEvaluation: () => void
   handleOpenBlock: (blockId: number) => void
   handleCloseBlock: (blockId: number) => void
-  isEvaluationPublic?: boolean
-  quizId: string
   startedAt?: string
   loading?: boolean
 }
 
 function LiveQuizTimeline({
   quizId,
-  blocks = [],
+  isGamificationEnabled,
   quizName,
+  blocks = [],
+  language,
   startedAt,
-  isEvaluationPublic = false,
   handleEndLiveQuiz,
-  handleTogglePublicEvaluation,
   handleOpenBlock,
   handleCloseBlock,
   loading,
@@ -88,18 +89,15 @@ function LiveQuizTimeline({
         lastActiveBlockId === blocks[blocks.length - 1].id &&
         activeBlockId === -1
       ) {
-        setInCooldown(false)
         setButtonState('endQuiz')
       } else if (
         // no block is active and no block has been executed yet
         lastActiveBlockId === -1 &&
         activeBlockId === -1
       ) {
-        setInCooldown(false)
         setButtonState('firstBlock')
       } else {
         // no block is active and the last block of the live quiz has not yet been executed
-        setInCooldown(false)
         setButtonState('nextBlock')
       }
     }
@@ -131,16 +129,7 @@ function LiveQuizTimeline({
                 key={quizId}
                 onClose={() => setEmbedModalOpen(false)}
                 quizId={quizId}
-                elements={blocks
-                  ?.flatMap((block) => block.elements)
-                  .filter(
-                    (instance) =>
-                      typeof instance !== 'undefined' && instance !== null
-                  )
-                  .map((instance) => ({
-                    id: instance.id,
-                    name: instance.elementData.name,
-                  }))}
+                isGamificationEnabled={isGamificationEnabled}
               />
             ) : null}
             <Button
@@ -190,7 +179,7 @@ function LiveQuizTimeline({
             <div className="flex w-full flex-row flex-wrap gap-2 sm:mt-0 sm:w-max">
               <Button
                 primary
-                loading={loading}
+                disabled={loading}
                 className={{
                   root: twMerge(
                     'bg-uzh-red-100 hover:bg-uzh-red-100 h-8 text-white'
@@ -221,8 +210,6 @@ function LiveQuizTimeline({
                 <LiveQuizBlock
                   key={`${block.id}-${block.status}`}
                   block={block}
-                  inCooldown={inCooldown && activeBlockId === block.id}
-                  setInCooldown={setInCooldown}
                   active={activeBlockId === block.id}
                   className="my-auto"
                 />
@@ -262,10 +249,11 @@ function LiveQuizTimeline({
                 buttonState === 'nextBlock' ||
                 buttonState === 'endQuiz'
               }
-              loading={loading}
+              disabled={loading}
               className={{
                 root: twMerge(
-                  buttonState === 'endQuiz' && 'bg-uzh-red-100',
+                  buttonState === 'endQuiz' &&
+                    'bg-uzh-red-100 hover:bg-uzh-red-100',
                   buttonState === 'blockActive' &&
                     inCooldown &&
                     'text-uzh-red-100 border-uzh-red-100 border bg-white'
@@ -306,7 +294,11 @@ function LiveQuizTimeline({
         />
       )}
       {qrModal && (
-        <LiveQuizQRModal quizId={quizId} onClose={() => setQRModal(false)} />
+        <LiveQuizQRModal
+          quizId={quizId}
+          language={language}
+          onClose={() => setQRModal(false)}
+        />
       )}
     </div>
   )

@@ -5,7 +5,7 @@ import {
   ObjectType,
   PermissionLevel,
   PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
@@ -37,7 +37,6 @@ describe('Unit tests for user group management', () => {
   let userTwoCtx: ContextWithUser
   let userThreeCtx: ContextWithUser
   let userFourCtx: ContextWithUser
-  let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
     const {

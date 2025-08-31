@@ -5,7 +5,7 @@ import {
   ObjectType,
   PermissionLevel,
   PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
@@ -53,8 +53,6 @@ describe('Unit tests for sharing functionalities of courses', () => {
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
   let userThreeCtx: ContextWithUser
-  let userFourCtx: ContextWithUser
-  let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
     const {
@@ -2127,7 +2125,7 @@ describe('Unit tests for sharing functionalities of courses', () => {
     expect(res8).toBeTruthy()
 
     // verify that all direct permissions are correctly returned
-    const directPermissions = await getCoursePermissions(
+    const { permissions: directPermissions } = await getCoursePermissions(
       { id: course.id },
       userOneCtx
     )
@@ -3490,21 +3488,11 @@ describe('Unit tests for sharing functionalities of courses', () => {
 
   it('Verify that individual and group permissions can be revoked on courses', async () => {
     const {
-      AC,
       SC,
-      MC,
-      KP,
-      NR,
-      FT,
-      SE,
-      CS,
-      FC,
-      CT,
       course,
       liveQuiz,
       practiceQuiz,
       microlearning,
-      groupActivity,
       group3,
       group4,
     } = await seedCourseActivities(prisma)

@@ -25,6 +25,7 @@ query GetSingleLiveQuiz($quizId: String!) {
     maxBonusPoints
     timeToZeroBonus
     isGamificationEnabled
+    isAssessmentEnabled
     isLiveQAEnabled
     isConfusionFeedbackEnabled
     isModerationEnabled

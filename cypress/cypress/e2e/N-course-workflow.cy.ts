@@ -4,6 +4,12 @@ import { getDatetimeValidationString } from './helpers'
 describe('Test course creation and editing functionalities', function () {
   before(() => {
     cy.seed()
+
+    // set browser language to english (independent of local machine setting
+    Cypress.automation('remote:debugger:protocol', {
+      command: 'Emulation.setLocaleOverride',
+      params: { locale: 'en' },
+    })
   })
 
   after(() => {
@@ -46,6 +52,17 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-description"]')
       .realClick()
       .type(this.data.course1.description)
+
+    // change the course language from the user default locale (english) to german
+    cy.get('[data-cy="course-language"]').should(
+      'contain',
+      messages.shared.generic.en
+    )
+    cy.selectOption('[data-cy="course-language"]', messages.shared.generic.de)
+    cy.get('[data-cy="course-language"]').should(
+      'contain',
+      messages.shared.generic.de
+    )
 
     // enter a course notification email (should be pre-filled with the user email)
     cy.get('[data-cy="course-notification-email"]').should(
@@ -142,6 +159,17 @@ describe('Test course creation and editing functionalities', function () {
       this.data.course2.displayName
     )
 
+    // keep the course language as english
+    cy.get('[data-cy="course-language"]').should(
+      'contain',
+      messages.shared.generic.en
+    )
+    cy.selectOption('[data-cy="course-language"]', messages.shared.generic.en)
+    cy.get('[data-cy="course-language"]').should(
+      'contain',
+      messages.shared.generic.en
+    )
+
     // enter a course notification email
     cy.get('[data-cy="course-notification-email"]').should(
       'have.value',
@@ -196,11 +224,9 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'checked'
     )
-    cy.get('[data-cy="toggle-group-creation-enabled"]').should(
-      'not.be.disabled'
-    )
+    cy.get('[data-cy="course-group-creation"]').should('not.be.disabled')
     cy.get('[data-cy="course-gamification"]').click()
-    cy.get('[data-cy="toggle-group-creation-enabled"]').should('be.disabled')
+    cy.get('[data-cy="course-group-creation"]').should('be.disabled')
     cy.get('[data-cy="group-creation-deadline"]').should('not.exist')
     cy.get('[data-cy="max-group-size"]').should('not.exist')
     cy.get('[data-cy="preferred-group-size"]').should('not.exist')
@@ -208,7 +234,7 @@ describe('Test course creation and editing functionalities', function () {
     // check if the values of the form are properly reset if gamification is disabled
     cy.get('[data-cy="manipulate-course-submit"]').should('not.be.disabled')
     cy.get('[data-cy="course-gamification"]').click()
-    cy.get('[data-cy="toggle-group-creation-enabled"]').click()
+    cy.get('[data-cy="course-group-creation"]').click()
     cy.get('[data-cy="max-group-size"]').clear()
     cy.get('[data-cy="manipulate-course-submit"]').should('be.disabled')
     cy.get('[data-cy="course-gamification"]').click()
@@ -216,10 +242,8 @@ describe('Test course creation and editing functionalities', function () {
 
     // change group settings
     cy.get('[data-cy="course-gamification"]').click()
-    cy.get('[data-cy="toggle-group-creation-enabled"]').should(
-      'not.be.disabled'
-    )
-    cy.get('[data-cy="toggle-group-creation-enabled"]').click()
+    cy.get('[data-cy="course-group-creation"]').should('not.be.disabled')
+    cy.get('[data-cy="course-group-creation"]').click()
 
     // enter an invalid group creation deadline date (after end date - 10 months in the future)
     // when field becomes visible, it is initialized with the current course date
@@ -537,6 +561,19 @@ describe('Test course creation and editing functionalities', function () {
       .clear()
       .type(this.data.course1.displayNameNew)
 
+    // check if the course language is set correctly
+    cy.get('[data-cy="course-language"]').should(
+      'contain',
+      messages.shared.generic.de
+    )
+
+    // change the course language to english
+    cy.selectOption('[data-cy="course-language"]', messages.shared.generic.en)
+    cy.get('[data-cy="course-language"]').should(
+      'contain',
+      messages.shared.generic.en
+    )
+
     // check if the notification email is set correctly
     cy.get('[data-cy="course-notification-email"]').should(
       'have.value',
@@ -623,6 +660,10 @@ describe('Test course creation and editing functionalities', function () {
       'have.value',
       this.data.course1.displayNameNew
     )
+    cy.get('[data-cy="course-language"]').should(
+      'contain',
+      messages.shared.generic.en
+    )
     cy.get('[data-cy="course-notification-email"]').should(
       'have.value',
       this.data.course1.notificationEmailNew
@@ -640,18 +681,8 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'checked'
     )
-    cy.get('[data-cy="course-gamification"]').should(
-      'have.attr',
-      'disabled',
-      'disabled'
-    )
-    cy.get('[data-cy="toggle-group-creation-enabled"]').should(
-      'not.have.attr',
-      'disabled',
-      'disabled'
-    )
-    cy.get('[data-cy="toggle-group-creation-enabled"]').click()
-    cy.get('[data-cy="toggle-group-creation-enabled"]').should(
+    cy.get('[data-cy="course-group-creation"]').click()
+    cy.get('[data-cy="course-group-creation"]').should(
       'have.attr',
       'data-state',
       'checked'
@@ -941,13 +972,12 @@ describe('Test course creation and editing functionalities', function () {
     cy.findByText(this.data.course2.name).should('not.exist')
 
     cy.get('[data-cy="library"]').click()
-    cy.get(`[data-cy="element-item-${this.data.deletion.qTitle}"]`).should(
-      'exist'
-    )
+    cy.validateElement({ element: this.data.deletion.qTitle })
     cy.deleteElement({ elementName: this.data.deletion.qTitle })
-    cy.get(`[data-cy="element-item-${this.data.deletion.qTitle}"]`).should(
-      'not.exist'
-    )
+    cy.validateElement({
+      element: this.data.deletion.qTitle,
+      shouldExist: false,
+    })
   })
   // #endregion
 
@@ -960,8 +990,8 @@ describe('Test course creation and editing functionalities', function () {
       data.NRML.title,
       data.SEML.title,
       data.CSML.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // check that the answer collection is not visible to the user
@@ -1049,8 +1079,8 @@ describe('Test course creation and editing functionalities', function () {
       data.NRML.title,
       data.SEML.title,
       data.CSML.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // check that the answer collection is not visible to the user
@@ -1144,8 +1174,8 @@ describe('Test course creation and editing functionalities', function () {
       data.NRML.title,
       data.SEML.title,
       data.CSML.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // check that the answer collection is not visible to the user
@@ -1271,11 +1301,11 @@ describe('Test course creation and editing functionalities', function () {
       data.NRML.title,
       data.SEML.title,
       data.CSML.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('exist')
-      cy.get(`[data-cy="element-item-${title}"]`)
-        .get(`[data-cy="permission-level-${title}-ADMIN"]`)
-        .should('exist')
+    ]).each((title: string) => {
+      cy.validateElement({
+        element: title,
+        contains: [messages.manage.sharing.permissionsADMIN],
+      })
     })
 
     // check that the answer collection is visible to the user
@@ -1365,8 +1395,8 @@ describe('Test course creation and editing functionalities', function () {
       data.NRML.title,
       data.SEML.title,
       data.CSML.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // verify that the user has no access to the answer collection

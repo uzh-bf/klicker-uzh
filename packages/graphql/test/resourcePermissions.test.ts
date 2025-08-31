@@ -1,8 +1,11 @@
 import { Hatchet } from '@hatchet-dev/typescript-sdk'
-import { ElementType, PermissionLevel, PrismaClient } from '@klicker-uzh/prisma'
+import {
+  ElementType,
+  PermissionLevel,
+  PrismaClient,
+} from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
-import type { ContextWithUser } from '../src/lib/context.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
 import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 
@@ -11,11 +14,6 @@ describe('Unit tests covering the creation of derived permissions for resources 
   let prisma: PrismaClient
   let hatchet: Hatchet
   let emitter: EventEmitter
-  let userOneCtx: ContextWithUser
-  let userTwoCtx: ContextWithUser
-  let userThreeCtx: ContextWithUser
-  let userFourCtx: ContextWithUser
-  let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
     const {
@@ -1090,7 +1088,7 @@ describe('Unit tests covering the creation of derived permissions for resources 
     })
 
     // create direct permissions with different permission levels for the answer collection
-    const directWritePermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userTwo.id,
         answerCollectionId: answerCollection.id,
@@ -1098,7 +1096,7 @@ describe('Unit tests covering the creation of derived permissions for resources 
       },
     })
 
-    const directAdminPermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userThree.id,
         answerCollectionId: answerCollection.id,
@@ -1670,7 +1668,7 @@ describe('Unit tests covering the creation of derived permissions for resources 
     })
 
     // grant individual WRITE permission for user 3
-    const individualPermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userThree.id,
         answerCollectionId: answerCollection.id,

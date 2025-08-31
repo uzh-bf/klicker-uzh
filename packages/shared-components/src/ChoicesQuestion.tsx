@@ -3,7 +3,6 @@ import type {
   ChoicesInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
-import { useTranslations } from 'next-intl'
 import React from 'react'
 import MCKPRIMEvaluation from './evaluation/MCKPRIMEvaluation'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
@@ -47,8 +46,6 @@ function ChoicesQuestion({
   noPoints,
   disabled,
 }: ChoicesQuestionProps) {
-  const t = useTranslations()
-
   return (
     <div className="flex flex-col gap-4 md:flex-row">
       <div className="flex-1">

@@ -1,8 +1,5 @@
 import { useMutation } from '@apollo/client'
-import {
-  GetUserCoursesDocument,
-  ToggleArchiveCourseDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ToggleArchiveCourseDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
@@ -17,8 +14,7 @@ function CourseArchiveModal({
 }) {
   const t = useTranslations()
   const [toggleArchiveCourse, { loading }] = useMutation(
-    ToggleArchiveCourseDocument,
-    { refetchQueries: [{ query: GetUserCoursesDocument }] }
+    ToggleArchiveCourseDocument
   )
 
   if (!courseId) {
@@ -46,6 +42,18 @@ function CourseArchiveModal({
               id: courseId,
               isArchived: !isArchived,
             },
+          },
+          update: (cache, { data }) => {
+            // check if the query was successful
+            if (!data?.toggleArchiveCourse) return
+
+            // update the entry in the course list accordingly
+            cache.modify({
+              id: cache.identify(data.toggleArchiveCourse),
+              fields: {
+                isArchived: () => data.toggleArchiveCourse!.isArchived,
+              },
+            })
           },
         })
         onClose()

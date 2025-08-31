@@ -4,6 +4,12 @@ import { getDatetimeValidationString } from './helpers'
 describe('Feature test for activity logs', function () {
   before(() => {
     cy.seed()
+
+    // set browser language to english (independent of local machine setting
+    Cypress.automation('remote:debugger:protocol', {
+      command: 'Emulation.setLocaleOverride',
+      params: { locale: 'en' },
+    })
   })
 
   after(() => {
@@ -235,6 +241,9 @@ describe('Feature test for activity logs', function () {
     cy.get('[data-cy="save-new-question"]').click()
 
     // open the activity log modal from the element dropdown
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.SC.title}{enter}`)
     cy.get(`[data-cy="actions-element-${this.data.SC.title}"]`).click()
     cy.get(`[data-cy="view-activity-log-${this.data.SC.title}"]`).click()
     cy.get('[data-cy="activity-log-input"]')
@@ -254,6 +263,9 @@ describe('Feature test for activity logs', function () {
     const creationMessage = `${Cypress.env('LECTURER_SHORTNAME')} created this object.`
 
     // verify that creation message is displayed correctly in the activity log
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.SC.title}{enter}`)
     cy.get(`[data-cy="actions-element-${this.data.SC.title}"]`).click()
     cy.get(`[data-cy="view-activity-log-${this.data.SC.title}"]`).click()
     cy.get(`[data-cy="activity-log-entry-${creationMessage}"]`).should('exist')
@@ -297,6 +309,9 @@ describe('Feature test for activity logs', function () {
 
     // check the activity log and that a corresponding message is shown
     const statusChangeMessage = `${Cypress.env('LECTURER_SHORTNAME')} modified status (READY -> REVIEW).`
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.SC.title}{enter}`)
     cy.get(`[data-cy="actions-element-${this.data.SC.title}"]`).click()
     cy.get(`[data-cy="view-activity-log-${this.data.SC.title}"]`).click()
     cy.get(`[data-cy="activity-log-entry-${statusChangeMessage}"]`).should(
@@ -323,6 +338,9 @@ describe('Feature test for activity logs', function () {
 
     // check the activity log and that a corresponding message is shown
     const titleChangeMessage = `${Cypress.env('LECTURER_SHORTNAME')} modified title (${this.data.SC.title} -> ${this.data.element.newTitle}).`
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.element.newTitle}{enter}`)
     cy.get(`[data-cy="actions-element-${this.data.element.newTitle}"]`).click()
     cy.get(
       `[data-cy="view-activity-log-${this.data.element.newTitle}"]`
@@ -348,6 +366,9 @@ describe('Feature test for activity logs', function () {
 
   it('Grant READ, WRITE, ADMIN permissions on the element to the other users', function () {
     cy.loginLecturer()
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.SC.title}{enter}`)
     cy.get(`[data-cy="actions-element-${this.data.SC.title}"]`).click()
     cy.get(`[data-cy="share-element-${this.data.SC.title}"]`).click()
     setUserPermissionsElementCollection()
@@ -355,6 +376,9 @@ describe('Feature test for activity logs', function () {
 
   it('Log in as the user with READ permissions, verify the permissions and enter a new message', function () {
     cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.SC.title}{enter}`)
     cy.get(`[data-cy="actions-element-${this.data.SC.title}"]`).click()
     cy.get(`[data-cy="view-activity-log-${this.data.SC.title}"]`).click()
     cy.get('[data-cy="activity-log-input"]')
@@ -377,6 +401,9 @@ describe('Feature test for activity logs', function () {
 
   it('Log in as the user with WRITE permissions, verify the permissions and enter a new message', function () {
     cy.loginInstitutionalCatalyst()
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.SC.title}{enter}`)
     cy.get(`[data-cy="actions-element-${this.data.SC.title}"]`).click()
     cy.get(`[data-cy="view-activity-log-${this.data.SC.title}"]`).click()
     cy.get('[data-cy="activity-log-input"]')
@@ -399,6 +426,9 @@ describe('Feature test for activity logs', function () {
 
   it('Log in as the user with ADMIN permissions, verify the permissions and enter a new message', function () {
     cy.loginInstitutionalCatalyst2()
+    cy.get('[data-cy="elements-search-input"]')
+      .clear()
+      .type(`${this.data.SC.title}{enter}`)
     cy.get(`[data-cy="actions-element-${this.data.SC.title}"]`).click()
     cy.get(`[data-cy="view-activity-log-${this.data.SC.title}"]`).click()
     cy.get('[data-cy="activity-log-input"]')
@@ -497,20 +527,7 @@ describe('Feature test for activity logs', function () {
         validation: getDatetimeValidationString(2, '20') + ', 14:00',
       }, // 2 months in the future at 14:00
       task: 'TASK',
-      clues: [
-        {
-          type: 'text',
-          name: 'Clue 1',
-          displayName: 'First Hint',
-          content: 'Lorem ipsum dolor sit amet',
-        },
-        {
-          type: 'text',
-          name: 'Clue 2',
-          displayName: 'Second Hint',
-          content: 'Consectetur adipiscing elit',
-        },
-      ],
+      clues: this.data.groupActivityStandardClues,
       stack: {
         elements: [this.data.SCML.title],
       },

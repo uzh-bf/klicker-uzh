@@ -74,8 +74,8 @@ function QuizAnalytics() {
             onClick={() =>
               window.open(
                 analytics.activityType === ActivityType.PracticeQuiz
-                  ? `/practiceQuiz/${activityId}/evaluation`
-                  : `/microLearning/${activityId}/evaluation`,
+                  ? `${router.locale ? `/${router.locale}` : ''}/practiceQuiz/${activityId}/evaluation`
+                  : `${router.locale ? `/${router.locale}` : ''}/microLearning/${activityId}/evaluation`,
                 '_blank'
               )
             }

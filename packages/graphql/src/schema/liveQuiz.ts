@@ -1,8 +1,8 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import builder from '../builder.js'
 import { CourseRef } from './course.js'
+import { ElementInstanceRef } from './element.js'
 import { PublicationStatus } from './practiceQuiz.js'
-import { ElementInstanceRef } from './question.js'
 
 export const LiveQuizAccessMode = builder.enumType('LiveQuizAccessMode', {
   values: Object.values(DB.AccessMode),
@@ -88,6 +88,7 @@ export interface ILiveQuiz extends DB.LiveQuiz {
   confusionSummary?: IConfusionSummary | null
   numOfBlocks?: number
   numOfInstances?: number
+  isPartOfGamifiedCourse?: boolean | null
   beforeFirstBlock?: boolean
 }
 
@@ -108,6 +109,10 @@ export const LiveQuiz = LiveQuizRef.implement({
     isConfusionFeedbackEnabled: t.exposeBoolean('isConfusionFeedbackEnabled'),
     isModerationEnabled: t.exposeBoolean('isModerationEnabled'),
     isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
+    isAssessmentEnabled: t.exposeBoolean('isAssessmentEnabled'),
+    isPartOfGamifiedCourse: t.exposeBoolean('isPartOfGamifiedCourse', {
+      nullable: true,
+    }),
 
     pointsMultiplier: t.exposeInt('pointsMultiplier'),
     defaultPoints: t.exposeInt('defaultPoints'),
@@ -236,6 +241,35 @@ export const LiveQuizSummary = LiveQuizSummaryRef.implement({
     numOfFeedbacks: t.exposeInt('numOfFeedbacks'),
     numOfConfusionFeedbacks: t.exposeInt('numOfConfusionFeedbacks'),
     numOfLeaderboardEntries: t.exposeInt('numOfLeaderboardEntries'),
+  }),
+})
+
+export interface ILiveQuizEmbeddingInfo {
+  id: string
+  hmac: string
+  instances: { id: number; name: string }[]
+}
+export const LiveQuizEmbeddingInfoElementRef = builder.objectRef<
+  ILiveQuizEmbeddingInfo['instances'][number]
+>('LiveQuizEmbeddingInfoElement')
+export const LiveQuizEmbeddingInfoElement =
+  LiveQuizEmbeddingInfoElementRef.implement({
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      name: t.exposeString('name'),
+    }),
+  })
+
+export const LiveQuizEmbeddingInfoRef =
+  builder.objectRef<ILiveQuizEmbeddingInfo>('LiveQuizEmbeddingInfo')
+export const LiveQuizEmbeddingInfo = LiveQuizEmbeddingInfoRef.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    hmac: t.exposeString('hmac'),
+    instances: t.expose('instances', {
+      type: [LiveQuizEmbeddingInfoElementRef],
+      nullable: true,
+    }),
   }),
 })
 // #endregion

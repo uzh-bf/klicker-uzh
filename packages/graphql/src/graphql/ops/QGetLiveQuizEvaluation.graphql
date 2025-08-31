@@ -4,6 +4,7 @@ query GetLiveQuizEvaluation($id: String!, $hmac: String) {
     name
     displayName
     description
+    courseLanguage
 
     ...EvaluationResults
 
@@ -18,10 +19,10 @@ query GetLiveQuizEvaluation($id: String!, $hmac: String) {
       createdAt
       responses {
         id
-        createdAt
         content
         positiveReactions
         negativeReactions
+        createdAt
       }
     }
     confusionFeedbacks {

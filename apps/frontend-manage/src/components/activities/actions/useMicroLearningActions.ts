@@ -23,7 +23,6 @@ import {
   ActivityInfo,
   ActivityType,
   GetSingleCourseDocument,
-  GetUserActivitiesDocument,
   UnpublishMicroLearningDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { toast } from '@uzh-bf/design-system'
@@ -41,6 +40,7 @@ function useMicroLearningActions({
   setExtensionModal,
   setSharingModal,
   setActivityLogOpen,
+  refetchActivities,
 }: {
   microLearning: ActivityInfo
   setPublishModal: Dispatch<SetStateAction<boolean>>
@@ -50,12 +50,13 @@ function useMicroLearningActions({
   setExtensionModal: Dispatch<SetStateAction<boolean>>
   setSharingModal: Dispatch<SetStateAction<boolean>>
   setActivityLogOpen: Dispatch<SetStateAction<boolean>>
+  refetchActivities?: () => Promise<void>
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
-
-  const [unpublishMicroLearning] = useMutation(UnpublishMicroLearningDocument)
-
+  const [unpublishMicroLearning, { loading: unpublishing }] = useMutation(
+    UnpublishMicroLearningDocument
+  )
   const onSuccessToast = () =>
     toast({
       type: 'success',
@@ -63,9 +64,7 @@ function useMicroLearningActions({
       options: { duration: 4000 },
     })
 
-  const href = `${process.env.NEXT_PUBLIC_PWA_URL}/course/${microLearning.courseId}/microlearning/${microLearning.id}/`
-  const evaluationHref = `/microLearning/${microLearning.id}/evaluation`
-
+  const href = `${process.env.NEXT_PUBLIC_PWA_URL}${microLearning.courseLanguage ? `/${microLearning.courseLanguage}` : ''}/course/${microLearning.courseId}/microLearnings/${microLearning.id}/`
   const actions = useMemo(
     () => [
       {
@@ -104,18 +103,18 @@ function useMicroLearningActions({
         id: 'openPreview',
         label: t('manage.courseList.openPreview'),
         icon: faMagnifyingGlass,
-        onClick: () => {
-          window.open(href, '_blank')
-        },
+        onClick: () => window.open(href, '_blank'),
         data: { cy: `open-microlearning-${microLearning.name}` },
       },
       {
         id: 'openEvaluation',
         label: t('manage.courseList.openEvaluation'),
         icon: faChartSimple,
-        onClick: () => {
-          window.open(evaluationHref, '_blank')
-        },
+        onClick: () =>
+          window.open(
+            `${router.locale ? `/${router.locale}` : ''}/microLearning/${microLearning.id}/evaluation`,
+            '_blank'
+          ),
         data: { cy: `evaluation-microlearning-${microLearning.name}` },
       },
       {
@@ -180,20 +179,17 @@ function useMicroLearningActions({
         id: 'analyticsMicroLearning',
         label: t('manage.courseList.activityAnalytics'),
         icon: faChartPie,
-        onClick: () => {
+        onClick: () =>
           router.push(
             `/analytics/${microLearning.courseId}/quizzes/${microLearning.id}`
-          )
-        },
+          ),
         data: { cy: `open-analytics-async-activity` },
       },
       {
         id: 'shareMicroLearning',
         label: t('manage.course.shareMicroLearning'),
         icon: faShare,
-        onClick: () => {
-          setSharingModal(true)
-        },
+        onClick: () => setSharingModal(true),
         data: { cy: `share-microlearning-${microLearning.name}` },
       },
       {
@@ -203,15 +199,40 @@ function useMicroLearningActions({
         onClick: async () => {
           await unpublishMicroLearning({
             variables: { id: microLearning.id! },
-            refetchQueries: [
-              {
-                query: GetSingleCourseDocument,
-                variables: { courseId: microLearning.courseId },
-              },
-              { query: GetUserActivitiesDocument },
-            ],
+            update: (cache, { data: res }) => {
+              // if the mutation was not successful, return early
+              if (!res?.unpublishMicroLearning?.id) return
+
+              // change the status of the practice quiz on the course overview back to draft
+              cache.updateQuery(
+                {
+                  query: GetSingleCourseDocument,
+                  variables: { courseId: microLearning.courseId! },
+                },
+                (data) => {
+                  if (!data?.course) return data
+
+                  return {
+                    course: {
+                      ...data.course,
+                      microLearningsInfo: data.course.microLearningsInfo?.map(
+                        (quiz) =>
+                          quiz.id === res.unpublishMicroLearning?.id
+                            ? {
+                                ...quiz,
+                                status: res.unpublishMicroLearning?.status,
+                              }
+                            : quiz
+                      ),
+                    },
+                  }
+                }
+              )
+            },
           })
+          await refetchActivities?.()
         },
+        disabled: unpublishing,
         data: { cy: `unpublish-microlearning-${microLearning.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
@@ -219,9 +240,7 @@ function useMicroLearningActions({
         id: 'removeMicroLearning',
         label: t('manage.course.removeMicroLearning'),
         icon: faX,
-        onClick: () => {
-          setRemovalModal(true)
-        },
+        onClick: () => setRemovalModal(true),
         data: { cy: `remove-microlearning-${microLearning.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
@@ -248,7 +267,6 @@ function useMicroLearningActions({
       microLearning.name,
       microLearning.courseId,
       href,
-      evaluationHref,
       setPublishModal,
       setExtensionModal,
       setEndingModal,

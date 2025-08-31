@@ -1,4 +1,4 @@
-import Prisma from '../../dist/index.js'
+import * as Prisma from '../client.js'
 import * as DATA_TEST from './data/TEST.js'
 
 export async function seedAchievements(prisma: Prisma.PrismaClient) {
@@ -29,15 +29,16 @@ export async function seedAchievements(prisma: Prisma.PrismaClient) {
       })
     })
   )
+
+  return achievements
 }
 
-const prismaClient = new Prisma.PrismaClient()
-
-await seedAchievements(prismaClient)
-  .catch((e) => {
-    console.error(e)
-    process.exit(1)
-  })
-  .finally(async () => {
-    await prismaClient.$disconnect()
-  })
+// const prismaClient = new Prisma.PrismaClient()
+// await seedAchievements(prismaClient)
+//   .catch((e) => {
+//     console.error(e)
+//     process.exit(1)
+//   })
+//   .finally(async () => {
+//     await prismaClient.$disconnect()
+//   })

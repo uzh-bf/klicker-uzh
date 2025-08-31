@@ -1,91 +1,84 @@
-import { useMutation, useQuery } from '@apollo/client'
-import {
-  faArchive,
-  faInbox,
-  faMagnifyingGlass,
-  faSort,
-  faSortAsc,
-  faSortDesc,
-} from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useQuery } from '@apollo/client'
+import { faListCheck } from '@fortawesome/free-solid-svg-icons'
 import {
   ActivityType,
   Element,
   GetUserElementsDocument,
-  ToggleIsArchivedDocument,
+  SharingType,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import {
-  Button,
-  Checkbox,
-  Select,
-  TextField,
-  toast,
-  Tooltip,
-} from '@uzh-bf/design-system'
+import { Button, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Suspense, useEffect, useMemo, useState } from 'react'
-import { isEmpty, pickBy } from 'remeda'
-import { buildIndex, processItems } from 'src/lib/utils/filters'
+import { Suspense, useCallback, useEffect, useState } from 'react'
+import ActivityCreation from '../components/activities/ActivityCreation'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
-import ElementCreation from '../components/activities/ElementCreation'
-import Layout from '../components/Layout'
-import ElementList from '../components/questions/ElementList'
+import Pagination from '../components/common/Pagination'
+import ElementList from '../components/elements/ElementList'
+import ElementListSearch from '../components/elements/ElementListSearch'
+import ElementListSelectAllCheckbox from '../components/elements/ElementListSelectAllCheckbox'
+import ElementListSorting from '../components/elements/ElementListSorting'
+import ElementBatchOperationsModal from '../components/elements/manipulation/ElementBatchOperationsModal'
 import ElementEditModal, {
   ElementEditMode,
-} from '../components/questions/manipulation/ElementEditModal'
-import RecoveryPrompt from '../components/questions/manipulation/RecoveryPrompt'
-import TagList from '../components/questions/tags/TagList'
+} from '../components/elements/manipulation/ElementEditModal'
+import RecoveryPrompt from '../components/elements/manipulation/RecoveryPrompt'
+import FilterList from '../components/elements/tags/FilterList'
+import Layout from '../components/Layout'
 import SuspendedFirstLoginModal from '../components/user/SuspendedFirstLoginModal'
 import useSortingAndFiltering, {
   SORTING_FILTERING_INITIAL,
-  SortyByType,
 } from '../lib/hooks/useSortingAndFiltering'
 
 function Index() {
   const router = useRouter()
   const t = useTranslations()
 
-  const [toggleIsArchived, { loading: toggelingArchive }] = useMutation(
-    ToggleIsArchivedDocument
-  )
+  // search, filter and pagination states
+  const [searchString, setSearchString] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
 
-  const [searchInput, setSearchInput] = useState('')
-  const [sortBy, setSortBy] = useState('')
+  // initialize page size from local storage (if available)
+  const [pageSize, setPageSize] = useState(() => {
+    // only try to access localStorage when on the client
+    if (typeof window !== 'undefined') {
+      try {
+        const storedPageSize = localStorage.getItem('elements-page-size')
+        if (storedPageSize) {
+          return JSON.parse(storedPageSize)
+        }
+      } catch (error) {
+        console.error(
+          'Error parsing stored elements-page-size from localStorage',
+          error
+        )
+      }
+    }
+    return 10
+  })
+
+  const [modificationModalOpen, setModificationModalOpen] = useState(false)
+  const [batchOperationsOpen, setBatchOperationsOpen] = useState(false)
+
+  // creation, recovery and editing modal states
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false)
   const [creationMode, setCreationMode] = useState<undefined | ActivityType>(
     undefined
   )
-  const [isQuestionCreationModalOpen, setIsQuestionCreationModalOpen] =
+  const [isElementCreationModalOpen, setIsElementCreationModalOpen] =
     useState(false)
 
-  const [selectedQuestions, setSelectedQuestions] = useState<
-    Record<number, Element | undefined>
-  >({})
-
-  const selectedElementContent = useMemo(
-    () =>
-      pickBy(
-        selectedQuestions,
-        (value) => typeof value !== 'undefined'
-      ) as Record<number, Element>,
-    [selectedQuestions]
-  )
-
-  const {
-    loading: loadingQuestions,
-    error: errorQuestions,
-    data: dataQuestions,
-  } = useQuery(GetUserElementsDocument)
+  const [selectedElements, setSelectedElements] = useState<{
+    [elementId: number]: Element
+  }>({})
 
   // initialize the sorting and filtering state from local storage (if available)
   const [storedFiltering, _] = useState(() => {
     // only try to access localStorage if we're on the client
     if (typeof window !== 'undefined') {
       try {
-        const savedFilters = localStorage.getItem('library-sorting-filters')
+        const savedFilters = localStorage.getItem('library-filtering-sorting')
         if (savedFilters) {
           return JSON.parse(savedFilters)
         }
@@ -99,15 +92,83 @@ function Index() {
   const {
     filters,
     sort,
-    handleSearch,
     handleSortByChange,
     handleSortOrderToggle,
     handleTagClick,
     handleReset,
     handleToggleArchive,
+    toggleCourseIdFilter,
+    toggleActivityIdFilter,
+    toggleMultiplierFilter,
     toggleSampleSolutionFilter,
     toggleAnswerFeedbackFilter,
   } = useSortingAndFiltering(storedFiltering)
+
+  const handleResetCleanURL = useCallback(() => {
+    // if a filtering by activity / course is set through the URL, reset it
+    if (router.query.filterByActivity || router.query.filterByCourse) {
+      router.push({ pathname: '/', query: {} }, undefined, {
+        shallow: true,
+      })
+    }
+
+    // reset the filters and sorting
+    handleReset()
+  }, [router.query.filterByCourse, router.query.filterByActivity])
+
+  const {
+    loading: loadingElements,
+    data: dataElements,
+    refetch: refetchElements,
+  } = useQuery(GetUserElementsDocument, {
+    variables: {
+      status: filters.status,
+      type: filters.type,
+      hasSampleSolution: filters.sampleSolution,
+      hasAnswerFeedbacks: filters.answerFeedbacks,
+      searchString: searchString.trim() || undefined,
+      showOwned: filters.sharingType.includes(SharingType.Owned),
+      showShared: filters.sharingType.includes(SharingType.Shared),
+      showDependencies: filters.sharingType.includes(SharingType.Dependency),
+      tagIds: filters.tags.map((tag) => parseInt(tag, 10)) ?? [],
+      activityId: filters.activityId,
+      multiplier: filters.multiplier,
+      showUntagged: filters.untagged,
+      sortByType: sort.by,
+      sortByAsc: sort.asc,
+      showArchived: filters.archive,
+      numEntries: pageSize,
+      offset: (currentPage - 1) * pageSize,
+    },
+    fetchPolicy: 'network-only',
+  })
+  const numOfElements = dataElements?.userElements?.numOfElements || 0
+  const elements = dataElements?.userElements?.elements ?? []
+
+  // on change, store new page size in local storage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('elements-page-size', JSON.stringify(pageSize))
+    }
+  }, [pageSize])
+
+  // reset pagination if elements length changes and current page would be out of bounds
+  useEffect(() => {
+    if (loadingElements) return
+
+    const maxPage = Math.max(1, Math.ceil(numOfElements / pageSize))
+    if (currentPage > maxPage) {
+      setCurrentPage(maxPage)
+    }
+  }, [loadingElements, numOfElements, currentPage, pageSize])
+
+  // reset pagination when filters, sorting or search changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters, sort, searchString])
+
+  // compute the number of total pagination pages
+  const totalPages = Math.max(1, Math.ceil(numOfElements / pageSize))
 
   // if the filters or sorting state changes, save it to local storage
   useEffect(() => {
@@ -115,10 +176,10 @@ function Index() {
       try {
         const newState = { filters, sort }
         // only save if there are actual changes
-        const currentStored = localStorage.getItem('library-sorting-filters')
+        const currentStored = localStorage.getItem('library-filtering-sorting')
         if (!currentStored || JSON.stringify(newState) !== currentStored) {
           localStorage.setItem(
-            'library-sorting-filters',
+            'library-filtering-sorting',
             JSON.stringify(newState)
           )
         }
@@ -127,6 +188,25 @@ function Index() {
       }
     }
   }, [filters, sort])
+
+  // when the shown elements change, make sure the selected elements are still valid
+  useEffect(() => {
+    setSelectedElements((prev) => {
+      const updatedSelection = { ...prev }
+      let changed = false
+
+      Object.keys(updatedSelection).forEach((id) => {
+        const numericalId = parseInt(id, 10)
+        if (!elements.some((el) => el.id === numericalId)) {
+          delete updatedSelection[numericalId]
+          changed = true
+        }
+      })
+
+      // only update state if something actually changed to avoid render loop
+      return changed ? updatedSelection : prev
+    })
+  }, [elements])
 
   // on initial render, preload the pages that might be visited next
   useEffect((): void => {
@@ -143,9 +223,9 @@ function Index() {
     }
   }, [router])
 
-  // once the activity wizard is opened, deselect all invalid questions
+  // once the activity wizard is opened, deselect all invalid elements
   useEffect(() => {
-    setSelectedQuestions((selection) => {
+    setSelectedElements((selection) => {
       if (!!creationMode) {
         return Object.fromEntries(
           Object.entries(selection).filter(
@@ -157,70 +237,42 @@ function Index() {
     })
   }, [creationMode])
 
-  const index = useMemo(() => {
-    if (dataQuestions?.userElements) {
-      const dataQuestionsFlatTags = dataQuestions.userElements.map(
-        (question) => ({
-          ...question,
-          tagsString: (question.tags ?? []).map((tag) => tag.name).join(' '),
+  // if passed through the query arguments, open the element editing dialog
+  useEffect(() => {
+    if (router.query.editElementId) {
+      setModificationModalOpen(true)
+    }
+  }, [router.query.editElementId])
+
+  // if the library should be filtered by activity, reset the filters and re-set them accordingly
+  useEffect(() => {
+    if (router.query.filterByActivity) {
+      handleReset()
+
+      if (router.query.filterByCourse) {
+        toggleCourseIdFilter({
+          courseId: router.query.filterByCourse as string,
         })
-      )
-      return buildIndex('questions', dataQuestionsFlatTags, [
-        'name',
-        'content',
-        'createdAt',
-        'updatedAt',
-        'tagsString',
-      ])
+      }
+      toggleActivityIdFilter({
+        activityId: router.query.filterByActivity as string,
+      })
     }
-    return null
-  }, [dataQuestions?.userElements])
+  }, [router.query.filterByCourse, router.query.filterByActivity])
 
-  const processedQuestions = useMemo(() => {
-    if (dataQuestions?.userElements) {
-      const items = processItems(
-        dataQuestions?.userElements,
-        filters,
-        sort,
-        index
-      )
-      return items
-    }
-  }, [dataQuestions?.userElements, filters, index, sort])
-
-  const filtersActive = useMemo(
-    () =>
-      !!(
-        filters.tags.length > 0 ||
-        filters.type ||
-        filters.status ||
-        filters.sharingType?.length !== 3 ||
-        filters.sampleSolution ||
-        filters.answerFeedbacks ||
-        filters.untagged
-      ),
-    [
-      filters.tags,
-      filters.type,
-      filters.status,
-      filters.sharingType,
-      filters.sampleSolution,
-      filters.answerFeedbacks,
-      filters.untagged,
-    ]
+  // since only applying the course filter does not result in a filtering of the elements, no warning should be shown
+  const filtersActiveExceptCourse = !!(
+    filters.tags.length > 0 ||
+    filters.activityId ||
+    filters.type ||
+    filters.status ||
+    filters.sharingType?.length !== 3 ||
+    filters.multiplier ||
+    filters.sampleSolution ||
+    filters.answerFeedbacks ||
+    filters.untagged
   )
-
-  const sortIcon = useMemo(() => {
-    if (!sortBy) {
-      return faSort
-    }
-
-    if (sort.asc) {
-      return faSortAsc
-    }
-
-    return faSortDesc
-  }, [sortBy, sort.asc])
+  const filtersActive = filtersActiveExceptCourse || !!filters.courseId
 
   return (
     <Layout
@@ -236,7 +288,7 @@ function Index() {
 
       {creationMode && (
         <>
-          <ElementCreation
+          <ActivityCreation
             creationMode={creationMode}
             closeWizard={() => {
               router.push('/')
@@ -246,353 +298,73 @@ function Index() {
             editMode={router.query.editMode as ActivityType}
             conversionMode={router.query.conversionMode as string}
             duplicationMode={router.query.duplicationMode as ActivityType}
-            selection={selectedElementContent}
-            resetSelection={() => setSelectedQuestions({})}
+            selection={selectedElements}
+            resetSelection={() => setSelectedElements({})}
           />
         </>
       )}
 
       <div className="flex h-full flex-col gap-4 overflow-y-auto md:flex-row">
-        {dataQuestions && dataQuestions.userElements && (
-          <div>
-            <div className="hidden h-full md:block">
-              <TagList
-                key={creationMode}
-                compact={!!creationMode}
-                filtersActive={filtersActive}
-                activeTags={filters.tags}
-                activeType={filters.type}
-                activeSharingTypes={filters.sharingType}
-                activeStatus={filters.status}
-                showUntagged={filters.untagged}
-                sampleSolution={filters.sampleSolution}
-                answerFeedbacks={filters.answerFeedbacks}
-                handleReset={handleReset}
-                handleTagClick={handleTagClick}
-                toggleSampleSolutionFilter={toggleSampleSolutionFilter}
-                toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
-                handleToggleArchive={handleToggleArchive}
-                isArchiveActive={filters.archive}
-              />
-            </div>
-            <div className="md:hidden">
-              <TagList
-                compact
-                key={creationMode}
-                filtersActive={filtersActive}
-                activeTags={filters.tags}
-                activeType={filters.type}
-                activeSharingTypes={filters.sharingType}
-                activeStatus={filters.status}
-                showUntagged={filters.untagged}
-                sampleSolution={filters.sampleSolution}
-                answerFeedbacks={filters.answerFeedbacks}
-                handleReset={handleReset}
-                handleTagClick={handleTagClick}
-                toggleSampleSolutionFilter={toggleSampleSolutionFilter}
-                toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
-                handleToggleArchive={handleToggleArchive}
-                isArchiveActive={filters.archive}
-              />
-            </div>
-          </div>
-        )}
+        <div>
+          <FilterList
+            key={creationMode}
+            defaultValue={
+              filters.courseId || filters.activityId
+                ? 'used-in-activity'
+                : undefined
+            }
+            filtersActive={filtersActive}
+            filters={filters}
+            handleReset={handleResetCleanURL}
+            handleTagClick={handleTagClick}
+            toggleCourseIdFilter={toggleCourseIdFilter}
+            toggleActivityIdFilter={toggleActivityIdFilter}
+            toggleMultiplierFilter={toggleMultiplierFilter}
+            toggleSampleSolutionFilter={toggleSampleSolutionFilter}
+            toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
+            handleToggleArchive={handleToggleArchive}
+            isArchiveActive={filters.archive}
+            refetchElements={async () => {
+              await refetchElements()
+            }}
+          />
+        </div>
+
         <div className="flex w-full flex-1 flex-col overflow-auto">
-          {!dataQuestions || loadingQuestions ? (
-            <Loader />
-          ) : (
-            <>
-              <div className="flex flex-none flex-row content-center items-end justify-between pb-3">
-                <div className="flex flex-row items-center gap-1">
-                  <div className="flex flex-col pr-0.5 text-xs">
-                    <Checkbox
-                      checked={
-                        processedQuestions?.length !== 0 &&
-                        Object.values(selectedQuestions).filter(
-                          (value) => value
-                        ).length == processedQuestions?.length
-                      }
-                      partial={
-                        Object.values(selectedQuestions).filter(
-                          (value) => value
-                        ).length > 0
-                      }
-                      onCheck={() => {
-                        setSelectedQuestions((prev) => {
-                          let allQuestions = {}
+          <>
+            <div className="flex flex-none flex-row content-center items-end justify-between pb-2.5">
+              <div className="flex flex-row items-center gap-1.5">
+                <ElementListSelectAllCheckbox
+                  elements={elements}
+                  selectedElements={selectedElements}
+                  setSelectedElements={setSelectedElements}
+                  creationMode={creationMode}
+                />
+                <ElementListSearch setSearchString={setSearchString} />
+                <ElementListSorting
+                  sort={sort}
+                  handleSortByChange={handleSortByChange}
+                  handleSortOrderToggle={handleSortOrderToggle}
+                />
+              </div>
 
-                          if (processedQuestions) {
-                            if (!isEmpty(selectedElementContent)) {
-                              // set questions after filtering to undefined
-                              // do not uncheck questions that are selected but not in the filtered set
-                              allQuestions = processedQuestions.reduce(
-                                (acc, curr) => ({
-                                  ...acc,
-                                  [curr.id]: undefined,
-                                }),
-                                {}
-                              )
-                            } else {
-                              // set all questions after filtering to their id and data
-                              allQuestions = processedQuestions.reduce(
-                                (acc, question) => ({
-                                  ...acc,
-                                  [question.id]: question,
-                                }),
-                                {}
-                              )
-                            }
-                          }
-
-                          return { ...prev, ...allQuestions }
-                        })
-                      }}
-                      className={{ root: 'border-unset' }}
-                    />
-                    {t('manage.questionPool.numSelected', {
-                      count: Object.keys(selectedElementContent).length,
-                      total: processedQuestions?.length ?? 0,
-                    })}
-                  </div>
-
-                  <TextField
-                    placeholder={t('manage.general.searchPlaceholder')}
-                    value={searchInput}
-                    onChange={(newValue: string) => {
-                      setSearchInput(newValue)
-                      handleSearch(newValue)
-                    }}
-                    icon={faMagnifyingGlass}
+              <div className="flex flex-row items-center gap-2">
+                {!creationMode && Object.keys(selectedElements).length > 0 ? (
+                  <Button
                     className={{
-                      input: 'h-10 pl-8',
-                      field: 'min-w-30 rounded-md pr-3',
+                      root: 'h-9 border-orange-300 bg-orange-100 hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
                     }}
-                  />
-
-                  <div className="flex flex-row gap-1 pr-3">
-                    <Button
-                      disabled={!sortBy}
-                      onClick={() => {
-                        handleSortOrderToggle()
-                      }}
-                      className={{ root: 'h-10 rounded-md' }}
-                      data={{ cy: 'sort-order-question-pool-toggle' }}
-                    >
-                      <Button.Icon icon={sortIcon} withoutLabel />
-                    </Button>
-                    <Select
-                      className={{
-                        root: 'min-w-30',
-                        trigger: 'h-10',
-                      }}
-                      placeholder={t('manage.general.sortBy')}
-                      items={[
-                        {
-                          value: SortyByType.CREATED,
-                          label: t('manage.general.dateCreated'),
-                          data: { cy: 'sort-by-question-pool-created' },
-                        },
-                        {
-                          value: SortyByType.MODIFIED,
-                          label: t('manage.general.dateModified'),
-                          data: { cy: 'sort-by-question-pool-modified' },
-                        },
-                        {
-                          value: SortyByType.TITLE,
-                          label: t('manage.general.title'),
-                          data: { cy: 'sort-by-question-pool-title' },
-                        },
-                      ]}
-                      onChange={(newSortBy: string) => {
-                        setSortBy(newSortBy)
-                        handleSortByChange(newSortBy as SortyByType)
-                      }}
-                      data={{ cy: 'sort-by-question-pool' }}
-                      contentPosition="popper"
-                    />
-                  </div>
-
-                  {Object.keys(selectedElementContent).length > 0 && (
-                    <>
-                      <Tooltip tooltip={t('manage.questionPool.moveToArchive')}>
-                        <Button
-                          disabled={toggelingArchive}
-                          className={{ root: 'ml-1 h-10' }}
-                          onClick={async () => {
-                            const { data } = await toggleIsArchived({
-                              variables: {
-                                elementIds: Object.keys(
-                                  selectedElementContent
-                                ).map(Number),
-                                isArchived: true,
-                              },
-                              update: (cache, { data }) => {
-                                // if the request was not successful, do nothing
-                                if (
-                                  !data?.toggleIsArchived ||
-                                  data.toggleIsArchived.failure
-                                )
-                                  return
-
-                                // check if request was successful
-                                const update = data?.toggleIsArchived
-                                if (!update) return
-
-                                // extract the ids of all elements that should now be marked as archived
-                                const updatedElementIds =
-                                  update.elements?.map(
-                                    (element) => element.id
-                                  ) ?? []
-
-                                // fetch the previously returned value for the elements list
-                                const elements = cache.readQuery({
-                                  query: GetUserElementsDocument,
-                                })
-
-                                if (elements?.userElements) {
-                                  cache.writeQuery({
-                                    query: GetUserElementsDocument,
-                                    data: {
-                                      userElements: elements.userElements.map(
-                                        (obj) =>
-                                          updatedElementIds.includes(obj.id)
-                                            ? {
-                                                ...obj,
-                                                isArchived: true,
-                                              }
-                                            : obj
-                                      ),
-                                    },
-                                  })
-                                }
-                              },
-                            })
-
-                            if (data?.toggleIsArchived?.success) {
-                              toast({
-                                type: 'success',
-                                message: t(
-                                  'manage.questionPool.archivingSuccess'
-                                ),
-                                options: { duration: 3000 },
-                              })
-                              setSelectedQuestions({})
-                            } else if (data?.toggleIsArchived?.partialSuccess) {
-                              toast({
-                                type: 'warning',
-                                message: t(
-                                  'manage.questionPool.archivingPartialSuccess'
-                                ),
-                                options: { duration: 8000 },
-                              })
-                              setSelectedQuestions({})
-                            } else if (data?.toggleIsArchived?.failure) {
-                              toast({
-                                type: 'error',
-                                message: t(
-                                  'manage.questionPool.archivingFailed'
-                                ),
-                                options: { duration: 8000 },
-                              })
-                            }
-                          }}
-                          data={{ cy: 'move-to-archive' }}
-                        >
-                          <FontAwesomeIcon icon={faArchive} />
-                        </Button>
-                      </Tooltip>
-                      <Tooltip
-                        tooltip={t('manage.questionPool.restoreFromArchive')}
-                      >
-                        <Button
-                          disabled={toggelingArchive}
-                          className={{ root: 'ml-1 h-10' }}
-                          onClick={async () => {
-                            const { data } = await toggleIsArchived({
-                              variables: {
-                                elementIds: Object.keys(
-                                  selectedElementContent
-                                ).map(Number),
-                                isArchived: false,
-                              },
-                              update: (cache, { data }) => {
-                                // if the request was not successful, do nothing
-                                if (
-                                  !data?.toggleIsArchived ||
-                                  data.toggleIsArchived.failure
-                                )
-                                  return
-
-                                // check if request was successful
-                                const updatedElements = data?.toggleIsArchived
-                                if (!updatedElements) return
-
-                                // extract the ids of all elements that should now be marked as archived
-                                const updatedElementIds =
-                                  updatedElements.elements?.map(
-                                    (element) => element.id
-                                  ) ?? []
-
-                                // fetch the previously returned value for the elements list
-                                const elements = cache.readQuery({
-                                  query: GetUserElementsDocument,
-                                })
-
-                                if (elements?.userElements) {
-                                  cache.writeQuery({
-                                    query: GetUserElementsDocument,
-                                    data: {
-                                      userElements: elements.userElements.map(
-                                        (obj) =>
-                                          updatedElementIds.includes(obj.id)
-                                            ? {
-                                                ...obj,
-                                                isArchived: false,
-                                              }
-                                            : obj
-                                      ),
-                                    },
-                                  })
-                                }
-                              },
-                            })
-
-                            if (data?.toggleIsArchived?.success) {
-                              toast({
-                                type: 'success',
-                                message: t(
-                                  'manage.questionPool.restoreFromArchiveSuccess'
-                                ),
-                                options: { duration: 8000 },
-                              })
-                              setSelectedQuestions({})
-                            } else if (data?.toggleIsArchived?.partialSuccess) {
-                              toast({
-                                type: 'warning',
-                                message: t(
-                                  'manage.questionPool.restoreFromArchivePartialSuccess'
-                                ),
-                                options: { duration: 8000 },
-                              })
-                              setSelectedQuestions({})
-                            } else if (data?.toggleIsArchived?.failure) {
-                              toast({
-                                type: 'error',
-                                message: t(
-                                  'manage.questionPool.restoreFromArchiveFailed'
-                                ),
-                                options: { duration: 8000 },
-                              })
-                            }
-                          }}
-                          data={{ cy: 'restore-from-archive' }}
-                        >
-                          <FontAwesomeIcon icon={faInbox} />
-                        </Button>
-                      </Tooltip>
-                    </>
-                  )}
-                </div>
+                    onClick={() => setBatchOperationsOpen(true)}
+                    data={{ cy: 'element-batch-operations' }}
+                  >
+                    <Button.Icon icon={faListCheck} />
+                    <Button.Label>
+                      {t('manage.questionPool.batchOperations', {
+                        numElements: Object.keys(selectedElements).length,
+                      })}
+                    </Button.Label>
+                  </Button>
+                ) : null}
                 <Button
                   primary
                   onClick={() => {
@@ -603,65 +375,84 @@ function Index() {
                     if (value) {
                       setShowRecoveryPrompt(true)
                     } else {
-                      setIsQuestionCreationModalOpen(true)
+                      setIsElementCreationModalOpen(true)
                     }
                   }}
                   data={{ cy: 'create-question' }}
-                  className={{ root: 'font-bold' }}
+                  className={{ root: 'h-9 font-bold' }}
                 >
-                  {t('manage.questionPool.createQuestion')}
+                  {t('manage.questionPool.createElement')}
                 </Button>
               </div>
+            </div>
 
-              <div className="h-full overflow-y-auto">
-                <ElementList
-                  filtersActive={filtersActive}
-                  activityWizardOpen={!!creationMode}
-                  elements={processedQuestions}
-                  selectedQuestions={selectedElementContent}
-                  triggerSuccessToast={() =>
-                    toast({
-                      type: 'success',
-                      message: t('manage.elements.questionSavedSuccessfully'),
-                      options: { duration: 4000 },
-                    })
-                  }
-                  setSelectedQuestions={(id: number, data: Element) => {
-                    setSelectedQuestions((prev) => {
-                      return { ...prev, [id]: prev[id] ? undefined : data }
-                    })
-                  }}
-                  tagfilter={filters.tags}
-                  handleTagClick={(tag: string) =>
-                    handleTagClick({
-                      tagName: tag,
-                      isTypeTag: false,
-                      isStatusTag: false,
-                      isSharingTypeTag: false,
-                      isUntagged: false,
-                    })
-                  }
-                  unsetDeletedQuestion={(questionId: number) => {
-                    setSelectedQuestions((prev) => {
-                      if (prev[questionId]) {
-                        const newSelectedQuestions = { ...prev }
-                        delete newSelectedQuestions[questionId]
-                        return newSelectedQuestions
-                      }
-                      return prev
-                    })
-                  }}
-                  handleFilterReset={handleReset}
-                />
-              </div>
-            </>
-          )}
+            <div className="h-full overflow-y-auto">
+              {!dataElements || loadingElements ? (
+                <div className="flex h-full items-center justify-center">
+                  <Loader />
+                </div>
+              ) : (
+                <>
+                  <ElementList
+                    filtersActive={filtersActiveExceptCourse}
+                    activityWizardOpen={!!creationMode}
+                    elements={elements}
+                    selectedElements={selectedElements}
+                    triggerSuccessToast={() =>
+                      toast({
+                        type: 'success',
+                        message: t('manage.elements.questionSavedSuccessfully'),
+                        options: { duration: 4000 },
+                      })
+                    }
+                    setSelectedElements={(id: number, data: Element) => {
+                      setSelectedElements((prev) => {
+                        const newSelected = { ...prev }
+                        if (newSelected[id]) {
+                          delete newSelected[id]
+                        } else {
+                          newSelected[id] = data
+                        }
+                        return newSelected
+                      })
+                    }}
+                    tagfilter={filters.tags}
+                    handleTagClick={(tagId: number) =>
+                      handleTagClick({
+                        valueOrId: tagId.toString(),
+                        isTypeTag: false,
+                        isStatusTag: false,
+                        isSharingTypeTag: false,
+                        isUntagged: false,
+                      })
+                    }
+                    handleFilterReset={handleResetCleanURL}
+                    refetchElements={async () => {
+                      await refetchElements()
+                    }}
+                  />
+
+                  {elements.length > 0 && (
+                    <Pagination
+                      totalPages={totalPages}
+                      currentPage={currentPage}
+                      setCurrentPage={setCurrentPage}
+                      numOfObjects={numOfElements}
+                      pageSize={pageSize}
+                      setPageSize={setPageSize}
+                      className="mb-3"
+                    />
+                  )}
+                </>
+              )}
+            </div>
+          </>
         </div>
       </div>
 
-      {isQuestionCreationModalOpen && (
+      {isElementCreationModalOpen && (
         <ElementEditModal
-          handleSetIsOpen={setIsQuestionCreationModalOpen}
+          handleSetIsOpen={setIsElementCreationModalOpen}
           triggerSuccessToast={() =>
             toast({
               type: 'success',
@@ -669,25 +460,61 @@ function Index() {
               options: { duration: 4000 },
             })
           }
-          isOpen={isQuestionCreationModalOpen}
+          isOpen={isElementCreationModalOpen}
           mode={ElementEditMode.CREATE}
+          refetchElements={async () => {
+            await refetchElements()
+          }}
+        />
+      )}
+      {modificationModalOpen && router.query.editElementId && (
+        <ElementEditModal
+          isOpen
+          inputsDisabled={false}
+          handleSetIsOpen={setModificationModalOpen}
+          triggerSuccessToast={() =>
+            toast({
+              type: 'success',
+              message: t('manage.elements.questionSavedSuccessfully'),
+              options: { duration: 4000 },
+            })
+          }
+          elementId={parseInt(router.query.editElementId as string, 10)}
+          mode={ElementEditMode.EDIT}
+          refetchElements={async () => {
+            await refetchElements()
+          }}
+        />
+      )}
+      {batchOperationsOpen && (
+        <ElementBatchOperationsModal
+          selectedElements={Object.values(selectedElements)}
+          onClose={() => setBatchOperationsOpen(false)}
+          resetSelectedElements={() => setSelectedElements({})}
+          refetchElements={async () => {
+            await refetchElements()
+          }}
         />
       )}
       {showRecoveryPrompt && (
         <RecoveryPrompt
           onRecovery={() => {
             setShowRecoveryPrompt(false)
-            setIsQuestionCreationModalOpen(true)
+            setIsElementCreationModalOpen(true)
           }}
           onDiscard={() => {
             localStorage.removeItem('autosave-element-creation')
             setShowRecoveryPrompt(false)
-            setIsQuestionCreationModalOpen(true)
+            setIsElementCreationModalOpen(true)
           }}
         />
       )}
       <Suspense fallback={<div />}>
-        <SuspendedFirstLoginModal />
+        <SuspendedFirstLoginModal
+          refetchElements={async () => {
+            await refetchElements()
+          }}
+        />
       </Suspense>
     </Layout>
   )

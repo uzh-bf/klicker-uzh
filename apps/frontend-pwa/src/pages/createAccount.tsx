@@ -32,7 +32,6 @@ function CreateAccount({
 }: Props) {
   const t = useTranslations()
   const router = useRouter()
-
   const [createParticipantAccount] = useMutation(
     CreateParticipantAccountDocument
   )
@@ -84,92 +83,103 @@ function CreateAccount({
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
-  const { req, res, query } = ctx
+  try {
+    const { req, res, query } = ctx
+    const apolloClient = initializeApollo()
+    const { participantToken, cookiesAvailable } = await getParticipantToken({
+      apolloClient,
+      ctx,
+    })
 
-  const apolloClient = initializeApollo()
+    if (participantToken) {
+      if (!cookiesAvailable) {
+        return {
+          redirect: {
+            destination: `${ctx.locale ? `/${ctx.locale}` : ''}/editProfile?participantToken=${participantToken}`,
+            permanent: false,
+            query: { participantToken },
+          },
+        }
+      }
 
-  const { participantToken, cookiesAvailable } = await getParticipantToken({
-    apolloClient,
-    ctx,
-  })
-
-  if (participantToken) {
-    if (!cookiesAvailable) {
       return {
         redirect: {
-          destination: `/editProfile?participantToken=${participantToken}`,
+          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/editProfile`,
           permanent: false,
-          query: { participantToken },
         },
       }
     }
 
-    return {
-      redirect: {
-        destination: `/editProfile`,
-        permanent: false,
-      },
+    const cookies = nookies.get(ctx)
+    const signedLtiData = { token: '', ssoId: '', email: '' }
+
+    // LTI 1.3 authentication flow
+    if (cookies['lti-token'] || query.jwt) {
+      const token = cookies['lti-token'] ?? query.jwt
+
+      const parsedToken = JWT.verify(
+        token,
+        process.env.APP_SECRET as string
+      ) as {
+        sub: string
+        email: string
+        scope: string
+      }
+
+      if (parsedToken.scope === 'LTI1.3') {
+        signedLtiData.token = token
+        signedLtiData.ssoId = parsedToken.sub
+        signedLtiData.email = parsedToken.email
+      }
     }
-  }
-
-  const cookies = nookies.get(ctx)
-
-  const signedLtiData = {
-    token: '',
-    ssoId: '',
-    email: '',
-  }
-
-  // LTI 1.3 authentication flow
-  if (cookies['lti-token'] || query.jwt) {
-    const token = cookies['lti-token'] ?? query.jwt
-
-    const parsedToken = JWT.verify(token, process.env.APP_SECRET as string) as {
-      sub: string
-      email: string
-      scope: string
-    }
-
-    if (parsedToken.scope === 'LTI1.3') {
-      signedLtiData.token = token
-      signedLtiData.ssoId = parsedToken.sub
-      signedLtiData.email = parsedToken.email
-    }
-  }
-  // LTI 1.1 authentication flow
-  else if (req.method === 'POST') {
-    const { request }: any = await new Promise((resolve) => {
-      bodyParser.urlencoded({ extended: true })(req, res, () => {
-        bodyParser.json()(req, res, () => {
-          resolve({ request: req })
+    // LTI 1.1 authentication flow
+    else if (req.method === 'POST') {
+      const { request }: any = await new Promise((resolve) => {
+        bodyParser.urlencoded({ extended: true })(req, res, () => {
+          bodyParser.json()(req, res, () => {
+            resolve({ request: req })
+          })
         })
       })
-    })
 
-    if (request?.body?.lis_person_sourcedid) {
-      signedLtiData.token = JWT.sign(
-        {
-          sub: request.body.lis_person_sourcedid,
-          email: request.body.lis_person_contact_email_primary,
-          scope: 'LTI1.1',
-        },
-        process.env.APP_SECRET as string,
-        {
-          algorithm: 'HS256',
-          expiresIn: '5m',
-        }
-      )
-      signedLtiData.ssoId = request.body.lis_person_sourcedid
-      signedLtiData.email = request.body.lis_person_contact_email_primary
+      if (request?.body?.lis_person_sourcedid) {
+        signedLtiData.token = JWT.sign(
+          {
+            sub: request.body.lis_person_sourcedid,
+            email: request.body.lis_person_contact_email_primary,
+            scope: 'LTI1.1',
+          },
+          process.env.APP_SECRET as string,
+          {
+            algorithm: 'HS256',
+            expiresIn: '5m',
+          }
+        )
+        signedLtiData.ssoId = request.body.lis_person_sourcedid
+        signedLtiData.email = request.body.lis_person_contact_email_primary
+      }
     }
-  }
 
-  if (!query?.disableLti && signedLtiData.token !== '') {
-    return addApolloState(apolloClient, {
+    if (!query?.disableLti && signedLtiData.token !== '') {
+      return addApolloState(apolloClient, {
+        props: {
+          signedLtiData: signedLtiData.token,
+          ssoId: signedLtiData.ssoId,
+          email: signedLtiData.email,
+          username: generatePassword.generate({
+            length: 10,
+            uppercase: true,
+            symbols: false,
+            numbers: true,
+          }),
+          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+            .default,
+        },
+      })
+    }
+
+    return {
       props: {
-        signedLtiData: signedLtiData.token,
-        ssoId: signedLtiData.ssoId,
-        email: signedLtiData.email,
         username: generatePassword.generate({
           length: 10,
           uppercase: true,
@@ -179,20 +189,27 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
-    })
-  }
+    }
+  } catch (error) {
+    console.error('Error in getServerSideProps on createAccount:', error)
 
-  return {
-    props: {
-      username: generatePassword.generate({
-        length: 10,
-        uppercase: true,
-        symbols: false,
-        numbers: true,
-      }),
-      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-        .default,
-    },
+    // remove the lti-token, if it is defined
+    try {
+      nookies.destroy(ctx, 'lti-token', {
+        domain: process.env.COOKIE_DOMAIN,
+        path: '/',
+      })
+    } catch (nookiesError) {
+      console.error(nookiesError)
+    }
+
+    // redirect to lti error page with redirect back to this page
+    return {
+      redirect: {
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/serverError?redirectTo=${encodeURIComponent(`/${ctx.locale}/createAccount`)}`,
+        permanent: false,
+      },
+    }
   }
 }
 

@@ -3,6 +3,12 @@ import messages from '../../../packages/i18n/messages/en'
 describe('Test creation and editing functionalities, validation, etc. for Flashcard elements', function () {
   before(() => {
     cy.seed()
+
+    // set browser language to english (independent of local machine setting
+    Cypress.automation('remote:debugger:protocol', {
+      command: 'Emulation.setLocaleOverride',
+      params: { locale: 'en' },
+    })
   })
 
   after(() => {
@@ -51,15 +57,14 @@ describe('Test creation and editing functionalities, validation, etc. for Flashc
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 
-    cy.get(`[data-cy="element-item-${this.data.FC.title}"]`).contains(
-      this.data.FC.content
-    )
-    cy.get(`[data-cy="element-item-${this.data.FC.title}"]`).contains(
-      this.data.FC.title
-    )
-    cy.get(`[data-cy="element-item-${this.data.FC.title}"]`).contains(
-      messages.shared.REVIEW.statusLabel
-    )
+    cy.validateElement({
+      element: this.data.FC.title,
+      contains: [
+        this.data.FC.content,
+        this.data.FC.title,
+        messages.shared.REVIEW.statusLabel,
+      ],
+    })
   })
 
   it('Check that values of flashcard element are stored and loaded correctly', function () {
@@ -103,15 +108,14 @@ describe('Test creation and editing functionalities, validation, etc. for Flashc
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 
-    cy.get(`[data-cy="element-item-${this.data.FC.titleEdited}"]`).contains(
-      this.data.FC.contentEdited
-    )
-    cy.get(`[data-cy="element-item-${this.data.FC.titleEdited}"]`).contains(
-      this.data.FC.titleEdited
-    )
-    cy.get(`[data-cy="element-item-${this.data.FC.titleEdited}"]`).contains(
-      messages.shared.READY.statusLabel
-    )
+    cy.validateElement({
+      element: this.data.FC.titleEdited,
+      contains: [
+        this.data.FC.contentEdited,
+        this.data.FC.titleEdited,
+        messages.shared.READY.statusLabel,
+      ],
+    })
   })
 
   it('Check that edited flashcard element is stored and loaded correctly', function () {

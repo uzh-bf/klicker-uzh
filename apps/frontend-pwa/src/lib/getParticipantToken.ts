@@ -15,7 +15,6 @@ export default async function getParticipantToken({
   ctx: GetServerSidePropsContext
 }) {
   const { req, res, query } = ctx
-
   const cookies = nookies.get(ctx)
 
   // if the user already has a participant token, skip registration
@@ -110,6 +109,7 @@ export default async function getParticipantToken({
     participantToken = result?.data?.loginParticipantWithLti?.participantToken
 
     if (participantToken) {
+      // set a proper participant_token
       nookies.set(ctx, 'participant_token', participantToken, {
         domain: process.env.COOKIE_DOMAIN,
         path: '/',
@@ -123,6 +123,12 @@ export default async function getParticipantToken({
           process.env.COOKIE_DOMAIN === '127.0.0.1'
             ? 'lax'
             : 'none',
+      })
+
+      // remove the lti-token cookie since we now have a proper participant_token
+      nookies.destroy(ctx, 'lti-token', {
+        domain: process.env.COOKIE_DOMAIN,
+        path: '/',
       })
     }
 

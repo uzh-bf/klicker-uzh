@@ -1,0 +1,44 @@
+---
+title: Participant Group Management
+---
+
+Participant groups in KlickerUZH are a course-specific concept, where logged-in students can form groups with their peers when the functionality has been enabled by the lecturer in the course settings. In gamified courses, groups appear on the group leaderboard and can be used to solve [group activities](/tutorials/group_activity/).
+
+## How do Students form Groups?
+
+Generally, students can form new groups or join existing ones through the student application as described in the corresponding [student documentation](/student_tutorials/groups_activities/). Additionally, for large courses, where students might not know their peers, KlickerUZH offers a [randomized group creation](/tutorials/participant_group_management/#randomized-student-groups) feature. Students can opt to be randomly assigned to a group by selecting this option during the group formation process.
+
+To adhere to your preferences as well as possible, you are asked to specify your preferred and maximum group size when enabling participant groups on a course. KlickerUZH will then automatically form new groups from the random assignment pool every day until the group creation deadline. Once the group formation deadline is reached, or the finalization of the group formation phase is triggered manually through the corresponding "Groups" tab on the course overview, all students that remain in the pool and all students that are in a group by themselves are assigned to random groups. This ensures fair and efficient group formation, especially useful in courses with many participants.
+
+## (Randomized) Student Groups
+
+:::warning
+As with gamification, once group formation has been enabled for a course (on creation or on editing), it can no longer be disabled if students have already created groups.
+:::
+
+If group creation has been enabled for a course, students can create groups with their peers by simply providing a name for the group and selecting the corresponding action. The students' peers can then join their group through the **group PIN** provided on the group overview page.
+
+The **randomized group creation** feature in KlickerUZH simplifies the process of forming student groups in large courses, especially when students may not know their peers. This feature is automatically available for all courses that have group formation enabled. Instead of manually creating or joining a group, students can opt to be randomly assigned to a group with others who have also chosen this option.
+
+This process helps ensure that groups are formed **fairly and efficiently**. The system automatically creates new groups **each day** and finalizes the process at the **group creation deadline** set by the lecturer, after which no further groups can be created and no changes to existing groups can be made any longer. The following steps must be completed to use the randomized group creation feature in KlickerUZH:
+
+1. **Enable group creation**: Ensure that the group creation feature is enabled for your course. If you haven't enabled it during the course creation, you can do so in the course editor on the course overview page. Enter your **preferred group size**, as well as a **maximum group size**, which should be respected by the system when forming groups. Please note that the group size settings cannot be changed any longer after group creation has been enabled.
+
+2. Have students select **randomized group assignment**: Students can opt to be randomly assigned to a group by selecting the option during the group formation process in the student app.
+
+![Random Group Creation - Student View](/img/group/random_groups_student.png)
+
+3. **Automatic group creation** during the creation period: Groups are created automatically every day, as long as there are at least twice the number of students as the preferred group size in the pool. KlickerUZH will try to adhere to your preferred group size as precisely as possible.
+
+4. Once the group creation deadline is reached, KlickerUZH automatically finalizes the group formation process:
+
+   1. Participants who are **alone** in a group are automatically added to the random assignment pool, and their group is resolved.
+   2. All students remaining in the assignment pool are evenly distributed into **new groups** to match the preferred group size.
+
+5. **Manual termination of group formation** during the creation period: Lecturers can manually finalize group assignments at any time through the course's **group overview page** (ahead of the group formation deadline). This allows you to use randomized group formation in a synchronous in-class setting instead of across a longer timespan. To do so, you can select the "**Assign random groups**" button within the groups section on the course overview page (screenshot below). This will close the group creation and distribute students from the pool into existing groups as described in the previous step. To reopen the group formation functionality after manual finalization, lecturers can **extend the deadline** in the course settings.
+
+<img
+  src="/img/group/random_groups_lecturer.png"
+  alt="Random Group Creation - Lecturer View"
+  style={{ maxWidth: '650px', width: '100%', display: 'block', margin: 'auto' }}
+/>

@@ -9,15 +9,9 @@ import CatalystTitle from '../../src/components/CatalystTitle'
 
 ## What is a Group Activity?
 
-Group activities are a new collaborative learning activity in KlickerUZH. They are designed to promote teamwork and collaboration among students. Group activities consist of a set of questions, explanation texts, and hints that are distributed across all participants. Participants work together to solve the questions and earn points for correct answers. Group activities are only available in a limited time window and can only be solved once. To be able to participate in a group activity, students need to be part of a group in the course. Groups can be created through the course overview on the student frontend.
+Group activities are one of the collaborative learning activities in KlickerUZH. They are designed to promote teamwork and collaboration among students. Group activities consist of a set of questions, explanation texts, and hints that are distributed among all participants. Participants work together to solve the questions and earn points for correct answers. Group activities are only available during a limited time window and can only be solved once. To be able to participate in a group activity, students need to be part of a group in the course. Groups can be created through the course overview on the student frontend.
 
-Currrently, student submissions need to be graded manually, but we are evaluating possibilities to use automated grading approaches (possibly including AI components). To see how group activities look like from the student view, check out the [corresponding section](/student_tutorials/groups_activities/).
-
-## How do Students form Groups?
-
-Generally, students can form new groups or join existing ones through the student application as described in the corresponding [student documentation](/student_tutorials/groups_activities/). Additionally, for large courses, where students might not know their peers, KlickerUZH offers a randomized group creation feature. Students can opt to be randomly assigned to a group by selecting this option during the group formation process.
-
-To adhere to your preferences as well as possible, you are asked to specify your preferred and maximum group size. KlickerUZH will then automatically form new groups from the random assignment pool every day until the group creation deadline. Once the group formation deadline is reached, or the finalization of the group formation phase is triggered manually through the corresponding "Groups" tab on the course overview, all students that remain in the pool and all students that are in a group by themselves are assigned to random groups. This ensures fair and efficient group formation, especially useful in courses with many participants.
+Currently, the student submissions for group activities need to be graded manually, but possibilities to use automated grading approaches are being evaluated. To see what group activities look like from the student view, check out the [corresponding section](/student_tutorials/groups_activities/).
 
 ## How can I create a Group Activity?
 
@@ -25,7 +19,7 @@ To adhere to your preferences as well as possible, you are asked to specify your
   id="kmsembed-0_5sz1kqgj"
   width="100%"
   height="400"
-  src="https://uzh.mediaspace.cast.switch.ch/embed/secure/iframe/entryId/0_5sz1kqgj/uiConfId/23449004/st/0"
+  src="https://uzh.mediaspace.cast.switch.ch/embed/secure/iframe/entryId/0_5sz1kqgj/uiConfId/23448425/st/0"
   class="kmsembed"
   allowfullscreen
   webkitallowfullscreen
@@ -37,51 +31,67 @@ To adhere to your preferences as well as possible, you are asked to specify your
   title="KlickerUZH v3.1 - Group Activities: Creation"
 ></iframe>
 
-To create a group activity, navigate to the question pool and use the button at the top to start the group creation wizard. The wizard will guide you through the process of creating a group activity. You can add a general introduction text, hints and questions. The different components / settings are explained in the following sections.
+<br />
+<br />
 
-In a first step, you will be asked to provide general information about the group activity. The following fields are available for customization:
+To create a Group Activity, navigate to the library and use the corresponding button at the top of the page. This opens the Group Activity wizard, which will guide you through the process of creating a Group Activity step by step. The different components / settings are explained in the following sections. For more information on the structure and didactical design of group activities, please also refer to the [group activity use case](/use_cases/group_activity/).
 
-- **Name**: The name of the group activity allows the user to distinguish the particular activity from others. It is therefore only visible to the users themselves.
-- **Display Name**: This name will be shown to the participants while the group activity is being performed.
-- **Description**: A description of the group activity can optionally be added and will be displayed to the participants as an introduction to the group activity. While not required, we highly recommend to provide general information about the group activity here.
+**Add the necessary metadata:**
 
-During the second step, you can adjust the settings of the group activity and define the hints, which will be required to solve the questions. The following fields are available for customization:
+1. **Name:** The name of the Group Activity allows the user to distinguish the particular activity from others. It is therefore not visible to students participating in the activity. For recurring courses, we recommend adding information like the semester or lecture week to the name.
+2. **Display Name:** The display name is shown to participants while the Group Activity is available.
+3. **Task Description:** In contrast to other activity types, the task description is required for group activities, as it provides essential context and instructions for the participants and is shown separately above the section with the hints (provided in a later step).
 
-- **Course**: In this field, the group activity has to be assigned to a course. Note that this is different from the Live Quiz, which can be run independently from a course.
-- **Multiplier**: By default, each question in the group activity is worth 25 points. This value is multiplied with the question multiplier and the group activity multiplier, which can be specified here.
-- **Start Date**: Once the group activity has been published from the course menu, it will automatically be available to the participants at the specified start date.
-- **End Date**: The group activity will be automatically closed at the specified end date. After this date, participants will no longer be able to submit their answers.
-- **Hints**: Group activities require you to provide at least two hints to solve the questions (specified in the next step). These hints will be equally distributed between the participants of the group, encouraging them to work together to solve the questions. You can add as many hints as you like and select between "text hints" and "numerical hints" with an optional unit value.
+**Adjust the settings:**
 
-![Group Activity Options](/img/group_activity/creation_options.png)
+4. **Course:** Group Activities need to be assigned to an active course. This is necessary for students to be able to access the Group Activity through the student app after having created a group. If you need help creating a course, please review the [tutorial on course management](/tutorials/course_management).
+5. **Start/End Dates:** Group Activities are only available during a limited timeframe once published. Please choose corresponding dates and times for the start and end of the activity here. Group activities should only start after the group formation deadline to ensure that all groups have been finalized before the activity can be started and hints are distributed among its members. After the activity has expired, it will become available to you for manual grading.
+6. **Multiplier:** When assigned to a gamified course, a multiplier can be set for the Group Activity. The selected factor will increase the maximum number of points that can be awarded during manual grading.
 
-In the third and last step, you can add questions and content elements to the group activity. These will be shown to all students in the order provided and should require the information from the hints to be solved.
+![Group Activity Options](/img/group_activity/creation_settings.png)
 
-![Group Activity Questions](/img/group_activity/creation_questions.png)
+**Choose your questions and define hints:**
+
+7. In the final step, you can add your prepared questions to the Group Activity using one of the following two methods. Group activities support all element types except for flashcards. All questions will be shown to the students below each other. If you need help with creating questions, please review the [tutorial on element management](/tutorials/element_management/).
+   1. **Drag & Drop:** To add a new question to the stack, simply drag the question onto the plus sign beneath the desired stack.
+   2. **Select Questions:** Select one or more questions that should be added to the Group Activity and use the button appearing next to the stack to add them.
+   3. **Ordering:** To order individual elements within the stack, please use the provided arrows.
+8. **Hints**: Group activities require you to provide at least two hints to solve the posed questions. These hints will be equally distributed between the participants of the group, encouraging them to work together to solve the questions. You can add as many hints as you like and select between "text hints" and "numerical hints" with an optional unit value.
+
+![Group Activity Questions](/img/group_activity/creation_stack.png)
+
+## How can I edit a Group Activity?
+
+Like all other activities in KlickerUZH, Group Activities can be edited as long as they are in their **draft** state. Once published, Group Activities will remain in the **scheduled** state until the start date is reached, when their status automatically changes to **published**. While scheduled, Group Activities can still be unpublished to the draft state and edited. Once a Group Activity is published, its content can no longer be modified, since student submissions might be affected by the changes. The name and display name of the Group Activity may be changed at any time, using the pencil icon next to the activity name.
+
+To edit the content of a Group Activity, open the actions dropdown and select the corresponding option. KlickerUZH will then automatically redirect you back to the library and open the familiar activity wizard used during creation with all information pre-filled. After making any changes to the metadata of the activity, its settings or the contained elements, **make sure to save your changes** in the last step of the wizard. For more information on how elements in a Group Activity are updated and how to handle outdated elements, please refer to the [tutorial on element updates](/tutorials/element_updates_activities/).
+
+Beyond opening the editing wizard from the actions menu on any Group Activity, KlickerUZH also offers you several other options as part of the activity actions:
+
+- **Start** any scheduled Group Activity immediately at any time before the official start date. This will change the status of the Group Activity to "Published" and make it available to the participants.
+- **Extend** the duration of your Group Activity, while it is still running.
+- **End** your Group Activity immediately, which will change its status to "Ended" and prevent further submissions.
+<!-- - **Duplicate** the Group Activity, independent of the status. -->
+- **Publish** it. Note that the publishing process makes the Group Activity available to all participants after the scheduled start date. Until then, the Group Activity will be in a "Scheduled" state and can be unpublished and edited again. The change from the scheduled state to the "Published" state is performed automatically at the scheduled start date and is irreversible.
+- **Unpublish** scheduled Group Activities.
+- **Grade** ended Group Activities (after the end date has been reached) or access the submissions and grading decisions (after the grading process has been finalized). For more information on the grading process, please refer to the section on [grading group activities](/tutorials/group_activity/#how-can-i-grade-the-submissions-to-a-group-activity).
+- **Share** access to your Group Activity with other users of KlickerUZH.
+- **View comments** that were submitted by you or other users of KlickerUZH for this Group Activity.
+- **Delete** your Group Activity with certain restrictions.
 
 ## How can I publish a Group Activity and make it accessible to participants?
 
-From the course overview, you can execute a set of actions on the group activity. Depending on the current status of the activity and the start and end times, the following actions are available:
+1. Once a Group Activity has been created, it will appear both in the **activities list** under the corresponding menu entry and in the **course overview** of the course it has been assigned to.
+2. After navigating to the corresponding entry in the lists, you can **publish** it. Note that the publishing process makes the Group Activity available to all participant groups after the scheduled start date. Until then, the Group Activity will be in a "Scheduled" state and can be unpublished and edited again. The change from the scheduled state to the "Published" state is performed automatically at the scheduled start date and is irreversible.
+3. Once **published**, all participants who are part of a group can access it through the group view on the course the activity is part of. From this view, it can be opened and started, at which point the hints will be distributed among the group members. Each group can submit one set of answers to the questions contained in the Group Activity.
 
-- **Edit**: Group activities, which are still in the draft state can be edited. Find the corresponding button under the `other actions` dropdown.
-- **Delete**: If you want to remove a group activity, you can do so by clicking the delete button before the group activity is published. Deleted group activities cannot be restored.
-- **Publish**: Once you are satisfied with the group activity, you can publish it. This will make it available to the participants at the specified start date or immediately, if the start date is in the past. As a preview is not yet available for group activities, we recommend to check out the corresponding [student documentation](/student_tutorials/groups_activities/) to get an impression of how the group activity will look like for the participants.
-- **Unpublish**: If the start date of a published group activity is in the future, you can unpublish it. This will hide the group activity from the participants and allow you to make further changes.
-- **Grading**: After the group activity has ended, you can grade the submissions of the participants through the dedicated grading view (described below).
-
-<img
-  src="/img/group_activity/ga_list.png"
-  alt="List of group activities"
-  width="800"
-/>
-
-## How can I grade the submissions to a Group Activity
+## How can I grade the submissions to a Group Activity?
 
 <iframe
   id="kmsembed-0_bbz7dszp"
   width="100%"
   height="400"
-  src="https://uzh.mediaspace.cast.switch.ch/embed/secure/iframe/entryId/0_bbz7dszp/uiConfId/23449004/st/0"
+  src="https://uzh.mediaspace.cast.switch.ch/embed/secure/iframe/entryId/0_bbz7dszp/uiConfId/23448425/st/0"
   class="kmsembed"
   allowfullscreen
   webkitallowfullscreen
@@ -93,13 +103,15 @@ From the course overview, you can execute a set of actions on the group activity
   title="KlickerUZH v3.1 - Group Activities: Grading"
 ></iframe>
 
-After the group activity has ended, you can grade the submissions of the participants. To do so, navigate to the course overview and select the grading on the corresponding group activity. This will open the grading view, where you can see the submissions of the participants and grade them (as illustrated above). The following feedback options are available:
+After the Group Activity has ended, you can grade the submissions. To do so, navigate to the course overview or activities list and open the grading view on the corresponding Group Activity, where you can see the submissions of the individual participant groups and grade them. The following feedback options are available:
 
-- **Points** (required): Points need to be awarded to the group's answer to each question. The maximum number of points for this question (computed as the product of the question and group activity multipliers and the default 25 points) is shown as a reference. The total number of points will automatically be computed for you.
+- **Points** (required): Points need to be awarded to the group's answer to each question. The maximum number of points for a particular question, computed as the product of the question and Group Activity multipliers and the default 25 points, is shown as a reference. The total number of points will automatically be computed for you.
 - **Answer Feedback** (optional): You can provide feedback to the group's answer to each question. This feedback will be shown to the participants after the grading has been completed.
-- **Pass / Fail** (required): Please specify at the bottom, if the group has passed or failed the group activity. This information will be shown to the participants after the grading has been completed.
+- **Pass / Fail** (required): Please specify at the bottom, if the group has passed or failed the Group Activity. This information will be shown to the participants after the grading has been completed.
 - **Submission Feedback** (optional): Right below the pass / fail decision, you can provide feedback to the group's submission as a whole.
 
-Please notice, that **grading a submission will not make it immediately visible to the students!** Only once all the submissions for a group activity have a valid grading decision, the grading can be **finalized** using the corresponding button in the grading view. After finalizing the grading, the results will be visible to the participants.
+:::warning
+Please note that **grading a submission will not make it immediately visible to the students!** Only once all the submissions for a Group Activity have a valid grading decision, the grading can be **finalized** using the corresponding button in the grading view. After finalizing the grading, the results will be visible to the participants.
+:::
 
 ![Group Activity Grading View](/img/group_activity/ga_grading_view.png)

@@ -13,13 +13,7 @@ import {
   UpdateCourseSettingsDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import {
-  Button,
-  Dropdown,
-  H1,
-  toast,
-  UserNotification,
-} from '@uzh-bf/design-system'
+import { Button, Dropdown, H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -39,6 +33,8 @@ interface CourseOverviewHeaderProps {
   earliestGroupDeadline?: string
   earliestStartDate?: string
   latestEndDate?: string
+  containsActivities: boolean
+  containsGroups: boolean
 }
 
 function CourseOverviewHeader({
@@ -46,6 +42,8 @@ function CourseOverviewHeader({
   earliestGroupDeadline,
   earliestStartDate,
   latestEndDate,
+  containsActivities,
+  containsGroups,
 }: CourseOverviewHeaderProps) {
   const t = useTranslations()
 
@@ -59,11 +57,44 @@ function CourseOverviewHeader({
   })
   const user = dataUser?.userProfile
 
-  const onSuccessToast = () =>
-    toast({
-      type: 'success',
-      message: t('manage.course.linkLTICopied'),
-    })
+  const ltiDropdownItems = [
+    getLTIAccessLink({
+      href: `${process.env.NEXT_PUBLIC_PWA_URL}/${course.language}/course/${course.id}`,
+      t,
+      name: course.name,
+      label: t('manage.course.linkLTILeaderboardLabel'),
+    }),
+    getLTIAccessLink({
+      href: `${process.env.NEXT_PUBLIC_PWA_URL}/${course.language}/course/${course.id}/docs`,
+      t,
+      name: course.name,
+      label: t('manage.course.linkLTIDocsLabel'),
+    }),
+    getLTIAccessLink({
+      href: `${process.env.NEXT_PUBLIC_PWA_URL}/${course.language}/course/${course.id}/liveQuizzes/overview`,
+      t,
+      name: course.name,
+      label: t('manage.course.linkLTILiveQuizzesLabel'),
+    }),
+    getLTIAccessLink({
+      href: `${process.env.NEXT_PUBLIC_PWA_URL}/${course.language}/course/${course.id}/practiceQuizzes/overview`,
+      t,
+      name: course.name,
+      label: t('manage.course.linkLTIPracticeQuizzesLabel'),
+    }),
+    getLTIAccessLink({
+      href: `${process.env.NEXT_PUBLIC_PWA_URL}/${course.language}/course/${course.id}/microLearnings/overview`,
+      t,
+      name: course.name,
+      label: t('manage.course.linkLTIMicroLearningsLabel'),
+    }),
+    getLTIAccessLink({
+      href: `${process.env.NEXT_PUBLIC_PWA_URL}/${course.language}/createAccount`,
+      t,
+      name: course.name,
+      label: t('manage.course.linkLTIAccountManagement'),
+    }),
+  ]
 
   return (
     <div className="flex flex-row flex-wrap items-center justify-between">
@@ -99,16 +130,14 @@ function CourseOverviewHeader({
             <Button.Label>{t('manage.course.shareCourse')}</Button.Label>
           </Button>
         ) : null}
-        {user?.privatePreview ? (
-          <Button
-            onClick={() => setIsActivityLogOpen(true)}
-            className={{ root: 'h-8' }}
-            data={{ cy: 'course-activity-log-button' }}
-          >
-            <Button.Icon icon={faMessage} />
-            <Button.Label>{t('shared.comments.tooltip')}</Button.Label>
-          </Button>
-        ) : null}
+        <Button
+          onClick={() => setIsActivityLogOpen(true)}
+          className={{ root: 'h-8' }}
+          data={{ cy: 'course-activity-log-button' }}
+        >
+          <Button.Icon icon={faMessage} />
+          <Button.Label>{t('shared.comments.tooltip')}</Button.Label>
+        </Button>
         <QRCodePopover
           triggerStyle="button"
           triggerText={t('manage.course.joinCourse')}
@@ -118,7 +147,7 @@ function CourseOverviewHeader({
               className={{ root: 'mb-3 w-80' }}
             />
           }
-          relHref={`/course/${course.id}/join?pin=${course.pinCode}`}
+          relHref={`/${course.language}/course/${course.id}/join?pin=${course.pinCode}`}
           data={{ cy: `course-join-qr-code` }}
         />
         {user?.publicPreview ? (
@@ -134,70 +163,22 @@ function CourseOverviewHeader({
             <Button.Label>{t('manage.course.learningAnalytics')}</Button.Label>
           </Button>
         ) : null}
-        {user?.catalyst && (
-          <Dropdown
-            data={{ cy: `course-actions-${name}` }}
-            className={{
-              item: 'p-1 hover:bg-gray-200',
-              viewport: 'z-10 bg-white',
-              trigger: 'h-8',
-            }}
-            trigger={
-              <>
-                <Button.Icon icon={faLink} />
-                <Button.Label>{t('manage.course.ltiLinks')}</Button.Label>
-              </>
-            }
-            items={[
-              user?.catalyst
-                ? [
-                    getLTIAccessLink({
-                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}`,
-                      onSuccess: onSuccessToast,
-                      t,
-                      name: course.name,
-                      label: t('manage.course.linkLTILeaderboardLabel'),
-                    }),
-                    getLTIAccessLink({
-                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/docs`,
-                      onSuccess: onSuccessToast,
-                      t,
-                      name: course.name,
-                      label: t('manage.course.linkLTIDocsLabel'),
-                    }),
-                    getLTIAccessLink({
-                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/liveQuizzes`,
-                      onSuccess: onSuccessToast,
-                      t,
-                      name: course.name,
-                      label: t('manage.course.linkLTILiveQuizzesLabel'),
-                    }),
-                    getLTIAccessLink({
-                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/practiceQuizzes`,
-                      onSuccess: onSuccessToast,
-                      t,
-                      name: course.name,
-                      label: t('manage.course.linkLTIPracticeQuizzesLabel'),
-                    }),
-                    getLTIAccessLink({
-                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/course/${course.id}/microLearnings`,
-                      onSuccess: onSuccessToast,
-                      t,
-                      name: course.name,
-                      label: t('manage.course.linkLTIMicroLearningsLabel'),
-                    }),
-                    getLTIAccessLink({
-                      href: `${process.env.NEXT_PUBLIC_PWA_URL}/createAccount`,
-                      onSuccess: onSuccessToast,
-                      t,
-                      name: course.name,
-                      label: t('manage.course.linkLTIAccountManagement'),
-                    }),
-                  ]
-                : [],
-            ].flat()}
-          />
-        )}
+        <Dropdown
+          data={{ cy: `course-lti-links` }}
+          className={{
+            item: 'p-1 hover:bg-gray-200',
+            viewport: 'z-10 bg-white',
+            trigger: 'h-8',
+          }}
+          align="end"
+          trigger={
+            <>
+              <Button.Icon icon={faLink} />
+              <Button.Label>{t('manage.course.ltiLinks')}</Button.Label>
+            </>
+          }
+          items={ltiDropdownItems}
+        />
       </div>
 
       {courseSettingsModal && (
@@ -206,6 +187,8 @@ function CourseOverviewHeader({
           earliestGroupDeadline={earliestGroupDeadline}
           earliestStartDate={earliestStartDate}
           latestEndDate={latestEndDate}
+          containsActivities={containsActivities}
+          containsGroups={containsGroups}
           onModalClose={() => setCourseSettingsModal(false)}
           onSubmit={async (
             values: CourseManipulationFormData,
@@ -225,7 +208,12 @@ function CourseOverviewHeader({
                   id: course.id,
                   name: values.name,
                   displayName: values.displayName,
-                  description: values.description,
+                  description:
+                    !values.description?.match(/^(<br>(\n)*)$/g) &&
+                    values.description !== ''
+                      ? values.description
+                      : null,
+                  language: values.language,
                   color: values.color,
                   startDate: startDateUTC,
                   endDate: endDateUTC,
@@ -234,14 +222,28 @@ function CourseOverviewHeader({
                   isGroupCreationEnabled: values.isGroupCreationEnabled,
                   groupDeadlineDate: groupDeadlineDateUTC,
                 },
-                refetchQueries: [
-                  {
-                    query: GetSingleCourseDocument,
-                    variables: {
-                      courseId: course.id,
+                update: (cache, { data }) => {
+                  // check if the update was successful
+                  if (!data?.updateCourseSettings) return
+
+                  // update the cached list of catalog collections
+                  cache.updateQuery(
+                    {
+                      query: GetSingleCourseDocument,
+                      variables: { courseId: course.id },
                     },
-                  },
-                ],
+                    (qData) => {
+                      if (!qData?.course) return qData
+
+                      return {
+                        course: {
+                          ...qData.course,
+                          ...data.updateCourseSettings!,
+                        },
+                      }
+                    }
+                  )
+                },
               })
 
               if (result.data?.updateCourseSettings) {
@@ -264,7 +266,6 @@ function CourseOverviewHeader({
           objectUuid={course.id}
           objectName={course.name}
           objectType={ObjectType.Course}
-          isOwner={course.isOwner ?? false}
           onClose={() => setSharingModal(false)}
         />
       ) : null}

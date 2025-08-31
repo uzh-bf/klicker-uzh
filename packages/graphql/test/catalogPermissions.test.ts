@@ -3,10 +3,9 @@ import {
   ObjectAccess,
   PermissionLevel,
   PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
-import type { ContextWithUser } from '../src/lib/context.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
 import { userFour, userOne, userThree, userTwo } from './userData.js'
 
@@ -15,11 +14,6 @@ describe('Unit tests covering the creation of derived permissions for catalog co
   let prisma: PrismaClient
   let hatchet: Hatchet
   let emitter: EventEmitter
-  let userOneCtx: ContextWithUser
-  let userTwoCtx: ContextWithUser
-  let userThreeCtx: ContextWithUser
-  let userFourCtx: ContextWithUser
-  let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
     const {
@@ -196,7 +190,7 @@ describe('Unit tests covering the creation of derived permissions for catalog co
     })
 
     // grant direct access with different permission levels to users 2, 3, and 4
-    const userTwoPermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userTwo.id,
         catalogCollectionId: catalogCollection.id,
@@ -212,7 +206,7 @@ describe('Unit tests covering the creation of derived permissions for catalog co
       },
     })
 
-    const userFourPermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userFour.id,
         catalogCollectionId: catalogCollection.id,
@@ -413,7 +407,7 @@ describe('Unit tests covering the creation of derived permissions for catalog co
     })
 
     // grant READ permissions to the first group and WRITE for the second group (second catalog collection)
-    const groupPermission3 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userGroupId: userGroup1.id,
         catalogCollectionId: catalogCollection2.id,
@@ -623,7 +617,7 @@ describe('Unit tests covering the creation of derived permissions for catalog co
     })
 
     // create individual permissions with READ, WRITE, and ADMIN access for users 2, 3, and 4
-    const userTwoPermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userTwo.id,
         catalogCollectionId: catalogCollection.id,

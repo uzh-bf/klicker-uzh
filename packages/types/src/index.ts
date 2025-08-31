@@ -6,7 +6,7 @@ import type {
   ObjectType,
   ParameterType,
   PerformanceLevel,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 
 // ----- ACTIVITY LOG TYPES -----
 // #region
@@ -29,6 +29,14 @@ export type ElementKeys = keyof Element
 export enum DisplayMode {
   LIST = 'LIST',
   GRID = 'GRID',
+}
+
+export enum SortByType {
+  TITLE = 'TITLE',
+  TYPE = 'TYPE',
+  STATUS = 'STATUS',
+  CREATED = 'CREATED',
+  MODIFIED = 'MODIFIED',
 }
 
 export enum ActivityType {

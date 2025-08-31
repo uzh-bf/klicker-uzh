@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
 import { faClipboard } from '@fortawesome/free-solid-svg-icons'
 import {
-  GetLiveQuizHmacDocument,
+  GetLiveQuizEmbeddingInfoDocument,
   GetSingleLiveQuizDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, Modal } from '@uzh-bf/design-system'
@@ -59,7 +59,7 @@ function EmbeddingModal({
     skip: !quizId,
   })
 
-  const { data, loading } = useQuery(GetLiveQuizHmacDocument, {
+  const { data, loading } = useQuery(GetLiveQuizEmbeddingInfoDocument, {
     variables: { id: quizId },
     skip: !open,
   })
@@ -74,7 +74,7 @@ function EmbeddingModal({
     <Modal
       open
       hideCloseButton
-      loading={loading || !data?.liveQuizHMAC}
+      loading={loading}
       onClose={onClose}
       onSecondaryAction={onClose}
       secondaryLabel={t('shared.generic.close')}
@@ -92,7 +92,7 @@ function EmbeddingModal({
               }`}</div>
               <HMACLink
                 quizId={quizId}
-                hmac={data?.liveQuizHMAC!}
+                hmac={data?.getLiveQuizEmbeddingInfo?.hmac ?? ''}
                 params={`questionIx=${ix}&hideControls=true`}
                 identifier={`question-${ix}`}
               />
@@ -104,7 +104,7 @@ function EmbeddingModal({
         <div className="w-30 font-bold">{t('shared.generic.leaderboard')}:</div>
         <HMACLink
           quizId={quizId}
-          hmac={data?.liveQuizHMAC ?? ''}
+          hmac={data?.getLiveQuizEmbeddingInfo?.hmac ?? ''}
           params={`leaderboard=true&hideControls=true`}
           identifier={`leaderboard`}
         />

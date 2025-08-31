@@ -11,8 +11,9 @@ interface ObjectSharingModalBaseProps {
   isTemplate?: boolean
   courseId?: string
   catalogCollectionId?: string
-  isOwner: boolean
   onClose: () => void
+  refetchActivities?: () => Promise<void>
+  refetchElements?: () => Promise<void>
 }
 
 interface ObjectSharingModalIdProps extends ObjectSharingModalBaseProps {
@@ -31,8 +32,9 @@ function ObjectSharingModalWrapper({
   objectType,
   isTemplate = false,
   catalogCollectionId,
-  isOwner,
   onClose,
+  refetchActivities,
+  refetchElements,
 }: ObjectSharingModalIdProps | ObjectSharingModalUuidProps) {
   const [transferModalOpen, setTransferModalOpen] = useState(false)
 
@@ -43,16 +45,34 @@ function ObjectSharingModalWrapper({
   return (
     <>
       <ObjectSharingModal
-        onClose={onClose}
+        onClose={async () => {
+          // if an operation related to elements was executed, refetch the element list
+          if (objectType === ObjectType.Element) {
+            await refetchElements?.()
+          }
+
+          // if an operation related to activities was executed, refetch the activity list
+          if (
+            objectType === ObjectType.LiveQuiz ||
+            objectType === ObjectType.PracticeQuiz ||
+            objectType === ObjectType.MicroLearning ||
+            objectType === ObjectType.GroupActivity
+          ) {
+            await refetchActivities?.()
+          }
+
+          onClose()
+        }}
         objectId={typeof objectId !== 'undefined' ? objectId : objectUuid!}
         objectType={objectType}
         objectName={objectName}
-        isOwner={isOwner}
         onOwnershipTransfer={() => setTransferModalOpen(true)}
         derivedPermissionsAvailable={
           objectType !== ObjectType.CatalogCollection &&
           objectType !== ObjectType.Course
         }
+        refetchElements={refetchElements}
+        refetchActivities={refetchActivities}
       />
       {transferModalOpen && (
         <TransferOwnershipModal

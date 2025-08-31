@@ -45,7 +45,8 @@ function CourseSelectionPage() {
   }>({ open: false, courseId: null, courseName: null })
 
   const { loading: loadingCourses, data: dataCourses } = useQuery(
-    GetUserCoursesDocument
+    GetUserCoursesDocument,
+    { fetchPolicy: 'cache-and-network' }
   )
 
   if (loadingCourses) {
@@ -56,9 +57,9 @@ function CourseSelectionPage() {
     )
   }
 
-  const courses = dataCourses?.userCourses?.filter((course) => {
-    return showArchive ? true : !course.isArchived
-  })
+  const courses = dataCourses?.userCourses?.filter((course) =>
+    showArchive ? true : !course.isArchived
+  )
 
   return (
     <Layout>
@@ -117,10 +118,7 @@ function CourseSelectionPage() {
                 (dataCourses?.userCourses?.length ?? 0) > 0 && 'md:pr-24'
               )}
             >
-              <UserNotification
-                type="warning"
-                className={{ root: 'text-normal mb-3' }}
-              >
+              <UserNotification className={{ root: 'mb-3 text-base' }}>
                 {t('manage.courseList.noCoursesFound')}
               </UserNotification>
               <CourseListButton
@@ -174,7 +172,12 @@ function CourseSelectionPage() {
                     variables: {
                       name: values.name,
                       displayName: values.displayName,
-                      description: values.description,
+                      description:
+                        !values.description?.match(/^(<br>(\n)*)$/g) &&
+                        values.description !== ''
+                          ? values.description
+                          : null,
+                      language: values.language,
                       color: values.color,
                       startDate: startDateUTC,
                       endDate: endDateUTC,
@@ -187,7 +190,25 @@ function CourseSelectionPage() {
                         String(values.preferredGroupSize)
                       ),
                     },
-                    refetchQueries: [{ query: GetUserCoursesDocument }],
+                    update: (cache, { data }) => {
+                      // verify that the course creation was successful
+                      if (!data?.createCourse) return
+
+                      // add the new course to the course list
+                      cache.updateQuery(
+                        { query: GetUserCoursesDocument },
+                        (qData) => {
+                          if (!qData?.userCourses) return qData
+
+                          return {
+                            userCourses: [
+                              ...qData.userCourses,
+                              data.createCourse!,
+                            ],
+                          }
+                        }
+                      )
+                    },
                   })
 
                   if (result.data?.createCourse) {

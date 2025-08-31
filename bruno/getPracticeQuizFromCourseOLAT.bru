@@ -1,0 +1,25 @@
+meta {
+  name: getPracticeQuizFromCourseOLAT
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{OLAT_API_URL}}/api/configuration/course/7c12e44e-d083-4acf-845e-4c34aaff6b49/practice-quiz
+  body: json
+  auth: inherit
+}
+
+headers {
+  X-API-Key: {{OLAT_API_KEY}}
+}
+
+body:json {
+  {
+    "identityMappingIdentifier": "29440fb7-5347-4244-a83a-7ce8379d80e4@eduid.ch"
+  }
+}
+
+body:form-urlencoded {
+  identityMappingIdentifier: 29440fb7-5347-4244-a83a-7ce8379d80e4@eduid
+}

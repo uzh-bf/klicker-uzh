@@ -3,6 +3,12 @@ import messages from '../../../packages/i18n/messages/en'
 describe('Test creation and editing functionalities, validation, etc. for Content elements', function () {
   before(() => {
     cy.seed()
+
+    // set browser language to english (independent of local machine setting
+    Cypress.automation('remote:debugger:protocol', {
+      command: 'Emulation.setLocaleOverride',
+      params: { locale: 'en' },
+    })
   })
 
   after(() => {
@@ -48,15 +54,14 @@ describe('Test creation and editing functionalities, validation, etc. for Conten
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 
-    cy.get(`[data-cy="element-item-${this.data.CT.title}"]`).contains(
-      this.data.CT.content
-    )
-    cy.get(`[data-cy="element-item-${this.data.CT.title}"]`).contains(
-      this.data.CT.title
-    )
-    cy.get(`[data-cy="element-item-${this.data.CT.title}"]`).contains(
-      messages.shared.DRAFT.statusLabel
-    )
+    cy.validateElement({
+      element: this.data.CT.title,
+      contains: [
+        this.data.CT.content,
+        this.data.CT.title,
+        messages.shared.DRAFT.statusLabel,
+      ],
+    })
   })
 
   it('Check that values of content element are stored and loaded correctly', function () {
@@ -93,15 +98,14 @@ describe('Test creation and editing functionalities, validation, etc. for Conten
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 
-    cy.get(`[data-cy="element-item-${this.data.CT.titleEdited}"]`).contains(
-      this.data.CT.contentEdited
-    )
-    cy.get(`[data-cy="element-item-${this.data.CT.titleEdited}"]`).contains(
-      this.data.CT.titleEdited
-    )
-    cy.get(`[data-cy="element-item-${this.data.CT.titleEdited}"]`).contains(
-      messages.shared.READY.statusLabel
-    )
+    cy.validateElement({
+      element: this.data.CT.titleEdited,
+      contains: [
+        this.data.CT.contentEdited,
+        this.data.CT.titleEdited,
+        messages.shared.READY.statusLabel,
+      ],
+    })
   })
 
   it('Check that edited content element is stored and loaded correctly', function () {

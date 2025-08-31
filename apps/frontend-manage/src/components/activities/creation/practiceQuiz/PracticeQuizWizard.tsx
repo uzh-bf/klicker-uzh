@@ -15,7 +15,7 @@ import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
 import * as yup from 'yup'
-import { ElementSelectCourse } from '../../ElementCreation'
+import { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
 import StackCreationStep from '../StackCreationStep'
 import WizardLayout, { PracticeQuizFormValues } from '../WizardLayout'
@@ -34,6 +34,7 @@ export interface PracticeQuizWizardStepProps {
   validationSchema: any
   gamifiedCourses?: ElementSelectCourse[]
   nonGamifiedCourses?: ElementSelectCourse[]
+  assessmentCourses?: ElementSelectCourse[]
   onSubmit?: (newValues: PracticeQuizFormValues) => void
   setStepValidity: Dispatch<SetStateAction<boolean[]>>
   onPrevStep?: (newValues: PracticeQuizFormValues) => void
@@ -96,9 +97,10 @@ function PracticeQuizWizard({
   )
   const formRef = useRef<FormikProps<PracticeQuizFormValues>>(null)
 
-  const { gamifiedCourses, nonGamifiedCourses } = useCoursesGamificationSplit({
-    courseSelection: courses,
-  })
+  const { gamifiedCourses, nonGamifiedCourses, assessmentCourses } =
+    useCoursesGamificationSplit({
+      courseSelection: courses,
+    })
 
   const nameValidationSchema = yup.object().shape({
     name: yup.string().required(t('manage.activityWizard.activityName')),
@@ -243,9 +245,10 @@ function PracticeQuizWizard({
     order:
       (initialValues?.orderType as ElementOrderType) || formDefaultValues.order,
     courseStartDate: formDefaultValues.courseStartDate,
-    resetTimeDays: initialValues?.resetTimeDays
-      ? String(initialValues?.resetTimeDays)
-      : formDefaultValues.resetTimeDays,
+    resetTimeDays:
+      typeof initialValues?.resetTimeDays !== 'undefined'
+        ? String(initialValues?.resetTimeDays)
+        : formDefaultValues.resetTimeDays,
   })
 
   const [createPracticeQuiz, { data: practiceQuizCreateData }] = useMutation(
@@ -258,6 +261,7 @@ function PracticeQuizWizard({
     async (values: PracticeQuizFormValues) => {
       submitPracticeQuizForm({
         id: initialValues?.id,
+        previousCourseId: initialValues?.course?.id,
         values,
         editMode,
         createPracticeQuiz,
@@ -310,7 +314,7 @@ function PracticeQuizWizard({
           )}
           name={formData.name}
           editMode={editMode}
-          previewElementHref={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${selectedCourseId}/quiz/${practiceQuizEditData?.editPracticeQuiz?.id || practiceQuizCreateData?.createPracticeQuiz?.id}`}
+          previewElementHref={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${selectedCourseId}/practiceQuizzes/${practiceQuizEditData?.editPracticeQuiz?.id || practiceQuizCreateData?.createPracticeQuiz?.id}`}
           viewElementHref={`/courses/${selectedCourseId}?tab=practiceQuizzes`}
           onRestartForm={() => {
             setIsWizardCompleted(false)
@@ -373,6 +377,7 @@ function PracticeQuizWizard({
           validationSchema={settingsValidationSchema}
           gamifiedCourses={gamifiedCourses}
           nonGamifiedCourses={nonGamifiedCourses}
+          assessmentCourses={assessmentCourses}
           setStepValidity={setStepValidity}
           onNextStep={(newValues: Partial<PracticeQuizFormValues>) => {
             setFormData((prev) => ({ ...prev, ...newValues }))

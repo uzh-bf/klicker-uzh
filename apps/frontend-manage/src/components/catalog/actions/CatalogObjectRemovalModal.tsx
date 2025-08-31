@@ -5,7 +5,7 @@ import {
   ObjectType,
   RemoveCatalogObjectAssignmentDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Modal } from '@uzh-bf/design-system'
+import { Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 function CatalogObjectRemovalModal({
@@ -50,7 +50,7 @@ function CatalogObjectRemovalModal({
       primaryLoading={loading}
       primaryButtonStyle="destructive"
       onPrimaryAction={async () => {
-        const res = await removeCatalogObjectAssignment({
+        const { data: res } = await removeCatalogObjectAssignment({
           variables: {
             assignmentId: object.id,
           },
@@ -59,32 +59,36 @@ function CatalogObjectRemovalModal({
             const success = data?.removeCatalogObjectAssignment
             if (!success) return
 
-            // update list of catalog objects
-            const catalogObjects = cache.readQuery({
-              query: GetCatalogObjectsDocument,
-              variables: {
-                catalogCollectionId,
-              },
-            })
-
-            if (catalogObjects?.getCatalogObjects) {
-              cache.writeQuery({
+            cache.updateQuery(
+              {
                 query: GetCatalogObjectsDocument,
-                variables: {
-                  catalogCollectionId,
-                },
-                data: {
-                  getCatalogObjects: catalogObjects?.getCatalogObjects.filter(
+                variables: { catalogCollectionId },
+              },
+              (data) => {
+                if (!data?.getCatalogObjects) return data
+                return {
+                  ...data,
+                  getCatalogObjects: data.getCatalogObjects.filter(
                     (obj) => obj.id !== object.id
                   ),
-                },
-              })
-            }
+                }
+              }
+            )
           },
         })
 
-        if (res.data?.removeCatalogObjectAssignment) {
+        const success = res?.removeCatalogObjectAssignment ?? false
+        if (success) {
+          toast({
+            type: 'success',
+            message: t('manage.catalog.objectRemovalSuccess'),
+          })
           onClose()
+        } else {
+          toast({
+            type: 'error',
+            message: t('manage.catalog.objectRemovalFailed'),
+          })
         }
       }}
       dataPrimaryAction={{ cy: 'confirm-removal' }}

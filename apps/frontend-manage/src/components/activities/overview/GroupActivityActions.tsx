@@ -69,11 +69,15 @@ function GroupActivityActions({
   isTemplate,
   sharingModal,
   setSharingModal,
+  setShowDetails,
+  refetchActivities,
 }: {
   groupActivity: ActivityInfo
   isTemplate: boolean
   sharingModal: boolean
   setSharingModal: Dispatch<SetStateAction<boolean>>
+  setShowDetails: Dispatch<SetStateAction<boolean>>
+  refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
   const [deletionModal, setDeletionModal] = useState(false)
@@ -105,7 +109,7 @@ function GroupActivityActions({
         'endGroupActivity',
         'gradeGroupActivity',
       ],
-      isShared: [...(user?.privatePreview ? ['activityLog'] : [])],
+      isShared: ['activityLog'],
       isRemovable: ['removeGroupActivity'],
     }
   }, [user?.privatePreview])
@@ -120,6 +124,7 @@ function GroupActivityActions({
     setExtensionModal,
     setSharingModal,
     setActivityLogOpen,
+    refetchActivities,
   })
 
   const availableActions = useAvailableActions({
@@ -142,6 +147,7 @@ function GroupActivityActions({
         activityId={groupActivity.id}
         activityName={groupActivity.name}
         activityType={groupActivity.type}
+        openActivityDetailsModal={() => setShowDetails(true)}
       />
       <div>
         {sharingModal && groupActivity.isManager ? (
@@ -150,8 +156,8 @@ function GroupActivityActions({
             objectName={groupActivity.name}
             objectType={ObjectType.GroupActivity}
             isTemplate={isTemplate}
-            isOwner={groupActivity.isOwner ?? false}
             onClose={() => setSharingModal(false)}
+            refetchActivities={refetchActivities}
           />
         ) : null}
         {publishingModal && (
@@ -163,6 +169,7 @@ function GroupActivityActions({
             endAt={groupActivity.scheduledEndAt}
             title={groupActivity.name}
             courseId={groupActivity.courseId!}
+            refetchActivities={refetchActivities}
           />
         )}
         {extensionModal && (
@@ -174,6 +181,7 @@ function GroupActivityActions({
             courseId={groupActivity.courseId!}
             title={t('manage.course.extendGroupActivity')}
             description={t('manage.course.extendGroupActivityDescription')}
+            refetchActivities={refetchActivities}
           />
         )}
 
@@ -184,6 +192,7 @@ function GroupActivityActions({
             title={groupActivity.name}
             isModalOpen={removalModal}
             setModalOpen={setRemovalModal}
+            refetchActivities={refetchActivities}
           />
         )}
         {deletionModal && (
@@ -191,6 +200,7 @@ function GroupActivityActions({
             onClose={() => setDeletionModal(false)}
             activityId={groupActivity.id}
             courseId={groupActivity.courseId!}
+            refetchActivities={refetchActivities}
           />
         )}
 
@@ -199,6 +209,7 @@ function GroupActivityActions({
             onClose={() => setEndingModal(false)}
             activityId={groupActivity.id}
             courseId={groupActivity.courseId!}
+            refetchActivities={refetchActivities}
           />
         )}
         {startingModal && (
@@ -209,6 +220,7 @@ function GroupActivityActions({
             groupDeadlineDate={groupActivity.groupDeadlineDate}
             numOfParticipantGroups={groupActivity.numOfParticipantGroups ?? 0}
             courseId={groupActivity.courseId!}
+            refetchActivities={refetchActivities}
           />
         )}
 
