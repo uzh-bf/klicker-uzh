@@ -8,6 +8,7 @@ build/
 email/
 .claude/
 .serena/
+project/
 
 ops.schema.json
 ops.ts

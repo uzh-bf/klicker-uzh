@@ -4,4 +4,4 @@
 ./util/sync-schema.sh
 
 # start postgres, redis, and reverse proxy
-docker compose up --build postgres redis_exec redis_cache reverse_proxy_docker
+docker compose up --build postgres redis_exec redis_cache reverse_proxy_docker hatchet

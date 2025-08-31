@@ -1,6 +1,8 @@
 repositories:
   - name: bitnami
     url: https://charts.bitnami.com/bitnami
+  - name: hatchet
+    url: https://hatchet-dev.github.io/hatchet-charts
 
 releases:
   - name: klicker-v2-qa
@@ -13,3 +15,13 @@ releases:
     values:
       - values.yaml
       - .values-SECRET.yaml
+  - name: hatchet-qa
+    namespace: klicker-v2-qa
+    createNamespace: true
+    chart: hatchet/hatchet-ha
+    version: '{{ env "HATCHET_CHART_VERSION" | default "0.9.2" }}'
+    installed: true
+    kubeContext: klicker-k8scbfdbd7c
+    values:
+      - values-hatchet.yaml
+      - .values-hatchet-SECRET.yaml

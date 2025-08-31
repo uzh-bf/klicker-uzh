@@ -16,6 +16,8 @@ module.exports = {
     'apps/frontend-pwa/',
     'apps/frontend-control/',
     'apps/office-addin/',
+    'apps/hatchet-worker-general',
+    'apps/hatchet-worker-response-processor',
     'packages/grading/',
     'packages/graphql/',
     'packages/lti/',
@@ -25,6 +27,7 @@ module.exports = {
     'packages/next-config',
     'packages/i18n',
     'packages/util',
+    'packages/hatchet-tasks',
   ].reduce(
     (acc, path) => {
       return acc.concat({
@@ -34,7 +37,7 @@ module.exports = {
     },
     [
       {
-        filename: `deploy/charts/klicker-uzh-v3/Chart.yaml`,
+        filename: `deploy/charts/klicker-uzh-v2/Chart.yaml`,
         updater: 'util/yaml-updater.js',
       },
     ]
