@@ -103,11 +103,17 @@ async function handleNewResponse(
       process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string,
       requestOptions
     )
+  } catch (e) {
+    console.error('Error sending response to primary endpoint:', e)
+  }
 
-    // Only send to secondary endpoint (Hatchet) if dual mode is enabled
+  try {
     const isDualModeEnabled =
       process.env.NEXT_PUBLIC_ENABLE_DUAL_RESPONSE_MODE === 'true'
 
+    console.log('Dual mode enabled:', isDualModeEnabled)
+
+    // Only send to secondary endpoint (Hatchet) if dual mode is enabled
     if (isDualModeEnabled && process.env.NEXT_PUBLIC_ADD_RESPONSE_V2_URL) {
       await fetch(
         process.env.NEXT_PUBLIC_ADD_RESPONSE_V2_URL as string,
@@ -115,7 +121,7 @@ async function handleNewResponse(
       )
     }
   } catch (e) {
-    console.log('error', e)
+    console.log('Error sending response to secondary endpoint:', e)
   }
 }
 

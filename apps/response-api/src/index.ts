@@ -1,8 +1,8 @@
 // TODO: ugly AI implementation, to be replaced with a go service for optimized performance
 
+import { hatchetClient } from '@klicker-uzh/hatchet'
 import { randomUUID } from 'crypto'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
-import { hatchet } from './hatchet-client.js'
 
 const PORT = Number(process.env.PORT ?? 7078)
 const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || '')
@@ -130,10 +130,24 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     )
   }
 
-  const cookie =
-    typeof req.headers['cookie'] === 'string'
-      ? req.headers['cookie']
-      : undefined
+  // Only forward participant-related cookies. If both exist, include both.
+  let cookie: string | undefined
+  if (typeof req.headers['cookie'] === 'string') {
+    const raw = req.headers['cookie']
+    const parts = raw.split(';').map((s) => s.trim())
+    const participantPair = parts.find((p) =>
+      p.startsWith('participant_token=')
+    )
+    const temporaryPair = parts.find((p) =>
+      p.startsWith('temporary_participant_token=')
+    )
+    const forwarded: string[] = []
+    if (participantPair) forwarded.push(participantPair)
+    if (temporaryPair) forwarded.push(temporaryPair)
+    if (forwarded.length > 0) {
+      cookie = forwarded.join('; ')
+    }
+  }
 
   const message = {
     messageId: randomUUID(),
@@ -148,7 +162,7 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     ? 'response-received:authenticated'
     : 'response-received:anonymous'
   console.log(`Pushing event ${eventName} with payload`, message)
-  await hatchet.event.push(eventName, message)
+  await hatchetClient.event.push(eventName, message)
 
   return sendJson(req, res, 200, { status: 'ok' })
 }

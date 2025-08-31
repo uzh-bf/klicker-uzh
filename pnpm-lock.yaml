@@ -1529,6 +1529,9 @@ importers:
       '@hatchet-dev/typescript-sdk':
         specifier: 1.9.4
         version: 1.9.4
+      '@klicker-uzh/hatchet':
+        specifier: workspace:*
+        version: link:../../packages/hatchet
     devDependencies:
       '@types/node':
         specifier: ^20.16.1
