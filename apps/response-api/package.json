@@ -12,8 +12,8 @@
     "@klicker-uzh/hatchet": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^20.16.1",
-    "tsx": "~4.19.1",
+    "@types/node": "^20.19.11",
+    "tsx": "~4.19.4",
     "typescript": "~5.6.3"
   },
   "scripts": {
