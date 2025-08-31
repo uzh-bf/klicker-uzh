@@ -32,6 +32,10 @@ Environment-specific deployment workflows:
 - **QA Deployments**: Automatic deployment for feature branches
 - **Service-Specific**: Individual workflows for each microservice
 - **Infrastructure**: Database migrations and infrastructure updates
+- **Hatchet Services**: Dedicated workflows for Hatchet worker deployments:
+  - **v3_hatchet-worker-general-qa.yml**: General worker service builds
+  - **v3_hatchet-worker-response-processor-qa.yml**: Response processor worker builds
+  - **v3_response-api-qa.yml**: Response API service builds
 
 ### AI-Assisted Development
 

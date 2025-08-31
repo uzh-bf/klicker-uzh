@@ -15,6 +15,10 @@ User-facing applications organized by function:
 - **Function Applications**: Serverless processing functions
 - **Integration Services**: LMS and external service integration
 - **Authentication Services**: Identity and access management
+- **Workflow Services**: Hatchet-based distributed processing
+  - **hatchet-worker-general**: General purpose workflow worker
+  - **hatchet-worker-response-processor**: Response processing worker
+  - **response-api**: Dedicated response handling API service
 
 ### Shared Package Layer (`packages/`)
 
@@ -27,6 +31,7 @@ Reusable packages shared across applications:
 - **Utilities**: Common functions and helpers
 - **UI Components**: Shared React components
 - **Internationalization**: Multi-language support
+- **Workflow Tasks**: Hatchet task definitions and workflow orchestration (`packages/hatchet-tasks`)
 
 ### Infrastructure Layer
 

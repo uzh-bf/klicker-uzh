@@ -40,6 +40,10 @@ Core infrastructure runs in containers:
 - **Database**: PostgreSQL with persistent storage
 - **Cache**: Redis instances for different use cases
 - **Reverse Proxy**: Traefik for dynamic service routing
+- **Workflow Orchestration**: Hatchet-lite for local workflow development
+  - **Web UI**: http://localhost:8888 for workflow monitoring
+  - **gRPC Server**: localhost:7077 for worker communication
+  - **Configuration**: Persistent config volume for Hatchet settings
 - **Development Tools**: Email testing and monitoring services
 
 ### Application Services

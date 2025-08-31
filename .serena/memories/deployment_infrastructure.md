@@ -63,12 +63,23 @@ Infrastructure as Code using Helm:
 - **Backend Services**: API services with horizontal scaling
 - **Function Services**: Serverless functions for specific tasks
 - **Authentication Services**: Identity and access management
+- **Workflow Orchestration**: Hatchet platform with multiple components:
+  - **Hatchet API**: REST API for workflow management
+  - **Hatchet Frontend**: Web UI for workflow monitoring
+  - **Hatchet gRPC**: Worker communication and coordination
+  - **Hatchet Controllers**: Workflow execution controllers
+  - **Hatchet Scheduler**: Task scheduling and queueing
+- **Worker Services**: Hatchet workers for distributed processing:
+  - **hatchet-worker-general**: General purpose task execution
+  - **hatchet-worker-response-processor**: Response processing workflows
+- **Response API**: Dedicated API service for response handling and task dispatch
 
 ### Infrastructure Services
 
 - **Database Services**: Managed database with backup and recovery
 - **Cache Layer**: Redis clusters for performance and session management
-- **Message Queues**: Asynchronous processing and event handling
+- **Message Queues**: Asynchronous processing and event handling (transitioning to Hatchet)
+- **Workflow Platform**: Hatchet for task orchestration and distributed processing
 - **Monitoring Services**: Observability and performance monitoring
 
 ## Scaling and Performance

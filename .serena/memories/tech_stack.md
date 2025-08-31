@@ -19,7 +19,8 @@
 - **API**: GraphQL with Pothos GraphQL schema builder
 - **Database**: PostgreSQL with Prisma ORM
 - **Caching**: Redis (dual instances for execution and general caching)
-- **Message Queue**: Azure Service Bus
+- **Workflow Orchestration**: Hatchet for distributed task processing
+- **Message Queue**: Azure Service Bus (transitioning to Hatchet workflows)
 - **Authentication**: JWT with educational identity integration
 - **Real-time**: GraphQL subscriptions with WebSockets
 - **File Storage**: Azure Blob Storage
@@ -27,12 +28,22 @@
 
 ## Serverless & Cloud Functions
 
-- **Platform**: Azure Functions for response processing
+- **Platform**: Azure Functions for response processing (transitioning to Hatchet workers)
 - **Triggers**: HTTP triggers and Service Bus message triggers
 - **Scaling**: Event-driven autoscaling
 - **Services**:
   - Real-time response handling
   - Asynchronous response processing and scoring
+
+## Workflow Orchestration & Task Processing
+
+- **Hatchet Workers**: Distributed task processing with worker pattern
+  - **hatchet-worker-general**: General purpose workflow execution
+  - **hatchet-worker-response-processor**: Specialized response processing workflows
+- **Response API**: Dedicated API for response handling and task dispatch
+- **Task Definition**: Shared task definitions in packages/hatchet-tasks
+- **Communication**: gRPC for worker coordination and task distribution
+- **Orchestration**: Event-driven workflow execution with Hatchet platform
 
 ## Database & Data Management
 
