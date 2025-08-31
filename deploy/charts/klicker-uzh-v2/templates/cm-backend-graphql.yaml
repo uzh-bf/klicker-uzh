@@ -16,7 +16,6 @@ data:
   NOTIFICATION_URL: {{ .Values.backendGraphql.notifications.url | quote }}
   NOTIFICATION_SUPPORT_MAIL: {{ .Values.backendGraphql.notifications.supportEmail | quote }}
   COOKIE_DOMAIN: {{ .Values.backendGraphql.cookieDomain | quote }}
-  CRON_TOKEN: {{ .Values.cron.token | quote }}
   REDIS_CACHE_HOST: {{ .Values.backendGraphql.redisCache.host | quote }}
   REDIS_CACHE_PORT: {{ .Values.backendGraphql.redisCache.port | quote }}
   BLOB_STORAGE_ACCOUNT_NAME: {{ .Values.blobStorage.accountName | quote }}
@@ -52,3 +51,7 @@ data:
   {{- if .Values.backendGraphql.preserveRedisForComparison }}
   PRESERVE_REDIS_FOR_COMPARISON: {{ .Values.backendGraphql.preserveRedisForComparison | quote }}
   {{ end }}
+  HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
+  HATCHET_TENANT_ID: {{ .Values.hatchet.client.tenantId | quote }}
+  HATCHET_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
+  HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}

@@ -27,7 +27,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9.15.4
+          version: 10.15.0
           run_install: true
 
       - name: Build relevant packages
@@ -44,6 +44,8 @@ jobs:
           pnpm run build
           cd ../graphql
           pnpm run build
+          cd ../hatchet
+          pnpm run build
           cd ../../apps/backend-docker
           pnpm run build
 
@@ -57,6 +59,13 @@ jobs:
         if: always() # Run this step even if the previous one fails
         shell: bash
         working-directory: packages/grading
+        run: |
+          pnpm run check
+
+      - name: Check hatchet package typescript types
+        if: always() # Run this step even if the previous one fails
+        shell: bash
+        working-directory: packages/hatchet
         run: |
           pnpm run check
 
@@ -148,5 +157,19 @@ jobs:
         if: always()
         shell: bash
         working-directory: apps/lti
+        run: |
+          pnpm run check
+
+      - name: Check hatchet-worker-general typescript types
+        if: always()
+        shell: bash
+        working-directory: apps/hatchet-worker-general
+        run: |
+          pnpm run check
+
+      - name: Check hatchet-worker-response-processor typescript types
+        if: always()
+        shell: bash
+        working-directory: apps/hatchet-worker-response-processor
         run: |
           pnpm run check

@@ -12,6 +12,7 @@ on:
       - apps/**
       - packages/**
       - cypress/**
+      - .github/workflows/cypress-testing.yml
 
 env:
   REGISTRY: ghcr.io
@@ -98,7 +99,7 @@ jobs:
 
       - uses: pnpm/action-setup@v2
         with:
-          version: 9.15.4
+          version: 10.15.0
           run_install: false
 
       - name: Get pnpm store directory
@@ -133,8 +134,7 @@ jobs:
 
       - name: Prepare .env files
         run: |
-          mv apps/backend-docker/.env.cypress apps/backend-docker/.env
-          ./_create_hatchet_token.sh
+          ./util/_create_hatchet_token_cypress.sh
 
       - name: Build all packages and apps
         run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test

@@ -5,119 +5,10 @@ RUN npm install -g pnpm
 
 WORKDIR /app
 
-# Create database initialization script
-RUN echo '#!/bin/bash\n\
-  set -e\n\
-  \n\
-  echo "Running tests from container..."\n\
-  \n\
-  cd /usr/src/app\n\
-  \n\
-  # Verify PostgreSQL connection
-  echo "Checking PostgreSQL connection..."\n\
-  if pg_isready -h postgres -U postgres; then\n\
-  echo "PostgreSQL is ready!"\n\
-  else\n\
-  echo "PostgreSQL is not ready. Exiting."\n\
-  exit 1\n\
-  fi\n\
-  \n\
-  # Verify Hatchet token is available
-  if [ -f "/hatchet/env/token.env" ]; then\n\
-  echo "Hatchet token found!"\n\
-  else\n\
-  echo "Hatchet token not found. Exiting."\n\
-  exit 1\n\
-  fi\n\
-<<<<<<< HEAD
-  \n\
-  # Load Hatchet environment variables
-  echo "Loading Hatchet configuration..."\n\
-  export $(cat /hatchet/env/token.env | xargs)\n\
-  echo "Hatchet client token loaded: ${HATCHET_CLIENT_TOKEN:0:20}..."\n\
-  echo "Hatchet TLS strategy: $HATCHET_CLIENT_TLS_STRATEGY"\n\
-  \n\
-  # Setup Prisma
-  echo "Setting up Prisma with database URL: $DATABASE_URL..."\n\
-  cd /usr/src/app/packages/prisma\n\
-  echo "Current directory: $(pwd)"\n\
-  \n\
-  # Build the prisma package
-  echo "Building prisma package..."\n\
-  pnpm run build\n\
-  \n\
-  # Run migrations using the prisma CLI commands configured for this project
-  echo "Running migrations..."\n\
-  pnpm run prisma:reset:raw -f\n\
-  \n\
-  # Run tests with Hatchet environment variables
-  echo "Running tests..."\n\
-  cd /usr/src/app/packages/graphql\n\
-  DATABASE_URL=$DATABASE_URL HATCHET_CLIENT_TOKEN=$HATCHET_CLIENT_TOKEN HATCHET_CLIENT_TLS_STRATEGY=$HATCHET_CLIENT_TLS_STRATEGY pnpm jest --verbose --runInBand\n\
-  # Check the exit code of the tests
-  \n\
-  TEST_EXIT=$?\n\
-  echo "Tests completed with exit code: $TEST_EXIT"\n\
-  exit $TEST_EXIT\n\
-  ' > /app/run-tests.sh
-||||||| 1fa4b5bf4
-  echo "Waiting..."\n\
-  sleep 2\n\
-done\n\
-\n\
-# Setup Prisma\n\
-echo "Setting up Prisma..."\n\
-cd /usr/src/app/packages/prisma\n\
-echo "Current directory: $(pwd)"\n\
-\n\
-# Build the prisma package first\n\
-echo "Building prisma package..."\n\
-pnpm run build\n\
-\n\
-# Run migrations using the prisma CLI commands configured for this project\n\
-echo "Running migrations..."\n\
-pnpm run prisma:reset:raw -f\n\
-\n\
-# Run tests\n\
-echo "Running tests..."\n\
-cd /usr/src/app/packages/graphql\n\
-DATABASE_URL=$DATABASE_URL pnpm jest --verbose --runInBand\n\
-\n\
-TEST_EXIT=$?\n\
-echo "Tests completed with exit code: $TEST_EXIT"\n\
-exit $TEST_EXIT\n\
-' > /app/run-tests.sh
-=======
-  echo "Waiting..."\n\
-  sleep 2\n\
-done\n\
-\n\
-# Setup Prisma\n\
-echo "Setting up Prisma..."\n\
-cd /usr/src/app/packages/prisma\n\
-echo "Current directory: $(pwd)"\n\
-\n\
-# Build the prisma package first\n\
-echo "Building prisma package..."\n\
-pnpm run build\n\
-\n\
-# Run migrations using the prisma CLI commands configured for this project\n\
-echo "Running migrations..."\n\
-pnpm run prisma:reset:raw -f\n\
-\n\
-# Run tests\n\
-echo "Running tests..."\n\
-cd /usr/src/app/packages/graphql\n\
-DATABASE_URL=$DATABASE_URL NODE_OPTIONS="$NODE_OPTIONS --experimental-vm-modules" pnpm jest --verbose --runInBand\n\
-\n\
-TEST_EXIT=$?\n\
-echo "Tests completed with exit code: $TEST_EXIT"\n\
-exit $TEST_EXIT\n\
-' > /app/run-tests.sh
->>>>>>> ff0ee163a5208a3075a8b6d82ad17e7db2029423
+COPY test/docker/test_script.sh /app/test_script.sh
 
 # Make the script executable
-RUN chmod +x /app/run-tests.sh
+RUN chmod +x /app/test_script.sh
 
 # Install PostgreSQL client and dependencies
 RUN apt-get update && \
@@ -125,4 +16,4 @@ RUN apt-get update && \
   rm -rf /var/lib/apt/lists/*
 
 # Set the command to run the script
-CMD ["/app/run-tests.sh"]
+CMD ["/app/test_script.sh"]
