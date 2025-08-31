@@ -18,11 +18,7 @@ const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || '')
 function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
   const origin = req.headers.origin
   // Only allow explicitly whitelisted origins, and never allow "null"
-  if (
-    origin &&
-    origin !== 'null' &&
-    CORS_ALLOWED_ORIGINS.includes(origin)
-  ) {
+  if (origin && origin !== 'null' && CORS_ALLOWED_ORIGINS.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin)
     res.setHeader('Vary', 'Origin')
     res.setHeader('Access-Control-Allow-Credentials', 'true')
