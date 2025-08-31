@@ -1,5 +1,5 @@
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
-import { enhanceContext, schema } from '@klicker-uzh/graphql'
+import { enhanceContext, handlers, schema } from '@klicker-uzh/graphql'
 import { prisma as prismaBase } from '@klicker-uzh/prisma'
 import { withOptimize } from '@prisma/extension-optimize'
 // import * as Sentry from '@sentry/node'
@@ -100,6 +100,7 @@ const tasks = prepareHatchetTasks({
   emitter,
   redisCache,
   redisExec,
+  handlers,
 })
 // #endregion
 

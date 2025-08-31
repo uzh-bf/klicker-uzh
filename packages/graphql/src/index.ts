@@ -1,3 +1,5 @@
+import type { HatchetHandlers } from '@klicker-uzh/types'
+
 export { default as enhanceContext } from './lib/context.js'
 
 import builder from './builder.js'
@@ -34,19 +36,28 @@ import './schema/subscription.js'
 //   })
 // }
 
-export {
+import {
   finalRandomGroupAssignments,
   runningRandomGroupAssignments,
   updateGroupAverageScores,
 } from './services/groups.js'
-export {
+import {
   sendPushNotifications,
   sendTeamsNotifications,
 } from './services/notifications.js'
-export { updateWeeklyTimelineEntries } from './services/participants.js'
+import { updateWeeklyTimelineEntries } from './services/participants.js'
 
 export const schema = builder.toSchema({
   schemaDirectives: {
     // oneOf: upperDirectiveTransformer,
   },
 })
+
+export const handlers: HatchetHandlers = {
+  finalRandomGroupAssignments,
+  runningRandomGroupAssignments,
+  updateGroupAverageScores,
+  sendPushNotifications,
+  sendTeamsNotifications,
+  updateWeeklyTimelineEntries,
+}

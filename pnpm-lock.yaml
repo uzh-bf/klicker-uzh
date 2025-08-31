@@ -1212,6 +1212,9 @@ importers:
       '@hatchet-dev/typescript-sdk':
         specifier: 1.9.4
         version: 1.9.4
+      '@klicker-uzh/graphql':
+        specifier: workspace:*
+        version: link:../../packages/graphql
       '@klicker-uzh/hatchet':
         specifier: workspace:*
         version: link:../../packages/hatchet
@@ -1862,9 +1865,6 @@ importers:
       '@hatchet-dev/typescript-sdk':
         specifier: 1.9.4
         version: 1.9.4
-      '@klicker-uzh/graphql':
-        specifier: workspace:*
-        version: link:../graphql
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../prisma
@@ -2284,6 +2284,9 @@ importers:
 
   packages/types:
     dependencies:
+      '@hatchet-dev/typescript-sdk':
+        specifier: 1.9.4
+        version: 1.9.4
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../prisma

@@ -9,7 +9,6 @@
   ],
   "dependencies": {
     "@hatchet-dev/typescript-sdk": "1.9.4",
-    "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*"
   },
   "devDependencies": {

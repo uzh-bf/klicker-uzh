@@ -358,6 +358,9 @@ export type AvatarSettings = {
 }
 // #endregion
 
+// ----- HATCHET (WORKER/TASK) TYPES -----
+export type { HatchetHandlers, PreparedHatchetTasks } from './hatchet.js'
+
 // ----- RESOURCES -----
 // #region
 export type ObjectSharingRequest = {

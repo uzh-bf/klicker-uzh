@@ -1,19 +1,14 @@
 import type { HatchetClient } from '@hatchet-dev/typescript-sdk'
-import {
-  finalRandomGroupAssignments,
-  runningRandomGroupAssignments,
-  sendPushNotifications,
-  sendTeamsNotifications,
-  updateGroupAverageScores,
-  updateWeeklyTimelineEntries,
-} from '@klicker-uzh/graphql'
 import { prisma } from '@klicker-uzh/prisma'
 import { AccessMode, PublicationStatus } from '@klicker-uzh/prisma/client'
+import type { HatchetHandlers } from '@klicker-uzh/types'
 import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 
 export * from './client.js'
+
+export type { HatchetHandlers } from '@klicker-uzh/types'
 
 export function prepareHatchetTasks({
   hatchet,
@@ -21,12 +16,14 @@ export function prepareHatchetTasks({
   emitter,
   redisExec,
   redisCache,
+  handlers,
 }: {
   hatchet: HatchetClient
   pubSub: PubSub<any>
   emitter: EventEmitter
   redisExec: Redis
   redisCache?: Redis
+  handlers: HatchetHandlers
 }) {
   // ! ACTIVITY PUBLICATION TASKS
   // #region
@@ -45,7 +42,7 @@ export function prepareHatchetTasks({
         })
 
         if (!microLearning) {
-          sendTeamsNotifications(
+          handlers.sendTeamsNotifications(
             'hatchet/microlearning-start',
             `Microlearning with ID ${microLearningId} not found or scheduled start time is not in the past yet.`
           )
@@ -61,7 +58,7 @@ export function prepareHatchetTasks({
         })
 
         // send a teams notification
-        await sendTeamsNotifications(
+        await handlers.sendTeamsNotifications(
           'graphql/publishScheduledMicroLearnings',
           `Successfully published scheduled microlearning ${microLearning.id}`
         )
@@ -75,7 +72,7 @@ export function prepareHatchetTasks({
         return { success: true }
       } catch (error) {
         console.error('Error publishing scheduled microlearning:', error)
-        sendTeamsNotifications(
+        handlers.sendTeamsNotifications(
           'hatchet/microlearning-start',
           `Error publishing microlearning with ID ${microLearningId}: ${error}`
         )
@@ -101,7 +98,7 @@ export function prepareHatchetTasks({
         })
 
         if (!groupActivity) {
-          sendTeamsNotifications(
+          handlers.sendTeamsNotifications(
             'hatchet/group-activity-start',
             `Group activity with ID ${groupActivityId} not found or scheduled start time is not in the past yet.`
           )
@@ -117,7 +114,7 @@ export function prepareHatchetTasks({
         })
 
         // send a teams notification
-        await sendTeamsNotifications(
+        await handlers.sendTeamsNotifications(
           'graphql/publishScheduledGroupActivitys',
           `Successfully published scheduled group activity ${groupActivity.id}`
         )
@@ -131,7 +128,7 @@ export function prepareHatchetTasks({
         return { success: true }
       } catch (error) {
         console.error('Error publishing scheduled group activity:', error)
-        sendTeamsNotifications(
+        handlers.sendTeamsNotifications(
           'hatchet/group-activity-start',
           `Error publishing group activity with ID ${groupActivityId}: ${error}`
         )
@@ -158,7 +155,7 @@ export function prepareHatchetTasks({
         })
 
         if (!practiceQuiz) {
-          sendTeamsNotifications(
+          handlers.sendTeamsNotifications(
             'hatchet/practice-quiz-start',
             `Practice quiz with ID ${practiceQuizId} not found or scheduled start time is not in the past yet.`
           )
@@ -175,7 +172,7 @@ export function prepareHatchetTasks({
         })
 
         // send a teams notification
-        await sendTeamsNotifications(
+        await handlers.sendTeamsNotifications(
           'graphql/publishScheduledPracticeQuizs',
           `Successfully published scheduled practice quiz ${updatedPracticeQuiz.id}`
         )
@@ -201,7 +198,7 @@ export function prepareHatchetTasks({
         return { success: true }
       } catch (error) {
         console.error('Error publishing scheduled practice quiz:', error)
-        sendTeamsNotifications(
+        handlers.sendTeamsNotifications(
           'hatchet/practice-quiz-start',
           `Error publishing practice quiz with ID ${practiceQuizId}: ${error}`
         )
@@ -228,7 +225,7 @@ export function prepareHatchetTasks({
         })
 
         if (!liveQuiz) {
-          sendTeamsNotifications(
+          handlers.sendTeamsNotifications(
             'hatchet/live-quiz-start',
             `Live quiz with ID ${liveQuizId} not found or scheduled start time is not in the past yet.`
           )
@@ -258,7 +255,7 @@ export function prepareHatchetTasks({
           },
         })
 
-        await sendTeamsNotifications(
+        await handlers.sendTeamsNotifications(
           'hatchet/live-quiz-start',
           `START Live quiz ${startedLiveQuiz.name} with id ${startedLiveQuiz.id}.`
         )
@@ -272,7 +269,7 @@ export function prepareHatchetTasks({
         return { success: true }
       } catch (error) {
         console.error('Error publishing scheduled live quiz:', error)
-        sendTeamsNotifications(
+        handlers.sendTeamsNotifications(
           'hatchet/live-quiz-start',
           `Error publishing live quiz with ID ${liveQuizId}: ${error}`
         )
@@ -302,7 +299,7 @@ export function prepareHatchetTasks({
         })
 
         if (!microLearning) {
-          sendTeamsNotifications(
+          handlers.sendTeamsNotifications(
             'hatchet/microlearning-end',
             `Microlearning with ID ${microLearningId} not found or scheduled end time is not in the past yet.`
           )
@@ -317,7 +314,7 @@ export function prepareHatchetTasks({
           data: { status: PublicationStatus.ENDED },
         })
 
-        await sendTeamsNotifications(
+        await handlers.sendTeamsNotifications(
           'hatchet/microlearning-end',
           `Successfully ended expired microlearning ${updatedMicroLearning.id}`
         )
@@ -332,7 +329,7 @@ export function prepareHatchetTasks({
         return { success: true }
       } catch (error) {
         console.error('Error ending expired microlearning:', error)
-        sendTeamsNotifications(
+        handlers.sendTeamsNotifications(
           'hatchet/microlearning-end',
           `Error ending microlearning with ID ${microLearningId}: ${error}`
         )
@@ -358,7 +355,7 @@ export function prepareHatchetTasks({
         })
 
         if (!groupActivity) {
-          sendTeamsNotifications(
+          handlers.sendTeamsNotifications(
             'hatchet/group-activity-end',
             `Group activity with ID ${groupActivityId} not found or scheduled end time is not in the past yet.`
           )
@@ -373,7 +370,7 @@ export function prepareHatchetTasks({
           data: { status: PublicationStatus.ENDED },
         })
 
-        await sendTeamsNotifications(
+        await handlers.sendTeamsNotifications(
           'hatchet/group-activity-end',
           `Successfully ended expired group activity ${updatedGroupActivity.id}`
         )
@@ -389,7 +386,7 @@ export function prepareHatchetTasks({
         return { success: true }
       } catch (error) {
         console.error('Error ending expired group activity:', error)
-        sendTeamsNotifications(
+        handlers.sendTeamsNotifications(
           'hatchet/group-activity-end',
           `Error ending group activity with ID ${groupActivityId}: ${error}`
         )
@@ -411,7 +408,7 @@ export function prepareHatchetTasks({
       '5 0 * * *', // running daily at 12:05 AM (UTC)
     ],
     fn: async () => {
-      const success = await updateGroupAverageScores(prisma, emitter)
+      const success = await handlers.updateGroupAverageScores(prisma, emitter)
       return { success }
     },
   })
@@ -423,7 +420,10 @@ export function prepareHatchetTasks({
       '10 0 * * *', // running daily at 12:10 AM (UTC)
     ],
     fn: async () => {
-      const success = await runningRandomGroupAssignments(prisma, emitter)
+      const success = await handlers.runningRandomGroupAssignments(
+        prisma,
+        emitter
+      )
       return { success }
     },
   })
@@ -435,7 +435,10 @@ export function prepareHatchetTasks({
       '15 0 * * *', // running daily at 12:15 AM (UTC)
     ],
     fn: async () => {
-      const success = await finalRandomGroupAssignments(prisma, emitter)
+      const success = await handlers.finalRandomGroupAssignments(
+        prisma,
+        emitter
+      )
       return { success }
     },
   })
@@ -447,7 +450,7 @@ export function prepareHatchetTasks({
       '20 0 * * *', // running daily at 12:20 AM (UTC)
     ],
     fn: async () => {
-      const success = await updateWeeklyTimelineEntries(prisma)
+      const success = await handlers.updateWeeklyTimelineEntries(prisma)
       return { success }
     },
   })
@@ -459,7 +462,7 @@ export function prepareHatchetTasks({
       '*/5 * * * *', // runs every 5 minutes
     ],
     fn: async () => {
-      const success = await sendPushNotifications(prisma)
+      const success = await handlers.sendPushNotifications(prisma)
       return { success }
     },
   })
@@ -479,3 +482,6 @@ export function prepareHatchetTasks({
     endExpiredMicroLearningTask,
   }
 }
+
+// Export the inferred type of the tasks dictionary so other packages can import it
+export type PreparedHatchetTasks = ReturnType<typeof prepareHatchetTasks>

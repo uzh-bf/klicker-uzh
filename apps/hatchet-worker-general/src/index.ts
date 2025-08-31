@@ -1,6 +1,7 @@
 // basic structure according to https://github.com/hatchet-dev/hatchet-typescript-quickstart/tree/main/monorepo
 
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
+import { handlers } from '@klicker-uzh/graphql'
 import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
 import EventEmitter from 'events'
 import { createPubSub } from 'graphql-yoga'
@@ -54,6 +55,7 @@ async function main() {
     emitter,
     redisExec,
     redisCache,
+    handlers,
   })
 
   const worker = await hatchetClient.worker('hatchet-worker-general', {
