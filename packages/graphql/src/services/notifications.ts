@@ -204,7 +204,7 @@ export async function handleSendPushNotifications() {
   return true
 }
 
-export async function handleSendTeamsNotifications({
+export async function handleSendTeamsNotification({
   scope,
   text,
 }: {

@@ -31,7 +31,7 @@ import { shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
 import { getPermissionBooleans } from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
-import { handleSendTeamsNotifications } from './notifications.js'
+import { handleSendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import {
   type RespondToElementStackInput,
@@ -272,13 +272,13 @@ export async function handleRunningRandomGroupAssignments(
         })
       })
 
-      await handleSendTeamsNotifications({
+      await handleSendTeamsNotification({
         scope: 'hatchet/running-random-group-assignments',
         text: `Successfully assigned new random groups for ${course.name} (id: ${course.id}; rolling assignment).`,
       })
     } catch (e) {
       console.error(e)
-      await handleSendTeamsNotifications({
+      await handleSendTeamsNotification({
         scope: 'hatchet/running-random-group-assignments',
         text: `Failed to assign groups for course ${course.name} (id: ${course.id}; rolling assignment) with error: ${
           e || 'missing'
@@ -392,7 +392,7 @@ export async function handleFinalRandomGroupAssignments(
         ctx.emitter
       )
 
-      await handleSendTeamsNotifications({
+      await handleSendTeamsNotification({
         scope: 'hatchet/final-random-group-assignments',
         text: `Resolved all single participant groups for course ${course.name} (id: ${course.id}).`,
       })
@@ -442,7 +442,7 @@ export async function handleFinalRandomGroupAssignments(
           html: emailHtml,
         })
 
-        await handleSendTeamsNotifications({
+        await handleSendTeamsNotification({
           scope: 'hatchet/final-random-group-assignments',
           text: `Failure of automatic group assignment - single participant in pool for course ${course.name} (id ${course.id}). Sent E-Mail to course owner with id ${course.ownerId}.`,
         })
@@ -479,13 +479,13 @@ export async function handleFinalRandomGroupAssignments(
         },
       })
 
-      await handleSendTeamsNotifications({
+      await handleSendTeamsNotification({
         scope: 'hatchet/final-random-group-assignments',
         text: `Successfully completed final random group assignment for course ${course.name} (id ${course.id}) with ${groups.length} new groups.`,
       })
     } catch (e) {
       console.error(e)
-      await handleSendTeamsNotifications({
+      await handleSendTeamsNotification({
         scope: 'hatchet/final-random-group-assignments',
         text: `Failed to finalize random group assignments for course ${course.name} (id: ${course.id}) with error: ${
           e || 'missing'
@@ -530,7 +530,7 @@ export async function manualRandomGroupAssignments(
       ctx.emitter
     )
 
-    await handleSendTeamsNotifications({
+    await handleSendTeamsNotification({
       scope: 'graphql/manualRandomGroupAssignments',
       text: `Resolved all single participant groups for course ${course.name} (id: ${course.id}).`,
     })
@@ -590,7 +590,7 @@ export async function manualRandomGroupAssignments(
       })
     })
 
-    await handleSendTeamsNotifications({
+    await handleSendTeamsNotification({
       scope: 'graphql/manualRandomGroupAssignments',
       text: `Successfully completed random group assignment for course ${course.name} (id: ${course.id}) with ${newGroups.length} new groups.`,
     })
@@ -598,7 +598,7 @@ export async function manualRandomGroupAssignments(
     return updatedCourse.participantGroups
   } catch (e) {
     console.error(e)
-    await handleSendTeamsNotifications({
+    await handleSendTeamsNotification({
       scope: 'graphql/manualRandomGroupAssignments',
       text: `Random group creation failed for course ${course.name} (id: ${course.id}) with error: ${
         e || 'missing'
@@ -2523,7 +2523,7 @@ export async function handleEndExpiredGroupActivity(
     })
 
     if (!groupActivity) {
-      handleSendTeamsNotifications({
+      handleSendTeamsNotification({
         scope: 'hatchet/group-activity-end',
         text: `Group activity with ID ${groupActivityId} not found or scheduled end time is not in the past yet.`,
       })
@@ -2538,7 +2538,7 @@ export async function handleEndExpiredGroupActivity(
       data: { status: DB.PublicationStatus.ENDED },
     })
 
-    await handleSendTeamsNotifications({
+    await handleSendTeamsNotification({
       scope: 'hatchet/group-activity-end',
       text: `Successfully ended expired group activity ${updatedGroupActivity.id}`,
     })
@@ -2554,7 +2554,7 @@ export async function handleEndExpiredGroupActivity(
     return true
   } catch (error) {
     console.error('Error ending expired group activity:', error)
-    handleSendTeamsNotifications({
+    handleSendTeamsNotification({
       scope: 'hatchet/group-activity-end',
       text: `Error ending group activity with ID ${groupActivityId}: ${error}`,
     })
@@ -2579,7 +2579,7 @@ export async function handlePublishScheduledGroupActivity(
     })
 
     if (!groupActivity) {
-      handleSendTeamsNotifications({
+      handleSendTeamsNotification({
         scope: 'hatchet/group-activity-start',
         text: `Group activity with ID ${groupActivityId} not found or scheduled start time is not in the past yet.`,
       })
@@ -2595,7 +2595,7 @@ export async function handlePublishScheduledGroupActivity(
     })
 
     // send a teams notification
-    await handleSendTeamsNotifications({
+    await handleSendTeamsNotification({
       scope: 'graphql/publishScheduledGroupActivitys',
       text: `Successfully published scheduled group activity ${groupActivity.id}`,
     })
@@ -2609,7 +2609,7 @@ export async function handlePublishScheduledGroupActivity(
     return true
   } catch (error) {
     console.error('Error publishing scheduled group activity:', error)
-    handleSendTeamsNotifications({
+    handleSendTeamsNotification({
       scope: 'hatchet/group-activity-start',
       text: `Error publishing group activity with ID ${groupActivityId}: ${error}`,
     })

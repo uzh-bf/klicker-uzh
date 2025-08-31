@@ -7,7 +7,7 @@ import isoWeek from 'dayjs/plugin/isoWeek.js'
 import { prop, sortBy } from 'remeda'
 import isEmail from 'validator/lib/isEmail.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { handleSendTeamsNotifications } from './notifications.js'
+import { handleSendTeamsNotification } from './notifications.js'
 
 dayjs.extend(isoWeek)
 
@@ -966,7 +966,7 @@ export async function updateWeeklyTimelineEntriesCourse(
 
   // if no course was found, return early
   if (!courseTimelineLastWeek || !courseTimelineCurrentWeek) {
-    await handleSendTeamsNotifications({
+    await handleSendTeamsNotification({
       scope: 'graphql/updateWeeklyTimelineEntriesCourse',
       text: `COURSE NOT FOUND: The course with id ${courseId} could not be found in the database for the computation of weekly timeline entries.`,
     })
@@ -1023,7 +1023,7 @@ export async function updateWeeklyTimelineEntriesCourse(
       }
     })
 
-    await handleSendTeamsNotifications({
+    await handleSendTeamsNotification({
       scope: 'graphql/updateWeeklyTimelineEntriesCourse',
       text: `Successfully updated ${updates.length} weekly timeline entries for course ${courseTimelineLastWeek.name} (${numUpdatesLastWeek} for last week with start date ${startDateLastWeek} and ${lastWeekDailys.length} daily entries, ${numUpdatesCurrentWeek} for the current week with start date ${startDateCurrentWeek} and ${currentWeekDailys.length} daily entries).`,
     })

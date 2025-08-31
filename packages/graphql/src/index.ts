@@ -50,7 +50,7 @@ import {
 } from './services/microLearning.js'
 import {
   handleSendPushNotifications,
-  handleSendTeamsNotifications,
+  handleSendTeamsNotification,
 } from './services/notifications.js'
 import { handleUpdateWeeklyTimelineEntries } from './services/participants.js'
 import { handlePublishScheduledPracticeQuiz } from './services/practiceQuizzes.js'
@@ -66,7 +66,7 @@ export const handlers: HatchetHandlers = {
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,
   handleSendPushNotifications,
-  handleSendTeamsNotifications,
+  handleSendTeamsNotification,
   handleUpdateWeeklyTimelineEntries,
   handleEndExpiredGroupActivity,
   handleEndExpiredMicroLearning,

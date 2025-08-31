@@ -18,7 +18,7 @@ export interface HatchetHandlerContext {
 
 // Shared contract for Hatchet task handler injections.
 export interface HatchetHandlers {
-  handleSendTeamsNotifications: (
+  handleSendTeamsNotification: (
     { scope, text }: { scope: string; text: string },
     ctx: HatchetHandlerContext
   ) => Promise<unknown> | void

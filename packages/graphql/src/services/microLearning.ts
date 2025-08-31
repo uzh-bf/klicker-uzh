@@ -15,7 +15,7 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { getPermissionBooleans } from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
-import { handleSendTeamsNotifications } from './notifications.js'
+import { handleSendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
 
 export async function getMicroLearningData(
@@ -909,7 +909,7 @@ export async function handleEndExpiredMicroLearning(
     })
 
     if (!microLearning) {
-      handleSendTeamsNotifications({
+      handleSendTeamsNotification({
         scope: 'hatchet/microlearning-end',
         text: `Microlearning with ID ${microLearningId} not found or scheduled end time is not in the past yet.`,
       })
@@ -924,7 +924,7 @@ export async function handleEndExpiredMicroLearning(
       data: { status: DB.PublicationStatus.ENDED },
     })
 
-    await handleSendTeamsNotifications({
+    await handleSendTeamsNotification({
       scope: 'hatchet/microlearning-end',
       text: `Successfully ended expired microlearning ${updatedMicroLearning.id}`,
     })
@@ -939,7 +939,7 @@ export async function handleEndExpiredMicroLearning(
     return { success: true }
   } catch (error) {
     console.error('Error ending expired microlearning:', error)
-    handleSendTeamsNotifications({
+    handleSendTeamsNotification({
       scope: 'hatchet/microlearning-end',
       text: `Error ending microlearning with ID ${microLearningId}: ${error}`,
     })
@@ -964,7 +964,7 @@ export async function handlePublishScheduledMicroLearning(
     })
 
     if (!microLearning) {
-      handleSendTeamsNotifications({
+      handleSendTeamsNotification({
         scope: 'hatchet/microlearning-start',
         text: `Microlearning with ID ${microLearningId} not found or scheduled start time is not in the past yet.`,
       })
@@ -980,7 +980,7 @@ export async function handlePublishScheduledMicroLearning(
     })
 
     // send a teams notification
-    await handleSendTeamsNotifications({
+    await handleSendTeamsNotification({
       scope: 'graphql/publishScheduledMicroLearnings',
       text: `Successfully published scheduled microlearning ${microLearning.id}`,
     })
@@ -994,7 +994,7 @@ export async function handlePublishScheduledMicroLearning(
     return true
   } catch (error) {
     console.error('Error publishing scheduled microlearning:', error)
-    handleSendTeamsNotifications({
+    handleSendTeamsNotification({
       scope: 'hatchet/microlearning-start',
       text: `Error publishing microlearning with ID ${microLearningId}: ${error}`,
     })

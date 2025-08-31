@@ -16,7 +16,7 @@ import type { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks } from '../lib/util.js'
 import { getPermissionBooleans } from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
-import { handleSendTeamsNotifications } from './notifications.js'
+import { handleSendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
 
 export async function getPracticeQuizData(
@@ -810,7 +810,7 @@ export async function handlePublishScheduledPracticeQuiz(
     })
 
     if (!practiceQuiz) {
-      handleSendTeamsNotifications({
+      handleSendTeamsNotification({
         scope: 'hatchet/practice-quiz-start',
         text: `Practice quiz with ID ${practiceQuizId} not found or scheduled start time is not in the past yet.`,
       })
@@ -827,7 +827,7 @@ export async function handlePublishScheduledPracticeQuiz(
     })
 
     // send a teams notification
-    await handleSendTeamsNotifications({
+    await handleSendTeamsNotification({
       scope: 'graphql/publishScheduledPracticeQuizs',
       text: `Successfully published scheduled practice quiz ${updatedPracticeQuiz.id}`,
     })
@@ -853,7 +853,7 @@ export async function handlePublishScheduledPracticeQuiz(
     return true
   } catch (error) {
     console.error('Error publishing scheduled practice quiz:', error)
-    handleSendTeamsNotifications({
+    handleSendTeamsNotification({
       scope: 'hatchet/practice-quiz-start',
       text: `Error publishing practice quiz with ID ${practiceQuizId}: ${error}`,
     })

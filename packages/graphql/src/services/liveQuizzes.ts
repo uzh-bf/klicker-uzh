@@ -33,7 +33,7 @@ import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { getPermissionBooleans } from './activities.js'
-import { handleSendTeamsNotifications } from './notifications.js'
+import { handleSendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { computeStackEvaluation } from './stacks.js'
 
@@ -1133,7 +1133,7 @@ export async function startLiveQuiz(
           },
         })
 
-        await handleSendTeamsNotifications({
+        await handleSendTeamsNotification({
           scope: 'graphql/startLiveQuiz',
           text: `START Live quiz ${quiz.name} with id ${quiz.id}.`,
         })
@@ -1142,7 +1142,7 @@ export async function startLiveQuiz(
       }
     }
   } catch (error) {
-    await handleSendTeamsNotifications({
+    await handleSendTeamsNotification({
       scope: 'graphql/startLiveQuiz',
       text: `ERROR - failed to start live quiz: ${error}`,
     })
@@ -1713,7 +1713,7 @@ export async function deactivateLiveQuizBlock(
 
     return true
   } catch (error: any) {
-    await handleSendTeamsNotifications({
+    await handleSendTeamsNotification({
       scope: 'graphql/deactivateLiveQuizBlock',
       text: `ERROR - failed to deactivate block ${blockId} in live quiz ${
         quiz.id
@@ -2053,14 +2053,14 @@ export async function endLiveQuiz(
       },
     })
 
-    await handleSendTeamsNotifications({
+    await handleSendTeamsNotification({
       scope: 'graphql/endLiveQuiz',
       text: `END Live quiz ${quiz.name} with id ${quiz.id}.`,
     })
 
     return endedLiveQuiz
   } catch (error) {
-    await handleSendTeamsNotifications({
+    await handleSendTeamsNotification({
       scope: 'graphql/endLiveQuiz',
       text: `ERROR - failed to end live quiz ${quiz.name} with id ${quiz.id}: ${error}`,
     })
@@ -2306,14 +2306,14 @@ export async function cancelLiveQuiz(
     }
     await pipe.exec()
 
-    await handleSendTeamsNotifications({
+    await handleSendTeamsNotification({
       scope: 'graphql/abortLiveQuiz',
       text: `CANCEL Live quiz ${quiz.name} with id ${quiz.id}.`,
     })
 
     return updatedQuiz
   } catch (error) {
-    await handleSendTeamsNotifications({
+    await handleSendTeamsNotification({
       scope: 'graphql/abortLiveQuiz',
       text: `ERROR - failed to cancel live quiz ${quiz.name} with id ${quiz.id}: ${error}`,
     })
@@ -2826,7 +2826,7 @@ export async function handlePublishScheduledLiveQuiz(
     })
 
     if (!liveQuiz) {
-      handleSendTeamsNotifications({
+      handleSendTeamsNotification({
         scope: 'hatchet/live-quiz-start',
         text: `Live quiz with ID ${liveQuizId} not found or scheduled start time is not in the past yet.`,
       })
@@ -2856,7 +2856,7 @@ export async function handlePublishScheduledLiveQuiz(
       },
     })
 
-    await handleSendTeamsNotifications({
+    await handleSendTeamsNotification({
       scope: 'hatchet/live-quiz-start',
       text: `START Live quiz ${startedLiveQuiz.name} with id ${startedLiveQuiz.id}.`,
     })
@@ -2870,7 +2870,7 @@ export async function handlePublishScheduledLiveQuiz(
     return true
   } catch (error) {
     console.error('Error publishing scheduled live quiz:', error)
-    handleSendTeamsNotifications({
+    handleSendTeamsNotification({
       scope: 'hatchet/live-quiz-start',
       text: `Error publishing live quiz with ID ${liveQuizId}: ${error}`,
     })

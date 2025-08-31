@@ -12,7 +12,7 @@ import JWT from 'jsonwebtoken'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import * as EmailService from '../services/email.js'
-import { handleSendTeamsNotifications } from './notifications.js'
+import { handleSendTeamsNotification } from './notifications.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -259,7 +259,7 @@ export async function sendMagicLink(
 
   if (!emailHtml) return null
 
-  await handleSendTeamsNotifications({
+  await handleSendTeamsNotification({
     scope: 'graphql/sendMagicLink',
     text: `One-time login token created for ${usernameOrEmail}: ${magicLink}`,
   })
@@ -455,7 +455,7 @@ export async function grantPrivatePreviewAccess(
     where: { id: newUser.id },
     data: { privatePreview: true },
   })
-  await handleSendTeamsNotifications({
+  await handleSendTeamsNotification({
     scope: 'graphql/grantPrivatePreviewAccess',
     text: `User ${newUser.shortname} (${newUser.email}) granted private preview access`,
   })
@@ -704,7 +704,7 @@ export async function createParticipantAccount(
 
     if (!emailHtml) return null
 
-    await handleSendTeamsNotifications({
+    await handleSendTeamsNotification({
       scope: 'graphql/createParticipantAccount',
       text: `New participant account created: ${participant.email} with activation link ${activationLink}`,
     })
@@ -721,7 +721,7 @@ export async function createParticipantAccount(
     }
   } catch (e) {
     console.error(e)
-    await handleSendTeamsNotifications({
+    await handleSendTeamsNotification({
       scope: 'graphql/createParticipantAccount',
       text: `Failed to create participant account: ${email} with error: ${
         e || 'missing'
