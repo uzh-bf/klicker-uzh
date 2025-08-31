@@ -12,6 +12,7 @@ on:
       - apps/**
       - packages/**
       - cypress/**
+      - .github/workflows/cypress-testing.yml
 
 env:
   REGISTRY: ghcr.io
