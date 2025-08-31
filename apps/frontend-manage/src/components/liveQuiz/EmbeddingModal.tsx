@@ -52,6 +52,7 @@ function EmbeddingModal({
           label={t('manage.evaluation.showSolution')}
           checked={showSolution}
           onCheckedChange={(val) => setShowSolution(val)}
+          data={{ cy: 'embedding-show-solution-switch' }}
         />
         <div className="pl-13 mb-3 text-sm">
           {t('manage.evaluation.showSolutionInfo')}
@@ -61,6 +62,7 @@ function EmbeddingModal({
           label={t('manage.evaluation.showExplanation')}
           checked={showExplanation}
           onCheckedChange={(val) => setShowExplanation(val)}
+          data={{ cy: 'embedding-show-explanation-switch' }}
         />
         <div className="pl-13 mb-3 text-sm">
           {t('manage.evaluation.showExplanationInfo')}

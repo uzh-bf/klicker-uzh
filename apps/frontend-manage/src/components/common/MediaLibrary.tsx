@@ -47,7 +47,6 @@ function MediaLibrary({ onImageClick }: Props) {
   const t = useTranslations()
   const client = useApolloClient()
   const [isUploading, setIsUploading] = useState(false)
-  // TODO: add query update
   const [getFileUploadSAS] = useMutation(GetFileUploadSasDocument)
 
   const handleFileFieldChange = useCallback(

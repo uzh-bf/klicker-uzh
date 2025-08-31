@@ -1,5 +1,3 @@
-import messages from '../../../packages/i18n/messages/en'
-
 describe('Tests the availability of certain functionalities to catalyst users only', () => {
   before(() => {
     cy.seed()
@@ -57,63 +55,14 @@ describe('Tests the availability of certain functionalities to catalyst users on
       cy.get('[data-cy="course-learning-analytics-link"]').should('not.exist')
     }
 
-    // private preview features in menubar
-    cy.get('[data-cy="library"]').click()
-    cy.get('[data-cy="resources"]').should(
-      privatePreview ? 'exist' : 'not.exist'
-    )
-
-    // (private) check that new question type filters are available
-    cy.get('[data-cy="collapse-tag-header-types"]').click()
-    cy.get('[data-cy="element-type-filter-SELECTION"]').should(
-      privatePreview ? 'exist' : 'not.exist'
-    )
-
-    // (private) check that new question types are available during element creation
-    cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]')
-      .should('exist')
-      .contains(messages.shared.SC.typeLabel)
-    cy.get('[data-cy="select-question-type"]').realClick()
-    if (privatePreview) {
-      cy.get(
-        `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
-      ).realClick()
-    } else {
-      cy.get(
-        `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
-      ).should('not.exist')
-      cy.get(
-        `[data-cy="select-question-type-${messages.shared.SC.typeLabel}"]`
-      ).realClick()
-    }
-    cy.get('[data-cy="close-element-modal"]').click()
-
-    // (private) create an element and verify that activity log is only shown with private preview access
-    const elementName = `${data.SC.title} - ${Math.floor(Math.random() * 10000)}`
-    cy.createQuestionSC({
-      name: elementName,
-      content: data.SC.content,
-      choices: data.SC.choices,
-      userId: Cypress.env('LECTURER_ID'),
-    })
-    cy.get(`[data-cy="edit-element-${elementName}"]`).click()
-    cy.get('[data-cy="element-preview-tab"]').should(
-      privatePreview ? 'exist' : 'not.exist'
-    )
-    cy.get('[data-cy="element-activity-tab"]').should(
-      privatePreview ? 'exist' : 'not.exist'
-    )
-    cy.get('[data-cy="close-element-modal"]').click()
-
-    // (private) sharing and activity log should only be shown to users with private preview access
+    // (private) sharing should only be shown to users with private preview access
     cy.get('[data-cy="courses"]').click()
     cy.get(`[data-cy="course-list-button-${data.seededCourse}"]`).click()
 
     cy.get('[data-cy="tab-liveQuizzes"]').click()
     cy.get(`[data-cy="actions-LIVE_QUIZ-${data.seed.liveQuiz}"]`).click()
     cy.get(`[data-cy="view-activity-log-${data.seed.liveQuiz}"]`).should(
-      privatePreview ? 'exist' : 'not.exist'
+      'exist'
     )
     cy.get(`[data-cy="share-live-quiz-${data.seed.liveQuiz}"]`).should(
       privatePreview ? 'exist' : 'not.exist'
@@ -125,7 +74,7 @@ describe('Tests the availability of certain functionalities to catalyst users on
       `[data-cy="actions-MICRO_LEARNING-${data.seed.microlearning}"]`
     ).click()
     cy.get(`[data-cy="view-activity-log-${data.seed.microlearning}"]`).should(
-      privatePreview ? 'exist' : 'not.exist'
+      'exist'
     )
     cy.get(`[data-cy="share-microlearning-${data.seed.microlearning}"]`).should(
       privatePreview ? 'exist' : 'not.exist'
@@ -137,7 +86,7 @@ describe('Tests the availability of certain functionalities to catalyst users on
       `[data-cy="actions-PRACTICE_QUIZ-${data.seed.practiceQuiz}"]`
     ).click()
     cy.get(`[data-cy="view-activity-log-${data.seed.practiceQuiz}"]`).should(
-      privatePreview ? 'exist' : 'not.exist'
+      'exist'
     )
     cy.get(`[data-cy="share-practice-quiz-${data.seed.practiceQuiz}"]`).should(
       privatePreview ? 'exist' : 'not.exist'
@@ -149,7 +98,7 @@ describe('Tests the availability of certain functionalities to catalyst users on
       `[data-cy="actions-GROUP_ACTIVITY-${data.seed.groupActivity}"]`
     ).click()
     cy.get(`[data-cy="view-activity-log-${data.seed.groupActivity}"]`).should(
-      privatePreview ? 'exist' : 'not.exist'
+      'exist'
     )
     cy.get(
       `[data-cy="share-group-activity-${data.seed.groupActivity}"]`

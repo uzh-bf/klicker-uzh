@@ -9,7 +9,7 @@ import {
   gradeQuestionSC,
   gradeQuestionSelection,
 } from '@klicker-uzh/grading'
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import type {
   CaseStudyElementData,
   CaseStudySolutionsObject,
@@ -3813,8 +3813,8 @@ function computeInstanceEvaluation({
 
 export function computeStackEvaluation(
   stacks: (
-    | (DB.ElementStack & { elements: DB.ElementInstance[] })
-    | (DB.ElementBlock & { elements: DB.ElementInstance[] })
+    | (DB.ElementStack & { elements: DB.ElementInstance[]; active?: boolean })
+    | (DB.ElementBlock & { elements: DB.ElementInstance[]; active?: boolean })
   )[]
 ) {
   return stacks.map((stack) => ({
@@ -3822,7 +3822,10 @@ export function computeStackEvaluation(
     stackName: 'displayName' in stack ? stack.displayName : null,
     stackDescription: 'description' in stack ? stack.description : null,
     stackOrder: stack.order,
-
+    stackActive: stack.active ?? false,
+    status: 'status' in stack ? stack.status : null,
+    expiresAt: 'expiresAt' in stack ? stack.expiresAt : null,
+    timeLimit: 'timeLimit' in stack ? stack.timeLimit : null,
     instances: stack.elements
       .map((instance) => computeInstanceEvaluation({ instance }))
       .filter((instance) => typeof instance !== 'undefined'),

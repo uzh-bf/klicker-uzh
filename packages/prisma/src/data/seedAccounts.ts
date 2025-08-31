@@ -1,4 +1,4 @@
-import Prisma from '../../dist/index.js'
+import * as Prisma from '../client.js'
 import { USER_ID_TEST } from './constants.js'
 
 export async function seedAccounts(prisma: Prisma.PrismaClient) {

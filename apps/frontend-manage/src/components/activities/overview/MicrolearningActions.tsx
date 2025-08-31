@@ -123,7 +123,7 @@ function MicrolearningActions({
         'copyLTIAccessLink',
         'openPreview',
         'openEvaluation',
-        ...(user?.privatePreview ? ['activityLog'] : []),
+        'activityLog',
         ...(user?.publicPreview ? ['analyticsMicroLearning'] : []),
       ],
       isRemovable: ['removeMicroLearning'],
@@ -172,7 +172,6 @@ function MicrolearningActions({
             objectName={microLearning.name}
             objectType={ObjectType.MicroLearning}
             isTemplate={isTemplate}
-            isOwner={microLearning.isOwner ?? false}
             onClose={() => setSharingModal(false)}
             refetchActivities={refetchActivities}
           />

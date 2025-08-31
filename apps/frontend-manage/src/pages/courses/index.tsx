@@ -25,7 +25,6 @@ import Layout from '../../components/Layout'
 function CourseSelectionPage() {
   const router = useRouter()
   const t = useTranslations()
-  // TODO: add query update
   const [createCourse] = useMutation(CreateCourseDocument)
 
   const [createCourseModal, showCreateCourseModal] = useState(false)
@@ -58,9 +57,9 @@ function CourseSelectionPage() {
     )
   }
 
-  const courses = dataCourses?.userCourses?.filter((course) => {
-    return showArchive ? true : !course.isArchived
-  })
+  const courses = dataCourses?.userCourses?.filter((course) =>
+    showArchive ? true : !course.isArchived
+  )
 
   return (
     <Layout>
@@ -173,7 +172,11 @@ function CourseSelectionPage() {
                     variables: {
                       name: values.name,
                       displayName: values.displayName,
-                      description: values.description,
+                      description:
+                        !values.description?.match(/^(<br>(\n)*)$/g) &&
+                        values.description !== ''
+                          ? values.description
+                          : null,
                       language: values.language,
                       color: values.color,
                       startDate: startDateUTC,
@@ -187,7 +190,25 @@ function CourseSelectionPage() {
                         String(values.preferredGroupSize)
                       ),
                     },
-                    refetchQueries: [{ query: GetUserCoursesDocument }],
+                    update: (cache, { data }) => {
+                      // verify that the course creation was successful
+                      if (!data?.createCourse) return
+
+                      // add the new course to the course list
+                      cache.updateQuery(
+                        { query: GetUserCoursesDocument },
+                        (qData) => {
+                          if (!qData?.userCourses) return qData
+
+                          return {
+                            userCourses: [
+                              ...qData.userCourses,
+                              data.createCourse!,
+                            ],
+                          }
+                        }
+                      )
+                    },
                   })
 
                   if (result.data?.createCourse) {

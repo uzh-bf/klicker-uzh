@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType, SharingType } from '@klicker-uzh/types'
 import { levelFromXp, recomputeDerivedPermissions } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
@@ -220,7 +220,7 @@ export async function leaveCourseLeaderboard(
 
 export async function getCourseOverviewData(
   { courseId }: { courseId: string },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   // TODO: a lot of fetching seems to be duplicated with the large joins here - optimize where possible
   if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
@@ -534,7 +534,7 @@ async function computeRollingLeaderboardEntries(
 
 export async function getStudentCourseLeaderboard(
   { courseId, mode }: { courseId: string; mode: string },
-  ctx: ContextWithUser
+  ctx: Context
 ) {
   if (
     ctx.user?.sub &&
@@ -642,7 +642,10 @@ export async function getStudentCourseLeaderboard(
     mode === 'biweekly'
   ) {
     const { leaderboardEntries, count, sum } =
-      await computeRollingLeaderboardEntries({ courseId, days: 14 }, ctx)
+      await computeRollingLeaderboardEntries(
+        { courseId, days: 14 },
+        ctx as ContextWithUser // user id and role have been validated in if statement
+      )
 
     return {
       leaderboard: leaderboardEntries,
@@ -739,7 +742,17 @@ export async function createCourse(
         prisma
       )
 
-      return newCourse
+      return {
+        ...newCourse,
+        derivedAccess: false,
+        numSharedUsers: 0,
+        permissionLevel: DB.PermissionLevel.OWNER,
+        isOwner: true,
+        isManager: true,
+        isEditor: true,
+        isShared: false,
+        isRemovable: false,
+      }
     },
     { timeout: 60000 }
   )
@@ -827,7 +840,7 @@ export async function updateCourseSettings(
     data: {
       name: name ?? undefined,
       displayName: displayName ?? undefined,
-      description: description ?? undefined,
+      description,
       language: language ?? DB.Locale.en,
       color: color ?? undefined,
       startDate: currentStartDatePast || !startDate ? undefined : startDate,
@@ -1070,7 +1083,7 @@ export async function deleteCourse(
   // live quizzes, which are only disconnected from the course need to be handled separately
   // elements that are contained in asynchronous activities (cascading delete) need to be updated manually
   const course = await ctx.prisma.course.findUnique({
-    where: { id },
+    where: { id, isAssessmentEnabled: false },
     include: {
       liveQuizzes: true,
       practiceQuizzes: { include: { stacks: { include: { elements: true } } } },

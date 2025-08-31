@@ -22,7 +22,6 @@ query GetSingleCourse($courseId: String!) {
     maxGroupSize
     preferredGroupSize
     randomAssignmentFinalized
-
     derivedAccess
     numSharedUsers
     permissionLevel

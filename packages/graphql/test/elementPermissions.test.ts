@@ -3,7 +3,7 @@ import {
   ElementType,
   PermissionLevel,
   PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import { ChoicesElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'

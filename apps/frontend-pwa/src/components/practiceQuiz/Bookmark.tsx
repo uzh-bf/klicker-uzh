@@ -29,7 +29,6 @@ function Bookmark({ bookmarks, quizId, stackId }: BookmarkProps) {
     return bookmarks.includes(stackId)
   }, [bookmarks, stackId])
 
-  // TODO: add query update
   const [bookmarkElementStack, { loading: bookmarkingStack }] = useMutation(
     BookmarkElementStackDocument,
     {
@@ -38,25 +37,18 @@ function Bookmark({ bookmarks, quizId, stackId }: BookmarkProps) {
         courseId: router.query.courseId as string,
         bookmarked: !isBookmarked,
       },
-      update(cache) {
-        const data = cache.readQuery({
-          query: GetBookmarksPracticeQuizDocument,
-          variables: {
-            courseId: router.query.courseId as string,
-            quizId: quizId,
+      update(cache, { data }) {
+        // verify that the bookmarking was successful
+        if (!data?.bookmarkElementStack) return
+
+        // update the cached bookmarks (mutation directly returns updated stack ids)
+        cache.updateQuery(
+          {
+            query: GetBookmarksPracticeQuizDocument,
+            variables: { courseId: router.query.courseId as string, quizId },
           },
-        })
-        cache.writeQuery({
-          query: GetBookmarksPracticeQuizDocument,
-          variables: { courseId: router.query.courseId as string, quizId },
-          data: {
-            getBookmarksPracticeQuiz: isBookmarked
-              ? (data?.getBookmarksPracticeQuiz ?? []).filter(
-                  (entry) => entry !== stackId
-                )
-              : [...(data?.getBookmarksPracticeQuiz ?? []), stackId],
-          },
-        })
+          () => ({ getBookmarksPracticeQuiz: data.bookmarkElementStack! })
+        )
       },
       optimisticResponse: {
         bookmarkElementStack: isBookmarked

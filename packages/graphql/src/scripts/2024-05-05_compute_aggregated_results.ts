@@ -1,4 +1,4 @@
-import { Element, ElementType, PrismaClient } from '@klicker-uzh/prisma'
+import { Element, ElementType, PrismaClient } from '@klicker-uzh/prisma/client'
 import {
   QuestionResultsChoices,
   QuestionResultsOpen,

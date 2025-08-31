@@ -38,7 +38,6 @@ function ElementDeletionModal({
   })
 
   // deletion mutation
-  // TODO: add query update
   const [deleteElement, { loading: deleting }] = useMutation(
     DeleteElementDocument
   )
@@ -71,6 +70,7 @@ function ElementDeletionModal({
 
   return (
     <ActivityConfirmationModal
+      confirmationType="delete"
       onClose={() => setModalOpen(false)}
       title={t('manage.questionPool.deleteElement')}
       loading={queryLoading}
@@ -80,9 +80,8 @@ function ElementDeletionModal({
       })}
       onSubmit={async () => {
         await deleteElement({
-          variables: {
-            id: elementId,
-          },
+          variables: { id: elementId },
+          // refetch required, since it is more cumbersome to compute a diff of removed tags than just refetch them (cheap)
           refetchQueries: [{ query: GetUserTagsDocument }],
         })
         await refetchElements()
@@ -91,7 +90,6 @@ function ElementDeletionModal({
       submitting={deleting}
       confirmations={confirmations}
       confirmationsInitializing={false}
-      confirmationType="delete"
     >
       <div className="flex flex-col gap-2">
         <ConfirmationItem

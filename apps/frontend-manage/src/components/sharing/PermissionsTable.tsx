@@ -76,7 +76,7 @@ function PermissionsTable({
                 <FontAwesomeIcon
                   icon={hasPermission ? faCheckCircle : faCircleXmark}
                   className={`text-lg ${
-                    hasPermission ? 'text-green-600' : 'text-red-600'
+                    hasPermission ? 'text-green-700' : 'text-red-600'
                   }`}
                 />
               </td>

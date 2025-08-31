@@ -1,4 +1,5 @@
-import { PrismaClient, UserLoginScope, UserRole } from '@klicker-uzh/prisma'
+import { prisma } from '@klicker-uzh/prisma'
+import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
 import SchemaBuilder from '@pothos/core'
 import DirectivePlugin from '@pothos/plugin-directives'
 import PrismaPlugin from '@pothos/plugin-prisma'
@@ -6,11 +7,8 @@ import ScopeAuthPlugin from '@pothos/plugin-scope-auth'
 import ZodPlugin from '@pothos/plugin-zod'
 import { GraphQLError } from 'graphql'
 import { DateTimeResolver, JSONResolver } from 'graphql-scalars'
-import './types/app.js'
-
 import type { Context, ContextWithUser } from './lib/context.js'
-
-const prisma = new PrismaClient({})
+import './types/app.js'
 
 const builder = new SchemaBuilder<{
   DefaultFieldNullability: false

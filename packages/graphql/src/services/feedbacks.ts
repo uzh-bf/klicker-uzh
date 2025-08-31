@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import type { Context, ContextWithUser } from '../lib/context.js'
 
 export async function getFeedbacks(
@@ -312,9 +312,7 @@ export async function deleteFeedbackResponse(
 
   const updatedFeedback = await ctx.prisma.feedback.findUnique({
     where: { id: deletedFeedbackResponse.feedbackId },
-    include: {
-      responses: true,
-    },
+    include: { responses: true },
   })
 
   if (!updatedFeedback) {

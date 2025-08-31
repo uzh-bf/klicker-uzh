@@ -46,9 +46,7 @@ export async function subscribeToPush(
         },
       },
     },
-    include: {
-      subscriptions: true,
-    },
+    include: { subscriptions: true },
   })
 }
 

@@ -5,7 +5,7 @@
  * - inversePermissionLevelMap: maps numeric levels back to PermissionLevel.
  */
 
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 
 export type UserAccessMap = {
   [userId: string]: {

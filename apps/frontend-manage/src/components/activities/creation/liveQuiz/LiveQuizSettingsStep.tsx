@@ -129,7 +129,21 @@ function LiveQuizSettingsStep({
                         }
                       }}
                       label={t('shared.generic.course')}
-                      tooltip={t('manage.activityWizard.liveQuizDescCourse')}
+                      tooltip={t.rich(
+                        'manage.activityWizard.liveQuizDescCourse',
+                        {
+                          link: (text) => (
+                            <a
+                              href="https://www.klicker.uzh.ch/tutorials/live_quiz/#what-functionalities-become-available-through-gamified-live-quizzes"
+                              className="text-primary-100 hover:underline"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {text}
+                            </a>
+                          ),
+                        }
+                      )}
                       placeholder={t(
                         'manage.activityWizard.liveQuizSelectCourse'
                       )}
@@ -147,7 +161,7 @@ function LiveQuizSettingsStep({
                             className={twMerge(
                               'w-4',
                               values.isGamificationEnabled
-                                ? 'text-green-600'
+                                ? 'text-green-700'
                                 : 'text-red-600'
                             )}
                           />
@@ -173,7 +187,7 @@ function LiveQuizSettingsStep({
                             className={twMerge(
                               'w-4',
                               values.isAssessmentEnabled
-                                ? 'text-green-600'
+                                ? 'text-green-700'
                                 : 'text-red-600'
                             )}
                           />
@@ -228,7 +242,7 @@ function LiveQuizSettingsStep({
                             className={twMerge(
                               'mt-0.75 w-3',
                               customizedGradingEnabled
-                                ? 'text-green-600'
+                                ? 'text-green-700'
                                 : 'text-red-600'
                             )}
                           />

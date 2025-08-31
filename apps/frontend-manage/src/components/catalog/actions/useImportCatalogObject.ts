@@ -17,7 +17,6 @@ function useImportCatalogObject({
   catalogCollectionId?: string
   onError: () => void
 }) {
-  // TODO: add query update
   const [importCatalogObject, { loading: importing }] = useMutation(
     ImportCatalogObjectDocument
   )
@@ -40,6 +39,8 @@ function useImportCatalogObject({
           objectType,
           catalogCollectionId,
         },
+        // generic return type supporting multiple object types is not available
+        // proper cache update therefore impractical -> refetch query is acceptable here
         refetchQueries: [
           ...(objectType === ObjectType.AnswerCollection
             ? [{ query: GetAnswerCollectionsInfoDocument }]

@@ -2,6 +2,64 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.3.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.1...v3.3.2) (2025-08-29)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** avoid errors for overviews with missing activities ([5f39264](https://github.com/uzh-bf/klicker-uzh/commit/5f392644e643f099676056bd86bca40b1cfcb434))
+* block the deletion of assessment courses ([#4865](https://github.com/uzh-bf/klicker-uzh/issues/4865)) ([d7a5244](https://github.com/uzh-bf/klicker-uzh/commit/d7a52446afb140791df75f01f12516ab6ecc6508))
+* **packages/prisma:** fix formula parsing and update flashcards sets for BF1 ([#4826](https://github.com/uzh-bf/klicker-uzh/issues/4826)) ([16536f1](https://github.com/uzh-bf/klicker-uzh/commit/16536f173c88fb60a349f9373c69293b5640a57d))
+
+
+### Refactors
+
+* **apps/frontend-pwa:** simplify student documentation setup and make it course-independent ([#4864](https://github.com/uzh-bf/klicker-uzh/issues/4864)) ([6113e81](https://github.com/uzh-bf/klicker-uzh/commit/6113e8155269b1bb31d0b268cf4f375d2b48e1e2))
+* eliminate all unnecessary refetches in all frontends and replace them with proper cache updates ([#4861](https://github.com/uzh-bf/klicker-uzh/issues/4861)) ([bcad977](https://github.com/uzh-bf/klicker-uzh/commit/bcad977e3b789b26afa2b5a2b38effe353ade4e6))
+* update prisma to separate adapter-based approach without rust middleware ([#4853](https://github.com/uzh-bf/klicker-uzh/issues/4853)) ([3155e9a](https://github.com/uzh-bf/klicker-uzh/commit/3155e9aef30e036c3df3cb7a80bbf50b31850651))
+
+
+### Enhancements
+
+* add dedicated error page that handles server side errors and fix errors on activity overviews ([#4862](https://github.com/uzh-bf/klicker-uzh/issues/4862)) ([cb6396c](https://github.com/uzh-bf/klicker-uzh/commit/cb6396c0b6b3a4c4f8d4a67bb21b10b6b3a9dca0))
+* **frontend-manage:** show activity owner in activity details modal information section ([15f7c23](https://github.com/uzh-bf/klicker-uzh/commit/15f7c2333b1187cad5ed71363a68027f4fe810fa))
+* show countdown on evaluation results cover for active live quiz blocks ([#4860](https://github.com/uzh-bf/klicker-uzh/issues/4860)) ([defad8b](https://github.com/uzh-bf/klicker-uzh/commit/defad8b21fde158921d52237c3d4cc2eb79b8b57))
+
+### [3.3.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0...v3.3.1) (2025-08-25)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that element edit modal is not closed on element status change ([#4859](https://github.com/uzh-bf/klicker-uzh/issues/4859)) ([6a44ac2](https://github.com/uzh-bf/klicker-uzh/commit/6a44ac2a1ff1bfd6ee26db0b4f4f8cd765b6229c))
+* **apps/frontend-manage:** ensure that reset time days are loaded correctly during practice quiz editing ([6c3555e](https://github.com/uzh-bf/klicker-uzh/commit/6c3555ea7b79a0dcd83435b07e5df00ed57c8425))
+* **apps/frontend-pwa:** resolve broken image links on student docs ([f82994b](https://github.com/uzh-bf/klicker-uzh/commit/f82994b2bfcc54990a26f1a0fcb9789a502cba3d))
+* **apps/lti:** ensure that lti service does not crash on request domain error ([ab37737](https://github.com/uzh-bf/klicker-uzh/commit/ab3773711bc98f20e206962c4313e6c7f0da18b3))
+* **ci:** change name of v2 response processor workflows ([b9932c6](https://github.com/uzh-bf/klicker-uzh/commit/b9932c6b26a0f2b40275bf9b374f33bd12b8385a))
+* **ci:** update function apps deployment workflows ([b5a1751](https://github.com/uzh-bf/klicker-uzh/commit/b5a1751d3d7ec34d6b4ce6dff66d56e8edf4e84e))
+* **packages/graphql:** ensure that correct number of leaderboard entries is shown when aborting live quiz ([afde000](https://github.com/uzh-bf/klicker-uzh/commit/afde000ced43ef02f21c587bcee7b8f096b03419))
+
+
+### Enhancements
+
+* **apps/docs:** add grading logic description for selection questions and case studies ([#4857](https://github.com/uzh-bf/klicker-uzh/issues/4857)) ([449d428](https://github.com/uzh-bf/klicker-uzh/commit/449d428c018911cbb27b8adcfe3bdd5d29c5884f))
+* **apps/frontend-manage:** hide the sample solution and explanation on live quiz evaluations while the block is active ([#4858](https://github.com/uzh-bf/klicker-uzh/issues/4858)) ([f575f31](https://github.com/uzh-bf/klicker-uzh/commit/f575f31693baa54e4468c1b91002d72ab95c92f9))
+* hide results of active live quiz blocks in live quiz browser evaluations ([#4852](https://github.com/uzh-bf/klicker-uzh/issues/4852)) ([7ed2d26](https://github.com/uzh-bf/klicker-uzh/commit/7ed2d26a7d1c132c3c4348c509adfb877b1a4218))
+* support additional gamification setting on live quiz templates ([#4851](https://github.com/uzh-bf/klicker-uzh/issues/4851)) ([5bde765](https://github.com/uzh-bf/klicker-uzh/commit/5bde76567b4e6147cb524c8873b2f31375fa5532))
+
+## [3.3.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-rc.0...v3.3.0) (2025-08-20)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** only validate course group formation deadline date if group creation is enabled ([f6a0340](https://github.com/uzh-bf/klicker-uzh/commit/f6a0340a851b64daff5416059226834e2a6c1344))
+* **apps/frontend-manage:** resolve issues with cache updates on removal of own object permissions and other minor bugfixes ([#4850](https://github.com/uzh-bf/klicker-uzh/issues/4850)) ([bbfd8f7](https://github.com/uzh-bf/klicker-uzh/commit/bbfd8f7a8c5f6102488786cadfb62f05d9690945))
+* ensure that course overview is accessible for all student users with gamification information blocked for non-participants ([#4847](https://github.com/uzh-bf/klicker-uzh/issues/4847)) ([069530d](https://github.com/uzh-bf/klicker-uzh/commit/069530dc9852f93f68a9df77e9593a3ec306e724))
+
+
+### Enhancements
+
+* support find shortcuts on overviews, illustrate course progress, fix deleted element edit operation availability ([#4848](https://github.com/uzh-bf/klicker-uzh/issues/4848)) ([101573a](https://github.com/uzh-bf/klicker-uzh/commit/101573a88d1672218f8e299deb009c9719ea409a))
+
 ## [3.3.0-rc.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0-alpha.83...v3.3.0-rc.0) (2025-08-19)
 
 

@@ -1,14 +1,9 @@
-import { useQuery } from '@apollo/client'
-import { ElementType, UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
+import { ElementType } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 
 function useElementTypeOptions() {
   const t = useTranslations()
-  const { data: user } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
-
-  const baseElements = [
+  return [
     {
       value: ElementType.Sc,
       label: t(`shared.${ElementType.Sc}.typeLabel`),
@@ -51,6 +46,24 @@ function useElementTypeOptions() {
       },
     },
     {
+      value: ElementType.Selection,
+      label: t(`shared.${ElementType.Selection}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.Selection}.typeLabel`
+        )}`,
+      },
+    },
+    {
+      value: ElementType.CaseStudy,
+      label: t(`shared.${ElementType.CaseStudy}.typeLabel`),
+      data: {
+        cy: `select-question-type-${t(
+          `shared.${ElementType.CaseStudy}.typeLabel`
+        )}`,
+      },
+    },
+    {
       value: ElementType.Content,
       label: t(`shared.${ElementType.Content}.typeLabel`),
       data: {
@@ -69,29 +82,6 @@ function useElementTypeOptions() {
       },
     },
   ]
-
-  if (user?.userProfile?.privatePreview) {
-    baseElements.push({
-      value: ElementType.Selection,
-      label: t(`shared.${ElementType.Selection}.typeLabel`),
-      data: {
-        cy: `select-question-type-${t(
-          `shared.${ElementType.Selection}.typeLabel`
-        )}`,
-      },
-    })
-    baseElements.push({
-      value: ElementType.CaseStudy,
-      label: t(`shared.${ElementType.CaseStudy}.typeLabel`),
-      data: {
-        cy: `select-question-type-${t(
-          `shared.${ElementType.CaseStudy}.typeLabel`
-        )}`,
-      },
-    })
-  }
-
-  return baseElements
 }
 
 export default useElementTypeOptions

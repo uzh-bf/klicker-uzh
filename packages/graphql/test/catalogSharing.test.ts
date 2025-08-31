@@ -4,7 +4,7 @@ import {
   ObjectType,
   PermissionLevel,
   PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
@@ -1799,10 +1799,11 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     )
 
     // fetch the direct permissions and make sure that they are correct
-    const directPermissions = await getCatalogCollectionPermissions(
-      { id: publicCatalog.id },
-      userOneCtx
-    )
+    const { permissions: directPermissions } =
+      await getCatalogCollectionPermissions(
+        { id: publicCatalog.id },
+        userOneCtx
+      )
     expect(directPermissions).not.toBeNull()
     expect(directPermissions.length).toBe(2)
 

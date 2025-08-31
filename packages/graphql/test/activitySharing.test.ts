@@ -6,7 +6,7 @@ import {
   PermissionLevel,
   PrismaClient,
   PublicationStatus,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import { ActivityType } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
@@ -2496,7 +2496,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     await recomputeDerivedPermissions({ liveQuizId: liveQuiz.id }, prisma)
 
     // call the getter function
-    const permissions = await getLiveQuizPermissions(
+    const { permissions } = await getLiveQuizPermissions(
       { id: liveQuiz.id },
       userTwoCtx
     )
@@ -5479,7 +5479,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     )
 
     // call the getter function
-    const permissions = await getPracticeQuizPermissions(
+    const { permissions } = await getPracticeQuizPermissions(
       { id: practiceQuiz.id },
       userTwoCtx
     )
@@ -7370,7 +7370,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     )
 
     // call the getter function
-    const permissions = await getMicroLearningPermissions(
+    const { permissions } = await getMicroLearningPermissions(
       { id: microLearning.id },
       userTwoCtx
     )
@@ -9279,7 +9279,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     )
 
     // call the getter function
-    const permissions = await getGroupActivityPermissions(
+    const { permissions } = await getGroupActivityPermissions(
       { id: groupActivity.id },
       userTwoCtx
     )

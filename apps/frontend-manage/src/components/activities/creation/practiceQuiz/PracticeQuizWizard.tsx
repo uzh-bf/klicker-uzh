@@ -245,9 +245,10 @@ function PracticeQuizWizard({
     order:
       (initialValues?.orderType as ElementOrderType) || formDefaultValues.order,
     courseStartDate: formDefaultValues.courseStartDate,
-    resetTimeDays: initialValues?.resetTimeDays
-      ? String(initialValues?.resetTimeDays)
-      : formDefaultValues.resetTimeDays,
+    resetTimeDays:
+      typeof initialValues?.resetTimeDays !== 'undefined'
+        ? String(initialValues?.resetTimeDays)
+        : formDefaultValues.resetTimeDays,
   })
 
   const [createPracticeQuiz, { data: practiceQuizCreateData }] = useMutation(

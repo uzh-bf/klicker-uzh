@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType as ActivityTypeEnum,
   SharingType as SharingTypeEnum,
@@ -18,6 +18,7 @@ interface IActivityInfoElement {
   totalPoints: number
   hasSampleSolution: boolean
   isEditor: boolean
+  isDeleted: boolean
   instance: IElementInstance
 }
 
@@ -33,6 +34,7 @@ export const ActivityInfoElement = builder.objectType(ActivityInfoElementRef, {
     totalPoints: t.exposeInt('totalPoints'),
     hasSampleSolution: t.exposeBoolean('hasSampleSolution'),
     isEditor: t.exposeBoolean('isEditor'),
+    isDeleted: t.exposeBoolean('isDeleted'),
     instance: t.expose('instance', {
       type: ElementInstanceRef,
     }),
@@ -43,6 +45,8 @@ interface IActivityInfoStack {
   id: number
   numOfParticipants?: number | null
   timeLimit?: number | null
+  stackTitle?: string | null
+  stackDescription?: string | null
   stackPoints?: number | null
   elements: IActivityInfoElement[]
 }
@@ -55,6 +59,8 @@ export const ActivityInfoStack = builder.objectType(ActivityInfoStackRef, {
     id: t.exposeInt('id'),
     numOfParticipants: t.exposeInt('numOfParticipants', { nullable: true }),
     timeLimit: t.exposeInt('timeLimit', { nullable: true }),
+    stackTitle: t.exposeString('stackTitle', { nullable: true }),
+    stackDescription: t.exposeString('stackDescription', { nullable: true }),
     stackPoints: t.exposeInt('stackPoints', { nullable: true }),
     elements: t.expose('elements', { type: [ActivityInfoElement] }),
   }),
@@ -236,6 +242,8 @@ export interface IActivityDetails {
   isActivityReviewer: boolean
   isActivityManager: boolean
   courseId?: string | null
+  ownerShortname: string
+  ownerEmail?: string | null
   isGamificationEnabled: boolean
   arePointsAwarded: boolean
   pointsMultiplier: number
@@ -259,6 +267,10 @@ export const ActivityDetails = builder.objectType(ActivityDetailsRef, {
     isActivityReviewer: t.exposeBoolean('isActivityReviewer'),
     isActivityManager: t.exposeBoolean('isActivityManager'),
     courseId: t.exposeString('courseId', { nullable: true }),
+
+    ownerShortname: t.exposeString('ownerShortname'),
+    ownerEmail: t.exposeString('ownerEmail', { nullable: true }),
+
     isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
     arePointsAwarded: t.exposeBoolean('arePointsAwarded'),
     pointsMultiplier: t.exposeInt('pointsMultiplier'),

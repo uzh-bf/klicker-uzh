@@ -13,6 +13,7 @@ subscription FeedbackAdded($quizId: String!) {
       content
       positiveReactions
       negativeReactions
+      createdAt
     }
   }
 }

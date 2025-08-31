@@ -186,7 +186,7 @@ function ElementBatchOperationsModal({
             <div className="flex flex-row items-center gap-5 self-end">
               <span
                 className={twMerge(
-                  'text-sm text-green-600',
+                  'text-sm text-green-700',
                   numOfUpdatedElements === 0 && 'text-red-600'
                 )}
               >

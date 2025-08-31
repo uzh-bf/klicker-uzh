@@ -147,10 +147,15 @@ function CourseManipulationModal({
             yup.ref('startDate'),
             t('manage.courseList.groupDeadlineAfterStart')
           )
-          .max(
-            yup.ref('endDate'),
-            t('manage.courseList.groupDeadlineBeforeEnd')
-          )
+          .when('isGroupCreationEnabled', {
+            is: true,
+            then: (schema) =>
+              schema.max(
+                yup.ref('endDate'),
+                t('manage.courseList.groupDeadlineBeforeEnd')
+              ),
+            otherwise: (schema) => schema,
+          })
           .test(
             'isBeforeFirstGroupActivity',
             t('manage.courseList.groupDeadlineBeforeFirstGroupActivity', {
@@ -165,10 +170,15 @@ function CourseManipulationModal({
       : yup
           .date()
           .min(new Date(), t('manage.courseList.groupDeadlineFuture'))
-          .max(
-            yup.ref('endDate'),
-            t('manage.courseList.groupDeadlineBeforeEnd')
-          )
+          .when('isGroupCreationEnabled', {
+            is: true,
+            then: (schema) =>
+              schema.max(
+                yup.ref('endDate'),
+                t('manage.courseList.groupDeadlineBeforeEnd')
+              ),
+            otherwise: (schema) => schema,
+          })
           .required(t('manage.courseList.groupDeadlineReq')),
     maxGroupSize: yup
       .number()

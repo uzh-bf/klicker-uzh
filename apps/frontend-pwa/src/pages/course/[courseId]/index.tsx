@@ -1,4 +1,6 @@
 import { useBackgroundQuery, useMutation, useQuery } from '@apollo/client'
+import { faLock } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetCourseGroupActivitiesDocument,
   GetCourseOverviewDataDocument,
@@ -28,6 +30,7 @@ import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import nookies from 'nookies'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
@@ -84,9 +87,10 @@ function CourseOverview({
       variables: { courseId },
     })
 
-  // TODO: add query update
   const [joinCourseLeaderboard] = useMutation(JoinCourseLeaderboardDocument, {
     variables: { courseId },
+    // refetching the leaderboard here makes sense to ensure that the participant
+    // is placed correctly in the leaderboard
     refetchQueries: [
       {
         query: GetStudentCourseLeaderboardDocument,
@@ -95,22 +99,16 @@ function CourseOverview({
     ],
   })
 
-  // TODO: add query update
   const [leaveCourseLeaderboard] = useMutation(LeaveCourseLeaderboardDocument, {
     variables: { courseId },
-    refetchQueries: [
-      {
-        query: GetStudentCourseLeaderboardDocument,
-        variables: { courseId, mode: leaderboardType },
-      },
-    ],
   })
 
   useEffect(() => {
     if (
-      data &&
-      !data.getCourseOverviewData?.course?.isGamificationEnabled &&
-      data.getCourseOverviewData?.course?.description
+      data?.getCourseOverviewData &&
+      (!participation ||
+        (!data.getCourseOverviewData?.course?.isGamificationEnabled &&
+          data.getCourseOverviewData?.course?.description))
     ) {
       setSelectedTab('info')
     }
@@ -166,6 +164,21 @@ function CourseOverview({
     setIsProfileModalOpen((prev) => !prev)
   }
 
+  // if the participant is not logged in and the course has no description, show a notification
+  if (!participation && !course.description) {
+    return (
+      <Layout
+        displayName={t('shared.generic.leaderboard')}
+        course={course ?? undefined}
+      >
+        <UserNotification
+          type="info"
+          message={t('pwa.courses.courseOverviewOnlyWithLogin')}
+        />
+      </Layout>
+    )
+  }
+
   return (
     <Layout
       displayName={t('shared.generic.leaderboard')}
@@ -183,7 +196,18 @@ function CourseOverview({
                       {
                         id: 'leaderboard',
                         value: 'global',
-                        label: t('shared.generic.leaderboard'),
+                        disabled: !participation,
+                        tooltip: !participation
+                          ? t('pwa.courses.gamificationOnlyForLoggedInUsers')
+                          : undefined,
+                        label: participation ? (
+                          t('shared.generic.leaderboard')
+                        ) : (
+                          <div className="flex flex-row items-center gap-2">
+                            <FontAwesomeIcon icon={faLock} />
+                            <span>{t('shared.generic.leaderboard')}</span>
+                          </div>
+                        ),
                         data: { cy: 'student-course-leaderboard-tab' },
                       },
                     ]
@@ -214,7 +238,18 @@ function CourseOverview({
                       {
                         id: 'create',
                         value: 'create',
-                        label: t('pwa.courses.createJoinGroup'),
+                        disabled: !participation,
+                        tooltip: !participation
+                          ? t('pwa.courses.gamificationOnlyForLoggedInUsers')
+                          : undefined,
+                        label: participation ? (
+                          t('pwa.courses.createJoinGroup')
+                        ) : (
+                          <div className="flex flex-row items-center gap-2">
+                            <FontAwesomeIcon icon={faLock} />
+                            <span>{t('pwa.courses.createJoinGroup')}</span>
+                          </div>
+                        ),
                         data: { cy: 'student-course-create-group' },
                       },
                     ]
@@ -579,42 +614,64 @@ function CourseOverview({
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
-  if (typeof ctx.params?.courseId !== 'string') {
-    return {
-      redirect: {
-        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
-        statusCode: 302,
-      },
+  try {
+    if (typeof ctx.params?.courseId !== 'string') {
+      return {
+        redirect: {
+          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
+          statusCode: 302,
+        },
+      }
     }
-  }
 
-  const apolloClient = initializeApollo()
+    const apolloClient = initializeApollo()
 
-  const { participantToken, cookiesAvailable } = await getParticipantToken({
-    apolloClient,
-    courseId: ctx.params.courseId,
-    ctx,
-  })
+    const { participantToken, cookiesAvailable } = await getParticipantToken({
+      apolloClient,
+      courseId: ctx.params.courseId,
+      ctx,
+    })
 
-  if (participantToken) {
-    return {
+    if (participantToken) {
+      return {
+        props: {
+          participantToken,
+          cookiesAvailable,
+          courseId: ctx.params.courseId,
+          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+            .default,
+        },
+      }
+    }
+
+    return addApolloState(apolloClient, {
       props: {
-        participantToken,
-        cookiesAvailable,
         courseId: ctx.params.courseId,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
+    })
+  } catch (error) {
+    console.error('Error in getServerSideProps on course overview:', error)
+
+    // remove the lti-token, if it is defined
+    try {
+      nookies.destroy(ctx, 'lti-token', {
+        domain: process.env.COOKIE_DOMAIN,
+        path: '/',
+      })
+    } catch (nookiesError) {
+      console.error(nookiesError)
+    }
+
+    // redirect to lti error page with redirect back to this page
+    return {
+      redirect: {
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/serverError?redirectTo=${encodeURIComponent(`/${ctx.locale}/course/${ctx.params?.courseId}`)}`,
+        permanent: false,
+      },
     }
   }
-
-  return addApolloState(apolloClient, {
-    props: {
-      courseId: ctx.params.courseId,
-      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-        .default,
-    },
-  })
 }
 
 export default CourseOverview

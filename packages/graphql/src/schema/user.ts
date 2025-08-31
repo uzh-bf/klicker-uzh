@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import builder from '../builder.js'
 
 export const LocaleType = builder.enumType('LocaleType', {

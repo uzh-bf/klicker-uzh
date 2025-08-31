@@ -23,6 +23,8 @@ type ActivityDetails {
   isActivityReviewer: Boolean!
   isGamificationEnabled: Boolean!
   name: String!
+  ownerEmail: String
+  ownerShortname: String!
   pointsMultiplier: Int!
   reviewStatus: ReviewStatus!
   stacks: [ActivityInfoStack!]!
@@ -96,6 +98,7 @@ type ActivityInfoElement {
   correctnessPoints: Int
   hasSampleSolution: Boolean!
   instance: ElementInstance!
+  isDeleted: Boolean!
   isEditor: Boolean!
   totalPoints: Int!
 }
@@ -104,7 +107,9 @@ type ActivityInfoStack {
   elements: [ActivityInfoElement!]!
   id: Int!
   numOfParticipants: Int
+  stackDescription: String
   stackPoints: Int
+  stackTitle: String
   timeLimit: Int
 }
 
@@ -1636,7 +1641,7 @@ type Mutation {
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): ActivityInfo
   createUserGroup(members: [UserGroupMembersInput!]!, name: String!): UserGroup
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
-  deactivateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
+  deactivateLiveQuizBlock(blockId: Int!, quizId: String!): Boolean
   declineObjectSharingRequest(requestId: Int!, userId: String!): Boolean!
   deleteActivityTemplate(activityId: String!, activityType: ActivityType!): String
   deleteAnswerCollection(collectionId: Int!): Int
@@ -1700,7 +1705,7 @@ type Mutation {
   manipulateFreeTextQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsFreeTextInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateNumericalQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsNumericalInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manipulateSelectionQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsSelectionInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
-  manualRandomGroupAssignments(courseId: String!): Course
+  manualRandomGroupAssignments(courseId: String!): [ParticipantGroup!]
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
   modifyAnswerCollection(description: String, id: Int!, name: String): AnswerCollection
   openGroupActivity(id: String!): GroupActivity
@@ -2088,6 +2093,11 @@ enum PermissionLevel {
   WRITE
 }
 
+type PermissionsList {
+  isOwner: Boolean!
+  permissions: [PermissionInfo!]!
+}
+
 type PracticeQuiz {
   availableFrom: Date
   course: Course
@@ -2181,7 +2191,7 @@ type Query {
   getMicroLearningEvaluation(id: String!): ActivityEvaluation
   getMicroLearningSummary(id: String!): ActivitySummary
   getObjectActivity(objectId: String!, objectType: ObjectType!): [ActivityLogEntry!]
-  getObjectPermissions(objectId: String!, objectType: ObjectType!): [PermissionInfo!]
+  getObjectPermissions(objectId: String!, objectType: ObjectType!): PermissionsList
   getOutdatedElementInstances(instanceIds: [Int!]!): [ElementInstanceVersionInfo!]
   getParticipation(courseId: String!): Participation
   getPracticeCourses: [Course!]
@@ -2460,11 +2470,15 @@ enum SortByType {
 }
 
 type StackEvaluation {
+  expiresAt: Date
   instances: [ElementInstanceEvaluation!]!
+  stackActive: Boolean!
   stackDescription: String
   stackId: Int!
   stackName: String
   stackOrder: Int!
+  status: ElementBlockStatus
+  timeLimit: Int
 }
 
 type StackFeedback {

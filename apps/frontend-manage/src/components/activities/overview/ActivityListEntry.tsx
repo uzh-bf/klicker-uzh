@@ -1,4 +1,3 @@
-import { useQuery } from '@apollo/client'
 import {
   faCheckCircle,
   faClock,
@@ -19,7 +18,6 @@ import {
   ActivityType,
   ObjectType,
   PublicationStatus,
-  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Checkbox, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -60,12 +58,6 @@ function ActivityListEntry({
   const [changeName, setChangeName] = useState<boolean>(false)
   const [sharingModal, setSharingModal] = useState<boolean>(false)
   const [isActivityLogOpen, setActivityLogOpen] = useState<boolean>(false)
-
-  // get the user data to check for the private preview flag
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
-  const user = dataUser?.userProfile
 
   const disabled =
     activity.status !== PublicationStatus.Draft &&
@@ -117,7 +109,7 @@ function ActivityListEntry({
   return (
     <>
       <div className="flex w-full flex-row items-center gap-1.5">
-        {user?.privatePreview && onCheck ? (
+        {onCheck ? (
           disabled ? (
             <Tooltip
               tooltip={t('manage.activities.batchOperationsOnlyDraftScheduled')}

@@ -13,7 +13,6 @@ function FinalizeGradingModal({
   activityId: string
 }) {
   const t = useTranslations()
-  // TODO: add query update
   const [finalizeGroupActivityGrading, { loading: finalizingGrading }] =
     useMutation(FinalizeGroupActivityGradingDocument)
 

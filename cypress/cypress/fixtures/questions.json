@@ -3,36 +3,43 @@
   "SC": {
     "title": "SC Title Test 1 (Version 1)",
     "content": "SC Question Content 1",
+    "explanation": "SC Question Explanation 1",
     "choices": [{ "value": "50%" }, { "value": "100%" }]
   },
   "SC2": {
     "title": "SC Title Test 1 (Version 2)",
     "content": "SC Question Content 1 (Version 2)",
+    "explanation": "SC Question Explanation 1 (Version 2)",
     "choices": [{ "value": "50%" }, { "value": "100%" }]
   },
   "SC3": {
     "title": "SC Title Test 1 (Version 3)",
     "content": "SC Question Content 1 (Version 3)",
+    "explanation": "SC Question Explanation 1 (Version 3)",
     "choices": [{ "value": "50%" }, { "value": "100%" }]
   },
   "SCML": {
     "title": "SC Title Test 2 (Version 1)",
     "content": "SC Question Content 2",
+    "explanation": "SC Question Explanation 2",
     "choices": [{ "value": "50%", "correct": true }, { "value": "100%" }]
   },
   "SCML2": {
     "title": "SC Title Test 2 (Version 2)",
     "content": "SC Question Content 2 (Version 2)",
+    "explanation": "SC Question Explanation 2 (Version 2)",
     "choices": [{ "value": "50%", "correct": true }, { "value": "100%" }]
   },
   "SCML3": {
     "title": "SC Title Test 2 (Version 3)",
     "content": "SC Question Content 2 (Version 3)",
+    "explanation": "SC Question Explanation 2 (Version 3)",
     "choices": [{ "value": "50%", "correct": true }, { "value": "100%" }]
   },
   "SCMLAF": {
     "title": "SC Title Test 3 (Version 1)",
     "content": "SC Question Content 3",
+    "explanation": "SC Question Explanation 3",
     "choices": [
       { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
       { "value": "100%", "feedback": "Feedback Option 100%" }
@@ -41,6 +48,7 @@
   "SCMLAF2": {
     "title": "SC Title Test 3 (Version 2)",
     "content": "SC Question Content 3 (Version 2)",
+    "explanation": "SC Question Explanation 3 (Version 2)",
     "choices": [
       { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
       { "value": "100%", "feedback": "Feedback Option 100%" }
@@ -49,6 +57,7 @@
   "SCMLAF3": {
     "title": "SC Title Test 3 (Version 3)",
     "content": "SC Question Content 3 (Version 3)",
+    "explanation": "SC Question Explanation 3 (Version 3)",
     "choices": [
       { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
       { "value": "100%", "feedback": "Feedback Option 100%" }
@@ -57,6 +66,7 @@
   "MC": {
     "title": "MC Title Test 1 (Version 1)",
     "content": "MC Question Content 1",
+    "explanation": "MC Question Explanation 1",
     "choices": [
       { "value": "25%" },
       { "value": "50%" },
@@ -67,6 +77,7 @@
   "MC2": {
     "title": "MC Title Test 1 (Version 2)",
     "content": "MC Question Content 1 (Version 2)",
+    "explanation": "MC Question Explanation 1 (Version 2)",
     "choices": [
       { "value": "25%" },
       { "value": "50%" },
@@ -77,6 +88,7 @@
   "MC3": {
     "title": "MC Title Test 1 (Version 3)",
     "content": "MC Question Content 1 (Version 3)",
+    "explanation": "MC Question Explanation 1 (Version 3)",
     "choices": [
       { "value": "25%" },
       { "value": "50%" },
@@ -87,6 +99,7 @@
   "MCML": {
     "title": "MC Title Test 2 (Version 1)",
     "content": "MC Question Content 2",
+    "explanation": "MC Question Explanation 2 (Version 1)",
     "choices": [
       { "value": "25%", "correct": false },
       { "value": "50%", "correct": true },
@@ -97,6 +110,7 @@
   "MCML2": {
     "title": "MC Title Test 2 (Version 2)",
     "content": "MC Question Content 2 (Version 2)",
+    "explanation": "MC Question Explanation 2 (Version 2)",
     "choices": [
       { "value": "25%", "correct": false },
       { "value": "50%", "correct": true },
@@ -107,6 +121,7 @@
   "MCML3": {
     "title": "MC Title Test 2 (Version 3)",
     "content": "MC Question Content 2 (Version 3)",
+    "explanation": "MC Question Explanation 2 (Version 3)",
     "choices": [
       { "value": "25%", "correct": false },
       { "value": "50%", "correct": true },
@@ -117,6 +132,7 @@
   "MCMLAF": {
     "title": "MC Title Test 3 (Version 1)",
     "content": "MC Question Content 3",
+    "explanation": "MC Question Explanation 3 (Version 1)",
     "choices": [
       { "value": "25%", "feedback": "Feedback Option 25%", "correct": false },
       { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
@@ -127,6 +143,7 @@
   "MCMLAF2": {
     "title": "MC Title Test 3 (Version 2)",
     "content": "MC Question Content 3 (Version 2)",
+    "explanation": "MC Question Explanation 3 (Version 2)",
     "choices": [
       { "value": "25%", "feedback": "Feedback Option 25%", "correct": false },
       { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
@@ -137,6 +154,7 @@
   "MCMLAF3": {
     "title": "MC Title Test 3 (Version 3)",
     "content": "MC Question Content 3 (Version 3)",
+    "explanation": "MC Question Explanation 3 (Version 3)",
     "choices": [
       { "value": "25%", "feedback": "Feedback Option 25%", "correct": false },
       { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
@@ -147,6 +165,7 @@
   "KP": {
     "title": "KPRIM Title Test 1 (Version 1)",
     "content": "KPRIM Question Content 1",
+    "explanation": "KPRIM Question Explanation 1 (Version 1)",
     "choices": [
       { "value": "10%" },
       { "value": "50%" },
@@ -157,6 +176,7 @@
   "KP2": {
     "title": "KPRIM Title Test 1 (Version 2)",
     "content": "KPRIM Question Content 1 (Version 2)",
+    "explanation": "KPRIM Question Explanation 1 (Version 2)",
     "choices": [
       { "value": "10%" },
       { "value": "50%" },
@@ -167,6 +187,7 @@
   "KP3": {
     "title": "KPRIM Title Test 1 (Version 3)",
     "content": "KPRIM Question Content 1 (Version 3)",
+    "explanation": "KPRIM Question Explanation 1 (Version 3)",
     "choices": [
       { "value": "10%" },
       { "value": "50%" },
@@ -177,6 +198,7 @@
   "KPML": {
     "title": "KPRIM Title Test 2 (Version 1)",
     "content": "KPRIM Question Content 2",
+    "explanation": "KPRIM Question Explanation 2 (Version 1)",
     "choices": [
       { "value": "10%", "correct": false },
       { "value": "50%", "correct": true },
@@ -187,6 +209,7 @@
   "KPML2": {
     "title": "KPRIM Title Test 2 (Version 2)",
     "content": "KPRIM Question Content 2 (Version 2)",
+    "explanation": "KPRIM Question Explanation 2 (Version 2)",
     "choices": [
       { "value": "10%", "correct": false },
       { "value": "50%", "correct": true },
@@ -197,6 +220,7 @@
   "KPML3": {
     "title": "KPRIM Title Test 2 (Version 3)",
     "content": "KPRIM Question Content 2 (Version 3)",
+    "explanation": "KPRIM Question Explanation 2 (Version 3)",
     "choices": [
       { "value": "10%", "correct": false },
       { "value": "50%", "correct": true },
@@ -207,6 +231,7 @@
   "KPMLAF": {
     "title": "KPRIM Title Test 3 (Version 1)",
     "content": "KPRIM Question Content 3",
+    "explanation": "KPRIM Question Explanation 3 (Version 1)",
     "choices": [
       { "value": "10%", "feedback": "Feedback Option 10%", "correct": false },
       { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
@@ -217,6 +242,7 @@
   "KPMLAF2": {
     "title": "KPRIM Title Test 3 (Version 2)",
     "content": "KPRIM Question Content 3 (Version 2)",
+    "explanation": "KPRIM Question Explanation 3 (Version 2)",
     "choices": [
       { "value": "10%", "feedback": "Feedback Option 10%", "correct": false },
       { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
@@ -227,6 +253,7 @@
   "KPMLAF3": {
     "title": "KPRIM Title Test 3 (Version 3)",
     "content": "KPRIM Question Content 3 (Version 3)",
+    "explanation": "KPRIM Question Explanation 3 (Version 3)",
     "choices": [
       { "value": "10%", "feedback": "Feedback Option 10%", "correct": false },
       { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
@@ -237,24 +264,28 @@
   "NR": {
     "title": "NR Title Test 1 (Version 1)",
     "content": "NR Question Content 1",
+    "explanation": "NR Question Explanation 1 (Version 1)",
     "options": {},
     "answer": "50"
   },
   "NR2": {
     "title": "NR Title Test 1 (Version 2)",
     "content": "NR Question Content 1 (Version 2)",
+    "explanation": "NR Question Explanation 1 (Version 2)",
     "options": {},
     "answer": "50"
   },
   "NR3": {
     "title": "NR Title Test 1 (Version 3)",
     "content": "NR Question Content 1 (Version 3)",
+    "explanation": "NR Question Explanation 1 (Version 3)",
     "options": {},
     "answer": "50"
   },
   "NRML": {
     "title": "NR Title Test 2 (Version 1)",
     "content": "NR Question Content 2",
+    "explanation": "NR Question Explanation 2 (Version 1)",
     "options": {
       "min": "0",
       "max": "100",
@@ -270,6 +301,7 @@
   "NRML2": {
     "title": "NR Title Test 2 (Version 2)",
     "content": "NR Question Content 2 (Version 2)",
+    "explanation": "NR Question Explanation 2 (Version 2)",
     "options": {
       "min": "0",
       "max": "100",
@@ -285,6 +317,7 @@
   "NRML3": {
     "title": "NR Title Test 2 (Version 3)",
     "content": "NR Question Content 2 (Version 3)",
+    "explanation": "NR Question Explanation 2 (Version 3)",
     "options": {
       "min": "0",
       "max": "100",
@@ -300,24 +333,28 @@
   "FT": {
     "title": "FT Title Test 1 (Version 1)",
     "content": "FT Question Content 1",
+    "explanation": "FT Question Explanation 1 (Version 1)",
     "options": {},
     "answer": "Solution 1"
   },
   "FT2": {
     "title": "FT Title Test 1 (Version 2)",
     "content": "FT Question Content 1 (Version 2)",
+    "explanation": "FT Question Explanation 1 (Version 2)",
     "options": {},
     "answer": "Solution 1"
   },
   "FT3": {
     "title": "FT Title Test 1 (Version 3)",
     "content": "FT Question Content 1 (Version 3)",
+    "explanation": "FT Question Explanation 1 (Version 3)",
     "options": {},
     "answer": "Solution 1"
   },
   "FTML": {
     "title": "FT Title Test 2 (Version 1)",
     "content": "FT Question Content 2",
+    "explanation": "FT Question Explanation 2 (Version 1)",
     "options": {
       "maxLength": "100",
       "solutions": ["Solution 1", "Solution 2"]
@@ -327,6 +364,7 @@
   "FTML2": {
     "title": "FT Title Test 2 (Version 2)",
     "content": "FT Question Content 2 (Version 2)",
+    "explanation": "FT Question Explanation 2 (Version 2)",
     "options": {
       "maxLength": "100",
       "solutions": ["Solution 1", "Solution 2"]
@@ -336,6 +374,7 @@
   "FTML3": {
     "title": "FT Title Test 2 (Version 3)",
     "content": "FT Question Content 2 (Version 3)",
+    "explanation": "FT Question Explanation 2 (Version 3)",
     "options": {
       "maxLength": "100",
       "solutions": ["Solution 1", "Solution 2"]
@@ -360,33 +399,39 @@
   "SE": {
     "title": "SE Title Test 1 (Version 1)",
     "content": "SE Question Content 1",
+    "explanation": "SE Question Explanation 1 (Version 1)",
     "inputs": 2
   },
   "SE2": {
     "title": "SE Title Test 1 (Version 2)",
     "content": "SE Question Content 1 (Version 2)",
+    "explanation": "SE Question Explanation 1 (Version 2)",
     "inputs": 2
   },
   "SE3": {
     "title": "SE Title Test 1 (Version 3)",
     "content": "SE Question Content 1 (Version 3)",
+    "explanation": "SE Question Explanation 1 (Version 3)",
     "inputs": 2
   },
   "SEML": {
     "title": "SE Title Test 2 (Version 1)",
     "content": "SE Question Content 2",
+    "explanation": "SE Question Explanation 2 (Version 1)",
     "inputs": 3,
     "solutions": [0, 1, 2, 4]
   },
   "SEML2": {
     "title": "SE Title Test 2 (Version 2)",
     "content": "SE Question Content 2 (Version 2)",
+    "explanation": "SE Question Explanation 2 (Version 2)",
     "inputs": 3,
     "solutions": [0, 1, 2, 4]
   },
   "SEML3": {
     "title": "SE Title Test 2 (Version 3)",
     "content": "SE Question Content 2 (Version 3)",
+    "explanation": "SE Question Explanation 2 (Version 3)",
     "inputs": 3,
     "solutions": [0, 1, 2, 4]
   },

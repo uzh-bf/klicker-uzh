@@ -48,26 +48,8 @@ function CourseDeletionModal({
     skip: !courseId,
   })
 
-  // TODO: add query update
-  const [deleteCourse, { loading: courseDeleting }] = useMutation(
-    DeleteCourseDocument,
-    {
-      update(cache, res) {
-        const data = cache.readQuery({
-          query: GetUserCoursesDocument,
-        })
-        cache.writeQuery({
-          query: GetUserCoursesDocument,
-          data: {
-            userCourses:
-              data?.userCourses?.filter(
-                (e) => e.id !== res.data?.deleteCourse?.id
-              ) ?? [],
-          },
-        })
-      },
-    }
-  )
+  const [deleteCourse, { loading: courseDeleting }] =
+    useMutation(DeleteCourseDocument)
 
   // skip confirmation for the elements where none are present
   useEffect(() => {
@@ -113,13 +95,23 @@ function CourseDeletionModal({
       onPrimaryAction={async () => {
         await deleteCourse({
           variables: { id: courseId },
-
           optimisticResponse: {
             __typename: 'Mutation',
             deleteCourse: {
               __typename: 'Course',
               id: courseId,
             },
+          },
+          update: (cache, { data }) => {
+            // check if the deletion was successful
+            if (!data?.deleteCourse) return
+
+            // remove the course from the queries list
+            cache.updateQuery({ query: GetUserCoursesDocument }, (qData) => ({
+              userCourses: qData?.userCourses?.filter(
+                (course) => course.id !== data.deleteCourse!.id
+              ),
+            }))
           },
         })
         onClose()

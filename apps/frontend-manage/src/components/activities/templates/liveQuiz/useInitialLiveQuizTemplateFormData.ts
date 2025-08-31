@@ -26,7 +26,8 @@ function useInitialLiveQuizTemplateFormData({
       multiplier: String(liveQuiz.pointsMultiplier),
       settingsProcessed: false,
 
-      isGamificationEnabled: liveQuiz.isGamificationEnabled,
+      isGamificationEnabled: false, // initialized without course assignment -> default is false
+      isAssessmentEnabled: false, // initialized without course assignment -> default is false
       isConfusionFeedbackEnabled: liveQuiz.isConfusionFeedbackEnabled,
       isLiveQAEnabled: liveQuiz.isLiveQAEnabled,
       isModerationEnabled: liveQuiz.isModerationEnabled,

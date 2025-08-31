@@ -2,7 +2,7 @@ import {
   gradeQuestionFreeText,
   gradeQuestionNumerical,
 } from '@klicker-uzh/grading'
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
   type CaseStudyCaseSolution,
@@ -1277,7 +1277,7 @@ export async function activateLiveQuizBlock(
 
   if (updatedQuiz.activeBlock?.expiresAt) {
     scheduledJobs[blockId] = schedule.scheduleJob(
-      dayjs(updatedQuiz.activeBlock.expiresAt).add(20, 'second').toDate(),
+      dayjs(updatedQuiz.activeBlock.expiresAt).add(10, 'second').toDate(),
       async () => {
         await deactivateLiveQuizBlock({ quizId, blockId }, ctx, true)
         ctx.emitter.emit('invalidate', {
@@ -1487,10 +1487,10 @@ export async function deactivateLiveQuizBlock(
     },
   })
 
-  if (!quiz || !quiz.activeBlock) return null
+  if (!quiz || !quiz.activeBlock) return false
 
   // if the block is not the active one, return early
-  if (quiz.activeBlockId !== blockId) return quiz
+  if (quiz.activeBlockId !== blockId) return false
 
   try {
     const cachedResults = await getCachedBlockResults({
@@ -1498,7 +1498,7 @@ export async function deactivateLiveQuizBlock(
       activeBlock: quiz.activeBlock,
     })
 
-    if (!cachedResults) return null
+    if (!cachedResults) return false
 
     const {
       instanceResults,
@@ -1632,7 +1632,7 @@ export async function deactivateLiveQuizBlock(
       activeInstanceIds,
     })
 
-    return updatedQuiz
+    return true
   } catch (error: any) {
     await sendTeamsNotifications(
       'graphql/deactivateLiveQuizBlock',
@@ -2082,6 +2082,7 @@ export async function getLiveQuizSummary(
           feedbacks: true,
           confusionFeedbacks: true,
           leaderboard: true,
+          temporaryLeaderboard: true,
         },
       },
       blocks: { include: { elements: true } },
@@ -2126,7 +2127,8 @@ export async function getLiveQuizSummary(
     numOfResponses: storedResponses,
     numOfFeedbacks: liveQuiz._count.feedbacks,
     numOfConfusionFeedbacks: liveQuiz._count.confusionFeedbacks,
-    numOfLeaderboardEntries: liveQuiz._count.leaderboard,
+    numOfLeaderboardEntries:
+      liveQuiz._count.leaderboard + liveQuiz._count.temporaryLeaderboard,
   }
 }
 
@@ -2300,7 +2302,7 @@ export async function getLiveQuizEvaluation(
   // compute evaluation
   const blockEvaluations = computeStackEvaluation(
     typeof activeBlockWithResults !== 'undefined'
-      ? [...liveQuiz.blocks, activeBlockWithResults]
+      ? [...liveQuiz.blocks, { ...activeBlockWithResults, active: true }]
       : liveQuiz.blocks
   )
 
