@@ -32,7 +32,6 @@ ssl/
 util/backup/dumps
 
 dist/
-project/
 trees/
 
 tsconfig.tsbuildinfo
