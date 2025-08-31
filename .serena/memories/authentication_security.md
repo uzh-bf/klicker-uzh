@@ -103,6 +103,7 @@ enum PermissionLevel {
 - **Revoke Access**: `MRevokeObjectAccess`
 - **Transfer Ownership**: `MTransferObjectOwnership`
 - **Check Permissions**: `QGetObjectPermissions`
+
 ### Access Requests
 
 - **Request System**: `MRequestCatalogObject`
