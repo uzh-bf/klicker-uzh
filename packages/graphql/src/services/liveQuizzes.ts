@@ -1924,23 +1924,38 @@ export async function endLiveQuiz(
       })
     }
 
-    // Clean up Redis keys unless we're in comparison mode
+    // Clean up Redis keys without using KEYS (iterate with SCAN to avoid blocking)
     if (!PRESERVE_REDIS) {
-      const keys = await ctx.redisExec.keys(`lq:${id}:*`)
-      const pipe = ctx.redisExec.multi()
-      for (const key of keys) {
-        pipe.unlink(key)
+      const SCAN_COUNT = 1000
+
+      const scanAndUnlink = async (pattern: string) => {
+        let cursor = '0'
+        do {
+          const [nextCursor, keys] = await ctx.redisExec.scan(
+            cursor,
+            'MATCH',
+            pattern,
+            'COUNT',
+            SCAN_COUNT
+          )
+          cursor = nextCursor
+
+          if (keys.length > 0) {
+            const pipe = ctx.redisExec.pipeline()
+            for (const key of keys) {
+              pipe.unlink(key)
+            }
+            await pipe.exec()
+          }
+        } while (cursor !== '0')
       }
+
+      await scanAndUnlink(`lq:${id}:*`)
 
       // If dual Redis mode is enabled, also clean up lqV2: keys
       if (ENABLE_DUAL_REDIS_MODE) {
-        const keysV2 = await ctx.redisExec.keys(`lqV2:${id}:*`)
-        for (const key of keysV2) {
-          pipe.unlink(key)
-        }
+        await scanAndUnlink(`lqV2:${id}:*`)
       }
-
-      await pipe.exec()
     } else {
       // In comparison mode, log that we're preserving Redis data
       console.log(
