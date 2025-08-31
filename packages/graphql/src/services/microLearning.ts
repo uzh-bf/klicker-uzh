@@ -936,7 +936,7 @@ export async function handleEndExpiredMicroLearning(
       id: updatedMicroLearning.id,
     })
 
-    return { success: true }
+    return true
   } catch (error) {
     console.error('Error ending expired microlearning:', error)
     handleSendTeamsNotification({

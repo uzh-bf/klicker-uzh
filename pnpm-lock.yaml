@@ -76,7 +76,7 @@ importers:
         version: 4.0.12(@fortawesome/fontawesome-svg-core@6.7.2)(@fortawesome/free-regular-svg-icons@6.7.2)(@fortawesome/free-solid-svg-icons@6.7.2)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.1.0))(@tailwindcss/postcss@4.1.11)(@types/react-dom@19.1.6(@types/react@19.1.8))(@types/react@19.1.8)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@19.1.0))(lucide-react@0.522.0(react@19.1.0))(postcss@8.4.49)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(tailwind-merge@3.3.1)(tailwindcss-animate@1.0.7(tailwindcss@4.1.11))(tailwindcss-radix@4.0.2(tailwindcss@4.1.11))(tailwindcss@4.1.11)(tw-animate-css@1.3.4)(yup@1.6.1)
       axios:
         specifier: 1.7.7
-        version: 1.7.7
+        version: 1.7.7(debug@4.4.1)
       bcryptjs:
         specifier: 2.4.3
         version: 2.4.3
@@ -333,7 +333,7 @@ importers:
         version: 8.5.13
       axios:
         specifier: ~1.7.7
-        version: 1.7.7
+        version: 1.7.7(debug@4.4.1)
       cross-env:
         specifier: ~7.0.3
         version: 7.0.3
@@ -1686,7 +1686,7 @@ importers:
         version: 6.14.0
       axios:
         specifier: 1.7.7
-        version: 1.7.7
+        version: 1.7.7(debug@4.4.1)
       bcryptjs:
         specifier: 2.4.3
         version: 2.4.3
@@ -1868,12 +1868,6 @@ importers:
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../prisma
-      graphql-yoga:
-        specifier: ^3.9.1
-        version: 3.9.1(graphql@16.9.0)
-      ioredis:
-        specifier: ^5.4.1
-        version: 5.4.1
     devDependencies:
       '@parcel/watcher':
         specifier: ~2.4.1
@@ -1890,6 +1884,12 @@ importers:
       cross-env:
         specifier: ~7.0.3
         version: 7.0.3
+      graphql-yoga:
+        specifier: ~3.9.1
+        version: 3.9.1(graphql@16.9.0)
+      ioredis:
+        specifier: ~5.4.1
+        version: 5.4.1
       npm-run-all:
         specifier: ~4.1.5
         version: 4.1.5
@@ -23866,7 +23866,7 @@ snapshots:
     dependencies:
       '@azure/core-auth': 1.9.0
       '@microsoft/teams-manifest': 0.1.5
-      axios: 1.7.7
+      axios: 1.7.7(debug@4.4.1)
       chai: 4.5.0
       jsonschema: 1.5.0
       neverthrow: 3.2.0
@@ -23893,7 +23893,7 @@ snapshots:
       '@microsoft/teamsfx-api': 0.23.1
       adm-zip: 0.5.16
       ajv: 8.17.1
-      axios: 1.7.7
+      axios: 1.7.7(debug@4.4.1)
       axios-retry: 3.9.1
       comment-json: 4.2.5
       cryptr: 6.3.0
@@ -27787,16 +27787,8 @@ snapshots:
 
   axios@1.11.0:
     dependencies:
-      follow-redirects: 1.15.9(debug@4.4.0)
+      follow-redirects: 1.15.9(debug@4.4.1)
       form-data: 4.0.4
-      proxy-from-env: 1.1.0
-    transitivePeerDependencies:
-      - debug
-
-  axios@1.7.7:
-    dependencies:
-      follow-redirects: 1.15.9(debug@4.4.0)
-      form-data: 4.0.1
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
       - debug
@@ -30076,8 +30068,8 @@ snapshots:
       '@typescript-eslint/parser': 8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3)
       eslint: 9.30.1(jiti@2.4.2)
       eslint-import-resolver-node: 0.3.9
-      eslint-import-resolver-typescript: 3.7.0(eslint-plugin-import@2.31.0)(eslint@9.30.1(jiti@2.4.2))
-      eslint-plugin-import: 2.31.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint-import-resolver-typescript@3.7.0)(eslint@9.30.1(jiti@2.4.2))
+      eslint-import-resolver-typescript: 3.7.0(eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint@9.30.1(jiti@2.4.2)))(eslint@9.30.1(jiti@2.4.2))
+      eslint-plugin-import: 2.31.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint-import-resolver-typescript@3.7.0(eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint@9.30.1(jiti@2.4.2)))(eslint@9.30.1(jiti@2.4.2)))(eslint@9.30.1(jiti@2.4.2))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@9.30.1(jiti@2.4.2))
       eslint-plugin-react: 7.37.4(eslint@9.30.1(jiti@2.4.2))
       eslint-plugin-react-hooks: 5.1.0(eslint@9.30.1(jiti@2.4.2))
@@ -30100,7 +30092,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-import-resolver-typescript@3.7.0(eslint-plugin-import@2.31.0)(eslint@9.30.1(jiti@2.4.2)):
+  eslint-import-resolver-typescript@3.7.0(eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint@9.30.1(jiti@2.4.2)))(eslint@9.30.1(jiti@2.4.2)):
     dependencies:
       '@nolyfill/is-core-module': 1.0.39
       debug: 4.4.1(supports-color@8.1.1)
@@ -30112,22 +30104,22 @@ snapshots:
       is-glob: 4.0.3
       stable-hash: 0.0.4
     optionalDependencies:
-      eslint-plugin-import: 2.31.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint-import-resolver-typescript@3.7.0)(eslint@9.30.1(jiti@2.4.2))
+      eslint-plugin-import: 2.31.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint-import-resolver-typescript@3.7.0(eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint@9.30.1(jiti@2.4.2)))(eslint@9.30.1(jiti@2.4.2)))(eslint@9.30.1(jiti@2.4.2))
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.12.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.7.0)(eslint@9.30.1(jiti@2.4.2)):
+  eslint-module-utils@2.12.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.7.0(eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint@9.30.1(jiti@2.4.2)))(eslint@9.30.1(jiti@2.4.2)))(eslint@9.30.1(jiti@2.4.2)):
     dependencies:
       debug: 3.2.7(supports-color@8.1.1)
     optionalDependencies:
       '@typescript-eslint/parser': 8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3)
       eslint: 9.30.1(jiti@2.4.2)
       eslint-import-resolver-node: 0.3.9
-      eslint-import-resolver-typescript: 3.7.0(eslint-plugin-import@2.31.0)(eslint@9.30.1(jiti@2.4.2))
+      eslint-import-resolver-typescript: 3.7.0(eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint@9.30.1(jiti@2.4.2)))(eslint@9.30.1(jiti@2.4.2))
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint-import-resolver-typescript@3.7.0)(eslint@9.30.1(jiti@2.4.2)):
+  eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint-import-resolver-typescript@3.7.0(eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint@9.30.1(jiti@2.4.2)))(eslint@9.30.1(jiti@2.4.2)))(eslint@9.30.1(jiti@2.4.2)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.8
@@ -30138,7 +30130,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 9.30.1(jiti@2.4.2)
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.7.0)(eslint@9.30.1(jiti@2.4.2))
+      eslint-module-utils: 2.12.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.7.0(eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.20.0(eslint@9.30.1(jiti@2.4.2))(typescript@5.6.3))(eslint@9.30.1(jiti@2.4.2)))(eslint@9.30.1(jiti@2.4.2)))(eslint@9.30.1(jiti@2.4.2))
       hasown: 2.0.2
       is-core-module: 2.16.1
       is-glob: 4.0.3
@@ -31641,7 +31633,7 @@ snapshots:
   http-proxy@1.18.1:
     dependencies:
       eventemitter3: 4.0.7
-      follow-redirects: 1.15.9(debug@4.4.0)
+      follow-redirects: 1.15.9(debug@4.4.1)
       requires-port: 1.0.0
     transitivePeerDependencies:
       - debug
