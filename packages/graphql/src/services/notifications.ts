@@ -1,5 +1,4 @@
 // import webpush, { WebPushError } from 'web-push'
-import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import axios from 'axios'
 import type { ContextWithUser } from '../lib/context.js'
 
@@ -136,7 +135,7 @@ export async function unsubscribeFromPush(
 //   }
 // }
 
-export async function sendPushNotifications(prisma: PrismaClient) {
+export async function handleSendPushNotifications() {
   if (
     !process.env.VAPID_PUBLIC_KEY ||
     !process.env.VAPID_PRIVATE_KEY ||
@@ -205,7 +204,13 @@ export async function sendPushNotifications(prisma: PrismaClient) {
   return true
 }
 
-export async function sendTeamsNotifications(scope: string, text: string) {
+export async function handleSendTeamsNotifications({
+  scope,
+  text,
+}: {
+  scope: string
+  text: string
+}) {
   if (process.env.TEAMS_WEBHOOK_URL) {
     try {
       return await axios.post(process.env.TEAMS_WEBHOOK_URL, {

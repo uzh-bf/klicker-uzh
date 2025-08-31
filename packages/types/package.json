@@ -20,6 +20,8 @@
   "peerDependencies": {
     "@hatchet-dev/typescript-sdk": "^1.9.4",
     "@klicker-uzh/prisma": "workspace:*",
+    "graphql-yoga": "^3.9.1",
+    "ioredis": "^5.4.1",
     "remeda": "^2.15.0"
   },
   "scripts": {

@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import { HatchetHandlerContext } from '@klicker-uzh/types'
 import { PrismaTransactionClient } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
@@ -6,7 +7,7 @@ import isoWeek from 'dayjs/plugin/isoWeek.js'
 import { prop, sortBy } from 'remeda'
 import isEmail from 'validator/lib/isEmail.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { sendTeamsNotifications } from './notifications.js'
+import { handleSendTeamsNotifications } from './notifications.js'
 
 dayjs.extend(isoWeek)
 
@@ -880,9 +881,12 @@ export async function upsertDailyTimelineEntry({
 }
 
 // cronjob function to aggregate daily timeline entries into weekly ones once per day (for the ongoing and last week)
-export async function updateWeeklyTimelineEntries(prisma: DB.PrismaClient) {
+export async function handleUpdateWeeklyTimelineEntries(
+  _,
+  ctx: HatchetHandlerContext
+) {
   // get all course ids
-  const courses = await prisma.course.findMany({
+  const courses = await ctx.prisma.course.findMany({
     select: {
       id: true,
     },
@@ -890,11 +894,11 @@ export async function updateWeeklyTimelineEntries(prisma: DB.PrismaClient) {
 
   // iterate over all courses and update weekly timeline entries
   for (const course of courses) {
-    await updateWeeklyTimelineEntriesCourse({ courseId: course.id }, prisma)
+    await updateWeeklyTimelineEntriesCourse({ courseId: course.id }, ctx.prisma)
   }
 
   // remove all daily timeline entries older than 2 weeks
-  await prisma.timelineEntry.deleteMany({
+  await ctx.prisma.timelineEntry.deleteMany({
     where: {
       type: DB.TimelineEntryType.DAILY,
       timestamp: {
@@ -962,10 +966,10 @@ export async function updateWeeklyTimelineEntriesCourse(
 
   // if no course was found, return early
   if (!courseTimelineLastWeek || !courseTimelineCurrentWeek) {
-    await sendTeamsNotifications(
-      'graphql/updateWeeklyTimelineEntriesCourse',
-      `COURSE NOT FOUND: The course with id ${courseId} could not be found in the database for the computation of weekly timeline entries.`
-    )
+    await handleSendTeamsNotifications({
+      scope: 'graphql/updateWeeklyTimelineEntriesCourse',
+      text: `COURSE NOT FOUND: The course with id ${courseId} could not be found in the database for the computation of weekly timeline entries.`,
+    })
 
     return false
   }
@@ -1019,10 +1023,10 @@ export async function updateWeeklyTimelineEntriesCourse(
       }
     })
 
-    await sendTeamsNotifications(
-      'graphql/updateWeeklyTimelineEntriesCourse',
-      `Successfully updated ${updates.length} weekly timeline entries for course ${courseTimelineLastWeek.name} (${numUpdatesLastWeek} for last week with start date ${startDateLastWeek} and ${lastWeekDailys.length} daily entries, ${numUpdatesCurrentWeek} for the current week with start date ${startDateCurrentWeek} and ${currentWeekDailys.length} daily entries).`
-    )
+    await handleSendTeamsNotifications({
+      scope: 'graphql/updateWeeklyTimelineEntriesCourse',
+      text: `Successfully updated ${updates.length} weekly timeline entries for course ${courseTimelineLastWeek.name} (${numUpdatesLastWeek} for last week with start date ${startDateLastWeek} and ${lastWeekDailys.length} daily entries, ${numUpdatesCurrentWeek} for the current week with start date ${startDateCurrentWeek} and ${currentWeekDailys.length} daily entries).`,
+    })
   }
 
   return true

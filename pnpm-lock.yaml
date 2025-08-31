@@ -76,7 +76,7 @@ importers:
         version: 4.0.12(@fortawesome/fontawesome-svg-core@6.7.2)(@fortawesome/free-regular-svg-icons@6.7.2)(@fortawesome/free-solid-svg-icons@6.7.2)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.1.0))(@tailwindcss/postcss@4.1.11)(@types/react-dom@19.1.6(@types/react@19.1.8))(@types/react@19.1.8)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@19.1.0))(lucide-react@0.522.0(react@19.1.0))(postcss@8.4.49)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(tailwind-merge@3.3.1)(tailwindcss-animate@1.0.7(tailwindcss@4.1.11))(tailwindcss-radix@4.0.2(tailwindcss@4.1.11))(tailwindcss@4.1.11)(tw-animate-css@1.3.4)(yup@1.6.1)
       axios:
         specifier: 1.7.7
-        version: 1.7.7(debug@4.4.1)
+        version: 1.7.7
       bcryptjs:
         specifier: 2.4.3
         version: 2.4.3
@@ -333,7 +333,7 @@ importers:
         version: 8.5.13
       axios:
         specifier: ~1.7.7
-        version: 1.7.7(debug@4.4.1)
+        version: 1.7.7
       cross-env:
         specifier: ~7.0.3
         version: 7.0.3
@@ -1686,7 +1686,7 @@ importers:
         version: 6.14.0
       axios:
         specifier: 1.7.7
-        version: 1.7.7(debug@4.4.1)
+        version: 1.7.7
       bcryptjs:
         specifier: 2.4.3
         version: 2.4.3
@@ -2285,11 +2285,17 @@ importers:
   packages/types:
     dependencies:
       '@hatchet-dev/typescript-sdk':
-        specifier: 1.9.4
+        specifier: ^1.9.4
         version: 1.9.4
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../prisma
+      graphql-yoga:
+        specifier: ^3.9.1
+        version: 3.9.1(graphql@16.9.0)
+      ioredis:
+        specifier: ^5.4.1
+        version: 5.4.1
       remeda:
         specifier: ^2.15.0
         version: 2.15.0
@@ -23860,7 +23866,7 @@ snapshots:
     dependencies:
       '@azure/core-auth': 1.9.0
       '@microsoft/teams-manifest': 0.1.5
-      axios: 1.7.7(debug@4.4.1)
+      axios: 1.7.7
       chai: 4.5.0
       jsonschema: 1.5.0
       neverthrow: 3.2.0
@@ -23887,7 +23893,7 @@ snapshots:
       '@microsoft/teamsfx-api': 0.23.1
       adm-zip: 0.5.16
       ajv: 8.17.1
-      axios: 1.7.7(debug@4.4.1)
+      axios: 1.7.7
       axios-retry: 3.9.1
       comment-json: 4.2.5
       cryptr: 6.3.0
@@ -27781,8 +27787,16 @@ snapshots:
 
   axios@1.11.0:
     dependencies:
-      follow-redirects: 1.15.9(debug@4.4.1)
+      follow-redirects: 1.15.9(debug@4.4.0)
       form-data: 4.0.4
+      proxy-from-env: 1.1.0
+    transitivePeerDependencies:
+      - debug
+
+  axios@1.7.7:
+    dependencies:
+      follow-redirects: 1.15.9(debug@4.4.0)
+      form-data: 4.0.1
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
       - debug
@@ -31627,7 +31641,7 @@ snapshots:
   http-proxy@1.18.1:
     dependencies:
       eventemitter3: 4.0.7
-      follow-redirects: 1.15.9(debug@4.4.1)
+      follow-redirects: 1.15.9(debug@4.4.0)
       requires-port: 1.0.0
     transitivePeerDependencies:
       - debug

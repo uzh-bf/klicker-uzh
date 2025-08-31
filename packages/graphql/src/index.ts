@@ -37,15 +37,23 @@ import './schema/subscription.js'
 // }
 
 import {
-  finalRandomGroupAssignments,
-  runningRandomGroupAssignments,
-  updateGroupAverageScores,
+  handleEndExpiredGroupActivity,
+  handleFinalRandomGroupAssignments,
+  handlePublishScheduledGroupActivity,
+  handleRunningRandomGroupAssignments,
+  handleUpdateGroupAverageScores,
 } from './services/groups.js'
+import { handlePublishScheduledLiveQuiz } from './services/liveQuizzes.js'
 import {
-  sendPushNotifications,
-  sendTeamsNotifications,
+  handleEndExpiredMicroLearning,
+  handlePublishScheduledMicroLearning,
+} from './services/microLearning.js'
+import {
+  handleSendPushNotifications,
+  handleSendTeamsNotifications,
 } from './services/notifications.js'
-import { updateWeeklyTimelineEntries } from './services/participants.js'
+import { handleUpdateWeeklyTimelineEntries } from './services/participants.js'
+import { handlePublishScheduledPracticeQuiz } from './services/practiceQuizzes.js'
 
 export const schema = builder.toSchema({
   schemaDirectives: {
@@ -54,10 +62,16 @@ export const schema = builder.toSchema({
 })
 
 export const handlers: HatchetHandlers = {
-  finalRandomGroupAssignments,
-  runningRandomGroupAssignments,
-  updateGroupAverageScores,
-  sendPushNotifications,
-  sendTeamsNotifications,
-  updateWeeklyTimelineEntries,
+  handleFinalRandomGroupAssignments,
+  handleRunningRandomGroupAssignments,
+  handleUpdateGroupAverageScores,
+  handleSendPushNotifications,
+  handleSendTeamsNotifications,
+  handleUpdateWeeklyTimelineEntries,
+  handleEndExpiredGroupActivity,
+  handleEndExpiredMicroLearning,
+  handlePublishScheduledLiveQuiz,
+  handlePublishScheduledPracticeQuiz,
+  handlePublishScheduledGroupActivity,
+  handlePublishScheduledMicroLearning,
 }

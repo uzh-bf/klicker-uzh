@@ -5,6 +5,7 @@ import {
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
+  HatchetHandlerContext,
   type CaseStudyCaseSolution,
   type ElementBlockInput,
   type ElementResultsCaseStudy,
@@ -32,7 +33,7 @@ import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { getPermissionBooleans } from './activities.js'
-import { sendTeamsNotifications } from './notifications.js'
+import { handleSendTeamsNotifications } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { computeStackEvaluation } from './stacks.js'
 
@@ -1132,19 +1133,19 @@ export async function startLiveQuiz(
           },
         })
 
-        await sendTeamsNotifications(
-          'graphql/startLiveQuiz',
-          `START Live quiz ${quiz.name} with id ${quiz.id}.`
-        )
+        await handleSendTeamsNotifications({
+          scope: 'graphql/startLiveQuiz',
+          text: `START Live quiz ${quiz.name} with id ${quiz.id}.`,
+        })
 
         return startedLiveQuiz
       }
     }
   } catch (error) {
-    await sendTeamsNotifications(
-      'graphql/startLiveQuiz',
-      `ERROR - failed to start live quiz: ${error}`
-    )
+    await handleSendTeamsNotifications({
+      scope: 'graphql/startLiveQuiz',
+      text: `ERROR - failed to start live quiz: ${error}`,
+    })
     throw error
   }
 }
@@ -1157,10 +1158,12 @@ export async function scheduleLiveQuiz(
   if (availableFrom && dayjs(availableFrom).isAfter(dayjs())) {
     try {
       // schedule the task to publish the live quiz
-      const scheduledTask =
-        await ctx.tasks.publishScheduledLiveQuizTask.schedule(availableFrom, {
+      const scheduledTask = await ctx.tasks.publishScheduledLiveQuiz.schedule(
+        availableFrom,
+        {
           liveQuizId: id,
-        })
+        }
+      )
       const taskId = scheduledTask.metadata.id
 
       // change the status of the live quiz to scheduled
@@ -1710,12 +1713,12 @@ export async function deactivateLiveQuizBlock(
 
     return true
   } catch (error: any) {
-    await sendTeamsNotifications(
-      'graphql/deactivateLiveQuizBlock',
-      `ERROR - failed to deactivate block ${blockId} in live quiz ${
+    await handleSendTeamsNotifications({
+      scope: 'graphql/deactivateLiveQuizBlock',
+      text: `ERROR - failed to deactivate block ${blockId} in live quiz ${
         quiz.id
-      } with active block ${quiz.activeBlockId}: ${error?.message || error}`
-    )
+      } with active block ${quiz.activeBlockId}: ${error?.message || error}`,
+    })
 
     throw error
   }
@@ -2050,17 +2053,17 @@ export async function endLiveQuiz(
       },
     })
 
-    await sendTeamsNotifications(
-      'graphql/endLiveQuiz',
-      `END Live quiz ${quiz.name} with id ${quiz.id}.`
-    )
+    await handleSendTeamsNotifications({
+      scope: 'graphql/endLiveQuiz',
+      text: `END Live quiz ${quiz.name} with id ${quiz.id}.`,
+    })
 
     return endedLiveQuiz
   } catch (error) {
-    await sendTeamsNotifications(
-      'graphql/endLiveQuiz',
-      `ERROR - failed to end live quiz ${quiz.name} with id ${quiz.id}: ${error}`
-    )
+    await handleSendTeamsNotifications({
+      scope: 'graphql/endLiveQuiz',
+      text: `ERROR - failed to end live quiz ${quiz.name} with id ${quiz.id}: ${error}`,
+    })
     throw error
   }
 }
@@ -2303,17 +2306,17 @@ export async function cancelLiveQuiz(
     }
     await pipe.exec()
 
-    await sendTeamsNotifications(
-      'graphql/abortLiveQuiz',
-      `CANCEL Live quiz ${quiz.name} with id ${quiz.id}.`
-    )
+    await handleSendTeamsNotifications({
+      scope: 'graphql/abortLiveQuiz',
+      text: `CANCEL Live quiz ${quiz.name} with id ${quiz.id}.`,
+    })
 
     return updatedQuiz
   } catch (error) {
-    await sendTeamsNotifications(
-      'graphql/abortLiveQuiz',
-      `ERROR - failed to cancel live quiz ${quiz.name} with id ${quiz.id}: ${error}`
-    )
+    await handleSendTeamsNotifications({
+      scope: 'graphql/abortLiveQuiz',
+      text: `ERROR - failed to cancel live quiz ${quiz.name} with id ${quiz.id}: ${error}`,
+    })
     throw error
   }
 }
@@ -2806,3 +2809,73 @@ export async function getLiveQuizLeaderboard(
   return filteredEntries
 }
 // #endregion
+
+export async function handlePublishScheduledLiveQuiz(
+  { liveQuizId }: { liveQuizId: string },
+  ctx: HatchetHandlerContext
+) {
+  try {
+    // check if the live quiz exists and if its availableFrom date is in the past
+    const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+      where: {
+        id: liveQuizId,
+        isDeleted: false,
+        status: DB.PublicationStatus.SCHEDULED,
+        availableFrom: { lte: new Date() },
+      },
+    })
+
+    if (!liveQuiz) {
+      handleSendTeamsNotifications({
+        scope: 'hatchet/live-quiz-start',
+        text: `Live quiz with ID ${liveQuizId} not found or scheduled start time is not in the past yet.`,
+      })
+      throw new Error(
+        `Live quiz with ID ${liveQuizId} not found or scheduled start time is not in the past yet.`
+      )
+    }
+
+    // start the live quiz
+    await ctx.redisExec
+      .pipeline()
+      .hmset(`lq:${liveQuiz.id}:meta`, {
+        namespace: liveQuiz.namespace,
+        startedAt: Number(new Date()),
+      })
+      .exec()
+
+    // generate a random pin code
+    const pinCode = 100000 + Math.floor(Math.random() * 900000)
+    const startedLiveQuiz = await ctx.prisma.liveQuiz.update({
+      where: { id: liveQuizId },
+      data: {
+        status: DB.PublicationStatus.PUBLISHED,
+        startedAt: new Date(),
+        pinCode:
+          liveQuiz.accessMode === DB.AccessMode.RESTRICTED ? pinCode : null,
+      },
+    })
+
+    await handleSendTeamsNotifications({
+      scope: 'hatchet/live-quiz-start',
+      text: `START Live quiz ${startedLiveQuiz.name} with id ${startedLiveQuiz.id}.`,
+    })
+
+    // invalidate the cache for the live quiz
+    ctx.emitter.emit('invalidate', {
+      typename: 'LiveQuiz',
+      id: startedLiveQuiz.id,
+    })
+
+    return true
+  } catch (error) {
+    console.error('Error publishing scheduled live quiz:', error)
+    handleSendTeamsNotifications({
+      scope: 'hatchet/live-quiz-start',
+      text: `Error publishing live quiz with ID ${liveQuizId}: ${error}`,
+    })
+    throw error // rethrow to allow Hatchet to handle retries
+  } finally {
+    await ctx.prisma.$disconnect()
+  }
+}

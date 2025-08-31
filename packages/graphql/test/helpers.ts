@@ -21,19 +21,22 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
-import { Repeater } from 'graphql-yoga'
+import { createPubSub, Repeater } from 'graphql-yoga'
+import { Redis } from 'ioredis'
+import {
+  handleEndExpiredGroupActivity,
+  handlePublishScheduledGroupActivity,
+} from 'src/services/groups.js'
+import { handlePublishScheduledLiveQuiz } from 'src/services/liveQuizzes.js'
+import {
+  handleEndExpiredMicroLearning,
+  handlePublishScheduledMicroLearning,
+} from 'src/services/microLearning.js'
+import { handlePublishScheduledPracticeQuiz } from 'src/services/practiceQuizzes.js'
 import { v4 as uuidv4 } from 'uuid'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { createAnswerCollection } from '../src/services/resources.js'
 import { createCatalogCollection } from '../src/services/sharing.js'
-import {
-  endExpiredGroupActivity,
-  endExpiredMicroLearning,
-  publishScheduledGroupActivity,
-  publishScheduledLiveQuiz,
-  publishScheduledMicroLearning,
-  publishScheduledPracticeQuiz,
-} from '../src/services/tasks.js'
 import {
   answerCollection1,
   answerCollection2,
@@ -99,22 +102,81 @@ export async function testInitialization(
     update: {},
   })
 
+  const pubSub = createPubSub()
+  const redisExec = new Redis()
+
+  const hatchetCtx = {
+    hatchet,
+    pubSub,
+    emitter,
+    redisExec,
+    prisma,
+  }
+
   // initialize tasks to be called
-  const publishScheduledMicroLearningTask =
-    publishScheduledMicroLearning(hatchet)
-  const publishScheduledPracticeQuizTask = publishScheduledPracticeQuiz(hatchet)
-  const publishScheduledGroupActivityTask =
-    publishScheduledGroupActivity(hatchet)
-  const publishScheduledLiveQuizTask = publishScheduledLiveQuiz(hatchet)
-  const endExpiredMicroLearningTask = endExpiredMicroLearning(hatchet)
-  const endExpiredGroupActivityTask = endExpiredGroupActivity(hatchet)
   const tasks = {
-    publishScheduledMicroLearningTask,
-    publishScheduledPracticeQuizTask,
-    publishScheduledGroupActivityTask,
-    publishScheduledLiveQuizTask,
-    endExpiredMicroLearningTask,
-    endExpiredGroupActivityTask,
+    publishScheduledMicroLearningTask: hatchet.task({
+      name: 'publish-scheduled-micro-learning',
+      fn: async ({ microLearningId }: { microLearningId: string }) => {
+        const success = await handlePublishScheduledMicroLearning(
+          {
+            microLearningId,
+          },
+          hatchetCtx
+        )
+        return { success }
+      },
+    }),
+    publishScheduledPracticeQuizTask: hatchet.task({
+      name: 'publish-scheduled-practice-quiz',
+      fn: async ({ practiceQuizId }: { practiceQuizId: string }) => {
+        const success = await handlePublishScheduledPracticeQuiz(
+          { practiceQuizId },
+          hatchetCtx
+        )
+        return { success }
+      },
+    }),
+    publishScheduledGroupActivityTask: hatchet.task({
+      name: 'publish-scheduled-group-activity',
+      fn: async ({ groupActivityId }: { groupActivityId: string }) => {
+        const success = await handlePublishScheduledGroupActivity(
+          { groupActivityId },
+          hatchetCtx
+        )
+        return { success }
+      },
+    }),
+    publishScheduledLiveQuizTask: hatchet.task({
+      name: 'publish-scheduled-live-quiz',
+      fn: async ({ liveQuizId }: { liveQuizId: string }) => {
+        const success = await handlePublishScheduledLiveQuiz(
+          { liveQuizId },
+          hatchetCtx
+        )
+        return { success }
+      },
+    }),
+    endExpiredMicroLearningTask: hatchet.task({
+      name: 'end-expired-micro-learning',
+      fn: async ({ microLearningId }: { microLearningId: string }) => {
+        const success = await handleEndExpiredMicroLearning(
+          { microLearningId },
+          hatchetCtx
+        )
+        return { success }
+      },
+    }),
+    endExpiredGroupActivityTask: hatchet.task({
+      name: 'end-expired-group-activity',
+      fn: async ({ groupActivityId }: { groupActivityId: string }) => {
+        const success = await handleEndExpiredGroupActivity(
+          { groupActivityId },
+          hatchetCtx
+        )
+        return { success }
+      },
+    }),
   }
 
   // mock context with user including all required properties

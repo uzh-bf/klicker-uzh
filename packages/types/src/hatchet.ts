@@ -1,47 +1,91 @@
-import type { TaskWorkflowDeclaration } from '@hatchet-dev/typescript-sdk/index.js'
+import type {
+  HatchetClient,
+  TaskWorkflowDeclaration,
+} from '@hatchet-dev/typescript-sdk/index.js'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import type EventEmitter from 'events'
+import type { PubSub } from 'graphql-yoga'
+import type { Redis } from 'ioredis'
+
+export interface HatchetHandlerContext {
+  hatchet: HatchetClient
+  pubSub: PubSub<any>
+  emitter: EventEmitter
+  redisExec: Redis
+  redisCache?: Redis
+  prisma: PrismaClient
+}
 
 // Shared contract for Hatchet task handler injections.
 export interface HatchetHandlers {
-  sendTeamsNotifications: (
-    scope: string,
-    text: string
+  handleSendTeamsNotifications: (
+    { scope, text }: { scope: string; text: string },
+    ctx: HatchetHandlerContext
   ) => Promise<unknown> | void
-  updateGroupAverageScores: (
-    prisma: PrismaClient,
-    emitter: EventEmitter
+  handleUpdateGroupAverageScores: (
+    {},
+    ctx: HatchetHandlerContext
   ) => Promise<boolean>
-  runningRandomGroupAssignments: (
-    prisma: PrismaClient,
-    emitter: EventEmitter
+  handleRunningRandomGroupAssignments: (
+    {},
+    ctx: HatchetHandlerContext
   ) => Promise<boolean>
-  finalRandomGroupAssignments: (
-    prisma: PrismaClient,
-    emitter: EventEmitter
+  handleFinalRandomGroupAssignments: (
+    {},
+    ctx: HatchetHandlerContext
   ) => Promise<boolean>
-  updateWeeklyTimelineEntries: (prisma: PrismaClient) => Promise<boolean>
-  sendPushNotifications: (prisma: PrismaClient) => Promise<boolean>
+  handleUpdateWeeklyTimelineEntries: (
+    {},
+    ctx: HatchetHandlerContext
+  ) => Promise<boolean>
+  handleSendPushNotifications: (
+    {},
+    ctx: HatchetHandlerContext
+  ) => Promise<boolean>
+  handleEndExpiredGroupActivity: (
+    { groupActivityId }: { groupActivityId: string },
+    ctx: HatchetHandlerContext
+  ) => Promise<boolean>
+  handleEndExpiredMicroLearning: (
+    { microLearningId }: { microLearningId: string },
+    ctx: HatchetHandlerContext
+  ) => Promise<boolean>
+  handlePublishScheduledLiveQuiz: (
+    { liveQuizId }: { liveQuizId: string },
+    ctx: HatchetHandlerContext
+  ) => Promise<boolean>
+  handlePublishScheduledPracticeQuiz: (
+    { practiceQuizId }: { practiceQuizId: string },
+    ctx: HatchetHandlerContext
+  ) => Promise<boolean>
+  handlePublishScheduledGroupActivity: (
+    { groupActivityId }: { groupActivityId: string },
+    ctx: HatchetHandlerContext
+  ) => Promise<boolean>
+  handlePublishScheduledMicroLearning: (
+    { microLearningId }: { microLearningId: string },
+    ctx: HatchetHandlerContext
+  ) => Promise<boolean>
 }
 
 // Contract for the tasks that are passed into the GraphQL context.
 export interface PreparedHatchetTasks {
-  publishScheduledMicroLearningTask: TaskWorkflowDeclaration<{
+  publishScheduledMicroLearning: TaskWorkflowDeclaration<{
     microLearningId: string
   }>
-  publishScheduledPracticeQuizTask: TaskWorkflowDeclaration<{
+  publishScheduledPracticeQuiz: TaskWorkflowDeclaration<{
     practiceQuizId: string
   }>
-  publishScheduledGroupActivityTask: TaskWorkflowDeclaration<{
+  publishScheduledGroupActivity: TaskWorkflowDeclaration<{
     groupActivityId: string
   }>
-  publishScheduledLiveQuizTask: TaskWorkflowDeclaration<{
+  publishScheduledLiveQuiz: TaskWorkflowDeclaration<{
     liveQuizId: string
   }>
-  endExpiredMicroLearningTask: TaskWorkflowDeclaration<{
+  endExpiredMicroLearning: TaskWorkflowDeclaration<{
     microLearningId: string
   }>
-  endExpiredGroupActivityTask: TaskWorkflowDeclaration<{
+  endExpiredGroupActivity: TaskWorkflowDeclaration<{
     groupActivityId: string
   }>
 }

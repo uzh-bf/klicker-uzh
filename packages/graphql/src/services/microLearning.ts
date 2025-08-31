@@ -1,5 +1,9 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { ActivityType, type ElementStackInput } from '@klicker-uzh/types'
+import {
+  ActivityType,
+  HatchetHandlerContext,
+  type ElementStackInput,
+} from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
   propagateActivityToElements,
@@ -11,6 +15,7 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { getPermissionBooleans } from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
+import { handleSendTeamsNotifications } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
 
 export async function getMicroLearningData(
@@ -473,18 +478,17 @@ export async function publishMicroLearning(
     try {
       // schedule hatchet task for automated publication
       const publicationTask =
-        await ctx.tasks.publishScheduledMicroLearningTask.schedule(
+        await ctx.tasks.publishScheduledMicroLearning.schedule(
           microLearning.scheduledStartAt,
           { microLearningId: microLearning.id }
         )
       const publicationTaskId = publicationTask.metadata.id
 
       // schedule hatchet task for automated ending
-      const completionTask =
-        await ctx.tasks.endExpiredMicroLearningTask.schedule(
-          microLearning.scheduledEndAt,
-          { microLearningId: microLearning.id }
-        )
+      const completionTask = await ctx.tasks.endExpiredMicroLearning.schedule(
+        microLearning.scheduledEndAt,
+        { microLearningId: microLearning.id }
+      )
       const completionTaskId = completionTask.metadata.id
 
       // set the status of the microlearning to scheduled and store the hatchet task ID
@@ -515,7 +519,7 @@ export async function publishMicroLearning(
   }
 
   // if the start date is in the past, but the end date is in the future, schedule the completion task
-  const completionTask = await ctx.tasks.endExpiredMicroLearningTask.schedule(
+  const completionTask = await ctx.tasks.endExpiredMicroLearning.schedule(
     microLearning.scheduledEndAt,
     { microLearningId: microLearning.id }
   )
@@ -612,7 +616,7 @@ export async function extendMicroLearning(
       )
     }
   }
-  const completionTask = await ctx.tasks.endExpiredMicroLearningTask.schedule(
+  const completionTask = await ctx.tasks.endExpiredMicroLearning.schedule(
     endDate,
     { microLearningId: microLearning.id }
   )
@@ -888,4 +892,114 @@ export async function removeMicroLearning(
   })
 
   return id
+}
+
+export async function handleEndExpiredMicroLearning(
+  { microLearningId }: { microLearningId: string },
+  ctx: HatchetHandlerContext
+) {
+  try {
+    const microLearning = await ctx.prisma.microLearning.findUnique({
+      where: {
+        id: microLearningId,
+        isDeleted: false,
+        status: DB.PublicationStatus.PUBLISHED,
+        scheduledEndAt: { lte: new Date() },
+      },
+    })
+
+    if (!microLearning) {
+      handleSendTeamsNotifications({
+        scope: 'hatchet/microlearning-end',
+        text: `Microlearning with ID ${microLearningId} not found or scheduled end time is not in the past yet.`,
+      })
+      throw new Error(
+        `Microlearning with ID ${microLearningId} not found or scheduled end time is not in the past yet.`
+      )
+    }
+
+    // end the microlearning
+    const updatedMicroLearning = await ctx.prisma.microLearning.update({
+      where: { id: microLearningId },
+      data: { status: DB.PublicationStatus.ENDED },
+    })
+
+    await handleSendTeamsNotifications({
+      scope: 'hatchet/microlearning-end',
+      text: `Successfully ended expired microlearning ${updatedMicroLearning.id}`,
+    })
+
+    // publish the event to subscribers
+    ctx.pubSub.publish('microLearningEnded', updatedMicroLearning)
+    ctx.emitter.emit('invalidate', {
+      typename: 'MicroLearning',
+      id: updatedMicroLearning.id,
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error ending expired microlearning:', error)
+    handleSendTeamsNotifications({
+      scope: 'hatchet/microlearning-end',
+      text: `Error ending microlearning with ID ${microLearningId}: ${error}`,
+    })
+    throw error // rethrow to allow Hatchet to handle retries
+  } finally {
+    await ctx.prisma.$disconnect()
+  }
+}
+
+export async function handlePublishScheduledMicroLearning(
+  { microLearningId }: { microLearningId: string },
+  ctx: HatchetHandlerContext
+) {
+  try {
+    // check if the microlearning exists and if its start date is in the past
+    const microLearning = await ctx.prisma.microLearning.findUnique({
+      where: {
+        id: microLearningId,
+        scheduledStartAt: { lte: new Date() },
+        status: DB.PublicationStatus.SCHEDULED,
+      },
+    })
+
+    if (!microLearning) {
+      handleSendTeamsNotifications({
+        scope: 'hatchet/microlearning-start',
+        text: `Microlearning with ID ${microLearningId} not found or scheduled start time is not in the past yet.`,
+      })
+      throw new Error(
+        `Microlearning with ID ${microLearningId} not found or scheduled start time is not in the past yet.`
+      )
+    }
+
+    // publish the microlearning
+    await ctx.prisma.microLearning.update({
+      where: { id: microLearningId },
+      data: { status: DB.PublicationStatus.PUBLISHED },
+    })
+
+    // send a teams notification
+    await handleSendTeamsNotifications({
+      scope: 'graphql/publishScheduledMicroLearnings',
+      text: `Successfully published scheduled microlearning ${microLearning.id}`,
+    })
+
+    // invalidate the cache for the microlearning
+    ctx.emitter.emit('invalidate', {
+      typename: 'MicroLearning',
+      id: microLearning.id,
+    })
+
+    return true
+  } catch (error) {
+    console.error('Error publishing scheduled microlearning:', error)
+    handleSendTeamsNotifications({
+      scope: 'hatchet/microlearning-start',
+      text: `Error publishing microlearning with ID ${microLearningId}: ${error}`,
+    })
+    throw error // rethrow to allow Hatchet to handle retries
+  } finally {
+    await ctx.prisma.$disconnect()
+  }
 }

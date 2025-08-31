@@ -8,6 +8,9 @@ import type {
   PerformanceLevel,
 } from '@klicker-uzh/prisma/client'
 
+// ----- HATCHET (WORKER/TASK) TYPES -----
+export * from './hatchet.js'
+
 // ----- ACTIVITY LOG TYPES -----
 // #region
 export enum ActivityLogModificationFieldType {
@@ -357,9 +360,6 @@ export type AvatarSettings = {
   facialHair: AvatarFacialHairTypes
 }
 // #endregion
-
-// ----- HATCHET (WORKER/TASK) TYPES -----
-export type { HatchetHandlers, PreparedHatchetTasks } from './hatchet.js'
 
 // ----- RESOURCES -----
 // #region
