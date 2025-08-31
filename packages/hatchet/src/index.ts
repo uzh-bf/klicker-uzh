@@ -27,7 +27,7 @@ export function prepareHatchetTasks({
 }) {
   // ! ACTIVITY PUBLICATION TASKS
   // #region
-  const publishScheduledMicroLearningTask = hatchet.task({
+  const publishScheduledMicroLearning = hatchet.task({
     name: 'publish-scheduled-microlearning',
     retries: 3,
     fn: async ({ microLearningId }: { microLearningId: string }) => {
@@ -83,7 +83,7 @@ export function prepareHatchetTasks({
     },
   })
 
-  const publishScheduledGroupActivityTask = hatchet.task({
+  const publishScheduledGroupActivity = hatchet.task({
     name: 'publish-scheduled-group-activity',
     retries: 3,
     fn: async ({ groupActivityId }: { groupActivityId: string }) => {
@@ -139,7 +139,7 @@ export function prepareHatchetTasks({
     },
   })
 
-  const publishScheduledPracticeQuizTask = hatchet.task({
+  const publishScheduledPracticeQuiz = hatchet.task({
     name: 'publish-scheduled-practice-quiz',
     retries: 3,
     fn: async ({ practiceQuizId }: { practiceQuizId: string }) => {
@@ -209,7 +209,7 @@ export function prepareHatchetTasks({
     },
   })
 
-  const publishScheduledLiveQuizTask = hatchet.task({
+  const publishScheduledLiveQuiz = hatchet.task({
     name: 'publish-scheduled-live-quiz',
     retries: 3,
     fn: async ({ liveQuizId }: { liveQuizId: string }) => {
@@ -284,7 +284,7 @@ export function prepareHatchetTasks({
 
   // ! ACTIVITY ENDING TASKS
   // #region
-  const endExpiredMicroLearningTask = hatchet.task({
+  const endExpiredMicroLearning = hatchet.task({
     name: 'end-expired-micro-learnings',
     retries: 3,
     fn: async ({ microLearningId }: { microLearningId: string }) => {
@@ -340,7 +340,7 @@ export function prepareHatchetTasks({
     },
   })
 
-  const endExpiredGroupActivityTask = hatchet.task({
+  const endExpiredGroupActivity = hatchet.task({
     name: 'end-expired-group-activities',
     retries: 3,
     fn: async ({ groupActivityId }: { groupActivityId: string }) => {
@@ -401,7 +401,7 @@ export function prepareHatchetTasks({
 
   // ! CRONJOBS
   // #region
-  const updateGroupAverageScoresTask = hatchet.task({
+  const updateGroupAverageScores = hatchet.task({
     name: 'update-group-average-scores',
     retries: 3,
     onCrons: [
@@ -413,7 +413,7 @@ export function prepareHatchetTasks({
     },
   })
 
-  const runningRandomGroupAssignmentsTask = hatchet.task({
+  const runningRandomGroupAssignments = hatchet.task({
     name: 'running-random-group-assignments',
     retries: 3,
     onCrons: [
@@ -428,7 +428,7 @@ export function prepareHatchetTasks({
     },
   })
 
-  const finalRandomGroupAssignmentsTask = hatchet.task({
+  const finalRandomGroupAssignments = hatchet.task({
     name: 'final-random-group-assignments',
     retries: 3,
     onCrons: [
@@ -443,7 +443,7 @@ export function prepareHatchetTasks({
     },
   })
 
-  const updateWeeklyTimelineEntriesTask = hatchet.task({
+  const updateWeeklyTimelineEntries = hatchet.task({
     name: 'update-weekly-timeline-entries',
     retries: 3,
     onCrons: [
@@ -455,7 +455,7 @@ export function prepareHatchetTasks({
     },
   })
 
-  const sendPushNotificationsTask = hatchet.task({
+  const sendPushNotifications = hatchet.task({
     name: 'send-push-notifications',
     retries: 3,
     onCrons: [
@@ -469,17 +469,17 @@ export function prepareHatchetTasks({
   // #endregion
 
   return {
-    updateGroupAverageScoresTask,
-    runningRandomGroupAssignmentsTask,
-    finalRandomGroupAssignmentsTask,
-    updateWeeklyTimelineEntriesTask,
-    sendPushNotificationsTask,
-    publishScheduledGroupActivityTask,
-    publishScheduledLiveQuizTask,
-    publishScheduledMicroLearningTask,
-    publishScheduledPracticeQuizTask,
-    endExpiredGroupActivityTask,
-    endExpiredMicroLearningTask,
+    updateGroupAverageScores,
+    runningRandomGroupAssignments,
+    finalRandomGroupAssignments,
+    updateWeeklyTimelineEntries,
+    sendPushNotifications,
+    publishScheduledGroupActivity,
+    publishScheduledLiveQuiz,
+    publishScheduledMicroLearning,
+    publishScheduledPracticeQuiz,
+    endExpiredGroupActivity,
+    endExpiredMicroLearning,
   }
 }
 
