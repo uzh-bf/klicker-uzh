@@ -79,10 +79,13 @@ func main() {
 
     // Start server with graceful shutdown
     srv := &http.Server{
-        Addr:    ":" + cfg.Port,
-        Handler: r,
+        Addr:              ":" + cfg.Port,
+        Handler:           r,
+        ReadTimeout:       10 * time.Second,
+        ReadHeaderTimeout: 5 * time.Second,
+        WriteTimeout:      15 * time.Second,
+        IdleTimeout:       60 * time.Second,
     }
-
     go func() {
         if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
             log.Fatalf("Server failed: %v", err)
