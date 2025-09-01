@@ -1,6 +1,7 @@
 'use client'
 import { makeAssistantToolUI } from '@assistant-ui/react'
-import { BookOpen, Loader2 } from 'lucide-react'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { BookOpen } from 'lucide-react'
 
 type RAGSearchArgs = {
   query: string
@@ -19,7 +20,7 @@ export const RAGToolUI = makeAssistantToolUI<RAGSearchArgs, RAGSearchResult>({
     if (status.type === 'running') {
       return (
         <div className="flex items-center gap-2 rounded-lg bg-blue-50 p-4">
-          <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+          <Loader basic />
           <span className="text-blue-800">
             Searching lecture content for: {args.query}...
           </span>
@@ -50,7 +51,7 @@ export const RAGToolUI = makeAssistantToolUI<RAGSearchArgs, RAGSearchResult>({
     if (!result || typeof result === 'string' || !result.result) {
       return (
         <div className="flex items-center gap-2 rounded-lg bg-blue-50 p-4">
-          <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+          <Loader basic />
           <span className="text-blue-800">
             Searching lecture content for: {args.query}...
           </span>

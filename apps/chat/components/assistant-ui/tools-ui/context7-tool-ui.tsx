@@ -1,6 +1,7 @@
 'use client'
 import { makeAssistantToolUI } from '@assistant-ui/react'
-import { Book, Loader2, Search, Star } from 'lucide-react'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { Book, Search, Star } from 'lucide-react'
 
 type Context7Args = {
   libraryName?: string
@@ -53,7 +54,7 @@ export const Context7ToolUI = makeAssistantToolUI<Context7Args, Context7Result>(
       if (status.type === 'running') {
         return (
           <div className="flex items-center gap-2 rounded-lg bg-purple-50 p-4">
-            <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
+            <Loader basic />
             <span className="text-purple-800">
               {args.libraryName
                 ? `Searching for ${args.libraryName}...`
@@ -84,7 +85,7 @@ export const Context7ToolUI = makeAssistantToolUI<Context7Args, Context7Result>(
       if (!result || typeof result === 'string') {
         return (
           <div className="flex items-center gap-2 rounded-lg bg-purple-50 p-4">
-            <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
+            <Loader basic />
             <span className="text-purple-800">
               {args.libraryName
                 ? `Searching for ${args.libraryName}...`
@@ -109,7 +110,7 @@ export const Context7ToolUI = makeAssistantToolUI<Context7Args, Context7Result>(
       if (typeof result !== 'object' || !result || !result.content) {
         return (
           <div className="flex items-center gap-2 rounded-lg bg-purple-50 p-4">
-            <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
+            <Loader basic />
             <span className="text-purple-800">
               {args.libraryName
                 ? `Searching for ${args.libraryName}...`
