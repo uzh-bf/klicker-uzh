@@ -7,7 +7,6 @@ import {
 import { useSettingsStore } from '@/app/stores/settingsStore'
 import { Context7ToolUI } from '@/components/assistant-ui/tools-ui/context7-tool-ui'
 import { RAGToolUI } from '@/components/assistant-ui/tools-ui/rag-tool-ui'
-import { WeatherToolUI } from '@/components/assistant-ui/tools-ui/weather-tool-ui'
 import {
   AssistantRuntimeProvider,
   useExternalStoreRuntime,
@@ -481,7 +480,6 @@ export function RuntimeProvider({
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <WeatherToolUI />
       <RAGToolUI />
       <Context7ToolUI />
       {children}

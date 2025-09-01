@@ -1,22 +1,6 @@
 import { tool } from 'ai'
 import { z } from 'zod'
 
-export const getWeather = tool({
-  description: 'Get weather for a location',
-  inputSchema: z.object({
-    location: z.string().describe('The location to get weather for'),
-  }),
-  execute: async ({ location }) => {
-    const response = await fetch('http://localhost:8000/api/tools/weather', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ location }),
-    })
-    console.log('Wheather API response:', response)
-    return await response.json()
-  },
-})
-
 export const RAGSearch = tool({
   description:
     'Ask questions about lecture slides and course materials. This tool uses RAG to provide comprehensive answers based on lecture content.',

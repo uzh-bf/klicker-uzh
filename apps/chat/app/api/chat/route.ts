@@ -1,4 +1,4 @@
-import { context7, getWeather, RAGSearch } from '@/app/tools'
+import { context7, RAGSearch } from '@/app/tools'
 import { anthropic } from '@ai-sdk/anthropic'
 import { openai } from '@ai-sdk/openai'
 import { PrismaClient } from '@klicker-uzh/prisma'
@@ -105,7 +105,6 @@ export async function POST(req: Request) {
     model: getModel(selectedModel),
     messages: convertToModelMessages(uiMessages),
     tools: {
-      getWeather,
       RAGSearch,
       context7,
     },
