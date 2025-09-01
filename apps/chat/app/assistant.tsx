@@ -17,6 +17,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar'
+import Footer from '@klicker-uzh/shared-components/src/Footer'
 
 export const Assistant = () => {
   return (
@@ -39,7 +40,10 @@ export const Assistant = () => {
               </BreadcrumbList>
             </Breadcrumb>
           </header>
-          <Thread />
+          <div className="flex flex-1 flex-col">
+            <Thread />
+            <Footer />
+          </div>
         </SidebarInset>
       </SidebarProvider>
     </RuntimeProvider>
