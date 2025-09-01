@@ -1,4 +1,4 @@
-import { getWeather, RAGSearch } from '@/app/tools'
+import { context7, getWeather, RAGSearch } from '@/app/tools'
 import { anthropic } from '@ai-sdk/anthropic'
 import { openai } from '@ai-sdk/openai'
 import { PrismaClient } from '@klicker-uzh/prisma'
@@ -107,6 +107,7 @@ export async function POST(req: Request) {
     tools: {
       getWeather,
       RAGSearch,
+      context7,
     },
     toolChoice: 'auto',
     stopWhen: stepCountIs(5),
