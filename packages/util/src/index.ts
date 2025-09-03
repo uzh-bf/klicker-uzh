@@ -9,3 +9,6 @@ export * from './types.js'
 
 // export everything from the levels module
 export * from './levels.js'
+
+// export everything from the jwt module
+export * from './jwt.js'

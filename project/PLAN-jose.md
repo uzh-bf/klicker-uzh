@@ -218,9 +218,9 @@ Additions
 
 ### Phase 1: Setup ✅
 - [x] Create documentation file
-- [ ] Add jose dependency to packages/util
-- [ ] Create JWT utility functions
-- [ ] Update util package exports
+- [x] Add jose dependency to packages/util
+- [x] Create JWT utility functions
+- [x] Update util package exports
 
 ### Phase 2: Update verification (TBD)
 - [ ] Update packages/graphql JWT verification
