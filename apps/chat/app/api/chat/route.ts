@@ -1,7 +1,7 @@
 import { context7, RAGSearch } from '@/app/tools'
 import { anthropic } from '@ai-sdk/anthropic'
 import { openai } from '@ai-sdk/openai'
-import { PrismaClient } from '@klicker-uzh/prisma'
+import { prisma } from '@klicker-uzh/prisma'
 import {
   convertToModelMessages,
   stepCountIs,
@@ -11,8 +11,6 @@ import {
 } from 'ai'
 
 export const maxDuration = 30
-
-const prisma = new PrismaClient()
 
 export async function POST(req: Request) {
   const {

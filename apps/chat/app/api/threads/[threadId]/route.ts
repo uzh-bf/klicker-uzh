@@ -1,6 +1,4 @@
-import { PrismaClient } from '@klicker-uzh/prisma'
-
-const prisma = new PrismaClient()
+import { prisma } from '@klicker-uzh/prisma'
 
 export async function GET(
   req: Request,
