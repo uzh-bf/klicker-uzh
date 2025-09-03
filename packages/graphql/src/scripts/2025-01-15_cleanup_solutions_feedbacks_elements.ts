@@ -1,4 +1,4 @@
-import { ElementType, PrismaClient } from '@klicker-uzh/prisma'
+import { ElementType, PrismaClient } from '@klicker-uzh/prisma/client'
 
 // ? This script will relink all missing live session activities to the corresponding live quiz entries after their migration
 async function run() {

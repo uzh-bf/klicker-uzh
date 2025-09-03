@@ -7,7 +7,6 @@ import {
   GetUserActivitiesDocument,
   PublicationStatus,
   SharingType,
-  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button } from '@uzh-bf/design-system'
@@ -96,12 +95,6 @@ function Activities() {
   const { data: dataCourses } = useQuery(GetUserActivitiesCoursesDocument, {
     fetchPolicy: 'cache-and-network',
   })
-
-  // get the user data to check for the private preview flag
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
-  const user = dataUser?.userProfile
 
   // get user activities while respecting the corresponding filters and pagination
   const {
@@ -245,13 +238,11 @@ function Activities() {
           <>
             <div className="flex flex-row items-start justify-between">
               <div className="mb-2 flex flex-row items-center gap-1.5">
-                {user?.privatePreview && (
-                  <ActivityListSelectAllCheckbox
-                    activities={activities}
-                    selectedActivities={selectedActivities}
-                    setSelectedActivities={setSelectedActivities}
-                  />
-                )}
+                <ActivityListSelectAllCheckbox
+                  activities={activities}
+                  selectedActivities={selectedActivities}
+                  setSelectedActivities={setSelectedActivities}
+                />
                 <ActivityListSearch setSearchString={setSearchString} />
                 <ActivityListSorting
                   sort={sort}
@@ -259,8 +250,7 @@ function Activities() {
                   handleSortOrderToggle={handleSortOrderToggle}
                 />
               </div>
-              {user?.privatePreview &&
-              Object.keys(selectedActivities).length > 0 ? (
+              {Object.keys(selectedActivities).length > 0 ? (
                 <Button
                   className={{
                     root: 'h-8.5 mt-0.5 border-orange-300 bg-orange-100 hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
@@ -336,7 +326,7 @@ function Activities() {
           }}
         />
       ) : null}
-      {user?.privatePreview && batchOperationsOpen ? (
+      {batchOperationsOpen && (
         <ActivityBatchOperationsModal
           selectedActivities={Object.values(selectedActivities)}
           onClose={() => setBatchOperationsOpen(false)}
@@ -345,7 +335,7 @@ function Activities() {
             await refetchActivities()
           }}
         />
-      ) : null}
+      )}
     </Layout>
   )
 }

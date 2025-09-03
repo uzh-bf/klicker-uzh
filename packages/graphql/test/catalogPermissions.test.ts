@@ -2,7 +2,7 @@ import {
   ObjectAccess,
   PermissionLevel,
   PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'

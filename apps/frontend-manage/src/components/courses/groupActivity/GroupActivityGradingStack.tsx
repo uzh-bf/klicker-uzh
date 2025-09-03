@@ -49,7 +49,6 @@ function GroupActivityGradingStack({
   maxPoints,
 }: GroupActivityGradingStackProps) {
   const t = useTranslations()
-  // TODO: add query update
   const [gradeGroupActivitySubmissions] = useMutation(
     GradeGroupActivitySubmissionDocument
   )

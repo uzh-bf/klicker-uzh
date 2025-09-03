@@ -1,4 +1,9 @@
-import { faFont, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
+import {
+  faFont,
+  faMinus,
+  faPlus,
+  faTriangleExclamation,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementInstanceEvaluation,
@@ -10,7 +15,7 @@ import {
   ACTIVE_CHART_TYPES,
   ChartType,
 } from '@klicker-uzh/shared-components/src/constants'
-import { Button, Select, Switch } from '@uzh-bf/design-system'
+import { Button, Select, Switch, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction } from 'react'
@@ -22,6 +27,7 @@ interface EvaluationFooterProps {
   type: 'LiveQuiz' | 'Asynchronous'
   currentInstance?: ElementInstanceEvaluation
   activeStack: ActiveStackType
+  isStackActive: boolean
   textSize: TextSizeType
   setTextSize: Dispatch<{ type: string }>
   showSolution: boolean
@@ -36,6 +42,7 @@ function EvaluationFooter({
   type,
   currentInstance,
   activeStack,
+  isStackActive,
   textSize,
   setTextSize,
   showSolution,
@@ -47,7 +54,6 @@ function EvaluationFooter({
 }: EvaluationFooterProps) {
   const t = useTranslations()
   const router = useRouter()
-
   const hasSolution = currentInstance?.hasSampleSolution ?? false
   const hasExplanation =
     currentInstance?.explanation &&
@@ -99,43 +105,63 @@ function EvaluationFooter({
               <FontAwesomeIcon icon={faFont} size="lg" />
               {t('manage.evaluation.fontSize')}
             </div>
-            <div className="flex flex-col gap-1">
-              {hasSolution && (
-                <Switch
-                  size={hasSolutionAndExplanation ? 'sm' : undefined}
-                  checked={showSolution}
-                  label={t('manage.evaluation.showSolution')}
-                  onCheckedChange={(newValue) => setShowSolution(newValue)}
-                  className={{
-                    label: twMerge(hasSolutionAndExplanation && 'text-sm'),
-                  }}
-                />
-              )}
-              {hasExplanation &&
-                currentInstance.type !== ElementType.Flashcard && (
-                  <Switch
-                    size={hasSolutionAndExplanation ? 'sm' : undefined}
-                    checked={showExplanation}
-                    label={t('manage.evaluation.showExplanation')}
-                    onCheckedChange={(newValue) => setShowExplanation(newValue)}
-                    className={{
-                      label: twMerge(hasSolutionAndExplanation && 'text-sm'),
-                    }}
-                  />
+            {hasSolution || hasExplanation ? (
+              <div className="flex flex-row items-center gap-2">
+                <div className="flex flex-col gap-1">
+                  {hasSolution && (
+                    <Switch
+                      disabled={isStackActive}
+                      size={hasSolutionAndExplanation ? 'sm' : undefined}
+                      checked={!isStackActive && showSolution}
+                      label={t('manage.evaluation.showSolution')}
+                      onCheckedChange={(newValue) => setShowSolution(newValue)}
+                      data={{ cy: 'evaluation-footer-show-solution' }}
+                      className={{
+                        label: twMerge(hasSolutionAndExplanation && 'text-sm'),
+                      }}
+                    />
+                  )}
+                  {hasExplanation &&
+                    currentInstance.type !== ElementType.Flashcard && (
+                      <Switch
+                        disabled={isStackActive}
+                        size={hasSolutionAndExplanation ? 'sm' : undefined}
+                        checked={!isStackActive && showExplanation}
+                        label={t('manage.evaluation.showExplanation')}
+                        onCheckedChange={(newValue) =>
+                          setShowExplanation(newValue)
+                        }
+                        data={{ cy: 'evaluation-footer-show-explanation' }}
+                        className={{
+                          label: twMerge(
+                            hasSolutionAndExplanation && 'text-sm'
+                          ),
+                        }}
+                      />
+                    )}
+                </div>
+                {isStackActive && (
+                  <Tooltip
+                    tooltip={t('manage.evaluation.solutionHiddenWhileActive')}
+                  >
+                    <FontAwesomeIcon
+                      icon={faTriangleExclamation}
+                      className="text-orange-500"
+                    />
+                  </Tooltip>
                 )}
-            </div>
+              </div>
+            ) : null}
             {currentInstance?.type &&
             ACTIVE_CHART_TYPES[currentInstance.type].length > 1 ? (
               <Select
                 contentPosition="popper"
                 className={{ trigger: 'w-44 border-slate-400' }}
-                items={ACTIVE_CHART_TYPES[currentInstance.type].map((item) => {
-                  return {
-                    label: t(item.label),
-                    value: item.value,
-                    data: { cy: `change-chart-type-${item.label}` },
-                  }
-                })}
+                items={ACTIVE_CHART_TYPES[currentInstance.type].map((item) => ({
+                  label: t(item.label),
+                  value: item.value,
+                  data: { cy: `change-chart-type-${item.label}` },
+                }))}
                 value={chartType}
                 onChange={(newValue) => setChartType(newValue as ChartType)}
                 data={{ cy: 'change-chart-type' }}

@@ -6,7 +6,7 @@ import {
   PrismaClient,
   PublicationStatus,
   ReviewStatus,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import {
   ElementData,
   ElementInstanceResults,

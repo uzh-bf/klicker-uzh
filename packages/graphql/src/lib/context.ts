@@ -1,9 +1,8 @@
 import {
-  Prisma,
   PrismaClient,
   UserLoginScope,
   UserRole,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import type { Request, Response } from 'express'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
@@ -45,7 +44,7 @@ export type PrismaTransactionContextWithUser = Omit<
   'prisma'
 > & {
   prisma: Omit<
-    PrismaClient<Prisma.PrismaClientOptions, never>,
+    PrismaClient,
     '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
   >
 }

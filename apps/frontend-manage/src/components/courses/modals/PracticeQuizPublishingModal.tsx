@@ -13,7 +13,7 @@ import { useTranslations } from 'next-intl'
 import * as yup from 'yup'
 
 interface PracticeQuizPublishingModalProps {
-  elementId: string
+  activityId: string
   title: string
   courseId: string
   courseStartDate: string
@@ -22,7 +22,7 @@ interface PracticeQuizPublishingModalProps {
 }
 
 function PracticeQuizPublishingModal({
-  elementId,
+  activityId,
   title,
   courseId,
   courseStartDate,
@@ -30,9 +30,35 @@ function PracticeQuizPublishingModal({
   refetchActivities,
 }: PracticeQuizPublishingModalProps) {
   const t = useTranslations()
-  // TODO: add query update
   const [publishPracticeQuiz, { loading: practiceQuizPublishing }] =
-    useMutation(PublishPracticeQuizDocument)
+    useMutation(PublishPracticeQuizDocument, {
+      update(cache, { data }) {
+        cache.updateQuery(
+          { query: GetSingleCourseDocument, variables: { courseId } },
+          (qData) => {
+            const publishedPq = data?.publishPracticeQuiz
+            if (!qData?.course?.practiceQuizzesInfo || !publishedPq)
+              return qData
+
+            return {
+              course: {
+                ...qData.course,
+                practiceQuizzesInfo: qData.course.practiceQuizzesInfo.map(
+                  (practiceQuiz) =>
+                    practiceQuiz.id === publishedPq.id
+                      ? {
+                          ...practiceQuiz,
+                          automaticPublicationAt: publishedPq.availableFrom,
+                          status: publishedPq.status,
+                        }
+                      : practiceQuiz
+                ),
+              },
+            }
+          }
+        )
+      },
+    })
 
   return (
     <Modal
@@ -57,13 +83,7 @@ function PracticeQuizPublishingModal({
           <Button
             primary
             onClick={async () => {
-              await publishPracticeQuiz({
-                variables: { id: elementId },
-                // TODO: replace with cache update
-                refetchQueries: [
-                  { query: GetSingleCourseDocument, variables: { courseId } },
-                ],
-              })
+              await publishPracticeQuiz({ variables: { id: activityId } })
               await refetchActivities?.()
               onClose()
             }}
@@ -92,13 +112,9 @@ function PracticeQuizPublishingModal({
               setSubmitting(true)
               await publishPracticeQuiz({
                 variables: {
-                  id: elementId,
+                  id: activityId,
                   availableFrom: dayjs(values.availableFrom).utc().format(),
                 },
-                // TODO: replace with cache update
-                refetchQueries: [
-                  { query: GetSingleCourseDocument, variables: { courseId } },
-                ],
               })
               await refetchActivities?.()
               onClose()

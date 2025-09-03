@@ -37,7 +37,6 @@ function SuspendedFirstLoginModal({
   >(true)
 
   const { data } = useSuspenseQuery(UserProfileDocument)
-  // TODO: add query update
   const [changeInitialSettings] = useMutation(ChangeInitialSettingsDocument)
   const t = useTranslations()
 
@@ -84,7 +83,7 @@ function SuspendedFirstLoginModal({
             shortname: Yup.string()
               .required(t('manage.settings.shortnameRequired'))
               .min(5, t('manage.settings.shortnameMin'))
-              .max(8, t('manage.settings.shortnameMax'))
+              .max(10, t('manage.settings.shortnameMax'))
               .matches(
                 /^[a-zA-Z0-9]*$/,
                 t('manage.settings.shortnameAlphanumeric')

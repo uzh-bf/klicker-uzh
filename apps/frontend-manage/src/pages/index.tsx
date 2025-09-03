@@ -5,7 +5,6 @@ import {
   Element,
   GetUserElementsDocument,
   SharingType,
-  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, toast } from '@uzh-bf/design-system'
@@ -73,11 +72,6 @@ function Index() {
   const [selectedElements, setSelectedElements] = useState<{
     [elementId: number]: Element
   }>({})
-
-  const { data: dataUser } = useQuery(UserProfileDocument, {
-    fetchPolicy: 'cache-only',
-  })
-  const user = dataUser?.userProfile
 
   // initialize the sorting and filtering state from local storage (if available)
   const [storedFiltering, _] = useState(() => {
@@ -355,9 +349,7 @@ function Index() {
               </div>
 
               <div className="flex flex-row items-center gap-2">
-                {!creationMode &&
-                Object.keys(selectedElements).length > 0 &&
-                user?.privatePreview ? (
+                {!creationMode && Object.keys(selectedElements).length > 0 ? (
                   <Button
                     className={{
                       root: 'h-9 border-orange-300 bg-orange-100 hover:border-orange-400 hover:bg-orange-200 hover:text-orange-900',
@@ -494,7 +486,7 @@ function Index() {
           }}
         />
       )}
-      {user?.privatePreview && batchOperationsOpen ? (
+      {batchOperationsOpen && (
         <ElementBatchOperationsModal
           selectedElements={Object.values(selectedElements)}
           onClose={() => setBatchOperationsOpen(false)}
@@ -503,7 +495,7 @@ function Index() {
             await refetchElements()
           }}
         />
-      ) : null}
+      )}
       {showRecoveryPrompt && (
         <RecoveryPrompt
           onRecovery={() => {

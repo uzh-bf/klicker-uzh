@@ -2,7 +2,7 @@ import type {
   ElementInstance,
   ElementStack,
   QuestionResponse,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import axios from 'axios'
 import dayjs from 'dayjs'
 import minMax from 'dayjs/plugin/minMax.js'

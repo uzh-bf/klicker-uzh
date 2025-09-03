@@ -51,7 +51,6 @@ function CourseOverviewHeader({
   const [sharingModal, setSharingModal] = useState(false)
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false)
 
-  // TODO: add query update
   const [updateCourseSettings] = useMutation(UpdateCourseSettingsDocument)
   const { data: dataUser } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
@@ -131,16 +130,14 @@ function CourseOverviewHeader({
             <Button.Label>{t('manage.course.shareCourse')}</Button.Label>
           </Button>
         ) : null}
-        {user?.privatePreview ? (
-          <Button
-            onClick={() => setIsActivityLogOpen(true)}
-            className={{ root: 'h-8' }}
-            data={{ cy: 'course-activity-log-button' }}
-          >
-            <Button.Icon icon={faMessage} />
-            <Button.Label>{t('shared.comments.tooltip')}</Button.Label>
-          </Button>
-        ) : null}
+        <Button
+          onClick={() => setIsActivityLogOpen(true)}
+          className={{ root: 'h-8' }}
+          data={{ cy: 'course-activity-log-button' }}
+        >
+          <Button.Icon icon={faMessage} />
+          <Button.Label>{t('shared.comments.tooltip')}</Button.Label>
+        </Button>
         <QRCodePopover
           triggerStyle="button"
           triggerText={t('manage.course.joinCourse')}
@@ -225,14 +222,28 @@ function CourseOverviewHeader({
                   isGroupCreationEnabled: values.isGroupCreationEnabled,
                   groupDeadlineDate: groupDeadlineDateUTC,
                 },
-                refetchQueries: [
-                  {
-                    query: GetSingleCourseDocument,
-                    variables: {
-                      courseId: course.id,
+                update: (cache, { data }) => {
+                  // check if the update was successful
+                  if (!data?.updateCourseSettings) return
+
+                  // update the cached list of catalog collections
+                  cache.updateQuery(
+                    {
+                      query: GetSingleCourseDocument,
+                      variables: { courseId: course.id },
                     },
-                  },
-                ],
+                    (qData) => {
+                      if (!qData?.course) return qData
+
+                      return {
+                        course: {
+                          ...qData.course,
+                          ...data.updateCourseSettings!,
+                        },
+                      }
+                    }
+                  )
+                },
               })
 
               if (result.data?.updateCourseSettings) {
@@ -255,7 +266,6 @@ function CourseOverviewHeader({
           objectUuid={course.id}
           objectName={course.name}
           objectType={ObjectType.Course}
-          isOwner={course.isOwner ?? false}
           onClose={() => setSharingModal(false)}
         />
       ) : null}

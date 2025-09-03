@@ -1,0 +1,42 @@
+{
+  "name": "@klicker-uzh/hatchet-tasks",
+  "version": "3.3.0-alpha.82",
+  "license": "AGPL-3.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@hatchet-dev/typescript-sdk": "1.9.4"
+  },
+  "devDependencies": {
+    "@parcel/watcher": "~2.4.1",
+    "@rollup/plugin-node-resolve": "~15.3.0",
+    "@rollup/plugin-typescript": "~12.1.2",
+    "@types/node": "^20.16.1",
+    "cross-env": "~7.0.3",
+    "npm-run-all": "~4.1.5",
+    "rollup": "~4.34.2",
+    "rollup-plugin-copy": "~3.5.0",
+    "tsx": "~4.19.1",
+    "typescript": "~5.6.3"
+  },
+  "scripts": {
+    "build": "run-s build:ts",
+    "build:test": "pnpm run build",
+    "build:ts": "cross-env NODE_ENV=production rollup -c",
+    "check": "tsc --noEmit",
+    "dev": "run-p dev:ts",
+    "dev:doppler": "doppler run --config dev -- pnpm run dev",
+    "dev:offline": "pnpm run dev",
+    "dev:ts": "cross-env NODE_ENV=development rollup -c --watch"
+  },
+  "engines": {
+    "node": "=20"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  },
+  "type": "module"
+}

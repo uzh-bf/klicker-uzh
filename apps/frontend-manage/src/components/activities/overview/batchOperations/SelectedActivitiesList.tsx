@@ -65,7 +65,7 @@ function SelectedActivitiesList({
                 {activity.actionsApplied ? (
                   <FontAwesomeIcon
                     icon={faCheck}
-                    className="text-green-600"
+                    className="text-green-700"
                     data-cy={`activity-batch-check-${activity.name}`}
                   />
                 ) : (

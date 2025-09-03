@@ -1,4 +1,4 @@
-import { PrismaClient } from '@klicker-uzh/prisma'
+import { PrismaClient } from '@klicker-uzh/prisma/client'
 
 async function run() {
   const DEBUG = false

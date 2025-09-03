@@ -29,7 +29,6 @@ function AnswerCollectionMetaForm({
   refetchAnswerCollections?: () => Promise<any>
 }) {
   const t = useTranslations()
-  // TODO: add query update
   const [modifyAnswerCollection] = useMutation(ModifyAnswerCollectionDocument, {
     update: (cache, { data }) => {
       if (data?.modifyAnswerCollection) {

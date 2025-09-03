@@ -1629,11 +1629,23 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.findByText(this.data.SEML2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.CSML2.content).should('exist')
+
     cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.activity1.newElements.SC.content).should(
+      'not.exist'
+    )
+    cy.get('[data-cy="show-results-evaluation"]').click()
     cy.findByText(this.data.activity1.newElements.SC.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.activity1.newElements.MC.content).should('exist')
+    cy.get('[data-cy="evaluate-previous-question"]').click()
+    cy.findByText(this.data.activity1.newElements.SC.content).should('exist') // on second access, results should be shown (after confirmation)
+
     cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.findByText(this.data.activity1.newElements.MC.content).should('exist')
+
+    cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.get('[data-cy="show-results-evaluation"]').click()
     cy.findByText(this.data.activity1.newElements.KP.content).should('exist')
 
     // end the live quiz
@@ -2470,10 +2482,16 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.activity2.newElements.CS.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.SCMLAF3.content).should('not.exist') // results of active elements should only be shown after confirmation
+    cy.get('[data-cy="show-results-evaluation"]').click()
     cy.findByText(this.data.SCMLAF3.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.MCMLAF3.content).should('not.exist')
+    cy.get('[data-cy="show-results-evaluation"]').click()
     cy.findByText(this.data.MCMLAF3.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
+    cy.findByText(this.data.KPMLAF3.content).should('not.exist')
+    cy.get('[data-cy="show-results-evaluation"]').click()
     cy.findByText(this.data.KPMLAF3.content).should('exist')
 
     // end the live quiz

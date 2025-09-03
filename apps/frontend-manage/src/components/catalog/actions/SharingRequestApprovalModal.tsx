@@ -30,7 +30,6 @@ function SharingRequestApprovalModal({
     type: request.objectType,
   })
 
-  // TODO: add query update
   const [approveObjectSharingRequest, { loading: approvalLoading }] =
     useMutation(ApproveObjectSharingRequestDocument)
 
@@ -92,44 +91,36 @@ function SharingRequestApprovalModal({
               update: (cache, { data }) => {
                 if (!data?.approveObjectSharingRequest) return
 
-                const queryData = cache.readQuery({
-                  query: GetCatalogSharingRequestsDocument,
-                })
-                const previousRequests = queryData?.getCatalogSharingRequests
+                cache.updateQuery(
+                  { query: GetCatalogSharingRequestsDocument },
+                  (qData) => {
+                    if (!qData?.getCatalogSharingRequests) return qData
+                    return {
+                      getCatalogSharingRequests:
+                        qData.getCatalogSharingRequests.filter(
+                          (r) =>
+                            !(
+                              r.requestId === request.requestId &&
+                              r.userId === request.userId
+                            )
+                        ),
+                    }
+                  }
+                )
 
-                const queryData2 = cache.readQuery({
-                  query: CountCatalogSharingRequestsDocument,
-                })
-                const requestsCount = queryData2?.countCatalogSharingRequests
-
-                if (!previousRequests && !requestsCount) return
-
-                if (previousRequests) {
-                  cache.writeQuery({
-                    query: GetCatalogSharingRequestsDocument,
-                    data: {
-                      getCatalogSharingRequests: previousRequests.filter(
-                        (r) =>
-                          !(
-                            r.requestId === request.requestId &&
-                            r.userId === request.userId
-                          )
-                      ),
-                    },
-                  })
-                }
-
-                if (requestsCount) {
-                  cache.writeQuery({
-                    query: CountCatalogSharingRequestsDocument,
-                    data: {
+                cache.updateQuery(
+                  { query: CountCatalogSharingRequestsDocument },
+                  (qData) => {
+                    if (typeof qData?.countCatalogSharingRequests !== 'number')
+                      return qData
+                    return {
                       countCatalogSharingRequests: Math.max(
-                        requestsCount - 1,
+                        qData.countCatalogSharingRequests - 1,
                         0
                       ),
-                    },
-                  })
-                }
+                    }
+                  }
+                )
               },
             })
 

@@ -20,7 +20,7 @@ function AnalyticsCourseLabel({
   return (
     <div className="flex flex-row items-center gap-3">
       {isPast ? (
-        <FontAwesomeIcon icon={faCheck} className="text-green-600" />
+        <FontAwesomeIcon icon={faCheck} className="text-green-700" />
       ) : isFuture ? (
         <FontAwesomeIcon icon={faClock} className="text-orange-400" />
       ) : (

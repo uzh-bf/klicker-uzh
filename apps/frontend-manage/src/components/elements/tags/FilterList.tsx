@@ -124,12 +124,8 @@ function FilterList({
     KPRIM: [faQuestionRegular, faQuestionSolid],
     FREE_TEXT: [faQuestionRegular, faQuestionSolid],
     NUMERICAL: [faQuestionRegular, faQuestionSolid],
-    SELECTION: user?.userProfile?.privatePreview
-      ? [faSquareCheckRegular, faSquareCheckSolid]
-      : undefined,
-    CASE_STUDY: user?.userProfile?.privatePreview
-      ? [faListCheck, faListCheck]
-      : undefined,
+    SELECTION: [faSquareCheckRegular, faSquareCheckSolid],
+    CASE_STUDY: [faListCheck, faListCheck],
   }
 
   return (

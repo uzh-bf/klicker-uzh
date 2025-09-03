@@ -22,7 +22,8 @@ export type LiveQuizTemplateFormValues = {
   settingsProcessed: boolean // boolean to signal that the settings have been processed / adapted if desired
 
   // live quiz settings (same as in wizard)
-  isGamificationEnabled: boolean // ! irrelevant = hidden
+  isGamificationEnabled: boolean // ! customizable / fixed depending on course settings (shown)
+  isAssessmentEnabled: boolean // ! fixed (but shown)
   isConfusionFeedbackEnabled: boolean // ! irrelevant = hidden
   isLiveQAEnabled: boolean // ! irrelevant = hidden
   isModerationEnabled: boolean // ! irrelevant = hidden

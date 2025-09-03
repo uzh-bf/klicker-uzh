@@ -37,7 +37,7 @@ import useElementActions from './useElementActions'
 const StatusColors: Record<ElementStatus, string> = {
   [ElementStatus.Draft]: 'bg-slate-400 hover:bg-slate-500',
   [ElementStatus.Review]: 'bg-violet-400 hover:bg-violet-500',
-  [ElementStatus.Ready]: 'bg-green-400 hover:bg-green-500',
+  [ElementStatus.Ready]: 'bg-green-600 hover:bg-green-700',
 }
 
 export interface ElementDragDropTypes {
@@ -128,10 +128,7 @@ function Element({
         'deleteElement',
       ],
       isEditor: ['editElement'],
-      isShared: [
-        'duplicateElement',
-        ...(dataUser?.userProfile?.privatePreview ? ['activityLog'] : []),
-      ],
+      isShared: ['duplicateElement', 'activityLog'],
       isRemovable: ['removeElement'],
     },
     isEditor: element.isEditor ?? false,
@@ -371,7 +368,6 @@ function Element({
           objectId={element.id}
           objectName={element.name}
           objectType={ObjectType.Element}
-          isOwner={element.isOwner ?? false}
           onClose={() => setSharingModalOpen(false)}
           refetchElements={refetchElements}
         />

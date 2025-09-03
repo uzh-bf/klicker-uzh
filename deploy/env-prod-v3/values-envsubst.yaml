@@ -4,6 +4,15 @@ teamsWebhookUrl: '${TEAMS_WEBHOOK_URL}'
 
 appSecret: '${APP_SECRET}'
 
+hatchet:
+  workers:
+    general:
+      image:
+        tag: '${APP_VERSION}'
+    responseProcessor:
+      image:
+        tag: '${APP_VERSION}'
+
 email:
   type: '${EMAIL_TYPE}'
   from: '${EMAIL_FROM}'
@@ -83,6 +92,10 @@ backendGraphql:
 olatApi:
   key: '${OLAT_API_KEY}'
 
+  image:
+    tag: '${APP_VERSION}'
+
+responseApi:
   image:
     tag: '${APP_VERSION}'
 

@@ -395,6 +395,7 @@ export default {
       modifiedAfterReviewInformation:
         'The content of this object was modified after the last review. Please mark it as reviewed again if you agree with the updated content.',
       availableActions: 'Available Actions',
+      configuration: 'Configuration',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -584,7 +585,7 @@ KlickerUZH offers you as a course participant a significant amount of functional
 
 ![Live Quiz _on the left_](/img/06_live_quiz.png)
 
-During the lecture, you have the possibility to answer the questions asked by the lecturers on [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname}) or in the KlickerUZH app (or, if available, in OLAT under the "Live Quiz" module). The results are displayed graphically without delay and can thus be presented and commented on by the lecturers after the answering time has expired.
+During the lecture, you have the possibility to answer the questions asked by the lecturers in the KlickerUZH app (or, if available, in OLAT under the "Live Quiz" module). The results are displayed graphically without delay and can thus be presented and commented on by the lecturers after the answering time has expired.
 
 No login is required to answer the questions. With a login you can participate in the challenge of your course and collect points.
 
@@ -594,7 +595,7 @@ No login is required to answer the questions. With a login you can participate i
 
 Do you have a question or would you like to give direct feedback on the lecture? With the Live Q&A you can ask the lecturers or assistants a question directly during the lecture - even if you are participating in the lecture from home. In addition, with the KlickerUZH you have the possibility to give the lecturers direct feedback on the speed and difficulty of the lecture during the lecture.
 
-Participation is possible at [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname}) (also anonymously) or via the KlickerUZH app.
+Participation is possible through the live quiz (also anonymously) or via the KlickerUZH app.
 
 #### Practice Quizzes, Microlearning, and Flashcards
 
@@ -647,12 +648,11 @@ If you already have a KlickerUZH account (e.g., from other courses), open the Kl
 
 ![](/img/05_join_course.png)
 
-If you are participating in a course with KlickerUZH for the first time, open the access link you received from the lecturers of your course (e.g., _{pwa_url}/course/XYZ/join?pin=111111111_). You can use this to create a new KlickerUZH account with an (anonymous) username and password. With this data you can then log in and create your personal avatar, as well as participate in activities.
+If you are participating in a course with KlickerUZH for the first time, open the access link you received from the lecturers of your course. You can use this to create a new KlickerUZH account with an (anonymous) username and password. With this data you can then log in and create your personal avatar, as well as participate in activities.
 
 #### Anonymous participation
 
-In general, it is also possible to participate anonymously in all elements of KlickerUZH. For live quizzes, you can find these for your course under: [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname})
-Practice quizzes and microlearning are available via direct links that you can receive from your lecturers. When accessing KlickerUZH via the OLAT integration, you can choose to create an account and will thereafter be logged in automatically. If you do not have a KlickerUZH account, your participation in practice quizzes will remain anonymous.
+In general, it is also possible to participate anonymously in all elements of KlickerUZH. Practice quizzes and microlearning are available via direct links that you can receive from your lecturers. When accessing KlickerUZH via the OLAT integration, you can choose to create an account and will thereafter be logged in automatically. If you do not have a KlickerUZH account, your participation in practice quizzes will remain anonymous.
       `,
       appSetupTitle: 'App Installation',
       appSetup: `
@@ -921,6 +921,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       loggedInAs: 'Logged in as',
       temporaryPseudonym: 'temporary pseudonym',
     },
+    serverError: {
+      warning: 'An unexpected error has occurred',
+      serverSideError:
+        'An unexpected error occurred while processing your request. Please reset your cookies and try again. If the problem persists, contact your course instructor.',
+      tryAgain: 'Try Again',
+    },
     avatar: {
       hair: 'Hair',
       hairColor: 'Hair Color',
@@ -1134,6 +1140,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       editElement: 'Edit Element',
       noElementEditPermissions:
         'You do not have sufficient permissions to edit this element.',
+      deletedElement:
+        'This element has been deleted and can no longer be edited.',
       activityInformation: 'Activity Information',
       activityMultiplier: 'Activity Multiplier',
       reviewCompleted: 'Review completed',
@@ -1155,6 +1163,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       bonusTime: 'Bonus time',
       noActivitiesWillBeUpdated: 'No activities will be updated',
       nActivitiesWillBeUpdated: '{number} activities will be updated',
+      activityContainsNoElements:
+        'This {activity} does not contain any elements.',
       multiplierRequiresGamifiedAssessmentCourse:
         'A multiplier can only be defined for gamified activities or activities in assessment courses, as points can only be collected in these courses. You have chosen an assignment to a course that does not meet these requirements.',
       liveQuizPointsRequireGamifiedAssessmentCourse:
@@ -1281,10 +1291,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       passwordTooltip:
         'The password is automatically generated. Please write it down before creating the login, it will not be visible anymore afterwards. If you want to change it, you can generate a new one using the button on the right.',
       shortnameRequirements:
-        'The shortname plays an important role across KlickerUZH, as it allows for easy access to courses and other practice quizzes in many places. Please follow the following rules when choosing the shortname: <ul><li>The shortname must be at least 5 and at most 8 characters long.</li><li>The shortname may only consist of letters and numbers.</li></ul>',
+        'The shortname plays an important role across KlickerUZH, as it allows for easy access to courses and other practice quizzes in many places. Please follow the following rules when choosing the shortname: <ul><li>The shortname must be at least 5 and at most 10 characters long.</li><li>The shortname may only consist of letters and numbers.</li></ul>',
       shortnameRequired: 'Please enter a shortname.',
       shortnameMin: 'The shortname must be at least 5 characters long.',
-      shortnameMax: 'The shortname must be at most 8 characters long.',
+      shortnameMax: 'The shortname must be at most 10 characters long.',
       shortnameAlphanumeric:
         'The shortname may only consist of letters and numbers.',
       shortnameTaken: 'The shortname you have chosen is already taken.',
@@ -1749,7 +1759,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'The name should allow you to distinguish this live quiz from others. It will not be shown to the participants, please use the display name (next field) for this.',
       liveQuizDescField:
         'Here you can enter an optional description of the live quiz. This will be displayed to the students at the beginning of the quiz.',
-      liveQuizDescCourse: 'You can assign your live quiz to a course.',
+      liveQuizDescCourse:
+        'You can assign your live quiz to a course. If your course is gamified or has assessment enabled, these settings will automatically propagate to the activity. For non-gamified courses or live quizzes without course assignment, you may activate gamification separately. For more information, please also refer to the documentation on <link>gamified live quizzes</link>.',
       liveQuizSelectCourse: 'Select course',
       liveQuizNoCourse: 'No course',
       liveQuizEnableGamification:
@@ -2012,6 +2023,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       replacingElement: 'element replaced',
       creatingElement: 'element created',
       forGamifiedCourses: 'for gamified courses',
+      gamificationDisabled: 'Gamification & Assessment disabled',
+      gamificationDisabledInfo:
+        'Please select a gamified or assessment course, or enable gamification for your live quiz to view the scoring logic here.',
       confirmSettings: 'Confirm Settings',
       settingsNotSaved:
         'Please save your changes to the settings before continuing to edit the template.',
@@ -2332,6 +2346,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'This option allows you to pre-select whether or not the sample solution should be shown on the embedded evaluation view, as soon as you open the corresponding page or slide. This setting can be modified once the corresponding view has been opened.',
       showExplanationInfo:
         'This option allows you to pre-select whether or not the explanation (if captured) should be shown on the embedded evaluation view, as soon as you open the corresponding page or slide. This setting can be modified once the corresponding view has been opened.',
+      solutionHiddenWhileActive:
+        'The sample solution and explanation will only be shown in the evaluation view after closing the active block.',
       fontSize: 'Font size',
       validSolutionRange: 'Valid solution range',
       correctSolutionRanges: 'Correct solution ranges',
@@ -2407,6 +2423,10 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       answerRemembered: 'Answer remembered',
       frontSide: 'Front Side',
       backSide: 'Back Side',
+      blockActive: 'Block is active',
+      blockActiveInfo:
+        'The currently selected block has not been closed yet. Participants in your quiz can still submit answers. Please confirm that you want to display the results.',
+      showResults: 'Show Results',
     },
     lecturer: {
       noDataAvailable: 'No data available...',
@@ -2500,6 +2520,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       openEvaluation: 'Open Evaluation',
       archiveOnlyPastCourses:
         'Only courses with an end date in the past can be archived.',
+      noDeletionAssessment: 'Courses in assessment mode cannot be deleted.',
       archiveCourse: 'Archive course',
       unarchiveCourse: 'Unarchive course',
       confirmCourseArchive:
@@ -2516,7 +2537,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         '{number} participant(s) of this course will loose their collected points and access to all course materials and activities.',
       noLiveQuizzesDisconnected: 'This course contains no live quizzes.',
       disconnectLiveQuizzes:
-        '{number} live quizze(s) will be disconnected from the course. They can still be accessed through the live quiz list.',
+        '{number} live quizze(s) will be disconnected from the course. They can still be accessed through the activity list.',
       noPracticeQuizzesToDelete: 'This course contains no practice quizzes.',
       deletePracticeQuizzes:
         '{number} practice quizze(s) (including their results) will be irreversibly deleted.',
@@ -2560,6 +2581,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       nParticipants: '{number} participants',
       saveDescription: 'Save description',
       noDescriptionNotification: 'No description available.',
+      reviewProgress: 'Review progress',
       activityNotAvailableAssessment:
         '{activityType} are currently not supported in assessment courses.',
       withGroups: 'With Groups',

@@ -41,4 +41,4 @@ jobs:
           cd ../grading
           pnpm run build
           cd ../graphql
-          pnpm run test
+          pnpm run test:docker

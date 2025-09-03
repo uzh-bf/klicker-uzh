@@ -41,13 +41,22 @@ describe('Different live-quiz workflows', function () {
     cy.createQuestionSC({
       name: this.data.SC.title,
       content: this.data.SC.content,
+      explanation: this.data.SC.explanation,
       choices: this.data.SC.choices,
       userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionSC({
       name: this.data.SCML.title,
       content: this.data.SCML.content,
+      explanation: this.data.SCML.explanation,
       choices: this.data.SCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionSC({
+      name: this.data.SCML2.title,
+      content: this.data.SCML2.content,
+      explanation: this.data.SCML2.explanation,
+      choices: this.data.SCML2.choices,
       userId: Cypress.env('LECTURER_ID'),
     })
 
@@ -55,13 +64,22 @@ describe('Different live-quiz workflows', function () {
     cy.createQuestionMC({
       name: this.data.MC.title,
       content: this.data.MC.content,
+      explanation: this.data.MC.explanation,
       choices: this.data.MC.choices,
       userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionMC({
       name: this.data.MCML.title,
       content: this.data.MCML.content,
+      explanation: this.data.MCML.explanation,
       choices: this.data.MCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionMC({
+      name: this.data.MCML2.title,
+      content: this.data.MCML2.content,
+      explanation: this.data.MCML2.explanation,
+      choices: this.data.MCML2.choices,
       userId: Cypress.env('LECTURER_ID'),
     })
 
@@ -69,13 +87,22 @@ describe('Different live-quiz workflows', function () {
     cy.createQuestionKPRIM({
       name: this.data.KP.title,
       content: this.data.KP.content,
+      explanation: this.data.KP.explanation,
       choices: this.data.KP.choices,
       userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionKPRIM({
       name: this.data.KPML.title,
       content: this.data.KPML.content,
+      explanation: this.data.KPML.explanation,
       choices: this.data.KPML.choices,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionKPRIM({
+      name: this.data.KPML2.title,
+      content: this.data.KPML2.content,
+      explanation: this.data.KPML2.explanation,
+      choices: this.data.KPML2.choices,
       userId: Cypress.env('LECTURER_ID'),
     })
 
@@ -83,13 +110,22 @@ describe('Different live-quiz workflows', function () {
     cy.createQuestionNR({
       name: this.data.NR.title,
       content: this.data.NR.content,
+      explanation: this.data.NR.explanation,
       ...this.data.NR.options,
       userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionNR({
       name: this.data.NRML.title,
       content: this.data.NRML.content,
+      explanation: this.data.NRML.explanation,
       ...this.data.NRML.options,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionNR({
+      name: this.data.NRML2.title,
+      content: this.data.NRML2.content,
+      explanation: this.data.NRML2.explanation,
+      ...this.data.NRML2.options,
       userId: Cypress.env('LECTURER_ID'),
     })
 
@@ -97,13 +133,22 @@ describe('Different live-quiz workflows', function () {
     cy.createQuestionFT({
       name: this.data.FT.title,
       content: this.data.FT.content,
+      explanation: this.data.FT.explanation,
       ...this.data.FT.options,
       userId: Cypress.env('LECTURER_ID'),
     })
     cy.createQuestionFT({
       name: this.data.FTML.title,
       content: this.data.FTML.content,
+      explanation: this.data.FTML.explanation,
       ...this.data.FTML.options,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionFT({
+      name: this.data.FTML2.title,
+      content: this.data.FTML2.content,
+      explanation: this.data.FTML2.explanation,
+      ...this.data.FTML2.options,
       userId: Cypress.env('LECTURER_ID'),
     })
 
@@ -123,6 +168,7 @@ describe('Different live-quiz workflows', function () {
     cy.createQuestionSE({
       name: this.data.SE.title,
       content: this.data.SE.content,
+      explanation: this.data.SE.explanation,
       numberOfInputs: this.data.SE.inputs,
       collectionName: this.data.collection.name,
       userId: Cypress.env('LECTURER_ID'),
@@ -130,10 +176,22 @@ describe('Different live-quiz workflows', function () {
     cy.createQuestionSE({
       name: this.data.SEML.title,
       content: this.data.SEML.content,
+      explanation: this.data.SEML.explanation,
       numberOfInputs: this.data.SEML.inputs,
       collectionName: this.data.collection.name,
       correctAnswers: this.data.collection.options.filter((_, i) =>
         this.data.SEML.solutions.includes(i)
+      ),
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionSE({
+      name: this.data.SEML2.title,
+      content: this.data.SEML2.content,
+      explanation: this.data.SEML2.explanation,
+      numberOfInputs: this.data.SEML2.inputs,
+      collectionName: this.data.collection.name,
+      correctAnswers: this.data.collection.options.filter((_, i) =>
+        this.data.SEML2.solutions.includes(i)
       ),
       userId: Cypress.env('LECTURER_ID'),
     })
@@ -163,6 +221,19 @@ describe('Different live-quiz workflows', function () {
       criteria: this.data.CSML.criteria,
       cases: this.data.CSML.cases,
       solutions: this.data.CSML.solutions,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionCS({
+      name: this.data.CSML2.title,
+      content: this.data.CSML2.content,
+      explanation: this.data.CSML2.explanation,
+      collectionName: this.data.collection.name,
+      selectedItems: this.data.collection.options.filter((_, i) =>
+        this.data.CSML2.selectedItems.includes(i)
+      ),
+      criteria: this.data.CSML2.criteria,
+      cases: this.data.CSML2.cases,
+      solutions: this.data.CSML2.solutions,
       userId: Cypress.env('LECTURER_ID'),
     })
 
@@ -912,9 +983,9 @@ describe('Different live-quiz workflows', function () {
       stacks: [
         {
           elements: [
-            this.data.SC.title,
-            this.data.MC.title,
-            this.data.KP.title,
+            this.data.SCML.title,
+            this.data.MCML.title,
+            this.data.KPML.title,
             this.data.NR.title,
             this.data.FT.title,
             this.data.SE.title,
@@ -924,13 +995,13 @@ describe('Different live-quiz workflows', function () {
         },
         {
           elements: [
-            this.data.SCML.title,
-            this.data.MCML.title,
-            this.data.KPML.title,
-            this.data.NRML.title,
-            this.data.FTML.title,
-            this.data.SEML.title,
-            this.data.CSML.title,
+            this.data.SCML2.title,
+            this.data.MCML2.title,
+            this.data.KPML2.title,
+            this.data.NRML2.title,
+            this.data.FTML2.title,
+            this.data.SEML2.title,
+            this.data.CSML2.title,
             this.data.CT2.title,
           ],
         },
@@ -1164,9 +1235,9 @@ describe('Different live-quiz workflows', function () {
     // CS question - skipping not permitted, partial answers not possible
     cy.answerCaseStudy({
       elementIx: 6,
-      answers: this.data.CSML.answers,
-      cases: this.data.CSML.cases,
-      criteria: this.data.CSML.criteria,
+      answers: this.data.CSML2.answers,
+      cases: this.data.CSML2.cases,
+      criteria: this.data.CSML2.criteria,
       initialValidation: cy
         .get('[data-cy="student-submit-answer"]')
         .should('be.disabled'),
@@ -1263,17 +1334,17 @@ describe('Different live-quiz workflows', function () {
     cy.get('@publicLinkEvaluation').then((link) => {
       cy.visit(String(link))
     })
-    cy.findByText(this.data.SC.content).should('exist')
+    cy.findByText(this.data.SCML.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.MC.content).should('exist')
+    cy.findByText(this.data.MCML.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
-    cy.findByText(this.data.SC.content).should('exist')
+    cy.findByText(this.data.SCML.content).should('exist')
 
     // check out specific question evaluation
     cy.get('@publicLinkQuestion0').then((link) => {
       cy.visit(String(link))
     })
-    cy.findByText(this.data.SC.content).should('exist')
+    cy.findByText(this.data.SCML.content).should('exist')
     cy.get('@publicLinkQuestion6').then((link) => {
       cy.visit(String(link))
     })
@@ -1285,15 +1356,120 @@ describe('Different live-quiz workflows', function () {
     cy.get('@publicLinkQuestion9').then((link) => {
       cy.visit(String(link))
     })
-    cy.findByText(this.data.MCML.content).should('exist')
+    cy.findByText(this.data.MCML2.content).should('exist')
 
     // check out leaderboard
     cy.get('@publicLinkLeaderboard').then((link) => {
       cy.visit(String(link))
     })
+
+    // sample solution / explanation settings
+    // verify that solution and explanation are only enabled for completed blocks
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="live-quiz-cockpit-${this.data.course2.quiz.name}"]`
+    ).click()
+    cy.wait(1000)
+
+    cy.get('[data-cy="embed-evaluation-cockpit"]').click()
+    cy.get('[data-cy="embedding-show-solution-switch"]').click() // enable sample solution on evaluation
+    cy.get('[data-cy="embedding-show-explanation-switch"]').click() // enable sample explanation on evaluation
+
+    // SC question with sample solution and explanation (closed block)
+    cy.get('[data-cy="open-embedding-link-question-0"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('solutionEvaluationLink0')
+      })
+    // NR question without sample solution but with explanation (closed block)
+    cy.get('[data-cy="open-embedding-link-question-3"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('solutionEvaluationLink3')
+      })
+
+    // CT element without sample solution or explanation (closed block)
+    cy.get('[data-cy="open-embedding-link-question-7"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('solutionEvaluationLink7')
+      })
+
+    // MC question with sample solution and explanation (active block)
+    cy.get('[data-cy="open-embedding-link-question-9"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('solutionEvaluationLink9')
+      })
+
+    // for past SC question with sample solution and explanation, both switches should be active
+    cy.get('@solutionEvaluationLink0').then((link) => {
+      cy.visit(String(link))
+    })
+    cy.findByText(this.data.SCML.content).should('exist')
+    cy.findByText(this.data.SCML.explanation).should('exist')
+    cy.get('[data-cy="evaluation-footer-show-solution"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="evaluation-footer-show-explanation"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+
+    // for past NR question without sample solution but with explanation (closed block)
+    cy.get('@solutionEvaluationLink3').then((link) => {
+      cy.visit(String(link))
+    })
+    cy.findByText(this.data.NR.content).should('exist')
+    cy.findByText(this.data.NR.explanation).should('exist')
+    cy.get('[data-cy="evaluation-footer-show-solution"]').should('not.exist')
+    cy.get('[data-cy="evaluation-footer-show-explanation"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+
+    // for content elements, neither the sample solution nor the explanation switch should exist
+    cy.get('@solutionEvaluationLink7').then((link) => {
+      cy.visit(String(link))
+    })
+    cy.findByText(this.data.CT.content).should('exist')
+    cy.get('[data-cy="evaluation-footer-show-solution"]').should('not.exist')
+    cy.get('[data-cy="evaluation-footer-show-explanation"]').should('not.exist')
+
+    // for the active block, both the sample solution and explanation should be unchecked and disabled
+    cy.get('@solutionEvaluationLink9').then((link) => {
+      cy.visit(String(link))
+    })
+    cy.findByText(this.data.MCML2.content).should('exist')
+    cy.findByText(this.data.MCML2.explanation).should('not.exist')
+    cy.get('[data-cy="evaluation-footer-show-solution"]').should(
+      'have.attr',
+      'data-state',
+      'unchecked'
+    )
+    cy.get('[data-cy="evaluation-footer-show-explanation"]').should(
+      'have.attr',
+      'data-state',
+      'unchecked'
+    )
+    cy.get('[data-cy="evaluation-footer-show-solution"]').should(
+      'have.attr',
+      'disabled',
+      'disabled'
+    )
+    cy.get('[data-cy="evaluation-footer-show-explanation"]').should(
+      'have.attr',
+      'disabled',
+      'disabled'
+    )
   })
 
-  it('Check out evaluation view of live quiz and its content', function () {
+  it('Check out the evaluation view of the live quiz and its content', function () {
     cy.loginLecturer()
 
     cy.get('[data-cy="activities"]').click()
@@ -1309,31 +1485,36 @@ describe('Different live-quiz workflows', function () {
     })
 
     // check content of evaluation view
-    cy.findByText(this.data.SC.content).should('exist')
+    cy.findByText(this.data.SCML.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.MC.content).should('exist')
+    cy.findByText(this.data.MCML.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
-    cy.findByText(this.data.SC.content).should('exist')
+    cy.findByText(this.data.SCML.content).should('exist')
 
     // test instance navigation
     cy.get('[data-cy="evaluate-question-select"]')
       .should('exist')
-      .contains(this.data.SC.title)
+      .contains(this.data.SCML.title)
     cy.get('[data-cy="evaluate-question-select"]').realClick()
     cy.get(
-      `[data-cy="evaluation-select-instance-${this.data.KP.title}"]`
+      `[data-cy="evaluation-select-instance-${this.data.KPML.title}"]`
     ).realClick()
-    cy.get('[data-cy="evaluate-question-select"]').contains(this.data.KP.title)
+    cy.get('[data-cy="evaluate-question-select"]').contains(
+      this.data.KPML.title
+    )
     cy.get('[data-cy="evaluate-question-select"]').realClick()
     cy.get(
-      `[data-cy="evaluation-select-instance-${this.data.SC.title}"]`
+      `[data-cy="evaluation-select-instance-${this.data.SCML.title}"]`
     ).realClick()
-    cy.get('[data-cy="evaluate-question-select"]').contains(this.data.SC.title)
+    cy.get('[data-cy="evaluate-question-select"]').contains(
+      this.data.SCML.title
+    )
 
     // navigate forwards and backwards through all questions
+    // results of closed blocks should be shown directly - active blocks require confirmation
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.KP.title).should('exist')
+    cy.findByText(this.data.KPML.title).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.NR.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
@@ -1344,28 +1525,39 @@ describe('Different live-quiz workflows', function () {
     cy.findByText(this.data.CS.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
     cy.findByText(this.data.CT.content).should('exist')
+
+    // results of active block should only be shown after confirmation
+    // on second visit (after confirmation), no additional measures are required
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.SCML.content).should('exist')
+    cy.findByText(this.data.SCML2.content).should('not.exist')
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.findByText(this.data.SCML2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.MCML.content).should('exist')
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.findByText(this.data.MCML2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.KPML.content).should('exist')
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.findByText(this.data.KPML2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.NRML.content).should('exist')
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.findByText(this.data.NRML2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.FTML.content).should('exist')
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.findByText(this.data.FTML2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.SEML.content).should('exist')
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.findByText(this.data.SEML2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.CSML.content).should('exist')
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.findByText(this.data.CSML2.content).should('exist')
     cy.get('[data-cy="evaluate-next-question"]').click()
-    cy.findByText(this.data.CT2.content).should('exist')
+    cy.findByText(this.data.CT2.content).should('exist') // content elements are always displayed (even without results confirmation)
     cy.get('[data-cy="evaluate-previous-question"]').click()
-    cy.findByText(this.data.CSML.content).should('exist')
+    cy.findByText(this.data.CSML2.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click().click().click()
-    cy.findByText(this.data.NRML.content).should('exist')
+    cy.findByText(this.data.NRML2.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click().click().click()
-    cy.findByText(this.data.SCML.content).should('exist')
+    cy.findByText(this.data.SCML2.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.findByText(this.data.CT.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click()
@@ -1375,15 +1567,15 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="evaluate-previous-question"]').click()
     cy.findByText(this.data.FT.content).should('exist')
     cy.get('[data-cy="evaluate-previous-question"]').click().click().click()
-    cy.findByText(this.data.MC.title).should('exist')
+    cy.findByText(this.data.MCML.title).should('exist')
 
     // test navigation through blocks
     cy.get('[data-cy="evaluate-stack-1"]').click()
-    cy.findByText(this.data.SCML.content).should('exist')
+    cy.findByText(this.data.SCML2.content).should('exist')
     cy.get('[data-cy="evaluate-stack-0"]').click()
-    cy.findByText(this.data.SC.title).should('exist')
+    cy.findByText(this.data.SCML.title).should('exist')
     cy.get('[data-cy="evaluate-stack-1"]').click()
-    cy.findByText(this.data.SCML.content).should('exist')
+    cy.findByText(this.data.SCML2.content).should('exist')
   })
 
   it('Close block and delete feedback / feedback response', function () {
@@ -1407,6 +1599,113 @@ describe('Different live-quiz workflows', function () {
     cy.get(
       `[data-cy="delete-response-${this.data.course2.quiz.feedbackResponse}"]`
     ).click()
+  })
+
+  it('Verify that after closing the active live quiz block, the sample solution is shown', function () {
+    cy.loginLecturer()
+
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+    cy.get(
+      `[data-cy="live-quiz-cockpit-${this.data.course2.quiz.name}"]`
+    ).click()
+    cy.wait(1000)
+
+    cy.get('[data-cy="embed-evaluation-cockpit"]').click()
+    cy.get('[data-cy="embedding-show-solution-switch"]').click() // enable sample solution on evaluation
+    cy.get('[data-cy="embedding-show-explanation-switch"]').click() // enable sample explanation on evaluation
+
+    // SC question with sample solution and explanation (closed block)
+    cy.get('[data-cy="open-embedding-link-question-0"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('solutionEvaluationLink0')
+      })
+    // NR question without sample solution but with explanation (closed block)
+    cy.get('[data-cy="open-embedding-link-question-3"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('solutionEvaluationLink3')
+      })
+
+    // CT element without sample solution or explanation (closed block)
+    cy.get('[data-cy="open-embedding-link-question-7"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('solutionEvaluationLink7')
+      })
+
+    // MC question with sample solution and explanation (active block)
+    cy.get('[data-cy="open-embedding-link-question-9"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text).as('solutionEvaluationLink9')
+      })
+
+    // for past SC question with sample solution and explanation, both switches should be active
+    cy.get('@solutionEvaluationLink0').then((link) => {
+      cy.visit(String(link))
+    })
+    cy.findByText(this.data.SCML.content).should('exist')
+    cy.findByText(this.data.SCML.explanation).should('exist')
+    cy.get('[data-cy="evaluation-footer-show-solution"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="evaluation-footer-show-explanation"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+
+    // for past NR question without sample solution but with explanation (closed block)
+    cy.get('@solutionEvaluationLink3').then((link) => {
+      cy.visit(String(link))
+    })
+    cy.findByText(this.data.NR.content).should('exist')
+    cy.findByText(this.data.NR.explanation).should('exist')
+    cy.get('[data-cy="evaluation-footer-show-solution"]').should('not.exist')
+    cy.get('[data-cy="evaluation-footer-show-explanation"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+
+    // for content elements, neither the sample solution nor the explanation switch should exist
+    cy.get('@solutionEvaluationLink7').then((link) => {
+      cy.visit(String(link))
+    })
+    cy.findByText(this.data.CT.content).should('exist')
+    cy.get('[data-cy="evaluation-footer-show-solution"]').should('not.exist')
+    cy.get('[data-cy="evaluation-footer-show-explanation"]').should('not.exist')
+
+    // for the active block, both the sample solution and explanation should be unchecked and disabled
+    cy.get('@solutionEvaluationLink9').then((link) => {
+      cy.visit(String(link))
+    })
+    cy.findByText(this.data.MCML2.content).should('exist')
+    cy.findByText(this.data.MCML2.explanation).should('exist')
+    cy.get('[data-cy="evaluation-footer-show-solution"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="evaluation-footer-show-explanation"]').should(
+      'have.attr',
+      'data-state',
+      'checked'
+    )
+    cy.get('[data-cy="evaluation-footer-show-solution"]').should(
+      'not.have.attr',
+      'disabled',
+      'disabled'
+    )
+    cy.get('[data-cy="evaluation-footer-show-explanation"]').should(
+      'not.have.attr',
+      'disabled',
+      'disabled'
+    )
   })
 
   it('Check that the deleted feedbacks are not visible anymore', function () {

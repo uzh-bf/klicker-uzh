@@ -15,7 +15,7 @@ import {
   QuestionResponse,
   QuestionResponseDetail,
   ResponseCorrectness,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import {
   ElementInstanceResults,
   ElementResultsChoices,

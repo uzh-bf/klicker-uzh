@@ -1,0 +1,86 @@
+name: Build and deploy func-response-processor-v2 to Function App (QA)
+
+on:
+  push:
+    branches:
+      - 'v3'
+      - 'v3*'
+    paths:
+      - 'apps/func-response-processor/**'
+      - '.github/workflows/v3_klickeruzhprod-response-processor**'
+  workflow_dispatch:
+
+env:
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'apps/func-response-processor'
+  NODE_VERSION: '20.18.1'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read #This is required for actions/checkout
+
+    steps:
+      - name: 'Checkout GitHub Action'
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ env.NODE_VERSION }} Environment
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9.15.4
+
+      - name: 'Resolve Project Dependencies Using Npm'
+        shell: bash
+        run: |
+          pnpm dlx turbo@2.1.0 prune --scope @klicker-uzh/func-response-processor
+          pushd out
+          echo "node-linker=hoisted" > .npmrc
+          pnpm install --frozen-lockfile --ignore-scripts --strict-peer-dependencies
+          pnpm run build
+          mv apps/func-response-processor apps/func
+          mv apps/func/host.json .
+          popd
+
+      - name: Zip artifact for deployment
+        run: zip release.zip ./* -r
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-app
+          path: release.zip
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: node-app
+
+      - name: Unzip artifact for deployment
+        run: unzip release.zip
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_D1A575E160714C03B3A45E4DADC0FF74 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_81DE92EF962A4C58AA81918E0D10D179 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F2723E2E9BD346B1A3E1E0EF2A7A4BF6 }}
+
+      - name: 'Run Azure Functions Action'
+        uses: Azure/functions-action@v1
+        id: fa
+        with:
+          app-name: 'klickeruzhprod-response-processor-v2'
+          slot-name: 'Production'
+          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}

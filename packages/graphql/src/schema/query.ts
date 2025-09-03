@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import { PrismaTransactionContextWithUser } from 'src/lib/context.js'
 import builder from '../builder.js'
@@ -92,7 +92,7 @@ import {
   DerivedPermissionOriginInformation,
   ObjectSharingRequest,
   ObjectType,
-  PermissionInfo,
+  PermissionsList,
   UserGroup,
 } from './sharing.js'
 import {
@@ -726,9 +726,7 @@ export const Query = builder.queryType({
       participantGroups: t.field({
         nullable: true,
         type: [ParticipantGroup],
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
+        args: { courseId: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await GroupService.getParticipantGroups(args, ctx)
         },
@@ -1513,7 +1511,7 @@ export const Query = builder.queryType({
 
       getObjectPermissions: t.withAuth(asUser).field({
         nullable: true,
-        type: [PermissionInfo],
+        type: PermissionsList,
         args: {
           objectId: t.arg.string({ required: true }),
           objectType: t.arg({ type: ObjectType, required: true }),

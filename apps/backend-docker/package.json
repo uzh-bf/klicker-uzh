@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/backend-docker",
-  "version": "3.3.0-rc.0",
+  "version": "3.3.2",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,6 +17,7 @@
     "@graphql-yoga/plugin-response-cache": "1.9.1",
     "@graphql-yoga/redis-event-target": "1.0.0",
     "@klicker-uzh/graphql": "workspace:*",
+    "@klicker-uzh/hatchet-tasks": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@opentelemetry/exporter-trace-otlp-http": "0.53.0",
     "@opentelemetry/instrumentation": "0.53.0",
@@ -24,6 +25,7 @@
     "@opentelemetry/sdk-trace-base": "1.26.0",
     "@opentelemetry/sdk-trace-node": "1.26.0",
     "@opentelemetry/semantic-conventions": "1.27.0",
+    "@prisma/adapter-pg": "6.14.0",
     "@prisma/extension-optimize": "1.0.1",
     "@prisma/instrumentation": "6.14.0",
     "@sentry/node": "7.103.0",

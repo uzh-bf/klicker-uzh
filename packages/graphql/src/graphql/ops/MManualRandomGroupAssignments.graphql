@@ -1,23 +1,16 @@
 mutation ManualRandomGroupAssignments($courseId: String!) {
   manualRandomGroupAssignments(courseId: $courseId) {
     id
-    displayName
-    groupDeadlineDate
-    randomAssignmentFinalized
-
-    participantGroups {
+    name
+    code
+    averageMemberScore
+    groupActivityScore
+    participants {
       id
-      name
-      code
-      averageMemberScore
-      groupActivityScore
-      participants {
-        id
-        username
-        score
-        email
-        avatar
-      }
+      username
+      score
+      email
+      avatar
     }
   }
 }

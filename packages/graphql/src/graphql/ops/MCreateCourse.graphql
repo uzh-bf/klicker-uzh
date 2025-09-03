@@ -35,12 +35,26 @@ mutation CreateCourse(
     color
     startDate
     endDate
-    isGroupCreationEnabled
     groupDeadlineDate
     maxGroupSize
     preferredGroupSize
     language
     notificationEmail
+    isArchived
     isGamificationEnabled
+    isAssessmentEnabled
+    isGroupCreationEnabled
+    randomAssignmentFinalized
+    createdAt
+    updatedAt
+
+    derivedAccess
+    numSharedUsers
+    permissionLevel
+    isOwner
+    isManager
+    isEditor
+    isShared
+    isRemovable
   }
 }

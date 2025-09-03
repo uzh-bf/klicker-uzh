@@ -6,7 +6,7 @@ import {
   ObjectType,
   PermissionLevel,
   PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import { ChoicesElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
@@ -1215,7 +1215,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     await recomputeDerivedPermissions({ answerCollectionId: AC1!.id }, prisma)
 
     // fetch the direct permissions and make sure that they are correct
-    const directPermissions = await getElementPermissions(
+    const { permissions: directPermissions } = await getElementPermissions(
       { id: SE.id },
       userOneCtx
     )

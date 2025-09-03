@@ -15,7 +15,7 @@ const PermissionLevelIcons: Record<
   { icon: IconDefinition; color: string } | undefined
 > = {
   [PermissionLevel.Read]: { icon: faEye, color: 'text-blue-600' },
-  [PermissionLevel.Execute]: { icon: faPersonRunning, color: 'text-green-600' },
+  [PermissionLevel.Execute]: { icon: faPersonRunning, color: 'text-green-700' },
   [PermissionLevel.Write]: { icon: faUserPen, color: 'text-orange-600' },
   [PermissionLevel.Admin]: { icon: faUserTie, color: 'text-red-600' },
   [PermissionLevel.Owner]: undefined,

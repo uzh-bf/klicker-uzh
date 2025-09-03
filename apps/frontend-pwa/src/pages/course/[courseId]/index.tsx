@@ -30,6 +30,7 @@ import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import nookies from 'nookies'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
@@ -86,9 +87,10 @@ function CourseOverview({
       variables: { courseId },
     })
 
-  // TODO: add query update
   const [joinCourseLeaderboard] = useMutation(JoinCourseLeaderboardDocument, {
     variables: { courseId },
+    // refetching the leaderboard here makes sense to ensure that the participant
+    // is placed correctly in the leaderboard
     refetchQueries: [
       {
         query: GetStudentCourseLeaderboardDocument,
@@ -97,15 +99,8 @@ function CourseOverview({
     ],
   })
 
-  // TODO: add query update
   const [leaveCourseLeaderboard] = useMutation(LeaveCourseLeaderboardDocument, {
     variables: { courseId },
-    refetchQueries: [
-      {
-        query: GetStudentCourseLeaderboardDocument,
-        variables: { courseId, mode: leaderboardType },
-      },
-    ],
   })
 
   useEffect(() => {
@@ -619,42 +614,64 @@ function CourseOverview({
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
-  if (typeof ctx.params?.courseId !== 'string') {
-    return {
-      redirect: {
-        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
-        statusCode: 302,
-      },
+  try {
+    if (typeof ctx.params?.courseId !== 'string') {
+      return {
+        redirect: {
+          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
+          statusCode: 302,
+        },
+      }
     }
-  }
 
-  const apolloClient = initializeApollo()
+    const apolloClient = initializeApollo()
 
-  const { participantToken, cookiesAvailable } = await getParticipantToken({
-    apolloClient,
-    courseId: ctx.params.courseId,
-    ctx,
-  })
+    const { participantToken, cookiesAvailable } = await getParticipantToken({
+      apolloClient,
+      courseId: ctx.params.courseId,
+      ctx,
+    })
 
-  if (participantToken) {
-    return {
+    if (participantToken) {
+      return {
+        props: {
+          participantToken,
+          cookiesAvailable,
+          courseId: ctx.params.courseId,
+          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+            .default,
+        },
+      }
+    }
+
+    return addApolloState(apolloClient, {
       props: {
-        participantToken,
-        cookiesAvailable,
         courseId: ctx.params.courseId,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
+    })
+  } catch (error) {
+    console.error('Error in getServerSideProps on course overview:', error)
+
+    // remove the lti-token, if it is defined
+    try {
+      nookies.destroy(ctx, 'lti-token', {
+        domain: process.env.COOKIE_DOMAIN,
+        path: '/',
+      })
+    } catch (nookiesError) {
+      console.error(nookiesError)
+    }
+
+    // redirect to lti error page with redirect back to this page
+    return {
+      redirect: {
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/serverError?redirectTo=${encodeURIComponent(`/${ctx.locale}/course/${ctx.params?.courseId}`)}`,
+        permanent: false,
+      },
     }
   }
-
-  return addApolloState(apolloClient, {
-    props: {
-      courseId: ctx.params.courseId,
-      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-        .default,
-    },
-  })
 }
 
 export default CourseOverview

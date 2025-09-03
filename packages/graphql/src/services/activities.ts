@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType, SharingType, SortByType } from '@klicker-uzh/types'
 import {
   PrismaTransactionClient,
@@ -862,6 +862,7 @@ export async function getLiveQuizDetails(
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id },
     include: {
+      owner: true,
       _count: {
         select: {
           permissions: {
@@ -944,6 +945,7 @@ export async function getLiveQuizDetails(
           .hasSampleSolution ??
           false)
       const isEditor = instance.element._count.permissions > 0
+      const isDeleted = instance.element.isDeleted
 
       if (!arePointsAwarded) {
         return {
@@ -953,6 +955,7 @@ export async function getLiveQuizDetails(
           totalPoints: 0,
           hasSampleSolution,
           isEditor,
+          isDeleted,
           instance,
         }
       }
@@ -979,6 +982,7 @@ export async function getLiveQuizDetails(
         totalPoints,
         hasSampleSolution,
         isEditor,
+        isDeleted,
         instance,
       }
     })
@@ -1027,6 +1031,7 @@ export async function getLiveQuizDetails(
         totalPoints: 0,
       }
 
+  const isActivityManager = liveQuiz._count.permissions > 0
   return {
     id: liveQuiz.id,
     name: liveQuiz.name,
@@ -1036,8 +1041,10 @@ export async function getLiveQuizDetails(
     isActivityReviewer:
       (liveQuiz.courseId === null && liveQuiz._count.permissions > 0) ||
       (!!liveQuiz.course && liveQuiz.course._count.permissions > 0),
-    isActivityManager: liveQuiz._count.permissions > 0,
+    isActivityManager,
     courseId: liveQuiz.courseId,
+    ownerShortname: liveQuiz.owner.shortname,
+    ownerEmail: isActivityManager ? liveQuiz.owner.email : null,
     isGamificationEnabled: liveQuiz.isGamificationEnabled,
     arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
@@ -1093,6 +1100,7 @@ function getAsyncActivityPointsElements({
       totalPoints: number
       hasSampleSolution: boolean
       isEditor: boolean
+      isDeleted: boolean
       instance: DB.ElementInstance
     }[]
     stackPoints: number
@@ -1116,6 +1124,7 @@ function getAsyncActivityPointsElements({
         totalPoints: points,
         hasSampleSolution,
         isEditor: !!instance.element.permissions?.[0],
+        isDeleted: instance.element.isDeleted,
         instance,
       })
       acc.stackPoints += points
@@ -1130,6 +1139,8 @@ function getAsyncActivityPointsElements({
       ? stack.elements[0].results.total +
         stack.elements[0].anonymousResults.total
       : 0,
+    stackTitle: stack.displayName,
+    stackDescription: stack.description,
     stackPoints: arePointsAwarded ? stackPoints : null,
     elements,
   }
@@ -1142,6 +1153,7 @@ export async function getPracticeQuizDetails(
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
     where: { id },
     include: {
+      owner: true,
       _count: {
         select: {
           permissions: {
@@ -1217,6 +1229,7 @@ export async function getPracticeQuizDetails(
       }, 0)
     : 0
 
+  const isActivityManager = practiceQuiz._count.permissions > 0
   return {
     id: practiceQuiz.id,
     name: practiceQuiz.name,
@@ -1224,8 +1237,10 @@ export async function getPracticeQuizDetails(
     status: practiceQuiz.status,
     reviewStatus: practiceQuiz.reviewStatus,
     isActivityReviewer: practiceQuiz.course._count.permissions > 0,
-    isActivityManager: practiceQuiz._count.permissions > 0,
+    isActivityManager,
     courseId: practiceQuiz.courseId,
+    ownerShortname: practiceQuiz.owner.shortname,
+    ownerEmail: isActivityManager ? practiceQuiz.owner.email : null,
     isGamificationEnabled: practiceQuiz.isGamificationEnabled,
     arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
@@ -1241,6 +1256,7 @@ export async function getMicroLearningDetails(
   const microLearning = await ctx.prisma.microLearning.findUnique({
     where: { id },
     include: {
+      owner: true,
       _count: {
         select: {
           permissions: {
@@ -1315,6 +1331,7 @@ export async function getMicroLearningDetails(
       }, 0)
     : 0
 
+  const isActivityManager = microLearning._count.permissions > 0
   return {
     id: microLearning.id,
     name: microLearning.name,
@@ -1322,8 +1339,10 @@ export async function getMicroLearningDetails(
     status: microLearning.status,
     reviewStatus: microLearning.reviewStatus,
     isActivityReviewer: microLearning.course._count.permissions > 0,
-    isActivityManager: microLearning._count.permissions > 0,
+    isActivityManager,
     courseId: microLearning.courseId,
+    ownerShortname: microLearning.owner.shortname,
+    ownerEmail: isActivityManager ? microLearning.owner.email : null,
     isGamificationEnabled: microLearning.isGamificationEnabled,
     arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
@@ -1341,6 +1360,7 @@ export async function getGroupActivityDetails(
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
     where: { id },
     include: {
+      owner: true,
       _count: {
         select: {
           permissions: {
@@ -1421,6 +1441,7 @@ export async function getGroupActivityDetails(
       }, 0)
     : 0
 
+  const isActivityManager = groupActivity._count.permissions > 0
   return {
     id: groupActivity.id,
     name: groupActivity.name,
@@ -1428,8 +1449,10 @@ export async function getGroupActivityDetails(
     status: groupActivity.status,
     reviewStatus: groupActivity.reviewStatus,
     isActivityReviewer: groupActivity.course._count.permissions > 0,
-    isActivityManager: groupActivity._count.permissions > 0,
+    isActivityManager,
     courseId: groupActivity.courseId,
+    ownerShortname: groupActivity.owner.shortname,
+    ownerEmail: isActivityManager ? groupActivity.owner.email : null,
     isGamificationEnabled: groupActivity.isGamificationEnabled,
     arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,

@@ -42,6 +42,7 @@ interface ActivityEvaluationProps {
   feedbacks?: Feedback[] | null
   confusionFeedbacks?: ConfusionTimestep[] | null
   leaderboard?: LeaderboardCombinedEntry[] | null
+  hideActiveBlockResults?: boolean
   type?: ActivityEvaluationType
 }
 
@@ -54,6 +55,7 @@ function ActivityEvaluation({
   feedbacks,
   confusionFeedbacks,
   leaderboard,
+  hideActiveBlockResults = false,
   type = 'Asynchronous',
 }: ActivityEvaluationProps) {
   const router = useRouter()
@@ -73,13 +75,19 @@ function ActivityEvaluation({
     false
   )
 
-  const instanceResults = stacks.flatMap((stack) => stack.instances)
+  const instanceResults = stacks.flatMap((stack, stackIx) =>
+    stack.instances.map((instance) => ({
+      ...instance,
+      stackIx,
+    }))
+  )
 
   // automatically switch to correct instance
   useEvaluationInitialization({
     setActiveInstance,
     setActiveStack,
     questionIx: router.query.questionIx as string | null,
+    results: instanceResults,
     showLeaderboard: router.query.leaderboard === 'true',
     missingInstanceResults: instanceResults.length === 0,
     type,
@@ -95,6 +103,7 @@ function ActivityEvaluation({
     showSolution: router.query.showSolution === 'true',
     showExplanation: router.query.showExplanation === 'true',
     activeInstance,
+    activeStack,
   })
 
   // compute a map between stack and instance indices {stackIx: [instanceIx1, instanceIx2], ...}
@@ -150,8 +159,14 @@ function ActivityEvaluation({
       <div className="flex min-h-0 flex-1 flex-col">
         {instanceResults.length > 0 && typeof activeStack === 'number' && (
           <ElementEvaluation
+            requireShowResultsConfirmation={
+              hideActiveBlockResults && stacks[activeStack].stackActive
+            }
+            isStackActive={stacks[activeStack]?.stackActive ?? false}
             currentInstance={instanceResults[activeInstance]}
+            currentStack={stacks[activeStack]}
             activeInstance={activeInstance}
+            activeStack={activeStack}
             courseLanguage={courseLanguage}
             textSize={textSize}
             chartType={chartType}
@@ -256,6 +271,11 @@ function ActivityEvaluation({
         <EvaluationFooter
           type={type}
           activeStack={activeStack}
+          isStackActive={
+            typeof activeStack === 'number'
+              ? (stacks[activeStack]?.stackActive ?? false)
+              : false
+          }
           textSize={textSize}
           setTextSize={setTextSize}
           showSolution={showSolution}

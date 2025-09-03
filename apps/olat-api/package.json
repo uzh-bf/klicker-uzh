@@ -11,6 +11,7 @@
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
+    "@prisma/adapter-pg": "6.14.0",
     "@scalar/express-api-reference": "0.8.7",
     "dayjs": "1.11.13",
     "express": "4.21.1",

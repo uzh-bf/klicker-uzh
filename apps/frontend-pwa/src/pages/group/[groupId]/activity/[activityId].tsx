@@ -39,7 +39,6 @@ function GroupActivityDetails() {
     }
   )
 
-  // TODO: add query update
   const [startGroupActivity, { loading: startLoading }] = useMutation(
     StartGroupActivityDocument,
     {
@@ -47,6 +46,9 @@ function GroupActivityDetails() {
         groupId: router.query.groupId as string,
         activityId: router.query.activityId as string,
       },
+      // after activating the group activity, the details need to be loaded
+      // to avoid code duplication, it makes sense to simply use a refetch here
+      // -> no relevant performance implications
       refetchQueries: [
         {
           query: GroupActivityDetailsDocument,

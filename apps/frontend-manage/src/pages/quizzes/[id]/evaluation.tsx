@@ -40,6 +40,8 @@ function Evaluation() {
 
   return (
     <ActivityEvaluation
+      type="LiveQuiz"
+      hideActiveBlockResults={!router.query.hmac} // hide the results for active blocks when not inside PPT
       activityId={router.query.id as string}
       activityName={evaluation?.displayName ?? ''}
       courseLanguage={evaluation?.courseLanguage}
@@ -47,7 +49,6 @@ function Evaluation() {
       feedbacks={evaluation?.feedbacks}
       confusionFeedbacks={evaluation?.confusionFeedbacks}
       leaderboard={leaderboard}
-      type="LiveQuiz"
     />
   )
 }

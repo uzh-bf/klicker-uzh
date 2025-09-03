@@ -56,6 +56,13 @@ http:
         - 'websecure'
       service: 'func-response-processor'
 
+    response-api:
+      rule: 'Host(`response-api.klicker.com`)'
+      entrypoints:
+        - 'web'
+        - 'websecure'
+      service: 'response-api'
+
   services:
     api:
       loadBalancer:
@@ -96,6 +103,11 @@ http:
       loadBalancer:
         servers:
           - url: 'http://host.docker.internal:7073'
+
+    response-api:
+      loadBalancer:
+        servers:
+          - url: 'http://host.docker.internal:7078'
 
 tls:
   certificates:

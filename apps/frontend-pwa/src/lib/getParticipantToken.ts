@@ -15,7 +15,6 @@ export default async function getParticipantToken({
   ctx: GetServerSidePropsContext
 }) {
   const { req, res, query } = ctx
-
   const cookies = nookies.get(ctx)
 
   // if the user already has a participant token, skip registration

@@ -4,7 +4,7 @@ import {
   ObjectType,
   PermissionLevel,
   PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
@@ -2114,7 +2114,7 @@ describe('Unit tests for sharing functionalities of courses', () => {
     expect(res8).toBeTruthy()
 
     // verify that all direct permissions are correctly returned
-    const directPermissions = await getCoursePermissions(
+    const { permissions: directPermissions } = await getCoursePermissions(
       { id: course.id },
       userOneCtx
     )

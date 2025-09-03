@@ -171,7 +171,7 @@ function LiveQuizActions({
         'embeddingEvaluation',
         'liveQuizEvaluation',
         'useTemplate',
-        ...(user?.privatePreview ? ['activityLog'] : []),
+        'activityLog',
       ],
       isRemovable: ['removeLiveQuiz'],
     }
@@ -297,7 +297,6 @@ function LiveQuizActions({
             objectName={liveQuiz.name}
             objectType={ObjectType.LiveQuiz}
             isTemplate={isTemplate}
-            isOwner={liveQuiz.isOwner ?? false}
             onClose={() => setSharingModal(false)}
             refetchActivities={refetchActivities}
           />

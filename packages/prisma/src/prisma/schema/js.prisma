@@ -1,13 +1,16 @@
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["postgresqlExtensions", "views"]
-  output          = "../client"
-  binaryTargets   = ["native", "debian-openssl-1.1.x", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
+  provider               = "prisma-client"
+  previewFeatures        = ["postgresqlExtensions", "views", "queryCompiler", "driverAdapters"]
+  output                 = "../client"
+  runtime                = "nodejs"
+  moduleFormat           = "esm"
+  generatedFileExtension = "ts"
+  importFileExtension    = "js"
 }
 
 generator pothos {
   provider     = "prisma-pothos-types"
-  clientOutput = "@klicker-uzh/prisma"
+  clientOutput = "@klicker-uzh/prisma/client"
   output       = "../client/pothos.ts"
 }
 

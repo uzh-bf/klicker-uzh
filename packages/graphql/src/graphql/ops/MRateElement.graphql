@@ -9,6 +9,7 @@ mutation RateElement(
     rating: $rating
   ) {
     id
+    elementInstanceId
     upvote
     downvote
     feedback

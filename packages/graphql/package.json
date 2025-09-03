@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/graphql",
-  "version": "3.3.0-rc.0",
+  "version": "3.3.2",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -16,9 +16,10 @@
     "@klicker-uzh/util": "workspace:*",
     "@pothos/core": "4.3.0",
     "@pothos/plugin-directives": "4.1.0",
-    "@pothos/plugin-prisma": "4.2.1",
+    "@pothos/plugin-prisma": "4.10.0",
     "@pothos/plugin-scope-auth": "4.1.0",
     "@pothos/plugin-zod": "4.1.0",
+    "@prisma/adapter-pg": "6.14.0",
     "axios": "1.7.7",
     "bcryptjs": "2.4.3",
     "dayjs": "1.11.13",
@@ -48,6 +49,7 @@
     "@graphql-tools/utils": "~10.5.5",
     "@graphql-typed-document-node/core": "~3.2.0",
     "@istanbuljs/nyc-config-typescript": "~1.0.2",
+    "@jest/globals": "~29.0.0",
     "@parcel/watcher": "~2.4.1",
     "@rollup/plugin-node-resolve": "~15.3.0",
     "@rollup/plugin-typescript": "~12.1.2",
@@ -95,7 +97,8 @@
     "script": "ENV=development doppler run --config dev -- tsx",
     "script:prod": "ENV=production doppler run --config prd -- tsx",
     "script:stg": "ENV=development doppler run --config stg -- tsx",
-    "test": "bash ./run-tests.sh"
+    "test": "NODE_OPTIONS='--experimental-vm-modules' jest --verbose --runInBand",
+    "test:docker": "bash ./run-tests.sh"
   },
   "engines": {
     "node": "=20"

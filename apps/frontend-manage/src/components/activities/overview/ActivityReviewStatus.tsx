@@ -14,7 +14,7 @@ function ActivityReviewStatus({
   return (
     <>
       {reviewStatus === ReviewStatus.Reviewed ? (
-        <div className="mr-3 flex flex-row items-center gap-1.5 text-sm text-green-600">
+        <div className="mr-3 flex flex-row items-center gap-1.5 text-sm text-green-700">
           <FontAwesomeIcon icon={faCheckDouble} />
           <span>{t('shared.generic.reviewStatusREVIEWED')}</span>
         </div>

@@ -26,7 +26,6 @@ function CourseRemovalModal({
     dependencyAccess: false, // access to dependencies might be lost if only granted through derived rights
   })
 
-  // TODO: add query update
   const [removeObject, { loading: removing }] =
     useMutation(RemoveObjectDocument)
 
@@ -54,7 +53,17 @@ function CourseRemovalModal({
             objectId: courseId,
             objectType: ObjectType.Course,
           },
-          refetchQueries: [{ query: GetUserCoursesDocument }],
+          update: (cache, { data }) => {
+            // check if the removal was successful
+            if (!data?.removeObject) return
+
+            // remove the course from the queries list
+            cache.updateQuery({ query: GetUserCoursesDocument }, (qData) => ({
+              userCourses: qData?.userCourses?.filter(
+                (course) => course.id !== data.removeObject!
+              ),
+            }))
+          },
         })
         setModalOpen(false)
       }}
