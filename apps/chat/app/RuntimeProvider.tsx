@@ -34,9 +34,9 @@ export function RuntimeProvider({
   const messages = activeThread?.messages || []
   const isRunning = activeThread?.isRunning || false
 
-  // get system prompt for the selected mode
+  // get selected chat mode
   const currentModeOption = modeOptions.find((mode) => mode.id === selectedMode)
-  const systemPrompt = currentModeOption?.systemPrompt || ''
+  const chatMode = currentModeOption?.id || 'default'
 
   // AbortController to handle request cancellation
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -81,7 +81,7 @@ export function RuntimeProvider({
             })),
             threadId,
             selectedModel,
-            systemPrompt,
+            chatMode,
             parentId: parentId || undefined,
             assistantMessageId,
           }),
@@ -317,7 +317,7 @@ export function RuntimeProvider({
         abortControllerRef.current = null
       }
     },
-    [setMessages, setIsRunning, selectedModel, systemPrompt]
+    [setMessages, setIsRunning, selectedModel, chatMode]
   ) // Add dependencies
 
   const onNew = useCallback(

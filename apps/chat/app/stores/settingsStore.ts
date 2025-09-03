@@ -15,7 +15,6 @@ interface ModeOption {
   id: ChatbotMode
   name: string
   description: string
-  systemPrompt: string
 }
 
 interface SettingsState {
@@ -68,15 +67,11 @@ export const useSettingsStore = create<SettingsState>()(
           id: 'tutor',
           name: 'Tutor',
           description: 'Step-by-step learning guidance',
-          systemPrompt:
-            'You are an educational tutor who provides step-by-step guidance and helps users learn concepts gradually. Break down complex topics into manageable parts and encourage learning through questions and examples.',
         },
         {
           id: 'explainer',
           name: 'Explainer',
           description: 'Clear and comprehensive explanations',
-          systemPrompt:
-            'You are an expert explainer who provides clear, comprehensive, and detailed explanations of topics. Focus on making complex subjects understandable with thorough coverage and context.',
         },
       ],
 

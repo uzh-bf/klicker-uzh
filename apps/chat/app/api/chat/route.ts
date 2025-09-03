@@ -1,4 +1,5 @@
 import { context7, RAGSearch } from '@/app/tools'
+import { getSystemPrompt, type ChatMode } from '@/lib/prompts'
 import { anthropic } from '@ai-sdk/anthropic'
 import { openai } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
@@ -17,14 +18,14 @@ export async function POST(req: Request) {
     messages,
     threadId,
     selectedModel,
-    systemPrompt,
+    chatMode,
     parentId,
     assistantMessageId,
   }: {
     messages: Array<{ id: string; role: string; content: string }>
     threadId: string | null
     selectedModel: string
-    systemPrompt: string
+    chatMode?: ChatMode
     parentId?: string | null
     assistantMessageId: string
   } = await req.json()
@@ -108,9 +109,7 @@ export async function POST(req: Request) {
     },
     toolChoice: 'auto',
     stopWhen: stepCountIs(5),
-    system:
-      systemPrompt ||
-      'You are a helpful assistant. After using any tool, always provide a helpful summary or explanation of the results.',
+    system: getSystemPrompt(chatMode),
 
     abortSignal: req.signal,
 
