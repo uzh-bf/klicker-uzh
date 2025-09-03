@@ -1,0 +1,46 @@
+{{- if .Values.assessment.responseApi.ingress.enabled -}}
+{{- $fullName := include "chart.fullname" . -}}
+{{- $svcPort := .Values.assessment.responseApi.service.port -}}
+{{- if and .Values.assessment.responseApi.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey .Values.assessment.responseApi.ingress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set .Values.assessment.responseApi.ingress.annotations "kubernetes.io/ingress.class" .Values.assessment.responseApi.ingress.className}}
+  {{- end }}
+{{- end }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullName }}-response-api-assessment
+  labels:
+    {{- include "chart.ingressLabels" . | nindent 4 }}
+  {{- with .Values.assessment.responseApi.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.assessment.responseApi.ingress.className }}
+  {{- if .Values.assessment.responseApi.ingress.tls }}
+  tls:
+    {{- range .Values.assessment.responseApi.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.assessment.responseApi.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ $fullName }}-response-api-assessment
+                port:
+                  number: {{ $svcPort }}
+          {{- end }}
+    {{- end }}
+{{- end }}

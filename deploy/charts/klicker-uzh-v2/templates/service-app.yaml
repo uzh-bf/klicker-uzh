@@ -35,6 +35,23 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  name: {{ include "chart.fullname" . }}-frontend-assessment
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.assessment.frontendPWA.service.type }}
+  ports:
+    - port: {{ .Values.assessment.frontendPWA.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "chart.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend-pwa-assessment
+---
+apiVersion: v1
+kind: Service
+metadata:
   name: {{ include "chart.fullname" . }}-frontend-manage
   labels:
     {{- include "chart.labels" . | nindent 4 }}
@@ -86,6 +103,23 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  name: {{ include "chart.fullname" . }}-backend-assessment
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.assessment.backendGraphql.service.type }}
+  ports:
+    - port: {{ .Values.assessment.backendGraphql.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "chart.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: backend-assessment
+---
+apiVersion: v1
+kind: Service
+metadata:
   name: {{ include "chart.fullname" . }}-lti
   labels:
     {{- include "chart.labels" . | nindent 4 }}
@@ -133,3 +167,20 @@ spec:
   selector:
     {{- include "chart.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: response-api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "chart.fullname" . }}-response-api-assessment
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.assessment.responseApi.service.type }}
+  ports:
+    - port: {{ .Values.assessment.responseApi.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "chart.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: response-api-assessment
