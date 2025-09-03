@@ -19,8 +19,9 @@ interface QuestionAreaProps {
   expiresAt?: Date
   instances: ElementInstance[]
   handleNewResponse: (
-    type: ElementType,
+    sessionId: string,
     instanceId: number,
+    type: ElementType,
     answer: any
   ) => void
   quizId: string
@@ -132,36 +133,41 @@ function QuestionArea({
           selected: value,
         }))
 
-      handleNewResponse(type, instanceId, responseList)
+      handleNewResponse(quizId, instanceId, type, responseList)
     } else if (
       ElementType.FreeText === type &&
       input.type === ElementType.FreeText &&
       typeof input.response !== 'undefined'
     ) {
-      handleNewResponse(type, instanceId, input.response)
+      handleNewResponse(quizId, instanceId, type, input.response)
     } else if (
       ElementType.Numerical === type &&
       input.type === ElementType.Numerical &&
       typeof input.response !== 'undefined'
     ) {
-      handleNewResponse(type, instanceId, String(parseFloat(input.response)))
+      handleNewResponse(
+        quizId,
+        instanceId,
+        type,
+        String(parseFloat(input.response))
+      )
     } else if (
       ElementType.Selection === type &&
       input.type === ElementType.Selection &&
       typeof input.response !== 'undefined'
     ) {
       // submit responses as an array of answer ids that were selected
-      handleNewResponse(type, instanceId, Object.values(input.response))
+      handleNewResponse(quizId, instanceId, type, Object.values(input.response))
     } else if (
       ElementType.CaseStudy === type &&
       input.type === ElementType.CaseStudy &&
       typeof input.response !== 'undefined'
     ) {
       // submit responses as an object with case, item and criterion ids as nested keys
-      handleNewResponse(type, instanceId, input.response)
+      handleNewResponse(quizId, instanceId, type, input.response)
     } else if (type === ElementType.Content) {
       // for content elements, only the number of reads / next clicks are counted
-      handleNewResponse(type, instanceId, true)
+      handleNewResponse(quizId, instanceId, type, true)
     }
   }
 

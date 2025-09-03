@@ -1,16 +1,19 @@
 import { faClock } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ElementBlockStatus,
   ElementInstanceEvaluation,
   ElementType,
   LocaleType,
+  StackEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import { useSessionStorage } from '@uidotdev/usehooks'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import LiveQuizCountdown from '../liveQuiz/cockpit/LiveQuizCountdown'
 import { ActivityEvaluationType } from './ActivityEvaluation'
 import CSEvaluation from './elements/CSEvaluation'
 import CTEvaluation from './elements/CTEvaluation'
@@ -24,6 +27,7 @@ import { TextSizeType } from './textSizes'
 
 interface ElementEvaluationProps {
   currentInstance: ElementInstanceEvaluation
+  currentStack: StackEvaluation
   activeInstance: number
   activeStack: number
   courseLanguage?: LocaleType | null
@@ -39,6 +43,7 @@ interface ElementEvaluationProps {
 
 function ElementEvaluation({
   currentInstance,
+  currentStack,
   activeInstance,
   activeStack,
   courseLanguage,
@@ -52,6 +57,7 @@ function ElementEvaluation({
   className,
 }: ElementEvaluationProps) {
   const t = useTranslations()
+  const [inCooldown, setInCooldown] = useState(false)
   const hasSolution = currentInstance.hasSampleSolution ?? false
   const hasExplanation =
     (!!currentInstance?.explanation &&
@@ -74,7 +80,25 @@ function ElementEvaluation({
 
   if (!showResults && currentInstance.type !== ElementType.Content) {
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center bg-slate-200">
+      <div
+        className="relative flex h-full w-full flex-col items-center justify-center bg-slate-200"
+        key={`overlay-${currentInstance.id}-${currentStack.stackId}`}
+      >
+        {currentStack.expiresAt && (
+          <div className="absolute right-4 top-4">
+            <LiveQuizCountdown
+              size="lg"
+              block={{
+                id: currentStack.stackId,
+                status: currentStack.status ?? ElementBlockStatus.Scheduled,
+                expiresAt: currentStack.expiresAt,
+                timeLimit: currentStack.timeLimit,
+              }}
+              inCooldown={inCooldown}
+              setInCooldown={setInCooldown}
+            />
+          </div>
+        )}
         <div className="mb-3 flex flex-row items-center gap-2.5 text-xl font-bold">
           <FontAwesomeIcon icon={faClock} />
           <span>{t('manage.evaluation.blockActive')}</span>

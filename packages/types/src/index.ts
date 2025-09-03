@@ -6,7 +6,7 @@ import type {
   ObjectType,
   ParameterType,
   PerformanceLevel,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 
 // ----- ACTIVITY LOG TYPES -----
 // #region

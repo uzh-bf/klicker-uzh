@@ -1,0 +1,11 @@
+sharedConfig:
+  defaultAdminEmail: '${HATCHET_ADMIN_EMAIL}' # in exposed/production environments, change this to a valid email
+  defaultAdminPassword: '${HATCHET_ADMIN_PASSWORD}' # in exposed/production environments, change this to a secure password
+
+  # you can set additional environment variables here, which will override any defaults
+  env:
+    DATABASE_URL: 'postgres://${HATCHET_DB_POSTGRES_USERNAME}:${HATCHET_DB_POSTGRES_PASSWORD}@${HATCHET_DB_POSTGRES_HOST}:5432/${HATCHET_DB_POSTGRES_DB_NAME}?sslmode=require'
+    ADMIN_NAME: '${HATCHET_ADMIN_NAME}'
+    DEFAULT_TENANT_NAME: '${HATCHET_DEFAULT_TENANT_NAME}'
+    DEFAULT_TENANT_SLUG: '${HATCHET_DEFAULT_TENANT_SLUG}'
+    DEFAULT_TENANT_ID: '${HATCHET_DEFAULT_TENANT_ID}'

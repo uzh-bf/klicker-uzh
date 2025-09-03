@@ -1,0 +1,33 @@
+meta {
+  name: addResponse
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:7078/AddResponse
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "messageId": "1",
+    "sessionId": "1",
+    "instanceId": "1",
+    "response": {
+      "choices": [
+        {
+          "ix": 1,
+          "selected": true
+        },
+        {
+          "ix": 2,
+          "selected": false
+        }
+      ]
+    },
+    "responseTimestamp": 1
+  }
+  
+}

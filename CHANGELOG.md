@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.3.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.1...v3.3.2) (2025-08-29)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** avoid errors for overviews with missing activities ([5f39264](https://github.com/uzh-bf/klicker-uzh/commit/5f392644e643f099676056bd86bca40b1cfcb434))
+* block the deletion of assessment courses ([#4865](https://github.com/uzh-bf/klicker-uzh/issues/4865)) ([d7a5244](https://github.com/uzh-bf/klicker-uzh/commit/d7a52446afb140791df75f01f12516ab6ecc6508))
+* **packages/prisma:** fix formula parsing and update flashcards sets for BF1 ([#4826](https://github.com/uzh-bf/klicker-uzh/issues/4826)) ([16536f1](https://github.com/uzh-bf/klicker-uzh/commit/16536f173c88fb60a349f9373c69293b5640a57d))
+
+
+### Refactors
+
+* **apps/frontend-pwa:** simplify student documentation setup and make it course-independent ([#4864](https://github.com/uzh-bf/klicker-uzh/issues/4864)) ([6113e81](https://github.com/uzh-bf/klicker-uzh/commit/6113e8155269b1bb31d0b268cf4f375d2b48e1e2))
+* eliminate all unnecessary refetches in all frontends and replace them with proper cache updates ([#4861](https://github.com/uzh-bf/klicker-uzh/issues/4861)) ([bcad977](https://github.com/uzh-bf/klicker-uzh/commit/bcad977e3b789b26afa2b5a2b38effe353ade4e6))
+* update prisma to separate adapter-based approach without rust middleware ([#4853](https://github.com/uzh-bf/klicker-uzh/issues/4853)) ([3155e9a](https://github.com/uzh-bf/klicker-uzh/commit/3155e9aef30e036c3df3cb7a80bbf50b31850651))
+
+
+### Enhancements
+
+* add dedicated error page that handles server side errors and fix errors on activity overviews ([#4862](https://github.com/uzh-bf/klicker-uzh/issues/4862)) ([cb6396c](https://github.com/uzh-bf/klicker-uzh/commit/cb6396c0b6b3a4c4f8d4a67bb21b10b6b3a9dca0))
+* **frontend-manage:** show activity owner in activity details modal information section ([15f7c23](https://github.com/uzh-bf/klicker-uzh/commit/15f7c2333b1187cad5ed71363a68027f4fe810fa))
+* show countdown on evaluation results cover for active live quiz blocks ([#4860](https://github.com/uzh-bf/klicker-uzh/issues/4860)) ([defad8b](https://github.com/uzh-bf/klicker-uzh/commit/defad8b21fde158921d52237c3d4cc2eb79b8b57))
+
 ### [3.3.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.0...v3.3.1) (2025-08-25)
 
 

@@ -1,8 +1,4 @@
-import {
-  faClock,
-  faTrashCan,
-  IconDefinition,
-} from '@fortawesome/free-regular-svg-icons'
+import { faClock, IconDefinition } from '@fortawesome/free-regular-svg-icons'
 import { faCheck, faMessage, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -19,6 +15,7 @@ import AssessmentBadge from '../activities/overview/AssessmentBadge'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectPermissionLevel from '../sharing/ObjectPermissionLevel'
 import CourseArchiveButton from './CourseArchiveButton'
+import CourseDeletionButton from './CourseDeletionButton'
 
 interface CourseListButtonProps {
   course?: Pick<
@@ -165,22 +162,25 @@ function CourseListButton({
                     showArchiveModal={showArchiveModal}
                   />
                 )}
-                <Button
-                  className={{
-                    root: 'h-9 w-9 border-red-600 text-red-600 hover:text-red-600',
-                  }}
-                  onClick={(e) => {
-                    e?.stopPropagation()
-                    e?.preventDefault()
-                    showDeletionModal?.({
-                      open: true,
-                      courseId: course.id,
-                    })
-                  }}
-                  data={{ cy: `delete-course-${course.name}` }}
-                >
-                  <Button.Icon withoutLabel icon={faTrashCan} />
-                </Button>
+                {course.isAssessmentEnabled ? (
+                  <Tooltip
+                    tooltip={t('manage.courseList.noDeletionAssessment')}
+                  >
+                    <CourseDeletionButton
+                      id={course.id}
+                      name={course.name}
+                      showDeletionModal={showDeletionModal}
+                      isAssessmentEnabled={course.isAssessmentEnabled}
+                    />
+                  </Tooltip>
+                ) : (
+                  <CourseDeletionButton
+                    id={course.id}
+                    name={course.name}
+                    showDeletionModal={showDeletionModal}
+                    isAssessmentEnabled={course.isAssessmentEnabled}
+                  />
+                )}
               </>
             ) : null}
             {course.isRemovable ? (

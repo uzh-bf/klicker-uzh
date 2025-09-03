@@ -45,7 +45,7 @@ pnpm run prisma:reset:raw -f\n\
 # Run tests\n\
 echo "Running tests..."\n\
 cd /usr/src/app/packages/graphql\n\
-DATABASE_URL=$DATABASE_URL pnpm jest --verbose --runInBand\n\
+DATABASE_URL=$DATABASE_URL NODE_OPTIONS="$NODE_OPTIONS --experimental-vm-modules" pnpm jest --verbose --runInBand\n\
 \n\
 TEST_EXIT=$?\n\
 echo "Tests completed with exit code: $TEST_EXIT"\n\

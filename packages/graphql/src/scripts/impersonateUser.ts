@@ -1,9 +1,11 @@
-import { PrismaClient, UserLoginScope } from '@klicker-uzh/prisma'
+import { PrismaClient, UserLoginScope } from '@klicker-uzh/prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 import JWT from 'jsonwebtoken'
 import readline from 'readline'
 
 async function run(email: string) {
-  const prisma = new PrismaClient()
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+  const prisma = new PrismaClient({ adapter })
 
   const user = await prisma.user.findUnique({
     where: {

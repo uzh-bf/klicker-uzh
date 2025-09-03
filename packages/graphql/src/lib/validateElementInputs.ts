@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import { ElementManipulationInput } from '@klicker-uzh/types'
 
 function validateElementInputs({

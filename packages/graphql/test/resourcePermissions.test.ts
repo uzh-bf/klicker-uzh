@@ -1,4 +1,8 @@
-import { ElementType, PermissionLevel, PrismaClient } from '@klicker-uzh/prisma'
+import {
+  ElementType,
+  PermissionLevel,
+  PrismaClient,
+} from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'

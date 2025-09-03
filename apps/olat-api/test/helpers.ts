@@ -1,9 +1,10 @@
+import { prisma } from '@klicker-uzh/prisma'
 import {
   ElementInstanceType,
   ElementStackType,
   ElementType,
   PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import {
   ElementData,
   ElementInstanceResults,
@@ -388,22 +389,15 @@ export function getDatabaseUrl() {
   }
 
   // as a fallback, use default PostgreSQL connection
-  return 'postgresql://klicker-prod:klicker@localhost:5432/klicker-prod'
+  process.env.DATABASE_URL =
+    'postgresql://klicker-prod:klicker@localhost:5432/klicker-prod'
 }
 
 export async function initializePrisma() {
   // configure database
-  const databaseUrl = getDatabaseUrl()
+  getDatabaseUrl()
 
   try {
-    // initialize PrismaClient with the database URL
-    const prisma = new PrismaClient({
-      datasources: {
-        db: { url: databaseUrl },
-      },
-      log: ['error', 'warn'],
-    })
-
     // test database connection
     await prisma.$connect()
 

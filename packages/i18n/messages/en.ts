@@ -589,7 +589,7 @@ KlickerUZH offers you as a course participant a significant amount of functional
 
 ![Live Quiz _on the left_](/img/06_live_quiz.png)
 
-During the lecture, you have the possibility to answer the questions asked by the lecturers on [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname}) or in the KlickerUZH app (or, if available, in OLAT under the "Live Quiz" module). The results are displayed graphically without delay and can thus be presented and commented on by the lecturers after the answering time has expired.
+During the lecture, you have the possibility to answer the questions asked by the lecturers in the KlickerUZH app (or, if available, in OLAT under the "Live Quiz" module). The results are displayed graphically without delay and can thus be presented and commented on by the lecturers after the answering time has expired.
 
 No login is required to answer the questions. With a login you can participate in the challenge of your course and collect points.
 
@@ -599,7 +599,7 @@ No login is required to answer the questions. With a login you can participate i
 
 Do you have a question or would you like to give direct feedback on the lecture? With the Live Q&A you can ask the lecturers or assistants a question directly during the lecture - even if you are participating in the lecture from home. In addition, with the KlickerUZH you have the possibility to give the lecturers direct feedback on the speed and difficulty of the lecture during the lecture.
 
-Participation is possible at [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname}) (also anonymously) or via the KlickerUZH app.
+Participation is possible through the live quiz (also anonymously) or via the KlickerUZH app.
 
 #### Practice Quizzes, Microlearning, and Flashcards
 
@@ -652,12 +652,11 @@ If you already have a KlickerUZH account (e.g., from other courses), open the Kl
 
 ![](/img/05_join_course.png)
 
-If you are participating in a course with KlickerUZH for the first time, open the access link you received from the lecturers of your course (e.g., _{pwa_url}/course/XYZ/join?pin=111111111_). You can use this to create a new KlickerUZH account with an (anonymous) username and password. With this data you can then log in and create your personal avatar, as well as participate in activities.
+If you are participating in a course with KlickerUZH for the first time, open the access link you received from the lecturers of your course. You can use this to create a new KlickerUZH account with an (anonymous) username and password. With this data you can then log in and create your personal avatar, as well as participate in activities.
 
 #### Anonymous participation
 
-In general, it is also possible to participate anonymously in all elements of KlickerUZH. For live quizzes, you can find these for your course under: [{pwa_url}/join/{shortname}]({pwa_url}/join/{shortname})
-Practice quizzes and microlearning are available via direct links that you can receive from your lecturers. When accessing KlickerUZH via the OLAT integration, you can choose to create an account and will thereafter be logged in automatically. If you do not have a KlickerUZH account, your participation in practice quizzes will remain anonymous.
+In general, it is also possible to participate anonymously in all elements of KlickerUZH. Practice quizzes and microlearning are available via direct links that you can receive from your lecturers. When accessing KlickerUZH via the OLAT integration, you can choose to create an account and will thereafter be logged in automatically. If you do not have a KlickerUZH account, your participation in practice quizzes will remain anonymous.
       `,
       appSetupTitle: 'App Installation',
       appSetup: `
@@ -925,6 +924,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'An error occurred while logging out of your temporary pseudonym. Please try again.',
       loggedInAs: 'Logged in as',
       temporaryPseudonym: 'temporary pseudonym',
+    },
+    serverError: {
+      warning: 'An unexpected error has occurred',
+      serverSideError:
+        'An unexpected error occurred while processing your request. Please reset your cookies and try again. If the problem persists, contact your course instructor.',
+      tryAgain: 'Try Again',
     },
     avatar: {
       hair: 'Hair',
@@ -2519,6 +2524,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       openEvaluation: 'Open Evaluation',
       archiveOnlyPastCourses:
         'Only courses with an end date in the past can be archived.',
+      noDeletionAssessment: 'Courses in assessment mode cannot be deleted.',
       archiveCourse: 'Archive course',
       unarchiveCourse: 'Unarchive course',
       confirmCourseArchive:
@@ -2535,7 +2541,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         '{number} participant(s) of this course will loose their collected points and access to all course materials and activities.',
       noLiveQuizzesDisconnected: 'This course contains no live quizzes.',
       disconnectLiveQuizzes:
-        '{number} live quizze(s) will be disconnected from the course. They can still be accessed through the live quiz list.',
+        '{number} live quizze(s) will be disconnected from the course. They can still be accessed through the activity list.',
       noPracticeQuizzesToDelete: 'This course contains no practice quizzes.',
       deletePracticeQuizzes:
         '{number} practice quizze(s) (including their results) will be irreversibly deleted.',

@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import {
   type AvatarSettingsInput as AvatarSettingsInputType,
   type AvatarSettings as AvatarSettingsType,

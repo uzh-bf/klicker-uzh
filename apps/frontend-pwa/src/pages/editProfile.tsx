@@ -7,6 +7,7 @@ import useParticipantToken from '@lib/useParticipantToken'
 import { toast } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import nookies from 'nookies'
 import Layout from '../components/Layout'
 import AccountDeletionForm from '../components/forms/AccountDeletionForm'
 import AvatarUpdateForm from '../components/forms/AvatarUpdateForm'
@@ -82,40 +83,61 @@ function EditProfile({ participantToken, cookiesAvailable }: Props) {
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
-  const apolloClient = initializeApollo()
+  try {
+    const apolloClient = initializeApollo()
+    const { participantToken, cookiesAvailable } = await getParticipantToken({
+      apolloClient,
+      ctx,
+    })
 
-  const { participantToken, cookiesAvailable } = await getParticipantToken({
-    apolloClient,
-    ctx,
-  })
-
-  if (!participantToken) {
-    return {
-      redirect: {
-        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/createAccount`,
-        permanent: false,
-      },
+    if (!participantToken) {
+      return {
+        redirect: {
+          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/createAccount`,
+          permanent: false,
+        },
+      }
     }
-  }
 
-  if (participantToken) {
-    return {
+    if (participantToken) {
+      return {
+        props: {
+          participantToken,
+          cookiesAvailable,
+          messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
+            .default,
+        },
+      }
+    }
+
+    return addApolloState(apolloClient, {
       props: {
-        participantToken,
         cookiesAvailable,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
+    })
+  } catch (error) {
+    console.error('Error in getServerSideProps on editProfile:', error)
+
+    // remove the lti-token, if it is defined
+    try {
+      nookies.destroy(ctx, 'lti-token', {
+        domain: process.env.COOKIE_DOMAIN,
+        path: '/',
+      })
+    } catch (nookiesError) {
+      console.error(nookiesError)
+    }
+
+    // redirect to lti error page with redirect back to this page
+    return {
+      redirect: {
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/serverError?redirectTo=${encodeURIComponent(`/${ctx.locale}/editProfile`)}`,
+        permanent: false,
+      },
     }
   }
-
-  return addApolloState(apolloClient, {
-    props: {
-      cookiesAvailable,
-      messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
-        .default,
-    },
-  })
 }
 
 export default EditProfile

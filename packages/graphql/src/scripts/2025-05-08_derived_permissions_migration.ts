@@ -1,4 +1,4 @@
-import { PrismaClient, PublicationStatus } from '@klicker-uzh/prisma'
+import { PrismaClient, PublicationStatus } from '@klicker-uzh/prisma/client'
 import { ActivityType } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import * as cliProgress from 'cli-progress'

@@ -49,6 +49,13 @@ http:
         - 'websecure'
       service: 'func-response-processor'
 
+    response-api:
+      rule: 'Host(`response-api.klicker.com`)'
+      entrypoints:
+        - 'web'
+        - 'websecure'
+      service: 'response-api'
+
   services:
     api:
       loadBalancer:
@@ -84,6 +91,11 @@ http:
       loadBalancer:
         servers:
           - url: 'http://172.25.8.0:7073'
+
+    response-api:
+      loadBalancer:
+        servers:
+          - url: 'http://172.25.8.0:7078'
 
 tls:
   certificates:

@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import type { Context, ContextWithUser } from '../lib/context.js'
 
 export async function getFeedbacks(

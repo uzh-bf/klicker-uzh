@@ -1,13 +1,13 @@
+import { prisma } from '@klicker-uzh/prisma'
 import {
   AchievementType,
   ElementType,
   ObjectAccess,
   PermissionLevel,
-  PrismaClient,
   PublicationStatus,
   UserLoginScope,
   UserRole,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import {
   CaseStudyCaseCriterionSolution,
   CaseStudyCaseSolution,
@@ -19,8 +19,9 @@ import {
   ElementOptionsNumerical,
   ElementOptionsSelection,
 } from '@klicker-uzh/types'
-import * as bcrypt from 'bcryptjs'
+import bcrypt from 'bcryptjs'
 import { defineConfig } from 'cypress'
+// import cypressCodeCoverage from '@cypress/code-coverage/task'
 
 // ! Copy of seeded user ids from prisma/seedUsers.ts
 const USER_ID_TEST = '76047345-3801-4628-ae7b-adbebcfe8821'
@@ -110,22 +111,6 @@ const PARTICIPANT_GROUP_IDS_SINGLE = [
   'd9f23367-32b9-45ba-9bd6-06b6d96a5829',
 ]
 
-async function connect() {
-  if (!process.env.DATABASE_URL) {
-    throw new Error('DATABASE_URL environment variable is not set')
-  }
-
-  const prisma = new PrismaClient({
-    datasources: {
-      db: {
-        url: process.env.DATABASE_URL,
-      },
-    },
-  })
-
-  return prisma
-}
-
 export default defineConfig({
   watchForFileChanges: true,
   projectId: 'y436dx',
@@ -187,12 +172,11 @@ export default defineConfig({
       // merge process.env with config.env
       config.env = { ...config.env, ...process.env }
 
-      require('@cypress/code-coverage/task')(on, config)
+      // cypressCodeCoverage(on, config)
       on('task', {
         // ! Helper functions
         // #region
         async connectToDB() {
-          const prisma = await connect()
           return prisma
         },
         // #endregion
@@ -236,8 +220,6 @@ export default defineConfig({
           const hasAnswerFeedbacks = choices.every(
             (choice) => typeof choice.feedback !== 'undefined'
           )
-
-          const prisma = await connect()
 
           try {
             const ChoicesQuestion = await prisma.element.create({
@@ -293,8 +275,8 @@ export default defineConfig({
             })
 
             return true
-          } finally {
-            await prisma.$disconnect()
+          } catch (error) {
+            throw error
           }
         },
         async createQuestionNumerical({
@@ -328,8 +310,6 @@ export default defineConfig({
             typeof solutionRanges !== 'undefined' &&
             solutionRanges !== null &&
             solutionRanges.length > 0
-
-          const prisma = await connect()
 
           try {
             const NumericalQuestion = await prisma.element.create({
@@ -393,8 +373,8 @@ export default defineConfig({
             })
 
             return true
-          } finally {
-            await prisma.$disconnect()
+          } catch (error) {
+            throw error
           }
         },
         async createQuestionFreeText({
@@ -418,8 +398,6 @@ export default defineConfig({
         }) {
           const hasSampleSolution =
             typeof solutions !== 'undefined' && solutions.length > 0
-
-          const prisma = await connect()
 
           try {
             const FreeTextQuestion = await prisma.element.create({
@@ -469,8 +447,8 @@ export default defineConfig({
             })
 
             return true
-          } finally {
-            await prisma.$disconnect()
+          } catch (error) {
+            throw error
           }
         },
         async createQuestionSelection({
@@ -494,8 +472,6 @@ export default defineConfig({
           isArchived: boolean
           userId: string
         }) {
-          const prisma = await connect()
-
           try {
             const dbAnswerCollection = await prisma.answerCollection.findFirst({
               where: {
@@ -614,8 +590,8 @@ export default defineConfig({
             })
 
             return true
-          } finally {
-            await prisma.$disconnect()
+          } catch (error) {
+            throw error
           }
         },
         async createQuestionCaseStudy({
@@ -672,8 +648,6 @@ export default defineConfig({
           isArchived: boolean
           userId: string
         }) {
-          const prisma = await connect()
-
           try {
             const dbAnswerCollection = await prisma.answerCollection.findFirst({
               where: {
@@ -864,8 +838,8 @@ export default defineConfig({
             })
 
             return true
-          } finally {
-            await prisma.$disconnect()
+          } catch (error) {
+            throw error
           }
         },
         async createContentElement({
@@ -879,8 +853,6 @@ export default defineConfig({
           isArchived: boolean
           userId: string
         }) {
-          const prisma = await connect()
-
           try {
             const ContentElement = await prisma.element.create({
               data: {
@@ -920,8 +892,8 @@ export default defineConfig({
             })
 
             return true
-          } finally {
-            await prisma.$disconnect()
+          } catch (error) {
+            throw error
           }
         },
         async createFlashcard({
@@ -937,8 +909,6 @@ export default defineConfig({
           isArchived: boolean
           userId: string
         }) {
-          const prisma = await connect()
-
           try {
             const Flashcard = await prisma.element.create({
               data: {
@@ -979,18 +949,16 @@ export default defineConfig({
             })
 
             return true
-          } finally {
-            await prisma.$disconnect()
+          } catch (error) {
+            throw error
           }
         },
         async deleteElements() {
-          const prisma = await connect()
-
           try {
             await prisma.element.deleteMany({})
             return true
-          } finally {
-            await prisma.$disconnect()
+          } catch (error) {
+            throw error
           }
         },
         // #endregion
@@ -998,8 +966,6 @@ export default defineConfig({
         // ! Practice Quiz queries / mutations
         // #region
         async getPracticeQuizInfo({ quizName }) {
-          const prisma = await connect()
-
           try {
             const practiceQuizzes = await prisma.practiceQuiz.findMany({
               where: {
@@ -1020,8 +986,6 @@ export default defineConfig({
           }
         },
         async removeSoftDeletedPracticeQuiz({ quizName }) {
-          const prisma = await connect()
-
           try {
             const practiceQuizzes = await prisma.practiceQuiz.deleteMany({
               where: {
@@ -1035,8 +999,8 @@ export default defineConfig({
             }
 
             return true
-          } finally {
-            await prisma.$disconnect()
+          } catch (error) {
+            throw error
           }
         },
         // #endregion
@@ -1044,8 +1008,6 @@ export default defineConfig({
         // ! Microlearning queries / mutations
         // #region
         async getMicroLearningInfo({ mlName }) {
-          const prisma = await connect()
-
           try {
             const microLearnings = await prisma.microLearning.findMany({
               where: {
@@ -1066,8 +1028,6 @@ export default defineConfig({
           }
         },
         async removeSoftDeletedMicrolearning({ mlName }) {
-          const prisma = await connect()
-
           try {
             const microLearnings = await prisma.microLearning.deleteMany({
               where: {
@@ -1081,8 +1041,8 @@ export default defineConfig({
             }
 
             return true
-          } finally {
-            await prisma.$disconnect()
+          } catch (error) {
+            throw error
           }
         },
         // #endregion
@@ -1100,8 +1060,6 @@ export default defineConfig({
           entries: string[]
           userId: string
         }) {
-          const prisma = await connect()
-
           try {
             const answerCollection = await prisma.answerCollection.create({
               data: {
@@ -1143,8 +1101,8 @@ export default defineConfig({
             })
 
             return true
-          } finally {
-            await prisma.$disconnect()
+          } catch (error) {
+            throw error
           }
         },
         // #endregion
@@ -1152,8 +1110,6 @@ export default defineConfig({
         // ! Live Quiz queries / mutations
         // #region
         async removeSoftDeletedLiveQuiz({ lqName }) {
-          const prisma = await connect()
-
           try {
             const liveQuizzes = await prisma.liveQuiz.deleteMany({
               where: {
@@ -1167,8 +1123,8 @@ export default defineConfig({
             }
 
             return true
-          } finally {
-            await prisma.$disconnect()
+          } catch (error) {
+            throw error
           }
         },
         // #endregion
@@ -1176,8 +1132,6 @@ export default defineConfig({
         // ! Group Activity queries / mutations
         // #region
         async removeSoftDeletedGroupActivity({ gaName }) {
-          const prisma = await connect()
-
           try {
             const groupActivities = await prisma.groupActivity.deleteMany({
               where: {
@@ -1191,8 +1145,8 @@ export default defineConfig({
             }
 
             return true
-          } finally {
-            await prisma.$disconnect()
+          } catch (error) {
+            throw error
           }
         },
         // #endregion
@@ -1208,8 +1162,6 @@ export default defineConfig({
           activityType: string
           status: PublicationStatus
         }) {
-          const prisma = await connect()
-
           try {
             if (activityType === 'LIVE_QUIZ') {
               const liveQuiz = await prisma.liveQuiz.findFirst({
@@ -1280,8 +1232,6 @@ export default defineConfig({
           publicPreview: boolean
           privatePreview: boolean
         }) {
-          const prisma = await connect()
-
           try {
             const user = await prisma.user.update({
               where: {
@@ -1303,8 +1253,6 @@ export default defineConfig({
         // ! Course Management / PINs
         // #region
         async getCoursePin({ courseName }: { courseName: string }) {
-          const prisma = await connect()
-
           try {
             const course = await prisma.course.findFirst({
               where: {
@@ -1326,8 +1274,6 @@ export default defineConfig({
         // ! Cleanup / Seeding
         // #region
         async seedDatabase() {
-          const prisma = await connect()
-
           try {
             // ? User seeding section (identical to seedUsers logic, different uuids)
             const password = 'abcd'
@@ -1726,13 +1672,11 @@ export default defineConfig({
             )
 
             return true
-          } finally {
-            await prisma.$disconnect()
+          } catch (error) {
+            throw error
           }
         },
         async seedActivities() {
-          const prisma = await connect()
-
           try {
             const liveQuizId = 'c4196bea-e0c8-49f2-9669-7fdb78bb030c'
             await prisma.liveQuiz.upsert({
@@ -1860,13 +1804,9 @@ export default defineConfig({
           } catch (error) {
             console.error('Error seeding activities:', error)
             return null
-          } finally {
-            await prisma.$disconnect()
           }
         },
         async cleanupDatabase() {
-          const prisma = await connect()
-
           try {
             // delete all activities
             await prisma.liveQuiz.deleteMany()
@@ -1895,8 +1835,8 @@ export default defineConfig({
             await prisma.participant.deleteMany()
 
             return true
-          } finally {
-            await prisma.$disconnect()
+          } catch (error) {
+            throw error
           }
         },
         // #endregion

@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType as ActivityTypeEnum,
   SharingType as SharingTypeEnum,
@@ -242,6 +242,8 @@ export interface IActivityDetails {
   isActivityReviewer: boolean
   isActivityManager: boolean
   courseId?: string | null
+  ownerShortname: string
+  ownerEmail?: string | null
   isGamificationEnabled: boolean
   arePointsAwarded: boolean
   pointsMultiplier: number
@@ -265,6 +267,10 @@ export const ActivityDetails = builder.objectType(ActivityDetailsRef, {
     isActivityReviewer: t.exposeBoolean('isActivityReviewer'),
     isActivityManager: t.exposeBoolean('isActivityManager'),
     courseId: t.exposeString('courseId', { nullable: true }),
+
+    ownerShortname: t.exposeString('ownerShortname'),
+    ownerEmail: t.exposeString('ownerEmail', { nullable: true }),
+
     isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
     arePointsAwarded: t.exposeBoolean('arePointsAwarded'),
     pointsMultiplier: t.exposeInt('pointsMultiplier'),

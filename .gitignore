@@ -30,4 +30,8 @@ scratchpad.md
 ssl/
 
 util/backup/dumps
+
+dist/
 trees/
+
+tsconfig.tsbuildinfo

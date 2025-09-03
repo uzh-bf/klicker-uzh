@@ -11,8 +11,7 @@ import path from 'path'
 import Turndown from 'turndown'
 import { fileURLToPath } from 'url'
 import { parseStringPromise } from 'xml2js'
-import Prisma from '../../dist/index.js'
-import { ElementType, UserLoginScope } from '../prisma/client/index.js'
+import * as Prisma from '../client.js'
 
 export async function prepareUser({
   name,
@@ -44,7 +43,7 @@ export async function prepareUser({
       create: {
         name: name.trim(),
         password: hashedPassword,
-        scope: UserLoginScope.FULL_ACCESS,
+        scope: Prisma.UserLoginScope.FULL_ACCESS,
       },
     },
   }
@@ -914,7 +913,7 @@ export function extractQuizInfo(
           .replaceAll('\\]', ']')
           .replaceAll('\\\\%', '\\%')
           .replaceAll('\\\\', '\\'),
-        type: ElementType.FLASHCARD,
+        type: Prisma.ElementType.FLASHCARD,
         options: {},
         tags:
           (hasFormula && formulaTagId) || courseTagId
@@ -1048,7 +1047,7 @@ export async function prepareContentElements(
           name: name.trim(),
           content: data,
           options: {},
-          type: ElementType.CONTENT,
+          type: Prisma.ElementType.CONTENT,
           owner: {
             connect: {
               id: userId,
