@@ -35,3 +35,5 @@ dist/
 trees/
 
 tsconfig.tsbuildinfo
+
+*.log

@@ -2,54 +2,54 @@
   "name": "@klicker-uzh/audit",
   "version": "3.3.2",
   "license": "AGPL-3.0",
-  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
+  "dependencies": {
+    "@azure/data-tables": "13.2.2",
+    "@hono/node-server": "1.19.0",
+    "@hono/zod-validator": "0.4.1",
+    "hono": "4.9.6",
+    "pino": "9.4.0",
+    "prom-client": "15.1.3",
+    "ulidx": "2.3.0",
+    "zod": "3.23.8"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "~15.3.0",
+    "@rollup/plugin-typescript": "~12.1.2",
+    "@types/node": "^20.16.1",
+    "cross-env": "~7.0.3",
+    "dotenv": "~16.4.5",
+    "nodemon": "~3.1.7",
+    "npm-run-all": "~4.1.5",
+    "rollup": "~4.34.2",
+    "tsx": "~4.19.1",
+    "typescript": "~5.6.3"
+  },
   "scripts": {
     "build": "cross-env NODE_ENV=production rollup -c",
     "build:test": "pnpm run build",
     "check": "tsc --noEmit",
     "dev": "npm-run-all --parallel dev:build dev:run",
     "dev:build": "rollup -c --watch",
-    "dev:run": "nodemon -w dist/ --exec 'node ./dist/index.js'",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
+    "dev:run": "nodemon -w dist/ --exec 'node ./dist/index.js'",
+    "docker:clean": "docker-compose down -v && docker volume rm audit-azurite-data 2>/dev/null || true",
+    "docker:down": "docker-compose down",
+    "docker:up": "docker-compose up -d",
     "start": "node -r dotenv/config dist/index.js",
     "test": "node --test test/api.test.js",
     "test:local": "docker-compose up -d && sleep 3 && node --test test/api.test.js",
-    "test:manual": "echo 'Starting Azurite and service for manual testing...' && docker-compose up -d && pnpm dev",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
-    "docker:clean": "docker-compose down -v && docker volume rm audit-azurite-data 2>/dev/null || true"
-  },
-  "dependencies": {
-    "@azure/data-tables": "^13.2.2",
-    "@hono/node-server": "^1.19.0",
-    "@hono/zod-validator": "^0.4.1",
-    "hono": "^4.9.6",
-    "pino": "^9.4.0",
-    "prom-client": "^15.1.3",
-    "ulidx": "^2.3.0",
-    "zod": "^3.23.8"
-  },
-  "devDependencies": {
-    "@rollup/plugin-node-resolve": "^15.3.0",
-    "@rollup/plugin-typescript": "^12.1.2",
-    "@types/node": "^20.11.17",
-    "cross-env": "^7.0.3",
-    "dotenv": "^16.4.5",
-    "nodemon": "^3.1.7",
-    "npm-run-all": "^4.1.5",
-    "rollup": "^4.34.2",
-    "tsx": "^4.7.1",
-    "typescript": "^5.8.3"
+    "test:manual": "echo 'Starting Azurite and service for manual testing...' && docker-compose up -d && pnpm dev"
   },
   "engines": {
     "node": "=20"
   },
   "volta": {
     "extends": "../../package.json"
-  }
+  },
+  "type": "module"
 }
