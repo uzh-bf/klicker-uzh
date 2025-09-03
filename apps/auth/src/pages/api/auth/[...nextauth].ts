@@ -248,7 +248,7 @@ export const authOptions: NextAuthOptions = {
     //   },
     // },
     sessionToken: {
-      name: 'next-auth.session-token',
+      name: COOKIE_NAME,
       options: {
         domain: process.env.COOKIE_DOMAIN,
         path: '/',
