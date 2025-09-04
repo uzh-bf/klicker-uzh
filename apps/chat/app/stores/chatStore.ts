@@ -1,38 +1,35 @@
 'use client'
 import { ThreadMessageLike } from '@assistant-ui/react'
 import { create } from 'zustand'
+import {
+  apiCall,
+  convertApiMessageToMessage,
+  convertApiThreadToThread,
+  type ApiMessage,
+  type ApiThread,
+} from '../lib/chatApi'
+import {
+  extractThreadTitle,
+  findBranchLeaf,
+  findLeafMessages,
+  getBranches,
+  getPathToLeaf,
+} from '../lib/chatUtils'
 
-// extended type to include parentId for conversation branching
+/**
+ * Extended thread message type that includes parentId for conversation branching
+ */
 export type ExtendedThreadMessageLike = ThreadMessageLike & {
   parentId?: string | null
 }
 
 export interface Thread {
   id: string
-  messages: ExtendedThreadMessageLike[] // current branch
+  messages: ExtendedThreadMessageLike[] // current conversation branch
   allMessages: ExtendedThreadMessageLike[] // all messages in the thread
   isRunning: boolean
   title?: string
   createdAt: Date
-}
-
-// API types
-interface ApiThread {
-  id: string
-  title?: string
-  createdAt: string
-  updatedAt: string
-  messageCount?: number
-}
-
-interface ApiMessage {
-  id: string
-  threadId: string
-  role: string
-  content: Array<{ type: string; text: string }>
-  parentId?: string | null
-  createdAt: string
-  updatedAt: string
 }
 
 interface ChatState {
@@ -40,198 +37,49 @@ interface ChatState {
   activeThreadId: string | null
   isLoading: boolean
 
-  // thread management
+  // thread management actions
   createThread: () => Promise<string>
   loadThreads: () => Promise<void>
   switchToThread: (threadId: string) => Promise<void>
   deleteThread: (threadId: string) => Promise<void>
   updateThreadTitle: (threadId: string, title: string) => Promise<void>
 
-  // active thread
+  // active thread message actions
   addMessage: (message: ExtendedThreadMessageLike) => Promise<string | null>
   setMessages: (messages: ExtendedThreadMessageLike[]) => void
   setIsRunning: (isRunning: boolean) => void
-  updateMessage: (
-    id: string,
-    updates: Partial<ExtendedThreadMessageLike>
-  ) => void
-  clearMessages: () => void
-  setLoading: (loading: boolean) => void
 
-  // tree navigation
+  // tree navigation actions
   switchToBranch: (leafId: string) => void
   getMessageBranches: (messageId: string) => ExtendedThreadMessageLike[]
 }
 
-const generateThreadId = () =>
-  `thread-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-
-// tree traversal helpers
-const getPathToLeaf = (
-  messages: ExtendedThreadMessageLike[],
-  leafId: string
-): ExtendedThreadMessageLike[] => {
-  const messageMap = new Map(messages.map((m) => [m.id, m]))
-  const path: ExtendedThreadMessageLike[] = []
-
-  let current = messageMap.get(leafId)
-
-  // build path from leaf to root
-  while (current) {
-    path.unshift(current)
-
-    if (current.parentId) {
-      const parent = messageMap.get(current.parentId)
-      current = parent
-    } else {
-      current = undefined
-    }
-  }
-
-  return path
-}
-
-const getBranches = (
-  messages: ExtendedThreadMessageLike[],
-  messageId: string
-): ExtendedThreadMessageLike[] => {
-  const message = messages.find((m) => m.id === messageId)
-  if (!message) {
-    return []
-  }
-
-  // find all siblings of the given message
-  const siblings = messages.filter(
-    (m) =>
-      m.parentId === message.parentId &&
-      m.role === message.role &&
-      m.id !== message.id
-  )
-
-  // return all messages (current + siblings) sorted by creation time
-  const allMessages = [message, ...siblings].sort(
-    (a, b) =>
-      new Date(a.createdAt || 0).getTime() -
-      new Date(b.createdAt || 0).getTime()
-  )
-
-  return allMessages
-}
-
-const findLeafMessages = (
-  messages: ExtendedThreadMessageLike[]
-): ExtendedThreadMessageLike[] => {
-  const parentIds = new Set<string>()
-  messages.forEach((m) => {
-    if (m.parentId) parentIds.add(m.parentId)
-  })
-
-  // get all messages that are not parents
-  return messages.filter(
-    (m) => typeof m.id === 'string' && !parentIds.has(m.id)
-  )
-}
-
-const findBranchLeaf = (
-  messages: ExtendedThreadMessageLike[],
-  startMessageId: string
-): ExtendedThreadMessageLike | null => {
-  const messageMap = new Map(messages.map((m) => [m.id, m]))
-  let current = messageMap.get(startMessageId)
-
-  if (!current) return null
-
-  // parentId -> children[] map
-  const childrenMap: Map<string, ExtendedThreadMessageLike[]> = new Map()
-  for (const m of messages) {
-    if (m.parentId) {
-      const arr = childrenMap.get(m.parentId) || []
-      arr.push(m)
-      childrenMap.set(m.parentId, arr)
-    }
-  }
-
-  // traverse down using the childrenMap
-  while (current) {
-    const id = typeof current.id === 'string' ? current.id : undefined
-    const children: ExtendedThreadMessageLike[] = id
-      ? childrenMap.get(id) || []
-      : []
-    if (children.length === 0) return current
-    if (children.length === 1) {
-      current = children[0]
-      continue
-    }
-
-    // pick most recent child
-    let latest = children[0]
-    for (let i = 1; i < children.length; i++) {
-      const c = children[i]
-      if (new Date(c.createdAt || 0) > new Date(latest.createdAt || 0)) {
-        latest = c
-      }
-    }
-    current = latest
-  }
-
-  return null
-}
-
-// API functions
-const apiCall = async (url: string, options: RequestInit = {}) => {
-  const response = await fetch(`/api${url}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
-  })
-
-  if (!response.ok) {
-    const errorText = await response.text()
-    console.error(
-      `API call failed for ${url}: ${response.statusText} (${response.status}) - ${errorText}`
-    )
-    throw new Error(
-      `API call failed for ${url}: ${response.statusText} (${response.status})`
-    )
-  }
-
-  return await response.json()
-}
-
-const convertApiThreadToThread = (apiThread: ApiThread): Thread => ({
-  id: apiThread.id,
-  title: apiThread.title,
-  messages: [],
-  allMessages: [],
-  isRunning: false,
-  createdAt: new Date(apiThread.createdAt),
-})
-
-const convertApiMessageToMessage = (
-  apiMessage: ApiMessage
-): ExtendedThreadMessageLike => ({
-  id: apiMessage.id,
-  role: apiMessage.role as 'user' | 'assistant',
-  content: apiMessage.content.map((item) => ({
-    type: item.type as 'text',
-    text: item.text,
-  })),
-  createdAt: new Date(apiMessage.createdAt),
-  parentId: apiMessage.parentId || undefined,
-})
-
+/**
+ * Chat Store Implementation
+ *
+ * This Zustand store manages the entire chat application state including:
+ * - Multiple conversation threads
+ * - Thread switching and management
+ * - Message handling within threads
+ * - Tree-like conversation branching
+ * - API integration for persistence
+ */
 export const useChatStore = create<ChatState>((set, get) => {
   return {
     threads: [],
     activeThreadId: null,
     isLoading: false,
 
+    /**
+     * Creates a new conversation thread
+     * Attempts to create the thread on the server, falls back to local creation if it fails
+     *
+     * @returns Promise<string> The ID of the created thread
+     */
     createThread: async () => {
       try {
         set({ isLoading: true })
-        const apiThread = await apiCall('/threads', {
+        const apiThread = await apiCall<ApiThread>('/threads', {
           method: 'POST',
           body: JSON.stringify({ title: null }),
         })
@@ -250,29 +98,18 @@ export const useChatStore = create<ChatState>((set, get) => {
       } catch (error) {
         console.error('Failed to create thread:', error)
         set({ isLoading: false })
-        // Fallback to local thread creation
-        const threadId = generateThreadId()
-        const newThread: Thread = {
-          id: threadId,
-          messages: [],
-          allMessages: [],
-          isRunning: false,
-          createdAt: new Date(),
-        }
-
-        set((state) => ({
-          threads: [...state.threads, newThread],
-          activeThreadId: threadId,
-        }))
-
-        return threadId
+        throw error
       }
     },
 
+    /**
+     * Loads all conversation threads from the server
+     * Fetches thread metadata (without messages) for sidebar display
+     */
     loadThreads: async () => {
       try {
         set({ isLoading: true })
-        const apiThreads: ApiThread[] = await apiCall('/threads')
+        const apiThreads: ApiThread[] = await apiCall<ApiThread[]>('/threads')
 
         const threads = apiThreads.map(convertApiThreadToThread)
 
@@ -287,6 +124,13 @@ export const useChatStore = create<ChatState>((set, get) => {
       }
     },
 
+    /**
+     * Switches to a different conversation thread
+     * Loads all messages for the thread if not already loaded
+     * Automatically sets the current conversation path to the most recent branch
+     *
+     * @param threadId - The ID of the thread to switch to
+     */
     switchToThread: async (threadId) => {
       try {
         set({ isLoading: true })
@@ -301,13 +145,13 @@ export const useChatStore = create<ChatState>((set, get) => {
           return
         }
 
-        // Load ALL messages for the thread
-        const apiMessages: ApiMessage[] = await apiCall(
+        // Load all messages for the thread from the server
+        const apiMessages: ApiMessage[] = await apiCall<ApiMessage[]>(
           `/threads/${threadId}/messages`
         )
         const allMessages = apiMessages.map(convertApiMessageToMessage)
 
-        // find latest leaf message to set as current path
+        // find most recent leaf message to set as current conversation branch
         const leafMessages = findLeafMessages(allMessages)
         const latestLeaf = leafMessages.reduce(
           (latest, current) =>
@@ -317,7 +161,7 @@ export const useChatStore = create<ChatState>((set, get) => {
           leafMessages[0]
         )
 
-        // get the path from root to latest leaf
+        // get the path from root to  latest leaf
         const currentPath = latestLeaf?.id
           ? getPathToLeaf(allMessages, latestLeaf.id)
           : allMessages
@@ -340,9 +184,14 @@ export const useChatStore = create<ChatState>((set, get) => {
       }
     },
 
+    /**
+     * Deletes a conversation thread and all its messages
+     *
+     * @param threadId - The ID of the thread to delete
+     */
     deleteThread: async (threadId) => {
       try {
-        await apiCall(`/threads/${threadId}`, { method: 'DELETE' })
+        await apiCall<void>(`/threads/${threadId}`, { method: 'DELETE' })
 
         set((state) => {
           const filteredThreads = state.threads.filter((t) => t.id !== threadId)
@@ -363,9 +212,15 @@ export const useChatStore = create<ChatState>((set, get) => {
       }
     },
 
+    /**
+     * Updates title of a conversation thread
+     *
+     * @param threadId - The ID of the thread to update
+     * @param title - The new title for the thread
+     */
     updateThreadTitle: async (threadId, title) => {
       try {
-        await apiCall(`/threads/${threadId}/title`, {
+        await apiCall<void>(`/threads/${threadId}/title`, {
           method: 'PUT',
           body: JSON.stringify({ title }),
         })
@@ -380,12 +235,20 @@ export const useChatStore = create<ChatState>((set, get) => {
       }
     },
 
+    /**
+     * Adds new message to active conversation thread
+     * Creates new thread if none is active
+     * Automatically generates a title from the first user message
+     *
+     * @param message - The message to add to the conversation
+     * @returns Promise<string | null> The ID of the thread the message was added to
+     */
     addMessage: async (message) => {
       const state = get()
 
       let currentThreadId = state.activeThreadId
 
-      // check if active thread exists, else create one
+      // create a new thread if none is active
       if (!currentThreadId) {
         currentThreadId = await get().createThread()
         if (!currentThreadId) {
@@ -394,6 +257,7 @@ export const useChatStore = create<ChatState>((set, get) => {
         }
       }
 
+      // verify active thread exists in our state
       const updatedState = get()
       const activeThread = updatedState.threads.find(
         (t) => t.id === currentThreadId
@@ -406,6 +270,7 @@ export const useChatStore = create<ChatState>((set, get) => {
         return null
       }
 
+      // add message to both current path and all messages
       set((state) => ({
         threads: state.threads.map((thread) =>
           thread.id === currentThreadId
@@ -418,33 +283,24 @@ export const useChatStore = create<ChatState>((set, get) => {
         ),
       }))
 
-      // use first user message as default title
+      // auto-generate thread title from first user message
       if (
         activeThread &&
         !activeThread.title &&
         message.role === 'user' &&
         activeThread.messages.length === 0
       ) {
-        const content = Array.isArray(message.content)
-          ? message.content.find(
-              (c: { type: string; text?: string }) => c.type === 'text'
-            )?.text
-          : message.content
+        const title = extractThreadTitle(message)
 
-        if (content && typeof content === 'string') {
-          const title =
-            content.slice(0, 50) + (content.length > 50 ? '...' : '')
-
-          // update title in store
+        if (title) {
           set((state) => ({
             threads: state.threads.map((thread) =>
               thread.id === currentThreadId ? { ...thread, title } : thread
             ),
           }))
 
-          // update title in backend
           try {
-            await apiCall(`/threads/${currentThreadId}/title`, {
+            await apiCall<void>(`/threads/${currentThreadId}/title`, {
               method: 'PUT',
               body: JSON.stringify({ title }),
             })
@@ -457,6 +313,12 @@ export const useChatStore = create<ChatState>((set, get) => {
       return currentThreadId
     },
 
+    /**
+     * Sets current conversation messages
+     * Used when switching between different conversation branches
+     *
+     * @param messages - The messages to set as the current conversation branch
+     */
     setMessages: (messages) => {
       set((state) => ({
         threads: state.threads.map((thread) =>
@@ -465,6 +327,12 @@ export const useChatStore = create<ChatState>((set, get) => {
       }))
     },
 
+    /**
+     * Updates the running state of active thread
+     * Used to show/hide loading indicators during AI response generation
+     *
+     * @param isRunning - Whether the thread is currently processing a response
+     */
     setIsRunning: (isRunning) => {
       set((state) => ({
         threads: state.threads.map((thread) =>
@@ -473,35 +341,12 @@ export const useChatStore = create<ChatState>((set, get) => {
       }))
     },
 
-    updateMessage: (id, updates) => {
-      set((state) => ({
-        threads: state.threads.map((thread) =>
-          thread.id === state.activeThreadId
-            ? {
-                ...thread,
-                messages: thread.messages.map((m) =>
-                  m.id === id ? { ...m, ...updates } : m
-                ),
-              }
-            : thread
-        ),
-      }))
-    },
-
-    clearMessages: () => {
-      set((state) => ({
-        threads: state.threads.map((thread) =>
-          thread.id === state.activeThreadId
-            ? { ...thread, messages: [] }
-            : thread
-        ),
-      }))
-    },
-
-    setLoading: (loading) => {
-      set({ isLoading: loading })
-    },
-
+    /**
+     * Switches current conversation view to a different branch
+     * Finds the actual leaf of the selected branch and reconstructs the conversation path
+     *
+     * @param leafId - The ID of a message in the desired branch
+     */
     switchToBranch: (leafId) => {
       const state = get()
       const activeThread = state.threads.find(
@@ -514,9 +359,10 @@ export const useChatStore = create<ChatState>((set, get) => {
       const actualLeaf = findBranchLeaf(allMessages, leafId)
       const targetLeafId = actualLeaf?.id || leafId
 
+      // Reconstruct conversation path to this leaf
       const pathMessages = getPathToLeaf(allMessages, targetLeafId)
 
-      // update thread with new path
+      // update the current conversation branch
       set((state) => ({
         threads: state.threads.map((thread) =>
           thread.id === state.activeThreadId
@@ -529,6 +375,13 @@ export const useChatStore = create<ChatState>((set, get) => {
       }))
     },
 
+    /**
+     * Gets all alternative responses (branches) for a specific message
+     * Used to show users different response options at any point in the conversation
+     *
+     * @param messageId - The ID of the message to find alternatives for
+     * @returns Array of alternative messages (including the original)
+     */
     getMessageBranches: (messageId) => {
       const state = get()
       const activeThread = state.threads.find(
