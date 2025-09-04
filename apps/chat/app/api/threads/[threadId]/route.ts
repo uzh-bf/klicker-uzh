@@ -1,5 +1,9 @@
 import { prisma } from '@klicker-uzh/prisma'
 
+/**
+ * Retrieves a specific thread by ID with metadata.
+ * Used for thread details without loading all messages (use /messages for that).
+ */
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ threadId: string }> }
@@ -25,7 +29,7 @@ export async function GET(
       title: thread.title,
       createdAt: thread.createdAt.toISOString(),
       updatedAt: thread.updatedAt.toISOString(),
-      message_count: thread._count.messages,
+      messageCount: thread._count.messages,
     })
   } catch (error) {
     console.error('Failed to fetch thread:', error)
@@ -33,6 +37,10 @@ export async function GET(
   }
 }
 
+/**
+ * Deletes a specific thread and all its associated messages permanently.
+ * Used when user wants to remove a conversation thread entirely.
+ */
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ threadId: string }> }

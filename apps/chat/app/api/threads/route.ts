@@ -1,5 +1,9 @@
 import { prisma } from '@klicker-uzh/prisma'
 
+/**
+ * Retrieves all chat threads ordered by most recently updated.
+ * Used by the frontend to display threads in the sidebar.
+ */
 export async function GET() {
   try {
     const threads = await prisma.chatThread.findMany({
@@ -26,6 +30,10 @@ export async function GET() {
   }
 }
 
+/**
+ * Creates a new chat thread with an optional title.
+ * Used when explicitly creating a thread or starting a new conversation.
+ */
 export async function POST(req: Request) {
   try {
     const { title } = await req.json()

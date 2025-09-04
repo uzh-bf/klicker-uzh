@@ -13,6 +13,10 @@ import {
 
 export const maxDuration = 30
 
+/**
+ * Main chat endpoint that processes AI conversations with streaming responses.
+ * Handles thread creation, message persistence, and AI model interactions with tools.
+ */
 export async function POST(req: Request) {
   const {
     messages,

@@ -1,5 +1,9 @@
 import { prisma } from '@klicker-uzh/prisma'
 
+/**
+ * Updates the title of a specific thread.
+ * Used when user renames a thread or system auto-generates titles.
+ */
 export async function PUT(
   req: Request,
   { params }: { params: Promise<{ threadId: string }> }
