@@ -1,4 +1,4 @@
-import { prisma } from '@klicker-uzh/prisma'
+import { ThreadService } from '../../../../lib/threads'
 
 /**
  * Updates the title of a specific thread.
@@ -12,11 +12,7 @@ export async function PUT(
     const { threadId } = await params
     const { title } = await req.json()
 
-    await prisma.chatThread.update({
-      where: { id: threadId },
-      data: { title },
-    })
-
+    await ThreadService.updateThreadTitle(threadId, title)
     return Response.json({ message: 'Thread title updated' })
   } catch (error) {
     console.error('Failed to update thread title:', error)

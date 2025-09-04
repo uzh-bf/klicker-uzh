@@ -1,4 +1,4 @@
-import { prisma } from '@klicker-uzh/prisma'
+import { ThreadService } from '../../../lib/threads'
 
 /**
  * Retrieves a specific thread by ID with metadata.
@@ -10,27 +10,13 @@ export async function GET(
 ) {
   try {
     const { threadId } = await params
-
-    const thread = await prisma.chatThread.findUnique({
-      where: { id: threadId },
-      include: {
-        _count: {
-          select: { messages: true },
-        },
-      },
-    })
+    const thread = await ThreadService.getThreadById(threadId)
 
     if (!thread) {
       return Response.json({ error: 'Thread not found' }, { status: 404 })
     }
 
-    return Response.json({
-      id: thread.id,
-      title: thread.title,
-      createdAt: thread.createdAt.toISOString(),
-      updatedAt: thread.updatedAt.toISOString(),
-      messageCount: thread._count.messages,
-    })
+    return Response.json(thread)
   } catch (error) {
     console.error('Failed to fetch thread:', error)
     return Response.json({ error: 'Failed to fetch thread' }, { status: 500 })
@@ -47,11 +33,7 @@ export async function DELETE(
 ) {
   try {
     const { threadId } = await params
-
-    await prisma.chatThread.delete({
-      where: { id: threadId },
-    })
-
+    await ThreadService.deleteThread(threadId)
     return Response.json({ message: 'Thread deleted' })
   } catch (error) {
     console.error('Failed to delete thread:', error)
