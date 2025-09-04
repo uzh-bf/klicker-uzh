@@ -54,6 +54,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth
     pullPolicy: Always
+    tag: argocd
 
   service:
     type: ClusterIP
@@ -94,6 +95,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa
     pullPolicy: Always
+    tag: argocd
 
   service:
     type: ClusterIP
@@ -134,6 +136,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage
     pullPolicy: Always
+    tag: argocd
 
   service:
     type: ClusterIP
@@ -174,6 +177,7 @@ frontendControl:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control
     pullPolicy: Always
+    tag: argocd
 
   service:
     type: ClusterIP
@@ -214,6 +218,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker
     pullPolicy: Always
+    tag: argocd
 
   service:
     type: ClusterIP
@@ -279,6 +284,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti
     pullPolicy: Always
+    tag: argocd
 
   service:
     type: ClusterIP
@@ -320,6 +326,7 @@ olatApi:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api
     pullPolicy: Always
+    tag: argocd
 
   service:
     type: ClusterIP
