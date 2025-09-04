@@ -7,6 +7,9 @@ auth:
   autoscaling:
     enabled: false
 
+  image:
+    tag: argocd
+
   ingress:
     className: haproxy
     hosts:
@@ -37,6 +40,9 @@ frontendPWA:
   autoscaling:
     enabled: false
 
+  image:
+    tag: argocd
+
   ingress:
     className: haproxy
     hosts:
@@ -65,6 +71,9 @@ frontendManage:
 
   autoscaling:
     enabled: false
+
+  image:
+    tag: argocd
 
   ingress:
     className: haproxy
@@ -95,6 +104,9 @@ frontendControl:
   autoscaling:
     enabled: false
 
+  image:
+    tag: argocd
+
   ingress:
     className: haproxy
     hosts:
@@ -123,6 +135,9 @@ backendGraphql:
 
   autoscaling:
     enabled: false
+
+  image:
+    tag: argocd
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -157,6 +172,9 @@ olatApi:
   autoscaling:
     enabled: false
 
+  image:
+    tag: argocd
+
   ingress:
     className: haproxy
     hosts:
@@ -182,6 +200,9 @@ olatApi:
 
 lti:
   priorityClassName: staging-workload
+
+  image:
+    tag: argocd
 
   ingress:
     className: haproxy
