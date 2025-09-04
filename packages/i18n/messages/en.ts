@@ -459,7 +459,11 @@ export default {
       noPointsCollected:
         'No points have been collected in this quiz so far. As soon as this changes, podium and leaderboard will be displayed here.',
       liveQuizGamifiedNoGamifiedCourse:
-        'This live quiz is gamified but not part of a gamified course. Since you are logged in, any points collected by you in the quiz will be automatically displayed on the leaderboard. If you do not wish to appear on the leaderboard, please log out and rejoin the quiz via the link.',
+        'This live quiz is gamified but not part of a gamified course. Since you are logged in, any points collected by you in the quiz will be automatically displayed on the leaderboard. If you do not wish to appear on the leaderboard, please <logout>log out</logout> and rejoin the quiz via the link.',
+      liveQuizGamifiedCourseNoParticipation:
+        'This live quiz is part of a gamified course. Since you have not joined this course, you will only collect points within this quiz. Your points will appear on the quiz leaderboard. If you do not want this, please <logout>log out</logout> and rejoin the quiz via the link.',
+      liveQuizCourseParticipationInactive:
+        'This live quiz is part of a gamified course, but you are currently not participating in the gamification. To join the leaderboard and collect points in this quiz, join the <link>leaderboard on the course overview</link> and rejoin the quiz.',
       rank: 'Rank',
       username: 'Username',
       email: 'Email',

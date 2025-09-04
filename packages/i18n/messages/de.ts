@@ -461,7 +461,11 @@ export default {
       noPointsCollected:
         'Bisher wurden im Rahmen dieses Live Quizzes noch keine Punkte gesammelt. Sobald sich dies ändert, werden hier Podium und Rangliste angezeigt.',
       liveQuizGamifiedNoGamifiedCourse:
-        'Dieses Live Quiz ist gamifiziert, aber nicht Teil eines gamifizierten Kurses. Da Sie angemeldet sind, werden Ihre im Quiz gesammelten Punkte automatisch auf dem Leaderboard angezeigt. Sollten Sie dies nicht wünschen, melden Sie sich bitte ab und treten Sie dem Quiz erneut über den Link bei.',
+        'Dieses Live Quiz ist gamifiziert, aber nicht Teil eines gamifizierten Kurses. Da Sie angemeldet sind, werden Ihre im Quiz gesammelten Punkte automatisch auf dem Leaderboard angezeigt. Sollten Sie dies nicht wünschen, <logout>melden Sie sich bitte ab</logout> und treten Sie dem Quiz erneut über den Link bei.',
+      liveQuizGamifiedCourseNoParticipation:
+        'Dieses Live Quiz ist Teil eines gamifizierten Kurses. Da Sie diesem Kurs nicht beigetreten sind, werden Sie nur im Rahmen dieses Quizzes Punkte sammeln. Ihre Punkte erscheinen auf dem Quiz-Leaderboard. Sollten Sie dies nicht wünschen, <logout>melden Sie sich bitte ab</logout> und treten Sie dem Quiz erneut über den Link bei.',
+      liveQuizCourseParticipationInactive:
+        'Dieses Live Quiz ist Teil eines gamifizierten Kurses, aber Sie nehmen derzeit nicht an der Gamifizierung teil. Um dem Leaderboard beizutreten und Punkte in diesem Quiz zu sammeln, treten Sie dem <link>Leaderboard auf der Kursübersicht</link> bei und kehren Sie zum Quiz zurück.',
       rank: 'Rang',
       username: 'Nutzername',
       email: 'E-Mail',
