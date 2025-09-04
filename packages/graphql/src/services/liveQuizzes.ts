@@ -1641,20 +1641,22 @@ export async function deactivateLiveQuizBlock(
                     type: DB.LeaderboardType.SESSION,
                     participant: { connect: { id: participantId } },
                     score: score,
-                    sessionParticipation: {
-                      connectOrCreate: {
-                        where: {
-                          courseId_participantId: {
-                            courseId: quiz.courseId!,
-                            participantId,
+                    sessionParticipation: quiz.courseId
+                      ? {
+                          connectOrCreate: {
+                            where: {
+                              courseId_participantId: {
+                                courseId: quiz.courseId,
+                                participantId,
+                              },
+                            },
+                            create: {
+                              course: { connect: { id: quiz.courseId! } },
+                              participant: { connect: { id: participantId } },
+                            },
                           },
-                        },
-                        create: {
-                          course: { connect: { id: quiz.courseId! } },
-                          participant: { connect: { id: participantId } },
-                        },
-                      },
-                    },
+                        }
+                      : undefined,
                   },
                   update: { score },
                 })

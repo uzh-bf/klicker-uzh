@@ -29,9 +29,9 @@ export async function getSelf(
     const participantData = await ctx.prisma.participant.findUnique({
       where: { id: ctx.user.sub },
       include: {
-        participations: {
-          where: { courseId: liveQuiz?.courseId || undefined },
-        },
+        participations: liveQuiz?.courseId
+          ? { where: { courseId: liveQuiz.courseId } }
+          : { take: 0 }, // make sure that no participations are fetched if courseid is not set
       },
     })
 
