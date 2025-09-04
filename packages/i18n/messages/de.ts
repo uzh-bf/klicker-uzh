@@ -318,6 +318,7 @@ export default {
       archived: 'Archiviert',
       ended: 'Beendet',
       assessment: 'Assessment',
+      pinProtected: 'PIN geschützt',
       learningAnalytics: 'Learning Analytics',
       monday: 'Montag',
       tuesday: 'Dienstag',
@@ -1677,6 +1678,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       pasteSelectionElements: '{count} Elemente hinzufügen',
       pasteSingleElementsBlock: '{count} Blöcke mit 1 Element anfügen',
       pasteSingleElementsStack: '{count} Stacks mit 1 Element hinzufügen',
+      pinProtected: 'PIN-Schutz',
+      pinProtectedTooltip:
+        'Bei aktiviertem Schutz durch einen PIN-Code generiert das System automatisch einen PIN, welcher durch die Studierenden beim Beitritt zum Quiz eingegeben werden muss.',
       displayNameTooltip:
         'Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.',
       stackDescriptionTitle: 'Stack {stackIx}: Beschreibung (optional)',

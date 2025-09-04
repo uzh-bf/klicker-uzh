@@ -26,6 +26,7 @@ query GetSingleLiveQuiz($quizId: String!) {
     timeToZeroBonus
     isGamificationEnabled
     isAssessmentEnabled
+    pinCode
     isLiveQAEnabled
     isConfusionFeedbackEnabled
     isModerationEnabled

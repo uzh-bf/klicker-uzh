@@ -563,6 +563,7 @@ interface ManipulateLiveQuizArgs {
   maxBonusPoints?: number | null
   timeToZeroBonus?: number | null
   isGamificationEnabled: boolean
+  isPinProtected: boolean
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean
   isModerationEnabled: boolean
@@ -582,6 +583,7 @@ export async function manipulateLiveQuiz(
     maxBonusPoints,
     timeToZeroBonus,
     isGamificationEnabled,
+    isPinProtected,
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
     isModerationEnabled,
@@ -650,6 +652,9 @@ export async function manipulateLiveQuiz(
   // only activities in assessment courses will be marked as being part of assessment
   const assessmentSetting = course?.isAssessmentEnabled ?? false
 
+  // pin protection applies when assessment is enabled or explicitly enabled via flag
+  const pinProtection = assessmentSetting || isPinProtected
+
   // re-create blocks and link existing instance / create new instances (depending on mode and novelty of the included element)
   const createOrUpdateJSON = {
     name: name.trim(),
@@ -662,14 +667,15 @@ export async function manipulateLiveQuiz(
     timeToZeroBonus: timeToZeroBonus ?? undefined,
     isGamificationEnabled: gamificationSetting,
     isAssessmentEnabled: assessmentSetting,
-    pinCode: assessmentSetting // if the course is changed to an assessment course, assign a pin
-      ? generatePassword.generate({
+    pinCode: pinProtection // if pin protection applies, assign a pin
+      ? (existingActivity?.pinCode ??
+        generatePassword.generate({
           uppercase: true,
           lowercase: false,
           numbers: true,
           symbols: false,
           length: 6,
-        })
+        }))
       : null,
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
@@ -843,6 +849,7 @@ export async function manipulateLiveQuiz(
     areInstancesOutdated: activity.areInstancesOutdated,
     isGamificationEnabled: activity.isGamificationEnabled,
     isAssessmentEnabled: activity.isAssessmentEnabled,
+    pinCode: activity.pinCode,
     numSharedUsers: id ? activity._count.permissions - 1 : 0,
     isOwner,
     isManager,

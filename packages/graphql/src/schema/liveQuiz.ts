@@ -101,7 +101,7 @@ export const LiveQuiz = LiveQuizRef.implement({
     name: t.exposeString('name'),
     description: t.exposeString('description', { nullable: true }),
     displayName: t.exposeString('displayName'),
-    pinCode: t.exposeInt('pinCode', { nullable: true }),
+    pinCode: t.exposeString('pinCode', { nullable: true }),
     templateId: t.exposeString('templateId', { nullable: true }),
     templateName: t.exposeString('templateName', { nullable: true }),
 

@@ -10,6 +10,7 @@ mutation CreateLiveQuiz(
   $maxBonusPoints: Int!
   $timeToZeroBonus: Int!
   $isGamificationEnabled: Boolean!
+  $isPinProtected: Boolean!
   $isConfusionFeedbackEnabled: Boolean!
   $isLiveQAEnabled: Boolean!
   $isModerationEnabled: Boolean!
@@ -26,6 +27,7 @@ mutation CreateLiveQuiz(
     maxBonusPoints: $maxBonusPoints
     timeToZeroBonus: $timeToZeroBonus
     isGamificationEnabled: $isGamificationEnabled
+    isPinProtected: $isPinProtected
     isConfusionFeedbackEnabled: $isConfusionFeedbackEnabled
     isLiveQAEnabled: $isLiveQAEnabled
     isModerationEnabled: $isModerationEnabled

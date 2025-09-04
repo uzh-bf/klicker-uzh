@@ -247,6 +247,8 @@ export async function getUserActivities(
           (activity.permissionLevel === DB.PermissionLevel.OWNER ||
             activity.permissionLevel === DB.PermissionLevel.ADMIN)) ||
         activity.isUserCourseAdmin,
+      pinCode:
+        activity.type === ActivityType.LIVE_QUIZ ? activity.pinCode : null,
       sharingType,
     }
   })

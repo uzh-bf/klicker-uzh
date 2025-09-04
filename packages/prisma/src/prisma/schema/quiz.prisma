@@ -404,6 +404,7 @@ view UserActivities {
   isGamificationEnabled Boolean
   isAssessmentEnabled   Boolean
   pointsMultiplier      Int
+  pinCode               String?
 
   // template information
   templateId   String?

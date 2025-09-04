@@ -109,6 +109,7 @@ export interface IActivityInfo {
   areInstancesOutdated: boolean
   isGamificationEnabled?: boolean
   isAssessmentEnabled?: boolean
+  pinCode?: string | null
 
   numSharedUsers?: number
   isOwner: boolean
@@ -177,6 +178,9 @@ export const ActivityInfo = builder.objectType(ActivityInfoRef, {
       nullable: true,
     }),
     isAssessmentEnabled: t.exposeBoolean('isAssessmentEnabled', {
+      nullable: true,
+    }),
+    pinCode: t.exposeString('pinCode', {
       nullable: true,
     }),
 
