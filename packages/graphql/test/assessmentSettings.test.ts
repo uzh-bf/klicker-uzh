@@ -101,7 +101,8 @@ describe('Unit tests for assessment configuration functionalities', () => {
       const dbLiveQuiz1 = await prisma.liveQuiz.findUnique({
         where: { id: liveQuiz1.id },
       })
-      expect(dbLiveQuiz1?.pinCode).toBeNull()
+      expect(dbLiveQuiz1?.pinCode).not.toBeNull()
+      expect(dbLiveQuiz1?.pinCode).toMatch(/^[A-Z0-9]{6}$/) // pin should be a valid 6-character alphanumeric code
 
       const liveQuiz2 = await seedLiveQuiz({ elements: [] }, userOneCtx)
       const liveQuiz2Edited = await manipulateLiveQuiz(
@@ -208,7 +209,8 @@ describe('Unit tests for assessment configuration functionalities', () => {
       const dbLiveQuiz5 = await prisma.liveQuiz.findUnique({
         where: { id: liveQuiz5.id },
       })
-      expect(dbLiveQuiz5?.pinCode).toBeNull()
+      expect(dbLiveQuiz5?.pinCode).not.toBeNull()
+      expect(dbLiveQuiz5?.pinCode).toMatch(/^[A-Z0-9]{6}$/)
 
       const liveQuiz6 = await seedLiveQuiz({ elements: [] }, userOneCtx)
       const liveQuiz6Edited = await manipulateLiveQuiz(
@@ -396,7 +398,8 @@ describe('Unit tests for assessment configuration functionalities', () => {
       const dbLiveQuiz12 = await prisma.liveQuiz.findUnique({
         where: { id: liveQuiz12Edited.id },
       })
-      expect(dbLiveQuiz12?.pinCode).toBeNull()
+      expect(dbLiveQuiz12?.pinCode).not.toBeNull()
+      expect(dbLiveQuiz12?.pinCode).toMatch(/^[A-Z0-9]{6}$/)
 
       // Case 7: Manipulate a live quiz assigned to courses with different gamification and assessment setting combinations
       const liveQuiz13 = await manipulateLiveQuiz(
