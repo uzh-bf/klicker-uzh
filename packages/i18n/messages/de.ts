@@ -874,6 +874,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noQuizDescription:
         'Unter diesem Link ist derzeit kein laufendes Live-Quiz verfügbar. Bitte überprüfen Sie Ihren Link oder wenden Sie sich an Ihren Dozierenden.',
       refreshPage: 'Seite aktualisieren',
+      pinRequired: 'Für den Zugriff auf dieses Quiz ist eine PIN erforderlich.',
+      enterPinTitle: 'PIN-Code eingeben',
+      invalidPin: 'Der eingegebene PIN ist ungültig.',
+      enterPinLabel: 'PIN-Code',
+      enterPinPlaceholder: 'PIN eingeben',
+      submitPin: 'PIN absenden',
     },
     feedbacks: {
       title: 'Feedback-Kanal',

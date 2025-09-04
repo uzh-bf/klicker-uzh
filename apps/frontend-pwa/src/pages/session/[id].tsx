@@ -1,4 +1,4 @@
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowsRotate,
@@ -12,12 +12,21 @@ import {
   GetFeedbacksDocument,
   GetRunningLiveQuizDocument,
   SelfDocument,
+  SetLiveQuizPinDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
 import { addApolloState, initializeApollo } from '@lib/apollo'
-import { Button, H1, H2, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  FormikAlphaNumericPinField,
+  H1,
+  H2,
+  UserNotification,
+  toast,
+} from '@uzh-bf/design-system'
+import { Form, Formik } from 'formik'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
@@ -124,7 +133,8 @@ function Index({ id }: { id: string }) {
   const router = useRouter()
   const [activeMobilePage, setActiveMobilePage] = useState('questions')
 
-  const { data, loading, subscribeToMore } = useQuery(
+  const [setLiveQuizPin] = useMutation(SetLiveQuizPinDocument)
+  const { data, loading, error, subscribeToMore, refetch } = useQuery(
     GetRunningLiveQuizDocument,
     { variables: { id } }
   )
@@ -136,6 +146,65 @@ function Index({ id }: { id: string }) {
     return (
       <Layout>
         <Loader />
+      </Layout>
+    )
+  }
+
+  // pin error handling
+  const isPinMissing =
+    error?.graphQLErrors?.some((e) => e.message === 'LIVE_QUIZ_PIN_MISSING') ||
+    error?.message === 'LIVE_QUIZ_PIN_MISSING'
+  const isPinInvalid =
+    error?.graphQLErrors?.some((e) => e.message === 'LIVE_QUIZ_PIN_INVALID') ||
+    error?.message === 'LIVE_QUIZ_PIN_INVALID'
+
+  if (isPinMissing || isPinInvalid) {
+    return (
+      <Layout>
+        <div className="mx-auto flex h-full w-full max-w-md flex-col items-center justify-center gap-4 py-8 text-center">
+          <H1>{t('pwa.liveQuiz.enterPinTitle')}</H1>
+          <p className="text-gray-600">{t('pwa.liveQuiz.pinRequired')}</p>
+          <Formik
+            initialValues={{ pin: '' }}
+            onSubmit={async (values, { setSubmitting }) => {
+              try {
+                await setLiveQuizPin({
+                  variables: { liveQuizId: id, pin: values.pin },
+                })
+                await refetch()
+              } catch (e: any) {
+                // show toast on invalid pin
+                const msg = t('pwa.liveQuiz.invalidPin')
+                toast({ type: 'error', message: msg })
+              } finally {
+                setSubmitting(false)
+              }
+            }}
+          >
+            {({ handleSubmit, isSubmitting }) => (
+              <Form
+                onSubmit={handleSubmit}
+                className="flex w-max flex-col items-end gap-4"
+              >
+                <FormikAlphaNumericPinField
+                  name="pin"
+                  uppercaseOnly
+                  label={t('pwa.liveQuiz.enterPinLabel')}
+                  length={6}
+                  data={{ cy: 'live-quiz-pin-input' }}
+                />
+                <Button
+                  primary
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={{ root: 'w-full' }}
+                >
+                  <Button.Label>{t('pwa.liveQuiz.submitPin')}</Button.Label>
+                </Button>
+              </Form>
+            )}
+          </Formik>
+        </div>
       </Layout>
     )
   }
@@ -343,21 +412,25 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   const apolloClient = initializeApollo()
 
-  await Promise.all([
-    apolloClient.query({
-      query: GetRunningLiveQuizDocument,
-      variables: {
-        id: ctx.query?.id as string,
-      },
-    }),
-    apolloClient.query({
-      query: GetFeedbacksDocument,
-      variables: {
-        quizId: ctx.query?.id as string,
-        skip: !ctx.query?.id,
-      },
-    }),
-  ])
+  try {
+    await Promise.all([
+      apolloClient.query({
+        query: GetRunningLiveQuizDocument,
+        variables: {
+          id: ctx.query?.id as string,
+        },
+      }),
+      apolloClient.query({
+        query: GetFeedbacksDocument,
+        variables: {
+          quizId: ctx.query?.id as string,
+          skip: !ctx.query?.id,
+        },
+      }),
+    ])
+  } catch (e) {
+    // Intentionally ignore GraphQL errors here (e.g., pin missing/invalid)
+  }
 
   return addApolloState(apolloClient, {
     props: {

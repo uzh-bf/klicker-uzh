@@ -247,6 +247,18 @@ export const Mutation = builder.mutationType({
       //   },
       // }),
 
+      setLiveQuizPin: t.field({
+        nullable: false,
+        type: 'Boolean',
+        args: {
+          liveQuizId: t.arg.string({ required: true }),
+          pin: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await LiveQuizService.setLiveQuizPinCookie(args, ctx)
+        },
+      }),
+
       respondToElementStack: t.field({
         nullable: true,
         type: StackFeedback,

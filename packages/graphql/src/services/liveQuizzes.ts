@@ -2578,7 +2578,95 @@ const aggregateFeedbacks = (feedbacks: DB.ConfusionTimestep[]) => {
 
 // ------ LIVE QUIZ GETTER FUNCTIONS (STUDENT) ------
 // #region
+export async function setLiveQuizPinCookie(
+  { liveQuizId, pin }: { liveQuizId: string; pin: string },
+  ctx: Context
+) {
+  // verify that the submitted pin is a 6 digit alphanumeric pin
+  if (!/^[a-zA-Z0-9]{6}$/.test(pin)) {
+    throw new GraphQLError('LIVE_QUIZ_PIN_INVALID', {
+      extensions: { code: 'FORBIDDEN' },
+    })
+  }
+
+  // verify that the corresponding live quiz is available
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: { id: liveQuizId },
+    select: { id: true, status: true, pinCode: true },
+  })
+  if (!liveQuiz || liveQuiz.status !== DB.PublicationStatus.PUBLISHED) {
+    throw new GraphQLError('LIVE_QUIZ_PIN_INVALID', {
+      extensions: { code: 'FORBIDDEN' },
+    })
+  }
+
+  // remove any previously added cookie and set the new correct one
+  const cookieName = `live-quiz-pin-${liveQuizId}`
+  if (!liveQuiz.pinCode || pin !== liveQuiz.pinCode) {
+    try {
+      ctx.res.clearCookie(cookieName, {
+        domain: process.env.COOKIE_DOMAIN as string | undefined,
+        path: '/',
+      })
+    } catch (_) {}
+    throw new GraphQLError('LIVE_QUIZ_PIN_INVALID', {
+      extensions: { code: 'FORBIDDEN' },
+    })
+  }
+
+  // set the pin as a cookie to be readable by the student live quiz query
+  ctx.res.cookie(cookieName, pin, {
+    domain: process.env.COOKIE_DOMAIN,
+    path: '/',
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24, // cookie valie for one day
+    secure:
+      process.env.NODE_ENV === 'production' &&
+      process.env.COOKIE_DOMAIN !== '127.0.0.1',
+    sameSite: 'lax',
+  })
+
+  return true
+}
+
 export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
+  // only get the minimal required information of the quiz
+  const quizInfo = await ctx.prisma.liveQuiz.findUnique({
+    where: { id },
+    select: { id: true, status: true, pinCode: true },
+  })
+
+  // if the quiz is not available, return early
+  if (!quizInfo || quizInfo.status !== DB.PublicationStatus.PUBLISHED)
+    return null
+
+  // if a pin code is required, verify that the user has already entered a valid one
+  if (quizInfo.pinCode) {
+    const cookieName = `live-quiz-pin-${id}`
+    const providedPin = ctx.req.cookies?.[cookieName]
+
+    if (!providedPin) {
+      throw new GraphQLError('LIVE_QUIZ_PIN_MISSING', {
+        extensions: { code: 'FORBIDDEN' },
+      })
+    }
+
+    if (providedPin !== quizInfo.pinCode) {
+      try {
+        ctx.res.clearCookie(cookieName, {
+          domain: process.env.COOKIE_DOMAIN as string | undefined,
+          path: '/',
+          secure: false,
+          sameSite: 'lax',
+        })
+      } catch (_) {}
+
+      throw new GraphQLError('LIVE_QUIZ_PIN_INVALID', {
+        extensions: { code: 'FORBIDDEN' },
+      })
+    }
+  }
+
   const quiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id },
     include: {

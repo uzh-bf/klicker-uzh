@@ -1733,6 +1733,7 @@ type Mutation {
   sendMagicLink(usernameOrEmail: String!): Boolean
   sendPushNotifications: Boolean!
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
+  setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
