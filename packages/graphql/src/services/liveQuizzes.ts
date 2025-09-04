@@ -1515,9 +1515,9 @@ export async function deactivateLiveQuizBlock(
           const participant = await ctx.prisma.participant.findUnique({
             where: { id },
             include: {
-              participations: {
-                where: { courseId: quiz.courseId ?? undefined },
-              },
+              participations: quiz.courseId
+                ? { where: { courseId: quiz.courseId } }
+                : { take: 0 },
             },
           })
 
