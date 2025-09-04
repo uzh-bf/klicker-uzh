@@ -317,6 +317,7 @@ export default {
       archived: 'Archived',
       ended: 'Ended',
       assessment: 'Assessment',
+      pin: 'PIN',
       pinProtected: 'PIN Protected',
       learningAnalytics: 'Learning Analytics',
       monday: 'Monday',
@@ -2252,11 +2253,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     cockpit: {
       liveQuizQRCodes: 'Live Quiz QR-Code',
       qrCodeAccountLinkTitle: 'Account Link',
+      qrCodeAccountLinkPinWarning: 'PIN not included',
+      qrCodeDirectLinkIncluded: 'PIN included',
       qrCodeAccountLinkDescription:
         'Your account link lists all of your active live quizzes. If only one quiz is active, participants will be redirected automatically, otherwise they will be able to choose which quiz to participate in. This link is recommended for addition to slides, as it stays the same as long as you do not change your shortname. For quizzes assigned to a course, the course language will be automatically embedded in the link.',
       qrCodeDirectLinkTitle: 'Direct Link',
       qrCodeDirectLinkDescription:
-        'The direct link leads participants directly and only to this quiz. Once the quiz has been completed, the link will no longer be valid. This link is recommended if you run a lot of quizzes in parallel and want participants to join a specific quiz only. For quizzes assigned to a course, the course language will be automatically embedded in the link.',
+        'The direct link leads participants directly and only to this quiz. Once the quiz has been completed, the link will no longer be valid. This link is recommended if you run a lot of quizzes in parallel and want participants to join a specific quiz only. For quizzes assigned to a course, the course language will be automatically embedded in the link. If a PIN code is enabled, it is directly embedded in the link.',
       firstBlock: 'Start first block',
       blockActive: 'Close block',
       nextBlock: 'Start next block',

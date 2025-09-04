@@ -318,6 +318,7 @@ export default {
       archived: 'Archiviert',
       ended: 'Beendet',
       assessment: 'Assessment',
+      pin: 'PIN',
       pinProtected: 'PIN geschützt',
       learningAnalytics: 'Learning Analytics',
       monday: 'Montag',
@@ -2289,11 +2290,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     cockpit: {
       liveQuizQRCodes: 'Live Quiz QR-Codes',
       qrCodeAccountLinkTitle: 'Konto-Link',
+      qrCodeAccountLinkPinWarning: 'PIN nicht enthalten',
+      qrCodeDirectLinkIncluded: 'PIN enthalten',
       qrCodeAccountLinkDescription:
         'Ihr Konto-Link listet alle aktiven Live-Quizzes. Wenn nur ein Quiz aktiv ist, werden Teilnehmende direkt weitergeleitet, andererseits können sie auswählen, an welchem Quiz sie teilnehmen möchten. Dieser Link wird empfohlen, um ihn zu Folien hinzuzufügen, da er konsistent bleibt, solange Sie Ihren Kurznamen nicht ändern. Für Quizzes mit Kurszuweisung wird automatisch die Kurssprache im Link eingebettet.',
       qrCodeDirectLinkTitle: 'Direktlink',
       qrCodeDirectLinkDescription:
-        'Der Direktlink führt Teilnehmende direkt und ausschliesslich zu diesem Quiz. Wenn das Quiz beendet ist, ist der Link nicht mehr gültig. Dieser Link wird empfohlen, wenn Sie viele Quizzes parallel durchführen und die Teilnehmenden nur an einem bestimmten Quiz teilnehmen sollen. Für Quizzes mit Kurszuweisung wird automatisch die Kurssprache im Link eingebettet.',
+        'Der Direktlink führt Teilnehmende direkt und ausschliesslich zu diesem Quiz. Wenn das Quiz beendet ist, ist der Link nicht mehr gültig. Dieser Link wird empfohlen, wenn Sie viele Quizzes parallel durchführen und die Teilnehmenden nur an einem bestimmten Quiz teilnehmen sollen. Für Quizzes mit Kurszuweisung wird automatisch die Kurssprache im Link eingebettet. Wenn ein PIN-Code aktiviert ist, wird dieser direkt im Link eingebettet.',
       firstBlock: 'Ersten Block starten',
       blockActive: 'Block schliessen',
       nextBlock: 'Nächsten Block starten',

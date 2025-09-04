@@ -22,10 +22,11 @@ import RuntimeCounter from './RuntimeCounter'
 
 interface LiveQuizTimelineProps {
   quizId: string
-  isGamificationEnabled: boolean
-  blocks?: QuizTimelineBlock[]
   quizName: string
+  quizPin?: string | null
+  blocks?: QuizTimelineBlock[]
   language?: LocaleType | null
+  isGamificationEnabled: boolean
   handleEndLiveQuiz: () => void
   handleOpenBlock: (blockId: number) => void
   handleCloseBlock: (blockId: number) => void
@@ -35,11 +36,12 @@ interface LiveQuizTimelineProps {
 
 function LiveQuizTimeline({
   quizId,
-  isGamificationEnabled,
   quizName,
+  quizPin,
   blocks = [],
   language,
   startedAt,
+  isGamificationEnabled,
   handleEndLiveQuiz,
   handleOpenBlock,
   handleCloseBlock,
@@ -105,10 +107,13 @@ function LiveQuizTimeline({
 
   return (
     <div className="flex flex-col md:flex-row md:flex-wrap">
-      <div className="flex flex-1 flex-row flex-wrap items-end justify-between md:flex-auto md:pb-2">
+      <div className="flex flex-1 flex-row flex-wrap items-end justify-between gap-y-2 md:flex-auto md:pb-2">
         <div className="flex flex-row flex-wrap items-end gap-8">
           <H1 className={{ root: 'm-0 text-xl' }}>Quiz: {quizName}</H1>
           <RuntimeCounter startedAt={startedAt} />
+          {quizPin && (
+            <span className="text-uzh-red-100 -mb-0.5 h-max text-xl font-bold">{`${t('shared.generic.pin')}: ${quizPin.slice(0, 3)} ${quizPin.slice(3)}`}</span>
+          )}
         </div>
 
         <div className="mt-1.5 flex flex-row flex-wrap items-end gap-2 sm:mt-0">
@@ -296,6 +301,7 @@ function LiveQuizTimeline({
       {qrModal && (
         <LiveQuizQRModal
           quizId={quizId}
+          quizPin={quizPin}
           language={language}
           onClose={() => setQRModal(false)}
         />

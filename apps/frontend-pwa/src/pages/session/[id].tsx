@@ -165,7 +165,13 @@ function Index({ id }: { id: string }) {
           <H1>{t('pwa.liveQuiz.enterPinTitle')}</H1>
           <p className="text-gray-600">{t('pwa.liveQuiz.pinRequired')}</p>
           <Formik
-            initialValues={{ pin: '' }}
+            enableReinitialize
+            initialValues={{
+              pin:
+                typeof router.query.pin === 'string'
+                  ? (router.query.pin as string)
+                  : '',
+            }}
             onSubmit={async (values, { setSubmitting }) => {
               try {
                 await setLiveQuizPin({
