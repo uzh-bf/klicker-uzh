@@ -5,6 +5,7 @@ on:
     branches:
       - 'v3'
       - 'v3*'
+      - 'argocd'
   pull_request:
     # branches: [ "v3" ]
     types: [opened, synchronize, reopened, ready_for_review]
@@ -47,10 +48,11 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: apps/lti/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
+          platforms: linux/amd64,linux/arm64
           labels: ${{ steps.meta.outputs.labels }}
