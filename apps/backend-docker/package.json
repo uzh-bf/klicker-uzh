@@ -80,6 +80,7 @@
     "build:ts": "rollup -c",
     "check": "tsc --noEmit",
     "dev": "npm-run-all --parallel dev:build dev:run",
+    "dev:assessment": "doppler run --config dev_assessment -- pnpm run dev",
     "dev:build": "rollup -c --watch",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:lti": "pnpm run dev",

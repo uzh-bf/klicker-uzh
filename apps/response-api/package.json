@@ -21,6 +21,7 @@
     "build:ts": "cross-env NODE_ENV=production tsc --outDir dist",
     "check": "tsc --noEmit",
     "dev": "run-p dev:ts",
+    "dev:assessment": "doppler run --config dev_assessment -- pnpm run dev",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:offline": "pnpm run dev",
     "dev:ts": "cross-env NODE_ENV=development tsx --watch --env-file .env src/index.ts"

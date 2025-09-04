@@ -56,7 +56,10 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
         jwtFromRequest(req: Request) {
           let token = null
 
-          if (
+          // Assessment mode: only check for student NextAuth cookie
+          if (process.env.ASSESSMENT_MODE === 'true') {
+            token = req.cookies?.['next-auth.participant-session-token']
+          } else if (
             req.headers.origin?.includes(
               process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
             ) ||

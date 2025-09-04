@@ -1,5 +1,5 @@
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
-import { faEnvelope, faKey } from '@fortawesome/free-solid-svg-icons'
+import { faEnvelope, faIdBadge, faKey } from '@fortawesome/free-solid-svg-icons'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import usePWAInstall, {
   BeforeInstallPromptEvent,
@@ -202,6 +202,30 @@ function LoginForm({
                   </div>
                 </>
               )}
+
+              {/* Edu-ID Login Button for Assessment Mode */}
+              {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true' &&
+                !magicLinkLogin && (
+                  <div className="mt-4 border-t border-gray-200 pt-4">
+                    <Button
+                      fluid
+                      className={{
+                        root: 'border-2 border-blue-600 text-blue-600 hover:bg-blue-50',
+                      }}
+                      onClick={() => {
+                        const currentUrl = window.location.origin
+                        const authUrl =
+                          process.env.NEXT_PUBLIC_AUTH_URL ||
+                          'https://auth.klicker.uzh.ch'
+                        window.location.href = `${authUrl}/student?redirectTo=${encodeURIComponent(currentUrl)}`
+                      }}
+                      data={{ cy: 'eduid-login-button' }}
+                    >
+                      <Button.Icon icon={faIdBadge} />
+                      <Button.Label>Login with Edu-ID</Button.Label>
+                    </Button>
+                  </div>
+                )}
 
               {!magicLinkLogin && installAndroid && onChrome && (
                 <div className="mt-4 flex flex-col justify-center md:hidden">

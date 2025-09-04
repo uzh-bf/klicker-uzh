@@ -1,7 +1,7 @@
 # Student Edu-ID Authentication Implementation Plan
 
 ## Overview
-Add Edu-ID (OpenID Connect) authentication for students to the KlickerUZH platform, enabling students to authenticate via the Swiss educational identity federation. This will be deployed on a new assessment.klicker.uzh.ch instance, separate from the lecturer authentication on manage.klicker.uzh.ch.
+Add Edu-ID (OpenID Connect) authentication for students to the KlickerUZH platform, enabling students to authenticate via the Swiss educational identity federation. This will be deployed on a new assessment.klicker.uzh.ch instance with a dedicated assessment backend, separate from the lecturer authentication on manage.klicker.uzh.ch.
 
 ## Key Requirements
 - Reuse the existing Edu-ID client (add assessment redirect URLs)
@@ -14,8 +14,9 @@ Add Edu-ID (OpenID Connect) authentication for students to the KlickerUZH platfo
 
 ## Separation Strategy
 - Lecturers: keep existing NextAuth config at `/api/auth/[...nextauth].ts` with `PrismaAdapter(prisma)`, persisting to `User` and `Account`.
-- Students (assessment PWA only): add a separate NextAuth config at `/api/auth-student/[...nextauth].ts` WITHOUT PrismaAdapter (JWT sessions only), with its own cookie name (e.g., `student-auth.session-token`).
-- Persistence for students happens via GraphQL in `/api/student` into `Participant` and `ParticipantAccount`. The NextAuth `Account` table is NOT used in the student flow.
+- Students (assessment PWA only): use NextAuth config at `/api/auth/eduid-participant.ts` WITHOUT PrismaAdapter (JWT sessions only), with cookie name `next-auth.participant-session-token`.
+- Assessment backend (with `ASSESSMENT_MODE=true`): directly accepts and validates the NextAuth participant session cookie - no token exchange needed.
+- Persistence for students happens directly in NextAuth callbacks into `Participant` and `ParticipantAccount`. The NextAuth `Account` table is NOT used in the student flow.
 
 ## Implementation Steps
 
@@ -43,20 +44,32 @@ Identifier choice:
 - Store Edu-ID `sub` in `ssoId` and `'EDUID'` in `ssoType`.
 - This maintains consistency with existing LTI authentication pattern.
 
-### 2. Auth App - Student NextAuth Configuration
+### 2. Backend - Assessment Mode Configuration
 
-Create a new NextAuth instance for students that operates independently from the lecturer instance.
+**Update `apps/backend-docker/src/app.ts`**:
+```typescript
+// Update JWT strategy's jwtFromRequest function
+if (process.env.ASSESSMENT_MODE === 'true') {
+  // Assessment mode: Only check for student NextAuth cookie
+  token = req.cookies?.['next-auth.participant-session-token']
+} else {
+  // Regular mode: Check all existing tokens (participant_token, etc.)
+  // ... existing logic
+}
+```
 
-**New file: `/api/auth-student/[...nextauth].ts`**:
+### 3. Auth App - Enhanced NextAuth Configuration
+
+**Update existing `/api/auth/eduid-participant.ts`**:
 ```typescript
 // Student-only NextAuth configuration
-// NO PrismaAdapter - all persistence via GraphQL
+// NO PrismaAdapter - participant persistence via callbacks
 export const authOptions: NextAuthOptions = {
   secret: process.env.APP_SECRET,
   
   providers: [
     {
-      id: 'eduid-student',  // Different ID from lecturer Edu-ID
+      id: 'eduid-participant',  // Same as existing
       wellKnown: process.env.EDUID_WELL_KNOWN,
       clientId: process.env.EDUID_CLIENT_ID,
       clientSecret: process.env.EDUID_CLIENT_SECRET,
@@ -69,20 +82,17 @@ export const authOptions: NextAuthOptions = {
             id_token: {
               sub: { essential: true },
               email: { essential: true },
-              // Additional claims if needed for student context
+              swissEduPersonUniqueID: { essential: true },
             },
           },
-          scope: 'openid email',
+          scope: 'openid email https://login.eduid.ch/authz/User.Read',
         },
       },
       idToken: true,
       checks: ['pkce', 'state'],
       
       profile(profile) {
-        return {
-          id: profile.sub,
-          email: profile.email,
-        }
+        return profile
       },
     }
   ],
@@ -93,7 +103,7 @@ export const authOptions: NextAuthOptions = {
   
   cookies: {
     sessionToken: {
-      name: 'student-auth.session-token',  // Different cookie name
+      name: 'next-auth.participant-session-token',
       options: {
         domain: process.env.COOKIE_DOMAIN,
         path: '/',
@@ -105,16 +115,32 @@ export const authOptions: NextAuthOptions = {
   },
   
   callbacks: {
+    async signIn({ user, account, profile }) {
+      // Create/link Participant and ParticipantAccount directly
+      await createOrLinkParticipant(profile)
+      return true
+    },
+    
     async jwt({ token, profile }) {
       if (profile) {
-        token.sub = profile.sub
+        // Look up participant by Edu-ID sub
+        const participantAccount = await prisma.participantAccount.findUnique({
+          where: { ssoId: profile.sub },
+          include: { participant: true }
+        })
+        
+        // Structure token for participant authentication
+        token.sub = participantAccount.participantId
+        token.role = 'PARTICIPANT'
+        token.scope = 'PARTICIPANT'
         token.email = profile.email
       }
       return token
     },
+    
     async redirect({ url, baseUrl }) {
-      // Only allow redirects to student_handoff
-      if (url.includes('/student_handoff')) {
+      // Allow redirects to assessment PWA
+      if (url.includes('assessment.klicker.uzh.ch')) {
         return url
       }
       return baseUrl
@@ -123,188 +149,66 @@ export const authOptions: NextAuthOptions = {
 }
 ```
 
-### 3. Auth App - Student Routes
+### 4. Auth App - Simple Entry Point
 
-**New route: `/student` (pages/student.tsx)**:
+**Create `/student.tsx` page**:
 ```typescript
-// Entry point for student Edu-ID authentication
+// Simple entry point for student Edu-ID authentication
 export default function Student() {
   const router = useRouter()
   
   useEffect(() => {
     const redirectTo = router.query.redirectTo as string
-    if (!redirectTo || !isValidRedirectUrl(redirectTo)) {
+    if (!redirectTo || !isValidStudentRedirectUrl(redirectTo)) {
       // Invalid or missing redirect
       return
     }
     
-    // Redirect to student NextAuth sign-in with callback
-    const callbackUrl = `/student_handoff?redirectTo=${encodeURIComponent(redirectTo)}`
-    router.replace(`/api/auth-student/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`)
-  }, [router])
-  
-  return null
-}
-```
-
-**New route: `/student_handoff` (pages/student_handoff.tsx)**:
-```typescript
-// Handles the callback from Edu-ID and exchanges for participant token
-export default function StudentHandoff() {
-  const router = useRouter()
-  
-  useEffect(() => {
-    const redirectTo = router.query.redirectTo as string
-    if (!redirectTo || !isValidRedirectUrl(redirectTo)) {
-      return
-    }
-    
-    const exchange = async () => {
-      const response = await fetch('/api/student', {
-        method: 'POST',
-        body: JSON.stringify({ redirectTo }),
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        // Redirect back to PWA with participant_token set
-        window.location.href = data.redirectURL
-      }
-    }
-    
-    exchange()
-  }, [router])
-  
-  return <div>Completing authentication...</div>
-}
-```
-
-**New API route: `/api/student` (pages/api/student.ts)**:
-```typescript
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Get the student NextAuth session
-  const session = await getToken({
-    req,
-    decode,
-    cookieName: 'student-auth.session-token',
-    secret: process.env.APP_SECRET,
-  })
-  
-  if (!session || !session.sub) {
-    return res.status(401).json({ error: 'Unauthorized' })
-  }
-  
-  const { redirectTo } = req.body
-  
-  // Validate redirect URL against whitelist
-  if (!isValidStudentRedirectUrl(redirectTo)) {
-    return res.status(400).json({ error: 'Invalid redirect URL' })
-  }
-  
-  // Create signed payload for GraphQL
-  const signedData = JWT.sign(
-    {
-      sub: session.sub,
-      email: session.email,
-      scope: 'EDUID',
-    },
-    process.env.APP_SECRET
-  )
-  
-  // Call GraphQL mutation
-  const result = await apolloClient.mutate({
-    mutation: LoginParticipantWithEduIdDocument,
-    variables: { signedEduIdData: signedData },
-  })
-  
-  if (result.data?.loginParticipantWithEduId?.participantToken) {
-    // Set participant_token cookie
-    setCookie(res, 'participant_token', result.data.loginParticipantWithEduId.participantToken, {
-      domain: process.env.COOKIE_DOMAIN,
-      path: '/',
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 14, // 14 days
+    // Directly trigger NextAuth sign-in with callback to PWA
+    signIn('eduid-participant', {
+      callbackUrl: redirectTo
     })
-    
-    // Optional: Clear student NextAuth session to avoid confusion
-    // await signOut({ req, res })
-    
-    return res.status(200).json({ redirectURL: redirectTo })
-  }
+  }, [router])
   
-  return res.status(500).json({ error: 'Authentication failed' })
+  return <div>Redirecting to Edu-ID...</div>
 }
 ```
 
-### 4. GraphQL API Updates
+### 5. NextAuth Helper Function
 
-**New mutation in schema/mutation.ts**:
+**Add to `/api/auth/eduid-participant.ts`**:
 ```typescript
-loginParticipantWithEduId: t.field({
-  type: ParticipantTokenData,
-  args: {
-    signedEduIdData: t.arg.string({ required: true }),
-  },
-  resolve: async (_, args, ctx) => {
-    return await AccountService.loginParticipantWithEduId(args, ctx)
-  },
-})
-```
-
-**New service function in services/accounts.ts**:
-```typescript
-async function loginParticipantWithEduId(
-  { signedEduIdData }: { signedEduIdData: string },
-  ctx: Context
-) {
-  // Verify signed payload from auth app
-  const data = JWT.verify(signedEduIdData, process.env.APP_SECRET as string) as {
-    sub: string
-    email?: string
-    scope: 'EDUID'
-  }
-  
+async function createOrLinkParticipant(profile: ExtendedProfile) {
   // Lookup existing account via ssoId (Edu-ID sub)
-  const existing = await ctx.prisma.participantAccount.findUnique({
-    where: { ssoId: data.sub },
+  const existing = await prisma.participantAccount.findUnique({
+    where: { ssoId: profile.sub },
     include: { participant: true },
   })
   
   if (existing) {
-    await ctx.prisma.participant.update({
+    await prisma.participant.update({
       where: { id: existing.participantId },
       data: { lastLoginAt: new Date() },
     })
-    const token = await doParticipantLogin(
-      {
-        participantId: existing.participantId,
-        participantLocale: existing.participant.locale,
-      },
-      ctx
-    )
-    return { participantToken: token, participant: existing.participant }
+    return existing.participant
   }
   
   // Check for existing participant by email
   let participant: Participant | null = null
   
-  if (data.email) {
-    participant = await ctx.prisma.participant.findUnique({
-      where: { email: data.email },
+  if (profile.email) {
+    participant = await prisma.participant.findUnique({
+      where: { email: profile.email },
     })
   }
   
   // Create new participant if none exists
   if (!participant) {
-    const username = await generateUniqueUsername(data.email)
-    participant = await ctx.prisma.participant.create({
+    const username = await generateUniqueUsername(profile.email)
+    participant = await prisma.participant.create({
       data: {
         username,
-        email: data.email,
+        email: profile.email,
         password: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10),
         isEmailValid: true,  // Edu-ID emails are pre-validated
         isSSOAccount: true,
@@ -314,27 +218,19 @@ async function loginParticipantWithEduId(
   }
   
   // Create ParticipantAccount link
-  await ctx.prisma.participantAccount.create({
+  await prisma.participantAccount.create({
     data: {
       ssoType: 'EDUID',
-      ssoId: data.sub,
+      ssoId: profile.sub,
       participant: { connect: { id: participant.id } },
     },
   })
   
-  const token = await doParticipantLogin(
-    {
-      participantId: participant.id,
-      participantLocale: participant.locale,
-    },
-    ctx
-  )
-  
-  return { participantToken: token, participant }
+  return participant
 }
 ```
 
-### 5. Frontend PWA Updates
+### 6. Frontend PWA Updates
 
 **Update login.tsx for assessment instance**:
 ```typescript
@@ -372,20 +268,25 @@ function Login() {
 }
 ```
 
-### 6. Cookie & Session Management
+### 7. Cookie & Session Management
 
-Cookie architecture:
-- Lecturer NextAuth: `next-auth.session-token` (existing)
-- Student NextAuth: `student-auth.session-token` (new, temporary)
-- Student App: `participant_token` (existing, final token)
+Simplified cookie architecture:
+- Lecturer NextAuth: `next-auth.session-token` (existing, regular backend)
+- Student NextAuth: `next-auth.participant-session-token` (new, assessment backend)
+- Assessment backend directly validates the NextAuth participant session token
 
-The student NextAuth session is only used temporarily during the authentication handoff and can optionally be cleared after setting the participant_token.
+No cookie exchange or handoff mechanism needed. The assessment backend (with `ASSESSMENT_MODE=true`) only handles student authentication via the NextAuth participant session cookie.
 
-### 7. Environment Configuration
+### 8. Environment Configuration
 
 **Add to PWA assessment environment (.env.assessment)**:
 ```bash
 NEXT_PUBLIC_AUTH_URL="https://auth.klicker.uzh.ch"
+```
+
+**Add to assessment backend environment**:
+```bash
+ASSESSMENT_MODE="true"
 ```
 
 **Add to auth app for validation**:
@@ -393,7 +294,7 @@ NEXT_PUBLIC_AUTH_URL="https://auth.klicker.uzh.ch"
 APP_STUDENT_DOMAIN="assessment.klicker.uzh.ch"
 ```
 
-### 8. Security Implementation
+### 9. Security Implementation
 
 **URL validation helper**:
 ```typescript
@@ -419,18 +320,19 @@ function isValidStudentRedirectUrl(url: string): boolean {
 }
 ```
 
-### 9. Testing Strategy
+### 10. Testing Strategy
 
-- Test redirect routing via `/student` and `/student_handoff`
-- Verify `participant_token` cookie is set and readable by PWA
+- Test redirect routing via `/student` entry point
+- Verify `next-auth.participant-session-token` cookie is set and readable by assessment backend
 - Test participant creation with Edu-ID and linking to existing participant by email
 - Validate username collision handling on new participant creation
-- Verify backward compatibility (username/password, magic link, LTI, temporary participants)
+- Verify backward compatibility (existing methods work on regular backend)
 - Ensure no `User`/`Account` rows are created during the student flow (adapterless NextAuth)
 - Test cookie domain settings across subdomains
-- Verify session isolation between lecturer and student logins
+- Verify session isolation between lecturer and student authentication
+- Test assessment backend only processes student authentication when `ASSESSMENT_MODE=true`
 
-### 10. Migration & Backward Compatibility
+### 11. Migration & Backward Compatibility
 
 **Phase 1**: Add new authentication alongside existing
 - Deploy new auth routes without removing existing methods
@@ -446,32 +348,105 @@ function isValidStudentRedirectUrl(url: string): boolean {
 
 ## Implementation Order
 
-1. GraphQL mutation `loginParticipantWithEduId`
-2. Auth app: add student NextAuth config (no PrismaAdapter) at `/api/auth-student/[...nextauth].ts`
-3. Auth app: add `/student`, `/student_handoff`, `/api/student`
-4. PWA (assessment): add Edu-ID login button linking to `/student`
-5. Testing and validation (including "no User/Account writes")
-6. Edu-ID redirect configuration updates
-7. Documentation and deployment
+1. ✅ **Backend**: Update JWT strategy in `apps/backend-docker/src/app.ts` for assessment mode
+2. ✅ **Auth app**: Enhance NextAuth callbacks in `/api/auth/eduid-participant.ts` for participant creation  
+3. ✅ **Auth app**: Add `/student.tsx` entry point page
+4. ✅ **PWA (assessment)**: Add Edu-ID login button linking to `/student`
+5. ✅ **Development Scripts**: Add `dev:assessment` commands across all apps with Doppler integration
+6. 📋 **Doppler Configuration**: Create `dev_assessment` config with assessment-specific variables
+7. 📋 **Edu-ID Configuration**: Register callback URLs in Switch Edu-ID client
+8. 📋 **Testing**: Validate end-to-end flow and cookie handling
+9. 📋 **Deployment**: Assessment backend and PWA instances
+
+## Implementation Status
+
+### ✅ Completed
+1. **Backend Assessment Mode Configuration** - `apps/backend-docker/src/app.ts` updated with `ASSESSMENT_MODE` environment variable check
+2. **NextAuth Enhanced Configuration** - `/api/auth/eduid-participant.ts` with:
+   - Participant creation/linking in signIn callback
+   - JWT structuring with participant data
+   - Helper function `createOrLinkParticipant`
+3. **Student Entry Point** - `/student.tsx` page created with URL validation and NextAuth integration
+4. **PWA Assessment Mode Updates** - Login form enhanced with:
+   - Environment-based Edu-ID login button
+   - Assessment mode detection via `NEXT_PUBLIC_IS_ASSESSMENT`
+   - Proper redirect handling to auth app
+5. **Development Scripts Setup** - Added `dev:assessment` commands to:
+   - Root package.json with Doppler `dev_assessment` config
+   - Backend-docker, frontend-pwa, auth, frontend-manage, frontend-control
+   - Fallback scripts for all other apps
+6. **Environment Configuration** - Assessment-specific environment files created:
+   - `.env.assessment` for production
+   - `.env.assessment.development` for local development
+
+### 🔄 In Progress  
+- Remaining app `dev:assessment` scripts (handled by user)
+
+### 📋 Pending
+1. **Doppler Configuration** - Create `dev_assessment` branch with:
+   - `ASSESSMENT_MODE=true`
+   - `NEXT_PUBLIC_IS_ASSESSMENT=true`
+   - `NEXT_PUBLIC_AUTH_URL=https://auth.klicker.com` (dev) / `https://auth.klicker.uzh.ch` (prod)
+2. **Edu-ID Redirect URLs** - Register in Switch Edu-ID client:
+   - `https://auth.klicker.com/api/auth/callback/eduid-participant` (dev)
+   - `https://auth.klicker.uzh.ch/api/auth/callback/eduid-participant` (prod)
+3. **End-to-End Testing** - Verify complete authentication flow
+4. **Production Deployment** - Assessment backend and PWA instances with proper environment configuration
+
+## Development Setup
+
+### Normal Mode
+```bash
+# Start all apps in normal mode
+pnpm dev
+
+# Individual apps
+cd apps/backend-docker && pnpm dev:doppler
+cd apps/frontend-pwa && pnpm dev:doppler
+```
+
+### Assessment Mode
+```bash  
+# Start all apps in assessment mode (requires dev_assessment Doppler config)
+pnpm dev:assessment
+
+# Individual apps
+cd apps/backend-docker && pnpm dev:assessment
+cd apps/frontend-pwa && pnpm dev:assessment
+```
+
+**Prerequisites for Assessment Mode:**
+1. Create `dev_assessment` Doppler config branched from `dev`
+2. Set required environment variables in Doppler (see Pending section above)
+3. All apps have `dev:assessment` scripts (completed or fallback to normal dev)
 
 ## Risks and Mitigations
 
 **Risk**: Cookie conflicts between lecturer and student sessions
-**Mitigation**: Use `participant_token` for students; optionally sign out NextAuth post-handoff
+**Mitigation**: Different cookie names and separate backend instances (assessment mode)
 
 **Risk**: Confusion between lecturer and student login flows
-**Mitigation**: Clear visual distinction and separate entry points
+**Mitigation**: Clear visual distinction, separate entry points, and dedicated assessment instance
 
-**Risk**: Existing LTI integration disruption
-**Mitigation**: Keep legacy fields and gradual migration
+**Risk**: Existing authentication methods disruption
+**Mitigation**: Assessment backend is separate - no impact on existing flows
 
-**Risk**: Edu-ID configuration complexity
-**Mitigation**: Reuse existing client with additional redirect URLs
+**Risk**: JWT token structure mismatch
+**Mitigation**: Careful validation that NextAuth JWT contains expected participant data structure
 
 ## Success Criteria
 
 - Students can authenticate via Edu-ID on assessment.klicker.uzh.ch
-- Complete separation between student and lecturer authentication
-- No disruption to existing authentication methods
-- Smooth migration path for existing accounts
-- Clear audit trail for authentication attempts
+- Assessment backend directly accepts NextAuth participant session cookies
+- Complete separation between student and lecturer authentication (separate backends)
+- No disruption to existing authentication methods (regular backend unchanged)
+- Smooth migration path for existing student accounts via email linking
+- Clear audit trail for authentication attempts via ParticipantAccount records
+
+## Key Benefits of Streamlined Approach
+
+- **Simplified Architecture**: No token exchange or handoff pages needed
+- **Clean Separation**: Dedicated assessment backend with `ASSESSMENT_MODE=true`
+- **Reduced Complexity**: NextAuth callbacks handle all participant creation/linking
+- **Better Performance**: Direct cookie validation without additional API calls
+- **Easier Testing**: Fewer moving parts and integration points
