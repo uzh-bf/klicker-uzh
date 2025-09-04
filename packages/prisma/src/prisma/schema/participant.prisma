@@ -187,7 +187,7 @@ model TemporaryLeaderboardEntry {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([id, quizId])
+  @@id([id, quizId])
   @@index(id)
   @@index(quizId)
 }
