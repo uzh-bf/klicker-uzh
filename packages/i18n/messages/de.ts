@@ -877,7 +877,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       refreshPage: 'Seite aktualisieren',
       pinRequired: 'Für den Zugriff auf dieses Quiz ist eine PIN erforderlich.',
       enterPinTitle: 'PIN-Code eingeben',
-      invalidPin: 'Der eingegebene PIN ist ungültig.',
+      invalidPin: 'Die eingegebene PIN ist ungültig.',
       enterPinLabel: 'PIN-Code',
       enterPinPlaceholder: 'PIN eingeben',
       submitPin: 'PIN absenden',
@@ -1687,7 +1687,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       pasteSingleElementsStack: '{count} Stacks mit 1 Element hinzufügen',
       pinProtected: 'PIN-Schutz',
       pinProtectedTooltip:
-        'Bei aktiviertem Schutz durch einen PIN-Code generiert das System automatisch einen PIN, welcher durch die Studierenden beim Beitritt zum Quiz eingegeben werden muss.',
+        'Bei aktiviertem Schutz durch einen PIN-Code generiert das System automatisch eine PIN, welche durch die Studierenden beim Beitritt zum Quiz eingegeben werden muss.',
       displayNameTooltip:
         'Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.',
       stackDescriptionTitle: 'Stack {stackIx}: Beschreibung (optional)',

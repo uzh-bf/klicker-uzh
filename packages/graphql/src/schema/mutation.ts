@@ -252,7 +252,10 @@ export const Mutation = builder.mutationType({
         type: 'Boolean',
         args: {
           liveQuizId: t.arg.string({ required: true }),
-          pin: t.arg.string({ required: true }),
+          pin: t.arg.string({
+            required: true,
+            validate: { minLength: 6, maxLength: 6, regex: /^[A-Z0-9]+$/ },
+          }),
         },
         resolve: async (_, args, ctx) => {
           return await LiveQuizService.setLiveQuizPinCookie(args, ctx)

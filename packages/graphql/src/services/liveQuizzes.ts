@@ -2582,13 +2582,6 @@ export async function setLiveQuizPinCookie(
   { liveQuizId, pin }: { liveQuizId: string; pin: string },
   ctx: Context
 ) {
-  // verify that the submitted pin is a 6 digit alphanumeric pin
-  if (!/^[a-zA-Z0-9]{6}$/.test(pin)) {
-    throw new GraphQLError('LIVE_QUIZ_PIN_INVALID', {
-      extensions: { code: 'FORBIDDEN' },
-    })
-  }
-
   // verify that the corresponding live quiz is available
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id: liveQuizId },
