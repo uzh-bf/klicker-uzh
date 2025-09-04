@@ -1378,9 +1378,7 @@ export default defineConfig({
             // ? Test course seeding
             const currentYear = new Date().getFullYear()
             await prisma.course.upsert({
-              where: {
-                id: COURSE_ID_TEST,
-              },
+              where: { id: COURSE_ID_TEST },
               create: {
                 id: COURSE_ID_TEST,
                 name: 'Testkurs',
@@ -1424,9 +1422,7 @@ export default defineConfig({
             })
 
             await prisma.course.upsert({
-              where: {
-                id: COURSE_ID_TEST2,
-              },
+              where: { id: COURSE_ID_TEST2 },
               create: {
                 id: COURSE_ID_TEST2,
                 name: 'Testkurs 2',
@@ -1457,12 +1453,8 @@ export default defineConfig({
               },
               create: {
                 permissionLevel: PermissionLevel.OWNER,
-                course: {
-                  connect: { id: COURSE_ID_TEST2 },
-                },
-                user: {
-                  connect: { id: USER_ID_TEST },
-                },
+                course: { connect: { id: COURSE_ID_TEST2 } },
+                user: { connect: { id: USER_ID_TEST } },
               },
               update: {
                 permissionLevel: PermissionLevel.OWNER,

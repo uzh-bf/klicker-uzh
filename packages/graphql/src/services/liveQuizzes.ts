@@ -23,6 +23,7 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
+import generatePassword from 'generate-password'
 import { GraphQLError } from 'graphql'
 import type { ChainableCommander } from 'ioredis'
 import { min } from 'mathjs'
@@ -661,6 +662,15 @@ export async function manipulateLiveQuiz(
     timeToZeroBonus: timeToZeroBonus ?? undefined,
     isGamificationEnabled: gamificationSetting,
     isAssessmentEnabled: assessmentSetting,
+    pinCode: assessmentSetting // if the course is changed to an assessment course, assign a pin
+      ? generatePassword.generate({
+          uppercase: true,
+          lowercase: false,
+          numbers: true,
+          symbols: false,
+          length: 6,
+        })
+      : null,
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
     isModerationEnabled,
@@ -1109,16 +1119,11 @@ export async function startLiveQuiz(
         }
 
         // generate a random pin code
-        const pinCode = 100000 + Math.floor(Math.random() * 900000)
         const startedLiveQuiz = await ctx.prisma.liveQuiz.update({
-          where: {
-            id,
-          },
+          where: { id },
           data: {
             status: DB.PublicationStatus.PUBLISHED,
             startedAt: new Date(),
-            pinCode:
-              quiz.accessMode === DB.AccessMode.RESTRICTED ? pinCode : null,
           },
         })
 

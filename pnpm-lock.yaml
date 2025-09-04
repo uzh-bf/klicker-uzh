@@ -2058,6 +2058,9 @@ importers:
       fs-extra:
         specifier: ~11.2.0
         version: 11.2.0
+      generate-password:
+        specifier: ~1.7.1
+        version: 1.7.1
       npm-run-all:
         specifier: ~4.1.5
         version: 4.1.5
