@@ -1,5 +1,5 @@
-import { describe, it, before, after } from 'node:test'
 import assert from 'node:assert'
+import { describe, it } from 'node:test'
 
 const BASE_URL = 'http://localhost:7080'
 const AUTH_TOKEN = process.env.INTERNAL_TOKEN || 'test-secret-token-123'
@@ -19,17 +19,16 @@ async function makeAuthenticatedRequest(path, options = {}) {
       'X-Internal-Token': AUTH_TOKEN,
       'Content-Type': 'application/json',
       ...options.headers,
-    }
+    },
   })
 }
 
 describe('Audit Service API Tests', () => {
-  
   describe('Health Endpoints', () => {
     it('GET /healthz should return 200 with status ok', async () => {
       const res = await makeRequest('/healthz')
       assert.strictEqual(res.status, 200)
-      
+
       const data = await res.json()
       assert.strictEqual(data.status, 'ok')
       assert.strictEqual(data.service, 'audit-service')
@@ -39,7 +38,7 @@ describe('Audit Service API Tests', () => {
     it('GET /ready should return 200 with readiness status', async () => {
       const res = await makeRequest('/ready')
       assert.strictEqual(res.status, 200)
-      
+
       const data = await res.json()
       assert.strictEqual(data.status, 'ready')
       assert.strictEqual(data.service, 'audit-service')
@@ -49,8 +48,11 @@ describe('Audit Service API Tests', () => {
     it('GET /metrics should return Prometheus metrics', async () => {
       const res = await makeRequest('/metrics')
       assert.strictEqual(res.status, 200)
-      assert.strictEqual(res.headers.get('content-type'), 'text/plain; version=0.0.4; charset=utf-8')
-      
+      assert.strictEqual(
+        res.headers.get('content-type'),
+        'text/plain; version=0.0.4; charset=utf-8'
+      )
+
       const text = await res.text()
       assert(text.includes('audit_requests_total'))
       assert(text.includes('audit_writes_total'))
@@ -67,10 +69,10 @@ describe('Audit Service API Tests', () => {
         body: JSON.stringify({
           tenantId: 'test-tenant',
           subject: 'test-subject',
-          action: 'test-action'
-        })
+          action: 'test-action',
+        }),
       })
-      
+
       assert.strictEqual(res.status, 401)
       const data = await res.json()
       assert(data.error.includes('Authentication required'))
@@ -79,17 +81,17 @@ describe('Audit Service API Tests', () => {
     it('POST /audit with wrong token should return 401', async () => {
       const res = await makeRequest('/audit', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'X-Internal-Token': 'wrong-token-123'
+          'X-Internal-Token': 'wrong-token-123',
         },
         body: JSON.stringify({
           tenantId: 'test-tenant',
-          subject: 'test-subject', 
-          action: 'test-action'
-        })
+          subject: 'test-subject',
+          action: 'test-action',
+        }),
       })
-      
+
       assert.strictEqual(res.status, 401)
       const data = await res.json()
       assert(data.error.includes('Authentication failed'))
@@ -101,14 +103,14 @@ describe('Audit Service API Tests', () => {
       const event = {
         tenantId: 'tenant-123',
         subject: 'user:john@example.com',
-        action: 'login.success'
+        action: 'login.success',
       }
 
       const res = await makeAuthenticatedRequest('/audit', {
         method: 'POST',
-        body: JSON.stringify(event)
+        body: JSON.stringify(event),
       })
-      
+
       assert.strictEqual(res.status, 202)
       const data = await res.json()
       assert.strictEqual(data.status, 'accepted')
@@ -129,16 +131,16 @@ describe('Audit Service API Tests', () => {
           tags: ['important', 'confidential'],
           metadata: {
             author: 'alice',
-            department: 'engineering'
-          }
-        }
+            department: 'engineering',
+          },
+        },
       }
 
       const res = await makeAuthenticatedRequest('/audit', {
         method: 'POST',
-        body: JSON.stringify(event)
+        body: JSON.stringify(event),
       })
-      
+
       assert.strictEqual(res.status, 202)
       const data = await res.json()
       assert.strictEqual(data.status, 'accepted')
@@ -151,14 +153,14 @@ describe('Audit Service API Tests', () => {
         tenantId: 'tenant-789',
         subject: 'system:backup',
         action: 'backup.completed',
-        timestamp: customTimestamp
+        timestamp: customTimestamp,
       }
 
       const res = await makeAuthenticatedRequest('/audit', {
         method: 'POST',
-        body: JSON.stringify(event)
+        body: JSON.stringify(event),
       })
-      
+
       assert.strictEqual(res.status, 202)
       const data = await res.json()
       assert.strictEqual(data.status, 'accepted')
@@ -171,13 +173,13 @@ describe('Audit Service API Tests', () => {
         tenantId: 'tenant-idempotent',
         subject: 'user:test',
         action: 'test.idempotency',
-        eventId: `test-event-${Date.now()}`
+        eventId: `test-event-${Date.now()}`,
       }
 
       // First request
       const res1 = await makeAuthenticatedRequest('/audit', {
         method: 'POST',
-        body: JSON.stringify(event)
+        body: JSON.stringify(event),
       })
       assert.strictEqual(res1.status, 202)
       const data1 = await res1.json()
@@ -186,7 +188,7 @@ describe('Audit Service API Tests', () => {
       // Second request with same eventId (should be idempotent)
       const res2 = await makeAuthenticatedRequest('/audit', {
         method: 'POST',
-        body: JSON.stringify(event)
+        body: JSON.stringify(event),
       })
       assert.strictEqual(res2.status, 202)
       const data2 = await res2.json()
@@ -198,60 +200,60 @@ describe('Audit Service API Tests', () => {
     it('POST /audit with missing tenantId should return 400', async () => {
       const event = {
         subject: 'user:test',
-        action: 'test.action'
+        action: 'test.action',
       }
 
       const res = await makeAuthenticatedRequest('/audit', {
         method: 'POST',
-        body: JSON.stringify(event)
+        body: JSON.stringify(event),
       })
-      
+
       assert.strictEqual(res.status, 400)
     })
 
     it('POST /audit with missing subject should return 400', async () => {
       const event = {
         tenantId: 'tenant-123',
-        action: 'test.action'
+        action: 'test.action',
       }
 
       const res = await makeAuthenticatedRequest('/audit', {
         method: 'POST',
-        body: JSON.stringify(event)
+        body: JSON.stringify(event),
       })
-      
+
       assert.strictEqual(res.status, 400)
     })
 
     it('POST /audit with missing action should return 400', async () => {
       const event = {
         tenantId: 'tenant-123',
-        subject: 'user:test'
+        subject: 'user:test',
       }
 
       const res = await makeAuthenticatedRequest('/audit', {
         method: 'POST',
-        body: JSON.stringify(event)
+        body: JSON.stringify(event),
       })
-      
+
       assert.strictEqual(res.status, 400)
     })
 
     it('POST /audit with invalid JSON should return 400', async () => {
       const res = await makeAuthenticatedRequest('/audit', {
         method: 'POST',
-        body: 'invalid-json'
+        body: 'invalid-json',
       })
-      
+
       assert.strictEqual(res.status, 400)
     })
 
     it('POST /audit with empty body should return 400', async () => {
       const res = await makeAuthenticatedRequest('/audit', {
         method: 'POST',
-        body: ''
+        body: '',
       })
-      
+
       assert.strictEqual(res.status, 400)
     })
 
@@ -259,14 +261,14 @@ describe('Audit Service API Tests', () => {
       const event = {
         tenantId: 'x'.repeat(101), // Exceeds max length of 100
         subject: 'user:test',
-        action: 'test.action'
+        action: 'test.action',
       }
 
       const res = await makeAuthenticatedRequest('/audit', {
         method: 'POST',
-        body: JSON.stringify(event)
+        body: JSON.stringify(event),
       })
-      
+
       assert.strictEqual(res.status, 400)
     })
   })

@@ -260,6 +260,141 @@ v2 (feature-gated) adds throughput optimizations:
 - Valid internal token (or symmetric JWT) allows access to `/audit`
 - Invalid/missing token returns 401
 
+### Phase 3.5: Public Frontend Event Submission (Direct Student Access)
+
+**Objective**: Enable direct audit event submission from student frontends with cookie-based JWT authentication for resilience when other infrastructure is unavailable.
+
+#### Tasks
+
+1. **Cookie Parser Utility** (`src/utils/cookie-parser.ts`)
+   ```typescript
+   export function parseCookies(cookieHeader: string): Record<string, string> {
+     return cookieHeader
+       .split(';')
+       .map(v => v.split('='))
+       .reduce((acc, v) => {
+         acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim())
+         return acc
+       }, {} as Record<string, string>)
+   }
+   ```
+
+2. **JWT Verification with jose** (`src/auth/jwt-verifier.ts`)
+   ```typescript
+   import * as jose from 'jose'
+   
+   export interface ParticipantContext {
+     participantId: string
+     role: string
+   }
+   
+   export async function verifyParticipantToken(token: string): Promise<ParticipantContext | null> {
+     if (!process.env.APP_SECRET) {
+       throw new Error('APP_SECRET not configured')
+     }
+     
+     try {
+       const secretBuffer = new TextEncoder().encode(process.env.APP_SECRET)
+       const { payload } = await jose.jwtVerify(token, secretBuffer)
+       
+       return {
+         participantId: payload.sub as string,
+         role: payload.role as string,
+       }
+     } catch (error) {
+       return null
+     }
+   }
+   ```
+
+3. **Public Endpoint with Event Restrictions** (`src/app.ts`)
+   ```typescript
+   // Whitelist of events allowed from frontend
+   const ALLOWED_PUBLIC_EVENTS = new Set([
+     'response.submitted',
+     'session.joined',
+     'session.left', 
+     'quiz.started',
+     'quiz.completed',
+     'feedback.submitted',
+     'question.answered',
+     'activity.accessed'
+   ])
+   
+   app.post('/audit/public',
+     zValidator('json', PublicAuditEventSchema),
+     async (c) => {
+       const cookieHeader = c.req.header('cookie')
+       if (!cookieHeader) {
+         return c.json({ error: 'No cookies provided' }, 401)
+       }
+       
+       const cookies = parseCookies(cookieHeader)
+       const participantToken = cookies['participant_token']
+       
+       if (!participantToken) {
+         return c.json({ error: 'participant_token cookie required' }, 401)
+       }
+       
+       const participant = await verifyParticipantToken(participantToken)
+       if (!participant) {
+         return c.json({ error: 'Invalid or expired participant token' }, 401)
+       }
+       
+       const event = c.req.valid('json')
+       
+       // Validate event type is allowed
+       if (!ALLOWED_PUBLIC_EVENTS.has(event.action)) {
+         return c.json({ error: `Event type '${event.action}' not allowed from public endpoint` }, 403)
+       }
+       
+       // Inject verified participant context (prevents spoofing)
+       const enrichedEvent = {
+         ...event,
+         subject: `participant:${participant.participantId}`,
+         userId: participant.participantId,
+         attributes: {
+           ...event.attributes,
+           source: 'frontend_direct',
+           participantRole: participant.role
+         }
+       }
+       
+       // Process through normal pipeline
+       await processAuditEvent(enrichedEvent)
+       
+       return c.json({ status: 'accepted', eventId: enrichedEvent.eventId }, 202)
+     }
+   )
+   ```
+
+4. **Public Event Schema** (`src/schemas/public-audit-event.ts`)
+   ```typescript
+   export const PublicAuditEventSchema = z.object({
+     tenantId: z.string().min(1).max(100),
+     action: z.string().min(1).max(200), // Will be validated against whitelist
+     timestamp: z.number().int().positive().optional().default(() => Date.now()),
+     eventId: z.string().max(100).optional(),
+     attributes: z.record(z.unknown()).optional(),
+     resourceId: z.string().max(500).optional(),
+     sessionId: z.string().max(100).optional(),
+     // Note: subject and userId will be overridden from JWT
+   })
+   ```
+
+5. **Environment Configuration**
+   - Add `APP_SECRET` to environment variables (same secret used by other services)
+   - Used for JWT verification of participant tokens
+
+**Acceptance Criteria**:
+- Public endpoint accessible without internal token
+- Only participant_token cookie accepted (not temporary tokens)
+- JWT verified using APP_SECRET with jose library
+- Event types restricted to whitelist
+- Participant context automatically injected from verified token
+- Spoofing prevented by overriding subject/userId
+- Events tagged with 'frontend_direct' source
+
 ### Phase 4: Azure Table Storage Integration
 
 **Objective**: Implement reliable writes to Azure Table Storage with proper entity modeling.
@@ -639,79 +774,122 @@ v2 (feature-gated) adds throughput optimizations:
 - HPA scales under load (when enabled)
 - Resource limits prevent resource exhaustion
 
-### Phase 8: Validation Strategy (MVP) and Deferred Load Testing
+### Phase 8: Comprehensive Testing Strategy
 
-**Objective (MVP)**: Validate happy path and buffering behavior; defer heavy load testing.
+**Objective**: Validate all functionality with actual database persistence, including public endpoint security and performance.
 
-#### Tasks
+#### 8.1 Test Infrastructure
+- **Azurite Setup**: Docker compose configuration for local Azure Table Storage emulation
+- **Test Utilities**: Azure Table helper for direct database verification  
+- **Environment Management**: Automated test environment setup and teardown
 
-1. **Unit Tests (targeted)** (`src/__tests__/`)
-   ```typescript
-   // Example: Batch buffer tests
-   describe('BatchBufferManager', () => {
-     it('should flush when batch size reached', async () => {
-       const buffer = new BatchBufferManager()
-       // Add 100 events to same partition
-       // Verify flush is triggered
-     })
+#### 8.2 Test Categories
 
-     it('should flush on timer expiry', async () => {
-       const buffer = new BatchBufferManager()
-       // Add events, wait for timer
-       // Verify flush occurs
-     })
-   })
-   ```
+**Unit Tests** (`test/unit/`)
+- Schema validation logic
+- Partition key generation algorithms
+- Event ID deterministic generation  
+- JWT verification functions
+- Event filtering and transformation
 
-2. **Integration Tests (smoke)**
-  - Azure Tables smoke write/ensure table
-  - Internal auth header validation
-  - End-to-end API flow (202 on valid payload)
+**Integration Tests** (`test/integration.test.js`)
+- End-to-end API flows with actual database persistence
+- Multi-tenant data isolation verification
+- Error handling and resilience
+- Authentication middleware testing
+- Public endpoint JWT cookie verification
 
-3. **Deferred Load Testing** (`test/load/`)
-   ```javascript
-   // k6 load test script
-   import http from 'k6/http'
-   import { check } from 'k6'
+**Database Verification Tests** (`test/database-verification.test.js`)
+- Direct Azure Table Storage validation
+- Partition key structure correctness
+- Data serialization integrity
+- Query performance optimization
+- Cross-tenant data isolation
 
-   export let options = {
-     stages: [
-       { duration: '1m', target: 100 },
-       { duration: '5m', target: 600 },
-       { duration: '1m', target: 1000 },
-       { duration: '2m', target: 1000 },
-       { duration: '1m', target: 0 },
-     ],
-   }
+**Performance Tests** (`test/performance.test.js`)
+- Load testing (50-200 concurrent requests)
+- Memory leak detection and monitoring
+- Throughput measurements under sustained load
+- Database connection pooling efficiency
+- Public endpoint performance under load
 
-   export default function () {
-     const payload = {
-       tenantId: 'test-tenant',
-       subject: 'user-action',
-       action: 'button-click',
-       timestamp: Date.now(),
-     }
+**Scenario Tests** (`test/scenarios.test.js`)
+- **Authentication Workflow**: Login, session management, logout audit trails
+- **Document Management**: Create, edit, delete, share document events
+- **Security Events**: Failed logins, permission changes, suspicious activities
+- **Financial Transactions**: Payment processing, subscription changes audit logs
+- **GDPR Compliance**: Data access, modification, deletion request tracking
+- **Public Frontend Events**: Direct student submissions, session participation
 
-     const response = http.post('http://audit-service/audit', JSON.stringify(payload), {
-       headers: { 'Content-Type': 'application/json' },
-     })
+#### 8.3 Test Execution Strategy
+```bash
+# Individual test suites
+npm run test:unit
+npm run test:integration  
+npm run test:database
+npm run test:performance
+npm run test:scenarios
 
-     check(response, {
-       'status is 202': (r) => r.status === 202,
-       'response time < 150ms': (r) => r.timings.duration < 150,
-     })
-   }
-   ```
+# Comprehensive test suite
+npm run test:all
 
-4. **Performance Benchmarking (MVP)**
-   - Local autocannon baseline at modest RPS (100–300)
-   - Staging load testing deferred
+# Docker environment management
+npm run test:start-env    # Start Azurite
+npm run test:stop-env     # Stop Azurite
+npm run test:clean-env    # Clean test data
+```
 
-**Acceptance Criteria (MVP)**:
-- Targeted unit tests for buffer/flush
-- Smoke integration against Azure Tables
-- Autocannon baseline shows stable behavior; P95 under ~150ms locally
+#### 8.4 Public Endpoint Testing
+```typescript
+// Cookie-based authentication tests
+describe('Public Endpoint Authentication', () => {
+  it('should accept valid participant_token cookie', async () => {
+    const validToken = await generateParticipantToken()
+    const response = await fetch('/audit/public', {
+      method: 'POST',
+      headers: { Cookie: `participant_token=${validToken}` },
+      body: JSON.stringify(validEvent)
+    })
+    expect(response.status).toBe(202)
+  })
 
+  it('should reject invalid/expired tokens', async () => {
+    const response = await fetch('/audit/public', {
+      method: 'POST', 
+      headers: { Cookie: 'participant_token=invalid' },
+      body: JSON.stringify(validEvent)
+    })
+    expect(response.status).toBe(401)
+  })
+})
+
+// Event type whitelisting tests  
+describe('Public Event Filtering', () => {
+  it('should accept whitelisted event types', async () => {
+    const events = ['response.submitted', 'session.joined', 'quiz.started']
+    for (const eventType of events) {
+      const response = await submitPublicEvent(eventType)
+      expect(response.status).toBe(202)
+    }
+  })
+
+  it('should reject non-whitelisted event types', async () => {
+    const response = await submitPublicEvent('admin.user.deleted')
+    expect(response.status).toBe(400)
+  })
+})
+```
+
+#### 8.5 Validation Criteria
+- All events successfully persisted to Azure Table Storage
+- Partition key strategy maintains query performance
+- Multi-tenant isolation enforced at database level  
+- Authentication flows properly audited
+- Public endpoint securely processes frontend events
+- JWT verification works with participant_token cookies
+- Event type whitelisting prevents unauthorized submissions
+- Performance benchmarks meet SLA requirements (< 100ms p95)
+- Zero memory leaks under sustained load
 ### Phase 9: Security & Compliance
 
 **Objective (MVP)**: Sensible defaults; defer advanced hardening.
@@ -744,10 +922,34 @@ v2 (feature-gated) adds throughput optimizations:
    - JWKS URI configuration via ConfigMap
    - No hardcoded credentials
 
+5. **Public Endpoint Security**
+   - Event type whitelist enforcement
+   - Strictly limit to student-actionable events only
+   - No administrative, system, or sensitive operations
+   - Regular review of allowed event types
+
+6. **Token Validation**
+   - Only accept valid participant_token (permanent accounts)
+   - Reject expired or malformed tokens
+   - No support for temporary tokens (security consideration)
+
+7. **Context Override Protection**
+   - Always override subject with verified participant ID
+   - Prevent user impersonation attempts
+   - Tag all events with 'frontend_direct' source
+
+8. **Rate Limiting (Future Enhancement)**
+   - Consider per-participant rate limits
+   - Protection against token abuse
+   - Circuit breaker for repeated failures
+
 **Acceptance Criteria (MVP)**:
 - Secrets not visible in logs or container inspection
 - Payload/attributes size limits enforced
 - Basic security headers configured if externally exposed
+- Public endpoint enforces event type whitelist
+- Participant context injection prevents spoofing
+- JWT verification using APP_SECRET
 
 ### Phase 10: Documentation & Operations
 
@@ -854,6 +1056,7 @@ v2 (feature-gated) adds throughput optimizations:
 - ✅ **Phase 1: Foundation & Project Setup** - Complete with monorepo integration
 - ✅ **Phase 2: Core API & Validation** - Hono server with Zod schema validation
 - ✅ **Phase 3: Authentication (MVP)** - Internal token authentication middleware
+- ⏳ **Phase 3.5: Public Frontend Event Submission** - JWT cookie authentication for direct frontend access
 - ✅ **Phase 4: Azure Table Storage Integration** - Direct writes with proper entity modeling
 - ✅ **Phase 5: Observability & Monitoring** - Pino logging, Prometheus metrics, health checks
 - ✅ **Phase 6: Testing & Development Infrastructure** - Azurite setup, API tests, documentation
@@ -902,7 +1105,7 @@ v2 (feature-gated) adds throughput optimizations:
 The service implements a pragmatic, production-ready audit logging solution:
 
 1. **HTTP Layer**: Hono framework with Zod validation
-2. **Authentication**: X-Internal-Token header validation
+2. **Authentication**: X-Internal-Token header validation + JWT cookie authentication for public endpoint
 3. **Storage**: Direct Azure Table Storage writes with partition strategy `<tenantHash>-<YYYYMMDDHHmm>-<shard>`
 4. **Observability**: Structured Pino logging + Prometheus metrics
 5. **Development**: Azurite local storage, comprehensive test suite
@@ -919,6 +1122,7 @@ The service implements a pragmatic, production-ready audit logging solution:
 ### Functional (MVP) - COMPLETED
 - ✅ Accepts audit events via POST /audit
 - ✅ Internal auth (X-Internal-Token header)
+- ⏳ **Public frontend endpoint** via POST /audit/public with JWT cookie authentication
 - ✅ Idempotent direct writes to Azure Table Storage
 - ✅ Proper error handling and HTTP status codes
 - ✅ Schema validation with Zod

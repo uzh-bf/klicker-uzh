@@ -1,0 +1,176 @@
+{
+  "minimal": {
+    "tenantId": "tenant-minimal",
+    "subject": "user:john@example.com",
+    "action": "login.success"
+  },
+
+  "complete": {
+    "tenantId": "tenant-complete",
+    "subject": "user:alice@example.com",
+    "action": "document.created",
+    "resourceId": "doc-12345",
+    "sessionId": "session-abc-123",
+    "userId": "user-alice-456",
+    "attributes": {
+      "documentType": "pdf",
+      "size": 2048000,
+      "classification": "confidential",
+      "tags": ["important", "quarterly-report"],
+      "metadata": {
+        "author": "Alice Johnson",
+        "department": "Finance",
+        "version": "1.0"
+      }
+    }
+  },
+
+  "authentication": [
+    {
+      "tenantId": "tenant-auth",
+      "subject": "user:bob@example.com",
+      "action": "login.attempt",
+      "attributes": {
+        "ipAddress": "192.168.1.100",
+        "userAgent": "Mozilla/5.0...",
+        "method": "password"
+      }
+    },
+    {
+      "tenantId": "tenant-auth",
+      "subject": "user:bob@example.com",
+      "action": "login.success",
+      "attributes": {
+        "ipAddress": "192.168.1.100",
+        "sessionDuration": 3600,
+        "mfaUsed": true
+      }
+    },
+    {
+      "tenantId": "tenant-auth",
+      "subject": "user:bob@example.com",
+      "action": "logout",
+      "attributes": {
+        "sessionDuration": 1800,
+        "reason": "user_initiated"
+      }
+    }
+  ],
+
+  "systemEvents": [
+    {
+      "tenantId": "tenant-system",
+      "subject": "system:backup-service",
+      "action": "backup.started",
+      "attributes": {
+        "backupType": "full",
+        "scheduledTime": "2024-01-15T02:00:00Z",
+        "expectedDuration": 7200
+      }
+    },
+    {
+      "tenantId": "tenant-system",
+      "subject": "system:backup-service",
+      "action": "backup.completed",
+      "attributes": {
+        "backupType": "full",
+        "duration": 6800,
+        "dataSize": "128GB",
+        "status": "success"
+      }
+    }
+  ],
+
+  "securityEvents": [
+    {
+      "tenantId": "tenant-security",
+      "subject": "user:suspicious@external.com",
+      "action": "login.failed",
+      "attributes": {
+        "ipAddress": "203.0.113.42",
+        "reason": "invalid_credentials",
+        "attemptCount": 5,
+        "blocked": true
+      }
+    },
+    {
+      "tenantId": "tenant-security",
+      "subject": "admin:security-system",
+      "action": "account.locked",
+      "resourceId": "user-suspicious-789",
+      "attributes": {
+        "reason": "too_many_failed_attempts",
+        "lockDuration": 1800,
+        "notificationSent": true
+      }
+    }
+  ],
+
+  "businessEvents": [
+    {
+      "tenantId": "tenant-business",
+      "subject": "user:customer@example.com",
+      "action": "order.created",
+      "resourceId": "order-98765",
+      "attributes": {
+        "orderTotal": 299.99,
+        "currency": "USD",
+        "items": [{ "id": "product-123", "quantity": 2, "price": 149.99 }],
+        "paymentMethod": "credit_card"
+      }
+    },
+    {
+      "tenantId": "tenant-business",
+      "subject": "system:payment-processor",
+      "action": "payment.processed",
+      "resourceId": "order-98765",
+      "attributes": {
+        "amount": 299.99,
+        "currency": "USD",
+        "transactionId": "txn-abc123",
+        "processingTime": 1.2
+      }
+    }
+  ],
+
+  "multiTenant": [
+    {
+      "tenantId": "tenant-a",
+      "subject": "user:a1@tenant-a.com",
+      "action": "document.viewed",
+      "resourceId": "doc-a-001"
+    },
+    {
+      "tenantId": "tenant-b",
+      "subject": "user:b1@tenant-b.com",
+      "action": "document.viewed",
+      "resourceId": "doc-b-001"
+    },
+    {
+      "tenantId": "tenant-c",
+      "subject": "user:c1@tenant-c.com",
+      "action": "document.viewed",
+      "resourceId": "doc-c-001"
+    }
+  ],
+
+  "timestampVariations": [
+    {
+      "tenantId": "tenant-time",
+      "subject": "system:scheduler",
+      "action": "task.scheduled"
+    },
+    {
+      "tenantId": "tenant-time",
+      "subject": "system:scheduler",
+      "action": "task.executed",
+      "timestamp": 1705276800000
+    },
+    {
+      "tenantId": "tenant-time",
+      "subject": "system:scheduler",
+      "action": "task.rescheduled",
+      "timestamp": 1705276800000
+    }
+  ]
+}

@@ -42,8 +42,16 @@
     "docker:up": "docker-compose up -d",
     "start": "node -r dotenv/config dist/index.js",
     "test": "node --test test/api.test.js",
+    "test:all": "docker-compose up -d && sleep 5 && node --test test/api.test.js test/integration.test.js test/database-verification.test.js test/scenarios.test.js",
+    "test:ci": "docker-compose up -d && sleep 5 && node --test test/api.test.js test/integration.test.js test/database-verification.test.js",
+    "test:cleanup": "docker-compose down -v",
+    "test:database": "docker-compose up -d && sleep 3 && node --test test/database-verification.test.js",
+    "test:integration": "docker-compose up -d && sleep 3 && node --test test/integration.test.js",
     "test:local": "docker-compose up -d && sleep 3 && node --test test/api.test.js",
-    "test:manual": "echo 'Starting Azurite and service for manual testing...' && docker-compose up -d && pnpm dev"
+    "test:manual": "echo 'Starting Azurite and service for manual testing...' && docker-compose up -d && pnpm dev",
+    "test:perf-quick": "docker-compose up -d && sleep 3 && node --test test/performance.test.js --grep 'Single Request Performance'",
+    "test:performance": "docker-compose up -d && sleep 5 && node --test test/performance.test.js",
+    "test:scenarios": "docker-compose up -d && sleep 3 && node --test test/scenarios.test.js"
   },
   "engines": {
     "node": "=20"
