@@ -10,14 +10,14 @@ auth:
   ingress:
     className: haproxy
     hosts:
-      - host: auth.klicker-qa.example.df-app.ch
+      - host: auth.klicker-qa.stg.example.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-prod-frontend-auth-tls
         hosts:
-          - auth.klicker-qa.example.df-app.ch
+          - auth.klicker-qa.stg.example.df-app.ch
 
   strategy:
     type: RollingUpdate
@@ -40,14 +40,14 @@ frontendPWA:
   ingress:
     className: haproxy
     hosts:
-      - host: pwa.klicker-qa.example.df-app.ch
+      - host: pwa.klicker-qa.stg.example.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-qa-frontend-pwa-tls
         hosts:
-          - pwa.klicker-qa.example.df-app.ch
+          - pwa.klicker-qa.stg.example.df-app.ch
 
   strategy:
     type: Recreate
@@ -69,14 +69,14 @@ frontendManage:
   ingress:
     className: haproxy
     hosts:
-      - host: manage.klicker-qa.example.df-app.ch
+      - host: manage.klicker-qa.stg.example.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-qa-frontend-manage-tls
         hosts:
-          - manage.klicker-qa.example.df-app.ch
+          - manage.klicker-qa.stg.example.df-app.ch
 
   strategy:
     type: Recreate
@@ -98,14 +98,14 @@ frontendControl:
   ingress:
     className: haproxy
     hosts:
-      - host: control.klicker-qa.example.df-app.ch
+      - host: control.klicker-qa.stg.example.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-qa-frontend-control-tls
         hosts:
-          - control.klicker-qa.example.df-app.ch
+          - control.klicker-qa.stg.example.df-app.ch
 
   strategy:
     type: Recreate
@@ -131,14 +131,14 @@ backendGraphql:
   ingress:
     className: haproxy
     hosts:
-      - host: backend-sls.klicker-qa.example.df-app.ch
+      - host: backend-sls.klicker-qa.stg.example.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-qa-backend-graphql-tls
         hosts:
-          - backend-sls.klicker-qa.example.df-app.ch
+          - backend-sls.klicker-qa.stg.example.df-app.ch
 
   strategy:
     type: Recreate
@@ -160,14 +160,14 @@ olatApi:
   ingress:
     className: haproxy
     hosts:
-      - host: olat-api.klicker-qa.example.df-app.ch
+      - host: olat-api.klicker-qa.stg.example.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-qa-olat-api-tls
         hosts:
-          - olat-api.klicker-qa.example.df-app.ch
+          - olat-api.klicker-qa.stg.example.df-app.ch
 
   strategy:
     type: Recreate
@@ -186,14 +186,14 @@ lti:
   ingress:
     className: haproxy
     hosts:
-      - host: lti.klicker-qa.example.df-app.ch
+      - host: lti.klicker-qa.stg.example.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-qa-lti-tls
         hosts:
-          - lti.klicker-qa.example.df-app.ch
+          - lti.klicker-qa.stg.example.df-app.ch
 
 redis:
   priorityClassName: staging-workload
