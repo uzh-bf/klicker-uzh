@@ -14,8 +14,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'KlickerChat',
-  description: "KlickerUZH's AI-powered educational assistant.",
+  title: 'KlickerUZH Tutor Chatbot',
 }
 
 export default function RootLayout({
