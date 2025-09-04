@@ -10,7 +10,7 @@
   "dependencies": {
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
-    "jose": "^5.9.4",
+    "jose": "5.9.4",
     "uuid": "10.0.0"
   },
   "devDependencies": {

@@ -1,5 +1,4 @@
-// @ts-ignore
-import JWT from 'jsonwebtoken'
+import { signJWT } from '@klicker-uzh/util'
 import { Provider } from 'ltijs'
 // @ts-ignore
 import Database from 'ltijs-sequelize'
@@ -52,10 +51,10 @@ if (process.env.LTI_DB_TYPE === 'postgres') {
 }
 
 // LTI launch callback (token has been verified by ltijs beforehand)
-Provider.onConnect((token, req, res) => {
+Provider.onConnect(async (token, req, res) => {
   console.log('LTI launch callback:', token)
 
-  const jwt = JWT.sign(
+  const jwt = await signJWT(
     {
       sub: token.user,
       email: token.userInfo.email,

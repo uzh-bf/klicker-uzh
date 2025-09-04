@@ -1,6 +1,6 @@
 import { PrismaClient, UserLoginScope } from '@klicker-uzh/prisma/client'
+import { signJWT } from '@klicker-uzh/util'
 import { PrismaPg } from '@prisma/adapter-pg'
-import JWT from 'jsonwebtoken'
 import readline from 'readline'
 
 async function run(email: string) {
@@ -18,7 +18,7 @@ async function run(email: string) {
     return
   }
 
-  const jwt = JWT.sign(
+  const jwt = await signJWT(
     {
       sub: user.id,
       role: user.role,

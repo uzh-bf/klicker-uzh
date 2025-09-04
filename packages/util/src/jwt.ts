@@ -1,6 +1,6 @@
 import * as jose from 'jose'
 
-export interface JWTPayload {
+export interface JWTPayload extends Record<string, unknown> {
   sub: string
   role?: string
   scope?: string
@@ -25,7 +25,7 @@ export async function signJWT(
   } = {}
 ): Promise<string> {
   const alg = options.algorithm ?? 'HS256'
-  let jwt = new jose.SignJWT(payload)
+  let jwt = new jose.SignJWT(payload as Record<string, unknown>)
     .setProtectedHeader({ alg, typ: 'JWT' })
     .setIssuedAt()
 
@@ -40,7 +40,7 @@ export async function verifyJWT(
   token: string,
   secret: string,
   opts: {
-    algorithms?: ('HS256')[]
+    algorithms?: 'HS256'[]
     clockTolerance?: string | number
   } = {}
 ): Promise<JWTPayload> {
@@ -51,13 +51,7 @@ export async function verifyJWT(
     })
     return payload as JWTPayload
   } catch (e) {
-    // Optional dynamic fallback for legacy flows; only in Node contexts
-    try {
-      const { default: JWT } = await import('jsonwebtoken')
-      return JWT.verify(token, secret) as JWTPayload
-    } catch (_) {
-      throw e
-    }
+    throw e
   }
 }
 

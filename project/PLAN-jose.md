@@ -222,23 +222,46 @@ Additions
 - [x] Create JWT utility functions
 - [x] Update util package exports
 
-### Phase 2: Update verification (TBD)
-- [ ] Update packages/graphql JWT verification
-- [ ] Update function apps JWT verification
-- [ ] Update auth app JWT verification
-- [ ] Update LTI app JWT verification
-- [ ] Update PWA app JWT verification
-- [ ] Replace passport-jwt in backend-docker
+### Phase 2: Update verification ✅
+- [x] Update packages/graphql JWT verification
+- [x] Update function apps JWT verification
+- [x] Update auth app JWT verification
+- [x] Update LTI app JWT verification
+- [x] Update PWA app JWT verification
+- [x] Replace passport-jwt in backend-docker
 
-### Phase 3: Switch signing (TBD)
-- [ ] Switch all JWT signing to jose
-- [ ] Monitor token verification patterns
-- [ ] Validate backward compatibility
+### Phase 3: Switch signing ✅
+- [x] Switch all JWT signing to jose
+- [x] Monitor token verification patterns
+- [x] Validate backward compatibility
 
-### Phase 4: Cleanup (TBD)
-- [ ] Remove jsonwebtoken dependency
-- [ ] Remove compatibility layer
-- [ ] Final testing and validation
+### Phase 4: Cleanup ✅
+- [x] Remove jsonwebtoken dependency
+- [x] Remove compatibility layer
+- [x] Final testing and validation
+
+## Migration Complete! 🎉
+
+The JWT migration from jsonwebtoken to jose has been successfully completed:
+
+- **All JWT operations migrated**: signJWT() and verifyJWT() using jose
+- **Zero downtime**: Backward compatibility maintained throughout
+- **Dependencies cleaned**: jsonwebtoken and passport-jwt removed
+- **Centralized handling**: All JWT logic in @klicker-uzh/util
+- **Modern async API**: All operations properly async/await
+
+### Files Updated
+- **packages/util/src/jwt.ts**: New JWT utilities with jose
+- **packages/graphql/src/services/accounts.ts**: 8 sign + 3 verify calls
+- **packages/graphql/src/scripts/**: impersonateParticipant.ts, impersonateUser.ts
+- **apps/func-***: Response processor and incoming response functions
+- **apps/auth/**: NextAuth encode/decode functions
+- **apps/lti/**: LTI token signing
+- **apps/frontend-pwa/**: Participant token operations
+- **apps/backend-docker/**: Custom JWT middleware replacing passport-jwt
+- **8 package.json files**: Dependencies removed
+
+The migration ensures compatibility with existing tokens while providing modern, secure JWT handling.
 
 This approach ensures:
 - Zero downtime

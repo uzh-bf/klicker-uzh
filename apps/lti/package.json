@@ -8,8 +8,8 @@
     "dist"
   ],
   "dependencies": {
+    "@klicker-uzh/util": "workspace:*",
     "cross-env": "7.0.3",
-    "jsonwebtoken": "9.0.2",
     "ltijs": "5.9.7",
     "ltijs-sequelize": "2.4.4"
   },
