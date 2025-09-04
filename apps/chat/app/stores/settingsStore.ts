@@ -1,9 +1,9 @@
 'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-
-export type ModelProvider = 'openai' | 'anthropic'
-export type ChatbotMode = 'tutor' | 'explainer'
+import { getModeOptions } from '../../lib/chatModes'
+import { getModelOptions, type ModelProvider } from '../../lib/models'
+import { type ChatbotMode } from '../../lib/prompts'
 
 interface ModelOption {
   id: ModelProvider
@@ -49,31 +49,9 @@ export const useSettingsStore = create<SettingsState>()(
       },
 
       // available options
-      modelOptions: [
-        {
-          id: 'openai',
-          name: 'GPT-4.1',
-          description: 'OpenAI model',
-        },
-        {
-          id: 'anthropic',
-          name: 'Claude 4 Sonnet',
-          description: 'Anthropic model',
-        },
-      ],
+      modelOptions: getModelOptions(),
 
-      modeOptions: [
-        {
-          id: 'tutor',
-          name: 'Tutor',
-          description: 'Step-by-step learning guidance',
-        },
-        {
-          id: 'explainer',
-          name: 'Explainer',
-          description: 'Clear and comprehensive explanations',
-        },
-      ],
+      modeOptions: getModeOptions(),
 
       // actions
       setSelectedModel: (model) => set({ selectedModel: model }),

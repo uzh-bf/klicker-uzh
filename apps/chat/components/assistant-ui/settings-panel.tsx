@@ -1,9 +1,6 @@
 'use client'
 
-import {
-  useSettingsStore,
-  type ModelProvider,
-} from '@/app/stores/settingsStore'
+import { useSettingsStore } from '@/app/stores/settingsStore'
 import { Progress } from '@/components/ui/progress'
 import {
   Select,
@@ -14,6 +11,7 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
+import { type ModelProvider } from '@/lib/models'
 import { Settings2, Zap } from 'lucide-react'
 
 export function SettingsPanel() {

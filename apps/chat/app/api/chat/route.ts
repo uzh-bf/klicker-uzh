@@ -1,5 +1,5 @@
 import { context7, RAGSearch } from '@/app/tools'
-import { getSystemPrompt, type ChatMode } from '@/lib/prompts'
+import { getSystemPrompt, type ChatbotMode } from '@/lib/prompts'
 import { anthropic } from '@ai-sdk/anthropic'
 import { openai } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     messages: Array<{ id: string; role: string; content: string }>
     threadId: string | null
     selectedModel: string
-    chatMode?: ChatMode
+    chatMode?: ChatbotMode
     parentId?: string | null
     assistantMessageId: string
   } = await req.json()

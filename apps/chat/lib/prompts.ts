@@ -1,9 +1,11 @@
-export type ChatMode = 'tutor' | 'explainer'
+export type ChatbotMode = 'tutor' | 'explainer'
 
 const SYSTEM_PROMPT: string =
   "You are KlickerChat, an AI-powered educational assistant integrated into KlickerUZH, the University of Zurich's interactive learning platform. You help students and educators enhance their learning experience through personalized support and intelligent assistance."
 
-export const MODES: Record<ChatMode | 'default', string> = {
+const DEFAULT_MODE_PROMPT = `As a helpful assistant, you should always provide a helpful summary or explanation of the results after using any tool.`
+
+export const MODE_PROMPTS: Record<ChatbotMode, string> = {
   tutor: `In tutor mode, your teaching approach should be:
 
 - Ask probing questions to guide students to discover answers themselves rather than giving direct solutions
@@ -27,13 +29,17 @@ When using any tool, always provide a helpful summary or explanation of the resu
 - Use visual aids and analogies when helpful
 
 After using any tool, always provide a helpful summary or explanation of the results.`,
-
-  default: `As a helpful assistant, you should always provide a helpful summary or explanation of the results after using any tool.`,
 }
 
-export function getSystemPrompt(chatMode?: ChatMode): string {
-  if (!chatMode || !(chatMode in MODES)) {
-    return `${SYSTEM_PROMPT}\n\n${MODES.default}`
+export function getSystemPrompt(chatMode?: ChatbotMode): string {
+  if (!chatMode) {
+    return `${SYSTEM_PROMPT}\n\n${DEFAULT_MODE_PROMPT}`
   }
-  return `${SYSTEM_PROMPT}\n\n${MODES[chatMode]}`
+
+  const modePrompt = MODE_PROMPTS[chatMode]
+  if (!modePrompt) {
+    return `${SYSTEM_PROMPT}\n\n${DEFAULT_MODE_PROMPT}`
+  }
+
+  return `${SYSTEM_PROMPT}\n\n${modePrompt}`
 }
