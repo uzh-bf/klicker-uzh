@@ -283,6 +283,27 @@ responseApi:
       cpu: 200m
       memory: 200Mi
 
+audit:
+  priorityClassName: production-workload
+
+  replicaCount: 2
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+  azureStorage:
+    tableName: 'auditlogs-prod'
+
 redis:
   auth:
     enabled: false

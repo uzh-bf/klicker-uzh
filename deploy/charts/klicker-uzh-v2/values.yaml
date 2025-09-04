@@ -448,6 +448,49 @@ responseApi:
 
   affinity: {}
 
+audit:
+  priorityClassName: production-workload
+
+  replicaCount: 2
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/audit
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 80
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 60
+    targetMemoryUtilizationPercentage: 80
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+  # Configuration
+  logLevel: "info"
+  
+  azureStorage:
+    tableName: "auditlogs"
+    connectionString: ""
+
+  internalToken: ""
+
 heartbeats:
   dailyGroupScores:
 
