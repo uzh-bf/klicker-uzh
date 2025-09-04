@@ -20,19 +20,19 @@ export interface Thread {
 interface ApiThread {
   id: string
   title?: string
-  created_at: string
-  updated_at: string
-  message_count?: number
+  createdAt: string
+  updatedAt: string
+  messageCount?: number
 }
 
 interface ApiMessage {
   id: string
-  thread_id: string
+  threadId: string
   role: string
   content: Array<{ type: string; text: string }>
-  parent_id?: string | null
-  created_at: string
-  updated_at: string
+  parentId?: string | null
+  createdAt: string
+  updatedAt: string
 }
 
 interface ChatState {
@@ -206,7 +206,7 @@ const convertApiThreadToThread = (apiThread: ApiThread): Thread => ({
   messages: [],
   allMessages: [],
   isRunning: false,
-  createdAt: new Date(apiThread.created_at),
+  createdAt: new Date(apiThread.createdAt),
 })
 
 const convertApiMessageToMessage = (
@@ -218,8 +218,8 @@ const convertApiMessageToMessage = (
     type: item.type as 'text',
     text: item.text,
   })),
-  createdAt: new Date(apiMessage.created_at),
-  parentId: apiMessage.parent_id || undefined,
+  createdAt: new Date(apiMessage.createdAt),
+  parentId: apiMessage.parentId || undefined,
 })
 
 export const useChatStore = create<ChatState>((set, get) => {

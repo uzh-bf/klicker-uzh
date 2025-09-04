@@ -23,8 +23,8 @@ export async function GET(
     return Response.json({
       id: thread.id,
       title: thread.title,
-      created_at: thread.createdAt.toISOString(),
-      updated_at: thread.updatedAt.toISOString(),
+      createdAt: thread.createdAt.toISOString(),
+      updatedAt: thread.updatedAt.toISOString(),
       message_count: thread._count.messages,
     })
   } catch (error) {

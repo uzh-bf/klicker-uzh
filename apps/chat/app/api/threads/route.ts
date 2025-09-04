@@ -15,9 +15,9 @@ export async function GET() {
       threads.map((thread) => ({
         id: thread.id,
         title: thread.title,
-        created_at: thread.createdAt.toISOString(),
-        updated_at: thread.updatedAt.toISOString(),
-        message_count: thread._count.messages,
+        createdAt: thread.createdAt.toISOString(),
+        updatedAt: thread.updatedAt.toISOString(),
+        messageCount: thread._count.messages,
       }))
     )
   } catch (error) {
@@ -39,9 +39,9 @@ export async function POST(req: Request) {
     return Response.json({
       id: thread.id,
       title: thread.title,
-      created_at: thread.createdAt.toISOString(),
-      updated_at: thread.updatedAt.toISOString(),
-      message_count: 0,
+      createdAt: thread.createdAt.toISOString(),
+      updatedAt: thread.updatedAt.toISOString(),
+      messageCount: 0,
     })
   } catch (error) {
     console.error('Failed to create thread:', error)

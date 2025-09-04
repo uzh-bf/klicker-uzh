@@ -15,12 +15,12 @@ export async function GET(
     return Response.json(
       messages.map((msg) => ({
         id: msg.id,
-        thread_id: msg.threadId,
+        threadId: msg.threadId,
         role: msg.role,
         content: msg.content,
-        parent_id: msg.parentId || null,
-        created_at: msg.createdAt.toISOString(),
-        updated_at: msg.updatedAt.toISOString(),
+        parentId: msg.parentId || null,
+        createdAt: msg.createdAt.toISOString(),
+        updatedAt: msg.updatedAt.toISOString(),
       }))
     )
   } catch (error) {
@@ -54,12 +54,12 @@ export async function POST(
 
     return Response.json({
       id: message.id,
-      thread_id: message.threadId,
+      threadId: message.threadId,
       role: message.role,
       content: message.content,
-      parent_id: (message as { parentId?: string | null }).parentId || null,
-      created_at: message.createdAt.toISOString(),
-      updated_at: message.updatedAt.toISOString(),
+      parentId: (message as { parentId?: string | null }).parentId || null,
+      createdAt: message.createdAt.toISOString(),
+      updatedAt: message.updatedAt.toISOString(),
     })
   } catch (error) {
     console.error('Failed to save message:', error)
