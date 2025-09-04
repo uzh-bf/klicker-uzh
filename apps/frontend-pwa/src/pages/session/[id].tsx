@@ -244,23 +244,24 @@ function Index({ id }: { id: string }) {
                 <H2>{displayName}</H2>
                 {!description?.match(/^(<br>(\n)*)$/g) && description !== '' ? (
                   <Markdown content={description} />
-                ) : null}
-                <UserNotification
-                  type="info"
-                  className={{ root: 'mt-1.5 md:text-base' }}
-                >
-                  {t.rich('pwa.liveQuiz.noActiveQuestion', {
-                    reload: (text) => (
-                      <span
-                        className="cursor-pointer underline"
-                        onClick={() => router.reload()}
-                        data-cy="reload-live-quiz"
-                      >
-                        {text}
-                      </span>
-                    ),
-                  })}
-                </UserNotification>
+                ) : (
+                  <UserNotification
+                    type="info"
+                    className={{ root: 'mt-1.5 md:text-base' }}
+                  >
+                    {t.rich('pwa.liveQuiz.noActiveQuestion', {
+                      reload: (text) => (
+                        <span
+                          className="cursor-pointer underline"
+                          onClick={() => router.reload()}
+                          data-cy="reload-live-quiz"
+                        >
+                          {text}
+                        </span>
+                      ),
+                    })}
+                  </UserNotification>
+                )}
               </div>
             ) : isGamificationEnabled ? (
               <div className={twMerge('min-h-full flex-1 bg-white')}>
