@@ -203,14 +203,13 @@ describe('Unit tests for assessment configuration functionalities', () => {
       )
       expect(liveQuiz5.isGamificationEnabled).toBe(true)
       expect(liveQuiz5.isAssessmentEnabled).toBe(false)
-      expect(liveQuiz5.pinCode).not.toBeNull()
+      expect(liveQuiz5.pinCode).toBeNull()
 
       // verify that no pin is defined for a non-assessment live quiz
       const dbLiveQuiz5 = await prisma.liveQuiz.findUnique({
         where: { id: liveQuiz5.id },
       })
-      expect(dbLiveQuiz5?.pinCode).not.toBeNull()
-      expect(dbLiveQuiz5?.pinCode).toMatch(/^[A-Z0-9]{6}$/)
+      expect(dbLiveQuiz5?.pinCode).toBeNull()
 
       const liveQuiz6 = await seedLiveQuiz({ elements: [] }, userOneCtx)
       const liveQuiz6Edited = await manipulateLiveQuiz(
