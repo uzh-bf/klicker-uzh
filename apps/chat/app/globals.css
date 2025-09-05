@@ -4,11 +4,42 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* UZH fonts */
+  --font-sans: var(--theme-font-primary), var(--source-sans-pro),
+    'Source Sans 3', 'Source Sans Pro', ui-sans-serif, system-ui, sans-serif,
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-mono: var(--mono-space-font), ui-monospace, SFMono-Regular, 'SF Mono',
+    Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+
+  /* UZH colors */
+  --color-uzh-blue: #0028a5;
+  --color-uzh-blue-100: #0028a5;
+  --color-uzh-blue-80: #3353b7;
+  --color-uzh-blue-60: #667ec9;
+  --color-uzh-blue-40: #99a9db;
+  --color-uzh-blue-20: #ccd4ed;
+  --color-uzh-grey: #a3adb7;
+  --color-uzh-grey-100: #a3adb7;
+  --color-uzh-grey-80: #b5bdc5;
+  --color-uzh-grey-60: #c8ced4;
+  --color-uzh-grey-40: #dadee2;
+  --color-uzh-grey-20: #edeff1;
+  --color-uzh-red: #dc6027;
+  --color-uzh-red-100: #dc6027;
+  --color-uzh-red-80: #e38052;
+  --color-uzh-red-60: #eaa07d;
+  --color-uzh-red-40: #f1bfa9;
+  --color-uzh-red-20: #f8dfd4;
+  --color-uzh-yellow: #fede00;
+  --color-uzh-yellow-100: #fede00;
+  --color-uzh-yellow-80: #fbe651;
+  --color-uzh-yellow-60: #fcec7c;
+  --color-uzh-yellow-40: #fdf3a8;
+  --color-uzh-yellow-20: #fef9d3;
+
+  /* Chat-specific theme colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--source-sans-pro), 'Source Sans 3', 'Source Sans Pro',
-    ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
