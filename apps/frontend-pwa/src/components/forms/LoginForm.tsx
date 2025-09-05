@@ -127,81 +127,85 @@ function LoginForm({
                 data={dataIdentifier}
               />
 
-              {magicLinkLogin && (
-                <div className="mt-3 flex flex-col gap-2 md:mt-2">
-                  {process.env.NEXT_PUBLIC_WITH_MAGIC_LINK === 'true' && (
+              {process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
+                magicLinkLogin && (
+                  <div className="mt-3 flex flex-col gap-2 md:mt-2">
+                    {process.env.NEXT_PUBLIC_WITH_MAGIC_LINK === 'true' && (
+                      <Button
+                        fluid
+                        primary
+                        type="submit"
+                        loading={isSubmitting}
+                        data={{ cy: 'magic-link-login' }}
+                      >
+                        <Button.Icon icon={faEnvelope} loading={isSubmitting} />
+                        <Button.Label>
+                          {t('pwa.general.magicLinkLogin')}
+                        </Button.Label>
+                      </Button>
+                    )}
                     <Button
                       fluid
-                      primary
-                      type="submit"
-                      loading={isSubmitting}
-                      data={{ cy: 'magic-link-login' }}
+                      type="button"
+                      onClick={() => setMagicLinkLogin(false)}
+                      data={{ cy: 'password-login' }}
                     >
-                      <Button.Icon icon={faEnvelope} loading={isSubmitting} />
+                      <Button.Icon icon={faKey} />
                       <Button.Label>
-                        {t('pwa.general.magicLinkLogin')}
+                        {t('pwa.general.passwordLogin')}
                       </Button.Label>
-                    </Button>
-                  )}
-                  <Button
-                    fluid
-                    type="button"
-                    onClick={() => setMagicLinkLogin(false)}
-                    data={{ cy: 'password-login' }}
-                  >
-                    <Button.Icon icon={faKey} />
-                    <Button.Label>
-                      {t('pwa.general.passwordLogin')}
-                    </Button.Label>
-                  </Button>
-                </div>
-              )}
-
-              {!magicLinkLogin && (
-                <>
-                  <FormikTextField
-                    required
-                    label={labelSecret}
-                    labelType="small"
-                    iconPosition="right"
-                    name={fieldSecret}
-                    data={dataSecret}
-                    icon={passwordHidden ? faEye : faEyeSlash}
-                    onIconClick={() => setPasswordHidden(!passwordHidden)}
-                    className={{
-                      root: 'mt-1',
-                      icon: 'bg-transparent',
-                      input: 'pr-10!',
-                    }}
-                    type={passwordHidden ? 'password' : 'text'}
-                  />
-
-                  <div className="flex flex-row justify-between">
-                    <Button
-                      basic
-                      onClick={() => setMagicLinkLogin(true)}
-                      className={{
-                        root: 'text-primary-100 p-0! mt-1 text-sm hover:bg-transparent hover:underline',
-                      }}
-                    >
-                      <Button.Label>
-                        {t('shared.generic.forgotPassword')}
-                      </Button.Label>
-                    </Button>
-                    <Button
-                      primary
-                      type="submit"
-                      disabled={isSubmitting}
-                      className={{
-                        root: 'mt-3 md:mb-0 md:mt-2 md:w-max md:self-end',
-                      }}
-                      data={{ cy: 'submit-login' }}
-                    >
-                      <Button.Label>{t('shared.generic.signin')}</Button.Label>
                     </Button>
                   </div>
-                </>
-              )}
+                )}
+
+              {process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
+                !magicLinkLogin && (
+                  <>
+                    <FormikTextField
+                      required
+                      label={labelSecret}
+                      labelType="small"
+                      iconPosition="right"
+                      name={fieldSecret}
+                      data={dataSecret}
+                      icon={passwordHidden ? faEye : faEyeSlash}
+                      onIconClick={() => setPasswordHidden(!passwordHidden)}
+                      className={{
+                        root: 'mt-1',
+                        icon: 'bg-transparent',
+                        input: 'pr-10!',
+                      }}
+                      type={passwordHidden ? 'password' : 'text'}
+                    />
+
+                    <div className="flex flex-row justify-between">
+                      <Button
+                        basic
+                        onClick={() => setMagicLinkLogin(true)}
+                        className={{
+                          root: 'text-primary-100 p-0! mt-1 text-sm hover:bg-transparent hover:underline',
+                        }}
+                      >
+                        <Button.Label>
+                          {t('shared.generic.forgotPassword')}
+                        </Button.Label>
+                      </Button>
+                      <Button
+                        primary
+                        type="submit"
+                        disabled={isSubmitting}
+                        className={{
+                          root: 'mt-3 md:mb-0 md:mt-2 md:w-max md:self-end',
+                        }}
+                        data={{ cy: 'submit-login' }}
+                      >
+                        <Button.Label>
+                          {t('shared.generic.signin')}
+                        </Button.Label>
+                      </Button>
+                    </div>
+                  </>
+                )}
 
               {/* Edu-ID Login Button for Assessment Mode */}
               {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true' &&
@@ -227,23 +231,26 @@ function LoginForm({
                   </div>
                 )}
 
-              {!magicLinkLogin && installAndroid && onChrome && (
-                <div className="mt-4 flex flex-col justify-center md:hidden">
-                  <UserNotification type="info" message={installAndroid}>
-                    <Button
-                      onClick={onInstallClick}
-                      className={{
-                        root: 'border-uzh-grey-80 mt-2 w-fit',
-                      }}
-                      data={{ cy: 'install-student-pwa' }}
-                    >
-                      <Button.Label>
-                        {t('shared.login.installButton')}
-                      </Button.Label>
-                    </Button>
-                  </UserNotification>
-                </div>
-              )}
+              {process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
+                !magicLinkLogin &&
+                installAndroid &&
+                onChrome && (
+                  <div className="mt-4 flex flex-col justify-center md:hidden">
+                    <UserNotification type="info" message={installAndroid}>
+                      <Button
+                        onClick={onInstallClick}
+                        className={{
+                          root: 'border-uzh-grey-80 mt-2 w-fit',
+                        }}
+                        data={{ cy: 'install-student-pwa' }}
+                      >
+                        <Button.Label>
+                          {t('shared.login.installButton')}
+                        </Button.Label>
+                      </Button>
+                    </UserNotification>
+                  </div>
+                )}
               {!magicLinkLogin && installIOS && oniOS && (
                 <UserNotification
                   className={{ root: 'mt-4' }}
