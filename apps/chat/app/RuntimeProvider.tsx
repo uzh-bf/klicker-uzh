@@ -1,472 +1,58 @@
 'use client'
 
-import {
-  useChatStore,
-  type ExtendedThreadMessageLike,
-} from '@/app/stores/chatStore'
+import { useChatResponse } from '@/app/hooks/useChatResponse'
+import { useThreadManagement } from '@/app/hooks/useThreadManagement'
+import { useChatStore } from '@/app/stores/chatStore'
 import { useSettingsStore } from '@/app/stores/settingsStore'
 import { Context7ToolUI } from '@/components/assistant-ui/tools-ui/context7-tool-ui'
 import { RAGToolUI } from '@/components/assistant-ui/tools-ui/rag-tool-ui'
 import {
   AssistantRuntimeProvider,
   useExternalStoreRuntime,
-  type AppendMessage,
   type ThreadMessageLike,
 } from '@assistant-ui/react'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect } from 'react'
 
 export function RuntimeProvider({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const {
-    activeThreadId,
-    threads,
-    createThread,
-    addMessage,
-    setMessages,
-    setIsRunning,
-  } = useChatStore()
+  const { activeThreadId, threads, setMessages } = useChatStore()
   const { selectedModel, selectedMode, modeOptions } = useSettingsStore()
 
+  // get current thread state
   const activeThread = threads.find((t) => t.id === activeThreadId)
   const messages = activeThread?.messages || []
   const isRunning = activeThread?.isRunning || false
 
-  // get selected chat mode
+  // get selected chat mode config
   const currentModeOption = modeOptions.find((mode) => mode.id === selectedMode)
   const chatMode = currentModeOption?.id || 'default'
 
-  // AbortController to handle request cancellation
-  const abortControllerRef = useRef<AbortController | null>(null)
-
-  // load threads on mount
+  // load threads on component mount
   useEffect(() => {
     useChatStore.getState().loadThreads()
   }, [])
 
-  // function to handle streaming chat response
-  const generateChatResponse = useCallback(
-    async (messagesToSend: ExtendedThreadMessageLike[], threadId: string) => {
-      const abortController = new AbortController()
-      abortControllerRef.current = abortController
-
-      setIsRunning(true)
-
-      const triggerMessage = messagesToSend[messagesToSend.length - 1]
-      const parentId = triggerMessage?.parentId
-
-      // assistant message ID which is also sent to backend to be coherent
-      const assistantMessageId = generateId()
-
-      try {
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: abortController.signal,
-          body: JSON.stringify({
-            messages: messagesToSend.map((m) => ({
-              id: m.id,
-              role: m.role,
-              content: Array.isArray(m.content)
-                ? m.content
-                    .map((c: { type?: string; text?: string } | string) =>
-                      typeof c === 'object' && c.type === 'text'
-                        ? c.text || ''
-                        : String(c)
-                    )
-                    .join('')
-                : String(m.content),
-            })),
-            threadId,
-            selectedModel,
-            chatMode,
-            parentId: parentId || undefined,
-            assistantMessageId,
-          }),
-        })
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-
-        const reader = response.body?.getReader()
-        const decoder = new TextDecoder()
-        let buffer = ''
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const orderedContentParts: any[] = []
-        let currentTextContent = ''
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const toolCallsMap: Map<string, any> = new Map()
-
-        if (reader) {
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
-
-            const chunk = decoder.decode(value, { stream: true })
-            buffer += chunk
-
-            const lines = buffer.split('\n')
-            buffer = lines.pop() || ''
-
-            for (const line of lines) {
-              if (!line.trim()) continue
-
-              if (line === 'data: [DONE]') {
-                continue
-              }
-
-              try {
-                let jsonData
-
-                if (line.startsWith('data: ')) {
-                  const jsonString = line.substring(6) // remove "data: " prefix
-                  jsonData = JSON.parse(jsonString)
-                } else {
-                  jsonData = JSON.parse(line)
-                }
-
-                if (jsonData.type === 'text-delta') {
-                  currentTextContent += jsonData.delta || ''
-
-                  // update last text content part or add if none exists
-                  if (
-                    orderedContentParts.length === 0 ||
-                    orderedContentParts[orderedContentParts.length - 1].type !==
-                      'text'
-                  ) {
-                    orderedContentParts.push({
-                      type: 'text',
-                      text: currentTextContent,
-                    })
-                  } else {
-                    const lastPart =
-                      orderedContentParts[orderedContentParts.length - 1]
-                    if (lastPart.type === 'text') {
-                      lastPart.text = currentTextContent
-                    }
-                  }
-
-                  const assistantMessage: ExtendedThreadMessageLike = {
-                    id: assistantMessageId,
-                    role: 'assistant',
-                    content: orderedContentParts,
-                    createdAt: new Date(),
-                    parentId: triggerMessage.id,
-                  }
-
-                  setMessages([...messagesToSend, assistantMessage])
-                } else if (jsonData.type === 'tool-input-start') {
-                  // finalize current text content if any
-                  if (
-                    currentTextContent.trim() &&
-                    (orderedContentParts.length === 0 ||
-                      orderedContentParts[orderedContentParts.length - 1]
-                        .type !== 'text')
-                  ) {
-                    orderedContentParts.push({
-                      type: 'text',
-                      text: currentTextContent,
-                    })
-                    currentTextContent = ''
-                  }
-
-                  // add tool call in correct position
-                  const toolCall = {
-                    type: 'tool-call',
-                    toolCallId: jsonData.toolCallId,
-                    toolName: jsonData.toolName,
-                    args: {},
-                    result: 'Loading...',
-                  }
-
-                  toolCallsMap.set(jsonData.toolCallId, toolCall)
-                  orderedContentParts.push(toolCall)
-
-                  const assistantMessage: ExtendedThreadMessageLike = {
-                    id: assistantMessageId,
-                    role: 'assistant',
-                    content: orderedContentParts,
-                    createdAt: new Date(),
-                    parentId: triggerMessage.id,
-                  }
-
-                  setMessages([...messagesToSend, assistantMessage])
-                } else if (jsonData.type === 'tool-input-available') {
-                  // update tool call with args
-                  const existingToolCall = toolCallsMap.get(jsonData.toolCallId)
-                  if (existingToolCall) {
-                    existingToolCall.args = jsonData.input
-                    existingToolCall.result = 'Executing...'
-
-                    const assistantMessage: ExtendedThreadMessageLike = {
-                      id: assistantMessageId,
-                      role: 'assistant',
-                      content: orderedContentParts,
-                      createdAt: new Date(),
-                      parentId: triggerMessage.id,
-                    }
-
-                    setMessages([...messagesToSend, assistantMessage])
-                  }
-                } else if (jsonData.type === 'tool-output-available') {
-                  // update tool call with result
-                  const existingToolCall = toolCallsMap.get(jsonData.toolCallId)
-                  if (existingToolCall) {
-                    existingToolCall.result = jsonData.output
-
-                    const assistantMessage: ExtendedThreadMessageLike = {
-                      id: assistantMessageId,
-                      role: 'assistant',
-                      content: orderedContentParts,
-                      createdAt: new Date(),
-                      parentId: triggerMessage.id,
-                    }
-
-                    setMessages([...messagesToSend, assistantMessage])
-                  }
-                } else if (jsonData.type === 'tool-output-error') {
-                  const existingToolCall = toolCallsMap.get(jsonData.toolCallId)
-                  if (existingToolCall) {
-                    existingToolCall.result = `Error: ${jsonData.errorText || 'Tool execution failed'}`
-
-                    const assistantMessage: ExtendedThreadMessageLike = {
-                      id: assistantMessageId,
-                      role: 'assistant',
-                      content: orderedContentParts,
-                      createdAt: new Date(),
-                      parentId: triggerMessage.id,
-                    }
-
-                    setMessages([...messagesToSend, assistantMessage])
-                  }
-                } else if (
-                  [
-                    'start',
-                    'start-step',
-                    'tool-input-delta',
-                    'finish-step',
-                    'finish',
-                    'text-start',
-                    'text-end',
-                  ].includes(jsonData.type)
-                ) {
-                  // just for stream management, can be ignored
-                } else {
-                  console.error('Unknown stream type:', jsonData.type, jsonData)
-                }
-              } catch (error) {
-                console.warn('Failed to parse stream line:', line, error)
-              }
-            }
-          }
-
-          // check for remaining text
-          if (
-            currentTextContent.trim() &&
-            (orderedContentParts.length === 0 ||
-              orderedContentParts[orderedContentParts.length - 1].type !==
-                'text')
-          ) {
-            orderedContentParts.push({ type: 'text', text: currentTextContent })
-          }
-
-          if (orderedContentParts.length > 0) {
-            const finalAssistantMessage: ExtendedThreadMessageLike = {
-              id: assistantMessageId,
-              role: 'assistant',
-              content: orderedContentParts,
-              createdAt: new Date(),
-              parentId: triggerMessage.id,
-            }
-
-            const newCurrentPath = [...messagesToSend, finalAssistantMessage]
-
-            // get current thread state to update allMessages
-            const { threads } = useChatStore.getState()
-            const activeThread = threads.find((t) => t.id === threadId)
-            const updatedAllMessages = activeThread
-              ? [...activeThread.allMessages, finalAssistantMessage]
-              : newCurrentPath
-
-            // update both current path and full tree
-            useChatStore.setState((state) => ({
-              threads: state.threads.map((thread) =>
-                thread.id === threadId
-                  ? {
-                      ...thread,
-                      messages: newCurrentPath,
-                      allMessages: updatedAllMessages,
-                    }
-                  : thread
-              ),
-            }))
-          }
-        }
-      } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') {
-          // do nothing - chat was aborted
-        } else {
-          console.error('Chat error:', error)
-        }
-      } finally {
-        setIsRunning(false)
-        abortControllerRef.current = null
-      }
-    },
-    [setMessages, setIsRunning, selectedModel, chatMode]
-  ) // Add dependencies
-
-  const onNew = useCallback(
-    async (message: AppendMessage) => {
-      const { activeThreadId: currentActiveThreadId } = useChatStore.getState()
-
-      let threadId = currentActiveThreadId
-
-      // create a new thread if none exists
-      if (!threadId) {
-        threadId = await createThread()
-        if (!threadId) {
-          console.error('Failed to create thread')
-          return
-        }
-      }
-
-      // add user message to the store
-      const userMessage: ExtendedThreadMessageLike = {
-        id: generateId(),
-        role: 'user',
-        content: message.content,
-        createdAt: new Date(),
-        parentId: message.parentId || null,
-      }
-
-      await addMessage(userMessage)
-
-      // get current messages from store
-      const currentMessages =
-        useChatStore.getState().threads.find((t) => t.id === threadId)
-          ?.messages || []
-
-      // generate chat response
-      await generateChatResponse(currentMessages, threadId)
-    },
-    [createThread, addMessage, generateChatResponse]
+  // init chat response handling hook
+  const { generateChatResponse, abortControllerRef } = useChatResponse(
+    selectedModel,
+    chatMode
   )
 
-  const onEdit = useCallback(
-    async (message: AppendMessage) => {
-      const { activeThreadId: threadId, threads } = useChatStore.getState()
-
-      if (!threadId) {
-        console.error('No active thread for edit')
-        return
-      }
-
-      const active = threads.find((t) => t.id === threadId)
-
-      const parentId = message.parentId
-
-      const editedMessage: ExtendedThreadMessageLike = {
-        role: 'user',
-        content: message.content,
-        id: generateId(),
-        createdAt: new Date(),
-        parentId: parentId,
-      }
-
-      // keep messages up to previous assistant message (use current path from store)
-      const parentIndex =
-        parentId && active
-          ? active.messages.findIndex((m) => m.id === parentId)
-          : -1
-      const newCurrentPath =
-        parentIndex >= 0 && active
-          ? [...active.messages.slice(0, parentIndex + 1), editedMessage]
-          : [editedMessage]
-
-      const updatedAllMessages = active
-        ? [...active.allMessages, editedMessage]
-        : [editedMessage]
-
-      // update thread with both current path and full tree
-      useChatStore.setState((state) => ({
-        threads: state.threads.map((thread) =>
-          thread.id === threadId
-            ? {
-                ...thread,
-                messages: newCurrentPath,
-                allMessages: updatedAllMessages,
-              }
-            : thread
-        ),
-      }))
-
-      // generate new chat response
-      await generateChatResponse(newCurrentPath, threadId)
-    },
-    [generateChatResponse]
+  // init thread management hooks
+  const { onNew, onEdit, onReload, onCancel } = useThreadManagement(
+    generateChatResponse,
+    abortControllerRef
   )
-
-  const onReload = useCallback(
-    async (parentId: string | null) => {
-      const { activeThreadId: threadId, threads } = useChatStore.getState()
-
-      if (!threadId) {
-        console.error('No active thread for reload')
-        return
-      }
-
-      const active = threads.find((t) => t.id === threadId)
-      if (!active) {
-        console.error('Active thread not found')
-        return
-      }
-
-      const parentIndex = parentId
-        ? active.messages.findIndex((m) => m.id === parentId)
-        : -1
-
-      if (parentId && parentIndex === -1) {
-        console.error('Parent message not found for reload')
-        return
-      }
-
-      const truncatedPath =
-        parentIndex >= 0 ? active.messages.slice(0, parentIndex + 1) : []
-
-      // update thread with truncated message history
-      useChatStore.setState((state) => ({
-        threads: state.threads.map((thread) =>
-          thread.id === threadId
-            ? {
-                ...thread,
-                messages: truncatedPath,
-              }
-            : thread
-        ),
-      }))
-
-      await generateChatResponse(truncatedPath, threadId)
-    },
-    [generateChatResponse]
-  )
-
-  const onCancel = useCallback(async () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-    }
-    setIsRunning(false)
-  }, [setIsRunning])
 
   const convertMessage = useCallback(
     (message: ThreadMessageLike) => message,
     []
   )
 
+  // runtime config for assistant UI
   const runtime = useExternalStoreRuntime({
     messages,
     isRunning,
@@ -485,8 +71,4 @@ export function RuntimeProvider({
       {children}
     </AssistantRuntimeProvider>
   )
-}
-
-function generateId(): string {
-  return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
 }

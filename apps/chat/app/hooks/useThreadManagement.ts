@@ -1,0 +1,204 @@
+import {
+  useChatStore,
+  type ExtendedThreadMessageLike,
+} from '@/app/stores/chatStore'
+import { type AppendMessage } from '@assistant-ui/react'
+import { useCallback } from 'react'
+import { generateId } from '../utils/chatUtils'
+
+/**
+ * Hook for managing chat thread operations.
+ *
+ * Provides callbacks for:
+ * - onNew: creating new messages and responses
+ * - onEdit: editing existing messages and regenerating responses
+ * - onReload: regenerating responses from a specific point
+ * - onCancel: cancelling ongoing chat requests
+ *
+ * @param generateChatResponse - Function to generate AI responses
+ * @param abortControllerRef - Ref to current abort controller for cancellation
+ * @returns Object containing all thread management callbacks
+ */
+export function useThreadManagement(
+  generateChatResponse: (
+    messages: ExtendedThreadMessageLike[],
+    threadId: string
+  ) => Promise<void>,
+  abortControllerRef: React.MutableRefObject<AbortController | null>
+) {
+  const { createThread, addMessage, setIsRunning } = useChatStore()
+
+  /**
+   * Handles creation of new user messages and generates response
+   *
+   * @param message - user message that was sent
+   */
+  const onNew = useCallback(
+    async (message: AppendMessage) => {
+      const { activeThreadId: currentActiveThreadId } = useChatStore.getState()
+
+      let threadId = currentActiveThreadId
+
+      // create new thread if none exists
+      if (!threadId) {
+        threadId = await createThread()
+        if (!threadId) {
+          console.error('Failed to create thread')
+          return
+        }
+      }
+
+      // create user message with unique ID and metadata
+      const userMessage: ExtendedThreadMessageLike = {
+        id: generateId(),
+        role: 'user',
+        content: message.content,
+        createdAt: new Date(),
+        parentId: message.parentId || null,
+      }
+
+      await addMessage(userMessage)
+
+      const currentMessages =
+        useChatStore.getState().threads.find((t) => t.id === threadId)
+          ?.messages || []
+
+      // generate response based on current conversation
+      await generateChatResponse(currentMessages, threadId)
+    },
+    [createThread, addMessage, generateChatResponse]
+  )
+
+  /**
+   * Handles editing of existing messages and regenerating responses.
+   *
+   * This creates a new conversation branch from the edit point.
+   *
+   * @param message - The edited message content
+   */
+  const onEdit = useCallback(
+    async (message: AppendMessage) => {
+      const { activeThreadId: threadId, threads } = useChatStore.getState()
+
+      if (!threadId) {
+        console.error('No active thread for edit')
+        return
+      }
+
+      const activeThread = threads.find((t) => t.id === threadId)
+      const parentId = message.parentId
+
+      // create edited message with new ID
+      const editedMessage: ExtendedThreadMessageLike = {
+        role: 'user',
+        content: message.content,
+        id: generateId(),
+        createdAt: new Date(),
+        parentId: parentId,
+      }
+
+      // build new conversation path up to the parent + edited message
+      const parentIndex =
+        parentId && activeThread
+          ? activeThread.messages.findIndex((m) => m.id === parentId)
+          : -1
+
+      const newCurrentPath =
+        parentIndex >= 0 && activeThread
+          ? [...activeThread.messages.slice(0, parentIndex + 1), editedMessage]
+          : [editedMessage]
+
+      // update complete message history
+      const updatedAllMessages = activeThread
+        ? [...activeThread.allMessages, editedMessage]
+        : [editedMessage]
+
+      // update thread state with both current path and full history
+      useChatStore.setState((state) => ({
+        threads: state.threads.map((thread) =>
+          thread.id === threadId
+            ? {
+                ...thread,
+                messages: newCurrentPath,
+                allMessages: updatedAllMessages,
+              }
+            : thread
+        ),
+      }))
+
+      // generate new response from the edited conversation state
+      await generateChatResponse(newCurrentPath, threadId)
+    },
+    [generateChatResponse]
+  )
+
+  /**
+   * Handles regenerating responses from a specific message.
+   *
+   * @param parentId - ID of the message to reload from
+   */
+  const onReload = useCallback(
+    async (parentId: string | null) => {
+      const { activeThreadId: threadId, threads } = useChatStore.getState()
+
+      if (!threadId) {
+        console.error('No active thread for reload')
+        return
+      }
+
+      const activeThread = threads.find((t) => t.id === threadId)
+      if (!activeThread) {
+        console.error('Active thread not found')
+        return
+      }
+
+      // find parent message index
+      const parentIndex = parentId
+        ? activeThread.messages.findIndex((m) => m.id === parentId)
+        : -1
+
+      if (parentId && parentIndex === -1) {
+        console.error('Parent message not found for reload')
+        return
+      }
+
+      const truncatedPath =
+        parentIndex >= 0 ? activeThread.messages.slice(0, parentIndex + 1) : []
+
+      // update thread with truncated message history
+      useChatStore.setState((state) => ({
+        threads: state.threads.map((thread) =>
+          thread.id === threadId
+            ? {
+                ...thread,
+                messages: truncatedPath,
+              }
+            : thread
+        ),
+      }))
+
+      // regenerate response from truncated state
+      await generateChatResponse(truncatedPath, threadId)
+    },
+    [generateChatResponse]
+  )
+
+  /**
+   * Cancels any ongoing chat request.
+   *
+   * Uses the AbortController to cancel the HTTP request
+   */
+  const onCancel = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    setIsRunning(false)
+  }, [setIsRunning, abortControllerRef])
+
+  return {
+    onNew,
+    onEdit,
+    onReload,
+    onCancel,
+  }
+}
