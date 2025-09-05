@@ -1,16 +1,12 @@
 import { sendTeamsNotifications } from '@/lib/util'
-import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@klicker-uzh/prisma'
 import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
 import bcrypt from 'bcryptjs'
-import JWT from 'jsonwebtoken'
-import type { NextAuthOptions, Profile } from 'next-auth'
+import type { Profile } from 'next-auth'
 import NextAuth, { Account } from 'next-auth'
-import { DefaultJWT, JWTDecodeParams, JWTEncodeParams } from 'next-auth/jwt'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { Provider } from 'next-auth/providers/index'
-
-export const COOKIE_NAME = 'next-auth.session-token'
+import authOptions from './auth.config'
 
 export interface ExtendedProfile extends Profile {
   swissEduPersonUniqueID: string
@@ -49,34 +45,6 @@ function reduceCatalyst(acc: boolean, affiliation: string) {
   }
 }
 
-export async function decode({ token, secret }: JWTDecodeParams) {
-  if (!token) return null
-  return JWT.verify(token, secret) as DefaultJWT
-}
-
-export async function encode({ token, secret }: JWTEncodeParams) {
-  return JWT.sign(token ?? '', secret)
-}
-
-function generateRandomString(length: number) {
-  let result = ''
-  let characters
-  for (let i = 0; i < length; i++) {
-    if (i === 0 || i === length - 1) {
-      characters =
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-    } else {
-      // TODO: re-introduce allowance for hyphens and underscores again when they are fully supported by manipulation forms
-      characters =
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-      // 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
-    }
-    const charactersLength = characters.length
-    result += characters.charAt(Math.floor(Math.random() * charactersLength))
-  }
-  return result
-}
-
 async function createUserAffiliations(
   userId: string,
   affiliationIds?: string[]
@@ -113,14 +81,33 @@ async function createUserAffiliations(
   }
 }
 
+function generateRandomString(length: number) {
+  let result = ''
+  let characters
+  for (let i = 0; i < length; i++) {
+    if (i === 0 || i === length - 1) {
+      characters =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+    } else {
+      // TODO: re-introduce allowance for hyphens and underscores again when they are fully supported by manipulation forms
+      characters =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+      // 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
+    }
+    const charactersLength = characters.length
+    result += characters.charAt(Math.floor(Math.random() * charactersLength))
+  }
+  return result
+}
+
 const EduIDProvider: Provider | null =
   typeof process.env.EDUID_CLIENT_SECRET !== 'undefined'
     ? {
         id: process.env.NEXT_PUBLIC_EDUID_ID as string,
-        wellKnown: process.env.EDUID_WELL_KNOWN as string,
+        // wellKnown: process.env.EDUID_WELL_KNOWN as string,
         clientId: process.env.EDUID_CLIENT_ID as string,
         clientSecret: process.env.EDUID_CLIENT_SECRET as string,
-
+        issuer: 'https://login.test.eduid.ch/',
         name: 'EduID',
         type: 'oauth',
         authorization: {
@@ -218,47 +205,12 @@ const CredentialProvider: Provider = CredentialsProvider({
   },
 })
 
-export const authOptions: NextAuthOptions = {
-  secret: process.env.APP_SECRET,
-
-  adapter: PrismaAdapter(prisma),
+export const { handlers, signIn, signOut, auth } = NextAuth({
+  ...authOptions,
 
   providers: EduIDProvider
     ? [EduIDProvider, CredentialProvider]
     : [CredentialProvider],
-
-  session: {
-    strategy: 'jwt',
-  },
-
-  jwt: {
-    decode,
-    encode,
-  },
-
-  cookies: {
-    // csrfToken: {
-    //   name: 'next-auth.csrf-token',
-    //   options: {
-    //     domain: process.env.COOKIE_DOMAIN,
-    //     // path: '/',
-    //     // httpOnly: true,
-    //     // sameSite: 'lax',
-    //     // secure: process.env.NODE_ENV === 'production',
-    //   },
-    // },
-    sessionToken: {
-      name: COOKIE_NAME,
-      options: {
-        domain: process.env.COOKIE_DOMAIN,
-        path: '/',
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-      },
-    },
-  },
-
   callbacks: {
     async signIn({ user, account, profile, email }) {
       console.log('signIn', user, account, profile, email)
@@ -366,6 +318,4 @@ export const authOptions: NextAuthOptions = {
       return baseUrl
     },
   },
-}
-
-export default NextAuth(authOptions)
+})
