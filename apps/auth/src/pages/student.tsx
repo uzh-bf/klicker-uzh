@@ -33,10 +33,16 @@ export default function Student() {
       return
     }
 
-    // Directly trigger NextAuth sign-in with callback to PWA
-    signIn('eduid-participant', {
-      callbackUrl: redirectTo,
-    })
+    // Set context cookie before signin to preserve state
+    document.cookie = `auth-context=participant; path=/; domain=${window.location.hostname.includes('.') ? '.' + window.location.hostname.split('.').slice(-2).join('.') : window.location.hostname}`
+    
+    // Build signin URL with participant context
+    const signinUrl = new URL('/api/auth/signin/eduid-participant', window.location.origin)
+    signinUrl.searchParams.set('participant', 'true')
+    signinUrl.searchParams.set('callbackUrl', redirectTo)
+    
+    // Redirect directly to preserve query parameters
+    window.location.href = signinUrl.toString()
   }, [router])
 
   return (
