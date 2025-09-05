@@ -265,6 +265,32 @@ export function useChatResponse(selectedModel: string, chatMode: string) {
                     }
                     setMessages([...messagesToSend, assistantMessage])
                   }
+                } else if (jsonData.type === 'error') {
+                  // STREAM ERROR
+                  console.error(
+                    'Stream error:',
+                    jsonData.errorText || 'Unknown error',
+                    jsonData
+                  )
+
+                  const errorContent = {
+                    type: 'text',
+                    text: `\n\n**Error**: I'm sorry, something went wrong while processing your request. Please try again.`,
+                  }
+
+                  orderedContentParts.push(errorContent)
+
+                  const assistantMessage: ExtendedThreadMessageLike = {
+                    id: assistantMessageId,
+                    role: 'assistant',
+                    content: orderedContentParts,
+                    createdAt: new Date(),
+                    parentId: triggerMessage.id,
+                  }
+                  setMessages([...messagesToSend, assistantMessage])
+
+                  // stop processing the stream on error
+                  break
                 } else if (
                   [
                     'start', // stream started
