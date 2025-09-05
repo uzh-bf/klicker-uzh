@@ -116,6 +116,17 @@
       ],
       "persistent": true
     },
+    "dev:assessment": {
+      "cache": false,
+      "dependsOn": [
+        "@klicker-uzh/util#build",
+        "@klicker-uzh/prisma#build",
+        "@klicker-uzh/graphql#build",
+        "@klicker-uzh/markdown#build",
+        "@klicker-uzh/transactional#build"
+      ],
+      "persistent": true
+    },
     "dev:docs": {
       "cache": false,
       "persistent": true
