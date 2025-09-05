@@ -6,7 +6,7 @@ on:
     branches:
       - 'v3'
       - 'v3*'
-      # - 'argocd'
+      - 'argocd'
   pull_request:
     # branches: [ "v3" ]
     types: [opened, synchronize, reopened, ready_for_review]
