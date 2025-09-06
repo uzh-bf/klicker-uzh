@@ -676,11 +676,16 @@ export async function manipulateLiveQuiz(
   const pinProtection = assessmentSetting || isPinProtected
 
   // if a new course should be assigned, verify that the live quiz is not removed from an assessment course (by someone with insufficient permissions)
-  const newCourse =
-    courseId !== null &&
-    typeof courseId !== 'undefined' &&
-    (!existingActivity?.isAssessmentEnabled ||
-      (existingActivity?.course?._count.permissions ?? 0) > 0)
+  const newCourse = courseId !== null && typeof courseId !== 'undefined'
+
+  // if the activity is part of an assessment course, but should be modified and the user is not a course admin, return early
+  if (
+    newCourse &&
+    existingActivity?.isAssessmentEnabled &&
+    !existingActivity?.course?._count.permissions
+  ) {
+    return null
+  }
 
   // re-create blocks and link existing instance / create new instances (depending on mode and novelty of the included element)
   const createOrUpdateJSON = {
