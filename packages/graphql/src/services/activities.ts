@@ -443,12 +443,16 @@ export async function applyActivityBatchOperations(
       status: { in: allowedActivityStatus },
       AND: [
         // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
-        {
-          OR:
-            (setMultiplier && !newCourse) || setLiveQuizPoints
-              ? [{ isGamificationEnabled: true }, { isAssessmentEnabled: true }]
-              : undefined,
-        },
+        ...((setMultiplier && !newCourse) || setLiveQuizPoints
+          ? [
+              {
+                OR: [
+                  { isGamificationEnabled: true },
+                  { isAssessmentEnabled: true },
+                ],
+              },
+            ]
+          : []),
         // activities in assessment mode can only be assigned to another course (and thereby removed from it) by an admin of the assessment course
         {
           OR: [

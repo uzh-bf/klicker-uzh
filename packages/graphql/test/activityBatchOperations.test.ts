@@ -1531,6 +1531,26 @@ describe('Integration tests for batch operations on activities', () => {
           userId: userFourCtx.user.sub,
           permissionLevel: PermissionLevel.ADMIN,
         },
+        {
+          courseId: gamified.id,
+          userId: userTwoCtx.user.sub,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+        {
+          courseId: gamified.id,
+          userId: userThreeCtx.user.sub,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          courseId: gamified.id,
+          userId: userFourCtx.user.sub,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          courseId: gamified.id,
+          userId: userFiveCtx.user.sub,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
       ],
     })
     await recomputeDerivedPermissions({ courseId: assessment.id }, prisma)
@@ -1560,6 +1580,10 @@ describe('Integration tests for batch operations on activities', () => {
         },
       ],
     })
+    await recomputeDerivedPermissions({ liveQuizId: lq.id }, prisma)
+    await recomputeDerivedPermissions({ practiceQuizId: pq.id }, prisma)
+    await recomputeDerivedPermissions({ microLearningId: ml.id }, prisma)
+    await recomputeDerivedPermissions({ groupActivityId: ga.id }, prisma)
 
     // verify that triggering a course re-assignment is only successful for users one and four
     for (const userCtx of [userTwoCtx, userThreeCtx, userFiveCtx]) {

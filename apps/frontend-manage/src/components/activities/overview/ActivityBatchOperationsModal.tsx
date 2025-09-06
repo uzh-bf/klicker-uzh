@@ -113,7 +113,11 @@ function ActivityBatchOperationsModal({
       // course assignment change
       if (selectedActions.course?.id) {
         // assessment activities can only be removed from assessment courses by course admins
-        if (activity.isAssessmentEnabled && !activity.isActivityReviewer) {
+        if (
+          activity.isAssessmentEnabled &&
+          !activity.isActivityReviewer &&
+          selectedActions.course.id !== activity.courseId
+        ) {
           actionsApplied = false
           reasons.push(t('manage.activities.batchAssessmentRemovalAdminOnly'))
         }
