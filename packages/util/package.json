@@ -11,7 +11,7 @@
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "jose": "5.9.4",
-    "remeda": "2.30.0",
+    "remeda": "2.15.0",
     "uuid": "10.0.0"
   },
   "devDependencies": {

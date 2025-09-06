@@ -557,8 +557,8 @@ importers:
         specifier: 5.10.1
         version: 5.10.1(@types/react@19.1.8)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       remeda:
-        specifier: 2.30.0
-        version: 2.30.0
+        specifier: 2.15.0
+        version: 2.15.0
       sharp:
         specifier: 0.33.5
         version: 0.33.5
@@ -777,8 +777,8 @@ importers:
         specifier: 1.8.6
         version: 1.8.6
       remeda:
-        specifier: 2.30.0
-        version: 2.30.0
+        specifier: 2.15.0
+        version: 2.15.0
       sharp:
         specifier: 0.33.5
         version: 0.33.5
@@ -994,8 +994,8 @@ importers:
         specifier: 3.0.2
         version: 3.0.2(@types/react@19.1.8)(react-dom@19.1.0(react@19.1.0))(react-is@18.3.1)(react@19.1.0)(redux@5.0.1)
       remeda:
-        specifier: 2.30.0
-        version: 2.30.0
+        specifier: 2.15.0
+        version: 2.15.0
       sharp:
         specifier: 0.33.5
         version: 0.33.5
@@ -1134,8 +1134,8 @@ importers:
         specifier: 5.4.1
         version: 5.4.1
       remeda:
-        specifier: 2.30.0
-        version: 2.30.0
+        specifier: 2.15.0
+        version: 2.15.0
     devDependencies:
       '@klicker-uzh/types':
         specifier: workspace:*
@@ -1427,8 +1427,8 @@ importers:
         specifier: 16.9.0
         version: 16.9.0
       remeda:
-        specifier: 2.30.0
-        version: 2.30.0
+        specifier: 2.15.0
+        version: 2.15.0
       uuid:
         specifier: 10.0.0
         version: 10.0.0
@@ -1543,8 +1543,8 @@ importers:
   packages/grading:
     dependencies:
       remeda:
-        specifier: 2.30.0
-        version: 2.30.0
+        specifier: 2.15.0
+        version: 2.15.0
     devDependencies:
       '@rollup/plugin-node-resolve':
         specifier: ~15.3.0
@@ -1652,8 +1652,8 @@ importers:
         specifier: 6.9.15
         version: 6.9.15
       remeda:
-        specifier: 2.30.0
-        version: 2.30.0
+        specifier: 2.15.0
+        version: 2.15.0
       unique-names-generator:
         specifier: 4.7.1
         version: 4.7.1
@@ -2247,8 +2247,8 @@ importers:
         specifier: 5.9.4
         version: 5.9.4
       remeda:
-        specifier: 2.30.0
-        version: 2.30.0
+        specifier: 2.15.0
+        version: 2.15.0
       uuid:
         specifier: 10.0.0
         version: 10.0.0
@@ -16409,6 +16409,9 @@ packages:
   remark-stringify@11.0.0:
     resolution: {integrity: sha512-1OSmLd3awB/t8qdoEOMazZkNsfVTeY4fTsgzcQFdXNq8ToTN4ZGwrMnlda4K6smTFKD+GRV6O48i6Z4iKgPPpw==}
 
+  remeda@2.15.0:
+    resolution: {integrity: sha512-Q0Xdg6z3pDKMGVCAI9wGZ+Yz0y0HOzaxxY3wc9gdjJyxqH93LywDUJ4PJ/zhweicYgcB4HbbOliR8HsIdse6mA==}
+
   remeda@2.30.0:
     resolution: {integrity: sha512-TcRpI1ecqnMer3jHhFtMerGvHFCDlCHljUp0/9A4HxHOh5bSY3kP1l8nQDFMnWYJKl3MSarDNY1tb0Bs/bCmvw==}
 
@@ -17929,10 +17932,6 @@ packages:
   type-fest@2.19.0:
     resolution: {integrity: sha512-RAH822pAdBgcNMAfWnCBU3CFZcfZ/i1eZjwFU/dsLKumyuuP3niueg2UAukXYF0E2AAoc82ZSSf9J0WQBinzHA==}
     engines: {node: '>=12.20'}
-
-  type-fest@4.32.0:
-    resolution: {integrity: sha512-rfgpoi08xagF3JSdtJlCwMq9DGNDE0IMh3Mkpc1wUypg9vPi786AiqeBBKcqvIkq42azsBM85N490fyZjeUftw==}
-    engines: {node: '>=16'}
 
   type-fest@4.41.0:
     resolution: {integrity: sha512-TeTSQ6H5YHvpqVwBRcnLDCBnDOHWYu7IvGbHT6N8AOymcr9PJGjc1GTtiWZTYg0NCgYwvnYWEkVChQAr9bjfwA==}
@@ -36965,6 +36964,10 @@ snapshots:
       mdast-util-to-markdown: 2.1.2
       unified: 11.0.5
 
+  remeda@2.15.0:
+    dependencies:
+      type-fest: 4.41.0
+
   remeda@2.30.0:
     dependencies:
       type-fest: 4.41.0
@@ -38744,8 +38747,6 @@ snapshots:
 
   type-fest@2.19.0: {}
 
-  type-fest@4.32.0: {}
-
   type-fest@4.41.0: {}
 
   type-is@1.6.18:
@@ -38830,7 +38831,7 @@ snapshots:
       emittery: 0.13.1
       fast-glob: 3.3.3
       pony-cause: 2.1.11
-      type-fest: 4.32.0
+      type-fest: 4.41.0
     transitivePeerDependencies:
       - '@types/node'
 

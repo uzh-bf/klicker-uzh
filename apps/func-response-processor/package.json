@@ -13,7 +13,7 @@
     "@klicker-uzh/util": "workspace:*",
     "@sentry/node": "7.103.0",
     "ioredis": "5.4.1",
-    "remeda": "2.30.0"
+    "remeda": "2.15.0"
   },
   "devDependencies": {
     "@klicker-uzh/types": "workspace:*",
