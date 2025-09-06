@@ -1,3 +1,4 @@
+import type { Hatchet } from '@hatchet-dev/typescript-sdk/index.js'
 import { ElementOrderType, PrismaClient } from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
 import { v4 as uuid } from 'uuid'
@@ -21,12 +22,18 @@ describe('Unit tests for assessment configuration functionalities', () => {
   // shared resources used across tests
   let prisma: PrismaClient
   let emitter: EventEmitter
+  let hatchet: Hatchet
   let userOneCtx: ContextWithUser
 
   beforeAll(async () => {
-    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    const {
+      prisma: newPrisma,
+      emitter: newEmitter,
+      hatchet: newHatchet,
+    } = await initializePrisma()
     prisma = newPrisma
     emitter = newEmitter
+    hatchet = newHatchet
   })
 
   afterAll(async () => {
@@ -35,7 +42,11 @@ describe('Unit tests for assessment configuration functionalities', () => {
   })
 
   beforeEach(async () => {
-    const { userOneCtx: ctx1 } = await testInitialization(prisma, emitter)
+    const { userOneCtx: ctx1 } = await testInitialization(
+      prisma,
+      hatchet,
+      emitter
+    )
     userOneCtx = ctx1
   })
 

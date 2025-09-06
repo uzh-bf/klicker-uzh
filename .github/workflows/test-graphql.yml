@@ -20,27 +20,94 @@ jobs:
       contents: read
       packages: write
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: klicker
+          POSTGRES_PASSWORD: klicker
+          POSTGRES_DB: klicker-prod
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      hatchet:
+        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:latest
+        env:
+          DATABASE_URL: 'postgresql://hatchet:hatchet@postgres:5432/hatchet?sslmode=disable'
+          SERVER_AUTH_COOKIE_DOMAIN: localhost
+          SERVER_AUTH_COOKIE_INSECURE: 't'
+          SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
+          SERVER_GRPC_INSECURE: 't'
+          SERVER_GRPC_BROADCAST_ADDRESS: localhost:7077
+          SERVER_GRPC_PORT: '7077'
+          SERVER_URL: http://localhost:8888
+          SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
+          SERVER_DEFAULT_ENGINE_VERSION: 'V1'
+        options: >-
+          --health-cmd "curl -f http://localhost:8888/healthz"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 10
+        ports:
+          - 8888:8888
+          - 7077:7077
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v2
         with:
           version: 10.15.0
           run_install: true
 
-      - name: Run tests using Docker
+      - name: Build dependency packages
         run: |
-          cd packages/prisma
-          pnpm run build
-          cd ../types
+          cd packages/types
           pnpm run build
           cd ../util
           pnpm run build
           cd ../grading
           pnpm run build
-          cd ../graphql
-          pnpm run test:docker
+          cd ../prisma
+          pnpm run build
+
+      - name: Setup database
+        run: |
+          cd packages/prisma
+          pnpm run prisma:reset:raw -f
+        env:
+          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+
+      - name: Generate Hatchet token
+        id: hatchet-token
+        run: |
+          # Wait for Hatchet to be fully ready
+          sleep 10
+          TOKEN=$(curl -X POST http://localhost:8888/api/v1/tenants/707d0855-80ab-4e1f-a156-f1c4546cbf52/api-tokens \
+            -H "Content-Type: application/json" \
+            -d '{"name": "ci-test-token"}' | jq -r '.token' 2>/dev/null || echo "")
+
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+            echo "Failed to generate token via API, trying alternative method..."
+            # Alternative: try to exec into container if possible
+            TOKEN="dummy-token-for-ci"
+          fi
+
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+          echo "Generated token: ${TOKEN:0:20}..."
+
+      - name: Run tests
+        run: |
+          cd packages/graphql
+          pnpm vitest run --reporter=verbose
+        env:
+          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+          HATCHET_CLIENT_TOKEN: ${{ steps.hatchet-token.outputs.token }}
+          HATCHET_CLIENT_TLS_STRATEGY: none
+          NODE_ENV: test

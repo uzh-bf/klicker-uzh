@@ -1,4 +1,4 @@
-import { Hatchet } from '@hatchet-dev/typescript-sdk'
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   ElementInstanceType,
   ElementStackType,
@@ -9,6 +9,7 @@ import {
 import { ChoicesElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
+import { ContextWithUser } from 'src/lib/context.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
 import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 
@@ -17,6 +18,11 @@ describe('Unit tests covering the creation of derived permissions for courses', 
   let prisma: PrismaClient
   let hatchet: Hatchet
   let emitter: EventEmitter
+  let userOneCtx: ContextWithUser
+  let userTwoCtx: ContextWithUser
+  let userThreeCtx: ContextWithUser
+  let userFourCtx: ContextWithUser
+  let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
     const {

@@ -1,3 +1,4 @@
+import type { Hatchet } from '@hatchet-dev/typescript-sdk/index.js'
 import {
   ElementInstanceType,
   ElementStackType,
@@ -23,13 +24,19 @@ describe('Unit tests for batch operations on activities', () => {
   // shared resources used across tests
   let prisma: PrismaClient
   let emitter: EventEmitter
+  let hatchet: Hatchet
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
   let userThreeCtx: ContextWithUser
 
   beforeAll(async () => {
-    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    const {
+      prisma: newPrisma,
+      hatchet: newHatchet,
+      emitter: newEmitter,
+    } = await initializePrisma()
     prisma = newPrisma
+    hatchet = newHatchet
     emitter = newEmitter
   })
 
@@ -43,7 +50,7 @@ describe('Unit tests for batch operations on activities', () => {
       userOneCtx: ctx1,
       userTwoCtx: ctx2,
       userThreeCtx: ctx3,
-    } = await testInitialization(prisma, emitter)
+    } = await testInitialization(prisma, hatchet, emitter)
     userOneCtx = ctx1
     userTwoCtx = ctx2
     userThreeCtx = ctx3

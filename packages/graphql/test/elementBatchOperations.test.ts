@@ -1,3 +1,5 @@
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
+import { hatchetClient } from '@klicker-uzh/hatchet'
 import {
   ElementInstanceType,
   ElementStatus,
@@ -21,6 +23,7 @@ describe('Unit tests batch operations on elements', () => {
   // shared resources used across tests
   let prisma: PrismaClient
   let emitter: EventEmitter
+  let hatchet: Hatchet
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
 
@@ -38,6 +41,7 @@ describe('Unit tests batch operations on elements', () => {
   beforeEach(async () => {
     const { userOneCtx: ctx1, userTwoCtx: ctx2 } = await testInitialization(
       prisma,
+      hatchetClient,
       emitter
     )
     userOneCtx = ctx1

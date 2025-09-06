@@ -1,5 +1,5 @@
-import { Hatchet } from '@hatchet-dev/typescript-sdk'
-import { jest } from '@jest/globals'
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
+import { hatchetClient } from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
 import {
   AnswerCollection,
@@ -34,6 +34,7 @@ import {
 } from 'src/services/microLearning.js'
 import { handlePublishScheduledPracticeQuiz } from 'src/services/practiceQuizzes.js'
 import { v4 as uuidv4 } from 'uuid'
+import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { createAnswerCollection } from '../src/services/resources.js'
 import { createCatalogCollection } from '../src/services/sharing.js'
@@ -192,10 +193,10 @@ export async function testInitialization(
     hatchet,
     tasks,
     emitter,
-    redisExec: jest.fn() as unknown as ContextWithUser['redisExec'],
+    redisExec: vi.fn() as unknown as ContextWithUser['redisExec'],
     pubSub: {
-      publish: jest.fn(),
-      subscribe: jest.fn().mockReturnValue(new Repeater(() => {})),
+      publish: vi.fn(),
+      subscribe: vi.fn().mockReturnValue(new Repeater(() => {})),
     } as ContextWithUser['pubSub'],
     req: {} as any,
     res: {} as any,
@@ -284,25 +285,7 @@ export async function initializePrisma() {
     // create EventEmitter for test context
     const emitter = new EventEmitter()
 
-    // create new instance of Hatchet for test context
-    const validLogLevels = ['INFO', 'OFF', 'DEBUG', 'WARN', 'ERROR']
-    const hatchet = Hatchet.init({
-      token: process.env.HATCHET_CLIENT_TOKEN,
-      log_level:
-        typeof process.env.HATCHET_LOG_LEVEL !== 'undefined' &&
-        validLogLevels.some(
-          (logLevel) => logLevel === process.env.HATCHET_LOG_LEVEL
-        )
-          ? (process.env.HATCHET_LOG_LEVEL as
-              | 'INFO'
-              | 'OFF'
-              | 'DEBUG'
-              | 'WARN'
-              | 'ERROR')
-          : 'INFO',
-    })
-
-    return { prisma, hatchet, emitter }
+    return { prisma, hatchet: hatchetClient, emitter }
   } catch (error) {
     console.error('Failed to initialize test environment:', error)
     throw new Error(`Database connection failed: ${error}`)

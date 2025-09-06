@@ -1,4 +1,4 @@
-import { Hatchet } from '@hatchet-dev/typescript-sdk'
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   AuditLogType,
   ElementType,
@@ -37,6 +37,7 @@ describe('Unit tests for user group management', () => {
   let userTwoCtx: ContextWithUser
   let userThreeCtx: ContextWithUser
   let userFourCtx: ContextWithUser
+  let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
     const {

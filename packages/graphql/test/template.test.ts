@@ -1,4 +1,4 @@
-import { Hatchet } from '@hatchet-dev/typescript-sdk'
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   ElementInstanceType,
   ElementType,

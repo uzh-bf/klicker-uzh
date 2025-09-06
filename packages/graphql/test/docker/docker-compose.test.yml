@@ -1,8 +1,6 @@
 services:
+  # Reverse proxy for local development
   reverse_proxy_macos:
-    profiles:
-      - dependencies
-      - test
     build:
       context: ../../../../util/traefik
       dockerfile: Dockerfile
@@ -23,10 +21,6 @@ services:
       # HTTP/2 configuration (critical for subscriptions)
       - '--entrypoints.websecure.http.tls=true'
       - '--entrypoints.websecure.http2.maxConcurrentStreams=250'
-
-      # HTTP to HTTPS redirect
-      # - '--entrypoints.web.http.redirections.entrypoint.to=websecure'
-      # - '--entrypoints.web.http.redirections.entrypoint.scheme=https'
     ports:
       - 80:80
       - 443:443
@@ -37,11 +31,8 @@ services:
     networks:
       - klicker
 
-  # main database
+  # Main database for testing
   postgres:
-    profiles:
-      - dependencies
-      - test
     image: docker.io/library/postgres:15
     environment:
       POSTGRES_USER: klicker
@@ -61,11 +52,8 @@ services:
       - klicker_data:/var/lib/postgresql/data
       - ../../../../util/init.sql:/docker-entrypoint-initdb.d/init.sql
 
-  # Hatchet service
+  # Hatchet service for workflow orchestration
   hatchet:
-    profiles:
-      - dependencies
-      - test
     image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:latest
     ports:
       - '8888:8888'
@@ -89,32 +77,6 @@ services:
       start_period: 20s
     volumes:
       - 'hatchet_lite_config:/config'
-    networks:
-      - klicker
-
-  test:
-    profiles:
-      - test
-    build:
-      context: ../..
-      dockerfile: test/docker/Dockerfile.test
-    environment:
-      DATABASE_URL: postgres://klicker:klicker@postgres:5432/klicker-prod
-      NODE_ENV: test
-      PNPM_HOME: '/tmp/.pnpm'
-      # FORCE_COLOR: '1' # enable color output in logs
-      # JEST_SILENT: 'false' # disable jest silent mode
-      # DEBUG: '*' # enable debugging messages
-      NODE_NO_WARNINGS: '0' # warnings should not be suppressed
-    env_file:
-      - ./.env
-    volumes:
-      - ../../../../:/usr/src/app
-    depends_on:
-      postgres:
-        condition: service_healthy
-      hatchet:
-        condition: service_healthy
     networks:
       - klicker
 
