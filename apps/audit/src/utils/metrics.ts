@@ -1,14 +1,9 @@
 import type { Hono } from 'hono'
 import client from 'prom-client'
-import { config } from '../config.js'
 
 // Initialize default metrics (CPU, memory, etc.)
 client.collectDefaultMetrics({
   prefix: 'audit_',
-  labels: {
-    service: config.SERVICE_NAME,
-    version: config.SERVICE_VERSION,
-  },
 })
 
 // Custom metrics for audit service (low-cardinality only)

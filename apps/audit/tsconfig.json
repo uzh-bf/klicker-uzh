@@ -1,5 +1,10 @@
 {
-  "include": ["./src/**/*", "./scripts/**/*", "./instrumented/**/*"],
+  "include": [
+    "./src/**/*",
+    "./scripts/**/*",
+    "./instrumented/**/*",
+    "./test/**/*"
+  ],
   "compilerOptions": {
     "baseUrl": ".",
     /* Base Options: */
@@ -21,6 +26,8 @@
     "sourceMap": true,
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
     /* If your code doesn't run in the DOM: */
-    "lib": ["es2022"]
+    "lib": ["es2022"],
+    /* Vitest types */
+    "types": ["vitest/globals"]
   }
 }

@@ -1,10 +1,10 @@
 import pino from 'pino'
 import { config } from '../config.js'
 
-export const logger = pino({
+export const logger = pino.default({
   level: config.LOG_LEVEL,
   formatters: {
-    level: (label) => ({ level: label.toUpperCase() }),
+    level: (label: string) => ({ level: label.toUpperCase() }),
   },
   timestamp: pino.stdTimeFunctions.isoTime,
   // Redact sensitive information from logs
@@ -21,8 +21,6 @@ export const logger = pino({
     censor: '[REDACTED]',
   },
   base: {
-    service: config.SERVICE_NAME,
-    version: config.SERVICE_VERSION,
     env: config.NODE_ENV,
   },
 })

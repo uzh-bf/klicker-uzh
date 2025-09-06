@@ -1,18 +1,21 @@
-import assert from 'node:assert'
-import { describe, it } from 'node:test'
-
 const BASE_URL = 'http://localhost:7080'
 const AUTH_TOKEN = process.env.INTERNAL_TOKEN || 'test-secret-token-123'
 
 // Helper function to make HTTP requests
-async function makeRequest(path, options = {}) {
+async function makeRequest(
+  path: string,
+  options: RequestInit = {}
+): Promise<Response> {
   const url = `${BASE_URL}${path}`
   const response = await fetch(url, options)
   return response
 }
 
 // Helper function to make authenticated requests
-async function makeAuthenticatedRequest(path, options = {}) {
+async function makeAuthenticatedRequest(
+  path: string,
+  options: RequestInit = {}
+): Promise<Response> {
   return makeRequest(path, {
     ...options,
     headers: {
@@ -25,39 +28,28 @@ async function makeAuthenticatedRequest(path, options = {}) {
 
 describe('Audit Service API Tests', () => {
   describe('Health Endpoints', () => {
-    it('GET /healthz should return 200 with status ok', async () => {
-      const res = await makeRequest('/healthz')
-      assert.strictEqual(res.status, 200)
-
-      const data = await res.json()
-      assert.strictEqual(data.status, 'ok')
-      assert.strictEqual(data.service, 'audit-service')
-      assert.ok(data.version)
-    })
-
     it('GET /ready should return 200 with readiness status', async () => {
-      const res = await makeRequest('/ready')
-      assert.strictEqual(res.status, 200)
+      const res = await makeAuthenticatedRequest('/ready')
+      expect(res.status).toBe(200)
 
-      const data = await res.json()
-      assert.strictEqual(data.status, 'ready')
-      assert.strictEqual(data.service, 'audit-service')
-      assert.ok(data.timestamp)
+      const data = (await res.json()) as any
+      expect(data.status).toBe('ready')
+      expect(data.timestamp).toBeTruthy()
+      expect(data.storage).toBe('connected')
     })
 
     it('GET /metrics should return Prometheus metrics', async () => {
       const res = await makeRequest('/metrics')
-      assert.strictEqual(res.status, 200)
-      assert.strictEqual(
-        res.headers.get('content-type'),
+      expect(res.status).toBe(200)
+      expect(res.headers.get('content-type')).toBe(
         'text/plain; version=0.0.4; charset=utf-8'
       )
 
       const text = await res.text()
-      assert(text.includes('audit_requests_total'))
-      assert(text.includes('audit_writes_total'))
-      assert(text.includes('audit_write_errors_total'))
-      assert(text.includes('audit_write_latency_seconds'))
+      expect(text).toContain('audit_requests_total')
+      expect(text).toContain('audit_writes_total')
+      expect(text).toContain('audit_write_errors_total')
+      expect(text).toContain('audit_write_latency_seconds')
     })
   })
 
@@ -73,9 +65,9 @@ describe('Audit Service API Tests', () => {
         }),
       })
 
-      assert.strictEqual(res.status, 401)
-      const data = await res.json()
-      assert(data.error.includes('Authentication required'))
+      expect(res.status).toBe(401)
+      const data = (await res.json()) as any
+      expect(data.error).toContain('Authentication required')
     })
 
     it('POST /audit with wrong token should return 401', async () => {
@@ -92,14 +84,19 @@ describe('Audit Service API Tests', () => {
         }),
       })
 
-      assert.strictEqual(res.status, 401)
-      const data = await res.json()
-      assert(data.error.includes('Authentication failed'))
+      expect(res.status).toBe(401)
+      const data = (await res.json()) as any
+      expect(data.error).toContain('Authentication failed')
+    })
+
+    it('GET /ready without auth should return 401', async () => {
+      const res = await makeRequest('/ready')
+      expect(res.status).toBe(401)
     })
   })
 
   describe('Valid Audit Events', () => {
-    it('POST /audit with minimal valid event should return 202', async () => {
+    it('POST /audit with minimal valid event should return 200', async () => {
       const event = {
         tenantId: 'tenant-123',
         subject: 'user:john@example.com',
@@ -111,13 +108,14 @@ describe('Audit Service API Tests', () => {
         body: JSON.stringify(event),
       })
 
-      assert.strictEqual(res.status, 202)
-      const data = await res.json()
-      assert.strictEqual(data.status, 'accepted')
-      assert.ok(data.eventId)
+      expect(res.status).toBe(200)
+      const data = (await res.json()) as any
+      expect(data.status).toBe('stored')
+      expect(data.stored).toBe(true)
+      expect(data.eventId).toBeTruthy()
     })
 
-    it('POST /audit with full event should return 202', async () => {
+    it('POST /audit with full event should return 200', async () => {
       const event = {
         tenantId: 'tenant-456',
         subject: 'user:alice@example.com',
@@ -141,13 +139,14 @@ describe('Audit Service API Tests', () => {
         body: JSON.stringify(event),
       })
 
-      assert.strictEqual(res.status, 202)
-      const data = await res.json()
-      assert.strictEqual(data.status, 'accepted')
-      assert.ok(data.eventId)
+      expect(res.status).toBe(200)
+      const data = (await res.json()) as any
+      expect(data.status).toBe('stored')
+      expect(data.stored).toBe(true)
+      expect(data.eventId).toBeTruthy()
     })
 
-    it('POST /audit with custom timestamp should return 202', async () => {
+    it('POST /audit with custom timestamp should return 200', async () => {
       const customTimestamp = Date.now() - 60000 // 1 minute ago
       const event = {
         tenantId: 'tenant-789',
@@ -161,9 +160,10 @@ describe('Audit Service API Tests', () => {
         body: JSON.stringify(event),
       })
 
-      assert.strictEqual(res.status, 202)
-      const data = await res.json()
-      assert.strictEqual(data.status, 'accepted')
+      expect(res.status).toBe(200)
+      const data = (await res.json()) as any
+      expect(data.status).toBe('stored')
+      expect(data.stored).toBe(true)
     })
   })
 
@@ -181,18 +181,18 @@ describe('Audit Service API Tests', () => {
         method: 'POST',
         body: JSON.stringify(event),
       })
-      assert.strictEqual(res1.status, 202)
-      const data1 = await res1.json()
-      assert.strictEqual(data1.eventId, event.eventId)
+      expect(res1.status).toBe(200)
+      const data1 = (await res1.json()) as any
+      expect(data1.eventId).toBe(event.eventId)
 
       // Second request with same eventId (should be idempotent)
       const res2 = await makeAuthenticatedRequest('/audit', {
         method: 'POST',
         body: JSON.stringify(event),
       })
-      assert.strictEqual(res2.status, 202)
-      const data2 = await res2.json()
-      assert.strictEqual(data2.eventId, event.eventId)
+      expect(res2.status).toBe(200)
+      const data2 = (await res2.json()) as any
+      expect(data2.eventId).toBe(event.eventId)
     })
   })
 
@@ -208,7 +208,7 @@ describe('Audit Service API Tests', () => {
         body: JSON.stringify(event),
       })
 
-      assert.strictEqual(res.status, 400)
+      expect(res.status).toBe(400)
     })
 
     it('POST /audit with missing subject should return 400', async () => {
@@ -222,7 +222,7 @@ describe('Audit Service API Tests', () => {
         body: JSON.stringify(event),
       })
 
-      assert.strictEqual(res.status, 400)
+      expect(res.status).toBe(400)
     })
 
     it('POST /audit with missing action should return 400', async () => {
@@ -236,7 +236,7 @@ describe('Audit Service API Tests', () => {
         body: JSON.stringify(event),
       })
 
-      assert.strictEqual(res.status, 400)
+      expect(res.status).toBe(400)
     })
 
     it('POST /audit with invalid JSON should return 400', async () => {
@@ -245,7 +245,7 @@ describe('Audit Service API Tests', () => {
         body: 'invalid-json',
       })
 
-      assert.strictEqual(res.status, 400)
+      expect(res.status).toBe(400)
     })
 
     it('POST /audit with empty body should return 400', async () => {
@@ -254,7 +254,7 @@ describe('Audit Service API Tests', () => {
         body: '',
       })
 
-      assert.strictEqual(res.status, 400)
+      expect(res.status).toBe(400)
     })
 
     it('POST /audit with string fields too long should return 400', async () => {
@@ -269,19 +269,19 @@ describe('Audit Service API Tests', () => {
         body: JSON.stringify(event),
       })
 
-      assert.strictEqual(res.status, 400)
+      expect(res.status).toBe(400)
     })
   })
 
   describe('Error Handling', () => {
     it('should handle non-existent endpoints with 404', async () => {
       const res = await makeRequest('/non-existent-endpoint')
-      assert.strictEqual(res.status, 404)
+      expect(res.status).toBe(404)
     })
 
     it('should handle unsupported methods', async () => {
       const res = await makeRequest('/audit', { method: 'DELETE' })
-      assert.strictEqual(res.status, 405)
+      expect(res.status).toBe(405)
     })
   })
 })
@@ -291,4 +291,4 @@ describe('Audit Service API Tests', () => {
 // 2. Azurite is running (docker-compose up -d)
 // 3. Environment variables are set (or using defaults)
 //
-// Run with: node --test test/api.test.js
+// Run with: pnpm test:api or vitest test/api.test.ts

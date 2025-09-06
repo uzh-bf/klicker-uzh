@@ -256,7 +256,7 @@ services:
       --location /data
       --debug /data/debug.log
     volumes:
-      - azurite-data:/data
+      - azurite_data:/data
     environment:
       - AZURITE_ACCOUNTS=devstoreaccount1
 

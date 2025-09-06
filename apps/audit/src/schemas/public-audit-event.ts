@@ -1,11 +1,14 @@
 import { z } from 'zod'
 
-export const AuditEventSchema = z
+/**
+ * Public audit event schema for frontend submissions
+ * Excludes subject and userId fields (will be injected from verified JWT)
+ */
+export const PublicAuditEventSchema = z
   .object({
     // Required fields
     tenantId: z.string().min(1).max(100),
-    subject: z.string().min(1).max(500),
-    action: z.string().min(1).max(200),
+    action: z.string().min(1).max(200), // Will be validated against whitelist
 
     // Timestamp - if omitted, default to server time (epoch ms)
     timestamp: z
@@ -21,10 +24,11 @@ export const AuditEventSchema = z
     // Optional fields
     resourceId: z.string().max(500).optional(),
     sessionId: z.string().max(100).optional(),
-    userId: z.string().max(100).optional(),
 
     // Attributes - allowed but should be capped in size to stay within Azure property caps
     attributes: z.record(z.unknown()).optional(),
+
+    // Note: subject and userId will be overridden from JWT verification
   })
   .superRefine((val, ctx) => {
     // Enforce ~32KB attributes limit to stay within Azure Table Storage property limits
@@ -50,4 +54,4 @@ export const AuditEventSchema = z
     }
   })
 
-export type AuditEvent = z.infer<typeof AuditEventSchema>
+export type PublicAuditEvent = z.infer<typeof PublicAuditEventSchema>

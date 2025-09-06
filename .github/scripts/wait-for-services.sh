@@ -6,7 +6,7 @@ set -e
 # Validate required environment variables
 if [ -z "${SERVICE_ENDPOINTS:-}" ]; then
   # Default endpoints if not specified
-  SERVICE_ENDPOINTS="http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010"
+  SERVICE_ENDPOINTS="http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010 http://127.0.0.1:7080/healthz"
 fi
 
 if [ -z "${TIMEOUT_SECONDS:-}" ]; then

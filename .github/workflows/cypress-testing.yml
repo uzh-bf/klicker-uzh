@@ -79,6 +79,18 @@ jobs:
           SERVER_URL: http://hatchet:8888
           SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
           SERVER_DEFAULT_ENGINE_VERSION: 'V1'
+      azurite:
+        image: mcr.microsoft.com/azure-storage/azurite
+        ports:
+          - 10000:10000 # Blob service
+          - 10001:10001 # Queue service
+          - 10002:10002 # Table service
+        options: >-
+          azurite
+          --blobHost 0.0.0.0
+          --queueHost 0.0.0.0
+          --tableHost 0.0.0.0
+          --loose
 
     # strategy:
     #   fail-fast: false # https://github.com/cypress-io/github-action/issues/48
@@ -153,7 +165,7 @@ jobs:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
           NODE_ENV: production
-          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010'
+          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010 http://127.0.0.1:7080/healthz'
           TIMEOUT_SECONDS: '300'
           CHECK_INTERVAL: '5'
 
@@ -171,7 +183,7 @@ jobs:
         timeout-minutes: 120
         with:
           install: false
-          wait-on: 'http://127.0.0.1:3000/healthz, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010'
+          wait-on: 'http://127.0.0.1:3000/healthz, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010, http://127.0.0.1:7080/healthz'
           wait-on-timeout: 300
           record: true
           browser: electron

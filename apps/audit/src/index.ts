@@ -25,8 +25,6 @@ async function startServer(): Promise<void> {
         logger.info(
           {
             port: info.port,
-            service: config.SERVICE_NAME,
-            version: config.SERVICE_VERSION,
             env: config.NODE_ENV,
             tableName: config.AZURE_TABLES_TABLE_NAME,
           },
@@ -34,7 +32,7 @@ async function startServer(): Promise<void> {
         )
 
         logger.info(`Server running on http://localhost:${info.port}`)
-        logger.info(`Health check: http://localhost:${info.port}/healthz`)
+        logger.info(`Readiness check: http://localhost:${info.port}/ready`)
         logger.info(`Metrics: http://localhost:${info.port}/metrics`)
       }
     )

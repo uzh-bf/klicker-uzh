@@ -1,6 +1,4 @@
-import assert from 'node:assert'
-import { after, before, describe, it } from 'node:test'
-import events from './fixtures/events.json' assert { type: 'json' }
+import events from './fixtures/events.json'
 import { AzureTableTestHelper } from './utils/azure-table-helper.js'
 
 const BASE_URL = 'http://localhost:7080'
@@ -10,7 +8,10 @@ const AUTH_TOKEN = process.env.INTERNAL_TOKEN || 'test-secret-token-123'
 const tableHelper = new AzureTableTestHelper('auditlogs')
 
 // Helper function to make authenticated requests
-async function makeAuthenticatedRequest(path, options = {}) {
+async function makeAuthenticatedRequest(
+  path: string,
+  options: RequestInit = {}
+): Promise<Response> {
   const url = `${BASE_URL}${path}`
   const response = await fetch(url, {
     ...options,
@@ -24,38 +25,40 @@ async function makeAuthenticatedRequest(path, options = {}) {
 }
 
 // Generate expected partition key for verification
-function generateExpectedPartitionKey(tenantId, timestamp, eventId) {
+function generateExpectedPartitionKey(
+  tenantId: string,
+  timestamp: number,
+  eventId?: string
+): string {
   const date = new Date(timestamp)
-  const bucket = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}${date.getHours().toString().padStart(2, '0')}${date.getMinutes().toString().padStart(2, '0')}`
+  const year = date.getFullYear()
+  const month = (date.getMonth() + 1).toString().padStart(2, '0')
+  const day = date.getDate().toString().padStart(2, '0')
+  const hour = date.getHours().toString().padStart(2, '0')
+  const minute = date.getMinutes().toString().padStart(2, '0')
+  const bucket = `${year}${month}${day}${hour}${minute}`
 
-  // Simple hash for tenant (matches the service implementation)
+  // Simple, fast hash for tenant distribution (matches the service implementation)
   let hash = 0
   for (let i = 0; i < tenantId.length; i++) {
     hash = (hash * 31 + tenantId.charCodeAt(i)) % 10000
   }
-  const tenantHash = hash.toString(16).padStart(2, '0').slice(0, 2)
+  const tenantHash = (hash % 100).toString().padStart(2, '0')
 
-  // Simple hash for shard
-  let shard = '0'
-  if (eventId) {
-    let shardHash = 0
-    for (let i = 0; i < eventId.length; i++) {
-      shardHash = (shardHash * 31 + eventId.charCodeAt(i)) % 16
-    }
-    shard = shardHash.toString(16).slice(0, 1)
-  }
+  // Simple shard: use first character of eventId if provided, otherwise '0'
+  const shard = eventId ? eventId[0] : '0'
 
   return `${tenantHash}-${bucket}-${shard}`
 }
 
 describe('Audit Service Integration Tests', () => {
-  before(async () => {
+  beforeAll(async () => {
     console.log('Setting up test environment...')
     await tableHelper.setup()
     await tableHelper.cleanup()
   })
 
-  after(async () => {
+  afterAll(async () => {
     console.log('Cleaning up test environment...')
     await tableHelper.cleanup()
   })
@@ -70,9 +73,11 @@ describe('Audit Service Integration Tests', () => {
         body: JSON.stringify(event),
       })
 
-      assert.strictEqual(response.status, 202)
-      const responseData = await response.json()
-      assert.strictEqual(responseData.eventId, event.eventId)
+      expect(response.status).toBe(200)
+      const responseData = (await response.json()) as any
+      expect(responseData.eventId).toBe(event.eventId)
+      expect(responseData.status).toBe('stored')
+      expect(responseData.stored).toBe(true)
 
       // Wait for persistence and verify in database
       const expectedPartitionKey = generateExpectedPartitionKey(
@@ -87,10 +92,10 @@ describe('Audit Service Integration Tests', () => {
       )
 
       // Verify entity fields
-      assert.strictEqual(persistedEntity.tenantId, event.tenantId)
-      assert.strictEqual(persistedEntity.subject, event.subject)
-      assert.strictEqual(persistedEntity.action, event.action)
-      assert.strictEqual(persistedEntity.rowKey, event.eventId)
+      expect(persistedEntity.tenantId).toBe(event.tenantId)
+      expect(persistedEntity.subject).toBe(event.subject)
+      expect(persistedEntity.action).toBe(event.action)
+      expect(persistedEntity.rowKey).toBe(event.eventId)
     })
 
     it('should persist complete event with complex attributes', async () => {
@@ -105,7 +110,7 @@ describe('Audit Service Integration Tests', () => {
         body: JSON.stringify(event),
       })
 
-      assert.strictEqual(response.status, 202)
+      expect(response.status).toBe(200)
 
       // Verify in database
       const expectedPartitionKey = generateExpectedPartitionKey(
@@ -120,18 +125,18 @@ describe('Audit Service Integration Tests', () => {
       )
 
       // Verify all fields including complex attributes
-      assert.strictEqual(persistedEntity.resourceId, event.resourceId)
-      assert.strictEqual(persistedEntity.sessionId, event.sessionId)
-      assert.strictEqual(persistedEntity.userId, event.userId)
+      expect(persistedEntity.resourceId).toBe(event.resourceId)
+      expect(persistedEntity.sessionId).toBe(event.sessionId)
+      expect(persistedEntity.userId).toBe(event.userId)
 
       // Verify attributes were serialized and can be parsed
-      const attributes = JSON.parse(persistedEntity.attributes)
-      assert.deepStrictEqual(attributes, event.attributes)
+      const attributes = JSON.parse(persistedEntity.attributes!)
+      expect(attributes).toEqual(event.attributes)
     })
 
     it('should handle event without explicit eventId (auto-generated)', async () => {
       const event = { ...events.minimal }
-      delete event.eventId // No explicit eventId
+      delete (event as any).eventId // No explicit eventId
 
       // Submit event
       const response = await makeAuthenticatedRequest('/audit', {
@@ -139,9 +144,9 @@ describe('Audit Service Integration Tests', () => {
         body: JSON.stringify(event),
       })
 
-      assert.strictEqual(response.status, 202)
-      const responseData = await response.json()
-      assert.ok(responseData.eventId) // Should have auto-generated eventId
+      expect(response.status).toBe(200)
+      const responseData = (await response.json()) as any
+      expect(responseData.eventId).toBeTruthy() // Should have auto-generated eventId
 
       // Verify in database using the returned eventId
       const expectedPartitionKey = generateExpectedPartitionKey(
@@ -170,7 +175,7 @@ describe('Audit Service Integration Tests', () => {
         body: JSON.stringify(event),
       })
 
-      assert.strictEqual(response.status, 202)
+      expect(response.status).toBe(200)
 
       // Verify timestamp was used for partition key
       const expectedPartitionKey = generateExpectedPartitionKey(
@@ -184,7 +189,7 @@ describe('Audit Service Integration Tests', () => {
         5000
       )
 
-      assert.strictEqual(persistedEntity.timestamp, customTimestamp)
+      expect(persistedEntity.timestamp).toBe(customTimestamp)
     })
   })
 
@@ -206,8 +211,8 @@ describe('Audit Service Integration Tests', () => {
         body: JSON.stringify({ ...event, subject: 'different-subject' }), // Different data, same eventId
       })
 
-      assert.strictEqual(response1.status, 202)
-      assert.strictEqual(response2.status, 202)
+      expect(response1.status).toBe(200)
+      expect(response2.status).toBe(200)
 
       // Verify only one entity exists in database
       const expectedPartitionKey = generateExpectedPartitionKey(
@@ -222,7 +227,7 @@ describe('Audit Service Integration Tests', () => {
       )
 
       // Should maintain original data due to idempotency
-      assert.strictEqual(persistedEntity.subject, event.subject)
+      expect(persistedEntity.subject).toBe(event.subject)
 
       // Count entities to ensure no duplicates
       const entitiesForTenant = await tableHelper.getEntitiesForTenant(
@@ -231,7 +236,7 @@ describe('Audit Service Integration Tests', () => {
       const matchingEntities = entitiesForTenant.filter(
         (e) => e.rowKey === event.eventId
       )
-      assert.strictEqual(matchingEntities.length, 1)
+      expect(matchingEntities.length).toBe(1)
     })
   })
 
@@ -240,7 +245,7 @@ describe('Audit Service Integration Tests', () => {
       const testId = Date.now()
 
       // Submit events for multiple tenants
-      const promises = events.multiTenant.map((event, index) =>
+      const promises = events.multiTenant.map((event: any, index: number) =>
         makeAuthenticatedRequest('/audit', {
           method: 'POST',
           body: JSON.stringify({
@@ -251,7 +256,7 @@ describe('Audit Service Integration Tests', () => {
       )
 
       const responses = await Promise.all(promises)
-      responses.forEach((response) => assert.strictEqual(response.status, 202))
+      responses.forEach((response) => expect(response.status).toBe(200))
 
       // Wait for all events to be persisted
       await tableHelper.waitForEntityCount(3, 10000)
@@ -261,15 +266,15 @@ describe('Audit Service Integration Tests', () => {
         const tenantEntities = await tableHelper.getEntitiesForTenant(tenant)
 
         // Should have exactly one entity for this tenant
-        assert.strictEqual(tenantEntities.length, 1)
-        assert.strictEqual(tenantEntities[0].tenantId, tenant)
+        expect(tenantEntities.length).toBe(1)
+        expect(tenantEntities[0]!.tenantId).toBe(tenant)
 
         // Should not see other tenants' data
         const otherTenants = ['tenant-a', 'tenant-b', 'tenant-c'].filter(
           (t) => t !== tenant
         )
         for (const otherEntity of tenantEntities) {
-          assert.ok(!otherTenants.includes(otherEntity.tenantId))
+          expect(otherTenants.includes(otherEntity.tenantId)).toBe(false)
         }
       }
     })
@@ -280,17 +285,19 @@ describe('Audit Service Integration Tests', () => {
       const testId = Date.now()
 
       // Submit authentication flow events
-      const authEvents = events.authentication.map((event, index) => ({
-        ...event,
-        eventId: `auth-${testId}-${index}`,
-      }))
+      const authEvents = events.authentication.map(
+        (event: any, index: number) => ({
+          ...event,
+          eventId: `auth-${testId}-${index}`,
+        })
+      )
 
       for (const event of authEvents) {
         const response = await makeAuthenticatedRequest('/audit', {
           method: 'POST',
           body: JSON.stringify(event),
         })
-        assert.strictEqual(response.status, 202)
+        expect(response.status).toBe(200)
       }
 
       // Wait for all events to be persisted
@@ -299,80 +306,80 @@ describe('Audit Service Integration Tests', () => {
       // Verify all auth events are stored
       const tenantEntities =
         await tableHelper.getEntitiesForTenant('tenant-auth')
-      assert.strictEqual(tenantEntities.length, 3)
+      expect(tenantEntities.length).toBe(3)
 
       // Verify event sequence
       const actions = tenantEntities.map((e) => e.action).sort()
-      assert.deepStrictEqual(actions, [
-        'login.attempt',
-        'login.success',
-        'logout',
-      ])
+      expect(actions).toEqual(['login.attempt', 'login.success', 'logout'])
     })
 
     it('should handle system events', async () => {
       const testId = Date.now()
 
       // Submit system events
-      const systemEvents = events.systemEvents.map((event, index) => ({
-        ...event,
-        eventId: `system-${testId}-${index}`,
-      }))
+      const systemEvents = events.systemEvents.map(
+        (event: any, index: number) => ({
+          ...event,
+          eventId: `system-${testId}-${index}`,
+        })
+      )
 
       for (const event of systemEvents) {
         const response = await makeAuthenticatedRequest('/audit', {
           method: 'POST',
           body: JSON.stringify(event),
         })
-        assert.strictEqual(response.status, 202)
+        expect(response.status).toBe(200)
       }
 
       // Verify system events
       await new Promise((resolve) => setTimeout(resolve, 2000))
       const systemEntities =
         await tableHelper.getEntitiesForTenant('tenant-system')
-      assert.strictEqual(systemEntities.length, 2)
+      expect(systemEntities.length).toBe(2)
 
       // Verify backup flow
       const backupEvents = systemEntities.filter((e) =>
         e.action.startsWith('backup.')
       )
-      assert.strictEqual(backupEvents.length, 2)
+      expect(backupEvents.length).toBe(2)
     })
 
     it('should handle business events with complex data', async () => {
       const testId = Date.now()
 
       // Submit business events
-      const businessEvents = events.businessEvents.map((event, index) => ({
-        ...event,
-        eventId: `business-${testId}-${index}`,
-      }))
+      const businessEvents = events.businessEvents.map(
+        (event: any, index: number) => ({
+          ...event,
+          eventId: `business-${testId}-${index}`,
+        })
+      )
 
       for (const event of businessEvents) {
         const response = await makeAuthenticatedRequest('/audit', {
           method: 'POST',
           body: JSON.stringify(event),
         })
-        assert.strictEqual(response.status, 202)
+        expect(response.status).toBe(200)
       }
 
       // Verify business events with complex attributes
       await new Promise((resolve) => setTimeout(resolve, 2000))
       const businessEntities =
         await tableHelper.getEntitiesForTenant('tenant-business')
-      assert.strictEqual(businessEntities.length, 2)
+      expect(businessEntities.length).toBe(2)
 
       // Verify order event has complex attributes
       const orderEvent = businessEntities.find(
         (e) => e.action === 'order.created'
       )
-      assert.ok(orderEvent)
+      expect(orderEvent).toBeTruthy()
 
-      const orderAttributes = JSON.parse(orderEvent.attributes)
-      assert.strictEqual(orderAttributes.orderTotal, 299.99)
-      assert.ok(Array.isArray(orderAttributes.items))
-      assert.strictEqual(orderAttributes.items[0].id, 'product-123')
+      const orderAttributes = JSON.parse(orderEvent!.attributes!)
+      expect(orderAttributes.orderTotal).toBe(299.99)
+      expect(Array.isArray(orderAttributes.items)).toBe(true)
+      expect(orderAttributes.items[0].id).toBe('product-123')
     })
   })
 
@@ -382,7 +389,7 @@ describe('Audit Service Integration Tests', () => {
       const baseTimestamp = Date.now()
 
       // Create events with different timestamps to ensure different partitions
-      const events = Array.from({ length: 5 }, (_, i) => ({
+      const testEvents = Array.from({ length: 5 }, (_, i) => ({
         tenantId: 'tenant-partition-test',
         subject: `user:test${i}`,
         action: 'test.action',
@@ -391,12 +398,12 @@ describe('Audit Service Integration Tests', () => {
       }))
 
       // Submit all events
-      for (const event of events) {
+      for (const event of testEvents) {
         const response = await makeAuthenticatedRequest('/audit', {
           method: 'POST',
           body: JSON.stringify(event),
         })
-        assert.strictEqual(response.status, 202)
+        expect(response.status).toBe(200)
       }
 
       // Wait for persistence
@@ -404,17 +411,9 @@ describe('Audit Service Integration Tests', () => {
 
       // Verify events are in different partitions
       const partitionKeys = await tableHelper.getPartitionKeys()
-      const testPartitions = partitionKeys.filter((pk) => {
-        const entities = []
-        // This is a simplified check - in a real scenario we'd query by partition
-        return true // Simplified for this test
-      })
 
       // Should have multiple partitions due to different timestamps
-      assert.ok(
-        partitionKeys.length > 1,
-        `Expected multiple partitions, got ${partitionKeys.length}`
-      )
+      expect(partitionKeys.length).toBeGreaterThan(1)
     })
   })
 
@@ -445,7 +444,7 @@ describe('Audit Service Integration Tests', () => {
         body: JSON.stringify(event),
       })
 
-      assert.strictEqual(response.status, 202)
+      expect(response.status).toBe(200)
 
       // Verify persistence
       const expectedPartitionKey = generateExpectedPartitionKey(
@@ -460,9 +459,9 @@ describe('Audit Service Integration Tests', () => {
       )
 
       // Verify attributes were properly serialized
-      const attributes = JSON.parse(persistedEntity.attributes)
-      assert.strictEqual(attributes.records.length, 100)
-      assert.ok(attributes.records[0].id.startsWith('record-'))
+      const attributes = JSON.parse(persistedEntity.attributes!)
+      expect(attributes.records.length).toBe(100)
+      expect(attributes.records[0].id.startsWith('record-')).toBe(true)
     })
   })
 
@@ -484,7 +483,7 @@ describe('Audit Service Integration Tests', () => {
       })
 
       const afterSubmission = Date.now()
-      assert.strictEqual(response.status, 202)
+      expect(response.status).toBe(200)
 
       // Verify entity has server-generated timestamp
       const expectedPartitionKey = generateExpectedPartitionKey(
@@ -499,8 +498,10 @@ describe('Audit Service Integration Tests', () => {
       )
 
       // Timestamp should be within the submission window
-      assert.ok(persistedEntity.timestamp >= beforeSubmission)
-      assert.ok(persistedEntity.timestamp <= afterSubmission)
+      expect(persistedEntity.timestamp).toBeGreaterThanOrEqual(beforeSubmission)
+      expect(persistedEntity.timestamp).toBeLessThanOrEqual(
+        afterSubmission + 1000
+      ) // Add small buffer
     })
   })
 })

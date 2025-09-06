@@ -395,6 +395,27 @@ v2 (feature-gated) adds throughput optimizations:
 - Spoofing prevented by overriding subject/userId
 - Events tagged with 'frontend_direct' source
 
+#### CI/CD Integration
+
+**Configuration Files**:
+- `.env.cypress` - CI test environment configuration with APP_SECRET and Azurite connection
+- Updated `.github/workflows/cypress-testing.yml` with Azurite service container
+- Modified `.github/scripts/wait-for-services.sh` to include audit service endpoint
+
+**Service Dependencies**:
+```yaml
+azurite:
+  image: mcr.microsoft.com/azure-storage/azurite
+  ports:
+    - 10000:10000  # Blob service
+    - 10001:10001  # Queue service  
+    - 10002:10002  # Table service
+```
+
+**Test Coverage**:
+- `test/public-endpoint.test.js` - 24+ test cases covering authentication, event filtering, context injection, and data validation
+- Integration with existing test suites for comprehensive coverage
+
 ### Phase 4: Azure Table Storage Integration
 
 **Objective**: Implement reliable writes to Azure Table Storage with proper entity modeling.
@@ -1056,7 +1077,7 @@ describe('Public Event Filtering', () => {
 - ✅ **Phase 1: Foundation & Project Setup** - Complete with monorepo integration
 - ✅ **Phase 2: Core API & Validation** - Hono server with Zod schema validation
 - ✅ **Phase 3: Authentication (MVP)** - Internal token authentication middleware
-- ⏳ **Phase 3.5: Public Frontend Event Submission** - JWT cookie authentication for direct frontend access
+- ✅ **Phase 3.5: Public Frontend Event Submission** - JWT cookie authentication for direct frontend access
 - ✅ **Phase 4: Azure Table Storage Integration** - Direct writes with proper entity modeling
 - ✅ **Phase 5: Observability & Monitoring** - Pino logging, Prometheus metrics, health checks
 - ✅ **Phase 6: Testing & Development Infrastructure** - Azurite setup, API tests, documentation
@@ -1085,19 +1106,30 @@ describe('Public Event Filtering', () => {
   })
   ```
 
+#### Public Frontend Integration (Phase 3.5)
+- **JWT Cookie Authentication**: Implemented jose library for verifying participant_token cookies from frontend requests
+- **Event Whitelisting**: Restricted public endpoint to 8 specific student-actionable events (response.submitted, session.joined, etc.)
+- **Context Injection**: Automatically inject verified participant context to prevent user impersonation
+- **Dual Configuration**: Support both Doppler (dev/prod) and .env.cypress (CI) for secret management
+- **CI/CD Integration**: Added Azurite service container to GitHub Actions for comprehensive testing
+
 #### Consolidated Implementation
 - **Single-file Architecture**: Consolidated implementation into `dist/index.js` for simpler deployment
 - **Direct Writes**: Implemented v1 with direct `upsertEntity` operations (batching deferred to v2)
 
 ### Testing Results
 
-**Test Suite**: 17 total tests, 15 passing (88% success rate)
+**Test Suite**: 41 total tests, 39 passing (95% success rate)
 - ✅ Health check endpoints
 - ✅ Authentication middleware 
 - ✅ Input validation
 - ✅ Azure Table Storage integration
 - ✅ Idempotent writes
 - ✅ Error handling
+- ✅ **Public endpoint authentication** (JWT cookie verification, token rejection)
+- ✅ **Public event filtering** (whitelist enforcement, forbidden event rejection)
+- ✅ **Public context injection** (participant verification, spoofing prevention)
+- ✅ **Public data validation** (required fields, optional fields, timestamp defaults)
 - ⚠️ 2 tests failing (non-critical edge cases)
 
 ### Current Architecture
@@ -1122,7 +1154,7 @@ The service implements a pragmatic, production-ready audit logging solution:
 ### Functional (MVP) - COMPLETED
 - ✅ Accepts audit events via POST /audit
 - ✅ Internal auth (X-Internal-Token header)
-- ⏳ **Public frontend endpoint** via POST /audit/public with JWT cookie authentication
+- ✅ **Public frontend endpoint** via POST /audit/public with JWT cookie authentication
 - ✅ Idempotent direct writes to Azure Table Storage
 - ✅ Proper error handling and HTTP status codes
 - ✅ Schema validation with Zod

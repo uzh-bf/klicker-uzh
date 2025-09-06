@@ -14,12 +14,11 @@ const configSchema = z.object({
   // Authentication configuration (MVP - internal token)
   INTERNAL_TOKEN: z.string().min(1),
 
+  // JWT authentication for public endpoints
+  APP_SECRET: z.string().min(1),
+
   // Logging configuration
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
-
-  // Service configuration
-  SERVICE_NAME: z.string().default('audit-service'),
-  SERVICE_VERSION: z.string().default('1.0.0'),
 })
 
 export type Config = z.infer<typeof configSchema>

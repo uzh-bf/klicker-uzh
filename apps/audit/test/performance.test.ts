@@ -1,5 +1,4 @@
-import assert from 'node:assert'
-import { after, before, describe, it } from 'node:test'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { AzureTableTestHelper } from './utils/azure-table-helper.js'
 
 const BASE_URL = 'http://localhost:7080'
@@ -9,7 +8,10 @@ const AUTH_TOKEN = process.env.INTERNAL_TOKEN || 'test-secret-token-123'
 const tableHelper = new AzureTableTestHelper('auditlogs')
 
 // Helper function to make authenticated requests
-async function makeAuthenticatedRequest(path, options = {}) {
+async function makeAuthenticatedRequest(
+  path: string,
+  options: RequestInit = {}
+): Promise<Response> {
   const url = `${BASE_URL}${path}`
   const response = await fetch(url, {
     ...options,
@@ -23,7 +25,7 @@ async function makeAuthenticatedRequest(path, options = {}) {
 }
 
 // Helper to generate test events
-function generateTestEvent(index, tenantId = 'perf-test') {
+function generateTestEvent(index: number, tenantId = 'perf-test') {
   return {
     tenantId,
     subject: `user:perf-user-${index}`,
@@ -45,7 +47,7 @@ function generateTestEvent(index, tenantId = 'perf-test') {
 }
 
 // Helper to measure performance
-async function measurePerformance(name, fn) {
+async function measurePerformance<T>(name: string, fn: () => Promise<T>) {
   const startTime = Date.now()
   const startMemory = process.memoryUsage()
 
@@ -72,13 +74,13 @@ async function measurePerformance(name, fn) {
 }
 
 describe('Performance and Load Tests', () => {
-  before(async () => {
+  beforeAll(async () => {
     console.log('Setting up performance tests...')
     await tableHelper.setup()
     await tableHelper.cleanup()
   })
 
-  after(async () => {
+  afterAll(async () => {
     console.log('Cleaning up performance tests...')
     await tableHelper.cleanup()
   })
@@ -94,19 +96,19 @@ describe('Performance and Load Tests', () => {
             method: 'POST',
             body: JSON.stringify(event),
           })
-          assert.strictEqual(response.status, 202)
+          expect(response.status).toBe(200)
           return response
         }
       )
 
       // Single events should be processed very quickly
-      assert.ok(duration < 100, `Expected under 100ms, got ${duration}ms`)
+      expect(duration).toBeLessThan(100)
 
       // Verify persistence
       await new Promise((resolve) => setTimeout(resolve, 500))
       const entities =
         await tableHelper.getEntitiesForTenant('single-perf-test')
-      assert.strictEqual(entities.length, 1)
+      expect(entities.length).toBe(1)
     })
 
     it('should process complex events efficiently (under 200ms)', async () => {
@@ -150,22 +152,22 @@ describe('Performance and Load Tests', () => {
             method: 'POST',
             body: JSON.stringify(complexEvent),
           })
-          assert.strictEqual(response.status, 202)
+          expect(response.status).toBe(200)
           return response
         }
       )
 
       // Complex events should still be reasonably fast
-      assert.ok(duration < 200, `Expected under 200ms, got ${duration}ms`)
+      expect(duration).toBeLessThan(200)
 
       // Verify persistence and data integrity
       await new Promise((resolve) => setTimeout(resolve, 1000))
       const entities =
         await tableHelper.getEntitiesForTenant('complex-perf-test')
-      assert.strictEqual(entities.length, 1)
+      expect(entities.length).toBe(1)
 
-      const attributes = JSON.parse(entities[0].attributes)
-      assert.strictEqual(attributes.records.length, 100)
+      const attributes = JSON.parse(entities[0]!.attributes!)
+      expect(attributes.records.length).toBe(100)
     })
   })
 
@@ -190,18 +192,11 @@ describe('Performance and Load Tests', () => {
 
       // All requests should be successful
       responses.forEach((response, index) => {
-        assert.strictEqual(
-          response.status,
-          202,
-          `Request ${index} failed with status ${response.status}`
-        )
+        expect(response.status).toBe(200)
       })
 
       // Should handle 50 concurrent requests reasonably quickly (under 5 seconds)
-      assert.ok(
-        duration < 5000,
-        `Expected under 5000ms for 50 concurrent requests, got ${duration}ms`
-      )
+      expect(duration).toBeLessThan(5000)
 
       // Calculate throughput
       const throughput = (eventCount / duration) * 1000 // events per second
@@ -210,11 +205,7 @@ describe('Performance and Load Tests', () => {
       // Verify all events were persisted
       await tableHelper.waitForEntityCount(eventCount, 15000)
       const entities = await tableHelper.getEntitiesForTenant(tenantId)
-      assert.strictEqual(
-        entities.length,
-        eventCount,
-        'All events should be persisted'
-      )
+      expect(entities.length).toBe(eventCount)
     })
 
     it('should handle 200 concurrent requests with reasonable performance', async () => {
@@ -236,7 +227,7 @@ describe('Performance and Load Tests', () => {
       )
 
       // Check success rate
-      const successfulResponses = responses.filter((r) => r.status === 202)
+      const successfulResponses = responses.filter((r) => r.status === 200)
       const successRate = (successfulResponses.length / responses.length) * 100
 
       console.log(
@@ -244,16 +235,10 @@ describe('Performance and Load Tests', () => {
       )
 
       // Should have high success rate (>95%)
-      assert.ok(
-        successRate >= 95,
-        `Expected >95% success rate, got ${successRate.toFixed(1)}%`
-      )
+      expect(successRate).toBeGreaterThanOrEqual(95)
 
       // Should handle 200 requests in reasonable time (under 15 seconds)
-      assert.ok(
-        duration < 15000,
-        `Expected under 15000ms for 200 requests, got ${duration}ms`
-      )
+      expect(duration).toBeLessThan(15000)
 
       const throughput = (successfulResponses.length / duration) * 1000
       console.log(`  Throughput: ${throughput.toFixed(2)} events/second`)
@@ -268,10 +253,7 @@ describe('Performance and Load Tests', () => {
       console.log(
         `  Persistence rate: ${persistenceRate.toFixed(1)}% (${entities.length}/${successfulResponses.length})`
       )
-      assert.ok(
-        persistenceRate >= 95,
-        `Expected >95% persistence rate, got ${persistenceRate.toFixed(1)}%`
-      )
+      expect(persistenceRate).toBeGreaterThanOrEqual(95)
     })
   })
 
@@ -282,7 +264,12 @@ describe('Performance and Load Tests', () => {
       const numBatches = 10
       const batchDelayMs = 500
 
-      const batchResults = []
+      const batchResults: Array<{
+        batch: number
+        duration: number
+        successCount: number
+        throughput: number
+      }> = []
       let totalEvents = 0
 
       const { duration: totalDuration } = await measurePerformance(
@@ -302,7 +289,7 @@ describe('Performance and Load Tests', () => {
             const responses = await Promise.all(requests)
             const batchDuration = Date.now() - batchStart
             const successCount = responses.filter(
-              (r) => r.status === 202
+              (r) => r.status === 200
             ).length
 
             batchResults.push({
@@ -340,17 +327,11 @@ describe('Performance and Load Tests', () => {
       console.log(`  Throughput variance: ${throughputVariance.toFixed(1)}%`)
 
       // Performance should not degrade significantly over time
-      assert.ok(
-        throughputVariance < 50,
-        `Expected <50% throughput variance, got ${throughputVariance.toFixed(1)}%`
-      )
+      expect(throughputVariance).toBeLessThan(50)
 
       // Overall success rate should be high
       const overallSuccessRate = (totalEvents / (batchSize * numBatches)) * 100
-      assert.ok(
-        overallSuccessRate >= 95,
-        `Expected >95% overall success rate, got ${overallSuccessRate.toFixed(1)}%`
-      )
+      expect(overallSuccessRate).toBeGreaterThanOrEqual(95)
 
       // Verify persistence
       await new Promise((resolve) => setTimeout(resolve, 3000))
@@ -359,10 +340,7 @@ describe('Performance and Load Tests', () => {
       console.log(
         `  Final persistence rate: ${persistenceRate.toFixed(1)}% (${entities.length}/${totalEvents})`
       )
-      assert.ok(
-        persistenceRate >= 95,
-        `Expected >95% persistence rate, got ${persistenceRate.toFixed(1)}%`
-      )
+      expect(persistenceRate).toBeGreaterThanOrEqual(95)
     })
   })
 
@@ -372,12 +350,18 @@ describe('Performance and Load Tests', () => {
       const iterations = 5
       const eventsPerIteration = 50
 
-      const memorySnapshots = []
+      const memorySnapshots: Array<{
+        iteration: number
+        successCount: number
+        heapUsed: number
+        memoryDelta: number
+        memoryDeltaMB: number
+      }> = []
 
       for (let iteration = 0; iteration < iterations; iteration++) {
         // Force garbage collection if available
-        if (global.gc) {
-          global.gc()
+        if ((global as any).gc) {
+          ;(global as any).gc()
         }
 
         const memoryBefore = process.memoryUsage()
@@ -392,13 +376,13 @@ describe('Performance and Load Tests', () => {
         })
 
         const responses = await Promise.all(requests)
-        const successCount = responses.filter((r) => r.status === 202).length
+        const successCount = responses.filter((r) => r.status === 200).length
 
         // Wait a bit for processing
         await new Promise((resolve) => setTimeout(resolve, 1000))
 
-        if (global.gc) {
-          global.gc()
+        if ((global as any).gc) {
+          ;(global as any).gc()
         }
 
         const memoryAfter = process.memoryUsage()
@@ -418,17 +402,14 @@ describe('Performance and Load Tests', () => {
       }
 
       // Check for memory growth trend
-      const firstHeap = memorySnapshots[0].heapUsed
-      const lastHeap = memorySnapshots[memorySnapshots.length - 1].heapUsed
+      const firstHeap = memorySnapshots[0]!.heapUsed
+      const lastHeap = memorySnapshots[memorySnapshots.length - 1]!.heapUsed
       const totalGrowth = ((lastHeap - firstHeap) / firstHeap) * 100
 
       console.log(`  Total heap growth: ${totalGrowth.toFixed(2)}%`)
 
       // Should not have excessive memory growth (allow up to 50% growth)
-      assert.ok(
-        totalGrowth < 50,
-        `Expected <50% memory growth, got ${totalGrowth.toFixed(2)}%`
-      )
+      expect(totalGrowth).toBeLessThan(50)
 
       // Verify all events were processed
       await new Promise((resolve) => setTimeout(resolve, 2000))
@@ -436,10 +417,7 @@ describe('Performance and Load Tests', () => {
       const entities = await tableHelper.getEntitiesForTenant(tenantId)
 
       const persistenceRate = (entities.length / totalExpectedEvents) * 100
-      assert.ok(
-        persistenceRate >= 90,
-        `Expected >90% persistence rate, got ${persistenceRate.toFixed(1)}%`
-      )
+      expect(persistenceRate).toBeGreaterThanOrEqual(90)
     })
   })
 
@@ -457,7 +435,7 @@ describe('Performance and Load Tests', () => {
               makeAuthenticatedRequest('/audit', {
                 method: 'POST',
                 body: JSON.stringify(generateTestEvent(i, tenantId)),
-              }).catch((error) => ({ status: 0, error })) // Catch network errors
+              }).catch((error) => ({ status: 0, error }) as any) // Catch network errors
           )
 
           return Promise.all(requests)
@@ -465,7 +443,7 @@ describe('Performance and Load Tests', () => {
       )
 
       // Analyze response codes
-      const statusCounts = {}
+      const statusCounts: Record<number, number> = {}
       responses.forEach((response) => {
         const status = response.status
         statusCounts[status] = (statusCounts[status] || 0) + 1
@@ -474,7 +452,7 @@ describe('Performance and Load Tests', () => {
       console.log('  Response distribution:', statusCounts)
 
       // Calculate error rate
-      const successCount = statusCounts[202] || 0
+      const successCount = statusCounts[200] || 0
       const errorRate = ((totalRequests - successCount) / totalRequests) * 100
 
       console.log(
@@ -483,19 +461,13 @@ describe('Performance and Load Tests', () => {
       console.log(`  Error rate: ${errorRate.toFixed(2)}%`)
 
       // Should have very low error rate under normal conditions
-      assert.ok(
-        errorRate < 5,
-        `Expected <5% error rate, got ${errorRate.toFixed(2)}%`
-      )
+      expect(errorRate).toBeLessThan(5)
 
       // Verify persistence
       await new Promise((resolve) => setTimeout(resolve, 2000))
       const entities = await tableHelper.getEntitiesForTenant(tenantId)
       const persistenceRate = (entities.length / successCount) * 100
-      assert.ok(
-        persistenceRate >= 95,
-        `Expected >95% persistence rate, got ${persistenceRate.toFixed(1)}%`
-      )
+      expect(persistenceRate).toBeGreaterThanOrEqual(95)
     })
   })
 
@@ -530,25 +502,19 @@ describe('Performance and Load Tests', () => {
             method: 'POST',
             body: JSON.stringify(testEvent),
           })
-          assert.strictEqual(response.status, 202)
+          expect(response.status).toBe(200)
           return response
         }
       )
 
       // Should still be fast even with many existing records
-      assert.ok(
-        duration < 500,
-        `Expected under 500ms with existing data, got ${duration}ms`
-      )
+      expect(duration).toBeLessThan(500)
 
       // Verify the new event was persisted
       await new Promise((resolve) => setTimeout(resolve, 1000))
       const entities = await tableHelper.getEntitiesForTenant(tenantId)
       const testEntity = entities.find((e) => e.rowKey === testEvent.eventId)
-      assert.ok(
-        testEntity,
-        'Test event should be persisted even with many existing records'
-      )
+      expect(testEntity).toBeTruthy()
     })
   })
 })

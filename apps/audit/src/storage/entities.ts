@@ -1,5 +1,5 @@
-import { ulid } from 'ulidx'
-import type { AuditEvent } from '../audit-event.js'
+import { createHash } from 'crypto'
+import type { AuditEvent } from '../schemas/audit-event.js'
 
 export interface AuditTableEntity {
   partitionKey: string
@@ -15,15 +15,43 @@ export interface AuditTableEntity {
 }
 
 /**
- * Create an Azure Table entity from an audit event
+ * Generate a deterministic event ID for idempotency
+ * Uses critical fields to ensure same event generates same ID
+ */
+function generateDeterministicEventId(event: AuditEvent): string {
+  const data = JSON.stringify({
+    tenantId: event.tenantId,
+    subject: event.subject,
+    action: event.action,
+    timestamp: event.timestamp,
+    userId: event.userId || null,
+    resourceId: event.resourceId || null,
+    sessionId: event.sessionId || null,
+    // Include subset of attributes for uniqueness (avoid full object for size)
+    attributesHash: event.attributes
+      ? createHash('sha256')
+          .update(JSON.stringify(event.attributes))
+          .digest('hex')
+          .substring(0, 8)
+      : null,
+  })
+
+  return createHash('sha256').update(data).digest('hex').substring(0, 16)
+}
+
+/**
+ * Create an Azure Table entity from an audit event with idempotency enforcement
  */
 export function createAuditEntity(event: AuditEvent): AuditTableEntity {
+  // Enforce idempotency: use provided eventId or generate deterministic one
+  const eventId = event.eventId || generateDeterministicEventId(event)
+
   const partitionKey = generatePartitionKey(
     event.tenantId,
     event.timestamp,
-    event.eventId
+    eventId
   )
-  const rowKey = event.eventId ?? ulid()
+  const rowKey = eventId
 
   return {
     partitionKey,

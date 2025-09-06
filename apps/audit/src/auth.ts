@@ -1,6 +1,12 @@
 import type { Context, Next } from 'hono'
+import * as jose from 'jose'
 import { config } from './config.js'
 import { logger } from './utils/logger.js'
+
+export interface ParticipantContext {
+  participantId: string
+  role: string
+}
 
 /**
  * Simple internal token authentication middleware for MVP
@@ -14,7 +20,7 @@ export async function authMiddleware(
 
   if (!token) {
     logger.warn(
-      { path: c.req.path },
+      { requestId: c.get('requestId'), path: c.req.path },
       'Authentication failed: missing X-Internal-Token header'
     )
     return c.json(
@@ -25,10 +31,7 @@ export async function authMiddleware(
 
   if (token !== config.INTERNAL_TOKEN) {
     logger.warn(
-      {
-        path: c.req.path,
-        tokenPrefix: token.substring(0, 4) + '...',
-      },
+      { requestId: c.get('requestId'), path: c.req.path },
       'Authentication failed: invalid token'
     )
     return c.json({ error: 'Authentication failed: invalid token' }, 401)
@@ -36,4 +39,73 @@ export async function authMiddleware(
 
   // Token is valid, proceed to next middleware/handler
   await next()
+}
+
+/**
+ * Verify participant JWT token using APP_SECRET
+ * Based on the pattern used in hatchet-worker-response-processor
+ */
+export async function verifyParticipantToken(
+  token: string,
+  appSecret: string
+): Promise<ParticipantContext | null> {
+  if (!appSecret) {
+    throw new Error('APP_SECRET not configured')
+  }
+
+  try {
+    const secretBuffer = new TextEncoder().encode(appSecret)
+    const { payload } = await jose.jwtVerify(token, secretBuffer, {
+      clockTolerance: 30, // Allow 30 seconds clock skew
+    })
+
+    // Explicit expiry check (jose should handle this, but be explicit)
+    if (payload.exp && payload.exp * 1000 < Date.now()) {
+      return null
+    }
+
+    // Extract participant data from JWT payload
+    const participantId = payload.sub as string
+    const role = payload.role as string
+
+    // Validate required claims
+    if (!participantId || !role) {
+      return null
+    }
+
+    // Validate role is expected value
+    if (!['PARTICIPANT', 'TEMPORARY_PARTICIPANT'].includes(role)) {
+      return null
+    }
+
+    return {
+      participantId,
+      role,
+    }
+  } catch (error) {
+    // JWT verification failed (expired, invalid signature, malformed, etc.)
+    return null
+  }
+}
+
+/**
+ * Parse cookies from HTTP Cookie header
+ * Based on the pattern used in func-response-processor and hatchet-worker-response-processor
+ */
+export function parseCookies(cookieHeader: string): Record<string, string> {
+  return cookieHeader
+    .split(';')
+    .map((v) => v.split('='))
+    .reduce(
+      (acc, v) => {
+        // Handle case where cookie might not have a value or might be malformed
+        if (v.length >= 2) {
+          acc[decodeURIComponent(v[0]!.trim())] = decodeURIComponent(
+            v[1]!.trim()
+          )
+        }
+        return acc
+      },
+      {} as Record<string, string>
+    )
 }

@@ -1,5 +1,4 @@
-import assert from 'node:assert'
-import { after, before, describe, it } from 'node:test'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { AzureTableTestHelper } from './utils/azure-table-helper.js'
 
 const BASE_URL = 'http://localhost:7080'
@@ -9,7 +8,10 @@ const AUTH_TOKEN = process.env.INTERNAL_TOKEN || 'test-secret-token-123'
 const tableHelper = new AzureTableTestHelper('auditlogs')
 
 // Helper function to make authenticated requests
-async function makeAuthenticatedRequest(path, options = {}) {
+async function makeAuthenticatedRequest(
+  path: string,
+  options: RequestInit = {}
+): Promise<Response> {
   const url = `${BASE_URL}${path}`
   const response = await fetch(url, {
     ...options,
@@ -22,8 +24,19 @@ async function makeAuthenticatedRequest(path, options = {}) {
   return response
 }
 
+interface AuditEvent {
+  tenantId: string
+  subject: string
+  action: string
+  eventId: string
+  sessionId?: string
+  userId?: string
+  resourceId?: string
+  attributes?: Record<string, any>
+}
+
 // Helper to submit events with verification
-async function submitAndVerifyEvents(events, tenantId) {
+async function submitAndVerifyEvents(events: AuditEvent[], tenantId: string) {
   const results = []
 
   for (const event of events) {
@@ -32,11 +45,7 @@ async function submitAndVerifyEvents(events, tenantId) {
       body: JSON.stringify(event),
     })
 
-    assert.strictEqual(
-      response.status,
-      202,
-      `Event ${event.eventId} submission failed`
-    )
+    expect(response.status).toBe(200)
     const responseData = await response.json()
 
     results.push({
@@ -50,23 +59,19 @@ async function submitAndVerifyEvents(events, tenantId) {
 
   // Verify all events are persisted
   const persistedEntities = await tableHelper.getEntitiesForTenant(tenantId)
-  assert.strictEqual(
-    persistedEntities.length,
-    events.length,
-    `Expected ${events.length} persisted events, found ${persistedEntities.length}`
-  )
+  expect(persistedEntities.length).toBe(events.length)
 
   return { results, persistedEntities }
 }
 
 describe('Real-World Scenario Tests', () => {
-  before(async () => {
+  beforeAll(async () => {
     console.log('Setting up scenario tests...')
     await tableHelper.setup()
     await tableHelper.cleanup()
   })
 
-  after(async () => {
+  afterAll(async () => {
     console.log('Cleaning up scenario tests...')
     await tableHelper.cleanup()
   })
@@ -79,7 +84,7 @@ describe('Real-World Scenario Tests', () => {
       const sessionId = `session-${testId}`
 
       // Complete authentication flow
-      const authFlow = [
+      const authFlow: AuditEvent[] = [
         {
           tenantId,
           subject: `user:${userId}@company.com`,
@@ -142,27 +147,27 @@ describe('Real-World Scenario Tests', () => {
       )
 
       // Check sequence
-      assert.strictEqual(authEvents[0].action, 'auth.login.attempt')
-      assert.strictEqual(authEvents[1].action, 'auth.mfa.challenge')
-      assert.strictEqual(authEvents[2].action, 'auth.mfa.success')
-      assert.strictEqual(authEvents[3].action, 'auth.login.success')
+      expect(authEvents[0]!.action).toBe('auth.login.attempt')
+      expect(authEvents[1]!.action).toBe('auth.mfa.challenge')
+      expect(authEvents[2]!.action).toBe('auth.mfa.success')
+      expect(authEvents[3]!.action).toBe('auth.login.success')
 
       // Verify session consistency
       authEvents.forEach((event) => {
-        assert.strictEqual(event.sessionId, sessionId)
-        assert.ok(event.subject.includes(userId))
+        expect(event.sessionId).toBe(sessionId)
+        expect(event.subject).toContain(userId)
       })
 
       // Verify MFA challenge/response correlation
       const challengeEvent = authEvents.find(
         (e) => e.action === 'auth.mfa.challenge'
-      )
+      )!
       const successEvent = authEvents.find(
         (e) => e.action === 'auth.mfa.success'
-      )
-      const challengeAttrs = JSON.parse(challengeEvent.attributes)
-      const successAttrs = JSON.parse(successEvent.attributes)
-      assert.strictEqual(challengeAttrs.challengeId, successAttrs.challengeId)
+      )!
+      const challengeAttrs = JSON.parse(challengeEvent.attributes!)
+      const successAttrs = JSON.parse(successEvent.attributes!)
+      expect(challengeAttrs.challengeId).toBe(successAttrs.challengeId)
 
       console.log(
         `  ✓ Complete authentication flow tracked: ${authEvents.length} events`
@@ -175,7 +180,7 @@ describe('Real-World Scenario Tests', () => {
       const userId = 'user-failure-test'
       const sessionId = `session-fail-${testId}`
 
-      const failureFlow = [
+      const failureFlow: AuditEvent[] = [
         {
           tenantId,
           subject: `user:${userId}@company.com`,
@@ -232,16 +237,16 @@ describe('Real-World Scenario Tests', () => {
       const failureEvents = persistedEntities.filter((e) =>
         e.action.includes('failed')
       )
-      assert.strictEqual(failureEvents.length, 2)
+      expect(failureEvents.length).toBe(2)
 
       const lockEvent = persistedEntities.find(
         (e) => e.action === 'auth.account.locked'
-      )
-      assert.ok(lockEvent)
-      assert.strictEqual(lockEvent.resourceId, userId)
+      )!
+      expect(lockEvent).toBeTruthy()
+      expect(lockEvent.resourceId).toBe(userId)
 
-      const lockAttrs = JSON.parse(lockEvent.attributes)
-      assert.strictEqual(lockAttrs.failedAttempts, 2)
+      const lockAttrs = JSON.parse(lockEvent.attributes!)
+      expect(lockAttrs.failedAttempts).toBe(2)
 
       console.log('  ✓ Failed authentication and lockout flow tracked')
     })
@@ -254,7 +259,7 @@ describe('Real-World Scenario Tests', () => {
       const userId = 'user-doc-test'
       const documentId = `doc-${testId}`
 
-      const documentFlow = [
+      const documentFlow: AuditEvent[] = [
         {
           tenantId,
           subject: `user:${userId}@company.com`,
@@ -357,7 +362,7 @@ describe('Real-World Scenario Tests', () => {
 
       // All events should reference the same document
       docEvents.forEach((event) => {
-        assert.strictEqual(event.resourceId, documentId)
+        expect(event.resourceId).toBe(documentId)
       })
 
       // Verify lifecycle stages
@@ -370,24 +375,26 @@ describe('Real-World Scenario Tests', () => {
         'document.shared',
         'document.approved',
       ]
-      assert.deepStrictEqual(actions, expectedActions)
+      expect(actions).toEqual(expectedActions)
 
       // Verify version tracking
-      const createEvent = docEvents.find((e) => e.action === 'document.created')
-      const editEvent = docEvents.find((e) => e.action === 'document.edited')
+      const createEvent = docEvents.find(
+        (e) => e.action === 'document.created'
+      )!
+      const editEvent = docEvents.find((e) => e.action === 'document.edited')!
 
-      const createAttrs = JSON.parse(createEvent.attributes)
-      const editAttrs = JSON.parse(editEvent.attributes)
+      const createAttrs = JSON.parse(createEvent.attributes!)
+      const editAttrs = JSON.parse(editEvent.attributes!)
 
-      assert.strictEqual(createAttrs.metadata.version, '1.0')
-      assert.strictEqual(editAttrs.previousVersion, '1.0')
-      assert.strictEqual(editAttrs.newVersion, '1.1')
+      expect(createAttrs.metadata.version).toBe('1.0')
+      expect(editAttrs.previousVersion).toBe('1.0')
+      expect(editAttrs.newVersion).toBe('1.1')
 
       // Verify sharing details
-      const shareEvent = docEvents.find((e) => e.action === 'document.shared')
-      const shareAttrs = JSON.parse(shareEvent.attributes)
-      assert.ok(Array.isArray(shareAttrs.sharedWith))
-      assert.strictEqual(shareAttrs.sharedWith.length, 2)
+      const shareEvent = docEvents.find((e) => e.action === 'document.shared')!
+      const shareAttrs = JSON.parse(shareEvent.attributes!)
+      expect(Array.isArray(shareAttrs.sharedWith)).toBe(true)
+      expect(shareAttrs.sharedWith.length).toBe(2)
 
       console.log(
         `  ✓ Document lifecycle tracked: ${docEvents.length} events across multiple users`
@@ -400,7 +407,7 @@ describe('Real-World Scenario Tests', () => {
       const userId = 'user-compliance'
       const fileId = `file-${testId}`
 
-      const complianceFlow = [
+      const complianceFlow: AuditEvent[] = [
         {
           tenantId,
           subject: `user:${userId}@company.com`,
@@ -489,28 +496,30 @@ describe('Real-World Scenario Tests', () => {
       )
 
       // Check PII detection and handling
-      const scanEvent = compEvents.find((e) => e.action === 'file.scanned')
-      const scanAttrs = JSON.parse(scanEvent.attributes)
-      assert.ok(scanAttrs.piiDetected.includes('email_addresses'))
-      assert.strictEqual(scanAttrs.riskLevel, 'high')
-      assert.strictEqual(scanAttrs.quarantined, true)
+      const scanEvent = compEvents.find((e) => e.action === 'file.scanned')!
+      const scanAttrs = JSON.parse(scanEvent.attributes!)
+      expect(scanAttrs.piiDetected).toContain('email_addresses')
+      expect(scanAttrs.riskLevel).toBe('high')
+      expect(scanAttrs.quarantined).toBe(true)
 
       // Check compliance review
-      const reviewEvent = compEvents.find((e) => e.action === 'file.reviewed')
-      const reviewAttrs = JSON.parse(reviewEvent.attributes)
-      assert.strictEqual(reviewAttrs.disposition, 'approved_with_conditions')
-      assert.ok(reviewAttrs.requiredActions.includes('encrypt_at_rest'))
+      const reviewEvent = compEvents.find((e) => e.action === 'file.reviewed')!
+      const reviewAttrs = JSON.parse(reviewEvent.attributes!)
+      expect(reviewAttrs.disposition).toBe('approved_with_conditions')
+      expect(reviewAttrs.requiredActions).toContain('encrypt_at_rest')
 
       // Check encryption compliance
-      const encryptEvent = compEvents.find((e) => e.action === 'file.encrypted')
-      const encryptAttrs = JSON.parse(encryptEvent.attributes)
-      assert.strictEqual(encryptAttrs.encryptionMethod, 'AES-256-GCM')
+      const encryptEvent = compEvents.find(
+        (e) => e.action === 'file.encrypted'
+      )!
+      const encryptAttrs = JSON.parse(encryptEvent.attributes!)
+      expect(encryptAttrs.encryptionMethod).toBe('AES-256-GCM')
 
       // Check controlled access
-      const accessEvent = compEvents.find((e) => e.action === 'file.accessed')
-      const accessAttrs = JSON.parse(accessEvent.attributes)
-      assert.strictEqual(accessAttrs.decryptionRequired, true)
-      assert.strictEqual(accessAttrs.approvedBy, 'compliance-officer')
+      const accessEvent = compEvents.find((e) => e.action === 'file.accessed')!
+      const accessAttrs = JSON.parse(accessEvent.attributes!)
+      expect(accessAttrs.decryptionRequired).toBe(true)
+      expect(accessAttrs.approvedBy).toBe('compliance-officer')
 
       console.log(
         '  ✓ Compliance-sensitive file operations tracked with full audit trail'
@@ -524,7 +533,7 @@ describe('Real-World Scenario Tests', () => {
       const tenantId = 'security-incident-test'
       const incidentId = `inc-${testId}`
 
-      const securityFlow = [
+      const securityFlow: AuditEvent[] = [
         {
           tenantId,
           subject: 'system:intrusion-detection',
@@ -613,38 +622,38 @@ describe('Real-World Scenario Tests', () => {
 
       // All events should reference the same incident
       secEvents.forEach((event) => {
-        assert.strictEqual(event.resourceId, incidentId)
+        expect(event.resourceId).toBe(incidentId)
       })
 
       // Verify incident progression
       const threatEvent = secEvents.find(
         (e) => e.action === 'security.threat.detected'
-      )
-      const threatAttrs = JSON.parse(threatEvent.attributes)
-      assert.strictEqual(threatAttrs.threatType, 'brute_force_attack')
-      assert.strictEqual(threatAttrs.severity, 'high')
+      )!
+      const threatAttrs = JSON.parse(threatEvent.attributes!)
+      expect(threatAttrs.threatType).toBe('brute_force_attack')
+      expect(threatAttrs.severity).toBe('high')
 
       const blockEvent = secEvents.find(
         (e) => e.action === 'security.ip.blocked'
-      )
-      const blockAttrs = JSON.parse(blockEvent.attributes)
-      assert.strictEqual(blockAttrs.blockedIP, threatAttrs.sourceIP)
+      )!
+      const blockAttrs = JSON.parse(blockEvent.attributes!)
+      expect(blockAttrs.blockedIP).toBe(threatAttrs.sourceIP)
 
       const investigationEvent = secEvents.find(
         (e) => e.action === 'security.incident.investigated'
+      )!
+      const invAttrs = JSON.parse(investigationEvent.attributes!)
+      expect(invAttrs.investigationFindings).toContain(
+        'confirmed_brute_force_attack'
       )
-      const invAttrs = JSON.parse(investigationEvent.attributes)
-      assert.ok(
-        invAttrs.investigationFindings.includes('confirmed_brute_force_attack')
-      )
-      assert.strictEqual(invAttrs.dataImpact, 'none')
+      expect(invAttrs.dataImpact).toBe('none')
 
       const resolutionEvent = secEvents.find(
         (e) => e.action === 'security.incident.resolved'
-      )
-      const resAttrs = JSON.parse(resolutionEvent.attributes)
-      assert.strictEqual(resAttrs.resolutionType, 'threat_mitigated')
-      assert.ok(Array.isArray(resAttrs.followUpActions))
+      )!
+      const resAttrs = JSON.parse(resolutionEvent.attributes!)
+      expect(resAttrs.resolutionType).toBe('threat_mitigated')
+      expect(Array.isArray(resAttrs.followUpActions)).toBe(true)
 
       console.log('  ✓ Security incident response workflow tracked end-to-end')
     })
@@ -655,7 +664,7 @@ describe('Real-World Scenario Tests', () => {
       const userId = 'admin-user'
       const sessionId = `admin-session-${testId}`
 
-      const adminFlow = [
+      const adminFlow: AuditEvent[] = [
         {
           tenantId,
           subject: `user:${userId}@company.com`,
@@ -748,24 +757,26 @@ describe('Real-World Scenario Tests', () => {
 
       // All events should be in same session
       adminEvents.forEach((event) => {
-        assert.strictEqual(event.sessionId, sessionId)
-        assert.strictEqual(event.userId, userId)
+        expect(event.sessionId).toBe(sessionId)
+        expect(event.userId).toBe(userId)
       })
 
       // Verify privilege escalation/revocation
       const escalationEvent = adminEvents.find(
         (e) => e.action === 'admin.privilege.escalated'
-      )
+      )!
       const revocationEvent = adminEvents.find(
         (e) => e.action === 'admin.privilege.revoked'
+      )!
+
+      const escalationAttrs = JSON.parse(escalationEvent.attributes!)
+      const revocationAttrs = JSON.parse(revocationEvent.attributes!)
+
+      expect(escalationAttrs.toRole).toBe('system_administrator')
+      expect(revocationAttrs.fromRole).toBe('system_administrator')
+      expect(revocationAttrs.actualDuration).toBeLessThan(
+        escalationAttrs.maxDuration
       )
-
-      const escalationAttrs = JSON.parse(escalationEvent.attributes)
-      const revocationAttrs = JSON.parse(revocationEvent.attributes)
-
-      assert.strictEqual(escalationAttrs.toRole, 'system_administrator')
-      assert.strictEqual(revocationAttrs.fromRole, 'system_administrator')
-      assert.ok(revocationAttrs.actualDuration < escalationAttrs.maxDuration)
 
       // Verify administrative actions tracking
       const dbAccessEvent = adminEvents.find(
@@ -778,14 +789,14 @@ describe('Real-World Scenario Tests', () => {
         (e) => e.action === 'system.backup.initiated'
       )
 
-      assert.ok(dbAccessEvent)
-      assert.ok(configEvent)
-      assert.ok(backupEvent)
+      expect(dbAccessEvent).toBeTruthy()
+      expect(configEvent).toBeTruthy()
+      expect(backupEvent).toBeTruthy()
 
-      const configAttrs = JSON.parse(configEvent.attributes)
-      assert.strictEqual(configAttrs.parameter, 'max_connections')
-      assert.strictEqual(configAttrs.oldValue, '100')
-      assert.strictEqual(configAttrs.newValue, '200')
+      const configAttrs = JSON.parse(configEvent!.attributes!)
+      expect(configAttrs.parameter).toBe('max_connections')
+      expect(configAttrs.oldValue).toBe('100')
+      expect(configAttrs.newValue).toBe('200')
 
       console.log(
         '  ✓ Privileged access and administrative operations fully audited'
@@ -800,7 +811,7 @@ describe('Real-World Scenario Tests', () => {
       const transactionId = `txn-${testId}`
       const amount = 25000.0
 
-      const financialFlow = [
+      const financialFlow: AuditEvent[] = [
         {
           tenantId,
           subject: 'user:employee@company.com',
@@ -893,45 +904,47 @@ describe('Real-World Scenario Tests', () => {
 
       // All events should reference the same transaction
       finEvents.forEach((event) => {
-        assert.strictEqual(event.resourceId, transactionId)
+        expect(event.resourceId).toBe(transactionId)
       })
 
       // Verify approval workflow
       const submitEvent = finEvents.find(
         (e) => e.action === 'finance.expense.submitted'
-      )
+      )!
       const reviewEvent = finEvents.find(
         (e) => e.action === 'finance.expense.reviewed'
-      )
+      )!
       const budgetEvent = finEvents.find(
         (e) => e.action === 'finance.expense.budget_checked'
-      )
+      )!
       const approvalEvent = finEvents.find(
         (e) => e.action === 'finance.expense.approved'
-      )
+      )!
       const paymentEvent = finEvents.find(
         (e) => e.action === 'finance.payment.processed'
-      )
+      )!
 
       // Verify amount consistency
-      const submitAttrs = JSON.parse(submitEvent.attributes)
-      const budgetAttrs = JSON.parse(budgetEvent.attributes)
-      const paymentAttrs = JSON.parse(paymentEvent.attributes)
+      const submitAttrs = JSON.parse(submitEvent.attributes!)
+      const budgetAttrs = JSON.parse(budgetEvent.attributes!)
+      const paymentAttrs = JSON.parse(paymentEvent.attributes!)
 
-      assert.strictEqual(submitAttrs.amount, amount)
-      assert.strictEqual(budgetAttrs.requestedAmount, amount)
-      assert.strictEqual(paymentAttrs.amount, amount)
+      expect(submitAttrs.amount).toBe(amount)
+      expect(budgetAttrs.requestedAmount).toBe(amount)
+      expect(paymentAttrs.amount).toBe(amount)
 
       // Verify approval chain
-      const reviewAttrs = JSON.parse(reviewEvent.attributes)
-      const approvalAttrs = JSON.parse(approvalEvent.attributes)
+      const reviewAttrs = JSON.parse(reviewEvent.attributes!)
+      const approvalAttrs = JSON.parse(approvalEvent.attributes!)
 
-      assert.strictEqual(reviewAttrs.reviewResult, 'approved')
-      assert.strictEqual(approvalAttrs.approvalLevel, 'executive')
+      expect(reviewAttrs.reviewResult).toBe('approved')
+      expect(approvalAttrs.approvalLevel).toBe('executive')
 
       // Verify budget compliance
-      assert.strictEqual(budgetAttrs.budgetStatus, 'sufficient_funds')
-      assert.ok(budgetAttrs.availableBudget >= budgetAttrs.requestedAmount)
+      expect(budgetAttrs.budgetStatus).toBe('sufficient_funds')
+      expect(budgetAttrs.availableBudget).toBeGreaterThanOrEqual(
+        budgetAttrs.requestedAmount
+      )
 
       console.log(
         `  ✓ Financial transaction workflow tracked: $${amount} approval and payment`
@@ -944,7 +957,7 @@ describe('Real-World Scenario Tests', () => {
       const requestId = `req-${testId}`
       const customerId = 'customer-12345'
 
-      const gdprFlow = [
+      const gdprFlow: AuditEvent[] = [
         {
           tenantId,
           subject: `customer:${customerId}@example.com`,
@@ -1061,44 +1074,44 @@ describe('Real-World Scenario Tests', () => {
 
       // All events should reference the same request
       gdprEvents.forEach((event) => {
-        assert.strictEqual(event.resourceId, requestId)
+        expect(event.resourceId).toBe(requestId)
       })
 
       // Verify request progression
       const submitEvent = gdprEvents.find(
         (e) => e.action === 'privacy.data_request.submitted'
-      )
+      )!
       const validateEvent = gdprEvents.find(
         (e) => e.action === 'privacy.request.validated'
-      )
+      )!
       const locateEvent = gdprEvents.find(
         (e) => e.action === 'privacy.data.located'
-      )
+      )!
       const reviewEvent = gdprEvents.find(
         (e) => e.action === 'privacy.data.reviewed'
-      )
+      )!
       const exportEvent = gdprEvents.find(
         (e) => e.action === 'privacy.data.exported'
-      )
+      )!
       const downloadEvent = gdprEvents.find(
         (e) => e.action === 'privacy.data.downloaded'
-      )
+      )!
 
       // Verify GDPR compliance elements
-      const submitAttrs = JSON.parse(submitEvent.attributes)
-      assert.strictEqual(submitAttrs.legalBasis, 'gdpr_article_15')
-      assert.ok(submitAttrs.dataCategories.includes('profile_data'))
+      const submitAttrs = JSON.parse(submitEvent.attributes!)
+      expect(submitAttrs.legalBasis).toBe('gdpr_article_15')
+      expect(submitAttrs.dataCategories).toContain('profile_data')
 
-      const locateAttrs = JSON.parse(locateEvent.attributes)
-      assert.ok(locateAttrs.recordsFound > 0)
-      assert.ok(locateAttrs.dataSources.includes('user_profiles'))
+      const locateAttrs = JSON.parse(locateEvent.attributes!)
+      expect(locateAttrs.recordsFound).toBeGreaterThan(0)
+      expect(locateAttrs.dataSources).toContain('user_profiles')
 
-      const reviewAttrs = JSON.parse(reviewEvent.attributes)
-      assert.strictEqual(reviewAttrs.approvalStatus, 'approved_for_export')
+      const reviewAttrs = JSON.parse(reviewEvent.attributes!)
+      expect(reviewAttrs.approvalStatus).toBe('approved_for_export')
 
-      const exportAttrs = JSON.parse(exportEvent.attributes)
-      assert.strictEqual(exportAttrs.encryptionUsed, true)
-      assert.ok(exportAttrs.checksums.sha256)
+      const exportAttrs = JSON.parse(exportEvent.attributes!)
+      expect(exportAttrs.encryptionUsed).toBe(true)
+      expect(exportAttrs.checksums.sha256).toBeTruthy()
 
       console.log(
         `  ✓ GDPR data request fulfilled: ${locateAttrs.recordsFound} records, ${locateAttrs.dataSize}`

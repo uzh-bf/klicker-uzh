@@ -1,5 +1,4 @@
-import assert from 'node:assert'
-import { after, before, describe, it } from 'node:test'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { AzureTableTestHelper } from './utils/azure-table-helper.js'
 
 const BASE_URL = 'http://localhost:7080'
@@ -9,7 +8,10 @@ const AUTH_TOKEN = process.env.INTERNAL_TOKEN || 'test-secret-token-123'
 const tableHelper = new AzureTableTestHelper('auditlogs')
 
 // Helper function to make authenticated requests
-async function makeAuthenticatedRequest(path, options = {}) {
+async function makeAuthenticatedRequest(
+  path: string,
+  options: RequestInit = {}
+): Promise<Response> {
   const url = `${BASE_URL}${path}`
   const response = await fetch(url, {
     ...options,
@@ -23,13 +25,13 @@ async function makeAuthenticatedRequest(path, options = {}) {
 }
 
 describe('Database Verification Tests', () => {
-  before(async () => {
+  beforeAll(async () => {
     console.log('Setting up database verification tests...')
     await tableHelper.setup()
     await tableHelper.cleanup()
   })
 
-  after(async () => {
+  afterAll(async () => {
     console.log('Cleaning up database verification tests...')
     await tableHelper.cleanup()
   })
@@ -59,7 +61,7 @@ describe('Database Verification Tests', () => {
           method: 'POST',
           body: JSON.stringify(event),
         })
-        assert.strictEqual(response.status, 202)
+        expect(response.status).toBe(200)
       }
 
       // Wait for persistence
@@ -68,19 +70,20 @@ describe('Database Verification Tests', () => {
       // Verify both events are actually in the database
       const persistedEntities =
         await tableHelper.getEntitiesForTenant('persist-test')
-      assert.strictEqual(persistedEntities.length, 2)
+      expect(persistedEntities.length).toBe(2)
 
       // Verify data integrity
       for (const event of events) {
         const found = persistedEntities.find((e) => e.rowKey === event.eventId)
-        assert.ok(found, `Event ${event.eventId} not found in database`)
-        assert.strictEqual(found.tenantId, event.tenantId)
-        assert.strictEqual(found.subject, event.subject)
-        assert.strictEqual(found.action, event.action)
+        expect(found).toBeTruthy()
+        if (!found) continue
+        expect(found.tenantId).toBe(event.tenantId)
+        expect(found.subject).toBe(event.subject)
+        expect(found.action).toBe(event.action)
 
         if (event.attributes) {
-          const persistedAttributes = JSON.parse(found.attributes)
-          assert.deepStrictEqual(persistedAttributes, event.attributes)
+          const persistedAttributes = JSON.parse(found!.attributes!)
+          expect(persistedAttributes).toEqual(event.attributes)
         }
       }
     })
@@ -111,7 +114,7 @@ describe('Database Verification Tests', () => {
       ])
 
       // All should be accepted
-      responses.forEach((response) => assert.strictEqual(response.status, 202))
+      responses.forEach((response) => expect(response.status).toBe(200))
 
       // Wait and verify only one record exists
       await new Promise((resolve) => setTimeout(resolve, 2000))
@@ -119,11 +122,7 @@ describe('Database Verification Tests', () => {
       const duplicateEntities = entities.filter(
         (e) => e.rowKey === event.eventId
       )
-      assert.strictEqual(
-        duplicateEntities.length,
-        1,
-        'Should have exactly one database record for duplicate eventId'
-      )
+      expect(duplicateEntities.length).toBe(1)
     })
   })
 
@@ -145,43 +144,30 @@ describe('Database Verification Tests', () => {
         method: 'POST',
         body: JSON.stringify(event),
       })
-      assert.strictEqual(response.status, 202)
+      expect(response.status).toBe(200)
 
       // Wait for persistence and get the entity
       await new Promise((resolve) => setTimeout(resolve, 1000))
       const entities = await tableHelper.getEntitiesForTenant('partition-test')
-      assert.strictEqual(entities.length, 1)
+      expect(entities.length).toBe(1)
 
-      const entity = entities[0]
+      const entity = entities[0]!
 
       // Verify partition key structure
-      assert.ok(entity.partitionKey, 'Partition key should exist')
+      expect(entity.partitionKey).toBeTruthy()
 
       // Partition key should include tenant hash and timestamp bucket
-      const partitionParts = entity.partitionKey.split('-')
-      assert.strictEqual(
-        partitionParts.length,
-        3,
-        'Partition key should have 3 parts: tenantHash-timeBucket-shard'
-      )
+      const partitionParts = entity.partitionKey!.split('-')
+      expect(partitionParts.length).toBe(3)
 
       // Verify tenant hash (first part - should be hex)
-      assert.ok(
-        /^[0-9a-f]{2}$/.test(partitionParts[0]),
-        'First part should be 2-digit hex tenant hash'
-      )
+      expect(/^[0-9a-f]{2}$/.test(partitionParts[0]!)).toBe(true)
 
       // Verify time bucket (second part - should be timestamp-based)
-      assert.ok(
-        /^\d{12}$/.test(partitionParts[1]),
-        'Second part should be 12-digit time bucket'
-      )
+      expect(/^\d{12}$/.test(partitionParts[1]!)).toBe(true)
 
       // Verify shard (third part - should be single hex digit)
-      assert.ok(
-        /^[0-9a-f]$/.test(partitionParts[2]),
-        'Third part should be single hex digit shard'
-      )
+      expect(/^[0-9a-f]$/.test(partitionParts[2]!)).toBe(true)
     })
 
     it('should distribute events across different partitions based on time', async () => {
@@ -203,7 +189,7 @@ describe('Database Verification Tests', () => {
           method: 'POST',
           body: JSON.stringify(event),
         })
-        assert.strictEqual(response.status, 202)
+        expect(response.status).toBe(200)
       }
 
       // Wait for persistence
@@ -213,16 +199,13 @@ describe('Database Verification Tests', () => {
       const entities = await tableHelper.getEntitiesForTenant(
         'time-partition-test'
       )
-      assert.strictEqual(entities.length, 3)
+      expect(entities.length).toBe(3)
 
       // Extract unique partition keys
       const partitionKeys = new Set(entities.map((e) => e.partitionKey))
 
       // Should have multiple partitions due to different timestamps
-      assert.ok(
-        partitionKeys.size > 1,
-        `Expected multiple partitions, got ${partitionKeys.size}`
-      )
+      expect(partitionKeys.size).toBeGreaterThan(1)
     })
 
     it('should handle events with same tenant but different sharding', async () => {
@@ -244,14 +227,14 @@ describe('Database Verification Tests', () => {
           method: 'POST',
           body: JSON.stringify(event),
         })
-        assert.strictEqual(response.status, 202)
+        expect(response.status).toBe(200)
       }
 
       // Wait for persistence
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
       const entities = await tableHelper.getEntitiesForTenant('shard-test')
-      assert.strictEqual(entities.length, 5)
+      expect(entities.length).toBe(5)
 
       // Check that sharding distributes across different partition keys
       const partitionKeys = new Set(entities.map((e) => e.partitionKey))
@@ -285,7 +268,7 @@ describe('Database Verification Tests', () => {
           method: 'POST',
           body: JSON.stringify(event),
         })
-        assert.strictEqual(response.status, 202)
+        expect(response.status).toBe(200)
       }
 
       // Verify row keys
@@ -295,20 +278,13 @@ describe('Database Verification Tests', () => {
       // Check that row keys match eventIds
       for (const entity of entities) {
         const originalEvent = events.find((e) => e.eventId === entity.rowKey)
-        assert.ok(
-          originalEvent,
-          `Row key ${entity.rowKey} should match an original eventId`
-        )
+        expect(originalEvent).toBeTruthy()
       }
 
       // Check uniqueness
       const rowKeys = entities.map((e) => e.rowKey)
       const uniqueRowKeys = new Set(rowKeys)
-      assert.strictEqual(
-        rowKeys.length,
-        uniqueRowKeys.size,
-        'All row keys should be unique'
-      )
+      expect(rowKeys.length).toBe(uniqueRowKeys.size)
     })
 
     it('should handle auto-generated eventIds correctly', async () => {
@@ -323,17 +299,17 @@ describe('Database Verification Tests', () => {
         method: 'POST',
         body: JSON.stringify(event),
       })
-      assert.strictEqual(response.status, 202)
+      expect(response.status).toBe(200)
 
-      const responseData = await response.json()
-      assert.ok(responseData.eventId, 'Should return auto-generated eventId')
+      const responseData = (await response.json()) as any
+      expect(responseData.eventId).toBeTruthy()
 
       // Verify in database
       await new Promise((resolve) => setTimeout(resolve, 1000))
       const entities =
         await tableHelper.getEntitiesForTenant('auto-eventid-test')
-      assert.strictEqual(entities.length, 1)
-      assert.strictEqual(entities[0].rowKey, responseData.eventId)
+      expect(entities.length).toBe(1)
+      expect(entities[0]!.rowKey).toBe(responseData.eventId)
     })
   })
 
@@ -368,32 +344,27 @@ describe('Database Verification Tests', () => {
         method: 'POST',
         body: JSON.stringify(complexEvent),
       })
-      assert.strictEqual(response.status, 202)
+      expect(response.status).toBe(200)
 
       // Verify serialization integrity
       await new Promise((resolve) => setTimeout(resolve, 1000))
       const entities =
         await tableHelper.getEntitiesForTenant('serialization-test')
-      assert.strictEqual(entities.length, 1)
+      expect(entities.length).toBe(1)
 
-      const entity = entities[0]
-      const deserializedAttributes = JSON.parse(entity.attributes)
+      const entity = entities[0]!
+      const deserializedAttributes = JSON.parse(entity.attributes!)
 
       // Deep equality check
-      assert.deepStrictEqual(deserializedAttributes, complexEvent.attributes)
+      expect(deserializedAttributes).toEqual(complexEvent.attributes)
 
       // Specific checks for edge cases
-      assert.strictEqual(deserializedAttributes.unicode, '🎉 Unicode test 测试')
-      assert.strictEqual(
-        deserializedAttributes.special_chars,
+      expect(deserializedAttributes.unicode).toBe('🎉 Unicode test 测试')
+      expect(deserializedAttributes.special_chars).toBe(
         'Special chars: !@#$%^&*()[]{}|;:,.<>?'
       )
-      assert.strictEqual(deserializedAttributes.null_value, null)
-      assert.deepStrictEqual(deserializedAttributes.array, [
-        1,
-        'two',
-        { three: 3 },
-      ])
+      expect(deserializedAttributes.null_value).toBe(null)
+      expect(deserializedAttributes.array).toEqual([1, 'two', { three: 3 }])
     })
 
     it('should handle events with no attributes', async () => {
@@ -410,20 +381,22 @@ describe('Database Verification Tests', () => {
         method: 'POST',
         body: JSON.stringify(event),
       })
-      assert.strictEqual(response.status, 202)
+      expect(response.status).toBe(200)
 
       // Verify in database
       await new Promise((resolve) => setTimeout(resolve, 1000))
       const entities =
         await tableHelper.getEntitiesForTenant('no-attributes-test')
-      assert.strictEqual(entities.length, 1)
+      expect(entities.length).toBe(1)
 
-      const entity = entities[0]
+      const entity = entities[0]!
 
       // Attributes field should either be empty, null, or not present
       if (entity.attributes) {
         const attributes = JSON.parse(entity.attributes)
-        assert.ok(Object.keys(attributes).length === 0 || attributes === null)
+        expect(
+          Object.keys(attributes).length === 0 || attributes === null
+        ).toBe(true)
       }
     })
   })
@@ -456,22 +429,22 @@ describe('Database Verification Tests', () => {
           method: 'POST',
           body: JSON.stringify(event),
         })
-        assert.strictEqual(response.status, 202)
+        expect(response.status).toBe(200)
       }
 
       // Verify timestamp storage
       await new Promise((resolve) => setTimeout(resolve, 1000))
       const entities = await tableHelper.getEntitiesForTenant('timestamp-test')
-      assert.strictEqual(entities.length, 2)
+      expect(entities.length).toBe(2)
 
       for (const entity of entities) {
         // Timestamp should be stored as number
-        assert.strictEqual(typeof entity.timestamp, 'number')
-        assert.ok(entity.timestamp > 0)
+        expect(typeof entity.timestamp).toBe('number')
+        expect(entity.timestamp).toBeGreaterThan(0)
 
         // Should match original timestamp
         const originalEvent = events.find((e) => e.eventId === entity.rowKey)
-        assert.strictEqual(entity.timestamp, originalEvent.timestamp)
+        expect(entity.timestamp).toBe(originalEvent!.timestamp)
       }
     })
 
@@ -492,18 +465,18 @@ describe('Database Verification Tests', () => {
       })
       const afterRequest = Date.now()
 
-      assert.strictEqual(response.status, 202)
+      expect(response.status).toBe(200)
 
       // Verify server-generated timestamp
       await new Promise((resolve) => setTimeout(resolve, 1000))
       const entities = await tableHelper.getEntitiesForTenant(
         'server-timestamp-test'
       )
-      assert.strictEqual(entities.length, 1)
+      expect(entities.length).toBe(1)
 
-      const entity = entities[0]
-      assert.ok(entity.timestamp >= beforeRequest)
-      assert.ok(entity.timestamp <= afterRequest)
+      const entity = entities[0]!
+      expect(entity.timestamp).toBeGreaterThanOrEqual(beforeRequest)
+      expect(entity.timestamp).toBeLessThanOrEqual(afterRequest)
     })
   })
 
@@ -526,7 +499,7 @@ describe('Database Verification Tests', () => {
           method: 'POST',
           body: JSON.stringify(event),
         })
-        assert.strictEqual(response.status, 202)
+        expect(response.status).toBe(200)
       }
 
       // Wait for persistence
@@ -538,17 +511,14 @@ describe('Database Verification Tests', () => {
       const queryTime = Date.now() - startTime
 
       // Verify results
-      assert.strictEqual(tenantEntities.length, 10)
+      expect(tenantEntities.length).toBe(10)
 
       // Query should be reasonably fast (under 1 second for 10 entities)
-      assert.ok(
-        queryTime < 1000,
-        `Query took ${queryTime}ms, expected under 1000ms`
-      )
+      expect(queryTime).toBeLessThan(1000)
 
       // All entities should belong to the correct tenant
       tenantEntities.forEach((entity) => {
-        assert.strictEqual(entity.tenantId, tenantId)
+        expect(entity.tenantId).toBe(tenantId)
       })
     })
   })
@@ -572,10 +542,7 @@ describe('Database Verification Tests', () => {
       })
 
       // Event should be accepted even if there are transient connectivity issues
-      assert.ok(
-        [202, 503].includes(response.status),
-        'Should accept event or return service unavailable'
-      )
+      expect([200, 503].includes(response.status)).toBe(true)
     })
   })
 })
