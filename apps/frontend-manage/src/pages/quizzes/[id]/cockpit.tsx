@@ -69,6 +69,7 @@ function Cockpit() {
   const {
     id,
     name,
+    pinCode,
     isLiveQAEnabled,
     isGamificationEnabled,
     isConfusionFeedbackEnabled,
@@ -85,10 +86,11 @@ function Cockpit() {
       <div className="mb-8 print:hidden">
         <LiveQuizTimeline
           quizId={id}
-          isGamificationEnabled={isGamificationEnabled}
           quizName={name}
+          quizPin={pinCode}
           blocks={blocks ?? []}
           language={course?.language ?? null}
+          isGamificationEnabled={isGamificationEnabled}
           handleEndLiveQuiz={() => {
             endLiveQuiz({ variables: { id: id } })
             router.push('/activities')

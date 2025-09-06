@@ -1401,6 +1401,7 @@ export async function getCourseData(
       derivedAccess: permission.derived,
       areInstancesOutdated: liveQuiz.areInstancesOutdated,
       numSharedUsers: liveQuiz._count.permissions - 1,
+      pinCode: liveQuiz.pinCode,
       isOwner,
       isManager,
       isEditor,

@@ -4,6 +4,7 @@ import {
   PrismaTransactionClient,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
+import generatePassword from 'generate-password'
 import { ContextWithUser } from 'src/lib/context.js'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
 import { POINTS_PER_INSTANCE } from './stacks.js'
@@ -246,6 +247,8 @@ export async function getUserActivities(
           (activity.permissionLevel === DB.PermissionLevel.OWNER ||
             activity.permissionLevel === DB.PermissionLevel.ADMIN)) ||
         activity.isUserCourseAdmin,
+      pinCode:
+        activity.type === ActivityType.LIVE_QUIZ ? activity.pinCode : null,
       sharingType,
     }
   })
@@ -579,6 +582,18 @@ export async function applyActivityBatchOperations(
             : undefined,
           isAssessmentEnabled: isCourseChanged
             ? { set: newCourse.isAssessmentEnabled }
+            : undefined,
+          // if the course is changed to an assessment course, assign a pin
+          pinCode: isCourseChanged
+            ? newCourse.isAssessmentEnabled
+              ? generatePassword.generate({
+                  uppercase: true,
+                  lowercase: false,
+                  numbers: true,
+                  symbols: false,
+                  length: 6,
+                })
+              : null
             : undefined,
           // multiplier updates
           pointsMultiplier: setMultiplier ? { set: multiplier } : undefined,

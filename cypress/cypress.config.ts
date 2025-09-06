@@ -477,11 +477,7 @@ export default defineConfig({
               where: {
                 name: collectionName,
                 isDeleted: false,
-                permissions: {
-                  some: {
-                    userId: userId,
-                  },
-                },
+                permissions: { some: { userId: userId } },
               },
             })
 
@@ -638,10 +634,7 @@ export default defineConfig({
           solutions?: {
             [caseIx: string]: {
               [itemIx: string]: {
-                [criterionIx: string]: {
-                  lower: number
-                  upper: number
-                }
+                [criterionIx: string]: { lower: number; upper: number }
               }
             }
           }
@@ -653,11 +646,7 @@ export default defineConfig({
               where: {
                 name: collectionName,
                 isDeleted: false,
-                permissions: {
-                  some: {
-                    userId: userId,
-                  },
-                },
+                permissions: { some: { userId: userId } },
               },
             })
 
@@ -669,9 +658,7 @@ export default defineConfig({
               await prisma.answerCollectionEntry.findMany({
                 where: {
                   collectionId: dbAnswerCollection.id,
-                  value: {
-                    in: selectedItems,
-                  },
+                  value: { in: selectedItems },
                 },
               })
 
@@ -1127,6 +1114,36 @@ export default defineConfig({
             throw error
           }
         },
+        async verifyLiveQuizPin({ pin, name }) {
+          try {
+            const liveQuiz = await prisma.liveQuiz.findFirst({
+              where: { name, isDeleted: false },
+            })
+
+            if (!liveQuiz) {
+              throw new Error('Live quiz not found')
+            }
+
+            return liveQuiz.pinCode === pin
+          } catch (error) {
+            throw error
+          }
+        },
+        async getLiveQuizPin({ name }) {
+          try {
+            const liveQuiz = await prisma.liveQuiz.findFirst({
+              where: { name, isDeleted: false },
+            })
+
+            if (!liveQuiz) {
+              throw new Error('Live quiz not found')
+            }
+
+            return liveQuiz.pinCode
+          } catch (error) {
+            throw error
+          }
+        },
         // #endregion
 
         // ! Group Activity queries / mutations
@@ -1165,7 +1182,7 @@ export default defineConfig({
           try {
             if (activityType === 'LIVE_QUIZ') {
               const liveQuiz = await prisma.liveQuiz.findFirst({
-                where: { name: activityName },
+                where: { name: activityName, isDeleted: false },
               })
 
               if (!liveQuiz) {
@@ -1178,7 +1195,7 @@ export default defineConfig({
               })
             } else if (activityType === 'PRACTICE_QUIZ') {
               const practiceQuiz = await prisma.practiceQuiz.findFirst({
-                where: { name: activityName },
+                where: { name: activityName, isDeleted: false },
               })
 
               if (!practiceQuiz) {
@@ -1191,7 +1208,7 @@ export default defineConfig({
               })
             } else if (activityType === 'MICRO_LEARNING') {
               const microLearning = await prisma.microLearning.findFirst({
-                where: { name: activityName },
+                where: { name: activityName, isDeleted: false },
               })
 
               if (!microLearning) {
@@ -1204,7 +1221,7 @@ export default defineConfig({
               })
             } else if (activityType === 'GROUP_ACTIVITY') {
               const groupActivity = await prisma.groupActivity.findFirst({
-                where: { name: activityName },
+                where: { name: activityName, isDeleted: false },
               })
 
               if (!groupActivity) {
@@ -1252,12 +1269,81 @@ export default defineConfig({
 
         // ! Course Management / PINs
         // #region
+        async createCourse({
+          name,
+          displayName,
+          description,
+          notificationEmail,
+          startDate,
+          endDate,
+          color,
+          isAssessmentEnabled = true,
+          isGamificationEnabled = true,
+          isGroupCreationEnabled = true,
+          groupDeadlineDate,
+          maxGroupSize = 4,
+          preferredGroupSize = 2,
+        }: {
+          name: string
+          displayName: string
+          description?: string
+          notificationEmail?: string
+          startDate?: Date
+          endDate?: Date
+          color?: string
+          isAssessmentEnabled?: boolean
+          isGamificationEnabled?: boolean
+          isGroupCreationEnabled?: boolean
+          groupDeadlineDate?: Date
+          maxGroupSize?: number
+          preferredGroupSize?: number
+        }) {
+          try {
+            const course = await prisma.course.create({
+              data: {
+                name,
+                displayName,
+                description,
+                notificationEmail,
+                isAssessmentEnabled,
+                isGamificationEnabled,
+                color,
+                pinCode: Math.floor(100000000 + Math.random() * 900000000),
+                startDate,
+                endDate,
+                isGroupCreationEnabled,
+                groupDeadlineDate: groupDeadlineDate ?? endDate,
+                maxGroupSize,
+                preferredGroupSize,
+                owner: { connect: { id: USER_ID_TEST } },
+              },
+            })
+
+            await prisma.derivedPermission.upsert({
+              where: {
+                courseId_userId: {
+                  courseId: course.id,
+                  userId: USER_ID_TEST,
+                },
+              },
+              create: {
+                permissionLevel: PermissionLevel.OWNER,
+                course: { connect: { id: course.id } },
+                user: { connect: { id: USER_ID_TEST } },
+              },
+              update: { permissionLevel: PermissionLevel.OWNER },
+            })
+
+            return !!course
+          } finally {
+            await prisma.$disconnect()
+          }
+        },
+
         async getCoursePin({ courseName }: { courseName: string }) {
           try {
             const course = await prisma.course.findFirst({
-              where: {
-                name: courseName,
-              },
+              where: { name: courseName },
             })
 
             if (!course) {
@@ -1378,9 +1464,7 @@ export default defineConfig({
             // ? Test course seeding
             const currentYear = new Date().getFullYear()
             await prisma.course.upsert({
-              where: {
-                id: COURSE_ID_TEST,
-              },
+              where: { id: COURSE_ID_TEST },
               create: {
                 id: COURSE_ID_TEST,
                 name: 'Testkurs',
@@ -1424,9 +1508,7 @@ export default defineConfig({
             })
 
             await prisma.course.upsert({
-              where: {
-                id: COURSE_ID_TEST2,
-              },
+              where: { id: COURSE_ID_TEST2 },
               create: {
                 id: COURSE_ID_TEST2,
                 name: 'Testkurs 2',
@@ -1457,12 +1539,8 @@ export default defineConfig({
               },
               create: {
                 permissionLevel: PermissionLevel.OWNER,
-                course: {
-                  connect: { id: COURSE_ID_TEST2 },
-                },
-                user: {
-                  connect: { id: USER_ID_TEST },
-                },
+                course: { connect: { id: COURSE_ID_TEST2 } },
+                user: { connect: { id: USER_ID_TEST } },
               },
               update: {
                 permissionLevel: PermissionLevel.OWNER,
@@ -1521,17 +1599,13 @@ export default defineConfig({
                 const username = `testuser${ix + 1}`
 
                 return prisma.participant.upsert({
-                  where: { id: id },
+                  where: { id },
                   create: {
                     id,
                     password: participantPassword,
                     username: username,
                     email: `${username}@test.uzh.ch`,
-                    participations: {
-                      create: {
-                        courseId: COURSE_ID_TEST,
-                      },
-                    },
+                    participations: { create: { courseId: COURSE_ID_TEST } },
                   },
                   update: {},
                 })

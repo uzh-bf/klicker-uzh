@@ -7,6 +7,7 @@ import {
 import {
   faExclamationTriangle,
   faFilePen,
+  faLock,
   faPencil,
   faPlay,
   faStamp,
@@ -19,7 +20,7 @@ import {
   ObjectType,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Checkbox, Tooltip } from '@uzh-bf/design-system'
+import { Badge, Checkbox, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -165,8 +166,20 @@ function ActivityListEntry({
                     data-cy={`change-activity-name-${activity.name}`}
                   />
                 )}
+
               {activity.isAssessmentEnabled && (
                 <AssessmentBadge className="ml-2" />
+              )}
+              {!!activity.pinCode && (
+                <Badge
+                  className={twMerge(
+                    'bg-primary-80 hover:bg-primary-100 gap-2',
+                    !activity.isAssessmentEnabled && 'ml-2'
+                  )}
+                >
+                  <FontAwesomeIcon icon={faLock} />
+                  {t('shared.generic.pinProtected')}
+                </Badge>
               )}
 
               <ObjectPermissionLevel

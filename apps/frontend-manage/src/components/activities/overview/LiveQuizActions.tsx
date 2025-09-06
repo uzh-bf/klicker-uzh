@@ -114,13 +114,6 @@ function LiveQuizActions({
     DeleteLiveQuizDocument,
     {
       variables: { id: liveQuiz.id },
-      optimisticResponse: {
-        __typename: 'Mutation',
-        deleteLiveQuiz: {
-          id: liveQuiz.id,
-          __typename: 'LiveQuiz',
-        },
-      },
       update: (cache, { data: res }) => {
         // if the live quiz is not part of a course or the mutation was not successful, return early
         if (!liveQuiz.courseId || !res?.deleteLiveQuiz?.id) return
@@ -277,6 +270,7 @@ function LiveQuizActions({
         {qrModal && (
           <LiveQuizQRModal
             quizId={liveQuiz.id}
+            quizPin={liveQuiz.pinCode}
             language={liveQuiz.courseLanguage}
             onClose={() => setQRModal(false)}
           />

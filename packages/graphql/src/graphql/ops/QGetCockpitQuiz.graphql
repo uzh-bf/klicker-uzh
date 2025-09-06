@@ -8,6 +8,7 @@ query GetCockpitQuiz($id: String!) {
     namespace
     name
     displayName
+    pinCode
     status
     startedAt
     course {
