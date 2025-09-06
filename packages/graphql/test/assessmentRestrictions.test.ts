@@ -1,4 +1,5 @@
 import {
+  ElementBlockStatus,
   ElementType,
   PermissionLevel,
   PrismaClient,
@@ -8,7 +9,6 @@ import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
-  activateLiveQuizBlock,
   cancelLiveQuiz,
   deleteLiveQuiz,
   manipulateLiveQuiz,
@@ -529,20 +529,19 @@ describe('Integration tests for assessment configuration functionalities', () =>
       await recomputeDerivedPermissions({ courseId: assessment.id }, prisma)
 
       // activate the first block for the second quiz and complete it for the second quiz
-      await activateLiveQuizBlock(
-        { quizId: quiz2.id, blockId: quiz2.blocks[0]!.id },
-        userOneCtx
-      )
+      await prisma.elementBlock.update({
+        where: { id: quiz2.blocks[0]!.id },
+        data: {
+          status: ElementBlockStatus.ACTIVE,
+          activeInLiveQuiz: { connect: { id: quiz2.id } },
+        },
+      })
 
       // activate and close the first block for the third quiz
-      await activateLiveQuizBlock(
-        { quizId: quiz3.id, blockId: quiz3.blocks[0]!.id },
-        userOneCtx
-      )
-      await activateLiveQuizBlock(
-        { quizId: quiz3.id, blockId: quiz3.blocks[0]!.id },
-        userOneCtx
-      )
+      await prisma.elementBlock.update({
+        where: { id: quiz3.blocks[0]!.id },
+        data: { status: ElementBlockStatus.EXECUTED },
+      })
 
       // verify that only the first quiz can be aborted (no quiz active yet)
       const res1 = await cancelLiveQuiz({ id: quiz1.id }, userOneCtx)
