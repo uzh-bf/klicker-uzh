@@ -22,6 +22,9 @@ A high-performance audit logging service built with Hono, TypeScript, and Azure 
 ### 1. Environment Setup
 
 ```bash
+# At root-level
+./_run_app_dependencies.sh
+
 # Copy environment template
 cp .env.example .env
 
@@ -29,17 +32,7 @@ cp .env.example .env
 # For local testing, the defaults work with Azurite
 ```
 
-### 2. Start Local Dependencies
-
-```bash
-# Start Azurite (local Azure Storage emulator)
-pnpm docker:up
-
-# Verify Azurite is running
-# Table service: http://localhost:10002
-```
-
-### 3. Install & Build
+### 2. Install & Build
 
 ```bash
 # Install dependencies
@@ -49,17 +42,7 @@ pnpm install
 pnpm build
 ```
 
-### 4. Configure Authentication
-
-```bash
-# Edit .env and set your internal token
-INTERNAL_TOKEN=your-secret-token-here
-
-# For testing, you can use:
-INTERNAL_TOKEN=test-secret-token-123
-```
-
-### 5. Run the Service
+### 4. Run the Service
 
 ```bash
 # Development mode (auto-rebuild)
@@ -321,32 +304,12 @@ Real-world audit trail workflows:
 - ✅ Financial approval and payment workflows
 - ✅ GDPR compliance and data request fulfillment
 
-### Performance Benchmarks
-
-The service achieves these performance characteristics:
-
-- **Single events**: <100ms processing time
-- **50 concurrent requests**: <5 seconds total
-- **200 concurrent requests**: >95% success rate
-- **Sustained load**: <50% memory growth over time
-- **Persistence verification**: >95% data integrity
-
-### Manual Testing
-
-```bash
-# Start service in development mode with hot reload
-pnpm test:manual
-
-# Use test/manual-test.http with VS Code REST Client
-# Or use curl commands from the API examples
-```
-
 ### Test Prerequisites
 
 Before running tests, ensure:
 
 1. **Docker** is installed and running
-2. **Azurite** is started: `pnpm docker:up`
+2. **Azurite** is started
 3. **Environment variables** are configured (`.env` file)
 4. **Service port 7080** is available
 
@@ -354,16 +317,14 @@ Before running tests, ensure:
 
 ### Environment Variables
 
-| Variable                         | Description              | Default         | Required |
-| -------------------------------- | ------------------------ | --------------- | -------- |
-| `PORT`                           | HTTP server port         | `7080`          | -        |
-| `NODE_ENV`                       | Environment mode         | `development`   | -        |
-| `AZURE_TABLES_CONNECTION_STRING` | Azure/Azurite connection | -               | ✅       |
-| `AZURE_TABLES_TABLE_NAME`        | Table name for events    | `auditevents`   | -        |
-| `INTERNAL_TOKEN`                 | Authentication token     | -               | ✅       |
-| `LOG_LEVEL`                      | Logging level            | `info`          | -        |
-| `SERVICE_NAME`                   | Service identifier       | `audit-service` | -        |
-| `SERVICE_VERSION`                | Service version          | `1.0.0`         | -        |
+| Variable                         | Description              | Default       | Required |
+| -------------------------------- | ------------------------ | ------------- | -------- |
+| `PORT`                           | HTTP server port         | `7080`        | -        |
+| `NODE_ENV`                       | Environment mode         | `development` | -        |
+| `AZURE_TABLES_CONNECTION_STRING` | Azure/Azurite connection | -             | ✅       |
+| `AZURE_TABLES_TABLE_NAME`        | Table name for events    | `auditevents` | -        |
+| `INTERNAL_TOKEN`                 | Authentication token     | -             | ✅       |
+| `LOG_LEVEL`                      | Logging level            | `info`        | -        |
 
 ### Local Development (Azurite)
 
@@ -683,30 +644,6 @@ audit:
 - ✅ **Backup**: Azure Table Storage backup strategy
 - ✅ **Disaster Recovery**: Multi-region deployment considerations
 
-### Scaling Considerations
-
-The service can handle:
-
-- **1000+ events/second** per instance
-- **Horizontal scaling** via Kubernetes HPA
-- **Partition distribution** across Azure Table Storage
-- **Stateless design** for easy scaling
-
-## Performance
-
-### Benchmarks
-
-Production performance characteristics:
-
-| Metric                | Target        | Achieved       |
-| --------------------- | ------------- | -------------- |
-| Single event latency  | <100ms        | ~45ms avg      |
-| 50 concurrent events  | <5s total     | ~2.1s          |
-| 200 concurrent events | >95% success  | 98.5% success  |
-| Sustained throughput  | 1000 events/s | 1200+ events/s |
-| Memory growth         | <50% over 24h | <25%           |
-| Error rate            | <1%           | <0.1%          |
-
 ### Performance Tuning
 
 #### Service Configuration
@@ -836,135 +773,10 @@ Access at: http://localhost:7080/metrics
 
 ## Scripts Reference
 
-| Command             | Description                              |
-| ------------------- | ---------------------------------------- |
-| `pnpm dev`          | Start in development mode (auto-rebuild) |
-| `pnpm build`        | Build production bundle                  |
-| `pnpm start`        | Start production server                  |
-| `pnpm test`         | Run API tests                            |
-| `pnpm test:local`   | Start Azurite + run tests                |
-| `pnpm test:manual`  | Start for manual testing                 |
-| `pnpm docker:up`    | Start Azurite container                  |
-| `pnpm docker:down`  | Stop containers                          |
-| `pnpm docker:clean` | Clean containers + volumes               |
-| `pnpm check`        | TypeScript type checking                 |
-
-## Troubleshooting
-
-### Service won't start
-
-1. **Check environment variables**: Ensure `.env` file exists with required values
-2. **Verify Azurite**: Run `pnpm docker:up` and check http://localhost:10002
-3. **Check ports**: Ensure port 7080 is not in use
-4. **Review logs**: Service logs configuration issues on startup
-
-### Tests failing
-
-1. **Service running**: Ensure service is running on localhost:7080
-2. **Azurite running**: Run `pnpm docker:up` before tests
-3. **Clean state**: Run `pnpm docker:clean` to reset Azurite data
-4. **Environment setup**: Verify `.env` file has correct `INTERNAL_TOKEN`
-5. **Port conflicts**: Check that ports 7080 and 10002 are available
-6. **Docker permissions**: Ensure Docker is running and accessible
-
-### Performance tests taking too long
-
-1. **Reduce test iterations**: Modify performance test parameters for local development
-2. **Skip heavy tests**: Use `pnpm test:perf-quick` for faster performance checks
-3. **Increase timeouts**: For slower systems, increase test timeout values
-4. **Resource constraints**: Ensure sufficient CPU/memory for concurrent testing
-
-### Database persistence issues
-
-1. **Azurite connectivity**: Verify connection string format and Azurite accessibility
-2. **Table permissions**: Check that Azurite allows table creation and operations
-3. **Network issues**: Confirm no firewall blocking localhost:10002
-4. **Data cleanup**: Use `pnpm test:cleanup` to reset test environment
-
-### Azure connection issues
-
-1. **Connection string format**: Verify format matches Azure documentation
-2. **Network access**: Ensure firewall allows Azure Storage access
-3. **Credentials**: Verify account key is valid and has table permissions
-
-## Getting Started Summary
-
-To run the comprehensive tests we've created:
-
-### 1. **Environment Setup** (one-time)
-
-```bash
-# Clone and navigate to the audit service
-cd apps/audit
-
-# Copy environment configuration
-cp .env.example .env
-
-# Edit .env and set your token
-INTERNAL_TOKEN=test-secret-token-123
-
-# Install dependencies
-pnpm install
-```
-
-### 2. **Start Test Environment**
-
-```bash
-# Start Azurite (Azure Table Storage emulator)
-pnpm docker:up
-
-# Build the service
-pnpm build
-
-# Start the service in development mode
-pnpm dev
-# Service will be available at http://localhost:7080
-```
-
-### 3. **Run Tests** (choose based on your needs)
-
-```bash
-# Quick validation - basic API functionality
-pnpm test
-
-# Comprehensive integration testing with database verification
-pnpm test:integration
-
-# Database integrity and partition key validation
-pnpm test:database
-
-# Performance and load testing (may take several minutes)
-pnpm test:performance
-
-# Real-world scenario workflows
-pnpm test:scenarios
-
-# Complete test suite (recommended for full validation)
-pnpm test:all
-```
-
-### 4. **Verify Results**
-
-- All tests should pass with ✅ indicators
-- Performance tests report throughput metrics
-- Database verification confirms actual persistence
-- Scenario tests validate complete audit trails
-
-### 5. **Cleanup**
-
-```bash
-# Stop services and clean up
-pnpm test:cleanup
-```
-
-## Contributing
-
-1. Follow existing TypeScript patterns and conventions
-2. Add tests for new features (use the comprehensive test suite as examples)
-3. Update documentation for API changes
-4. Ensure all tests pass before submitting changes
-5. Use the provided test utilities for database verification
-
-## License
-
-AGPL-3.0 - see LICENSE file for details.
+| Command      | Description                              |
+| ------------ | ---------------------------------------- |
+| `pnpm dev`   | Start in development mode (auto-rebuild) |
+| `pnpm build` | Build production bundle                  |
+| `pnpm start` | Start production server                  |
+| `pnpm test`  | Run API tests                            |
+| `pnpm check` | TypeScript type checking                 |
