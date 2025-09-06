@@ -1,6 +1,6 @@
-import { nodeResolve } from '@rollup/plugin-node-resolve'
-import typescript from '@rollup/plugin-typescript'
+// import { nodeResolve } from '@rollup/plugin-node-resolve'
 import { defineConfig } from 'rollup'
+import esbuild from 'rollup-plugin-esbuild'
 
 const config = defineConfig([
   {
@@ -15,11 +15,12 @@ const config = defineConfig([
       entryFileNames: '[name].js',
     },
     plugins: [
-      nodeResolve(),
-      typescript({
-        tsconfig: './tsconfig.json',
-        rootDir: 'src',
-      }),
+      // nodeResolve(),
+      // typescript({
+      //   tsconfig: './tsconfig.json',
+      //   rootDir: 'src',
+      // }),
+      esbuild(),
     ],
     external: [/@klicker-uzh*/, /node_modules/], // Exclude node_modules and specific external dependencies
   },

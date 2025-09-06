@@ -1,7 +1,7 @@
 import { nodeResolve } from '@rollup/plugin-node-resolve'
-import typescript from '@rollup/plugin-typescript'
 import { defineConfig } from 'rollup'
 import del from 'rollup-plugin-delete'
+import esbuild from 'rollup-plugin-esbuild'
 
 const config = defineConfig([
   {
@@ -17,13 +17,7 @@ const config = defineConfig([
         targets: ['dist'],
       }),
       nodeResolve(),
-      typescript({
-        tsconfig: './tsconfig.json',
-        rootDir: 'src',
-        declaration: true,
-        declarationDir: 'dist',
-        outputToFilesystem: true,
-      }),
+      esbuild(),
       // copy({
       //   targets: [
       //     {

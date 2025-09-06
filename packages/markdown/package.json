@@ -28,11 +28,13 @@
     "@types/react-dom": "^19.1.6",
     "autoprefixer": "~10.4.20",
     "cross-env": "~7.0.3",
+    "esbuild": "~0.25.9",
     "eslint": "~9.30.1",
     "npm-run-all": "~4.1.5",
     "postcss-import": "~16.1.0",
     "rollup": "~4.34.9",
     "rollup-plugin-copy": "~3.5.0",
+    "rollup-plugin-esbuild": "~6.2.1",
     "typescript": "~5.6.3"
   },
   "peerDependencies": {
@@ -48,9 +50,10 @@
     "yup": "^1.6.1"
   },
   "scripts": {
-    "build": "run-s build:ts",
+    "build": "run-s build:ts build:types",
     "build:test": "pnpm run build",
     "build:ts": "cross-env NODE_ENV=production rollup -c",
+    "build:types": "tsc --emitDeclarationOnly --outDir ./dist -p ./tsconfig.json",
     "check": "tsc --noEmit",
     "dev": "run-p dev:ts",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",

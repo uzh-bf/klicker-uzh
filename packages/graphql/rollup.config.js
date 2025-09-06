@@ -1,7 +1,7 @@
 import { nodeResolve } from '@rollup/plugin-node-resolve'
-import typescript from '@rollup/plugin-typescript'
 import { defineConfig } from 'rollup'
 import copy from 'rollup-plugin-copy'
+import esbuild from 'rollup-plugin-esbuild'
 
 const config = defineConfig([
   {
@@ -20,10 +20,11 @@ const config = defineConfig([
     },
     plugins: [
       nodeResolve(),
-      typescript({
-        tsconfig: './tsconfig.json',
-        rootDir: process.env.NODE_ENV === 'test' ? 'instrumented' : 'src',
-      }),
+      // typescript({
+      //   tsconfig: './tsconfig.json',
+      //   rootDir: process.env.NODE_ENV === 'test' ? 'instrumented' : 'src',
+      // }),
+      esbuild(),
       copy({
         targets: [{ src: 'src/public/*', dest: 'dist' }],
       }),
