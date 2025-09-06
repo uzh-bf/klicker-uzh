@@ -1554,6 +1554,7 @@ describe('Integration tests for batch operations on activities', () => {
       ],
     })
     await recomputeDerivedPermissions({ courseId: assessment.id }, prisma)
+    await recomputeDerivedPermissions({ courseId: gamified.id }, prisma)
 
     // share the activities directly with user five
     await prisma.permission.createMany({
