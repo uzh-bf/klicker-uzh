@@ -300,28 +300,6 @@ describe('Integration tests for assessment configuration functionalities', () =>
         prisma
       )
 
-      // share the assessment course directly with users three, four, and five (editor, execution, and viewer permissions)
-      await prisma.permission.createMany({
-        data: [
-          {
-            userId: userThree.id,
-            courseId: assessment.id,
-            permissionLevel: PermissionLevel.WRITE,
-          },
-          {
-            userId: userFour.id,
-            courseId: assessment.id,
-            permissionLevel: PermissionLevel.EXECUTE,
-          },
-          {
-            userId: userFive.id,
-            courseId: assessment.id,
-            permissionLevel: PermissionLevel.READ,
-          },
-        ],
-      })
-      await recomputeDerivedPermissions({ courseId: assessment.id }, prisma)
-
       // seed multiple live quizzes in different states
       const draftQuiz1 = await seedLiveQuiz(
         {
