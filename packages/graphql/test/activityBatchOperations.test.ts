@@ -1665,42 +1665,45 @@ describe('Integration tests for batch operations on activities', () => {
       expect(verification4!.courseId).toBe(gamified.id)
 
       // assign the activities back to the assessment course to be ready for another transfer
-      const res5 = await applyActivityBatchOperations(
-        {
-          activityIds: [lq.id, pq.id, ml.id, ga.id],
-          courseId: assessment.id,
-        },
-        userCtx
-      )
-      expect(res5).toBe(4)
+      if (userCtx.user.sub === userOneCtx.user.sub) {
+        // backwards assignment only works for user one (user four has not sufficient permissions, on purpose)
+        const res2 = await applyActivityBatchOperations(
+          {
+            activityIds: [lq.id, pq.id, ml.id, ga.id],
+            courseId: assessment.id,
+          },
+          userCtx
+        )
+        expect(res2).toBe(4)
 
-      const verification5 = await prisma.liveQuiz.findUnique({
-        where: { id: lq.id },
-      })
-      expect(verification5).not.toBeNull()
-      expect(verification5!.isAssessmentEnabled).toBe(true)
-      expect(verification5!.courseId).toBe(assessment.id)
+        const verification5 = await prisma.liveQuiz.findUnique({
+          where: { id: lq.id },
+        })
+        expect(verification5).not.toBeNull()
+        expect(verification5!.isAssessmentEnabled).toBe(true)
+        expect(verification5!.courseId).toBe(assessment.id)
 
-      const verification6 = await prisma.practiceQuiz.findUnique({
-        where: { id: pq.id },
-      })
-      expect(verification6).not.toBeNull()
-      expect(verification6!.isAssessmentEnabled).toBe(true)
-      expect(verification6!.courseId).toBe(assessment.id)
+        const verification6 = await prisma.practiceQuiz.findUnique({
+          where: { id: pq.id },
+        })
+        expect(verification6).not.toBeNull()
+        expect(verification6!.isAssessmentEnabled).toBe(true)
+        expect(verification6!.courseId).toBe(assessment.id)
 
-      const verification7 = await prisma.microLearning.findUnique({
-        where: { id: ml.id },
-      })
-      expect(verification7).not.toBeNull()
-      expect(verification7!.isAssessmentEnabled).toBe(true)
-      expect(verification7!.courseId).toBe(assessment.id)
+        const verification7 = await prisma.microLearning.findUnique({
+          where: { id: ml.id },
+        })
+        expect(verification7).not.toBeNull()
+        expect(verification7!.isAssessmentEnabled).toBe(true)
+        expect(verification7!.courseId).toBe(assessment.id)
 
-      const verification8 = await prisma.groupActivity.findUnique({
-        where: { id: ga.id },
-      })
-      expect(verification8).not.toBeNull()
-      expect(verification8!.isAssessmentEnabled).toBe(true)
-      expect(verification8!.courseId).toBe(assessment.id)
+        const verification8 = await prisma.groupActivity.findUnique({
+          where: { id: ga.id },
+        })
+        expect(verification8).not.toBeNull()
+        expect(verification8!.isAssessmentEnabled).toBe(true)
+        expect(verification8!.courseId).toBe(assessment.id)
+      }
     }
   })
 
