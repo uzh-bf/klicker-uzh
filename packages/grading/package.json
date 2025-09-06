@@ -8,7 +8,7 @@
     "dist"
   ],
   "dependencies": {
-    "remeda": "2.15.0"
+    "remeda": "2.30.0"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "~15.3.0",

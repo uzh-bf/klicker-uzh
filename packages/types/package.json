@@ -20,7 +20,7 @@
     "typescript": "~5.6.3"
   },
   "peerDependencies": {
-    "remeda": "^2.15.0"
+    "remeda": "^2.30.0"
   },
   "scripts": {
     "build": "run-s build:ts",
