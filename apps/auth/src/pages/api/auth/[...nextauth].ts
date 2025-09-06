@@ -2,8 +2,8 @@ import { sendTeamsNotifications } from '@/lib/util'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@klicker-uzh/prisma'
 import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
+import { JWTPayload, signJWT, verifyJWT } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
-import JWT from 'jsonwebtoken'
 import type { NextAuthOptions, Profile } from 'next-auth'
 import NextAuth, { Account } from 'next-auth'
 import { DefaultJWT, JWTDecodeParams, JWTEncodeParams } from 'next-auth/jwt'
@@ -51,11 +51,13 @@ function reduceCatalyst(acc: boolean, affiliation: string) {
 
 export async function decode({ token, secret }: JWTDecodeParams) {
   if (!token) return null
-  return JWT.verify(token, secret) as DefaultJWT
+  const secretString = typeof secret === 'string' ? secret : secret.toString()
+  return (await verifyJWT(token, secretString)) as DefaultJWT
 }
 
 export async function encode({ token, secret }: JWTEncodeParams) {
-  return JWT.sign(token ?? '', secret)
+  const secretString = typeof secret === 'string' ? secret : secret.toString()
+  return signJWT((token as JWTPayload) ?? {}, secretString)
 }
 
 function generateRandomString(length: number) {

@@ -4,8 +4,8 @@ import {
   HttpResponseInit,
   InvocationContext,
 } from '@azure/functions'
+import { verifyJWT } from '@klicker-uzh/util'
 import * as Sentry from '@sentry/node'
-import { verify } from 'jsonwebtoken'
 
 import getServiceBus from './sbus'
 
@@ -66,7 +66,7 @@ const httpTrigger = async function (
           }, {})
 
         if (parsedCookies['participant_token'] !== undefined) {
-          const participantData = verify(
+          const participantData = await verifyJWT(
             parsedCookies['participant_token'],
             process.env.APP_SECRET
           )
@@ -79,7 +79,7 @@ const httpTrigger = async function (
             messageId = `${participantData.sub}-${body.sessionId}`
           }
         } else if (parsedCookies['temporary_participant_token'] !== undefined) {
-          const participantData = verify(
+          const participantData = await verifyJWT(
             parsedCookies['temporary_participant_token'],
             process.env.APP_SECRET
           )

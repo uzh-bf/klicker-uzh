@@ -11,11 +11,11 @@ import {
   gradeQuestionSelection,
 } from '@klicker-uzh/grading'
 import type { ResponseInput } from '@klicker-uzh/types'
+import { verifyJWT } from '@klicker-uzh/util'
 import * as Sentry from '@sentry/node'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
-import { verify } from 'jsonwebtoken'
 import getRedis from './redis'
 
 const MAX_BONUS_POINTS = 45 // maximum 45 bonus points for fastest answer
@@ -133,10 +133,10 @@ const serviceBusTrigger = async function (
           }, {})
 
         if (parsedCookies['participant_token'] !== undefined) {
-          participantData = verify(
+          participantData = (await verifyJWT(
             parsedCookies['participant_token'],
             process.env.APP_SECRET
-          ) as { sub: string; role: string }
+          )) as { sub: string; role: string }
 
           if (participantData.role !== 'PARTICIPANT') {
             participantData = null
@@ -144,10 +144,10 @@ const serviceBusTrigger = async function (
             context.log("Participant's JWT verified", participantData)
           }
         } else if (parsedCookies['temporary_participant_token'] !== undefined) {
-          participantData = verify(
+          participantData = (await verifyJWT(
             parsedCookies['temporary_participant_token'],
             process.env.APP_SECRET
-          ) as { sub: string; role: string }
+          )) as { sub: string; role: string }
 
           if (participantData.role !== 'TEMPORARY_PARTICIPANT') {
             participantData = null
