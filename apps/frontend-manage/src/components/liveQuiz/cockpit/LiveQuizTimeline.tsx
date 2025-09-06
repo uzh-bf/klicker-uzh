@@ -1,14 +1,17 @@
 import { faPauseCircle } from '@fortawesome/free-regular-svg-icons'
 import {
   faCode,
+  faFastForward,
+  faFlagCheckered,
   faPlay,
   faQrcode,
   faStop,
   faUpRightFromSquare,
+  faX,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { LocaleType } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1 } from '@uzh-bf/design-system'
+import { Button, H1, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -21,6 +24,7 @@ import LiveQuizQRModal from './LiveQuizQRModal'
 import RuntimeCounter from './RuntimeCounter'
 
 interface LiveQuizTimelineProps {
+  assessmentMode: boolean
   quizId: string
   quizName: string
   quizPin?: string | null
@@ -35,6 +39,7 @@ interface LiveQuizTimelineProps {
 }
 
 function LiveQuizTimeline({
+  assessmentMode,
   quizId,
   quizName,
   quizPin,
@@ -132,14 +137,6 @@ function LiveQuizTimeline({
                 {t('manage.liveQuizzes.embeddingEvaluation')}
               </Button.Label>
             </Button>
-            {!isFeedbackQuiz && embedModalOpen ? (
-              <EmbeddingModal
-                key={quizId}
-                onClose={() => setEmbedModalOpen(false)}
-                quizId={quizId}
-                isGamificationEnabled={isGamificationEnabled}
-              />
-            ) : null}
             <Button
               className={{ root: 'h-8 sm:w-max' }}
               onClick={() => setQRModal(true)}
@@ -244,13 +241,33 @@ function LiveQuizTimeline({
             />
           </div>
           <div className="mt-2 flex w-full flex-row justify-between gap-2">
-            <Button
-              destructive
-              onClick={() => setCancelLiveQuizModal(true)}
-              data={{ cy: 'abort-live-quiz-cockpit' }}
-            >
-              <Button.Label>{t('manage.cockpit.abortLiveQuiz')}</Button.Label>
-            </Button>
+            {/* assessment quizzes can only be aborted before starting the first block */}
+            {assessmentMode &&
+            !(lastActiveBlockId === -1 && activeBlockId === -1) ? (
+              <Tooltip tooltip={t('manage.cockpit.noAbortionAssessmentQuiz')}>
+                <Button
+                  destructive
+                  disabled
+                  data={{ cy: 'abort-live-quiz-cockpit' }}
+                  className={{ root: 'h-8' }}
+                >
+                  <Button.Icon icon={faStop} />
+                  <Button.Label>
+                    {t('manage.cockpit.abortLiveQuiz')}
+                  </Button.Label>
+                </Button>
+              </Tooltip>
+            ) : (
+              <Button
+                destructive
+                onClick={() => setCancelLiveQuizModal(true)}
+                data={{ cy: 'abort-live-quiz-cockpit' }}
+                className={{ root: 'h-8' }}
+              >
+                <Button.Icon icon={faX} />
+                <Button.Label>{t('manage.cockpit.abortLiveQuiz')}</Button.Label>
+              </Button>
+            )}
             <Button
               primary={
                 buttonState === 'firstBlock' ||
@@ -260,6 +277,7 @@ function LiveQuizTimeline({
               disabled={loading}
               className={{
                 root: twMerge(
+                  'h-8',
                   buttonState === 'endQuiz' &&
                     'bg-uzh-red-100 hover:bg-uzh-red-100',
                   buttonState === 'blockActive' &&
@@ -285,6 +303,18 @@ function LiveQuizTimeline({
               }}
               data={{ cy: 'next-block-timeline' }}
             >
+              <Button.Icon
+                icon={
+                  buttonState === 'blockActive' && inCooldown
+                    ? faFastForward
+                    : buttonState === 'firstBlock' ||
+                        buttonState === 'nextBlock'
+                      ? faPlay
+                      : buttonState === 'endQuiz'
+                        ? faFlagCheckered
+                        : faStop
+                }
+              />
               <Button.Label>
                 {buttonState === 'blockActive' && inCooldown
                   ? t('manage.cockpit.skipCooldown')
@@ -294,6 +324,14 @@ function LiveQuizTimeline({
           </div>
         </>
       )}
+      {!isFeedbackQuiz && embedModalOpen ? (
+        <EmbeddingModal
+          key={quizId}
+          onClose={() => setEmbedModalOpen(false)}
+          quizId={quizId}
+          isGamificationEnabled={isGamificationEnabled}
+        />
+      ) : null}
       {cancelLiveQuizModal && (
         <CancelLiveQuizModal
           onClose={() => setCancelLiveQuizModal(false)}

@@ -2268,6 +2268,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       evaluationResults: 'Evaluation (results)',
       abortLiveQuiz: 'Abort quiz',
       confirmAbortLiveQuiz: 'Abort live quiz {title}?',
+      noAbortionAssessmentQuiz:
+        'Assessment quizzes cannot be aborted once a block has been started. If you have started the quiz for testing purposes, please proceed through all blocks and end the quiz. Users with administrator rights in the assessment course can then reset the live quiz.',
       cancelLiveQuizMessage:
         'Please confirm the deletion of all elements associated with this live quiz and confirm the irreversible abortion of this live quiz.',
       noResponsesToDelete:

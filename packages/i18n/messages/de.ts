@@ -2305,6 +2305,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       evaluationResults: 'Auswertung (Resultate)',
       abortLiveQuiz: 'Quiz abbrechen',
       confirmAbortLiveQuiz: 'Live Quiz {title} abbrechen?',
+      noAbortionAssessmentQuiz:
+        'Assessment-Quizzes können nicht abgebrochen werden, sobald ein Block gestartet wurde. Sollten Sie das Quiz zu Testzwecken gestartet haben, führen Sie bitte alle Blöcke durch, beenden Sie das Quiz. Nutzer mit Administratorenrechten im Assessment-Kurse können das Live Quiz dann zurücksetzen.',
       cancelLiveQuizMessage:
         'Bitte bestätigen Sie die Löschung aller Elemente, die mit dieser Live-Quiz verbunden sind, und bestätigen Sie den Abbruch dieses Live-Quiz.',
       noResponsesToDelete:

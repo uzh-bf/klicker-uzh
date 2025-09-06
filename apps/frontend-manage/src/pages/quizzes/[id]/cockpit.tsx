@@ -72,6 +72,7 @@ function Cockpit() {
     pinCode,
     isLiveQAEnabled,
     isGamificationEnabled,
+    isAssessmentEnabled,
     isConfusionFeedbackEnabled,
     isModerationEnabled,
     startedAt,
@@ -85,6 +86,7 @@ function Cockpit() {
     <Layout>
       <div className="mb-8 print:hidden">
         <LiveQuizTimeline
+          assessmentMode={isAssessmentEnabled}
           quizId={id}
           quizName={name}
           quizPin={pinCode}

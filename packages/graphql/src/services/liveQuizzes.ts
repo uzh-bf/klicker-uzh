@@ -2264,15 +2264,26 @@ export async function cancelLiveQuiz(
       throw new Error('Live quiz is not running')
     }
 
-    const instances = quiz.blocks.flatMap((block) => block.elements)
+    // if the quiz is an assessment quiz, it can only be aborted before the first block is activated
+    if (
+      quiz.isAssessmentEnabled &&
+      (quiz.activeBlock ||
+        quiz.blocks.some(
+          (block) => block.status !== DB.ElementBlockStatus.SCHEDULED
+        ))
+    ) {
+      throw new Error(
+        'Assessment quizzes can only be aborted before the first block is activated'
+      )
+    }
 
+    const instances = quiz.blocks.flatMap((block) => block.elements)
     const [updatedQuiz] = await ctx.prisma.$transaction([
       ctx.prisma.liveQuiz.update({
         where: { id },
         data: {
           status: DB.PublicationStatus.DRAFT,
           startedAt: null,
-          pinCode: null,
           activeBlock: { disconnect: true },
           leaderboard: { deleteMany: {} },
           temporaryLeaderboard: { deleteMany: {} },
