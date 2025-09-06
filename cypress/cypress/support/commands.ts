@@ -1386,7 +1386,7 @@ Cypress.Commands.add(
       isAssessmentEnabled,
       isGamificationEnabled,
       isGroupCreationEnabled,
-      groupDeadlineDate: groupDeadlineDate,
+      groupDeadlineDate,
       maxGroupSize,
       preferredGroupSize,
     }).then((result: boolean) => {

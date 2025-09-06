@@ -477,11 +477,7 @@ export default defineConfig({
               where: {
                 name: collectionName,
                 isDeleted: false,
-                permissions: {
-                  some: {
-                    userId: userId,
-                  },
-                },
+                permissions: { some: { userId: userId } },
               },
             })
 
@@ -638,10 +634,7 @@ export default defineConfig({
           solutions?: {
             [caseIx: string]: {
               [itemIx: string]: {
-                [criterionIx: string]: {
-                  lower: number
-                  upper: number
-                }
+                [criterionIx: string]: { lower: number; upper: number }
               }
             }
           }
@@ -653,11 +646,7 @@ export default defineConfig({
               where: {
                 name: collectionName,
                 isDeleted: false,
-                permissions: {
-                  some: {
-                    userId: userId,
-                  },
-                },
+                permissions: { some: { userId: userId } },
               },
             })
 
@@ -669,9 +658,7 @@ export default defineConfig({
               await prisma.answerCollectionEntry.findMany({
                 where: {
                   collectionId: dbAnswerCollection.id,
-                  value: {
-                    in: selectedItems,
-                  },
+                  value: { in: selectedItems },
                 },
               })
 
@@ -1130,7 +1117,7 @@ export default defineConfig({
         async verifyLiveQuizPin({ pin, name }) {
           try {
             const liveQuiz = await prisma.liveQuiz.findFirst({
-              where: { name },
+              where: { name, isDeleted: false },
             })
 
             if (!liveQuiz) {
@@ -1145,7 +1132,7 @@ export default defineConfig({
         async getLiveQuizPin({ name }) {
           try {
             const liveQuiz = await prisma.liveQuiz.findFirst({
-              where: { name },
+              where: { name, isDeleted: false },
             })
 
             if (!liveQuiz) {
@@ -1195,7 +1182,7 @@ export default defineConfig({
           try {
             if (activityType === 'LIVE_QUIZ') {
               const liveQuiz = await prisma.liveQuiz.findFirst({
-                where: { name: activityName },
+                where: { name: activityName, isDeleted: false },
               })
 
               if (!liveQuiz) {
@@ -1208,7 +1195,7 @@ export default defineConfig({
               })
             } else if (activityType === 'PRACTICE_QUIZ') {
               const practiceQuiz = await prisma.practiceQuiz.findFirst({
-                where: { name: activityName },
+                where: { name: activityName, isDeleted: false },
               })
 
               if (!practiceQuiz) {
@@ -1221,7 +1208,7 @@ export default defineConfig({
               })
             } else if (activityType === 'MICRO_LEARNING') {
               const microLearning = await prisma.microLearning.findFirst({
-                where: { name: activityName },
+                where: { name: activityName, isDeleted: false },
               })
 
               if (!microLearning) {
@@ -1234,7 +1221,7 @@ export default defineConfig({
               })
             } else if (activityType === 'GROUP_ACTIVITY') {
               const groupActivity = await prisma.groupActivity.findFirst({
-                where: { name: activityName },
+                where: { name: activityName, isDeleted: false },
               })
 
               if (!groupActivity) {
@@ -1356,9 +1343,7 @@ export default defineConfig({
         async getCoursePin({ courseName }: { courseName: string }) {
           try {
             const course = await prisma.course.findFirst({
-              where: {
-                name: courseName,
-              },
+              where: { name: courseName },
             })
 
             if (!course) {
