@@ -8,10 +8,6 @@ function isValidStudentRedirectUrl(url: string): boolean {
     const allowedDomains = [
       'assessment.klicker.uzh.ch',
       'assessment.klicker.com',
-      'pwa.klicker.com',
-      // Development domains
-      '127.0.0.1:3000',
-      'localhost:3000',
     ]
 
     return allowedDomains.some(
@@ -26,7 +22,7 @@ function isValidStudentRedirectUrl(url: string): boolean {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
-  console.log('🚀 MIDDLEWARE RUNNING:', {
+  console.log('MIDDLEWARE RUNNING:', {
     pathname,
     fullUrl: request.url,
     referer: request.headers.get('referer'),
@@ -38,24 +34,24 @@ export async function middleware(request: NextRequest) {
 
   // Handle /student route - redirect to OAuth immediately
   if (pathname === '/student') {
-    console.log('🎯 STUDENT ROUTE MATCHED!')
+    console.log('STUDENT ROUTE MATCHED!')
     const redirectTo = request.nextUrl.searchParams.get('redirectTo')
 
     console.log('RedirectTo parameter:', redirectTo)
 
     if (!redirectTo || !isValidStudentRedirectUrl(redirectTo)) {
-      console.log('❌ Invalid redirect URL:', redirectTo)
+      console.log('Invalid redirect URL:', redirectTo)
       return new NextResponse('Invalid redirect URL', { status: 400 })
     }
 
-    console.log('✅ Valid redirect URL, proceeding with OAuth redirect')
+    console.log('Valid redirect URL, proceeding with OAuth redirect')
 
     // Redirect directly to the EduID OAuth flow
     const signinUrl = new URL('/api/auth/signin/eduid-participant', request.url)
     signinUrl.searchParams.set('callbackUrl', redirectTo)
     signinUrl.searchParams.set('participant', 'true')
 
-    console.log('🔄 Student route redirect to:', signinUrl.toString())
+    console.log('Student route redirect to:', signinUrl.toString())
 
     const response = NextResponse.redirect(signinUrl)
 
@@ -68,7 +64,7 @@ export async function middleware(request: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
     })
 
-    console.log('✅ Returning redirect response')
+    console.log('Returning redirect response')
     return response
   }
 

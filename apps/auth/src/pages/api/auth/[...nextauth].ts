@@ -213,187 +213,15 @@ async function createOrLinkParticipant(profile: ExtendedProfile) {
   return participant
 }
 
-// EduID Provider for Lecturer Authentication
-const EduIDLecturerProvider: Provider | null =
-  typeof process.env.EDUID_CLIENT_SECRET !== 'undefined'
-    ? {
-        id: process.env.NEXT_PUBLIC_EDUID_ID as string,
-        wellKnown: process.env.EDUID_WELL_KNOWN as string,
-        clientId: process.env.EDUID_CLIENT_ID as string,
-        clientSecret: process.env.EDUID_CLIENT_SECRET as string,
-
-        name: 'EduID',
-        type: 'oauth',
-        authorization: {
-          params: {
-            claims: {
-              id_token: {
-                sub: { essential: true },
-                email: { essential: true },
-                swissEduPersonUniqueID: { essential: true },
-                swissEduIDLinkedAffiliation: { essential: false },
-                swissEduIDLinkedAffiliationMail: { essential: false },
-                swissEduIDLinkedAffiliationUniqueID: { essential: false },
-              },
-            },
-            scope: 'openid email https://login.eduid.ch/authz/User.Read',
-          },
-        },
-        idToken: true,
-        checks: ['pkce', 'state'],
-
-        profile(profile) {
-          return {
-            id: profile.sub,
-            email: profile.email,
-            shortname: generateRandomString(8),
-            lastLoginAt: new Date(),
-            catalystInstitutional:
-              profile.email?.endsWith('uzh.ch') ||
-              profile.swissEduIDLinkedAffiliation?.reduce(
-                reduceCatalyst,
-                false
-              ),
-          }
-        },
-      }
-    : null
-
-// EduID Provider for Participant Authentication
-const EduIDParticipantProvider: Provider | null =
-  typeof process.env.EDUID_CLIENT_SECRET !== 'undefined'
-    ? {
-        id: 'eduid-participant',
-        wellKnown: process.env.EDUID_WELL_KNOWN as string,
-        clientId: process.env.EDUID_CLIENT_ID as string,
-        clientSecret: process.env.EDUID_CLIENT_SECRET as string,
-
-        name: 'EduID',
-        type: 'oauth',
-        authorization: {
-          params: {
-            claims: {
-              id_token: {
-                sub: { essential: true },
-                email: { essential: true },
-                swissEduPersonUniqueID: { essential: true },
-                swissEduIDLinkedAffiliation: { essential: false },
-                swissEduIDLinkedAffiliationMail: { essential: false },
-                swissEduIDLinkedAffiliationUniqueID: { essential: false },
-              },
-            },
-            scope: 'openid email https://login.eduid.ch/authz/User.Read',
-          },
-        },
-        idToken: true,
-        checks: ['pkce', 'state'],
-
-        profile(profile) {
-          // Ensure we have the required fields for NextAuth
-          if (!profile.sub) {
-            console.error('Missing sub in EduID profile:', profile)
-            throw new Error('Missing sub in EduID profile')
-          }
-
-          return {
-            id: profile.sub, // NextAuth requires an id field
-            sub: profile.sub, // Preserve original sub
-            email: profile.email || '',
-            name: profile.email?.split('@')[0] || 'Student',
-            // Preserve all original profile data for callbacks
-            ...profile,
-          }
-        },
-      }
-    : null
-
-const CredentialProvider: Provider = CredentialsProvider({
-  name: 'Delegation',
-
-  credentials: {
-    identifier: {
-      label: 'Shortname of Main Account',
-      type: 'text',
-      placeholder: 'banking23',
-      required: true,
-      'data-cy': 'identifier-field',
-    },
-    password: {
-      label: 'Password',
-      type: 'password',
-      required: true,
-      'data-cy': 'password-field',
-    },
-  },
-
-  async authorize(credentials, req) {
-    if (!credentials) return null
-
-    const user = await prisma.user.findUnique({
-      where: { shortname: credentials.identifier },
-      include: {
-        logins: true,
-      },
-    })
-
-    if (!user) return null
-
-    // go through each login and compare credentials with the login password
-    for (let login of user.logins) {
-      const isLoginValid = await bcrypt.compare(
-        credentials.password,
-        login.password
-      )
-
-      if (isLoginValid) {
-        await prisma.userLogin.update({
-          where: { id: login.id },
-          data: { lastLoginAt: new Date() },
-        })
-
-        return {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-          shortname: user.shortname,
-          scope: login.scope,
-          catalystInstitutional: user.catalystInstitutional,
-          catalystIndividual: user.catalystIndividual,
-        }
-      }
-    }
-
-    return null
-  },
-})
-
 // Dynamic NextAuth configuration based on context
 export default async function auth(req: NextApiRequest, res: NextApiResponse) {
   const context = getAuthContext(req)
 
   // Configure providers based on context
-  let providers: Provider[] = []
-  let adapter: any = undefined
-  let cookieName: string
+  let authOptions: NextAuthOptions
 
-  if (context === 'participant') {
-    // Participant flow: EduID only, no PrismaAdapter
-    providers = EduIDParticipantProvider ? [EduIDParticipantProvider] : []
-    adapter = undefined // JWT sessions only
-    cookieName = PARTICIPANT_COOKIE_NAME
-  } else {
-    // Lecturer flow: EduID + Credentials, with PrismaAdapter
-    providers = EduIDLecturerProvider
-      ? [EduIDLecturerProvider, CredentialProvider]
-      : [CredentialProvider]
-    adapter = PrismaAdapter(prisma)
-    cookieName = COOKIE_NAME
-  }
-
-  const authOptions: NextAuthOptions = {
+  let sharedOptions: Partial<NextAuthOptions> = {
     secret: process.env.APP_SECRET,
-    adapter,
-    providers,
 
     session: {
       strategy: 'jwt',
@@ -403,40 +231,295 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
       decode,
       encode,
     },
+  }
 
-    cookies: {
-      sessionToken: {
-        name: cookieName,
-        options: {
-          domain: process.env.COOKIE_DOMAIN,
-          path: '/',
-          httpOnly: true,
-          sameSite: 'lax',
-          secure: process.env.NODE_ENV === 'production',
+  if (context === 'participant') {
+    // EduID Provider for Participant Authentication
+    const EduIDParticipantProvider: Provider | null =
+      typeof process.env.EDUID_CLIENT_SECRET !== 'undefined'
+        ? {
+            id: 'eduid-participant',
+            wellKnown: process.env.EDUID_WELL_KNOWN as string,
+            clientId: process.env.EDUID_CLIENT_ID as string,
+            clientSecret: process.env.EDUID_CLIENT_SECRET as string,
+
+            name: 'EduID',
+            type: 'oauth',
+            authorization: {
+              params: {
+                claims: {
+                  id_token: {
+                    sub: { essential: true },
+                    email: { essential: true },
+                    swissEduPersonUniqueID: { essential: true },
+                    swissEduIDLinkedAffiliation: { essential: false },
+                    swissEduIDLinkedAffiliationMail: { essential: false },
+                    swissEduIDLinkedAffiliationUniqueID: { essential: false },
+                  },
+                },
+                scope: 'openid email https://login.eduid.ch/authz/User.Read',
+              },
+            },
+            idToken: true,
+            checks: ['pkce', 'state'],
+
+            profile(profile) {
+              // Ensure we have the required fields for NextAuth
+              if (!profile.sub) {
+                console.error('Missing sub in EduID profile:', profile)
+                throw new Error('Missing sub in EduID profile')
+              }
+
+              return {
+                id: profile.sub, // NextAuth requires an id field
+                sub: profile.sub, // Preserve original sub
+                email: profile.email || '',
+                name: profile.email?.split('@')[0] || 'Student',
+                // Preserve all original profile data for callbacks
+                ...profile,
+              }
+            },
+          }
+        : null
+
+    authOptions = {
+      ...sharedOptions,
+
+      providers: EduIDParticipantProvider ? [EduIDParticipantProvider] : [],
+
+      cookies: {
+        sessionToken: {
+          name: PARTICIPANT_COOKIE_NAME,
+          options: {
+            domain: process.env.COOKIE_DOMAIN,
+            path: '/',
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
+          },
         },
       },
-    },
 
-    callbacks: {
-      async signIn({ user, account, profile, email }) {
-        console.log('signIn', user, account, profile, email)
+      callbacks: {
+        async signIn({ user, account, profile, email }) {
+          console.log('signIn', user, account, profile, email)
 
-        if (context === 'participant') {
-          // Participant authentication flow
-          if (!profile) return false
+          if (!profile) {
+            console.error('No profile provided for participant sign-in')
+            return false
+          }
 
           try {
             const participant = await createOrLinkParticipant(
               profile as ExtendedProfile
             )
+
+            if (!participant) {
+              console.error(
+                'Failed to create/link participant: no participant returned'
+              )
+              return false
+            }
+
             // Store participantId for jwt callback
             ;(profile as any).participantId = participant.id
+            console.log(
+              `Participant ${participant.id} authenticated successfully`
+            )
             return true
           } catch (error) {
             console.error('Failed to create/link participant:', error)
             return false
           }
-        } else {
+        },
+
+        async jwt({ token, profile }) {
+          // Handle initial sign-in with participant profile
+          if (profile && (profile as any).participantId) {
+            token.sub = (profile as any).participantId
+            token.role = 'PARTICIPANT'
+            token.scope = 'PARTICIPANT'
+            token.email = profile.email
+            token.name =
+              profile.name || profile.email?.split('@')[0] || 'Student'
+          } else if (token.sub && token.role === 'PARTICIPANT') {
+            // Always validate participant exists in database on subsequent calls
+            const participant = await prisma.participant.findUnique({
+              where: { id: token.sub as string },
+            })
+
+            if (!participant) {
+              // Participant doesn't exist in current database - invalidate token
+              console.warn(
+                `Participant ${token.sub} not found in database, invalidating token`
+              )
+              // Return empty token to force re-authentication
+              return { sub: '', role: '', scope: '', email: '', name: '' }
+            }
+
+            // Update token with current participant data
+            token.role = 'PARTICIPANT'
+            token.scope = 'PARTICIPANT'
+            token.email = participant.email
+            token.name =
+              token.name || participant.email?.split('@')[0] || 'Student'
+          }
+
+          return token
+        },
+
+        async redirect({ url, baseUrl }) {
+          if (
+            url.includes('assessment.klicker.uzh.ch') ||
+            url.includes('assessment.klicker.com')
+          ) {
+            return url
+          }
+
+          if (url.startsWith('/')) {
+            return `${baseUrl}${url}`
+          }
+
+          if (url.includes(process.env.COOKIE_DOMAIN as string)) {
+            return url
+          }
+
+          return baseUrl
+        },
+      },
+    }
+  } else {
+    // EduID Provider for Lecturer Authentication
+    const EduIDLecturerProvider: Provider | null =
+      typeof process.env.EDUID_CLIENT_SECRET !== 'undefined'
+        ? {
+            id: process.env.NEXT_PUBLIC_EDUID_ID as string,
+            wellKnown: process.env.EDUID_WELL_KNOWN as string,
+            clientId: process.env.EDUID_CLIENT_ID as string,
+            clientSecret: process.env.EDUID_CLIENT_SECRET as string,
+
+            name: 'EduID',
+            type: 'oauth',
+            authorization: {
+              params: {
+                claims: {
+                  id_token: {
+                    sub: { essential: true },
+                    email: { essential: true },
+                    swissEduPersonUniqueID: { essential: true },
+                    swissEduIDLinkedAffiliation: { essential: false },
+                    swissEduIDLinkedAffiliationMail: { essential: false },
+                    swissEduIDLinkedAffiliationUniqueID: { essential: false },
+                  },
+                },
+                scope: 'openid email https://login.eduid.ch/authz/User.Read',
+              },
+            },
+            idToken: true,
+            checks: ['pkce', 'state'],
+
+            profile(profile) {
+              return {
+                id: profile.sub,
+                email: profile.email,
+                shortname: generateRandomString(8),
+                lastLoginAt: new Date(),
+                catalystInstitutional:
+                  profile.email?.endsWith('uzh.ch') ||
+                  profile.swissEduIDLinkedAffiliation?.reduce(
+                    reduceCatalyst,
+                    false
+                  ),
+              }
+            },
+          }
+        : null
+
+    const CredentialProvider: Provider = CredentialsProvider({
+      name: 'Delegation',
+
+      credentials: {
+        identifier: {
+          label: 'Shortname of Main Account',
+          type: 'text',
+          placeholder: 'banking23',
+          required: true,
+          'data-cy': 'identifier-field',
+        },
+        password: {
+          label: 'Password',
+          type: 'password',
+          required: true,
+          'data-cy': 'password-field',
+        },
+      },
+
+      async authorize(credentials, req) {
+        if (!credentials) return null
+
+        const user = await prisma.user.findUnique({
+          where: { shortname: credentials.identifier },
+          include: {
+            logins: true,
+          },
+        })
+
+        if (!user) return null
+
+        // go through each login and compare credentials with the login password
+        for (let login of user.logins) {
+          const isLoginValid = await bcrypt.compare(
+            credentials.password,
+            login.password
+          )
+
+          if (isLoginValid) {
+            await prisma.userLogin.update({
+              where: { id: login.id },
+              data: { lastLoginAt: new Date() },
+            })
+
+            return {
+              id: user.id,
+              email: user.email,
+              role: user.role,
+              shortname: user.shortname,
+              scope: login.scope,
+              catalystInstitutional: user.catalystInstitutional,
+              catalystIndividual: user.catalystIndividual,
+            }
+          }
+        }
+
+        return null
+      },
+    })
+
+    authOptions = {
+      ...sharedOptions,
+
+      adapter: PrismaAdapter(prisma),
+      providers: EduIDLecturerProvider
+        ? [EduIDLecturerProvider, CredentialProvider]
+        : [CredentialProvider],
+
+      cookies: {
+        sessionToken: {
+          name: COOKIE_NAME,
+          options: {
+            domain: process.env.COOKIE_DOMAIN,
+            path: '/',
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
+          },
+        },
+      },
+
+      callbacks: {
+        async signIn({ user, account, profile, email }) {
+          console.log('signIn', user, account, profile, email)
+
           // Lecturer authentication flow (existing logic)
           const profileData = profile as ExtendedProfile
           if (profileData?.sub && account?.provider) {
@@ -480,30 +563,11 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
               }
             }
           }
-          return true
-        }
-      },
 
-      async jwt({ token, user, account, profile, trigger }) {
-        if (context === 'participant') {
-          // Participant JWT handling
-          if (profile && (profile as any).participantId) {
-            token.sub = (profile as any).participantId
-            token.role = 'PARTICIPANT'
-            token.scope = 'PARTICIPANT'
-            token.email = profile.email
-          } else if (token.sub && !token.role) {
-            // For subsequent calls, look up participant by ID
-            const participant = await prisma.participant.findUnique({
-              where: { id: token.sub as string },
-            })
-            if (participant) {
-              token.role = 'PARTICIPANT'
-              token.scope = 'PARTICIPANT'
-              token.email = participant.email
-            }
-          }
-        } else {
+          return true
+        },
+
+        async jwt({ token, user, account, profile, trigger }) {
           // Lecturer JWT handling (existing logic)
           const profileData = profile as ExtendedProfile
           const userData = user as ExtendedUser
@@ -540,31 +604,11 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
               }
             }
           }
-        }
 
-        return token
-      },
-      async redirect({ url, baseUrl }) {
-        if (context === 'participant') {
-          // Participant redirect handling
-          if (
-            url.includes('assessment.klicker.uzh.ch') ||
-            url.includes('assessment.klicker.com') ||
-            url.includes('pwa.klicker.com')
-          ) {
-            return url
-          }
+          return token
+        },
 
-          if (url.startsWith('/')) {
-            return `${baseUrl}${url}`
-          }
-
-          if (url.includes(process.env.COOKIE_DOMAIN as string)) {
-            return url
-          }
-
-          return baseUrl
-        } else {
+        async redirect({ url, baseUrl }) {
           // Lecturer redirect handling (existing logic)
           if (url.startsWith('/')) {
             return `${baseUrl}${url}`
@@ -578,11 +622,12 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
           }
 
           return baseUrl
-        }
+        },
       },
-    },
+    }
   }
 
-  const handler = NextAuth(authOptions) as any
+  const handler = NextAuth(authOptions)
+
   return handler(req, res)
 }
