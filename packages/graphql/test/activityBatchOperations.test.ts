@@ -19,7 +19,7 @@ import type { ContextWithUser } from '../src/lib/context.js'
 import { applyActivityBatchOperations } from '../src/services/activities.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
 
-describe('Unit tests for batch operations on activities', () => {
+describe('Integration tests for batch operations on activities', () => {
   // shared resources used across tests
   let prisma: PrismaClient
   let emitter: EventEmitter

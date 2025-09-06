@@ -1059,7 +1059,7 @@ export async function getActiveUserCourses(
               isOwner: false,
               isManager: false,
               isEditor: false,
-              isShared: true,
+              isShared: false,
             },
           ]
 

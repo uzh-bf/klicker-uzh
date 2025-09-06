@@ -55,7 +55,7 @@ import {
 } from './helpers.js'
 import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 
-describe('Unit tests for sharing functionalities of activities (e.g. live quiz)', () => {
+describe('Integration tests for sharing functionalities of activities (e.g. live quiz)', () => {
   // shared resources used across tests
   let prisma: PrismaClient
   let emitter: EventEmitter
@@ -3964,6 +3964,8 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userFour.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course4.id }, prisma)
+
     const course5 = await prisma.course.create({
       data: {
         name: 'Course 5',

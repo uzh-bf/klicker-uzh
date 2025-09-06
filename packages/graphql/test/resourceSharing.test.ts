@@ -41,7 +41,7 @@ import {
 import { answerCollection1, answerCollection2 } from './testData.js'
 import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 
-describe('Unit tests for sharing functionalities of resources (e.g. answer collections)', () => {
+describe('Integration tests for sharing functionalities of resources (e.g. answer collections)', () => {
   // shared resources used across tests
   let prisma: PrismaClient
   let emitter: EventEmitter

@@ -2510,6 +2510,11 @@ export async function deleteLiveQuiz(
     // running live quizzes cannot be deleted
     return null
   } else if (liveQuiz.status === DB.PublicationStatus.ENDED) {
+    // completed assessment live quizzes cannot be deleted
+    if (liveQuiz.isAssessmentEnabled) {
+      return null
+    }
+
     const deletedLiveQuiz = await ctx.prisma.$transaction(
       async (prisma) => {
         const quiz = await prisma.liveQuiz.update({
