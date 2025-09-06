@@ -1,5 +1,5 @@
 import messages from '../../../packages/i18n/messages/en'
-import { getDatetimeValidationString } from './helpers'
+import { getDatetimeValidationString, getFutureDate } from './helpers'
 
 describe('Different live-quiz workflows', function () {
   before(() => {
@@ -3484,19 +3484,19 @@ describe('Different live-quiz workflows', function () {
       displayName: this.data.modes.microLearningDisplayName,
       courseName: this.data.modes.course,
       startDate: {
-        monthDelta: -3,
+        monthDelta: -4,
         day: 16,
         hour: 2,
         minute: 0,
-        validation: getDatetimeValidationString(-2, '16') + ', 02:00',
-      }, // 2 months in the past at 2:00
+        validation: getDatetimeValidationString(-3, '16') + ', 02:00',
+      }, // 3 months in the past at 2:00
       endDate: {
-        monthDelta: 3,
+        monthDelta: 2,
         day: 14,
         hour: 18,
         minute: 0,
-        validation: getDatetimeValidationString(4, '14') + ', 18:00',
-      }, // 4 months in the future at 18:00
+        validation: getDatetimeValidationString(3, '14') + ', 18:00',
+      }, // 3 months in the future at 18:00
       stacks: [
         { elements: [this.data.SCML.title] },
         { elements: [this.data.MCML.title] },
@@ -4200,6 +4200,450 @@ describe('Different live-quiz workflows', function () {
       instanceIx: 6,
     })
     cy.get('[data-cy="close-activity-details-modal"]').click()
+  })
+  // #endregion
+
+  // ! Part 7: Assessment Live Quizzes
+  // #region
+  function createAndStartAssessmentLiveQuizzes(data: any) {
+    cy.get('[data-cy="library"]').click()
+    cy.createLiveQuiz({
+      name: data.assessment.gamifiedCourse.liveQuiz,
+      displayName: data.assessment.gamifiedCourse.liveQuiz,
+      courseName: data.assessment.gamifiedCourse.name,
+      blocks: [{ elements: [data.SCML.title, data.MC.title] }],
+    })
+    cy.get('[data-cy="create-new-activity"]').click()
+    cy.createLiveQuiz({
+      name: data.assessment.nonGamifiedCourse.liveQuiz,
+      displayName: data.assessment.nonGamifiedCourse.liveQuiz,
+      courseName: data.assessment.nonGamifiedCourse.name,
+      blocks: [{ elements: [data.SCML.title, data.MC.title] }],
+    })
+    cy.get('[data-cy="create-new-activity"]').click()
+
+    // start both live quizzes
+    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${data.assessment.gamifiedCourse.liveQuiz}{enter}`
+    )
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${data.assessment.gamifiedCourse.liveQuiz}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="start-live-quiz-${data.assessment.gamifiedCourse.liveQuiz}"]`
+    ).click()
+    cy.get('[data-cy="abort-live-quiz-cockpit"]').should('exist')
+    cy.get('[data-cy="next-block-timeline"]').click() // start the first block of the live quiz
+    cy.wait(500)
+
+    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${data.assessment.nonGamifiedCourse.liveQuiz}{enter}`
+    )
+    cy.get(
+      `[data-cy="activity-LIVE_QUIZ-${data.assessment.nonGamifiedCourse.liveQuiz}"]`
+    ).should('exist')
+    cy.get(
+      `[data-cy="start-live-quiz-${data.assessment.nonGamifiedCourse.liveQuiz}"]`
+    ).click()
+    cy.get('[data-cy="abort-live-quiz-cockpit"]').should('exist')
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
+  }
+
+  function enterPinAnswerFirstBlock(pin: string, data: any) {
+    cy.get('[data-cy="live-quiz-pin-input-1"]').should('exist')
+    cy.get('[data-cy="live-quiz-submit-pin"]').should('be.disabled')
+    cy.get('[data-cy="live-quiz-pin-input-1"]').realClick().realType(pin)
+    cy.get('[data-cy="live-quiz-submit-pin"]').click()
+
+    // verify and answer the contained questions
+    // answer the first provided question
+    cy.get('[data-cy="instance-question-content"]').contains(data.SCML.content)
+    cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+    cy.get('[data-cy="sc-0-answer-option-0"]').click()
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="instance-question-content"]').contains(data.MC.content)
+
+    // reload the page and verify that the entered PIN persists (leave second block to following test case)
+    cy.reload()
+    cy.get('[data-cy="instance-question-content"]').contains(data.MC.content)
+  }
+
+  function studentAccountLinkAccess(
+    link: string,
+    data: any,
+    loggedIn: boolean,
+    gamified: boolean
+  ) {
+    // open the live quiz link and participate in the live quiz anonymously
+    cy.visit(Cypress.env('URL_STUDENT'))
+    cy.origin(
+      Cypress.env('URL_STUDENT'),
+      {
+        args: {
+          username: Cypress.env('STUDENT_USERNAME'),
+          password: Cypress.env('STUDENT_PASSWORD'),
+          scQuestion: data.SCML.content,
+          mcQuestion: data.MC.content,
+          link,
+          loggedIn,
+          gamified,
+        },
+      },
+      async ({
+        username,
+        password,
+        scQuestion,
+        mcQuestion,
+        link,
+        loggedIn,
+        gamified,
+      }) => {
+        if (loggedIn) {
+          // log in as a student
+          cy.get('[data-cy="username-field"]').click().type(username)
+          cy.get('[data-cy="password-field"]').click().type(password)
+          cy.get('[data-cy="submit-login"]').click()
+        }
+
+        // visit the live quiz directly through the link and verify that the PIN is already filled in
+        cy.visit(String(link))
+        cy.get('[data-cy="live-quiz-pin-input-1"]').should('exist')
+        cy.get('[data-cy="live-quiz-submit-pin"]')
+          .should('not.be.disabled')
+          .click()
+
+        // if the quiz is gamified and the user is not logged in, select anonymous participation
+        if (!loggedIn) {
+          if (gamified) {
+            // participate in the live quiz anonymously
+            cy.get('[data-cy="participate-anonymously"]').click()
+          } else {
+            cy.get('[data-cy="participate-anonymously"]').should('not.exist')
+          }
+
+          // verify and answer the contained questions
+          // answer the first provided question
+          cy.get('[data-cy="instance-question-content"]').contains(scQuestion)
+          cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+          cy.get('[data-cy="sc-0-answer-option-0"]').click()
+          cy.get('[data-cy="student-submit-answer"]').click()
+          cy.wait(500)
+          cy.get('[data-cy="instance-question-content"]').contains(mcQuestion)
+
+          // reload the page and verify that the entered PIN persists (leave second block to following test case)
+          cy.reload()
+          cy.get('[data-cy="instance-question-content"]').contains(mcQuestion)
+        }
+
+        // verify that the second question is shown (first one has already been completed earlier)
+        cy.get('[data-cy="instance-question-content"]').contains(mcQuestion)
+
+        // reload the page and verify that the entered PIN persists
+        cy.reload()
+        cy.get('[data-cy="instance-question-content"]').contains(mcQuestion)
+
+        // answer the second provided question
+        cy.get('[data-cy="instance-question-content"]').contains(mcQuestion)
+        cy.get('[data-cy="student-submit-answer"]').should('be.disabled')
+        cy.get('[data-cy="mc-1-answer-option-1"]').click()
+        cy.get('[data-cy="mc-1-answer-option-3"]').click()
+        cy.get('[data-cy="student-submit-answer"]').click()
+        cy.wait(500)
+      }
+    )
+  }
+
+  function getAssessmentQuizLinks(data: any) {
+    // obtain the live quiz pin for both quizzes from the lecturer cockpit
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${data.assessment.gamifiedCourse.liveQuiz}{enter}`
+    )
+    cy.get(
+      `[data-cy="live-quiz-cockpit-${data.assessment.gamifiedCourse.liveQuiz}"]`
+    ).click()
+    cy.get('[data-cy="open-qr-modal"]').click()
+    cy.get('[data-cy="qr-link-direct"]')
+      .invoke('text')
+      .then((text) => cy.wrap(text).as('assessmentQuizLink'))
+    cy.get('[data-cy="live-quiz-qr-modal-close"]').click()
+
+    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${data.assessment.nonGamifiedCourse.liveQuiz}{enter}`
+    )
+    cy.get(
+      `[data-cy="live-quiz-cockpit-${data.assessment.nonGamifiedCourse.liveQuiz}"]`
+    ).click()
+    cy.get('[data-cy="open-qr-modal"]').click()
+    cy.get('[data-cy="qr-link-direct"]')
+      .invoke('text')
+      .then((text) => cy.wrap(text).as('assessmentQuizLink2'))
+    cy.get('[data-cy="live-quiz-qr-modal-close"]').click()
+  }
+
+  it('Preparation: Reset the database and create all required content for the assessment live quizzes', function () {
+    cy.cleanup()
+    cy.seed()
+
+    // login the lecturer
+    cy.loginLecturer()
+
+    // seed two questions
+    cy.createQuestionSC({
+      name: this.data.SCML.title,
+      content: this.data.SCML.content,
+      explanation: this.data.SCML.explanation,
+      choices: this.data.SCML.choices,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionMC({
+      name: this.data.MC.title,
+      content: this.data.MC.content,
+      explanation: this.data.MC.explanation,
+      choices: this.data.MC.choices,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+
+    // create two assessment courses (one with gamification, one without)
+    cy.createCourse({
+      name: this.data.assessment.gamifiedCourse.name,
+      displayName: this.data.assessment.gamifiedCourse.displayName,
+      isAssessmentEnabled: true,
+      isGamificationEnabled: true,
+      isGroupCreationEnabled: true,
+      startDate: getFutureDate(-1, '11'), // 1 month ago
+      endDate: getFutureDate(6, '20'), // 6 months from now
+      groupDeadlineDate: getFutureDate(2, '12'), // 2 months from now
+      maxGroupSize: 4,
+      preferredGroupSize: 2,
+    })
+    cy.createCourse({
+      name: this.data.assessment.nonGamifiedCourse.name,
+      displayName: this.data.assessment.nonGamifiedCourse.displayName,
+      isAssessmentEnabled: true,
+      isGamificationEnabled: false,
+      isGroupCreationEnabled: false,
+      startDate: getFutureDate(-1, '11'), // 1 month ago
+      endDate: getFutureDate(6, '20'), // 6 months from now
+      groupDeadlineDate: getFutureDate(2, '12'), // 2 months from now
+    })
+
+    // create one live quiz in each of the assessment courses
+    createAndStartAssessmentLiveQuizzes(this.data)
+  })
+
+  it('Have the a student with a valid account join both courses', function () {
+    cy.loginStudent()
+    cy.task('getCoursePin', {
+      courseName: this.data.assessment.gamifiedCourse.name,
+    }).then((pin: number) => {
+      // check if the pin was fetched successfully
+      if (!pin) {
+        throw new Error(
+          'No course pin found. Please ensure that the previous test case has run successfully and generated a course pin.'
+        )
+      }
+
+      // join the course
+      cy.get('[data-cy="join-new-course"]').click()
+      cy.get('[data-cy="join-course-pin-field-1"]')
+        .realClick()
+        .realType(String(pin))
+      cy.get('[data-cy="join-course-submit-form"]').click()
+      cy.get(
+        `[data-cy="course-button-${this.data.assessment.gamifiedCourse.displayName}"]`
+      ).should('exist')
+    })
+
+    cy.task('getCoursePin', {
+      courseName: this.data.assessment.nonGamifiedCourse.name,
+    }).then((pin: number) => {
+      // check if the pin was fetched successfully
+      if (!pin) {
+        throw new Error(
+          'No course pin found. Please ensure that the previous test case has run successfully and generated a course pin.'
+        )
+      }
+
+      // join the course
+      cy.get('[data-cy="join-new-course"]').click()
+      cy.get('[data-cy="join-course-pin-field-1"]')
+        .realClick()
+        .realType(String(pin))
+      cy.get('[data-cy="join-course-submit-form"]').click()
+      cy.get(
+        `[data-cy="course-button-${this.data.assessment.nonGamifiedCourse.displayName}"]`
+      ).should('exist')
+    })
+  })
+
+  it('Verify that the shown PINs are identical with the stored ones', function () {
+    // combine approach of loading and entering on student view does not work due to limitations of cypress
+    // obtain the shown pins for both created live quizzes
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.assessment.gamifiedCourse.liveQuiz}{enter}`
+    )
+    cy.get(
+      `[data-cy="live-quiz-cockpit-${this.data.assessment.gamifiedCourse.liveQuiz}"]`
+    ).click()
+    cy.get('[data-cy="live-quiz-pin"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text.split(':')[1].replace(/\s+/g, '')).as('assessmentQuizPin')
+      })
+
+    cy.get('[data-cy="activities"]').click()
+    cy.get('[data-cy="activities-search-input"]').type(
+      `${this.data.assessment.nonGamifiedCourse.liveQuiz}{enter}`
+    )
+    cy.get(
+      `[data-cy="live-quiz-cockpit-${this.data.assessment.nonGamifiedCourse.liveQuiz}"]`
+    ).click()
+    cy.get('[data-cy="live-quiz-pin"]')
+      .invoke('text')
+      .then((text) => {
+        cy.wrap(text.split(':')[1].replace(/\s+/g, '')).as('assessmentQuizPin2')
+      })
+
+    // verify that these pins are equal to the ones stored in the database
+    cy.get('@assessmentQuizPin').then((pin) => {
+      cy.task('verifyLiveQuizPin', {
+        pin,
+        name: this.data.assessment.gamifiedCourse.liveQuiz,
+      }).then((result: boolean) => {
+        // check if the correct pin is shown
+        if (result === false) {
+          throw new Error(
+            'The wrong live quiz is shown for the quiz in question'
+          )
+        }
+
+        // dummy action
+        cy.visit(Cypress.env('URL_MANAGE'))
+      })
+    })
+    cy.get('@assessmentQuizPin2').then((pin) => {
+      cy.task('verifyLiveQuizPin', {
+        pin,
+        name: this.data.assessment.nonGamifiedCourse.liveQuiz,
+      }).then((result: boolean) => {
+        // check if the correct pin is shown
+        if (result === false) {
+          throw new Error(
+            'The wrong live quiz is shown for the quiz in question'
+          )
+        }
+
+        // dummy action
+        cy.visit(Cypress.env('URL_MANAGE'))
+      })
+    })
+  })
+
+  it('Log in as one of the course participants and access both live quizzes using the provided PINs', function () {
+    // this test case is only relevant for students with account and course participation -> otherwise direct quiz access
+    cy.loginStudent()
+
+    cy.task('getLiveQuizPin', {
+      name: this.data.assessment.gamifiedCourse.liveQuiz,
+    }).then((pin: string) => {
+      // open the live quiz and enter the loaded PIN
+      cy.get(
+        `[data-cy="live-quiz-${this.data.assessment.gamifiedCourse.liveQuiz}"]`
+      ).click()
+
+      // enter the live quiz pin and answer the data in the first block
+      enterPinAnswerFirstBlock(pin, this.data)
+    })
+    cy.get('[data-cy="header-home"]').click()
+
+    cy.task('getLiveQuizPin', {
+      name: this.data.assessment.nonGamifiedCourse.liveQuiz,
+    }).then((pin: string) => {
+      // open the live quiz and enter the loaded PIN
+      cy.get(
+        `[data-cy="live-quiz-${this.data.assessment.nonGamifiedCourse.liveQuiz}"]`
+      ).click()
+
+      // enter the live quiz pin and answer the data in the first block
+      enterPinAnswerFirstBlock(pin, this.data)
+    })
+  })
+
+  it('Test the direct access links for the live quiz with embedded PIN (logged in users)', function () {
+    getAssessmentQuizLinks(this.data)
+
+    // verify that a logged-in user can use the corresponding direct access links to join the live quizzes
+    // --> no account selector dialog is shown and questions can be answered (reload should not affect availability)
+    cy.get('@assessmentQuizLink').then(function (link) {
+      cy.clearAllCookies()
+      cy.clearAllLocalStorage()
+
+      studentAccountLinkAccess(String(link), this.data, true, true)
+    })
+
+    cy.get('@assessmentQuizLink2').then(function (link) {
+      cy.clearAllCookies()
+      cy.clearAllLocalStorage()
+
+      studentAccountLinkAccess(String(link), this.data, true, false)
+    })
+  })
+
+  it('Test the direct access links for the live quiz with embedded PIN (anonymous users)', function () {
+    cy.loginLecturer()
+
+    // end, delete and recreate both live quizzes
+    cy.wrap([
+      this.data.assessment.gamifiedCourse.liveQuiz,
+      this.data.assessment.nonGamifiedCourse.liveQuiz,
+    ]).each((quiz) => {
+      // end the live quiz
+      cy.get('[data-cy="running-live-quiz-dropdown"]').click()
+      cy.get(`[data-cy="running-live-quiz-${quiz}"]`).click()
+      cy.get('[data-cy="next-block-timeline"]').click()
+      cy.wait(500)
+      cy.get('[data-cy="next-block-timeline"]').click()
+      cy.wait(500)
+
+      // delete and re-create the live quiz for the anonymous test case (with the same name)
+      cy.get(`[data-cy="activities"]`).click()
+      cy.get('[data-cy="activities-search-input"]').type(`${quiz}{enter}`)
+      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).click()
+      cy.get(`[data-cy="delete-live-quiz-${quiz}"]`).click()
+      cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
+      cy.get('[data-cy="activities-search-input"]').clear()
+    })
+
+    // recreate both live quizzes
+    createAndStartAssessmentLiveQuizzes(this.data)
+
+    // get the assessment access links for the two quizzes
+    getAssessmentQuizLinks(this.data)
+
+    // verify that student without login can use the corresponding direct access links to join the live quizzes
+    // --> anonymous participation and temporary pseudonym should both be available and questions can be answered
+    cy.clearAllCookies()
+    cy.clearAllLocalStorage()
+
+    cy.get('@assessmentQuizLink').then(function (link) {
+      studentAccountLinkAccess(String(link), this.data, false, true)
+    })
+
+    cy.get('@assessmentQuizLink2').then(function (link) {
+      studentAccountLinkAccess(String(link), this.data, false, false)
+    })
+
+    // dummy action
+    cy.visit(Cypress.env('URL_MANAGE'))
   })
   // #endregion
 })

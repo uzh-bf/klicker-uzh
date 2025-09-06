@@ -174,7 +174,9 @@ model LeaderboardEntry {
 }
 
 model TemporaryLeaderboardEntry {
-  id       String  @id @default(uuid()) @db.Uuid // participant id of temporary participant
+  // participant id of temporary participant / participant id in case of logged-in 
+  // participant without participation or in gamified live quiz without course
+  id       String  @default(uuid()) @db.Uuid
   username String
   score    Int
   avatar   String?
@@ -184,6 +186,10 @@ model TemporaryLeaderboardEntry {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@id([id, quizId])
+  @@index(id)
+  @@index(quizId)
 }
 
 model PushSubscription {

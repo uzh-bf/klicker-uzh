@@ -24,6 +24,7 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
+import generatePassword from 'generate-password'
 import { GraphQLError } from 'graphql'
 import type { ChainableCommander } from 'ioredis'
 import { min } from 'mathjs'
@@ -563,6 +564,7 @@ interface ManipulateLiveQuizArgs {
   maxBonusPoints?: number | null
   timeToZeroBonus?: number | null
   isGamificationEnabled: boolean
+  isPinProtected: boolean
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean
   isModerationEnabled: boolean
@@ -582,6 +584,7 @@ export async function manipulateLiveQuiz(
     maxBonusPoints,
     timeToZeroBonus,
     isGamificationEnabled,
+    isPinProtected,
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
     isModerationEnabled,
@@ -650,6 +653,9 @@ export async function manipulateLiveQuiz(
   // only activities in assessment courses will be marked as being part of assessment
   const assessmentSetting = course?.isAssessmentEnabled ?? false
 
+  // pin protection applies when assessment is enabled or explicitly enabled via flag
+  const pinProtection = assessmentSetting || isPinProtected
+
   // re-create blocks and link existing instance / create new instances (depending on mode and novelty of the included element)
   const createOrUpdateJSON = {
     name: name.trim(),
@@ -662,6 +668,16 @@ export async function manipulateLiveQuiz(
     timeToZeroBonus: timeToZeroBonus ?? undefined,
     isGamificationEnabled: gamificationSetting,
     isAssessmentEnabled: assessmentSetting,
+    pinCode: pinProtection // if pin protection applies, assign a pin
+      ? (existingActivity?.pinCode ??
+        generatePassword.generate({
+          uppercase: true,
+          lowercase: false,
+          numbers: true,
+          symbols: false,
+          length: 6,
+        }))
+      : null,
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
     isModerationEnabled,
@@ -834,6 +850,7 @@ export async function manipulateLiveQuiz(
     areInstancesOutdated: activity.areInstancesOutdated,
     isGamificationEnabled: activity.isGamificationEnabled,
     isAssessmentEnabled: activity.isAssessmentEnabled,
+    pinCode: activity.pinCode,
     numSharedUsers: id ? activity._count.permissions - 1 : 0,
     isOwner,
     isManager,
@@ -1122,14 +1139,11 @@ export async function startLiveQuiz(
         }
 
         // generate a random pin code
-        const pinCode = 100000 + Math.floor(Math.random() * 900000)
         const startedLiveQuiz = await ctx.prisma.liveQuiz.update({
           where: { id },
           data: {
             status: DB.PublicationStatus.PUBLISHED,
             startedAt: new Date(),
-            pinCode:
-              quiz.accessMode === DB.AccessMode.RESTRICTED ? pinCode : null,
           },
         })
 
@@ -1561,6 +1575,7 @@ export async function deactivateLiveQuizBlock(
   const quiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id: quizId },
     include: {
+      course: true,
       activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
       blocks: { orderBy: { id: 'asc' } },
     },
@@ -1587,21 +1602,76 @@ export async function deactivateLiveQuizBlock(
     } = cachedResults
 
     // filter the leaderboard entries to only include those that have a valid participant id
-    const existingParticipantsLB = (
+    const { regularParticipantLeaderboard, temporaryParticipantLeaderboard } = (
       await Promise.allSettled(
         Object.entries(liveQuizLeaderboard).map(async ([id, score]) => {
           const participant = await ctx.prisma.participant.findUnique({
             where: { id },
+            include: {
+              participations: quiz.courseId
+                ? { where: { courseId: quiz.courseId } }
+                : { take: 0 },
+            },
           })
 
           if (!participant) return null
-          return [id, score] as [string, string]
+          return {
+            participantId: id,
+            participantUsername: participant.username,
+            participantAvatar: participant.avatar,
+            gamifiedCourseParticipation:
+              !!quiz.courseId &&
+              quiz.course?.isGamificationEnabled &&
+              !!participant.participations?.[0],
+            courseParticipationActive:
+              !!quiz.courseId &&
+              !!participant.participations?.[0] &&
+              participant.participations?.[0].isActive,
+            score,
+          }
         })
       )
-    ).flatMap((result) => {
-      if (result.status !== 'fulfilled' || !result.value) return []
-      return [result.value]
-    })
+    ).reduce<{
+      regularParticipantLeaderboard: { participantId: string; score: number }[]
+      temporaryParticipantLeaderboard: {
+        participantId: string
+        participantUsername: string
+        participantAvatar: string | null
+        score: number
+      }[]
+    }>(
+      (acc, result) => {
+        // filter out failed requests and those which have a valid gamified course participation,
+        // which is not active -> active decision to not be on leaderboard
+        if (
+          result.status !== 'fulfilled' ||
+          !result.value ||
+          (result.value.gamifiedCourseParticipation &&
+            !result.value.courseParticipationActive)
+        ) {
+          return acc
+        }
+
+        if (result.value.gamifiedCourseParticipation) {
+          // active gamified course participation (inactive already filtered) -> regular leaderboard
+          acc.regularParticipantLeaderboard.push({
+            participantId: result.value.participantId,
+            score: parseInt(result.value.score, 10),
+          })
+        } else {
+          // no gamified course participation -> temporary leaderboard
+          acc.temporaryParticipantLeaderboard.push({
+            participantId: result.value.participantId,
+            participantUsername: result.value.participantUsername,
+            participantAvatar: result.value.participantAvatar,
+            score: parseInt(result.value.score, 10),
+          })
+        }
+
+        return acc
+      },
+      { regularParticipantLeaderboard: [], temporaryParticipantLeaderboard: [] }
+    )
 
     // filter temporary leaderboard entries to only include those that have a valid temporary leaderboard entry for this live quiz
     // technically, this should not be required, since all ids should be valid, but it is a safety check
@@ -1611,11 +1681,16 @@ export async function deactivateLiveQuizBlock(
           async ([id, score]) => {
             const tempLeadeboardEntry =
               await ctx.prisma.temporaryLeaderboardEntry.findUnique({
-                where: { id, quizId },
+                where: { id_quizId: { id, quizId } },
               })
 
             if (!tempLeadeboardEntry) return null
-            return [id, score] as [string, string]
+            return {
+              participantId: id,
+              participantUsername: undefined,
+              participantAvatar: undefined,
+              score: parseInt(score, 10),
+            }
           }
         )
       )
@@ -1646,45 +1721,70 @@ export async function deactivateLiveQuizBlock(
         },
         leaderboard: quiz.isGamificationEnabled
           ? {
-              upsert: existingParticipantsLB.map(
-                ([id, score]: [string, string]) => ({
+              upsert: regularParticipantLeaderboard.map(
+                ({ participantId, score }) => ({
                   where: {
                     type_participantId_liveQuizId: {
                       type: DB.LeaderboardType.SESSION,
-                      participantId: id,
+                      participantId,
                       liveQuizId: quizId,
                     },
                   },
                   create: {
                     type: DB.LeaderboardType.SESSION,
-                    participant: { connect: { id } },
-                    score: parseInt(score),
-                    sessionParticipation: {
-                      connectOrCreate: {
-                        where: {
-                          courseId_participantId: {
-                            courseId: quiz.courseId!,
-                            participantId: id,
+                    participant: { connect: { id: participantId } },
+                    score: score,
+                    sessionParticipation: quiz.courseId
+                      ? {
+                          connectOrCreate: {
+                            where: {
+                              courseId_participantId: {
+                                courseId: quiz.courseId,
+                                participantId,
+                              },
+                            },
+                            create: {
+                              course: { connect: { id: quiz.courseId! } },
+                              participant: { connect: { id: participantId } },
+                            },
                           },
-                        },
-                        create: {
-                          course: { connect: { id: quiz.courseId! } },
-                          participant: { connect: { id } },
-                        },
-                      },
-                    },
+                        }
+                      : undefined,
                   },
-                  update: { score: parseInt(score) },
+                  update: { score },
                 })
               ),
             }
           : undefined,
-        temporaryLeaderboard: {
-          update: existingTemporaryLB.map(([id, score]: [string, string]) => ({
-            where: { id, quizId },
-            data: { score: parseInt(score) },
-          })),
-        },
+        temporaryLeaderboard: quiz.isGamificationEnabled
+          ? {
+              upsert: [
+                ...temporaryParticipantLeaderboard,
+                ...existingTemporaryLB,
+              ].map(
+                ({
+                  participantId,
+                  participantUsername,
+                  participantAvatar,
+                  score,
+                }) => ({
+                  where: {
+                    id_quizId: {
+                      id: participantId,
+                      quizId,
+                    },
+                  },
+                  create: {
+                    id: participantId,
+                    username: participantUsername ?? '', // fallback should never be used
+                    avatar: participantAvatar ?? undefined,
+                    score,
+                  },
+                  update: { score },
+                })
+              ),
+            }
+          : undefined,
       },
       include: { blocks: { orderBy: { order: 'asc' } } },
     })
@@ -1731,6 +1831,7 @@ export async function endLiveQuiz(
   const quiz = await ctx.prisma.liveQuiz.findFirst({
     where: { id },
     include: {
+      course: true,
       blocks: {
         include: { elements: { orderBy: { order: 'asc' } } },
         orderBy: { id: 'asc' },
@@ -1906,11 +2007,12 @@ export async function endLiveQuiz(
           },
         })
 
-        // if the live quiz is part of a course, update the course leaderboard
+        // if the live quiz is part of a gamified course, update the course leaderboard
         // with the accumulated points and award achievements
         if (quizLB && quiz.courseId) {
           for (const participant of existingParticipants) {
             if (
+              quiz.course?.isGamificationEnabled && // verify that the course is gamified
               typeof participant.score !== 'undefined' &&
               participant.hasParticipation
             ) {
@@ -2043,13 +2145,10 @@ export async function endLiveQuiz(
     }
 
     const endedLiveQuiz = await ctx.prisma.liveQuiz.update({
-      where: {
-        id,
-      },
+      where: { id },
       data: {
         status: DB.PublicationStatus.ENDED,
         finishedAt: new Date(),
-        pinCode: null,
       },
     })
 
@@ -2572,7 +2671,88 @@ const aggregateFeedbacks = (feedbacks: DB.ConfusionTimestep[]) => {
 
 // ------ LIVE QUIZ GETTER FUNCTIONS (STUDENT) ------
 // #region
+export async function setLiveQuizPinCookie(
+  { liveQuizId, pin }: { liveQuizId: string; pin: string },
+  ctx: Context
+) {
+  // verify that the corresponding live quiz is available
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: { id: liveQuizId },
+    select: { id: true, status: true, pinCode: true },
+  })
+  if (!liveQuiz || liveQuiz.status !== DB.PublicationStatus.PUBLISHED) {
+    throw new GraphQLError('LIVE_QUIZ_PIN_INVALID', {
+      extensions: { code: 'FORBIDDEN' },
+    })
+  }
+
+  // remove any previously added cookie and set the new correct one
+  const cookieName = `live-quiz-pin-${liveQuizId}`
+  if (!liveQuiz.pinCode || pin !== liveQuiz.pinCode) {
+    try {
+      ctx.res.clearCookie(cookieName, {
+        domain: process.env.COOKIE_DOMAIN as string | undefined,
+        path: '/',
+      })
+    } catch (_) {}
+    throw new GraphQLError('LIVE_QUIZ_PIN_INVALID', {
+      extensions: { code: 'FORBIDDEN' },
+    })
+  }
+
+  // set the pin as a cookie to be readable by the student live quiz query
+  ctx.res.cookie(cookieName, pin, {
+    domain: process.env.COOKIE_DOMAIN,
+    path: '/',
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24, // cookie valie for one day
+    secure:
+      process.env.NODE_ENV === 'production' &&
+      process.env.COOKIE_DOMAIN !== '127.0.0.1',
+    sameSite: 'lax',
+  })
+
+  return true
+}
+
 export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
+  // only get the minimal required information of the quiz
+  const quizInfo = await ctx.prisma.liveQuiz.findUnique({
+    where: { id },
+    select: { id: true, status: true, pinCode: true },
+  })
+
+  // if the quiz is not available, return early
+  if (!quizInfo || quizInfo.status !== DB.PublicationStatus.PUBLISHED)
+    return null
+
+  // if a pin code is required, verify that the user has already entered a valid one
+  if (quizInfo.pinCode) {
+    const cookieName = `live-quiz-pin-${id}`
+    const providedPin = ctx.req.cookies?.[cookieName]
+
+    if (!providedPin) {
+      throw new GraphQLError('LIVE_QUIZ_PIN_MISSING', {
+        extensions: { code: 'FORBIDDEN' },
+      })
+    }
+
+    if (providedPin !== quizInfo.pinCode) {
+      try {
+        ctx.res.clearCookie(cookieName, {
+          domain: process.env.COOKIE_DOMAIN as string | undefined,
+          path: '/',
+          secure: false,
+          sameSite: 'lax',
+        })
+      } catch (_) {}
+
+      throw new GraphQLError('LIVE_QUIZ_PIN_INVALID', {
+        extensions: { code: 'FORBIDDEN' },
+      })
+    }
+  }
+
   const quiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id },
     include: {

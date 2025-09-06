@@ -3459,6 +3459,9 @@ function combineCaseStudyResults({
               // extract values from merged results
               const responses = Object.values(mergedResults)
 
+              // if the criterion is a liker criterion, make sure the entire valid bar is included in the solution interval
+              const isLikertCriterion = !!criterion.labels
+
               return {
                 criterionId: criterion.id,
                 name: criterion.name,
@@ -3468,8 +3471,16 @@ function combineCaseStudyResults({
                 unit: criterion.unit,
                 labels: criterion.labels,
 
-                solutionMin: criterionSolution?.min,
-                solutionMax: criterionSolution?.max,
+                solutionMin: criterionSolution?.min
+                  ? isLikertCriterion
+                    ? criterionSolution?.min - 0.5
+                    : criterionSolution?.min
+                  : undefined,
+                solutionMax: criterionSolution?.max
+                  ? isLikertCriterion
+                    ? criterionSolution?.max + 0.5
+                    : criterionSolution?.max
+                  : undefined,
 
                 statistics:
                   responses && responses.length > 0

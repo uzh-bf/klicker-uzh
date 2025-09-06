@@ -188,7 +188,6 @@ const serviceBusTrigger = async function (
     const {
       type,
       solutions,
-      startedAt,
       firstResponseReceivedAt,
       sessionBlockId,
       choiceCount,

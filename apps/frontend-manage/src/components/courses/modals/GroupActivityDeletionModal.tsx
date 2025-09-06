@@ -33,13 +33,6 @@ function GroupActivityDeletionModal({
     DeleteGroupActivityDocument,
     {
       variables: { id: activityId },
-      optimisticResponse: {
-        __typename: 'Mutation',
-        deleteGroupActivity: {
-          __typename: 'GroupActivity',
-          id: activityId,
-        },
-      },
       update: (cache, { data: res }) => {
         // if the group activity is not part of a course or the mutation was not successful, return early
         if (!res?.deleteGroupActivity?.id) return

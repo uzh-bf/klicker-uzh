@@ -10,7 +10,7 @@
     "@klicker-uzh/shared-components": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@next-auth/prisma-adapter": "1.0.7",
-    "@uzh-bf/design-system": "4.0.12",
+    "@uzh-bf/design-system": "4.1.0",
     "axios": "1.7.9",
     "bcryptjs": "2.4.3",
     "js-cookie": "3.0.5",

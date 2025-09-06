@@ -318,6 +318,8 @@ export default {
       archived: 'Archiviert',
       ended: 'Beendet',
       assessment: 'Assessment',
+      pin: 'PIN',
+      pinProtected: 'PIN geschützt',
       learningAnalytics: 'Learning Analytics',
       monday: 'Montag',
       tuesday: 'Dienstag',
@@ -461,7 +463,11 @@ export default {
       noPointsCollected:
         'Bisher wurden im Rahmen dieses Live Quizzes noch keine Punkte gesammelt. Sobald sich dies ändert, werden hier Podium und Rangliste angezeigt.',
       liveQuizGamifiedNoGamifiedCourse:
-        'Dieses Live Quiz ist gamifiziert, aber nicht Teil eines gamifizierten Kurses. Da Sie angemeldet sind, werden Ihre im Quiz gesammelten Punkte automatisch auf dem Leaderboard angezeigt. Sollten Sie dies nicht wünschen, melden Sie sich bitte ab und treten Sie dem Quiz erneut über den Link bei.',
+        'Dieses Live Quiz ist gamifiziert, aber nicht Teil eines gamifizierten Kurses. Da Sie angemeldet sind, werden Ihre im Quiz gesammelten Punkte automatisch auf dem Leaderboard angezeigt. Sollten Sie dies nicht wünschen, <logout>melden Sie sich bitte ab</logout> und treten Sie dem Quiz erneut über den Link bei.',
+      liveQuizGamifiedCourseNoParticipation:
+        'Dieses Live Quiz ist Teil eines gamifizierten Kurses. Da Sie diesem Kurs nicht beigetreten sind, werden Sie nur im Rahmen dieses Quizzes Punkte sammeln. Ihre Punkte erscheinen auf dem Quiz-Leaderboard. Sollten Sie dies nicht wünschen, <logout>melden Sie sich bitte ab</logout> und treten Sie dem Quiz erneut über den Link bei.',
+      liveQuizCourseParticipationInactive:
+        'Dieses Live Quiz ist Teil eines gamifizierten Kurses, aber Sie nehmen derzeit nicht an der Gamifizierung teil. Um dem Leaderboard beizutreten und Punkte in diesem Quiz zu sammeln, treten Sie dem <link>Leaderboard auf der Kursübersicht</link> bei und kehren Sie zum Quiz zurück.',
       rank: 'Rang',
       username: 'Nutzername',
       email: 'E-Mail',
@@ -869,6 +875,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noQuizDescription:
         'Unter diesem Link ist derzeit kein laufendes Live-Quiz verfügbar. Bitte überprüfen Sie Ihren Link oder wenden Sie sich an Ihren Dozierenden.',
       refreshPage: 'Seite aktualisieren',
+      pinRequired: 'Für den Zugriff auf dieses Quiz ist eine PIN erforderlich.',
+      enterPinTitle: 'PIN-Code eingeben',
+      invalidPin: 'Die eingegebene PIN ist ungültig.',
+      enterPinLabel: 'PIN-Code',
+      enterPinPlaceholder: 'PIN eingeben',
+      submitPin: 'PIN absenden',
     },
     feedbacks: {
       title: 'Feedback-Kanal',
@@ -1673,6 +1685,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       pasteSelectionElements: '{count} Elemente hinzufügen',
       pasteSingleElementsBlock: '{count} Blöcke mit 1 Element anfügen',
       pasteSingleElementsStack: '{count} Stacks mit 1 Element hinzufügen',
+      pinProtected: 'PIN-Schutz',
+      pinProtectedTooltip:
+        'Bei aktiviertem Schutz durch einen PIN-Code generiert das System automatisch eine PIN, welche durch die Studierenden beim Beitritt zum Quiz eingegeben werden muss.',
       displayNameTooltip:
         'Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.',
       stackDescriptionTitle: 'Stack {stackIx}: Beschreibung (optional)',
@@ -2283,11 +2298,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     cockpit: {
       liveQuizQRCodes: 'Live Quiz QR-Codes',
       qrCodeAccountLinkTitle: 'Konto-Link',
+      qrCodeAccountLinkPinWarning: 'PIN nicht enthalten',
+      qrCodeDirectLinkIncluded: 'PIN enthalten',
       qrCodeAccountLinkDescription:
         'Ihr Konto-Link listet alle aktiven Live-Quizzes. Wenn nur ein Quiz aktiv ist, werden Teilnehmende direkt weitergeleitet, andererseits können sie auswählen, an welchem Quiz sie teilnehmen möchten. Dieser Link wird empfohlen, um ihn zu Folien hinzuzufügen, da er konsistent bleibt, solange Sie Ihren Kurznamen nicht ändern. Für Quizzes mit Kurszuweisung wird automatisch die Kurssprache im Link eingebettet.',
       qrCodeDirectLinkTitle: 'Direktlink',
       qrCodeDirectLinkDescription:
-        'Der Direktlink führt Teilnehmende direkt und ausschliesslich zu diesem Quiz. Wenn das Quiz beendet ist, ist der Link nicht mehr gültig. Dieser Link wird empfohlen, wenn Sie viele Quizzes parallel durchführen und die Teilnehmenden nur an einem bestimmten Quiz teilnehmen sollen. Für Quizzes mit Kurszuweisung wird automatisch die Kurssprache im Link eingebettet.',
+        'Der Direktlink führt Teilnehmende direkt und ausschliesslich zu diesem Quiz. Wenn das Quiz beendet ist, ist der Link nicht mehr gültig. Dieser Link wird empfohlen, wenn Sie viele Quizzes parallel durchführen und die Teilnehmenden nur an einem bestimmten Quiz teilnehmen sollen. Für Quizzes mit Kurszuweisung wird automatisch die Kurssprache im Link eingebettet. Wenn ein PIN-Code aktiviert ist, wird dieser direkt im Link eingebettet.',
       firstBlock: 'Ersten Block starten',
       blockActive: 'Block schliessen',
       nextBlock: 'Nächsten Block starten',

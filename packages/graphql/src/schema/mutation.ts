@@ -246,6 +246,21 @@ export const Mutation = builder.mutationType({
       //   },
       // }),
 
+      setLiveQuizPin: t.field({
+        nullable: false,
+        type: 'Boolean',
+        args: {
+          liveQuizId: t.arg.string({ required: true }),
+          pin: t.arg.string({
+            required: true,
+            validate: { minLength: 6, maxLength: 6, regex: /^[A-Z0-9]+$/ },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await LiveQuizService.setLiveQuizPinCookie(args, ctx)
+        },
+      }),
+
       respondToElementStack: t.field({
         nullable: true,
         type: StackFeedback,
@@ -884,6 +899,7 @@ export const Mutation = builder.mutationType({
           maxBonusPoints: t.arg.int({ required: false }),
           timeToZeroBonus: t.arg.int({ required: false }),
           isGamificationEnabled: t.arg.boolean({ required: true }),
+          isPinProtected: t.arg.boolean({ required: true }),
           isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
           isLiveQAEnabled: t.arg.boolean({ required: true }),
           isModerationEnabled: t.arg.boolean({ required: true }),
@@ -910,6 +926,7 @@ export const Mutation = builder.mutationType({
           maxBonusPoints: t.arg.int({ required: false }),
           timeToZeroBonus: t.arg.int({ required: false }),
           isGamificationEnabled: t.arg.boolean({ required: true }),
+          isPinProtected: t.arg.boolean({ required: true }),
           isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
           isLiveQAEnabled: t.arg.boolean({ required: true }),
           isModerationEnabled: t.arg.boolean({ required: true }),

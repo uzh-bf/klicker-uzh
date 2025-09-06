@@ -120,6 +120,7 @@ describe('Unit tests for batch operations on activities', () => {
       prisma,
       0
     )
+
     const liveQuiz = await prisma.liveQuiz.create({
       data: {
         name: uuid(),
@@ -127,6 +128,10 @@ describe('Unit tests for batch operations on activities', () => {
         pointsMultiplier: 1,
         courseId: args.courseId,
         ownerId: userOneCtx.user.sub,
+        pinCode:
+          args?.isAssessmentEnabled === true
+            ? (args.pinCode ?? 'AB12CD') // valid 6-char uppercase alphanumeric
+            : null,
         blocks: {
           create: [
             {
@@ -428,6 +433,7 @@ describe('Unit tests for batch operations on activities', () => {
 
     expect(updatedLiveQuiz?.isGamificationEnabled).toBe(true)
     expect(updatedLiveQuiz?.isAssessmentEnabled).toBe(false)
+    expect(updatedLiveQuiz?.pinCode).toBeNull()
 
     expect(updatedPracticeQuiz?.isGamificationEnabled).toBe(true)
     expect(updatedPracticeQuiz?.isAssessmentEnabled).toBe(false)
@@ -469,6 +475,8 @@ describe('Unit tests for batch operations on activities', () => {
 
     expect(updatedLiveQuiz2?.isGamificationEnabled).toBe(false)
     expect(updatedLiveQuiz2?.isAssessmentEnabled).toBe(true)
+    expect(updatedLiveQuiz2?.pinCode).not.toBeNull()
+    expect(updatedLiveQuiz2?.pinCode).toMatch(/^[A-Z0-9]{6}$/) // pin should be set automatically for assessment live quizzes
 
     expect(updatedPracticeQuiz2?.isGamificationEnabled).toBe(false)
     expect(updatedPracticeQuiz2?.isAssessmentEnabled).toBe(true)
@@ -510,6 +518,7 @@ describe('Unit tests for batch operations on activities', () => {
 
     expect(updatedLiveQuiz3?.isGamificationEnabled).toBe(false)
     expect(updatedLiveQuiz3?.isAssessmentEnabled).toBe(false)
+    expect(updatedLiveQuiz3?.pinCode).toBeNull()
 
     expect(updatedPracticeQuiz3?.isGamificationEnabled).toBe(false)
     expect(updatedPracticeQuiz3?.isAssessmentEnabled).toBe(false)

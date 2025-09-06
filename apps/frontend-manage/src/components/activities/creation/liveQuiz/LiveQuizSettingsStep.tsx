@@ -3,6 +3,7 @@ import {
   faCheck,
   faCrown,
   faGears,
+  faQuestionCircle,
   faUsers,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
@@ -19,6 +20,7 @@ import {
   Checkbox,
   FormikSwitchField,
   SelectField,
+  Tooltip,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -112,6 +114,7 @@ function LiveQuizSettingsStep({
                           setFieldValue('isGamificationEnabled', false)
                           setFieldValue('isAssessmentEnabled', false)
                           setFieldValue('multiplier', '1')
+                          setFieldValue('isPinProtected', false)
                         } else {
                           const selectedCourse = [
                             ...(gamifiedCourses ?? []),
@@ -124,6 +127,10 @@ function LiveQuizSettingsStep({
                           )
                           setFieldValue(
                             'isAssessmentEnabled',
+                            selectedCourse?.isAssessmentEnabled ?? false
+                          )
+                          setFieldValue(
+                            'isPinProtected',
                             selectedCourse?.isAssessmentEnabled ?? false
                           )
                         }
@@ -152,7 +159,7 @@ function LiveQuizSettingsStep({
                       className={{ tooltip: 'z-20' }}
                     />
 
-                    <div className="mt-2 space-y-0.5 pb-2 pl-1">
+                    <div className="mt-2 flex flex-col pb-2 pl-1">
                       {selectedCourse?.isGamified &&
                       values.isGamificationEnabled ? (
                         <div className="gap-2.25 flex flex-row items-center pl-0.5">
@@ -177,6 +184,10 @@ function LiveQuizSettingsStep({
                               !values.isGamificationEnabled
                             )
                           }
+                          className={{
+                            indicator: 'text-xs',
+                            root: 'w-4.5 h-4.5',
+                          }}
                         />
                       )}
 
@@ -194,6 +205,44 @@ function LiveQuizSettingsStep({
                           {t('shared.generic.assessment')}
                         </div>
                       )}
+                      <div className="flex flex-row items-center gap-2.5">
+                        {values.isAssessmentEnabled ? (
+                          <div className="flex flex-row items-center gap-2.5 pl-0.5">
+                            <FontAwesomeIcon
+                              icon={faCheck}
+                              className="w-4 text-green-700"
+                            />
+                            {t('manage.activityWizard.pinProtected')}
+                          </div>
+                        ) : (
+                          <Checkbox
+                            size="sm"
+                            label={t('manage.activityWizard.pinProtected')}
+                            checked={values.isPinProtected}
+                            onCheck={() =>
+                              setFieldValue(
+                                'isPinProtected',
+                                !values.isPinProtected
+                              )
+                            }
+                            className={{
+                              indicator: 'text-xs',
+                              root: 'w-4.5 h-4.5',
+                            }}
+                          />
+                        )}
+                        <Tooltip
+                          tooltip={t(
+                            'manage.activityWizard.pinProtectedTooltip'
+                          )}
+                        >
+                          <FontAwesomeIcon
+                            size="lg"
+                            icon={faQuestionCircle}
+                            className="text-primary-60"
+                          />
+                        </Tooltip>
+                      </div>
                     </div>
                   </div>
                   <div>
