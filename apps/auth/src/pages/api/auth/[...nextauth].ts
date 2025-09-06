@@ -18,65 +18,43 @@ export const PARTICIPANT_COOKIE_NAME = 'next-auth.participant-session-token'
 // Export for discourse.ts and other consumers
 export const APP_SECRET = process.env.APP_SECRET
 
-// Context detection function
+// Simplified context detection - middleware handles most of the logic
 function getAuthContext(req: NextApiRequest): 'lecturer' | 'participant' {
   const { participant, nextauth } = req.query
-  const referer = req.headers.referer || ''
   const cookies = req.headers.cookie || ''
-  
-  console.log('Context detection:', {
+
+  console.log('NextAuth context detection:', {
     participant,
     nextauth,
-    referer,
-    cookies,
+    hasCookie: cookies.includes('auth-context=participant'),
     url: req.url,
-    method: req.method
+    method: req.method,
   })
-  
-  // Check for explicit participant auth parameter
+
+  // Check for explicit participant auth parameter (set by middleware)
   if (participant === 'true') {
-    console.log('Context: participant (explicit param)')
+    console.log('Context: participant (middleware param)')
     return 'participant'
   }
-  
-  // Check auth context cookie
+
+  // Check auth context cookie (set by middleware)
   if (cookies.includes('auth-context=participant')) {
-    console.log('Context: participant (cookie)')
+    console.log('Context: participant (middleware cookie)')
     return 'participant'
   }
-  
-  // Check if this is a participant provider callback
-  if (Array.isArray(nextauth) && nextauth.includes('callback') && nextauth.includes('eduid-participant')) {
-    console.log('Context: participant (callback)')
+
+  // Check if this is a participant provider callback/signin
+  if (
+    Array.isArray(nextauth) &&
+    (nextauth.includes('eduid-participant') ||
+      (nextauth.includes('callback') &&
+        nextauth.includes('eduid-participant')) ||
+      (nextauth.includes('signin') && nextauth.includes('eduid-participant')))
+  ) {
+    console.log('Context: participant (provider route)')
     return 'participant'
   }
-  
-  // Check referer patterns for student/assessment context
-  if (referer.includes('/student')) {
-    console.log('Context: participant (student referer)')
-    return 'participant'
-  }
-  if (referer.includes('assessment.')) {
-    console.log('Context: participant (assessment referer)')
-    return 'participant'
-  }
-  if (referer.includes('participant=true')) {
-    console.log('Context: participant (referer param)')
-    return 'participant'
-  }
-  
-  // Check URL patterns for participant authentication
-  if (req.url?.includes('participant=true')) {
-    console.log('Context: participant (URL param)')
-    return 'participant'
-  }
-  
-  // Check for provider-specific routing
-  if (Array.isArray(nextauth) && nextauth.includes('signin') && nextauth.includes('eduid-participant')) {
-    console.log('Context: participant (signin)')
-    return 'participant'
-  }
-  
+
   // Default to lecturer authentication
   console.log('Context: lecturer (default)')
   return 'lecturer'
@@ -316,14 +294,14 @@ const EduIDParticipantProvider: Provider | null =
             console.error('Missing sub in EduID profile:', profile)
             throw new Error('Missing sub in EduID profile')
           }
-          
+
           return {
-            id: profile.sub,  // NextAuth requires an id field
-            sub: profile.sub,  // Preserve original sub
+            id: profile.sub, // NextAuth requires an id field
+            sub: profile.sub, // Preserve original sub
             email: profile.email || '',
             name: profile.email?.split('@')[0] || 'Student',
             // Preserve all original profile data for callbacks
-            ...profile
+            ...profile,
           }
         },
       }
@@ -392,12 +370,12 @@ const CredentialProvider: Provider = CredentialsProvider({
 // Dynamic NextAuth configuration based on context
 export default async function auth(req: NextApiRequest, res: NextApiResponse) {
   const context = getAuthContext(req)
-  
+
   // Configure providers based on context
   let providers: Provider[] = []
   let adapter: any = undefined
   let cookieName: string
-  
+
   if (context === 'participant') {
     // Participant flow: EduID only, no PrismaAdapter
     providers = EduIDParticipantProvider ? [EduIDParticipantProvider] : []
@@ -446,9 +424,11 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
         if (context === 'participant') {
           // Participant authentication flow
           if (!profile) return false
-          
+
           try {
-            const participant = await createOrLinkParticipant(profile as ExtendedProfile)
+            const participant = await createOrLinkParticipant(
+              profile as ExtendedProfile
+            )
             // Store participantId for jwt callback
             ;(profile as any).participantId = participant.id
             return true
@@ -574,15 +554,15 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
           ) {
             return url
           }
-          
+
           if (url.startsWith('/')) {
             return `${baseUrl}${url}`
           }
-          
+
           if (url.includes(process.env.COOKIE_DOMAIN as string)) {
             return url
           }
-          
+
           return baseUrl
         } else {
           // Lecturer redirect handling (existing logic)

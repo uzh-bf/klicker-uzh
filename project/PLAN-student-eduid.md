@@ -12,13 +12,52 @@ Add Edu-ID (OpenID Connect) authentication for students to the KlickerUZH platfo
 - Ensure strict separation of identities: Lecturers use `User/Account`, Students use `Participant/ParticipantAccount`
 - Do NOT use NextAuth PrismaAdapter or the `User/Account` tables for students
 
-## Separation Strategy
-- Lecturers: keep existing NextAuth config at `/api/auth/[...nextauth].ts` with `PrismaAdapter(prisma)`, persisting to `User` and `Account`.
-- Students (assessment PWA only): use NextAuth config at `/api/auth/eduid-participant.ts` WITHOUT PrismaAdapter (JWT sessions only), with cookie name `next-auth.participant-session-token`.
-- Assessment backend (with `ASSESSMENT_MODE=true`): directly accepts and validates the NextAuth participant session cookie - no token exchange needed.
-- Persistence for students happens directly in NextAuth callbacks into `Participant` and `ParticipantAccount`. The NextAuth `Account` table is NOT used in the student flow.
+## Actual Implementation Strategy (Updated)
 
-## Implementation Steps
+**⚠️ Original Plan Changed**: We discovered that NextAuth v4's catch-all route architecture prevents separate authentication files from functioning. The solution required working within NextAuth's provider system through dynamic configuration.
+
+### Dynamic NextAuth Configuration
+- **Single Entry Point**: All authentication flows use `/api/auth/[...nextauth].ts` with dynamic configuration
+- **Context Detection**: Middleware and context functions detect lecturer vs participant flows
+- **Conditional Adapters**: 
+  - Lecturers: Use `PrismaAdapter(prisma)` → persists to `User` and `Account` tables
+  - Students: No adapter (JWT sessions only) → persists via callbacks to `Participant`/`ParticipantAccount`
+- **Separate Cookies**: 
+  - Lecturers: `next-auth.session-token` 
+  - Students: `next-auth.participant-session-token`
+- **Middleware Routing**: `/src/middleware.ts` handles context detection and automatic redirects
+
+### Assessment Backend Integration
+- Assessment backend (with `ASSESSMENT_MODE=true`) directly accepts NextAuth participant session cookies
+- No token exchange or handoff mechanism needed
+- Complete separation maintained through different cookie names and backend modes
+
+## Architectural Discoveries & Constraints
+
+### NextAuth v4 Limitations
+**Issue**: NextAuth v4's `[...nextauth].ts` creates a catch-all route that intercepts ALL requests to `/api/auth/*`, making separate authentication files like `/api/auth/eduid-participant.ts` unreachable.
+
+**Solution**: Implemented dynamic configuration within a single NextAuth instance using context detection.
+
+### Key Technical Challenges Resolved
+
+#### 1. "This action with HTTP GET is not supported by NextAuth.js"
+- **Cause**: Incorrect NextAuth handler initialization in dynamic configuration
+- **Fix**: Changed from `NextAuth(authOptions)` to proper `NextAuth(authOptions) as any` with correct handler invocation
+
+#### 2. "Profile id is missing in EduID OAuth profile response"
+- **Cause**: Participant provider profile function returned raw OAuth profile without required `id` field
+- **Fix**: Updated profile function to map `profile.sub` to `id` field and preserve all original data
+
+#### 3. Middleware Not Executing
+- **Cause**: Middleware placed in wrong location (`/middleware.ts` instead of `/src/middleware.ts`)
+- **Fix**: Moved middleware to correct location for Pages Router with src directory
+
+#### 4. Context Preservation Through OAuth Flow
+- **Challenge**: Maintaining participant context through EduID OAuth redirect flow
+- **Solution**: Cookie-based context persistence + URL parameters + middleware detection
+
+## Implementation Steps (Actual Implementation)
 
 ### 1. Database Schema (V1: No Changes)
 
@@ -58,125 +97,130 @@ if (process.env.ASSESSMENT_MODE === 'true') {
 }
 ```
 
-### 3. Auth App - Enhanced NextAuth Configuration
+### 3. Dynamic NextAuth Configuration
 
-**Update existing `/api/auth/eduid-participant.ts`**:
+**Updated `/api/auth/[...nextauth].ts` with dynamic configuration**:
 ```typescript
-// Student-only NextAuth configuration
-// NO PrismaAdapter - participant persistence via callbacks
-export const authOptions: NextAuthOptions = {
-  secret: process.env.APP_SECRET,
+// Dynamic NextAuth configuration based on context
+export default async function auth(req: NextApiRequest, res: NextApiResponse) {
+  const context = getAuthContext(req)  // 'lecturer' | 'participant'
   
-  providers: [
-    {
-      id: 'eduid-participant',  // Same as existing
-      wellKnown: process.env.EDUID_WELL_KNOWN,
-      clientId: process.env.EDUID_CLIENT_ID,
-      clientSecret: process.env.EDUID_CLIENT_SECRET,
-      
-      name: 'EduID',
-      type: 'oauth',
-      authorization: {
-        params: {
-          claims: {
-            id_token: {
-              sub: { essential: true },
-              email: { essential: true },
-              swissEduPersonUniqueID: { essential: true },
-            },
-          },
-          scope: 'openid email https://login.eduid.ch/authz/User.Read',
-        },
-      },
-      idToken: true,
-      checks: ['pkce', 'state'],
-      
-      profile(profile) {
-        return profile
-      },
+  // Configure providers based on context
+  let providers: Provider[] = []
+  let adapter: any = undefined
+  let cookieName: string
+  
+  if (context === 'participant') {
+    // Participant flow: EduID only, no PrismaAdapter
+    providers = [EduIDParticipantProvider]
+    adapter = undefined // JWT sessions only
+    cookieName = PARTICIPANT_COOKIE_NAME
+  } else {
+    // Lecturer flow: EduID + Credentials, with PrismaAdapter
+    providers = [EduIDLecturerProvider, CredentialProvider]
+    adapter = PrismaAdapter(prisma)
+    cookieName = COOKIE_NAME
+  }
+
+  const authOptions: NextAuthOptions = {
+    secret: process.env.APP_SECRET,
+    adapter,
+    providers,
+    session: { strategy: 'jwt' },
+    cookies: {
+      sessionToken: {
+        name: cookieName,
+        options: { /* cookie options */ }
+      }
+    },
+    callbacks: {
+      // Context-specific callbacks for signIn, jwt, redirect
     }
-  ],
-  
-  session: {
-    strategy: 'jwt',  // JWT only - no database sessions
-  },
-  
-  cookies: {
-    sessionToken: {
-      name: 'next-auth.participant-session-token',
-      options: {
-        domain: process.env.COOKIE_DOMAIN,
-        path: '/',
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-      },
-    },
-  },
-  
-  callbacks: {
-    async signIn({ user, account, profile }) {
-      // Create/link Participant and ParticipantAccount directly
-      await createOrLinkParticipant(profile)
-      return true
-    },
-    
-    async jwt({ token, profile }) {
-      if (profile) {
-        // Look up participant by Edu-ID sub
-        const participantAccount = await prisma.participantAccount.findUnique({
-          where: { ssoId: profile.sub },
-          include: { participant: true }
-        })
-        
-        // Structure token for participant authentication
-        token.sub = participantAccount.participantId
-        token.role = 'PARTICIPANT'
-        token.scope = 'PARTICIPANT'
-        token.email = profile.email
-      }
-      return token
-    },
-    
-    async redirect({ url, baseUrl }) {
-      // Allow redirects to assessment PWA
-      if (url.includes('assessment.klicker.uzh.ch')) {
-        return url
-      }
-      return baseUrl
-    },
-  },
+  }
+
+  return await NextAuth(authOptions)(req, res)
 }
 ```
 
-### 4. Auth App - Simple Entry Point
+**Key Features**:
+- Context detection from middleware cookies, URL parameters, and referer headers
+- Separate EduID providers for lecturers and participants
+- Dynamic adapter assignment (PrismaAdapter for lecturers, none for participants)
+- Context-specific callbacks that handle User vs Participant table persistence
 
-**Create `/student.tsx` page**:
+### 4. Middleware for Elegant Context Detection
+
+**Created `/src/middleware.ts`**:
 ```typescript
-// Simple entry point for student Edu-ID authentication
-export default function Student() {
-  const router = useRouter()
+export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
   
-  useEffect(() => {
-    const redirectTo = router.query.redirectTo as string
+  // Handle /student route - redirect to OAuth immediately  
+  if (pathname === '/student') {
+    const redirectTo = request.nextUrl.searchParams.get('redirectTo')
+    
     if (!redirectTo || !isValidStudentRedirectUrl(redirectTo)) {
-      // Invalid or missing redirect
-      return
+      return new NextResponse('Invalid redirect URL', { status: 400 })
     }
     
-    // Directly trigger NextAuth sign-in with callback to PWA
-    signIn('eduid-participant', {
-      callbackUrl: redirectTo
+    // Redirect directly to the EduID OAuth flow
+    const signinUrl = new URL('/api/auth/signin/eduid-participant', request.url)
+    signinUrl.searchParams.set('callbackUrl', redirectTo)
+    signinUrl.searchParams.set('participant', 'true')
+    
+    const response = NextResponse.redirect(signinUrl)
+    
+    // Set context cookie for the auth flow
+    response.cookies.set('auth-context', 'participant', {
+      httpOnly: true, sameSite: 'lax', path: '/',
+      domain: process.env.COOKIE_DOMAIN
     })
-  }, [router])
+    
+    return response
+  }
   
-  return <div>Redirecting to Edu-ID...</div>
+  // Process auth routes for context detection
+  if (pathname.startsWith('/api/auth')) {
+    // Detect and preserve participant context
+    // Set participant=true parameter if context detected
+  }
+}
+
+export const config = {
+  matcher: ['/api/auth/:path*', '/student']
 }
 ```
 
-### 5. NextAuth Helper Function
+### 5. Simplified Student Entry Point
 
-**Add to `/api/auth/eduid-participant.ts`**:
+**Updated `/student.tsx` page** (now just a fallback):
+```typescript
+// Middleware handles the redirect, this is just a fallback
+export default function Student() {
+  return (
+    <div className="flex h-full flex-col items-center justify-center">
+      <div className="text-center">
+        <h1 className="mb-4 text-2xl font-semibold">
+          Redirecting to Edu-ID...
+        </h1>
+        <p className="text-gray-600">
+          Please wait while we redirect you to the authentication service.
+        </p>
+      </div>
+    </div>
+  )
+}
+```
+
+**Benefits of Middleware Approach**:
+- Server-side redirect is faster than client-side
+- Centralized context detection logic
+- Automatic parameter preservation
+- No JavaScript required for redirect
+
+### 6. Participant Helper Function
+
+**Integrated into `/api/auth/[...nextauth].ts`**:
 ```typescript
 async function createOrLinkParticipant(profile: ExtendedProfile) {
   // Lookup existing account via ssoId (Edu-ID sub)
@@ -194,21 +238,21 @@ async function createOrLinkParticipant(profile: ExtendedProfile) {
   }
   
   // Check for existing participant by email
-  let participant: Participant | null = null
+  let participant: any = null
   
   if (profile.email) {
     participant = await prisma.participant.findUnique({
-      where: { email: profile.email },
+      where: { email: profile.email.toLowerCase() },
     })
   }
   
   // Create new participant if none exists
   if (!participant) {
-    const username = await generateUniqueUsername(profile.email)
+    const username = `student_${crypto.randomBytes(4).toString('hex')}`
     participant = await prisma.participant.create({
       data: {
         username,
-        email: profile.email,
+        email: profile.email?.toLowerCase(),
         password: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10),
         isEmailValid: true,  // Edu-ID emails are pre-validated
         isSSOAccount: true,
@@ -221,12 +265,25 @@ async function createOrLinkParticipant(profile: ExtendedProfile) {
   await prisma.participantAccount.create({
     data: {
       ssoType: 'EDUID',
-      ssoId: profile.sub,
+      ssoId: profile.sub as string,
       participant: { connect: { id: participant.id } },
     },
   })
   
   return participant
+}
+```
+
+**Key Fix**: Updated EduID Participant provider profile function to return proper user object:
+```typescript
+profile(profile) {
+  return {
+    id: profile.sub,  // NextAuth requires an id field
+    sub: profile.sub,
+    email: profile.email || '',
+    name: profile.email?.split('@')[0] || 'Student',
+    ...profile  // Preserve all original data for callbacks
+  }
 }
 ```
 
@@ -346,6 +403,104 @@ function isValidStudentRedirectUrl(url: string): boolean {
 - Consider deprecating username/password for assessment instance
 - Keep magic link and LTI as alternatives
 
+## Lessons Learned & Key Insights
+
+### NextAuth Architecture Limitations
+**Discovery**: NextAuth v4's catch-all route system (`[...nextauth].ts`) makes it impossible to create separate authentication endpoints under `/api/auth/*`. This fundamentally changed our architectural approach.
+
+**Lesson**: For complex multi-tenant authentication, work within NextAuth's provider system rather than against it. Dynamic configuration based on request context is more robust than separate route files.
+
+### Dynamic Configuration vs Static Configuration
+**Discovery**: NextAuth can be dynamically configured per request, allowing different providers, adapters, and callbacks based on runtime context detection.
+
+**Benefits**:
+- Single codebase handling multiple authentication flows
+- Easier maintenance and testing
+- Shared security and session management logic
+- Conditional adapter usage (PrismaAdapter for lecturers, none for participants)
+
+### Context Preservation Through OAuth Flows
+**Challenge**: Maintaining authentication context (lecturer vs participant) through external OAuth redirects where the application loses control.
+
+**Solution Strategy**:
+1. **Multiple Detection Points**: URL parameters, cookies, referer headers, and route patterns
+2. **Middleware-First Approach**: Set context before OAuth flow begins
+3. **Cookie Persistence**: HttpOnly cookies survive OAuth redirects
+4. **Redundant Signals**: Multiple ways to detect context prevents loss
+
+**Key Insight**: OAuth flows require stateful context preservation, not just URL parameters.
+
+### Middleware vs Client-Side Routing
+**Discovery**: Server-side middleware redirects are significantly faster and more reliable than client-side JavaScript redirects for authentication flows.
+
+**Benefits of Middleware Approach**:
+- No JavaScript required for redirect functionality
+- Faster perceived performance (no client render before redirect)
+- SEO-friendly (proper HTTP redirects)
+- Centralized routing logic
+- Better security (server-side URL validation)
+
+### NextAuth Profile Function Requirements
+**Critical Discovery**: NextAuth requires OAuth profile functions to return an object with an `id` field, even when using JWT sessions without a database adapter.
+
+**Error Pattern**: Raw OAuth profile data missing required fields causes "Profile id is missing" errors.
+
+**Solution**: Always map OAuth profile data to NextAuth's expected format:
+```typescript
+profile(profile) {
+  return {
+    id: profile.sub,  // Required by NextAuth
+    sub: profile.sub, // Preserve original
+    email: profile.email || '',
+    name: profile.name || 'Default',
+    ...profile // Preserve all original data
+  }
+}
+```
+
+### Database Adapter Conditional Usage
+**Innovation**: Using PrismaAdapter conditionally based on authentication context allows different persistence strategies within the same NextAuth instance.
+
+**Pattern**:
+- Lecturers: PrismaAdapter → persists to User/Account tables
+- Participants: No adapter → manual persistence via callbacks to Participant/ParticipantAccount tables
+
+**Benefits**: Clean separation of concerns while sharing authentication infrastructure.
+
+### Development Environment Complexity
+**Challenge**: Running two modes (regular and assessment) of the same application stack simultaneously.
+
+**Solution**: Doppler branch-based configuration with mode-specific npm scripts.
+
+**Learning**: Environment variable management becomes critical for multi-mode applications. Clear naming conventions prevent deployment mistakes.
+
+### Cookie Domain and SameSite Considerations
+**Discovery**: Cookie domain and SameSite settings become complex with multi-subdomain authentication (auth.klicker.uzh.ch, assessment.klicker.uzh.ch, manage.klicker.uzh.ch).
+
+**Best Practice**: Use environment-based cookie domain configuration and test thoroughly across all target subdomains.
+
+### Error Recovery and Debugging
+**Key Insight**: Authentication flow errors often manifest as generic NextAuth errors that don't clearly indicate the root cause.
+
+**Debugging Strategy**:
+1. Add comprehensive logging at each step (context detection, provider selection, profile mapping)
+2. Test each component in isolation before integration
+3. Validate OAuth profile data structure early in the flow
+
+### Architectural Decision: Single vs Multiple NextAuth Instances
+**Decision**: Use single dynamic NextAuth instance rather than attempting multiple instances or custom authentication.
+
+**Rationale**:
+- Leverages NextAuth's security features and session management
+- Reduces custom authentication code maintenance
+- Provides consistent developer experience
+- Easier testing and debugging
+
+**Trade-offs**:
+- More complex dynamic configuration logic
+- Requires careful context detection
+- All authentication flows must fit NextAuth patterns
+
 ## Implementation Order
 
 1. ✅ **Backend**: Update JWT strategy in `apps/backend-docker/src/app.ts` for assessment mode
@@ -358,39 +513,62 @@ function isValidStudentRedirectUrl(url: string): boolean {
 8. 📋 **Testing**: Validate end-to-end flow and cookie handling
 9. 📋 **Deployment**: Assessment backend and PWA instances
 
-## Implementation Status
+## Implementation Status (Updated)
 
 ### ✅ Completed
-1. **Backend Assessment Mode Configuration** - `apps/backend-docker/src/app.ts` updated with `ASSESSMENT_MODE` environment variable check
-2. **NextAuth Enhanced Configuration** - `/api/auth/eduid-participant.ts` with:
-   - Participant creation/linking in signIn callback
-   - JWT structuring with participant data
-   - Helper function `createOrLinkParticipant`
-3. **Student Entry Point** - `/student.tsx` page created with URL validation and NextAuth integration
-4. **PWA Assessment Mode Updates** - Login form enhanced with:
+1. **Backend Assessment Mode Configuration** - `apps/backend-docker/src/app.ts` updated with `ASSESSMENT_MODE` environment variable check to accept `next-auth.participant-session-token`
+
+2. **Dynamic NextAuth Configuration** - Single `/api/auth/[...nextauth].ts` with:
+   - Context detection function (`getAuthContext`)
+   - Conditional provider configuration (EduIDLecturerProvider vs EduIDParticipantProvider)  
+   - Dynamic adapter assignment (PrismaAdapter for lecturers, none for participants)
+   - Separate cookie names for complete isolation
+   - Context-specific callbacks for User vs Participant table persistence
+   - Fixed profile function to return proper user object with `id` field
+
+3. **Middleware for Context Detection** - `/src/middleware.ts` with:
+   - Automatic redirect from `/student` to OAuth flow
+   - Context cookie setting and preservation  
+   - URL parameter injection for context preservation
+   - Centralized routing logic
+
+4. **Simplified Student Entry Point** - `/student.tsx` updated to:
+   - Serve as fallback only (middleware handles the redirect)
+   - Provide user feedback during redirect process
+
+5. **PWA Assessment Mode Updates** - Login form enhanced with:
    - Environment-based Edu-ID login button
    - Assessment mode detection via `NEXT_PUBLIC_IS_ASSESSMENT`
-   - Proper redirect handling to auth app
-5. **Development Scripts Setup** - Added `dev:assessment` commands to:
-   - Root package.json with Doppler `dev_assessment` config
-   - Backend-docker, frontend-pwa, auth, frontend-manage, frontend-control
-   - Fallback scripts for all other apps
-6. **Environment Configuration** - Assessment-specific environment files created:
-   - `.env.assessment` for production
-   - `.env.assessment.development` for local development
+   - Proper redirect to `/student` entry point
 
-### 🔄 In Progress  
-- Remaining app `dev:assessment` scripts (handled by user)
+6. **Development Scripts Setup** - Added `dev:assessment` commands across apps
+
+7. **Technical Issues Resolved**:
+   - ✅ Fixed "This action with HTTP GET is not supported" error
+   - ✅ Fixed "Profile id is missing in EduID OAuth profile response" error  
+   - ✅ Fixed middleware location issue (moved to `/src/middleware.ts`)
+   - ✅ Implemented cookie-based context preservation through OAuth flow
+
+### 🔄 Current Issues
+1. **Double-Click Required** - Users still see NextAuth signin page with EduID button after middleware redirect
+   - **Status**: Working but not optimal UX
+   - **Next Step**: Implement direct OAuth redirect to skip NextAuth signin page entirely
 
 ### 📋 Pending
-1. **Doppler Configuration** - Create `dev_assessment` branch with:
+1. **Direct OAuth Redirect** - Skip NextAuth signin page to eliminate double-click:
+   - Option A: Custom signin page that auto-redirects for participants
+   - Option B: Modify middleware to redirect directly to OAuth provider
+   - Option C: Use NextAuth's direct provider signin URL
+
+2. **Doppler Configuration** - Create `dev_assessment` branch with:
    - `ASSESSMENT_MODE=true`
-   - `NEXT_PUBLIC_IS_ASSESSMENT=true`
+   - `NEXT_PUBLIC_IS_ASSESSMENT=true`  
    - `NEXT_PUBLIC_AUTH_URL=https://auth.klicker.com` (dev) / `https://auth.klicker.uzh.ch` (prod)
-2. **Edu-ID Redirect URLs** - Register in Switch Edu-ID client:
+
+3. **Edu-ID Redirect URLs** - Register in Switch Edu-ID client:
    - `https://auth.klicker.com/api/auth/callback/eduid-participant` (dev)
    - `https://auth.klicker.uzh.ch/api/auth/callback/eduid-participant` (prod)
-3. **End-to-End Testing** - Verify complete authentication flow
+
 4. **Production Deployment** - Assessment backend and PWA instances with proper environment configuration
 
 ## Development Setup

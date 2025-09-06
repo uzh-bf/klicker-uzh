@@ -2,7 +2,7 @@ import { UserRole } from '@klicker-uzh/prisma/client'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getToken } from 'next-auth/jwt'
 import crypto from 'node:crypto'
-import { COOKIE_NAME, APP_SECRET, decode } from './auth/[...nextauth]'
+import { APP_SECRET, COOKIE_NAME, decode } from './auth/[...nextauth]'
 
 type ResponseData = {
   redirectURL: string
