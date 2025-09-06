@@ -137,7 +137,7 @@ describe('JWT Utilities', () => {
     })
 
     it('should decode token with custom type', () => {
-      interface CustomPayload {
+      interface CustomPayload extends Record<string, unknown> {
         sub: string
         customField: string
       }

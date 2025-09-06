@@ -51,11 +51,13 @@ function reduceCatalyst(acc: boolean, affiliation: string) {
 
 export async function decode({ token, secret }: JWTDecodeParams) {
   if (!token) return null
-  return verifyJWT(token, secret) as DefaultJWT
+  const secretString = typeof secret === 'string' ? secret : secret.toString()
+  return (await verifyJWT(token, secretString)) as DefaultJWT
 }
 
 export async function encode({ token, secret }: JWTEncodeParams) {
-  return signJWT(token ?? {}, secret)
+  const secretString = typeof secret === 'string' ? secret : secret.toString()
+  return signJWT((token as JWTPayload) ?? {}, secretString)
 }
 
 function generateRandomString(length: number) {
