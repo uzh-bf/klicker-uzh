@@ -678,6 +678,7 @@ export async function manipulateLiveQuiz(
   // if a new course should be assigned, verify that the live quiz is not removed from an assessment course (by someone with insufficient permissions)
   const newCourse =
     courseId !== null &&
+    typeof courseId !== 'undefined' &&
     (!existingActivity?.isAssessmentEnabled ||
       (existingActivity?.course?._count.permissions ?? 0) > 0)
 

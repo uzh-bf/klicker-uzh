@@ -3922,6 +3922,8 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userOne.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course1.id }, prisma)
+
     const course2 = await prisma.course.create({
       data: {
         name: 'Course 2',
@@ -3934,6 +3936,8 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userTwo.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course2.id }, prisma)
+
     const course3 = await prisma.course.create({
       data: {
         name: 'Course 3',
@@ -3946,6 +3950,8 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userThree.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course3.id }, prisma)
+
     const course4 = await prisma.course.create({
       data: {
         name: 'Course 4',
@@ -3970,6 +3976,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userFive.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course5.id }, prisma)
 
     // create a live quiz that is linked to course 1
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)

@@ -175,7 +175,13 @@ function LiveQuizActions({
       ],
       isRemovable: ['removeLiveQuiz'],
     }
-  }, [user?.privatePreview])
+  }, [
+    user?.privatePreview,
+    liveQuiz.id,
+    liveQuiz.status,
+    liveQuiz.isAssessmentEnabled,
+    liveQuiz.isActivityReviewer,
+  ])
 
   const actions = useLiveQuizActions({
     quiz: liveQuiz,

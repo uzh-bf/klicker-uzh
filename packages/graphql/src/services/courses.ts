@@ -1048,7 +1048,7 @@ export async function getActiveUserCourses(
     // deduplicate the course linked to the activity with the other user courses and sort it accordingly
     if (activityCourse) {
       const userHasActivityCourseAssess = courses.some(
-        (course) => course.id === activityCourse!.id
+        (course) => course.id === activityCourse.id
       )
       const augmentedCourses = userHasActivityCourseAssess
         ? courses
