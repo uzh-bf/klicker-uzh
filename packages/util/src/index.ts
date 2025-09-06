@@ -12,3 +12,6 @@ export * from './levels.js'
 
 // export everything from the jwt module
 export * from './jwt.js'
+
+// export everything from the audit module
+export * from './audit.js'

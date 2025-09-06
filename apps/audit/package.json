@@ -11,6 +11,7 @@
     "@azure/data-tables": "13.2.2",
     "@hono/node-server": "1.19.0",
     "@hono/zod-validator": "0.4.1",
+    "@klicker-uzh/util": "workspace:*",
     "hono": "4.9.6",
     "jose": "5.9.4",
     "pino": "9.4.0",

@@ -933,3 +933,66 @@ export type ActivityQuizAnalytics = {
   totalCorrectRate: number
 }
 // #endregion
+
+// ----- AUDIT LOG TYPES -----
+// #region
+export interface AuditEvent {
+  tenantId: string
+  subject: string
+  action: string
+  resourceId?: string
+  sessionId?: string
+  userId?: string
+  timestamp?: number
+  eventId?: string
+  attributes?: Record<string, any>
+}
+
+export type AuditAction =
+  | 'login.success'
+  | 'login.failed'
+  | 'logout'
+  | 'data.create'
+  | 'data.read'
+  | 'data.update'
+  | 'data.delete'
+  | 'permission.granted'
+  | 'permission.denied'
+  | 'error.system'
+  | 'error.user'
+  | 'quiz.created'
+  | 'quiz.updated'
+  | 'quiz.deleted'
+  | 'quiz.started'
+  | 'quiz.ended'
+  | 'element.created'
+  | 'element.updated'
+  | 'element.deleted'
+  | 'response.submitted'
+  | 'feedback.created'
+  | 'feedback.updated'
+  | string
+
+export interface AuditClientConfig {
+  serviceUrl?: string
+  internalToken?: string
+  retryAttempts?: number
+  timeout?: number
+  batchSize?: number
+  flushInterval?: number
+  enabled?: boolean
+}
+
+export interface AuditResponse {
+  status: 'stored'
+  stored: boolean
+  eventId: string
+}
+
+export interface AuditBatchResponse {
+  status: 'stored'
+  stored: boolean
+  eventIds: string[]
+  processedCount: number
+}
+// #endregion

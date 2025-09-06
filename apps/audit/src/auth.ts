@@ -1,5 +1,5 @@
+import { verifyJWT } from '@klicker-uzh/util'
 import type { Context, Next } from 'hono'
-import * as jose from 'jose'
 import { config } from './config.js'
 import { logger } from './utils/logger.js'
 
@@ -43,7 +43,7 @@ export async function authMiddleware(
 
 /**
  * Verify participant JWT token using APP_SECRET
- * Based on the pattern used in hatchet-worker-response-processor
+ * Uses the shared JWT utilities from @klicker-uzh/util
  */
 export async function verifyParticipantToken(
   token: string,
@@ -54,15 +54,9 @@ export async function verifyParticipantToken(
   }
 
   try {
-    const secretBuffer = new TextEncoder().encode(appSecret)
-    const { payload } = await jose.jwtVerify(token, secretBuffer, {
+    const payload = await verifyJWT(token, appSecret, {
       clockTolerance: 30, // Allow 30 seconds clock skew
     })
-
-    // Explicit expiry check (jose should handle this, but be explicit)
-    if (payload.exp && payload.exp * 1000 < Date.now()) {
-      return null
-    }
 
     // Extract participant data from JWT payload
     const participantId = payload.sub as string
