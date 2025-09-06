@@ -539,11 +539,17 @@ describe('Integration tests for assessment configuration functionalities', () =>
       // expect(res1).not.toBeNull()
       // expect(res1?.status).toEqual(PublicationStatus.DRAFT)
 
-      const res2 = await cancelLiveQuiz({ id: quiz2.id }, userOneCtx)
-      expect(res2).toBeNull()
+      await expect(
+        cancelLiveQuiz({ id: quiz2.id }, userOneCtx)
+      ).rejects.toThrow(
+        'Assessment quizzes can only be aborted before the first block is activated'
+      )
 
-      const res3 = await cancelLiveQuiz({ id: quiz3.id }, userOneCtx)
-      expect(res3).toBeNull()
+      await expect(
+        cancelLiveQuiz({ id: quiz3.id }, userOneCtx)
+      ).rejects.toThrow(
+        'Assessment quizzes can only be aborted before the first block is activated'
+      )
     })
   })
 })
