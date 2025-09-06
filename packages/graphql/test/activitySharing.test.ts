@@ -5893,6 +5893,8 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
         ownerId: userOne.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course1.id }, prisma)
+
     const course2 = await prisma.course.create({
       data: {
         name: 'Course 2',
@@ -5905,6 +5907,8 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
         ownerId: userTwo.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course2.id }, prisma)
+
     const course3 = await prisma.course.create({
       data: {
         name: 'Course 3',
@@ -5917,6 +5921,8 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
         ownerId: userThree.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course3.id }, prisma)
+
     const course4 = await prisma.course.create({
       data: {
         name: 'Course 4',
@@ -5929,6 +5935,8 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
         ownerId: userFour.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course4.id }, prisma)
+
     const course5 = await prisma.course.create({
       data: {
         name: 'Course 5',
@@ -5941,6 +5949,7 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
         ownerId: userFive.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course5.id }, prisma)
 
     // create an activity that is linked to course 1
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)
@@ -7787,6 +7796,8 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
         ownerId: userOne.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course1.id }, prisma)
+
     const course2 = await prisma.course.create({
       data: {
         name: 'Course 2',
@@ -7799,6 +7810,8 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
         ownerId: userTwo.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course2.id }, prisma)
+
     const course3 = await prisma.course.create({
       data: {
         name: 'Course 3',
@@ -7811,6 +7824,8 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
         ownerId: userThree.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course3.id }, prisma)
+
     const course4 = await prisma.course.create({
       data: {
         name: 'Course 4',
@@ -7823,6 +7838,8 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
         ownerId: userFour.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course4.id }, prisma)
+
     const course5 = await prisma.course.create({
       data: {
         name: 'Course 5',
@@ -7835,6 +7852,7 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
         ownerId: userFive.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course5.id }, prisma)
 
     // create an activity that is linked to course 1
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)
@@ -9696,6 +9714,8 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
         ownerId: userOne.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course1.id }, prisma)
+
     const course2 = await prisma.course.create({
       data: {
         name: 'Course 2',
@@ -9708,6 +9728,8 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
         ownerId: userTwo.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course2.id }, prisma)
+
     const course3 = await prisma.course.create({
       data: {
         name: 'Course 3',
@@ -9720,6 +9742,8 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
         ownerId: userThree.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course3.id }, prisma)
+
     const course4 = await prisma.course.create({
       data: {
         name: 'Course 4',
@@ -9732,6 +9756,8 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
         ownerId: userFour.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course4.id }, prisma)
+
     const course5 = await prisma.course.create({
       data: {
         name: 'Course 5',
@@ -9744,6 +9770,7 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
         ownerId: userFive.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course5.id }, prisma)
 
     // create an activity that is linked to course 1
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)

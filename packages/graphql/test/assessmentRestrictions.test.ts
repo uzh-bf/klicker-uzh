@@ -5,8 +5,11 @@ import {
 } from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
-import { deleteLiveQuiz } from 'src/services/liveQuizzes.js'
 import type { ContextWithUser } from '../src/lib/context.js'
+import {
+  deleteLiveQuiz,
+  manipulateLiveQuiz,
+} from '../src/services/liveQuizzes.js'
 import {
   initializePrisma,
   seedCourse,
@@ -221,6 +224,257 @@ describe('Integration tests for assessment configuration functionalities', () =>
       expect(res19).toBeNull()
       const res20 = await deleteLiveQuiz({ id: endedQuiz.id }, userFiveCtx)
       expect(res20).toBeNull()
+    })
+
+    it('Verify that only assessment course owners and admins can remove activities from the course', async () => {
+      // seed courses
+      const { assessment, gamifiedAssessment } = await seedCourses()
+
+      // share the assessment course directly with user two (admin permissions)
+      await prisma.permission.create({
+        data: {
+          userId: userTwo.id,
+          courseId: assessment.id,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+      })
+      await recomputeDerivedPermissions({ courseId: assessment.id }, prisma)
+
+      // share the gamified assessment course directly with user two (admin permissions)
+      await prisma.permission.create({
+        data: {
+          userId: userTwo.id,
+          courseId: gamifiedAssessment.id,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+      })
+      await recomputeDerivedPermissions(
+        { courseId: gamifiedAssessment.id },
+        prisma
+      )
+
+      // share the assessment course directly with users three, four, and five (editor, execution, and viewer permissions)
+      await prisma.permission.createMany({
+        data: [
+          {
+            userId: userThree.id,
+            courseId: assessment.id,
+            permissionLevel: PermissionLevel.WRITE,
+          },
+          {
+            userId: userFour.id,
+            courseId: assessment.id,
+            permissionLevel: PermissionLevel.EXECUTE,
+          },
+          {
+            userId: userFive.id,
+            courseId: assessment.id,
+            permissionLevel: PermissionLevel.READ,
+          },
+        ],
+      })
+      await recomputeDerivedPermissions({ courseId: assessment.id }, prisma)
+
+      // share the gamified assessment course directly with users three, four, and five (editor, execution, and viewer permissions)
+      await prisma.permission.createMany({
+        data: [
+          {
+            userId: userThree.id,
+            courseId: gamifiedAssessment.id,
+            permissionLevel: PermissionLevel.WRITE,
+          },
+          {
+            userId: userFour.id,
+            courseId: gamifiedAssessment.id,
+            permissionLevel: PermissionLevel.EXECUTE,
+          },
+          {
+            userId: userFive.id,
+            courseId: gamifiedAssessment.id,
+            permissionLevel: PermissionLevel.READ,
+          },
+        ],
+      })
+      await recomputeDerivedPermissions(
+        { courseId: gamifiedAssessment.id },
+        prisma
+      )
+
+      // share the assessment course directly with users three, four, and five (editor, execution, and viewer permissions)
+      await prisma.permission.createMany({
+        data: [
+          {
+            userId: userThree.id,
+            courseId: assessment.id,
+            permissionLevel: PermissionLevel.WRITE,
+          },
+          {
+            userId: userFour.id,
+            courseId: assessment.id,
+            permissionLevel: PermissionLevel.EXECUTE,
+          },
+          {
+            userId: userFive.id,
+            courseId: assessment.id,
+            permissionLevel: PermissionLevel.READ,
+          },
+        ],
+      })
+      await recomputeDerivedPermissions({ courseId: assessment.id }, prisma)
+
+      // seed multiple live quizzes in different states
+      const draftQuiz1 = await seedLiveQuiz(
+        {
+          elements: [],
+          status: PublicationStatus.DRAFT,
+          courseId: assessment.id,
+        },
+        userOneCtx
+      )
+      const draftQuiz2 = await seedLiveQuiz(
+        {
+          elements: [],
+          status: PublicationStatus.DRAFT,
+          courseId: assessment.id,
+        },
+        userTwoCtx
+      )
+      const draftQuiz3 = await seedLiveQuiz(
+        {
+          elements: [],
+          status: PublicationStatus.DRAFT,
+          courseId: assessment.id,
+        },
+        userThreeCtx
+      )
+      await recomputeDerivedPermissions({ courseId: assessment.id }, prisma)
+
+      // general arguments used for manipulation function calls
+      const args = {
+        name: '',
+        displayName: '',
+        blocks: [],
+        multiplier: 1,
+        isGamificationEnabled: true,
+        isPinProtected: true,
+        isConfusionFeedbackEnabled: true,
+        isLiveQAEnabled: true,
+        isModerationEnabled: true,
+      }
+
+      // verify that only course admins and owners can change the course assignment away from the assessment course
+      const res1 = await manipulateLiveQuiz(
+        { ...args, id: draftQuiz1.id, courseId: gamifiedAssessment.id },
+        userThreeCtx
+      )
+      expect(res1).toBeNull()
+      const res2 = await manipulateLiveQuiz(
+        { ...args, id: draftQuiz1.id, courseId: gamifiedAssessment.id },
+        userFourCtx
+      )
+      expect(res2).toBeNull()
+      const res3 = await manipulateLiveQuiz(
+        { ...args, id: draftQuiz1.id, courseId: gamifiedAssessment.id },
+        userFiveCtx
+      )
+      expect(res3).toBeNull()
+
+      const res4 = await manipulateLiveQuiz(
+        { ...args, id: draftQuiz1.id, courseId: gamifiedAssessment.id },
+        userTwoCtx
+      )
+      expect(res4).not.toBeNull()
+      expect(res4?.courseId).toEqual(gamifiedAssessment.id)
+
+      const res5 = await manipulateLiveQuiz(
+        { ...args, id: draftQuiz1.id, courseId: assessment.id },
+        userTwoCtx
+      )
+      expect(res5).not.toBeNull()
+      expect(res5?.courseId).toEqual(assessment.id)
+
+      const res6 = await manipulateLiveQuiz(
+        { ...args, id: draftQuiz2.id, courseId: gamifiedAssessment.id },
+        userOneCtx
+      )
+      expect(res6).not.toBeNull()
+      expect(res6?.courseId).toEqual(gamifiedAssessment.id)
+
+      // verify the same for the second quiz, owned by the admin user
+      const res7 = await manipulateLiveQuiz(
+        { ...args, id: draftQuiz2.id, courseId: assessment.id },
+        userThreeCtx
+      )
+      expect(res7).toBeNull()
+      const res8 = await manipulateLiveQuiz(
+        { ...args, id: draftQuiz2.id, courseId: assessment.id },
+        userFourCtx
+      )
+      expect(res8).toBeNull()
+      const res9 = await manipulateLiveQuiz(
+        { ...args, id: draftQuiz2.id, courseId: assessment.id },
+        userFiveCtx
+      )
+      expect(res9).toBeNull()
+
+      const res10 = await manipulateLiveQuiz(
+        { ...args, id: draftQuiz2.id, courseId: gamifiedAssessment.id },
+        userTwoCtx
+      )
+      expect(res10).not.toBeNull()
+      expect(res10?.courseId).toEqual(gamifiedAssessment.id)
+
+      const res11 = await manipulateLiveQuiz(
+        { ...args, id: draftQuiz2.id, courseId: assessment.id },
+        userTwoCtx
+      )
+      expect(res11).not.toBeNull()
+      expect(res11?.courseId).toEqual(assessment.id)
+
+      const res12 = await manipulateLiveQuiz(
+        { ...args, id: draftQuiz3.id, courseId: gamifiedAssessment.id },
+        userOneCtx
+      )
+      expect(res12).not.toBeNull()
+      expect(res12?.courseId).toEqual(gamifiedAssessment.id)
+
+      // verify the same for the third course, owned by the editor user
+      const res13 = await manipulateLiveQuiz(
+        { ...args, id: draftQuiz3.id, courseId: assessment.id },
+        userThreeCtx
+      )
+      expect(res13).toBeNull()
+      const res14 = await manipulateLiveQuiz(
+        { ...args, id: draftQuiz3.id, courseId: assessment.id },
+        userFourCtx
+      )
+      expect(res14).toBeNull()
+      const res15 = await manipulateLiveQuiz(
+        { ...args, id: draftQuiz3.id, courseId: assessment.id },
+        userFiveCtx
+      )
+      expect(res15).toBeNull()
+
+      const res16 = await manipulateLiveQuiz(
+        { ...args, id: draftQuiz3.id, courseId: gamifiedAssessment.id },
+        userTwoCtx
+      )
+      expect(res16).not.toBeNull()
+      expect(res16?.courseId).toEqual(gamifiedAssessment.id)
+
+      const res17 = await manipulateLiveQuiz(
+        { ...args, id: draftQuiz3.id, courseId: assessment.id },
+        userTwoCtx
+      )
+      expect(res17).not.toBeNull()
+      expect(res17?.courseId).toEqual(assessment.id)
+
+      const res18 = await manipulateLiveQuiz(
+        { ...args, id: draftQuiz3.id, courseId: gamifiedAssessment.id },
+        userOneCtx
+      )
+      expect(res18).not.toBeNull()
+      expect(res18?.courseId).toEqual(gamifiedAssessment.id)
     })
   })
 })
