@@ -307,7 +307,7 @@ export async function getParticipation(
 //       console.log('new participation', participation)
 //     }
 
-//     const jwt = createParticipantToken(participant.participant.id)
+//     const jwt = await createParticipantToken(participant.participant.id)
 
 //     return {
 //       id: `${courseId}-${participant.participant.id}`,
@@ -384,7 +384,7 @@ export async function getParticipation(
 //       update: {},
 //     })
 
-//     const jwt = createParticipantToken(existingParticipant.id)
+//     const jwt = await createParticipantToken(existingParticipant.id)
 
 //     ctx.res.cookie('participant_token', jwt, {
 //       domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,
@@ -424,7 +424,7 @@ export async function getParticipation(
 //       },
 //     })
 
-//     const jwt = createParticipantToken(participant.id)
+//     const jwt = await createParticipantToken(participant.id)
 
 //     ctx.res.cookie('participant_token', jwt, {
 //       domain: process.env.COOKIE_DOMAIN ?? process.env.API_DOMAIN,

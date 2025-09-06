@@ -1,5 +1,4 @@
-// @ts-ignore
-import JWT from 'jsonwebtoken'
+import { signJWT } from '@klicker-uzh/util'
 import { Provider } from 'ltijs'
 // @ts-ignore
 import Database from 'ltijs-sequelize'
@@ -52,10 +51,11 @@ if (process.env.LTI_DB_TYPE === 'postgres') {
 }
 
 // LTI launch callback (token has been verified by ltijs beforehand)
-Provider.onConnect((token, req, res) => {
+// @ts-ignore The type here is wrong, a Promise is accepted as per official docs
+Provider.onConnect(async (token, req, res) => {
   console.log('LTI launch callback:', token)
 
-  const jwt = JWT.sign(
+  const jwt = await signJWT(
     {
       sub: token.user,
       email: token.userInfo.email,
@@ -91,14 +91,14 @@ Provider.onConnect((token, req, res) => {
         domain: process.env.COOKIE_DOMAIN as string,
       })
 
-      return
+      return res.end()
     }
 
     // TODO: treat DF_DOMAIN separately with different secret
 
     const url = req.query.redirectTo as string
     console.log('Redirecting to:', url)
-    res.redirect(`${url}?jwt=${jwt}`)
+    return res.redirect(`${url}?jwt=${jwt}`)
   } else if (typeof process.env.LTI_REDIRECT_URL === 'string') {
     if (
       !process.env.LTI_REDIRECT_URL.includes(
@@ -118,17 +118,17 @@ Provider.onConnect((token, req, res) => {
         domain: process.env.COOKIE_DOMAIN as string,
       })
 
-      return
+      return res.end()
     }
 
     // TODO: treat DF_DOMAIN separately with different secret
 
     const url = process.env.LTI_REDIRECT_URL as string
     console.log('Redirecting to:', url)
-    res.redirect(`${url}?jwt=${jwt}`)
+    return res.redirect(`${url}?jwt=${jwt}`)
   }
 
-  res.end()
+  return res.end()
 })
 
 // setup function

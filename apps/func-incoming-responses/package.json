@@ -10,11 +10,10 @@
   "dependencies": {
     "@azure/functions": "4.6.0",
     "@azure/service-bus": "7.9.5",
-    "@sentry/node": "7.103.0",
-    "jsonwebtoken": "9.0.2"
+    "@klicker-uzh/util": "workspace:*",
+    "@sentry/node": "7.103.0"
   },
   "devDependencies": {
-    "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^20.16.1",
     "azure-functions-core-tools": "~4.0.6610",
     "cross-env": "~7.0.3",
