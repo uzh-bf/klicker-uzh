@@ -492,13 +492,10 @@ describe('Integration tests for assessment configuration functionalities', () =>
 
       // create three different live quizzes in the assessment course
       const { AC1: AC } = await seedAnswerCollections(userOneCtx)
-      const { SC, MC } = await seedElements(userOneCtx, AC!.id)
+      const { SC } = await seedElements(userOneCtx, AC.id)
       const quiz1 = await seedLiveQuiz(
         {
-          elements: [
-            { id: SC.id, type: ElementType.SC },
-            { id: MC.id, type: ElementType.MC },
-          ],
+          elements: [{ id: SC.id, type: ElementType.SC }],
           status: PublicationStatus.PUBLISHED,
           courseId: assessment.id,
         },
@@ -506,10 +503,7 @@ describe('Integration tests for assessment configuration functionalities', () =>
       )
       const quiz2 = await seedLiveQuiz(
         {
-          elements: [
-            { id: SC.id, type: ElementType.SC },
-            { id: MC.id, type: ElementType.MC },
-          ],
+          elements: [{ id: SC.id, type: ElementType.SC }],
           status: PublicationStatus.PUBLISHED,
           courseId: assessment.id,
         },
@@ -517,10 +511,7 @@ describe('Integration tests for assessment configuration functionalities', () =>
       )
       const quiz3 = await seedLiveQuiz(
         {
-          elements: [
-            { id: SC.id, type: ElementType.SC },
-            { id: MC.id, type: ElementType.MC },
-          ],
+          elements: [{ id: SC.id, type: ElementType.SC }],
           status: PublicationStatus.PUBLISHED,
           courseId: assessment.id,
         },

@@ -675,12 +675,10 @@ export async function manipulateLiveQuiz(
   // pin protection applies when assessment is enabled or explicitly enabled via flag
   const pinProtection = assessmentSetting || isPinProtected
 
-  // if a new course should be assigned, verify that the live quiz is not removed from an assessment course (by someone with insufficient permissions)
-  const newCourse = courseId !== null && typeof courseId !== 'undefined'
-
   // if the activity is part of an assessment course, but should be modified and the user is not a course admin, return early
   if (
-    newCourse &&
+    typeof courseId !== 'undefined' &&
+    courseId !== null &&
     existingActivity?.isAssessmentEnabled &&
     !existingActivity?.course?._count.permissions
   ) {
@@ -780,14 +778,20 @@ export async function manipulateLiveQuiz(
         where: { id: id ?? uuidv4() },
         create: {
           ...createOrUpdateJSON,
-          course: newCourse ? { connect: { id: courseId } } : undefined,
+          course:
+            typeof courseId !== 'undefined' && courseId !== null
+              ? { connect: { id: courseId } }
+              : undefined,
           owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
         },
         update: {
           ...createOrUpdateJSON,
-          course: newCourse
-            ? { connect: { id: courseId } }
-            : { disconnect: true },
+          course:
+            typeof courseId !== 'undefined'
+              ? courseId !== null
+                ? { connect: { id: courseId } }
+                : { disconnect: true }
+              : undefined,
         },
         include: {
           templateInfo: true,
