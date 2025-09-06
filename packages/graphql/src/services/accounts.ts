@@ -77,7 +77,7 @@ async function doParticipantLogin(
     data: { lastLoginAt: new Date() },
   })
 
-  const jwt = createParticipantToken(participantId)
+  const jwt = await createParticipantToken(participantId)
 
   ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
 
@@ -174,7 +174,7 @@ export async function loginTemporaryParticipant(
     })
 
   // create and return a new valid token for the temporary participant
-  const jwt = createTemporaryParticipantToken(temporaryParticipant.id)
+  const jwt = await createTemporaryParticipantToken(temporaryParticipant.id)
   ctx.res.cookie('temporary_participant_token', jwt, COOKIE_SETTINGS)
   return jwt
 }
