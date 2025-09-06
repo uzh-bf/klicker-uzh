@@ -1,4 +1,5 @@
 import {
+  ElementType,
   PermissionLevel,
   PrismaClient,
   PublicationStatus,
@@ -7,12 +8,15 @@ import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
+  activateLiveQuizBlock,
+  cancelLiveQuiz,
   deleteLiveQuiz,
   manipulateLiveQuiz,
 } from '../src/services/liveQuizzes.js'
 import {
   initializePrisma,
   seedCourse,
+  seedElements,
   seedLiveQuiz,
   testCleanup,
   testInitialization,
@@ -341,22 +345,30 @@ describe('Integration tests for assessment configuration functionalities', () =>
       }
 
       // verify that only course admins and owners can change the course assignment away from the assessment course
-      const res1 = await manipulateLiveQuiz(
-        { ...args, id: draftQuiz1.id, courseId: gamifiedAssessment.id },
-        userThreeCtx
+      await expect(
+        manipulateLiveQuiz(
+          { ...args, id: draftQuiz1.id, courseId: gamifiedAssessment.id },
+          userThreeCtx
+        )
+      ).rejects.toThrow(
+        'Assessment live quizzes can only be modified by course admins or owners'
       )
-      expect(res1).toBeNull()
-      const res2 = await manipulateLiveQuiz(
-        { ...args, id: draftQuiz1.id, courseId: gamifiedAssessment.id },
-        userFourCtx
+      await expect(
+        manipulateLiveQuiz(
+          { ...args, id: draftQuiz1.id, courseId: gamifiedAssessment.id },
+          userFourCtx
+        )
+      ).rejects.toThrow(
+        'Assessment live quizzes can only be modified by course admins or owners'
       )
-      expect(res2).toBeNull()
-      const res3 = await manipulateLiveQuiz(
-        { ...args, id: draftQuiz1.id, courseId: gamifiedAssessment.id },
-        userFiveCtx
+      await expect(
+        manipulateLiveQuiz(
+          { ...args, id: draftQuiz1.id, courseId: gamifiedAssessment.id },
+          userFiveCtx
+        )
+      ).rejects.toThrow(
+        'Assessment live quizzes can only be modified by course admins or owners'
       )
-      expect(res3).toBeNull()
-
       const res4 = await manipulateLiveQuiz(
         { ...args, id: draftQuiz1.id, courseId: gamifiedAssessment.id },
         userTwoCtx
@@ -379,21 +391,30 @@ describe('Integration tests for assessment configuration functionalities', () =>
       expect(res6?.courseId).toEqual(gamifiedAssessment.id)
 
       // verify the same for the second quiz, owned by the admin user
-      const res7 = await manipulateLiveQuiz(
-        { ...args, id: draftQuiz2.id, courseId: assessment.id },
-        userThreeCtx
+      await expect(
+        manipulateLiveQuiz(
+          { ...args, id: draftQuiz2.id, courseId: assessment.id },
+          userThreeCtx
+        )
+      ).rejects.toThrow(
+        'Assessment live quizzes can only be modified by course admins or owners'
       )
-      expect(res7).toBeNull()
-      const res8 = await manipulateLiveQuiz(
-        { ...args, id: draftQuiz2.id, courseId: assessment.id },
-        userFourCtx
+      await expect(
+        manipulateLiveQuiz(
+          { ...args, id: draftQuiz2.id, courseId: assessment.id },
+          userFourCtx
+        )
+      ).rejects.toThrow(
+        'Assessment live quizzes can only be modified by course admins or owners'
       )
-      expect(res8).toBeNull()
-      const res9 = await manipulateLiveQuiz(
-        { ...args, id: draftQuiz2.id, courseId: assessment.id },
-        userFiveCtx
+      await expect(
+        manipulateLiveQuiz(
+          { ...args, id: draftQuiz2.id, courseId: assessment.id },
+          userFiveCtx
+        )
+      ).rejects.toThrow(
+        'Assessment live quizzes can only be modified by course admins or owners'
       )
-      expect(res9).toBeNull()
 
       const res10 = await manipulateLiveQuiz(
         { ...args, id: draftQuiz2.id, courseId: gamifiedAssessment.id },
@@ -417,21 +438,30 @@ describe('Integration tests for assessment configuration functionalities', () =>
       expect(res12?.courseId).toEqual(gamifiedAssessment.id)
 
       // verify the same for the third course, owned by the editor user
-      const res13 = await manipulateLiveQuiz(
-        { ...args, id: draftQuiz3.id, courseId: assessment.id },
-        userThreeCtx
+      await expect(
+        manipulateLiveQuiz(
+          { ...args, id: draftQuiz3.id, courseId: assessment.id },
+          userThreeCtx
+        )
+      ).rejects.toThrow(
+        'Assessment live quizzes can only be modified by course admins or owners'
       )
-      expect(res13).toBeNull()
-      const res14 = await manipulateLiveQuiz(
-        { ...args, id: draftQuiz3.id, courseId: assessment.id },
-        userFourCtx
+      await expect(
+        manipulateLiveQuiz(
+          { ...args, id: draftQuiz3.id, courseId: assessment.id },
+          userFourCtx
+        )
+      ).rejects.toThrow(
+        'Assessment live quizzes can only be modified by course admins or owners'
       )
-      expect(res14).toBeNull()
-      const res15 = await manipulateLiveQuiz(
-        { ...args, id: draftQuiz3.id, courseId: assessment.id },
-        userFiveCtx
+      await expect(
+        manipulateLiveQuiz(
+          { ...args, id: draftQuiz3.id, courseId: assessment.id },
+          userFiveCtx
+        )
+      ).rejects.toThrow(
+        'Assessment live quizzes can only be modified by course admins or owners'
       )
-      expect(res15).toBeNull()
 
       const res16 = await manipulateLiveQuiz(
         { ...args, id: draftQuiz3.id, courseId: gamifiedAssessment.id },
@@ -453,6 +483,75 @@ describe('Integration tests for assessment configuration functionalities', () =>
       )
       expect(res18).not.toBeNull()
       expect(res18?.courseId).toEqual(gamifiedAssessment.id)
+    })
+
+    it('Verify that assessment live quizzes cannot be aborted once at least one block has been started', async () => {
+      // seed courses
+      const { assessment } = await seedCourses()
+
+      // create three different live quizzes in the assessment course
+      const { SC, MC } = await seedElements(userOneCtx, 0)
+      const quiz1 = await seedLiveQuiz(
+        {
+          elements: [
+            { id: SC.id, type: ElementType.SC },
+            { id: MC.id, type: ElementType.MC },
+          ],
+          status: PublicationStatus.PUBLISHED,
+          courseId: assessment.id,
+        },
+        userOneCtx
+      )
+      const quiz2 = await seedLiveQuiz(
+        {
+          elements: [
+            { id: SC.id, type: ElementType.SC },
+            { id: MC.id, type: ElementType.MC },
+          ],
+          status: PublicationStatus.PUBLISHED,
+          courseId: assessment.id,
+        },
+        userOneCtx
+      )
+      const quiz3 = await seedLiveQuiz(
+        {
+          elements: [
+            { id: SC.id, type: ElementType.SC },
+            { id: MC.id, type: ElementType.MC },
+          ],
+          status: PublicationStatus.PUBLISHED,
+          courseId: assessment.id,
+        },
+        userOneCtx
+      )
+      await recomputeDerivedPermissions({ courseId: assessment.id }, prisma)
+
+      // activate the first block for the second quiz and complete it for the second quiz
+      await activateLiveQuizBlock(
+        { quizId: quiz2.id, blockId: quiz2.blocks[0]!.id },
+        userOneCtx
+      )
+
+      // activate and close the first block for the third quiz
+      await activateLiveQuizBlock(
+        { quizId: quiz3.id, blockId: quiz3.blocks[0]!.id },
+        userOneCtx
+      )
+      await activateLiveQuizBlock(
+        { quizId: quiz3.id, blockId: quiz3.blocks[0]!.id },
+        userOneCtx
+      )
+
+      // verify that only the first quiz can be aborted (no quiz active yet)
+      const res1 = await cancelLiveQuiz({ id: quiz1.id }, userOneCtx)
+      expect(res1).not.toBeNull()
+      expect(res1?.status).toEqual(PublicationStatus.DRAFT)
+
+      const res2 = await cancelLiveQuiz({ id: quiz2.id }, userOneCtx)
+      expect(res2).toBeNull()
+
+      const res3 = await cancelLiveQuiz({ id: quiz3.id }, userOneCtx)
+      expect(res3).toBeNull()
     })
   })
 })

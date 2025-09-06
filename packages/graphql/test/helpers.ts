@@ -680,6 +680,7 @@ export async function seedLiveQuiz(
         })),
       },
     },
+    include: { blocks: true },
   })
 
   return liveQuiz

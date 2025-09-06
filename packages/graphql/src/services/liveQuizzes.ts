@@ -684,7 +684,9 @@ export async function manipulateLiveQuiz(
     existingActivity?.isAssessmentEnabled &&
     !existingActivity?.course?._count.permissions
   ) {
-    return null
+    throw new GraphQLError(
+      'Assessment live quizzes can only be modified by course admins or owners'
+    )
   }
 
   // re-create blocks and link existing instance / create new instances (depending on mode and novelty of the included element)
