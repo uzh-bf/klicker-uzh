@@ -636,9 +636,11 @@ export async function seedLiveQuiz(
   ctx: ContextWithUser
 ) {
   // if a courseId is defined, fetch the corresponding course
-  const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
-  })
+  const course = courseId
+    ? await ctx.prisma.course.findUnique({
+        where: { id: courseId },
+      })
+    : null
 
   const liveQuiz = await ctx.prisma.liveQuiz.create({
     data: {

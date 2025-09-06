@@ -2545,9 +2545,7 @@ export async function deleteLiveQuiz(
         liveQuiz.course._count.permissions > 0
 
       if (!isCourseAdminOwner) {
-        throw new GraphQLError(
-          'Assessment live quizzes can only be deleted by course admins or owners'
-        )
+        return null
       }
     }
 
