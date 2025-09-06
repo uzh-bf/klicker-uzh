@@ -19,6 +19,7 @@ import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import EmbeddingModal from '../EmbeddingModal'
 import CancelLiveQuizModal from './CancelLiveQuizModal'
+import CloseBlockConfirmDialog from './CloseBlockConfirmDialog'
 import LiveQuizBlock, { QuizTimelineBlock } from './LiveQuizBlock'
 import LiveQuizQRModal from './LiveQuizQRModal'
 import RuntimeCounter from './RuntimeCounter'
@@ -31,9 +32,9 @@ interface LiveQuizTimelineProps {
   blocks?: QuizTimelineBlock[]
   language?: LocaleType | null
   isGamificationEnabled: boolean
-  handleEndLiveQuiz: () => void
-  handleOpenBlock: (blockId: number) => void
-  handleCloseBlock: (blockId: number) => void
+  handleEndLiveQuiz: () => Promise<void>
+  handleOpenBlock: (blockId: number) => Promise<void>
+  handleCloseBlock: (blockId: number) => Promise<void>
   startedAt?: string
   loading?: boolean
 }
@@ -59,6 +60,7 @@ function LiveQuizTimeline({
   const [cancelLiveQuizModal, setCancelLiveQuizModal] = useState(false)
   const [qrModal, setQRModal] = useState(false)
   const [inCooldown, setInCooldown] = useState<boolean>(false)
+  const [confirmBlockClosure, setConfirmBlockClosure] = useState(false)
 
   // logic: keep track of the current and previous block
   const [buttonState, setButtonState] = useState<
@@ -190,7 +192,7 @@ function LiveQuizTimeline({
                     'bg-uzh-red-100 hover:bg-uzh-red-100 h-8 text-white'
                   ),
                 }}
-                onClick={handleEndLiveQuiz}
+                onClick={async () => await handleEndLiveQuiz()}
                 data={{ cy: 'end-live-quiz-cockpit' }}
               >
                 <Button.Label>{t('manage.cockpit.endQuiz')}</Button.Label>
@@ -216,6 +218,7 @@ function LiveQuizTimeline({
                   key={`${block.id}-${block.status}`}
                   block={block}
                   active={activeBlockId === block.id}
+                  setBlockClosureModal={setConfirmBlockClosure}
                   className="my-auto"
                 />
                 <FontAwesomeIcon
@@ -285,20 +288,24 @@ function LiveQuizTimeline({
                     'text-uzh-red-100 border-uzh-red-100 border bg-white'
                 ),
               }}
-              onClick={() => {
+              onClick={async () => {
                 if (buttonState === 'firstBlock') {
-                  handleOpenBlock(blocks[0].id)
+                  await handleOpenBlock(blocks[0].id)
                 } else if (buttonState === 'nextBlock') {
                   const openBlockIndex =
                     blocks.findIndex(
                       (block) => block.id === lastActiveBlockId
                     ) + 1
-                  handleOpenBlock(blocks[openBlockIndex].id)
+                  await handleOpenBlock(blocks[openBlockIndex].id)
                 } else if (buttonState === 'blockActive') {
-                  handleCloseBlock(activeBlockId)
-                  setInCooldown(false)
+                  if (assessmentMode) {
+                    setConfirmBlockClosure(true)
+                  } else {
+                    await handleCloseBlock(activeBlockId)
+                    setInCooldown(false)
+                  }
                 } else {
-                  handleEndLiveQuiz()
+                  await handleEndLiveQuiz()
                 }
               }}
               data={{ cy: 'next-block-timeline' }}
@@ -345,6 +352,18 @@ function LiveQuizTimeline({
           quizPin={quizPin}
           language={language}
           onClose={() => setQRModal(false)}
+        />
+      )}
+      {confirmBlockClosure && (
+        <CloseBlockConfirmDialog
+          open
+          onClose={() => setConfirmBlockClosure(false)}
+          onConfirm={async () => {
+            if (activeBlockId != null) {
+              await handleCloseBlock(activeBlockId)
+              setInCooldown(false)
+            }
+          }}
         />
       )}
     </div>

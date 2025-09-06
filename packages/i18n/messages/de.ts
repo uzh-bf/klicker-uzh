@@ -2384,6 +2384,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Ich verstehe, dass die Moderation deaktiviert wird.',
       confirmPublishUnpublished:
         'Ich bestätige, dass alle {count} unveröffentlichten Feedback(s) veröffentlicht werden sollen.',
+      confirmCloseBlockTitle: 'Aktiven Block schliessen',
+      confirmCloseBlock:
+        'Bitte bestägiten Sie, dass der Block geschlossen werden soll. Ab diesem Zeitpunkt akzeptiert das System keine weiteren Antworten der Studierenden und die vollständige Auswertung (inkl. Musterlösung) kann eingesehen werden.',
     },
     evaluation: {
       evaluationNotYetAvailable:

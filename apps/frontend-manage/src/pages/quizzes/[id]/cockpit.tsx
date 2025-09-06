@@ -93,12 +93,12 @@ function Cockpit() {
           blocks={blocks ?? []}
           language={course?.language ?? null}
           isGamificationEnabled={isGamificationEnabled}
-          handleEndLiveQuiz={() => {
-            endLiveQuiz({ variables: { id: id } })
+          handleEndLiveQuiz={async () => {
+            await endLiveQuiz({ variables: { id: id } })
             router.push('/activities')
           }}
-          handleOpenBlock={(blockId: number) => {
-            activateLiveQuizBlock({
+          handleOpenBlock={async (blockId: number) => {
+            await activateLiveQuizBlock({
               variables: { quizId: id, blockId },
               // high stakes mutation where cache updates are hard due to cached and db data
               refetchQueries: [
@@ -106,8 +106,8 @@ function Cockpit() {
               ],
             })
           }}
-          handleCloseBlock={(blockId: number) => {
-            deactivateLiveQuizBlock({
+          handleCloseBlock={async (blockId: number) => {
+            await deactivateLiveQuizBlock({
               variables: { quizId: id, blockId },
               // high stakes mutation where cache updates are hard due to cached and db data
               refetchQueries: [

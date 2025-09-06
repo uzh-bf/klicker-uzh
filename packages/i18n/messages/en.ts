@@ -2347,6 +2347,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'I understand that moderation will be disabled.',
       confirmPublishUnpublished:
         'I confirm that all {count} unpublished feedback(s) should be published.',
+      confirmCloseBlockTitle: 'Close Active Block',
+      confirmCloseBlock:
+        'Please confirm that the active block should be closed. After your confirmation, the system will not accept any further answers from the students and the complete evaluation (including sample solution) can be displayed.',
     },
     evaluation: {
       evaluationNotYetAvailable:
