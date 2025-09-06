@@ -16,9 +16,7 @@ import {
 } from '@klicker-uzh/prisma/client'
 import { ElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import {
-  getInitialInstanceResults,
   MISSING_CATALOG_COLLECTION_ID,
-  processElementData,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
@@ -644,11 +642,6 @@ export async function seedLiveQuiz(
       })
     : null
 
-  // get all the elements that should be included in the live quiz
-  const dbElements = await ctx.prisma.element.findMany({
-    where: { id: { in: elements.map((e) => e.id) } },
-  })
-
   const liveQuiz = await ctx.prisma.liveQuiz.create({
     data: {
       name: uuidv4(),
@@ -667,29 +660,24 @@ export async function seedLiveQuiz(
         symbols: false,
       }),
       blocks: {
-        create: dbElements.map((element, index) => {
-          const elementData = processElementData(element)
-          const initialResults = getInitialInstanceResults(elementData)
-
-          return {
-            order: index,
-            elements: {
-              create: [
-                {
-                  order: 0,
-                  elementId: element.id,
-                  type: ElementInstanceType.LIVE_QUIZ,
-                  elementType: element.type,
-                  options: {},
-                  elementData,
-                  results: initialResults,
-                  anonymousResults: initialResults,
-                  ownerId: ctx.user.sub,
-                },
-              ],
-            },
-          }
-        }),
+        create: elements.map((element, index) => ({
+          order: index,
+          elements: {
+            create: [
+              {
+                order: 0,
+                elementId: element.id,
+                type: ElementInstanceType.LIVE_QUIZ,
+                elementType: element.type,
+                options: {},
+                elementData: {} as ElementData,
+                results: {} as ElementInstanceResults,
+                anonymousResults: {} as ElementInstanceResults,
+                ownerId: ctx.user.sub,
+              },
+            ],
+          },
+        })),
       },
     },
     include: { blocks: true },
