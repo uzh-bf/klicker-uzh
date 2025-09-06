@@ -4396,17 +4396,15 @@ describe('Different live-quiz workflows', function () {
       cy.get('[data-cy="running-live-quiz-dropdown"]').click()
       cy.get(`[data-cy="running-live-quiz-${quiz}"]`).click()
       cy.get('[data-cy="next-block-timeline"]').click()
+      cy.get('[data-cy="cancel-close-block"]').click()
+      cy.get('[data-cy="next-block-timeline"]').click()
+      cy.get('[data-cy="confirm-close-block"]').click()
       cy.wait(500)
       cy.get('[data-cy="next-block-timeline"]').click()
       cy.wait(500)
 
       // delete and re-create the live quiz for the anonymous test case (with the same name)
-      cy.get(`[data-cy="activities"]`).click()
-      cy.get('[data-cy="activities-search-input"]').type(`${quiz}{enter}`)
-      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).click()
-      cy.get(`[data-cy="delete-live-quiz-${quiz}"]`).click()
-      cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
-      cy.get('[data-cy="activities-search-input"]').clear()
+      cy.task('deleteLiveQuiz', { name: quiz })
     })
   }
 

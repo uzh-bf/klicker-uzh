@@ -15,6 +15,7 @@ import {
 } from '../src/services/liveQuizzes.js'
 import {
   initializePrisma,
+  seedAnswerCollections,
   seedCourse,
   seedElements,
   seedLiveQuiz,
@@ -490,7 +491,8 @@ describe('Integration tests for assessment configuration functionalities', () =>
       const { assessment } = await seedCourses()
 
       // create three different live quizzes in the assessment course
-      const { SC, MC } = await seedElements(userOneCtx, 0)
+      const { AC1: AC } = await seedAnswerCollections(userOneCtx)
+      const { SC, MC } = await seedElements(userOneCtx, AC!.id)
       const quiz1 = await seedLiveQuiz(
         {
           elements: [
