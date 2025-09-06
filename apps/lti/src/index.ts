@@ -51,6 +51,7 @@ if (process.env.LTI_DB_TYPE === 'postgres') {
 }
 
 // LTI launch callback (token has been verified by ltijs beforehand)
+// @ts-ignore The type here is wrong, a Promise is accepted as per official docs
 Provider.onConnect(async (token, req, res) => {
   console.log('LTI launch callback:', token)
 
