@@ -441,11 +441,35 @@ export async function applyActivityBatchOperations(
         },
       },
       status: { in: allowedActivityStatus },
-      // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
-      OR:
-        (setMultiplier && !newCourse) || setLiveQuizPoints
-          ? [{ isGamificationEnabled: true }, { isAssessmentEnabled: true }]
-          : undefined,
+      AND: [
+        // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
+        {
+          OR:
+            (setMultiplier && !newCourse) || setLiveQuizPoints
+              ? [{ isGamificationEnabled: true }, { isAssessmentEnabled: true }]
+              : undefined,
+        },
+        // activities in assessment mode can only be assigned to another course (and thereby removed from it) by an admin of the assessment course
+        {
+          OR: [
+            { courseId: null },
+            { isAssessmentEnabled: false },
+            {
+              isAssessmentEnabled: true,
+              course: {
+                permissions: {
+                  some: {
+                    userId: ctx.user.sub,
+                    permissionLevel: {
+                      in: [DB.PermissionLevel.OWNER, DB.PermissionLevel.ADMIN],
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
+      ],
     },
     include: { blocks: { include: { elements: true } } },
   })
@@ -490,6 +514,28 @@ export async function applyActivityBatchOperations(
                   },
                 ]
               : []),
+            // activities in assessment mode can only be assigned to another course (and thereby removed from it) by an admin of the assessment course
+            {
+              OR: [
+                { isAssessmentEnabled: false },
+                {
+                  isAssessmentEnabled: true,
+                  course: {
+                    permissions: {
+                      some: {
+                        userId: ctx.user.sub,
+                        permissionLevel: {
+                          in: [
+                            DB.PermissionLevel.OWNER,
+                            DB.PermissionLevel.ADMIN,
+                          ],
+                        },
+                      },
+                    },
+                  },
+                },
+              ],
+            },
           ],
         },
         include: { stacks: { include: { elements: true } } },
@@ -508,16 +554,46 @@ export async function applyActivityBatchOperations(
             },
           },
           status: { in: allowedActivityStatus },
-          // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
-          OR:
-            setMultiplier && !newCourse
-              ? [{ isGamificationEnabled: true }, { isAssessmentEnabled: true }]
-              : undefined,
           // if a new course is assigned, the entire availability interval of the activity should lie inside the course duration
           scheduledStartAt: newCourse
             ? { gte: newCourse.startDate }
             : undefined,
           scheduledEndAt: newCourse ? { lte: newCourse.endDate } : undefined,
+          AND: [
+            // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
+            ...(setMultiplier && !newCourse
+              ? [
+                  {
+                    OR: [
+                      { isGamificationEnabled: true },
+                      { isAssessmentEnabled: true },
+                    ],
+                  },
+                ]
+              : []),
+            // activities in assessment mode can only be assigned to another course (and thereby removed from it) by an admin of the assessment course
+            {
+              OR: [
+                { isAssessmentEnabled: false },
+                {
+                  isAssessmentEnabled: true,
+                  course: {
+                    permissions: {
+                      some: {
+                        userId: ctx.user.sub,
+                        permissionLevel: {
+                          in: [
+                            DB.PermissionLevel.OWNER,
+                            DB.PermissionLevel.ADMIN,
+                          ],
+                        },
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          ],
         },
         include: { stacks: { include: { elements: true } } },
       })
@@ -536,14 +612,6 @@ export async function applyActivityBatchOperations(
               },
             },
             status: { in: allowedActivityStatus },
-            // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
-            OR:
-              setMultiplier && !newCourse
-                ? [
-                    { isGamificationEnabled: true },
-                    { isAssessmentEnabled: true },
-                  ]
-                : undefined,
             // if a new course is assigned, the group formation deadline should be before the start of the group activity
             // (start date of course does not need to be verified, since group formation deadline is always after start date)
             scheduledStartAt: newCourse
@@ -551,6 +619,41 @@ export async function applyActivityBatchOperations(
               : undefined,
             // if a new course is assigned, the group activity should end before the end of the course
             scheduledEndAt: newCourse ? { lte: newCourse.endDate } : undefined,
+            AND: [
+              // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
+              ...(setMultiplier && !newCourse
+                ? [
+                    {
+                      OR: [
+                        { isGamificationEnabled: true },
+                        { isAssessmentEnabled: true },
+                      ],
+                    },
+                  ]
+                : []),
+              // activities in assessment mode can only be assigned to another course (and thereby removed from it) by an admin of the assessment course
+              {
+                OR: [
+                  { isAssessmentEnabled: false },
+                  {
+                    isAssessmentEnabled: true,
+                    course: {
+                      permissions: {
+                        some: {
+                          userId: ctx.user.sub,
+                          permissionLevel: {
+                            in: [
+                              DB.PermissionLevel.OWNER,
+                              DB.PermissionLevel.ADMIN,
+                            ],
+                          },
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
           },
           include: { stacks: { include: { elements: true } } },
         })
