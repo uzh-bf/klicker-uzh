@@ -101,7 +101,7 @@ LEFT JOIN (
     p."courseId",
     p."userId",
     true as is_user_course_admin
-  FROM "Permission" p
+  FROM "DerivedPermission" p
   WHERE p."courseId" IS NOT NULL 
     AND p."permissionLevel" IN ('ADMIN', 'OWNER')
   GROUP BY p."courseId", p."userId"
@@ -207,7 +207,7 @@ LEFT JOIN (
     p."courseId",
     p."userId",
     true as is_user_course_admin
-  FROM "Permission" p
+  FROM "DerivedPermission" p
   WHERE p."courseId" IS NOT NULL 
     AND p."permissionLevel" IN ('ADMIN', 'OWNER')
   GROUP BY p."courseId", p."userId"
@@ -313,7 +313,7 @@ LEFT JOIN (
     p."courseId",
     p."userId",
     true as is_user_course_admin
-  FROM "Permission" p
+  FROM "DerivedPermission" p
   WHERE p."courseId" IS NOT NULL 
     AND p."permissionLevel" IN ('ADMIN', 'OWNER')
   GROUP BY p."courseId", p."userId"
@@ -426,7 +426,7 @@ LEFT JOIN (
     p."courseId",
     p."userId",
     true as is_user_course_admin
-  FROM "Permission" p
+  FROM "DerivedPermission" p
   WHERE p."courseId" IS NOT NULL 
     AND p."permissionLevel" IN ('ADMIN', 'OWNER')
   GROUP BY p."courseId", p."userId"

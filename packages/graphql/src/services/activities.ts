@@ -203,9 +203,7 @@ export async function getUserActivities(
       take: numEntries ?? undefined,
       skip: offset ?? undefined,
     }),
-    ctx.prisma.userActivities.count({
-      where: whereClause,
-    }),
+    ctx.prisma.userActivities.count({ where: whereClause }),
   ])
 
   // map the fetched activities to the return type

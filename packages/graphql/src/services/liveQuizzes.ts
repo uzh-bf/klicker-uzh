@@ -591,10 +591,30 @@ export async function manipulateLiveQuiz(
   ctx: ContextWithUser
 ) {
   // in EDIT mode - validate that the live quiz exists and is not published
-  let existingActivity: DB.LiveQuiz | null = null
+  let existingActivity:
+    | (DB.LiveQuiz & { course?: { _count: { permissions: number } } | null })
+    | null = null
   if (id) {
     existingActivity = await ctx.prisma.liveQuiz.findUnique({
       where: { id, isDeleted: false },
+      include: {
+        course: {
+          include: {
+            _count: {
+              select: {
+                permissions: {
+                  where: {
+                    userId: ctx.user.sub,
+                    permissionLevel: {
+                      in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     })
 
     if (!existingActivity) {
@@ -654,6 +674,18 @@ export async function manipulateLiveQuiz(
 
   // pin protection applies when assessment is enabled or explicitly enabled via flag
   const pinProtection = assessmentSetting || isPinProtected
+
+  // if the activity is part of an assessment course, but should be modified and the user is not a course admin, return early
+  if (
+    typeof courseId !== 'undefined' &&
+    courseId !== null &&
+    existingActivity?.isAssessmentEnabled &&
+    !existingActivity?.course?._count.permissions
+  ) {
+    throw new GraphQLError(
+      'Assessment live quizzes can only be modified by course admins or owners'
+    )
+  }
 
   // re-create blocks and link existing instance / create new instances (depending on mode and novelty of the included element)
   const createOrUpdateJSON = {
@@ -746,15 +778,20 @@ export async function manipulateLiveQuiz(
         where: { id: id ?? uuidv4() },
         create: {
           ...createOrUpdateJSON,
-          course: courseId !== null ? { connect: { id: courseId } } : undefined,
+          course:
+            typeof courseId !== 'undefined' && courseId !== null
+              ? { connect: { id: courseId } }
+              : undefined,
           owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
         },
         update: {
           ...createOrUpdateJSON,
           course:
-            courseId !== null
-              ? { connect: { id: courseId } }
-              : { disconnect: true },
+            typeof courseId !== 'undefined'
+              ? courseId !== null
+                ? { connect: { id: courseId } }
+                : { disconnect: true }
+              : undefined,
         },
         include: {
           templateInfo: true,
@@ -2264,15 +2301,26 @@ export async function cancelLiveQuiz(
       throw new Error('Live quiz is not running')
     }
 
-    const instances = quiz.blocks.flatMap((block) => block.elements)
+    // if the quiz is an assessment quiz, it can only be aborted before the first block is activated
+    if (
+      quiz.isAssessmentEnabled &&
+      (quiz.activeBlock ||
+        quiz.blocks.some(
+          (block) => block.status !== DB.ElementBlockStatus.SCHEDULED
+        ))
+    ) {
+      throw new Error(
+        'Assessment quizzes can only be aborted before the first block is activated'
+      )
+    }
 
+    const instances = quiz.blocks.flatMap((block) => block.elements)
     const [updatedQuiz] = await ctx.prisma.$transaction([
       ctx.prisma.liveQuiz.update({
         where: { id },
         data: {
           status: DB.PublicationStatus.DRAFT,
           startedAt: null,
-          pinCode: null,
           activeBlock: { disconnect: true },
           leaderboard: { deleteMany: {} },
           temporaryLeaderboard: { deleteMany: {} },
@@ -2446,7 +2494,25 @@ export async function deleteLiveQuiz(
   // fetch live quiz to check its status, remember the contained elements
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id },
-    include: { blocks: { include: { elements: true } } },
+    include: {
+      blocks: { include: { elements: true } },
+      course: {
+        include: {
+          _count: {
+            select: {
+              permissions: {
+                where: {
+                  userId: ctx.user.sub,
+                  permissionLevel: {
+                    in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   })
 
   if (!liveQuiz) return null
@@ -2455,6 +2521,11 @@ export async function deleteLiveQuiz(
     // running live quizzes cannot be deleted
     return null
   } else if (liveQuiz.status === DB.PublicationStatus.ENDED) {
+    // completed assessment live quizzes cannot be deleted
+    if (liveQuiz.isAssessmentEnabled) {
+      return null
+    }
+
     const deletedLiveQuiz = await ctx.prisma.$transaction(
       async (prisma) => {
         const quiz = await prisma.liveQuiz.update({
@@ -2478,6 +2549,17 @@ export async function deleteLiveQuiz(
 
     return deletedLiveQuiz
   } else {
+    // draft and scheduled assessment live quizzes can only be deleted by admins of the corresponding assessment course
+    if (liveQuiz.isAssessmentEnabled) {
+      const isCourseAdminOwner =
+        !!liveQuiz.course?._count?.permissions &&
+        liveQuiz.course._count.permissions > 0
+
+      if (!isCourseAdminOwner) {
+        return null
+      }
+    }
+
     const deletedLiveQuiz = await ctx.prisma.$transaction(
       async (prisma) => {
         const quiz = await prisma.liveQuiz.delete({

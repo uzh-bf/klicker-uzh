@@ -1144,6 +1144,25 @@ export default defineConfig({
             throw error
           }
         },
+        async deleteLiveQuiz({ name }: { name: string }) {
+          try {
+            const liveQuiz = await prisma.liveQuiz.findFirst({
+              where: { name, isDeleted: false },
+            })
+
+            if (!liveQuiz) {
+              throw new Error('Live quiz not found')
+            }
+
+            await prisma.liveQuiz.delete({
+              where: { id: liveQuiz.id },
+            })
+
+            return true
+          } catch (error) {
+            throw error
+          }
+        },
         // #endregion
 
         // ! Group Activity queries / mutations

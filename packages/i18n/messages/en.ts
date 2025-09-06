@@ -1778,6 +1778,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You can assign your live quiz to a course. If your course is gamified or has assessment enabled, these settings will automatically propagate to the activity. For non-gamified courses or live quizzes without course assignment, you may activate gamification separately. For more information, please also refer to the documentation on <link>gamified live quizzes</link>.',
       liveQuizSelectCourse: 'Select course',
       liveQuizNoCourse: 'No course',
+      assessmentCourseRemovalRestricted:
+        'Activities in assessment mode can only be removed from it by an administrator of the corresponding course.',
       liveQuizEnableGamification:
         'Select a gamified course to activate gamification.',
       liveQuizMultiplier:
@@ -2268,6 +2270,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       evaluationResults: 'Evaluation (results)',
       abortLiveQuiz: 'Abort quiz',
       confirmAbortLiveQuiz: 'Abort live quiz {title}?',
+      noAbortionAssessmentQuiz:
+        'Assessment quizzes cannot be aborted once a block has been started. If you have started the quiz for testing purposes, please proceed through all blocks and end the quiz. Users with administrator rights in the assessment course can then reset the live quiz.',
       cancelLiveQuizMessage:
         'Please confirm the deletion of all elements associated with this live quiz and confirm the irreversible abortion of this live quiz.',
       noResponsesToDelete:
@@ -2345,6 +2349,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'I understand that moderation will be disabled.',
       confirmPublishUnpublished:
         'I confirm that all {count} unpublished feedback(s) should be published.',
+      confirmCloseBlockTitle: 'Close Active Block',
+      confirmCloseBlock:
+        'Please confirm that the active block should be closed. After your confirmation, the system will not accept any further answers from the students and the complete evaluation (including sample solution) can be displayed.',
     },
     evaluation: {
       evaluationNotYetAvailable:

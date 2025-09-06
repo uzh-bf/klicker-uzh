@@ -14,12 +14,14 @@ function LiveQuizCountdown({
   block,
   size,
   inCooldown,
+  onExpiration,
   setInCooldown,
   className,
 }: {
   block: Pick<QuizTimelineBlock, 'id' | 'status' | 'expiresAt' | 'timeLimit'>
   size?: 'sm' | 'md' | 'lg'
   inCooldown: boolean
+  onExpiration: () => void
   setInCooldown: Dispatch<SetStateAction<boolean>>
   className?: string
 }) {
@@ -66,8 +68,10 @@ function LiveQuizCountdown({
   useEffect(() => {
     if (cooldown && !inCooldown) {
       setInCooldown(cooldown)
+      onExpiration()
     } else if (!cooldown && inCooldown) {
       setInCooldown(cooldown)
+      onExpiration()
     }
   }, [endTimestamp, cooldown])
 
@@ -82,7 +86,10 @@ function LiveQuizCountdown({
       expiresAt={endTimestamp}
       totalDuration={endDuration}
       terminalPercentage={100}
-      onExpire={() => setInCooldown(true)}
+      onExpire={() => {
+        onExpiration()
+        setInCooldown(true)
+      }}
       formatter={(value) => {
         if (inCooldown && value !== 0) {
           return <FontAwesomeIcon icon={faSave} />

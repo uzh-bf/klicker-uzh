@@ -1791,6 +1791,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie können Ihr Live Quiz einem Kurs zuordnen. Wenn Ihr Kurs gamifiziert ist oder der Assessment-Modus aktiviert ist, werden diese Einstellungen automatisch auf die Aktivität übertragen. Für nicht-gamifizierte Kurse oder Live Quizzes ohne Kurszuordnung kann die Gamifizierung separat aktiviert werden. Weitere Informationen finden Sie in der Dokumentation zu <link>gamifizierten Live Quizzes</link>.',
       liveQuizSelectCourse: 'Kurs auswählen',
       liveQuizNoCourse: 'Kein Kurs',
+      assessmentCourseRemovalRestricted:
+        'Aktivitäten im Assessment-Modus können nur durch einen Administrator des entsprechenden Kurses wieder aus diesem entfernt werden.',
       liveQuizEnableGamification:
         'Wählen Sie einen gamifizierten Kurs aus, um Gamifizierung zu aktivieren.',
       liveQuizMultiplier:
@@ -2305,6 +2307,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       evaluationResults: 'Auswertung (Resultate)',
       abortLiveQuiz: 'Quiz abbrechen',
       confirmAbortLiveQuiz: 'Live Quiz {title} abbrechen?',
+      noAbortionAssessmentQuiz:
+        'Assessment-Quizzes können nicht abgebrochen werden, sobald ein Block gestartet wurde. Sollten Sie das Quiz zu Testzwecken gestartet haben, führen Sie bitte alle Blöcke durch und beenden Sie das Quiz. Nutzer mit Administratorenrechten im Assessment-Kurse können das Live Quiz dann zurücksetzen.',
       cancelLiveQuizMessage:
         'Bitte bestätigen Sie die Löschung aller Elemente, die mit dieser Live-Quiz verbunden sind, und bestätigen Sie den Abbruch dieses Live-Quiz.',
       noResponsesToDelete:
@@ -2382,6 +2386,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Ich verstehe, dass die Moderation deaktiviert wird.',
       confirmPublishUnpublished:
         'Ich bestätige, dass alle {count} unveröffentlichten Feedback(s) veröffentlicht werden sollen.',
+      confirmCloseBlockTitle: 'Aktiven Block schliessen',
+      confirmCloseBlock:
+        'Bitte bestätigen Sie, dass der Block geschlossen werden soll. Ab diesem Zeitpunkt akzeptiert das System keine weiteren Antworten der Studierenden und die vollständige Auswertung (inkl. Musterlösung) kann eingesehen werden.',
     },
     evaluation: {
       evaluationNotYetAvailable:

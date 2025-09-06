@@ -1,14 +1,17 @@
 import { faPauseCircle } from '@fortawesome/free-regular-svg-icons'
 import {
   faCode,
+  faFastForward,
+  faFlagCheckered,
   faPlay,
   faQrcode,
   faStop,
   faUpRightFromSquare,
+  faX,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { LocaleType } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1 } from '@uzh-bf/design-system'
+import { Button, H1, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -16,25 +19,28 @@ import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import EmbeddingModal from '../EmbeddingModal'
 import CancelLiveQuizModal from './CancelLiveQuizModal'
+import CloseBlockConfirmDialog from './CloseBlockConfirmDialog'
 import LiveQuizBlock, { QuizTimelineBlock } from './LiveQuizBlock'
 import LiveQuizQRModal from './LiveQuizQRModal'
 import RuntimeCounter from './RuntimeCounter'
 
 interface LiveQuizTimelineProps {
+  assessmentMode: boolean
   quizId: string
   quizName: string
   quizPin?: string | null
   blocks?: QuizTimelineBlock[]
   language?: LocaleType | null
   isGamificationEnabled: boolean
-  handleEndLiveQuiz: () => void
-  handleOpenBlock: (blockId: number) => void
-  handleCloseBlock: (blockId: number) => void
+  handleEndLiveQuiz: () => Promise<void>
+  handleOpenBlock: (blockId: number) => Promise<void>
+  handleCloseBlock: (blockId: number) => Promise<void>
   startedAt?: string
   loading?: boolean
 }
 
 function LiveQuizTimeline({
+  assessmentMode,
   quizId,
   quizName,
   quizPin,
@@ -54,6 +60,7 @@ function LiveQuizTimeline({
   const [cancelLiveQuizModal, setCancelLiveQuizModal] = useState(false)
   const [qrModal, setQRModal] = useState(false)
   const [inCooldown, setInCooldown] = useState<boolean>(false)
+  const [confirmBlockClosure, setConfirmBlockClosure] = useState(false)
 
   // logic: keep track of the current and previous block
   const [buttonState, setButtonState] = useState<
@@ -132,14 +139,6 @@ function LiveQuizTimeline({
                 {t('manage.liveQuizzes.embeddingEvaluation')}
               </Button.Label>
             </Button>
-            {!isFeedbackQuiz && embedModalOpen ? (
-              <EmbeddingModal
-                key={quizId}
-                onClose={() => setEmbedModalOpen(false)}
-                quizId={quizId}
-                isGamificationEnabled={isGamificationEnabled}
-              />
-            ) : null}
             <Button
               className={{ root: 'h-8 sm:w-max' }}
               onClick={() => setQRModal(true)}
@@ -193,7 +192,7 @@ function LiveQuizTimeline({
                     'bg-uzh-red-100 hover:bg-uzh-red-100 h-8 text-white'
                   ),
                 }}
-                onClick={handleEndLiveQuiz}
+                onClick={async () => await handleEndLiveQuiz()}
                 data={{ cy: 'end-live-quiz-cockpit' }}
               >
                 <Button.Label>{t('manage.cockpit.endQuiz')}</Button.Label>
@@ -219,6 +218,7 @@ function LiveQuizTimeline({
                   key={`${block.id}-${block.status}`}
                   block={block}
                   active={activeBlockId === block.id}
+                  setBlockClosureModal={setConfirmBlockClosure}
                   className="my-auto"
                 />
                 <FontAwesomeIcon
@@ -244,13 +244,33 @@ function LiveQuizTimeline({
             />
           </div>
           <div className="mt-2 flex w-full flex-row justify-between gap-2">
-            <Button
-              destructive
-              onClick={() => setCancelLiveQuizModal(true)}
-              data={{ cy: 'abort-live-quiz-cockpit' }}
-            >
-              <Button.Label>{t('manage.cockpit.abortLiveQuiz')}</Button.Label>
-            </Button>
+            {/* assessment quizzes can only be aborted before starting the first block */}
+            {assessmentMode &&
+            !(lastActiveBlockId === -1 && activeBlockId === -1) ? (
+              <Tooltip tooltip={t('manage.cockpit.noAbortionAssessmentQuiz')}>
+                <Button
+                  destructive
+                  disabled
+                  data={{ cy: 'abort-live-quiz-cockpit' }}
+                  className={{ root: 'h-8' }}
+                >
+                  <Button.Icon icon={faStop} />
+                  <Button.Label>
+                    {t('manage.cockpit.abortLiveQuiz')}
+                  </Button.Label>
+                </Button>
+              </Tooltip>
+            ) : (
+              <Button
+                destructive
+                onClick={() => setCancelLiveQuizModal(true)}
+                data={{ cy: 'abort-live-quiz-cockpit' }}
+                className={{ root: 'h-8' }}
+              >
+                <Button.Icon icon={faX} />
+                <Button.Label>{t('manage.cockpit.abortLiveQuiz')}</Button.Label>
+              </Button>
+            )}
             <Button
               primary={
                 buttonState === 'firstBlock' ||
@@ -260,6 +280,7 @@ function LiveQuizTimeline({
               disabled={loading}
               className={{
                 root: twMerge(
+                  'h-8',
                   buttonState === 'endQuiz' &&
                     'bg-uzh-red-100 hover:bg-uzh-red-100',
                   buttonState === 'blockActive' &&
@@ -267,24 +288,40 @@ function LiveQuizTimeline({
                     'text-uzh-red-100 border-uzh-red-100 border bg-white'
                 ),
               }}
-              onClick={() => {
+              onClick={async () => {
                 if (buttonState === 'firstBlock') {
-                  handleOpenBlock(blocks[0].id)
+                  await handleOpenBlock(blocks[0].id)
                 } else if (buttonState === 'nextBlock') {
                   const openBlockIndex =
                     blocks.findIndex(
                       (block) => block.id === lastActiveBlockId
                     ) + 1
-                  handleOpenBlock(blocks[openBlockIndex].id)
+                  await handleOpenBlock(blocks[openBlockIndex].id)
                 } else if (buttonState === 'blockActive') {
-                  handleCloseBlock(activeBlockId)
-                  setInCooldown(false)
+                  if (assessmentMode) {
+                    setConfirmBlockClosure(true)
+                  } else {
+                    await handleCloseBlock(activeBlockId)
+                    setInCooldown(false)
+                  }
                 } else {
-                  handleEndLiveQuiz()
+                  await handleEndLiveQuiz()
                 }
               }}
               data={{ cy: 'next-block-timeline' }}
             >
+              <Button.Icon
+                icon={
+                  buttonState === 'blockActive' && inCooldown
+                    ? faFastForward
+                    : buttonState === 'firstBlock' ||
+                        buttonState === 'nextBlock'
+                      ? faPlay
+                      : buttonState === 'endQuiz'
+                        ? faFlagCheckered
+                        : faStop
+                }
+              />
               <Button.Label>
                 {buttonState === 'blockActive' && inCooldown
                   ? t('manage.cockpit.skipCooldown')
@@ -294,6 +331,14 @@ function LiveQuizTimeline({
           </div>
         </>
       )}
+      {!isFeedbackQuiz && embedModalOpen ? (
+        <EmbeddingModal
+          key={quizId}
+          onClose={() => setEmbedModalOpen(false)}
+          quizId={quizId}
+          isGamificationEnabled={isGamificationEnabled}
+        />
+      ) : null}
       {cancelLiveQuizModal && (
         <CancelLiveQuizModal
           onClose={() => setCancelLiveQuizModal(false)}
@@ -307,6 +352,18 @@ function LiveQuizTimeline({
           quizPin={quizPin}
           language={language}
           onClose={() => setQRModal(false)}
+        />
+      )}
+      {confirmBlockClosure && (
+        <CloseBlockConfirmDialog
+          open
+          onClose={() => setConfirmBlockClosure(false)}
+          onConfirm={async () => {
+            if (activeBlockId != null) {
+              await handleCloseBlock(activeBlockId)
+              setInCooldown(false)
+            }
+          }}
         />
       )}
     </div>
