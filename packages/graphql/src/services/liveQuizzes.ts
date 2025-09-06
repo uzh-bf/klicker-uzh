@@ -2457,7 +2457,25 @@ export async function deleteLiveQuiz(
   // fetch live quiz to check its status, remember the contained elements
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id },
-    include: { blocks: { include: { elements: true } } },
+    include: {
+      blocks: { include: { elements: true } },
+      course: {
+        include: {
+          _count: {
+            select: {
+              permissions: {
+                where: {
+                  userId: ctx.user.sub,
+                  permissionLevel: {
+                    in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   })
 
   if (!liveQuiz) return null
@@ -2489,6 +2507,19 @@ export async function deleteLiveQuiz(
 
     return deletedLiveQuiz
   } else {
+    // draft and scheduled assessment live quizzes can only be deleted by admins of the corresponding assessment course
+    if (liveQuiz.isAssessmentEnabled) {
+      const isCourseAdminOwner =
+        !!liveQuiz.course?._count?.permissions &&
+        liveQuiz.course._count.permissions > 0
+
+      if (!isCourseAdminOwner) {
+        throw new GraphQLError(
+          'Assessment live quizzes can only be deleted by course admins or owners'
+        )
+      }
+    }
+
     const deletedLiveQuiz = await ctx.prisma.$transaction(
       async (prisma) => {
         const quiz = await prisma.liveQuiz.delete({

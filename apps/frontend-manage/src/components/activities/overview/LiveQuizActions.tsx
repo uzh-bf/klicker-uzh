@@ -154,7 +154,14 @@ function LiveQuizActions({
         ...(user?.privatePreview
           ? ['templateFromLiveQuiz', 'shareLiveQuiz']
           : []),
-        'deleteLiveQuiz',
+        // assessment live quizzes can only be deleted when not completed and only by course admins
+        ...(!liveQuiz.isAssessmentEnabled
+          ? ['deleteLiveQuiz']
+          : liveQuiz.isActivityReviewer &&
+              (liveQuiz.status === PublicationStatus.Draft ||
+                liveQuiz.status === PublicationStatus.Scheduled)
+            ? ['deleteLiveQuiz']
+            : []),
         'deleteTemplate',
       ],
       isEditor: ['editLiveQuiz', 'editTemplate'],
