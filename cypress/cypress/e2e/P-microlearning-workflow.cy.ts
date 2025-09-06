@@ -3352,14 +3352,14 @@ describe('Different microlearning workflows', function () {
         hour: 12,
         minute: 30,
         validation: startDate1,
-      }, // 3 months in the future at 2:00
+      },
       endDate: {
         monthDelta: 1,
         day: 20,
         hour: 14,
         minute: 0,
         validation: endDate1,
-      }, // 7 months in the future at 18:00
+      },
       stacks: [
         {
           elements: [
@@ -3443,14 +3443,14 @@ describe('Different microlearning workflows', function () {
         hour: 12,
         minute: 30,
         validation: startDate1,
-      }, // 3 months in the future at 2:00
+      },
       endDate: {
         monthDelta: 1,
         day: 20,
         hour: 14,
         minute: 0,
         validation: endDate1,
-      }, // 7 months in the future at 18:00
+      },
       stacks: [
         {
           elements: [

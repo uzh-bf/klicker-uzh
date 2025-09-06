@@ -33,6 +33,7 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import * as Yup from 'yup'
 import Layout from '../../components/Layout'
 import LiveQuizLeaderboard from '../../components/common/LiveQuizLeaderboard'
 import FeedbackArea from '../../components/liveQuiz/FeedbackArea'
@@ -166,12 +167,18 @@ function Index({ id }: { id: string }) {
           <p className="text-gray-600">{t('pwa.liveQuiz.pinRequired')}</p>
           <Formik
             enableReinitialize
+            validateOnMount
             initialValues={{
               pin:
                 typeof router.query.pin === 'string'
                   ? (router.query.pin as string)
                   : '',
             }}
+            validationSchema={Yup.object({
+              pin: Yup.string()
+                .length(6, t('pwa.liveQuiz.pinRequired'))
+                .required(t('pwa.liveQuiz.pinRequired')),
+            })}
             onSubmit={async (values, { setSubmitting }) => {
               try {
                 await setLiveQuizPin({
@@ -187,7 +194,7 @@ function Index({ id }: { id: string }) {
               }
             }}
           >
-            {({ handleSubmit, isSubmitting }) => (
+            {({ handleSubmit, isSubmitting, isValid }) => (
               <Form
                 onSubmit={handleSubmit}
                 className="flex w-max flex-col items-end gap-4"
@@ -202,8 +209,9 @@ function Index({ id }: { id: string }) {
                 <Button
                   primary
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !isValid}
                   className={{ root: 'w-full' }}
+                  data={{ cy: 'live-quiz-submit-pin' }}
                 >
                   <Button.Label>{t('pwa.liveQuiz.submitPin')}</Button.Label>
                 </Button>

@@ -1563,6 +1563,9 @@ importers:
       cypress-real-events:
         specifier: ~1.14.0
         version: 1.14.0(cypress@14.5.1)
+      generate-password:
+        specifier: ~1.7.1
+        version: 1.7.1
       jose:
         specifier: ~5.9.4
         version: 5.9.6

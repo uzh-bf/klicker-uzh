@@ -2064,13 +2064,10 @@ export async function endLiveQuiz(
     }
 
     const endedLiveQuiz = await ctx.prisma.liveQuiz.update({
-      where: {
-        id,
-      },
+      where: { id },
       data: {
         status: DB.PublicationStatus.ENDED,
         finishedAt: new Date(),
-        pinCode: null,
       },
     })
 

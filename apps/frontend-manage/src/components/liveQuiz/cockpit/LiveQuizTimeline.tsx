@@ -112,7 +112,10 @@ function LiveQuizTimeline({
           <H1 className={{ root: 'm-0 text-xl' }}>Quiz: {quizName}</H1>
           <RuntimeCounter startedAt={startedAt} />
           {quizPin && (
-            <span className="text-uzh-red-100 -mb-0.5 h-max text-xl font-bold">{`${t('shared.generic.pin')}: ${quizPin.slice(0, 3)} ${quizPin.slice(3)}`}</span>
+            <span
+              className="text-uzh-red-100 -mb-0.5 h-max text-xl font-bold"
+              data-cy="live-quiz-pin"
+            >{`${t('shared.generic.pin')}: ${quizPin.slice(0, 3)} ${quizPin.slice(3)}`}</span>
           )}
         </div>
 
