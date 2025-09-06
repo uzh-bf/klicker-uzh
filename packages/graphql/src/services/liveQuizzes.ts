@@ -591,10 +591,30 @@ export async function manipulateLiveQuiz(
   ctx: ContextWithUser
 ) {
   // in EDIT mode - validate that the live quiz exists and is not published
-  let existingActivity: DB.LiveQuiz | null = null
+  let existingActivity:
+    | (DB.LiveQuiz & { course?: { _count: { permissions: number } } | null })
+    | null = null
   if (id) {
     existingActivity = await ctx.prisma.liveQuiz.findUnique({
       where: { id, isDeleted: false },
+      include: {
+        course: {
+          include: {
+            _count: {
+              select: {
+                permissions: {
+                  where: {
+                    userId: ctx.user.sub,
+                    permissionLevel: {
+                      in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     })
 
     if (!existingActivity) {
@@ -654,6 +674,12 @@ export async function manipulateLiveQuiz(
 
   // pin protection applies when assessment is enabled or explicitly enabled via flag
   const pinProtection = assessmentSetting || isPinProtected
+
+  // if a new course should be assigned, verify that the live quiz is not removed from an assessment course (by someone with insufficient permissions)
+  const newCourse =
+    courseId !== null &&
+    (!existingActivity?.isAssessmentEnabled ||
+      (existingActivity?.course?._count.permissions ?? 0) > 0)
 
   // re-create blocks and link existing instance / create new instances (depending on mode and novelty of the included element)
   const createOrUpdateJSON = {
@@ -746,15 +772,14 @@ export async function manipulateLiveQuiz(
         where: { id: id ?? uuidv4() },
         create: {
           ...createOrUpdateJSON,
-          course: courseId !== null ? { connect: { id: courseId } } : undefined,
+          course: newCourse ? { connect: { id: courseId } } : undefined,
           owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
         },
         update: {
           ...createOrUpdateJSON,
-          course:
-            courseId !== null
-              ? { connect: { id: courseId } }
-              : { disconnect: true },
+          course: newCourse
+            ? { connect: { id: courseId } }
+            : { disconnect: true },
         },
         include: {
           templateInfo: true,

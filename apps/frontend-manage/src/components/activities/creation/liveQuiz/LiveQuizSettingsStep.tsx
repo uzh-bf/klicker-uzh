@@ -4,6 +4,7 @@ import {
   faCrown,
   faGears,
   faQuestionCircle,
+  faTriangleExclamation,
   faUsers,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
@@ -105,59 +106,89 @@ function LiveQuizSettingsStep({
                         {t('shared.generic.settings')}
                       </div>
                     </div>
-                    <SelectField
-                      value={values.courseId}
-                      onChange={(value) => {
-                        setFieldValue('courseId', value)
+                    <div className="flex flex-row items-end gap-2.5">
+                      <SelectField
+                        disabled={
+                          values.isAssessmentEnabled &&
+                          !selectedCourse?.isManager // only managers of an assessment course can remove a quiz from it
+                        }
+                        value={values.courseId}
+                        onChange={(value) => {
+                          setFieldValue('courseId', value)
 
-                        if (value === 'no-course-selected') {
-                          setFieldValue('isGamificationEnabled', false)
-                          setFieldValue('isAssessmentEnabled', false)
-                          setFieldValue('multiplier', '1')
-                          setFieldValue('isPinProtected', false)
-                        } else {
-                          const selectedCourse = [
-                            ...(gamifiedCourses ?? []),
-                            ...(nonGamifiedCourses ?? []),
-                            ...(assessmentCourses ?? []),
-                          ].find((course) => course.value === value)
-                          setFieldValue(
-                            'isGamificationEnabled',
-                            selectedCourse?.isGamified ?? false
-                          )
-                          setFieldValue(
-                            'isAssessmentEnabled',
-                            selectedCourse?.isAssessmentEnabled ?? false
-                          )
-                          setFieldValue(
-                            'isPinProtected',
-                            selectedCourse?.isAssessmentEnabled ?? false
-                          )
-                        }
-                      }}
-                      label={t('shared.generic.course')}
-                      tooltip={t.rich(
-                        'manage.activityWizard.liveQuizDescCourse',
-                        {
-                          link: (text) => (
-                            <a
-                              href="https://www.klicker.uzh.ch/tutorials/live_quiz/#what-functionalities-become-available-through-gamified-live-quizzes"
-                              className="text-primary-100 hover:underline"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              {text}
-                            </a>
-                          ),
-                        }
-                      )}
-                      placeholder={t(
-                        'manage.activityWizard.liveQuizSelectCourse'
-                      )}
-                      groups={groupedCourses}
-                      data={{ cy: 'select-course' }}
-                      className={{ tooltip: 'z-20' }}
-                    />
+                          if (value === 'no-course-selected') {
+                            setFieldValue('isGamificationEnabled', false)
+                            setFieldValue('isAssessmentEnabled', false)
+                            setFieldValue('multiplier', '1')
+                            setFieldValue('isPinProtected', false)
+                          } else {
+                            const selectedCourse = [
+                              ...(gamifiedCourses ?? []),
+                              ...(nonGamifiedCourses ?? []),
+                              ...(assessmentCourses ?? []),
+                            ].find((course) => course.value === value)
+                            setFieldValue(
+                              'isGamificationEnabled',
+                              selectedCourse?.isGamified ?? false
+                            )
+                            setFieldValue(
+                              'isAssessmentEnabled',
+                              selectedCourse?.isAssessmentEnabled ?? false
+                            )
+                            setFieldValue(
+                              'isPinProtected',
+                              selectedCourse?.isAssessmentEnabled ?? false
+                            )
+                          }
+                        }}
+                        label={t('shared.generic.course')}
+                        tooltip={t.rich(
+                          'manage.activityWizard.liveQuizDescCourse',
+                          {
+                            link: (text) => (
+                              <a
+                                href="https://www.klicker.uzh.ch/tutorials/live_quiz/#what-functionalities-become-available-through-gamified-live-quizzes"
+                                className="text-primary-100 hover:underline"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {text}
+                              </a>
+                            ),
+                          }
+                        )}
+                        placeholder={t(
+                          'manage.activityWizard.liveQuizSelectCourse'
+                        )}
+                        groups={groupedCourses}
+                        data={{ cy: 'select-course' }}
+                        className={{
+                          select: {
+                            trigger: twMerge(
+                              'h-8 w-60',
+                              values.isAssessmentEnabled &&
+                                !selectedCourse?.isManager
+                                ? 'w-53'
+                                : ''
+                            ),
+                          },
+                          tooltip: 'z-20',
+                        }}
+                      />
+                      {values.isAssessmentEnabled &&
+                      !selectedCourse?.isManager ? (
+                        <Tooltip
+                          tooltip={t(
+                            'manage.activityWizard.assessmentCourseRemovalRestricted'
+                          )}
+                        >
+                          <FontAwesomeIcon
+                            icon={faTriangleExclamation}
+                            className="text-uzh-red-100 mb-1"
+                          />
+                        </Tooltip>
+                      ) : null}
+                    </div>
 
                     <div className="mt-2 flex flex-col pb-2 pl-1">
                       {selectedCourse?.isGamified &&
@@ -283,7 +314,7 @@ function LiveQuizSettingsStep({
                       <>
                         <MultiplierSelector
                           disabled={!values.isGamificationEnabled}
-                          className={{ trigger: 'w-59' }}
+                          className={{ trigger: 'w-59 h-8' }}
                         />
                         <div className="mt-2 flex flex-row items-start gap-2.5">
                           <FontAwesomeIcon

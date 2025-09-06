@@ -1778,6 +1778,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You can assign your live quiz to a course. If your course is gamified or has assessment enabled, these settings will automatically propagate to the activity. For non-gamified courses or live quizzes without course assignment, you may activate gamification separately. For more information, please also refer to the documentation on <link>gamified live quizzes</link>.',
       liveQuizSelectCourse: 'Select course',
       liveQuizNoCourse: 'No course',
+      assessmentCourseRemovalRestricted:
+        'Activities in assessment mode can only be removed from it by an administrator of the corresponding course.',
       liveQuizEnableGamification:
         'Select a gamified course to activate gamification.',
       liveQuizMultiplier:

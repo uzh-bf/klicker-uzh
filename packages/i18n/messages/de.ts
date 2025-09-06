@@ -1791,6 +1791,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie können Ihr Live Quiz einem Kurs zuordnen. Wenn Ihr Kurs gamifiziert ist oder der Assessment-Modus aktiviert ist, werden diese Einstellungen automatisch auf die Aktivität übertragen. Für nicht-gamifizierte Kurse oder Live Quizzes ohne Kurszuordnung kann die Gamifizierung separat aktiviert werden. Weitere Informationen finden Sie in der Dokumentation zu <link>gamifizierten Live Quizzes</link>.',
       liveQuizSelectCourse: 'Kurs auswählen',
       liveQuizNoCourse: 'Kein Kurs',
+      assessmentCourseRemovalRestricted:
+        'Aktivitäten im Assessment-Modus können nur durch einen Administrator des entsprechenden Kurses wieder aus diesem entfernt werden.',
       liveQuizEnableGamification:
         'Wählen Sie einen gamifizierten Kurs aus, um Gamifizierung zu aktivieren.',
       liveQuizMultiplier:
