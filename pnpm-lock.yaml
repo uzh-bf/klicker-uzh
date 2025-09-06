@@ -79,7 +79,7 @@ importers:
         version: 4.0.12(@fortawesome/fontawesome-svg-core@6.7.2)(@fortawesome/free-regular-svg-icons@6.7.2)(@fortawesome/free-solid-svg-icons@6.7.2)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.1.0))(@tailwindcss/postcss@4.1.11)(@types/react-dom@19.1.6(@types/react@19.1.8))(@types/react@19.1.8)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.13)(formik@2.4.6(react@19.1.0))(lucide-react@0.522.0(react@19.1.0))(postcss@8.4.49)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(tailwind-merge@3.3.1)(tailwindcss-animate@1.0.7(tailwindcss@4.1.11))(tailwindcss-radix@4.0.2(tailwindcss@4.1.11))(tailwindcss@4.1.11)(tw-animate-css@1.3.4)(yup@1.6.1)
       axios:
         specifier: 1.7.7
-        version: 1.7.7(debug@4.4.1)
+        version: 1.7.7
       bcryptjs:
         specifier: 2.4.3
         version: 2.4.3
@@ -97,7 +97,7 @@ importers:
         version: 15.3.4(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       next-auth:
         specifier: 4.24.11
-        version: 4.24.11(next@15.3.4(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(nodemailer@6.9.15)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        version: 4.24.11(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(nodemailer@6.9.15)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       next-intl:
         specifier: 4.3.4
         version: 4.3.4(next@15.3.4(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)(typescript@5.6.3)
@@ -272,7 +272,7 @@ importers:
         version: 5.4.1
       next-auth:
         specifier: 4.24.11
-        version: 4.24.11(next@15.3.4(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(nodemailer@6.9.15)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        version: 4.24.11(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(nodemailer@6.9.15)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       ws:
         specifier: 8.18.0
         version: 8.18.0
@@ -312,7 +312,7 @@ importers:
         version: 8.5.13
       axios:
         specifier: ~1.7.7
-        version: 1.7.7(debug@4.4.1)
+        version: 1.7.7
       cross-env:
         specifier: ~7.0.3
         version: 7.0.3
@@ -1192,12 +1192,12 @@ importers:
       '@klicker-uzh/grading':
         specifier: workspace:*
         version: link:../../packages/grading
+      '@klicker-uzh/util':
+        specifier: workspace:*
+        version: link:../../packages/util
       ioredis:
         specifier: 5.4.1
         version: 5.4.1
-      jose:
-        specifier: 5.9.4
-        version: 5.9.4
     devDependencies:
       '@klicker-uzh/types':
         specifier: workspace:*
@@ -1623,7 +1623,7 @@ importers:
         version: 6.14.0
       axios:
         specifier: 1.7.7
-        version: 1.7.7(debug@4.4.1)
+        version: 1.7.7
       bcryptjs:
         specifier: 2.4.3
         version: 2.4.3
@@ -2277,6 +2277,9 @@ importers:
       typescript:
         specifier: ~5.6.3
         version: 5.6.3
+      vitest:
+        specifier: ~3.2.3
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@20.17.12)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.37.0)(tsx@4.19.2)(yaml@2.8.1)
 
 packages:
 
@@ -17188,9 +17191,6 @@ packages:
     resolution: {integrity: sha512-RwNA9Z/7PrK06rYLIzFMlaF+l73iwpzsqRIFgbMLbTcLD6cOao82TaWefPXQvB2fOC4AjuYSEndS7N/mTCbkdQ==}
     engines: {node: '>= 0.8'}
 
-  std-env@3.8.0:
-    resolution: {integrity: sha512-Bc3YwwCB+OzldMxOXJIIvC6cPRWr/LxOp48CdQTOkPyk/t4JWWJbrilwBd7RJzKV8QW7tJkcgAmeuLLJugl5/w==}
-
   std-env@3.9.0:
     resolution: {integrity: sha512-UGvjygr6F6tpH7o2qyqR6QYpwraIjKSdtzyBdyytFOHmPZY917kwdwLG0RbOjWOnKmnm3PeHjaoLLMie7kPLQw==}
 
@@ -23758,7 +23758,7 @@ snapshots:
     dependencies:
       '@azure/core-auth': 1.9.0
       '@microsoft/teams-manifest': 0.1.5
-      axios: 1.7.7(debug@4.4.1)
+      axios: 1.7.7
       chai: 4.5.0
       jsonschema: 1.5.0
       neverthrow: 3.2.0
@@ -23785,7 +23785,7 @@ snapshots:
       '@microsoft/teamsfx-api': 0.23.1
       adm-zip: 0.5.16
       ajv: 8.17.1
-      axios: 1.7.7(debug@4.4.1)
+      axios: 1.7.7
       axios-retry: 3.9.1
       comment-json: 4.2.5
       cryptr: 6.3.0
@@ -23867,7 +23867,7 @@ snapshots:
   '@next-auth/prisma-adapter@1.0.7(@prisma/client@6.14.0(prisma@6.14.0(typescript@5.6.3))(typescript@5.6.3))(next-auth@4.24.11(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(nodemailer@6.9.15)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))':
     dependencies:
       '@prisma/client': 6.14.0(prisma@6.14.0(typescript@5.6.3))(typescript@5.6.3)
-      next-auth: 4.24.11(next@15.3.4(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(nodemailer@6.9.15)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      next-auth: 4.24.11(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(nodemailer@6.9.15)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
 
   '@next/env@15.1.2': {}
 
@@ -27661,8 +27661,16 @@ snapshots:
 
   axios@1.11.0:
     dependencies:
-      follow-redirects: 1.15.9(debug@4.4.1)
+      follow-redirects: 1.15.9(debug@4.4.0)
       form-data: 4.0.4
+      proxy-from-env: 1.1.0
+    transitivePeerDependencies:
+      - debug
+
+  axios@1.7.7:
+    dependencies:
+      follow-redirects: 1.15.9(debug@4.4.0)
+      form-data: 4.0.1
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
       - debug
@@ -31507,7 +31515,7 @@ snapshots:
   http-proxy@1.18.1:
     dependencies:
       eventemitter3: 4.0.7
-      follow-redirects: 1.15.9(debug@4.4.1)
+      follow-redirects: 1.15.9(debug@4.4.0)
       requires-port: 1.0.0
     transitivePeerDependencies:
       - debug
@@ -34101,7 +34109,7 @@ snapshots:
 
   neverthrow@3.2.0: {}
 
-  next-auth@4.24.11(next@15.3.4(@babel/core@7.26.0)(@opentelemetry/api@1.9.0)(babel-plugin-macros@3.1.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(nodemailer@6.9.15)(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
+  next-auth@4.24.11(next@15.3.4(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(nodemailer@6.9.15)(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
       '@babel/runtime': 7.27.6
       '@panva/hkdf': 1.2.1
@@ -37942,8 +37950,6 @@ snapshots:
 
   statuses@2.0.1: {}
 
-  std-env@3.8.0: {}
-
   std-env@3.9.0: {}
 
   stdin-discarder@0.2.2: {}
@@ -39428,7 +39434,7 @@ snapshots:
       figures: 3.2.0
       markdown-table: 2.0.0
       pretty-time: 1.1.0
-      std-env: 3.8.0
+      std-env: 3.9.0
       webpack: 5.97.1(@swc/core@1.10.7(@swc/helpers@0.5.15))
       wrap-ansi: 7.0.0
 

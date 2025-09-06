@@ -44,15 +44,11 @@ export async function verifyJWT(
     clockTolerance?: string | number
   } = {}
 ): Promise<JWTPayload> {
-  try {
-    const { payload } = await jose.jwtVerify(token, getSecretKey(secret), {
-      algorithms: opts.algorithms ?? ['HS256'],
-      clockTolerance: opts.clockTolerance ?? '5s',
-    })
-    return payload as JWTPayload
-  } catch (e) {
-    throw e
-  }
+  const { payload } = await jose.jwtVerify(token, getSecretKey(secret), {
+    algorithms: opts.algorithms ?? ['HS256'],
+    clockTolerance: opts.clockTolerance ?? '5s',
+  })
+  return payload as JWTPayload
 }
 
 export function decodeJWT<T extends Record<string, unknown> = JWTPayload>(
