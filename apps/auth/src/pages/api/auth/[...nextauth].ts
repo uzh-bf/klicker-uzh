@@ -215,7 +215,7 @@ async function createOrLinkParticipant(profile: ExtendedProfile) {
 
   // Create new participant if none exists
   if (!participant) {
-    const username = `student_${crypto.randomBytes(4).toString('hex')}`
+    const username = generateRandomString(10)
     participant = await prisma.participant.create({
       data: {
         username,
