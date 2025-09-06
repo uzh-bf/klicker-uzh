@@ -1,6 +1,6 @@
+import { signJWT } from '@klicker-uzh/util'
 import '@testing-library/cypress/add-commands'
 import 'cypress-real-events'
-import * as jose from 'jose'
 import localforage from 'localforage'
 import messages from '../../../packages/i18n/messages/en'
 
@@ -123,15 +123,10 @@ const loginFactory = (
     cy.viewport('macbook-16')
     localforage.setItem('hideLecturerSurvey', 'true')
 
-    const secret = new TextEncoder().encode('abcd')
-    const alg = 'HS256'
-
     cy.wrap(null).then(async () => {
-      const token = await new jose.SignJWT(tokenData)
-        .setProtectedHeader({ alg })
-        .setIssuedAt()
-        .setExpirationTime('2h')
-        .sign(secret)
+      const token = await signJWT(tokenData, Cypress.env('APP_SECRET'), {
+        expiresIn: '2h',
+      })
 
       cy.setCookie('next-auth.session-token', token, {
         domain: '127.0.0.1',
