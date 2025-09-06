@@ -1030,6 +1030,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupActivityEnded:
         'This group activity has ended already. You cannot start it anymore or submit any answers.',
     },
+    assessment: {
+      title: 'Assessment Login',
+      warning:
+        'This is an assessment application. All your data and activities will be visible to your lecturers.',
+      loginWithEduId: 'Login with Edu-ID',
+      eduIdRequired: 'Edu-ID authentication is required for assessments',
+    },
   },
   manage: {
     general: {

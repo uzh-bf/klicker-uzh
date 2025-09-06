@@ -64,6 +64,72 @@ function LoginForm({
     deferredPrompt.current!.prompt()
   }
 
+  // Assessment mode UI - simplified login with only Edu-ID
+  if (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true') {
+    return (
+      <div className="md:grow-0! flex max-w-full grow flex-col md:max-w-xl md:rounded-lg md:border md:shadow">
+        <div className="flex flex-1 flex-col items-center justify-center">
+          <div className="mb-8 w-full text-center sm:my-12">
+            <Image
+              src="/KlickerLogo.png"
+              width={300}
+              height={90}
+              alt="KlickerUZH Logo"
+              className="mx-auto"
+              data-cy="login-logo"
+            />
+          </div>
+
+          <div className="w-full space-y-4 px-6">
+            <h1 className="mb-4 text-center text-2xl font-semibold">
+              {t('pwa.assessment.title')}
+            </h1>
+
+            {/* Assessment Warning */}
+            <div className="mb-6">
+              <UserNotification type="warning">
+                {t('pwa.assessment.warning')}
+              </UserNotification>
+            </div>
+
+            <p className="mt-2 text-center text-sm text-gray-500">
+              {t('pwa.assessment.eduIdRequired')}
+            </p>
+
+            {/* Edu-ID Login Button */}
+            <Button
+              fluid
+              className={{
+                root: 'p-4',
+              }}
+              onClick={() => {
+                const currentUrl = window.location.origin
+                const authUrl =
+                  process.env.NEXT_PUBLIC_AUTH_URL ||
+                  'https://auth.klicker.uzh.ch'
+                window.location.href = `${authUrl}/student?redirectTo=${encodeURIComponent(currentUrl)}`
+              }}
+              data={{ cy: 'eduid-login-button' }}
+            >
+              <Image
+                src="/edu-id-logo.svg"
+                width={300}
+                height={90}
+                alt="Edu-ID Logo"
+                className="mx-auto"
+              />
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-8 w-full flex-none">
+          <Footer />
+        </div>
+      </div>
+    )
+  }
+
+  // Regular mode UI (existing functionality)
   return (
     <div className="md:grow-0! flex max-w-full grow flex-col md:max-w-xl md:rounded-lg md:border md:shadow">
       <div className="flex flex-1 flex-col items-center justify-center">

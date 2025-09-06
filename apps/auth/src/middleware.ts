@@ -8,6 +8,31 @@ function isValidStudentRedirectUrl(url: string): boolean {
     const allowedDomains = [
       'assessment.klicker.uzh.ch',
       'assessment.klicker.com',
+      // Development
+      'localhost:3000',
+      '127.0.0.1:3000',
+    ]
+
+    return allowedDomains.some(
+      (domain) =>
+        parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`)
+    )
+  } catch {
+    return false
+  }
+}
+
+function isValidLecturerRedirectUrl(url: string): boolean {
+  if (!url) return false
+
+  try {
+    const parsed = new URL(url)
+    const allowedDomains = [
+      'manage.klicker.uzh.ch',
+      'manage.klicker.com',
+      // Development
+      '127.0.0.1:3001',
+      'localhost:3001',
     ]
 
     return allowedDomains.some(
@@ -27,19 +52,59 @@ export async function middleware(request: NextRequest) {
     fullUrl: request.url,
     referer: request.headers.get('referer'),
     searchParams: Object.fromEntries(request.nextUrl.searchParams.entries()),
-    cookies: Object.fromEntries(
-      request.cookies.getAll().map((c) => [c.name, c.value])
-    ),
   })
+
+  // Handle /lecturer route - redirect to OAuth immediately for lecturer auth
+  if (pathname === '/lecturer') {
+    console.log('LECTURER ROUTE MATCHED!')
+    const redirectTo =
+      request.nextUrl.searchParams.get('redirectTo') ||
+      process.env.NEXT_PUBLIC_MANAGE_URL ||
+      'https://manage.klicker.uzh.ch'
+
+    console.log('RedirectTo parameter (with default):', redirectTo)
+
+    if (!isValidLecturerRedirectUrl(redirectTo)) {
+      console.log('Invalid lecturer redirect URL:', redirectTo)
+      return new NextResponse('Invalid redirect URL', { status: 400 })
+    }
+
+    console.log('Valid lecturer redirect URL, proceeding with OAuth redirect')
+
+    // Redirect to lecturer signin with both EduID and credentials options
+    const signinUrl = new URL('/api/auth/signin', request.url)
+    signinUrl.searchParams.set('callbackUrl', redirectTo)
+    // No participant parameter - default to lecturer context
+
+    console.log('Lecturer route redirect to:', signinUrl.toString())
+
+    const response = NextResponse.redirect(signinUrl)
+
+    // Clear any existing auth-context cookies to prevent conflicts
+    response.cookies.set('auth-context', '', {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      domain: process.env.COOKIE_DOMAIN,
+      secure: process.env.NODE_ENV === 'production',
+      expires: new Date(0), // Expire immediately
+    })
+
+    console.log('Returning lecturer redirect response')
+    return response
+  }
 
   // Handle /student route - redirect to OAuth immediately
   if (pathname === '/student') {
     console.log('STUDENT ROUTE MATCHED!')
-    const redirectTo = request.nextUrl.searchParams.get('redirectTo')
+    const redirectTo =
+      request.nextUrl.searchParams.get('redirectTo') ||
+      process.env.NEXT_PUBLIC_ASSESSMENT_URL ||
+      'https://assessment.klicker.uzh.ch'
 
-    console.log('RedirectTo parameter:', redirectTo)
+    console.log('RedirectTo parameter (with default):', redirectTo)
 
-    if (!redirectTo || !isValidStudentRedirectUrl(redirectTo)) {
+    if (!isValidStudentRedirectUrl(redirectTo)) {
       console.log('Invalid redirect URL:', redirectTo)
       return new NextResponse('Invalid redirect URL', { status: 400 })
     }
@@ -55,61 +120,54 @@ export async function middleware(request: NextRequest) {
 
     const response = NextResponse.redirect(signinUrl)
 
-    // Set context cookie for the auth flow
-    response.cookies.set('auth-context', 'participant', {
+    // Clear any existing auth-context cookies to prevent conflicts
+    response.cookies.set('auth-context', '', {
       httpOnly: true,
       sameSite: 'lax',
       path: '/',
       domain: process.env.COOKIE_DOMAIN,
       secure: process.env.NODE_ENV === 'production',
+      expires: new Date(0), // Expire immediately
     })
 
     console.log('Returning redirect response')
     return response
   }
 
-  // Process auth routes for context detection
+  // Process auth routes for context detection (stateless approach)
   if (pathname.startsWith('/api/auth')) {
-    // Detect participant context from various sources
     const referer = request.headers.get('referer') || ''
-    const existingContext = request.cookies.get('auth-context')?.value
     const participantParam = request.nextUrl.searchParams.get('participant')
 
+    // Only detect participant context from explicit parameters and current request context
+    // No persistent cookies to avoid conflicts
     const isParticipantContext =
       participantParam === 'true' ||
-      existingContext === 'participant' ||
+      pathname.includes('eduid-participant') ||
       referer.includes('assessment.') ||
-      referer.includes('pwa.klicker.') ||
-      referer.includes('/student') ||
-      referer.includes('participant=true')
+      referer.includes('/student')
 
-    console.log('Context detection result:', {
+    console.log('Stateless context detection result:', {
       isParticipantContext,
       participantParam,
-      existingContext,
       referer,
+      pathname,
     })
 
-    if (isParticipantContext) {
-      const response = NextResponse.next()
+    // For participant context, ensure participant parameter is present in URL
+    if (isParticipantContext && participantParam !== 'true') {
+      const url = request.nextUrl.clone()
+      url.searchParams.set('participant', 'true')
+      console.log('Adding participant parameter to URL:', url.toString())
+      return NextResponse.redirect(url)
+    }
 
-      // Set/refresh context cookie
-      response.cookies.set('auth-context', 'participant', {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        domain: process.env.COOKIE_DOMAIN,
-        secure: process.env.NODE_ENV === 'production',
-      })
-
-      // Add participant parameter to the URL if not already present
-      if (participantParam !== 'true') {
-        const url = request.nextUrl.clone()
-        url.searchParams.set('participant', 'true')
-        return NextResponse.redirect(url)
-      }
-
-      return response
+    // For lecturer context (default), clear any participant parameters
+    if (!isParticipantContext && participantParam === 'true') {
+      const url = request.nextUrl.clone()
+      url.searchParams.delete('participant')
+      console.log('Removing participant parameter from URL:', url.toString())
+      return NextResponse.redirect(url)
     }
   }
 
@@ -117,5 +175,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/auth/:path*', '/student'],
+  matcher: ['/api/auth/:path*', '/student', '/lecturer'],
 }

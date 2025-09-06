@@ -18,28 +18,33 @@ export const PARTICIPANT_COOKIE_NAME = 'next-auth.participant-session-token'
 // Export for discourse.ts and other consumers
 export const APP_SECRET = process.env.APP_SECRET
 
-// Simplified context detection - middleware handles most of the logic
+// Stateless context detection - no persistent cookies, URL and referrer based only
 function getAuthContext(req: NextApiRequest): 'lecturer' | 'participant' {
   const { participant, nextauth } = req.query
-  const cookies = req.headers.cookie || ''
+  const referer = req.headers.referer || ''
 
-  console.log('NextAuth context detection:', {
+  console.log('NextAuth stateless context detection:', {
     participant,
     nextauth,
-    hasCookie: cookies.includes('auth-context=participant'),
+    referer,
     url: req.url,
     method: req.method,
   })
 
-  // Check for explicit participant auth parameter (set by middleware)
+  // Check for explicit participant parameter (from middleware /student route)
   if (participant === 'true') {
-    console.log('Context: participant (middleware param)')
+    console.log('Context: participant (explicit param)')
     return 'participant'
   }
 
-  // Check auth context cookie (set by middleware)
-  if (cookies.includes('auth-context=participant')) {
-    console.log('Context: participant (middleware cookie)')
+  // Check URL route patterns for participant context
+  if (
+    req.url &&
+    (req.url.includes('/student') ||
+      req.url.includes('eduid-participant') ||
+      req.url.includes('participant=true'))
+  ) {
+    console.log('Context: participant (URL pattern)')
     return 'participant'
   }
 
@@ -55,7 +60,27 @@ function getAuthContext(req: NextApiRequest): 'lecturer' | 'participant' {
     return 'participant'
   }
 
-  // Default to lecturer authentication
+  // Check referrer patterns for participant context
+  if (
+    referer &&
+    (referer.includes('assessment.') ||
+      referer.includes('/student') ||
+      referer.includes('participant=true'))
+  ) {
+    console.log('Context: participant (referrer)')
+    return 'participant'
+  }
+
+  // Check referrer patterns for explicit lecturer context
+  if (
+    referer &&
+    (referer.includes('manage.') || referer.includes('/lecturer'))
+  ) {
+    console.log('Context: lecturer (referrer)')
+    return 'lecturer'
+  }
+
+  // Default to lecturer authentication for all other cases
   console.log('Context: lecturer (default)')
   return 'lecturer'
 }
@@ -454,7 +479,7 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
         },
       },
 
-      async authorize(credentials, req) {
+      async authorize(credentials) {
         if (!credentials) return null
 
         const user = await prisma.user.findUnique({
@@ -567,7 +592,7 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
           return true
         },
 
-        async jwt({ token, user, account, profile, trigger }) {
+        async jwt({ token, user, profile }) {
           // Lecturer JWT handling (existing logic)
           const profileData = profile as ExtendedProfile
           const userData = user as ExtendedUser

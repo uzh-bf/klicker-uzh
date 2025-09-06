@@ -16,7 +16,9 @@ function Login() {
       `${process.env.NEXT_PUBLIC_MANAGE_URL as string}${origin}`
     )
 
-    router.push(`${process.env.NEXT_PUBLIC_AUTH_URL}?redirectTo=${redirection}`)
+    router.push(
+      `${process.env.NEXT_PUBLIC_AUTH_URL}/lecturer?redirectTo=${redirection}`
+    )
   })
 
   return null

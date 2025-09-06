@@ -1031,6 +1031,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupActivityEnded:
         'Diese Gruppenaktivität ist bereits beendet. Sie können sie nicht mehr starten oder Antworten einreichen.',
     },
+    assessment: {
+      title: 'Assessment Login',
+      warning:
+        'Dies ist eine Assessment-Anwendung. Alle Ihre Daten und Aktivitäten sind für Ihre Dozierenden sichtbar.',
+      loginWithEduId: 'Login mit Edu-ID',
+      eduIdRequired:
+        'Edu-ID-Authentifizierung ist für Assessments erforderlich',
+    },
   },
   manage: {
     general: {
