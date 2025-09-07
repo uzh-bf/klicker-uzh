@@ -58,7 +58,7 @@ function ActivityBatchOperationsModal({
 
   const { loading: loadingCourses, data: dataCourses } = useQuery(
     GetActiveUserCoursesDocument,
-    { fetchPolicy: 'cache-and-network' }
+    { fetchPolicy: 'network-only' }
   )
 
   // whenever the applied filters change, update the affected activities
@@ -112,6 +112,16 @@ function ActivityBatchOperationsModal({
 
       // course assignment change
       if (selectedActions.course?.id) {
+        // assessment activities can only be removed from assessment courses by course admins
+        if (
+          activity.isAssessmentEnabled &&
+          !activity.isActivityReviewer &&
+          selectedActions.course.id !== activity.courseId
+        ) {
+          actionsApplied = false
+          reasons.push(t('manage.activities.batchAssessmentRemovalAdminOnly'))
+        }
+
         // group activities can only be assigned to courses with groups enabled
         if (
           activity.type === ActivityType.GroupActivity &&

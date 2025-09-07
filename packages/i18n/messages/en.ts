@@ -1201,6 +1201,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'A multiplier can only be set for gamified activities or activities in assessment courses, as points can only be collected in these courses.',
       batchGroupActivityRequiresGroupsEnabled:
         'Group activities can only be assigned to courses where group formation is enabled.',
+      batchAssessmentRemovalAdminOnly:
+        'Activities that are in assessment mode (assigned to an assessment course) can only be removed from it by administrators of the corresponding course.',
       batchActivityDatesOutsideCourse:
         'The availability interval of group activities and microlearnings must be fully within the course duration.',
       batchGroupActivityRequiresFinalizedGroups:
