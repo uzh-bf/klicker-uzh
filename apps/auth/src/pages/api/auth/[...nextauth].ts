@@ -159,6 +159,51 @@ async function createUserAffiliations(
   // if affiliations are present, add corresponding accounts for the user
   if (affiliationIds && affiliationIds.length > 0) {
     for (const affiliationId of affiliationIds) {
+      try {
+        // get provider as the string between @ and .ch
+        const parts = affiliationId.split('@')
+        if (parts.length < 2) continue
+
+        const domainParts = parts[1]?.split('.')
+        if (!domainParts || domainParts.length === 0) continue
+
+        const provider = domainParts[0]
+        if (!provider) continue
+        // upsert accounts for every affiliation
+        await prisma.account.upsert({
+          where: {
+            provider_providerAccountId: {
+              provider,
+              providerAccountId: affiliationId,
+            },
+          },
+          create: {
+            provider,
+            providerAccountId: affiliationId,
+            user: { connect: { id: userId } },
+            type: 'affiliation',
+            isVerified: true, // SSO affiliations are auto-verified
+            isPrimary: false, // New affiliations are never primary by default
+          },
+          update: {
+            isVerified: true, // Update verification status for SSO
+          },
+        })
+      } catch (error) {
+        console.error(`Failed to add affiliation ${affiliationId}:`, error)
+        // Continue with other affiliations
+      }
+    }
+  }
+}
+
+// Helper function to create participant affiliations
+async function createParticipantAffiliations(
+  participantId: string,
+  affiliationIds: string[]
+) {
+  for (const affiliationId of affiliationIds) {
+    try {
       // get provider as the string between @ and .ch
       const parts = affiliationId.split('@')
       if (parts.length < 2) continue
@@ -168,28 +213,39 @@ async function createUserAffiliations(
 
       const provider = domainParts[0]
       if (!provider) continue
-      // upsert accounts for every affiliation
-      await prisma.account.upsert({
+
+      // upsert participant accounts for every affiliation
+      await prisma.participantAccount.upsert({
         where: {
-          provider_providerAccountId: {
-            provider,
-            providerAccountId: affiliationId,
+          participantId_ssoType: {
+            participantId,
+            ssoType: provider,
           },
         },
         create: {
-          provider,
-          providerAccountId: affiliationId,
-          user: { connect: { id: userId } },
+          ssoType: provider,
+          ssoId: affiliationId,
+          participant: { connect: { id: participantId } },
           type: 'affiliation',
+          isVerified: true, // SSO affiliations are auto-verified
+          isPrimary: false, // New affiliations are never primary by default
         },
-        update: {},
+        update: {
+          isVerified: true, // Update verification status for SSO
+        },
       })
+    } catch (error) {
+      console.error(
+        `Failed to add participant affiliation ${affiliationId}:`,
+        error
+      )
+      // Continue with other affiliations
     }
   }
 }
 
-// Participant authentication helper function
-async function createOrLinkParticipant(profile: ExtendedProfile) {
+// Enhanced participant authentication helper function
+async function createOrLinkParticipantEnhanced(profile: ExtendedProfile) {
   // Lookup existing account via ssoId (Edu-ID sub)
   const existing = await prisma.participantAccount.findUnique({
     where: { ssoId: profile.sub },
@@ -197,6 +253,14 @@ async function createOrLinkParticipant(profile: ExtendedProfile) {
   })
 
   if (existing) {
+    // Update affiliations for existing participant
+    if (profile.swissEduIDLinkedAffiliationUniqueID) {
+      await createParticipantAffiliations(
+        existing.participantId,
+        profile.swissEduIDLinkedAffiliationUniqueID
+      )
+    }
+
     await prisma.participant.update({
       where: { id: existing.participantId },
       data: { lastLoginAt: new Date() },
@@ -204,13 +268,29 @@ async function createOrLinkParticipant(profile: ExtendedProfile) {
     return existing.participant
   }
 
-  // Check for existing participant by email
+  // Check for existing participant by any affiliation (including primary email)
   let participant: any = null
-
   if (profile.email) {
+    // Try to find by primary email first
     participant = await prisma.participant.findUnique({
       where: { email: profile.email.toLowerCase() },
     })
+
+    // If not found by primary email, check affiliations
+    if (!participant) {
+      const affiliatedAccount = await prisma.participantAccount.findFirst({
+        where: {
+          type: 'affiliation',
+          ssoId: profile.email.toLowerCase(),
+          isVerified: true,
+        },
+        include: { participant: true },
+      })
+
+      if (affiliatedAccount) {
+        participant = affiliatedAccount.participant
+      }
+    }
   }
 
   // Create new participant if none exists
@@ -228,16 +308,32 @@ async function createOrLinkParticipant(profile: ExtendedProfile) {
     })
   }
 
-  // Create ParticipantAccount link
+  // Create enhanced ParticipantAccount link
   await prisma.participantAccount.create({
     data: {
       ssoType: 'EDUID',
       ssoId: profile.sub as string,
       participant: { connect: { id: participant.id } },
+      type: 'sso',
+      isVerified: true, // SSO accounts are pre-verified
+      isPrimary: false, // SSO accounts are not necessarily primary
     },
   })
 
+  // Add affiliations for participant
+  if (profile.swissEduIDLinkedAffiliationUniqueID) {
+    await createParticipantAffiliations(
+      participant.id,
+      profile.swissEduIDLinkedAffiliationUniqueID
+    )
+  }
+
   return participant
+}
+
+// Legacy function for backward compatibility
+async function createOrLinkParticipant(profile: ExtendedProfile) {
+  return createOrLinkParticipantEnhanced(profile)
 }
 
 // Dynamic NextAuth configuration based on context
