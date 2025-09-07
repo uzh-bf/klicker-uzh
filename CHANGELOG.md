@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.1...v3.4.0-alpha.2) (2025-09-07)
+
+
+### Bug Fixes
+
+* **packages/graphql:** ensure that direct permissions of activities are revoked correctly on soft deletion ([#4882](https://github.com/uzh-bf/klicker-uzh/issues/4882)) ([dad3784](https://github.com/uzh-bf/klicker-uzh/commit/dad378474d545edfdce14320987e440560c5c0f2))
+
 ## [3.4.0-alpha.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.0...v3.4.0-alpha.1) (2025-09-07)
 
 
