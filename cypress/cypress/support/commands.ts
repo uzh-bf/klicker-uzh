@@ -1214,12 +1214,12 @@ Cypress.Commands.add(
     cy.setDatetime({
       cyString: 'select-start-date',
       deselectorString: 'availability-section-header',
-      datetime: startDate,
+      datetime: { ...startDate, monthDelta: startDate.monthDelta - 1 }, // pre-selected date is at beginning of next month
     })
     cy.setDatetime({
       cyString: 'select-end-date',
       deselectorString: 'availability-section-header',
-      datetime: endDate,
+      datetime: { ...endDate, monthDelta: endDate.monthDelta - 1 }, // pre-selected date is at beginning of next month
     })
 
     if (multiplier) {
@@ -1298,12 +1298,18 @@ Cypress.Commands.add(
     cy.setDatetime({
       cyString: 'select-start-date',
       deselectorString: 'availability-section-header',
-      datetime: scheduledStartDate,
+      datetime: {
+        ...scheduledStartDate,
+        monthDelta: scheduledStartDate.monthDelta - 1,
+      }, // pre-selected date is at beginning of next month
     })
     cy.setDatetime({
       cyString: 'select-end-date',
       deselectorString: 'availability-section-header',
-      datetime: scheduledEndDate,
+      datetime: {
+        ...scheduledEndDate,
+        monthDelta: scheduledEndDate.monthDelta - 1,
+      }, // pre-selected date is at beginning of next month
     })
     cy.get('[data-cy="next-or-submit"]').click()
 

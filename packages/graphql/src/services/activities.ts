@@ -675,6 +675,37 @@ export async function applyActivityBatchOperations(
       // check if the course is different from before
       const isCourseChanged = !!newCourse && liveQuiz.courseId !== newCourse.id
 
+      // if required, find a new pin code for the live quiz that is still available
+      let newPinCode: string | null = null
+      if (isCourseChanged && newCourse.isAssessmentEnabled) {
+        let pinValid = false
+
+        for (let attempt = 0; attempt < 10; attempt++) {
+          // generate a new pin code
+          newPinCode = generatePassword.generate({
+            uppercase: true,
+            lowercase: false,
+            numbers: true,
+            symbols: false,
+            length: 6,
+          })
+
+          // check if the pin code is still available
+          const existingLiveQuiz = await tx.liveQuiz.findUnique({
+            where: { pinCode: newPinCode },
+          })
+          if (!existingLiveQuiz) {
+            pinValid = true
+            break
+          }
+        }
+
+        // if the pin is still invalid, return null and abort the transaction
+        if (!pinValid) {
+          throw new Error('Could not find available pin code for live quiz')
+        }
+      }
+
       const modifiedLiveQuiz = await tx.liveQuiz.update({
         where: { id: liveQuiz.id },
         data: {
@@ -689,17 +720,7 @@ export async function applyActivityBatchOperations(
             ? { set: newCourse.isAssessmentEnabled }
             : undefined,
           // if the course is changed to an assessment course, assign a pin
-          pinCode: isCourseChanged
-            ? newCourse.isAssessmentEnabled
-              ? generatePassword.generate({
-                  uppercase: true,
-                  lowercase: false,
-                  numbers: true,
-                  symbols: false,
-                  length: 6,
-                })
-              : null
-            : undefined,
+          pinCode: isCourseChanged ? newPinCode : undefined,
           // multiplier updates
           pointsMultiplier: setMultiplier ? { set: multiplier } : undefined,
           // if defined, set custom grading logic components
@@ -1153,19 +1174,14 @@ export async function getLiveQuizDetails(
 
   const isActivityManager = liveQuiz._count.permissions > 0
   return {
-    id: liveQuiz.id,
-    name: liveQuiz.name,
-    displayName: liveQuiz.displayName,
-    status: liveQuiz.status,
-    reviewStatus: liveQuiz.reviewStatus,
+    ...liveQuiz,
     isActivityReviewer:
       (liveQuiz.courseId === null && liveQuiz._count.permissions > 0) ||
       (!!liveQuiz.course && liveQuiz.course._count.permissions > 0),
     isActivityManager,
-    courseId: liveQuiz.courseId,
     ownerShortname: liveQuiz.owner.shortname,
     ownerEmail: isActivityManager ? liveQuiz.owner.email : null,
-    isGamificationEnabled: liveQuiz.isGamificationEnabled,
+    isPinProtected: !!liveQuiz.pinCode,
     arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
     totalBasePoints,
@@ -1351,17 +1367,12 @@ export async function getPracticeQuizDetails(
 
   const isActivityManager = practiceQuiz._count.permissions > 0
   return {
-    id: practiceQuiz.id,
-    name: practiceQuiz.name,
-    displayName: practiceQuiz.displayName,
-    status: practiceQuiz.status,
-    reviewStatus: practiceQuiz.reviewStatus,
+    ...practiceQuiz,
     isActivityReviewer: practiceQuiz.course._count.permissions > 0,
     isActivityManager,
-    courseId: practiceQuiz.courseId,
+    isPinProtected: false,
     ownerShortname: practiceQuiz.owner.shortname,
     ownerEmail: isActivityManager ? practiceQuiz.owner.email : null,
-    isGamificationEnabled: practiceQuiz.isGamificationEnabled,
     arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
     totalPoints,
@@ -1453,17 +1464,12 @@ export async function getMicroLearningDetails(
 
   const isActivityManager = microLearning._count.permissions > 0
   return {
-    id: microLearning.id,
-    name: microLearning.name,
-    displayName: microLearning.displayName,
-    status: microLearning.status,
-    reviewStatus: microLearning.reviewStatus,
+    ...microLearning,
     isActivityReviewer: microLearning.course._count.permissions > 0,
     isActivityManager,
-    courseId: microLearning.courseId,
+    isPinProtected: false,
     ownerShortname: microLearning.owner.shortname,
     ownerEmail: isActivityManager ? microLearning.owner.email : null,
-    isGamificationEnabled: microLearning.isGamificationEnabled,
     arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
     totalCorrectnessPoints: null,
@@ -1563,17 +1569,12 @@ export async function getGroupActivityDetails(
 
   const isActivityManager = groupActivity._count.permissions > 0
   return {
-    id: groupActivity.id,
-    name: groupActivity.name,
-    displayName: groupActivity.displayName,
-    status: groupActivity.status,
-    reviewStatus: groupActivity.reviewStatus,
+    ...groupActivity,
     isActivityReviewer: groupActivity.course._count.permissions > 0,
     isActivityManager,
-    courseId: groupActivity.courseId,
+    isPinProtected: false,
     ownerShortname: groupActivity.owner.shortname,
     ownerEmail: isActivityManager ? groupActivity.owner.email : null,
-    isGamificationEnabled: groupActivity.isGamificationEnabled,
     arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
     totalCorrectnessPoints: null,

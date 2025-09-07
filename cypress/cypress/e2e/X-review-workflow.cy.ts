@@ -107,14 +107,14 @@ describe('Feature test for review functionalities and batch operations', functio
       name: this.data.review.microLearning,
       displayName: this.data.review.microLearning,
       startDate: {
-        monthDelta: 2,
+        monthDelta: 3,
         day: 11,
         hour: 2,
         minute: 0,
         validation: getDatetimeValidationString(3, '11') + ', 02:00',
       }, // 3 months in the future at 2:00 (defaults at first of next month)
       endDate: {
-        monthDelta: 6,
+        monthDelta: 7,
         day: 20,
         hour: 18,
         minute: 0,
@@ -131,14 +131,14 @@ describe('Feature test for review functionalities and batch operations', functio
       displayName: this.data.review.groupActivity,
       courseName: this.data.review.course.name,
       scheduledStartDate: {
-        monthDelta: 2,
+        monthDelta: 3,
         day: 11,
         hour: 2,
         minute: 0,
         validation: getDatetimeValidationString(3, '11') + ', 02:00',
       }, // 3 months in the future at 2:00
       scheduledEndDate: {
-        monthDelta: 6,
+        monthDelta: 7,
         day: 20,
         hour: 18,
         minute: 0,
@@ -1205,7 +1205,7 @@ describe('Feature test for review functionalities and batch operations', functio
 
   // 3 months in the future at 2:00
   const activityStart = {
-    monthDelta: 2,
+    monthDelta: 3,
     day: 11,
     hour: 2,
     minute: 0,
@@ -1213,7 +1213,7 @@ describe('Feature test for review functionalities and batch operations', functio
   }
   // 7 months in the future at 18:00
   const activityEnd = {
-    monthDelta: 6,
+    monthDelta: 7,
     day: 20,
     hour: 18,
     minute: 0,

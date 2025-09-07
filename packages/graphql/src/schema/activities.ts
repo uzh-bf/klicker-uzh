@@ -255,6 +255,9 @@ export interface IActivityDetails {
   totalCorrectnessPoints?: number | null
   totalBonusPoints?: number | null
   totalPoints: number
+  isAssessmentEnabled: boolean
+  isPinProtected: boolean
+  pinCode?: string | null
   stacks: IActivityInfoStack[]
 }
 
@@ -284,6 +287,11 @@ export const ActivityDetails = builder.objectType(ActivityDetailsRef, {
     }),
     totalBonusPoints: t.exposeInt('totalBonusPoints', { nullable: true }),
     totalPoints: t.exposeInt('totalPoints'),
+
+    isAssessmentEnabled: t.exposeBoolean('isAssessmentEnabled'),
+    isPinProtected: t.exposeBoolean('isPinProtected'),
+    pinCode: t.exposeString('pinCode', { nullable: true }),
+
     stacks: t.expose('stacks', { type: [ActivityInfoStack] }),
   }),
 })

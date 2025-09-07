@@ -122,7 +122,13 @@ function LiveQuizTimeline({
             <span
               className="text-uzh-red-100 -mb-0.5 h-max text-xl font-bold"
               data-cy="live-quiz-pin"
-            >{`${t('shared.generic.pin')}: ${quizPin.slice(0, 3)} ${quizPin.slice(3)}`}</span>
+            >
+              <span>{t('shared.generic.pin')}: </span>
+              <span className="inline-flex gap-1">
+                <span>{quizPin.slice(0, 3)}</span>
+                <span>{quizPin.slice(3)}</span>
+              </span>
+            </span>
           )}
         </div>
 

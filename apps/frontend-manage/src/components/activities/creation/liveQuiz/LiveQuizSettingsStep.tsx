@@ -114,31 +114,54 @@ function LiveQuizSettingsStep({
                         }
                         value={values.courseId}
                         onChange={(value) => {
+                          // if the live quiz was assigned to another course before, get the corresponding settings
+                          const prevCourse = values.courseId
+                            ? [
+                                ...(gamifiedCourses ?? []),
+                                ...(nonGamifiedCourses ?? []),
+                                ...(assessmentCourses ?? []),
+                              ].find(
+                                (course) => course.value === values.courseId
+                              )
+                            : undefined
+
+                          // set the new course
                           setFieldValue('courseId', value)
 
-                          if (value === 'no-course-selected') {
+                          // if the gamification setting was true from the previous course, reset it to false
+                          // --> only keep manually modified gamification settings
+                          if (prevCourse?.isGamified) {
                             setFieldValue('isGamificationEnabled', false)
+                          }
+
+                          // if the pin protection setting was true from the previous course, reset it to false
+                          // --> only keep manually modified pin protection settings
+                          if (prevCourse?.isAssessmentEnabled) {
+                            setFieldValue('isPinProtected', false)
+                          }
+
+                          if (value === 'no-course-selected') {
                             setFieldValue('isAssessmentEnabled', false)
                             setFieldValue('multiplier', '1')
-                            setFieldValue('isPinProtected', false)
                           } else {
                             const selectedCourse = [
                               ...(gamifiedCourses ?? []),
                               ...(nonGamifiedCourses ?? []),
                               ...(assessmentCourses ?? []),
                             ].find((course) => course.value === value)
-                            setFieldValue(
-                              'isGamificationEnabled',
-                              selectedCourse?.isGamified ?? false
-                            )
-                            setFieldValue(
-                              'isAssessmentEnabled',
-                              selectedCourse?.isAssessmentEnabled ?? false
-                            )
-                            setFieldValue(
-                              'isPinProtected',
-                              selectedCourse?.isAssessmentEnabled ?? false
-                            )
+
+                            // if the new course has gamification enabled, set the setting accordingly
+                            if (selectedCourse?.isGamified) {
+                              setFieldValue('isGamificationEnabled', true)
+                            }
+
+                            // if the new course has assessment enabled, set the assessment and pin protection settings accordingly
+                            if (selectedCourse?.isAssessmentEnabled) {
+                              setFieldValue('isAssessmentEnabled', true)
+                              setFieldValue('isPinProtected', true)
+                            } else {
+                              setFieldValue('isAssessmentEnabled', false)
+                            }
                           }
                         }}
                         label={t('shared.generic.course')}

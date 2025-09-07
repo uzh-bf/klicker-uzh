@@ -862,14 +862,14 @@ describe('Test course creation and editing functionalities', function () {
       name: this.data.deletion.mlName,
       displayName: this.data.deletion.mlName,
       startDate: {
-        monthDelta: -3,
+        monthDelta: -2,
         day: 16,
         hour: 2,
         minute: 0,
         validation: getDatetimeValidationString(-2, '16') + ', 02:00',
       }, // 2 months in the past at 2:00
       endDate: {
-        monthDelta: 3,
+        monthDelta: 4,
         day: 14,
         hour: 18,
         minute: 0,
@@ -1545,14 +1545,14 @@ describe('Test course creation and editing functionalities', function () {
       name: this.data.sharing.microLearning,
       displayName: this.data.sharing.microLearning,
       startDate: {
-        monthDelta: 11,
+        monthDelta: 12,
         day: 16,
         hour: 2,
         minute: 0,
         validation: getDatetimeValidationString(12, '16') + ', 02:00',
       }, // 2 months in the past at 2:00
       endDate: {
-        monthDelta: 23,
+        monthDelta: 24,
         day: 14,
         hour: 18,
         minute: 0,
@@ -1570,14 +1570,14 @@ describe('Test course creation and editing functionalities', function () {
       task: 'Task Description',
       courseName: this.data.sharing.course,
       scheduledStartDate: {
-        monthDelta: 11,
+        monthDelta: 12,
         day: 16,
         hour: 2,
         minute: 0,
         validation: getDatetimeValidationString(12, '16') + ', 02:00',
       }, // 2 months in the past at 2:00
       scheduledEndDate: {
-        monthDelta: 23,
+        monthDelta: 24,
         day: 14,
         hour: 18,
         minute: 0,

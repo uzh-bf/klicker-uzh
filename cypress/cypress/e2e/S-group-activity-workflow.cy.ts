@@ -322,14 +322,14 @@ describe('Create and solve a group activity', function () {
       task: this.data.synchronous.task,
       courseName: this.data.course,
       scheduledStartDate: {
-        monthDelta: 1,
+        monthDelta: 2,
         day: 10,
         hour: 12,
         minute: 30,
         validation: synchronousStartDate,
       }, // 2 months in the future at 12:30
       scheduledEndDate: {
-        monthDelta: 2,
+        monthDelta: 3,
         day: 20,
         hour: 14,
         minute: 0,
@@ -2227,14 +2227,14 @@ describe('Create and solve a group activity', function () {
         displayName: this.data.sharing[`ga${i}Display`],
         courseName: this.data.seededCourse,
         scheduledStartDate: {
-          monthDelta: -2,
+          monthDelta: -1,
           day: 10,
           hour: 12,
           minute: 30,
           validation: getDatetimeValidationString(-1, '10') + ', 12:30',
         }, // 1 month in the past at 12:30
         scheduledEndDate: {
-          monthDelta: 1,
+          monthDelta: 2,
           day: 20,
           hour: 14,
           minute: 0,
@@ -2846,14 +2846,14 @@ describe('Create and solve a group activity', function () {
       courseName: this.data.details.courseName,
       multiplier: messages.manage.activityWizard.multiplier2,
       scheduledStartDate: {
-        monthDelta: 1,
+        monthDelta: 2,
         day: 10,
         hour: 12,
         minute: 30,
         validation: synchronousStartDate,
       }, // 2 months in the future at 12:30
       scheduledEndDate: {
-        monthDelta: 2,
+        monthDelta: 3,
         day: 20,
         hour: 14,
         minute: 0,

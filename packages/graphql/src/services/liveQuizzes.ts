@@ -687,6 +687,37 @@ export async function manipulateLiveQuiz(
     )
   }
 
+  // if required, find a new pin code for the live quiz that is still available
+  let newPinCode: string | undefined | null = existingActivity?.pinCode
+  if (pinProtection && (!courseId || courseId !== existingActivity?.courseId)) {
+    let pinValid = false
+
+    for (let attempt = 0; attempt < 10; attempt++) {
+      // generate a new pin code
+      newPinCode = generatePassword.generate({
+        uppercase: true,
+        lowercase: false,
+        numbers: true,
+        symbols: false,
+        length: 6,
+      })
+
+      // check if the pin code is still available
+      const existingLiveQuiz = await ctx.prisma.liveQuiz.findUnique({
+        where: { pinCode: newPinCode },
+      })
+      if (!existingLiveQuiz) {
+        pinValid = true
+        break
+      }
+    }
+
+    // if the pin is still invalid, return null and abort the transaction
+    if (!pinValid) {
+      throw new Error('Could not find available pin code for live quiz')
+    }
+  }
+
   // re-create blocks and link existing instance / create new instances (depending on mode and novelty of the included element)
   const createOrUpdateJSON = {
     name: name.trim(),
@@ -699,16 +730,7 @@ export async function manipulateLiveQuiz(
     timeToZeroBonus: timeToZeroBonus ?? undefined,
     isGamificationEnabled: gamificationSetting,
     isAssessmentEnabled: assessmentSetting,
-    pinCode: pinProtection // if pin protection applies, assign a pin
-      ? (existingActivity?.pinCode ??
-        generatePassword.generate({
-          uppercase: true,
-          lowercase: false,
-          numbers: true,
-          symbols: false,
-          length: 6,
-        }))
-      : null,
+    pinCode: pinProtection ? newPinCode : null, // if pin protection applies (and the course changed), assign a pin
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
     isModerationEnabled,
@@ -1072,23 +1094,24 @@ export async function getShortnameQuizzes(
   ctx: Context
 ) {
   const user = await ctx.prisma.user.findUnique({
-    where: {
-      shortname: shortname.trim(),
-    },
+    where: { shortname: shortname.trim() },
     include: {
       liveQuizzes: {
         where: {
           accessMode: DB.AccessMode.PUBLIC,
           status: DB.PublicationStatus.PUBLISHED,
         },
-        include: {
-          course: true,
-        },
+        include: { course: true },
       },
     },
   })
 
-  return user?.liveQuizzes ?? []
+  return (
+    user?.liveQuizzes.map((quiz) => ({
+      ...quiz,
+      isPinProtected: !!quiz.pinCode,
+    })) ?? []
+  )
 }
 
 export async function getUnassignedLiveQuizzes(ctx: ContextWithUser) {
