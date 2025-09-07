@@ -3484,14 +3484,14 @@ describe('Different live-quiz workflows', function () {
       displayName: this.data.modes.microLearningDisplayName,
       courseName: this.data.modes.course,
       startDate: {
-        monthDelta: -4,
+        monthDelta: -3,
         day: 16,
         hour: 2,
         minute: 0,
         validation: getDatetimeValidationString(-3, '16') + ', 02:00',
       }, // 3 months in the past at 2:00
       endDate: {
-        monthDelta: 2,
+        monthDelta: 3,
         day: 14,
         hour: 18,
         minute: 0,
