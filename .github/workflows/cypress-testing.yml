@@ -5,13 +5,14 @@ on:
     # paths:
     #   - apps/**
     #   - packages/**
-  pull_request:
-    branches: ['v3', 'v3*']
-    types: [opened, synchronize, reopened]
-    paths:
-      - apps/**
-      - packages/**
-      - cypress/**
+  # TODO: reintroduce this before merging
+  # pull_request:
+  #   branches: ['v3', 'v3*']
+  #   types: [opened, synchronize, reopened]
+  #   paths:
+  #     - apps/**
+  #     - packages/**
+  #     - cypress/**
 
 env:
   REGISTRY: ghcr.io
