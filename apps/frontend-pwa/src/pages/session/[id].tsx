@@ -108,22 +108,10 @@ async function handleNewResponse(
   }
 
   try {
-    // Always send to primary endpoint (Azure Function)
     await fetch(
       process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string,
       requestOptions
     )
-
-    // Only send to secondary endpoint (Hatchet) if dual mode is enabled
-    const isDualModeEnabled =
-      process.env.NEXT_PUBLIC_ENABLE_DUAL_RESPONSE_MODE === 'true'
-
-    if (isDualModeEnabled && process.env.NEXT_PUBLIC_ADD_RESPONSE_V2_URL) {
-      await fetch(
-        process.env.NEXT_PUBLIC_ADD_RESPONSE_V2_URL as string,
-        requestOptions
-      )
-    }
   } catch (e) {
     console.log('error', e)
   }
