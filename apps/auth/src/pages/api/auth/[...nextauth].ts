@@ -245,7 +245,7 @@ async function createParticipantAffiliations(
 }
 
 // Enhanced participant authentication helper function
-async function createOrLinkParticipantEnhanced(profile: ExtendedProfile) {
+async function createOrLinkParticipant(profile: ExtendedProfile) {
   // Lookup existing account via ssoId (Edu-ID sub)
   const existing = await prisma.participantAccount.findUnique({
     where: { ssoId: profile.sub },
@@ -329,11 +329,6 @@ async function createOrLinkParticipantEnhanced(profile: ExtendedProfile) {
   }
 
   return participant
-}
-
-// Legacy function for backward compatibility
-async function createOrLinkParticipant(profile: ExtendedProfile) {
-  return createOrLinkParticipantEnhanced(profile)
 }
 
 // Dynamic NextAuth configuration based on context
