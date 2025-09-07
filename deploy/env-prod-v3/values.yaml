@@ -11,14 +11,14 @@ hatchet:
     hostPort: 'hatchet-grpc:7070'
   workers:
     general:
-      replicaCount: 0
+      replicaCount: 1
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general
         pullPolicy: Always
 
     responseProcessor:
-      replicaCount: 0
+      replicaCount: 2
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
@@ -252,7 +252,7 @@ responseApi:
 
   priorityClassName: production-workload
 
-  replicaCount: 0
+  replicaCount: 2
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api
