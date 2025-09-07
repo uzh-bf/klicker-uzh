@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.1](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.0...v3.4.0-alpha.1) (2025-09-07)
+
+
+### Deployment
+
+* update values for hatchet production deployment ([aa4a367](https://github.com/uzh-bf/klicker-uzh/commit/aa4a3676e377b54a5c64e4ae86887a4a277d8769))
+
 ## [3.4.0-alpha.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.2...v3.4.0-alpha.0) (2025-09-07)
 
 
