@@ -1,4 +1,8 @@
-import { faCheckSquare, faXmarkSquare } from '@fortawesome/free-solid-svg-icons'
+import {
+  faArrowRight,
+  faCheckSquare,
+  faXmarkSquare,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityDetails,
@@ -9,6 +13,18 @@ import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import ActivityReviewStatus from '../ActivityReviewStatus'
+
+function BooleanIcon({ value }: { value: boolean }) {
+  return (
+    <FontAwesomeIcon
+      icon={value ? faCheckSquare : faXmarkSquare}
+      className={twMerge(
+        'ml-1',
+        value ? 'text-uzh-darkgreen-100' : 'text-red-600'
+      )}
+    />
+  )
+}
 
 function ActivityInformation({
   details,
@@ -23,7 +39,7 @@ function ActivityInformation({
 
   return (
     <UserNotification
-      className={{ root: 'w-full text-base lg:w-2/3', content: 'w-full' }}
+      className={{ root: 'w-full text-base', content: 'w-full' }}
     >
       <div className="flex flex-row items-center justify-between gap-4">
         <span className="font-bold">
@@ -31,55 +47,75 @@ function ActivityInformation({
         </span>
         <ActivityReviewStatus reviewStatus={activityReviewStatus} />
       </div>
-      <div className="mt-1 flex flex-col gap-0.5 text-sm">
-        {[
-          {
-            label: t('manage.activityWizard.name'),
-            value: details.name,
-          },
-          {
-            label: t('manage.activityWizard.displayName'),
-            value: details.displayName,
-          },
-          {
-            label: t('manage.activities.activityType'),
-            value: t(`shared.types.${activityType}`),
-          },
-          {
-            label: t('shared.generic.gamification'),
-            value: (
-              <FontAwesomeIcon
-                icon={
-                  details.isGamificationEnabled ? faCheckSquare : faXmarkSquare
-                }
-                className={twMerge(
-                  'ml-1',
-                  details.isGamificationEnabled
-                    ? 'text-uzh-darkgreen-100'
-                    : 'text-red-600'
-                )}
-              />
-            ),
-          },
-          ...(details.arePointsAwarded
-            ? [
-                {
-                  label: t('manage.activities.activityMultiplier'),
-                  value: `${details.pointsMultiplier}x`,
-                },
-              ]
-            : []),
-          {
-            label: t('shared.generic.owner'),
-            value: details.ownerEmail
-              ? `${details.ownerShortname} (${details.ownerEmail})`
-              : details.ownerShortname,
-          },
-        ].map(({ label, value }) => (
-          <div key={label}>
-            <span className="font-bold">{label}:</span> {value}
-          </div>
-        ))}
+      <div className="mt-1 grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
+        <div className="flex flex-col gap-0.5">
+          {[
+            {
+              label: t('manage.activityWizard.name'),
+              value: details.name,
+            },
+            {
+              label: t('manage.activityWizard.displayName'),
+              value: details.displayName,
+            },
+            {
+              label: t('manage.activities.activityType'),
+              value: t(`shared.types.${activityType}`),
+            },
+            {
+              label: t('shared.generic.owner'),
+              value: details.ownerEmail
+                ? `${details.ownerShortname} (${details.ownerEmail})`
+                : details.ownerShortname,
+            },
+          ].map(({ label, value }) => (
+            <div key={label}>
+              <span className="font-bold">{label}:</span> {value}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-0.5">
+          {[
+            {
+              label: t('shared.generic.gamification'),
+              value: <BooleanIcon value={details.isGamificationEnabled} />,
+            },
+            ...(details.arePointsAwarded
+              ? [
+                  {
+                    label: t('manage.activities.activityMultiplier'),
+                    value: `${details.pointsMultiplier}x`,
+                  },
+                ]
+              : []),
+            {
+              label: t('shared.generic.assessment'),
+              value: <BooleanIcon value={details.isAssessmentEnabled} />,
+            },
+            {
+              label: t('shared.generic.pinProtected'),
+              value: (
+                <span className="space-x-1.5">
+                  <BooleanIcon value={details.isPinProtected} />
+
+                  {details.pinCode && (
+                    <>
+                      <FontAwesomeIcon icon={faArrowRight} className="mx-1" />
+                      <span className="text-uzh-red-100 font-bold">
+                        {details.pinCode}
+                      </span>
+                    </>
+                  )}
+                </span>
+              ),
+            },
+          ].map(({ label, value }) => (
+            <div key={label}>
+              <span className="font-bold">{label}:</span> {value}
+            </div>
+          ))}
+        </div>
       </div>
     </UserNotification>
   )

@@ -1094,23 +1094,24 @@ export async function getShortnameQuizzes(
   ctx: Context
 ) {
   const user = await ctx.prisma.user.findUnique({
-    where: {
-      shortname: shortname.trim(),
-    },
+    where: { shortname: shortname.trim() },
     include: {
       liveQuizzes: {
         where: {
           accessMode: DB.AccessMode.PUBLIC,
           status: DB.PublicationStatus.PUBLISHED,
         },
-        include: {
-          course: true,
-        },
+        include: { course: true },
       },
     },
   })
 
-  return user?.liveQuizzes ?? []
+  return (
+    user?.liveQuizzes.map((quiz) => ({
+      ...quiz,
+      isPinProtected: !!quiz.pinCode,
+    })) ?? []
+  )
 }
 
 export async function getUnassignedLiveQuizzes(ctx: ContextWithUser) {

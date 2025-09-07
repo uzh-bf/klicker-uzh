@@ -1,9 +1,5 @@
 import { useQuery } from '@apollo/client'
-import {
-  faArrowUpRightFromSquare,
-  faList,
-  faMessage,
-} from '@fortawesome/free-solid-svg-icons'
+import { faArrowUpRightFromSquare } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivityType,
@@ -14,16 +10,16 @@ import {
   PublicationStatus,
   ReviewStatus,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal, UserNotification } from '@uzh-bf/design-system'
+import { Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useMemo, useState } from 'react'
 import StudentElementPreviewActivityDetails from '../../../elements/manipulation/StudentElementPreviewActivityDetails'
 import ActivityLog from '../../../sharing/ActivityLog'
+import ActivityDetailsActions from './ActivityDetailsActions'
 import ActivityInformation from './ActivityInformation'
 import ActivityOverviewTable from './ActivityOverviewTable'
-import ActivityReviewButton from './ActivityReviewButton'
 
 function ActivityDetailsModal({
   activityId,
@@ -107,60 +103,18 @@ function ActivityDetailsModal({
     >
       {!!details ? (
         <div className="flex h-auto min-h-0 flex-col gap-2 lg:flex-row xl:h-full xl:max-h-full xl:flex-row">
-          <div className="flex h-max max-h-full min-h-0 w-full flex-col gap-4 overflow-auto lg:max-h-[calc(100vh-6rem)] lg:w-2/3 xl:w-1/2">
-            <div className="flex flex-col gap-2 lg:flex-row">
-              <ActivityInformation
-                details={details}
-                activityType={activityType}
-                activityReviewStatus={details?.reviewStatus}
-              />
-
-              <div className="flex w-full flex-col items-end gap-1.5 lg:w-1/3">
-                <Button
-                  className={{ root: 'h-7 text-sm' }}
-                  onClick={() => setSelectedInstanceId(null)}
-                >
-                  <Button.Icon icon={faMessage} />
-                  <Button.Label>
-                    {t('shared.comments.viewComments')}
-                  </Button.Label>
-                </Button>
-
-                {/* course admins should have the possibility to set an activity's status to reviewed or unset it */}
-                {details.isActivityReviewer && (
-                  <ActivityReviewButton
-                    activityId={details.id}
-                    activityType={activityType}
-                    courseId={details.courseId}
-                    isReviewed={isReviewed}
-                  />
-                )}
-
-                {/* activity admins can open contained elements in library
-                 -> with less than admin permissions only a selection might be visible, which could be confusing */}
-                {details.isActivityManager && (
-                  <Button
-                    className={{ root: 'h-7 text-sm' }}
-                    onClick={() =>
-                      router.push({
-                        pathname: '/',
-                        query: {
-                          ...(details.courseId
-                            ? { filterByCourse: details.courseId }
-                            : {}),
-                          filterByActivity: details.id,
-                        },
-                      })
-                    }
-                  >
-                    <Button.Icon icon={faList} />
-                    <Button.Label>
-                      {t('manage.activities.openElementsInLibrary')}
-                    </Button.Label>
-                  </Button>
-                )}
-              </div>
-            </div>
+          <div className="flex h-max max-h-full min-h-0 w-full flex-col gap-2 overflow-auto lg:max-h-[calc(100vh-6rem)] lg:w-2/3 xl:w-1/2">
+            <ActivityDetailsActions
+              details={details}
+              activityType={activityType}
+              isReviewed={isReviewed}
+              setSelectedInstanceId={setSelectedInstanceId}
+            />
+            <ActivityInformation
+              details={details}
+              activityType={activityType}
+              activityReviewStatus={details?.reviewStatus}
+            />
 
             <ActivityOverviewTable
               details={details}
