@@ -16,8 +16,6 @@ model ParticipantAccount {
   updatedAt DateTime @updatedAt
 
   @@unique([participantId, ssoType])
-  // Ensure only one primary affiliation per participant
-  @@unique([participantId, isPrimary])
   // Performance indexes
   @@index([ssoId, isVerified])
   @@index([type, isVerified])

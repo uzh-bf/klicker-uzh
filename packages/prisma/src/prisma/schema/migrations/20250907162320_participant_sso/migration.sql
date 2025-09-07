@@ -2,7 +2,6 @@
   Warnings:
 
   - A unique constraint covering the columns `[userId,isPrimary]` on the table `Account` will be added. If there are existing duplicate values, this will fail.
-  - A unique constraint covering the columns `[participantId,isPrimary]` on the table `ParticipantAccount` will be added. If there are existing duplicate values, this will fail.
   - Added the required column `updatedAt` to the `ParticipantAccount` table without a default value. This is not possible if the table is not empty.
 
 */
@@ -30,6 +29,3 @@ CREATE INDEX "ParticipantAccount_ssoId_isVerified_idx" ON "public"."ParticipantA
 
 -- CreateIndex
 CREATE INDEX "ParticipantAccount_type_isVerified_idx" ON "public"."ParticipantAccount"("type", "isVerified");
-
--- CreateIndex
-CREATE UNIQUE INDEX "ParticipantAccount_participantId_isPrimary_key" ON "public"."ParticipantAccount"("participantId", "isPrimary");
