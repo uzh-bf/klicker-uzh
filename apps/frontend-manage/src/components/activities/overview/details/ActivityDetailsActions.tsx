@@ -41,7 +41,7 @@ function ActivityDetailsActions({
       )}
 
       {/* activity admins can open contained elements in library
-                 -> with less than admin permissions only a selection might be visible, which could be confusing */}
+      -> with less than admin permissions only a selection might be visible, which could be confusing */}
       {details.isActivityManager && (
         <Button
           className={{ root: 'h-7 text-sm' }}
