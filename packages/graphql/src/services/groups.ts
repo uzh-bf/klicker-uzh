@@ -1748,7 +1748,10 @@ export async function deleteGroupActivity(
       async (prisma) => {
         const updatedActivity = await prisma.groupActivity.update({
           where: { id },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            directPermissions: { deleteMany: {} }, // delete all direct permissions on the activity
+          },
         })
 
         // update derived permissions for this group activity (after soft deletion)
