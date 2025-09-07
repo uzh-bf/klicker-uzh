@@ -80,16 +80,6 @@ export async function middleware(request: NextRequest) {
 
     const response = NextResponse.redirect(signinUrl)
 
-    // Clear any existing auth-context cookies to prevent conflicts
-    response.cookies.set('auth-context', '', {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-      domain: process.env.COOKIE_DOMAIN,
-      secure: process.env.NODE_ENV === 'production',
-      expires: new Date(0), // Expire immediately
-    })
-
     console.log('Returning lecturer redirect response')
     return response
   }
@@ -120,16 +110,6 @@ export async function middleware(request: NextRequest) {
 
     const response = NextResponse.redirect(signinUrl)
 
-    // Clear any existing auth-context cookies to prevent conflicts
-    response.cookies.set('auth-context', '', {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-      domain: process.env.COOKIE_DOMAIN,
-      secure: process.env.NODE_ENV === 'production',
-      expires: new Date(0), // Expire immediately
-    })
-
     console.log('Returning redirect response')
     return response
   }
@@ -140,7 +120,6 @@ export async function middleware(request: NextRequest) {
     const participantParam = request.nextUrl.searchParams.get('participant')
 
     // Only detect participant context from explicit parameters and current request context
-    // No persistent cookies to avoid conflicts
     const isParticipantContext =
       participantParam === 'true' ||
       pathname.includes('eduid-participant') ||

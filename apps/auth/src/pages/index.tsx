@@ -29,51 +29,16 @@ function SignInOutButton() {
 
   const { data: session, status } = useSession()
 
-  // Check for both session types manually since useSession() only checks current context
-  const checkAllSessions = () => {
-    if (typeof window === 'undefined')
-      return { lecturer: false, participant: false }
-
-    const cookies = document.cookie
-    return {
-      lecturer: cookies.includes('next-auth.session-token='),
-      participant: cookies.includes('next-auth.participant-session-token='),
-    }
-  }
-
-  const sessions = checkAllSessions()
-  const hasParticipantSession = sessions.participant && !session
-
   if (status === 'loading') return null
 
-  // Show logged-in UI if we have either type of session
-  if (session || hasParticipantSession) {
-    const isParticipantSession =
-      hasParticipantSession ||
-      session?.user?.name?.startsWith('student_') ||
-      (session as any)?.role === 'PARTICIPANT' ||
-      (session as any)?.scope === 'PARTICIPANT'
-
+  if (session) {
     return (
       <>
         <UserNotification
-          message={
-            isParticipantSession
-              ? `Logged in as Student: ${session?.user?.email || 'Student'}`
-              : t('auth.signedInAs', { username: session?.user?.email! })
-          }
-          type={isParticipantSession ? 'warning' : 'info'}
+          message={t('auth.signedInAs', { username: session?.user?.email! })}
+          type="info"
           className={{ root: '-mt-4 mb-4' }}
         />
-
-        {isParticipantSession && (
-          <UserNotification
-            message="You are logged in as a student. To access lecturer features, please logout and use the lecturer login."
-            type="warning"
-            className={{ root: 'mb-4' }}
-          />
-        )}
-
         <div className="flex w-full flex-row items-center justify-between">
           <Button
             destructive
@@ -82,56 +47,13 @@ function SignInOutButton() {
           >
             {t('shared.generic.logout')}
           </Button>
-          {!isParticipantSession && (
-            <Button
-              primary
-              onClick={() => router.push(process.env.NEXT_PUBLIC_MANAGE_URL!)}
-              data={{ cy: 'auth-open-manage-button' }}
-            >
-              {t('shared.generic.openApplication')}
-            </Button>
-          )}
-          {isParticipantSession && (
-            <Button
-              onClick={() =>
-                router.push(process.env.NEXT_PUBLIC_ASSESSMENT_URL!)
-              }
-              data={{ cy: 'auth-open-assessment-button' }}
-            >
-              Open Assessment
-            </Button>
-          )}
-        </div>
-
-        {/* Context switcher */}
-        <div className="mt-4 flex justify-center space-x-4 text-sm text-gray-600">
-          <button
-            onClick={() => {
-              signOut({ redirect: false }).then(() => {
-                router.push(
-                  '/lecturer?redirectTo=' +
-                    encodeURIComponent(process.env.NEXT_PUBLIC_MANAGE_URL!)
-                )
-              })
-            }}
-            className="underline hover:text-blue-600"
+          <Button
+            primary
+            onClick={() => router.push(process.env.NEXT_PUBLIC_MANAGE_URL!)}
+            data={{ cy: 'auth-open-manage-button' }}
           >
-            Switch to Lecturer Login
-          </button>
-          <span>|</span>
-          <button
-            onClick={() => {
-              signOut({ redirect: false }).then(() => {
-                router.push(
-                  '/student?redirectTo=' +
-                    encodeURIComponent(process.env.NEXT_PUBLIC_ASSESSMENT_URL!)
-                )
-              })
-            }}
-            className="underline hover:text-blue-600"
-          >
-            Switch to Student Login
-          </button>
+            {t('shared.generic.openApplication')}
+          </Button>
         </div>
       </>
     )
@@ -165,10 +87,10 @@ function SignInOutButton() {
   return (
     <div className="flex flex-col gap-4">
       <Head>
-        <title>KlickerUZH - Lecturer Authentication</title>
+        <title>Lecturer Login</title>
         <meta
           name="description"
-          content="Lecturer authentication for KlickerUZH - Access course management and teaching tools."
+          content="Log in interface for lecturers to manage their courses and materials."
         />
       </Head>
       <p className="rounded border-slate-300 bg-slate-100 px-3 py-2 shadow">
@@ -254,9 +176,7 @@ export function Index() {
           />
         </div>
         <div className="flex w-full flex-row justify-between px-6 sm:px-10 md:mx-0">
-          <div>
-            <H1 className={{ root: 'mb-0' }}>{t('auth.authentication')}</H1>
-          </div>
+          <H1 className={{ root: 'mb-0' }}>{t('auth.authentication')}</H1>
           <div>
             <LanguageChanger
               value={router.locale as string}
