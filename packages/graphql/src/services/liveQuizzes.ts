@@ -689,7 +689,7 @@ export async function manipulateLiveQuiz(
 
   // if required, find a new pin code for the live quiz that is still available
   let newPinCode: string | undefined | null = existingActivity?.pinCode
-  if (pinProtection && courseId && courseId !== existingActivity?.courseId) {
+  if (pinProtection && (!courseId || courseId !== existingActivity?.courseId)) {
     let pinValid = false
 
     for (let attempt = 0; attempt < 10; attempt++) {
