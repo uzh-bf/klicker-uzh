@@ -29,7 +29,7 @@ const config = defineConfig([
         targets: [{ src: 'src/public/*', dest: 'dist' }],
       }),
     ],
-    external: [/@klicker-uzh*/, /node_modules/], // Exclude node_modules and specific external dependencies
+    external: [/^@klicker-uzh\//, /node_modules/], // Exclude node_modules and specific external dependencies
   },
 ])
 

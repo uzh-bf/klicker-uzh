@@ -30,7 +30,7 @@ const config = defineConfig([
     ],
     external: [
       // Exclude node_modules and other external dependencies
-      /@klicker-uzh*/,
+      /^@klicker-uzh\//,
       /node_modules/,
       '@prisma/adapter-pg',
       '@prisma/client',

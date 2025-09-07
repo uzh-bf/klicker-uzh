@@ -1,5 +1,6 @@
 {
-  "include": ["**/**/*"],
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["jest.config.*", "**/jest.config.*"],
   "compilerOptions": {
     "baseUrl": ".",
     /* Base Options: */
