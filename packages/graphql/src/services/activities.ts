@@ -675,6 +675,37 @@ export async function applyActivityBatchOperations(
       // check if the course is different from before
       const isCourseChanged = !!newCourse && liveQuiz.courseId !== newCourse.id
 
+      // if required, find a new pin code for the live quiz that is still available
+      let newPinCode: string | null = null
+      if (isCourseChanged && newCourse.isAssessmentEnabled) {
+        let pinValid = false
+
+        for (let attempt = 0; attempt < 10; attempt++) {
+          // generate a new pin code
+          newPinCode = generatePassword.generate({
+            uppercase: true,
+            lowercase: false,
+            numbers: true,
+            symbols: false,
+            length: 6,
+          })
+
+          // check if the pin code is still available
+          const existingLiveQuiz = await tx.liveQuiz.findUnique({
+            where: { pinCode: newPinCode },
+          })
+          if (!existingLiveQuiz) {
+            pinValid = true
+            break
+          }
+        }
+
+        // if the pin is still invalid, return null and abort the transaction
+        if (!pinValid) {
+          throw new Error('Could not find available pin code for live quiz')
+        }
+      }
+
       const modifiedLiveQuiz = await tx.liveQuiz.update({
         where: { id: liveQuiz.id },
         data: {
@@ -689,17 +720,7 @@ export async function applyActivityBatchOperations(
             ? { set: newCourse.isAssessmentEnabled }
             : undefined,
           // if the course is changed to an assessment course, assign a pin
-          pinCode: isCourseChanged
-            ? newCourse.isAssessmentEnabled
-              ? generatePassword.generate({
-                  uppercase: true,
-                  lowercase: false,
-                  numbers: true,
-                  symbols: false,
-                  length: 6,
-                })
-              : null
-            : undefined,
+          pinCode: isCourseChanged ? newPinCode : undefined,
           // multiplier updates
           pointsMultiplier: setMultiplier ? { set: multiplier } : undefined,
           // if defined, set custom grading logic components
