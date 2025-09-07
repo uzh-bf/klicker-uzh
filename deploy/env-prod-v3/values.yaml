@@ -267,14 +267,14 @@ responseApi:
 
   ingress:
     hosts:
-      - host: api.klicker.uzh.ch
+      - host: chat.klicker.uzh.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-prod-response-api-tls
         hosts:
-          - api.klicker.uzh.ch
+          - chat.klicker.uzh.ch
 
   strategy:
     type: Recreate
