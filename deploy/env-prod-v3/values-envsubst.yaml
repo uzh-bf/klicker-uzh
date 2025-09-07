@@ -11,10 +11,10 @@ hatchet:
   workers:
     general:
       image:
-        tag: v3
+        tag: '${APP_VERSION}'
     responseProcessor:
       image:
-        tag: v3
+        tag: '${APP_VERSION}'
 
 email:
   type: '${EMAIL_TYPE}'
@@ -99,7 +99,7 @@ olatApi:
 
 responseApi:
   image:
-    tag: v3
+    tag: '${APP_VERSION}'
 
 lti:
   image:
