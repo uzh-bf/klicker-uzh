@@ -36,6 +36,7 @@ import { LiveQuizWizardStepProps } from './LiveQuizWizard'
 
 function LiveQuizSettingsStep({
   editMode,
+  duplicationMode,
   formRef,
   formData,
   continueDisabled,
@@ -84,6 +85,13 @@ function LiveQuizSettingsStep({
           parseInt(String(values.maxBonusPoints)) !== LQ_MAX_BONUS_POINTS ||
           parseInt(String(values.timeToZeroBonus)) !== LQ_TIME_TO_ZERO_BONUS
 
+        // only managers of an assessment course can remove an assessment live quiz from it
+        // during duplication course re-assignment should be unlocked
+        const courseSelectionDisabled =
+          !duplicationMode &&
+          values.isAssessmentEnabled &&
+          !selectedCourse?.isManager
+
         return (
           <Form className="h-full w-full">
             <CreationFormValidator
@@ -108,10 +116,7 @@ function LiveQuizSettingsStep({
                     </div>
                     <div className="flex flex-row items-end gap-2.5">
                       <SelectField
-                        disabled={
-                          values.isAssessmentEnabled &&
-                          !selectedCourse?.isManager // only managers of an assessment course can remove a quiz from it
-                        }
+                        disabled={courseSelectionDisabled}
                         value={values.courseId}
                         onChange={(value) => {
                           // if the live quiz was assigned to another course before, get the corresponding settings
@@ -189,17 +194,13 @@ function LiveQuizSettingsStep({
                           select: {
                             trigger: twMerge(
                               'h-8 w-60',
-                              values.isAssessmentEnabled &&
-                                !selectedCourse?.isManager
-                                ? 'w-53'
-                                : ''
+                              courseSelectionDisabled ? 'w-53' : ''
                             ),
                           },
                           tooltip: 'z-20',
                         }}
                       />
-                      {values.isAssessmentEnabled &&
-                      !selectedCourse?.isManager ? (
+                      {courseSelectionDisabled ? (
                         <Tooltip
                           tooltip={t(
                             'manage.activityWizard.assessmentCourseRemovalRestricted'
