@@ -1,25 +1,18 @@
-This is the [assistant-ui](https://github.com/Yonom/assistant-ui) starter project.
+# For experimenting with MCP tools:
 
-## Getting Started
+## Context7
 
-First, add your OpenAI API key to `.env.local` file:
-
-```
-OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-```
-
-Then, run the development server:
+clone the [Context7 repo](https://github.com/upstash/context7.git)
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/upstash/context7.git
+cd context7
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+start the MCP server
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm run build
+node dist/index.js --transport http --port $PORT
+```

@@ -1,4 +1,5 @@
-import { context7, RAGSearch } from '@/app/tools'
+import { getContext7Tools } from '@/app/lib/mcpClients'
+import { RAGSearch } from '@/app/tools'
 import { getSystemPrompt, type ChatbotMode } from '@/lib/prompts'
 import { anthropic } from '@ai-sdk/anthropic'
 import { openai } from '@ai-sdk/openai'
@@ -104,12 +105,14 @@ export async function POST(req: Request) {
     parts: [{ type: 'text' as const, text: msg.content }],
   }))
 
+  const context7Tools = await getContext7Tools()
+
   const result = streamText({
     model: getModel(selectedModel),
     messages: convertToModelMessages(uiMessages),
     tools: {
       RAGSearch,
-      context7,
+      ...context7Tools,
     },
     toolChoice: 'auto',
     stopWhen: stepCountIs(5),
