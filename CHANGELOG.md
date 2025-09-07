@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.0](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.2...v3.4.0-alpha.0) (2025-09-07)
+
+
+### Features
+
+* introduce possibility to choose PIN protection for live quizzes ([#4870](https://github.com/uzh-bf/klicker-uzh/issues/4870)) ([d9510cb](https://github.com/uzh-bf/klicker-uzh/commit/d9510cbcc0b92ceb6b379980dd70d91e769ad092))
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that course selection is not blocked when duplicating assessment live quiz ([7b1db69](https://github.com/uzh-bf/klicker-uzh/commit/7b1db698b9a5e16b6833cc473ee651e7a957a433))
+* make sure that activity batch operations respect constraints for activity removal from assessment courses ([#4876](https://github.com/uzh-bf/klicker-uzh/issues/4876)) ([04913cc](https://github.com/uzh-bf/klicker-uzh/commit/04913ccd7e404bf79fc1f8a56ff6c195fe464108))
+* **packages/graphql:** make sure that entire histogram bar is covered by case study likert criterion solution illustration ([#4869](https://github.com/uzh-bf/klicker-uzh/issues/4869)) ([9ea5b37](https://github.com/uzh-bf/klicker-uzh/commit/9ea5b37821f54935395a6d31b195fe1c5fb92126))
+
+
+### Enhancements
+
+* add hatchet infrastructure (initial deployments for hatchet-ha, hatchet-lite for local development), add initial response-api and response-processor worker based on hatchet ([#4839](https://github.com/uzh-bf/klicker-uzh/issues/4839)) ([5802509](https://github.com/uzh-bf/klicker-uzh/commit/580250949d4be51b4307df3ca3ad28dccc28b1ee))
+* ensure uniqueness of live quiz assessment pins through retries and improve UX of assessment quizzes ([#4878](https://github.com/uzh-bf/klicker-uzh/issues/4878)) ([df1db29](https://github.com/uzh-bf/klicker-uzh/commit/df1db29917173bcf1bf071a391e868ba7ea68343))
+* extend cases handled in gamified live quiz settings with logged in users ([#4856](https://github.com/uzh-bf/klicker-uzh/issues/4856)) ([b0d0b64](https://github.com/uzh-bf/klicker-uzh/commit/b0d0b64c5c0397e72a8b8b05164136789fa2cdc8))
+* restrict the available actions in connection with aborting, deleting or re-assigning assessment live quizzes ([#4875](https://github.com/uzh-bf/klicker-uzh/issues/4875)) ([c9d8edc](https://github.com/uzh-bf/klicker-uzh/commit/c9d8edc5fe19fad5dd317b93196670a21db2a06a))
+
 ### [3.3.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.3.1...v3.3.2) (2025-08-29)
 
 
