@@ -2440,7 +2440,10 @@ export async function deleteLiveQuiz(
       async (prisma) => {
         const quiz = await prisma.liveQuiz.update({
           where: { id, status: DB.PublicationStatus.ENDED },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            directPermissions: { deleteMany: {} }, // delete all direct permissions on the activity
+          },
         })
 
         // update derived permissions for this live quiz (after soft deletion)

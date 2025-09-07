@@ -659,7 +659,10 @@ export async function deleteMicroLearning(
       async (prisma) => {
         const updated = await prisma.microLearning.update({
           where: { id },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            directPermissions: { deleteMany: {} }, // delete all direct permissions on the activity
+          },
         })
 
         // update derived permissions for this microlearning (after soft deletion)
