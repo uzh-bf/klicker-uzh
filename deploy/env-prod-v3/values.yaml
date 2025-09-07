@@ -25,6 +25,8 @@ hatchet:
         pullPolicy: Always
 
 auth:
+  replicaCount: 1
+
   autoscaling:
     enabled: false
 
@@ -229,6 +231,8 @@ olatApi:
       memory: 1000Mi
 
 lti:
+  replicaCount: 2
+
   ingress:
     hosts:
       - host: lti.klicker.uzh.ch
