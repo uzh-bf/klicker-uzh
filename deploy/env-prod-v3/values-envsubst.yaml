@@ -8,11 +8,12 @@ hatchet:
   workers:
     general:
       image:
-        tag: '${APP_VERSION}'
+        # tag: '${APP_VERSION}'
+        tag: v3
     responseProcessor:
       image:
-        tag: '${APP_VERSION}'
-
+        # tag: '${APP_VERSION}'
+        tag: v3
 email:
   type: '${EMAIL_TYPE}'
   from: '${EMAIL_FROM}'
@@ -97,7 +98,8 @@ olatApi:
 
 responseApi:
   image:
-    tag: '${APP_VERSION}'
+    # tag: '${APP_VERSION}'
+    tag: v3
 
 lti:
   replicaCount: 4
