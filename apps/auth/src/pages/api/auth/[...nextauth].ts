@@ -392,7 +392,6 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
                 id: profile.sub, // NextAuth requires an id field
                 sub: profile.sub, // Preserve original sub
                 email: profile.email || '',
-                name: profile.email?.split('@')[0] || 'Student',
                 // Preserve all original profile data for callbacks
                 ...profile,
               }
@@ -456,10 +455,7 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
           if (profile && (profile as any).participantId) {
             token.sub = (profile as any).participantId
             token.role = 'PARTICIPANT'
-            token.scope = 'PARTICIPANT'
             token.email = profile.email
-            token.name =
-              profile.name || profile.email?.split('@')[0] || 'Student'
           } else if (token.sub && token.role === 'PARTICIPANT') {
             // Always validate participant exists in database on subsequent calls
             const participant = await prisma.participant.findUnique({
@@ -477,10 +473,7 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
 
             // Update token with current participant data
             token.role = 'PARTICIPANT'
-            token.scope = 'PARTICIPANT'
             token.email = participant.email
-            token.name =
-              token.name || participant.email?.split('@')[0] || 'Student'
           }
 
           return token
