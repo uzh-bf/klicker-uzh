@@ -21,8 +21,6 @@
     "unified": "11.0.5"
   },
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "~15.3.1",
-    "@rollup/plugin-typescript": "~12.1.4",
     "@types/node": "^20.19.11",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
@@ -31,9 +29,10 @@
     "eslint": "~9.30.1",
     "npm-run-all": "~4.1.5",
     "postcss-import": "~16.1.0",
-    "rollup": "~4.34.9",
-    "rollup-plugin-copy": "~3.5.0",
-    "typescript": "~5.6.3"
+    "typescript": "~5.6.3",
+    "vite": "~7.1.4",
+    "vite-plugin-dts": "~4.5.4",
+    "vite-plugin-static-copy": "~3.1.2"
   },
   "peerDependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
@@ -50,12 +49,12 @@
   "scripts": {
     "build": "run-s build:ts",
     "build:test": "pnpm run build",
-    "build:ts": "cross-env NODE_ENV=production rollup -c",
+    "build:ts": "cross-env NODE_ENV=production vite build",
     "check": "tsc --noEmit",
     "dev": "run-p dev:ts",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:offline": "pnpm run dev",
-    "dev:ts": "cross-env NODE_ENV=development rollup -c --watch"
+    "dev:ts": "cross-env NODE_ENV=development vite build --watch"
   },
   "engines": {
     "node": "=20"

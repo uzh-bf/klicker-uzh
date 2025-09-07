@@ -9,13 +9,12 @@
   ],
   "dependencies": {},
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "~15.3.1",
-    "@rollup/plugin-typescript": "~12.1.4",
     "@types/node": "^20.19.11",
     "cross-env": "~7.0.3",
     "npm-run-all": "~4.1.5",
-    "rollup": "~4.34.9",
-    "typescript": "~5.6.3"
+    "typescript": "~5.6.3",
+    "vite": "~7.1.4",
+    "vite-plugin-dts": "~4.5.4"
   },
   "peerDependencies": {
     "@hatchet-dev/typescript-sdk": "^1.9.4",
@@ -27,11 +26,11 @@
   "scripts": {
     "build": "run-s build:ts",
     "build:test": "pnpm run build",
-    "build:ts": "cross-env NODE_ENV=production rollup -c",
+    "build:ts": "cross-env NODE_ENV=production vite build",
     "check": "tsc --noEmit",
     "dev": "run-p dev:ts",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
-    "dev:ts": "cross-env NODE_ENV=development rollup -c --watch"
+    "dev:ts": "cross-env NODE_ENV=development vite build --watch"
   },
   "engines": {
     "node": "=20"

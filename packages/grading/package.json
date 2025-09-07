@@ -11,27 +11,24 @@
     "remeda": "2.15.0"
   },
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "~15.3.1",
-    "@rollup/plugin-typescript": "~12.1.4",
-    "@types/jest": "^29.5.14",
     "@types/node": "^20.19.11",
     "cross-env": "~7.0.3",
     "eslint": "~9.30.1",
     "npm-run-all": "~4.1.5",
-    "rollup": "~4.34.9",
-    "ts-node": "~10.9.2",
     "typescript": "~5.6.3",
+    "vite": "~7.1.4",
+    "vite-plugin-dts": "~4.5.4",
     "vitest": "~3.2.4"
   },
   "scripts": {
     "build": "run-s build:ts",
     "build:test": "pnpm run build",
-    "build:ts": "cross-env NODE_ENV=production rollup -c",
+    "build:ts": "cross-env NODE_ENV=production vite build",
     "check": "tsc --noEmit",
-    "dev": "cross-env NODE_ENV=development rollup -c --watch",
+    "dev": "cross-env NODE_ENV=development vite build --watch",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:offline": "pnpm run dev",
-    "test": "NODE_OPTIONS='--experimental-vm-modules' vitest run --reporter=verbose"
+    "test": "vitest run"
   },
   "engines": {
     "node": "=20"

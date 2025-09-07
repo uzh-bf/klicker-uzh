@@ -16,8 +16,6 @@
   "devDependencies": {
     "@klicker-uzh/transactional": "workspace:*",
     "@pothos/plugin-prisma": "~4.10.0",
-    "@rollup/plugin-node-resolve": "~15.3.1",
-    "@rollup/plugin-typescript": "~12.1.4",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.19.11",
     "@types/pg": "^8.15.5",
@@ -35,13 +33,12 @@
     "p-map": "~7.0.2",
     "prisma": "~6.14.0",
     "prisma-json-types-generator": "~3.6.0",
-    "rollup": "~4.34.9",
-    "rollup-plugin-copy": "~3.5.0",
-    "rollup-plugin-delete": "~2.1.0",
     "tsx": "~4.19.4",
     "turndown": "~7.2.0",
     "typescript": "~5.6.3",
     "uuid": "~10.0.0",
+    "vite": "~7.1.4",
+    "vite-plugin-dts": "~4.5.4",
     "xml2js": "~0.6.2"
   },
   "peerDependencies": {
@@ -50,7 +47,7 @@
   "scripts": {
     "build": "run-s generate build:ts",
     "build:test": "pnpm run build",
-    "build:ts": "cross-env NODE_ENV=production rollup -c",
+    "build:ts": "cross-env NODE_ENV=production vite build",
     "check": "tsc --noEmit",
     "generate": "prisma generate",
     "prisma:deploy": "doppler run --config dev -- pnpm run prisma:deploy:raw",
