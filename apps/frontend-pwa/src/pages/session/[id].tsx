@@ -322,6 +322,9 @@ function Index({ id }: { id: string }) {
     course,
   } = data.studentLiveQuiz
 
+  const feedbackAvailable = isLiveQAEnabled || isConfusionFeedbackEnabled
+  const leaderboardAvailable = !!selfData?.self && !!isGamificationEnabled
+
   const mobileMenuItems: {
     value: string
     label: string
@@ -354,7 +357,7 @@ function Index({ id }: { id: string }) {
     ...(selfData?.self && isGamificationEnabled
       ? [
           {
-            value: 'gamification',
+            value: 'leaderboard',
             label: t('shared.generic.leaderboard'),
             icon: <FontAwesomeIcon icon={faRankingStar} size="lg" />,
             data: { cy: 'mobile-menu-leaderboard' },
@@ -510,111 +513,93 @@ function Index({ id }: { id: string }) {
           </div>
         ) : null}
 
-        {activeView === 'leaderboard' && (
-          <div className={twMerge('min-h-full flex-1 bg-white md:hidden')}>
-            <LiveQuizLeaderboard
-              quizId={id}
-              courseId={course?.id}
-              isBeforeFirstBlock={beforeFirstBlock ?? false}
-              showLeaderboardGamifiedQuizHint
-              isPartOfGamifiedCourse={isPartOfGamifiedCourse}
-            />
-          </div>
-        )}
-
         <div
           className={twMerge(
-            'hidden bg-white md:w-1/2 md:pl-5',
+            'bg-white md:w-1/2 md:pl-5',
             (!blocks || blocks.length === 0) && 'mx-auto',
-            (isLiveQAEnabled ||
-              isConfusionFeedbackEnabled ||
-              (selfData?.self && isGamificationEnabled)) &&
-              'md:block',
-            activeView === 'feedbacks' &&
-              (isLiveQAEnabled || isConfusionFeedbackEnabled) &&
-              'block'
+            feedbackAvailable || leaderboardAvailable
+              ? 'md:block'
+              : 'md:hidden',
+            (activeView === 'feedbacks' && feedbackAvailable) ||
+              (activeView === 'leaderboard' && leaderboardAvailable)
+              ? 'block'
+              : 'hidden'
           )}
         >
-          {/* Right-side tabs on desktop (feedback/leaderboard) */}
-          {(() => {
-            const rightTabs = [
-              ...(isLiveQAEnabled || isConfusionFeedbackEnabled
-                ? [
+          {/* right-side tabs on desktop (shown only when both features exist) */}
+          {(isLiveQAEnabled || isConfusionFeedbackEnabled) &&
+            selfData?.self &&
+            isGamificationEnabled && (
+              <Tabs
+                defaultValue={rightTab}
+                value={rightTab}
+                tabs={
+                  [
                     {
                       id: 'tab-feedbacks',
                       value: 'feedbacks',
                       label: t('shared.generic.feedbacks'),
                       data: { cy: 'tab-feedbacks' },
-                    } as const,
-                  ]
-                : []),
-              ...(selfData?.self && isGamificationEnabled
-                ? [
+                    },
                     {
                       id: 'tab-leaderboard-right',
                       value: 'leaderboard',
                       label: t('shared.generic.leaderboard'),
                       data: { cy: 'tab-leaderboard-right' },
-                    } as const,
-                  ]
-                : []),
-            ]
+                    },
+                  ] as any
+                }
+                onValueChange={(value) =>
+                  setRightTab(value as 'feedbacks' | 'leaderboard')
+                }
+                className={{
+                  root: 'mb-1.5 hidden md:block',
+                  list: 'h-7.5 md:h-7.5 bg-gray-200',
+                  trigger: 'h-6',
+                }}
+              >
+                {' '}
+              </Tabs>
+            )}
 
-            return (
-              <>
-                {rightTabs.length > 1 && (
-                  <Tabs
-                    defaultValue={rightTabs[0]!.value}
-                    value={rightTab}
-                    tabs={rightTabs as any}
-                    onValueChange={(value) =>
-                      setRightTab(value as 'feedbacks' | 'leaderboard')
-                    }
-                    className={{
-                      root: 'mb-1.5 hidden md:block',
-                      list: 'h-7.5 md:h-7.5 bg-gray-200',
-                      trigger: 'h-6',
-                    }}
-                  >
-                    {' '}
-                  </Tabs>
-                )}
-
-                {/* desktop content driven by rightTab */}
-                <div className="hidden md:block">
-                  {rightTab === 'feedbacks' &&
-                  (isLiveQAEnabled || isConfusionFeedbackEnabled) ? (
-                    <FeedbackArea
-                      isConfusionFeedbackEnabled={isConfusionFeedbackEnabled}
-                      isLiveQAEnabled={isLiveQAEnabled}
-                    />
-                  ) : null}
-
-                  {rightTab === 'leaderboard' &&
-                  selfData?.self &&
-                  isGamificationEnabled ? (
-                    <div className="min-h-full w-full bg-white">
-                      <LiveQuizLeaderboard
-                        quizId={id}
-                        courseId={course?.id}
-                        isBeforeFirstBlock={beforeFirstBlock ?? false}
-                        showLeaderboardGamifiedQuizHint
-                        isPartOfGamifiedCourse={isPartOfGamifiedCourse}
-                      />
-                    </div>
-                  ) : null}
-                </div>
-
-                {/* mobile content (unchanged): feedback page */}
-                <div className="md:hidden">
-                  <FeedbackArea
-                    isConfusionFeedbackEnabled={isConfusionFeedbackEnabled}
-                    isLiveQAEnabled={isLiveQAEnabled}
-                  />
-                </div>
-              </>
-            )
-          })()}
+          <FeedbackArea
+            isConfusionFeedbackEnabled={isConfusionFeedbackEnabled}
+            isLiveQAEnabled={isLiveQAEnabled}
+            className={twMerge(
+              // mobile: show only when on feedbacks view and available
+              activeView === 'feedbacks' &&
+                (isLiveQAEnabled || isConfusionFeedbackEnabled)
+                ? 'block'
+                : 'hidden',
+              // desktop: show only when feedbacks tab selected and available
+              rightTab === 'feedbacks' &&
+                (isLiveQAEnabled || isConfusionFeedbackEnabled)
+                ? 'md:block'
+                : 'md:hidden'
+            )}
+          />
+          <LiveQuizLeaderboard
+            quizId={id}
+            courseId={course?.id}
+            isBeforeFirstBlock={beforeFirstBlock ?? false}
+            showLeaderboardGamifiedQuizHint
+            isPartOfGamifiedCourse={isPartOfGamifiedCourse}
+            className={twMerge(
+              // mobile visibility
+              activeView === 'leaderboard' &&
+                selfData?.self &&
+                isGamificationEnabled
+                ? 'block'
+                : 'hidden',
+              // desktop visibility
+              rightTab === 'leaderboard' &&
+                selfData?.self &&
+                isGamificationEnabled
+                ? 'md:block'
+                : 'md:hidden',
+              'min-h-full w-full'
+            )}
+          />
         </div>
       </div>
     </Layout>
@@ -632,19 +617,23 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   }
 
   const apolloClient = initializeApollo()
-  await Promise.all([
+
+  try {
     apolloClient.query({
       query: GetRunningLiveQuizDocument,
       variables: { id: ctx.query?.id as string },
-    }),
-    apolloClient.query({
-      query: GetFeedbacksDocument,
-      variables: {
-        quizId: ctx.query?.id as string,
-        skip: !ctx.query?.id,
-      },
-    }),
-  ])
+    })
+  } catch (e) {
+    // intentionally ignore GraphQL errors here (e.g., pin missing/invalid) -> handled in UI
+  }
+
+  await apolloClient.query({
+    query: GetFeedbacksDocument,
+    variables: {
+      quizId: ctx.query?.id as string,
+      skip: !ctx.query?.id,
+    },
+  })
 
   return addApolloState(apolloClient, {
     props: {

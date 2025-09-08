@@ -290,9 +290,7 @@ function QuestionArea({
 
   return (
     <div className="min-h-content mt-1.5 h-full w-full">
-      <H2 className={{ root: 'mb-0 pt-4 md:pt-2' }}>
-        {t('shared.generic.questions')}
-      </H2>
+      <H2 className={{ root: 'mb-0 pt-2' }}>{t('shared.generic.questions')}</H2>
 
       <div className="flex w-full flex-col">
         {remainingQuestions.length === 0 && (

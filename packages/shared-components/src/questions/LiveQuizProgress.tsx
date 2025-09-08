@@ -85,49 +85,34 @@ export function LiveQuizProgress({
       </div>
 
       <div className="my-auto">
-        {(() => {
-          const atEnd = activeIndex >= allowedMaxIndex
-          const buttonLabel = isContent
-            ? t('shared.generic.next')
-            : isCurrentUnanswered
-              ? t('shared.generic.send')
-              : t('shared.generic.continue')
-
-          const buttonDisabled = isContent
-            ? atEnd
-            : isCurrentUnanswered
-              ? !canSubmit
-              : atEnd
-
-          const onPrimary = () => {
-            if (isContent) {
-              onSubmit()
-              return
-            }
+        <Button
+          fluid
+          primary={isCurrentUnanswered}
+          className={{ root: 'h-8 px-4 md:h-9 md:px-5' }}
+          disabled={
+            isCurrentUnanswered ? !canSubmit : activeIndex >= allowedMaxIndex
+          }
+          onClick={() => {
             if (isCurrentUnanswered) {
               onSubmit()
             } else {
               onNext()
             }
-          }
-
-          return (
-            <Button
-              fluid
-              primary={isCurrentUnanswered && !isContent}
-              className={{ root: 'h-8 px-4 md:h-9 md:px-5' }}
-              disabled={buttonDisabled}
-              onClick={onPrimary}
-              data={{
-                cy: isCurrentUnanswered
-                  ? 'student-submit-answer'
-                  : 'student-continue',
-              }}
-            >
-              <Button.Label>{buttonLabel}</Button.Label>
-            </Button>
-          )
-        })()}
+          }}
+          data={{
+            cy: isCurrentUnanswered
+              ? 'student-submit-answer'
+              : 'student-continue',
+          }}
+        >
+          <Button.Label>
+            {!isCurrentUnanswered
+              ? t('shared.generic.continue')
+              : isContent
+                ? t('shared.generic.next')
+                : t('shared.generic.send')}
+          </Button.Label>
+        </Button>
       </div>
     </div>
   )
