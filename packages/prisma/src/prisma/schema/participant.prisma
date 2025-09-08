@@ -6,8 +6,8 @@ enum InvitationStatus {
 model ParticipantInvitation {
   id Int @id @default(autoincrement())
 
-  email   String
-  status  InvitationStatus @default(PENDING)
+  email  String
+  status InvitationStatus @default(PENDING)
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid
@@ -25,8 +25,9 @@ model ParticipantInvitation {
 model ParticipantAccount {
   id String @id @default(uuid()) @db.Uuid
 
-  ssoId   String @unique
-  ssoType String @default("LTI1.1")
+  ssoId    String  @unique
+  ssoType  String  @default("LTI1.1")
+  ssoEmail String?
 
   // Add fields for affiliation support
   type       String  @default("sso") // "sso", "affiliation"
@@ -208,7 +209,7 @@ model LeaderboardEntry {
 }
 
 model TemporaryLeaderboardEntry {
-  // participant id of temporary participant / participant id in case of logged-in 
+  // participant id of temporary participant / participant id in case of logged-in
   // participant without participation or in gamified live quiz without course
   id       String  @default(uuid()) @db.Uuid
   username String
