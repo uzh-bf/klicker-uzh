@@ -19,7 +19,7 @@ interface QuestionAreaProps {
   expiresAt?: Date
   instances: ElementInstance[]
   handleNewResponse: (
-    sessionId: string,
+    quizId: string,
     instanceId: number,
     type: ElementType,
     answer: any

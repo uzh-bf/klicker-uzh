@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/func-incoming-responses",
-  "version": "3.3.2",
+  "version": "3.4.0-alpha.3",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "files": [
@@ -10,11 +10,10 @@
   "dependencies": {
     "@azure/functions": "4.6.0",
     "@azure/service-bus": "7.9.5",
-    "@sentry/node": "7.103.0",
-    "jsonwebtoken": "9.0.2"
+    "@klicker-uzh/util": "workspace:*",
+    "@sentry/node": "7.103.0"
   },
   "devDependencies": {
-    "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^20.16.1",
     "azure-functions-core-tools": "~4.0.6610",
     "cross-env": "~7.0.3",
@@ -29,6 +28,7 @@
     "build:test": "pnpm run build",
     "check": "tsc --noEmit",
     "dev": "npm-run-all --parallel dev:ts dev:func",
+    "dev:assessment": "pnpm run dev",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:func": "func start -p 7072 --verbose --javascript",
     "dev:ts": "tsup --watch",

@@ -7,13 +7,14 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { PrismaPg } from '@prisma/adapter-pg'
+import generatePassword from 'generate-password'
 import * as Prisma from '../client.js'
 import {
+  COURSE_ID_TEST4 as COURSE_ID_ASSESSMENT,
   COURSE_ID_CALENDAR,
   COURSE_ID_TEST,
   COURSE_ID_TEST2,
   COURSE_ID_TEST3,
-  COURSE_ID_TEST4,
   COURSE_ID_TEST5,
   USER_ID_TEST,
 } from './constants.js'
@@ -306,7 +307,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
 
   await prisma.course.upsert(
     prepareCourse({
-      id: COURSE_ID_TEST4,
+      id: COURSE_ID_ASSESSMENT,
       name: 'Assessment Course',
       displayName: 'Assessment Course',
       description:
@@ -652,6 +653,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         'Introduction to digital transformation concepts and methodologies.',
       status: Prisma.PublicationStatus.DRAFT,
       pointsMultiplier: 2,
+      isGamificationEnabled: true,
+      isAssessmentEnabled: false,
     },
     {
       id: '3ce1b871-809a-4f7a-b3de-e238a4e6e3bc',
@@ -661,24 +664,68 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         'Comprehensive exploration of data analytics techniques and tools.',
       status: Prisma.PublicationStatus.DRAFT,
       pointsMultiplier: 3,
+      isGamificationEnabled: true,
+      isAssessmentEnabled: false,
     },
   ]
 
-  for (const quizData of calendarLiveQuizzes) {
+  const assessmentLiveQuizzes = [
+    {
+      id: '0d4b7c3d-0230-4f7b-b95a-319891171295',
+      name: 'Assessment Live Quiz 1',
+      displayName: 'Assessment Live Quiz 1',
+      description:
+        'Introduction to digital transformation concepts and methodologies.',
+      status: Prisma.PublicationStatus.DRAFT,
+      pointsMultiplier: 2,
+      isGamificationEnabled: false,
+      isAssessmentEnabled: true,
+      pinCode: generatePassword.generate({
+        uppercase: true,
+        lowercase: false,
+        numbers: true,
+        symbols: false,
+        length: 6,
+      }),
+    },
+    {
+      id: '5840b720-a5fd-4f73-9081-22c06d0c4069',
+      name: 'Assessment Live Quiz 2',
+      displayName: 'Assessment Live Quiz 2',
+      description:
+        'Comprehensive exploration of data analytics techniques and tools.',
+      status: Prisma.PublicationStatus.DRAFT,
+      pointsMultiplier: 3,
+      isGamificationEnabled: true,
+      isAssessmentEnabled: true,
+      pinCode: generatePassword.generate({
+        uppercase: true,
+        lowercase: false,
+        numbers: true,
+        symbols: false,
+        length: 6,
+      }),
+    },
+  ]
+
+  for (const quizData of [
+    ...calendarLiveQuizzes.map((quiz) => ({
+      courseId: COURSE_ID_CALENDAR,
+      ...quiz,
+    })),
+    ...assessmentLiveQuizzes.map((quiz) => ({
+      courseId: COURSE_ID_ASSESSMENT,
+      ...quiz,
+    })),
+  ]) {
     const liveQuiz = await prisma.liveQuiz.upsert({
       where: { id: quizData.id },
       create: {
-        id: quizData.id,
-        name: quizData.name,
-        displayName: quizData.displayName,
-        description: quizData.description,
+        ...quizData,
+        courseId: undefined,
         isModerationEnabled: true,
         isLiveQAEnabled: true,
         isConfusionFeedbackEnabled: true,
-        isGamificationEnabled: true,
-        isAssessmentEnabled: false,
-        status: quizData.status,
-        pointsMultiplier: quizData.pointsMultiplier,
         defaultPoints: 25,
         defaultCorrectPoints: 50,
         maxBonusPoints: 20,
@@ -718,8 +765,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
             },
           ],
         },
+        course: { connect: { id: quizData.courseId } },
         owner: { connect: { id: USER_ID_TEST } },
-        course: { connect: { id: COURSE_ID_CALENDAR } },
       },
       update: {},
     })
@@ -2393,7 +2440,7 @@ Once this microlearning is published, it will be immediately accessible
     COURSE_ID_TEST,
     COURSE_ID_TEST2,
     COURSE_ID_TEST3,
-    COURSE_ID_TEST4,
+    COURSE_ID_ASSESSMENT,
     COURSE_ID_TEST5,
     COURSE_ID_CALENDAR,
   ]

@@ -1,0 +1,3 @@
+mutation SetLiveQuizPin($liveQuizId: String!, $pin: String!) {
+  setLiveQuizPin(liveQuizId: $liveQuizId, pin: $pin)
+}

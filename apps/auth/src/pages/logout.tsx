@@ -7,10 +7,29 @@ export default function Logout() {
 
   useEffect(() => {
     async function exec() {
-      await signOut()
-      router.push('https://www.klicker.uzh.ch')
+      try {
+        // Sign out from NextAuth first
+        await signOut({ redirect: false })
+
+        // Redirect to main website
+        router.push('https://www.klicker.uzh.ch')
+      } catch (error) {
+        console.error('Error during logout:', error)
+        // Still redirect even if there's an error
+        router.push('https://www.klicker.uzh.ch')
+      }
     }
     exec()
-  })
-  return null
+  }, [router])
+
+  return (
+    <div className="flex h-full flex-col items-center justify-center">
+      <div className="text-center">
+        <h1 className="mb-4 text-2xl font-semibold">Signing Out...</h1>
+        <p className="text-gray-600">
+          Please wait while we sign you out and clear all sessions.
+        </p>
+      </div>
+    </div>
+  )
 }

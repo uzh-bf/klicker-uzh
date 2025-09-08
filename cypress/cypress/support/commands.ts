@@ -123,7 +123,7 @@ const loginFactory = (
     cy.viewport('macbook-16')
     localforage.setItem('hideLecturerSurvey', 'true')
 
-    const secret = new TextEncoder().encode('abcd')
+    const secret = new TextEncoder().encode(Cypress.env('APP_SECRET'))
     const alg = 'HS256'
 
     cy.wrap(null).then(async () => {
@@ -1214,12 +1214,12 @@ Cypress.Commands.add(
     cy.setDatetime({
       cyString: 'select-start-date',
       deselectorString: 'availability-section-header',
-      datetime: startDate,
+      datetime: { ...startDate, monthDelta: startDate.monthDelta - 1 }, // pre-selected date is at beginning of next month
     })
     cy.setDatetime({
       cyString: 'select-end-date',
       deselectorString: 'availability-section-header',
-      datetime: endDate,
+      datetime: { ...endDate, monthDelta: endDate.monthDelta - 1 }, // pre-selected date is at beginning of next month
     })
 
     if (multiplier) {
@@ -1298,12 +1298,18 @@ Cypress.Commands.add(
     cy.setDatetime({
       cyString: 'select-start-date',
       deselectorString: 'availability-section-header',
-      datetime: scheduledStartDate,
+      datetime: {
+        ...scheduledStartDate,
+        monthDelta: scheduledStartDate.monthDelta - 1,
+      }, // pre-selected date is at beginning of next month
     })
     cy.setDatetime({
       cyString: 'select-end-date',
       deselectorString: 'availability-section-header',
-      datetime: scheduledEndDate,
+      datetime: {
+        ...scheduledEndDate,
+        monthDelta: scheduledEndDate.monthDelta - 1,
+      }, // pre-selected date is at beginning of next month
     })
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -1345,12 +1351,13 @@ interface CreateCourseArgs {
   displayName: string
   description?: string
   notificationEmail?: string
-  startDate?: DateType
-  endDate?: DateType
+  startDate?: Date
+  endDate?: Date
   color?: string
+  isAssessmentEnabled?: boolean
   isGamificationEnabled?: boolean
-  isGroupFormationEnabled?: boolean
-  groupFormationDeadline?: DateType
+  isGroupCreationEnabled?: boolean
+  groupDeadlineDate?: Date
   maxGroupSize?: number
   preferredGroupSize?: number
 }
@@ -1365,112 +1372,38 @@ Cypress.Commands.add(
     startDate,
     endDate,
     color,
+    isAssessmentEnabled = false,
     isGamificationEnabled = true,
-    isGroupFormationEnabled = true,
-    groupFormationDeadline,
+    isGroupCreationEnabled = true,
+    groupDeadlineDate,
     maxGroupSize = 4,
     preferredGroupSize = 2,
   }: CreateCourseArgs) => {
-    cy.get('[data-cy="course-list-button-new-course"]').click()
-
-    // set the necessary metadata
-    cy.get('[data-cy="course-name"]').click().type(name)
-    cy.get('[data-cy="course-display-name"]').click().type(displayName)
-
-    // if defined, set the description
-    if (description) {
-      cy.get('[data-cy="course-description"]').realClick().type(description)
-    }
-
-    // if defined, set the notification email
-    if (notificationEmail) {
-      cy.get('[data-cy="course-notification-email"]')
-        .click()
-        .clear()
-        .type(notificationEmail)
-    }
-
-    // if defined, set the start date
-    if (startDate) {
-      cy.setDate({
-        cyString: 'course-start-date',
-        deselectorString: 'course-name',
-        date: startDate,
-      })
-    }
-
-    // if defined, set the end date
-    if (endDate) {
-      cy.setDate({
-        cyString: 'course-end-date',
-        deselectorString: 'course-name',
-        date: endDate,
-      })
-    }
-
-    // if defined, set the color
-    if (color) {
-      cy.get('[data-cy="course-color-trigger"]').click()
-      cy.get('[data-cy="course-color-hex-input"]').clear()
-      cy.get('[data-cy="course-color-hex-input"]').type(color)
-      cy.get('[data-cy="course-color-submit"]').click()
-    }
-
-    // set gamification toggle
-    if (isGamificationEnabled) {
-      cy.get('[data-cy="course-gamification"]').should(
-        'have.attr',
-        'data-state',
-        'checked'
-      )
-    } else {
-      cy.get('[data-cy="course-gamification"]').click()
-      cy.get('[data-cy="course-gamification"]').should(
-        'have.attr',
-        'data-state',
-        'unchecked'
-      )
-    }
-
-    // set group formation toggle
-    if (isGroupFormationEnabled) {
-      cy.get('[data-cy="course-group-creation"]').should(
-        'have.attr',
-        'data-state',
-        'checked'
-      )
-
-      // if defined, modify the group formation deadline
-      if (groupFormationDeadline) {
-        cy.setDate({
-          cyString: 'group-creation-deadline',
-          deselectorString: 'course-name',
-          date: groupFormationDeadline,
-        })
+    // trigger answer collection creation directly through prisma action
+    cy.get('[data-cy="courses"]').click()
+    cy.task('createCourse', {
+      name,
+      displayName,
+      description,
+      notificationEmail,
+      startDate,
+      endDate,
+      color,
+      isAssessmentEnabled,
+      isGamificationEnabled,
+      isGroupCreationEnabled,
+      groupDeadlineDate,
+      maxGroupSize,
+      preferredGroupSize,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === false) {
+        throw new Error('Course creation failed!')
       }
-
-      // set group size parameters
-      cy.get('[data-cy="max-group-size"]')
-        .click()
-        .clear()
-        .type(String(maxGroupSize))
-      cy.get('[data-cy="preferred-group-size"]')
-        .click()
-        .clear()
-        .type(String(preferredGroupSize))
-    } else if (isGamificationEnabled) {
-      cy.get('[data-cy="course-group-creation"]').click()
-      cy.get('[data-cy="course-group-creation"]').should(
-        'have.attr',
-        'data-state',
-        'unchecked'
-      )
-    }
-
-    // submit the form
-    cy.get('[data-cy="manipulate-course-submit"]').click()
+    })
 
     // check if the course is in the list
+    cy.reload()
     cy.get('[data-cy="courses"]').click()
     cy.findByText(name).should('exist')
   }
@@ -1970,9 +1903,10 @@ declare global {
         startDate,
         endDate,
         color,
+        isAssessmentEnabled,
         isGamificationEnabled,
-        isGroupFormationEnabled,
-        groupFormationDeadline,
+        isGroupCreationEnabled,
+        groupDeadlineDate,
         maxGroupSize,
         preferredGroupSize,
       }: CreateCourseArgs): Chainable<void>

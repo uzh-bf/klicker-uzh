@@ -14,18 +14,19 @@
     "bcryptjs": "~2.4.3",
     "cypress": "~14.5.1",
     "cypress-real-events": "~1.14.0",
+    "generate-password": "~1.7.1",
     "jose": "~5.9.4",
     "localforage": "~1.10.0",
     "typescript": "~5.6.3",
     "uuid": "~10.0.0"
   },
   "scripts": {
-    "test": "doppler run --config=dev_cypress -- cypress open",
+    "test": "CONFIG=dev_cypress ../util/_run_with_doppler.sh cypress open",
     "test:raw": "cypress open",
-    "test:run": "doppler run --config=dev_cypress -- cypress run",
-    "test:run:one": "doppler run --config=dev_cypress -- cypress run --spec",
+    "test:run": "CONFIG=dev_cypress ../util/_run_with_doppler.sh cypress run",
+    "test:run:one": "CONFIG=dev_cypress ../util/_run_with_doppler.sh cypress run --spec",
     "test:run:raw": "cypress run",
-    "test:watch": "doppler run --config=dev_cypress -- cypress open --watch"
+    "test:watch": "CONFIG=dev_cypress ../util/_run_with_doppler.sh cypress open --watch"
   },
   "engines": {
     "node": "=20"

@@ -47,6 +47,7 @@ const acceptedTypes = [
 
 export interface LiveQuizWizardStepProps {
   editMode: boolean
+  duplicationMode?: boolean
   formRef: any
   formData: LiveQuizFormValues
   continueDisabled: boolean
@@ -80,6 +81,7 @@ interface LiveQuizWizardProps {
     | 'isConfusionFeedbackEnabled'
     | 'isGamificationEnabled'
     | 'isAssessmentEnabled'
+    | 'pinCode'
     | 'isLiveQAEnabled'
     | 'isModerationEnabled'
     | 'blocks'
@@ -189,6 +191,7 @@ function LiveQuizWizard({
     timeToZeroBonus: LQ_TIME_TO_ZERO_BONUS,
     isGamificationEnabled: false,
     isAssessmentEnabled: false,
+    isPinProtected: false,
     isConfusionFeedbackEnabled: true,
     isLiveQAEnabled: false,
     isModerationEnabled: true,
@@ -263,6 +266,7 @@ function LiveQuizWizard({
     isAssessmentEnabled:
       initialValues?.isAssessmentEnabled ??
       formDefaultValues.isAssessmentEnabled,
+    isPinProtected: initialValues?.pinCode ? true : false,
     isConfusionFeedbackEnabled:
       initialValues?.isConfusionFeedbackEnabled ??
       formDefaultValues.isConfusionFeedbackEnabled,
@@ -435,6 +439,7 @@ function LiveQuizWizard({
         <LiveQuizSettingsStep
           key="live-quiz-settings-step"
           editMode={editMode}
+          duplicationMode={duplicationMode}
           formRef={formRef}
           formData={formData}
           continueDisabled={false}

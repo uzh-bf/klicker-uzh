@@ -1,5 +1,5 @@
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons'
-import { faEnvelope, faKey } from '@fortawesome/free-solid-svg-icons'
+import { faEnvelope, faIdBadge, faKey } from '@fortawesome/free-solid-svg-icons'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import usePWAInstall, {
   BeforeInstallPromptEvent,
@@ -64,6 +64,72 @@ function LoginForm({
     deferredPrompt.current!.prompt()
   }
 
+  // Assessment mode UI - simplified login with only Edu-ID
+  if (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true') {
+    return (
+      <div className="md:grow-0! flex max-w-full grow flex-col md:max-w-xl md:rounded-lg md:border md:shadow">
+        <div className="flex flex-1 flex-col items-center justify-center">
+          <div className="mb-8 w-full text-center sm:my-12">
+            <Image
+              src="/KlickerLogo.png"
+              width={300}
+              height={90}
+              alt="KlickerUZH Logo"
+              className="mx-auto"
+              data-cy="login-logo"
+            />
+          </div>
+
+          <div className="w-full space-y-4 px-6">
+            <h1 className="mb-4 text-center text-2xl font-semibold">
+              {t('pwa.assessment.title')}
+            </h1>
+
+            {/* Assessment Warning */}
+            <div className="mb-6">
+              <UserNotification type="warning">
+                {t('pwa.assessment.warning')}
+              </UserNotification>
+            </div>
+
+            <p className="mt-2 text-center text-sm text-gray-500">
+              {t('pwa.assessment.eduIdRequired')}
+            </p>
+
+            {/* Edu-ID Login Button */}
+            <Button
+              fluid
+              className={{
+                root: 'p-4',
+              }}
+              onClick={() => {
+                const currentUrl = window.location.origin
+                const authUrl =
+                  process.env.NEXT_PUBLIC_AUTH_URL ||
+                  'https://auth.klicker.uzh.ch'
+                window.location.href = `${authUrl}/student?redirectTo=${encodeURIComponent(currentUrl)}`
+              }}
+              data={{ cy: 'eduid-login-button' }}
+            >
+              <Image
+                src="/edu-id-logo.svg"
+                width={300}
+                height={90}
+                alt="Edu-ID Logo"
+                className="mx-auto"
+              />
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-8 w-full flex-none">
+          <Footer />
+        </div>
+      </div>
+    )
+  }
+
+  // Regular mode UI (existing functionality)
   return (
     <div className="md:grow-0! flex max-w-full grow flex-col md:max-w-xl md:rounded-lg md:border md:shadow">
       <div className="flex flex-1 flex-col items-center justify-center">
@@ -127,99 +193,130 @@ function LoginForm({
                 data={dataIdentifier}
               />
 
-              {magicLinkLogin && (
-                <div className="mt-3 flex flex-col gap-2 md:mt-2">
-                  {process.env.NEXT_PUBLIC_WITH_MAGIC_LINK === 'true' && (
+              {process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
+                magicLinkLogin && (
+                  <div className="mt-3 flex flex-col gap-2 md:mt-2">
+                    {process.env.NEXT_PUBLIC_WITH_MAGIC_LINK === 'true' && (
+                      <Button
+                        fluid
+                        primary
+                        type="submit"
+                        loading={isSubmitting}
+                        data={{ cy: 'magic-link-login' }}
+                      >
+                        <Button.Icon icon={faEnvelope} loading={isSubmitting} />
+                        <Button.Label>
+                          {t('pwa.general.magicLinkLogin')}
+                        </Button.Label>
+                      </Button>
+                    )}
                     <Button
                       fluid
-                      primary
-                      type="submit"
-                      loading={isSubmitting}
-                      data={{ cy: 'magic-link-login' }}
+                      type="button"
+                      onClick={() => setMagicLinkLogin(false)}
+                      data={{ cy: 'password-login' }}
                     >
-                      <Button.Icon icon={faEnvelope} loading={isSubmitting} />
+                      <Button.Icon icon={faKey} />
                       <Button.Label>
-                        {t('pwa.general.magicLinkLogin')}
+                        {t('pwa.general.passwordLogin')}
                       </Button.Label>
-                    </Button>
-                  )}
-                  <Button
-                    fluid
-                    type="button"
-                    onClick={() => setMagicLinkLogin(false)}
-                    data={{ cy: 'password-login' }}
-                  >
-                    <Button.Icon icon={faKey} />
-                    <Button.Label>
-                      {t('pwa.general.passwordLogin')}
-                    </Button.Label>
-                  </Button>
-                </div>
-              )}
-
-              {!magicLinkLogin && (
-                <>
-                  <FormikTextField
-                    required
-                    label={labelSecret}
-                    labelType="small"
-                    iconPosition="right"
-                    name={fieldSecret}
-                    data={dataSecret}
-                    icon={passwordHidden ? faEye : faEyeSlash}
-                    onIconClick={() => setPasswordHidden(!passwordHidden)}
-                    className={{
-                      root: 'mt-1',
-                      icon: 'bg-transparent',
-                      input: 'pr-10!',
-                    }}
-                    type={passwordHidden ? 'password' : 'text'}
-                  />
-
-                  <div className="flex flex-row justify-between">
-                    <Button
-                      basic
-                      onClick={() => setMagicLinkLogin(true)}
-                      className={{
-                        root: 'text-primary-100 p-0! mt-1 text-sm hover:bg-transparent hover:underline',
-                      }}
-                    >
-                      <Button.Label>
-                        {t('shared.generic.forgotPassword')}
-                      </Button.Label>
-                    </Button>
-                    <Button
-                      primary
-                      type="submit"
-                      disabled={isSubmitting}
-                      className={{
-                        root: 'mt-3 md:mb-0 md:mt-2 md:w-max md:self-end',
-                      }}
-                      data={{ cy: 'submit-login' }}
-                    >
-                      <Button.Label>{t('shared.generic.signin')}</Button.Label>
                     </Button>
                   </div>
-                </>
-              )}
+                )}
 
-              {!magicLinkLogin && installAndroid && onChrome && (
-                <div className="mt-4 flex flex-col justify-center md:hidden">
-                  <UserNotification type="info" message={installAndroid}>
-                    <Button
-                      onClick={onInstallClick}
+              {process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
+                !magicLinkLogin && (
+                  <>
+                    <FormikTextField
+                      required
+                      label={labelSecret}
+                      labelType="small"
+                      iconPosition="right"
+                      name={fieldSecret}
+                      data={dataSecret}
+                      icon={passwordHidden ? faEye : faEyeSlash}
+                      onIconClick={() => setPasswordHidden(!passwordHidden)}
                       className={{
-                        root: 'border-uzh-grey-80 mt-2 w-fit',
+                        root: 'mt-1',
+                        icon: 'bg-transparent',
+                        input: 'pr-10!',
                       }}
-                      data={{ cy: 'install-student-pwa' }}
+                      type={passwordHidden ? 'password' : 'text'}
+                    />
+
+                    <div className="flex flex-row justify-between">
+                      <Button
+                        basic
+                        onClick={() => setMagicLinkLogin(true)}
+                        className={{
+                          root: 'text-primary-100 p-0! mt-1 text-sm hover:bg-transparent hover:underline',
+                        }}
+                      >
+                        <Button.Label>
+                          {t('shared.generic.forgotPassword')}
+                        </Button.Label>
+                      </Button>
+                      <Button
+                        primary
+                        type="submit"
+                        disabled={isSubmitting}
+                        className={{
+                          root: 'mt-3 md:mb-0 md:mt-2 md:w-max md:self-end',
+                        }}
+                        data={{ cy: 'submit-login' }}
+                      >
+                        <Button.Label>
+                          {t('shared.generic.signin')}
+                        </Button.Label>
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+              {/* Edu-ID Login Button for Assessment Mode */}
+              {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true' &&
+                !magicLinkLogin && (
+                  <div className="mt-4 border-t border-gray-200 pt-4">
+                    <Button
+                      fluid
+                      className={{
+                        root: 'border-2 border-blue-600 text-blue-600 hover:bg-blue-50',
+                      }}
+                      onClick={() => {
+                        const currentUrl = window.location.origin
+                        const authUrl =
+                          process.env.NEXT_PUBLIC_AUTH_URL ||
+                          'https://auth.klicker.uzh.ch'
+                        window.location.href = `${authUrl}/student?redirectTo=${encodeURIComponent(currentUrl)}`
+                      }}
+                      data={{ cy: 'eduid-login-button' }}
                     >
-                      <Button.Label>
-                        {t('shared.login.installButton')}
-                      </Button.Label>
+                      <Button.Icon icon={faIdBadge} />
+                      <Button.Label>Login with Edu-ID</Button.Label>
                     </Button>
-                  </UserNotification>
-                </div>
-              )}
+                  </div>
+                )}
+
+              {process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
+                !magicLinkLogin &&
+                installAndroid &&
+                onChrome && (
+                  <div className="mt-4 flex flex-col justify-center md:hidden">
+                    <UserNotification type="info" message={installAndroid}>
+                      <Button
+                        onClick={onInstallClick}
+                        className={{
+                          root: 'border-uzh-grey-80 mt-2 w-fit',
+                        }}
+                        data={{ cy: 'install-student-pwa' }}
+                      >
+                        <Button.Label>
+                          {t('shared.login.installButton')}
+                        </Button.Label>
+                      </Button>
+                    </UserNotification>
+                  </div>
+                )}
               {!magicLinkLogin && installIOS && oniOS && (
                 <UserNotification
                   className={{ root: 'mt-4' }}

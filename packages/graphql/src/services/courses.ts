@@ -953,13 +953,33 @@ export async function getActiveUserCourses(
   const userCourses = await ctx.prisma.user.findUnique({
     where: { id: ctx.user.sub },
     include: {
-      courses: {
-        where: { endDate: { gte: new Date() }, isArchived: false },
-        orderBy: [{ startDate: 'asc' }, { name: 'asc' }],
+      objects: {
+        where: {
+          courseId: { not: null },
+          course: { endDate: { gte: new Date() }, isArchived: false },
+        },
+        include: { course: true },
+        orderBy: [
+          { course: { startDate: 'asc' } },
+          { course: { name: 'asc' } },
+        ],
       },
     },
   })
-  const courses = userCourses?.courses ?? []
+
+  const courses =
+    userCourses?.objects?.map((object) => ({
+      ...object.course!,
+      isOwner: object.permissionLevel === DB.PermissionLevel.OWNER,
+      isManager:
+        object.permissionLevel === DB.PermissionLevel.OWNER ||
+        object.permissionLevel === DB.PermissionLevel.ADMIN,
+      isEditor:
+        object.permissionLevel === DB.PermissionLevel.OWNER ||
+        object.permissionLevel === DB.PermissionLevel.ADMIN ||
+        object.permissionLevel === DB.PermissionLevel.WRITE,
+      isShared: object.permissionLevel !== DB.PermissionLevel.OWNER,
+    })) ?? []
 
   if (
     activityId &&
@@ -1043,10 +1063,25 @@ export async function getActiveUserCourses(
 
     // deduplicate the course linked to the activity with the other user courses and sort it accordingly
     if (activityCourse) {
-      const sortedCourses = [
-        ...(activityCourse ? [activityCourse] : []),
-        ...courses.filter((course) => course.id !== activityCourse.id),
-      ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      const userHasActivityCourseAssess = courses.some(
+        (course) => course.id === activityCourse.id
+      )
+      const augmentedCourses = userHasActivityCourseAssess
+        ? courses
+        : [
+            ...courses,
+            {
+              ...activityCourse,
+              isOwner: false,
+              isManager: false,
+              isEditor: false,
+              isShared: false,
+            },
+          ]
+
+      const sortedCourses = augmentedCourses.sort(
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+      )
 
       return sortedCourses
     } else {
@@ -1402,6 +1437,8 @@ export async function getCourseData(
       name: liveQuiz.name,
       displayName: liveQuiz.displayName,
       reviewStatus: liveQuiz.reviewStatus,
+      isGamificationEnabled: liveQuiz.isGamificationEnabled,
+      isAssessmentEnabled: liveQuiz.isAssessmentEnabled,
       type: ActivityType.LIVE_QUIZ,
       status: liveQuiz.status,
       courseId: course.id,
@@ -1417,6 +1454,7 @@ export async function getCourseData(
       derivedAccess: permission.derived,
       areInstancesOutdated: liveQuiz.areInstancesOutdated,
       numSharedUsers: liveQuiz._count.permissions - 1,
+      pinCode: liveQuiz.pinCode,
       isOwner,
       isManager,
       isEditor,
@@ -1454,6 +1492,8 @@ export async function getCourseData(
       name: practiceQuiz.name,
       displayName: practiceQuiz.displayName,
       reviewStatus: practiceQuiz.reviewStatus,
+      isGamificationEnabled: practiceQuiz.isGamificationEnabled,
+      isAssessmentEnabled: practiceQuiz.isAssessmentEnabled,
       type: ActivityType.PRACTICE_QUIZ,
       status: practiceQuiz.status,
       courseId: course.id,
@@ -1507,6 +1547,8 @@ export async function getCourseData(
       name: microLearning.name,
       displayName: microLearning.displayName,
       reviewStatus: microLearning.reviewStatus,
+      isGamificationEnabled: microLearning.isGamificationEnabled,
+      isAssessmentEnabled: microLearning.isAssessmentEnabled,
       type: ActivityType.MICRO_LEARNING,
       status: microLearning.status,
       courseId: course.id,
@@ -1562,6 +1604,8 @@ export async function getCourseData(
         name: groupActivity.name,
         displayName: groupActivity.displayName,
         reviewStatus: groupActivity.reviewStatus,
+        isGamificationEnabled: groupActivity.isGamificationEnabled,
+        isAssessmentEnabled: groupActivity.isAssessmentEnabled,
         type: ActivityType.GROUP_ACTIVITY,
         status: groupActivity.status,
         courseId: course.id,

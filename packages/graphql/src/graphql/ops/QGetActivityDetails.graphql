@@ -20,6 +20,10 @@ query GetActivityDetails($activityId: String!, $activityType: ActivityType!) {
     totalBonusPoints
     totalPoints
 
+    isAssessmentEnabled
+    isPinProtected
+    pinCode
+
     stacks {
       id
       numOfParticipants

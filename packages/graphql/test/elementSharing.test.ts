@@ -39,7 +39,7 @@ import {
 } from './helpers.js'
 import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 
-describe('Unit tests for sharing functionalities of elements (questions, content snippets, flashcards)', () => {
+describe('Integration tests for sharing functionalities of elements (questions, content snippets, flashcards)', () => {
   // shared resources used across tests
   let prisma: PrismaClient
   let emitter: EventEmitter

@@ -38,9 +38,7 @@ function JoinPage() {
         <div className="mb-5">{t('pwa.joinCourse.introLoggedInNoCourse')}</div>
         <Formik
           validateOnMount
-          initialValues={{
-            pin: '',
-          }}
+          initialValues={{ pin: '' }}
           validationSchema={joinCourseWithPinSchema}
           onSubmit={async (values, { setSubmitting }) => {
             setSubmitting(true)

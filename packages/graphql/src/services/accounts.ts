@@ -5,10 +5,11 @@ import {
   getInitialInstanceStatistics,
   processElementData,
   recomputeDerivedPermissions,
+  signJWT,
+  verifyJWT,
 } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import type { CookieOptions } from 'express'
-import JWT from 'jsonwebtoken'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
@@ -34,8 +35,8 @@ export async function logoutUser(_: any, ctx: ContextWithUser) {
   return ctx.user.sub
 }
 
-export function createParticipantToken(participantId: string) {
-  return JWT.sign(
+export async function createParticipantToken(participantId: string) {
+  return signJWT(
     {
       sub: participantId,
       role: DB.UserRole.PARTICIPANT,
@@ -49,8 +50,8 @@ export function createParticipantToken(participantId: string) {
   )
 }
 
-export function createTemporaryParticipantToken(participantId: string) {
-  return JWT.sign(
+export async function createTemporaryParticipantToken(participantId: string) {
+  return signJWT(
     {
       sub: participantId,
       role: DB.UserRole.TEMPORARY_PARTICIPANT,
@@ -76,7 +77,7 @@ async function doParticipantLogin(
     data: { lastLoginAt: new Date() },
   })
 
-  const jwt = createParticipantToken(participantId)
+  const jwt = await createParticipantToken(participantId)
 
   ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
 
@@ -173,7 +174,7 @@ export async function loginTemporaryParticipant(
     })
 
   // create and return a new valid token for the temporary participant
-  const jwt = createTemporaryParticipantToken(temporaryParticipant.id)
+  const jwt = await createTemporaryParticipantToken(temporaryParticipant.id)
   ctx.res.cookie('temporary_participant_token', jwt, COOKIE_SETTINGS)
   return jwt
 }
@@ -232,7 +233,7 @@ export async function sendMagicLink(
   // TODO: should we disable magic link login until the email has been verified?
   if (!participantData?.email) return false
 
-  const magicLinkJWT = JWT.sign(
+  const magicLinkJWT = await signJWT(
     {
       sub: participantData.id,
       role: DB.UserRole.PARTICIPANT,
@@ -241,7 +242,7 @@ export async function sendMagicLink(
     process.env.APP_SECRET as string,
     {
       algorithm: 'HS256',
-      expiresIn: '15 minutes',
+      expiresIn: '15m',
     }
   )
 
@@ -279,7 +280,10 @@ export async function loginParticipantMagicLink(
   ctx: Context
 ) {
   //
-  const tokenData = JWT.verify(token, process.env.APP_SECRET as string) as {
+  const tokenData = (await verifyJWT(
+    token,
+    process.env.APP_SECRET as string
+  )) as {
     sub: string
     scope: DB.UserLoginScope
   }
@@ -314,7 +318,10 @@ export async function activateParticipantAccount(
   ctx: Context
 ) {
   //
-  const tokenData = JWT.verify(token, process.env.APP_SECRET as string) as {
+  const tokenData = (await verifyJWT(
+    token,
+    process.env.APP_SECRET as string
+  )) as {
     sub: string
     scope: DB.UserLoginScope
   }
@@ -367,7 +374,7 @@ export async function logoutTemporaryParticipant(
 
   // check if there exists a temporary leaderboard entry for the current user
   const lbEntry = await ctx.prisma.temporaryLeaderboardEntry.findUnique({
-    where: { id: ctx.user.sub, quizId: liveQuizId },
+    where: { id_quizId: { id: ctx.user.sub, quizId: liveQuizId } },
   })
 
   if (!lbEntry) {
@@ -376,7 +383,7 @@ export async function logoutTemporaryParticipant(
 
   // delete the temporary leaderboard entry
   await ctx.prisma.temporaryLeaderboardEntry.delete({
-    where: { id: ctx.user.sub, quizId: liveQuizId },
+    where: { id_quizId: { id: ctx.user.sub, quizId: liveQuizId } },
   })
 
   // delete the cookie
@@ -544,10 +551,10 @@ export async function createParticipantAccount(
 ) {
   if (signedLtiData) {
     const account = await ctx.prisma.$transaction(async (prisma) => {
-      const ltiData = JWT.verify(
+      const ltiData = (await verifyJWT(
         signedLtiData,
         process.env.APP_SECRET as string
-      ) as { email: string; sub: string; scope: 'LTI1.1' | 'LTI1.3' }
+      )) as { email: string; sub: string; scope: 'LTI1.1' | 'LTI1.3' }
       // check if the username is already taken by another user
       const existingUser = await prisma.participant.findMany({
         where: {
@@ -677,7 +684,7 @@ export async function createParticipantAccount(
       return participant
     })
 
-    const activationJWT = JWT.sign(
+    const activationJWT = await signJWT(
       {
         sub: participant.id,
         role: DB.UserRole.PARTICIPANT,
@@ -686,7 +693,7 @@ export async function createParticipantAccount(
       process.env.APP_SECRET as string,
       {
         algorithm: 'HS256',
-        expiresIn: '60 minutes',
+        expiresIn: '60m',
       }
     )
 
@@ -741,10 +748,10 @@ export async function loginParticipantWithLti(
   { signedLtiData, courseId }: LoginParticipantWithLtiArgs,
   ctx: Context
 ) {
-  const ltiData = JWT.verify(
+  const ltiData = (await verifyJWT(
     signedLtiData,
     process.env.APP_SECRET as string
-  ) as {
+  )) as {
     sub: string
     email?: string
     scope: string

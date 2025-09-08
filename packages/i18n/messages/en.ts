@@ -317,6 +317,8 @@ export default {
       archived: 'Archived',
       ended: 'Ended',
       assessment: 'Assessment',
+      pin: 'PIN',
+      pinProtected: 'PIN Protected',
       learningAnalytics: 'Learning Analytics',
       monday: 'Monday',
       tuesday: 'Tuesday',
@@ -459,7 +461,11 @@ export default {
       noPointsCollected:
         'No points have been collected in this quiz so far. As soon as this changes, podium and leaderboard will be displayed here.',
       liveQuizGamifiedNoGamifiedCourse:
-        'This live quiz is gamified but not part of a gamified course. Since you are logged in, any points collected by you in the quiz will be automatically displayed on the leaderboard. If you do not wish to appear on the leaderboard, please log out and rejoin the quiz via the link.',
+        'This live quiz is gamified but not part of a gamified course. Since you are logged in, any points collected by you in the quiz will be automatically displayed on the leaderboard. If you do not wish to appear on the leaderboard, please <logout>log out</logout> and rejoin the quiz via the link.',
+      liveQuizGamifiedCourseNoParticipation:
+        'This live quiz is part of a gamified course. Since you have not joined this course, you will only collect points within this quiz. Your points will appear on the quiz leaderboard. If you do not want this, please <logout>log out</logout> and rejoin the quiz via the link.',
+      liveQuizCourseParticipationInactive:
+        'This live quiz is part of a gamified course, but you are currently not participating in the gamification. To join the leaderboard and collect points in this quiz, join the <link>leaderboard on the course overview</link> and rejoin the quiz.',
       rank: 'Rank',
       username: 'Username',
       email: 'Email',
@@ -866,6 +872,12 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       noQuizDescription:
         'There is currently no running live quiz available under this link. Please check your link or contact your instructor.',
       refreshPage: 'Refresh Page',
+      pinRequired: 'A PIN is required to access this quiz.',
+      enterPinTitle: 'Enter PIN Code',
+      invalidPin: 'The provided PIN is invalid.',
+      enterPinLabel: 'PIN Code',
+      enterPinPlaceholder: 'Enter PIN',
+      submitPin: 'Submit PIN',
     },
     feedbacks: {
       title: 'Feedback Channel',
@@ -1030,6 +1042,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       groupActivityEnded:
         'This group activity has ended already. You cannot start it anymore or submit any answers.',
     },
+    assessment: {
+      title: 'Assessment Login',
+      warning:
+        'This is an assessment application. All your data and activities will be visible to your lecturers.',
+      loginWithEduId: 'Login with Edu-ID',
+      eduIdRequired: 'Edu-ID authentication is required for assessments',
+    },
   },
   manage: {
     general: {
@@ -1189,6 +1208,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'A multiplier can only be set for gamified activities or activities in assessment courses, as points can only be collected in these courses.',
       batchGroupActivityRequiresGroupsEnabled:
         'Group activities can only be assigned to courses where group formation is enabled.',
+      batchAssessmentRemovalAdminOnly:
+        'Activities that are in assessment mode (assigned to an assessment course) can only be removed from it by administrators of the corresponding course.',
       batchActivityDatesOutsideCourse:
         'The availability interval of group activities and microlearnings must be fully within the course duration.',
       batchGroupActivityRequiresFinalizedGroups:
@@ -1666,6 +1687,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       pasteSelectionElements: 'Add {count} elements',
       pasteSingleElementsBlock: 'Add {count} blocks with 1 element',
       pasteSingleElementsStack: 'Add {count} stacks with 1 element',
+      pinProtected: 'PIN protection',
+      pinProtectedTooltip:
+        'When enabled, the system automatically generates a PIN that students must enter when joining the quiz.',
       displayNameTooltip: 'The display name is shown to participants.',
       stackDescriptionTitle: 'Stack {stackIx}: Description (optional)',
       stackDisplayName: 'Stack title',
@@ -1763,6 +1787,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'You can assign your live quiz to a course. If your course is gamified or has assessment enabled, these settings will automatically propagate to the activity. For non-gamified courses or live quizzes without course assignment, you may activate gamification separately. For more information, please also refer to the documentation on <link>gamified live quizzes</link>.',
       liveQuizSelectCourse: 'Select course',
       liveQuizNoCourse: 'No course',
+      assessmentCourseRemovalRestricted:
+        'Activities in assessment mode can only be removed from it by an administrator of the corresponding course.',
       liveQuizEnableGamification:
         'Select a gamified course to activate gamification.',
       liveQuizMultiplier:
@@ -1789,7 +1815,7 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       liveQuizPointsExplanation:
         'These advanced settings allow you to change the point allocation in a live quiz. Please note that all point settings and the illustrations of the point allocation refer to elements with a multiplier of 1x. Larger multipliers are applied to all components except from the standard points. The multiplier set on the activity is already included in the illustration. The answer time starts running as soon as the first participant has answered the question completely correctly. For more information, please consult our <link>documentation</link>.',
       liveQuizGamificationDeactivated:
-        'The gamification is currently not activated for this live quiz. Please select a gamified course or activate gamification manually.',
+        'Gamification is currently not activated for this live quiz. Please select a gamified course or activate gamification manually.',
       liveQuizDefaultPoints: 'Standard points',
       liveQuizDefaultPointsTooltip:
         'Participants in a live quiz receive this number of points for participating in a question. If no sample solution is defined, only standard points are awarded. The default value is {defaultValue}.',
@@ -2238,11 +2264,13 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
     cockpit: {
       liveQuizQRCodes: 'Live Quiz QR-Code',
       qrCodeAccountLinkTitle: 'Account Link',
+      qrCodeAccountLinkPinWarning: 'PIN not included',
+      qrCodeDirectLinkIncluded: 'PIN included',
       qrCodeAccountLinkDescription:
         'Your account link lists all of your active live quizzes. If only one quiz is active, participants will be redirected automatically, otherwise they will be able to choose which quiz to participate in. This link is recommended for addition to slides, as it stays the same as long as you do not change your shortname. For quizzes assigned to a course, the course language will be automatically embedded in the link.',
       qrCodeDirectLinkTitle: 'Direct Link',
       qrCodeDirectLinkDescription:
-        'The direct link leads participants directly and only to this quiz. Once the quiz has been completed, the link will no longer be valid. This link is recommended if you run a lot of quizzes in parallel and want participants to join a specific quiz only. For quizzes assigned to a course, the course language will be automatically embedded in the link.',
+        'The direct link leads participants directly and only to this quiz. Once the quiz has been completed, the link will no longer be valid. This link is recommended if you run a lot of quizzes in parallel and want participants to join a specific quiz only. For quizzes assigned to a course, the course language will be automatically embedded in the link. If a PIN code is enabled, it is directly embedded in the link.',
       firstBlock: 'Start first block',
       blockActive: 'Close block',
       nextBlock: 'Start next block',
@@ -2251,6 +2279,8 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       evaluationResults: 'Evaluation (results)',
       abortLiveQuiz: 'Abort quiz',
       confirmAbortLiveQuiz: 'Abort live quiz {title}?',
+      noAbortionAssessmentQuiz:
+        'Assessment quizzes cannot be aborted once a block has been started. If you have started the quiz for testing purposes, please proceed through all blocks and end the quiz. Users with administrator rights in the assessment course can then reset the live quiz.',
       cancelLiveQuizMessage:
         'Please confirm the deletion of all elements associated with this live quiz and confirm the irreversible abortion of this live quiz.',
       noResponsesToDelete:
@@ -2328,6 +2358,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
         'I understand that moderation will be disabled.',
       confirmPublishUnpublished:
         'I confirm that all {count} unpublished feedback(s) should be published.',
+      confirmCloseBlockTitle: 'Close Active Block',
+      confirmCloseBlock:
+        'Please confirm that the active block should be closed. After your confirmation, the system will not accept any further answers from the students and the complete evaluation (including sample solution) can be displayed.',
     },
     evaluation: {
       evaluationNotYetAvailable:

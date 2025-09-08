@@ -1,5 +1,10 @@
 import { useQuery } from '@apollo/client'
-import { faChalkboardUser } from '@fortawesome/free-solid-svg-icons'
+import {
+  faClipboardCheck,
+  faCrown,
+  faLock,
+} from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetShortnameQuizzesDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
@@ -67,17 +72,81 @@ function Join({
             name: shortname,
           })}
         </H2>
+        <div className="-mt-1 mb-1 flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-sm text-gray-600 sm:mb-0 sm:mt-0">
+          <span className="flex items-center gap-1.5">
+            <FontAwesomeIcon
+              icon={faCrown}
+              className="mb-0.5 w-3.5 text-orange-400"
+            />
+            {t('shared.generic.gamified')}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <FontAwesomeIcon
+              icon={faClipboardCheck}
+              className="text-uzh-red-100 mb-0.5 w-3.5"
+            />
+            {t('shared.generic.assessment')}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <FontAwesomeIcon
+              icon={faLock}
+              className="text-primary-100 mb-0.5 w-3.5"
+            />
+            {t('shared.generic.pinProtected')}
+          </span>
+        </div>
         <div className="flex flex-col gap-1.5">
           {data.shortnameQuizzes.map((quiz) => (
             <LinkButton
               key={quiz.id}
-              icon={faChalkboardUser}
               href={`/session/${quiz.id}`}
               data={{ cy: `join-live-quiz-${quiz.name}` }}
               className={{ root: 'gap-1 text-lg', icon: 'h-5 w-5' }}
             >
-              {quiz.displayName}{' '}
-              {quiz.course && `in ${quiz.course?.displayName}`}
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1 whitespace-normal">
+                  {quiz.displayName}{' '}
+                  {quiz.course && `in ${quiz.course?.displayName}`}
+                </div>
+                <div className="flex shrink-0 items-center gap-2 text-sm text-gray-600">
+                  {quiz.isGamificationEnabled && (
+                    <span
+                      className="flex items-center"
+                      title={t('shared.generic.gamified')}
+                      aria-label={t('shared.generic.gamified')}
+                    >
+                      <FontAwesomeIcon
+                        icon={faCrown}
+                        className="mb-0.5 w-3.5 text-orange-400"
+                      />
+                    </span>
+                  )}
+                  {quiz.isAssessmentEnabled && (
+                    <span
+                      className="flex items-center"
+                      title={t('shared.generic.assessment')}
+                      aria-label={t('shared.generic.assessment')}
+                    >
+                      <FontAwesomeIcon
+                        icon={faClipboardCheck}
+                        className="text-uzh-red-100 mb-0.5 w-3.5"
+                      />
+                    </span>
+                  )}
+                  {quiz.isPinProtected && (
+                    <span
+                      className="flex items-center"
+                      title={t('shared.generic.pinProtected')}
+                      aria-label={t('shared.generic.pinProtected')}
+                    >
+                      <FontAwesomeIcon
+                        icon={faLock}
+                        className="text-primary-100 mb-0.5 w-3.5"
+                      />
+                    </span>
+                  )}
+                </div>
+              </div>
             </LinkButton>
           ))}
         </div>
