@@ -768,6 +768,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       coursePinFormat: 'Kurs-PIN (Format: ### ### ###)',
       coursePinNumerical: 'Bitte geben Sie einen numerischen PIN ein.',
       coursePinRequired: 'Bitte geben Sie den Kurs-PIN ein.',
+      invalidPin: 'PIN ungültig',
+      genericError:
+        'Beim Versuch, dem Kurs beizutreten, ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an Ihren Dozenten.',
     },
     practiceQuiz: {
       flashcardClick: 'Klicken Sie, um die Antwort zu sehen',
