@@ -2,10 +2,11 @@
 
 ## Implementation Status
 
-### ✅ All Tasks Completed - System Ready for Production
+### ✅ All Tasks Completed - System Ready for Production with Affiliation Support
 - [x] **Database Schema**: ParticipantInvitation model and InvitationStatus enum created
 - [x] **Course PIN Logic**: Assessment courses no longer generate PINs (pinCode set to null)
 - [x] **Auto-Accept System**: SSO callback in auth application automatically accepts pending invitations
+- [x] **Affiliation Email Support**: System now checks invitations for all verified organizational emails
 - [x] **GraphQL API**: Queries and mutations for invitation management implemented
 - [x] **CSV Import Tool**: Command-line script for bulk invitation import with validation (moved to proper location)
 - [x] **Backend Validation**: Assessment courses cannot be joined via PIN
@@ -22,7 +23,8 @@
 
 **Backend Logic Implemented:**
 - Course creation sets pinCode=null for assessment courses
-- Auth app auto-accepts invitations during eduID SSO callback
+- Auth app auto-accepts invitations during eduID SSO callback for ALL verified emails (primary + affiliations)
+- Enhanced autoAcceptInvitations function to handle multiple email addresses
 - GraphQL services for invitation CRUD operations
 - CSV import script with email validation and duplicate detection
 
@@ -55,7 +57,8 @@ The Participant Invitation System enables lecturers to invite participants to as
 7. Auth app:
    - Creates/finds participant account
    - Links eduID account (ParticipantAccount)
-   - Checks for pending invitations by email
+   - Creates affiliation accounts for each verified org email
+   - Checks for pending invitations across ALL emails (primary + affiliations)
    - Auto-accepts invitations → Creates Participation entries
    - Sets auth cookie
 8. Redirects to PWA/?enrolled=3 (if 3 new courses enrolled)
@@ -123,12 +126,17 @@ When a participant authenticates via eduID:
 
 ```typescript
 // In eduID SSO callback handler
-const eduIdEmail = userInfo.email.toLowerCase()
+// Extract all relevant emails (primary + affiliations)
+const affiliationEmails = profile.swissEduIDLinkedAffiliationMail || []
+const allEmails = [
+  profile.email,
+  ...affiliationEmails
+].filter(Boolean).map(email => email.toLowerCase())
 
-// Find pending invitations
+// Find pending invitations for any of the emails
 const pendingInvitations = await prisma.participantInvitation.findMany({
   where: { 
-    email: eduIdEmail,
+    email: { in: allEmails },
     status: 'PENDING'
   }
 })

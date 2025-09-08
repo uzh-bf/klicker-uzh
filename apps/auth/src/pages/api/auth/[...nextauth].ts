@@ -152,30 +152,36 @@ function generateRandomString(length: number) {
   return result
 }
 
-async function autoAcceptInvitations(email: string, participantId?: string) {
+async function autoAcceptInvitations(emails: string[], participantId?: string) {
   try {
     if (!participantId) {
-      // Find or create participant account for this email
-      const participant = await prisma.participant.findUnique({
-        where: { email: email.toLowerCase() },
-      })
+      // Find participant account for any of the provided emails
+      let participant = null
+      for (const email of emails) {
+        participant = await prisma.participant.findUnique({
+          where: { email: email.toLowerCase() },
+        })
+        if (participant) break
+      }
+
       if (!participant) {
-        console.log('No participant found for email:', email)
+        console.log('No participant found for emails:', emails)
         return 0
       }
       participantId = participant.id
     }
 
-    // Find all pending invitations for this email
+    // Find all pending invitations for any of the provided emails
     const pendingInvitations = await prisma.participantInvitation.findMany({
       where: {
-        email: email.toLowerCase(),
+        email: { in: emails.map((email) => email.toLowerCase()) },
         status: 'PENDING',
       },
     })
 
     console.log(
-      `Found ${pendingInvitations.length} pending invitations for ${email}`
+      `Found ${pendingInvitations.length} pending invitations for emails:`,
+      emails
     )
 
     let acceptedCount = 0
@@ -218,7 +224,7 @@ async function autoAcceptInvitations(email: string, participantId?: string) {
     if (acceptedCount > 0) {
       await sendTeamsNotifications(
         'auth/invitationAutoAccept',
-        `User ${email} was automatically enrolled in ${acceptedCount} course(s) via invitations.`
+        `User with emails [${emails.join(', ')}] was automatically enrolled in ${acceptedCount} course(s) via invitations.`
       )
     }
 
@@ -341,24 +347,27 @@ async function createOrLinkParticipant(profile: ExtendedProfile) {
       )
     }
 
-    // auto-accept invitations for new users (those created via eduID)
-    if (
-      profileData &&
-      profileData.email &&
-      userData.role === 'PARTICIPANT' &&
-      userData.id
-    ) {
-      try {
-        const acceptedCount = await autoAcceptInvitations(
-          profileData.email,
-          userData.id
-        )
-        console.log(
-          `Auto-accepted ${acceptedCount} invitations for new user ${profileData.email}`
-        )
-      } catch (error) {
-        console.error('Error auto-accepting invitations for new user:', error)
-      }
+    // auto-accept invitations for existing users
+    try {
+      // Extract all relevant emails for invitation checking
+      const affiliationEmails = profile.swissEduIDLinkedAffiliationMail || []
+      const allEmails = [profile.email, ...affiliationEmails]
+        .filter(Boolean)
+        .map((email) => email.toLowerCase())
+
+      const acceptedCount = await autoAcceptInvitations(
+        allEmails,
+        existing.participantId
+      )
+      console.log(
+        `Auto-accepted ${acceptedCount} invitations for existing user with emails:`,
+        allEmails
+      )
+    } catch (error) {
+      console.error(
+        'Error auto-accepting invitations for existing user:',
+        error
+      )
     }
 
     await prisma.participant.update({
@@ -426,6 +435,26 @@ async function createOrLinkParticipant(profile: ExtendedProfile) {
     await createParticipantAffiliations(
       participant.id,
       profile.swissEduIDLinkedAffiliationUniqueID
+    )
+  }
+
+  // auto-accept invitations for newly created participants
+  try {
+    // Extract all relevant emails for invitation checking
+    const affiliationEmails = profile.swissEduIDLinkedAffiliationMail || []
+    const allEmails = [profile.email, ...affiliationEmails]
+      .filter(Boolean)
+      .map((email) => email.toLowerCase())
+
+    const acceptedCount = await autoAcceptInvitations(allEmails, participant.id)
+    console.log(
+      `Auto-accepted ${acceptedCount} invitations for new participant with emails:`,
+      allEmails
+    )
+  } catch (error) {
+    console.error(
+      'Error auto-accepting invitations for new participant:',
+      error
     )
   }
 
