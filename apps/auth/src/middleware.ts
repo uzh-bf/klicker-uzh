@@ -8,14 +8,12 @@ function isValidStudentRedirectUrl(url: string): boolean {
     const allowedDomains = [
       'assessment.klicker.uzh.ch',
       'assessment.klicker.com',
-      // Development
-      'localhost:3000',
-      '127.0.0.1:3000',
+      'localhost:3001',
+      '127.0.0.1:3001',
     ]
 
     return allowedDomains.some(
-      (domain) =>
-        parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`)
+      (domain) => parsed.host === domain || parsed.host.endsWith(`.${domain}`)
     )
   } catch {
     return false
@@ -30,14 +28,12 @@ function isValidLecturerRedirectUrl(url: string): boolean {
     const allowedDomains = [
       'manage.klicker.uzh.ch',
       'manage.klicker.com',
-      // Development
-      '127.0.0.1:3001',
-      'localhost:3001',
+      'localhost:3002',
+      '127.0.0.1:3002',
     ]
 
     return allowedDomains.some(
-      (domain) =>
-        parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`)
+      (domain) => parsed.host === domain || parsed.host.endsWith(`.${domain}`)
     )
   } catch {
     return false
