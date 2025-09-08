@@ -1,0 +1,64 @@
+meta {
+  name: Missing Required Field
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{AUDIT_URL}}/audit
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Internal-Token: {{INTERNAL_TOKEN}}
+}
+
+body:json {
+  {
+    "tenantId": "{{TENANT_ID}}",
+    "subject": "user:test"
+  }
+}
+
+assert {
+  res.status: 400
+  res.body.error: contains action
+}
+
+tests {
+  test("Missing required field is rejected", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+  
+  test("Error message indicates missing action", function() {
+    const body = res.getBody();
+    const errorMessage = body.error || body.message || JSON.stringify(body);
+    expect(errorMessage.toLowerCase()).to.contain('action');
+  });
+  
+  test("Validation error is clear and helpful", function() {
+    const body = res.getBody();
+    expect(body).to.have.property('error');
+    expect(body.error).to.be.a('string');
+    expect(body.error.length).to.be.greaterThan(0);
+  });
+}
+
+docs {
+  Test validation of required fields.
+  
+  This request is missing the required "action" field.
+  
+  Required fields for audit events:
+  - tenantId: Organization/tenant identifier
+  - subject: Who/what performed the action
+  - action: What action was performed
+  
+  Expected behavior:
+  - HTTP 400 Bad Request status
+  - Clear error message indicating missing field
+  - No event should be created
+  - Fast validation response (no storage interaction)
+}

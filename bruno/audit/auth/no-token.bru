@@ -1,0 +1,50 @@
+meta {
+  name: No Authentication Token
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{AUDIT_URL}}/audit
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "tenantId": "{{TENANT_ID}}",
+    "subject": "user:test",
+    "action": "test.action"
+  }
+}
+
+assert {
+  res.status: 401
+  res.body.error: contains unauthorized
+}
+
+tests {
+  test("Request without token is rejected", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+  
+  test("Error message indicates missing authorization", function() {
+    const body = res.getBody();
+    expect(body.error || body.message).to.match(/unauthorized|token|auth/i);
+  });
+}
+
+docs {
+  Test authentication enforcement - requests without tokens should be rejected.
+  
+  Expected behavior:
+  - HTTP 401 Unauthorized status
+  - Error message indicating missing authentication
+  - No audit event should be created
+  
+  This validates the security boundary of the audit service.
+}

@@ -1,0 +1,92 @@
+meta {
+  name: Complete Authentication Flow
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{AUDIT_URL}}/audit
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Internal-Token: {{INTERNAL_TOKEN}}
+}
+
+body:json {
+  {
+    "tenantId": "{{TENANT_ID}}",
+    "subject": "participant:{{USER_EMAIL}}",
+    "action": "auth.participant.login.success",
+    "userId": "{{USER_ID}}",
+    "sessionId": "session-{{$timestamp}}",
+    "attributes": {
+      "method": "password",
+      "ip": "127.0.0.1",
+      "userAgent": "Mozilla/5.0 (Test Browser)",
+      "loginDuration": 0.245,
+      "twoFactorUsed": false,
+      "firstLogin": false
+    }
+  }
+}
+
+assert {
+  res.status: 202
+  res.body.status: eq accepted
+  res.body.eventId: isString
+}
+
+tests {
+  test("Login event is logged successfully", function() {
+    expect(res.getStatus()).to.equal(202);
+    expect(res.getBody().eventId).to.be.a('string');
+  });
+  
+  test("Authentication flow can be tracked", function() {
+    const sessionId = req.body.sessionId;
+    bru.setVar("currentSessionId", sessionId);
+    expect(sessionId).to.contain('session-');
+  });
+}
+
+script:post-response {
+  if (res.body && res.body.eventId) {
+    bru.setVar("loginEventId", res.body.eventId);
+    bru.setVar("authFlowSessionId", req.body.sessionId);
+    bru.setVar("authFlowUserId", req.body.userId);
+    
+    console.log("🔐 Authentication flow started");
+    console.log("Login Event ID:", res.body.eventId);
+    console.log("Session ID:", req.body.sessionId);
+    
+    // Simulate some session activity time
+    const loginTime = Date.now();
+    bru.setVar("loginTimestamp", loginTime);
+  }
+}
+
+docs {
+  Complete authentication flow scenario test.
+  
+  This test simulates a complete user authentication flow:
+  1. User login attempt (this request)
+  2. Session activity (would be follow-up requests)
+  3. User logout (would be final request)
+  
+  Variables set for follow-up requests:
+  - loginEventId: Reference to login event
+  - authFlowSessionId: Session to track through flow
+  - authFlowUserId: User ID for session tracking
+  - loginTimestamp: When login occurred
+  
+  This demonstrates:
+  - Scenario-based testing with Bruno
+  - Variable passing between requests
+  - Session tracking across multiple events
+  - Complete audit trail creation
+  
+  Run this test first in the authentication flow sequence.
+}

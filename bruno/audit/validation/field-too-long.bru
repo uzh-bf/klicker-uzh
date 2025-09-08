@@ -1,0 +1,69 @@
+meta {
+  name: Field Too Long
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{AUDIT_URL}}/audit
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Internal-Token: {{INTERNAL_TOKEN}}
+}
+
+body:json {
+  {
+    "tenantId": "this-tenant-id-is-way-too-long-and-exceeds-the-maximum-allowed-length-of-100-characters-which-should-cause-validation-to-fail-because-it-is-unreasonably-long-for-a-tenant-identifier",
+    "subject": "user:test",
+    "action": "test.action"
+  }
+}
+
+assert {
+  res.status: 400
+  res.body.error: contains length
+}
+
+tests {
+  test("Field length validation is enforced", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+  
+  test("Error message indicates length validation", function() {
+    const body = res.getBody();
+    const errorMessage = body.error || body.message || JSON.stringify(body);
+    const lowerMessage = errorMessage.toLowerCase();
+    expect(lowerMessage).to.match(/length|long|exceed|limit|maximum/);
+  });
+  
+  test("Specific field causing error is identified", function() {
+    const body = res.getBody();
+    const errorMessage = body.error || body.message || JSON.stringify(body);
+    const lowerMessage = errorMessage.toLowerCase();
+    expect(lowerMessage).to.match(/tenant|tenantid/);
+  });
+}
+
+docs {
+  Test field length validation limits.
+  
+  This request has a tenantId that exceeds the maximum allowed length.
+  
+  Field length limits (example):
+  - tenantId: 100 characters max
+  - subject: 200 characters max
+  - action: 100 characters max
+  - resourceId: 200 characters max
+  - sessionId: 100 characters max
+  - userId: 100 characters max
+  
+  Expected behavior:
+  - HTTP 400 Bad Request status
+  - Error message indicating field length violation
+  - Specific field name mentioned in error
+  - No event should be created
+}

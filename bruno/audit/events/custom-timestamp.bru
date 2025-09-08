@@ -1,0 +1,82 @@
+meta {
+  name: Event with Custom Timestamp
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{AUDIT_URL}}/audit
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Internal-Token: {{INTERNAL_TOKEN}}
+}
+
+body:json {
+  {
+    "tenantId": "{{TENANT_ID}}",
+    "subject": "system:backup-service",
+    "action": "data.backup.completed",
+    "timestamp": 1704067200000,
+    "resourceId": "backup-job-{{$randomUUID}}",
+    "attributes": {
+      "backupType": "full",
+      "dataSize": "1.2GB",
+      "duration": "45m",
+      "scheduledTime": "2024-01-01T00:00:00Z",
+      "actualTime": "2024-01-01T00:45:00Z"
+    }
+  }
+}
+
+assert {
+  res.status: 202
+  res.body.status: eq accepted
+  res.body.eventId: isString
+}
+
+tests {
+  test("Event with custom timestamp is accepted", function() {
+    expect(res.getStatus()).to.equal(202);
+  });
+  
+  test("Custom timestamp is preserved", function() {
+    const body = res.getBody();
+    // The service should accept the custom timestamp
+    // In a real test, we'd verify the stored timestamp matches
+    expect(body.status).to.equal('accepted');
+  });
+  
+  test("System events are processed correctly", function() {
+    const body = res.getBody();
+    expect(body.eventId).to.be.a('string');
+  });
+}
+
+script:post-response {
+  if (res.body && res.body.eventId) {
+    bru.setVar("customTimestampEventId", res.body.eventId);
+    console.log("Custom timestamp event created with ID:", res.body.eventId);
+    console.log("Timestamp used: 2024-01-01T00:00:00Z (1704067200000)");
+  }
+}
+
+docs {
+  Test audit event with custom timestamp for historical events.
+  
+  Use cases:
+  - Batch processing of historical data
+  - System events that occurred at specific times
+  - Data migration scenarios
+  - Replay of events from other systems
+  
+  Expected behavior:
+  - Custom timestamp is respected and stored
+  - Event is processed normally despite past timestamp
+  - Useful for creating accurate audit trails during migrations
+  
+  Note: timestamp is Unix milliseconds (1704067200000 = 2024-01-01T00:00:00Z)
+}

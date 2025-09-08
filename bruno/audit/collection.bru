@@ -1,0 +1,50 @@
+meta {
+  name: Audit Service API Tests
+  type: collection
+  version: 1.0.0
+}
+
+auth {
+  mode: none
+}
+
+script:pre-request {
+  // Set default base URL if not set in environment
+  if (!bru.getEnvVar("AUDIT_URL")) {
+    bru.setVar("AUDIT_URL", "http://localhost:7080");
+  }
+  
+  // Set default auth token if not set in environment
+  if (!bru.getEnvVar("INTERNAL_TOKEN")) {
+    bru.setVar("INTERNAL_TOKEN", "test-secret-token-123");
+  }
+}
+
+script:post-response {
+  // Log response for debugging (can be disabled in production)
+  if (res.status >= 400) {
+    console.log(`Request failed: ${req.method} ${req.url} - ${res.status} ${res.statusText}`);
+  }
+}
+
+docs {
+  KlickerUZH Audit Service API Test Collection
+  
+  This collection contains comprehensive tests for the audit logging service, including:
+  - Health and readiness checks
+  - Authentication and authorization tests
+  - Event submission validation
+  - Error handling scenarios
+  - Performance and load tests
+  
+  Prerequisites:
+  - Audit service running (docker-compose up -d + pnpm dev in apps/audit)
+  - Azurite storage emulator running
+  - Environment variables configured (see environments/ folder)
+  
+  Usage:
+  1. Select appropriate environment (local/staging/production)
+  2. Run tests individually or as collection
+  3. Check assertions for validation
+  4. Review response data and logs
+}

@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { DisplayMode } from '@klicker-uzh/types'
 import {
+  AuditClient,
   getInitialInstanceResults,
   getInitialInstanceStatistics,
   processElementData,
@@ -14,6 +15,9 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { sendTeamsNotifications } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
+
+// Initialize audit client for authentication event logging
+const auditClient = new AuditClient()
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -30,6 +34,20 @@ export async function logoutUser(_: any, ctx: ContextWithUser) {
   ctx.res.cookie('next-auth.session-token', 'logoutString', {
     ...COOKIE_SETTINGS,
     maxAge: 0,
+  })
+
+  // Log user logout event
+  await auditClient.log({
+    tenantId: 'klicker-uzh', // TODO: get from context when multi-tenant support is added
+    subject: `user:${ctx.user.email || ctx.user.sub}`,
+    action: 'auth.user.logout',
+    userId: ctx.user.sub,
+    attributes: {
+      method: 'session_cookie_clear',
+      ip: ctx.req?.ip,
+      userAgent: ctx.req?.headers?.['user-agent'],
+      userRole: ctx.user.role,
+    }
   })
 
   return ctx.user.sub
@@ -103,11 +121,41 @@ export async function loginParticipant(
   })
 
   const participant = participantWithUsername || participantWithEmail
-  if (!participant) return null
+  
+  // Log failed login attempt - participant not found
+  if (!participant) {
+    await auditClient.log({
+      tenantId: 'klicker-uzh', // TODO: get from context when multi-tenant support is added
+      subject: `participant:${usernameOrEmail}`,
+      action: 'auth.participant.login.failed',
+      attributes: {
+        method: 'password',
+        reason: 'user_not_found',
+        ip: ctx.req?.ip,
+        userAgent: ctx.req?.headers?.['user-agent'],
+      }
+    })
+    return null
+  }
 
   const isLoginValid = await bcrypt.compare(password, participant.password)
 
-  if (!isLoginValid) return null
+  // Log failed login attempt - invalid password
+  if (!isLoginValid) {
+    await auditClient.log({
+      tenantId: 'klicker-uzh', // TODO: get from context when multi-tenant support is added
+      subject: `participant:${participant.username || participant.email}`,
+      action: 'auth.participant.login.failed',
+      userId: participant.id,
+      attributes: {
+        method: 'password',
+        reason: 'invalid_password',
+        ip: ctx.req?.ip,
+        userAgent: ctx.req?.headers?.['user-agent'],
+      }
+    })
+    return null
+  }
 
   await doParticipantLogin(
     {
@@ -116,6 +164,22 @@ export async function loginParticipant(
     },
     ctx
   )
+
+  // Log successful login attempt
+  await auditClient.log({
+    tenantId: 'klicker-uzh', // TODO: get from context when multi-tenant support is added
+    subject: `participant:${participant.username || participant.email}`,
+    action: 'auth.participant.login.success',
+    userId: participant.id,
+    attributes: {
+      method: 'password',
+      participantId: participant.id,
+      locale: participant.locale,
+      ip: ctx.req?.ip,
+      userAgent: ctx.req?.headers?.['user-agent'],
+      lastLoginAt: participant.lastLoginAt?.toISOString(),
+    }
+  })
 
   // TODO: return more data (e.g. Avatar etc.)
   return participant.id
@@ -135,6 +199,20 @@ export async function loginTemporaryParticipant(
   })
 
   if (!liveQuiz) {
+    await auditClient.log({
+      tenantId: 'klicker-uzh',
+      subject: `temp-participant:${pseudonym}`,
+      action: 'auth.temporary.login.failed',
+      sessionId: liveQuizId,
+      attributes: {
+        method: 'temporary',
+        reason: 'quiz_not_found_or_not_published',
+        liveQuizId,
+        pseudonym: pseudonym.trim(),
+        ip: ctx.req?.ip,
+        userAgent: ctx.req?.headers?.['user-agent'],
+      }
+    })
     return null
   }
 
@@ -144,6 +222,20 @@ export async function loginTemporaryParticipant(
   })
 
   if (existingParticipant) {
+    await auditClient.log({
+      tenantId: 'klicker-uzh',
+      subject: `temp-participant:${pseudonym}`,
+      action: 'auth.temporary.login.failed',
+      sessionId: liveQuizId,
+      attributes: {
+        method: 'temporary',
+        reason: 'pseudonym_taken_by_participant',
+        liveQuizId,
+        pseudonym: pseudonym.trim(),
+        ip: ctx.req?.ip,
+        userAgent: ctx.req?.headers?.['user-agent'],
+      }
+    })
     return null // error: 'pseudonym already taken'
   }
 
@@ -156,6 +248,20 @@ export async function loginTemporaryParticipant(
     })
 
   if (existingTemporaryParticipant) {
+    await auditClient.log({
+      tenantId: 'klicker-uzh',
+      subject: `temp-participant:${pseudonym}`,
+      action: 'auth.temporary.login.failed',
+      sessionId: liveQuizId,
+      attributes: {
+        method: 'temporary',
+        reason: 'pseudonym_taken_by_temporary_participant',
+        liveQuizId,
+        pseudonym: pseudonym.trim(),
+        ip: ctx.req?.ip,
+        userAgent: ctx.req?.headers?.['user-agent'],
+      }
+    })
     return null // error: 'pseudonym already taken'
   }
 
@@ -176,6 +282,25 @@ export async function loginTemporaryParticipant(
   // create and return a new valid token for the temporary participant
   const jwt = await createTemporaryParticipantToken(temporaryParticipant.id)
   ctx.res.cookie('temporary_participant_token', jwt, COOKIE_SETTINGS)
+
+  // Log successful temporary participant login
+  await auditClient.log({
+    tenantId: 'klicker-uzh',
+    subject: `temp-participant:${pseudonym}`,
+    action: 'auth.temporary.login.success',
+    sessionId: liveQuizId,
+    userId: temporaryParticipant.id,
+    attributes: {
+      method: 'temporary',
+      liveQuizId,
+      pseudonym: pseudonym.trim(),
+      avatar: avatar || null,
+      temporaryParticipantId: temporaryParticipant.id,
+      ip: ctx.req?.ip,
+      userAgent: ctx.req?.headers?.['user-agent'],
+    }
+  })
+
   return jwt
 }
 
@@ -289,6 +414,19 @@ export async function loginParticipantMagicLink(
   }
 
   if (!tokenData.sub || tokenData.scope !== DB.UserLoginScope.OTP) {
+    await auditClient.log({
+      tenantId: 'klicker-uzh',
+      subject: `participant:unknown`,
+      action: 'auth.magiclink.login.failed',
+      attributes: {
+        method: 'magic_link',
+        reason: 'invalid_token_or_scope',
+        tokenValid: !!tokenData.sub,
+        scopeValid: tokenData.scope === DB.UserLoginScope.OTP,
+        ip: ctx.req?.ip,
+        userAgent: ctx.req?.headers?.['user-agent'],
+      }
+    })
     return null
   }
 
@@ -307,8 +445,40 @@ export async function loginParticipantMagicLink(
       ctx
     )
 
+    // Log successful magic link login
+    await auditClient.log({
+      tenantId: 'klicker-uzh',
+      subject: `participant:${participant.username || participant.email}`,
+      action: 'auth.magiclink.login.success',
+      userId: participant.id,
+      attributes: {
+        method: 'magic_link',
+        participantId: participant.id,
+        locale: participant.locale,
+        tokenUsed: true,
+        ip: ctx.req?.ip,
+        userAgent: ctx.req?.headers?.['user-agent'],
+        lastLoginAt: participant.lastLoginAt?.toISOString(),
+      }
+    })
+
     return participant.id
   }
+
+  // Log failed login - participant not found
+  await auditClient.log({
+    tenantId: 'klicker-uzh',
+    subject: `participant:${tokenData.sub}`,
+    action: 'auth.magiclink.login.failed',
+    userId: tokenData.sub,
+    attributes: {
+      method: 'magic_link',
+      reason: 'participant_not_found',
+      tokenSubject: tokenData.sub,
+      ip: ctx.req?.ip,
+      userAgent: ctx.req?.headers?.['user-agent'],
+    }
+  })
 
   return null
 }
@@ -360,6 +530,20 @@ export async function logoutParticipant(ctx: ContextWithUser) {
     maxAge: 0,
   })
 
+  // Log participant logout event
+  await auditClient.log({
+    tenantId: 'klicker-uzh',
+    subject: `participant:${ctx.user.email || ctx.user.sub}`,
+    action: 'auth.participant.logout',
+    userId: ctx.user.sub,
+    attributes: {
+      method: 'session_cookie_clear',
+      ip: ctx.req?.ip,
+      userAgent: ctx.req?.headers?.['user-agent'],
+      userRole: ctx.user.role,
+    }
+  })
+
   return ctx.user.sub
 }
 
@@ -369,6 +553,20 @@ export async function logoutTemporaryParticipant(
 ) {
   // verify that the requesting user is a temporary participant
   if (ctx.user.role !== DB.UserRole.TEMPORARY_PARTICIPANT) {
+    await auditClient.log({
+      tenantId: 'klicker-uzh',
+      subject: `user:${ctx.user.email || ctx.user.sub}`,
+      action: 'auth.temporary.logout.failed',
+      userId: ctx.user.sub,
+      attributes: {
+        method: 'temporary',
+        reason: 'not_temporary_participant',
+        userRole: ctx.user.role,
+        liveQuizId,
+        ip: ctx.req?.ip,
+        userAgent: ctx.req?.headers?.['user-agent'],
+      }
+    })
     return false // not a temporary participant
   }
 
@@ -378,6 +576,19 @@ export async function logoutTemporaryParticipant(
   })
 
   if (!lbEntry) {
+    await auditClient.log({
+      tenantId: 'klicker-uzh',
+      subject: `temp-participant:${ctx.user.sub}`,
+      action: 'auth.temporary.logout.failed',
+      userId: ctx.user.sub,
+      attributes: {
+        method: 'temporary',
+        reason: 'leaderboard_entry_not_found',
+        liveQuizId,
+        ip: ctx.req?.ip,
+        userAgent: ctx.req?.headers?.['user-agent'],
+      }
+    })
     return false // no temporary participant found
   }
 
@@ -390,6 +601,24 @@ export async function logoutTemporaryParticipant(
   ctx.res.cookie('temporary_participant_token', 'logoutString', {
     ...COOKIE_SETTINGS,
     maxAge: 0,
+  })
+
+  // Log successful temporary participant logout
+  await auditClient.log({
+    tenantId: 'klicker-uzh',
+    subject: `temp-participant:${lbEntry.username}`,
+    action: 'auth.temporary.logout.success',
+    userId: ctx.user.sub,
+    sessionId: liveQuizId,
+    attributes: {
+      method: 'temporary',
+      liveQuizId,
+      temporaryParticipantId: ctx.user.sub,
+      username: lbEntry.username,
+      score: lbEntry.score,
+      ip: ctx.req?.ip,
+      userAgent: ctx.req?.headers?.['user-agent'],
+    }
   })
 
   return true
@@ -778,6 +1007,21 @@ export async function loginParticipantWithLti(
     console.log('existingParticipant', existingParticipant)
 
     if (!existingParticipant) {
+      await auditClient.log({
+        tenantId: 'klicker-uzh',
+        subject: `participant:${ltiData.email}`,
+        action: 'auth.lti.login.failed',
+        attributes: {
+          method: 'lti',
+          reason: 'participant_not_found_by_email',
+          ltiSubject: ltiData.sub,
+          email: ltiData.email,
+          ltiScope: ltiData.scope,
+          courseId,
+          ip: ctx.req?.ip,
+          userAgent: ctx.req?.headers?.['user-agent'],
+        }
+      })
       return null
     }
 
@@ -797,7 +1041,24 @@ export async function loginParticipantWithLti(
     })
   }
 
-  if (!account?.participant) return null
+  if (!account?.participant) {
+    await auditClient.log({
+      tenantId: 'klicker-uzh',
+      subject: `participant:${ltiData.email || ltiData.sub}`,
+      action: 'auth.lti.login.failed',
+      attributes: {
+        method: 'lti',
+        reason: 'no_participant_account_found',
+        ltiSubject: ltiData.sub,
+        email: ltiData.email,
+        ltiScope: ltiData.scope,
+        courseId,
+        ip: ctx.req?.ip,
+        userAgent: ctx.req?.headers?.['user-agent'],
+      }
+    })
+    return null
+  }
 
   if (courseId) {
     const participation = await ctx.prisma.participation.upsert({
@@ -832,6 +1093,27 @@ export async function loginParticipantWithLti(
     },
     ctx
   )
+
+  // Log successful LTI login
+  await auditClient.log({
+    tenantId: 'klicker-uzh',
+    subject: `participant:${account.participant.username || account.participant.email}`,
+    action: 'auth.lti.login.success',
+    userId: account.participant.id,
+    attributes: {
+      method: 'lti',
+      participantId: account.participant.id,
+      ltiSubject: ltiData.sub,
+      ltiScope: ltiData.scope,
+      email: ltiData.email,
+      courseId,
+      participationCreated: !!courseId,
+      locale: account.participant.locale,
+      ip: ctx.req?.ip,
+      userAgent: ctx.req?.headers?.['user-agent'],
+      lastLoginAt: account.participant.lastLoginAt?.toISOString(),
+    }
+  })
 
   return {
     participant: account.participant,

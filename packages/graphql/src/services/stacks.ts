@@ -52,6 +52,7 @@ import type {
 } from '@klicker-uzh/types'
 import { FlashcardCorrectness, StackFeedbackStatus } from '@klicker-uzh/types'
 import {
+  AuditClient,
   getInitialInstanceResults,
   PrismaTransactionClient,
 } from '@klicker-uzh/util'
@@ -2599,6 +2600,9 @@ async function updateLeaderboardOnQuestionResponse({
   })
 }
 
+// Initialize audit client for response tracking
+const auditClient = new AuditClient()
+
 export async function respondToQuestion(
   {
     id,
@@ -2617,7 +2621,34 @@ export async function respondToQuestion(
   },
   ctx: Context
 ) {
-  const result = await ctx.prisma.$transaction(async (prisma) => {
+  const startTime = Date.now()
+  const participantId = ctx.user?.sub
+  const sessionId = ctx.req?.headers?.['x-session-id'] as string
+  
+  // Log response submission attempt
+  if (participantId && ctx.user?.role === DB.UserRole.PARTICIPANT) {
+    await auditClient.log({
+      tenantId: 'klicker-uzh',
+      subject: `participant:${participantId}`,
+      action: 'response.submitted',
+      resourceId: id.toString(),
+      sessionId,
+      userId: participantId,
+      attributes: {
+        questionId: id.toString(),
+        courseId,
+        submissionType: 'manual',
+        answerTime,
+        timestamp: new Date().toISOString(),
+        // Include response hash for verification (not the actual response for privacy)
+        responseHash: createHash('sha256').update(JSON.stringify(response)).digest('hex')
+      }
+    })
+  }
+
+  let result
+  try {
+    result = await ctx.prisma.$transaction(async (prisma) => {
     const existingInstance = await getValidateElementInstance({
       prisma,
       id,
@@ -2627,6 +2658,23 @@ export async function respondToQuestion(
 
     // if the instance does not exist or the elementData is not defined, return early
     if (!existingInstance || !existingInstance?.elementData) {
+      // Log validation failure
+      if (participantId && ctx.user?.role === DB.UserRole.PARTICIPANT) {
+        await auditClient.log({
+          tenantId: 'klicker-uzh',
+          subject: `participant:${participantId}`,
+          action: 'response.validation.failed',
+          resourceId: id.toString(),
+          sessionId,
+          userId: participantId,
+          attributes: {
+            questionId: id.toString(),
+            courseId,
+            validationError: !existingInstance ? 'instance_not_found' : 'element_data_missing',
+            timestamp: new Date().toISOString(),
+          }
+        })
+      }
       return null
     }
 
@@ -2765,6 +2813,25 @@ export async function respondToQuestion(
       })
 
       if (!newAggResponses) {
+        // Log validation failure for aggregated responses computation
+        if (participantId && ctx.user?.role === DB.UserRole.PARTICIPANT) {
+          await auditClient.log({
+            tenantId: 'klicker-uzh',
+            subject: `participant:${participantId}`,
+            action: 'response.validation.failed',
+            resourceId: id.toString(),
+            sessionId,
+            userId: participantId,
+            attributes: {
+              questionId: id.toString(),
+              courseId,
+              validationError: 'aggregated_responses_computation_failed',
+              elementType: updatedInstance.elementType,
+              timestamp: new Date().toISOString(),
+            }
+          })
+        }
+        
         throw new Error(
           `Failed to compute aggregated responses for question type ${updatedInstance.elementType}`
         )
@@ -2866,7 +2933,53 @@ export async function respondToQuestion(
     }
   })
 
+  // Log successful response save
+  if (result && participantId && ctx.user?.role === DB.UserRole.PARTICIPANT) {
+    await auditClient.log({
+      tenantId: 'klicker-uzh',
+      subject: `participant:${participantId}`,
+      action: 'response.saved',
+      resourceId: id.toString(),
+      sessionId,
+      userId: participantId,
+      attributes: {
+        questionId: id.toString(),
+        courseId,
+        saveLatency: Date.now() - startTime,
+        timestamp: new Date().toISOString(),
+        hasEvaluation: !!result.evaluation,
+        score: result.evaluation?.score
+      }
+    })
+  }
+
   return result
+  } catch (error) {
+    // Log failed response save
+    if (participantId && ctx.user?.role === DB.UserRole.PARTICIPANT) {
+      await auditClient.log({
+        tenantId: 'klicker-uzh',
+        subject: `participant:${participantId}`,
+        action: 'response.failed',
+        resourceId: id.toString(),
+        sessionId,
+        userId: participantId,
+        attributes: {
+          questionId: id.toString(),
+          courseId,
+          errorCode: (error as any).code || 'UNKNOWN_ERROR',
+          errorMessage: (error as Error).message,
+          errorCategory: 'database',
+          timestamp: new Date().toISOString(),
+          attemptNumber: 1,
+          willRetry: false
+        }
+      })
+    }
+    
+    // Re-throw the error for GraphQL error handling
+    throw error
+  }
 }
 // #endregion
 

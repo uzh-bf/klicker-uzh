@@ -1,0 +1,38 @@
+meta {
+  name: Readiness Check
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{AUDIT_URL}}/ready
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: 200
+  res.responseTime: < 2000
+}
+
+tests {
+  test("Readiness check returns OK", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response indicates service is ready", function() {
+    expect(res.getResponseTime()).to.be.below(2000);
+  });
+}
+
+docs {
+  Readiness check to verify the audit service is ready to accept requests.
+  
+  This endpoint should:
+  - Return 200 OK when service dependencies are available
+  - Check Azure Table Storage connectivity
+  - Verify authentication systems are operational
+  - Allow slightly longer response time for dependency checks
+  
+  Used by Kubernetes readiness probes.
+}

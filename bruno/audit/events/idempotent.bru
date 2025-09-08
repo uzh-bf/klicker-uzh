@@ -1,0 +1,85 @@
+meta {
+  name: Idempotent Event (Custom EventId)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{AUDIT_URL}}/audit
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Internal-Token: {{INTERNAL_TOKEN}}
+}
+
+body:json {
+  {
+    "tenantId": "{{TENANT_ID}}",
+    "subject": "student:bob.wilson@uzh.ch",
+    "action": "answer.submitted",
+    "eventId": "answer-submission-unique-001",
+    "resourceId": "question-42",
+    "sessionId": "live-session-xyz",
+    "userId": "student-789",
+    "attributes": {
+      "questionType": "multiple-choice",
+      "answerValue": "B",
+      "timeSpent": 23,
+      "confident": true,
+      "submissionAttempt": 1
+    }
+  }
+}
+
+assert {
+  res.status: 202
+  res.body.status: eq accepted
+  res.body.eventId: eq answer-submission-unique-001
+}
+
+tests {
+  test("Event with custom eventId is accepted", function() {
+    expect(res.getStatus()).to.equal(202);
+  });
+  
+  test("Custom eventId is preserved", function() {
+    const body = res.getBody();
+    expect(body.eventId).to.equal("answer-submission-unique-001");
+  });
+  
+  test("Response indicates successful processing", function() {
+    const body = res.getBody();
+    expect(body.status).to.equal('accepted');
+  });
+}
+
+script:post-response {
+  if (res.body && res.body.eventId) {
+    bru.setVar("idempotentEventId", res.body.eventId);
+    console.log("Idempotent event created with ID:", res.body.eventId);
+    
+    // Store the exact request data for repeat test
+    bru.setVar("idempotentRequestBody", JSON.stringify(req.body));
+  }
+}
+
+docs {
+  Test idempotent event processing with custom eventId.
+  
+  Idempotency ensures:
+  - Same eventId always produces same result
+  - Duplicate submissions don't create multiple events
+  - Safe retry behavior for client applications
+  - Consistent event IDs for deterministic processing
+  
+  Use cases:
+  - Client retry logic
+  - Batch processing jobs
+  - Event replay scenarios
+  - Ensuring exactly-once semantics
+  
+  This test should be followed by the repeat-idempotent test.
+}

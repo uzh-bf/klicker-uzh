@@ -1,0 +1,141 @@
+meta {
+  name: Response Tracking Scenario
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{AUDIT_URL}}/audit
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Internal-Token: {{INTERNAL_TOKEN}}
+}
+
+body:json {
+  {
+    "tenantId": "{{TENANT_ID}}",
+    "subject": "student:alice.student@uzh.ch",
+    "action": "response.submitted",
+    "resourceId": "question-mc-001",
+    "userId": "student-alice-123",
+    "sessionId": "live-session-{{$timestamp}}",
+    "attributes": {
+      "questionType": "multiple-choice",
+      "questionText": "What is the time complexity of binary search?",
+      "responseValue": "O(log n)",
+      "isCorrect": true,
+      "responseTime": 12.5,
+      "confidence": 0.85,
+      "attemptNumber": 1,
+      "hintsUsed": 0,
+      "partialCredit": 1.0,
+      "metadata": {
+        "quizId": "quiz-data-structures-midterm",
+        "sectionId": "algorithms",
+        "difficultyLevel": "intermediate",
+        "pointValue": 2.0
+      }
+    }
+  }
+}
+
+assert {
+  res.status: 202
+  res.body.status: eq accepted
+  res.body.eventId: isString
+}
+
+tests {
+  test("Student response is tracked", function() {
+    expect(res.getStatus()).to.equal(202);
+    expect(res.getBody().eventId).to.be.a('string');
+  });
+  
+  test("Response metadata is complete", function() {
+    const responseTime = req.body.attributes.responseTime;
+    const confidence = req.body.attributes.confidence;
+    
+    expect(responseTime).to.be.a('number');
+    expect(confidence).to.be.within(0, 1);
+  });
+}
+
+script:post-response {
+  if (res.body && res.body.eventId) {
+    const studentId = req.body.userId;
+    const questionId = req.body.resourceId;
+    const sessionId = req.body.sessionId;
+    const responseTime = req.body.attributes.responseTime;
+    const isCorrect = req.body.attributes.isCorrect;
+    
+    // Store response tracking data
+    bru.setVar("responseEventId", res.body.eventId);
+    bru.setVar("trackingStudentId", studentId);
+    bru.setVar("trackingQuestionId", questionId);
+    bru.setVar("trackingSessionId", sessionId);
+    bru.setVar("studentResponseTime", responseTime);
+    
+    console.log("📊 Response tracking captured");
+    console.log("Response Event ID:", res.body.eventId);
+    console.log("Student ID:", studentId);
+    console.log("Question ID:", questionId);
+    console.log("Response Time:", responseTime + "s");
+    console.log("Correct:", isCorrect ? "✅" : "❌");
+    
+    // Learning analytics insights
+    if (responseTime < 5) {
+      console.log("📈 Fast response - likely confident or guessing");
+    } else if (responseTime > 30) {
+      console.log("📉 Slow response - may indicate difficulty");
+    }
+    
+    // Set up for additional tracking scenarios
+    console.log("Follow-up tracking scenarios:");
+    console.log("- Multiple responses per student");
+    console.log("- Response patterns analysis"); 
+    console.log("- Session completion tracking");
+  }
+}
+
+docs {
+  Response tracking scenario for learning analytics.
+  
+  This test captures detailed student response data including:
+  
+  Response Metadata:
+  - Response content and correctness
+  - Time spent on question
+  - Confidence level and attempt number
+  - Hints used and partial credit earned
+  
+  Educational Context:
+  - Question difficulty and point value
+  - Quiz and section identification
+  - Learning objective alignment
+  
+  Analytics Use Cases:
+  - Student performance patterns
+  - Question difficulty analysis
+  - Time-on-task measurements
+  - Confidence vs. performance correlation
+  - Hint effectiveness evaluation
+  
+  Compliance and Assessment:
+  - Academic integrity monitoring
+  - Fair assessment verification
+  - Accommodation tracking
+  - Grade calculation audit trail
+  
+  Variables for pattern analysis:
+  - responseEventId: This response event
+  - trackingStudentId: Student for pattern analysis
+  - trackingQuestionId: Question performance data
+  - trackingSessionId: Session context
+  - studentResponseTime: Performance metric
+  
+  This supports educational research and learning optimization.
+}

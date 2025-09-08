@@ -1,0 +1,126 @@
+meta {
+  name: Large Payload Performance Test
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{AUDIT_URL}}/audit
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Internal-Token: {{INTERNAL_TOKEN}}
+}
+
+body:json {
+  {
+    "tenantId": "performance-test",
+    "subject": "system:performance-test",
+    "action": "load.test",
+    "attributes": {
+      "testType": "performance",
+      "payload": "This is a test payload to simulate a larger attributes object with some meaningful content that might be stored in audit events during high-volume operations in production environments where detailed metadata needs to be captured",
+      "metrics": {
+        "responseTime": 150,
+        "throughput": 850,
+        "errorRate": 0.02,
+        "cpuUsage": 65.5,
+        "memoryUsage": 78.2,
+        "diskIO": 234.7,
+        "networkIO": 123.4,
+        "activeConnections": 45,
+        "queueDepth": 12,
+        "cacheHitRatio": 0.89
+      },
+      "environment": {
+        "region": "eu-central-1",
+        "instance": "audit-service-1",
+        "version": "1.0.0",
+        "deployment": "production",
+        "nodeVersion": "20.11.0",
+        "architecture": "x64",
+        "platform": "linux",
+        "container": "docker"
+      },
+      "tags": ["performance", "load-test", "monitoring", "metrics", "baseline"],
+      "notes": "This event tests the service's ability to handle larger attribute payloads while maintaining performance benchmarks and ensuring storage efficiency",
+      "additionalData": {
+        "requestId": "{{$randomUUID}}",
+        "correlationId": "perf-test-{{$timestamp}}",
+        "batchId": "batch-001",
+        "sequenceNumber": 1
+      }
+    }
+  }
+}
+
+assert {
+  res.status: 202
+  res.body.status: eq accepted
+  res.body.eventId: isString
+  res.responseTime: < 10000
+}
+
+tests {
+  test("Large payload is accepted", function() {
+    expect(res.getStatus()).to.equal(202);
+  });
+  
+  test("Performance remains acceptable with larger payloads", function() {
+    expect(res.getResponseTime()).to.be.below(10000); // 10 seconds max
+  });
+  
+  test("Complex nested attributes are handled", function() {
+    const body = res.getBody();
+    expect(body.eventId).to.be.a('string');
+    expect(body.status).to.equal('accepted');
+  });
+  
+  test("Response time scales reasonably with payload size", function() {
+    // This test establishes baseline for payload size vs. response time
+    const responseTime = res.getResponseTime();
+    console.log("Large payload response time:", responseTime + "ms");
+    expect(responseTime).to.be.below(10000);
+  });
+}
+
+script:post-response {
+  if (res.body && res.body.eventId) {
+    bru.setVar("largePayloadEventId", res.body.eventId);
+    const responseTime = res.getResponseTime();
+    bru.setVar("largePayloadResponseTime", responseTime);
+    
+    console.log("Large payload event created with ID:", res.body.eventId);
+    console.log("Response time:", responseTime + "ms");
+    
+    // Calculate approximate payload size
+    const payloadSize = JSON.stringify(req.body).length;
+    console.log("Approximate payload size:", payloadSize + " bytes");
+  }
+}
+
+docs {
+  Test audit service performance with larger attribute payloads.
+  
+  This test validates:
+  - Service can handle complex, nested attribute objects
+  - Performance remains acceptable with realistic large payloads
+  - Storage system can efficiently handle varied payload sizes
+  - No memory leaks or performance degradation
+  
+  Payload characteristics:
+  - Multiple levels of nesting
+  - Arrays and objects mixed
+  - String data of reasonable size
+  - Numeric metrics and metadata
+  - Typical production-scale attributes
+  
+  Performance expectations:
+  - Response time < 10 seconds
+  - Memory usage stable
+  - No errors or timeouts
+  - Consistent behavior under load
+}

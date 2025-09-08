@@ -1,0 +1,70 @@
+meta {
+  name: Invalid JSON
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{AUDIT_URL}}/audit
+  body: raw
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Internal-Token: {{INTERNAL_TOKEN}}
+}
+
+body:raw {
+  {
+    "tenantId": "{{TENANT_ID}}",
+    "subject": "user:test",
+    "action": "test.action",
+    "attributes": {
+      "invalid": json here
+    }
+  }
+}
+
+assert {
+  res.status: 400
+  res.body.error: contains json
+}
+
+tests {
+  test("Invalid JSON is rejected", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+  
+  test("Error message indicates JSON parsing issue", function() {
+    const body = res.getBody();
+    const errorMessage = body.error || body.message || JSON.stringify(body);
+    const lowerMessage = errorMessage.toLowerCase();
+    expect(lowerMessage).to.match(/json|parse|syntax|invalid.*format/);
+  });
+  
+  test("Bad request status is returned quickly", function() {
+    expect(res.getResponseTime()).to.be.below(2000);
+  });
+}
+
+docs {
+  Test JSON parsing validation.
+  
+  This request contains malformed JSON with invalid syntax.
+  The "attributes" object has invalid JSON: "invalid": json here
+  
+  Expected behavior:
+  - HTTP 400 Bad Request status
+  - Error message indicating JSON parsing failure
+  - Fast response (parser catches error immediately)
+  - No event should be created
+  - No further processing should occur
+  
+  Common JSON syntax errors this catches:
+  - Unquoted values
+  - Missing commas
+  - Trailing commas
+  - Unescaped quotes
+  - Invalid escape sequences
+}

@@ -1,0 +1,120 @@
+meta {
+  name: Quiz Lifecycle Scenario
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{AUDIT_URL}}/audit
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Internal-Token: {{INTERNAL_TOKEN}}
+}
+
+body:json {
+  {
+    "tenantId": "{{TENANT_ID}}",
+    "subject": "instructor:{{USER_EMAIL}}",
+    "action": "quiz.created",
+    "resourceId": "quiz-{{$randomUUID}}",
+    "userId": "{{USER_ID}}",
+    "sessionId": "instructor-session-{{$timestamp}}",
+    "attributes": {
+      "quizName": "Midterm Exam - Data Structures",
+      "courseId": "{{COURSE_ID}}",
+      "questionCount": 15,
+      "timeLimit": 60,
+      "maxAttempts": 1,
+      "shuffleQuestions": true,
+      "showFeedback": false,
+      "publicationScheduled": true,
+      "scheduledStart": "2024-03-15T09:00:00Z",
+      "estimatedDuration": 45
+    }
+  }
+}
+
+assert {
+  res.status: 202
+  res.body.status: eq accepted
+  res.body.eventId: isString
+}
+
+tests {
+  test("Quiz creation is logged", function() {
+    expect(res.getStatus()).to.equal(202);
+    expect(res.getBody().eventId).to.be.a('string');
+  });
+  
+  test("Quiz lifecycle tracking initiated", function() {
+    const quizId = req.body.resourceId;
+    expect(quizId).to.contain('quiz-');
+    bru.setVar("lifecycleQuizId", quizId);
+  });
+}
+
+script:post-response {
+  if (res.body && res.body.eventId) {
+    const quizId = req.body.resourceId;
+    const courseId = req.body.attributes.courseId;
+    
+    // Store key identifiers for lifecycle tracking
+    bru.setVar("quizCreateEventId", res.body.eventId);
+    bru.setVar("lifecycleQuizId", quizId);
+    bru.setVar("lifecycleCourseId", courseId);
+    bru.setVar("quizCreationTime", Date.now());
+    
+    console.log("📝 Quiz lifecycle started");
+    console.log("Quiz Created - Event ID:", res.body.eventId);
+    console.log("Quiz ID:", quizId);
+    console.log("Course ID:", courseId);
+    
+    // Simulate follow-up events
+    console.log("Next steps in lifecycle:");
+    console.log("- Quiz publication: quiz.published");
+    console.log("- Student responses: response.submitted");
+    console.log("- Quiz completion: quiz.completed");
+  }
+}
+
+docs {
+  Quiz lifecycle scenario test - Creation phase.
+  
+  This test initiates a complete quiz lifecycle tracking:
+  
+  Phase 1: Creation (this request)
+  - Instructor creates new quiz
+  - Quiz configured with settings
+  - Initial audit event logged
+  
+  Phase 2: Publication (follow-up)
+  - Quiz published to students
+  - Availability window opened
+  - Publication audit logged
+  
+  Phase 3: Student Activity (follow-up)
+  - Students access quiz
+  - Responses submitted
+  - Progress tracked
+  
+  Phase 4: Completion (follow-up)
+  - Quiz session ends
+  - Results calculated
+  - Final statistics logged
+  
+  Variables set for lifecycle tracking:
+  - quizCreateEventId: Reference to creation event
+  - lifecycleQuizId: Quiz ID for all related events
+  - lifecycleCourseId: Course context
+  - quizCreationTime: Timestamp for duration calculations
+  
+  Educational compliance requirements:
+  - Complete activity trail for grading disputes
+  - Student access patterns for learning analytics
+  - Instructor actions for course evaluation
+  - System performance metrics for optimization
+}
