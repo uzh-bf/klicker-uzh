@@ -1,4 +1,4 @@
-import { ExtendedThreadMessageLike, Thread } from '../stores/chatStore'
+import { ExtendedThreadMessageLike, Thread } from '../../app/stores/chatStore'
 
 export interface ApiThread {
   id: string

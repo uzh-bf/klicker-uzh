@@ -1,4 +1,4 @@
-import { ExtendedThreadMessageLike } from '../stores/chatStore'
+import { ExtendedThreadMessageLike } from '../../app/stores/chatStore'
 
 /**
  * Generates unique thread ID with timestamp and random suffix
