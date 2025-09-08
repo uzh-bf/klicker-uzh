@@ -133,6 +133,35 @@ export async function encode({ token, secret }: JWTEncodeParams) {
   return signJWT((token as JWTPayload) ?? {}, secretString)
 }
 
+function extractProviderFromAffiliationId(
+  affiliationId: string
+): string | null {
+  try {
+    const parts = affiliationId.split('@')
+    if (parts.length < 2) return null
+
+    const domainParts = parts[1]?.split('.')
+    if (!domainParts || domainParts.length === 0) return null
+
+    const provider = domainParts[0]
+    return provider || null
+  } catch {
+    return null
+  }
+}
+
+function collectAllEmails(
+  primaryEmail?: string,
+  affiliationEmails?: string[]
+): string[] {
+  const emails = []
+  if (primaryEmail) emails.push(primaryEmail.toLowerCase())
+  if (affiliationEmails) {
+    emails.push(...affiliationEmails.map((email) => email.toLowerCase()))
+  }
+  return emails.filter(Boolean)
+}
+
 function generateRandomString(length: number) {
   let result = ''
   let characters
@@ -235,6 +264,7 @@ async function autoAcceptInvitations(emails: string[], participantId?: string) {
   }
 }
 
+// Helper function to create user affiliations
 async function createUserAffiliations(
   userId: string,
   affiliationIds?: string[]
@@ -243,15 +273,9 @@ async function createUserAffiliations(
   if (affiliationIds && affiliationIds.length > 0) {
     for (const affiliationId of affiliationIds) {
       try {
-        // get provider as the string between @ and .ch
-        const parts = affiliationId.split('@')
-        if (parts.length < 2) continue
-
-        const domainParts = parts[1]?.split('.')
-        if (!domainParts || domainParts.length === 0) continue
-
-        const provider = domainParts[0]
+        const provider = extractProviderFromAffiliationId(affiliationId)
         if (!provider) continue
+
         // upsert accounts for every affiliation
         await prisma.account.upsert({
           where: {
@@ -283,19 +307,19 @@ async function createUserAffiliations(
 // Helper function to create participant affiliations
 async function createParticipantAffiliations(
   participantId: string,
-  affiliationIds: string[]
+  affiliationIds: string[],
+  affiliationEmails?: string[] // Make emails optional
 ) {
   let processedAffiliations = new Set<string>()
-  for (const affiliationId of affiliationIds) {
+
+  for (let i = 0; i < affiliationIds.length; i++) {
+    const affiliationId = affiliationIds[i]
+    const affiliationEmail = affiliationEmails?.[i]?.toLowerCase() || null
+
+    if (!affiliationId) continue // Only skip if ID is missing
+
     try {
-      // get provider as the string between @ and .ch
-      const parts = affiliationId.split('@')
-      if (parts.length < 2) continue
-
-      const domainParts = parts[1]?.split('.')
-      if (!domainParts || domainParts.length === 0) continue
-
-      const provider = domainParts[0]
+      const provider = extractProviderFromAffiliationId(affiliationId)
       if (!provider) continue
 
       // upsert participant accounts for every affiliation
@@ -309,12 +333,14 @@ async function createParticipantAffiliations(
         create: {
           ssoType: provider,
           ssoId: affiliationId,
+          ssoEmail: affiliationEmail, // Store email if available
           participant: { connect: { id: participantId } },
           type: 'affiliation',
           isVerified: true, // SSO affiliations are auto-verified
           isPrimary: false, // New affiliations are never primary by default
         },
         update: {
+          ssoEmail: affiliationEmail, // Update email if changed (can be null)
           isVerified: true, // Update verification status for SSO
         },
       })
@@ -343,17 +369,18 @@ async function createOrLinkParticipant(profile: ExtendedProfile) {
     if (profile.swissEduIDLinkedAffiliationUniqueID) {
       const participantAffiliations = await createParticipantAffiliations(
         existing.participantId,
-        profile.swissEduIDLinkedAffiliationUniqueID
+        profile.swissEduIDLinkedAffiliationUniqueID,
+        profile.swissEduIDLinkedAffiliationMail // Pass undefined if not available
       )
     }
 
     // auto-accept invitations for existing users
     try {
       // Extract all relevant emails for invitation checking
-      const affiliationEmails = profile.swissEduIDLinkedAffiliationMail || []
-      const allEmails = [profile.email, ...affiliationEmails]
-        .filter(Boolean)
-        .map((email) => email.toLowerCase())
+      const allEmails = collectAllEmails(
+        profile.email,
+        profile.swissEduIDLinkedAffiliationMail
+      )
 
       const acceptedCount = await autoAcceptInvitations(
         allEmails,
@@ -423,10 +450,11 @@ async function createOrLinkParticipant(profile: ExtendedProfile) {
     data: {
       ssoType: 'EDUID',
       ssoId: profile.sub as string,
+      ssoEmail: profile.email?.toLowerCase(), // Store primary email
       participant: { connect: { id: participant.id } },
       type: 'sso',
       isVerified: true, // SSO accounts are pre-verified
-      isPrimary: false, // SSO accounts are not necessarily primary
+      isPrimary: true, // SSO accounts are not necessarily primary
     },
   })
 
@@ -434,17 +462,18 @@ async function createOrLinkParticipant(profile: ExtendedProfile) {
   if (profile.swissEduIDLinkedAffiliationUniqueID) {
     await createParticipantAffiliations(
       participant.id,
-      profile.swissEduIDLinkedAffiliationUniqueID
+      profile.swissEduIDLinkedAffiliationUniqueID,
+      profile.swissEduIDLinkedAffiliationMail
     )
   }
 
   // auto-accept invitations for newly created participants
   try {
     // Extract all relevant emails for invitation checking
-    const affiliationEmails = profile.swissEduIDLinkedAffiliationMail || []
-    const allEmails = [profile.email, ...affiliationEmails]
-      .filter(Boolean)
-      .map((email) => email.toLowerCase())
+    const allEmails = collectAllEmails(
+      profile.email,
+      profile.swissEduIDLinkedAffiliationMail
+    )
 
     const acceptedCount = await autoAcceptInvitations(allEmails, participant.id)
     console.log(

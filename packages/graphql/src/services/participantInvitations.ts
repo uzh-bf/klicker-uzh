@@ -79,10 +79,10 @@ export async function createParticipantInvitations(
         continue
       }
 
-      // Check for existing verified ParticipantAccount with matching ssoId
+      // Check for existing verified ParticipantAccount with matching email
       const participantAccount = await prisma.participantAccount.findFirst({
         where: {
-          ssoId: email,
+          ssoEmail: email,
           isVerified: true,
         },
         include: {

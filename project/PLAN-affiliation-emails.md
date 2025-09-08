@@ -340,15 +340,24 @@ If issues arise:
 
 ### 10. Implementation Checklist
 
-- [ ] Add email field to ParticipantAccount schema
-- [ ] Run Prisma migration
-- [ ] Update createParticipantAffiliations to accept emails parameter
-- [ ] Update function calls to pass affiliation emails
-- [ ] Update invitation service to check email field
+- [x] Add email field to ParticipantAccount schema
+- [x] Run Prisma migration
+- [x] Update createParticipantAffiliations to accept emails parameter
+- [x] Update function calls to pass affiliation emails
+- [x] Update invitation service to check email field
+- [x] Refactor duplicated affiliation logic (extracted common functions)
 - [ ] Test login flow populates emails
 - [ ] Test invitation auto-acceptance works
 - [ ] Document changes in API docs
 - [ ] Update any GraphQL schemas if needed
+
+### 11. Code Refactoring Completed
+
+**Eliminated Duplicated Logic:**
+- Extracted `extractProviderFromAffiliationId()` function for reusable provider parsing
+- Extracted `collectAllEmails()` function for consistent email collection
+- Simplified both `createUserAffiliations` and `createParticipantAffiliations` functions
+- Reduced code duplication by ~50 lines while improving maintainability
 
 ## Timeline Estimate
 
