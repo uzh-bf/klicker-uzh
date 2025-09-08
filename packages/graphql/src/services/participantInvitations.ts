@@ -30,7 +30,7 @@ export async function createParticipantInvitations(
 ): Promise<CreateInvitationsResponse> {
   const results: InvitationResult[] = []
 
-  // Validate course exists and is assessment enabled
+  // Validate course exists and has SSO enabled
   const course = await prisma.course.findUnique({
     where: { id: courseId },
   })

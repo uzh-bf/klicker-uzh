@@ -182,22 +182,25 @@ function generateRandomString(length: number) {
 }
 
 async function autoAcceptInvitations(emails: string[], participantId?: string) {
+  let matchingParticipantId: string | undefined = participantId
+
   try {
     if (!participantId) {
       // Find participant account for any of the provided emails
-      let participant = null
-      for (const email of emails) {
-        participant = await prisma.participant.findUnique({
-          where: { email: email.toLowerCase() },
-        })
-        if (participant) break
-      }
+      const participant = await prisma.participant.findFirst({
+        where: {
+          email: {
+            in: emails.map((email) => email.toLowerCase()),
+          },
+        },
+      })
 
       if (!participant) {
         console.log('No participant found for emails:', emails)
         return 0
       }
-      participantId = participant.id
+
+      matchingParticipantId = participant.id
     }
 
     // Find all pending invitations for any of the provided emails
@@ -216,32 +219,34 @@ async function autoAcceptInvitations(emails: string[], participantId?: string) {
     let acceptedCount = 0
     for (const invitation of pendingInvitations) {
       try {
-        // Create or activate participation
-        await prisma.participation.upsert({
-          where: {
-            courseId_participantId: {
-              courseId: invitation.courseId,
-              participantId,
+        await prisma.$transaction(async (tx) => {
+          // Create or activate participation
+          await tx.participation.upsert({
+            where: {
+              courseId_participantId: {
+                courseId: invitation.courseId,
+                participantId: matchingParticipantId!,
+              },
             },
-          },
-          create: {
-            courseId: invitation.courseId,
-            participantId,
-            isActive: true,
-          },
-          update: {
-            isActive: true,
-          },
-        })
+            create: {
+              courseId: invitation.courseId,
+              participantId: matchingParticipantId!,
+              isActive: true,
+            },
+            update: {
+              isActive: true,
+            },
+          })
 
-        // Mark invitation as accepted
-        await prisma.participantInvitation.update({
-          where: { id: invitation.id },
-          data: {
-            status: 'ACCEPTED',
-            participantId,
-            acceptedAt: new Date(),
-          },
+          // Mark invitation as accepted
+          await tx.participantInvitation.update({
+            where: { id: invitation.id },
+            data: {
+              status: 'ACCEPTED',
+              participantId,
+              acceptedAt: new Date(),
+            },
+          })
         })
 
         acceptedCount++
