@@ -8,6 +8,18 @@
         "serena",
         "start-mcp-server"
       ]
+    },
+    "dbhub": {
+      "command": "npx",
+      "args": [
+        "@bytebase/dbhub",
+        "--transport",
+        "http",
+        "--port",
+        "8080",
+        "--dsn",
+        "postgres://klicker-prod:klicker@localhost:5432/klicker-prod?sslmode=disable"
+      ]
     }
   }
 }

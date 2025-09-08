@@ -67,7 +67,7 @@ export function prepareCourse({
   isAssessmentEnabled?: boolean
   ownerId: string
   color?: string
-  pinCode: number
+  pinCode?: number | null
   startDate: Date
   endDate: Date
   isGroupCreationEnabled: boolean

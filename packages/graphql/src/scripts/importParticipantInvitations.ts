@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
 import { parse } from 'csv-parse/sync'
 import { readFileSync } from 'fs'
 
@@ -30,7 +30,7 @@ function parseArgs(): ImportOptions {
 
   if (!options.courseId || !options.file) {
     console.error(
-      'Usage: npx tsx packages/graphql/src/scripts/import-participant-invitations.ts --courseId="uuid" --file="invitations.csv" [--dry-run]'
+      'Usage: npx tsx packages/graphql/src/scripts/importParticipantInvitations.ts --courseId="uuid" --file="invitations.csv" [--dry-run]'
     )
     process.exit(1)
   }
@@ -45,7 +45,6 @@ function validateEmail(email: string): boolean {
 
 async function run() {
   const { courseId, file, dryRun } = parseArgs()
-  const prisma = new PrismaClient()
 
   console.log('=== Participant Invitation Import ===')
   console.log('Course ID:', courseId)
