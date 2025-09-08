@@ -12,11 +12,11 @@
     "dbhub": {
       "command": "npx",
       "args": [
+        "-y",
         "@bytebase/dbhub",
+        "--readonly",
         "--transport",
-        "http",
-        "--port",
-        "8080",
+        "stdio",
         "--dsn",
         "postgres://klicker-prod:klicker@localhost:5432/klicker-prod?sslmode=disable"
       ]
