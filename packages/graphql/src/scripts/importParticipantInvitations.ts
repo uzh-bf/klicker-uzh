@@ -3,6 +3,7 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { parse } from 'csv-parse/sync'
 import { readFileSync } from 'fs'
+import { createParticipantInvitations } from '../services/participantInvitations.js'
 
 interface ImportOptions {
   courseId: string
@@ -30,17 +31,12 @@ function parseArgs(): ImportOptions {
 
   if (!options.courseId || !options.file) {
     console.error(
-      'Usage: npx tsx packages/graphql/src/scripts/importParticipantInvitations.ts --courseId="uuid" --file="invitations.csv" [--dry-run]'
+      'Usage: npx tsx packages/graphql/src/scripts/importParticipantInvitations.ts --courseId="uuid" --file="invitations_dev.csv" [--dry-run]'
     )
     process.exit(1)
   }
 
   return options as ImportOptions
-}
-
-function validateEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(email)
 }
 
 async function run() {
@@ -53,29 +49,6 @@ async function run() {
   console.log()
 
   try {
-    // Verify the course exists and is assessment enabled
-    console.log('Verifying course...')
-    const course = await prisma.course.findUnique({
-      where: { id: courseId },
-    })
-
-    if (!course) {
-      console.error('❌ Course not found')
-      process.exit(1)
-    }
-
-    if (!course.isAssessmentEnabled) {
-      console.error(
-        '❌ Course is not assessment enabled. Only assessment courses can have invitations.'
-      )
-      process.exit(1)
-    }
-
-    console.log(
-      `✅ Course "${course.displayName}" is valid and assessment enabled`
-    )
-    console.log()
-
     // Read and parse CSV file
     console.log('Reading CSV file...')
     const csvContent = readFileSync(file, 'utf-8')
@@ -99,100 +72,65 @@ async function run() {
       process.exit(1)
     }
 
-    // Process invitations
-    let totalProcessed = 0
-    let created = 0
-    let duplicates = 0
-    const errors: string[] = []
+    // Extract emails from CSV
+    const emails = records.map((record) => record.email).filter(Boolean)
 
     console.log('Processing invitations...')
 
-    for (const record of records) {
-      totalProcessed++
-      const email = record.email?.toLowerCase()?.trim()
-
-      if (!email) {
-        errors.push(`Row ${totalProcessed}: Email is empty`)
-        continue
-      }
-
-      if (!validateEmail(email)) {
-        errors.push(`Row ${totalProcessed}: Invalid email format: ${email}`)
-        continue
-      }
-
-      try {
-        if (!dryRun) {
-          // Check for existing invitation
-          const existingInvitation =
-            await prisma.participantInvitation.findUnique({
-              where: {
-                email_courseId: {
-                  email,
-                  courseId,
-                },
-              },
-            })
-
-          if (existingInvitation) {
-            duplicates++
-            console.log(
-              `⚠️  Duplicate invitation for ${email} (status: ${existingInvitation.status})`
-            )
-            continue
-          }
-
-          // Create the invitation
-          await prisma.participantInvitation.create({
-            data: {
-              email,
-              courseId,
-              status: 'PENDING',
-            },
-          })
-
-          created++
-          console.log(`✅ Created invitation for ${email}`)
-        } else {
-          // In dry run mode, just check for duplicates
-          const existingInvitation =
-            await prisma.participantInvitation.findUnique({
-              where: {
-                email_courseId: {
-                  email,
-                  courseId,
-                },
-              },
-            })
-
-          if (existingInvitation) {
-            duplicates++
-            console.log(`[DRY RUN] Would skip duplicate: ${email}`)
-          } else {
-            created++
-            console.log(`[DRY RUN] Would create invitation for: ${email}`)
-          }
-        }
-      } catch (error: any) {
-        errors.push(
-          `Row ${totalProcessed}: Error processing ${email}: ${error.message}`
-        )
-      }
-    }
+    // Use the new service to create invitations
+    const result = await createParticipantInvitations(courseId, emails, {
+      dryRun,
+      batchSize: 50,
+    })
 
     console.log()
     console.log('=== Import Results ===')
-    console.log(`Total rows processed: ${totalProcessed}`)
+    console.log(`Total rows processed: ${result.totalProcessed}`)
     console.log(
-      `${dryRun ? 'Would create' : 'Successfully created'}: ${created}`
+      `${dryRun ? 'Would create (PENDING)' : 'Successfully created (PENDING)'}: ${result.created}`
     )
-    console.log(`Skipped (duplicates): ${duplicates}`)
-    console.log(`Errors: ${errors.length}`)
+    console.log(
+      `${dryRun ? 'Would auto-accept (existing users)' : 'Auto-accepted (existing users)'}: ${result.autoAccepted}`
+    )
+    console.log(`Skipped (duplicates): ${result.duplicates}`)
+    console.log(`Errors: ${result.errors}`)
 
-    if (errors.length > 0) {
+    // Show auto-accepted users
+    if (result.autoAccepted > 0) {
+      console.log()
+      console.log('=== Auto-Accepted Users ===')
+      const autoAcceptedResults = result.results.filter(
+        (r) => r.status === 'auto_accepted'
+      )
+      autoAcceptedResults.forEach((result) => {
+        const prefix = dryRun
+          ? '[DRY RUN] Would auto-accept'
+          : '✅ Auto-accepted'
+        console.log(`${prefix}: ${result.email} → ${result.participantId}`)
+      })
+    }
+
+    // Show errors
+    if (result.errors > 0) {
       console.log()
       console.log('=== Errors ===')
-      errors.forEach((error) => console.log(`❌ ${error}`))
+      const errorResults = result.results.filter((r) => r.status === 'error')
+      errorResults.forEach((result) => {
+        console.log(`❌ ${result.email}: ${result.error}`)
+      })
+    }
+
+    // Show duplicates
+    if (result.duplicates > 0) {
+      console.log()
+      console.log('=== Duplicates ===')
+      const duplicateResults = result.results.filter(
+        (r) => r.status === 'duplicate'
+      )
+      duplicateResults.forEach((result) => {
+        const prefix = dryRun ? '[DRY RUN] Would skip' : '⚠️  Skipped'
+        console.log(`${prefix}: ${result.email} (already invited)`)
+      })
     }
 
     if (dryRun) {
@@ -201,14 +139,25 @@ async function run() {
         'ℹ️  This was a dry run. No invitations were actually created.'
       )
       console.log('   Remove --dry-run flag to execute the import.')
-    } else if (created > 0) {
+    } else if (result.created > 0 || result.autoAccepted > 0) {
       console.log()
+      if (result.autoAccepted > 0) {
+        console.log(
+          `✅ Import completed successfully! ${result.created} pending invitations created, ${result.autoAccepted} users auto-enrolled.`
+        )
+      } else {
+        console.log(
+          `✅ Import completed successfully! ${result.created} invitations created.`
+        )
+      }
       console.log(
-        `✅ Import completed successfully! ${created} invitations created.`
+        '   Pending participants will be automatically enrolled when they log in via eduID.'
       )
-      console.log(
-        '   Participants will be automatically enrolled when they log in via eduID.'
-      )
+      if (result.autoAccepted > 0) {
+        console.log(
+          '   Auto-enrolled participants can access the course immediately.'
+        )
+      }
     }
   } catch (error: any) {
     console.error('❌ Import failed:', error.message)
