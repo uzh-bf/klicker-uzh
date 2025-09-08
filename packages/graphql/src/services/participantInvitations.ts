@@ -1,5 +1,5 @@
 import { prisma } from '@klicker-uzh/prisma'
-import { InvitationStatus } from '@klicker-uzh/prisma/client'
+import { CourseAuthType, InvitationStatus } from '@klicker-uzh/prisma/client'
 import * as R from 'remeda'
 import * as z from 'zod'
 
@@ -39,7 +39,7 @@ export async function createParticipantInvitations(
     throw new Error('Course not found')
   }
 
-  if (course.authType !== 'SSO') {
+  if (course.authType !== CourseAuthType.SSO) {
     throw new Error(
       'Course does not use SSO authentication. Only SSO courses can have invitations.'
     )

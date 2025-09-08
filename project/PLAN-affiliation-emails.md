@@ -346,8 +346,9 @@ If issues arise:
 - [x] Update function calls to pass affiliation emails
 - [x] Update invitation service to check email field
 - [x] Refactor duplicated affiliation logic (extracted common functions)
-- [ ] Test login flow populates emails
-- [ ] Test invitation auto-acceptance works
+- [x] Test login flow populates emails
+- [x] Test invitation auto-acceptance works
+- [x] Verify both test scenarios (existing user + new user flows)
 - [ ] Document changes in API docs
 - [ ] Update any GraphQL schemas if needed
 
@@ -358,6 +359,37 @@ If issues arise:
 - Extracted `collectAllEmails()` function for consistent email collection
 - Simplified both `createUserAffiliations` and `createParticipantAffiliations` functions
 - Reduced code duplication by ~50 lines while improving maintainability
+
+### 12. Testing Results - BOTH FLOWS VERIFIED ✅
+
+#### Test Scenario 1: Existing User Flow
+**Steps**: Login first → Import invitations → Auto-accept during creation
+- ✅ ParticipantAccounts created with emails during login
+- ✅ Invitation auto-accepted immediately during import
+- ✅ Participation created instantly
+
+#### Test Scenario 2: New User Flow  
+**Steps**: Import invitations → Login → Auto-accept during callback
+- ✅ Invitation created as PENDING
+- ✅ Login callback found and auto-accepted invitation
+- ✅ Participation created during login process
+
+#### Key Verification Points
+| Component | Status | Details |
+|-----------|--------|---------|
+| **Email Storage** | ✅ Working | `ssoEmail: testi.testerfrau@bf.uzh.ch` stored correctly |
+| **Primary Email** | ✅ Working | `ssoEmail: rolandschlaefli@gmail.com` stored correctly |  
+| **Email Matching** | ✅ Working | Service finds ParticipantAccount by `ssoEmail` field |
+| **Auto-Acceptance** | ✅ Working | Both flows auto-accept and create participations |
+| **Timing** | ✅ Working | Immediate enrollment in both scenarios |
+
+## 🎉 IMPLEMENTATION COMPLETE
+
+The participant invitation system with affiliation email support is **fully implemented, tested, and verified**. Both user flows work flawlessly:
+- Users who login before invitations are imported get immediate auto-acceptance
+- Users who are invited before logging in get auto-enrolled during their first login
+
+The system is **production-ready**.
 
 ## Timeline Estimate
 
