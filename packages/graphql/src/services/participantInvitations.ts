@@ -1,6 +1,7 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { InvitationStatus } from '@klicker-uzh/prisma/client'
 import * as R from 'remeda'
+import * as z from 'zod'
 
 export interface InvitationResult {
   email: string
@@ -17,11 +18,6 @@ export interface CreateInvitationsResponse {
   duplicates: number
   errors: number
   results: InvitationResult[]
-}
-
-function validateEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(email)
 }
 
 /**
@@ -54,7 +50,7 @@ export async function createParticipantInvitations(
     const email = rawEmail.toLowerCase().trim()
 
     // Validate email format
-    if (!validateEmail(email)) {
+    if (!z.string().email().safeParse(email).success) {
       results.push({
         email: rawEmail,
         status: 'error',
