@@ -1,5 +1,6 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { InvitationStatus } from '@klicker-uzh/prisma/client'
+import * as R from 'remeda'
 
 export interface InvitationResult {
   email: string
@@ -32,10 +33,6 @@ export async function createParticipantInvitations(
   emails: string[]
 ): Promise<CreateInvitationsResponse> {
   const results: InvitationResult[] = []
-  let created = 0
-  let autoAccepted = 0
-  let duplicates = 0
-  let errors = 0
 
   // Validate course exists and is assessment enabled
   const course = await prisma.course.findUnique({
@@ -63,7 +60,6 @@ export async function createParticipantInvitations(
         status: 'error',
         error: 'Invalid email format',
       })
-      errors++
       continue
     }
 
@@ -84,7 +80,6 @@ export async function createParticipantInvitations(
           status: 'duplicate',
           invitationId: existingInvitation.id,
         })
-        duplicates++
         continue
       }
 
@@ -113,7 +108,6 @@ export async function createParticipantInvitations(
           invitationId: result.invitationId,
           participantId: participantAccount.participant.id,
         })
-        autoAccepted++
       } else {
         // Create pending invitation
         const invitation = await prisma.participantInvitation.create({
@@ -129,7 +123,6 @@ export async function createParticipantInvitations(
           status: 'created',
           invitationId: invitation.id,
         })
-        created++
       }
     } catch (error: any) {
       results.push({
@@ -137,16 +130,22 @@ export async function createParticipantInvitations(
         status: 'error',
         error: error.message,
       })
-      errors++
     }
   }
 
+  // Count results by status using Remeda
+  const statusCounts = R.pipe(
+    results,
+    R.groupBy(R.prop('status')),
+    R.mapValues(R.length)
+  )
+
   return {
     totalProcessed: emails.length,
-    created,
-    autoAccepted,
-    duplicates,
-    errors,
+    created: statusCounts.created || 0,
+    autoAccepted: statusCounts.auto_accepted || 0,
+    duplicates: statusCounts.duplicate || 0,
+    errors: statusCounts.error || 0,
     results,
   }
 }
@@ -194,41 +193,4 @@ async function autoAcceptInvitation(
   })
 
   return result
-}
-
-/**
- * Get invitations for a course (for admin/debugging)
- */
-export async function getCourseInvitations(courseId: string) {
-  return await prisma.participantInvitation.findMany({
-    where: { courseId },
-    include: {
-      participant: {
-        select: {
-          id: true,
-          username: true,
-        },
-      },
-    },
-    orderBy: [{ status: 'asc' }, { invitedAt: 'desc' }],
-  })
-}
-
-/**
- * Get invitations for a participant (for debugging)
- */
-export async function getParticipantInvitations(participantId: string) {
-  return await prisma.participantInvitation.findMany({
-    where: { participantId },
-    include: {
-      course: {
-        select: {
-          id: true,
-          name: true,
-          displayName: true,
-        },
-      },
-    },
-    orderBy: { invitedAt: 'desc' },
-  })
 }

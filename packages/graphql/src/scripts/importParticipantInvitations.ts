@@ -3,6 +3,7 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { parse } from 'csv-parse/sync'
 import { readFileSync } from 'fs'
+import * as R from 'remeda'
 import { createParticipantInvitations } from '../services/participantInvitations.js'
 
 // Configuration - adjust these values as needed
@@ -10,7 +11,6 @@ const CSV_FILE = 'src/scripts/invitations_dev.csv'
 
 async function run() {
   console.log('=== Participant Invitation Import ===')
-  console.log('Course ID:', COURSE_ID)
   console.log('CSV File:', CSV_FILE)
   console.log()
 
@@ -33,76 +33,118 @@ async function run() {
       process.exit(1)
     }
 
-    if (!records[0].email) {
-      console.error('CSV must have an "email" column')
+    if (!records[0].email || !records[0].courseId) {
+      console.error('CSV must have both "email" and "courseId" columns')
       process.exit(1)
     }
 
-    // Extract emails from CSV
-    const emails = records.map((record) => record.email).filter(Boolean)
+    // Group emails by courseId using Remeda
+    const validRecords = R.pipe(
+      records,
+      R.filter((record) => {
+        const hasValidData = record.email?.trim() && record.courseId?.trim()
+        if (!hasValidData) {
+          console.warn(
+            `Skipping row with missing email or courseId: ${JSON.stringify(record)}`
+          )
+        }
+        return hasValidData
+      }),
+      R.map((record) => ({
+        email: record.email.trim(),
+        courseId: record.courseId.trim(),
+      }))
+    )
 
-    console.log('Processing invitations...')
-
-    // Create invitations using the service
-    const result = await createParticipantInvitations(COURSE_ID, emails)
-
-    console.log()
-    console.log('=== Import Results ===')
-    console.log(`Total rows processed: ${result.totalProcessed}`)
-    console.log(`Successfully created (PENDING): ${result.created}`)
-    console.log(`Auto-accepted (existing users): ${result.autoAccepted}`)
-    console.log(`Skipped (duplicates): ${result.duplicates}`)
-    console.log(`Errors: ${result.errors}`)
-
-    // Show auto-accepted users
-    if (result.autoAccepted > 0) {
-      console.log()
-      console.log('=== Auto-Accepted Users ===')
-      const autoAcceptedResults = result.results.filter(
-        (r) => r.status === 'auto_accepted'
-      )
-      autoAcceptedResults.forEach((result) => {
-        console.log(`Auto-accepted: ${result.email} → ${result.participantId}`)
-      })
-    }
-
-    // Show errors
-    if (result.errors > 0) {
-      console.log()
-      console.log('=== Errors ===')
-      const errorResults = result.results.filter((r) => r.status === 'error')
-      errorResults.forEach((result) => {
-        console.log(`${result.email}: ${result.error}`)
-      })
-    }
-
-    // Show duplicates
-    if (result.duplicates > 0) {
-      console.log()
-      console.log('=== Duplicates ===')
-      const duplicateResults = result.results.filter(
-        (r) => r.status === 'duplicate'
-      )
-      duplicateResults.forEach((result) => {
-        console.log(`Skipped: ${result.email} (already invited)`)
-      })
-    }
-
-    if (result.created > 0 || result.autoAccepted > 0) {
-      console.log()
-      if (result.autoAccepted > 0) {
-        console.log(
-          `Import completed! ${result.created} pending invitations created, ${result.autoAccepted} users auto-enrolled.`
+    const groupedByState = R.groupBy(validRecords, R.prop('courseId'))
+    const courseGroups = new Map(
+      R.pipe(
+        groupedByState,
+        R.toPairs,
+        R.map(
+          ([courseId, records]) =>
+            [courseId, records.map((r) => r.email)] as const
         )
-      } else {
-        console.log(`Import completed! ${result.created} invitations created.`)
-      }
-      console.log(
-        '   Pending participants will be automatically enrolled when they log in via eduID.'
       )
-      if (result.autoAccepted > 0) {
+    )
+
+    console.log(`Found ${courseGroups.size} unique course(s)`)
+    console.log()
+
+    // Process each course group
+    let totalCreated = 0
+    let totalAutoAccepted = 0
+    let totalDuplicates = 0
+    let totalErrors = 0
+    let totalProcessed = 0
+
+    for (const [courseId, emails] of courseGroups.entries()) {
+      console.log(`=== Processing Course: ${courseId} ===`)
+      console.log(`Emails to process: ${emails.length}`)
+
+      try {
+        const result = await createParticipantInvitations(courseId, emails)
+
+        console.log(`Created (PENDING): ${result.created}`)
+        console.log(`Auto-accepted (existing users): ${result.autoAccepted}`)
+        console.log(`Skipped (duplicates): ${result.duplicates}`)
+        console.log(`Errors: ${result.errors}`)
+
+        // Group results by status for this course
+        const resultsByStatus = R.groupBy(result.results, R.prop('status'))
+
+        // Show auto-accepted users for this course
+        const autoAcceptedResults = resultsByStatus.auto_accepted || []
+        if (autoAcceptedResults.length > 0) {
+          autoAcceptedResults.forEach((result) => {
+            console.log(
+              `  Auto-accepted: ${result.email} → ${result.participantId}`
+            )
+          })
+        }
+
+        // Show errors for this course
+        const errorResults = resultsByStatus.error || []
+        if (errorResults.length > 0) {
+          errorResults.forEach((result) => {
+            console.log(`  Error: ${result.email}: ${result.error}`)
+          })
+        }
+
+        // Aggregate totals
+        totalCreated += result.created
+        totalAutoAccepted += result.autoAccepted
+        totalDuplicates += result.duplicates
+        totalErrors += result.errors
+        totalProcessed += result.totalProcessed
+      } catch (error: any) {
+        console.error(`Failed to process course ${courseId}: ${error.message}`)
+        totalErrors += emails.length
+      }
+
+      console.log()
+    }
+
+    // Show final totals
+    console.log('=== Total Results ===')
+    console.log(`Courses processed: ${courseGroups.size}`)
+    console.log(`Total rows processed: ${totalProcessed}`)
+    console.log(`Total created (PENDING): ${totalCreated}`)
+    console.log(`Total auto-accepted: ${totalAutoAccepted}`)
+    console.log(`Total duplicates: ${totalDuplicates}`)
+    console.log(`Total errors: ${totalErrors}`)
+
+    if (totalCreated > 0 || totalAutoAccepted > 0) {
+      console.log()
+      console.log(
+        `Import completed! ${totalCreated} pending invitations created, ${totalAutoAccepted} users auto-enrolled across ${courseGroups.size} course(s).`
+      )
+      console.log(
+        'Pending participants will be automatically enrolled when they log in via eduID.'
+      )
+      if (totalAutoAccepted > 0) {
         console.log(
-          '   Auto-enrolled participants can access the course immediately.'
+          'Auto-enrolled participants can access their courses immediately.'
         )
       }
     }
