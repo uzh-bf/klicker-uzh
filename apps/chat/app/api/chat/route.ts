@@ -1,5 +1,5 @@
 import { getContext7Tools } from '@/app/lib/mcpClients'
-import { RAGSearch } from '@/app/tools'
+import { RAGSearch } from '@/app/lib/tools'
 import { getSystemPrompt, type ChatbotMode } from '@/lib/prompts'
 import { anthropic } from '@ai-sdk/anthropic'
 import { openai } from '@ai-sdk/openai'
