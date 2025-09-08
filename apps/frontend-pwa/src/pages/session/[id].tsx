@@ -619,7 +619,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   const apolloClient = initializeApollo()
 
   try {
-    apolloClient.query({
+    await apolloClient.query({
       query: GetRunningLiveQuizDocument,
       variables: { id: ctx.query?.id as string },
     })
