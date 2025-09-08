@@ -96,6 +96,7 @@ function ElementEvaluation({
               }}
               inCooldown={inCooldown}
               setInCooldown={setInCooldown}
+              onExpiration={() => {}}
             />
           </div>
         )}

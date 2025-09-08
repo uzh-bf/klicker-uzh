@@ -74,6 +74,7 @@ export interface LiveQuizFormValues extends CommonFormValues {
   blocks: ElementBlockFormValues[]
   isGamificationEnabled: boolean
   isAssessmentEnabled: boolean
+  isPinProtected: boolean
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean
   isModerationEnabled: boolean

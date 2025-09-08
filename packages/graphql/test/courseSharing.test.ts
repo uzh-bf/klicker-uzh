@@ -44,7 +44,7 @@ import {
   userTwo,
 } from './userData.js'
 
-describe('Unit tests for sharing functionalities of courses', () => {
+describe('Integration tests for sharing functionalities of courses', () => {
   // shared resources used across tests
   let prisma: PrismaClient
   let emitter: EventEmitter

@@ -114,13 +114,6 @@ function LiveQuizActions({
     DeleteLiveQuizDocument,
     {
       variables: { id: liveQuiz.id },
-      optimisticResponse: {
-        __typename: 'Mutation',
-        deleteLiveQuiz: {
-          id: liveQuiz.id,
-          __typename: 'LiveQuiz',
-        },
-      },
       update: (cache, { data: res }) => {
         // if the live quiz is not part of a course or the mutation was not successful, return early
         if (!liveQuiz.courseId || !res?.deleteLiveQuiz?.id) return
@@ -161,7 +154,14 @@ function LiveQuizActions({
         ...(user?.privatePreview
           ? ['templateFromLiveQuiz', 'shareLiveQuiz']
           : []),
-        'deleteLiveQuiz',
+        // assessment live quizzes can only be deleted when not completed and only by course admins
+        ...(!liveQuiz.isAssessmentEnabled
+          ? ['deleteLiveQuiz']
+          : liveQuiz.isActivityReviewer &&
+              (liveQuiz.status === PublicationStatus.Draft ||
+                liveQuiz.status === PublicationStatus.Scheduled)
+            ? ['deleteLiveQuiz']
+            : []),
         'deleteTemplate',
       ],
       isEditor: ['editLiveQuiz', 'editTemplate'],
@@ -175,7 +175,13 @@ function LiveQuizActions({
       ],
       isRemovable: ['removeLiveQuiz'],
     }
-  }, [user?.privatePreview])
+  }, [
+    user?.privatePreview,
+    liveQuiz.id,
+    liveQuiz.status,
+    liveQuiz.isAssessmentEnabled,
+    liveQuiz.isActivityReviewer,
+  ])
 
   const actions = useLiveQuizActions({
     quiz: liveQuiz,
@@ -277,6 +283,7 @@ function LiveQuizActions({
         {qrModal && (
           <LiveQuizQRModal
             quizId={liveQuiz.id}
+            quizPin={liveQuiz.pinCode}
             language={liveQuiz.courseLanguage}
             onClose={() => setQRModal(false)}
           />

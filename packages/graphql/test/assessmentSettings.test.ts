@@ -17,7 +17,7 @@ import {
   testInitialization,
 } from './helpers.js'
 
-describe('Unit tests for assessment configuration functionalities', () => {
+describe('Integration tests for assessment configuration functionalities', () => {
   // shared resources used across tests
   let prisma: PrismaClient
   let emitter: EventEmitter
@@ -43,7 +43,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
     await testCleanup(prisma)
   })
 
-  describe('Unit tests for assessment settings on courses and activities', () => {
+  describe('Integration tests for assessment settings on courses and activities', () => {
     // set default booleans for irrelevant interaction settings
     const isConfusionFeedbackEnabled = false
     const isLiveQAEnabled = false
@@ -84,6 +84,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
           blocks: [],
           multiplier: 1,
           isGamificationEnabled: true,
+          isPinProtected: true,
           isConfusionFeedbackEnabled,
           isLiveQAEnabled,
           isModerationEnabled,
@@ -94,6 +95,14 @@ describe('Unit tests for assessment configuration functionalities', () => {
       expect(liveQuiz1.id).not.toBeNull()
       expect(liveQuiz1.isGamificationEnabled).toBe(true)
       expect(liveQuiz1.isAssessmentEnabled).toBe(false)
+      expect(liveQuiz1.pinCode).not.toBeNull() // pin can be set manually for non-assessment live quizzes
+
+      // verify that no pin is defined for a non-assessment live quiz
+      const dbLiveQuiz1 = await prisma.liveQuiz.findUnique({
+        where: { id: liveQuiz1.id },
+      })
+      expect(dbLiveQuiz1?.pinCode).not.toBeNull()
+      expect(dbLiveQuiz1?.pinCode).toMatch(/^[A-Z0-9]{6}$/) // pin should be a valid 6-character alphanumeric code
 
       const liveQuiz2 = await seedLiveQuiz({ elements: [] }, userOneCtx)
       const liveQuiz2Edited = await manipulateLiveQuiz(
@@ -104,6 +113,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
           blocks: [],
           multiplier: 1,
           isGamificationEnabled: true,
+          isPinProtected: false,
           isConfusionFeedbackEnabled,
           isLiveQAEnabled,
           isModerationEnabled,
@@ -113,6 +123,13 @@ describe('Unit tests for assessment configuration functionalities', () => {
       )
       expect(liveQuiz2Edited.isGamificationEnabled).toBe(true)
       expect(liveQuiz2Edited.isAssessmentEnabled).toBe(false)
+      expect(liveQuiz2Edited.pinCode).toBeNull()
+
+      // verify that no pin is defined for a non-assessment live quiz
+      const dbLiveQuiz2 = await prisma.liveQuiz.findUnique({
+        where: { id: liveQuiz2Edited.id },
+      })
+      expect(dbLiveQuiz2?.pinCode).toBeNull()
 
       // Case 2: Manipulate a live quiz without course assignment and gamification disabled (create and edit)
       const liveQuiz3 = await manipulateLiveQuiz(
@@ -122,6 +139,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
           blocks: [],
           multiplier: 1,
           isGamificationEnabled: false,
+          isPinProtected: false,
           isConfusionFeedbackEnabled,
           isLiveQAEnabled,
           isModerationEnabled,
@@ -132,6 +150,13 @@ describe('Unit tests for assessment configuration functionalities', () => {
       expect(liveQuiz3.id).not.toBeNull()
       expect(liveQuiz3.isGamificationEnabled).toBe(false)
       expect(liveQuiz3.isAssessmentEnabled).toBe(false)
+      expect(liveQuiz3.pinCode).toBeNull()
+
+      // verify that no pin is defined for a non-assessment live quiz
+      const dbLiveQuiz3 = await prisma.liveQuiz.findUnique({
+        where: { id: liveQuiz3.id },
+      })
+      expect(dbLiveQuiz3?.pinCode).toBeNull()
 
       const liveQuiz4 = await seedLiveQuiz({ elements: [] }, userOneCtx)
       const liveQuiz4Edited = await manipulateLiveQuiz(
@@ -142,6 +167,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
           blocks: [],
           multiplier: 1,
           isGamificationEnabled: false,
+          isPinProtected: false,
           isConfusionFeedbackEnabled,
           isLiveQAEnabled,
           isModerationEnabled,
@@ -151,6 +177,13 @@ describe('Unit tests for assessment configuration functionalities', () => {
       )
       expect(liveQuiz4Edited.isGamificationEnabled).toBe(false)
       expect(liveQuiz4Edited.isAssessmentEnabled).toBe(false)
+      expect(liveQuiz4Edited.pinCode).toBeNull()
+
+      // verify that no pin is defined for a non-assessment live quiz
+      const dbLiveQuiz4 = await prisma.liveQuiz.findUnique({
+        where: { id: liveQuiz4Edited.id },
+      })
+      expect(dbLiveQuiz4?.pinCode).toBeNull()
 
       // Case 3: Manipulate a live quiz with gamified course assignment and check that gamification setting is ignored (create and edit)
       const liveQuiz5 = await manipulateLiveQuiz(
@@ -160,6 +193,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
           blocks: [],
           multiplier: 1,
           isGamificationEnabled: false,
+          isPinProtected: false,
           isConfusionFeedbackEnabled,
           isLiveQAEnabled,
           isModerationEnabled,
@@ -169,6 +203,13 @@ describe('Unit tests for assessment configuration functionalities', () => {
       )
       expect(liveQuiz5.isGamificationEnabled).toBe(true)
       expect(liveQuiz5.isAssessmentEnabled).toBe(false)
+      expect(liveQuiz5.pinCode).toBeNull()
+
+      // verify that no pin is defined for a non-assessment live quiz
+      const dbLiveQuiz5 = await prisma.liveQuiz.findUnique({
+        where: { id: liveQuiz5.id },
+      })
+      expect(dbLiveQuiz5?.pinCode).toBeNull()
 
       const liveQuiz6 = await seedLiveQuiz({ elements: [] }, userOneCtx)
       const liveQuiz6Edited = await manipulateLiveQuiz(
@@ -179,6 +220,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
           blocks: [],
           multiplier: 1,
           isGamificationEnabled: false,
+          isPinProtected: false,
           isConfusionFeedbackEnabled,
           isLiveQAEnabled,
           isModerationEnabled,
@@ -188,6 +230,13 @@ describe('Unit tests for assessment configuration functionalities', () => {
       )
       expect(liveQuiz6Edited.isGamificationEnabled).toBe(true)
       expect(liveQuiz6Edited.isAssessmentEnabled).toBe(false)
+      expect(liveQuiz6Edited.pinCode).toBeNull()
+
+      // verify that no pin is defined for a non-assessment live quiz
+      const dbLiveQuiz6 = await prisma.liveQuiz.findUnique({
+        where: { id: liveQuiz6Edited.id },
+      })
+      expect(dbLiveQuiz6?.pinCode).toBeNull()
 
       // Case 4: Manipulate a live quiz with non-gamified course assignment and check that gamification setting is set (create and edit)
       const liveQuiz7 = await manipulateLiveQuiz(
@@ -197,6 +246,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
           blocks: [],
           multiplier: 1,
           isGamificationEnabled: true,
+          isPinProtected: false,
           isConfusionFeedbackEnabled,
           isLiveQAEnabled,
           isModerationEnabled,
@@ -206,6 +256,13 @@ describe('Unit tests for assessment configuration functionalities', () => {
       )
       expect(liveQuiz7.isGamificationEnabled).toBe(true)
       expect(liveQuiz7.isAssessmentEnabled).toBe(false)
+      expect(liveQuiz7.pinCode).toBeNull()
+
+      // verify that no pin is defined for a non-assessment live quiz
+      const dbLiveQuiz7 = await prisma.liveQuiz.findUnique({
+        where: { id: liveQuiz7.id },
+      })
+      expect(dbLiveQuiz7?.pinCode).toBeNull()
 
       const liveQuiz8 = await seedLiveQuiz({ elements: [] }, userOneCtx)
       const liveQuiz8Edited = await manipulateLiveQuiz(
@@ -216,6 +273,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
           blocks: [],
           multiplier: 1,
           isGamificationEnabled: true,
+          isPinProtected: false,
           isConfusionFeedbackEnabled,
           isLiveQAEnabled,
           isModerationEnabled,
@@ -225,6 +283,13 @@ describe('Unit tests for assessment configuration functionalities', () => {
       )
       expect(liveQuiz8Edited.isGamificationEnabled).toBe(true)
       expect(liveQuiz8Edited.isAssessmentEnabled).toBe(false)
+      expect(liveQuiz8Edited.pinCode).toBeNull()
+
+      // verify that no pin is defined for a non-assessment live quiz
+      const dbLiveQuiz8 = await prisma.liveQuiz.findUnique({
+        where: { id: liveQuiz8Edited.id },
+      })
+      expect(dbLiveQuiz8?.pinCode).toBeNull()
 
       // Case 5: Manipulate a live quiz with assessment enabled course assignment (create and edit)
       const liveQuiz9 = await manipulateLiveQuiz(
@@ -234,6 +299,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
           blocks: [],
           multiplier: 1,
           isGamificationEnabled: false,
+          isPinProtected: false,
           isConfusionFeedbackEnabled,
           isLiveQAEnabled,
           isModerationEnabled,
@@ -243,6 +309,14 @@ describe('Unit tests for assessment configuration functionalities', () => {
       )
       expect(liveQuiz9.isGamificationEnabled).toBe(false)
       expect(liveQuiz9.isAssessmentEnabled).toBe(true)
+      expect(liveQuiz9.pinCode).not.toBeNull() // pin code is automatically enabled for assessment quizzes (independent of input arguments)
+
+      // verify that a valid pin is defined for an assessment live quiz
+      const dbLiveQuiz9 = await prisma.liveQuiz.findUnique({
+        where: { id: liveQuiz9.id },
+      })
+      expect(dbLiveQuiz9?.pinCode).not.toBeNull()
+      expect(dbLiveQuiz9?.pinCode).toMatch(/^[A-Z0-9]{6}$/) // pin should be set automatically for assessment live quizzes
 
       const liveQuiz10 = await seedLiveQuiz({ elements: [] }, userOneCtx)
       const liveQuiz10Edited = await manipulateLiveQuiz(
@@ -253,6 +327,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
           blocks: [],
           multiplier: 1,
           isGamificationEnabled: false,
+          isPinProtected: true,
           isConfusionFeedbackEnabled,
           isLiveQAEnabled,
           isModerationEnabled,
@@ -262,6 +337,14 @@ describe('Unit tests for assessment configuration functionalities', () => {
       )
       expect(liveQuiz10Edited.isGamificationEnabled).toBe(false)
       expect(liveQuiz10Edited.isAssessmentEnabled).toBe(true)
+      expect(liveQuiz10Edited.pinCode).not.toBeNull()
+
+      // verify that a valid pin is defined for an assessment live quiz
+      const dbLiveQuiz10 = await prisma.liveQuiz.findUnique({
+        where: { id: liveQuiz10Edited.id },
+      })
+      expect(dbLiveQuiz10?.pinCode).not.toBeNull()
+      expect(dbLiveQuiz10?.pinCode).toMatch(/^[A-Z0-9]{6}$/) // pin should be set automatically for assessment live quizzes
 
       // Case 6: Manipulate a live quiz with assessment disabled course assignment (create and edit)
       const liveQuiz11 = await manipulateLiveQuiz(
@@ -271,6 +354,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
           blocks: [],
           multiplier: 1,
           isGamificationEnabled: false,
+          isPinProtected: false,
           isConfusionFeedbackEnabled,
           isLiveQAEnabled,
           isModerationEnabled,
@@ -280,6 +364,13 @@ describe('Unit tests for assessment configuration functionalities', () => {
       )
       expect(liveQuiz11.isGamificationEnabled).toBe(false)
       expect(liveQuiz11.isAssessmentEnabled).toBe(false)
+      expect(liveQuiz11.pinCode).toBeNull()
+
+      // verify that no pin is defined for a non-assessment live quiz
+      const dbLiveQuiz11 = await prisma.liveQuiz.findUnique({
+        where: { id: liveQuiz11.id },
+      })
+      expect(dbLiveQuiz11?.pinCode).toBeNull()
 
       const liveQuiz12 = await seedLiveQuiz({ elements: [] }, userOneCtx)
       const liveQuiz12Edited = await manipulateLiveQuiz(
@@ -290,6 +381,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
           blocks: [],
           multiplier: 1,
           isGamificationEnabled: false,
+          isPinProtected: true,
           isConfusionFeedbackEnabled,
           isLiveQAEnabled,
           isModerationEnabled,
@@ -299,6 +391,14 @@ describe('Unit tests for assessment configuration functionalities', () => {
       )
       expect(liveQuiz12Edited.isGamificationEnabled).toBe(false)
       expect(liveQuiz12Edited.isAssessmentEnabled).toBe(false)
+      expect(liveQuiz12Edited.pinCode).not.toBeNull()
+
+      // verify that no pin is defined for a non-assessment live quiz
+      const dbLiveQuiz12 = await prisma.liveQuiz.findUnique({
+        where: { id: liveQuiz12Edited.id },
+      })
+      expect(dbLiveQuiz12?.pinCode).not.toBeNull()
+      expect(dbLiveQuiz12?.pinCode).toMatch(/^[A-Z0-9]{6}$/)
 
       // Case 7: Manipulate a live quiz assigned to courses with different gamification and assessment setting combinations
       const liveQuiz13 = await manipulateLiveQuiz(
@@ -308,6 +408,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
           blocks: [],
           multiplier: 1,
           isGamificationEnabled: true,
+          isPinProtected: true,
           isConfusionFeedbackEnabled,
           isLiveQAEnabled,
           isModerationEnabled,
@@ -317,6 +418,14 @@ describe('Unit tests for assessment configuration functionalities', () => {
       )
       expect(liveQuiz13.isGamificationEnabled).toBe(true)
       expect(liveQuiz13.isAssessmentEnabled).toBe(true)
+      expect(liveQuiz13.pinCode).not.toBeNull()
+
+      // verify that a valid pin is defined for an assessment live quiz
+      const dbLiveQuiz13 = await prisma.liveQuiz.findUnique({
+        where: { id: liveQuiz13.id },
+      })
+      expect(dbLiveQuiz13?.pinCode).not.toBeNull()
+      expect(dbLiveQuiz13?.pinCode).toMatch(/^[A-Z0-9]{6}$/) // pin should be set automatically for assessment live quizzes
 
       const liveQuiz14 = await seedLiveQuiz({ elements: [] }, userOneCtx)
       const liveQuiz14Edited = await manipulateLiveQuiz(
@@ -327,6 +436,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
           blocks: [],
           multiplier: 1,
           isGamificationEnabled: false, // will be overridden by course setting
+          isPinProtected: false,
           isConfusionFeedbackEnabled,
           isLiveQAEnabled,
           isModerationEnabled,
@@ -336,6 +446,14 @@ describe('Unit tests for assessment configuration functionalities', () => {
       )
       expect(liveQuiz14Edited.isGamificationEnabled).toBe(true)
       expect(liveQuiz14Edited.isAssessmentEnabled).toBe(true)
+      expect(liveQuiz14Edited.pinCode).not.toBeNull()
+
+      // verify that a valid pin is defined for an assessment live quiz
+      const dbLiveQuiz14 = await prisma.liveQuiz.findUnique({
+        where: { id: liveQuiz14Edited.id },
+      })
+      expect(dbLiveQuiz14?.pinCode).not.toBeNull()
+      expect(dbLiveQuiz14?.pinCode).toMatch(/^[A-Z0-9]{6}$/) // pin should be set automatically for assessment live quizzes
 
       // Case 8: Manipulate a live quiz without course assignment and gamification enabled (create and edit)
       const liveQuiz15 = await manipulateLiveQuiz(
@@ -345,6 +463,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
           blocks: [],
           multiplier: 1,
           isGamificationEnabled: true,
+          isPinProtected: false,
           isConfusionFeedbackEnabled,
           isLiveQAEnabled,
           isModerationEnabled,
@@ -355,6 +474,13 @@ describe('Unit tests for assessment configuration functionalities', () => {
       expect(liveQuiz15.id).not.toBeNull()
       expect(liveQuiz15.isGamificationEnabled).toBe(true)
       expect(liveQuiz15.isAssessmentEnabled).toBe(false)
+      expect(liveQuiz15.pinCode).toBeNull()
+
+      // verify that no pin is defined for a non-assessment live quiz
+      const dbLiveQuiz15 = await prisma.liveQuiz.findUnique({
+        where: { id: liveQuiz15.id },
+      })
+      expect(dbLiveQuiz15?.pinCode).toBeNull()
 
       const liveQuiz16 = await seedLiveQuiz({ elements: [] }, userOneCtx)
       const liveQuiz16Edited = await manipulateLiveQuiz(
@@ -365,6 +491,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
           blocks: [],
           multiplier: 1,
           isGamificationEnabled: true,
+          isPinProtected: false,
           isConfusionFeedbackEnabled,
           isLiveQAEnabled,
           isModerationEnabled,
@@ -374,6 +501,13 @@ describe('Unit tests for assessment configuration functionalities', () => {
       )
       expect(liveQuiz16Edited.isGamificationEnabled).toBe(true)
       expect(liveQuiz16Edited.isAssessmentEnabled).toBe(false)
+      expect(liveQuiz16Edited.pinCode).toBeNull()
+
+      // verify that no pin is defined for a non-assessment live quiz
+      const dbLiveQuiz16 = await prisma.liveQuiz.findUnique({
+        where: { id: liveQuiz16Edited.id },
+      })
+      expect(dbLiveQuiz16?.pinCode).toBeNull()
     })
 
     it('Verify that booleans on practice quizzes are set correctly when assigning it to courses', async () => {

@@ -1,5 +1,5 @@
 import messages from '../../../packages/i18n/messages/en'
-import { getDatetimeValidationString } from './helpers'
+import { getDatetimeValidationString, getFutureDate } from './helpers'
 
 describe('Feature test for review functionalities and batch operations', function () {
   before(() => {
@@ -24,6 +24,13 @@ describe('Feature test for review functionalities and batch operations', functio
       this.data = { ...this.data, ...reviewData }
     })
   })
+
+  // ! DEV: if a test case fails, stop the test run
+  // afterEach(function () {
+  //   if (this.currentTest.state === 'failed') {
+  //     Cypress.stop()
+  //   }
+  // })
 
   // ! Part 1: Activity review functionality
   // #region
@@ -50,22 +57,10 @@ describe('Feature test for review functionalities and batch operations', functio
       name: this.data.review.course.name,
       displayName: this.data.review.course.displayName,
       isGamificationEnabled: true,
-      isGroupFormationEnabled: true,
-      startDate: {
-        monthDelta: 1,
-        day: 11,
-        validation: getDatetimeValidationString(2, '11'),
-      },
-      endDate: {
-        monthDelta: 6,
-        day: 20,
-        validation: getDatetimeValidationString(13, '20'),
-      },
-      groupFormationDeadline: {
-        monthDelta: -5,
-        day: 12,
-        validation: getDatetimeValidationString(2, '12'),
-      }, // 2 months in the future at 2:00
+      isGroupCreationEnabled: true,
+      startDate: getFutureDate(1, '11'),
+      endDate: getFutureDate(12, '20'),
+      groupDeadlineDate: getFutureDate(1, '12'),
       maxGroupSize: 4,
       preferredGroupSize: 2,
     })
@@ -73,22 +68,10 @@ describe('Feature test for review functionalities and batch operations', functio
       name: this.data.review.course2.name,
       displayName: this.data.review.course2.displayName,
       isGamificationEnabled: true,
-      isGroupFormationEnabled: true,
-      startDate: {
-        monthDelta: 1,
-        day: 11,
-        validation: getDatetimeValidationString(2, '11'),
-      },
-      endDate: {
-        monthDelta: 6,
-        day: 20,
-        validation: getDatetimeValidationString(13, '20'),
-      },
-      groupFormationDeadline: {
-        monthDelta: -5,
-        day: 12,
-        validation: getDatetimeValidationString(2, '12'),
-      }, // 2 months in the future at 2:00
+      isGroupCreationEnabled: true,
+      startDate: getFutureDate(1, '11'),
+      endDate: getFutureDate(12, '20'),
+      groupDeadlineDate: getFutureDate(1, '12'),
       maxGroupSize: 4,
       preferredGroupSize: 2,
     })
@@ -124,19 +107,19 @@ describe('Feature test for review functionalities and batch operations', functio
       name: this.data.review.microLearning,
       displayName: this.data.review.microLearning,
       startDate: {
-        monthDelta: 2,
+        monthDelta: 3,
         day: 11,
         hour: 2,
         minute: 0,
         validation: getDatetimeValidationString(3, '11') + ', 02:00',
-      }, // 3 months in the future at 2:00
+      }, // 3 months in the future at 2:00 (defaults at first of next month)
       endDate: {
-        monthDelta: 4,
+        monthDelta: 7,
         day: 20,
         hour: 18,
         minute: 0,
-        validation: getDatetimeValidationString(5, '20') + ', 18:00',
-      }, // 7 months in the future at 18:00
+        validation: getDatetimeValidationString(7, '20') + ', 18:00',
+      }, // 7 months in the future at 18:00 (defaults at second of next month)
       courseName: this.data.review.course.name,
       stacks: [{ elements: [this.data.SCML.title, this.data.MCML.title] }],
     })
@@ -148,18 +131,18 @@ describe('Feature test for review functionalities and batch operations', functio
       displayName: this.data.review.groupActivity,
       courseName: this.data.review.course.name,
       scheduledStartDate: {
-        monthDelta: 2,
+        monthDelta: 3,
         day: 11,
         hour: 2,
         minute: 0,
         validation: getDatetimeValidationString(3, '11') + ', 02:00',
       }, // 3 months in the future at 2:00
       scheduledEndDate: {
-        monthDelta: 4,
+        monthDelta: 7,
         day: 20,
         hour: 18,
         minute: 0,
-        validation: getDatetimeValidationString(5, '20') + ', 18:00',
+        validation: getDatetimeValidationString(7, '20') + ', 18:00',
       }, // 7 months in the future at 18:00
       task: 'TASK',
       clues: [
@@ -1213,37 +1196,12 @@ describe('Feature test for review functionalities and batch operations', functio
 
   // ! Part 3: Activity list batch operations
   // #region
-  const validCourseStart = {
-    monthDelta: 1,
-    day: 11,
-    validation: getDatetimeValidationString(2, '11'),
-  }
-  const validCourseGroupDeadline = {
-    monthDelta: -4,
-    day: 12,
-    validation: getDatetimeValidationString(3, '12'),
-  }
-  const validCourseEnd = {
-    monthDelta: 6,
-    day: 20,
-    validation: getDatetimeValidationString(13, '20'),
-  }
-
-  const invalidCourseStart = {
-    monthDelta: 3,
-    day: 20,
-    validation: getDatetimeValidationString(4, '20'),
-  }
-  const invalidCourseGroupDeadline = {
-    monthDelta: -3,
-    day: 21,
-    validation: getDatetimeValidationString(4, '21'),
-  }
-  const invalidCourseEnd = {
-    monthDelta: -1,
-    day: 20,
-    validation: getDatetimeValidationString(6, '20'),
-  }
+  const validCourseStart = getFutureDate(1, '11')
+  const validCourseGroupDeadline = getFutureDate(2, '12')
+  const validCourseEnd = getFutureDate(12, '20')
+  const invalidCourseStart = getFutureDate(3, '20')
+  const invalidCourseGroupDeadline = getFutureDate(3, '21')
+  const invalidCourseEnd = getFutureDate(5, '20')
 
   // 3 months in the future at 2:00
   const activityStart = {
@@ -1251,11 +1209,11 @@ describe('Feature test for review functionalities and batch operations', functio
     day: 11,
     hour: 2,
     minute: 0,
-    validation: getDatetimeValidationString(4, '11') + ', 02:00',
+    validation: getDatetimeValidationString(3, '11') + ', 02:00',
   }
   // 7 months in the future at 18:00
   const activityEnd = {
-    monthDelta: 6,
+    monthDelta: 7,
     day: 20,
     hour: 18,
     minute: 0,
@@ -1288,10 +1246,10 @@ describe('Feature test for review functionalities and batch operations', functio
       name: this.data.batch.course1,
       displayName: this.data.batch.course1,
       isGamificationEnabled: true,
-      isGroupFormationEnabled: true,
+      isGroupCreationEnabled: true,
       startDate: validCourseStart,
       endDate: validCourseEnd,
-      groupFormationDeadline: validCourseGroupDeadline,
+      groupDeadlineDate: validCourseGroupDeadline,
       maxGroupSize: 4,
       preferredGroupSize: 2,
     })
@@ -1299,10 +1257,10 @@ describe('Feature test for review functionalities and batch operations', functio
       name: this.data.batch.course2,
       displayName: this.data.batch.course2,
       isGamificationEnabled: true,
-      isGroupFormationEnabled: true,
+      isGroupCreationEnabled: true,
       startDate: validCourseStart,
       endDate: validCourseEnd,
-      groupFormationDeadline: validCourseGroupDeadline,
+      groupDeadlineDate: validCourseGroupDeadline,
       maxGroupSize: 4,
       preferredGroupSize: 2,
     })
@@ -1312,10 +1270,10 @@ describe('Feature test for review functionalities and batch operations', functio
       name: this.data.batch.course3,
       displayName: this.data.batch.course3,
       isGamificationEnabled: true,
-      isGroupFormationEnabled: true,
+      isGroupCreationEnabled: true,
       startDate: validCourseStart,
       endDate: invalidCourseEnd,
-      groupFormationDeadline: validCourseGroupDeadline,
+      groupDeadlineDate: validCourseGroupDeadline,
       maxGroupSize: 4,
       preferredGroupSize: 2,
     })
@@ -1323,10 +1281,10 @@ describe('Feature test for review functionalities and batch operations', functio
       name: this.data.batch.course4,
       displayName: this.data.batch.course4,
       isGamificationEnabled: true,
-      isGroupFormationEnabled: true,
+      isGroupCreationEnabled: true,
       startDate: invalidCourseStart,
       endDate: invalidCourseEnd,
-      groupFormationDeadline: invalidCourseGroupDeadline,
+      groupDeadlineDate: invalidCourseGroupDeadline,
       maxGroupSize: 4,
       preferredGroupSize: 2,
     })
@@ -1334,10 +1292,10 @@ describe('Feature test for review functionalities and batch operations', functio
       name: this.data.batch.course5,
       displayName: this.data.batch.course5,
       isGamificationEnabled: true,
-      isGroupFormationEnabled: true,
+      isGroupCreationEnabled: true,
       startDate: invalidCourseStart,
       endDate: validCourseEnd,
-      groupFormationDeadline: invalidCourseGroupDeadline,
+      groupDeadlineDate: invalidCourseGroupDeadline,
       maxGroupSize: 4,
       preferredGroupSize: 2,
     })
@@ -1347,7 +1305,7 @@ describe('Feature test for review functionalities and batch operations', functio
       name: this.data.batch.courseNoGroups,
       displayName: this.data.batch.courseNoGroups,
       isGamificationEnabled: true,
-      isGroupFormationEnabled: false,
+      isGroupCreationEnabled: false,
       startDate: validCourseStart,
       endDate: validCourseEnd,
     })
@@ -1357,7 +1315,7 @@ describe('Feature test for review functionalities and batch operations', functio
       name: this.data.batch.courseNotGamified,
       displayName: this.data.batch.courseNotGamified,
       isGamificationEnabled: false,
-      isGroupFormationEnabled: false,
+      isGroupCreationEnabled: false,
       startDate: validCourseStart,
       endDate: validCourseEnd,
     })

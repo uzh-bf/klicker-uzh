@@ -374,7 +374,7 @@ export async function logoutTemporaryParticipant(
 
   // check if there exists a temporary leaderboard entry for the current user
   const lbEntry = await ctx.prisma.temporaryLeaderboardEntry.findUnique({
-    where: { id: ctx.user.sub, quizId: liveQuizId },
+    where: { id_quizId: { id: ctx.user.sub, quizId: liveQuizId } },
   })
 
   if (!lbEntry) {
@@ -383,7 +383,7 @@ export async function logoutTemporaryParticipant(
 
   // delete the temporary leaderboard entry
   await ctx.prisma.temporaryLeaderboardEntry.delete({
-    where: { id: ctx.user.sub, quizId: liveQuizId },
+    where: { id_quizId: { id: ctx.user.sub, quizId: liveQuizId } },
   })
 
   // delete the cookie

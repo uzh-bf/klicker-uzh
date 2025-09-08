@@ -56,12 +56,13 @@ function ActivityOverviewTable({
         message={t('manage.activities.activityContainsNoElements', {
           activity: t(`shared.types.${activityType}`),
         })}
+        className={{ root: 'mt-2 w-full' }}
       />
     )
   }
 
   return (
-    <ShadcnTable className="text-sm">
+    <ShadcnTable className="mt-2 text-sm">
       <ShadcnTableHeader>
         <ShadcnTableRow>
           <ShadcnTableHead
