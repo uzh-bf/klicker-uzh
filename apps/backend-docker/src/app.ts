@@ -53,22 +53,48 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
   async function jwtMiddleware(req: any, res: any, next: any) {
     let token = null
 
-    if (
-      req.headers.origin?.includes(
-        process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
-      ) ||
-      req.headers.origin?.includes(
-        process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
-      )
-    ) {
-      token = req.cookies?.['next-auth.session-token']
-    } else if (
-      req.headers.origin?.includes(process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa')
-    ) {
-      token =
-        req.cookies?.['participant_token'] ??
-        req.cookies?.['temporary_participant_token'] ??
-        req.cookies?.['next-auth.session-token']
+    console.log(
+      'Processing token with ASSESSMENT_MODE',
+      process.env.ASSESSMENT_MODE,
+      req.cookies
+    )
+
+    // Assessment mode: only check for student NextAuth cookie
+    if (process.env.ASSESSMENT_MODE === 'true') {
+      if (
+        req.headers.origin?.includes(
+          process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
+        ) ||
+        req.headers.origin?.includes(
+          process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
+        )
+      ) {
+        token = req.cookies?.['next-auth.session-token']
+      } else if (
+        req.headers.origin?.includes(
+          process.env.APP_ASSESSMENT_SUBDOMAIN ?? 'assessment'
+        )
+      ) {
+        token = req.cookies?.['next-auth.participant-session-token']
+      }
+    } else {
+      if (
+        req.headers.origin?.includes(
+          process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
+        ) ||
+        req.headers.origin?.includes(
+          process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
+        )
+      ) {
+        token = req.cookies?.['next-auth.session-token']
+      } else if (
+        req.headers.origin?.includes(process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa')
+      ) {
+        token =
+          req.cookies?.['participant_token'] ??
+          req.cookies?.['temporary_participant_token'] ??
+          req.cookies?.['next-auth.session-token']
+      }
     }
 
     token =

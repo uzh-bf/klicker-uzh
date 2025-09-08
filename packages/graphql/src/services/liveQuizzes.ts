@@ -23,8 +23,8 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
+import generatePassword from 'generate-password'
 import { GraphQLError } from 'graphql'
-import type { ChainableCommander } from 'ioredis'
 import { min } from 'mathjs'
 import schedule from 'node-schedule'
 import { createHmac } from 'node:crypto'
@@ -43,32 +43,8 @@ const FIRST_ACHIEVEMENT_ID = 5
 const SECOND_ACHIEVEMENT_ID = 6
 const THIRD_ACHIEVEMENT_ID = 7
 
-// Feature flags for dual Redis mode
-const ENABLE_DUAL_REDIS_MODE = process.env.ENABLE_DUAL_REDIS_MODE === 'true'
-const PRESERVE_REDIS = process.env.PRESERVE_REDIS_FOR_COMPARISON === 'true'
-
 // ------ HELPER FUNCTIONS ------
 // #region
-
-/**
- * Helper function to execute Redis operations on both lq: and lqV2: prefixes
- * This enables parallel testing of Azure Functions and Hatchet processors
- */
-function redisOperation(
-  redisMulti: ChainableCommander,
-  operation: string,
-  key: string,
-  ...args: any[]
-) {
-  // Always execute on the original lq: prefix
-  redisMulti[operation](`lq:${key}`, ...args)
-
-  // If dual mode is enabled, also execute on lqV2: prefix
-  if (ENABLE_DUAL_REDIS_MODE) {
-    redisMulti[operation](`lqV2:${key}`, ...args)
-  }
-}
-
 async function getCachedBlockResults({
   ctx,
   activeBlock,
@@ -395,30 +371,14 @@ async function unlinkCachedBlockResults({
   // unlink everything regarding the block in redis
   const unlinkMulti = ctx.redisExec.pipeline()
 
-  if (!PRESERVE_REDIS) {
-    // Always unlink lq: keys
-    unlinkMulti.unlink(`lq:${quizId}:b:${blockId}:lb`)
-    unlinkMulti.unlink(`lq:${quizId}:b:${blockId}:lbTemporary`)
-    activeInstanceIds.forEach((instanceId) => {
-      unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:info`)
-      unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:responseHashes`)
-      unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:responses`)
-      unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:results`)
-    })
-
-    // If NOT in comparison mode and dual Redis is enabled, also unlink lqV2: keys
-    // In comparison mode, we preserve lqV2: keys for analysis
-    if (ENABLE_DUAL_REDIS_MODE) {
-      unlinkMulti.unlink(`lqV2:${quizId}:b:${blockId}:lb`)
-      unlinkMulti.unlink(`lqV2:${quizId}:b:${blockId}:lbTemporary`)
-      activeInstanceIds.forEach((instanceId) => {
-        unlinkMulti.unlink(`lqV2:${quizId}:i:${instanceId}:info`)
-        unlinkMulti.unlink(`lqV2:${quizId}:i:${instanceId}:responseHashes`)
-        unlinkMulti.unlink(`lqV2:${quizId}:i:${instanceId}:responses`)
-        unlinkMulti.unlink(`lqV2:${quizId}:i:${instanceId}:results`)
-      })
-    }
-  }
+  unlinkMulti.unlink(`lq:${quizId}:b:${blockId}:lb`)
+  unlinkMulti.unlink(`lq:${quizId}:b:${blockId}:lbTemporary`)
+  activeInstanceIds.forEach((instanceId) => {
+    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:info`)
+    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:responseHashes`)
+    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:responses`)
+    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:results`)
+  })
 
   return unlinkMulti.exec()
 }
@@ -562,6 +522,7 @@ interface ManipulateLiveQuizArgs {
   maxBonusPoints?: number | null
   timeToZeroBonus?: number | null
   isGamificationEnabled: boolean
+  isPinProtected: boolean
   isConfusionFeedbackEnabled: boolean
   isLiveQAEnabled: boolean
   isModerationEnabled: boolean
@@ -581,6 +542,7 @@ export async function manipulateLiveQuiz(
     maxBonusPoints,
     timeToZeroBonus,
     isGamificationEnabled,
+    isPinProtected,
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
     isModerationEnabled,
@@ -588,10 +550,30 @@ export async function manipulateLiveQuiz(
   ctx: ContextWithUser
 ) {
   // in EDIT mode - validate that the live quiz exists and is not published
-  let existingActivity: DB.LiveQuiz | null = null
+  let existingActivity:
+    | (DB.LiveQuiz & { course?: { _count: { permissions: number } } | null })
+    | null = null
   if (id) {
     existingActivity = await ctx.prisma.liveQuiz.findUnique({
       where: { id, isDeleted: false },
+      include: {
+        course: {
+          include: {
+            _count: {
+              select: {
+                permissions: {
+                  where: {
+                    userId: ctx.user.sub,
+                    permissionLevel: {
+                      in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     })
 
     if (!existingActivity) {
@@ -649,6 +631,52 @@ export async function manipulateLiveQuiz(
   // only activities in assessment courses will be marked as being part of assessment
   const assessmentSetting = course?.isAssessmentEnabled ?? false
 
+  // pin protection applies when assessment is enabled or explicitly enabled via flag
+  const pinProtection = assessmentSetting || isPinProtected
+
+  // if the activity is part of an assessment course, but should be modified and the user is not a course admin, return early
+  if (
+    typeof courseId !== 'undefined' &&
+    courseId !== null &&
+    existingActivity?.isAssessmentEnabled &&
+    !existingActivity?.course?._count.permissions
+  ) {
+    throw new GraphQLError(
+      'Assessment live quizzes can only be modified by course admins or owners'
+    )
+  }
+
+  // if required, find a new pin code for the live quiz that is still available
+  let newPinCode: string | undefined | null = existingActivity?.pinCode
+  if (pinProtection && (!courseId || courseId !== existingActivity?.courseId)) {
+    let pinValid = false
+
+    for (let attempt = 0; attempt < 10; attempt++) {
+      // generate a new pin code
+      newPinCode = generatePassword.generate({
+        uppercase: true,
+        lowercase: false,
+        numbers: true,
+        symbols: false,
+        length: 6,
+      })
+
+      // check if the pin code is still available
+      const existingLiveQuiz = await ctx.prisma.liveQuiz.findUnique({
+        where: { pinCode: newPinCode },
+      })
+      if (!existingLiveQuiz) {
+        pinValid = true
+        break
+      }
+    }
+
+    // if the pin is still invalid, return null and abort the transaction
+    if (!pinValid) {
+      throw new Error('Could not find available pin code for live quiz')
+    }
+  }
+
   // re-create blocks and link existing instance / create new instances (depending on mode and novelty of the included element)
   const createOrUpdateJSON = {
     name: name.trim(),
@@ -661,6 +689,7 @@ export async function manipulateLiveQuiz(
     timeToZeroBonus: timeToZeroBonus ?? undefined,
     isGamificationEnabled: gamificationSetting,
     isAssessmentEnabled: assessmentSetting,
+    pinCode: pinProtection ? newPinCode : null, // if pin protection applies (and the course changed), assign a pin
     isConfusionFeedbackEnabled,
     isLiveQAEnabled,
     isModerationEnabled,
@@ -730,15 +759,20 @@ export async function manipulateLiveQuiz(
         where: { id: id ?? uuidv4() },
         create: {
           ...createOrUpdateJSON,
-          course: courseId !== null ? { connect: { id: courseId } } : undefined,
+          course:
+            typeof courseId !== 'undefined' && courseId !== null
+              ? { connect: { id: courseId } }
+              : undefined,
           owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
         },
         update: {
           ...createOrUpdateJSON,
           course:
-            courseId !== null
-              ? { connect: { id: courseId } }
-              : { disconnect: true },
+            typeof courseId !== 'undefined'
+              ? courseId !== null
+                ? { connect: { id: courseId } }
+                : { disconnect: true }
+              : undefined,
         },
         include: {
           templateInfo: true,
@@ -833,6 +867,7 @@ export async function manipulateLiveQuiz(
     areInstancesOutdated: activity.areInstancesOutdated,
     isGamificationEnabled: activity.isGamificationEnabled,
     isAssessmentEnabled: activity.isAssessmentEnabled,
+    pinCode: activity.pinCode,
     numSharedUsers: id ? activity._count.permissions - 1 : 0,
     isOwner,
     isManager,
@@ -1018,23 +1053,24 @@ export async function getShortnameQuizzes(
   ctx: Context
 ) {
   const user = await ctx.prisma.user.findUnique({
-    where: {
-      shortname: shortname.trim(),
-    },
+    where: { shortname: shortname.trim() },
     include: {
       liveQuizzes: {
         where: {
           accessMode: DB.AccessMode.PUBLIC,
           status: DB.PublicationStatus.PUBLISHED,
         },
-        include: {
-          course: true,
-        },
+        include: { course: true },
       },
     },
   })
 
-  return user?.liveQuizzes ?? []
+  return (
+    user?.liveQuizzes.map((quiz) => ({
+      ...quiz,
+      isPinProtected: !!quiz.pinCode,
+    })) ?? []
+  )
 }
 
 export async function getUnassignedLiveQuizzes(ctx: ContextWithUser) {
@@ -1097,8 +1133,7 @@ export async function startLiveQuiz(
       case DB.PublicationStatus.SCHEDULED: {
         try {
           const pipeline = ctx.redisExec.pipeline()
-
-          redisOperation(pipeline, 'hmset', `${quiz.id}:meta`, {
+          pipeline.hmset(`lq:${quiz.id}:meta`, {
             namespace: quiz.namespace,
             startedAt: Number(new Date()),
           })
@@ -1109,16 +1144,11 @@ export async function startLiveQuiz(
         }
 
         // generate a random pin code
-        const pinCode = 100000 + Math.floor(Math.random() * 900000)
         const startedLiveQuiz = await ctx.prisma.liveQuiz.update({
-          where: {
-            id,
-          },
+          where: { id },
           data: {
             status: DB.PublicationStatus.PUBLISHED,
             startedAt: new Date(),
-            pinCode:
-              quiz.accessMode === DB.AccessMode.RESTRICTED ? pinCode : null,
           },
         })
 
@@ -1313,107 +1343,71 @@ export async function activateLiveQuizBlock(
       case DB.ElementType.SC:
       case DB.ElementType.MC:
       case DB.ElementType.KPRIM: {
-        redisOperation(
-          redisMulti,
-          'hmset',
-          `${quiz.id}:i:${instance.id}:info`,
-          {
-            ...commonInfo,
-            choiceCount: elementData.options.choices.length,
-            solutions: elementData.options.hasSampleSolution
-              ? JSON.stringify(
-                  elementData.options.choices
-                    .map((choice, ix) => ({ ix, correct: choice.correct }))
-                    .filter((choice) => choice.correct)
-                    .map((choice) => choice.ix)
-                )
-              : undefined,
-          }
-        )
-        redisOperation(
-          redisMulti,
-          'hmset',
-          `${quiz.id}:i:${instance.id}:results`,
-          {
-            participants: 0,
-            ...(instance.results as ElementResultsChoices).choices,
-          }
-        )
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
+          ...commonInfo,
+          choiceCount: elementData.options.choices.length,
+          solutions: elementData.options.hasSampleSolution
+            ? JSON.stringify(
+                elementData.options.choices
+                  .map((choice, ix) => ({ ix, correct: choice.correct }))
+                  .filter((choice) => choice.correct)
+                  .map((choice) => choice.ix)
+              )
+            : undefined,
+        })
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
+          participants: 0,
+          ...(instance.results as ElementResultsChoices).choices,
+        })
+
         break
       }
 
       case DB.ElementType.NUMERICAL: {
-        redisOperation(
-          redisMulti,
-          'hmset',
-          `${quiz.id}:i:${instance.id}:info`,
-          {
-            ...commonInfo,
-            solutions:
-              elementData.options.exactSolutions &&
-              elementData.options.exactSolutions.length > 0
-                ? JSON.stringify(elementData.options.exactSolutions)
-                : elementData.options.solutionRanges
-                  ? JSON.stringify(elementData.options.solutionRanges)
-                  : undefined,
-          }
-        )
-        redisOperation(
-          redisMulti,
-          'hmset',
-          `${quiz.id}:i:${instance.id}:results`,
-          {
-            participants: 0,
-          }
-        )
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
+          ...commonInfo,
+          solutions:
+            elementData.options.exactSolutions &&
+            elementData.options.exactSolutions.length > 0
+              ? JSON.stringify(elementData.options.exactSolutions)
+              : elementData.options.solutionRanges
+                ? JSON.stringify(elementData.options.solutionRanges)
+                : undefined,
+        })
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
+          participants: 0,
+        })
+
         break
       }
 
       case DB.ElementType.FREE_TEXT: {
-        redisOperation(
-          redisMulti,
-          'hmset',
-          `${quiz.id}:i:${instance.id}:info`,
-          {
-            ...commonInfo,
-            solutions: elementData.options.hasSampleSolution
-              ? JSON.stringify(elementData.options.solutions)
-              : undefined,
-          }
-        )
-        redisOperation(
-          redisMulti,
-          'hmset',
-          `${quiz.id}:i:${instance.id}:results`,
-          {
-            participants: 0,
-          }
-        )
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
+          ...commonInfo,
+          solutions: elementData.options.hasSampleSolution
+            ? JSON.stringify(elementData.options.solutions)
+            : undefined,
+        })
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
+          participants: 0,
+        })
+
         break
       }
 
       case DB.ElementType.SELECTION: {
-        redisOperation(
-          redisMulti,
-          'hmset',
-          `${quiz.id}:i:${instance.id}:info`,
-          {
-            ...commonInfo,
-            solutions: JSON.stringify(
-              elementData.options.answerCollectionSolutionIds
-            ),
-            numberOfInputs: elementData.options.numberOfInputs,
-          }
-        )
-        redisOperation(
-          redisMulti,
-          'hmset',
-          `${quiz.id}:i:${instance.id}:results`,
-          {
-            participants: 0,
-            ...(instance.results as ElementResultsSelection).selections,
-          }
-        )
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
+          ...commonInfo,
+          solutions: JSON.stringify(
+            elementData.options.answerCollectionSolutionIds
+          ),
+          numberOfInputs: elementData.options.numberOfInputs,
+        })
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
+          participants: 0,
+          ...(instance.results as ElementResultsSelection).selections,
+        })
+
         break
       }
 
@@ -1430,41 +1424,23 @@ export async function activateLiveQuizBlock(
               }))
             : undefined
 
-        redisOperation(
-          redisMulti,
-          'hmset',
-          `${quiz.id}:i:${instance.id}:info`,
-          {
-            ...commonInfo,
-            solutions: solutions ? JSON.stringify(solutions) : undefined,
-          }
-        )
-        redisOperation(
-          redisMulti,
-          'hmset',
-          `${quiz.id}:i:${instance.id}:results`,
-          {
-            participants: 0,
-          }
-        )
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
+          ...commonInfo,
+          solutions: solutions ? JSON.stringify(solutions) : undefined,
+        })
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
+          participants: 0,
+        })
+
         break
       }
 
       case DB.ElementType.CONTENT: {
-        redisOperation(
-          redisMulti,
-          'hmset',
-          `${quiz.id}:i:${instance.id}:info`,
-          commonInfo
-        )
-        redisOperation(
-          redisMulti,
-          'hmset',
-          `${quiz.id}:i:${instance.id}:results`,
-          {
-            participants: 0,
-          }
-        )
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, commonInfo)
+        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
+          participants: 0,
+        })
+
         break
       }
     }
@@ -1482,6 +1458,7 @@ export async function deactivateLiveQuizBlock(
   const quiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id: quizId },
     include: {
+      course: true,
       activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
       blocks: { orderBy: { id: 'asc' } },
     },
@@ -1508,21 +1485,76 @@ export async function deactivateLiveQuizBlock(
     } = cachedResults
 
     // filter the leaderboard entries to only include those that have a valid participant id
-    const existingParticipantsLB = (
+    const { regularParticipantLeaderboard, temporaryParticipantLeaderboard } = (
       await Promise.allSettled(
         Object.entries(liveQuizLeaderboard).map(async ([id, score]) => {
           const participant = await ctx.prisma.participant.findUnique({
             where: { id },
+            include: {
+              participations: quiz.courseId
+                ? { where: { courseId: quiz.courseId } }
+                : { take: 0 },
+            },
           })
 
           if (!participant) return null
-          return [id, score] as [string, string]
+          return {
+            participantId: id,
+            participantUsername: participant.username,
+            participantAvatar: participant.avatar,
+            gamifiedCourseParticipation:
+              !!quiz.courseId &&
+              quiz.course?.isGamificationEnabled &&
+              !!participant.participations?.[0],
+            courseParticipationActive:
+              !!quiz.courseId &&
+              !!participant.participations?.[0] &&
+              participant.participations?.[0].isActive,
+            score,
+          }
         })
       )
-    ).flatMap((result) => {
-      if (result.status !== 'fulfilled' || !result.value) return []
-      return [result.value]
-    })
+    ).reduce<{
+      regularParticipantLeaderboard: { participantId: string; score: number }[]
+      temporaryParticipantLeaderboard: {
+        participantId: string
+        participantUsername: string
+        participantAvatar: string | null
+        score: number
+      }[]
+    }>(
+      (acc, result) => {
+        // filter out failed requests and those which have a valid gamified course participation,
+        // which is not active -> active decision to not be on leaderboard
+        if (
+          result.status !== 'fulfilled' ||
+          !result.value ||
+          (result.value.gamifiedCourseParticipation &&
+            !result.value.courseParticipationActive)
+        ) {
+          return acc
+        }
+
+        if (result.value.gamifiedCourseParticipation) {
+          // active gamified course participation (inactive already filtered) -> regular leaderboard
+          acc.regularParticipantLeaderboard.push({
+            participantId: result.value.participantId,
+            score: parseInt(result.value.score, 10),
+          })
+        } else {
+          // no gamified course participation -> temporary leaderboard
+          acc.temporaryParticipantLeaderboard.push({
+            participantId: result.value.participantId,
+            participantUsername: result.value.participantUsername,
+            participantAvatar: result.value.participantAvatar,
+            score: parseInt(result.value.score, 10),
+          })
+        }
+
+        return acc
+      },
+      { regularParticipantLeaderboard: [], temporaryParticipantLeaderboard: [] }
+    )
 
     // filter temporary leaderboard entries to only include those that have a valid temporary leaderboard entry for this live quiz
     // technically, this should not be required, since all ids should be valid, but it is a safety check
@@ -1532,11 +1564,16 @@ export async function deactivateLiveQuizBlock(
           async ([id, score]) => {
             const tempLeadeboardEntry =
               await ctx.prisma.temporaryLeaderboardEntry.findUnique({
-                where: { id, quizId },
+                where: { id_quizId: { id, quizId } },
               })
 
             if (!tempLeadeboardEntry) return null
-            return [id, score] as [string, string]
+            return {
+              participantId: id,
+              participantUsername: undefined,
+              participantAvatar: undefined,
+              score: parseInt(score, 10),
+            }
           }
         )
       )
@@ -1567,45 +1604,70 @@ export async function deactivateLiveQuizBlock(
         },
         leaderboard: quiz.isGamificationEnabled
           ? {
-              upsert: existingParticipantsLB.map(
-                ([id, score]: [string, string]) => ({
+              upsert: regularParticipantLeaderboard.map(
+                ({ participantId, score }) => ({
                   where: {
                     type_participantId_liveQuizId: {
                       type: DB.LeaderboardType.SESSION,
-                      participantId: id,
+                      participantId,
                       liveQuizId: quizId,
                     },
                   },
                   create: {
                     type: DB.LeaderboardType.SESSION,
-                    participant: { connect: { id } },
-                    score: parseInt(score),
-                    sessionParticipation: {
-                      connectOrCreate: {
-                        where: {
-                          courseId_participantId: {
-                            courseId: quiz.courseId!,
-                            participantId: id,
+                    participant: { connect: { id: participantId } },
+                    score: score,
+                    sessionParticipation: quiz.courseId
+                      ? {
+                          connectOrCreate: {
+                            where: {
+                              courseId_participantId: {
+                                courseId: quiz.courseId,
+                                participantId,
+                              },
+                            },
+                            create: {
+                              course: { connect: { id: quiz.courseId! } },
+                              participant: { connect: { id: participantId } },
+                            },
                           },
-                        },
-                        create: {
-                          course: { connect: { id: quiz.courseId! } },
-                          participant: { connect: { id } },
-                        },
-                      },
-                    },
+                        }
+                      : undefined,
                   },
-                  update: { score: parseInt(score) },
+                  update: { score },
                 })
               ),
             }
           : undefined,
-        temporaryLeaderboard: {
-          update: existingTemporaryLB.map(([id, score]: [string, string]) => ({
-            where: { id, quizId },
-            data: { score: parseInt(score) },
-          })),
-        },
+        temporaryLeaderboard: quiz.isGamificationEnabled
+          ? {
+              upsert: [
+                ...temporaryParticipantLeaderboard,
+                ...existingTemporaryLB,
+              ].map(
+                ({
+                  participantId,
+                  participantUsername,
+                  participantAvatar,
+                  score,
+                }) => ({
+                  where: {
+                    id_quizId: {
+                      id: participantId,
+                      quizId,
+                    },
+                  },
+                  create: {
+                    id: participantId,
+                    username: participantUsername ?? '', // fallback should never be used
+                    avatar: participantAvatar ?? undefined,
+                    score,
+                  },
+                  update: { score },
+                })
+              ),
+            }
+          : undefined,
       },
       include: { blocks: { orderBy: { order: 'asc' } } },
     })
@@ -1652,6 +1714,7 @@ export async function endLiveQuiz(
   const quiz = await ctx.prisma.liveQuiz.findFirst({
     where: { id },
     include: {
+      course: true,
       blocks: {
         include: { elements: { orderBy: { order: 'asc' } } },
         orderBy: { id: 'asc' },
@@ -1827,11 +1890,12 @@ export async function endLiveQuiz(
           },
         })
 
-        // if the live quiz is part of a course, update the course leaderboard
+        // if the live quiz is part of a gamified course, update the course leaderboard
         // with the accumulated points and award achievements
         if (quizLB && quiz.courseId) {
           for (const participant of existingParticipants) {
             if (
+              quiz.course?.isGamificationEnabled && // verify that the course is gamified
               typeof participant.score !== 'undefined' &&
               participant.hasParticipation
             ) {
@@ -1925,52 +1989,32 @@ export async function endLiveQuiz(
     }
 
     // Clean up Redis keys without using KEYS (iterate with SCAN to avoid blocking)
-    if (!PRESERVE_REDIS) {
-      const SCAN_COUNT = 1000
-
-      const scanAndUnlink = async (pattern: string) => {
-        let cursor = '0'
-        do {
-          const [nextCursor, keys] = await ctx.redisExec.scan(
-            cursor,
-            'MATCH',
-            pattern,
-            'COUNT',
-            SCAN_COUNT
-          )
-          cursor = nextCursor
-
-          if (keys.length > 0) {
-            const pipe = ctx.redisExec.pipeline()
-            for (const key of keys) {
-              pipe.unlink(key)
-            }
-            await pipe.exec()
-          }
-        } while (cursor !== '0')
-      }
-
-      await scanAndUnlink(`lq:${id}:*`)
-
-      // If dual Redis mode is enabled, also clean up lqV2: keys
-      if (ENABLE_DUAL_REDIS_MODE) {
-        await scanAndUnlink(`lqV2:${id}:*`)
-      }
-    } else {
-      // In comparison mode, log that we're preserving Redis data
-      console.log(
-        `Preserving Redis data for quiz ${id} - both lq: and lqV2: keys retained`
+    const SCAN_COUNT = 1000
+    let cursor = '0'
+    do {
+      const [nextCursor, keys] = await ctx.redisExec.scan(
+        cursor,
+        'MATCH',
+        `lq:${id}:*`,
+        'COUNT',
+        SCAN_COUNT
       )
-    }
+      cursor = nextCursor
+
+      if (keys.length > 0) {
+        const pipe = ctx.redisExec.pipeline()
+        for (const key of keys) {
+          pipe.unlink(key)
+        }
+        await pipe.exec()
+      }
+    } while (cursor !== '0')
 
     const endedLiveQuiz = await ctx.prisma.liveQuiz.update({
-      where: {
-        id,
-      },
+      where: { id },
       data: {
         status: DB.PublicationStatus.ENDED,
         finishedAt: new Date(),
-        pinCode: null,
       },
     })
 
@@ -2167,15 +2211,26 @@ export async function cancelLiveQuiz(
       throw new Error('Live quiz is not running')
     }
 
-    const instances = quiz.blocks.flatMap((block) => block.elements)
+    // if the quiz is an assessment quiz, it can only be aborted before the first block is activated
+    if (
+      quiz.isAssessmentEnabled &&
+      (quiz.activeBlock ||
+        quiz.blocks.some(
+          (block) => block.status !== DB.ElementBlockStatus.SCHEDULED
+        ))
+    ) {
+      throw new Error(
+        'Assessment quizzes can only be aborted before the first block is activated'
+      )
+    }
 
+    const instances = quiz.blocks.flatMap((block) => block.elements)
     const [updatedQuiz] = await ctx.prisma.$transaction([
       ctx.prisma.liveQuiz.update({
         where: { id },
         data: {
           status: DB.PublicationStatus.DRAFT,
           startedAt: null,
-          pinCode: null,
           activeBlock: { disconnect: true },
           leaderboard: { deleteMany: {} },
           temporaryLeaderboard: { deleteMany: {} },
@@ -2349,7 +2404,25 @@ export async function deleteLiveQuiz(
   // fetch live quiz to check its status, remember the contained elements
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id },
-    include: { blocks: { include: { elements: true } } },
+    include: {
+      blocks: { include: { elements: true } },
+      course: {
+        include: {
+          _count: {
+            select: {
+              permissions: {
+                where: {
+                  userId: ctx.user.sub,
+                  permissionLevel: {
+                    in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   })
 
   if (!liveQuiz) return null
@@ -2358,11 +2431,19 @@ export async function deleteLiveQuiz(
     // running live quizzes cannot be deleted
     return null
   } else if (liveQuiz.status === DB.PublicationStatus.ENDED) {
+    // completed assessment live quizzes cannot be deleted
+    if (liveQuiz.isAssessmentEnabled) {
+      return null
+    }
+
     const deletedLiveQuiz = await ctx.prisma.$transaction(
       async (prisma) => {
         const quiz = await prisma.liveQuiz.update({
           where: { id, status: DB.PublicationStatus.ENDED },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            directPermissions: { deleteMany: {} }, // delete all direct permissions on the activity
+          },
         })
 
         // update derived permissions for this live quiz (after soft deletion)
@@ -2381,6 +2462,17 @@ export async function deleteLiveQuiz(
 
     return deletedLiveQuiz
   } else {
+    // draft and scheduled assessment live quizzes can only be deleted by admins of the corresponding assessment course
+    if (liveQuiz.isAssessmentEnabled) {
+      const isCourseAdminOwner =
+        !!liveQuiz.course?._count?.permissions &&
+        liveQuiz.course._count.permissions > 0
+
+      if (!isCourseAdminOwner) {
+        return null
+      }
+    }
+
     const deletedLiveQuiz = await ctx.prisma.$transaction(
       async (prisma) => {
         const quiz = await prisma.liveQuiz.delete({
@@ -2478,7 +2570,88 @@ const aggregateFeedbacks = (feedbacks: DB.ConfusionTimestep[]) => {
 
 // ------ LIVE QUIZ GETTER FUNCTIONS (STUDENT) ------
 // #region
+export async function setLiveQuizPinCookie(
+  { liveQuizId, pin }: { liveQuizId: string; pin: string },
+  ctx: Context
+) {
+  // verify that the corresponding live quiz is available
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: { id: liveQuizId },
+    select: { id: true, status: true, pinCode: true },
+  })
+  if (!liveQuiz || liveQuiz.status !== DB.PublicationStatus.PUBLISHED) {
+    throw new GraphQLError('LIVE_QUIZ_PIN_INVALID', {
+      extensions: { code: 'FORBIDDEN' },
+    })
+  }
+
+  // remove any previously added cookie and set the new correct one
+  const cookieName = `live-quiz-pin-${liveQuizId}`
+  if (!liveQuiz.pinCode || pin !== liveQuiz.pinCode) {
+    try {
+      ctx.res.clearCookie(cookieName, {
+        domain: process.env.COOKIE_DOMAIN as string | undefined,
+        path: '/',
+      })
+    } catch (_) {}
+    throw new GraphQLError('LIVE_QUIZ_PIN_INVALID', {
+      extensions: { code: 'FORBIDDEN' },
+    })
+  }
+
+  // set the pin as a cookie to be readable by the student live quiz query
+  ctx.res.cookie(cookieName, pin, {
+    domain: process.env.COOKIE_DOMAIN,
+    path: '/',
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24, // cookie valie for one day
+    secure:
+      process.env.NODE_ENV === 'production' &&
+      process.env.COOKIE_DOMAIN !== '127.0.0.1',
+    sameSite: 'lax',
+  })
+
+  return true
+}
+
 export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
+  // only get the minimal required information of the quiz
+  const quizInfo = await ctx.prisma.liveQuiz.findUnique({
+    where: { id },
+    select: { id: true, status: true, pinCode: true },
+  })
+
+  // if the quiz is not available, return early
+  if (!quizInfo || quizInfo.status !== DB.PublicationStatus.PUBLISHED)
+    return null
+
+  // if a pin code is required, verify that the user has already entered a valid one
+  if (quizInfo.pinCode) {
+    const cookieName = `live-quiz-pin-${id}`
+    const providedPin = ctx.req.cookies?.[cookieName]
+
+    if (!providedPin) {
+      throw new GraphQLError('LIVE_QUIZ_PIN_MISSING', {
+        extensions: { code: 'FORBIDDEN' },
+      })
+    }
+
+    if (providedPin !== quizInfo.pinCode) {
+      try {
+        ctx.res.clearCookie(cookieName, {
+          domain: process.env.COOKIE_DOMAIN as string | undefined,
+          path: '/',
+          secure: false,
+          sameSite: 'lax',
+        })
+      } catch (_) {}
+
+      throw new GraphQLError('LIVE_QUIZ_PIN_INVALID', {
+        extensions: { code: 'FORBIDDEN' },
+      })
+    }
+  }
+
   const quiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id },
     include: {

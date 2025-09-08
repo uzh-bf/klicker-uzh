@@ -27,7 +27,7 @@ import {
 } from './helpers.js'
 import { userFour, userOne, userThree, userTwo } from './userData.js'
 
-describe('Unit tests for user group management', () => {
+describe('Integration tests for user group management', () => {
   // shared resources used across tests
   let prisma: PrismaClient
   let emitter: EventEmitter
@@ -65,7 +65,7 @@ describe('Unit tests for user group management', () => {
     await testCleanup(prisma)
   })
 
-  describe('Unit tests for user group creation and manipulation, including member management', () => {
+  describe('Integration tests for user group creation and manipulation, including member management', () => {
     it('Providing regular members should result in a successful group creation', async () => {
       // create a group with two regular members (not admins)
       const groupName = 'Test Group'

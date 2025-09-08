@@ -91,7 +91,7 @@ model LiveQuiz {
   areInstancesOutdated Boolean @default(false) // flag to indicate if the any instances in this live quiz are outdated due to changes in the corresponding element
 
   namespace            String    @default(uuid()) @db.Uuid
-  pinCode              Int?
+  pinCode              String?   @unique
   name                 String
   displayName          String
   description          String?
@@ -404,6 +404,7 @@ view UserActivities {
   isGamificationEnabled Boolean
   isAssessmentEnabled   Boolean
   pointsMultiplier      Int
+  pinCode               String?
 
   // template information
   templateId   String?

@@ -111,8 +111,7 @@ export async function processResponseMessage(
   redisMulti = redisExec.pipeline() // -> pipeline (not atomic)
 
   try {
-    // TODO: change the sessionKey back OR adapt backend to use the new sessionKey
-    const sessionKey = `lqV2:${message.sessionId}`
+    const sessionKey = `lq:${message.sessionId}`
     const instanceKey = `${sessionKey}:i:${message.instanceId}`
     const responseTimestamp = message.responseTimestamp
     const response = message.response

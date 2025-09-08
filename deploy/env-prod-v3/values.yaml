@@ -11,20 +11,22 @@ hatchet:
     hostPort: 'hatchet-grpc:7070'
   workers:
     general:
-      replicaCount: 0
+      replicaCount: 1
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general
         pullPolicy: Always
 
     responseProcessor:
-      replicaCount: 0
+      replicaCount: 2
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
         pullPolicy: Always
 
 auth:
+  replicaCount: 1
+
   autoscaling:
     enabled: false
 
@@ -229,6 +231,8 @@ olatApi:
       memory: 1000Mi
 
 lti:
+  replicaCount: 2
+
   ingress:
     hosts:
       - host: lti.klicker.uzh.ch
@@ -252,7 +256,7 @@ responseApi:
 
   priorityClassName: production-workload
 
-  replicaCount: 0
+  replicaCount: 2
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api
@@ -263,14 +267,14 @@ responseApi:
 
   ingress:
     hosts:
-      - host: response-api.klicker.uzh.ch
+      - host: chat.klicker.uzh.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-prod-response-api-tls
         hosts:
-          - response-api.klicker.uzh.ch
+          - chat.klicker.uzh.ch
 
   strategy:
     type: Recreate

@@ -4,6 +4,7 @@ import {
   PrismaTransactionClient,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
+import generatePassword from 'generate-password'
 import { ContextWithUser } from 'src/lib/context.js'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
 import { POINTS_PER_INSTANCE } from './stacks.js'
@@ -202,9 +203,7 @@ export async function getUserActivities(
       take: numEntries ?? undefined,
       skip: offset ?? undefined,
     }),
-    ctx.prisma.userActivities.count({
-      where: whereClause,
-    }),
+    ctx.prisma.userActivities.count({ where: whereClause }),
   ])
 
   // map the fetched activities to the return type
@@ -246,6 +245,8 @@ export async function getUserActivities(
           (activity.permissionLevel === DB.PermissionLevel.OWNER ||
             activity.permissionLevel === DB.PermissionLevel.ADMIN)) ||
         activity.isUserCourseAdmin,
+      pinCode:
+        activity.type === ActivityType.LIVE_QUIZ ? activity.pinCode : null,
       sharingType,
     }
   })
@@ -440,11 +441,39 @@ export async function applyActivityBatchOperations(
         },
       },
       status: { in: allowedActivityStatus },
-      // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
-      OR:
-        (setMultiplier && !newCourse) || setLiveQuizPoints
-          ? [{ isGamificationEnabled: true }, { isAssessmentEnabled: true }]
-          : undefined,
+      AND: [
+        // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
+        ...((setMultiplier && !newCourse) || setLiveQuizPoints
+          ? [
+              {
+                OR: [
+                  { isGamificationEnabled: true },
+                  { isAssessmentEnabled: true },
+                ],
+              },
+            ]
+          : []),
+        // activities in assessment mode can only be assigned to another course (and thereby removed from it) by an admin of the assessment course
+        {
+          OR: [
+            { courseId: null },
+            { isAssessmentEnabled: false },
+            {
+              isAssessmentEnabled: true,
+              course: {
+                permissions: {
+                  some: {
+                    userId: ctx.user.sub,
+                    permissionLevel: {
+                      in: [DB.PermissionLevel.OWNER, DB.PermissionLevel.ADMIN],
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        },
+      ],
     },
     include: { blocks: { include: { elements: true } } },
   })
@@ -489,6 +518,28 @@ export async function applyActivityBatchOperations(
                   },
                 ]
               : []),
+            // activities in assessment mode can only be assigned to another course (and thereby removed from it) by an admin of the assessment course
+            {
+              OR: [
+                { isAssessmentEnabled: false },
+                {
+                  isAssessmentEnabled: true,
+                  course: {
+                    permissions: {
+                      some: {
+                        userId: ctx.user.sub,
+                        permissionLevel: {
+                          in: [
+                            DB.PermissionLevel.OWNER,
+                            DB.PermissionLevel.ADMIN,
+                          ],
+                        },
+                      },
+                    },
+                  },
+                },
+              ],
+            },
           ],
         },
         include: { stacks: { include: { elements: true } } },
@@ -507,16 +558,46 @@ export async function applyActivityBatchOperations(
             },
           },
           status: { in: allowedActivityStatus },
-          // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
-          OR:
-            setMultiplier && !newCourse
-              ? [{ isGamificationEnabled: true }, { isAssessmentEnabled: true }]
-              : undefined,
           // if a new course is assigned, the entire availability interval of the activity should lie inside the course duration
           scheduledStartAt: newCourse
             ? { gte: newCourse.startDate }
             : undefined,
           scheduledEndAt: newCourse ? { lte: newCourse.endDate } : undefined,
+          AND: [
+            // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
+            ...(setMultiplier && !newCourse
+              ? [
+                  {
+                    OR: [
+                      { isGamificationEnabled: true },
+                      { isAssessmentEnabled: true },
+                    ],
+                  },
+                ]
+              : []),
+            // activities in assessment mode can only be assigned to another course (and thereby removed from it) by an admin of the assessment course
+            {
+              OR: [
+                { isAssessmentEnabled: false },
+                {
+                  isAssessmentEnabled: true,
+                  course: {
+                    permissions: {
+                      some: {
+                        userId: ctx.user.sub,
+                        permissionLevel: {
+                          in: [
+                            DB.PermissionLevel.OWNER,
+                            DB.PermissionLevel.ADMIN,
+                          ],
+                        },
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          ],
         },
         include: { stacks: { include: { elements: true } } },
       })
@@ -535,14 +616,6 @@ export async function applyActivityBatchOperations(
               },
             },
             status: { in: allowedActivityStatus },
-            // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
-            OR:
-              setMultiplier && !newCourse
-                ? [
-                    { isGamificationEnabled: true },
-                    { isAssessmentEnabled: true },
-                  ]
-                : undefined,
             // if a new course is assigned, the group formation deadline should be before the start of the group activity
             // (start date of course does not need to be verified, since group formation deadline is always after start date)
             scheduledStartAt: newCourse
@@ -550,6 +623,41 @@ export async function applyActivityBatchOperations(
               : undefined,
             // if a new course is assigned, the group activity should end before the end of the course
             scheduledEndAt: newCourse ? { lte: newCourse.endDate } : undefined,
+            AND: [
+              // if no new course is assigned, but the multiplier is updated, the activity needs to be already gamified / in assessment mode
+              ...(setMultiplier && !newCourse
+                ? [
+                    {
+                      OR: [
+                        { isGamificationEnabled: true },
+                        { isAssessmentEnabled: true },
+                      ],
+                    },
+                  ]
+                : []),
+              // activities in assessment mode can only be assigned to another course (and thereby removed from it) by an admin of the assessment course
+              {
+                OR: [
+                  { isAssessmentEnabled: false },
+                  {
+                    isAssessmentEnabled: true,
+                    course: {
+                      permissions: {
+                        some: {
+                          userId: ctx.user.sub,
+                          permissionLevel: {
+                            in: [
+                              DB.PermissionLevel.OWNER,
+                              DB.PermissionLevel.ADMIN,
+                            ],
+                          },
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
           },
           include: { stacks: { include: { elements: true } } },
         })
@@ -567,6 +675,37 @@ export async function applyActivityBatchOperations(
       // check if the course is different from before
       const isCourseChanged = !!newCourse && liveQuiz.courseId !== newCourse.id
 
+      // if required, find a new pin code for the live quiz that is still available
+      let newPinCode: string | null = null
+      if (isCourseChanged && newCourse.isAssessmentEnabled) {
+        let pinValid = false
+
+        for (let attempt = 0; attempt < 10; attempt++) {
+          // generate a new pin code
+          newPinCode = generatePassword.generate({
+            uppercase: true,
+            lowercase: false,
+            numbers: true,
+            symbols: false,
+            length: 6,
+          })
+
+          // check if the pin code is still available
+          const existingLiveQuiz = await tx.liveQuiz.findUnique({
+            where: { pinCode: newPinCode },
+          })
+          if (!existingLiveQuiz) {
+            pinValid = true
+            break
+          }
+        }
+
+        // if the pin is still invalid, return null and abort the transaction
+        if (!pinValid) {
+          throw new Error('Could not find available pin code for live quiz')
+        }
+      }
+
       const modifiedLiveQuiz = await tx.liveQuiz.update({
         where: { id: liveQuiz.id },
         data: {
@@ -580,6 +719,8 @@ export async function applyActivityBatchOperations(
           isAssessmentEnabled: isCourseChanged
             ? { set: newCourse.isAssessmentEnabled }
             : undefined,
+          // if the course is changed to an assessment course, assign a pin
+          pinCode: isCourseChanged ? newPinCode : undefined,
           // multiplier updates
           pointsMultiplier: setMultiplier ? { set: multiplier } : undefined,
           // if defined, set custom grading logic components
@@ -1033,19 +1174,14 @@ export async function getLiveQuizDetails(
 
   const isActivityManager = liveQuiz._count.permissions > 0
   return {
-    id: liveQuiz.id,
-    name: liveQuiz.name,
-    displayName: liveQuiz.displayName,
-    status: liveQuiz.status,
-    reviewStatus: liveQuiz.reviewStatus,
+    ...liveQuiz,
     isActivityReviewer:
       (liveQuiz.courseId === null && liveQuiz._count.permissions > 0) ||
       (!!liveQuiz.course && liveQuiz.course._count.permissions > 0),
     isActivityManager,
-    courseId: liveQuiz.courseId,
     ownerShortname: liveQuiz.owner.shortname,
     ownerEmail: isActivityManager ? liveQuiz.owner.email : null,
-    isGamificationEnabled: liveQuiz.isGamificationEnabled,
+    isPinProtected: !!liveQuiz.pinCode,
     arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
     totalBasePoints,
@@ -1231,17 +1367,12 @@ export async function getPracticeQuizDetails(
 
   const isActivityManager = practiceQuiz._count.permissions > 0
   return {
-    id: practiceQuiz.id,
-    name: practiceQuiz.name,
-    displayName: practiceQuiz.displayName,
-    status: practiceQuiz.status,
-    reviewStatus: practiceQuiz.reviewStatus,
+    ...practiceQuiz,
     isActivityReviewer: practiceQuiz.course._count.permissions > 0,
     isActivityManager,
-    courseId: practiceQuiz.courseId,
+    isPinProtected: false,
     ownerShortname: practiceQuiz.owner.shortname,
     ownerEmail: isActivityManager ? practiceQuiz.owner.email : null,
-    isGamificationEnabled: practiceQuiz.isGamificationEnabled,
     arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
     totalPoints,
@@ -1333,17 +1464,12 @@ export async function getMicroLearningDetails(
 
   const isActivityManager = microLearning._count.permissions > 0
   return {
-    id: microLearning.id,
-    name: microLearning.name,
-    displayName: microLearning.displayName,
-    status: microLearning.status,
-    reviewStatus: microLearning.reviewStatus,
+    ...microLearning,
     isActivityReviewer: microLearning.course._count.permissions > 0,
     isActivityManager,
-    courseId: microLearning.courseId,
+    isPinProtected: false,
     ownerShortname: microLearning.owner.shortname,
     ownerEmail: isActivityManager ? microLearning.owner.email : null,
-    isGamificationEnabled: microLearning.isGamificationEnabled,
     arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
     totalCorrectnessPoints: null,
@@ -1443,17 +1569,12 @@ export async function getGroupActivityDetails(
 
   const isActivityManager = groupActivity._count.permissions > 0
   return {
-    id: groupActivity.id,
-    name: groupActivity.name,
-    displayName: groupActivity.displayName,
-    status: groupActivity.status,
-    reviewStatus: groupActivity.reviewStatus,
+    ...groupActivity,
     isActivityReviewer: groupActivity.course._count.permissions > 0,
     isActivityManager,
-    courseId: groupActivity.courseId,
+    isPinProtected: false,
     ownerShortname: groupActivity.owner.shortname,
     ownerEmail: isActivityManager ? groupActivity.owner.email : null,
-    isGamificationEnabled: groupActivity.isGamificationEnabled,
     arePointsAwarded,
     pointsMultiplier: pointsMultiplierActivity,
     totalCorrectnessPoints: null,

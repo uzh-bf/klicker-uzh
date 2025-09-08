@@ -463,9 +463,7 @@ export const Query = builder.queryType({
       shortnameQuizzes: t.field({
         nullable: true,
         type: [LiveQuiz],
-        args: {
-          shortname: t.arg.string({ required: true }),
-        },
+        args: { shortname: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await LiveQuizService.getShortnameQuizzes(args, ctx)
         },
@@ -474,9 +472,7 @@ export const Query = builder.queryType({
       getLiveQuizSummary: t.withAuth(asUser).field({
         nullable: true,
         type: LiveQuizSummary,
-        args: {
-          quizId: t.arg.string({ required: true }),
-        },
+        args: { quizId: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ liveQuizId: args.quizId }),
           DB.PermissionLevel.READ,
@@ -514,9 +510,7 @@ export const Query = builder.queryType({
       getCoursePublishedMicroLearnings: t.field({
         nullable: true,
         type: [MicroLearning],
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
+        args: { courseId: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await MicroLearningService.getCoursePublishedMicroLearnings(
             args,
@@ -544,9 +538,7 @@ export const Query = builder.queryType({
       cockpitQuiz: t.withAuth(asUser).field({
         nullable: true,
         type: LiveQuiz,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ liveQuizId: args.id }),
           DB.PermissionLevel.EXECUTE,
@@ -559,9 +551,7 @@ export const Query = builder.queryType({
       controlLiveQuiz: t.withAuth(asUser).field({
         nullable: true,
         type: LiveQuiz,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ liveQuizId: args.id }),
           DB.PermissionLevel.READ,
@@ -574,9 +564,7 @@ export const Query = builder.queryType({
       practiceQuiz: t.field({
         nullable: true,
         type: PracticeQuiz,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await PracticeQuizService.getPracticeQuizData(args, ctx)
         },
@@ -585,9 +573,7 @@ export const Query = builder.queryType({
       getPreviousStackEvaluation: t.field({
         nullable: true,
         type: StackFeedback,
-        args: {
-          stackId: t.arg.int({ required: true }),
-        },
+        args: { stackId: t.arg.int({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await StacksService.getPreviousStackEvaluation(args, ctx)
         },
@@ -596,9 +582,7 @@ export const Query = builder.queryType({
       getPracticeQuizEvaluation: t.withAuth(asUser).field({
         nullable: true,
         type: ActivityEvaluation,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ practiceQuizId: args.id }),
           DB.PermissionLevel.READ,
@@ -614,9 +598,7 @@ export const Query = builder.queryType({
       microLearning: t.field({
         nullable: true,
         type: MicroLearning,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await MicroLearningService.getMicroLearningData(args, ctx)
         },
@@ -625,9 +607,7 @@ export const Query = builder.queryType({
       getMicroLearningEvaluation: t.withAuth(asUser).field({
         nullable: true,
         type: ActivityEvaluation,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ microLearningId: args.id }),
           DB.PermissionLevel.READ,
@@ -643,9 +623,7 @@ export const Query = builder.queryType({
       getSinglePracticeQuiz: t.withAuth(asUser).field({
         nullable: true,
         type: PracticeQuiz,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ practiceQuizId: args.id }),
           DB.PermissionLevel.READ,
@@ -658,9 +636,7 @@ export const Query = builder.queryType({
       getSingleMicroLearning: t.withAuth(asUser).field({
         nullable: true,
         type: MicroLearning,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ microLearningId: args.id }),
           DB.PermissionLevel.READ,
@@ -704,9 +680,7 @@ export const Query = builder.queryType({
       studentLiveQuiz: t.field({
         nullable: true,
         type: LiveQuiz,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await LiveQuizService.getRunningLiveQuiz(args, ctx)
         },

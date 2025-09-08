@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/func-response-processor",
-  "version": "3.3.2",
+  "version": "3.4.0-alpha.3",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "files": [
@@ -31,6 +31,7 @@
     "build:test": "pnpm run build",
     "check": "tsc --noEmit",
     "dev": "npm-run-all --parallel dev:ts dev:func",
+    "dev:assessment": "pnpm run dev",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:func": "func start -p 7073 --verbose --javascript",
     "dev:ts": "tsup --watch",

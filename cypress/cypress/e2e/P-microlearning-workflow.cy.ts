@@ -602,14 +602,14 @@ describe('Different microlearning workflows', function () {
       courseName: this.data.course,
       multiplier: messages.manage.activityWizard.multiplier2,
       startDate: {
-        monthDelta: 2,
+        monthDelta: 3,
         day: 11,
         hour: 2,
         minute: 0,
         validation: getDatetimeValidationString(3, '11') + ', 02:00',
       }, // 3 months in the future at 2:00
       endDate: {
-        monthDelta: 6,
+        monthDelta: 7,
         day: 20,
         hour: 18,
         minute: 0,
@@ -634,14 +634,14 @@ describe('Different microlearning workflows', function () {
       displayName: this.data.completed.displayName,
       courseName: this.data.course,
       startDate: {
-        monthDelta: -3,
+        monthDelta: -2,
         day: 16,
         hour: 2,
         minute: 0,
         validation: getDatetimeValidationString(-2, '16') + ', 02:00',
       }, // 2 months in the past at 2:00
       endDate: {
-        monthDelta: 3,
+        monthDelta: 4,
         day: 14,
         hour: 18,
         minute: 0,
@@ -1420,14 +1420,14 @@ describe('Different microlearning workflows', function () {
       displayName: MLDisplayName,
       courseName: this.data.course,
       startDate: {
-        monthDelta: -3,
+        monthDelta: -2,
         day: 16,
         hour: 2,
         minute: 0,
         validation: getDatetimeValidationString(-2, '16') + ', 02:00',
       }, // 2 months in the past at 2:00
       endDate: {
-        monthDelta: 3,
+        monthDelta: 4,
         day: 14,
         hour: 18,
         minute: 0,
@@ -1546,14 +1546,14 @@ describe('Different microlearning workflows', function () {
       name: this.data.manipulation.name,
       displayName: this.data.manipulation.displayName,
       startDate: {
-        monthDelta: -3,
+        monthDelta: -2,
         day: 16,
         hour: 2,
         minute: 0,
         validation: getDatetimeValidationString(-2, '16') + ', 02:00',
       }, // 2 months in the past at 2:00
       endDate: {
-        monthDelta: 3,
+        monthDelta: 4,
         day: 14,
         hour: 18,
         minute: 0,
@@ -2764,14 +2764,14 @@ describe('Different microlearning workflows', function () {
         displayName: this.data.sharing[`micro${i}Display`],
         courseName: this.data.seededCourse,
         startDate: {
-          monthDelta: -3,
+          monthDelta: -2,
           day: 16,
           hour: 2,
           minute: 0,
           validation: getDatetimeValidationString(-2, '16') + ', 02:00',
         }, // 2 months in the past at 2:00
         endDate: {
-          monthDelta: 3,
+          monthDelta: 4,
           day: 14,
           hour: 18,
           minute: 0,
@@ -3347,19 +3347,19 @@ describe('Different microlearning workflows', function () {
       courseName: this.data.details.courseName,
       multiplier: messages.manage.activityWizard.multiplier2,
       startDate: {
-        monthDelta: -3,
+        monthDelta: -2,
         day: 10,
         hour: 12,
         minute: 30,
         validation: startDate1,
-      }, // 3 months in the future at 2:00
+      },
       endDate: {
-        monthDelta: 1,
+        monthDelta: 2,
         day: 20,
         hour: 14,
         minute: 0,
         validation: endDate1,
-      }, // 7 months in the future at 18:00
+      },
       stacks: [
         {
           elements: [
@@ -3438,19 +3438,19 @@ describe('Different microlearning workflows', function () {
       displayName: this.data.details.displayNameNonGamified,
       courseName: this.data.details.courseNonGamified,
       startDate: {
-        monthDelta: -3,
+        monthDelta: -2,
         day: 10,
         hour: 12,
         minute: 30,
         validation: startDate1,
-      }, // 3 months in the future at 2:00
+      },
       endDate: {
-        monthDelta: 1,
+        monthDelta: 2,
         day: 20,
         hour: 14,
         minute: 0,
         validation: endDate1,
-      }, // 7 months in the future at 18:00
+      },
       stacks: [
         {
           elements: [

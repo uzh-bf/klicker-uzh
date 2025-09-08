@@ -264,6 +264,7 @@ describe('Login / Logout workflows for lecturer and students', () => {
       cy.get('form > button[type=submit]').click()
     })
 
+    cy.url().should('include', Cypress.env('URL_MANAGE'))
     cy.get('[data-cy="homepage"]').should('exist')
     cy.get('[data-cy="user-menu"]').click()
   })

@@ -54,6 +54,7 @@ function LiveQuizTemplateSettings({
             | 'startDate'
             | 'endDate'
             | 'groupDeadlineDate'
+            | 'isManager'
           >
         ) => ({
           label: course.name,
@@ -64,6 +65,7 @@ function LiveQuizTemplateSettings({
           startDate: course.startDate,
           endDate: course.endDate,
           groupDeadline: course.groupDeadlineDate,
+          isManager: course.isManager ?? false,
         })
       ) ?? [],
     [dataCourses]

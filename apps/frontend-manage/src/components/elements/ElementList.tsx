@@ -1,10 +1,6 @@
-import { faBullhorn, faX } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { Element as ElementType } from '@klicker-uzh/graphql/dist/ops'
-import useStickyState from '@klicker-uzh/shared-components/src/hooks/useStickyState'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import Link from 'next/link'
 import React from 'react'
 import Element from './Element'
 
@@ -34,11 +30,11 @@ function ElementList({
   refetchElements,
 }: ElementListProps): React.ReactElement {
   const t = useTranslations()
-  const {
-    value: hideSurvey,
-    setValue: setHideSurvey,
-    hasInitialized,
-  } = useStickyState('hideLecturerSurvey', 'false')
+  // const {
+  //   value: hideSurvey,
+  //   setValue: setHideSurvey,
+  //   hasInitialized,
+  // } = useStickyState('hideLecturerSurvey', 'false')
 
   if (!elements) {
     return <></>
@@ -111,7 +107,7 @@ function ElementList({
           refetchElements={refetchElements}
         />
       ))}
-      {hasInitialized && hideSurvey === 'false' && (
+      {/* {hasInitialized && hideSurvey === 'false' && (
         <div className="fixed bottom-11 w-[calc(100%-17rem)]">
           <div className="flex flex-row items-center justify-between rounded-md bg-orange-200 px-3 py-1.5">
             <div className="flex flex-row items-center gap-3">
@@ -138,7 +134,7 @@ function ElementList({
             />
           </div>
         </div>
-      )}
+      )} */}
     </div>
   )
 }

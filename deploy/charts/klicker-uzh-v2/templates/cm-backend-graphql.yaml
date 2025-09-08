@@ -46,9 +46,3 @@ data:
   {{- if .Values.heartbeats.dailyGroupScores }}
   HEARTBEAT_DAILY_GROUP_SCORES: {{ .Values.heartbeats.dailyGroupScores | quote }}
   {{ end }}
-  {{- if .Values.backendGraphql.dualRedisMode }}
-  ENABLE_DUAL_REDIS_MODE: {{ .Values.backendGraphql.dualRedisMode | quote }}
-  {{ end }}
-  {{- if .Values.backendGraphql.preserveRedisForComparison }}
-  PRESERVE_REDIS_FOR_COMPARISON: {{ .Values.backendGraphql.preserveRedisForComparison | quote }}
-  {{ end }}

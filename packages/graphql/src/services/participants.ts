@@ -18,13 +18,36 @@ export async function getSelf(
 
   // if the user is logged in as a participant, return the participant data
   if (ctx.user.role === DB.UserRole.PARTICIPANT) {
+    // check if the live quiz is part of a course
+    const liveQuiz = liveQuizId
+      ? await ctx.prisma.liveQuiz.findUnique({
+          where: { id: liveQuizId },
+          include: { course: true },
+        })
+      : null
+
     const participantData = await ctx.prisma.participant.findUnique({
       where: { id: ctx.user.sub },
+      include: {
+        participations: liveQuiz?.courseId
+          ? { where: { courseId: liveQuiz.courseId } }
+          : { take: 0 }, // make sure that no participations are fetched if courseid is not set
+      },
     })
 
     if (!participantData) return null
 
-    return { role: DB.UserRole.PARTICIPANT, ...participantData }
+    const isCourseParticipant =
+      !!liveQuiz?.courseId && participantData.participations.length > 0
+    const isCourseParticipationActive =
+      isCourseParticipant && participantData.participations[0]?.isActive
+
+    return {
+      role: DB.UserRole.PARTICIPANT,
+      isCourseParticipant,
+      isCourseParticipationActive,
+      ...participantData,
+    }
   }
 
   // if the user is logged in as a temporary quiz participant, return the corresponding pseudonym
@@ -34,7 +57,7 @@ export async function getSelf(
 
     const temporaryParticipantData =
       await ctx.prisma.temporaryLeaderboardEntry.findUnique({
-        where: { id: ctx.user.sub, quizId: liveQuizId },
+        where: { id_quizId: { id: ctx.user.sub, quizId: liveQuizId } },
       })
 
     if (!temporaryParticipantData) return null
@@ -44,6 +67,8 @@ export async function getSelf(
       id: ctx.user.sub,
       role: DB.UserRole.TEMPORARY_PARTICIPANT,
       scopeQuizId: temporaryParticipantData.quizId,
+      isCourseParticipant: false,
+      isCourseParticipationActive: false,
       lastLoginAt: temporaryParticipantData.createdAt,
       isActive: true,
       isProfilePublic: true,

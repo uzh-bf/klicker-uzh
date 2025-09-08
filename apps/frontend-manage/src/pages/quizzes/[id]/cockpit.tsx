@@ -69,8 +69,10 @@ function Cockpit() {
   const {
     id,
     name,
+    pinCode,
     isLiveQAEnabled,
     isGamificationEnabled,
+    isAssessmentEnabled,
     isConfusionFeedbackEnabled,
     isModerationEnabled,
     startedAt,
@@ -84,17 +86,19 @@ function Cockpit() {
     <Layout>
       <div className="mb-8 print:hidden">
         <LiveQuizTimeline
+          assessmentMode={isAssessmentEnabled}
           quizId={id}
-          isGamificationEnabled={isGamificationEnabled}
           quizName={name}
+          quizPin={pinCode}
           blocks={blocks ?? []}
           language={course?.language ?? null}
-          handleEndLiveQuiz={() => {
-            endLiveQuiz({ variables: { id: id } })
+          isGamificationEnabled={isGamificationEnabled}
+          handleEndLiveQuiz={async () => {
+            await endLiveQuiz({ variables: { id: id } })
             router.push('/activities')
           }}
-          handleOpenBlock={(blockId: number) => {
-            activateLiveQuizBlock({
+          handleOpenBlock={async (blockId: number) => {
+            await activateLiveQuizBlock({
               variables: { quizId: id, blockId },
               // high stakes mutation where cache updates are hard due to cached and db data
               refetchQueries: [
@@ -102,8 +106,8 @@ function Cockpit() {
               ],
             })
           }}
-          handleCloseBlock={(blockId: number) => {
-            deactivateLiveQuizBlock({
+          handleCloseBlock={async (blockId: number) => {
+            await deactivateLiveQuizBlock({
               variables: { quizId: id, blockId },
               // high stakes mutation where cache updates are hard due to cached and db data
               refetchQueries: [

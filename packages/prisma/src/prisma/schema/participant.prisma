@@ -4,12 +4,21 @@ model ParticipantAccount {
   ssoId   String @unique
   ssoType String @default("LTI1.1")
 
+  // Add fields for affiliation support
+  type       String  @default("sso") // "sso", "affiliation"
+  isPrimary  Boolean @default(false) // Only one primary per participant
+  isVerified Boolean @default(false) // Only verified affiliations can login
+
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([participantId, ssoType])
+  // Performance indexes
+  @@index([ssoId, isVerified])
+  @@index([type, isVerified])
 }
 
 model Participant {
@@ -174,7 +183,9 @@ model LeaderboardEntry {
 }
 
 model TemporaryLeaderboardEntry {
-  id       String  @id @default(uuid()) @db.Uuid // participant id of temporary participant
+  // participant id of temporary participant / participant id in case of logged-in 
+  // participant without participation or in gamified live quiz without course
+  id       String  @default(uuid()) @db.Uuid
   username String
   score    Int
   avatar   String?
@@ -184,6 +195,10 @@ model TemporaryLeaderboardEntry {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@id([id, quizId])
+  @@index(id)
+  @@index(quizId)
 }
 
 model PushSubscription {

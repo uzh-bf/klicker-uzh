@@ -635,7 +635,10 @@ export async function deletePracticeQuiz(
       async (prisma) => {
         const quiz = await prisma.practiceQuiz.update({
           where: { id },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            directPermissions: { deleteMany: {} }, // delete all direct permissions on the activity
+          },
           include: { stacks: true },
         })
 

@@ -33,13 +33,6 @@ function MicroLearningDeletionModal({
     DeleteMicroLearningDocument,
     {
       variables: { id: activityId },
-      optimisticResponse: {
-        __typename: 'Mutation',
-        deleteMicroLearning: {
-          __typename: 'MicroLearning',
-          id: activityId,
-        },
-      },
       update: (cache, { data: res }) => {
         // if the microlearning is not part of a course or the mutation was not successful, return early
         if (!res?.deleteMicroLearning?.id) return

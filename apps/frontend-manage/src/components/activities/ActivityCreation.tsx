@@ -30,6 +30,7 @@ export type ElementSelectCourse = {
   startDate: Date
   endDate: Date
   groupDeadline: Date
+  isManager: boolean
   data?: { cy: string }
 }
 
@@ -130,6 +131,7 @@ function ActivityCreation({
             | 'startDate'
             | 'endDate'
             | 'groupDeadlineDate'
+            | 'isManager'
           >
         ) => ({
           label: course.name,
@@ -140,6 +142,7 @@ function ActivityCreation({
           startDate: course.startDate,
           endDate: course.endDate,
           groupDeadline: course.groupDeadlineDate,
+          isManager: course.isManager ?? false,
         })
       ) ?? [],
     [dataCourses]
