@@ -47,7 +47,7 @@ export async function logoutUser(_: any, ctx: ContextWithUser) {
       ip: ctx.req?.ip,
       userAgent: ctx.req?.headers?.['user-agent'],
       userRole: ctx.user.role,
-    }
+    },
   })
 
   return ctx.user.sub
@@ -121,7 +121,7 @@ export async function loginParticipant(
   })
 
   const participant = participantWithUsername || participantWithEmail
-  
+
   // Log failed login attempt - participant not found
   if (!participant) {
     await auditClient.log({
@@ -133,7 +133,7 @@ export async function loginParticipant(
         reason: 'user_not_found',
         ip: ctx.req?.ip,
         userAgent: ctx.req?.headers?.['user-agent'],
-      }
+      },
     })
     return null
   }
@@ -152,7 +152,7 @@ export async function loginParticipant(
         reason: 'invalid_password',
         ip: ctx.req?.ip,
         userAgent: ctx.req?.headers?.['user-agent'],
-      }
+      },
     })
     return null
   }
@@ -178,7 +178,7 @@ export async function loginParticipant(
       ip: ctx.req?.ip,
       userAgent: ctx.req?.headers?.['user-agent'],
       lastLoginAt: participant.lastLoginAt?.toISOString(),
-    }
+    },
   })
 
   // TODO: return more data (e.g. Avatar etc.)
@@ -211,7 +211,7 @@ export async function loginTemporaryParticipant(
         pseudonym: pseudonym.trim(),
         ip: ctx.req?.ip,
         userAgent: ctx.req?.headers?.['user-agent'],
-      }
+      },
     })
     return null
   }
@@ -234,7 +234,7 @@ export async function loginTemporaryParticipant(
         pseudonym: pseudonym.trim(),
         ip: ctx.req?.ip,
         userAgent: ctx.req?.headers?.['user-agent'],
-      }
+      },
     })
     return null // error: 'pseudonym already taken'
   }
@@ -260,7 +260,7 @@ export async function loginTemporaryParticipant(
         pseudonym: pseudonym.trim(),
         ip: ctx.req?.ip,
         userAgent: ctx.req?.headers?.['user-agent'],
-      }
+      },
     })
     return null // error: 'pseudonym already taken'
   }
@@ -298,7 +298,7 @@ export async function loginTemporaryParticipant(
       temporaryParticipantId: temporaryParticipant.id,
       ip: ctx.req?.ip,
       userAgent: ctx.req?.headers?.['user-agent'],
-    }
+    },
   })
 
   return jwt
@@ -425,7 +425,7 @@ export async function loginParticipantMagicLink(
         scopeValid: tokenData.scope === DB.UserLoginScope.OTP,
         ip: ctx.req?.ip,
         userAgent: ctx.req?.headers?.['user-agent'],
-      }
+      },
     })
     return null
   }
@@ -459,7 +459,7 @@ export async function loginParticipantMagicLink(
         ip: ctx.req?.ip,
         userAgent: ctx.req?.headers?.['user-agent'],
         lastLoginAt: participant.lastLoginAt?.toISOString(),
-      }
+      },
     })
 
     return participant.id
@@ -477,7 +477,7 @@ export async function loginParticipantMagicLink(
       tokenSubject: tokenData.sub,
       ip: ctx.req?.ip,
       userAgent: ctx.req?.headers?.['user-agent'],
-    }
+    },
   })
 
   return null
@@ -541,7 +541,7 @@ export async function logoutParticipant(ctx: ContextWithUser) {
       ip: ctx.req?.ip,
       userAgent: ctx.req?.headers?.['user-agent'],
       userRole: ctx.user.role,
-    }
+    },
   })
 
   return ctx.user.sub
@@ -565,7 +565,7 @@ export async function logoutTemporaryParticipant(
         liveQuizId,
         ip: ctx.req?.ip,
         userAgent: ctx.req?.headers?.['user-agent'],
-      }
+      },
     })
     return false // not a temporary participant
   }
@@ -587,7 +587,7 @@ export async function logoutTemporaryParticipant(
         liveQuizId,
         ip: ctx.req?.ip,
         userAgent: ctx.req?.headers?.['user-agent'],
-      }
+      },
     })
     return false // no temporary participant found
   }
@@ -618,7 +618,7 @@ export async function logoutTemporaryParticipant(
       score: lbEntry.score,
       ip: ctx.req?.ip,
       userAgent: ctx.req?.headers?.['user-agent'],
-    }
+    },
   })
 
   return true
@@ -1020,7 +1020,7 @@ export async function loginParticipantWithLti(
           courseId,
           ip: ctx.req?.ip,
           userAgent: ctx.req?.headers?.['user-agent'],
-        }
+        },
       })
       return null
     }
@@ -1055,7 +1055,7 @@ export async function loginParticipantWithLti(
         courseId,
         ip: ctx.req?.ip,
         userAgent: ctx.req?.headers?.['user-agent'],
-      }
+      },
     })
     return null
   }
@@ -1112,7 +1112,7 @@ export async function loginParticipantWithLti(
       ip: ctx.req?.ip,
       userAgent: ctx.req?.headers?.['user-agent'],
       lastLoginAt: account.participant.lastLoginAt?.toISOString(),
-    }
+    },
   })
 
   return {

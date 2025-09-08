@@ -16,12 +16,19 @@ import {
   type ElementStackInput,
 } from '@klicker-uzh/types'
 import {
+  auditClient,
   getActivityInstanceConnectOrCreate,
   getInitialInstanceResults,
   levelFromXp,
   propagateActivityToElements,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
+import {
+  createPinValidationFailedEvent,
+  createPinValidationSuccessEvent,
+  generateSessionId,
+  hashSensitiveData,
+} from '@klicker-uzh/util/src/auditEvents'
 import dayjs from 'dayjs'
 import generatePassword from 'generate-password'
 import { GraphQLError } from 'graphql'
@@ -2574,12 +2581,33 @@ export async function setLiveQuizPinCookie(
   { liveQuizId, pin }: { liveQuizId: string; pin: string },
   ctx: Context
 ) {
+  const sessionId = generateSessionId()
+  const pinHash = hashSensitiveData(pin)
+
   // verify that the corresponding live quiz is available
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id: liveQuizId },
     select: { id: true, status: true, pinCode: true },
   })
+
   if (!liveQuiz || liveQuiz.status !== DB.PublicationStatus.PUBLISHED) {
+    // Log failed PIN validation - quiz not found or not published
+    await auditClient.log(
+      createPinValidationFailedEvent(
+        'klicker-uzh',
+        `anonymous:session-${sessionId}`,
+        sessionId,
+        liveQuizId,
+        pinHash,
+        'quiz_not_found_or_not_published',
+        {
+          ip: ctx.req?.ip,
+          userAgent: ctx.req?.headers?.['user-agent'],
+          quizStatus: liveQuiz?.status || 'not_found',
+        }
+      )
+    )
+
     throw new GraphQLError('LIVE_QUIZ_PIN_INVALID', {
       extensions: { code: 'FORBIDDEN' },
     })
@@ -2594,17 +2622,51 @@ export async function setLiveQuizPinCookie(
         path: '/',
       })
     } catch (_) {}
+
+    // Log failed PIN validation - incorrect PIN
+    await auditClient.log(
+      createPinValidationFailedEvent(
+        'klicker-uzh',
+        `anonymous:session-${sessionId}`,
+        sessionId,
+        liveQuizId,
+        pinHash,
+        'incorrect_pin',
+        {
+          ip: ctx.req?.ip,
+          userAgent: ctx.req?.headers?.['user-agent'],
+          hasQuizPin: !!liveQuiz.pinCode,
+        }
+      )
+    )
+
     throw new GraphQLError('LIVE_QUIZ_PIN_INVALID', {
       extensions: { code: 'FORBIDDEN' },
     })
   }
+
+  // Log successful PIN validation
+  await auditClient.log(
+    createPinValidationSuccessEvent(
+      'klicker-uzh',
+      `anonymous:session-${sessionId}`,
+      sessionId,
+      liveQuizId,
+      pinHash,
+      {
+        ip: ctx.req?.ip,
+        userAgent: ctx.req?.headers?.['user-agent'],
+        cookieName,
+      }
+    )
+  )
 
   // set the pin as a cookie to be readable by the student live quiz query
   ctx.res.cookie(cookieName, pin, {
     domain: process.env.COOKIE_DOMAIN,
     path: '/',
     httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24, // cookie valie for one day
+    maxAge: 1000 * 60 * 60 * 24, // cookie valid for one day
     secure:
       process.env.NODE_ENV === 'production' &&
       process.env.COOKIE_DOMAIN !== '127.0.0.1',
