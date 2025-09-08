@@ -480,19 +480,39 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
         },
 
         async redirect({ url, baseUrl }) {
-          if (
-            url.includes('assessment.klicker.uzh.ch') ||
-            url.includes('assessment.klicker.com')
-          ) {
-            return url
-          }
-
+          // Handle relative URLs
           if (url.startsWith('/')) {
             return `${baseUrl}${url}`
           }
 
-          if (url.includes(process.env.COOKIE_DOMAIN as string)) {
-            return url
+          // Parse and validate against allowed hostnames
+          try {
+            const parsedUrl = new URL(url)
+            const allowedHosts = [
+              'assessment.klicker.uzh.ch',
+              'assessment.klicker.com',
+              // Add localhost for development
+              'localhost:3001',
+              '127.0.0.1:3001',
+            ]
+
+            if (allowedHosts.includes(parsedUrl.host)) {
+              return url
+            }
+          } catch {
+            // Invalid URL, fall through to baseUrl
+          }
+
+          // Check for cookie domain (if different from assessment domains)
+          if (process.env.COOKIE_DOMAIN) {
+            try {
+              const parsedUrl = new URL(url)
+              if (parsedUrl.host === process.env.COOKIE_DOMAIN) {
+                return url
+              }
+            } catch {
+              // Invalid URL, fall through
+            }
           }
 
           return baseUrl
@@ -720,16 +740,40 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
         },
 
         async redirect({ url, baseUrl }) {
-          // Lecturer redirect handling (existing logic)
+          // Handle relative URLs
           if (url.startsWith('/')) {
             return `${baseUrl}${url}`
           }
 
-          if (
-            url.includes(process.env.COOKIE_DOMAIN as string) ||
-            url.includes('127.0.0.1')
-          ) {
-            return url
+          // Parse and validate against allowed hostnames
+          try {
+            const parsedUrl = new URL(url)
+            const allowedHosts = [
+              'manage.klicker.uzh.ch',
+              'manage.klicker.com',
+              // Add localhost/127.0.0.1 for development
+              '127.0.0.1',
+              '127.0.0.1:3002',
+              'localhost:3002',
+            ]
+
+            // Check exact host match
+            if (
+              allowedHosts.includes(parsedUrl.host) ||
+              allowedHosts.includes(parsedUrl.hostname)
+            ) {
+              return url
+            }
+
+            // Check cookie domain if configured
+            if (
+              process.env.COOKIE_DOMAIN &&
+              parsedUrl.host === process.env.COOKIE_DOMAIN
+            ) {
+              return url
+            }
+          } catch {
+            // Invalid URL, fall through to baseUrl
           }
 
           return baseUrl
