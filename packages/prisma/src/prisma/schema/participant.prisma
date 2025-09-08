@@ -4,12 +4,21 @@ model ParticipantAccount {
   ssoId   String @unique
   ssoType String @default("LTI1.1")
 
+  // Add fields for affiliation support
+  type       String  @default("sso") // "sso", "affiliation"
+  isPrimary  Boolean @default(false) // Only one primary per participant
+  isVerified Boolean @default(false) // Only verified affiliations can login
+
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([participantId, ssoType])
+  // Performance indexes
+  @@index([ssoId, isVerified])
+  @@index([type, isVerified])
 }
 
 model Participant {

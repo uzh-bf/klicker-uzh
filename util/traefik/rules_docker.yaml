@@ -7,8 +7,22 @@ http:
         - 'websecure'
       service: 'api'
 
+    assessment-api:
+      rule: 'Host(`assessment-api.klicker.com`)'
+      entrypoints:
+        - 'web'
+        - 'websecure'
+      service: 'api'
+
     pwa:
       rule: 'Host(`pwa.klicker.com`)'
+      entrypoints:
+        - 'web'
+        - 'websecure'
+      service: 'pwa'
+
+    assessment:
+      rule: 'Host(`assessment.klicker.com`)'
       entrypoints:
         - 'web'
         - 'websecure'
@@ -51,6 +65,13 @@ http:
 
     response-api:
       rule: 'Host(`response-api.klicker.com`)'
+      entrypoints:
+        - 'web'
+        - 'websecure'
+      service: 'response-api'
+
+    response-api-assessment:
+      rule: 'Host(`response-api-assessment.klicker.com`)'
       entrypoints:
         - 'web'
         - 'websecure'

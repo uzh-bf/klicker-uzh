@@ -52,6 +52,7 @@
     "build:test": "cross-env NODE_ENV=test next build",
     "check": "tsc --noEmit",
     "dev": "next dev --turbo --port 3010",
+    "dev:assessment": "pnpm run dev",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:offline": "next dev --port 3010",
     "dev:test": "cross-env NODE_ENV=test next dev --port 3010",
