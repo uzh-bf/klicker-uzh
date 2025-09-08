@@ -1301,7 +1301,10 @@ export async function activateLiveQuizBlock(
     },
     include: {
       activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
-      blocks: { orderBy: { order: 'asc' } },
+      blocks: {
+        include: { elements: { orderBy: { order: 'asc' } } },
+        orderBy: { order: 'asc' },
+      },
     },
   })
 
@@ -1318,7 +1321,25 @@ export async function activateLiveQuizBlock(
     )
   }
 
-  ctx.pubSub.publish('runningLiveQuizUpdated', updatedQuiz)
+  // update the quiz with an updated version through the corresponding subscription
+  ctx.pubSub.publish('runningLiveQuizUpdated', {
+    id: updatedQuiz.id,
+    beforeFirstBlock: false,
+    activeBlock: {
+      ...updatedQuiz.activeBlock,
+      elements: removeSolutionFromInstances({
+        instances: updatedQuiz.activeBlock?.elements ?? [],
+      }),
+    },
+    // for future blocks, do not return the elements
+    blocks: updatedQuiz.blocks.map((block) => ({
+      ...block,
+      elements:
+        block.status === DB.ElementBlockStatus.EXECUTED
+          ? removeSolutionFromInstances({ instances: block.elements })
+          : [],
+    })),
+  })
 
   // initialize the cache for the new active block
   const redisMulti = ctx.redisExec.pipeline()
@@ -1669,12 +1690,27 @@ export async function deactivateLiveQuizBlock(
             }
           : undefined,
       },
-      include: { blocks: { orderBy: { order: 'asc' } } },
+      include: {
+        blocks: {
+          include: { elements: { orderBy: { order: 'asc' } } },
+          orderBy: { order: 'asc' },
+        },
+      },
     })
 
+    // update the running live quiz with the updated block information
     ctx.pubSub.publish('runningLiveQuizUpdated', {
-      ...updatedQuiz,
+      id: updatedQuiz.id,
+      beforeFirstBlock: false,
       activeBlock: null,
+      // for future blocks, do not return the elements
+      blocks: updatedQuiz.blocks.map((block) => ({
+        ...block,
+        elements:
+          block.status === DB.ElementBlockStatus.EXECUTED
+            ? removeSolutionFromInstances({ instances: block.elements })
+            : [],
+      })),
     })
 
     ctx.emitter.emit('invalidate', {
@@ -2614,6 +2650,49 @@ export async function setLiveQuizPinCookie(
   return true
 }
 
+function removeSolutionFromInstances({
+  instances,
+}: {
+  instances: DB.ElementInstance[]
+}) {
+  return instances.map((instance) => {
+    const elementData = instance.elementData
+    if (
+      !elementData ||
+      typeof elementData !== 'object' ||
+      Array.isArray(elementData)
+    )
+      return instance
+
+    switch (elementData.type) {
+      case DB.ElementType.SC:
+      case DB.ElementType.MC:
+        return {
+          ...instance,
+          elementData: {
+            ...elementData,
+            options: {
+              ...elementData.options,
+              choices: elementData.options.choices.map((choice) => ({
+                ...pick(choice, ['ix', 'value']),
+              })),
+            },
+          },
+        }
+
+      case DB.ElementType.NUMERICAL:
+      case DB.ElementType.FREE_TEXT:
+        return {
+          ...instance,
+          elementData,
+        }
+
+      default:
+        return instance
+    }
+  })
+}
+
 export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
   // only get the minimal required information of the quiz
   const quizInfo = await ctx.prisma.liveQuiz.findUnique({
@@ -2656,16 +2735,13 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
     where: { id },
     include: {
       activeBlock: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
+        include: { elements: { orderBy: { order: 'asc' } } },
+      },
+      blocks: {
+        include: { elements: { orderBy: { order: 'asc' } } },
+        orderBy: { order: 'asc' },
       },
       course: true,
-      blocks: true,
     },
   })
 
@@ -2682,43 +2758,18 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
       beforeFirstBlock,
       activeBlock: {
         ...quiz.activeBlock,
-        elements: quiz.activeBlock.elements.map((instance) => {
-          const elementData = instance.elementData
-          if (
-            !elementData ||
-            typeof elementData !== 'object' ||
-            Array.isArray(elementData)
-          )
-            return instance
-
-          switch (elementData.type) {
-            case DB.ElementType.SC:
-            case DB.ElementType.MC:
-              return {
-                ...instance,
-                elementData: {
-                  ...elementData,
-                  options: {
-                    ...elementData.options,
-                    choices: elementData.options.choices.map((choice) => ({
-                      ...pick(choice, ['ix', 'value']),
-                    })),
-                  },
-                },
-              }
-
-            case DB.ElementType.NUMERICAL:
-            case DB.ElementType.FREE_TEXT:
-              return {
-                ...instance,
-                elementData,
-              }
-
-            default:
-              return instance
-          }
+        elements: removeSolutionFromInstances({
+          instances: quiz.activeBlock.elements,
         }),
       },
+      // for future blocks, do not return the elements
+      blocks: quiz.blocks.map((block) => ({
+        ...block,
+        elements:
+          block.status === DB.ElementBlockStatus.EXECUTED
+            ? removeSolutionFromInstances({ instances: block.elements })
+            : [],
+      })),
     }
   }
 
