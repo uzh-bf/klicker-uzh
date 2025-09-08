@@ -1,11 +1,6 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { InvitationStatus } from '@klicker-uzh/prisma/client'
 
-export interface CreateInvitationsOptions {
-  dryRun?: boolean
-  batchSize?: number
-}
-
 export interface InvitationResult {
   email: string
   status: 'created' | 'auto_accepted' | 'duplicate' | 'error'
@@ -34,11 +29,8 @@ function validateEmail(email: string): boolean {
  */
 export async function createParticipantInvitations(
   courseId: string,
-  emails: string[],
-  options: CreateInvitationsOptions = {}
+  emails: string[]
 ): Promise<CreateInvitationsResponse> {
-  const { dryRun = false, batchSize = 50 } = options
-
   const results: InvitationResult[] = []
   let created = 0
   let autoAccepted = 0
@@ -60,39 +52,7 @@ export async function createParticipantInvitations(
     )
   }
 
-  // Process emails in batches
-  for (let i = 0; i < emails.length; i += batchSize) {
-    const batch = emails.slice(i, i + batchSize)
-    const batchResults = await processBatch(courseId, batch, dryRun)
-
-    results.push(...batchResults.results)
-    created += batchResults.created
-    autoAccepted += batchResults.autoAccepted
-    duplicates += batchResults.duplicates
-    errors += batchResults.errors
-  }
-
-  return {
-    totalProcessed: emails.length,
-    created,
-    autoAccepted,
-    duplicates,
-    errors,
-    results,
-  }
-}
-
-async function processBatch(
-  courseId: string,
-  emails: string[],
-  dryRun: boolean
-): Promise<CreateInvitationsResponse> {
-  const results: InvitationResult[] = []
-  let created = 0
-  let autoAccepted = 0
-  let duplicates = 0
-  let errors = 0
-
+  // Process all emails
   for (const rawEmail of emails) {
     const email = rawEmail.toLowerCase().trim()
 
@@ -139,7 +99,7 @@ async function processBatch(
         },
       })
 
-      if (participantAccount?.participant && !dryRun) {
+      if (participantAccount?.participant) {
         // Auto-accept invitation for existing verified user
         const result = await autoAcceptInvitation(
           email,
@@ -154,37 +114,21 @@ async function processBatch(
           participantId: participantAccount.participant.id,
         })
         autoAccepted++
-      } else if (participantAccount?.participant && dryRun) {
-        // Dry run: would auto-accept
-        results.push({
-          email,
-          status: 'auto_accepted',
-          participantId: participantAccount.participant.id,
-        })
-        autoAccepted++
       } else {
         // Create pending invitation
-        if (!dryRun) {
-          const invitation = await prisma.participantInvitation.create({
-            data: {
-              email,
-              courseId,
-              status: InvitationStatus.PENDING,
-            },
-          })
+        const invitation = await prisma.participantInvitation.create({
+          data: {
+            email,
+            courseId,
+            status: InvitationStatus.PENDING,
+          },
+        })
 
-          results.push({
-            email,
-            status: 'created',
-            invitationId: invitation.id,
-          })
-        } else {
-          // Dry run: would create
-          results.push({
-            email,
-            status: 'created',
-          })
-        }
+        results.push({
+          email,
+          status: 'created',
+          invitationId: invitation.id,
+        })
         created++
       }
     } catch (error: any) {
