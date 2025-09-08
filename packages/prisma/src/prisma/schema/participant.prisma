@@ -1,3 +1,27 @@
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+}
+
+model ParticipantInvitation {
+  id Int @id @default(autoincrement())
+
+  email   String
+  status  InvitationStatus @default(PENDING)
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  participantId String?      @db.Uuid
+
+  invitedAt  DateTime  @default(now())
+  acceptedAt DateTime?
+
+  @@unique([email, courseId])
+  @@index([email])
+}
+
 model ParticipantAccount {
   id String @id @default(uuid()) @db.Uuid
 
@@ -52,6 +76,7 @@ model Participant {
   coursePerformances              ParticipantPerformance[]
   groupAssignmentPoolEntries      GroupAssignmentPoolEntry[]
   messages                        GroupMessage[]
+  invitations                     ParticipantInvitation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -77,6 +77,83 @@ function generateRandomString(length: number) {
   return result
 }
 
+async function autoAcceptInvitations(email: string, participantId?: string) {
+  try {
+    if (!participantId) {
+      // Find or create participant account for this email
+      const participant = await prisma.participant.findUnique({
+        where: { email: email.toLowerCase() },
+      })
+      if (!participant) {
+        console.log('No participant found for email:', email)
+        return 0
+      }
+      participantId = participant.id
+    }
+
+    // Find all pending invitations for this email
+    const pendingInvitations = await prisma.participantInvitation.findMany({
+      where: {
+        email: email.toLowerCase(),
+        status: 'PENDING',
+      },
+    })
+
+    console.log(
+      `Found ${pendingInvitations.length} pending invitations for ${email}`
+    )
+
+    let acceptedCount = 0
+    for (const invitation of pendingInvitations) {
+      try {
+        // Create or activate participation
+        await prisma.participation.upsert({
+          where: {
+            courseId_participantId: {
+              courseId: invitation.courseId,
+              participantId,
+            },
+          },
+          create: {
+            courseId: invitation.courseId,
+            participantId,
+            isActive: true,
+          },
+          update: {
+            isActive: true,
+          },
+        })
+
+        // Mark invitation as accepted
+        await prisma.participantInvitation.update({
+          where: { id: invitation.id },
+          data: {
+            status: 'ACCEPTED',
+            participantId,
+            acceptedAt: new Date(),
+          },
+        })
+
+        acceptedCount++
+      } catch (error) {
+        console.error(`Error accepting invitation ${invitation.id}:`, error)
+      }
+    }
+
+    if (acceptedCount > 0) {
+      await sendTeamsNotifications(
+        'auth/invitationAutoAccept',
+        `User ${email} was automatically enrolled in ${acceptedCount} course(s) via invitations.`
+      )
+    }
+
+    return acceptedCount
+  } catch (error) {
+    console.error('Error in autoAcceptInvitations:', error)
+    return 0
+  }
+}
+
 async function createUserAffiliations(
   userId: string,
   affiliationIds?: string[]
@@ -297,6 +374,21 @@ export const authOptions: NextAuthOptions = {
             profileData.swissEduIDLinkedAffiliationUniqueID
           )
 
+          // auto-accept any pending participant invitations for this email
+          if (profileData.email && user.role === 'PARTICIPANT') {
+            try {
+              const acceptedCount = await autoAcceptInvitations(
+                profileData.email,
+                user.id
+              )
+              console.log(
+                `Auto-accepted ${acceptedCount} invitations for ${profileData.email}`
+              )
+            } catch (error) {
+              console.error('Error auto-accepting invitations:', error)
+            }
+          }
+
           if (user.firstLogin) {
             await sendTeamsNotifications(
               'eduId/signUp',
@@ -340,6 +432,29 @@ export const authOptions: NextAuthOptions = {
           } catch (error) {
             console.error(
               'Error creating user affiliations in JWT callback:',
+              error
+            )
+          }
+        }
+
+        // auto-accept invitations for new users (those created via eduID)
+        if (
+          profileData &&
+          profileData.email &&
+          userData.role === 'PARTICIPANT' &&
+          userData.id
+        ) {
+          try {
+            const acceptedCount = await autoAcceptInvitations(
+              profileData.email,
+              userData.id
+            )
+            console.log(
+              `Auto-accepted ${acceptedCount} invitations for new user ${profileData.email}`
+            )
+          } catch (error) {
+            console.error(
+              'Error auto-accepting invitations for new user:',
               error
             )
           }
