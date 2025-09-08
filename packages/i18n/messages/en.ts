@@ -765,6 +765,9 @@ Since the KlickerUZH app is not yet available on the iOS App Store, follow these
       coursePinFormat: 'Course-PIN (format: ### ### ###)',
       coursePinNumerical: 'Please enter a numerical course PIN.',
       coursePinRequired: 'Please enter the course PIN.',
+      invalidPin: 'PIN invalid',
+      genericError:
+        'There was an error when trying to join the course. Please try again or ask your lecturer for assistance.',
     },
     practiceQuiz: {
       flashcardClick: 'Click to turn card',

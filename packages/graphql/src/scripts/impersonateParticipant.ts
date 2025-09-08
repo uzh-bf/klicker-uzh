@@ -1,12 +1,9 @@
-import { PrismaClient, UserRole } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
+import { UserRole } from '@klicker-uzh/prisma/client'
 import { signJWT } from '@klicker-uzh/util'
-import { PrismaPg } from '@prisma/adapter-pg'
 import readline from 'readline'
 
 async function run(username: string) {
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-  const prisma = new PrismaClient({ adapter })
-
   const participant = await prisma.participant.findUnique({
     where: {
       username,

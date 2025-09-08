@@ -24,17 +24,16 @@
     "typescript": "~5.6.3"
   },
   "scripts": {
-    "build": "cross-env NODE_ENV=production tsup",
-    "build:test": "pnpm run build",
-    "check": "tsc --noEmit",
-    "dev": "npm-run-all --parallel dev:ts dev:func",
-    "dev:assessment": "pnpm run dev",
+    "build:funcs": "cross-env NODE_ENV=production tsup",
+    "build:funcs:test": "pnpm run build",
+    "check:funcs": "tsc --noEmit",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:func": "func start -p 7072 --verbose --javascript",
+    "dev:funcs": "npm-run-all --parallel dev:ts dev:func",
     "dev:ts": "tsup --watch",
     "prestart": "pnpm run build",
-    "start": "func start -p 7072 --verbose --javascript",
-    "start:test": "func start -p 7072 --verbose --javascript"
+    "start:funcs": "func start -p 7072 --verbose --javascript",
+    "start:funcs:test": "func start -p 7072 --verbose --javascript"
   },
   "engines": {
     "node": "=20"

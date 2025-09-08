@@ -1,8 +1,33 @@
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+}
+
+model ParticipantInvitation {
+  id Int @id @default(autoincrement())
+
+  email  String
+  status InvitationStatus @default(PENDING)
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  participantId String?      @db.Uuid
+
+  invitedAt  DateTime  @default(now())
+  acceptedAt DateTime?
+
+  @@unique([email, courseId])
+  @@index([email])
+}
+
 model ParticipantAccount {
   id String @id @default(uuid()) @db.Uuid
 
-  ssoId   String @unique
-  ssoType String @default("LTI1.1")
+  ssoId    String  @unique
+  ssoType  String  @default("LTI1.1")
+  ssoEmail String?
 
   // Add fields for affiliation support
   type       String  @default("sso") // "sso", "affiliation"
@@ -61,6 +86,7 @@ model Participant {
   coursePerformances              ParticipantPerformance[]
   groupAssignmentPoolEntries      GroupAssignmentPoolEntry[]
   messages                        GroupMessage[]
+  invitations                     ParticipantInvitation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -183,7 +209,7 @@ model LeaderboardEntry {
 }
 
 model TemporaryLeaderboardEntry {
-  // participant id of temporary participant / participant id in case of logged-in 
+  // participant id of temporary participant / participant id in case of logged-in
   // participant without participation or in gamified live quiz without course
   id       String  @default(uuid()) @db.Uuid
   username String

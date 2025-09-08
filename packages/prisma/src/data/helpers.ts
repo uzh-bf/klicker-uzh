@@ -67,7 +67,7 @@ export function prepareCourse({
   isAssessmentEnabled?: boolean
   ownerId: string
   color?: string
-  pinCode: number
+  pinCode?: number | null
   startDate: Date
   endDate: Date
   isGroupCreationEnabled: boolean
@@ -78,6 +78,9 @@ export function prepareCourse({
 }) {
   const data = {
     ...args,
+    authType: args.isAssessmentEnabled
+      ? Prisma.CourseAuthType.SSO
+      : Prisma.CourseAuthType.PIN,
     owner: {
       connect: {
         id: ownerId,
