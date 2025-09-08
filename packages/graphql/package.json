@@ -94,7 +94,7 @@
     "dev:ts": "cross-env NODE_ENV=development rollup -c --watch",
     "generate": "graphql-codegen --config codegen.ts",
     "script": "ENV=development doppler run --config dev -- tsx",
-    "script:invitations:dev": "doppler run --config dev -- tsx src/scripts/importParticipantInvitations.ts --courseId 156d1069-434c-4f5a-b541-5637987ee504 --file src/scripts/invitations.csv",
+    "script:invitations:dev": "CONFIG=dev_assessment ../../util/_run_with_doppler.sh tsx src/scripts/importParticipantInvitations.ts --courseId 156d1069-434c-4f5a-b541-5637987ee504 --file src/scripts/invitations.csv",
     "script:prod": "ENV=production doppler run --config prd -- tsx",
     "script:stg": "ENV=development doppler run --config stg -- tsx",
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest --verbose --runInBand",
