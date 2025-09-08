@@ -1,7 +1,11 @@
 'use client'
 
 import { useChatStore } from '@/app/stores/chatStore'
-import { TooltipIconButton } from '@/components/assistant-ui/tooltip-icon-button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 
@@ -72,25 +76,37 @@ export function BranchPicker({ messageId, className }: BranchPickerProps) {
 
   return (
     <div className={`flex items-center gap-1 ${className}`}>
-      <TooltipIconButton
-        tooltip="Previous branch"
-        disabled={!hasPrevious}
-        onClick={goToPrevious}
-      >
-        <ChevronLeftIcon />
-      </TooltipIconButton>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            disabled={!hasPrevious}
+            onClick={goToPrevious}
+            className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
+          >
+            <ChevronLeftIcon />
+            <span className="sr-only">Previous branch</span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Previous branch</TooltipContent>
+      </Tooltip>
 
       <span className="flex items-center whitespace-nowrap px-1 text-xs">
         {currentIndex + 1} / {branches.length}
       </span>
 
-      <TooltipIconButton
-        tooltip="Next branch"
-        disabled={!hasNext}
-        onClick={goToNext}
-      >
-        <ChevronRightIcon />
-      </TooltipIconButton>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            disabled={!hasNext}
+            onClick={goToNext}
+            className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
+          >
+            <ChevronRightIcon />
+            <span className="sr-only">Next branch</span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Next branch</TooltipContent>
+      </Tooltip>
     </div>
   )
 }

@@ -5,21 +5,25 @@ import {
   ThreadPrimitive,
   useMessage,
 } from '@assistant-ui/react'
+import { faPaperPlane } from '@fortawesome/free-solid-svg-icons'
 import {
   ArrowDownIcon,
   CheckIcon,
   CopyIcon,
   PencilIcon,
   RefreshCwIcon,
-  SendHorizontalIcon,
 } from 'lucide-react'
 import type { FC } from 'react'
 
 import { BranchPicker } from '@/components/assistant-ui/branch-picker'
 import { MarkdownText } from '@/components/assistant-ui/markdown-text'
-import { TooltipIconButton } from '@/components/assistant-ui/tooltip-icon-button'
-import { Button } from '@/components/ui/button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { getThreadSuggestions } from '@/lib/config/suggestions'
+import { Button } from '@uzh-bf/design-system'
 import { ToolFallback } from './tool-fallback'
 
 export const Thread: FC = () => {
@@ -56,15 +60,17 @@ export const Thread: FC = () => {
 
 const ThreadScrollToBottom: FC = () => {
   return (
-    <ThreadPrimitive.ScrollToBottom asChild>
-      <TooltipIconButton
-        tooltip="Scroll to bottom"
-        variant="outline"
-        className="absolute -top-8 rounded-full disabled:invisible"
-      >
-        <ArrowDownIcon />
-      </TooltipIconButton>
-    </ThreadPrimitive.ScrollToBottom>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <ThreadPrimitive.ScrollToBottom asChild>
+          <button className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring absolute -top-8 inline-flex h-9 w-9 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-50">
+            <ArrowDownIcon />
+            <span className="sr-only">Scroll to bottom</span>
+          </button>
+        </ThreadPrimitive.ScrollToBottom>
+      </TooltipTrigger>
+      <TooltipContent>Scroll to bottom</TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -105,7 +111,7 @@ const ThreadWelcomeSuggestions: FC = () => {
 
 const Composer: FC = () => {
   return (
-    <ComposerPrimitive.Root className="focus-within:border-ring/20 flex w-full flex-wrap items-end rounded-lg border bg-inherit px-2.5 shadow-sm transition-colors ease-in">
+    <ComposerPrimitive.Root className="focus-within:border-ring/20 flex w-full flex-wrap items-center rounded-lg border bg-inherit px-2.5 shadow-sm transition-colors ease-in">
       <ComposerPrimitive.Input
         rows={1}
         autoFocus
@@ -122,24 +128,32 @@ const ComposerAction: FC = () => {
     <>
       <ThreadPrimitive.If running={false}>
         <ComposerPrimitive.Send asChild>
-          <TooltipIconButton
-            tooltip="Send"
-            variant="default"
-            className="my-2.5 size-8 p-2 transition-opacity ease-in"
+          <Button
+            className={{
+              root: 'm-2 flex h-12 w-12 items-center justify-center rounded-lg',
+            }}
           >
-            <SendHorizontalIcon />
-          </TooltipIconButton>
+            <Button.Icon icon={faPaperPlane} />
+          </Button>
         </ComposerPrimitive.Send>
       </ThreadPrimitive.If>
       <ThreadPrimitive.If running>
         <ComposerPrimitive.Cancel asChild>
-          <TooltipIconButton
-            tooltip="Cancel"
-            variant="default"
-            className="my-2.5 size-8 p-2 transition-opacity ease-in"
+          <Button
+            className={{
+              root: 'm-2 flex h-12 w-12 items-center justify-center rounded-lg',
+            }}
           >
-            <CircleStopIcon />
-          </TooltipIconButton>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              width="20"
+              height="20"
+            >
+              <rect width="10" height="10" x="3" y="3" rx="2" />
+            </svg>
+          </Button>
         </ComposerPrimitive.Cancel>
       </ThreadPrimitive.If>
     </>
@@ -165,11 +179,17 @@ const UserActionBar: FC = () => {
       autohide="not-last"
       className="col-start-1 row-start-2 mr-3 mt-2.5 flex flex-col items-end"
     >
-      <ActionBarPrimitive.Edit asChild>
-        <TooltipIconButton tooltip="Edit">
-          <PencilIcon />
-        </TooltipIconButton>
-      </ActionBarPrimitive.Edit>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <ActionBarPrimitive.Edit asChild>
+            <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
+              <PencilIcon />
+              <span className="sr-only">Edit</span>
+            </button>
+          </ActionBarPrimitive.Edit>
+        </TooltipTrigger>
+        <TooltipContent>Edit</TooltipContent>
+      </Tooltip>
 
       <BranchPickerWrapper />
     </ActionBarPrimitive.Root>
@@ -183,10 +203,30 @@ const EditComposer: FC = () => {
 
       <div className="mx-3 mb-3 flex items-center justify-center gap-2 self-end">
         <ComposerPrimitive.Cancel asChild>
-          <Button variant="ghost">Cancel</Button>
+          <Button
+            style={{
+              backgroundColor: '#000000',
+              color: '#ffffff',
+            }}
+            className={{
+              root: 'hover:!bg-gray-800',
+            }}
+          >
+            <Button.Label>Cancel</Button.Label>
+          </Button>
         </ComposerPrimitive.Cancel>
         <ComposerPrimitive.Send asChild>
-          <Button>Send</Button>
+          <Button
+            style={{
+              backgroundColor: '#ffffff',
+              color: '#000000',
+            }}
+            className={{
+              root: 'hover:!bg-gray-100',
+            }}
+          >
+            <Button.Label>Send</Button.Label>
+          </Button>
         </ComposerPrimitive.Send>
       </div>
     </ComposerPrimitive.Root>
@@ -215,21 +255,33 @@ const AssistantActionBar: FC = () => {
       autohideFloat="single-branch"
       className="text-muted-foreground data-[floating]:bg-background col-start-3 row-start-2 -ml-1 flex gap-1 data-[floating]:absolute data-[floating]:rounded-md data-[floating]:border data-[floating]:p-1 data-[floating]:shadow-sm"
     >
-      <ActionBarPrimitive.Copy asChild>
-        <TooltipIconButton tooltip="Copy">
-          <MessagePrimitive.If copied>
-            <CheckIcon />
-          </MessagePrimitive.If>
-          <MessagePrimitive.If copied={false}>
-            <CopyIcon />
-          </MessagePrimitive.If>
-        </TooltipIconButton>
-      </ActionBarPrimitive.Copy>
-      <ActionBarPrimitive.Reload asChild>
-        <TooltipIconButton tooltip="Refresh">
-          <RefreshCwIcon />
-        </TooltipIconButton>
-      </ActionBarPrimitive.Reload>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <ActionBarPrimitive.Copy asChild>
+            <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
+              <MessagePrimitive.If copied>
+                <CheckIcon />
+              </MessagePrimitive.If>
+              <MessagePrimitive.If copied={false}>
+                <CopyIcon />
+              </MessagePrimitive.If>
+              <span className="sr-only">Copy</span>
+            </button>
+          </ActionBarPrimitive.Copy>
+        </TooltipTrigger>
+        <TooltipContent>Copy</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <ActionBarPrimitive.Reload asChild>
+            <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
+              <RefreshCwIcon />
+              <span className="sr-only">Refresh</span>
+            </button>
+          </ActionBarPrimitive.Reload>
+        </TooltipTrigger>
+        <TooltipContent>Refresh</TooltipContent>
+      </Tooltip>
 
       <BranchPickerWrapper />
     </ActionBarPrimitive.Root>
@@ -239,18 +291,4 @@ const AssistantActionBar: FC = () => {
 const BranchPickerWrapper: FC = () => {
   const message = useMessage()
   return <BranchPicker messageId={message.id} />
-}
-
-const CircleStopIcon = () => {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 16 16"
-      fill="currentColor"
-      width="16"
-      height="16"
-    >
-      <rect width="10" height="10" x="3" y="3" rx="2" />
-    </svg>
-  )
 }

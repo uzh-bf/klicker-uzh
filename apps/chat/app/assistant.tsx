@@ -3,14 +3,6 @@
 import { RuntimeProvider } from '@/app/RuntimeProvider'
 import { AppSidebar } from '@/components/app-sidebar'
 import { Thread } from '@/components/assistant-ui/thread'
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
 import { Separator } from '@/components/ui/separator'
 import {
   SidebarInset,
@@ -18,6 +10,14 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@uzh-bf/design-system'
 
 export const Assistant = () => {
   return (
@@ -31,7 +31,9 @@ export const Assistant = () => {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">Klicker Chat</BreadcrumbLink>
+                  <BreadcrumbLink asChild>
+                    <div className="cursor-pointer">Klicker Chat</div>
+                  </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>

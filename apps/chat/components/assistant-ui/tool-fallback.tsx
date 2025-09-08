@@ -1,7 +1,7 @@
 import { ToolCallContentPartComponent } from '@assistant-ui/react'
+import { Button } from '@uzh-bf/design-system'
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
 import { useState } from 'react'
-import { Button } from '../ui/button'
 
 export const ToolFallback: ToolCallContentPartComponent = ({
   toolName,
@@ -17,7 +17,7 @@ export const ToolFallback: ToolCallContentPartComponent = ({
           Used tool: <b>{toolName}</b>
         </p>
         <div className="flex-grow" />
-        <Button onClick={() => setIsCollapsed(!isCollapsed)}>
+        <Button basic onClick={() => setIsCollapsed(!isCollapsed)}>
           {isCollapsed ? <ChevronUpIcon /> : <ChevronDownIcon />}
         </Button>
       </div>

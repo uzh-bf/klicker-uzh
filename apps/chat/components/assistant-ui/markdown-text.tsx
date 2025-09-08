@@ -14,7 +14,11 @@ import { CheckIcon, CopyIcon } from 'lucide-react'
 import { FC, memo, useState } from 'react'
 import remarkGfm from 'remark-gfm'
 
-import { TooltipIconButton } from '@/components/assistant-ui/tooltip-icon-button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 const MarkdownTextImpl = () => {
@@ -41,10 +45,19 @@ const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
   return (
     <div className="flex items-center justify-between gap-4 rounded-t-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white">
       <span className="lowercase [&>span]:text-xs">{language}</span>
-      <TooltipIconButton tooltip="Copy" onClick={onCopy}>
-        {!isCopied && <CopyIcon />}
-        {isCopied && <CheckIcon />}
-      </TooltipIconButton>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={onCopy}
+            className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium text-white transition-colors hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
+          >
+            {!isCopied && <CopyIcon />}
+            {isCopied && <CheckIcon />}
+            <span className="sr-only">Copy</span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Copy</TooltipContent>
+      </Tooltip>
     </div>
   )
 }
