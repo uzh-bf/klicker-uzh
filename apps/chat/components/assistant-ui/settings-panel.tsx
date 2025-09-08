@@ -10,8 +10,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { Switch } from '@/components/ui/switch'
 import { type ModelProvider } from '@/lib/models'
+import { type ChatbotMode } from '@/lib/prompts'
 import { Settings2, Zap } from 'lucide-react'
 
 export function SettingsPanel() {
@@ -20,6 +20,7 @@ export function SettingsPanel() {
     selectedMode,
     credits,
     modelOptions,
+    modeOptions,
     setSelectedModel,
     setSelectedMode,
   } = useSettingsStore()
@@ -28,6 +29,10 @@ export function SettingsPanel() {
 
   const handleModelChange = (value: string) => {
     setSelectedModel(value as ModelProvider)
+  }
+
+  const handleModeChange = (value: string) => {
+    setSelectedMode(value as ChatbotMode)
   }
 
   return (
@@ -62,31 +67,23 @@ export function SettingsPanel() {
       {/* mode selection */}
       <div className="space-y-2">
         <label className="text-muted-foreground text-xs">Chat Mode</label>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <span
-              className={`text-xs ${selectedMode === 'tutor' ? 'font-medium' : 'text-muted-foreground'}`}
-            >
-              Tutor
-            </span>
-            <Switch
-              checked={selectedMode === 'explainer'}
-              onCheckedChange={(checked) =>
-                setSelectedMode(checked ? 'explainer' : 'tutor')
-              }
-            />
-            <span
-              className={`text-xs ${selectedMode === 'explainer' ? 'font-medium' : 'text-muted-foreground'}`}
-            >
-              Explainer
-            </span>
-          </div>
-        </div>
-        <p className="text-muted-foreground text-xs">
-          {selectedMode === 'tutor'
-            ? 'Step-by-step learning guidance'
-            : 'Clear and comprehensive explanations'}
-        </p>
+        <Select value={selectedMode} onValueChange={handleModeChange}>
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue placeholder="Select mode" />
+          </SelectTrigger>
+          <SelectContent>
+            {modeOptions.map((option) => (
+              <SelectItem key={option.id} value={option.id}>
+                <div className="flex flex-col items-start">
+                  <span className="font-medium">{option.name}</span>
+                  <span className="text-muted-foreground text-xs">
+                    {option.description}
+                  </span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <Separator />
