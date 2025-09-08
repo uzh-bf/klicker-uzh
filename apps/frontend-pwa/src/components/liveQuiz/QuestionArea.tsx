@@ -7,14 +7,15 @@ import LiveQuizProgress from '@klicker-uzh/shared-components/src/questions/LiveQ
 import { push } from '@socialgouv/matomo-next'
 import { H2 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import localForage from 'localforage'
+import localforage from 'localforage'
 import { useTranslations } from 'next-intl'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { isDeepEqual } from 'remeda'
 import useRemainingInstances from '../hooks/useRemainingInstances'
 import AllQuestionsAnsweredMessage from './AllQuestionsAnsweredMessage'
 
 interface QuestionAreaProps {
+  isBlockActive?: boolean
   gamificationEnabled: boolean
   expiresAt?: Date
   instances: ElementInstance[]
@@ -31,6 +32,7 @@ interface QuestionAreaProps {
 }
 
 function QuestionArea({
+  isBlockActive = false,
   gamificationEnabled,
   expiresAt,
   instances,
@@ -41,7 +43,9 @@ function QuestionArea({
 }: QuestionAreaProps): React.ReactElement {
   const t = useTranslations()
 
-  const [remainingQuestions, setRemainingQuestions] = useState(new Array())
+  const [remainingQuestions, setRemainingQuestions] = useState<number[] | null>(
+    null
+  )
   const [activeInstance, setActiveInstance] = useState<number>(0)
   const currentInstance = instances[activeInstance]
 
@@ -59,11 +63,39 @@ function QuestionArea({
     setStudentResponse,
   })
 
+  // load previously stored response from localforage (if available)
+  useEffect(() => {
+    const loadStoredResponse = async () => {
+      if (!currentInstance) return
+      try {
+        const key = `lq-${quizId}-ex-${execution}-i-${currentInstance.id}`
+        const stored = await localforage.getItem(key)
+        if (typeof stored === 'undefined' || stored === null) return
+
+        // initialize the student response with the stored value
+        setStudentResponse({
+          type: currentInstance.elementType,
+          // stored is saved as the raw input.response (or boolean/string for content/numerical)
+          // which matches the expected response shape per ElementType
+          response: stored as any,
+          valid: true,
+        })
+      } catch (e) {
+        console.error(e)
+      }
+    }
+
+    loadStoredResponse()
+
+    // re-run when quizId/execution/instance changes
+  }, [quizId, execution, currentInstance?.id])
+
   // compute remaining instances based on stored responses
   useRemainingInstances({
     quizId,
     instances,
     execution,
+    isBlockCompleted: !isBlockActive,
     setRemainingQuestions,
     setActiveInstance,
   })
@@ -82,7 +114,7 @@ function QuestionArea({
     await updateStoredResponses(instanceId, quizId, execution)
 
     // calculate the new indices of remaining questions
-    const newRemaining = remainingQuestions.filter(
+    const newRemaining = (remainingQuestions ?? []).filter(
       (question) => !isDeepEqual(activeInstance, question)
     )
 
@@ -98,7 +130,7 @@ function QuestionArea({
       answerQuestion({ instanceId, type: elementType, input: studentResponse })
     }
 
-    const remainingQuestionIds = remainingQuestions.map(
+    const remainingQuestionIds = (remainingQuestions ?? []).map(
       (index: number) => instances[index].id
     )
     await updateStoredResponses(remainingQuestionIds, quizId, execution)
@@ -126,29 +158,53 @@ function QuestionArea({
         (type === ElementType.Kprim && input.type === ElementType.Kprim)) &&
       typeof input.response !== 'undefined'
     ) {
-      const responseList = Object.entries(input.response)
-        .filter(([, value]) => value)
-        .map(([key, value]) => ({
-          ix: parseInt(key),
-          selected: value,
-        }))
+      // submit responses as an array of objects with answer ix and selected boolean
+      handleNewResponse(
+        quizId,
+        instanceId,
+        type,
+        Object.entries(input.response)
+          .filter(([, value]) => value)
+          .map(([key, value]) => ({
+            ix: parseInt(key),
+            selected: value,
+          }))
+      )
 
-      handleNewResponse(quizId, instanceId, type, responseList)
+      // store the submitted answer locally to be shown
+      localforage.setItem(
+        `lq-${quizId}-ex-${execution}-i-${instanceId}`,
+        input.response
+      )
     } else if (
       ElementType.FreeText === type &&
       input.type === ElementType.FreeText &&
       typeof input.response !== 'undefined'
     ) {
+      // submit responses as a string
       handleNewResponse(quizId, instanceId, type, input.response)
+
+      // store the submitted answer locally to be shown
+      localforage.setItem(
+        `lq-${quizId}-ex-${execution}-i-${instanceId}`,
+        input.response
+      )
     } else if (
       ElementType.Numerical === type &&
       input.type === ElementType.Numerical &&
       typeof input.response !== 'undefined'
     ) {
+      // submit responses as a number (float)
       handleNewResponse(
         quizId,
         instanceId,
         type,
+        String(parseFloat(input.response))
+      )
+
+      // store the submitted answer locally to be shown
+      localforage.setItem(
+        `lq-${quizId}-ex-${execution}-i-${instanceId}`,
         String(parseFloat(input.response))
       )
     } else if (
@@ -158,6 +214,12 @@ function QuestionArea({
     ) {
       // submit responses as an array of answer ids that were selected
       handleNewResponse(quizId, instanceId, type, Object.values(input.response))
+
+      // store the submitted answer locally to be shown
+      localforage.setItem(
+        `lq-${quizId}-ex-${execution}-i-${instanceId}`,
+        input.response
+      )
     } else if (
       ElementType.CaseStudy === type &&
       input.type === ElementType.CaseStudy &&
@@ -165,9 +227,18 @@ function QuestionArea({
     ) {
       // submit responses as an object with case, item and criterion ids as nested keys
       handleNewResponse(quizId, instanceId, type, input.response)
+
+      // store the submitted answer locally to be shown
+      localforage.setItem(
+        `lq-${quizId}-ex-${execution}-i-${instanceId}`,
+        input.response
+      )
     } else if (type === ElementType.Content) {
       // for content elements, only the number of reads / next clicks are counted
       handleNewResponse(quizId, instanceId, type, true)
+
+      // store the submitted answer locally to be shown
+      localforage.setItem(`lq-${quizId}-ex-${execution}-i-${instanceId}`, true)
     }
   }
 
@@ -178,7 +249,7 @@ function QuestionArea({
   ) => {
     if (typeof window !== 'undefined') {
       try {
-        const prevResponses: any = await localForage.getItem(
+        const prevResponses: any = await localforage.getItem(
           `${quizId}-responses`
         )
         let newResponses: string[] = []
@@ -204,7 +275,7 @@ function QuestionArea({
                 timestamp: dayjs().unix(),
               }
         )
-        await localForage.setItem(`${quizId}-responses`, stringified)
+        await localforage.setItem(`${quizId}-responses`, stringified)
       } catch (e) {
         console.error(e)
         // TODO: maybe delete possible responses that were already saved in case of failure
@@ -212,40 +283,67 @@ function QuestionArea({
     }
   }
 
-  return (
-    <div className="min-h-content h-full w-full">
-      <H2 className={{ root: 'mb-0 pt-4 md:pt-2' }}>
-        {t('shared.generic.question')}
-      </H2>
+  // while the remaining questions are still initializing, do not return anything
+  if (remainingQuestions === null) {
+    return <></>
+  }
 
-      {remainingQuestions.length === 0 ? (
-        <AllQuestionsAnsweredMessage
-          gamificationEnabled={gamificationEnabled}
+  return (
+    <div className="min-h-content mt-1.5 h-full w-full">
+      <H2 className={{ root: 'mb-0 pt-2' }}>{t('shared.generic.questions')}</H2>
+
+      <div className="flex w-full flex-col">
+        {remainingQuestions.length === 0 && (
+          <AllQuestionsAnsweredMessage
+            gamificationEnabled={gamificationEnabled}
+          />
+        )}
+
+        <LiveQuizProgress
+          activeIndex={activeInstance}
+          numItems={instances.length}
+          expiresAt={expiresAt}
+          timeLimit={timeLimit}
+          allowedMaxIndex={
+            isBlockActive
+              ? typeof remainingQuestions[0] === 'number'
+                ? (remainingQuestions[0] as number)
+                : instances.length - 1
+              : instances.length - 1
+          }
+          isCurrentUnanswered={remainingQuestions.includes(activeInstance)}
+          isContent={currentInstance.elementType === ElementType.Content}
+          isBlockOver={remainingQuestions.length === 0}
+          canSubmit={!!studentResponse.valid}
+          onPrev={() => setActiveInstance((prev) => Math.max(0, prev - 1))}
+          onNext={() =>
+            setActiveInstance((prev) =>
+              Math.min(
+                isBlockActive
+                  ? typeof remainingQuestions[0] === 'number'
+                    ? (remainingQuestions[0] as number)
+                    : instances.length - 1
+                  : instances.length - 1,
+                prev + 1
+              )
+            )
+          }
+          onSubmit={onSubmit}
+          onExpire={onExpire}
         />
-      ) : (
-        <div className="flex w-full flex-col">
-          <LiveQuizProgress
-            activeIndex={instances.length - remainingQuestions.length}
-            contentInstance={
-              currentInstance.elementType === ElementType.Content
-            }
-            numItems={instances.length}
-            expiresAt={expiresAt}
-            timeLimit={timeLimit}
-            isSubmitDisabled={!studentResponse.valid}
-            onSubmit={onSubmit}
-            onExpire={onExpire}
-          />
-          <StudentElement
-            sequential
-            hideReadButton
-            element={currentInstance}
-            elementIx={activeInstance}
-            singleStudentResponse={studentResponse}
-            setSingleStudentResponse={setStudentResponse}
-          />
-        </div>
-      )}
+
+        <StudentElement
+          sequential
+          hideReadButton
+          disabledInput={
+            !isBlockActive || !remainingQuestions.includes(activeInstance)
+          }
+          element={currentInstance}
+          elementIx={activeInstance}
+          singleStudentResponse={studentResponse}
+          setSingleStudentResponse={setStudentResponse}
+        />
+      </div>
     </div>
   )
 }
