@@ -9,7 +9,6 @@ import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
-import * as InvitationService from '../services/invitations.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as ParticipantService from '../services/participants.js'
@@ -75,10 +74,6 @@ import {
   Participation,
   StudentCourseLeaderboard,
 } from './participant.js'
-import {
-  InvitationStatistics,
-  ParticipantInvitation,
-} from './participantInvitation.js'
 import {
   ActivitySummary,
   ElementStack,
@@ -1988,55 +1983,6 @@ export const Query = builder.queryType({
         resolve: async (_, args, ctx) => {
           return await SharingService.getAnswerCollectionCatalogInfo(args, ctx)
         },
-      }),
-
-      // Invitation management queries (admin only)
-      getCourseInvitations: t.withAuth(asUser).field({
-        nullable: true,
-        type: [ParticipantInvitation],
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
-        resolve: withPermission(
-          (args) => ({ courseId: args.courseId }),
-          DB.PermissionLevel.ADMIN,
-          async (_, args, ctx) => {
-            return await InvitationService.getCourseInvitations(args, ctx)
-          }
-        ),
-      }),
-
-      getParticipantInvitations: t.withAuth(asUser).field({
-        nullable: true,
-        type: [ParticipantInvitation],
-        args: {
-          participantId: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          // Only allow users to see their own invitations or admins to see any
-          if (
-            ctx.user?.sub !== args.participantId &&
-            ctx.user?.role !== DB.UserRole.ADMIN
-          ) {
-            return null
-          }
-          return await InvitationService.getParticipantInvitations(args, ctx)
-        },
-      }),
-
-      getCourseInvitationStats: t.withAuth(asUser).field({
-        nullable: true,
-        type: InvitationStatistics,
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
-        resolve: withPermission(
-          (args) => ({ courseId: args.courseId }),
-          DB.PermissionLevel.READ,
-          async (_, args, ctx) => {
-            return await InvitationService.getInvitationStatistics(args, ctx)
-          }
-        ),
       }),
     }
   },

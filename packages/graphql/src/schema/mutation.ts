@@ -9,7 +9,6 @@ import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
-import * as InvitationService from '../services/invitations.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as NotificationService from '../services/notifications.js'
@@ -60,7 +59,6 @@ import {
   Participation,
   SubscriptionObjectInput,
 } from './participant.js'
-import { InvitationCreationResult } from './participantInvitation.js'
 import {
   ElementBlockInput,
   ElementOrderType,
@@ -3415,26 +3413,6 @@ export const Mutation = builder.mutationType({
         resolve: async (_, args, ctx) => {
           return await AccountService.deleteUserLogin(args, ctx)
         },
-      }),
-
-      // #endregion
-
-      // #region Invitation Management
-
-      createParticipantInvitations: t.withAuth(asUser).field({
-        nullable: true,
-        type: InvitationCreationResult,
-        args: {
-          courseId: t.arg.string({ required: true }),
-          emails: t.arg.stringList({ required: true }),
-        },
-        resolve: withPermission(
-          (args) => ({ courseId: args.courseId }),
-          DB.PermissionLevel.ADMIN,
-          async (_, args, ctx) => {
-            return await InvitationService.createInvitations(args, ctx)
-          }
-        ),
       }),
 
       // #endregion
