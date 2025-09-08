@@ -2667,6 +2667,7 @@ function removeSolutionFromInstances({
     switch (elementData.type) {
       case DB.ElementType.SC:
       case DB.ElementType.MC:
+      case DB.ElementType.KPRIM:
         return {
           ...instance,
           elementData: {
@@ -2681,10 +2682,54 @@ function removeSolutionFromInstances({
         }
 
       case DB.ElementType.NUMERICAL:
+        return {
+          ...instance,
+          elementData: {
+            ...elementData,
+            options: {
+              ...elementData.options,
+              exactSolutions: undefined,
+              solutionRanges: undefined,
+            },
+          },
+        }
+
       case DB.ElementType.FREE_TEXT:
         return {
           ...instance,
-          elementData,
+          elementData: {
+            ...elementData,
+            options: {
+              ...elementData.options,
+              solutions: undefined,
+            },
+          },
+        }
+
+      case DB.ElementType.SELECTION:
+        return {
+          ...instance,
+          elementData: {
+            ...elementData,
+            options: {
+              ...elementData.options,
+              answerCollectionSolutionIds: undefined,
+            },
+          },
+        }
+
+      case DB.ElementType.CASE_STUDY:
+        return {
+          ...instance,
+          elementData: {
+            ...elementData,
+            options: {
+              ...elementData.options,
+              cases: elementData.options.cases.map((caseItem) => ({
+                ...omitBy(caseItem, (_, key) => key === 'solutions'),
+              })),
+            },
+          },
         }
 
       default:

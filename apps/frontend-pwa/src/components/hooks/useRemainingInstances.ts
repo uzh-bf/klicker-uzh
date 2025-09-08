@@ -20,7 +20,7 @@ function useRemainingInstances({
   useEffect((): void => {
     const exec = async () => {
       try {
-        // if the block is not active, immediately set the value to the first instance and return
+        // if the block is already completed, automatically jump to the first instance and return early
         if (isBlockCompleted) {
           setActiveInstance(0)
           setRemainingQuestions([])

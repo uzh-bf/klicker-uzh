@@ -69,7 +69,7 @@ export function LiveQuizProgress({
             className={{ root: 'h-3 w-3 md:h-4 md:w-4' }}
           />
         </Button>
-        <div className="mx-1 md:mx-1.5">{`Question ${activeIndex + 1}/${numItems}`}</div>
+        <div className="mx-1 md:mx-1.5">{`${t('shared.generic.question')} ${activeIndex + 1}/${numItems}`}</div>
         <Button
           onClick={onNext}
           disabled={activeIndex >= allowedMaxIndex}

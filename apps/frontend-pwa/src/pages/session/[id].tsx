@@ -196,6 +196,17 @@ function Index({ id }: { id: string }) {
     rightTab,
   ])
 
+  // if the live quiz was loaded correctly, but does not contain any blocks, directly switch to the feedback view
+  useEffect(() => {
+    if (
+      data?.studentLiveQuiz?.id &&
+      (!data?.studentLiveQuiz?.blocks ||
+        data?.studentLiveQuiz?.blocks.length === 0)
+    ) {
+      setActiveView('feedbacks')
+    }
+  }, [data?.studentLiveQuiz])
+
   if (loading) {
     return (
       <Layout>
@@ -319,31 +330,38 @@ function Index({ id }: { id: string }) {
     showBadge?: boolean
     data?: { cy?: string; test?: string }
   }[] = [
-    {
-      value: 'questions',
-      label: t('shared.generic.questions'),
-      icon: <FontAwesomeIcon icon={faQuestion} size="lg" />,
-      unseenItems: activeBlock?.elements?.length,
-      data: { cy: 'mobile-menu-questions' },
-    },
+    ...(!blocks || blocks.length === 0
+      ? []
+      : [
+          {
+            value: 'questions',
+            label: t('shared.generic.questions'),
+            icon: <FontAwesomeIcon icon={faQuestion} size="lg" />,
+            unseenItems: activeBlock?.elements?.length,
+            data: { cy: 'mobile-menu-questions' },
+          },
+        ]),
+    ...(isLiveQAEnabled || isConfusionFeedbackEnabled
+      ? [
+          {
+            value: 'feedbacks',
+            label: t('shared.generic.feedbacks'),
+            icon: <FontAwesomeIcon icon={faCommentDots} size="lg" />,
+            data: { cy: 'mobile-menu-feedbacks' },
+          },
+        ]
+      : []),
+    ...(selfData?.self && isGamificationEnabled
+      ? [
+          {
+            value: 'gamification',
+            label: t('shared.generic.leaderboard'),
+            icon: <FontAwesomeIcon icon={faRankingStar} size="lg" />,
+            data: { cy: 'mobile-menu-leaderboard' },
+          },
+        ]
+      : []),
   ]
-
-  if (isLiveQAEnabled || isConfusionFeedbackEnabled) {
-    mobileMenuItems.push({
-      value: 'feedbacks',
-      label: t('shared.generic.feedbacks'),
-      icon: <FontAwesomeIcon icon={faCommentDots} size="lg" />,
-      data: { cy: 'mobile-menu-feedbacks' },
-    })
-  }
-  if (selfData?.self && isGamificationEnabled) {
-    mobileMenuItems.push({
-      value: 'leaderboard',
-      label: t('shared.generic.leaderboard'),
-      icon: <FontAwesomeIcon icon={faRankingStar} size="lg" />,
-      data: { cy: 'mobile-menu-leaderboard' },
-    })
-  }
 
   return (
     <Layout
@@ -361,133 +379,136 @@ function Index({ id }: { id: string }) {
       />
 
       <div className="md:mx-auto md:flex md:w-full md:max-w-7xl md:flex-row md:pt-5">
-        <div
-          className={twMerge(
-            'hidden flex-1 border-gray-300 bg-white md:pr-5',
-            (isLiveQAEnabled ||
-              isConfusionFeedbackEnabled ||
-              (selfData?.self && isGamificationEnabled)) &&
-              'md:w-1/2 md:border-r',
-            activeView === 'questions' && 'block',
-            'md:block'
-          )}
-        >
+        {blocks && blocks.length > 0 ? (
           <div
             className={twMerge(
-              activeView === 'questions' ? '' : 'hidden',
+              'hidden flex-1 border-gray-300 bg-white md:pr-5',
+              (isLiveQAEnabled ||
+                isConfusionFeedbackEnabled ||
+                (selfData?.self && isGamificationEnabled)) &&
+                'md:w-1/2 md:border-r',
+              activeView === 'questions' && 'block',
               'md:block'
             )}
-            key={`question-area-${activeBlock?.id}-${activeBlock?.status}`}
           >
-            <>
-              {blocks && blocks.length > 0 ? (
-                <StepProgress
-                  value={
-                    selectedBlock !== null
-                      ? selectedBlock
-                      : blocks[0]?.status !== ElementBlockStatus.Scheduled
-                        ? 0
-                        : -1
-                  }
-                  items={blocks?.map((block, ix) => ({
-                    id: block.id,
-                    ix,
-                    label: t('shared.generic.blockN', { number: ix + 1 }),
-                    blockStatus: block.status,
-                    disabled: block.status === ElementBlockStatus.Scheduled,
-                    className: twMerge(
-                      block.id === activeBlock?.id &&
-                        'bg-primary-100! hover:bg-primary-100 text-white hover:text-white'
-                    ),
-                  }))}
-                  displayOffsetLeft={1}
-                  displayOffsetRight={1}
-                  formatter={({ element }) => (
-                    <span className="w-full space-x-2">
-                      <FontAwesomeIcon
-                        icon={
-                          element.blockStatus === ElementBlockStatus.Scheduled
-                            ? faClock
-                            : element.blockStatus === ElementBlockStatus.Active
-                              ? faUsers
-                              : faCheck
-                        }
-                      />
-                      <span>{element.label}</span>
-                    </span>
-                  )}
-                  onItemClick={(_, item) => {
-                    if (!item!.disabled) {
-                      setSelectedBlock(Number(item!.ix))
+            <div
+              className={twMerge(
+                activeView === 'questions' ? '' : 'hidden',
+                'md:block'
+              )}
+              key={`question-area-${activeBlock?.id}-${activeBlock?.status}`}
+            >
+              <>
+                {blocks && blocks.length > 0 ? (
+                  <StepProgress
+                    value={
+                      selectedBlock !== null
+                        ? selectedBlock
+                        : blocks[0]?.status !== ElementBlockStatus.Scheduled
+                          ? 0
+                          : -1
                     }
-                  }}
-                  className={{ root: 'md:mt-0.25 mt-5 text-sm' }}
-                />
-              ) : null}
+                    items={blocks?.map((block, ix) => ({
+                      id: block.id,
+                      ix,
+                      label: t('shared.generic.blockN', { number: ix + 1 }),
+                      blockStatus: block.status,
+                      disabled: block.status === ElementBlockStatus.Scheduled,
+                      className: twMerge(
+                        block.id === activeBlock?.id &&
+                          'bg-primary-100! hover:bg-primary-100 text-white hover:text-white'
+                      ),
+                    }))}
+                    displayOffsetLeft={1}
+                    displayOffsetRight={1}
+                    formatter={({ element }) => (
+                      <span className="w-full space-x-2">
+                        <FontAwesomeIcon
+                          icon={
+                            element.blockStatus === ElementBlockStatus.Scheduled
+                              ? faClock
+                              : element.blockStatus ===
+                                  ElementBlockStatus.Active
+                                ? faUsers
+                                : faCheck
+                          }
+                        />
+                        <span>{element.label}</span>
+                      </span>
+                    )}
+                    onItemClick={(_, item) => {
+                      if (!item!.disabled) {
+                        setSelectedBlock(Number(item!.ix))
+                      }
+                    }}
+                    className={{ root: 'md:mt-0.25 mt-5 text-sm' }}
+                  />
+                ) : null}
 
-              {beforeFirstBlock ? (
-                <div
-                  data-cy="live-quiz-description"
-                  className="mt-1.5 pt-4 md:pt-2"
-                >
-                  <H2>{displayName}</H2>
-                  {description !== null &&
-                  typeof description !== 'undefined' &&
-                  description !== '' &&
-                  !description?.match(/^(<br>(\n)*)$/g) ? (
-                    <Markdown content={description} />
-                  ) : (
-                    <UserNotification
-                      type="info"
-                      className={{ root: 'mt-1.5 md:text-base' }}
-                    >
-                      {t.rich('pwa.liveQuiz.noActiveQuestion', {
-                        reload: (text) => (
-                          <span
-                            className="cursor-pointer underline"
-                            onClick={() => router.reload()}
-                            data-cy="reload-live-quiz"
-                          >
-                            {text}
-                          </span>
-                        ),
-                      })}
-                    </UserNotification>
-                  )}
-                </div>
-              ) : null}
+                {beforeFirstBlock ? (
+                  <div
+                    data-cy="live-quiz-description"
+                    className="mt-1.5 pt-4 md:pt-2"
+                  >
+                    <H2>{displayName}</H2>
+                    {description !== null &&
+                    typeof description !== 'undefined' &&
+                    description !== '' &&
+                    !description?.match(/^(<br>(\n)*)$/g) ? (
+                      <Markdown content={description} />
+                    ) : (
+                      <UserNotification
+                        type="info"
+                        className={{ root: 'mt-1.5 md:text-base' }}
+                      >
+                        {t.rich('pwa.liveQuiz.noActiveQuestion', {
+                          reload: (text) => (
+                            <span
+                              className="cursor-pointer underline"
+                              onClick={() => router.reload()}
+                              data-cy="reload-live-quiz"
+                            >
+                              {text}
+                            </span>
+                          ),
+                        })}
+                      </UserNotification>
+                    )}
+                  </div>
+                ) : null}
 
-              {activeBlock &&
-              selectedBlock ===
-                blocks?.findIndex((b) => b.id === activeBlock.id) ? (
-                <QuestionArea
-                  isBlockActive
-                  quizId={id}
-                  gamificationEnabled={isGamificationEnabled}
-                  expiresAt={activeBlock.expiresAt}
-                  instances={activeBlock.elements ?? []}
-                  handleNewResponse={handleNewResponse}
-                  timeLimit={activeBlock?.timeLimit ?? undefined}
-                  execution={activeBlock?.execution ?? 0}
-                />
-              ) : null}
+                {activeBlock &&
+                selectedBlock ===
+                  blocks?.findIndex((b) => b.id === activeBlock.id) ? (
+                  <QuestionArea
+                    isBlockActive
+                    quizId={id}
+                    gamificationEnabled={isGamificationEnabled}
+                    expiresAt={activeBlock.expiresAt}
+                    instances={activeBlock.elements ?? []}
+                    handleNewResponse={handleNewResponse}
+                    timeLimit={activeBlock?.timeLimit ?? undefined}
+                    execution={activeBlock?.execution ?? 0}
+                  />
+                ) : null}
 
-              {selectedBlock !== null &&
-              (!activeBlock ||
-                selectedBlock !==
-                  blocks?.findIndex((b) => b.id === activeBlock.id)) &&
-              blocks?.[selectedBlock] ? (
-                <QuestionArea
-                  quizId={id}
-                  gamificationEnabled={isGamificationEnabled}
-                  instances={blocks?.[selectedBlock].elements ?? []}
-                  execution={blocks?.[selectedBlock]?.execution ?? 0}
-                  handleNewResponse={() => {}} // submissions are no longer possible
-                />
-              ) : null}
-            </>
+                {selectedBlock !== null &&
+                (!activeBlock ||
+                  selectedBlock !==
+                    blocks?.findIndex((b) => b.id === activeBlock.id)) &&
+                blocks?.[selectedBlock] ? (
+                  <QuestionArea
+                    quizId={id}
+                    gamificationEnabled={isGamificationEnabled}
+                    instances={blocks?.[selectedBlock].elements ?? []}
+                    execution={blocks?.[selectedBlock]?.execution ?? 0}
+                    handleNewResponse={() => {}} // submissions are no longer possible
+                  />
+                ) : null}
+              </>
+            </div>
           </div>
-        </div>
+        ) : null}
 
         {activeView === 'leaderboard' && (
           <div className={twMerge('min-h-full flex-1 bg-white md:hidden')}>
@@ -504,6 +525,7 @@ function Index({ id }: { id: string }) {
         <div
           className={twMerge(
             'hidden bg-white md:w-1/2 md:pl-5',
+            (!blocks || blocks.length === 0) && 'mx-auto',
             (isLiveQAEnabled ||
               isConfusionFeedbackEnabled ||
               (selfData?.self && isGamificationEnabled)) &&

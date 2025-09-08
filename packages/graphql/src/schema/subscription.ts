@@ -27,7 +27,6 @@ export const Subscription = builder.subscriptionType({
 
     return {
       runningLiveQuizUpdated: t.field({
-        nullable: true,
         type: LiveQuizRef,
         args: { id: t.arg.string({ required: true }) },
         subscribe: (_, args, ctx) =>

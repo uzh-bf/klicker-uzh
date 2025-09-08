@@ -7,7 +7,7 @@ import LiveQuizProgress from '@klicker-uzh/shared-components/src/questions/LiveQ
 import { push } from '@socialgouv/matomo-next'
 import { H2 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { default as localForage, default as localforage } from 'localforage'
+import localforage from 'localforage'
 import { useTranslations } from 'next-intl'
 import React, { useEffect, useState } from 'react'
 import { isDeepEqual } from 'remeda'
@@ -249,7 +249,7 @@ function QuestionArea({
   ) => {
     if (typeof window !== 'undefined') {
       try {
-        const prevResponses: any = await localForage.getItem(
+        const prevResponses: any = await localforage.getItem(
           `${quizId}-responses`
         )
         let newResponses: string[] = []
@@ -275,7 +275,7 @@ function QuestionArea({
                 timestamp: dayjs().unix(),
               }
         )
-        await localForage.setItem(`${quizId}-responses`, stringified)
+        await localforage.setItem(`${quizId}-responses`, stringified)
       } catch (e) {
         console.error(e)
         // TODO: maybe delete possible responses that were already saved in case of failure
