@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+@source "../node_modules/@uzh-bf/design-system/src";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
