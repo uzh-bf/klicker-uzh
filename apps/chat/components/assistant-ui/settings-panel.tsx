@@ -33,12 +33,12 @@ export function SettingsPanel() {
     <div className="space-y-4 border-t p-4">
       <div className="flex items-center gap-2">
         <Settings2 className="h-4 w-4" />
-        <span className="text-sm font-medium">Settings</span>
+        <span className="text-basefont-medium">Settings</span>
       </div>
 
       {/* model selection */}
       <div className="space-y-2">
-        <label className="text-muted-foreground text-xs">AI Model</label>
+        <label className="text-sm font-bold">AI Model</label>
         <Select
           placeholder="Select AI Model"
           items={modelOptions.map((option) => ({
@@ -50,11 +50,17 @@ export function SettingsPanel() {
           }}
           defaultValue={selectedModel}
         />
+        <p className="text-muted-foreground text-sm">
+          {
+            modelOptions.find((option) => option.id === selectedModel)
+              ?.description
+          }
+        </p>
       </div>
 
       {/* mode selection */}
       <div className="space-y-2">
-        <label className="text-muted-foreground text-xs">Chat Mode</label>
+        <label className="text-sm font-bold">Chat Mode</label>
         <Select
           placeholder="Select Chat Mode"
           items={modeOptions.map((option) => ({
@@ -66,6 +72,12 @@ export function SettingsPanel() {
           }}
           defaultValue={selectedMode}
         />
+        <p className="text-muted-foreground text-sm">
+          {
+            modeOptions.find((option) => option.id === selectedMode)
+              ?.description
+          }
+        </p>
       </div>
 
       <Separator />
@@ -74,10 +86,10 @@ export function SettingsPanel() {
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <Zap className="h-4 w-4" />
-          <span className="text-xs font-medium">Available Credits</span>
+          <span className="text-sm font-medium">Available Credits</span>
         </div>
         <div className="space-y-1">
-          <div className="flex justify-between text-xs">
+          <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">
               {credits.current} / {credits.total}
             </span>
