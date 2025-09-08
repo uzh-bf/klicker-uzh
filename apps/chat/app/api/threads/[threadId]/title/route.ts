@@ -1,4 +1,4 @@
-import { ThreadService } from '../../../../lib/threads'
+import { ThreadService } from '../../../../services/threads'
 
 /**
  * Updates the title of a specific thread.

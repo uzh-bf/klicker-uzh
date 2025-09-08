@@ -1,4 +1,4 @@
-import { ThreadService } from '../../../lib/threads'
+import { ThreadService } from '../../../services/threads'
 
 /**
  * Retrieves a specific thread by ID with metadata.

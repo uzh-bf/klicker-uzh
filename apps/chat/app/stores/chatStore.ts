@@ -7,14 +7,14 @@ import {
   convertApiThreadToThread,
   type ApiMessage,
   type ApiThread,
-} from '../lib/chatApi'
+} from '../../lib/api/types'
 import {
   extractThreadTitle,
   findBranchLeaf,
   findLeafMessages,
   getBranches,
   getPathToLeaf,
-} from '../lib/chatUtils'
+} from '../../lib/api/utils'
 
 /**
  * Extended thread message type that includes parentId for conversation branching

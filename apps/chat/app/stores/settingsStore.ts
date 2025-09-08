@@ -1,9 +1,9 @@
 'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { getModeOptions } from '../../lib/chatModes'
-import { getModelOptions, type ModelProvider } from '../../lib/models'
-import { type ChatbotMode } from '../../lib/prompts'
+import { getModelOptions, type ModelProvider } from '../../lib/config/models'
+import { getModeOptions } from '../../lib/config/modes'
+import { type ChatbotMode } from '../../lib/config/prompts'
 
 interface ModelOption {
   id: ModelProvider

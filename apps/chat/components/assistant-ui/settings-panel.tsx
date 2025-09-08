@@ -10,8 +10,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { type ModelProvider } from '@/lib/models'
-import { type ChatbotMode } from '@/lib/prompts'
+import { type ModelProvider } from '@/lib/config/models'
+import { type ChatbotMode } from '@/lib/config/prompts'
 import { Settings2, Zap } from 'lucide-react'
 
 export function SettingsPanel() {

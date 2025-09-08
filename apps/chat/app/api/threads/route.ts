@@ -1,4 +1,4 @@
-import { ThreadService } from '../../lib/threads'
+import { ThreadService } from '../../services/threads'
 
 /**
  * Retrieves all chat threads ordered by most recently updated.
