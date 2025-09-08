@@ -60,7 +60,7 @@ async function run() {
     const courseGroups = new Map(
       R.pipe(
         groupedByState,
-        R.toPairs,
+        R.entries,
         R.map(
           ([courseId, records]) =>
             [courseId, records.map((r) => r.email)] as const

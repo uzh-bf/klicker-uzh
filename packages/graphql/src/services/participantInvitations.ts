@@ -39,9 +39,9 @@ export async function createParticipantInvitations(
     throw new Error('Course not found')
   }
 
-  if (!course.isAssessmentEnabled) {
+  if (course.authType !== 'SSO') {
     throw new Error(
-      'Course is not assessment enabled. Only assessment courses can have invitations.'
+      'Course does not use SSO authentication. Only SSO courses can have invitations.'
     )
   }
 
@@ -133,7 +133,7 @@ export async function createParticipantInvitations(
   const statusCounts = R.pipe(
     results,
     R.groupBy(R.prop('status')),
-    R.mapValues(R.length)
+    R.mapValues((items) => items.length)
   )
 
   return {

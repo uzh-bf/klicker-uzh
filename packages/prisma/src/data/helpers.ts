@@ -78,6 +78,9 @@ export function prepareCourse({
 }) {
   const data = {
     ...args,
+    authType: args.isAssessmentEnabled
+      ? Prisma.CourseAuthType.SSO
+      : Prisma.CourseAuthType.PIN,
     owner: {
       connect: {
         id: ownerId,
