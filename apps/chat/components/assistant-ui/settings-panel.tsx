@@ -2,16 +2,10 @@
 
 import { useSettingsStore } from '@/app/stores/settingsStore'
 import { Progress } from '@/components/ui/progress'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { type ModelProvider } from '@/lib/config/models'
 import { type ChatbotMode } from '@/lib/config/prompts'
+import { Select } from '@uzh-bf/design-system'
 import { Settings2, Zap } from 'lucide-react'
 
 export function SettingsPanel() {
@@ -45,45 +39,33 @@ export function SettingsPanel() {
       {/* model selection */}
       <div className="space-y-2">
         <label className="text-muted-foreground text-xs">AI Model</label>
-        <Select value={selectedModel} onValueChange={handleModelChange}>
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue placeholder="Select model" />
-          </SelectTrigger>
-          <SelectContent>
-            {modelOptions.map((option) => (
-              <SelectItem key={option.id} value={option.id}>
-                <div className="flex flex-col items-start">
-                  <span className="font-medium">{option.name}</span>
-                  <span className="text-muted-foreground text-xs">
-                    {option.description}
-                  </span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Select
+          placeholder="Select AI Model"
+          items={modelOptions.map((option) => ({
+            value: option.id,
+            label: option.name,
+          }))}
+          onChange={(newValue) => {
+            handleModelChange(newValue)
+          }}
+          defaultValue={selectedModel}
+        />
       </div>
 
       {/* mode selection */}
       <div className="space-y-2">
         <label className="text-muted-foreground text-xs">Chat Mode</label>
-        <Select value={selectedMode} onValueChange={handleModeChange}>
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue placeholder="Select mode" />
-          </SelectTrigger>
-          <SelectContent>
-            {modeOptions.map((option) => (
-              <SelectItem key={option.id} value={option.id}>
-                <div className="flex flex-col items-start">
-                  <span className="font-medium">{option.name}</span>
-                  <span className="text-muted-foreground text-xs">
-                    {option.description}
-                  </span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Select
+          placeholder="Select Chat Mode"
+          items={modeOptions.map((option) => ({
+            value: option.id,
+            label: option.name,
+          }))}
+          onChange={(newValue) => {
+            handleModeChange(newValue)
+          }}
+          defaultValue={selectedMode}
+        />
       </div>
 
       <Separator />
