@@ -10,8 +10,6 @@ module.exports = {
     'apps/auth/',
     'apps/docs/',
     'apps/backend-docker/',
-    'apps/func-incoming-responses/',
-    'apps/func-response-processor/',
     'apps/frontend-manage/',
     'apps/frontend-pwa/',
     'apps/frontend-control/',

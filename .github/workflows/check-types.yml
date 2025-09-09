@@ -130,20 +130,6 @@ jobs:
         run: |
           pnpm run check
 
-      - name: Check func-response-processor typescript types
-        if: always()
-        shell: bash
-        working-directory: apps/func-response-processor
-        run: |
-          pnpm run check
-
-      - name: Check func-incoming-responses typescript types
-        if: always()
-        shell: bash
-        working-directory: apps/func-incoming-responses
-        run: |
-          pnpm run check
-
       - name: Check apps/lti typescript types
         if: always()
         shell: bash
