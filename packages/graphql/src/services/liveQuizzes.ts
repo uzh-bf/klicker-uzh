@@ -1055,21 +1055,38 @@ export async function getShortnameQuizzes(
   const user = await ctx.prisma.user.findUnique({
     where: { shortname: shortname.trim() },
     include: {
-      liveQuizzes: {
+      objects: {
         where: {
-          accessMode: DB.AccessMode.PUBLIC,
-          status: DB.PublicationStatus.PUBLISHED,
+          // the shared object must be a live quiz that is published and accessible
+          liveQuizId: { not: null },
+          liveQuiz: {
+            status: DB.PublicationStatus.PUBLISHED,
+            accessMode: DB.AccessMode.PUBLIC,
+          },
+          // only users with at least execution permissions can execute a live quiz
+          permissionLevel: {
+            in: [
+              DB.PermissionLevel.OWNER,
+              DB.PermissionLevel.ADMIN,
+              DB.PermissionLevel.WRITE,
+              DB.PermissionLevel.EXECUTE,
+            ],
+          },
         },
-        include: { course: true },
+        include: { liveQuiz: { include: { course: true } } },
       },
     },
   })
 
   return (
-    user?.liveQuizzes.map((quiz) => ({
-      ...quiz,
-      isPinProtected: !!quiz.pinCode,
-    })) ?? []
+    user?.objects.flatMap((obj) =>
+      obj.liveQuiz
+        ? {
+            ...obj.liveQuiz,
+            isPinProtected: !!obj.liveQuiz.pinCode,
+          }
+        : []
+    ) ?? []
   )
 }
 
