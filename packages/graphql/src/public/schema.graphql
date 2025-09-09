@@ -127,6 +127,7 @@ type ActivityLogEntry {
   createdAt: Date!
   id: Int!
   isEdited: Boolean
+  isOwn: Boolean!
   message: String
   objectType: ObjectType!
   options: ActivityLogEntryOptions
@@ -1648,6 +1649,7 @@ type Mutation {
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateLiveQuizBlock(blockId: Int!, quizId: String!): Boolean
   declineObjectSharingRequest(requestId: Int!, userId: String!): Boolean!
+  deleteActivityMessage(id: Int!): Boolean!
   deleteActivityTemplate(activityId: String!, activityType: ActivityType!): String
   deleteAnswerCollection(collectionId: Int!): Int
   deleteAnswerCollectionEntry(collectionId: Int!, id: Int!): Int

@@ -398,6 +398,7 @@ export default {
         'The content of this object was modified after the last review. Please mark it as reviewed again if you agree with the updated content.',
       availableActions: 'Available Actions',
       configuration: 'Configuration',
+      unknownUser: 'Unknown User',
     },
     types: {
       ACTIVITIES: 'Activities',

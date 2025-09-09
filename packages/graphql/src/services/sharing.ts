@@ -6748,17 +6748,38 @@ export async function addActivityMessage(
         objectType === DB.ObjectType.GROUP_ACTIVITY ? objectId : undefined,
       userId: ctx.user.sub,
     },
-    include: {
-      user: { select: { shortname: true } },
-    },
+    include: { user: { select: { shortname: true } } },
   })
 
   return {
     ...newActivityEntry,
     username: newActivityEntry.user!.shortname,
+    isOwn: true, // created message has to be the user's own message
     isEdited: false, // flag to signal if an object has been edited
     options: {},
   }
+}
+
+export async function deleteActivityMessage(
+  { messageId }: { messageId: number },
+  ctx: ContextWithUser
+) {
+  // fetch the activity message
+  const activityMessage = await ctx.prisma.activityLogEntry.findUnique({
+    where: { id: messageId },
+  })
+
+  // check if the message exists and if it belongs to the user
+  if (!activityMessage || activityMessage.userId !== ctx.user.sub) {
+    return false
+  }
+
+  // delete the message
+  await ctx.prisma.activityLogEntry.delete({
+    where: { id: messageId, userId: ctx.user.sub },
+  })
+
+  return true
 }
 
 export async function getObjectActivity(
@@ -6806,7 +6827,8 @@ export async function getObjectActivity(
       oldValue: entry.modificationDetails?.oldValue,
       newValue: entry.modificationDetails?.newValue,
     },
-    username: entry.user?.shortname ?? 'Unknown User',
+    username: entry.user?.shortname ?? '',
+    isOwn: entry.userId === ctx.user.sub,
     isEdited: entry.updatedAt.getTime() > entry.createdAt.getTime(),
   }))
 }

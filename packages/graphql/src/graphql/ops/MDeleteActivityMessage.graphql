@@ -1,0 +1,3 @@
+mutation DeleteActivityMessage($id: Int!) {
+  deleteActivityMessage(id: $id)
+}
