@@ -382,8 +382,9 @@ function CourseOverview({
                                   />
                                   <Button
                                     fluid
+                                    primary
                                     onClick={() => joinCourseLeaderboard()}
-                                    className={{ root: 'h-8' }}
+                                    className={{ root: 'mt-3 h-8' }}
                                     data={{
                                       cy: 'student-course-join-leaderboard',
                                     }}
