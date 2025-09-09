@@ -28,13 +28,11 @@ function JoinCourse({
   courseId,
   displayName,
   color,
-  description,
   courseLoading,
 }: {
   courseId: string
   displayName: string
   color: string
-  description: string
   courseLoading: boolean
 }) {
   const t = useTranslations()
