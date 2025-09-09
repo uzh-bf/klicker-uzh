@@ -129,6 +129,15 @@ const ComposerAction: FC = () => {
       <ThreadPrimitive.If running={false}>
         <ComposerPrimitive.Send asChild>
           <Button
+            style={{
+              borderRadius: '50%',
+              width: '36px',
+              height: '36px',
+              minWidth: '36px',
+              minHeight: '36px',
+              padding: '0',
+              paddingLeft: '5px',
+            }}
             className={{
               root: 'm-2 flex h-12 w-12 items-center justify-center rounded-lg',
             }}
@@ -140,6 +149,14 @@ const ComposerAction: FC = () => {
       <ThreadPrimitive.If running>
         <ComposerPrimitive.Cancel asChild>
           <Button
+            style={{
+              borderRadius: '50%',
+              width: '36px',
+              height: '36px',
+              minWidth: '36px',
+              minHeight: '36px',
+              padding: '0',
+            }}
             className={{
               root: 'm-2 flex h-12 w-12 items-center justify-center rounded-lg',
             }}
