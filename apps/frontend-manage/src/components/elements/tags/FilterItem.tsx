@@ -25,7 +25,7 @@ function FilterItem({
   const filterItemElement = (
     <li
       className={twMerge(
-        'hover:text-primary-100 cursor-pointer px-2 py-0.5',
+        'hover:text-primary-100 line-clamp-1 cursor-pointer px-2 py-0.5',
         active && 'text-primary-100',
         disabled &&
           'hover:text-uzh-grey-100 text-uzh-grey-100 cursor-not-allowed'

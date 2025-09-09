@@ -14,10 +14,7 @@ export async function getUserActivitiesCourses(ctx: ContextWithUser) {
     where: { id: ctx.user.sub },
     include: {
       objects: {
-        where: {
-          courseId: { not: null },
-          course: { isArchived: false },
-        },
+        where: { courseId: { not: null } },
         include: {
           course: {
             select: {
@@ -34,6 +31,7 @@ export async function getUserActivitiesCourses(ctx: ContextWithUser) {
             },
           },
         },
+        orderBy: { course: { endDate: 'desc' } },
       },
     },
   })
