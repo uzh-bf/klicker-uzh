@@ -5,14 +5,18 @@ import StudentElement, {
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
 import LiveQuizProgress from '@klicker-uzh/shared-components/src/questions/LiveQuizProgress'
 import { push } from '@socialgouv/matomo-next'
-import { H2 } from '@uzh-bf/design-system'
+import { H2, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import localforage from 'localforage'
 import { useTranslations } from 'next-intl'
+import dynamic from 'next/dynamic'
 import React, { useEffect, useState } from 'react'
 import { isDeepEqual } from 'remeda'
 import useRemainingInstances from '../hooks/useRemainingInstances'
-import AllQuestionsAnsweredMessage from './AllQuestionsAnsweredMessage'
+
+const ConfettiExplosion = dynamic(() => import('react-confetti-explosion'), {
+  ssr: false,
+})
 
 interface QuestionAreaProps {
   isBlockActive?: boolean
@@ -43,6 +47,7 @@ function QuestionArea({
 }: QuestionAreaProps): React.ReactElement {
   const t = useTranslations()
 
+  const [showConfetti, setShowConfetti] = useState(false)
   const [remainingQuestions, setRemainingQuestions] = useState<number[] | null>(
     null
   )
@@ -118,8 +123,14 @@ function QuestionArea({
       (question) => !isDeepEqual(activeInstance, question)
     )
 
+    // update the active instance and the remaining questions
     setActiveInstance(newRemaining[0] || 0)
     setRemainingQuestions(newRemaining)
+
+    // if this was the last question of the block and gamification is enabled, show confetti
+    if (newRemaining.length === 0 && gamificationEnabled) {
+      setShowConfetti(true)
+    }
   }
 
   const onExpire = async (): Promise<void> => {
@@ -137,6 +148,12 @@ function QuestionArea({
 
     // automatically skip all possibly remaining questions
     setRemainingQuestions([])
+
+    // if the live quiz is gamified, show a confetti explosion
+    if (gamificationEnabled) {
+      setShowConfetti(true)
+    }
+
     push(['trackEvent', 'Live Quiz', 'Time expired'])
   }
 
@@ -289,15 +306,22 @@ function QuestionArea({
   }
 
   return (
-    <div className="min-h-content mt-1.5 h-full w-full">
+    <div className="min-h-content relative mt-1.5 h-full w-full">
       <H2 className={{ root: 'mb-0 pt-2' }}>{t('shared.generic.questions')}</H2>
 
       <div className="flex w-full flex-col">
         {remainingQuestions.length === 0 && (
-          <AllQuestionsAnsweredMessage
-            gamificationEnabled={gamificationEnabled}
+          <UserNotification
+            type="success"
+            className={{ root: 'mt-1.5 md:text-base' }}
+            message={t('pwa.liveQuiz.allQuestionsAnswered')}
           />
         )}
+        {showConfetti ? (
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transform">
+            <ConfettiExplosion duration={2000} />
+          </div>
+        ) : null}
 
         <LiveQuizProgress
           activeIndex={activeInstance}
