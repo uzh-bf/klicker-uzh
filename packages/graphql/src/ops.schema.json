@@ -38677,7 +38677,7 @@
             "description": null,
             "args": [
               {
-                "name": "quizId",
+                "name": "id",
                 "description": null,
                 "type": {
                   "kind": "NON_NULL",
@@ -38694,9 +38694,13 @@
               }
             ],
             "type": {
-              "kind": "OBJECT",
-              "name": "ElementBlock",
-              "ofType": null
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "LiveQuiz",
+                "ofType": null
+              }
             },
             "isDeprecated": false,
             "deprecationReason": null

@@ -1,14 +1,7 @@
-subscription RunningLiveQuizUpdated($quizId: String!) {
-  runningLiveQuizUpdated(quizId: $quizId) {
+subscription RunningLiveQuizUpdated($id: String!) {
+  runningLiveQuizUpdated(id: $id) {
     id
-    status
-    expiresAt
-    timeLimit
-    randomSelection
-    execution
-    elements {
-      id
-      ...ElementDataWithoutSolutions
-    }
+    beforeFirstBlock
+    ...StudentLiveQuizBlocksData
   }
 }
