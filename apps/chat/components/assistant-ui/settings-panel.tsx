@@ -1,11 +1,10 @@
 'use client'
 
 import { useSettingsStore } from '@/app/stores/settingsStore'
-import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 import { type ModelProvider } from '@/lib/config/models'
 import { type ChatbotMode } from '@/lib/config/prompts'
-import { Select } from '@uzh-bf/design-system'
+import { Progress, Select } from '@uzh-bf/design-system'
 import { Settings2, Zap } from 'lucide-react'
 
 export function SettingsPanel() {
@@ -97,7 +96,15 @@ export function SettingsPanel() {
               {Math.round(creditsPercentage)}%
             </span>
           </div>
-          <Progress value={creditsPercentage} className="h-2" />
+          <Progress
+            value={creditsPercentage}
+            max={100}
+            className={{
+              root: 'h-3 font-bold',
+              indicator: `h-3 ${creditsPercentage < 10 ? 'bg-red-600' : creditsPercentage < 20 ? 'bg-yellow-400' : 'bg-blue-500'}`,
+            }}
+            formatter={() => null}
+          />
         </div>
       </div>
     </div>
