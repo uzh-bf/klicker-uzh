@@ -1328,7 +1328,9 @@ export default defineConfig({
                 isAssessmentEnabled,
                 isGamificationEnabled,
                 color,
-                pinCode: Math.floor(100000000 + Math.random() * 900000000),
+                pinCode: !isAssessmentEnabled
+                  ? Math.floor(100000000 + Math.random() * 900000000)
+                  : null,
                 startDate,
                 endDate,
                 isGroupCreationEnabled,
