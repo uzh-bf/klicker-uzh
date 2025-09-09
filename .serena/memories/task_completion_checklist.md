@@ -15,7 +15,7 @@ pnpm format
 pnpm lint
 
 # Type checking (for TypeScript packages)
-pnpm run check
+pnpm run check:all
 ```
 
 ## 2. Testing

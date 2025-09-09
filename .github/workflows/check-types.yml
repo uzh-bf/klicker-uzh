@@ -7,7 +7,6 @@ on:
       - apps/**
       - packages/**
   pull_request:
-    # branches: ["v3", "v3*"]
     types: [opened, synchronize, reopened]
     paths:
       - apps/**
@@ -44,95 +43,11 @@ jobs:
           pnpm run build
           cd ../graphql
           pnpm run build
+          cd ../hatchet-tasks
+          pnpm run build
           cd ../../apps/backend-docker
           pnpm run build
 
-      - name: Check prisma package typescript types
+      - name: Check the typescript types of all packages and apps
         shell: bash
-        working-directory: packages/prisma
-        run: |
-          pnpm run check
-
-      - name: Check grading package typescript types
-        if: always() # Run this step even if the previous one fails
-        shell: bash
-        working-directory: packages/grading
-        run: |
-          pnpm run check
-
-      - name: Check util package typescript types
-        if: always() # Run this step even if the previous one fails
-        shell: bash
-        working-directory: packages/util
-        run: |
-          pnpm run check
-
-      - name: Check graphql package typescript types
-        if: always() # Run this step even if the previous one fails
-        shell: bash
-        working-directory: packages/graphql
-        run: |
-          pnpm run check
-
-      - name: Check shared-components package typescript types
-        if: always()
-        shell: bash
-        working-directory: packages/shared-components
-        run: |
-          pnpm run check
-
-      - name: Check backend-docker typescript types
-        if: always()
-        shell: bash
-        working-directory: apps/backend-docker
-        run: |
-          pnpm run check
-
-      - name: Check frontend-pwa typescript types
-        if: always()
-        shell: bash
-        working-directory: apps/frontend-pwa
-        run: |
-          pnpm run check
-
-      - name: Check frontend-manage typescript types
-        if: always()
-        shell: bash
-        working-directory: apps/frontend-manage
-        run: |
-          pnpm run check
-
-      - name: Check frontend-control typescript types
-        if: always()
-        shell: bash
-        working-directory: apps/frontend-control
-        run: |
-          pnpm run check
-
-      - name: Check frontend-auth typescript types
-        if: always()
-        shell: bash
-        working-directory: apps/auth
-        run: |
-          pnpm run check
-
-      - name: Check office-addin typescript types
-        if: always()
-        shell: bash
-        working-directory: apps/office-addin
-        run: |
-          pnpm run check
-
-      - name: Check olat-api typescript types
-        if: always()
-        shell: bash
-        working-directory: apps/olat-api
-        run: |
-          pnpm run check
-
-      - name: Check apps/lti typescript types
-        if: always()
-        shell: bash
-        working-directory: apps/lti
-        run: |
-          pnpm run check
+        run: pnpm run check
