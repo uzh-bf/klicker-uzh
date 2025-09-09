@@ -4,13 +4,12 @@ import type { FC } from 'react'
 import { useState } from 'react'
 
 import { useChatStore, type Thread } from '@/app/stores/chatStore'
-import { Input } from '@/components/ui/input'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { Button } from '@uzh-bf/design-system'
+import { Button, TextField } from '@uzh-bf/design-system'
 
 export const ThreadList: FC = () => {
   return (
@@ -33,7 +32,7 @@ const ThreadListNew: FC = () => {
       onClick={handleNewThread}
       basic
       className={{
-        root: 'data-[active]:bg-muted hover:bg-muted flex items-center justify-start gap-1 rounded-lg px-2.5 py-2 text-start',
+        root: 'data-[active]:bg-muted hover:bg-muted m-2 flex items-center gap-1 rounded-lg border-2 px-2.5 py-2 text-start',
       }}
     >
       <Button.Icon icon={faPlus} />
@@ -129,11 +128,11 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
     >
       {isEditing ? (
         <>
-          <Input
+          <TextField
             value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
+            onChange={setEditTitle}
             onKeyDown={handleKeyDown}
-            className="mx-2 h-8 flex-grow text-sm"
+            className={{ input: 'mx-2 h-8 flex-grow text-sm' }}
             autoFocus
           />
           <Tooltip>
