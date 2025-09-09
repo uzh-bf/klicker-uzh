@@ -5,7 +5,6 @@ import { VariantProps, cva } from 'class-variance-authority'
 import { PanelLeftIcon } from 'lucide-react'
 import * as React from 'react'
 
-import { Separator } from '@/components/ui/separator'
 import {
   Sheet,
   SheetContent,
@@ -22,7 +21,7 @@ import {
 } from '@/components/ui/tooltip'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
-import { Button, TextField } from '@uzh-bf/design-system'
+import { Button, Separator, TextField } from '@uzh-bf/design-system'
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state'
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
