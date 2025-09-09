@@ -60,9 +60,10 @@ export function SCAnswerOptions({
                     'min-h-10 border-slate-300',
                     !hasFeedback && 'h-full',
                     hasFeedback && 'rounded-b-none',
-                    disabled && 'bg-accent disabled:opacity-90',
+                    disabled &&
+                      'bg-accent disabled:hover:bg-accent disabled:opacity-90',
                     value?.[choice.ix] &&
-                      'bg-primary-20 border-primary-100 hover:bg-primary-20'
+                      'bg-primary-20 border-primary-100 hover:bg-primary-20 disabled:hover:bg-primary-20'
                   ),
                 }}
                 onClick={() =>

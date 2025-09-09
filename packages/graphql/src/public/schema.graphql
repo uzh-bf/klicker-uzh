@@ -2550,7 +2550,7 @@ type Subscription {
   groupActivityStarted(courseId: String!): GroupActivity!
   liveQuizSettingsChanged(quizId: String!): LiveQuizStudentSettings
   microLearningEnded(activityId: String!): MicroLearning!
-  runningLiveQuizUpdated(quizId: String!): ElementBlock
+  runningLiveQuizUpdated(id: String!): LiveQuiz!
   singleGroupActivityEnded(activityId: String!): GroupActivity!
 }
 

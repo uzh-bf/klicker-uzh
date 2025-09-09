@@ -6,7 +6,7 @@ import {
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Head from 'next/head'
-import React from 'react'
+import React, { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Header from './common/Header'
 
@@ -26,7 +26,9 @@ interface LayoutProps {
     showBadge?: boolean
     data?: { cy?: string; test?: string }
   }[]
-  setActiveMobilePage?: (value: string) => void
+  setActiveMobilePage?: Dispatch<
+    SetStateAction<'questions' | 'feedbacks' | 'leaderboard'>
+  >
   liveQuizId?: string
   className?: { header?: string; body?: string }
 }
@@ -95,7 +97,7 @@ function Layout({
       <div className="flex-none md:hidden">
         <MobileMenuBar
           menuItems={mobileMenuItems}
-          onClick={setActiveMobilePage}
+          onClick={(value) => setActiveMobilePage?.(value as any)}
           participantMissing={
             !dataParticipant?.self ||
             dataParticipant.self.role === UserRole.TemporaryParticipant
