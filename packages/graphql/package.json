@@ -86,7 +86,7 @@
     "build:instrument": "nyc instrument --compact=false src instrumented",
     "build:test": "run-s build:instrument build",
     "build:ts": "rollup -c",
-    "check": "tsc --noEmit",
+    "check": "tsc --noEmit -p tsconfig.check.json",
     "dev": "npm-run-all --parallel dev:graphql dev:ts",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:graphql": "nodemon --watch 'src/graphql/ops/*.graphql' --watch 'src/**/*.ts' --exec 'graphql-codegen --config codegen.ts'",
