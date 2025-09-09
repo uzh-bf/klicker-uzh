@@ -1,4 +1,9 @@
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -27,7 +32,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <MessagesSquare className="size-6" />
                 <span className="text-lg font-semibold">Chat History</span>
               </div>
-              <SidebarTrigger />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <SidebarTrigger className="mr-1 size-5" />
+                </TooltipTrigger>
+                <TooltipContent>Close sidebar</TooltipContent>
+              </Tooltip>
             </div>
           </SidebarMenuItem>
         </SidebarMenu>
