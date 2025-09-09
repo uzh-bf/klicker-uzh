@@ -400,6 +400,7 @@ export default {
         'Der Inhalt dieses Objekts wurde nach dem letzten Review verändert. Bitte markieren Sie dieses erneut als gereviewt, wenn Sie mit dem aktualisierten Inhalt einverstanden sind.',
       availableActions: 'Verfügbare Aktionen',
       configuration: 'Konfiguration',
+      unknownUser: 'Unbekannter Nutzer',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',

@@ -1,8 +1,8 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   ActivityLogEntry,
-  ActivityLogType,
   AddActivityMessageDocument,
+  DeleteActivityMessageDocument,
   GetObjectActivityDocument,
   ObjectType,
   ResolveActivityLogEntryDocument,
@@ -11,16 +11,18 @@ import {
 export function useObjectActivity({
   objectId,
   objectType,
+  visible = true,
 }: {
   objectId: string | number
   objectType: ObjectType
+  visible?: boolean
 }) {
   // query for fetching activity entries using the unified query
   const { data, loading, error, refetch } = useQuery(
     GetObjectActivityDocument,
     {
       variables: { objectId: String(objectId), objectType },
-      skip: !objectId,
+      skip: !objectId || !visible,
       fetchPolicy: 'cache-and-network',
     }
   )
@@ -33,6 +35,11 @@ export function useObjectActivity({
   // mutation for resolving/unresolving messages
   const [resolveMessage, { loading: resolvingMessage }] = useMutation(
     ResolveActivityLogEntryDocument
+  )
+
+  // mutation for deleting messages
+  const [deleteMessage, { loading: deletingMessage }] = useMutation(
+    DeleteActivityMessageDocument
   )
 
   const addActivityMessage = async (message: string) => {
@@ -48,21 +55,6 @@ export function useObjectActivity({
         objectId: typeof objectId === 'number' ? objectId.toString() : objectId,
         objectType,
         message,
-      },
-      optimisticResponse: {
-        addActivityMessage: {
-          __typename: 'ActivityLogEntry',
-          id: -1, // temporary ID that will be replaced by the server
-          type: ActivityLogType.Message,
-          objectType, // include this for consistency
-          message,
-          resolved: false,
-          resolvedAt: null,
-          username: 'self', // indicating it's the current user's message
-          isEdited: false,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
       },
       update: (cache, { data }) => {
         // verify that the posting of the message was successful
@@ -131,6 +123,33 @@ export function useObjectActivity({
     })
   }
 
+  const deleteActivityMessage = async (id: number) => {
+    return deleteMessage({
+      variables: { id },
+      update: (cache, { data }) => {
+        // verify that the deletion was successful
+        if (!data?.deleteActivityMessage) return
+
+        // update the displayed messages
+        cache.updateQuery(
+          {
+            query: GetObjectActivityDocument,
+            variables: { objectId: String(objectId), objectType },
+          },
+          (qData) => {
+            if (!qData?.getObjectActivity) return qData
+
+            return {
+              getObjectActivity: qData.getObjectActivity.filter(
+                (entry) => entry.id !== id
+              ),
+            }
+          }
+        )
+      },
+    })
+  }
+
   // extract entries from the response
   const entries: ActivityLogEntry[] = data?.getObjectActivity || []
 
@@ -140,8 +159,10 @@ export function useObjectActivity({
     error,
     addActivityMessage,
     resolveActivityLogEntry,
+    deleteActivityMessage,
     isAddingMessage: addingMessage,
     isResolvingMessage: resolvingMessage,
+    isDeletingMessage: deletingMessage,
     refetch,
   }
 }
