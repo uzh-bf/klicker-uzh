@@ -78,4 +78,4 @@ lti:
     type: postgres
     port: 5432
     name: klicker-qa-lti-stg
-    username: a61c482fdca49311
+    username: 4f0ec58f635edc1b
