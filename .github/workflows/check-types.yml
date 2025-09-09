@@ -43,6 +43,8 @@ jobs:
           pnpm run build
           cd ../graphql
           pnpm run build
+          cd ../hatchet-tasks
+          pnpm run build
           cd ../../apps/backend-docker
           pnpm run build
 
