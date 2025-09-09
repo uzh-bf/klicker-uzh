@@ -3,6 +3,7 @@ import { prisma } from '@klicker-uzh/prisma'
 import {
   AnswerCollection,
   CatalogCollection,
+  CourseAuthType,
   Element,
   ElementInstanceType,
   ElementStackType,
@@ -610,6 +611,7 @@ export async function seedCourse(
       isGamificationEnabled,
       isAssessmentEnabled,
       ownerId: ctx.user.sub,
+      authType: isAssessmentEnabled ? CourseAuthType.SSO : CourseAuthType.PIN,
     },
   })
 

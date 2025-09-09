@@ -1,4 +1,5 @@
 import {
+  CourseAuthType,
   ElementInstanceType,
   ElementStackType,
   ElementType,
@@ -103,6 +104,9 @@ describe('Integration tests for batch operations on activities', () => {
         isGroupCreationEnabled: true,
         groupDeadlineDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // one week in the future
         ownerId: userOneCtx.user.sub,
+        authType: !!args.isAssessmentEnabled
+          ? CourseAuthType.SSO
+          : CourseAuthType.PIN,
         ...args,
       },
     })
