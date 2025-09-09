@@ -44,7 +44,8 @@ RUN npm i -g --ignore-scripts pnpm@9.15.4 turbo@2.1.0
 COPY --from=builder /app/out/json/ .
 RUN pnpm i --frozen-lockfile --prod --ignore-scripts
 
-COPY --from=builder --chown=nodejs:nodejs /app/packages/util/dist/ /app/packages/util/dist/
+COPY --from=builder --chown=nodejs:nodejs /app/packages/util/dist/ ./packages/util/dist/
+COPY --from=builder --chown=nodejs:nodejs /app/packages/prisma/dist/ ./packages/prisma/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/apps/lti/dist ./apps/lti/dist
 
 USER nodejs
