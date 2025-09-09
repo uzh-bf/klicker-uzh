@@ -99,8 +99,8 @@ export function SettingsPanel() {
             value={creditsPercentage}
             max={100}
             className={{
-              root: 'h-3 font-bold',
-              indicator: `h-3 ${creditsPercentage < 10 ? 'bg-red-600' : creditsPercentage < 20 ? 'bg-yellow-400' : 'bg-blue-500'}`,
+              root: 'h-2 font-bold',
+              indicator: `h-2 ${creditsPercentage < 10 ? 'bg-red-600' : creditsPercentage < 20 ? 'bg-yellow-400' : 'bg-blue-400'}`,
             }}
             formatter={() => null}
           />
