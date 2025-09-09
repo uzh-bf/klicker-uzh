@@ -15,8 +15,6 @@ The project follows a monorepo structure using pnpm workspaces and Turbo for bui
 - **Frontend Control** (`apps/frontend-control`): Mobile controller for live quizzes
 - **Frontend Authentication** (`apps/auth`): Authentication frontend
 - **Backend Docker** (`apps/backend-docker`): Main backend service
-- **Backend Responses** (`apps/func-incoming-responses`): Handles live quiz responses
-- **Backend Response Processor** (`apps/func-response-processor`): Processes queued responses
 - **OLAT API** (`apps/olat-api`): REST API for LMS integration
 
 ### Shared Packages
