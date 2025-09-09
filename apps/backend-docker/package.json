@@ -78,7 +78,7 @@
     "build:instrument": "nyc instrument --compact=false src instrumented",
     "build:test": "run-s build:instrument build:ts",
     "build:ts": "rollup -c",
-    "check": "tsc --noEmit",
+    "check": "tsc --noEmit -p tsconfig.check.json",
     "dev": "npm-run-all --parallel dev:build dev:run",
     "dev:build": "rollup -c --watch",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
