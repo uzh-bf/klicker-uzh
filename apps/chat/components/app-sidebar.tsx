@@ -8,7 +8,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
   SidebarTrigger,
-} from '@/components/ui/sidebar'
+} from '@uzh-bf/design-system'
 import { MessagesSquare } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'

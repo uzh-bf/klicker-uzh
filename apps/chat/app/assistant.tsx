@@ -3,7 +3,6 @@
 import { RuntimeProvider } from '@/app/RuntimeProvider'
 import { AppSidebar } from '@/components/app-sidebar'
 import { Thread } from '@/components/assistant-ui/thread'
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import {
   Breadcrumb,
@@ -12,6 +11,8 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
+  SidebarInset,
+  SidebarProvider,
 } from '@uzh-bf/design-system'
 
 export const Assistant = () => {
