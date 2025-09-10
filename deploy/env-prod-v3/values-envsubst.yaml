@@ -1,112 +1,81 @@
-dfDomain: '${DF_DOMAIN}'
-
-teamsWebhookUrl: '${TEAMS_WEBHOOK_URL}'
-
-appSecret: '${APP_SECRET}'
+dfDomain: prd.example.df-app.ch
 
 email:
-  type: '${EMAIL_TYPE}'
-  from: '${EMAIL_FROM}'
-  host: '${EMAIL_HOST}'
-  port: '${EMAIL_PORT}'
-  username: '${EMAIL_USER}'
-  password: '${EMAIL_PASS}'
-  secure: '${EMAIL_SECURE}'
-  requireTLS: '${EMAIL_STARTTLS}'
+  type: SMTP
+  from: '"Team KlickerUZH" <noreply-klicker@df.uzh.ch>'
+  port: '1025'
+  username: username
+  secure: 'false'
+  requireTLS: 'false'
 
 blobStorage:
-  accountName: '${BLOB_STORAGE_ACCOUNT_NAME}'
-  accessKey: '${BLOB_STORAGE_ACCESS_KEY}'
+  accountName: klickeruzhdevimages
 
 cron:
-  token: '${CRON_TOKEN}'
-
-eduId:
-  clientSecret: '${EDUID_CLIENT_SECRET}'
+  token: abcd
 
 auth:
   replicaCount: 1
   image:
-    tag: '${APP_VERSION}'
+    tag: argocd
 
 frontendPWA:
   image:
-    tag: '${APP_VERSION}'
+    tag: argocd
 
 frontendManage:
   image:
-    tag: '${APP_VERSION}'
+    tag: argocd
 
 frontendControl:
   image:
-    tag: '${APP_VERSION}'
+    tag: argocd
 
 backendGraphql:
   image:
-    tag: '${APP_VERSION}'
+    tag: argocd
+  apiDomain: api.klicker-prod.prd.example.df-app.ch
+  cookieDomain: .klicker-prod.prd.example.df-app.ch
 
-  apiDomain: '${API_DOMAIN}'
-  cookieDomain: '${COOKIE_DOMAIN}'
-  databaseUrl: '${DATABASE_URL}'
-
-  appManageSubdomain: '${APP_MANAGE_SUBDOMAIN}'
-  appManageDomain: '${APP_MANAGE_SUBDOMAIN}${COOKIE_DOMAIN}'
-  appStudentSubdomain: '${APP_STUDENT_SUBDOMAIN}'
-  appStudentDomain: '${APP_STUDENT_SUBDOMAIN}${COOKIE_DOMAIN}'
-  appControlSubdomain: '${APP_CONTROL_SUBDOMAIN}'
-  appControlDomain: '${APP_CONTROL_SUBDOMAIN}${COOKIE_DOMAIN}'
+  appManageSubdomain: manage
+  appManageDomain: manage.klicker-prod.prd.example.df-app.ch
+  appStudentSubdomain: pwa
+  appStudentDomain: pwa.klicker-prod.prd.example.df-app.ch
+  appControlSubdomain: control
+  appControlDomain: control.klicker-prod.prd.example.df-app.ch
 
   notifications:
-    url: '${NOTIFICATION_URL}'
-    secret: '${NOTIFICATION_SECRET}'
-    supportEmail: '${NOTIFICATION_SUPPORT_EMAIL}'
-
-  vapid:
-    publicKey: '${VAPID_PUBLIC_KEY}'
-    privateKey: '${VAPID_PRIVATE_KEY}'
+    supportEmail: klicker.support@uzh.ch
 
   redisCache:
-    host: klicker-v2-prod-redis-master
     port: 6379
     tls: false
-    pass: ''
 
   redisExec:
-    host: '${REDIS_HOST}'
-    port: '${REDIS_PORT}'
-    tls: '${REDIS_TLS}'
-    pass: '${REDIS_PASS}'
+    port: 6379
+    tls: true
 
   sentryEnv: production
-  sentryDSN: '${SENTRY_DSN}'
 
 olatApi:
-  key: '${OLAT_API_KEY}'
-
   image:
-    tag: '${APP_VERSION}'
+    tag: argocd
 
 lti:
   replicaCount: 4
-
   image:
-    tag: '${APP_VERSION}'
+    tag: argocd
 
-  appSecret: '${APP_SECRET}'
-  clientId: '${LTI_CLIENT_ID}'
-  redirectURL: '${LTI_REDIRECT_URL}'
-  cookieDomain: '${COOKIE_DOMAIN}'
-  encryptionKey: '${APP_SECRET}'
-  name: '${LTI_NAME}'
-  url: '${LTI_URL}'
-  authEndpoint: '${LTI_AUTH_ENDPOINT}'
-  tokenEndpoint: '${LTI_TOKEN_ENDPOINT}'
-  keysEndpoint: '${LTI_KEYS_ENDPOINT}'
+  redirectURL: https://lti.klicker-prod.prd.example.df-app.ch
+  cookieDomain: .klicker-prod.prd.example.df-app.ch
+  name: OLAT UZH
+  url: https://lms.uzh.ch
+  authEndpoint: https://lms.uzh.ch/lti/auth
+  tokenEndpoint: https://lms.uzh.ch/lti/token
+  keysEndpoint: https://lms.uzh.ch/lti/keys
 
   db:
-    type: '${LTI_DB_TYPE}'
-    host: '${LTI_DB_HOST}'
-    port: '${LTI_DB_PORT}'
-    name: '${LTI_DB_NAME}'
-    username: '${LTI_DB_USER}'
-    password: '${LTI_DB_PASS}'
+    type: poprdres
+    port: 5432
+    name: klicker-prod-lti-prd
+    username: fa2f28bacccb3302

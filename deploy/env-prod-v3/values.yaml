@@ -1,30 +1,23 @@
 heartbeats:
-  dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/gmMi315s2532oozauJa18ckx
-
-cron:
-  dailyGroupScores: '5 6,20 * * *'
+  dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
 
 auth:
+  priorityClassName: production-workload
+
   autoscaling:
     enabled: false
 
   ingress:
+    className: haproxy
     hosts:
-      - host: auth.klicker.uzh.ch
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-      - host: auth.klicker-prod.bf-app.ch
+      - host: auth.klicker-prod.prd.example.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
-      - secretName: klicker-prod-frontend-auth-tls-uzh
-        hosts:
-          - auth.klicker.uzh.ch
       - secretName: klicker-prod-frontend-auth-tls
         hosts:
-          - auth.klicker-prod.bf-app.ch
+          - auth.klicker-prod.prd.example.df-app.ch
 
   strategy:
     type: RollingUpdate
@@ -32,201 +25,178 @@ auth:
 
   resources:
     requests:
-      cpu: 150m
-      memory: 150Mi
+      cpu: 50m
+      memory: 50Mi
     limits:
-      cpu: 300m
-      memory: 300Mi
+      cpu: 200m
+      memory: 200Mi
 
 frontendPWA:
+  priorityClassName: production-workload
+
   autoscaling:
     enabled: false
 
   ingress:
+    className: haproxy
     hosts:
-      - host: pwa.klicker.uzh.ch
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-      - host: pwa.klicker-prod.bf-app.ch
+      - host: pwa.klicker-prod.prd.example.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
-      - secretName: klicker-prod-frontend-pwa-tls-uzh
-        hosts:
-          - pwa.klicker.uzh.ch
       - secretName: klicker-prod-frontend-pwa-tls
         hosts:
-          - pwa.klicker-prod.bf-app.ch
+          - pwa.klicker-prod.prd.example.df-app.ch
 
   strategy:
-    type: RollingUpdate
-    # type: Recreate
+    type: Recreate
 
   resources:
     requests:
-      cpu: 150m
-      memory: 150Mi
+      cpu: 50m
+      memory: 50Mi
     limits:
-      cpu: 1000m
-      memory: 1000Mi
+      cpu: 200m
+      memory: 200Mi
 
 frontendManage:
+  priorityClassName: production-workload
+
   autoscaling:
     enabled: false
 
   ingress:
+    className: haproxy
     hosts:
-      - host: manage.klicker.uzh.ch
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-      - host: manage.klicker-prod.bf-app.ch
+      - host: manage.klicker-prod.prd.example.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
-      - secretName: klicker-prod-frontend-manage-tls-uzh
-        hosts:
-          - manage.klicker.uzh.ch
       - secretName: klicker-prod-frontend-manage-tls
         hosts:
-          - manage.klicker-prod.bf-app.ch
+          - manage.klicker-prod.prd.example.df-app.ch
 
   strategy:
-    type: RollingUpdate
-    # type: Recreate
+    type: Recreate
 
   resources:
     requests:
-      cpu: 150m
-      memory: 150Mi
+      cpu: 50m
+      memory: 50Mi
     limits:
-      cpu: 1000m
-      memory: 1000Mi
+      cpu: 200m
+      memory: 200Mi
 
 frontendControl:
+  priorityClassName: production-workload
+
   autoscaling:
     enabled: false
 
   ingress:
+    className: haproxy
     hosts:
-      - host: control.klicker.uzh.ch
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-      - host: control.klicker-prod.bf-app.ch
+      - host: control.klicker-prod.prd.example.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
-      - secretName: klicker-prod-frontend-control-tls-uzh
-        hosts:
-          - control.klicker.uzh.ch
       - secretName: klicker-prod-frontend-control-tls
         hosts:
-          - control.klicker-prod.bf-app.ch
+          - control.klicker-prod.prd.example.df-app.ch
 
   strategy:
-    type: RollingUpdate
-    # type: Recreate
+    type: Recreate
 
   resources:
     requests:
-      cpu: 150m
-      memory: 150Mi
+      cpu: 50m
+      memory: 50Mi
     limits:
-      cpu: 1000m
-      memory: 1000Mi
+      cpu: 200m
+      memory: 200Mi
 
 backendGraphql:
+  priorityClassName: production-workload
+
   autoscaling:
     enabled: false
 
+  appManageSubdomain: manage
+  appStudentSubdomain: pwa
+  appControlSubdomain: control
+
   ingress:
+    className: haproxy
     hosts:
-      - host: backend-sls.klicker.uzh.ch
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-      - host: backend-sls.klicker-prod.bf-app.ch
+      - host: backend-sls.klicker-prod.prd.example.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
-      - secretName: klicker-prod-backend-graphql-tls-uzh
-        hosts:
-          - backend-sls.klicker.uzh.ch
       - secretName: klicker-prod-backend-graphql-tls
         hosts:
-          - backend-sls.klicker-prod.bf-app.ch
+          - backend-sls.klicker-prod.prd.example.df-app.ch
 
   strategy:
-    type: RollingUpdate
-    # type: Recreate
+    type: Recreate
 
   resources:
     requests:
-      cpu: 150m
-      memory: 150Mi
+      cpu: 50m
+      memory: 50Mi
     limits:
-      cpu: 1000m
-      memory: 1000Mi
+      cpu: 200m
+      memory: 200Mi
 
 olatApi:
+  priorityClassName: production-workload
+
   autoscaling:
     enabled: false
 
   ingress:
+    className: haproxy
     hosts:
-      - host: olat-api.klicker.uzh.ch
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-      - host: olat-api.klicker-prod.bf-app.ch
+      - host: olat-api.klicker-prod.prd.example.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
-      - secretName: klicker-prod-olat-api-tls-uzh
-        hosts:
-          - olat-api.klicker.uzh.ch
       - secretName: klicker-prod-olat-api-tls
         hosts:
-          - olat-api.klicker-prod.bf-app.ch
+          - olat-api.klicker-prod.prd.example.df-app.ch
 
   strategy:
-    type: RollingUpdate
-    # type: Recreate
+    type: Recreate
 
   resources:
     requests:
-      cpu: 150m
-      memory: 150Mi
+      cpu: 50m
+      memory: 50Mi
     limits:
-      cpu: 1000m
-      memory: 1000Mi
+      cpu: 200m
+      memory: 200Mi
 
 lti:
+  priorityClassName: production-workload
+
   ingress:
+    className: haproxy
     hosts:
-      - host: lti.klicker.uzh.ch
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-      - host: lti.klicker-prod.bf-app.ch
+      - host: lti.klicker-prod.prd.example.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
-      - secretName: klicker-prod-lti-tls-uzh
-        hosts:
-          - lti.klicker.uzh.ch
       - secretName: klicker-prod-lti-tls
         hosts:
-          - lti.klicker-prod.bf-app.ch
+          - lti.klicker-prod.prd.example.df-app.ch
 
 redis:
+  priorityClassName: production-workload
+  architecture: standalone
   auth:
     enabled: false
