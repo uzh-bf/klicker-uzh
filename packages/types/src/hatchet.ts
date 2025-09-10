@@ -70,22 +70,40 @@ export interface HatchetHandlers {
 
 // Contract for the tasks that are passed into the GraphQL context.
 export interface PreparedHatchetTasks {
-  publishScheduledMicroLearning: TaskWorkflowDeclaration<{
-    microLearningId: string
-  }>
-  publishScheduledPracticeQuiz: TaskWorkflowDeclaration<{
-    practiceQuizId: string
-  }>
-  publishScheduledGroupActivity: TaskWorkflowDeclaration<{
-    groupActivityId: string
-  }>
-  publishScheduledLiveQuiz: TaskWorkflowDeclaration<{
-    liveQuizId: string
-  }>
-  endExpiredMicroLearning: TaskWorkflowDeclaration<{
-    microLearningId: string
-  }>
-  endExpiredGroupActivity: TaskWorkflowDeclaration<{
-    groupActivityId: string
-  }>
+  publishScheduledMicroLearning: TaskWorkflowDeclaration<
+    {
+      microLearningId: string
+    },
+    { success: boolean }
+  >
+  publishScheduledPracticeQuiz: TaskWorkflowDeclaration<
+    {
+      practiceQuizId: string
+    },
+    { success: boolean }
+  >
+  publishScheduledGroupActivity: TaskWorkflowDeclaration<
+    {
+      groupActivityId: string
+    },
+    { success: boolean }
+  >
+  publishScheduledLiveQuiz: TaskWorkflowDeclaration<
+    {
+      liveQuizId: string
+    },
+    { success: boolean }
+  >
+  endExpiredMicroLearning: TaskWorkflowDeclaration<
+    {
+      microLearningId: string
+    },
+    { success: boolean }
+  >
+  endExpiredGroupActivity: TaskWorkflowDeclaration<
+    {
+      groupActivityId: string
+    },
+    { success: boolean }
+  >
 }

@@ -53,8 +53,6 @@ describe('Integration tests for sharing functionalities of courses', () => {
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
   let userThreeCtx: ContextWithUser
-  let userFourCtx: ContextWithUser
-  let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
     const {
@@ -77,15 +75,11 @@ describe('Integration tests for sharing functionalities of courses', () => {
       userOneCtx: ctx1,
       userTwoCtx: ctx2,
       userThreeCtx: ctx3,
-      userFourCtx: ctx4,
-      userFiveCtx: ctx5,
     } = await testInitialization(prisma, hatchet, emitter)
 
     userOneCtx = ctx1
     userTwoCtx = ctx2
     userThreeCtx = ctx3
-    userFourCtx = ctx4
-    userFiveCtx = ctx5
   })
 
   afterEach(async () => {

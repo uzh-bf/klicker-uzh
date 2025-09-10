@@ -53,7 +53,6 @@ describe('Integration tests for object access validation', () => {
   let userThreeCtx: ContextWithUser
   let userFourCtx: ContextWithUser
   let userFiveCtx: ContextWithUser
-  let userSixCtx: ContextWithUser
 
   beforeAll(async () => {
     const {
@@ -78,7 +77,6 @@ describe('Integration tests for object access validation', () => {
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
       userFiveCtx: ctx5,
-      userSixCtx: ctx6,
     } = await testInitialization(prisma, hatchet, emitter)
 
     userOneCtx = ctx1
@@ -86,7 +84,6 @@ describe('Integration tests for object access validation', () => {
     userThreeCtx = ctx3
     userFourCtx = ctx4
     userFiveCtx = ctx5
-    userSixCtx = ctx6
   })
 
   afterEach(async () => {

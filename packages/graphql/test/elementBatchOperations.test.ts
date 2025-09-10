@@ -1,5 +1,4 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
-import { hatchetClient } from '@klicker-uzh/hatchet'
 import {
   ElementInstanceType,
   ElementStatus,
@@ -28,9 +27,14 @@ describe('Unit tests batch operations on elements', () => {
   let userTwoCtx: ContextWithUser
 
   beforeAll(async () => {
-    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    const {
+      prisma: newPrisma,
+      emitter: newEmitter,
+      hatchet: newHatchet,
+    } = await initializePrisma()
     prisma = newPrisma
     emitter = newEmitter
+    hatchet = newHatchet
   })
 
   afterAll(async () => {
@@ -41,7 +45,7 @@ describe('Unit tests batch operations on elements', () => {
   beforeEach(async () => {
     const { userOneCtx: ctx1, userTwoCtx: ctx2 } = await testInitialization(
       prisma,
-      hatchetClient,
+      hatchet,
       emitter
     )
     userOneCtx = ctx1

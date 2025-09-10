@@ -170,7 +170,7 @@ migrate(prisma).then(() => {
           return args
         },
       },
-      wsServer
+      wsServer as unknown as WebSocketServer
     )
   })
 })
