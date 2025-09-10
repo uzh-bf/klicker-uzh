@@ -87,7 +87,7 @@ export async function processAssessmentResponse(
   const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
 
   // if the instance info is not available, return that the corresponding cache data is not available
-  if (!instanceInfo) {
+  if (!instanceInfo || Object.keys(instanceInfo).length === 0) {
     ctx.logger.info(
       `Element instance metadata for instance ${message.instanceId} not found.`
     )
@@ -145,9 +145,9 @@ export async function processAssessmentResponse(
   let awardedXp = 0
 
   switch (type) {
-    case 'SC':
-    case 'MC':
-    case 'KPRIM': {
+    case ElementType.SC:
+    case ElementType.MC:
+    case ElementType.KPRIM: {
       // if response choices are not defined, return early
       if (!response.choices) {
         ctx.logger.error(`Missing response choices: ${JSON.stringify(message)}`)
@@ -167,7 +167,6 @@ export async function processAssessmentResponse(
           instanceInfo,
           firstResponseReceivedAt,
           responseTimestamp,
-          basePoints,
           pointsMultiplier,
           parsedSolutions,
         })
@@ -179,7 +178,7 @@ export async function processAssessmentResponse(
       break
     }
 
-    case 'NUMERICAL': {
+    case ElementType.NUMERICAL: {
       // if response value is not defined, return early
       if (typeof response.value === 'undefined' || response.value === null) {
         ctx.logger.error(`Missing response value: ${JSON.stringify(message)}`)
@@ -197,7 +196,6 @@ export async function processAssessmentResponse(
           instanceInfo,
           firstResponseReceivedAt,
           responseTimestamp,
-          basePoints,
           pointsMultiplier,
           parsedSolutions,
         })
@@ -209,7 +207,7 @@ export async function processAssessmentResponse(
       break
     }
 
-    case 'FREE_TEXT': {
+    case ElementType.FREE_TEXT: {
       // if response value is not defined, return early
       if (typeof response.value !== 'string') {
         ctx.logger.error(`Missing response value: ${JSON.stringify(message)}`)
@@ -227,7 +225,6 @@ export async function processAssessmentResponse(
           instanceInfo,
           firstResponseReceivedAt,
           responseTimestamp,
-          basePoints,
           pointsMultiplier,
           parsedSolutions,
         })
@@ -238,7 +235,7 @@ export async function processAssessmentResponse(
 
       break
     }
-    case 'SELECTION': {
+    case ElementType.SELECTION: {
       // if response selection is not defined, return early
       if (!response.selection) {
         ctx.logger.error(
@@ -258,7 +255,6 @@ export async function processAssessmentResponse(
           instanceInfo,
           firstResponseReceivedAt,
           responseTimestamp,
-          basePoints,
           pointsMultiplier,
           parsedSolutions,
         })
@@ -269,7 +265,7 @@ export async function processAssessmentResponse(
 
       break
     }
-    case 'CASE_STUDY': {
+    case ElementType.CASE_STUDY: {
       // if response assessment is not defined, return early
       if (!response.assessment) {
         ctx.logger.error(
@@ -289,7 +285,6 @@ export async function processAssessmentResponse(
           instanceInfo,
           firstResponseReceivedAt,
           responseTimestamp,
-          basePoints,
           pointsMultiplier,
           parsedSolutions,
         })
@@ -416,7 +411,7 @@ export async function aggregateAssessmentResponses(
   const instanceKey = `${liveQuizKey}:i:${instanceId}`
 
   // for gamified live quizzes, update the leaderboard and the participant xp
-  if (isGamificationEnabled) {
+  if (isGamificationEnabled && elementType !== ElementType.CONTENT) {
     updateLeaderboards({
       redisMulti: redis,
       participantId,
@@ -431,9 +426,9 @@ export async function aggregateAssessmentResponses(
   // step through the different element types, responses do not need to be verified anymore, since this was done by preceding task
   // aggregate the passed student response into the responses stored in the redis cache (for evaluation during quiz execution)
   switch (elementType) {
-    case 'SC':
-    case 'MC':
-    case 'KPRIM': {
+    case ElementType.SC:
+    case ElementType.MC:
+    case ElementType.KPRIM: {
       response
         .choices!.filter((choice) => choice.selected)
         .forEach((choice) => {
@@ -443,7 +438,7 @@ export async function aggregateAssessmentResponses(
       break
     }
 
-    case 'NUMERICAL': {
+    case ElementType.NUMERICAL: {
       const MD5 = createHash('md5')
       MD5.update(response.value!)
       const responseHash = MD5.digest('hex')
@@ -453,7 +448,7 @@ export async function aggregateAssessmentResponses(
       break
     }
 
-    case 'FREE_TEXT': {
+    case ElementType.FREE_TEXT: {
       const cleanResponseValue = response.value!.trim()
       const MD5 = createHash('md5')
       MD5.update(cleanResponseValue)
@@ -468,7 +463,7 @@ export async function aggregateAssessmentResponses(
       break
     }
 
-    case 'SELECTION': {
+    case ElementType.SELECTION: {
       response.selection!.forEach((answerId: number) => {
         if (answerId === -1) return // skipped input fields should not be considered
         redis.hincrby(`${instanceKey}:results`, String(answerId), 1)
@@ -477,7 +472,7 @@ export async function aggregateAssessmentResponses(
       break
     }
 
-    case 'CASE_STUDY': {
+    case ElementType.CASE_STUDY: {
       Object.entries(response.assessment!).forEach(([caseId, caseData]) => {
         Object.entries(caseData).forEach(([itemId, itemData]) => {
           Object.entries(itemData).forEach(
@@ -510,7 +505,7 @@ export async function aggregateAssessmentResponses(
       break
     }
 
-    case 'CONTENT': {
+    case ElementType.CONTENT: {
       // increase number of participants on element (do not award points / ... for content elements)
       redis.hincrby(`${instanceKey}:results`, 'participants', 1)
       break

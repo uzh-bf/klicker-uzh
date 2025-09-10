@@ -431,7 +431,6 @@ export function getCaseStudyQuestionPointsDetails({
   instanceInfo,
   firstResponseReceivedAt,
   responseTimestamp,
-  basePoints,
   pointsMultiplier,
   parsedSolutions,
 }: SharedQuestionPointsParams) {

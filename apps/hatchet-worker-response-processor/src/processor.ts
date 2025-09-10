@@ -133,7 +133,7 @@ export async function processResponseMessage(
 
     const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
     // if the instance metadata is not available, it has been closed and purged already
-    if (!instanceInfo) {
+    if (!instanceInfo || Object.keys(instanceInfo).length === 0) {
       ctx.logger.info('Question instance metadata not found', message)
       return { status: 400 }
     }

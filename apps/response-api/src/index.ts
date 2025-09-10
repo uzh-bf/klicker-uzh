@@ -163,22 +163,22 @@ async function handleAddAssessmentResponse(
   // TODO: validate correlationId?
 
   // check if there already exists an entry in the votes table with the given correlationId
-  redis
-    .hget(`lq:${sessionId}:i:${instanceId}:votes`, correlationId)
-    .then((existing) => {
-      if (existing && existing === 'true') {
-        console.log(
-          `Participant with correlationId ${correlationId} already answered instance ${instanceId} in session ${sessionId}`
-        )
-        hatchet.events.push('create-audit-log-entry', {
-          correlationId,
-          info: `[AddResponse Assessment] Participant with correlationId ${correlationId} already tried to answer instance ${instanceId} in session ${sessionId} again.`,
-        })
-
-        // TODO: should we return a bad request or a success message, because the answer is already there?
-        return badRequest(req, res, 'Response already recorded')
-      }
+  const votes = await redis.hget(
+    `lq:${sessionId}:i:${instanceId}:votes`,
+    correlationId
+  )
+  if (votes) {
+    console.log(
+      `Participant with correlationId ${correlationId} already answered instance ${instanceId} in session ${sessionId}`
+    )
+    hatchet.events.push('create-audit-log-entry', {
+      correlationId,
+      info: `[AddResponse Assessment] Participant with correlationId ${correlationId} already tried to answer instance ${instanceId} in session ${sessionId} again.`,
     })
+
+    // TODO: should we return a bad request or a success message, because the answer is already there?
+    return badRequest(req, res, 'Response already recorded')
+  }
 
   const cookies =
     typeof req.headers['cookie'] === 'string'
