@@ -97,9 +97,9 @@
     "script:invitations:dev": "CONFIG=dev_assessment ../../util/_run_with_doppler.sh tsx src/scripts/importParticipantInvitations.ts",
     "script:prod": "ENV=production doppler run --config prd -- tsx",
     "script:stg": "ENV=development doppler run --config stg -- tsx",
-    "test": "vitest run --reporter=verbose",
+    "test": "vitest run",
     "test:local": "bash ./run-tests-local.sh",
-    "test:watch": "vitest --reporter=verbose"
+    "test:watch": "vitest"
   },
   "engines": {
     "node": "=20"

@@ -6,7 +6,7 @@ export default defineConfig({
     environment: 'node',
     testTimeout: 30000,
     silent: false,
-    reporter: ['verbose'],
+    reporters: ['verbose'],
     pool: 'forks',
     poolOptions: {
       forks: {

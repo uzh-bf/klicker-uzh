@@ -118,7 +118,7 @@ export async function testInitialization(
 
   // initialize tasks to be called
   const tasks = {
-    publishScheduledMicroLearningTask: hatchet.task({
+    publishScheduledMicroLearning: hatchet.task({
       name: 'publish-scheduled-micro-learning',
       fn: async ({ microLearningId }: { microLearningId: string }) => {
         const success = await handlePublishScheduledMicroLearning(
@@ -130,7 +130,7 @@ export async function testInitialization(
         return { success }
       },
     }),
-    publishScheduledPracticeQuizTask: hatchet.task({
+    publishScheduledPracticeQuiz: hatchet.task({
       name: 'publish-scheduled-practice-quiz',
       fn: async ({ practiceQuizId }: { practiceQuizId: string }) => {
         const success = await handlePublishScheduledPracticeQuiz(
@@ -140,7 +140,7 @@ export async function testInitialization(
         return { success }
       },
     }),
-    publishScheduledGroupActivityTask: hatchet.task({
+    publishScheduledGroupActivity: hatchet.task({
       name: 'publish-scheduled-group-activity',
       fn: async ({ groupActivityId }: { groupActivityId: string }) => {
         const success = await handlePublishScheduledGroupActivity(
@@ -150,7 +150,7 @@ export async function testInitialization(
         return { success }
       },
     }),
-    publishScheduledLiveQuizTask: hatchet.task({
+    publishScheduledLiveQuiz: hatchet.task({
       name: 'publish-scheduled-live-quiz',
       fn: async ({ liveQuizId }: { liveQuizId: string }) => {
         const success = await handlePublishScheduledLiveQuiz(
@@ -160,7 +160,7 @@ export async function testInitialization(
         return { success }
       },
     }),
-    endExpiredMicroLearningTask: hatchet.task({
+    endExpiredMicroLearning: hatchet.task({
       name: 'end-expired-micro-learning',
       fn: async ({ microLearningId }: { microLearningId: string }) => {
         const success = await handleEndExpiredMicroLearning(
@@ -170,7 +170,7 @@ export async function testInitialization(
         return { success }
       },
     }),
-    endExpiredGroupActivityTask: hatchet.task({
+    endExpiredGroupActivity: hatchet.task({
       name: 'end-expired-group-activity',
       fn: async ({ groupActivityId }: { groupActivityId: string }) => {
         const success = await handleEndExpiredGroupActivity(
