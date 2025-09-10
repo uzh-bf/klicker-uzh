@@ -1619,6 +1619,9 @@ importers:
       graphql-yoga:
         specifier: 3.9.1
         version: 3.9.1(graphql@16.9.0)
+      ioredis:
+        specifier: 5.4.1
+        version: 5.4.1
       mathjs:
         specifier: 11.9.1
         version: 11.9.1

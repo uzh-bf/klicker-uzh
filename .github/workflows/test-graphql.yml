@@ -71,6 +71,16 @@ jobs:
           - 8888:8888
           - 7077:7077
 
+      redis_exec:
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        image: redis:7
+        ports:
+          - 6379:6379
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

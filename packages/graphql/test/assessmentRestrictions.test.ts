@@ -1,3 +1,4 @@
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   ElementBlockStatus,
   ElementType,
@@ -28,6 +29,7 @@ describe('Integration tests for assessment configuration functionalities', () =>
   // shared resources used across tests
   let prisma: PrismaClient
   let emitter: EventEmitter
+  let hatchet: Hatchet
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
   let userThreeCtx: ContextWithUser
@@ -35,9 +37,14 @@ describe('Integration tests for assessment configuration functionalities', () =>
   let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
-    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    const {
+      prisma: newPrisma,
+      emitter: newEmitter,
+      hatchet: newHatchet,
+    } = await initializePrisma()
     prisma = newPrisma
     emitter = newEmitter
+    hatchet = newHatchet
   })
 
   afterAll(async () => {
@@ -52,7 +59,7 @@ describe('Integration tests for assessment configuration functionalities', () =>
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
       userFiveCtx: ctx5,
-    } = await testInitialization(prisma, emitter)
+    } = await testInitialization(prisma, hatchet, emitter)
     userOneCtx = ctx1
     userTwoCtx = ctx2
     userThreeCtx = ctx3

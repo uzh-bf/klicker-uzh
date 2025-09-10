@@ -29,6 +29,7 @@
     "graphql": "16.9.0",
     "graphql-scalars": "1.23.0",
     "graphql-yoga": "3.9.1",
+    "ioredis": "5.4.1",
     "mathjs": "11.9.1",
     "node-schedule": "2.1.1",
     "nodemailer": "6.9.15",
@@ -96,9 +97,9 @@
     "script:invitations:dev": "CONFIG=dev_assessment ../../util/_run_with_doppler.sh tsx src/scripts/importParticipantInvitations.ts",
     "script:prod": "ENV=production doppler run --config prd -- tsx",
     "script:stg": "ENV=development doppler run --config stg -- tsx",
-    "test": "NODE_OPTIONS='--experimental-vm-modules' vitest run --reporter=verbose",
+    "test": "vitest run --reporter=verbose",
     "test:local": "bash ./run-tests-local.sh",
-    "test:watch": "NODE_OPTIONS='--experimental-vm-modules' vitest --reporter=verbose"
+    "test:watch": "vitest --reporter=verbose"
   },
   "engines": {
     "node": "=20"

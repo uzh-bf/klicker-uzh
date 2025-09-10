@@ -30,7 +30,7 @@
     "dev": "cross-env NODE_ENV=development rollup -c --watch",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:offline": "pnpm run dev",
-    "test": "NODE_OPTIONS='--experimental-vm-modules' vitest run --reporter=verbose"
+    "test": "vitest run --reporter=verbose"
   },
   "engines": {
     "node": "=20"
