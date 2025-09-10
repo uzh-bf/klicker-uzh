@@ -21,10 +21,13 @@ type ActivityDetails {
   id: String!
   isActivityManager: Boolean!
   isActivityReviewer: Boolean!
+  isAssessmentEnabled: Boolean!
   isGamificationEnabled: Boolean!
+  isPinProtected: Boolean!
   name: String!
   ownerEmail: String
   ownerShortname: String!
+  pinCode: String
   pointsMultiplier: Int!
   reviewStatus: ReviewStatus!
   stacks: [ActivityInfoStack!]!
@@ -124,6 +127,7 @@ type ActivityLogEntry {
   createdAt: Date!
   id: Int!
   isEdited: Boolean
+  isOwn: Boolean!
   message: String
   objectType: ObjectType!
   options: ActivityLogEntryOptions
@@ -1515,6 +1519,7 @@ type LiveQuiz {
   isLiveQAEnabled: Boolean!
   isModerationEnabled: Boolean!
   isPartOfGamifiedCourse: Boolean
+  isPinProtected: Boolean
   maxBonusPoints: Int
   name: String!
   namespace: String
@@ -1645,6 +1650,7 @@ type Mutation {
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateLiveQuizBlock(blockId: Int!, quizId: String!): Boolean
   declineObjectSharingRequest(requestId: Int!, userId: String!): Boolean!
+  deleteActivityMessage(id: Int!): Boolean!
   deleteActivityTemplate(activityId: String!, activityType: ActivityType!): String
   deleteAnswerCollection(collectionId: Int!): Int
   deleteAnswerCollectionEntry(collectionId: Int!, id: Int!): Int
@@ -2542,7 +2548,7 @@ type Subscription {
   groupActivityStarted(courseId: String!): GroupActivity!
   liveQuizSettingsChanged(quizId: String!): LiveQuizStudentSettings
   microLearningEnded(activityId: String!): MicroLearning!
-  runningLiveQuizUpdated(quizId: String!): ElementBlock
+  runningLiveQuizUpdated(id: String!): LiveQuiz!
   singleGroupActivityEnded(activityId: String!): GroupActivity!
 }
 

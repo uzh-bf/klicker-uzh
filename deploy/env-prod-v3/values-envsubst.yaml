@@ -5,6 +5,9 @@ teamsWebhookUrl: '${TEAMS_WEBHOOK_URL}'
 appSecret: '${APP_SECRET}'
 
 hatchet:
+  client:
+    token: '${HATCHET_CLIENT_TOKEN}'
+    tenantId: '${HATCHET_DEFAULT_TENANT_ID}'
   workers:
     general:
       image:
@@ -34,7 +37,6 @@ eduId:
   clientSecret: '${EDUID_CLIENT_SECRET}'
 
 auth:
-  replicaCount: 1
   image:
     tag: '${APP_VERSION}'
 
@@ -100,8 +102,6 @@ responseApi:
     tag: '${APP_VERSION}'
 
 lti:
-  replicaCount: 4
-
   image:
     tag: '${APP_VERSION}'
 

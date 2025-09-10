@@ -1,0 +1,31 @@
+fragment StudentLiveQuizBlocksData on LiveQuiz {
+  blocks {
+    id
+    status
+    expiresAt
+    timeLimit
+    randomSelection
+    execution
+    elements {
+      id
+      type
+      elementType
+      ...ElementDataWithoutSolutions
+    }
+  }
+
+  activeBlock {
+    id
+    status
+    expiresAt
+    timeLimit
+    randomSelection
+    execution
+    elements {
+      id
+      type
+      elementType
+      ...ElementDataWithoutSolutions
+    }
+  }
+}

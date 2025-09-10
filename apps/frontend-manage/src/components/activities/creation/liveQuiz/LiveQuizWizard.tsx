@@ -47,6 +47,7 @@ const acceptedTypes = [
 
 export interface LiveQuizWizardStepProps {
   editMode: boolean
+  duplicationMode?: boolean
   formRef: any
   formData: LiveQuizFormValues
   continueDisabled: boolean
@@ -438,6 +439,7 @@ function LiveQuizWizard({
         <LiveQuizSettingsStep
           key="live-quiz-settings-step"
           editMode={editMode}
+          duplicationMode={duplicationMode}
           formRef={formRef}
           formData={formData}
           continueDisabled={false}

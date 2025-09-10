@@ -6,18 +6,27 @@ function useRemainingInstances({
   quizId,
   instances,
   execution,
+  isBlockCompleted,
   setRemainingQuestions,
   setActiveInstance,
 }: {
   quizId: string
   instances: ElementInstance[]
   execution: number
-  setRemainingQuestions: Dispatch<SetStateAction<number[]>>
+  isBlockCompleted: boolean
+  setRemainingQuestions: Dispatch<SetStateAction<number[] | null>>
   setActiveInstance: Dispatch<SetStateAction<number>>
 }): void {
   useEffect((): void => {
     const exec = async () => {
       try {
+        // if the block is already completed, automatically jump to the first instance and return early
+        if (isBlockCompleted) {
+          setActiveInstance(0)
+          setRemainingQuestions([])
+          return
+        }
+
         let storedResponses: any = (await localForage.getItem(
           `${quizId}-responses`
         )) || {
@@ -40,7 +49,7 @@ function useRemainingInstances({
             return [...indices, index]
           }, [])
 
-        setActiveInstance(remaining[0])
+        setActiveInstance(remaining[0] ?? 0)
         setRemainingQuestions(remaining)
       } catch (e) {
         console.error(e)
@@ -48,7 +57,7 @@ function useRemainingInstances({
     }
     exec()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quizId, instances, execution])
+  }, [quizId, instances, execution, isBlockCompleted])
 }
 
 export default useRemainingInstances

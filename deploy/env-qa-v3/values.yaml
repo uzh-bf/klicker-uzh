@@ -147,12 +147,6 @@ backendGraphql:
   appStudentSubdomain: pwa
   appControlSubdomain: control
 
-  # Enable dual Redis mode for parallel testing
-  dualRedisMode: true
-
-  # Preserve Redis data after quiz ends for comparison
-  preserveRedisForComparison: true
-
   ingress:
     hosts:
       - host: backend-sls.klicker-qa.bf-app.ch

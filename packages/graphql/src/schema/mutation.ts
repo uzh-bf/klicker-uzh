@@ -1825,6 +1825,16 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      deleteActivityMessage: t.withAuth(asUserFullAccess).boolean({
+        args: { id: t.arg.int({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.deleteActivityMessage(
+            { messageId: args.id },
+            ctx
+          )
+        },
+      }),
+
       addObjectToCatalog: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: CatalogObject,

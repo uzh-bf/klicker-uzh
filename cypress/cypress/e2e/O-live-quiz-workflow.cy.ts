@@ -3484,14 +3484,14 @@ describe('Different live-quiz workflows', function () {
       displayName: this.data.modes.microLearningDisplayName,
       courseName: this.data.modes.course,
       startDate: {
-        monthDelta: -4,
+        monthDelta: -3,
         day: 16,
         hour: 2,
         minute: 0,
         validation: getDatetimeValidationString(-3, '16') + ', 02:00',
       }, // 3 months in the past at 2:00
       endDate: {
-        monthDelta: 2,
+        monthDelta: 3,
         day: 14,
         hour: 18,
         minute: 0,
@@ -4387,6 +4387,27 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="live-quiz-qr-modal-close"]').click()
   }
 
+  function endAssessmentLiveQuizzes(data: any) {
+    cy.wrap([
+      data.assessment.gamifiedCourse.liveQuiz,
+      data.assessment.nonGamifiedCourse.liveQuiz,
+    ]).each((quiz) => {
+      // end the live quiz
+      cy.get('[data-cy="running-live-quiz-dropdown"]').click()
+      cy.get(`[data-cy="running-live-quiz-${quiz}"]`).click()
+      cy.get('[data-cy="next-block-timeline"]').click()
+      cy.get('[data-cy="cancel-close-block"]').click()
+      cy.get('[data-cy="next-block-timeline"]').click()
+      cy.get('[data-cy="confirm-close-block"]').click()
+      cy.wait(500)
+      cy.get('[data-cy="next-block-timeline"]').click()
+      cy.wait(500)
+
+      // delete and re-create the live quiz for the anonymous test case (with the same name)
+      cy.task('deleteLiveQuiz', { name: quiz })
+    })
+  }
+
   it('Preparation: Reset the database and create all required content for the assessment live quizzes', function () {
     cy.cleanup()
     cy.seed()
@@ -4602,26 +4623,7 @@ describe('Different live-quiz workflows', function () {
     cy.loginLecturer()
 
     // end, delete and recreate both live quizzes
-    cy.wrap([
-      this.data.assessment.gamifiedCourse.liveQuiz,
-      this.data.assessment.nonGamifiedCourse.liveQuiz,
-    ]).each((quiz) => {
-      // end the live quiz
-      cy.get('[data-cy="running-live-quiz-dropdown"]').click()
-      cy.get(`[data-cy="running-live-quiz-${quiz}"]`).click()
-      cy.get('[data-cy="next-block-timeline"]').click()
-      cy.wait(500)
-      cy.get('[data-cy="next-block-timeline"]').click()
-      cy.wait(500)
-
-      // delete and re-create the live quiz for the anonymous test case (with the same name)
-      cy.get(`[data-cy="activities"]`).click()
-      cy.get('[data-cy="activities-search-input"]').type(`${quiz}{enter}`)
-      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).click()
-      cy.get(`[data-cy="delete-live-quiz-${quiz}"]`).click()
-      cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
-      cy.get('[data-cy="activities-search-input"]').clear()
-    })
+    endAssessmentLiveQuizzes(this.data)
 
     // recreate both live quizzes
     createAndStartAssessmentLiveQuizzes(this.data)
@@ -4644,6 +4646,13 @@ describe('Different live-quiz workflows', function () {
 
     // dummy action
     cy.visit(Cypress.env('URL_MANAGE'))
+  })
+
+  it('End the two assessment live quizzes', function () {
+    cy.loginLecturer()
+
+    // end, delete and recreate both live quizzes
+    endAssessmentLiveQuizzes(this.data)
   })
   // #endregion
 })

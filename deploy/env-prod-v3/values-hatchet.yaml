@@ -8,14 +8,14 @@ sharedConfig:
   # serverAuthCookieInsecure: "t" # allows cookies to be set over http
   # serverAuthSetEmailVerified: "t" # automatically sets email_verified to true for all users
   # serverAuthBasicAuthEnabled: "t" # allows login via basic auth (email/password)
-  # grpcBroadcastAddress: "localhost:7070" # the endpoint for the gRPC server, exposed via the `grpc` service
-  # grpcInsecure: "true" # allows gRPC to be served over http
+  grpcBroadcastAddress: 'hatchet-grpc:7070' # the endpoint for the gRPC server, exposed via the `grpc` service
+  grpcInsecure: 'true' # allows gRPC to be served over http
 
   # you can set additional environment variables here, which will override any defaults
   # env:
 
 api:
-  replicaCount: 1
+  replicaCount: 2
   resources:
     limits:
       cpu: 500m
@@ -23,10 +23,10 @@ api:
     requests:
       cpu: 50m
       memory: 128Mi
-  priorityClassName: production-workload
+  priorityClassName: klicker-v2-prod-klicker-uzh-v2-production-workload
 
 frontend:
-  replicaCount: 1
+  replicaCount: 2
   resources:
     limits:
       cpu: 500m
@@ -34,13 +34,13 @@ frontend:
     requests:
       cpu: 50m
       memory: 128Mi
-  priorityClassName: production-workload
+  priorityClassName: klicker-v2-prod-klicker-uzh-v2-production-workload
 
 postgres:
   enabled: false
 
 grpc:
-  replicaCount: 1
+  replicaCount: 2
   resources:
     limits:
       cpu: 500m
@@ -48,10 +48,10 @@ grpc:
     requests:
       cpu: 50m
       memory: 128Mi
-  priorityClassName: production-workload
+  priorityClassName: klicker-v2-prod-klicker-uzh-v2-production-workload
 
 controllers:
-  replicaCount: 1
+  replicaCount: 2
   resources:
     limits:
       cpu: 500m
@@ -59,10 +59,10 @@ controllers:
     requests:
       cpu: 50m
       memory: 128Mi
-  priorityClassName: production-workload
+  priorityClassName: klicker-v2-prod-klicker-uzh-v2-production-workload
 
 scheduler:
-  replicaCount: 1
+  replicaCount: 2
   resources:
     limits:
       cpu: 500m
@@ -70,7 +70,7 @@ scheduler:
     requests:
       cpu: 50m
       memory: 128Mi
-  priorityClassName: production-workload
+  priorityClassName: klicker-v2-prod-klicker-uzh-v2-production-workload
 
 caddy:
   enabled: true
@@ -81,4 +81,4 @@ caddy:
     requests:
       cpu: 50m
       memory: 128Mi
-  priorityClassName: production-workload
+  priorityClassName: klicker-v2-prod-klicker-uzh-v2-production-workload

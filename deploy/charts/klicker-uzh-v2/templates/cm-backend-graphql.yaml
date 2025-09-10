@@ -45,12 +45,6 @@ data:
   {{- if .Values.heartbeats.dailyGroupScores }}
   HEARTBEAT_DAILY_GROUP_SCORES: {{ .Values.heartbeats.dailyGroupScores | quote }}
   {{ end }}
-  {{- if .Values.backendGraphql.dualRedisMode }}
-  ENABLE_DUAL_REDIS_MODE: {{ .Values.backendGraphql.dualRedisMode | quote }}
-  {{ end }}
-  {{- if .Values.backendGraphql.preserveRedisForComparison }}
-  PRESERVE_REDIS_FOR_COMPARISON: {{ .Values.backendGraphql.preserveRedisForComparison | quote }}
-  {{ end }}
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   HATCHET_TENANT_ID: {{ .Values.hatchet.client.tenantId | quote }}
   HATCHET_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}

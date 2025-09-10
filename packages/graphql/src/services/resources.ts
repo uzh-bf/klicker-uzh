@@ -538,7 +538,10 @@ export async function deleteAnswerCollection(
       // ? Soft-delete the answer collection
       const updatedAnswerCollection = await prisma.answerCollection.update({
         where: { id: collectionId },
-        data: { isDeleted: true },
+        data: {
+          isDeleted: true,
+          directPermissions: { deleteMany: {} }, // delete all direct permissions on the activity
+        },
       })
 
       // trigger recomputation of all derived permissions for this answer collection object

@@ -43,7 +43,7 @@ import {
   userTwo,
 } from './userData.js'
 
-describe('Unit tests for object access validation', () => {
+describe('Integration tests for object access validation', () => {
   // shared resources used across tests
   let prisma: PrismaClient
   let hatchet: Hatchet

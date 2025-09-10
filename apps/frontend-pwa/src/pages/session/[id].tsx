@@ -1,13 +1,16 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faCommentDots } from '@fortawesome/free-regular-svg-icons'
+import { faClock, faCommentDots } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowsRotate,
+  faCheck,
   faExclamationCircle,
   faQuestion,
   faRankingStar,
+  faUsers,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
+  ElementBlockStatus,
   ElementType,
   GetFeedbacksDocument,
   GetRunningLiveQuizDocument,
@@ -23,6 +26,8 @@ import {
   FormikAlphaNumericPinField,
   H1,
   H2,
+  StepProgress,
+  Tabs,
   UserNotification,
   toast,
 } from '@uzh-bf/design-system'
@@ -31,7 +36,7 @@ import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
 import Layout from '../../components/Layout'
@@ -108,28 +113,10 @@ async function handleNewResponse(
   }
 
   try {
-    // Always send to primary endpoint (Azure Function)
     await fetch(
       process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string,
       requestOptions
     )
-  } catch (e) {
-    console.error('Error sending response to primary endpoint:', e)
-  }
-
-  try {
-    const isDualModeEnabled =
-      process.env.NEXT_PUBLIC_ENABLE_DUAL_RESPONSE_MODE === 'true'
-
-    console.log('Dual mode enabled:', isDualModeEnabled)
-
-    // Only send to secondary endpoint (Hatchet) if dual mode is enabled
-    if (isDualModeEnabled && process.env.NEXT_PUBLIC_ADD_RESPONSE_V2_URL) {
-      await fetch(
-        process.env.NEXT_PUBLIC_ADD_RESPONSE_V2_URL as string,
-        requestOptions
-      )
-    }
   } catch (e) {
     console.log('Error sending response to secondary endpoint:', e)
   }
@@ -138,7 +125,13 @@ async function handleNewResponse(
 function Index({ id }: { id: string }) {
   const t = useTranslations()
   const router = useRouter()
-  const [activeMobilePage, setActiveMobilePage] = useState('questions')
+  const [selectedBlock, setSelectedBlock] = useState<number | null>(null)
+  const [activeView, setActiveView] = useState<
+    'questions' | 'feedbacks' | 'leaderboard'
+  >('questions')
+  const [rightTab, setRightTab] = useState<'feedbacks' | 'leaderboard'>(
+    'feedbacks'
+  )
 
   const [setLiveQuizPin] = useMutation(SetLiveQuizPinDocument)
   const { data, loading, error, subscribeToMore, refetch } = useQuery(
@@ -148,6 +141,71 @@ function Index({ id }: { id: string }) {
   const { data: selfData } = useQuery(SelfDocument, {
     variables: { liveQuizId: id },
   })
+
+  // if a block is active when the page is loaded or a new block is activated, switch to the corresponding block
+  useEffect(() => {
+    if (data?.studentLiveQuiz?.activeBlock) {
+      const activeBlockIndex = data.studentLiveQuiz.blocks?.findIndex(
+        (b) => b.id === data.studentLiveQuiz?.activeBlock?.id
+      )
+
+      if (activeBlockIndex !== -1 && typeof activeBlockIndex === 'number') {
+        setSelectedBlock(activeBlockIndex)
+      }
+    } else if (selectedBlock === null) {
+      const lastCompletedBlockIndex = data?.studentLiveQuiz?.blocks?.findIndex(
+        (b) => b.status === ElementBlockStatus.Executed
+      )
+
+      if (
+        lastCompletedBlockIndex !== -1 &&
+        typeof lastCompletedBlockIndex === 'number'
+      ) {
+        setSelectedBlock(lastCompletedBlockIndex)
+      } else {
+        setSelectedBlock(-1)
+      }
+    }
+  }, [data])
+
+  // keep right-side tab valid when availability changes, without overriding user choice
+  useEffect(() => {
+    const feedbackAvailable =
+      data?.studentLiveQuiz?.isLiveQAEnabled ||
+      data?.studentLiveQuiz?.isConfusionFeedbackEnabled
+    const leaderboardAvailable =
+      !!selfData?.self && !!data?.studentLiveQuiz?.isGamificationEnabled
+    if (
+      rightTab === 'feedbacks' &&
+      !feedbackAvailable &&
+      leaderboardAvailable
+    ) {
+      setRightTab('leaderboard')
+    } else if (
+      rightTab === 'leaderboard' &&
+      !leaderboardAvailable &&
+      feedbackAvailable
+    ) {
+      setRightTab('feedbacks')
+    }
+  }, [
+    data?.studentLiveQuiz?.isLiveQAEnabled,
+    data?.studentLiveQuiz?.isConfusionFeedbackEnabled,
+    data?.studentLiveQuiz?.isGamificationEnabled,
+    selfData?.self,
+    rightTab,
+  ])
+
+  // if the live quiz was loaded correctly, but does not contain any blocks, directly switch to the feedback view
+  useEffect(() => {
+    if (
+      data?.studentLiveQuiz?.id &&
+      (!data?.studentLiveQuiz?.blocks ||
+        data?.studentLiveQuiz?.blocks.length === 0)
+    ) {
+      setActiveView('feedbacks')
+    }
+  }, [data?.studentLiveQuiz])
 
   if (loading) {
     return (
@@ -253,6 +311,7 @@ function Index({ id }: { id: string }) {
 
   const {
     activeBlock,
+    blocks,
     displayName,
     description,
     beforeFirstBlock,
@@ -263,6 +322,9 @@ function Index({ id }: { id: string }) {
     course,
   } = data.studentLiveQuiz
 
+  const feedbackAvailable = isLiveQAEnabled || isConfusionFeedbackEnabled
+  const leaderboardAvailable = !!selfData?.self && !!isGamificationEnabled
+
   const mobileMenuItems: {
     value: string
     label: string
@@ -271,38 +333,45 @@ function Index({ id }: { id: string }) {
     showBadge?: boolean
     data?: { cy?: string; test?: string }
   }[] = [
-    {
-      value: 'questions',
-      label: t('shared.generic.questions'),
-      icon: <FontAwesomeIcon icon={faQuestion} size="lg" />,
-      unseenItems: activeBlock?.elements?.length,
-      data: { cy: 'mobile-menu-questions' },
-    },
+    ...(!blocks || blocks.length === 0
+      ? []
+      : [
+          {
+            value: 'questions',
+            label: t('shared.generic.questions'),
+            icon: <FontAwesomeIcon icon={faQuestion} size="lg" />,
+            unseenItems: activeBlock?.elements?.length,
+            data: { cy: 'mobile-menu-questions' },
+          },
+        ]),
+    ...(isLiveQAEnabled || isConfusionFeedbackEnabled
+      ? [
+          {
+            value: 'feedbacks',
+            label: t('shared.generic.feedbacks'),
+            icon: <FontAwesomeIcon icon={faCommentDots} size="lg" />,
+            data: { cy: 'mobile-menu-feedbacks' },
+          },
+        ]
+      : []),
+    ...(selfData?.self && isGamificationEnabled
+      ? [
+          {
+            value: 'leaderboard',
+            label: t('shared.generic.leaderboard'),
+            icon: <FontAwesomeIcon icon={faRankingStar} size="lg" />,
+            data: { cy: 'mobile-menu-leaderboard' },
+          },
+        ]
+      : []),
   ]
-
-  if (isLiveQAEnabled || isConfusionFeedbackEnabled) {
-    mobileMenuItems.push({
-      value: 'feedbacks',
-      label: t('shared.generic.feedbacks'),
-      icon: <FontAwesomeIcon icon={faCommentDots} size="lg" />,
-      data: { cy: 'mobile-menu-feedbacks' },
-    })
-  }
-  if (selfData?.self && isGamificationEnabled) {
-    mobileMenuItems.push({
-      value: 'leaderboard',
-      label: t('shared.generic.leaderboard'),
-      icon: <FontAwesomeIcon icon={faRankingStar} size="lg" />,
-      data: { cy: 'mobile-menu-leaderboard' },
-    })
-  }
 
   return (
     <Layout
       displayName={displayName}
       course={course ?? { name: 'KlickerUZH' }}
       mobileMenuItems={mobileMenuItems}
-      setActiveMobilePage={setActiveMobilePage}
+      setActiveMobilePage={setActiveView}
       liveQuizId={id}
       className={{ body: 'p-0 px-4 pb-4' }}
     >
@@ -312,107 +381,224 @@ function Index({ id }: { id: string }) {
         quizId={id}
       />
 
-      <div className="md:mx-auto md:flex md:w-full md:max-w-7xl md:flex-row md:pt-3">
-        <div
-          className={twMerge(
-            'hidden flex-1 border-gray-300 bg-white md:pr-5',
-            (isLiveQAEnabled || isConfusionFeedbackEnabled) &&
-              'md:w-1/2 md:border-r',
-            activeMobilePage === 'questions' && 'block',
-            (activeMobilePage === 'feedbacks' ||
-              activeMobilePage === 'leaderboard') &&
-              'md:block'
-          )}
-        >
-          {!activeBlock ? (
-            beforeFirstBlock &&
-            description !== null &&
-            typeof description !== 'undefined' &&
-            description !== '' ? (
-              <div data-cy="live-quiz-description" className="pt-4 md:pt-2">
-                <H2>{displayName}</H2>
-                {!description?.match(/^(<br>(\n)*)$/g) && description !== '' ? (
-                  <Markdown content={description} />
-                ) : (
-                  <UserNotification
-                    type="info"
-                    className={{ root: 'mt-1.5 md:text-base' }}
-                  >
-                    {t.rich('pwa.liveQuiz.noActiveQuestion', {
-                      reload: (text) => (
-                        <span
-                          className="cursor-pointer underline"
-                          onClick={() => router.reload()}
-                          data-cy="reload-live-quiz"
-                        >
-                          {text}
-                        </span>
-                      ),
-                    })}
-                  </UserNotification>
-                )}
-              </div>
-            ) : isGamificationEnabled ? (
-              <div className={twMerge('min-h-full flex-1 bg-white')}>
-                <LiveQuizLeaderboard
-                  quizId={id}
-                  courseId={course?.id}
-                  isBeforeFirstBlock={beforeFirstBlock ?? false}
-                  showLeaderboardGamifiedQuizHint
-                  isPartOfGamifiedCourse={isPartOfGamifiedCourse}
-                />
-              </div>
-            ) : (
-              <UserNotification type="info" className={{ root: 'mt-4' }}>
-                {t.rich('pwa.liveQuiz.noActiveQuestion', {
-                  reload: (text) => (
-                    <span
-                      className="cursor-pointer underline"
-                      onClick={() => router.reload()}
-                      data-cy="reload-live-quiz"
-                    >
-                      {text}
-                    </span>
-                  ),
-                })}
-              </UserNotification>
-            )
-          ) : (
-            <QuestionArea
-              gamificationEnabled={isGamificationEnabled}
-              expiresAt={activeBlock.expiresAt}
-              instances={activeBlock.elements ?? []}
-              handleNewResponse={handleNewResponse}
-              quizId={id}
-              timeLimit={activeBlock?.timeLimit ?? undefined}
-              execution={activeBlock?.execution ?? 0}
-            />
-          )}
-        </div>
-
-        {selfData?.self && isGamificationEnabled && (
+      <div className="md:mx-auto md:flex md:w-full md:max-w-7xl md:flex-row md:pt-5">
+        {blocks && blocks.length > 0 ? (
           <div
             className={twMerge(
-              'hidden min-h-full flex-1 bg-white md:p-8',
-              activeMobilePage === 'leaderboard' && 'block md:hidden'
+              'hidden flex-1 border-gray-300 bg-white md:pr-5',
+              (isLiveQAEnabled ||
+                isConfusionFeedbackEnabled ||
+                (selfData?.self && isGamificationEnabled)) &&
+                'md:w-1/2 md:border-r',
+              activeView === 'questions' && 'block',
+              'md:block'
             )}
           >
-            <LiveQuizLeaderboard quizId={id} />
+            <div
+              className={twMerge(
+                activeView === 'questions' ? '' : 'hidden',
+                'md:block'
+              )}
+              key={`question-area-${activeBlock?.id}-${activeBlock?.status}`}
+            >
+              <>
+                {blocks && blocks.length > 0 ? (
+                  <StepProgress
+                    value={
+                      selectedBlock !== null
+                        ? selectedBlock
+                        : blocks[0]?.status !== ElementBlockStatus.Scheduled
+                          ? 0
+                          : -1
+                    }
+                    items={blocks?.map((block, ix) => ({
+                      id: block.id,
+                      ix,
+                      label: t('shared.generic.blockN', { number: ix + 1 }),
+                      blockStatus: block.status,
+                      disabled: block.status === ElementBlockStatus.Scheduled,
+                      className: twMerge(
+                        block.id === activeBlock?.id &&
+                          'bg-primary-100! hover:bg-primary-100 text-white hover:text-white'
+                      ),
+                    }))}
+                    displayOffsetLeft={1}
+                    displayOffsetRight={1}
+                    formatter={({ element }) => (
+                      <span className="w-full space-x-2">
+                        <FontAwesomeIcon
+                          icon={
+                            element.blockStatus === ElementBlockStatus.Scheduled
+                              ? faClock
+                              : element.blockStatus ===
+                                  ElementBlockStatus.Active
+                                ? faUsers
+                                : faCheck
+                          }
+                        />
+                        <span>{element.label}</span>
+                      </span>
+                    )}
+                    onItemClick={(_, item) => {
+                      if (!item!.disabled) {
+                        setSelectedBlock(Number(item!.ix))
+                      }
+                    }}
+                    className={{ root: 'md:mt-0.25 mt-5 text-sm' }}
+                  />
+                ) : null}
+
+                {beforeFirstBlock ? (
+                  <div
+                    data-cy="live-quiz-description"
+                    className="mt-1.5 pt-4 md:pt-2"
+                  >
+                    <H2>{displayName}</H2>
+                    {description !== null &&
+                    typeof description !== 'undefined' &&
+                    description !== '' &&
+                    !description?.match(/^(<br>(\n)*)$/g) ? (
+                      <Markdown content={description} />
+                    ) : (
+                      <UserNotification
+                        type="info"
+                        className={{ root: 'mt-1.5 md:text-base' }}
+                      >
+                        {t.rich('pwa.liveQuiz.noActiveQuestion', {
+                          reload: (text) => (
+                            <span
+                              className="cursor-pointer underline"
+                              onClick={() => router.reload()}
+                              data-cy="reload-live-quiz"
+                            >
+                              {text}
+                            </span>
+                          ),
+                        })}
+                      </UserNotification>
+                    )}
+                  </div>
+                ) : null}
+
+                {activeBlock &&
+                selectedBlock ===
+                  blocks?.findIndex((b) => b.id === activeBlock.id) ? (
+                  <QuestionArea
+                    isBlockActive
+                    quizId={id}
+                    gamificationEnabled={isGamificationEnabled}
+                    expiresAt={activeBlock.expiresAt}
+                    instances={activeBlock.elements ?? []}
+                    handleNewResponse={handleNewResponse}
+                    timeLimit={activeBlock?.timeLimit ?? undefined}
+                    execution={activeBlock?.execution ?? 0}
+                  />
+                ) : null}
+
+                {selectedBlock !== null &&
+                (!activeBlock ||
+                  selectedBlock !==
+                    blocks?.findIndex((b) => b.id === activeBlock.id)) &&
+                blocks?.[selectedBlock] ? (
+                  <QuestionArea
+                    quizId={id}
+                    gamificationEnabled={isGamificationEnabled}
+                    instances={blocks?.[selectedBlock].elements ?? []}
+                    execution={blocks?.[selectedBlock]?.execution ?? 0}
+                    handleNewResponse={() => {}} // submissions are no longer possible
+                  />
+                ) : null}
+              </>
+            </div>
           </div>
-        )}
+        ) : null}
 
         <div
           className={twMerge(
-            'hidden flex-1 bg-white md:pl-5',
-            (isLiveQAEnabled || isConfusionFeedbackEnabled) && 'md:block',
-            activeMobilePage === 'feedbacks' &&
-              (isLiveQAEnabled || isConfusionFeedbackEnabled) &&
-              'block'
+            'bg-white md:w-1/2 md:pl-5',
+            (!blocks || blocks.length === 0) && 'mx-auto',
+            feedbackAvailable || leaderboardAvailable
+              ? 'md:block'
+              : 'md:hidden',
+            (activeView === 'feedbacks' && feedbackAvailable) ||
+              (activeView === 'leaderboard' && leaderboardAvailable)
+              ? 'block'
+              : 'hidden'
           )}
         >
+          {/* right-side tabs on desktop (shown only when both features exist) */}
+          {(isLiveQAEnabled || isConfusionFeedbackEnabled) &&
+            selfData?.self &&
+            isGamificationEnabled && (
+              <Tabs
+                defaultValue={rightTab}
+                value={rightTab}
+                tabs={
+                  [
+                    {
+                      id: 'tab-feedbacks',
+                      value: 'feedbacks',
+                      label: t('shared.generic.feedbacks'),
+                      data: { cy: 'tab-feedbacks' },
+                    },
+                    {
+                      id: 'tab-leaderboard-right',
+                      value: 'leaderboard',
+                      label: t('shared.generic.leaderboard'),
+                      data: { cy: 'tab-leaderboard-right' },
+                    },
+                  ] as any
+                }
+                onValueChange={(value) =>
+                  setRightTab(value as 'feedbacks' | 'leaderboard')
+                }
+                className={{
+                  root: 'mb-1.5 hidden md:block',
+                  list: 'h-7.5 md:h-7.5 bg-gray-200',
+                  trigger: 'h-6',
+                }}
+              >
+                {' '}
+              </Tabs>
+            )}
+
           <FeedbackArea
             isConfusionFeedbackEnabled={isConfusionFeedbackEnabled}
             isLiveQAEnabled={isLiveQAEnabled}
+            className={twMerge(
+              // mobile: show only when on feedbacks view and available
+              activeView === 'feedbacks' &&
+                (isLiveQAEnabled || isConfusionFeedbackEnabled)
+                ? 'block'
+                : 'hidden',
+              // desktop: show only when feedbacks tab selected and available
+              rightTab === 'feedbacks' &&
+                (isLiveQAEnabled || isConfusionFeedbackEnabled)
+                ? 'md:block'
+                : 'md:hidden'
+            )}
+          />
+          <LiveQuizLeaderboard
+            quizId={id}
+            courseId={course?.id}
+            isBeforeFirstBlock={beforeFirstBlock ?? false}
+            showLeaderboardGamifiedQuizHint
+            isPartOfGamifiedCourse={isPartOfGamifiedCourse}
+            className={twMerge(
+              // mobile visibility
+              activeView === 'leaderboard' &&
+                selfData?.self &&
+                isGamificationEnabled
+                ? 'block'
+                : 'hidden',
+              // desktop visibility
+              rightTab === 'leaderboard' &&
+                selfData?.self &&
+                isGamificationEnabled
+                ? 'md:block'
+                : 'md:hidden',
+              'min-h-full w-full'
+            )}
           />
         </div>
       </div>
@@ -433,24 +619,21 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   const apolloClient = initializeApollo()
 
   try {
-    await Promise.all([
-      apolloClient.query({
-        query: GetRunningLiveQuizDocument,
-        variables: {
-          id: ctx.query?.id as string,
-        },
-      }),
-      apolloClient.query({
-        query: GetFeedbacksDocument,
-        variables: {
-          quizId: ctx.query?.id as string,
-          skip: !ctx.query?.id,
-        },
-      }),
-    ])
+    await apolloClient.query({
+      query: GetRunningLiveQuizDocument,
+      variables: { id: ctx.query?.id as string },
+    })
   } catch (e) {
-    // Intentionally ignore GraphQL errors here (e.g., pin missing/invalid)
+    // intentionally ignore GraphQL errors here (e.g., pin missing/invalid) -> handled in UI
   }
+
+  await apolloClient.query({
+    query: GetFeedbacksDocument,
+    variables: {
+      quizId: ctx.query?.id as string,
+      skip: !ctx.query?.id,
+    },
+  })
 
   return addApolloState(apolloClient, {
     props: {

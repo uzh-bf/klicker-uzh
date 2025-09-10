@@ -45,7 +45,7 @@ import {
 } from './helpers.js'
 import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 
-describe('Unit tests for sharing functionalities of catalog collections', () => {
+describe('Integration tests for sharing functionalities of catalog collections', () => {
   // shared resources used across tests
   let prisma: PrismaClient
   let hatchet: Hatchet

@@ -2,7 +2,7 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "3.3.2",
+  "version": "3.4.0-alpha.4",
   "repository": "uzh-bf/klicker-uzh.git",
   "homepage": "https://www.klicker.uzh.ch/",
   "bugs": "https://github.com/uzh-bf/klicker-uzh/issues",
@@ -39,10 +39,10 @@
     "yaml": "~2.6.1"
   },
   "scripts": {
-    "//check:app": "turbo run check --parallel --continue",
     "build": "turbo run build",
     "build:test": "cross-env NODE_ENV=test turbo run build:test --cache-dir=.turbo",
-    "check": "run-p check:*",
+    "check": "turbo run check --parallel --continue",
+    "check:all": "run-p check check:format check:lint check:syncpack",
     "check:format": "lint-staged",
     "check:lint": "turbo run lint --parallel --continue",
     "check:syncpack": "syncpack lint",

@@ -463,9 +463,7 @@ export const Query = builder.queryType({
       shortnameQuizzes: t.field({
         nullable: true,
         type: [LiveQuiz],
-        args: {
-          shortname: t.arg.string({ required: true }),
-        },
+        args: { shortname: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await LiveQuizService.getShortnameQuizzes(args, ctx)
         },
@@ -474,9 +472,7 @@ export const Query = builder.queryType({
       getLiveQuizSummary: t.withAuth(asUser).field({
         nullable: true,
         type: LiveQuizSummary,
-        args: {
-          quizId: t.arg.string({ required: true }),
-        },
+        args: { quizId: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ liveQuizId: args.quizId }),
           DB.PermissionLevel.READ,

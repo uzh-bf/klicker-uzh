@@ -486,14 +486,14 @@ describe('Create different types of elements (with and without sample solution) 
         name: ml,
         displayName: ml,
         startDate: {
-          monthDelta: -3,
+          monthDelta: -2,
           day: 16,
           hour: 2,
           minute: 0,
           validation: getDatetimeValidationString(-2, '16') + ', 02:00',
         }, // 2 months in the past at 2:00
         endDate: {
-          monthDelta: 3,
+          monthDelta: 4,
           day: 14,
           hour: 18,
           minute: 0,
@@ -517,14 +517,14 @@ describe('Create different types of elements (with and without sample solution) 
         task: 'Task Description',
         courseName: this.data.update.course,
         scheduledStartDate: {
-          monthDelta: -2,
+          monthDelta: -1,
           day: 10,
           hour: 12,
           minute: 30,
           validation: getDatetimeValidationString(-1, '10') + ', 12:30',
         }, // 1 month in the past at 12:30
         scheduledEndDate: {
-          monthDelta: 1,
+          monthDelta: 2,
           day: 20,
           hour: 14,
           minute: 0,

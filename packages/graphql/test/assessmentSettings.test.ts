@@ -18,7 +18,7 @@ import {
   testInitialization,
 } from './helpers.js'
 
-describe('Unit tests for assessment configuration functionalities', () => {
+describe('Integration tests for assessment configuration functionalities', () => {
   // shared resources used across tests
   let prisma: PrismaClient
   let emitter: EventEmitter
@@ -54,7 +54,7 @@ describe('Unit tests for assessment configuration functionalities', () => {
     await testCleanup(prisma)
   })
 
-  describe('Unit tests for assessment settings on courses and activities', () => {
+  describe('Integration tests for assessment settings on courses and activities', () => {
     // set default booleans for irrelevant interaction settings
     const isConfusionFeedbackEnabled = false
     const isLiveQAEnabled = false

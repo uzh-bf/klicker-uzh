@@ -21,6 +21,7 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
+import generatePassword from 'generate-password'
 import { createPubSub, Repeater } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import {
@@ -730,6 +731,13 @@ export async function seedLiveQuiz(
   },
   ctx: ContextWithUser
 ) {
+  // if a courseId is defined, fetch the corresponding course
+  const course = courseId
+    ? await ctx.prisma.course.findUnique({
+        where: { id: courseId },
+      })
+    : null
+
   const liveQuiz = await ctx.prisma.liveQuiz.create({
     data: {
       name: uuidv4(),
@@ -738,6 +746,15 @@ export async function seedLiveQuiz(
       status,
       courseId,
       ownerId: ctx.user.sub,
+      isAssessmentEnabled: course?.isAssessmentEnabled ?? false,
+      isGamificationEnabled: course?.isGamificationEnabled ?? false,
+      pinCode: generatePassword.generate({
+        length: 6,
+        numbers: true,
+        uppercase: true,
+        lowercase: false,
+        symbols: false,
+      }),
       blocks: {
         create: elements.map((element, index) => ({
           order: index,
@@ -759,6 +776,7 @@ export async function seedLiveQuiz(
         })),
       },
     },
+    include: { blocks: true },
   })
 
   return liveQuiz

@@ -37,7 +37,7 @@ import {
 import { questionsSLAF } from './testData.js'
 import { userFour, userOne, userThree, userTwo } from './userData.js'
 
-describe('Unit tests for template service', () => {
+describe('Integration tests for template service', () => {
   // shared resources used across tests
   let prisma: PrismaClient
   let hatchet: Hatchet

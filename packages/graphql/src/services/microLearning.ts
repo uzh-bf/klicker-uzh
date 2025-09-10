@@ -807,7 +807,10 @@ export async function deleteMicroLearning(
       async (prisma) => {
         const updated = await prisma.microLearning.update({
           where: { id },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            directPermissions: { deleteMany: {} }, // delete all direct permissions on the activity
+          },
         })
 
         // remove the scheduled completion task, if it exists (should only exist for published microlearnings)

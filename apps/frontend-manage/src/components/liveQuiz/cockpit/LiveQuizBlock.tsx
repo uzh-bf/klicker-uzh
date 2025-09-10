@@ -13,7 +13,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import React, { useState } from 'react'
+import React, { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import LiveQuizCountdown from './LiveQuizCountdown'
 
@@ -29,6 +29,7 @@ interface LiveQuizBlockProps {
   className?: string
   active: boolean
   block: QuizTimelineBlock
+  setBlockClosureModal: Dispatch<SetStateAction<boolean>>
 }
 
 const ICON_MAP = {
@@ -41,6 +42,7 @@ function LiveQuizBlock({
   className,
   active,
   block,
+  setBlockClosureModal,
 }: LiveQuizBlockProps): React.ReactElement {
   const t = useTranslations()
   const [inCooldown, setInCooldown] = useState(false)
@@ -81,6 +83,7 @@ function LiveQuizBlock({
           <LiveQuizCountdown
             block={block}
             inCooldown={inCooldown}
+            onExpiration={() => setBlockClosureModal(false)}
             setInCooldown={setInCooldown}
           />
         )}
