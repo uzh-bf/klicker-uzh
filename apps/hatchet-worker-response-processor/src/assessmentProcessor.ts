@@ -41,10 +41,11 @@ export async function processAssessmentResponse(
   },
   ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
 ) {
-  ctx.logger.info(
-    'ProcessAssessmentResponse function processing a message',
-    message
-  )
+  ctx.logger.info('ProcessAssessmentResponse: received message', {
+    correlationId: message.correlationId,
+    sessionId: message.sessionId,
+    instanceId: message.instanceId,
+  })
   ctx.v1.events.push('create-audit-log-entry', {
     correlationId: message.correlationId,
     info: `[AddResponse Assessment] Processing response for instance ${message.instanceId} by participant ${message.participantId}.`,
@@ -78,7 +79,14 @@ export async function processAssessmentResponse(
   const response = message.response
 
   if (!response) {
-    ctx.logger.error(`Missing response: ${JSON.stringify(message)}`)
+    ctx.logger.error(
+      'Missing response ' +
+        JSON.stringify({
+          correlationId: message.correlationId,
+          sessionId: message.sessionId,
+          instanceId: message.instanceId,
+        })
+    )
     throw new Error('Missing response')
   }
 
@@ -88,9 +96,10 @@ export async function processAssessmentResponse(
 
   // if the instance info is not available, return that the corresponding cache data is not available
   if (!instanceInfo || Object.keys(instanceInfo).length === 0) {
-    ctx.logger.info(
-      `Element instance metadata for instance ${message.instanceId} not found.`
-    )
+    ctx.logger.info('Element instance metadata not found', {
+      correlationId: message.correlationId,
+      instanceId: message.instanceId,
+    })
     ctx.v1.events.push('create-audit-log-entry', {
       correlationId: message.correlationId,
       info: `[AddResponse Assessment] Instance metadata for instance ${message.instanceId} not found.`,
@@ -113,7 +122,10 @@ export async function processAssessmentResponse(
   } = instanceInfo
 
   if (blockClosedAt && Number(responseTimestamp) > Number(blockClosedAt)) {
-    ctx.logger.info('Response received after element block was closed')
+    ctx.logger.info('Response received after element block was closed', {
+      correlationId: message.correlationId,
+      instanceId: message.instanceId,
+    })
     ctx.v1.events.push('create-audit-log-entry', {
       correlationId: message.correlationId,
       info: `[AddResponse Assessment] Response received after block of element instance ${message.instanceId} was closed at ${new Date(blockClosedAt)}.`,
@@ -129,9 +141,7 @@ export async function processAssessmentResponse(
       parsedSolutions = JSON.parse(solutions)
     }
   } catch (e) {
-    ctx.logger.error(
-      `Error parsing solutions (Error: ${JSON.stringify(e)}, Message: ${JSON.stringify(message)})`
-    )
+    ctx.logger.error(`Error parsing solutions: ${String(e)}`)
     throw new Error('Error parsing solutions')
   }
 
@@ -150,7 +160,14 @@ export async function processAssessmentResponse(
     case ElementType.KPRIM: {
       // if response choices are not defined, return early
       if (!response.choices) {
-        ctx.logger.error(`Missing response choices: ${JSON.stringify(message)}`)
+        ctx.logger.error(
+          'Missing response choices ' +
+            JSON.stringify({
+              correlationId: message.correlationId,
+              sessionId: message.sessionId,
+              instanceId: message.instanceId,
+            })
+        )
         ctx.v1.events.push('create-audit-log-entry', {
           correlationId: message.correlationId,
           info: `[AddResponse Assessment] Response to choices question (instance id ${message.instanceId}) does not contain choices.`,
@@ -181,7 +198,14 @@ export async function processAssessmentResponse(
     case ElementType.NUMERICAL: {
       // if response value is not defined, return early
       if (typeof response.value === 'undefined' || response.value === null) {
-        ctx.logger.error(`Missing response value: ${JSON.stringify(message)}`)
+        ctx.logger.error(
+          'Missing response value ' +
+            JSON.stringify({
+              correlationId: message.correlationId,
+              sessionId: message.sessionId,
+              instanceId: message.instanceId,
+            })
+        )
         ctx.v1.events.push('create-audit-log-entry', {
           correlationId: message.correlationId,
           info: `[AddResponse Assessment] Response to numerical question (instance id ${message.instanceId}) does not contain value.`,
@@ -210,7 +234,14 @@ export async function processAssessmentResponse(
     case ElementType.FREE_TEXT: {
       // if response value is not defined, return early
       if (typeof response.value !== 'string') {
-        ctx.logger.error(`Missing response value: ${JSON.stringify(message)}`)
+        ctx.logger.error(
+          'Missing response value ' +
+            JSON.stringify({
+              correlationId: message.correlationId,
+              sessionId: message.sessionId,
+              instanceId: message.instanceId,
+            })
+        )
         ctx.v1.events.push('create-audit-log-entry', {
           correlationId: message.correlationId,
           info: `[AddResponse Assessment] Response to free text question (instance id ${message.instanceId}) does not contain value.`,
@@ -239,7 +270,12 @@ export async function processAssessmentResponse(
       // if response selection is not defined, return early
       if (!response.selection) {
         ctx.logger.error(
-          `Missing response selection: ${JSON.stringify(message)}`
+          'Missing response selection ' +
+            JSON.stringify({
+              correlationId: message.correlationId,
+              sessionId: message.sessionId,
+              instanceId: message.instanceId,
+            })
         )
         ctx.v1.events.push('create-audit-log-entry', {
           correlationId: message.correlationId,
@@ -269,7 +305,12 @@ export async function processAssessmentResponse(
       // if response assessment is not defined, return early
       if (!response.assessment) {
         ctx.logger.error(
-          `Missing response assessment: ${JSON.stringify(message)}`
+          'Missing response assessment ' +
+            JSON.stringify({
+              correlationId: message.correlationId,
+              sessionId: message.sessionId,
+              instanceId: message.instanceId,
+            })
         )
         ctx.v1.events.push('create-audit-log-entry', {
           correlationId: message.correlationId,
@@ -514,11 +555,20 @@ export async function aggregateAssessmentResponses(
 
   try {
     await redis.exec()
-    ctx.logger.info("Successfully aggregated a participant's results", message)
+    ctx.logger.info("Successfully aggregated a participant's results", {
+      correlationId: message.correlationId,
+      sessionId: message.liveQuizId,
+      instanceId: message.instanceId,
+    })
     return { status: 200 }
   } catch (e) {
     ctx.logger.error(
-      `Redis pipeline for results aggregation failed: ${JSON.stringify(e)} (Message: ${JSON.stringify(message)})`
+      `Redis pipeline for results aggregation failed: ${String(e)}` +
+        JSON.stringify({
+          correlationId: message.correlationId,
+          sessionId: message.liveQuizId,
+          instanceId: message.instanceId,
+        })
     )
     redis.discard()
     throw new Error(

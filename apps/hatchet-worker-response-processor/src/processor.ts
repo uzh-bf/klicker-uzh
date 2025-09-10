@@ -39,7 +39,11 @@ export async function processResponseMessage(
   message: Message,
   ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
 ) {
-  ctx.logger.info('ProcessResponse function processing a message', message)
+  ctx.logger.info('ProcessResponse: received message', {
+    messageId: message.messageId,
+    sessionId: message.sessionId,
+    instanceId: message.instanceId,
+  })
 
   try {
     assert(!!redisExec)
@@ -65,7 +69,14 @@ export async function processResponseMessage(
     const responseTimestamp = message.responseTimestamp
     const response = message.response
     if (!response) {
-      ctx.logger.error(`Missing response: ${JSON.stringify(message)}`)
+      ctx.logger.error(
+        'Missing response ' +
+          JSON.stringify({
+            messageId: message.messageId,
+            sessionId: message.sessionId,
+            instanceId: message.instanceId,
+          })
+      )
       return { status: 400 }
     }
 
@@ -91,7 +102,7 @@ export async function processResponseMessage(
           if (participantData.role !== 'PARTICIPANT') {
             participantData = null
           } else {
-            ctx.logger.info("Participant's JWT verified", participantData)
+            ctx.logger.info("Participant's JWT verified")
           }
         } else if (parsedCookies['temporary_participant_token'] !== undefined) {
           participantData = await verifyJWT(
@@ -102,16 +113,11 @@ export async function processResponseMessage(
           if (participantData.role !== 'TEMPORARY_PARTICIPANT') {
             participantData = null
           } else {
-            ctx.logger.info(
-              "Temporary Participant's JWT verified",
-              participantData
-            )
+            ctx.logger.info("Temporary Participant's JWT verified")
           }
         }
       } catch (e) {
-        ctx.logger.error(
-          `JWT verification failed: ${JSON.stringify(e)} (Cookie: ${JSON.stringify(message.cookie)})`
-        )
+        ctx.logger.error(`JWT verification failed: ${String(e)}`)
       }
 
       // if the participant has already responded to the question instance, return instantly
@@ -134,10 +140,17 @@ export async function processResponseMessage(
     const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
     // if the instance metadata is not available, it has been closed and purged already
     if (!instanceInfo || Object.keys(instanceInfo).length === 0) {
-      ctx.logger.info('Question instance metadata not found', message)
+      ctx.logger.info('Question instance metadata not found', {
+        messageId: message.messageId,
+        sessionId: message.sessionId,
+        instanceId: message.instanceId,
+      })
       return { status: 400 }
     }
-    ctx.logger.info('Instance info', instanceInfo)
+    ctx.logger.info('Instance info loaded', {
+      sessionId: message.sessionId,
+      instanceId: message.instanceId,
+    })
 
     const {
       type,
@@ -154,7 +167,7 @@ export async function processResponseMessage(
         parsedSolutions = JSON.parse(solutions)
       }
     } catch (e) {
-      ctx.logger.info('Error parsing solutions', { e, message })
+      ctx.logger.info(`Error parsing solutions: ${String(e)}`)
     }
 
     let pointsAwarded: number | string = 0
@@ -167,7 +180,12 @@ export async function processResponseMessage(
         // if response choices are not defined, return early
         if (!response.choices) {
           ctx.logger.error(
-            `Missing response choices: ${JSON.stringify(message)}`
+            'Missing response choices ' +
+              JSON.stringify({
+                messageId: message.messageId,
+                sessionId: message.sessionId,
+                instanceId: message.instanceId,
+              })
           )
           return { status: 400 }
         }
@@ -240,7 +258,14 @@ export async function processResponseMessage(
       case 'NUMERICAL': {
         // if response value is not defined, return early
         if (typeof response.value === 'undefined' || response.value === null) {
-          ctx.logger.error(`Missing response value: ${JSON.stringify(message)}`)
+          ctx.logger.error(
+            'Missing response value ' +
+              JSON.stringify({
+                messageId: message.messageId,
+                sessionId: message.sessionId,
+                instanceId: message.instanceId,
+              })
+          )
           return { status: 400 }
         }
 
@@ -310,7 +335,14 @@ export async function processResponseMessage(
       case 'FREE_TEXT': {
         // if response value is not defined, return early
         if (typeof response.value !== 'string') {
-          ctx.logger.error(`Missing response value: ${JSON.stringify(message)}`)
+          ctx.logger.error(
+            'Missing response value ' +
+              JSON.stringify({
+                messageId: message.messageId,
+                sessionId: message.sessionId,
+                instanceId: message.instanceId,
+              })
+          )
           return { status: 400 }
         }
 
@@ -381,7 +413,12 @@ export async function processResponseMessage(
         // if response selection is not defined, return early
         if (!response.selection) {
           ctx.logger.error(
-            `Missing response selection: ${JSON.stringify(message)}`
+            'Missing response selection ' +
+              JSON.stringify({
+                messageId: message.messageId,
+                sessionId: message.sessionId,
+                instanceId: message.instanceId,
+              })
           )
           return { status: 400 }
         }
@@ -455,7 +492,12 @@ export async function processResponseMessage(
         // if response assessment is not defined, return early
         if (!response.assessment) {
           ctx.logger.error(
-            `Missing response assessment: ${JSON.stringify(message)}`
+            'Missing response assessment ' +
+              JSON.stringify({
+                messageId: message.messageId,
+                sessionId: message.sessionId,
+                instanceId: message.instanceId,
+              })
           )
           return { status: 400 }
         }
@@ -556,7 +598,12 @@ export async function processResponseMessage(
     }
   } catch (e) {
     ctx.logger.error(
-      `Error processing response: ${JSON.stringify(e)} (Message: ${JSON.stringify(message)})`
+      `Error processing response: ${String(e)} ` +
+        JSON.stringify({
+          messageId: message.messageId,
+          sessionId: message.sessionId,
+          instanceId: message.instanceId,
+        })
     )
     redisMulti?.discard()
     return { status: 500 }
@@ -564,11 +611,20 @@ export async function processResponseMessage(
 
   try {
     await redisMulti.exec()
-    ctx.logger.info("Successfully processed participant's response", message)
+    ctx.logger.info("Successfully processed participant's response", {
+      messageId: message.messageId,
+      sessionId: message.sessionId,
+      instanceId: message.instanceId,
+    })
     return { status: 200 }
   } catch (e) {
     ctx.logger.error(
-      `Redis transaction failed: ${JSON.stringify(e)} (Message: ${JSON.stringify(message)})`
+      `Redis transaction failed: ${String(e)} ` +
+        JSON.stringify({
+          messageId: message.messageId,
+          sessionId: message.sessionId,
+          instanceId: message.instanceId,
+        })
     )
     redisMulti?.discard()
     throw new Error(`Redis transaction failed ${String(e)}`)
