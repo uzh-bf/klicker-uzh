@@ -1,0 +1,4 @@
+#!/bin/sh
+
+CONTAINER_NAME=$(docker ps -a --filter "ancestor=ghcr.io/hatchet-dev/hatchet/hatchet-lite:latest" --format "{{.Names}}" | head -n1)
+export HATCHET_CLIENT_TOKEN=$(docker exec $CONTAINER_NAME /hatchet-admin token create --config /config --tenant-id 707d0855-80ab-4e1f-a156-f1c4546cbf52 | xargs)

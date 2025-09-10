@@ -110,31 +110,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
 
-      - name: Generate Hatchet token
-        id: hatchet-token
-        run: |
-          # Wait for Hatchet to be fully ready
-          sleep 10
-          TOKEN=$(curl -X POST http://localhost:8888/api/v1/tenants/707d0855-80ab-4e1f-a156-f1c4546cbf52/api-tokens \
-            -H "Content-Type: application/json" \
-            -d '{"name": "ci-test-token"}' | jq -r '.token' 2>/dev/null || echo "")
-
-          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
-            echo "Failed to generate token via API, trying alternative method..."
-            # Alternative: try to exec into container if possible
-            TOKEN="dummy-token-for-ci"
-          fi
-
-          echo "token=$TOKEN" >> $GITHUB_OUTPUT
-          echo "Generated token: ${TOKEN:0:20}..."
-
       - name: Run tests
         run: |
+          ./util/_create_hatchet_token_graphql.sh
           cd packages/graphql
-          pnpm vitest run --reporter=verbose
+          pnpm vitest run
         env:
           DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
-          HATCHET_CLIENT_TOKEN: ${{ steps.hatchet-token.outputs.token }}
           HATCHET_CLIENT_TLS_STRATEGY: none
           NODE_ENV: test
           HATCHET_API_URL: http://localhost:8888
