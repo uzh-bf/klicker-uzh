@@ -21,6 +21,18 @@
     "sequential-thinking": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "dbhub": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@bytebase/dbhub",
+        "--readonly",
+        "--transport",
+        "stdio",
+        "--dsn",
+        "postgres://klicker-prod:klicker@localhost:5432/klicker-prod?sslmode=disable"
+      ]
     }
   }
 }

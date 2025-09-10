@@ -1,5 +1,6 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk/index.js'
 import {
+  CourseAuthType,
   ElementInstanceType,
   ElementStackType,
   ElementType,
@@ -99,17 +100,21 @@ describe('Integration tests for batch operations on activities', () => {
     args: { [x: string]: any } = {},
     prisma: PrismaClient
   ) {
-    const randomPin = Math.floor(100000 + Math.random() * 900000)
     const course = await prisma.course.create({
       data: {
         name: uuid(),
         displayName: uuid(),
-        pinCode: randomPin,
+        pinCode: !args.isAssessmentEnabled
+          ? Math.floor(100000 + Math.random() * 900000)
+          : null,
         startDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // two weeks ago
         endDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000), // three weeks in the future
         isGroupCreationEnabled: true,
         groupDeadlineDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // one week in the future
         ownerId: userOneCtx.user.sub,
+        authType: !!args.isAssessmentEnabled
+          ? CourseAuthType.SSO
+          : CourseAuthType.PIN,
         ...args,
       },
     })

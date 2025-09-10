@@ -194,12 +194,16 @@ function CourseOverviewPage() {
           )}
         </div>
         <div className="grid grid-cols-2">
-          <div className="whitespace-nowrap font-bold">
-            {t('shared.generic.pinCode')}
-          </div>
-          <div className="font-mono text-red-700" data-cy="course-pin">
-            {course.pinCode}
-          </div>
+          {!course.isAssessmentEnabled && course.pinCode && (
+            <>
+              <div className="whitespace-nowrap font-bold">
+                {t('shared.generic.pinCode')}
+              </div>
+              <div className="font-mono text-red-700" data-cy="course-pin">
+                {course.pinCode}
+              </div>
+            </>
+          )}
           <div className="font-bold">{t('shared.generic.courseDuration')}</div>
           {dayjs(course.startDate).format('DD.MM.YYYY')} -{' '}
           {dayjs(course.endDate).format('DD.MM.YYYY')}

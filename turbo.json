@@ -11,6 +11,7 @@
     "APP_STUDENT_DOMAIN",
     "APP_STUDENT_SUBDOMAIN",
     "APP_SECRET",
+    "ASSESSMENT_MODE",
     "AZUREWEBJOBSFEATUREFLAGS",
     "AZUREWEBJOBSSTORAGE",
     "BLOB_STORAGE_ACCESS_KEY",
@@ -109,6 +110,17 @@
       "persistent": true
     },
     "dev:offline": {
+      "cache": false,
+      "dependsOn": [
+        "@klicker-uzh/util#build",
+        "@klicker-uzh/prisma#build",
+        "@klicker-uzh/graphql#build",
+        "@klicker-uzh/markdown#build",
+        "@klicker-uzh/transactional#build"
+      ],
+      "persistent": true
+    },
+    "dev:assessment": {
       "cache": false,
       "dependsOn": [
         "@klicker-uzh/util#build",

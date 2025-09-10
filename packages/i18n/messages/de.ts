@@ -775,6 +775,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       coursePinFormat: 'Kurs-PIN (Format: ### ### ###)',
       coursePinNumerical: 'Bitte geben Sie einen numerischen PIN ein.',
       coursePinRequired: 'Bitte geben Sie den Kurs-PIN ein.',
+      invalidPin: 'PIN ungültig',
+      genericError:
+        'Beim Versuch, dem Kurs beizutreten, ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an Ihren Dozenten.',
     },
     practiceQuiz: {
       flashcardClick: 'Klicken Sie, um die Antwort zu sehen',
@@ -1049,6 +1052,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nOfMaxParticipants: '{numParticipants}/{maxParticipants} Teilnehmer',
       groupActivityEnded:
         'Diese Gruppenaktivität ist bereits beendet. Sie können sie nicht mehr starten oder Antworten einreichen.',
+    },
+    assessment: {
+      title: 'Assessment Login',
+      warning:
+        'Dies ist eine Assessment-Anwendung. Alle Ihre Daten und Aktivitäten sind für Ihre Dozierenden sichtbar.',
+      loginWithEduId: 'Login mit Edu-ID',
+      eduIdRequired:
+        'Edu-ID-Authentifizierung ist für Assessments erforderlich',
     },
   },
   manage: {

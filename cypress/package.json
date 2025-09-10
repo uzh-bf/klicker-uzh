@@ -21,12 +21,12 @@
     "uuid": "~10.0.0"
   },
   "scripts": {
-    "test": "doppler run --config=dev_cypress -- cypress open",
+    "test": "CONFIG=dev_cypress ../util/_run_with_doppler.sh cypress open",
     "test:raw": "cypress open",
-    "test:run": "doppler run --config=dev_cypress -- cypress run",
-    "test:run:one": "doppler run --config=dev_cypress -- cypress run --spec",
+    "test:run": "CONFIG=dev_cypress ../util/_run_with_doppler.sh cypress run",
+    "test:run:one": "CONFIG=dev_cypress ../util/_run_with_doppler.sh cypress run --spec",
     "test:run:raw": "cypress run",
-    "test:watch": "doppler run --config=dev_cypress -- cypress open --watch"
+    "test:watch": "CONFIG=dev_cypress ../util/_run_with_doppler.sh cypress open --watch"
   },
   "engines": {
     "node": "=20"

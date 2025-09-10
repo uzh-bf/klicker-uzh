@@ -12,8 +12,8 @@
     "@klicker-uzh/grading": "workspace:*",
     "@klicker-uzh/hatchet": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
-    "ioredis": "5.4.1",
-    "jose": "5.9.4"
+    "@klicker-uzh/util": "workspace:*",
+    "ioredis": "5.4.1"
   },
   "devDependencies": {
     "@klicker-uzh/types": "workspace:*",
@@ -29,7 +29,8 @@
     "build:test": "pnpm run build",
     "build:ts": "cross-env NODE_ENV=production rollup -c",
     "check": "tsc --noEmit",
-    "dev": "pnpm dev:ts",
+    "dev": "pnpm run dev:ts",
+    "dev:assessment": "pnpm run dev",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:offline": "pnpm run dev",
     "dev:ts": "cross-env NODE_ENV=development tsx --watch --env-file .env src/index.ts"

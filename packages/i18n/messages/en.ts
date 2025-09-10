@@ -772,6 +772,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       coursePinFormat: 'Course-PIN (format: ### ### ###)',
       coursePinNumerical: 'Please enter a numerical course PIN.',
       coursePinRequired: 'Please enter the course PIN.',
+      invalidPin: 'PIN invalid',
+      genericError:
+        'There was an error when trying to join the course. Please try again or ask your lecturer for assistance.',
     },
     practiceQuiz: {
       flashcardClick: 'Click to turn card',
@@ -1049,6 +1052,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       nOfMaxParticipants: '{numParticipants}/{maxParticipants} participants',
       groupActivityEnded:
         'This group activity has ended already. You cannot start it anymore or submit any answers.',
+    },
+    assessment: {
+      title: 'Assessment Login',
+      warning:
+        'This is an assessment application. All your data and activities will be visible to your lecturers.',
+      loginWithEduId: 'Login with Edu-ID',
+      eduIdRequired: 'Edu-ID authentication is required for assessments',
     },
   },
   manage: {

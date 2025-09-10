@@ -1,7 +1,7 @@
 FROM docker.io/library/node:20.19.4-alpine AS base
 
 
-FROM base AS builder
+FROM base AS deps
 WORKDIR /app
 
 RUN apk add --no-cache libc6-compat
@@ -14,7 +14,7 @@ COPY . .
 RUN turbo prune --scope=@klicker-uzh/lti-service --docker
 
 
-FROM base AS installer
+FROM base AS builder
 WORKDIR /app
 
 RUN apk add --no-cache libc6-compat
@@ -22,14 +22,14 @@ RUN apk update
 
 RUN npm i -g --ignore-scripts pnpm@10.15.0 turbo@2.5.6
 
-COPY --from=builder /app/out/json/ .
-COPY --from=builder /app/out/pnpm* .
+COPY --from=deps /app/out/json/ .
+COPY --from=deps /app/out/pnpm* .
 
 RUN pnpm i --ignore-scripts
 
 ARG NODE_ENV="production"
 
-COPY --from=builder /app/out/full/ .
+COPY --from=deps /app/out/full/ .
 RUN pnpm run build --filter=@klicker-uzh/lti-service
 
 
@@ -41,10 +41,13 @@ RUN adduser --system --uid 1001 nodejs
 
 RUN npm i -g --ignore-scripts pnpm@10.15.0 turbo@2.5.6
 
-COPY --from=builder /app/out/json/ .
-RUN pnpm i --prod --ignore-scripts
+COPY --from=deps /app/out/json/ .
+COPY --from=deps /app/out/pnpm* .
+RUN pnpm i --frozen-lockfile --prod --ignore-scripts
 
-COPY --from=installer --chown=nodejs:nodejs /app/apps/lti/dist ./apps/lti/dist
+COPY --from=builder --chown=nodejs:nodejs /app/packages/util/dist/ ./packages/util/dist/
+COPY --from=builder --chown=nodejs:nodejs /app/packages/prisma/dist/ ./packages/prisma/dist/
+COPY --from=builder --chown=nodejs:nodejs /app/apps/lti/dist ./apps/lti/dist
 
 USER nodejs
 

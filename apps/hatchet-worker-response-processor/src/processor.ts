@@ -18,10 +18,10 @@ import {
   gradeQuestionSelection,
 } from '@klicker-uzh/grading'
 import type { ResponseInput } from '@klicker-uzh/types'
+import { verifyJWT } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
-import * as jose from 'jose'
 import {
   DEFAULT_CORRECT_POINTS,
   DEFAULT_POINTS,
@@ -43,22 +43,6 @@ export type Message = {
 }
 
 const redisExec = getRedis()
-
-async function verifyJWT(jwt: string) {
-  if (!process.env.APP_SECRET) {
-    throw new Error('APP_SECRET environment variable is not set')
-  }
-
-  const secretBuffer = new TextEncoder().encode(process.env.APP_SECRET)
-
-  const { payload, protectedHeader } = await jose.jwtVerify(jwt, secretBuffer)
-
-  return {
-    ...payload,
-    role: payload['role'] as string,
-    sub: payload['sub'] as string,
-  }
-}
 
 function updateLeaderboards({
   redisMulti,
@@ -150,7 +134,10 @@ export async function processResponseMessage(
           }, {})
 
         if (parsedCookies['participant_token'] !== undefined) {
-          participantData = await verifyJWT(parsedCookies['participant_token'])
+          participantData = await verifyJWT(
+            parsedCookies['participant_token'],
+            process.env.APP_SECRET as string
+          )
 
           if (participantData.role !== 'PARTICIPANT') {
             participantData = null
@@ -159,7 +146,8 @@ export async function processResponseMessage(
           }
         } else if (parsedCookies['temporary_participant_token'] !== undefined) {
           participantData = await verifyJWT(
-            parsedCookies['temporary_participant_token']
+            parsedCookies['temporary_participant_token'],
+            process.env.APP_SECRET as string
           )
 
           if (participantData.role !== 'TEMPORARY_PARTICIPANT') {

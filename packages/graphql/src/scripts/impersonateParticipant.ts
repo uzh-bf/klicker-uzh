@@ -1,12 +1,9 @@
-import { PrismaClient, UserRole } from '@klicker-uzh/prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
-import JWT from 'jsonwebtoken'
+import { prisma } from '@klicker-uzh/prisma'
+import { UserRole } from '@klicker-uzh/prisma/client'
+import { signJWT } from '@klicker-uzh/util'
 import readline from 'readline'
 
 async function run(username: string) {
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-  const prisma = new PrismaClient({ adapter })
-
   const participant = await prisma.participant.findUnique({
     where: {
       username,
@@ -18,7 +15,7 @@ async function run(username: string) {
     return
   }
 
-  const jwt = JWT.sign(
+  const jwt = await signJWT(
     {
       sub: participant.id,
       role: UserRole.PARTICIPANT,

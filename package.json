@@ -47,6 +47,7 @@
     "check:lint": "turbo run lint --parallel --continue",
     "check:syncpack": "syncpack lint",
     "dev": "CONFIG=dev ./util/_run_with_doppler.sh pnpm dev:raw",
+    "dev:assessment": "CONFIG=dev_assessment ./util/_run_with_doppler.sh turbo run dev:assessment --concurrency 30",
     "dev:cleverreach": "doppler run --config dev_cleverreach -- pnpm run dev:raw",
     "dev:docs": "turbo run dev:docs",
     "dev:lti": "doppler run --config dev_lti -- turbo run dev:lti",

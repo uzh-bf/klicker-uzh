@@ -31,6 +31,7 @@
     "build:ts": "cross-env NODE_ENV=production rollup -c",
     "check": "tsc --noEmit",
     "dev": "run-p dev:ts",
+    "dev:assessment": "pnpm run dev",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:offline": "pnpm run dev",
     "dev:ts": "cross-env NODE_ENV=development tsx --watch --env-file .env src/index.ts"

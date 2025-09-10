@@ -1,7 +1,7 @@
 import { ApolloClient, NormalizedCacheObject } from '@apollo/client'
 import { LoginParticipantWithLtiDocument } from '@klicker-uzh/graphql/dist/ops'
+import { signJWT, verifyJWT } from '@klicker-uzh/util'
 import bodyParser from 'body-parser'
-import JWT from 'jsonwebtoken'
 import { GetServerSidePropsContext } from 'next'
 import nookies from 'nookies'
 
@@ -52,10 +52,10 @@ export default async function getParticipantToken({
       }
 
       try {
-        const signedLtiData = JWT.verify(
+        const signedLtiData = (await verifyJWT(
           token,
           process.env.APP_SECRET as string
-        ) as { sub: string; email: string; scope: string }
+        )) as { sub: string; email: string; scope: string }
 
         if (signedLtiData.scope === 'LTI1.3') {
           result = await apolloClient.mutate({
@@ -83,7 +83,7 @@ export default async function getParticipantToken({
 
       if (request?.body?.lis_person_sourcedid) {
         // send along a JWT to ensure only the next server is allowed to register participants from LTI
-        const signedLtiData = JWT.sign(
+        const signedLtiData = await signJWT(
           {
             sub: request?.body?.lis_person_sourcedid,
             email: request?.body?.lis_person_contact_email_primary,

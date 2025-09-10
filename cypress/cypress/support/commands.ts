@@ -123,7 +123,7 @@ const loginFactory = (
     cy.viewport('macbook-16')
     localforage.setItem('hideLecturerSurvey', 'true')
 
-    const secret = new TextEncoder().encode('abcd')
+    const secret = new TextEncoder().encode(Cypress.env('APP_SECRET'))
     const alg = 'HS256'
 
     cy.wrap(null).then(async () => {
