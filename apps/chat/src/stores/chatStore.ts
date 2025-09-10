@@ -7,14 +7,14 @@ import {
   convertApiThreadToThread,
   type ApiMessage,
   type ApiThread,
-} from '../../lib/api/types'
+} from '../lib/api/types'
 import {
   extractThreadTitle,
   findBranchLeaf,
   findLeafMessages,
   getBranches,
   getPathToLeaf,
-} from '../../lib/api/utils'
+} from '../lib/api/utils'
 
 /**
  * Extended thread message type that includes parentId for conversation branching
@@ -38,14 +38,21 @@ interface ChatState {
   isLoading: boolean
 
   // thread management actions
-  createThread: () => Promise<string>
-  loadThreads: () => Promise<void>
-  switchToThread: (threadId: string) => Promise<void>
-  deleteThread: (threadId: string) => Promise<void>
-  updateThreadTitle: (threadId: string, title: string) => Promise<void>
+  createThread: (chatbotId: string) => Promise<string>
+  loadThreads: (chatbotId: string) => Promise<void>
+  switchToThread: (chatbotId: string, threadId: string) => Promise<void>
+  deleteThread: (chatbotId: string, threadId: string) => Promise<void>
+  updateThreadTitle: (
+    chatbotId: string,
+    threadId: string,
+    title: string
+  ) => Promise<void>
 
   // active thread message actions
-  addMessage: (message: ExtendedThreadMessageLike) => Promise<string | null>
+  addMessage: (
+    chatbotId: string,
+    message: ExtendedThreadMessageLike
+  ) => Promise<string | null>
   setMessages: (messages: ExtendedThreadMessageLike[]) => void
   setIsRunning: (isRunning: boolean) => void
 
@@ -74,15 +81,19 @@ export const useChatStore = create<ChatState>((set, get) => {
      * Creates a new conversation thread
      * Attempts to create the thread on the server, falls back to local creation if it fails
      *
+     * @param chatbotId - The ID of the chatbot to create the thread for
      * @returns Promise<string> The ID of the created thread
      */
-    createThread: async () => {
+    createThread: async (chatbotId: string) => {
       try {
         set({ isLoading: true })
-        const apiThread = await apiCall<ApiThread>('/threads', {
-          method: 'POST',
-          body: JSON.stringify({ title: null }),
-        })
+        const apiThread = await apiCall<ApiThread>(
+          `/chatbots/${chatbotId}/threads`,
+          {
+            method: 'POST',
+            body: JSON.stringify({ title: null }),
+          }
+        )
 
         const newThread = convertApiThreadToThread(apiThread)
 
@@ -106,10 +117,12 @@ export const useChatStore = create<ChatState>((set, get) => {
      * Loads all conversation threads from the server
      * Fetches thread metadata (without messages) for sidebar display
      */
-    loadThreads: async () => {
+    loadThreads: async (chatbotId: string) => {
       try {
         set({ isLoading: true })
-        const apiThreads: ApiThread[] = await apiCall<ApiThread[]>('/threads')
+        const apiThreads: ApiThread[] = await apiCall<ApiThread[]>(
+          `/chatbots/${chatbotId}/threads`
+        )
 
         const threads = apiThreads.map(convertApiThreadToThread)
 
@@ -131,7 +144,7 @@ export const useChatStore = create<ChatState>((set, get) => {
      *
      * @param threadId - The ID of the thread to switch to
      */
-    switchToThread: async (threadId) => {
+    switchToThread: async (chatbotId: string, threadId: string) => {
       try {
         set({ isLoading: true })
 
@@ -147,7 +160,7 @@ export const useChatStore = create<ChatState>((set, get) => {
 
         // Load all messages for the thread from the server
         const apiMessages: ApiMessage[] = await apiCall<ApiMessage[]>(
-          `/threads/${threadId}/messages`
+          `/chatbots/${chatbotId}/threads/${threadId}/messages`
         )
         const allMessages = apiMessages.map(convertApiMessageToMessage)
 
@@ -189,9 +202,11 @@ export const useChatStore = create<ChatState>((set, get) => {
      *
      * @param threadId - The ID of the thread to delete
      */
-    deleteThread: async (threadId) => {
+    deleteThread: async (chatbotId: string, threadId: string) => {
       try {
-        await apiCall<void>(`/threads/${threadId}`, { method: 'DELETE' })
+        await apiCall<void>(`/chatbots/${chatbotId}/threads/${threadId}`, {
+          method: 'DELETE',
+        })
 
         set((state) => {
           const filteredThreads = state.threads.filter((t) => t.id !== threadId)
@@ -218,12 +233,19 @@ export const useChatStore = create<ChatState>((set, get) => {
      * @param threadId - The ID of the thread to update
      * @param title - The new title for the thread
      */
-    updateThreadTitle: async (threadId, title) => {
+    updateThreadTitle: async (
+      chatbotId: string,
+      threadId: string,
+      title: string
+    ) => {
       try {
-        await apiCall<void>(`/threads/${threadId}/title`, {
-          method: 'PUT',
-          body: JSON.stringify({ title }),
-        })
+        await apiCall<void>(
+          `/chatbots/${chatbotId}/threads/${threadId}/title`,
+          {
+            method: 'PUT',
+            body: JSON.stringify({ title }),
+          }
+        )
 
         set((state) => ({
           threads: state.threads.map((thread) =>
@@ -240,17 +262,18 @@ export const useChatStore = create<ChatState>((set, get) => {
      * Creates new thread if none is active
      * Automatically generates a title from the first user message
      *
+     * @param chatbotId - The chatbot ID for thread operations
      * @param message - The message to add to the conversation
      * @returns Promise<string | null> The ID of the thread the message was added to
      */
-    addMessage: async (message) => {
+    addMessage: async (chatbotId: string, message) => {
       const state = get()
 
       let currentThreadId = state.activeThreadId
 
       // create a new thread if none is active
       if (!currentThreadId) {
-        currentThreadId = await get().createThread()
+        currentThreadId = await get().createThread(chatbotId)
         if (!currentThreadId) {
           console.error('Failed to create thread for message')
           return null
@@ -300,10 +323,13 @@ export const useChatStore = create<ChatState>((set, get) => {
           }))
 
           try {
-            await apiCall<void>(`/threads/${currentThreadId}/title`, {
-              method: 'PUT',
-              body: JSON.stringify({ title }),
-            })
+            await apiCall<void>(
+              `/chatbots/${chatbotId}/threads/${currentThreadId}/title`,
+              {
+                method: 'PUT',
+                body: JSON.stringify({ title }),
+              }
+            )
           } catch (error) {
             console.error('Failed to update thread title:', error)
           }

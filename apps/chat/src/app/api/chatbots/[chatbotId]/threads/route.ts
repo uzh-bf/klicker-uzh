@@ -1,6 +1,6 @@
 import { JWTPayload, jwtVerify } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
-import { ThreadService } from '../../services/threads'
+import { ThreadService } from '../../../../../services/threads'
 
 /**
  * Retrieves all chat threads for the authenticated participant ordered by most recently updated.

@@ -1,6 +1,6 @@
 import { JWTPayload, jwtVerify } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
-import { ThreadService } from '../../../services/threads'
+import { ThreadService } from '../../../../../../services/threads'
 
 /**
  * Deletes a specific thread and all its associated messages permanently for the authenticated participant.

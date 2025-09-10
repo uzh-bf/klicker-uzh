@@ -1,9 +1,10 @@
+import { useParams } from 'next/navigation'
 import { useCallback, useRef } from 'react'
+import { generateId } from '../lib/utils/chatUtils'
 import {
   useChatStore,
   type ExtendedThreadMessageLike,
 } from '../stores/chatStore'
-import { generateId } from '../utils/chatUtils'
 
 /**
  * Hook for handling streaming chat responses from the backend.
@@ -20,6 +21,8 @@ import { generateId } from '../utils/chatUtils'
  * @returns Object containing generateChatResponse function and abort controller ref
  */
 export function useChatResponse(selectedModel: string, chatMode: string) {
+  const { chatbotId } = useParams<{ chatbotId: string }>()
+
   const { setMessages, setIsRunning } = useChatStore()
 
   // AbortController to handle request cancellation
@@ -54,7 +57,7 @@ export function useChatResponse(selectedModel: string, chatMode: string) {
 
       try {
         // send request to API with streaming enabled
-        const response = await fetch('/api/chat', {
+        const response = await fetch(`/api/chatbots/${chatbotId}/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: abortController.signal,
@@ -367,7 +370,7 @@ export function useChatResponse(selectedModel: string, chatMode: string) {
         abortControllerRef.current = null
       }
     },
-    [setMessages, setIsRunning, selectedModel, chatMode]
+    [setMessages, setIsRunning, selectedModel, chatMode, chatbotId]
   )
 
   return {

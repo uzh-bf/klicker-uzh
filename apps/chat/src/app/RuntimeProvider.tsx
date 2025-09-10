@@ -8,14 +8,16 @@ import {
 import { useCallback, useEffect } from 'react'
 import { Context7ToolUI } from '../components/assistant-ui/tools-ui/context7-tool-ui'
 import { RAGToolUI } from '../components/assistant-ui/tools-ui/rag-tool-ui'
-import { useChatResponse } from './hooks/useChatResponse'
-import { useThreadManagement } from './hooks/useThreadManagement'
-import { useChatStore } from './stores/chatStore'
-import { useSettingsStore } from './stores/settingsStore'
+import { useChatResponse } from '../hooks/useChatResponse'
+import { useThreadManagement } from '../hooks/useThreadManagement'
+import { useChatStore } from '../stores/chatStore'
+import { useSettingsStore } from '../stores/settingsStore'
 
 export function RuntimeProvider({
+  chatbotId,
   children,
 }: Readonly<{
+  chatbotId: string
   children: React.ReactNode
 }>) {
   const { activeThreadId, threads, setMessages } = useChatStore()
@@ -32,8 +34,8 @@ export function RuntimeProvider({
 
   // load threads on component mount
   useEffect(() => {
-    useChatStore.getState().loadThreads()
-  }, [])
+    useChatStore.getState().loadThreads(chatbotId)
+  }, [chatbotId])
 
   // init chat response handling hook
   const { generateChatResponse, abortControllerRef } = useChatResponse(

@@ -11,13 +11,13 @@ import {
   SidebarInset,
   SidebarProvider,
 } from '@uzh-bf/design-system'
-import { AppSidebar } from '../components/app-sidebar'
-import { Thread } from '../components/assistant-ui/thread'
-import { RuntimeProvider } from './RuntimeProvider'
+import { RuntimeProvider } from '../app/RuntimeProvider'
+import { AppSidebar } from './app-sidebar'
+import { Thread } from './assistant-ui/thread'
 
-export const Assistant = () => {
+export const Assistant = ({ chatbotId }: { chatbotId: string }) => {
   return (
-    <RuntimeProvider>
+    <RuntimeProvider chatbotId={chatbotId}>
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>

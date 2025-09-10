@@ -1,10 +1,13 @@
+'use client'
+
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import { CheckIcon, EditIcon, Trash2, XIcon } from 'lucide-react'
 import type { FC } from 'react'
 import { useState } from 'react'
 
 import { Button, TextField } from '@uzh-bf/design-system'
-import { type Thread, useChatStore } from '../../app/stores/chatStore'
+import { useParams } from 'next/navigation'
+import { useChatStore, type Thread } from '../../stores/chatStore'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 
 export const ThreadList: FC = () => {
@@ -17,10 +20,11 @@ export const ThreadList: FC = () => {
 }
 
 const ThreadListNew: FC = () => {
-  const createThread = useChatStore((state) => state.createThread)
+  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const { createThread } = useChatStore()
 
   const handleNewThread = () => {
-    createThread()
+    createThread(chatbotId)
   }
 
   return (
@@ -38,10 +42,9 @@ const ThreadListNew: FC = () => {
 }
 
 const ThreadListItems: FC = () => {
-  const threads = useChatStore((state) => state.threads)
-  const activeThreadId = useChatStore((state) => state.activeThreadId)
-  const switchToThread = useChatStore((state) => state.switchToThread)
-  const deleteThread = useChatStore((state) => state.deleteThread)
+  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const { threads, activeThreadId, switchToThread, deleteThread } =
+    useChatStore()
 
   return (
     <div className="flex flex-col gap-1">
@@ -50,8 +53,8 @@ const ThreadListItems: FC = () => {
           key={thread.id}
           thread={thread}
           isActive={thread.id === activeThreadId}
-          onSelect={() => switchToThread(thread.id)}
-          onDelete={() => deleteThread(thread.id)}
+          onSelect={() => switchToThread(chatbotId, thread.id)}
+          onDelete={() => deleteThread(chatbotId, thread.id)}
         />
       ))}
     </div>
@@ -71,9 +74,10 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
   onSelect,
   onDelete,
 }) => {
+  const { chatbotId } = useParams<{ chatbotId: string }>()
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState('')
-  const updateThreadTitle = useChatStore((state) => state.updateThreadTitle)
+  const { updateThreadTitle } = useChatStore()
 
   const getThreadTitle = () => {
     if (thread.title) return thread.title
@@ -100,7 +104,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
 
   const handleEditSave = async () => {
     if (editTitle.trim()) {
-      await updateThreadTitle(thread.id, editTitle.trim())
+      await updateThreadTitle(chatbotId, thread.id, editTitle.trim())
     }
     setIsEditing(false)
   }

@@ -1,10 +1,11 @@
 import { type AppendMessage } from '@assistant-ui/react'
+import { useParams } from 'next/navigation'
 import { useCallback } from 'react'
+import { generateId } from '../lib/utils/chatUtils'
 import {
   useChatStore,
   type ExtendedThreadMessageLike,
 } from '../stores/chatStore'
-import { generateId } from '../utils/chatUtils'
 
 /**
  * Hook for managing chat thread operations.
@@ -26,6 +27,7 @@ export function useThreadManagement(
   ) => Promise<void>,
   abortControllerRef: React.MutableRefObject<AbortController | null>
 ) {
+  const { chatbotId } = useParams<{ chatbotId: string }>()
   const { createThread, addMessage, setIsRunning } = useChatStore()
 
   /**
@@ -41,7 +43,7 @@ export function useThreadManagement(
 
       // create new thread if none exists
       if (!threadId) {
-        threadId = await createThread()
+        threadId = await createThread(chatbotId)
         if (!threadId) {
           console.error('Failed to create thread')
           return
@@ -57,7 +59,7 @@ export function useThreadManagement(
         parentId: message.parentId || null,
       }
 
-      await addMessage(userMessage)
+      await addMessage(chatbotId, userMessage)
 
       const currentMessages =
         useChatStore.getState().threads.find((t) => t.id === threadId)
@@ -66,7 +68,7 @@ export function useThreadManagement(
       // generate response based on current conversation
       await generateChatResponse(currentMessages, threadId)
     },
-    [createThread, addMessage, generateChatResponse]
+    [createThread, addMessage, generateChatResponse, chatbotId]
   )
 
   /**
