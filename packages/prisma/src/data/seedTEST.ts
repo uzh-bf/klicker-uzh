@@ -116,7 +116,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   await seedAchievements(prisma)
   await seedUsers(prisma)
   await seedAccounts(prisma)
-  await seedChatbots(prisma)
   await seedCompetencyTree(prisma)
   await seedEmailTemplates(prisma)
 
@@ -371,6 +370,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       notificationEmail: 'notifications@df.uzh.ch',
     })
   )
+
+  await seedChatbots(prisma)
 
   const questionsTest: (Prisma.Element & {
     answerCollection?:

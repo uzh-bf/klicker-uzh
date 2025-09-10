@@ -47,6 +47,7 @@ model Course {
   responses                  QuestionResponse[]
   groupAssignmentPoolEntries GroupAssignmentPoolEntry[]
   timelineEntries            TimelineEntry[]
+  chatbots                   Chatbot[]
 
   directPermissions  Permission[]
   permissions        DerivedPermission[]

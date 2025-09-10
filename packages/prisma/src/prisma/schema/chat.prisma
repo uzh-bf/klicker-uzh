@@ -61,6 +61,9 @@ model Chatbot {
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
 
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

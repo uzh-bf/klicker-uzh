@@ -1,5 +1,5 @@
 import * as Prisma from '../client.js'
-import { USER_ID_TEST } from './constants.js'
+import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
 
 export const CHATBOT_ID_TEST = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
 
@@ -16,6 +16,7 @@ export async function seedChatbots(prisma: Prisma.PrismaClient) {
         'A helpful chatbot for answering questions about KlickerUZH and educational content.',
       avatar: CHATBOT_AVATAR_HASH,
       ownerId: USER_ID_TEST,
+      courseId: COURSE_ID_TEST,
     },
   })
 
