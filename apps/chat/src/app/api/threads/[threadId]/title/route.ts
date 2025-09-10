@@ -1,22 +1,60 @@
+import { JWTPayload, jwtVerify } from 'jose'
+import { NextRequest, NextResponse } from 'next/server'
 import { ThreadService } from '../../../../services/threads'
 
 /**
- * Updates the title of a specific thread.
+ * Updates the title of a specific thread for the authenticated participant.
  * Used when user renames a thread or system auto-generates titles.
  */
 export async function PUT(
-  req: Request,
+  req: NextRequest,
   { params }: { params: Promise<{ threadId: string }> }
 ) {
+  const participantToken = req.cookies.get('participant_token')?.value
+
+  if (!participantToken) {
+    return NextResponse.json(
+      { error: 'No authentication token found' },
+      { status: 401 }
+    )
+  }
+
+  let participantData: JWTPayload
+  try {
+    const jwtPayload = await jwtVerify(
+      participantToken,
+      new TextEncoder().encode(process.env.APP_SECRET || '')
+    )
+    participantData = jwtPayload.payload
+  } catch (error) {
+    console.error('JWT verification failed:', error)
+    return NextResponse.json(
+      { error: 'Invalid authentication token' },
+      { status: 401 }
+    )
+  }
+
   try {
     const { threadId } = await params
     const { title } = await req.json()
 
-    await ThreadService.updateThreadTitle(threadId, title)
-    return Response.json({ message: 'Thread title updated' })
+    const updatedThread = await ThreadService.updateThreadTitle(
+      threadId,
+      participantData.sub as string,
+      title
+    )
+
+    if (!updatedThread) {
+      return NextResponse.json({ error: 'Thread not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({
+      message: 'Thread title updated',
+      thread: updatedThread,
+    })
   } catch (error) {
     console.error('Failed to update thread title:', error)
-    return Response.json(
+    return NextResponse.json(
       { error: 'Failed to update thread title' },
       { status: 500 }
     )

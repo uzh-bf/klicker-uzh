@@ -28,7 +28,7 @@ const ThreadListNew: FC = () => {
       onClick={handleNewThread}
       basic
       className={{
-        root: 'data-[active]:bg-muted hover:bg-muted mx-6 my-2 flex items-center rounded-lg border-2 px-2.5 py-1',
+        root: 'hover:bg-muted mx-6 my-2 flex items-center rounded-lg border-2 px-2.5 py-1',
       }}
     >
       <Button.Icon icon={faPlus} />
@@ -120,7 +120,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
 
   return (
     <div
-      className={`data-[active]:bg-muted hover:bg-muted focus-visible:bg-muted focus-visible:ring-ring flex items-center gap-2 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 ${isActive ? 'bg-muted' : ''}`}
+      className={`hover:bg-muted focus-visible:bg-muted focus-visible:ring-ring flex items-center gap-2 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 ${isActive ? 'bg-muted' : ''}`}
     >
       {isEditing ? (
         <>

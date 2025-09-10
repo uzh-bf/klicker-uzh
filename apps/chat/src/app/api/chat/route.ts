@@ -9,9 +9,10 @@ import {
   type LanguageModel,
 } from 'ai'
 import { JWTPayload, jwtVerify } from 'jose'
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getSystemPrompt, type ChatbotMode } from '../../../lib/config/prompts'
 import { getContext7Tools } from '../../services/mcpClients'
+import { ThreadService } from '../../services/threads'
 import { RAGSearch } from '../../services/tools'
 
 export const maxDuration = 30
@@ -22,18 +23,27 @@ export const maxDuration = 30
  */
 export async function POST(req: NextRequest) {
   const participantToken = req.cookies.get('participant_token')?.value
-  let participantData: JWTPayload
 
+  if (!participantToken) {
+    return NextResponse.json(
+      { error: 'No authentication token found' },
+      { status: 401 }
+    )
+  }
+
+  let participantData: JWTPayload
   try {
     const jwtPayload = await jwtVerify(
-      participantToken || '',
+      participantToken,
       new TextEncoder().encode(process.env.APP_SECRET || '')
     )
     participantData = jwtPayload.payload
   } catch (error) {
-    console.error('Invalid participant token:', error)
-    // redirect to pwa.klicker.com
-    return Response.redirect('https://pwa.klicker.com', 302)
+    console.error('Unexpected JWT verification failure in API route:', error)
+    return NextResponse.json(
+      { error: 'Invalid authentication token' },
+      { status: 401 }
+    )
   }
 
   const {
@@ -58,14 +68,10 @@ export async function POST(req: NextRequest) {
   // create a new thread if none exists
   if (!currentThreadId && messages.length > 0) {
     try {
-      const newThread = await prisma.chatThread.create({
-        data: {
-          title: null,
-          participant: {
-            connect: { id: participantData.sub },
-          },
-        },
-      })
+      const newThread = await ThreadService.createThread(
+        participantData.sub as string,
+        null
+      )
       currentThreadId = newThread.id
     } catch (error) {
       console.error('Failed to create thread:', error)

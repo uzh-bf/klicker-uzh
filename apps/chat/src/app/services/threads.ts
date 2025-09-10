@@ -27,12 +27,15 @@ export class ThreadService {
   /**
    * Creates new thread with optional title
    */
-  static async createThread(title?: string | null): Promise<Thread> {
+  static async createThread(
+    participantId: string,
+    title?: string | null
+  ): Promise<Thread> {
     const thread = await prisma.chatThread.create({
       data: {
         title,
         participant: {
-          connect: { id: '6f45065c-667f-4259-818c-c6f6b477eb48' },
+          connect: { id: participantId },
         },
       },
     })
@@ -41,10 +44,11 @@ export class ThreadService {
   }
 
   /**
-   * Retrieves all threads ordered by most recently updated
+   * Retrieves all threads for a specific participant ordered by most recently updated
    */
-  static async getAllThreads(): Promise<Thread[]> {
+  static async getAllThreads(participantId: string): Promise<Thread[]> {
     const threads = await prisma.chatThread.findMany({
+      where: { participantId },
       orderBy: { updatedAt: 'desc' },
     })
 
@@ -52,11 +56,17 @@ export class ThreadService {
   }
 
   /**
-   * Retrieves a specific thread by ID
+   * Retrieves a specific thread by ID if it belongs to the participant
    */
-  static async getThreadById(threadId: string): Promise<Thread | null> {
-    const thread = await prisma.chatThread.findUnique({
-      where: { id: threadId },
+  static async getThreadById(
+    threadId: string,
+    participantId: string
+  ): Promise<Thread | null> {
+    const thread = await prisma.chatThread.findFirst({
+      where: {
+        id: threadId,
+        participantId,
+      },
     })
 
     if (!thread) return null
@@ -64,12 +74,17 @@ export class ThreadService {
   }
 
   /**
-   * Updates thread title
+   * Updates thread title if it belongs to the participant
    */
   static async updateThreadTitle(
     threadId: string,
+    participantId: string,
     title: string
-  ): Promise<Thread> {
+  ): Promise<Thread | null> {
+    // verify ownership
+    const existingThread = await this.getThreadById(threadId, participantId)
+    if (!existingThread) return null
+
     const thread = await prisma.chatThread.update({
       where: { id: threadId },
       data: { title },
@@ -79,9 +94,16 @@ export class ThreadService {
   }
 
   /**
-   * Deletes a thread and all its associated messages
+   * Deletes a thread and all its associated messages if it belongs to the participant
    */
-  static async deleteThread(threadId: string): Promise<void> {
+  static async deleteThread(
+    threadId: string,
+    participantId: string
+  ): Promise<boolean> {
+    // verify ownership
+    const existingThread = await this.getThreadById(threadId, participantId)
+    if (!existingThread) return false
+
     // delete messages first
     await prisma.chatMessage.deleteMany({
       where: { threadId },
@@ -91,6 +113,8 @@ export class ThreadService {
     await prisma.chatThread.delete({
       where: { id: threadId },
     })
+
+    return true
   }
 
   /**
