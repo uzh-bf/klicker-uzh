@@ -116,6 +116,7 @@ model User {
   liveQuizzes       LiveQuiz[]
   competencyTrees   CompetencyTree[]
   answerCollections AnswerCollection[]
+  chatbots          Chatbot[]
 
   userGroups                UserGroup[]         @relation("UserGroupMembers")
   adminUserGroups           UserGroup[]         @relation("UserGroupAdmins")

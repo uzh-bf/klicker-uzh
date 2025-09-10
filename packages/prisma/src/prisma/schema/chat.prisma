@@ -1,26 +1,66 @@
+model ChatUsageCredits {
+  id String @id @default(uuid()) @db.Uuid
+
+  total   Int @default(0)
+  current Int @default(0)
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chatbotId String  @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, chatbotId])
+}
+
 model ChatThread {
-  id         String      @id @default(cuid())
-  title      String?
-  createdAt  DateTime    @default(now()) @map("created_at")
-  updatedAt  DateTime    @updatedAt @map("updated_at")
+  id    String  @id @default(uuid()) @db.Uuid
+  title String?
 
-  messages   ChatMessage[]
+  messages ChatMessage[]
 
-  @@map("ChatThread")
+  participant   Participant @relation(fields: [participantId], references: [id])
+  participantId String      @db.Uuid
+
+  chatbot   Chatbot? @relation(fields: [chatbotId], references: [id])
+  chatbotId String?  @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ChatMessage {
-  id        String    @id @default(cuid())
-  threadId  String    @map("thread_id")
-  parentId  String?
-  role      String    // 'user' | 'assistant'
-  content   Json      // Array<{ type: string; text: string }>
+  id       String  @id @default(uuid()) @db.Uuid
+  threadId String  @db.Uuid
+  parentId String? @db.Uuid
+  role     String // 'user' | 'assistant'
+  content  Json // Array<{ type: string; text: string }>
 
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
+  thread ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
 
-  thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  @@index([threadId])
   @@index([parentId])
-  @@map("ChatMessage")
+}
+
+model Chatbot {
+  id String @id @default(uuid()) @db.Uuid
+
+  name        String
+  description String?
+  avatar      String? // URL to avatar image
+
+  threads      ChatThread[]
+  usageCredits ChatUsageCredits[]
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
