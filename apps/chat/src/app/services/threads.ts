@@ -29,7 +29,12 @@ export class ThreadService {
    */
   static async createThread(title?: string | null): Promise<Thread> {
     const thread = await prisma.chatThread.create({
-      data: { title },
+      data: {
+        title,
+        participant: {
+          connect: { id: '6f45065c-667f-4259-818c-c6f6b477eb48' },
+        },
+      },
     })
 
     return this.mapThreadToResponse(thread)

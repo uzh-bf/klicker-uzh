@@ -1,8 +1,8 @@
+import { useCallback, useRef } from 'react'
 import {
   useChatStore,
   type ExtendedThreadMessageLike,
-} from '@/app/stores/chatStore'
-import { useCallback, useRef } from 'react'
+} from '../stores/chatStore'
 import { generateId } from '../utils/chatUtils'
 
 /**

@@ -3,13 +3,9 @@ import { CheckIcon, EditIcon, Trash2, XIcon } from 'lucide-react'
 import type { FC } from 'react'
 import { useState } from 'react'
 
-import { useChatStore, type Thread } from '@/app/stores/chatStore'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 import { Button, TextField } from '@uzh-bf/design-system'
+import { type Thread, useChatStore } from '../../app/stores/chatStore'
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 
 export const ThreadList: FC = () => {
   return (

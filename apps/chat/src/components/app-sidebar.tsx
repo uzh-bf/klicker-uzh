@@ -1,9 +1,4 @@
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
-import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -20,6 +15,7 @@ import Link from 'next/link'
 import * as React from 'react'
 import { SettingsPanel } from './assistant-ui/settings-panel'
 import { ThreadList } from './assistant-ui/thread-list'
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (

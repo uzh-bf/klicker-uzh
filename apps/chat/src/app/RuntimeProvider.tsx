@@ -1,17 +1,17 @@
 'use client'
 
-import { useChatResponse } from '@/app/hooks/useChatResponse'
-import { useThreadManagement } from '@/app/hooks/useThreadManagement'
-import { useChatStore } from '@/app/stores/chatStore'
-import { useSettingsStore } from '@/app/stores/settingsStore'
-import { Context7ToolUI } from '@/components/assistant-ui/tools-ui/context7-tool-ui'
-import { RAGToolUI } from '@/components/assistant-ui/tools-ui/rag-tool-ui'
 import {
   AssistantRuntimeProvider,
   useExternalStoreRuntime,
   type ThreadMessageLike,
 } from '@assistant-ui/react'
 import { useCallback, useEffect } from 'react'
+import { Context7ToolUI } from '../components/assistant-ui/tools-ui/context7-tool-ui'
+import { RAGToolUI } from '../components/assistant-ui/tools-ui/rag-tool-ui'
+import { useChatResponse } from './hooks/useChatResponse'
+import { useThreadManagement } from './hooks/useThreadManagement'
+import { useChatStore } from './stores/chatStore'
+import { useSettingsStore } from './stores/settingsStore'
 
 export function RuntimeProvider({
   children,

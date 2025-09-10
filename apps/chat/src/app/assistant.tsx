@@ -1,8 +1,5 @@
 'use client'
 
-import { RuntimeProvider } from '@/app/RuntimeProvider'
-import { AppSidebar } from '@/components/app-sidebar'
-import { Thread } from '@/components/assistant-ui/thread'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import {
   Breadcrumb,
@@ -14,6 +11,9 @@ import {
   SidebarInset,
   SidebarProvider,
 } from '@uzh-bf/design-system'
+import { AppSidebar } from '../components/app-sidebar'
+import { Thread } from '../components/assistant-ui/thread'
+import { RuntimeProvider } from './RuntimeProvider'
 
 export const Assistant = () => {
   return (

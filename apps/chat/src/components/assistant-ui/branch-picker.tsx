@@ -1,13 +1,9 @@
 'use client'
 
-import { useChatStore } from '@/app/stores/chatStore'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
+import { useChatStore } from '../../app/stores/chatStore'
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 
 interface BranchPickerProps {
   messageId: string

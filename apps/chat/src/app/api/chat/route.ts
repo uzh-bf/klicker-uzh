@@ -1,6 +1,3 @@
-import { getContext7Tools } from '@/app/services/mcpClients'
-import { RAGSearch } from '@/app/services/tools'
-import { getSystemPrompt, type ChatbotMode } from '@/lib/config/prompts'
 import { anthropic } from '@ai-sdk/anthropic'
 import { openai } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
@@ -11,6 +8,11 @@ import {
   UIMessage,
   type LanguageModel,
 } from 'ai'
+import { JWTPayload, jwtVerify } from 'jose'
+import { NextRequest } from 'next/server'
+import { getSystemPrompt, type ChatbotMode } from '../../../lib/config/prompts'
+import { getContext7Tools } from '../../services/mcpClients'
+import { RAGSearch } from '../../services/tools'
 
 export const maxDuration = 30
 
@@ -18,7 +20,22 @@ export const maxDuration = 30
  * Main chat endpoint that processes AI conversations with streaming responses.
  * Handles thread creation, message persistence, and AI model interactions with tools.
  */
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const participantToken = req.cookies.get('participant_token')?.value
+  let participantData: JWTPayload
+
+  try {
+    const jwtPayload = await jwtVerify(
+      participantToken || '',
+      new TextEncoder().encode(process.env.APP_SECRET || '')
+    )
+    participantData = jwtPayload.payload
+  } catch (error) {
+    console.error('Invalid participant token:', error)
+    // redirect to pwa.klicker.com
+    return Response.redirect('https://pwa.klicker.com', 302)
+  }
+
   const {
     messages,
     threadId,
@@ -44,6 +61,9 @@ export async function POST(req: Request) {
       const newThread = await prisma.chatThread.create({
         data: {
           title: null,
+          participant: {
+            connect: { id: participantData.sub },
+          },
         },
       })
       currentThreadId = newThread.id

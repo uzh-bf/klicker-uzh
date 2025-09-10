@@ -20,6 +20,7 @@ export async function createContext7MCPClient() {
           headers: apiKey
             ? {
                 Authorization: `Bearer ${apiKey}`,
+                'Chatbot-ID': 'TODO',
                 'Content-Type': 'application/json',
               }
             : {

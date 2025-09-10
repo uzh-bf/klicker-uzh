@@ -1,8 +1,9 @@
 'use client'
 
-import { useSettingsStore } from '@/app/stores/settingsStore'
-import { type ModelProvider } from '@/lib/config/models'
-import { type ChatbotMode } from '@/lib/config/prompts'
+import { useSettingsStore } from '../../app/stores/settingsStore'
+import { type ModelProvider } from '../../lib/config/models'
+import { type ChatbotMode } from '../../lib/config/prompts'
+
 import { Progress, Select, Separator } from '@uzh-bf/design-system'
 import { Settings2, Zap } from 'lucide-react'
 

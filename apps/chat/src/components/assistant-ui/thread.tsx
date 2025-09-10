@@ -15,15 +15,11 @@ import {
 } from 'lucide-react'
 import type { FC } from 'react'
 
-import { BranchPicker } from '@/components/assistant-ui/branch-picker'
-import { MarkdownText } from '@/components/assistant-ui/markdown-text'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
-import { getThreadSuggestions } from '@/lib/config/suggestions'
 import { Button } from '@uzh-bf/design-system'
+import { getThreadSuggestions } from '../../lib/config/suggestions'
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
+import { BranchPicker } from './branch-picker'
+import { MarkdownText } from './markdown-text'
 import { ToolFallback } from './tool-fallback'
 
 export const Thread: FC = () => {

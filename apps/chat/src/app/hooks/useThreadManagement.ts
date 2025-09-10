@@ -1,9 +1,9 @@
+import { type AppendMessage } from '@assistant-ui/react'
+import { useCallback } from 'react'
 import {
   useChatStore,
   type ExtendedThreadMessageLike,
-} from '@/app/stores/chatStore'
-import { type AppendMessage } from '@assistant-ui/react'
-import { useCallback } from 'react'
+} from '../stores/chatStore'
 import { generateId } from '../utils/chatUtils'
 
 /**
