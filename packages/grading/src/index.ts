@@ -274,7 +274,7 @@ export function gradeQuestionCaseStudy({
 
 // ! Function to compute awarded points for instances in synchronous activities
 interface ComputeAwardedPointsArgs {
-  firstResponseReceivedAt: string | null
+  firstResponseReceivedAt?: string | null
   responseTimestamp: number
   maxBonus: number
   timeToZeroBonus?: number
@@ -284,6 +284,7 @@ interface ComputeAwardedPointsArgs {
   pointsPercentage?: number | null
   basePoints: boolean
   pointsMultiplier?: number | string | null
+  roundedResult: boolean
 }
 export function computeAwardedPoints({
   firstResponseReceivedAt,
@@ -296,6 +297,7 @@ export function computeAwardedPoints({
   pointsPercentage,
   basePoints, // flag if based points should be awarded
   pointsMultiplier,
+  roundedResult = false,
 }: ComputeAwardedPointsArgs): number {
   const slope = maxBonus / (timeToZeroBonus ?? 20)
 
@@ -327,7 +329,11 @@ export function computeAwardedPoints({
 
   awardedPoints += basePoints ? (defaultPoints ?? 0) : 0
 
-  return Math.round(awardedPoints)
+  if (roundedResult) {
+    return Math.round(awardedPoints)
+  }
+
+  return awardedPoints
 }
 
 // ! Function to compute awarded points for instances in asynchronous activities

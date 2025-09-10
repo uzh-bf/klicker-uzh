@@ -162,7 +162,7 @@ services:
       NOTIFICATION_URL: 'noone@klicker.com'
       REDIS_CACHE_HOST: 'redis_cache'
       REDIS_CACHE_PASS: ''
-      REDIS_CACHE_PORT: 6380
+      REDIS_CACHE_PORT: 6379
       REDIS_HOST: 'redis_exec'
       REDIS_PASS: ''
       REDIS_PORT: 6379
