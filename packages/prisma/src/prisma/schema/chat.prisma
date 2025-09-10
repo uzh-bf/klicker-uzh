@@ -25,8 +25,8 @@ model ChatThread {
   participant   Participant @relation(fields: [participantId], references: [id])
   participantId String      @db.Uuid
 
-  chatbot   Chatbot? @relation(fields: [chatbotId], references: [id])
-  chatbotId String?  @db.Uuid
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id])
+  chatbotId String  @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
