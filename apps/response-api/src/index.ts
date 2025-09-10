@@ -1,5 +1,6 @@
 // TODO: ugly AI implementation, to be replaced with a go service for optimized performance
 
+import { verifyJWT } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
 import { hatchet } from './hatchet-client.js'
@@ -144,18 +145,74 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     responseTimestamp: Date.now(),
   }
 
-  const eventName = cookie
+  // determine if the participant is logged in with a valid student cookie (temporary or standard)
+  const isAuthenticatedParticipant =
+    cookie &&
+    (cookie.includes('participant_token=') ||
+      cookie.includes('temporary_participant_token='))
+
+  // depending on the authentication state, add the response to the correct hatchet event queue
+  const eventName = isAuthenticatedParticipant
     ? 'response-received:authenticated'
     : 'response-received:anonymous'
   console.log(`Pushing event ${eventName} with payload`, message)
-  await hatchet.event.push(eventName, message)
+
+  await hatchet.events.push(eventName, message)
+  return sendJson(req, res, 200, { status: 'ok' })
+}
+
+async function handleAddAssessmentResponse(
+  req: IncomingMessage,
+  res: ServerResponse
+) {
+  // TODO: check if answer already exists in votes table for assessment -> early return
+  let payload: any
+  try {
+    payload = await readBody(req)
+  } catch (err: any) {
+    return badRequest(req, res, err.message)
+  }
+
+  if (!payload || typeof payload !== 'object') {
+    return badRequest(req, res, 'Body must be a JSON object')
+  }
+
+  const { response, sessionId, instanceId } = payload
+  if (!response || !sessionId || typeof instanceId === 'undefined') {
+    return badRequest(
+      req,
+      res,
+      'Missing required fields: response, sessionId, instanceId'
+    )
+  }
+
+  const cookie =
+    typeof req.headers['cookie'] === 'string'
+      ? req.headers['cookie']
+      : undefined
+
+  const message = {
+    messageId: randomUUID(),
+    sessionId: String(sessionId),
+    instanceId: String(instanceId),
+    response: response, // pass through as-is; worker validates
+    cookie,
+    responseTimestamp: Date.now(),
+  }
+
+  // start the processing of an assessment response
+  console.log(
+    `Pushing event ${'response-received:assessment'} with payload`,
+    message
+  )
+  await hatchet.events.push('response-received:assessment', message)
 
   return sendJson(req, res, 200, { status: 'ok' })
 }
 
 const server = createServer(async (req, res) => {
   try {
-    // Handle CORS preflight requests
+    // handle CORS preflight requests
     if (req.method === 'OPTIONS') {
       setCorsHeaders(req, res)
       res.statusCode = 204
@@ -164,7 +221,7 @@ const server = createServer(async (req, res) => {
 
     const url = new URL(req.url || '/', 'http://localhost')
 
-    // Health check endpoint
+    // health check endpoint
     if (
       req.method === 'GET' &&
       (url.pathname === '/healthz' || url.pathname === '/')
@@ -172,12 +229,46 @@ const server = createServer(async (req, res) => {
       return sendJson(req, res, 200, { status: 'ok' })
     }
 
-    // Route for adding a response
+    // add response endpoint
     if (url.pathname === '/AddResponse' && req.method === 'POST') {
-      return await handleAddResponse(req, res)
+      // if not in assessment mode, call standard processing logic
+      if (process.env.ASSESSMENT_MODE === 'true') {
+        const cookies = req.headers['cookie']
+
+        // parse the cookies that are of the format key=value; key2=value2
+        const parsedCookies: Record<string, string> = {}
+        if (cookies) {
+          cookies.split(';').forEach((cookie) => {
+            const [key, value] = cookie.trim().split('=')
+            if (key && value) parsedCookies[key] = value
+          })
+        }
+
+        // TODO: add some verification mechanism that student did not set a regular participant cookie as their assessment cookie
+        // check if the assessment cookie is present and valid
+        const user = parsedCookies['next-auth.participant-session-token']
+          ? await verifyJWT(
+              parsedCookies['next-auth.participant-session-token'],
+              process.env.APP_SECRET as string
+            )
+          : null
+        const isAssessmentCookieValid = !!user && user.role === 'PARTICIPANT'
+
+        if (!isAssessmentCookieValid) {
+          return sendJson(req, res, 401, {
+            error: 'Missing or invalid assessment cookie',
+          })
+        }
+
+        return await handleAddAssessmentResponse(req, res)
+      } else {
+        // call the standard processing function, which will distinguish between authenticated and anonymous modes
+        // if a valid cookie exists is not relevant at this point -> otherwise answers are simply treated as anonymous
+        return await handleAddResponse(req, res)
+      }
     }
 
-    // Fallback to 404 Not Found
+    // fallback to 404 Not Found
     return notFound(req, res)
   } catch (err: any) {
     console.error('Server error', err)

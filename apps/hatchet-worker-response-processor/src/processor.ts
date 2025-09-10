@@ -2,6 +2,7 @@
 
 // TODO: code from azure function, requires a complete rework to hatchet best practices (e.g., as a DAG etc. for immutability and retriability)
 
+// TODO: add additional processor with assessment logic
 import type {
   Context,
   DurableContext,
@@ -34,7 +35,7 @@ import getRedis from './redis.js'
 // TODO: ensure that the response meets the restrictions specified in the element options
 
 export type Message = {
-  messageId: string // TODO: to be used as correlation id
+  messageId: string
   sessionId: string
   instanceId: string
   response: ResponseInput
