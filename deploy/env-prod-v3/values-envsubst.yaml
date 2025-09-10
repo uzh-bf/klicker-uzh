@@ -20,28 +20,28 @@ auth:
     tag: argocd
   ingress:
     annotations:
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
 
 frontendPWA:
   image:
     tag: argocd
   ingress:
     annotations:
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
 
 frontendManage:
   image:
     tag: argocd
   ingress:
     annotations:
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
 
 frontendControl:
   image:
     tag: argocd
   ingress:
     annotations:
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
 
 backendGraphql:
   image:
@@ -50,7 +50,7 @@ backendGraphql:
   cookieDomain: .klicker-prod.prd.example.df-app.ch
   ingress:
     annotations:
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
 
   appManageSubdomain: manage
   appManageDomain: manage.klicker-prod.prd.example.df-app.ch
@@ -77,7 +77,7 @@ olatApi:
     tag: argocd
   ingress:
     annotations:
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
 
 lti:
   replicaCount: 4
@@ -85,7 +85,7 @@ lti:
     tag: argocd
   ingress:
     annotations:
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
 
   redirectURL: https://lti.klicker-prod.prd.example.df-app.ch
   cookieDomain: .klicker-prod.prd.example.df-app.ch
