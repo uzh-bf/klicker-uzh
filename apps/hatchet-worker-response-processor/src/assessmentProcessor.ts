@@ -44,7 +44,6 @@ export async function processAssessmentResponse(
   ctx.v1.events.push('create-audit-log-entry', {
     correlationId: message.correlationId,
     info: `[AddResponse Assessment] Processing response for instance ${message.instanceId} by participant ${message.participantId}.`,
-    message,
   })
 
   try {
@@ -89,8 +88,8 @@ export async function processAssessmentResponse(
       `Element instance metadata for instance ${message.instanceId} not found.`
     )
     ctx.v1.events.push('create-audit-log-entry', {
-      info: `[AddResponse Assessment] Instance metadata for instance ${message.instanceId} not found.`,
       correlationId: message.correlationId,
+      info: `[AddResponse Assessment] Instance metadata for instance ${message.instanceId} not found.`,
     })
     throw new Error('Instance metadata not found')
   }
@@ -117,7 +116,7 @@ export async function processAssessmentResponse(
     ctx.logger.info('Response received after element block was closed')
     ctx.v1.events.push('create-audit-log-entry', {
       correlationId: message.correlationId,
-      info: `[AddResponse Assessment] Response received after block of element instance ${message.instanceId} was closed.`,
+      info: `[AddResponse Assessment] Response received after block of element instance ${message.instanceId} was closed at ${new Date(blockClosedAt)}.`,
     })
     return { status: 200 }
   }
@@ -154,8 +153,7 @@ export async function processAssessmentResponse(
         ctx.logger.error(`Missing response choices: ${JSON.stringify(message)}`)
         ctx.v1.events.push('create-audit-log-entry', {
           correlationId: message.correlationId,
-          info: `[AddResponse Assessment] Missing response choices for instance ${message.instanceId}.`,
-          response,
+          info: `[AddResponse Assessment] Response to choices question (instance id ${message.instanceId}) does not contain choices.`,
         })
         throw new Error('Missing response choices')
       }
@@ -187,8 +185,7 @@ export async function processAssessmentResponse(
         ctx.logger.error(`Missing response value: ${JSON.stringify(message)}`)
         ctx.v1.events.push('create-audit-log-entry', {
           correlationId: message.correlationId,
-          info: `[AddResponse Assessment] Missing response value for instance ${message.instanceId}.`,
-          response,
+          info: `[AddResponse Assessment] Response to numerical question (instance id ${message.instanceId}) does not contain value.`,
         })
         throw new Error('Missing response value')
       }
@@ -218,8 +215,7 @@ export async function processAssessmentResponse(
         ctx.logger.error(`Missing response value: ${JSON.stringify(message)}`)
         ctx.v1.events.push('create-audit-log-entry', {
           correlationId: message.correlationId,
-          info: `[AddResponse Assessment] Missing response value for instance ${message.instanceId}.`,
-          response,
+          info: `[AddResponse Assessment] Response to free text question (instance id ${message.instanceId}) does not contain value.`,
         })
         throw new Error('Missing response value')
       }
@@ -250,8 +246,7 @@ export async function processAssessmentResponse(
         )
         ctx.v1.events.push('create-audit-log-entry', {
           correlationId: message.correlationId,
-          info: `[AddResponse Assessment] Missing response selection for instance ${message.instanceId}.`,
-          response,
+          info: `[AddResponse Assessment] Response to selection question (instance id ${message.instanceId}) does not contain selection.`,
         })
         throw new Error('Missing response selection')
       }
@@ -282,8 +277,7 @@ export async function processAssessmentResponse(
         )
         ctx.v1.events.push('create-audit-log-entry', {
           correlationId: message.correlationId,
-          info: `[AddResponse Assessment] Missing response assessment for instance ${message.instanceId}.`,
-          response,
+          info: `[AddResponse Assessment] Response to case study question (instance id ${message.instanceId}) does not contain assessments.`,
         })
         throw new Error('Missing response assessment')
       }
@@ -327,7 +321,6 @@ export async function processAssessmentResponse(
   ctx.v1.events.push('create-audit-log-entry', {
     correlationId: message.correlationId,
     info: `[AddResponse Assessment] Computed points for instance ${message.instanceId}. Base Points: ${awardedBasePoints}, Correctness Points: ${awardedCorrectnessPoints}, Bonus Points: ${awardedBonusPoints}, XP: ${awardedXp}.`,
-    response,
   })
 
   // ! Step 3: Directly store the submitted response in the live quiz responses table and add entry to redis votes list for successful response
@@ -358,7 +351,6 @@ export async function processAssessmentResponse(
     ctx.v1.events.push('create-audit-log-entry', {
       correlationId: message.correlationId,
       info: `[AddResponse Assessment] Failed to create live quiz response for instance ${message.instanceId} and participant ${message.participantId}.`,
-      response,
     })
     throw new NonRetryableError(
       `Live quiz response creation failed with the following error: ${JSON.stringify(e)}`
