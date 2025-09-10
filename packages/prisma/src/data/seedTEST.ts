@@ -31,6 +31,7 @@ import {
 } from './helpers.js'
 import { seedAccounts } from './seedAccounts.js'
 import { seedAchievements } from './seedAchievements.js'
+import { seedChatbots } from './seedChatbots.js'
 import { seedCompetencyTree } from './seedCompetencyTree.js'
 import { seedEmailTemplates } from './seedEmailTemplates.js'
 import { seedLevels } from './seedLevels.js'
@@ -115,6 +116,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   await seedAchievements(prisma)
   await seedUsers(prisma)
   await seedAccounts(prisma)
+  await seedChatbots(prisma)
   await seedCompetencyTree(prisma)
   await seedEmailTemplates(prisma)
 
