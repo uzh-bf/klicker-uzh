@@ -12,6 +12,10 @@ on:
       - 'packages/graphql/**'
       - '.github/workflows/test-graphql.yml'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   test:
     if: github.event.pull_request.draft == false
@@ -112,7 +116,7 @@ jobs:
 
       - name: Run tests
         run: |
-          ./util/_create_hatchet_token_graphql.sh
+          . ./util/_create_hatchet_token_graphql.sh
           cd packages/graphql
           pnpm vitest run
         env:
