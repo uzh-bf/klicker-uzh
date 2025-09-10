@@ -11,7 +11,7 @@ import { useServer } from 'graphql-ws/lib/use/ws'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import { EventEmitter } from 'node:events'
-import { WebSocketServer } from 'ws'
+import * as WebSocket from 'ws'
 import prepareApp from './app.js'
 import { migrate } from './migration.js'
 
@@ -121,7 +121,7 @@ migrate(prisma).then(() => {
   const server = app.listen(3000, () => {
     console.log(`GraphQL API located at 0.0.0.0:3000${yogaApp.graphqlEndpoint}`)
 
-    const wsServer = new WebSocketServer({
+    const wsServer = new WebSocket.WebSocketServer({
       server,
       path: yogaApp.graphqlEndpoint,
     })
@@ -170,7 +170,7 @@ migrate(prisma).then(() => {
           return args
         },
       },
-      wsServer as unknown as WebSocketServer
+      wsServer as Parameters<typeof useServer>[1]
     )
   })
 })
