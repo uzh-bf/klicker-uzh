@@ -8,8 +8,9 @@ import { ThreadService } from '../../../services/threads'
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ threadId: string }> }
+  { params }: { params: Promise<{ chatbotId: string; threadId: string }> }
 ) {
+  const { chatbotId, threadId } = await params
   const participantToken = req.cookies.get('participant_token')?.value
 
   if (!participantToken) {
@@ -35,11 +36,10 @@ export async function DELETE(
   }
 
   try {
-    const { threadId } = await params
-
     const deleted = await ThreadService.deleteThread(
       threadId,
-      participantData.sub as string
+      participantData.sub as string,
+      chatbotId
     )
     if (!deleted) {
       return NextResponse.json({ error: 'Thread not found' }, { status: 404 })

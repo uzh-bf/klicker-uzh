@@ -8,8 +8,9 @@ import { ThreadService } from '../../../../services/threads'
  */
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ threadId: string }> }
+  { params }: { params: Promise<{ chatbotId: string; threadId: string }> }
 ) {
+  const { chatbotId, threadId } = await params
   const participantToken = req.cookies.get('participant_token')?.value
 
   if (!participantToken) {
@@ -35,12 +36,12 @@ export async function PUT(
   }
 
   try {
-    const { threadId } = await params
     const { title } = await req.json()
 
     const updatedThread = await ThreadService.updateThreadTitle(
       threadId,
       participantData.sub as string,
+      chatbotId,
       title
     )
 

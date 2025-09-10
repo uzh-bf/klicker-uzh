@@ -6,7 +6,11 @@ import { ThreadService } from '../../services/threads'
  * Retrieves all chat threads for the authenticated participant ordered by most recently updated.
  * Used by the frontend to display threads in the sidebar.
  */
-export async function GET(req: NextRequest) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ chatbotId: string }> }
+) {
+  const { chatbotId } = await params
   const participantToken = req.cookies.get('participant_token')?.value
 
   if (!participantToken) {
@@ -33,7 +37,8 @@ export async function GET(req: NextRequest) {
 
   try {
     const threads = await ThreadService.getAllThreads(
-      participantData.sub as string
+      participantData.sub as string,
+      chatbotId
     )
     return NextResponse.json(threads)
   } catch (error) {
@@ -49,7 +54,11 @@ export async function GET(req: NextRequest) {
  * Creates a new chat thread with an optional title for the authenticated participant.
  * Used when explicitly creating a thread or starting a new conversation.
  */
-export async function POST(req: NextRequest) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ chatbotId: string }> }
+) {
+  const { chatbotId } = await params
   const participantToken = req.cookies.get('participant_token')?.value
 
   if (!participantToken) {
@@ -78,6 +87,7 @@ export async function POST(req: NextRequest) {
     const { title } = await req.json()
     const thread = await ThreadService.createThread(
       participantData.sub as string,
+      chatbotId,
       title
     )
     return NextResponse.json(thread)

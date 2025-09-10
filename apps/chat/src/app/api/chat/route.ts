@@ -21,7 +21,11 @@ export const maxDuration = 30
  * Main chat endpoint that processes AI conversations with streaming responses.
  * Handles thread creation, message persistence, and AI model interactions with tools.
  */
-export async function POST(req: NextRequest) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ chatbotId: string }> }
+) {
+  const { chatbotId } = await params
   const participantToken = req.cookies.get('participant_token')?.value
 
   if (!participantToken) {
@@ -70,6 +74,7 @@ export async function POST(req: NextRequest) {
     try {
       const newThread = await ThreadService.createThread(
         participantData.sub as string,
+        chatbotId,
         null
       )
       currentThreadId = newThread.id
