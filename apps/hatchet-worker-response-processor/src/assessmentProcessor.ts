@@ -5,9 +5,14 @@ import {
   type JsonObject,
 } from '@hatchet-dev/typescript-sdk/index.js'
 import { prisma } from '@klicker-uzh/prisma'
-import { ResponseCorrectness } from '@klicker-uzh/prisma/client'
+import {
+  ElementType,
+  ResponseCorrectness,
+  UserRole,
+} from '@klicker-uzh/prisma/client'
 import type { ResponseInput } from '@klicker-uzh/types'
 import { strict as assert } from 'assert'
+import { createHash } from 'crypto'
 import { DEFAULT_POINTS } from './constants.js'
 import {
   getCaseStudyQuestionPointsDetails,
@@ -15,26 +20,25 @@ import {
   getFreeTextQuestionPointsDetails,
   getNumericalQuestionPointsDetails,
   getSelectionQuestionPointsDetails,
+  updateLeaderboards,
 } from './helpers.js'
 import getRedis from './redis.js'
 
 // TODO: Consider the following improvements
 // - ensure that the response meets the restrictions specified in the element options (as for standard processor)
 
-export type Message = {
-  correlationId: string
-  participantId: string
-  sessionId: string
-  instanceId: string
-  response: ResponseInput
-  cookie?: string
-  responseTimestamp: number
-}
-
 const redisExec = getRedis()
 
 export async function processAssessmentResponse(
-  message: Message,
+  message: {
+    correlationId: string
+    participantId: string
+    sessionId: string
+    instanceId: string
+    response: ResponseInput
+    cookie?: string
+    responseTimestamp: number
+  },
   ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
 ) {
   ctx.logger.info(
@@ -107,18 +111,14 @@ export async function processAssessmentResponse(
     blockExecution,
     blockClosedAt,
   } = instanceInfo
-  if (
-    typeof blockClosedAt !== 'undefined' &&
-    blockClosedAt !== null &&
-    Number(blockClosedAt) > 0 &&
-    responseTimestamp > Number(blockClosedAt)
-  ) {
+
+  if (blockClosedAt && Number(responseTimestamp) > Number(blockClosedAt)) {
     ctx.logger.info('Response received after element block was closed')
     ctx.v1.events.push('create-audit-log-entry', {
       correlationId: message.correlationId,
       info: `[AddResponse Assessment] Response received after block of element instance ${message.instanceId} was closed at ${new Date(blockClosedAt)}.`,
     })
-    return { status: 200 }
+    throw new NonRetryableError('Response received after block was closed')
   }
 
   // ! Step 2: Switch between different types, validate response and compute awarded points and XP
@@ -365,5 +365,169 @@ export async function processAssessmentResponse(
   )
 
   // ! Step 4: Schedule additional hatchet task with response details to update aggregated results in redis & update leaderboard if gamification is enabled
-  // TODO
+  const quizInfo = await redisExec.hgetall(`${instanceKey}:info`)
+  ctx.v1.events.push('response-processed:aggregation', {
+    correlationId: message.correlationId,
+    participantId: message.participantId,
+    liveQuizId: message.sessionId,
+    blockId: sessionBlockId,
+    instanceId: message.instanceId,
+    elementType: type,
+    isGamificationEnabled: quizInfo?.isGamificationEnabled === 'true',
+    pointsAwarded: awardedBasePoints,
+    xpAwarded: awardedXp,
+    response,
+  })
+}
+
+export async function aggregateAssessmentResponses(
+  message: {
+    correlationId: string
+    participantId: string
+    liveQuizId: string
+    blockId: string
+    instanceId: string
+    elementType: ElementType
+    isGamificationEnabled: boolean
+    pointsAwarded: number
+    xpAwarded: number
+    response: ResponseInput
+  },
+  ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
+) {
+  // destructure message into components required for results aggregation
+  const {
+    participantId,
+    liveQuizId,
+    blockId,
+    instanceId,
+    elementType,
+    isGamificationEnabled,
+    pointsAwarded,
+    xpAwarded,
+    response,
+  } = message
+
+  // set up redis pipeline for batched execution
+  const redis = redisExec.pipeline()
+
+  // compose cache keys
+  const liveQuizKey = `lq:${liveQuizId}`
+  const instanceKey = `${liveQuizKey}:i:${instanceId}`
+
+  // for gamified live quizzes, update the leaderboard and the participant xp
+  if (isGamificationEnabled) {
+    updateLeaderboards({
+      redisMulti: redis,
+      participantId,
+      participantRole: UserRole.PARTICIPANT,
+      liveQuizKey,
+      sessionBlockId: blockId,
+      pointsAwarded,
+      xpAwarded,
+    })
+  }
+
+  // step through the different element types, responses do not need to be verified anymore, since this was done by preceding task
+  // aggregate the passed student response into the responses stored in the redis cache (for evaluation during quiz execution)
+  switch (elementType) {
+    case 'SC':
+    case 'MC':
+    case 'KPRIM': {
+      response
+        .choices!.filter((choice) => choice.selected)
+        .forEach((choice) => {
+          redis.hincrby(`${instanceKey}:results`, String(choice.ix), 1)
+        })
+      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
+      break
+    }
+
+    case 'NUMERICAL': {
+      const MD5 = createHash('md5')
+      MD5.update(response.value!)
+      const responseHash = MD5.digest('hex')
+      redis.hincrby(`${instanceKey}:results`, responseHash, 1)
+      redis.hset(`${instanceKey}:responseHashes`, responseHash, response.value!)
+      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
+      break
+    }
+
+    case 'FREE_TEXT': {
+      const cleanResponseValue = response.value!.trim()
+      const MD5 = createHash('md5')
+      MD5.update(cleanResponseValue)
+      const responseHash = MD5.digest('hex')
+      redis.hincrby(`${instanceKey}:results`, responseHash, 1)
+      redis.hset(
+        `${instanceKey}:responseHashes`,
+        responseHash,
+        cleanResponseValue
+      )
+      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
+      break
+    }
+
+    case 'SELECTION': {
+      response.selection!.forEach((answerId: number) => {
+        if (answerId === -1) return // skipped input fields should not be considered
+        redis.hincrby(`${instanceKey}:results`, String(answerId), 1)
+      })
+      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
+      break
+    }
+
+    case 'CASE_STUDY': {
+      Object.entries(response.assessment!).forEach(([caseId, caseData]) => {
+        Object.entries(caseData).forEach(([itemId, itemData]) => {
+          Object.entries(itemData).forEach(
+            ([criterionId, criterionResponse]) => {
+              if (
+                criterionResponse === null ||
+                typeof criterionResponse !== 'number'
+              ) {
+                return
+              }
+
+              // compute the hash of the response
+              const MD5 = createHash('md5')
+              MD5.update(String(criterionResponse))
+              const responseHash = MD5.digest('hex')
+              const combinedHash = `${caseId}:${itemId}:${criterionId}:${responseHash}`
+
+              // add the response hash / valid combination and/or increment the corresponding count
+              redis.hincrby(`${instanceKey}:results`, combinedHash, 1)
+              redis.hset(
+                `${instanceKey}:responseHashes`,
+                combinedHash,
+                String(criterionResponse)
+              )
+            }
+          )
+        })
+      })
+      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
+      break
+    }
+
+    case 'CONTENT': {
+      // increase number of participants on element (do not award points / ... for content elements)
+      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
+      break
+    }
+  }
+
+  try {
+    await redis.exec()
+    ctx.logger.info("Successfully aggregated a participant's results", message)
+    return { status: 200 }
+  } catch (e) {
+    ctx.logger.error(
+      `Redis pipeline for results aggregation failed: ${JSON.stringify(e)} (Message: ${JSON.stringify(message)})`
+    )
+    redis.discard()
+    throw new Error(
+      `Redis pipeline for results aggregation failed ${String(e)}`
+    )
+  }
 }

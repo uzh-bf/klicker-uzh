@@ -1,5 +1,11 @@
-import { Priority } from '@hatchet-dev/typescript-sdk/index.js'
-import { processAssessmentResponse } from './assessmentProcessor.js'
+import {
+  ConcurrencyLimitStrategy,
+  Priority,
+} from '@hatchet-dev/typescript-sdk/index.js'
+import {
+  aggregateAssessmentResponses,
+  processAssessmentResponse,
+} from './assessmentProcessor.js'
 import { hatchet } from './hatchet-client.js'
 import { processResponseMessage } from './processor.js'
 
@@ -40,11 +46,24 @@ export const processAssessmentResponseTask = hatchet.durableTask({
   fn: processAssessmentResponse,
 })
 
+export const aggregateAssessmentResponsesTask = hatchet.durableTask({
+  name: 'aggregate-assessment-responses',
+  retries: 1,
+  defaultPriority: Priority.MEDIUM,
+  concurrency: {
+    expression: 'input.instanceId', // use the instance id as a concurrency key to ensure only a single aggregation task is running per instance
+    maxRuns: 1, // per instance, only a single aggregation task should be running at a time
+    limitStrategy: ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+  },
+  onEvents: ['response-processed:aggregation'],
+  fn: aggregateAssessmentResponses,
+})
+
 async function main() {
   const worker = await hatchet.worker('hatchet-worker-response-processor', {
     workflows:
       process.env.ASSESSMENT_MODE === 'true'
-        ? [processAssessmentResponseTask]
+        ? [processAssessmentResponseTask, aggregateAssessmentResponsesTask]
         : [processAuthenticatedResponseTask, processAnonymousResponseTask],
   })
 
