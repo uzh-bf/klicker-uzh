@@ -275,6 +275,7 @@ export const UserGroup = UserGroupRef.implement({
 // #region
 interface IActivityLogEntry extends DB.ActivityLogEntry {
   username: string // username of the user who created the activity/changelog entry
+  isOwn: boolean // whether the entry was created by the current user
   options: {
     field?: ActivityLogModificationFieldTypeEnum
     oldValue?: string
@@ -308,6 +309,7 @@ export const ActivityLogEntry = ActivityLogEntryRef.implement({
     resolved: t.exposeBoolean('resolved'),
     resolvedAt: t.expose('resolvedAt', { type: 'Date', nullable: true }),
     username: t.exposeString('username'),
+    isOwn: t.exposeBoolean('isOwn'),
     options: t.expose('options', {
       type: ActivityLogEntryOptions,
       nullable: true,

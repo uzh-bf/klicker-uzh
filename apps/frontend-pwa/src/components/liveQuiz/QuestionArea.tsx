@@ -5,14 +5,70 @@ import StudentElement, {
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
 import LiveQuizProgress from '@klicker-uzh/shared-components/src/questions/LiveQuizProgress'
 import { push } from '@socialgouv/matomo-next'
-import { H2 } from '@uzh-bf/design-system'
+import { H2, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import localforage from 'localforage'
 import { useTranslations } from 'next-intl'
-import React, { useEffect, useState } from 'react'
+import dynamic from 'next/dynamic'
+import React, {
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { isDeepEqual } from 'remeda'
 import useRemainingInstances from '../hooks/useRemainingInstances'
-import AllQuestionsAnsweredMessage from './AllQuestionsAnsweredMessage'
+
+const ConfettiExplosion = dynamic(() => import('react-confetti-explosion'), {
+  ssr: false,
+})
+
+const loadStoredResponse = async ({
+  quizId,
+  execution,
+  currentInstance,
+  setStudentResponse,
+}: {
+  quizId: string
+  execution: number
+  currentInstance: ElementInstance | undefined
+  setStudentResponse: Dispatch<SetStateAction<InstanceStackStudentResponseType>>
+}) => {
+  if (!currentInstance) return
+  try {
+    const key = `lq-${quizId}-ex-${execution}-i-${currentInstance.id}`
+    const stored = await localforage.getItem(key)
+    const tempStored = await localforage.getItem(`${key}-temp`)
+
+    // if neither a submitted response, nor a temporary response exists, return early
+    if (!stored && !tempStored) return
+
+    // if the block was already submitted, load the previously submitted response and remove the temporary one (if it exists)
+    if (stored) {
+      setStudentResponse({
+        type: currentInstance.elementType,
+        // stored is saved as the raw input.response (or boolean/string for content/numerical)
+        // which matches the expected response shape per ElementType
+        response: stored as any,
+        valid: true,
+      })
+
+      // if still exists, remove the temporary response
+      if (tempStored) {
+        await localforage.removeItem(`${key}-temp`)
+      }
+    } else {
+      setStudentResponse({
+        type: currentInstance.elementType,
+        response: tempStored as any,
+        valid: true,
+      })
+    }
+  } catch (e) {
+    console.error(e)
+  }
+}
 
 interface QuestionAreaProps {
   isBlockActive?: boolean
@@ -43,6 +99,7 @@ function QuestionArea({
 }: QuestionAreaProps): React.ReactElement {
   const t = useTranslations()
 
+  const [showConfetti, setShowConfetti] = useState(false)
   const [remainingQuestions, setRemainingQuestions] = useState<number[] | null>(
     null
   )
@@ -63,31 +120,54 @@ function QuestionArea({
     setStudentResponse,
   })
 
-  // load previously stored response from localforage (if available)
+  // keep a ref to the latest studentResponse for autosave
+  const latestStudentResponseRef =
+    useRef<InstanceStackStudentResponseType>(studentResponse)
   useEffect(() => {
-    const loadStoredResponse = async () => {
-      if (!currentInstance) return
-      try {
-        const key = `lq-${quizId}-ex-${execution}-i-${currentInstance.id}`
-        const stored = await localforage.getItem(key)
-        if (typeof stored === 'undefined' || stored === null) return
+    latestStudentResponseRef.current = studentResponse
+  }, [studentResponse])
 
-        // initialize the student response with the stored value
-        setStudentResponse({
-          type: currentInstance.elementType,
-          // stored is saved as the raw input.response (or boolean/string for content/numerical)
-          // which matches the expected response shape per ElementType
-          response: stored as any,
-          valid: true,
-        })
-      } catch (e) {
-        console.error(e)
-      }
-    }
-
-    loadStoredResponse()
+  useEffect(() => {
+    // load the stored student response from the temporary or submission storage
+    loadStoredResponse({
+      quizId,
+      execution,
+      currentInstance,
+      setStudentResponse,
+    })
 
     // re-run when quizId/execution/instance changes
+  }, [quizId, execution, currentInstance?.id])
+
+  // periodically store the in-progress response in a temporary key
+  useEffect(() => {
+    let interval: NodeJS.Timeout | undefined
+
+    const setupInterval = async () => {
+      // if no instance exists, return early
+      if (!currentInstance) return
+
+      // if the answer to this instance has already been submitted, do not store a temporary response
+      const storageKey = `lq-${quizId}-ex-${execution}-i-${currentInstance.id}`
+      const stored = await localforage.getItem(storageKey)
+      if (stored) return
+
+      const key = `lq-${quizId}-ex-${execution}-i-${currentInstance.id}-temp`
+      interval = setInterval(async () => {
+        const latest = latestStudentResponseRef.current
+        // only persist if there is something to store
+        if (typeof latest?.response !== 'undefined') {
+          // save raw response as temporary draft
+          await localforage.setItem(key, latest.response as any)
+        }
+      }, 10000) // 10 seconds
+    }
+
+    setupInterval()
+
+    return () => {
+      if (interval) clearInterval(interval)
+    }
   }, [quizId, execution, currentInstance?.id])
 
   // compute remaining instances based on stored responses
@@ -118,8 +198,14 @@ function QuestionArea({
       (question) => !isDeepEqual(activeInstance, question)
     )
 
+    // update the active instance and the remaining questions
     setActiveInstance(newRemaining[0] || 0)
     setRemainingQuestions(newRemaining)
+
+    // if this was the last question of the block and gamification is enabled, show confetti
+    if (newRemaining.length === 0 && gamificationEnabled) {
+      setShowConfetti(true)
+    }
   }
 
   const onExpire = async (): Promise<void> => {
@@ -137,6 +223,12 @@ function QuestionArea({
 
     // automatically skip all possibly remaining questions
     setRemainingQuestions([])
+
+    // if the live quiz is gamified, show a confetti explosion
+    if (gamificationEnabled) {
+      setShowConfetti(true)
+    }
+
     push(['trackEvent', 'Live Quiz', 'Time expired'])
   }
 
@@ -150,6 +242,8 @@ function QuestionArea({
     type: ElementType
     input: InstanceStackStudentResponseType
   }): void => {
+    const storageKey = `lq-${quizId}-ex-${execution}-i-${instanceId}`
+
     if (!input.valid) {
       return
     } else if (
@@ -171,11 +265,9 @@ function QuestionArea({
           }))
       )
 
-      // store the submitted answer locally to be shown
-      localforage.setItem(
-        `lq-${quizId}-ex-${execution}-i-${instanceId}`,
-        input.response
-      )
+      // store the submitted answer locally to be shown and remove any temporary saved response
+      localforage.setItem(storageKey, input.response)
+      localforage.removeItem(`${storageKey}-temp`)
     } else if (
       ElementType.FreeText === type &&
       input.type === ElementType.FreeText &&
@@ -184,11 +276,9 @@ function QuestionArea({
       // submit responses as a string
       handleNewResponse(quizId, instanceId, type, input.response)
 
-      // store the submitted answer locally to be shown
-      localforage.setItem(
-        `lq-${quizId}-ex-${execution}-i-${instanceId}`,
-        input.response
-      )
+      // store the submitted answer locally to be shown and remove any temporary saved response
+      localforage.setItem(storageKey, input.response)
+      localforage.removeItem(`${storageKey}-temp`)
     } else if (
       ElementType.Numerical === type &&
       input.type === ElementType.Numerical &&
@@ -202,11 +292,9 @@ function QuestionArea({
         String(parseFloat(input.response))
       )
 
-      // store the submitted answer locally to be shown
-      localforage.setItem(
-        `lq-${quizId}-ex-${execution}-i-${instanceId}`,
-        String(parseFloat(input.response))
-      )
+      // store the submitted answer locally to be shown and remove any temporary saved response
+      localforage.setItem(storageKey, String(parseFloat(input.response)))
+      localforage.removeItem(`${storageKey}-temp`)
     } else if (
       ElementType.Selection === type &&
       input.type === ElementType.Selection &&
@@ -215,11 +303,9 @@ function QuestionArea({
       // submit responses as an array of answer ids that were selected
       handleNewResponse(quizId, instanceId, type, Object.values(input.response))
 
-      // store the submitted answer locally to be shown
-      localforage.setItem(
-        `lq-${quizId}-ex-${execution}-i-${instanceId}`,
-        input.response
-      )
+      // store the submitted answer locally to be shown and remove any temporary saved response
+      localforage.setItem(storageKey, input.response)
+      localforage.removeItem(`${storageKey}-temp`)
     } else if (
       ElementType.CaseStudy === type &&
       input.type === ElementType.CaseStudy &&
@@ -228,17 +314,16 @@ function QuestionArea({
       // submit responses as an object with case, item and criterion ids as nested keys
       handleNewResponse(quizId, instanceId, type, input.response)
 
-      // store the submitted answer locally to be shown
-      localforage.setItem(
-        `lq-${quizId}-ex-${execution}-i-${instanceId}`,
-        input.response
-      )
+      // store the submitted answer locally to be shown and remove any temporary saved response
+      localforage.setItem(storageKey, input.response)
+      localforage.removeItem(`${storageKey}-temp`)
     } else if (type === ElementType.Content) {
       // for content elements, only the number of reads / next clicks are counted
       handleNewResponse(quizId, instanceId, type, true)
 
-      // store the submitted answer locally to be shown
-      localforage.setItem(`lq-${quizId}-ex-${execution}-i-${instanceId}`, true)
+      // store the submitted answer locally to be shown and remove any temporary saved response
+      localforage.setItem(storageKey, true)
+      localforage.removeItem(`${storageKey}-temp`)
     }
   }
 
@@ -289,15 +374,22 @@ function QuestionArea({
   }
 
   return (
-    <div className="min-h-content mt-1.5 h-full w-full">
+    <div className="min-h-content relative mt-1.5 h-full w-full">
       <H2 className={{ root: 'mb-0 pt-2' }}>{t('shared.generic.questions')}</H2>
 
       <div className="flex w-full flex-col">
         {remainingQuestions.length === 0 && (
-          <AllQuestionsAnsweredMessage
-            gamificationEnabled={gamificationEnabled}
+          <UserNotification
+            type="success"
+            className={{ root: 'mt-1.5 md:text-base' }}
+            message={t('pwa.liveQuiz.allQuestionsAnswered')}
           />
         )}
+        {showConfetti ? (
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transform">
+            <ConfettiExplosion duration={2000} />
+          </div>
+        ) : null}
 
         <LiveQuizProgress
           activeIndex={activeInstance}

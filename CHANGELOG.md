@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.3...v3.4.0-alpha.4) (2025-09-09)
+
+
+### Features
+
+* add possibility for students to navigate back to answered questions during live quiz ([#4884](https://github.com/uzh-bf/klicker-uzh/issues/4884)) ([9213bce](https://github.com/uzh-bf/klicker-uzh/commit/9213bceb1bdafa1531205c3ac6f4f514cbc90fd7))
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** only show confetti explosion when submitting an answer to the last question of a gamified live quiz block ([b350b23](https://github.com/uzh-bf/klicker-uzh/commit/b350b23ac93aa5b982016a132ce6a7a905a51ae0))
+
+
+### Documentation
+
+* **apps/frontend-pwa:** update student documentation with new screen shots and updated descriptions of application functionalities ([#4886](https://github.com/uzh-bf/klicker-uzh/issues/4886)) ([26b7910](https://github.com/uzh-bf/klicker-uzh/commit/26b791024bbaa41dfd02c3df9ee3fa8abe2e23d5))
+
 ## [3.4.0-alpha.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.2...v3.4.0-alpha.3) (2025-09-07)
 
 ## [3.4.0-alpha.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.1...v3.4.0-alpha.2) (2025-09-07)
