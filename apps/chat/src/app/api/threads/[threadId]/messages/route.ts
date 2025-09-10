@@ -1,21 +1,53 @@
 import { prisma } from '@klicker-uzh/prisma'
+import { JWTPayload, jwtVerify } from 'jose'
+import { NextRequest, NextResponse } from 'next/server'
 
 /**
  * Retrieves all messages for a specific thread in chronological order.
  * Used by the frontend to load conversation history when switching threads.
  */
 export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ threadId: string }> }
+  req: NextRequest,
+  { params }: { params: Promise<{ chatbotId: string; threadId: string }> }
 ) {
+  const { chatbotId, threadId } = await params
+  const participantToken = req.cookies.get('participant_token')?.value
+
+  if (!participantToken) {
+    return NextResponse.json(
+      { error: 'No authentication token found' },
+      { status: 401 }
+    )
+  }
+
+  let participantData: JWTPayload
   try {
-    const { threadId } = await params
+    const jwtPayload = await jwtVerify(
+      participantToken,
+      new TextEncoder().encode(process.env.APP_SECRET || '')
+    )
+    participantData = jwtPayload.payload
+  } catch (error) {
+    console.error('JWT verification failed:', error)
+    return NextResponse.json(
+      { error: 'Invalid authentication token' },
+      { status: 401 }
+    )
+  }
+
+  try {
     const messages = await prisma.chatMessage.findMany({
-      where: { threadId },
+      where: {
+        threadId,
+        thread: {
+          participantId: participantData.sub as string,
+          chatbotId,
+        },
+      },
       orderBy: { createdAt: 'asc' },
     })
 
-    return Response.json(
+    return NextResponse.json(
       messages.map((msg) => ({
         id: msg.id,
         threadId: msg.threadId,
@@ -28,6 +60,9 @@ export async function GET(
     )
   } catch (error) {
     console.error('Failed to fetch messages:', error)
-    return Response.json({ error: 'Failed to fetch messages' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Failed to fetch messages' },
+      { status: 500 }
+    )
   }
 }
