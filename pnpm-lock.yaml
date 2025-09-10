@@ -1395,6 +1395,9 @@ importers:
       '@hatchet-dev/typescript-sdk':
         specifier: 1.9.4
         version: 1.9.4
+      ioredis:
+        specifier: 5.4.1
+        version: 5.4.1
     devDependencies:
       '@types/node':
         specifier: ^20.16.1

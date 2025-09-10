@@ -1,7 +1,16 @@
 import { verifyJWT } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
+import { Redis } from 'ioredis'
 import { hatchet } from './hatchet-client.js'
+
+const redis = new Redis({
+  family: 4,
+  host: process.env.REDIS_HOST,
+  password: process.env.REDIS_PASS ?? '',
+  port: Number(process.env.REDIS_PORT) ?? 6379,
+  tls: process.env.REDIS_TLS ? {} : undefined,
+})
 
 const PORT = Number(process.env.PORT ?? 7078)
 const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || '')
@@ -126,7 +135,6 @@ async function handleAddAssessmentResponse(
   req: IncomingMessage,
   res: ServerResponse
 ) {
-  // TODO: check if answer already exists in votes table for assessment -> early return
   let payload: any
   try {
     payload = await readBody(req)
@@ -138,14 +146,39 @@ async function handleAddAssessmentResponse(
     return badRequest(req, res, 'Body must be a JSON object')
   }
 
-  const { response, sessionId, instanceId } = payload
-  if (!response || !sessionId || typeof instanceId === 'undefined') {
+  const { response, sessionId, instanceId, correlationId } = payload
+  if (
+    !response ||
+    !sessionId ||
+    typeof instanceId === 'undefined' ||
+    !correlationId
+  ) {
     return badRequest(
       req,
       res,
-      'Missing required fields: response, sessionId, instanceId'
+      'Missing required fields: response, sessionId, instanceId, correlationId'
     )
   }
+
+  // TODO: validate correlationId?
+
+  // check if there already exists an entry in the votes table with the given correlationId
+  redis
+    .hget(`lq:${sessionId}:i:${instanceId}:votes`, correlationId)
+    .then((existing) => {
+      if (existing && existing === 'true') {
+        console.log(
+          `Participant with correlationId ${correlationId} already answered instance ${instanceId} in session ${sessionId}`
+        )
+        hatchet.events.push('create-audit-log-entry', {
+          correlationId,
+          info: `[AddResponse Assessment] Participant with correlationId ${correlationId} already tried to answer instance ${instanceId} in session ${sessionId} again.`,
+        })
+
+        // TODO: should we return a bad request or a success message, because the answer is already there?
+        return badRequest(req, res, 'Response already recorded')
+      }
+    })
 
   const cookies =
     typeof req.headers['cookie'] === 'string'
@@ -178,11 +211,11 @@ async function handleAddAssessmentResponse(
   }
 
   const message = {
-    correlationId: user.sub, // TODO: replace with proper correlationId
+    correlationId,
     participantId: user.sub,
     sessionId: String(sessionId),
     instanceId: String(instanceId),
-    response: response, // pass through as-is; worker validates
+    response, // pass through as-is; worker validates
     responseTimestamp: Date.now(),
   }
 

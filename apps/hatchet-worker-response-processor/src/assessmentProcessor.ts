@@ -41,6 +41,11 @@ export async function processAssessmentResponse(
     'ProcessAssessmentResponse function processing a message',
     message
   )
+  ctx.v1.events.push('create-audit-log-entry', {
+    correlationId: message.correlationId,
+    info: `[AddResponse Assessment] Processing response for instance ${message.instanceId} by participant ${message.participantId}.`,
+    message,
+  })
 
   try {
     assert(!!redisExec)
@@ -83,7 +88,10 @@ export async function processAssessmentResponse(
     ctx.logger.info(
       `Element instance metadata for instance ${message.instanceId} not found.`
     )
-    // TODO: audit log entry for failed processing
+    ctx.v1.events.push('create-audit-log-entry', {
+      info: `[AddResponse Assessment] Instance metadata for instance ${message.instanceId} not found.`,
+      correlationId: message.correlationId,
+    })
     throw new Error('Instance metadata not found')
   }
 
@@ -106,8 +114,11 @@ export async function processAssessmentResponse(
     Number(blockClosedAt) > 0 &&
     responseTimestamp > Number(blockClosedAt)
   ) {
-    ctx.logger.info('Response received after question instance was closed')
-    // TODO: audit log entry for stopped processing due to invalid user data
+    ctx.logger.info('Response received after element block was closed')
+    ctx.v1.events.push('create-audit-log-entry', {
+      correlationId: message.correlationId,
+      info: `[AddResponse Assessment] Response received after block of element instance ${message.instanceId} was closed.`,
+    })
     return { status: 200 }
   }
 
@@ -141,7 +152,11 @@ export async function processAssessmentResponse(
       // if response choices are not defined, return early
       if (!response.choices) {
         ctx.logger.error(`Missing response choices: ${JSON.stringify(message)}`)
-        // TODO: audit log entry for stopped processing due to invalid user data
+        ctx.v1.events.push('create-audit-log-entry', {
+          correlationId: message.correlationId,
+          info: `[AddResponse Assessment] Missing response choices for instance ${message.instanceId}.`,
+          response,
+        })
         throw new Error('Missing response choices')
       }
 
@@ -170,7 +185,11 @@ export async function processAssessmentResponse(
       // if response value is not defined, return early
       if (typeof response.value === 'undefined' || response.value === null) {
         ctx.logger.error(`Missing response value: ${JSON.stringify(message)}`)
-        // TODO: audit log entry for stopped processing due to invalid user data
+        ctx.v1.events.push('create-audit-log-entry', {
+          correlationId: message.correlationId,
+          info: `[AddResponse Assessment] Missing response value for instance ${message.instanceId}.`,
+          response,
+        })
         throw new Error('Missing response value')
       }
 
@@ -197,7 +216,11 @@ export async function processAssessmentResponse(
       // if response value is not defined, return early
       if (typeof response.value !== 'string') {
         ctx.logger.error(`Missing response value: ${JSON.stringify(message)}`)
-        // TODO: audit log entry for stopped processing due to invalid user data
+        ctx.v1.events.push('create-audit-log-entry', {
+          correlationId: message.correlationId,
+          info: `[AddResponse Assessment] Missing response value for instance ${message.instanceId}.`,
+          response,
+        })
         throw new Error('Missing response value')
       }
 
@@ -225,7 +248,11 @@ export async function processAssessmentResponse(
         ctx.logger.error(
           `Missing response selection: ${JSON.stringify(message)}`
         )
-        // TODO: audit log entry for stopped processing due to invalid user data
+        ctx.v1.events.push('create-audit-log-entry', {
+          correlationId: message.correlationId,
+          info: `[AddResponse Assessment] Missing response selection for instance ${message.instanceId}.`,
+          response,
+        })
         throw new Error('Missing response selection')
       }
 
@@ -253,7 +280,11 @@ export async function processAssessmentResponse(
         ctx.logger.error(
           `Missing response assessment: ${JSON.stringify(message)}`
         )
-        // TODO: audit log entry for stopped processing due to invalid user data
+        ctx.v1.events.push('create-audit-log-entry', {
+          correlationId: message.correlationId,
+          info: `[AddResponse Assessment] Missing response assessment for instance ${message.instanceId}.`,
+          response,
+        })
         throw new Error('Missing response assessment')
       }
 
@@ -292,7 +323,12 @@ export async function processAssessmentResponse(
     )
   }
 
-  // TODO: send audit-log event for computed points and XP
+  // send audit-log event for computed points and XP
+  ctx.v1.events.push('create-audit-log-entry', {
+    correlationId: message.correlationId,
+    info: `[AddResponse Assessment] Computed points for instance ${message.instanceId}. Base Points: ${awardedBasePoints}, Correctness Points: ${awardedCorrectnessPoints}, Bonus Points: ${awardedBonusPoints}, XP: ${awardedXp}.`,
+    response,
+  })
 
   // ! Step 3: Directly store the submitted response in the live quiz responses table and add entry to redis votes list for successful response
   try {
@@ -319,7 +355,11 @@ export async function processAssessmentResponse(
     ctx.logger.error(
       `Error during live quiz response creation: ${JSON.stringify(e)}`
     )
-    // TODO: add audit log entry for failed processing
+    ctx.v1.events.push('create-audit-log-entry', {
+      correlationId: message.correlationId,
+      info: `[AddResponse Assessment] Failed to create live quiz response for instance ${message.instanceId} and participant ${message.participantId}.`,
+      response,
+    })
     throw new NonRetryableError(
       `Live quiz response creation failed with the following error: ${JSON.stringify(e)}`
     )
