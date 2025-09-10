@@ -1,5 +1,3 @@
-// TODO: ugly AI implementation, to be replaced with a go service for optimized performance
-
 import { verifyJWT } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
@@ -11,11 +9,6 @@ const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || '')
   .map((o) => o.trim())
   .filter(Boolean)
 
-/**
- * Sets CORS headers for the response.
- * @param req - The incoming message.
- * @param res - The server response.
- */
 function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
   const origin = req.headers.origin
   // Only allow explicitly whitelisted origins, and never allow "null"
@@ -28,13 +21,6 @@ function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Cookie')
 }
 
-/**
- * Sends a JSON response.
- * @param req - The incoming message.
- * @param res - The server response.
- * @param status - The HTTP status code.
- * @param body - The response body.
- */
 function sendJson(
   req: IncomingMessage,
   res: ServerResponse,
@@ -49,21 +35,6 @@ function sendJson(
   res.end(json)
 }
 
-/**
- * Sends a 404 Not Found response.
- * @param req - The incoming message.
- * @param res - The server response.
- */
-function notFound(req: IncomingMessage, res: ServerResponse) {
-  sendJson(req, res, 404, { error: 'Not found' })
-}
-
-/**
- * Sends a 400 Bad Request response.
- * @param req - The incoming message.
- * @param res - The server response.
- * @param message - The error message.
- */
 function badRequest(
   req: IncomingMessage,
   res: ServerResponse,
@@ -72,11 +43,6 @@ function badRequest(
   sendJson(req, res, 400, { error: message ?? 'Bad request' })
 }
 
-/**
- * Reads the request body and parses it as JSON.
- * @param req - The incoming message.
- * @returns The parsed JSON payload.
- */
 async function readBody(req: IncomingMessage): Promise<any> {
   const chunks: Buffer[] = []
   let size = 0
@@ -105,11 +71,6 @@ async function readBody(req: IncomingMessage): Promise<any> {
   }
 }
 
-/**
- * Handles the /AddResponse endpoint.
- * @param req - The incoming message.
- * @param res - The server response.
- */
 async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   let payload: any
   try {
@@ -269,7 +230,7 @@ const server = createServer(async (req, res) => {
     }
 
     // fallback to 404 Not Found
-    return notFound(req, res)
+    return sendJson(req, res, 404, { error: 'Not found' })
   } catch (err: any) {
     console.error('Server error', err)
     return sendJson(req, res, 500, { error: 'Internal server error' })
