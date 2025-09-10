@@ -63,7 +63,6 @@ auth:
     enabled: true
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
 
   resources:
     requests:
@@ -103,7 +102,6 @@ frontendPWA:
     enabled: true
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
 
   resources:
     requests:
@@ -143,7 +141,6 @@ frontendManage:
     enabled: true
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
 
   resources:
     requests:
@@ -183,7 +180,6 @@ frontendControl:
     enabled: true
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
 
   resources:
     requests:
@@ -223,7 +219,6 @@ backendGraphql:
     enabled: true
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
 
   resources:
     requests:
@@ -288,7 +283,6 @@ lti:
     enabled: true
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
 
   resources:
     requests:
@@ -329,7 +323,6 @@ olatApi:
     enabled: true
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: 256m
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
 
   resources:
     requests:

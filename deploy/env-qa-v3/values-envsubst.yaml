@@ -18,24 +18,39 @@ auth:
   replicaCount: 1
   image:
     tag: argocd
+  ingress:
+    annotations:
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
 
 frontendPWA:
   image:
     tag: argocd
+  ingress:
+    annotations:
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
 
 frontendManage:
   image:
     tag: argocd
+  ingress:
+    annotations:
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
 
 frontendControl:
   image:
     tag: argocd
+  ingress:
+    annotations:
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
 
 backendGraphql:
   image:
     tag: argocd
   apiDomain: api.klicker-qa.stg.example.df-app.ch
   cookieDomain: .klicker-qa.stg.example.df-app.ch
+  ingress:
+    annotations:
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
 
   appManageSubdomain: manage
   appManageDomain: manage.klicker-qa.stg.example.df-app.ch
@@ -60,11 +75,17 @@ backendGraphql:
 olatApi:
   image:
     tag: argocd
+  ingress:
+    annotations:
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
 
 lti:
   replicaCount: 4
   image:
     tag: argocd
+  ingress:
+    annotations:
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
 
   redirectURL: https://lti.klicker-qa.stg.example.df-app.ch
   cookieDomain: .klicker-qa.stg.example.df-app.ch
