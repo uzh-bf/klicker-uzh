@@ -8,12 +8,13 @@
     "dist"
   ],
   "dependencies": {
+    "@klicker-uzh/prisma": "workspace:*",
+    "@klicker-uzh/types": "workspace:*",
     "jose": "5.9.4",
     "remeda": "2.15.0",
     "uuid": "10.0.0"
   },
   "devDependencies": {
-    "@klicker-uzh/types": "workspace:*",
     "@rollup/plugin-node-resolve": "~15.3.1",
     "@rollup/plugin-typescript": "~12.1.4",
     "@types/node": "^20.19.11",
@@ -23,9 +24,6 @@
     "rollup": "~4.34.9",
     "typescript": "~5.6.3",
     "vitest": "~3.2.4"
-  },
-  "peerDependencies": {
-    "@klicker-uzh/prisma": "workspace:*"
   },
   "scripts": {
     "build": "run-s build:ts",

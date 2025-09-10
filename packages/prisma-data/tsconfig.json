@@ -1,9 +1,8 @@
 {
-  "include": ["src/**/*"],
-  "exclude": ["dist", "node_modules"],
+  "include": ["src/**/*.ts"],
   "compilerOptions": {
     "baseUrl": ".",
-    "rootDir": "src",
+    "rootDir": ".",
     /* Base Options: */
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -25,7 +24,7 @@
     /* AND if you're building for a library: */
     "declaration": true,
     /* AND if you're building for a library in a monorepo: */
-    "composite": true,
+    "composite": false,
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
     "declarationMap": true,
     /* If your code doesn't run in the DOM: */

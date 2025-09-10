@@ -49,6 +49,7 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
 COPY --from=builder /app/packages/prisma/dist/ /app/packages/prisma/dist/
+COPY --from=builder /app/packages/types/dist/ /app/packages/types/dist/
 COPY --from=builder /app/apps/olat-api/dist/ /app/apps/olat-api/dist/
 COPY --from=builder /app/apps/olat-api/static /app/apps/olat-api/static/
 

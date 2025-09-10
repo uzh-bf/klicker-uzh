@@ -4,6 +4,7 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "@auth/prisma-adapter": "2.10.0",
+    "@hatchet-dev/typescript-sdk": "1.9.4",
     "@klicker-uzh/i18n": "workspace:*",
     "@klicker-uzh/next-config": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",

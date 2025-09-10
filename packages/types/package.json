@@ -7,37 +7,42 @@
   "files": [
     "dist"
   ],
-  "dependencies": {},
+  "dependencies": {
+    "@klicker-uzh/prisma": "workspace:*"
+  },
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "~15.3.1",
-    "@rollup/plugin-typescript": "~12.1.4",
+    "@hatchet-dev/typescript-sdk": "~1.9.4",
     "@types/node": "^20.19.11",
     "cross-env": "~7.0.3",
+    "graphql-yoga": "~3.9.1",
+    "ioredis": "~5.4.1",
     "npm-run-all": "~4.1.5",
-    "rollup": "~4.34.9",
     "typescript": "~5.6.3"
   },
   "peerDependencies": {
     "@hatchet-dev/typescript-sdk": "^1.9.4",
-    "@klicker-uzh/prisma": "workspace:*",
     "graphql-yoga": "^3.9.1",
-    "ioredis": "^5.4.1",
-    "remeda": "^2.15.0"
+    "ioredis": "^5.4.1"
   },
   "scripts": {
-    "build": "run-s build:ts",
+    "build": "tsc -p tsconfig.json",
     "build:test": "pnpm run build",
-    "build:ts": "cross-env NODE_ENV=production rollup -c",
-    "check": "tsc --noEmit",
-    "dev": "run-p dev:ts",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "dev": "tsc -w -p tsconfig.json",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
-    "dev:ts": "cross-env NODE_ENV=development rollup -c --watch"
+    "dev:ts": "tsc -w -p tsconfig.json"
   },
   "engines": {
     "node": "=20"
   },
   "volta": {
     "extends": "../../package.json"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
   "type": "module"
 }
