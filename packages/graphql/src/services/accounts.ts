@@ -280,10 +280,9 @@ export async function loginParticipantMagicLink(
   ctx: Context
 ) {
   //
-  const tokenData = (await verifyJWT(
-    token,
-    process.env.APP_SECRET as string
-  )) as {
+  const tokenData = (await verifyJWT(token, process.env.APP_SECRET as string, {
+    issuer: process.env.API_ISSUER,
+  })) as {
     sub: string
     scope: DB.UserLoginScope
   }
@@ -318,10 +317,9 @@ export async function activateParticipantAccount(
   ctx: Context
 ) {
   //
-  const tokenData = (await verifyJWT(
-    token,
-    process.env.APP_SECRET as string
-  )) as {
+  const tokenData = (await verifyJWT(token, process.env.APP_SECRET as string, {
+    issuer: process.env.API_ISSUER,
+  })) as {
     sub: string
     scope: DB.UserLoginScope
   }

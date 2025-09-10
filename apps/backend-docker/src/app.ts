@@ -103,7 +103,12 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
     let user = null
     if (token) {
       try {
-        user = await verifyJWT(token, process.env.APP_SECRET as string)
+        user = await verifyJWT(token, process.env.APP_SECRET as string, {
+          issuer:
+            process.env.ASSESSMENT_MODE === 'true'
+              ? process.env.NEXTAUTH_URL
+              : process.env.API_ISSUER,
+        })
       } catch (error) {
         // JWT verification failed, continue with user = null
         console.log('JWT verification failed:', error)

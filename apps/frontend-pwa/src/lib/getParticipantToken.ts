@@ -93,6 +93,7 @@ export default async function getParticipantToken({
           {
             algorithm: 'HS256',
             expiresIn: '5m',
+            issuer: process.env.LTI_ISSUER,
           }
         )
 

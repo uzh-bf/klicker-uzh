@@ -125,7 +125,9 @@ function reduceCatalyst(acc: boolean, affiliation: string) {
 export async function decode({ token, secret }: JWTDecodeParams) {
   if (!token) return null
   const secretString = typeof secret === 'string' ? secret : secret.toString()
-  return (await verifyJWT(token, secretString)) as DefaultJWT
+  return (await verifyJWT(token, secretString, {
+    issuer: process.env.NEXTAUTH_URL,
+  })) as DefaultJWT
 }
 
 export async function encode({ token, secret }: JWTEncodeParams) {
@@ -638,6 +640,9 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
             // Update token with current participant data
             token.role = 'PARTICIPANT'
             token.email = participant.email
+
+            // Add issuer to token for origin verification
+            token.iss = process.env.NEXTAUTH_URL
           }
 
           return token

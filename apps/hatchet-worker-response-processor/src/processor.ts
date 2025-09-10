@@ -85,7 +85,10 @@ export async function processResponseMessage(
         if (parsedCookies['participant_token'] !== undefined) {
           participantData = await verifyJWT(
             parsedCookies['participant_token'],
-            process.env.APP_SECRET as string
+            process.env.APP_SECRET as string,
+            {
+              issuer: process.env.API_ISSUER,
+            }
           )
 
           if (participantData.role !== 'PARTICIPANT') {
@@ -96,7 +99,10 @@ export async function processResponseMessage(
         } else if (parsedCookies['temporary_participant_token'] !== undefined) {
           participantData = await verifyJWT(
             parsedCookies['temporary_participant_token'],
-            process.env.APP_SECRET as string
+            process.env.APP_SECRET as string,
+            {
+              issuer: process.env.API_ISSUER,
+            }
           )
 
           if (participantData.role !== 'TEMPORARY_PARTICIPANT') {

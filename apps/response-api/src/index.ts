@@ -249,7 +249,10 @@ const server = createServer(async (req, res) => {
         const user = parsedCookies['next-auth.participant-session-token']
           ? await verifyJWT(
               parsedCookies['next-auth.participant-session-token'],
-              process.env.APP_SECRET as string
+              process.env.APP_SECRET as string,
+              {
+                issuer: process.env.NEXTAUTH_URL,
+              }
             )
           : null
         const isAssessmentCookieValid = !!user && user.role === 'PARTICIPANT'
