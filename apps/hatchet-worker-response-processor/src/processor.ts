@@ -60,8 +60,8 @@ export async function processResponseMessage(
   redisMulti = redisExec.pipeline() // -> pipeline (not atomic)
 
   try {
-    const sessionKey = `lq:${message.sessionId}`
-    const instanceKey = `${sessionKey}:i:${message.instanceId}`
+    const liveQuizKey = `lq:${message.sessionId}`
+    const instanceKey = `${liveQuizKey}:i:${message.instanceId}`
     const responseTimestamp = message.responseTimestamp
     const response = message.response
     if (!response) {
@@ -228,7 +228,7 @@ export async function processResponseMessage(
             redisMulti,
             participantId: participantData.sub,
             participantRole: participantData.role!,
-            sessionKey,
+            liveQuizKey,
             sessionBlockId: sessionBlockId!,
             pointsAwarded,
             xpAwarded,
@@ -298,7 +298,7 @@ export async function processResponseMessage(
             redisMulti,
             participantId: participantData.sub,
             participantRole: participantData.role!,
-            sessionKey,
+            liveQuizKey,
             sessionBlockId: sessionBlockId!,
             pointsAwarded,
             xpAwarded,
@@ -369,7 +369,7 @@ export async function processResponseMessage(
             redisMulti,
             participantId: participantData.sub,
             participantRole: participantData.role!,
-            sessionKey,
+            liveQuizKey,
             sessionBlockId: sessionBlockId!,
             pointsAwarded,
             xpAwarded,
@@ -443,7 +443,7 @@ export async function processResponseMessage(
             redisMulti,
             participantId: participantData.sub,
             participantRole: participantData.role!,
-            sessionKey,
+            liveQuizKey,
             sessionBlockId: sessionBlockId!,
             pointsAwarded,
             xpAwarded,
@@ -539,7 +539,7 @@ export async function processResponseMessage(
             redisMulti,
             participantId: participantData.sub,
             participantRole: participantData.role!,
-            sessionKey,
+            liveQuizKey,
             sessionBlockId: sessionBlockId!,
             pointsAwarded,
             xpAwarded,

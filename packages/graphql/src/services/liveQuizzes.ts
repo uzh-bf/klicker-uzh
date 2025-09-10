@@ -1127,6 +1127,8 @@ export async function startLiveQuiz(
           pipeline.hmset(`lq:${quiz.id}:meta`, {
             namespace: quiz.namespace,
             startedAt: Number(new Date()),
+            isGamificationEnabled: quiz.isGamificationEnabled,
+            isAssessmentEnabled: quiz.isAssessmentEnabled,
           })
 
           await pipeline.exec()
@@ -1350,6 +1352,7 @@ export async function activateLiveQuizBlock(
       defaultCorrectPoints: updatedQuiz.defaultCorrectPoints,
       maxBonusPoints: updatedQuiz.maxBonusPoints,
       timeToZeroBonus: updatedQuiz.timeToZeroBonus,
+      blockExecution: updatedQuiz.activeBlock!.execution,
       blockStartedAt: Number(updatedQuiz.activeBlock!.startedAt),
     }
 

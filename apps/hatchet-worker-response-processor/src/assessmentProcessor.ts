@@ -1,0 +1,337 @@
+import {
+  NonRetryableError,
+  type Context,
+  type DurableContext,
+  type JsonObject,
+} from '@hatchet-dev/typescript-sdk/index.js'
+import { prisma } from '@klicker-uzh/prisma'
+import { ResponseCorrectness } from '@klicker-uzh/prisma/client'
+import type { ResponseInput } from '@klicker-uzh/types'
+import { strict as assert } from 'assert'
+import { DEFAULT_POINTS } from './constants.js'
+import {
+  getCaseStudyQuestionPointsDetails,
+  getChoicesQuestionPointsDetails,
+  getFreeTextQuestionPointsDetails,
+  getNumericalQuestionPointsDetails,
+  getSelectionQuestionPointsDetails,
+} from './helpers.js'
+import getRedis from './redis.js'
+
+// TODO: Consider the following improvements
+// - ensure that the response meets the restrictions specified in the element options (as for standard processor)
+
+export type Message = {
+  correlationId: string
+  participantId: string
+  sessionId: string
+  instanceId: string
+  response: ResponseInput
+  cookie?: string
+  responseTimestamp: number
+}
+
+const redisExec = getRedis()
+
+export async function processAssessmentResponse(
+  message: Message,
+  ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
+) {
+  ctx.logger.info(
+    'ProcessAssessmentResponse function processing a message',
+    message
+  )
+
+  try {
+    assert(!!redisExec)
+  } catch (e) {
+    ctx.logger.error(`Redis connection error: ${JSON.stringify(e)}`)
+    throw new Error(`Redis connection error ${String(e)}`)
+  }
+
+  try {
+    assert(!!prisma)
+  } catch (e) {
+    ctx.logger.error(`Prisma client error: ${JSON.stringify(e)}`)
+    throw new Error(`Prisma client error ${String(e)}`)
+  }
+
+  if (message.sessionId === 'ping') {
+    if (process.env.FUNCTION_HEARTBEAT_URL) {
+      await fetch(process.env.FUNCTION_HEARTBEAT_URL)
+    }
+    return { status: 200 }
+  }
+
+  // extract the relevant information from the redis cache
+  const liveQuizKey = `lq:${message.sessionId}`
+  const instanceKey = `${liveQuizKey}:i:${message.instanceId}`
+  const responseTimestamp = message.responseTimestamp
+  const response = message.response
+
+  if (!response) {
+    ctx.logger.error(`Missing response: ${JSON.stringify(message)}`)
+    throw new Error('Missing response')
+  }
+
+  // ! Step 1: Validation of answer timestamp (from message before block closure)
+  // get live quiz and instance information from redis cache
+  const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
+
+  // if the instance info is not available, return that the corresponding cache data is not available
+  if (!instanceInfo) {
+    ctx.logger.info(
+      `Element instance metadata for instance ${message.instanceId} not found.`
+    )
+    // TODO: audit log entry for failed processing
+    throw new Error('Instance metadata not found')
+  }
+
+  // verify that the student answer was submitted before the block was closed
+  const {
+    type,
+    solutions,
+    firstResponseReceivedAt,
+    sessionBlockId,
+    choiceCount,
+    basePoints,
+    defaultPoints,
+    pointsMultiplier,
+    blockExecution,
+    blockClosedAt,
+  } = instanceInfo
+  if (
+    typeof blockClosedAt !== 'undefined' &&
+    blockClosedAt !== null &&
+    Number(blockClosedAt) > 0 &&
+    responseTimestamp > Number(blockClosedAt)
+  ) {
+    ctx.logger.info('Response received after question instance was closed')
+    // TODO: audit log entry for stopped processing due to invalid user data
+    return { status: 200 }
+  }
+
+  // ! Step 2: Switch between different types, validate response and compute awarded points and XP
+
+  let parsedSolutions = undefined
+  try {
+    if (solutions) {
+      parsedSolutions = JSON.parse(solutions)
+    }
+  } catch (e) {
+    ctx.logger.error(
+      `Error parsing solutions (Error: ${JSON.stringify(e)}, Message: ${JSON.stringify(message)})`
+    )
+    throw new Error('Error parsing solutions')
+  }
+
+  const awardedBasePoints =
+    basePoints === 'true'
+      ? parseInt(defaultPoints ?? String(DEFAULT_POINTS), 10)
+      : 0
+  let computedCorrectness: number | null = null
+  let awardedCorrectnessPoints = 0
+  let awardedBonusPoints = 0
+  let awardedXp = 0
+
+  switch (type) {
+    case 'SC':
+    case 'MC':
+    case 'KPRIM': {
+      // if response choices are not defined, return early
+      if (!response.choices) {
+        ctx.logger.error(`Missing response choices: ${JSON.stringify(message)}`)
+        // TODO: audit log entry for stopped processing due to invalid user data
+        throw new Error('Missing response choices')
+      }
+
+      // compute the relevant points
+      const { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage } =
+        getChoicesQuestionPointsDetails({
+          type,
+          choiceCount,
+          response,
+          instanceInfo,
+          firstResponseReceivedAt,
+          responseTimestamp,
+          basePoints,
+          pointsMultiplier,
+          parsedSolutions,
+        })
+      computedCorrectness = pointsPercentage
+      awardedCorrectnessPoints = correctnessPoints
+      awardedBonusPoints = bonusPoints
+      awardedXp = xpAwarded
+
+      break
+    }
+
+    case 'NUMERICAL': {
+      // if response value is not defined, return early
+      if (typeof response.value === 'undefined' || response.value === null) {
+        ctx.logger.error(`Missing response value: ${JSON.stringify(message)}`)
+        // TODO: audit log entry for stopped processing due to invalid user data
+        throw new Error('Missing response value')
+      }
+
+      // compute the relevant points
+      const { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage } =
+        getNumericalQuestionPointsDetails({
+          response,
+          instanceInfo,
+          firstResponseReceivedAt,
+          responseTimestamp,
+          basePoints,
+          pointsMultiplier,
+          parsedSolutions,
+        })
+      computedCorrectness = pointsPercentage
+      awardedCorrectnessPoints = correctnessPoints
+      awardedBonusPoints = bonusPoints
+      awardedXp = xpAwarded
+
+      break
+    }
+
+    case 'FREE_TEXT': {
+      // if response value is not defined, return early
+      if (typeof response.value !== 'string') {
+        ctx.logger.error(`Missing response value: ${JSON.stringify(message)}`)
+        // TODO: audit log entry for stopped processing due to invalid user data
+        throw new Error('Missing response value')
+      }
+
+      // compute the relevant points
+      const { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage } =
+        getFreeTextQuestionPointsDetails({
+          response,
+          instanceInfo,
+          firstResponseReceivedAt,
+          responseTimestamp,
+          basePoints,
+          pointsMultiplier,
+          parsedSolutions,
+        })
+      computedCorrectness = pointsPercentage
+      awardedCorrectnessPoints = correctnessPoints
+      awardedBonusPoints = bonusPoints
+      awardedXp = xpAwarded
+
+      break
+    }
+    case 'SELECTION': {
+      // if response selection is not defined, return early
+      if (!response.selection) {
+        ctx.logger.error(
+          `Missing response selection: ${JSON.stringify(message)}`
+        )
+        // TODO: audit log entry for stopped processing due to invalid user data
+        throw new Error('Missing response selection')
+      }
+
+      // compute the relevant points
+      const { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage } =
+        getSelectionQuestionPointsDetails({
+          response,
+          instanceInfo,
+          firstResponseReceivedAt,
+          responseTimestamp,
+          basePoints,
+          pointsMultiplier,
+          parsedSolutions,
+        })
+      computedCorrectness = pointsPercentage
+      awardedCorrectnessPoints = correctnessPoints
+      awardedBonusPoints = bonusPoints
+      awardedXp = xpAwarded
+
+      break
+    }
+    case 'CASE_STUDY': {
+      // if response assessment is not defined, return early
+      if (!response.assessment) {
+        ctx.logger.error(
+          `Missing response assessment: ${JSON.stringify(message)}`
+        )
+        // TODO: audit log entry for stopped processing due to invalid user data
+        throw new Error('Missing response assessment')
+      }
+
+      // compute the relevant points
+      const { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage } =
+        getCaseStudyQuestionPointsDetails({
+          response,
+          instanceInfo,
+          firstResponseReceivedAt,
+          responseTimestamp,
+          basePoints,
+          pointsMultiplier,
+          parsedSolutions,
+        })
+      computedCorrectness = pointsPercentage
+      awardedCorrectnessPoints = correctnessPoints
+      awardedBonusPoints = bonusPoints
+      awardedXp = xpAwarded
+
+      break
+    }
+  }
+
+  // if the response was correct, set the corresponding timestamp on the instance
+  if (
+    computedCorrectness !== null &&
+    computedCorrectness === 1 &&
+    !firstResponseReceivedAt
+  ) {
+    // if we are processing a first response, set the timestamp on the instance
+    // this will allow us to award points for response timing
+    redisExec.hset(
+      `${instanceKey}:info`,
+      'firstResponseReceivedAt',
+      responseTimestamp
+    )
+  }
+
+  // TODO: send audit-log event for computed points and XP
+
+  // ! Step 3: Directly store the submitted response in the live quiz responses table and add entry to redis votes list for successful response
+  try {
+    await prisma.liveQuizResponse.create({
+      data: {
+        submittedAt: new Date(responseTimestamp),
+        response,
+        timeSpent: -1, // TODO: set this in future improvements
+        correctness:
+          computedCorrectness === null || computedCorrectness === 1
+            ? ResponseCorrectness.CORRECT
+            : computedCorrectness === 0
+              ? ResponseCorrectness.WRONG
+              : ResponseCorrectness.PARTIAL,
+        basePoints: awardedBasePoints,
+        correctnessPoints: awardedCorrectnessPoints,
+        bonusPoints: awardedBonusPoints,
+        elementBlockExecution: parseInt(blockExecution ?? '0', 10),
+        instance: { connect: { id: Number(message.instanceId) } },
+        participant: { connect: { id: message.participantId } },
+      },
+    })
+  } catch (e) {
+    ctx.logger.error(
+      `Error during live quiz response creation: ${JSON.stringify(e)}`
+    )
+    // TODO: add audit log entry for failed processing
+    throw new NonRetryableError(
+      `Live quiz response creation failed with the following error: ${JSON.stringify(e)}`
+    )
+  }
+
+  // add the participant to the list of participants that have answered this question instance
+  redisExec.hset(
+    `lq:${message.sessionId}:i:${message.instanceId}:votes`,
+    message.correlationId,
+    'true'
+  )
+
+  // ! Step 4: Schedule additional hatchet task with response details to update aggregated results in redis & update leaderboard if gamification is enabled
+  // TODO
+}

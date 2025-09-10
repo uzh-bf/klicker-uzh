@@ -1,11 +1,7 @@
 // pn exec:prod scripts/fixPointsInconsistency.ts
 
-import { PrismaClient } from '@klicker-uzh/prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
+import { prisma } from '@klicker-uzh/prisma'
 import { Redis } from 'ioredis'
-
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-const prisma = new PrismaClient({ adapter })
 
 const redisExec = new Redis({
   family: 4,

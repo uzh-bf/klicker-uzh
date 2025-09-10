@@ -1,4 +1,5 @@
 import { Priority } from '@hatchet-dev/typescript-sdk/index.js'
+import { processAssessmentResponse } from './assessmentProcessor.js'
 import { hatchet } from './hatchet-client.js'
 import { processResponseMessage } from './processor.js'
 
@@ -36,7 +37,7 @@ export const processAssessmentResponseTask = hatchet.durableTask({
   retries: 3,
   defaultPriority: Priority.HIGH,
   onEvents: ['response-received:assessment'],
-  fn: processResponseMessage, // TODO: replace this with assessment workflow
+  fn: processAssessmentResponse,
 })
 
 async function main() {

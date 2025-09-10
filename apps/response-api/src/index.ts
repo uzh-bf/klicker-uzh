@@ -147,17 +147,42 @@ async function handleAddAssessmentResponse(
     )
   }
 
-  const cookie =
+  const cookies =
     typeof req.headers['cookie'] === 'string'
       ? req.headers['cookie']
       : undefined
 
+  // parse the cookies that are of the format key=value; key2=value2
+  const parsedCookies: Record<string, string> = {}
+  if (cookies) {
+    cookies.split(';').forEach((cookie) => {
+      const [key, value] = cookie.trim().split('=')
+      if (key && value) parsedCookies[key] = value
+    })
+  }
+
+  // TODO: add some verification mechanism that student did not set a regular participant cookie as their assessment cookie
+  // check if the assessment cookie is present and valid
+  const user = parsedCookies['next-auth.participant-session-token']
+    ? await verifyJWT(
+        parsedCookies['next-auth.participant-session-token'],
+        process.env.APP_SECRET as string
+      )
+    : null
+  const isAssessmentCookieValid = !!user && user.role === 'PARTICIPANT'
+
+  if (!isAssessmentCookieValid) {
+    return sendJson(req, res, 401, {
+      error: 'Missing or invalid assessment cookie',
+    })
+  }
+
   const message = {
-    messageId: randomUUID(),
+    correlationId: user.sub, // TODO: replace with proper correlationId
+    participantId: user.sub,
     sessionId: String(sessionId),
     instanceId: String(instanceId),
     response: response, // pass through as-is; worker validates
-    cookie,
     responseTimestamp: Date.now(),
   }
 
@@ -166,8 +191,8 @@ async function handleAddAssessmentResponse(
     `Pushing event ${'response-received:assessment'} with payload`,
     message
   )
-  await hatchet.events.push('response-received:assessment', message)
 
+  await hatchet.events.push('response-received:assessment', message)
   return sendJson(req, res, 200, { status: 'ok' })
 }
 
@@ -194,33 +219,6 @@ const server = createServer(async (req, res) => {
     if (url.pathname === '/AddResponse' && req.method === 'POST') {
       // if not in assessment mode, call standard processing logic
       if (process.env.ASSESSMENT_MODE === 'true') {
-        const cookies = req.headers['cookie']
-
-        // parse the cookies that are of the format key=value; key2=value2
-        const parsedCookies: Record<string, string> = {}
-        if (cookies) {
-          cookies.split(';').forEach((cookie) => {
-            const [key, value] = cookie.trim().split('=')
-            if (key && value) parsedCookies[key] = value
-          })
-        }
-
-        // TODO: add some verification mechanism that student did not set a regular participant cookie as their assessment cookie
-        // check if the assessment cookie is present and valid
-        const user = parsedCookies['next-auth.participant-session-token']
-          ? await verifyJWT(
-              parsedCookies['next-auth.participant-session-token'],
-              process.env.APP_SECRET as string
-            )
-          : null
-        const isAssessmentCookieValid = !!user && user.role === 'PARTICIPANT'
-
-        if (!isAssessmentCookieValid) {
-          return sendJson(req, res, 401, {
-            error: 'Missing or invalid assessment cookie',
-          })
-        }
-
         return await handleAddAssessmentResponse(req, res)
       } else {
         // call the standard processing function, which will distinguish between authenticated and anonymous modes

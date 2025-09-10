@@ -120,14 +120,14 @@ model LiveQuizResponse {
 
   // set correctness enum and awarded points
   correctness       ResponseCorrectness
-  basePoints        Float               @db.Real
-  correctnessPoints Float               @db.Real
-  bonusPoints       Float               @db.Real
+  basePoints        Float               @db.Real // set to 0 if base points are disabled
+  correctnessPoints Float               @db.Real // set to 0 if no sample solution is defined
+  bonusPoints       Float               @db.Real // set to 0 if no bonus points are defined
 
   // link to instance and live quiz execution index (to allow for abortion and restart)
-  instance          ElementInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  instanceId        Int
-  liveQuizExecution Int
+  instance              ElementInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  instanceId            Int
+  elementBlockExecution Int
 
   // link to participant
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -136,8 +136,8 @@ model LiveQuizResponse {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([instanceId, liveQuizExecution, participantId])
-  @@index([instanceId, liveQuizExecution])
+  @@unique([instanceId, elementBlockExecution, participantId])
+  @@index([instanceId, elementBlockExecution])
 }
 
 model ElementFeedback {

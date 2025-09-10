@@ -13,7 +13,7 @@ CREATE TABLE "public"."LiveQuizResponse" (
     "correctnessPoints" FLOAT(2) NOT NULL,
     "bonusPoints" FLOAT(2) NOT NULL,
     "instanceId" INTEGER NOT NULL,
-    "liveQuizExecution" INTEGER NOT NULL,
+    "elementBlockExecution" INTEGER NOT NULL,
     "participantId" UUID NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -22,10 +22,10 @@ CREATE TABLE "public"."LiveQuizResponse" (
 );
 
 -- CreateIndex
-CREATE INDEX "LiveQuizResponse_instanceId_liveQuizExecution_idx" ON "public"."LiveQuizResponse"("instanceId", "liveQuizExecution");
+CREATE INDEX "LiveQuizResponse_instanceId_elementBlockExecution_idx" ON "public"."LiveQuizResponse"("instanceId", "elementBlockExecution");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "LiveQuizResponse_instanceId_liveQuizExecution_participantId_key" ON "public"."LiveQuizResponse"("instanceId", "liveQuizExecution", "participantId");
+CREATE UNIQUE INDEX "LiveQuizResponse_instanceId_elementBlockExecution_participa_key" ON "public"."LiveQuizResponse"("instanceId", "elementBlockExecution", "participantId");
 
 -- AddForeignKey
 ALTER TABLE "public"."LiveQuizResponse" ADD CONSTRAINT "LiveQuizResponse_instanceId_fkey" FOREIGN KEY ("instanceId") REFERENCES "public"."ElementInstance"("id") ON DELETE CASCADE ON UPDATE CASCADE;
