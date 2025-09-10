@@ -76,7 +76,7 @@
     },
     "check": {
       "cache": false,
-      "outputLogs": "errors-only",
+      "outputLogs": "new-only",
       "dependsOn": ["^build"]
     },
     "build": {

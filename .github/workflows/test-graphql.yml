@@ -92,13 +92,13 @@ jobs:
 
       - name: Build dependency packages
         run: |
+          cd ../prisma
+          pnpm run build
           cd packages/types
           pnpm run build
           cd ../util
           pnpm run build
           cd ../grading
-          pnpm run build
-          cd ../prisma
           pnpm run build
           cd ../hatchet
           pnpm run build
