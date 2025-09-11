@@ -1,13 +1,14 @@
+import { getModelCost, type ModelID } from '@/src/lib/config/models'
 import { getMCPTools } from '@/src/services/mcpClients'
 import { anthropic } from '@ai-sdk/anthropic'
 import { openai } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
 import {
   convertToModelMessages,
+  LanguageModel,
   stepCountIs,
   streamText,
   UIMessage,
-  type LanguageModel,
 } from 'ai'
 import { JWTPayload, jwtVerify } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
@@ -15,6 +16,7 @@ import {
   getSystemPrompt,
   type ChatbotMode,
 } from '../../../../../lib/config/prompts'
+import { CreditsService } from '../../../../../services/credits'
 import { ThreadService } from '../../../../../services/threads'
 import { RAGSearch } from '../../../../../services/tools'
 
@@ -63,7 +65,7 @@ export async function POST(
   }: {
     messages: Array<{ id: string; role: string; content: string }>
     threadId: string | null
-    selectedModel: string
+    selectedModel: ModelID
     chatMode?: ChatbotMode
     parentId?: string | null
     assistantMessageId: string
@@ -114,16 +116,14 @@ export async function POST(
     }
   }
 
-  function getModel(modelName: string): LanguageModel {
-    switch (modelName) {
-      case 'openai':
+  function getModel(modelId: ModelID): LanguageModel {
+    switch (modelId) {
+      case 'gpt-4.1':
         return openai('gpt-4.1')
-      case 'anthropic':
+      case 'claude-sonnet-4-0':
         return anthropic('claude-sonnet-4-0')
       default:
-        console.warn(
-          `Unknown model: ${modelName}, defaulting to OpenAI GPT-4.1`
-        )
+        console.warn(`Unknown model: ${modelId}, defaulting to OpenAI GPT-4.1`)
         return openai('gpt-4.1')
     }
   }
@@ -181,6 +181,29 @@ export async function POST(
           })
         } catch (error) {
           console.error('Failed to save assistant message:', error)
+        }
+      }
+
+      if (result.totalUsage) {
+        try {
+          const costBase = getModelCost(selectedModel)
+
+          const totalCost =
+            (costBase.input * (result.totalUsage.inputTokens || 0) +
+              costBase.output * (result.totalUsage.outputTokens || 0)) /
+            1000000
+
+          const costTotal = totalCost
+
+          if (participantData.sub) {
+            await CreditsService.decrementCredits(
+              participantData.sub as string,
+              chatbotId,
+              costTotal
+            )
+          }
+        } catch (error) {
+          console.error('Failed to deduct credits:', error)
         }
       }
     },

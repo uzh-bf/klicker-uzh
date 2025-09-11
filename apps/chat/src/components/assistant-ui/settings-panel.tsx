@@ -1,6 +1,6 @@
 'use client'
 
-import { type ModelProvider } from '../../lib/config/models'
+import { type ModelID } from '../../lib/config/models'
 import { type ChatbotMode } from '../../lib/config/prompts'
 import { useSettingsStore } from '../../stores/settingsStore'
 
@@ -22,7 +22,7 @@ export function SettingsPanel() {
     credits.total > 0 ? (credits.current / credits.total) * 100 : 0
 
   const handleModelChange = (value: string) => {
-    setSelectedModel(value as ModelProvider)
+    setSelectedModel(value as ModelID)
   }
 
   const handleModeChange = (value: string) => {

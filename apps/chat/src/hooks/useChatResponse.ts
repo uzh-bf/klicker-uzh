@@ -5,6 +5,7 @@ import {
   useChatStore,
   type ExtendedThreadMessageLike,
 } from '../stores/chatStore'
+import { useSettingsStore } from '../stores/settingsStore'
 
 /**
  * Hook for handling streaming chat responses from the backend.
@@ -24,6 +25,7 @@ export function useChatResponse(selectedModel: string, chatMode: string) {
   const { chatbotId } = useParams<{ chatbotId: string }>()
 
   const { setMessages, setIsRunning } = useChatStore()
+  const { loadCredits } = useSettingsStore()
 
   // AbortController to handle request cancellation
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -368,9 +370,18 @@ export function useChatResponse(selectedModel: string, chatMode: string) {
       } finally {
         setIsRunning(false)
         abortControllerRef.current = null
+
+        // refresh credits after chat completion
+        if (chatbotId) {
+          try {
+            await loadCredits(chatbotId)
+          } catch (error) {
+            console.error('Failed to refresh credits after chat:', error)
+          }
+        }
       }
     },
-    [setMessages, setIsRunning, selectedModel, chatMode, chatbotId]
+    [setMessages, setIsRunning, selectedModel, chatMode, chatbotId, loadCredits]
   )
 
   return {

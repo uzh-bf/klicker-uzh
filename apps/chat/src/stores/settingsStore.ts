@@ -1,12 +1,12 @@
 'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { getModelOptions, type ModelProvider } from '../lib/config/models'
+import { getModelOptions, ModelID } from '../lib/config/models'
 import { getModeOptions } from '../lib/config/modes'
 import { type ChatbotMode } from '../lib/config/prompts'
 
 interface ModelOption {
-  id: ModelProvider
+  id: ModelID
   name: string
   description: string
 }
@@ -19,7 +19,7 @@ interface ModeOption {
 
 interface SettingsState {
   // Current selections
-  selectedModel: ModelProvider
+  selectedModel: ModelID
   selectedMode: ChatbotMode
   credits: {
     current: number
@@ -42,11 +42,11 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       // initial state
-      selectedModel: 'openai',
+      selectedModel: 'gpt-4.1',
       selectedMode: 'tutor',
       credits: {
-        current: 0,
-        total: 0,
+        current: 0.0,
+        total: 0.0,
       },
 
       // available options
