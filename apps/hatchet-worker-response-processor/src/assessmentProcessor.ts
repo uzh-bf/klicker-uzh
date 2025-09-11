@@ -78,7 +78,10 @@ export async function processAssessmentResponse(
   const responseTimestamp = message.responseTimestamp
   const response = message.response
 
-  if (!response) {
+  // get live quiz and instance information from redis cache
+  const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
+
+  if (!response && instanceInfo.type !== ElementType.CONTENT) {
     ctx.logger.error(
       'Missing response ' +
         JSON.stringify({
@@ -87,13 +90,10 @@ export async function processAssessmentResponse(
           instanceId: message.instanceId,
         })
     )
-    throw new Error('Missing response')
+    throw new NonRetryableError('Missing response')
   }
 
   // ! Step 1: Validation of answer timestamp (from message before block closure)
-  // get live quiz and instance information from redis cache
-  const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
-
   // if the instance info is not available, return that the corresponding cache data is not available
   if (!instanceInfo || Object.keys(instanceInfo).length === 0) {
     ctx.logger.info('Element instance metadata not found', {
@@ -172,7 +172,7 @@ export async function processAssessmentResponse(
           correlationId: message.correlationId,
           info: `[AddResponse Assessment] Response to choices question (instance id ${message.instanceId}) does not contain choices.`,
         })
-        throw new Error('Missing response choices')
+        throw new NonRetryableError('Missing response choices')
       }
 
       // compute the relevant points
@@ -210,7 +210,7 @@ export async function processAssessmentResponse(
           correlationId: message.correlationId,
           info: `[AddResponse Assessment] Response to numerical question (instance id ${message.instanceId}) does not contain value.`,
         })
-        throw new Error('Missing response value')
+        throw new NonRetryableError('Missing response value')
       }
 
       // compute the relevant points
@@ -246,7 +246,7 @@ export async function processAssessmentResponse(
           correlationId: message.correlationId,
           info: `[AddResponse Assessment] Response to free text question (instance id ${message.instanceId}) does not contain value.`,
         })
-        throw new Error('Missing response value')
+        throw new NonRetryableError('Missing response value')
       }
 
       // compute the relevant points
@@ -281,7 +281,7 @@ export async function processAssessmentResponse(
           correlationId: message.correlationId,
           info: `[AddResponse Assessment] Response to selection question (instance id ${message.instanceId}) does not contain selection.`,
         })
-        throw new Error('Missing response selection')
+        throw new NonRetryableError('Missing response selection')
       }
 
       // compute the relevant points
@@ -316,7 +316,7 @@ export async function processAssessmentResponse(
           correlationId: message.correlationId,
           info: `[AddResponse Assessment] Response to case study question (instance id ${message.instanceId}) does not contain assessments.`,
         })
-        throw new Error('Missing response assessment')
+        throw new NonRetryableError('Missing response assessment')
       }
 
       // compute the relevant points
@@ -346,7 +346,7 @@ export async function processAssessmentResponse(
   ) {
     // if we are processing a first response, set the timestamp on the instance
     // this will allow us to award points for response timing
-    redisExec.hset(
+    redisExec.hsetnx(
       `${instanceKey}:info`,
       'firstResponseReceivedAt',
       responseTimestamp
