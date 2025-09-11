@@ -9,7 +9,7 @@ function StudentDocs() {
 
   return (
     <Layout displayName={t('shared.generic.documentation')}>
-      {process.env.NEXT_PUBLIC_IS_ASSESSMENT && (
+      {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true' && (
         <UserNotification
           type="warning"
           className={{ root: 'mx-auto mb-3 w-full max-w-5xl text-base' }}

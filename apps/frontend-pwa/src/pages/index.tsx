@@ -79,7 +79,10 @@ function Index() {
       refetchQueries: [
         {
           query: ParticipationsDocument,
-          variables: { endpoint: subscriptionObject.endpoint },
+          variables: {
+            endpoint: subscriptionObject.endpoint,
+            assessmentOnly: process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
+          },
         },
       ],
     })
@@ -97,7 +100,10 @@ function Index() {
       refetchQueries: [
         {
           query: ParticipationsDocument,
-          variables: { endpoint: subscriptionObject.endpoint },
+          variables: {
+            endpoint: subscriptionObject.endpoint,
+            assessmentOnly: process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
+          },
         },
       ],
     })
@@ -153,7 +159,11 @@ function Index() {
   return (
     <Layout
       key="pwa-home-layout"
-      displayName={`${t('shared.generic.title')} (${t('shared.generic.assessment')})`}
+      displayName={
+        process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
+          ? `${t('shared.generic.title')} (${t('shared.generic.assessment')})`
+          : t('shared.generic.title')
+      }
     >
       {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true' && (
         <UserNotification

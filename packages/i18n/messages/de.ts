@@ -582,7 +582,7 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
     },
     studentDocs: {
       assessmentInstanceWarning:
-        'Bitte bachten Sie, dass Sie sich aktuell in der <b>Assessment-Instanz</b> von KlickerUZH befinden. Die nachfolgende Dokumentation bezieht sich auf die reguläre Studierenden-Applikation, welche sich von der Assessment-Instanz unterscheiden kann.',
+        'Bitte beachten Sie, dass Sie sich aktuell in der <b>Assessment-Instanz</b> von KlickerUZH befinden. Die nachfolgende Dokumentation bezieht sich auf die reguläre Studierenden-Applikation, welche sich von der Assessment-Instanz unterscheiden kann.',
       pageList: `
 In dieser Dokumentation finden Sie die wichtigsten Informationen zu KlickerUZH in Ihrem Kurs:
 
@@ -1843,7 +1843,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizAdvancedSettings: 'Erweiterte Einstellungen',
       liveQuizCustomizedGrading: 'Benutzerdefinierte Bewertung',
       liveQuizPointsExplanation:
-        'Diese erweiterten Einstellungen ermöglichen es, die Punktevergabe bei einem Live-Quiz zu verändern. Bitte bachten Sie, dass alle Punkteinstellungen und die Illustrationen der Punktevergabe sich auf Elemente mit einem Multiplikator von 1x beziehen. Höhere Multiplikatoren werden auf alle Komponenten ausser den Standardpunkten angewendet. Der auf der Aktivität gesetzte Multiplikator wird in der Illustration bereits mit einbezogen. Die Antwortzeit beginnt abzulaufen sobald der erste Teilnehmer eine vollständig korrekte Antwort abgegeben hat. Für mehr Informationen konsultieren Sie bitte unsere <link>Dokumentation</link>.',
+        'Diese erweiterten Einstellungen ermöglichen es, die Punktevergabe bei einem Live-Quiz zu verändern. Bitte beachten Sie, dass alle Punkteinstellungen und die Illustrationen der Punktevergabe sich auf Elemente mit einem Multiplikator von 1x beziehen. Höhere Multiplikatoren werden auf alle Komponenten ausser den Standardpunkten angewendet. Der auf der Aktivität gesetzte Multiplikator wird in der Illustration bereits mit einbezogen. Die Antwortzeit beginnt abzulaufen sobald der erste Teilnehmer eine vollständig korrekte Antwort abgegeben hat. Für mehr Informationen konsultieren Sie bitte unsere <link>Dokumentation</link>.',
       liveQuizGamificationDeactivated:
         'Gamifizierung ist für dieses Live Quiz aktuell nicht aktiviert. Bitte wählen Sie entweder einen gamifizierten Kurs oder aktivieren Sie die Gamifizierung manuell.',
       liveQuizDefaultPoints: 'Standardpunkte',
