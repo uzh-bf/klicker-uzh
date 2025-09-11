@@ -120,8 +120,15 @@ export async function testInitialization(
   const tasks = {
     createAuditLoggingEntry: hatchet.task({
       name: 'create-audit-logging-entry',
-      fn: async () => {
-        console.info('Audit log triggered')
+      fn: async ({
+        message,
+      }: {
+        message: Record<string, string | undefined> & {
+          correlationId: string
+          info: string
+        }
+      }) => {
+        console.info('Audit log triggered', message)
         return { success: true }
       },
     }),
