@@ -165,10 +165,11 @@ function Index({ id }: { id: string }) {
       if (activeBlockIndex !== -1 && typeof activeBlockIndex === 'number') {
         setSelectedBlock(activeBlockIndex)
       }
-    } else if (selectedBlock === null) {
-      const lastCompletedBlockIndex = data?.studentLiveQuiz?.blocks?.findIndex(
-        (b) => b.status === ElementBlockStatus.Executed
-      )
+    } else if (selectedBlock === null || selectedBlock === -1) {
+      const lastCompletedBlockIndex =
+        data?.studentLiveQuiz?.blocks?.findLastIndex(
+          (b) => b.status === ElementBlockStatus.Executed
+        )
 
       if (
         lastCompletedBlockIndex !== -1 &&
