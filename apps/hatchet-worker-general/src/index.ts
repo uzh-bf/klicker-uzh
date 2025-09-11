@@ -51,7 +51,7 @@ async function main() {
     family: 4,
     host: process.env.REDIS_HOST ?? 'localhost',
     password: process.env.REDIS_PASS ?? '',
-    port: Number(process.env.REDIS_PORT) ?? 6379,
+    port: Number(process.env.REDIS_PORT ?? 6379),
     tls: process.env.REDIS_TLS ? {} : undefined,
   })
 
@@ -59,7 +59,7 @@ async function main() {
     family: 4,
     host: process.env.REDIS_CACHE_HOST ?? 'localhost',
     password: process.env.REDIS_CACHE_PASS ?? '',
-    port: Number(process.env.REDIS_CACHE_PORT) ?? 6380,
+    port: Number(process.env.REDIS_CACHE_PORT ?? 6380),
     tls: process.env.REDIS_CACHE_TLS ? {} : undefined,
   })
 
@@ -67,7 +67,7 @@ async function main() {
     family: 4,
     host: process.env.REDIS_CACHE_HOST ?? 'localhost',
     password: process.env.REDIS_CACHE_PASS ?? '',
-    port: Number(process.env.REDIS_CACHE_PORT) ?? 6380,
+    port: Number(process.env.REDIS_CACHE_PORT ?? 6380),
     tls: process.env.REDIS_CACHE_TLS ? {} : undefined,
   })
 
@@ -75,7 +75,7 @@ async function main() {
     family: 4,
     host: process.env.REDIS_CACHE_HOST ?? 'localhost',
     password: process.env.REDIS_CACHE_PASS ?? '',
-    port: Number(process.env.REDIS_CACHE_PORT) ?? 6380,
+    port: Number(process.env.REDIS_CACHE_PORT ?? 6380),
     tls: process.env.REDIS_CACHE_TLS ? {} : undefined,
   })
 
