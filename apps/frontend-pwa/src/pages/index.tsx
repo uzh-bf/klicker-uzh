@@ -155,30 +155,32 @@ function Index() {
       key="pwa-home-layout"
       displayName={`${t('shared.generic.title')} (${t('shared.generic.assessment')})`}
     >
-      <UserNotification
-        dismissible
-        type="info"
-        hidden={showAssessmentHint !== 'true'}
-        onDismiss={() => setShowAssessmentHint('false')}
-        className={{
-          root: 'mb-4 md:mx-auto md:w-full md:max-w-xl',
-          closeIcon: 'h-6 w-6 text-lg',
-        }}
-      >
-        {t.rich('pwa.assessment.homepageHint', {
-          pwa_url: process.env.NEXT_PUBLIC_PWA_URL!,
-          link: (children) => (
-            <a
-              href={process.env.NEXT_PUBLIC_PWA_URL!}
-              target="_blank"
-              rel="noreferrer"
-              className="font-bold"
-            >
-              {children}
-            </a>
-          ),
-        })}
-      </UserNotification>
+      {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true' && (
+        <UserNotification
+          dismissible
+          type="info"
+          hidden={showAssessmentHint !== 'true'}
+          onDismiss={() => setShowAssessmentHint('false')}
+          className={{
+            root: 'mb-4 md:mx-auto md:w-full md:max-w-xl',
+            closeIcon: 'h-6 w-6 text-lg',
+          }}
+        >
+          {t.rich('pwa.assessment.homepageHint', {
+            pwa_url: process.env.NEXT_PUBLIC_PWA_URL!,
+            link: (children) => (
+              <a
+                href={process.env.NEXT_PUBLIC_PWA_URL!}
+                target="_blank"
+                rel="noreferrer"
+                className="font-bold"
+              >
+                {children}
+              </a>
+            ),
+          })}
+        </UserNotification>
+      )}
 
       <div
         className="flex flex-col gap-4 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8"
