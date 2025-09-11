@@ -72,6 +72,7 @@ model Participant {
   participations                  Participation[]
   questionResponses               QuestionResponse[]
   detailQuestionResponses         QuestionResponseDetail[]
+  liveQuizResponses               LiveQuizResponse[]
   feedbacks                       Feedback[]
   elementFeedbacks                ElementFeedback[]
   leaderboards                    LeaderboardEntry[]

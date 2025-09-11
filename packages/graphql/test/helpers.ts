@@ -118,6 +118,13 @@ export async function testInitialization(
 
   // initialize tasks to be called
   const tasks = {
+    createAuditLoggingEntry: hatchet.task({
+      name: 'create-audit-logging-entry',
+      fn: async () => {
+        console.info('Audit log triggered')
+        return { success: true }
+      },
+    }),
     publishScheduledMicroLearning: hatchet.task({
       name: 'publish-scheduled-micro-learning',
       fn: async ({ microLearningId }: { microLearningId: string }) => {

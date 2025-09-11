@@ -9,7 +9,9 @@
   ],
   "dependencies": {
     "@hatchet-dev/typescript-sdk": "1.9.4",
-    "@klicker-uzh/hatchet": "workspace:*"
+    "@klicker-uzh/hatchet": "workspace:*",
+    "@klicker-uzh/util": "workspace:*",
+    "ioredis": "5.4.1"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "~15.3.1",

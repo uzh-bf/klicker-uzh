@@ -357,32 +357,6 @@ async function getCachedBlockResults({
     activeInstanceIds: activeBlock.elements.map((instance) => instance.id),
   }
 }
-
-async function unlinkCachedBlockResults({
-  ctx,
-  quizId,
-  blockId,
-  activeInstanceIds,
-}: {
-  ctx: Context
-  quizId: string
-  blockId: number
-  activeInstanceIds: number[]
-}) {
-  // unlink everything regarding the block in redis
-  const unlinkMulti = ctx.redisExec.pipeline()
-
-  unlinkMulti.unlink(`lq:${quizId}:b:${blockId}:lb`)
-  unlinkMulti.unlink(`lq:${quizId}:b:${blockId}:lbTemporary`)
-  activeInstanceIds.forEach((instanceId) => {
-    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:info`)
-    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:responseHashes`)
-    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:responses`)
-    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:results`)
-  })
-
-  return unlinkMulti.exec()
-}
 // #endregion
 
 // ------ LIVE QUIZ CREATION / EDITING ------
@@ -1154,6 +1128,8 @@ export async function startLiveQuiz(
           pipeline.hmset(`lq:${quiz.id}:meta`, {
             namespace: quiz.namespace,
             startedAt: Number(new Date()),
+            isGamificationEnabled: quiz.isGamificationEnabled,
+            isAssessmentEnabled: quiz.isAssessmentEnabled,
           })
 
           await pipeline.exec()
@@ -1397,6 +1373,7 @@ export async function activateLiveQuizBlock(
           where: { id: blockId },
           data: {
             status: DB.ElementBlockStatus.ACTIVE,
+            startedAt: new Date(),
             expiresAt: newBlock.timeLimit
               ? dayjs().add(newBlock.timeLimit, 'seconds').toDate()
               : undefined,
@@ -1463,6 +1440,8 @@ export async function activateLiveQuizBlock(
       defaultCorrectPoints: updatedQuiz.defaultCorrectPoints,
       maxBonusPoints: updatedQuiz.maxBonusPoints,
       timeToZeroBonus: updatedQuiz.timeToZeroBonus,
+      blockExecution: updatedQuiz.activeBlock!.execution,
+      blockStartedAt: Number(updatedQuiz.activeBlock!.startedAt),
     }
 
     switch (elementData.type) {
@@ -1717,6 +1696,7 @@ export async function deactivateLiveQuizBlock(
             where: { id: blockId },
             data: {
               status: DB.ElementBlockStatus.EXECUTED,
+              closedAt: new Date(),
               elements: {
                 update: Object.entries(instanceResults).map(
                   ([id, instanceResult]) => ({
@@ -1828,12 +1808,20 @@ export async function deactivateLiveQuizBlock(
       delete scheduledJobs[blockId]
     }
 
-    unlinkCachedBlockResults({
-      ctx,
-      quizId,
-      blockId,
-      activeInstanceIds,
-    })
+    // add the closure timestamp of the block to the instance info in the redis cache
+    const updatedBlock = updatedQuiz.blocks.find(
+      (block) => block.id === blockId
+    )
+    if (updatedBlock && updatedBlock.closedAt) {
+      for (const instanceId of activeInstanceIds) {
+        // add the blockClosedAt timestamp to the instance info cache
+        await ctx.redisExec.hset(
+          `lq:${quiz.id}:i:${instanceId}:info`,
+          'blockClosedAt',
+          Number(updatedBlock.closedAt)
+        )
+      }
+    }
 
     return true
   } catch (error: any) {
@@ -2129,6 +2117,7 @@ export async function endLiveQuiz(
       })
     }
 
+    // TODO: make sure here that cache keys of instances in assessment live quizzes remain intact until the last response has been processed
     // Clean up Redis keys without using KEYS (iterate with SCAN to avoid blocking)
     const SCAN_COUNT = 1000
     let cursor = '0'
@@ -2389,6 +2378,8 @@ export async function cancelLiveQuiz(
               },
               data: {
                 status: DB.ElementBlockStatus.SCHEDULED,
+                startedAt: null,
+                closedAt: null,
                 expiresAt: null,
                 execution: { increment: 1 },
               },

@@ -60,10 +60,15 @@ async function handleNewResponse(
     method: 'POST',
     credentials: 'include',
   }
+
+  // TODO: provide proper correlationId
+  const correlationId = '18513af0-f4b8-4098-b93d-9a77e29f08a5'
+
   if (QUESTION_GROUPS.CHOICES.includes(type)) {
     requestOptions = {
       ...requestOptions,
       body: JSON.stringify({
+        correlationId,
         instanceId,
         sessionId,
         response: { choices: answer },
@@ -76,6 +81,7 @@ async function handleNewResponse(
     requestOptions = {
       ...requestOptions,
       body: JSON.stringify({
+        correlationId,
         instanceId,
         sessionId,
         response: { value: answer },
@@ -85,6 +91,7 @@ async function handleNewResponse(
     requestOptions = {
       ...requestOptions,
       body: JSON.stringify({
+        correlationId,
         instanceId,
         sessionId,
         response: { selection: answer },
@@ -94,6 +101,7 @@ async function handleNewResponse(
     requestOptions = {
       ...requestOptions,
       body: JSON.stringify({
+        correlationId,
         instanceId,
         sessionId,
         response: { assessment: answer },
@@ -103,6 +111,7 @@ async function handleNewResponse(
     requestOptions = {
       ...requestOptions,
       body: JSON.stringify({
+        correlationId,
         instanceId,
         sessionId,
         response: { read: true },
