@@ -161,7 +161,10 @@ function Header({
                       <div className="font-bold">
                         <div>{t('pwa.profile.loggedInAs')}</div>
                         <div className="font-normal">
-                          {`${participant?.username}${participant.role === UserRole.TemporaryParticipant ? ` (${t('pwa.profile.temporaryPseudonym')})` : ''}`}
+                          {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
+                            ? (participant.institutionalEmail ??
+                              participant.email)
+                            : `${participant?.username}${participant.role === UserRole.TemporaryParticipant ? ` (${t('pwa.profile.temporaryPseudonym')})` : ''}`}
                         </div>
                       </div>
                     ),

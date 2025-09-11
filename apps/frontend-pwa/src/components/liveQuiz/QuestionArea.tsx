@@ -215,7 +215,7 @@ function QuestionArea({
     )
 
     // update the active instance and the remaining questions
-    setActiveInstance(newRemaining[0] || 0)
+    setActiveInstance(newRemaining[0] ?? instances.length - 1)
     setRemainingQuestions(newRemaining)
 
     // if this was the last question of the block and gamification is enabled, show confetti
@@ -248,6 +248,7 @@ function QuestionArea({
 
     // automatically skip all possibly remaining questions
     setRemainingQuestions([])
+    setActiveInstance(instances.length - 1)
 
     // if the live quiz is gamified, show a confetti explosion
     if (gamificationEnabled) {

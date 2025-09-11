@@ -13,12 +13,13 @@ import AccountDeletionForm from '../components/forms/AccountDeletionForm'
 import AvatarUpdateForm from '../components/forms/AvatarUpdateForm'
 import UpdateAccountInfoForm from '../components/forms/UpdateAccountInfoForm'
 
-interface Props {
+function EditProfile({
+  participantToken,
+  cookiesAvailable,
+}: {
   participantToken?: string
   cookiesAvailable?: boolean
-}
-
-function EditProfile({ participantToken, cookiesAvailable }: Props) {
+}) {
   const t = useTranslations()
   const { data, loading, refetch } = useQuery(SelfDocument)
 
@@ -59,7 +60,7 @@ function EditProfile({ participantToken, cookiesAvailable }: Props) {
     >
       <div className="flex flex-col gap-8 md:mx-auto md:w-full md:max-w-5xl md:gap-4">
         <div className="flex w-full flex-col gap-8 md:flex-row md:gap-4">
-          <div className="w-full md:w-1/2">
+          <div className="w-full md:h-full md:w-1/2">
             <UpdateAccountInfoForm
               user={data.self}
               onError={onError}
