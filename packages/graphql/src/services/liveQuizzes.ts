@@ -1322,9 +1322,30 @@ export async function activateLiveQuizBlock(
     beforeFirstBlock: false,
     activeBlock: {
       ...updatedQuiz.activeBlock,
-      elements: removeSolutionFromInstances({
-        instances: updatedQuiz.activeBlock?.elements ?? [],
-      }),
+      elements: updatedQuiz.activeBlock?.elements
+        ? await Promise.all(
+            removeSolutionFromInstances({
+              instances: updatedQuiz.activeBlock.elements,
+            }).map(async (instance) => {
+              if (!quiz.isAssessmentEnabled) {
+                return instance
+              }
+
+              // for assessment quizzes, add a correlation key to verify a student's submission
+              const correlationKey = await signJWT(
+                {
+                  instanceId: instance.id,
+                  execution: updatedQuiz.activeBlock!.execution,
+                  liveQuizId: quiz.id,
+                  sub: '', // dummy sub, since this value is required
+                },
+                process.env.APP_SECRET as string
+              )
+
+              return { ...instance, correlationKey }
+            })
+          )
+        : [],
     },
     // for future blocks, do not return the elements
     blocks: updatedQuiz.blocks.map((block) => ({
