@@ -2835,7 +2835,7 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
       beforeFirstBlock,
       activeBlock: { ...quiz.activeBlock, elements: activeBlockInstances },
       // for future blocks, do not return the elements
-      blocks: quiz.blocks.map(async (block) => ({
+      blocks: quiz.blocks.map((block) => ({
         ...block,
         elements:
           block.status === DB.ElementBlockStatus.EXECUTED
