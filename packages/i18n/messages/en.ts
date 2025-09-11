@@ -201,6 +201,7 @@ export default {
       microlearnings: 'Microlearnings',
       microlearning: 'Microlearning',
       activeLiveQuizzes: 'Active Live Quizzes',
+      assessmentLiveQuizzes: 'Assessment Live Quizzes',
       activePracticeQuizzes: 'Active Practice Quizzes',
       activeMicroLearnings: 'Active Microlearnings',
       groupActivity: 'Group Activity',
@@ -515,6 +516,7 @@ export default {
       waitingForActivation:
         'Your account has been created. Please check your inbox for an activation link.',
       myCourses: 'My Courses',
+      myAssessmentCourses: 'My Assessment Courses',
       insights: 'Insights',
       timeline: 'Timeline',
       myBookmarks: 'My Bookmarks',
@@ -577,6 +579,8 @@ Your data will never be shared with other parties beside the above and will neve
         'I agree to the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy) and [terms of service](https://www.klicker.uzh.ch/terms_of_service) and consent to the processing of my data as described therein. I am aware that I can participate in learning activities anonymously and without an account if I do not agree to these conditions.',
     },
     studentDocs: {
+      assessmentInstanceWarning:
+        'Please note that you are currently in the <b>assessment instance</b> of KlickerUZH. The following documentation refers to the regular student application, which may differ from the assessment instance.',
       pageList: `
 In this documentation you will find the most important information about KlickerUZH in your course:
 
@@ -1054,6 +1058,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'This group activity has ended already. You cannot start it anymore or submit any answers.',
     },
     assessment: {
+      homepageHint:
+        'Welcome to the assessment instance of KlickerUZH! If you want to use activities outside of an assessment course, please log in at <link>{pwa_url}</link> instead.',
       title: 'Assessment Login',
       warning:
         'This is an assessment application. All your data and activities will be visible to your lecturers.',

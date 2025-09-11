@@ -183,7 +183,7 @@ function AvatarUpdateForm({ user, onError, onSuccess }: AvatarUpdateFormProps) {
                     type="submit"
                     loading={isSubmitting}
                     disabled={!isValid}
-                    className={{ root: 'border-primary-100 h-8' }}
+                    className={{ root: 'border-primary-100 mt-3 h-8' }}
                     data={{ cy: 'save-avatar-update' }}
                   >
                     <Button.Icon icon={faSave} loading={isSubmitting} />

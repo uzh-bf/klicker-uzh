@@ -1964,6 +1964,7 @@ type Participant {
   avatarSettings: AvatarSettings
   email: String
   id: ID!
+  institutionalEmail: String
   isActive: Boolean!
   isCourseParticipant: Boolean
   isCourseParticipationActive: Boolean
@@ -2231,7 +2232,7 @@ type Query {
   microLearning(id: String!): MicroLearning
   participantCourses: [Course!]
   participantGroups(courseId: String!): [ParticipantGroup!]
-  participations(endpoint: String): [Participation!]
+  participations(assessmentOnly: Boolean, endpoint: String): [Participation!]
   practiceQuiz(id: String!): PracticeQuiz
   publicParticipantProfile(participantId: String!): Participant
   self(liveQuizId: String): Participant
