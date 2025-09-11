@@ -162,15 +162,46 @@ export async function POST(
 
     onFinish: async (result) => {
       // save assistant response to database
-      if (currentThreadId && result.text) {
+      if (currentThreadId && result.steps && result.steps.length > 0) {
         try {
+          const content = []
+
+          for (const step of result.steps) {
+            if (step.content && Array.isArray(step.content)) {
+              if (
+                step.content.length === 1 &&
+                step.content[0].type === 'text'
+              ) {
+                // Case 1: single text content
+                content.push({ type: 'text', text: step.content[0].text })
+              } else if (step.content.length === 2) {
+                // Case 2: tool call with tool-call and tool-result
+                const toolCall = step.content.find(
+                  (item) => item.type === 'tool-call'
+                )
+                const toolResult = step.content.find(
+                  (item) => item.type === 'tool-result'
+                )
+
+                if (toolCall && toolResult) {
+                  content.push({
+                    type: 'tool-call',
+                    toolCallId: toolCall.toolCallId,
+                    toolName: toolCall.toolName,
+                    args: toolCall.input,
+                    result: toolResult.output,
+                  })
+                }
+              }
+            }
+          }
           await prisma.chatMessage.create({
             data: {
               id: assistantMessageId,
               threadId: currentThreadId,
               parentId: userMessageId,
               role: 'assistant',
-              content: [{ type: 'text', text: result.text }],
+              content: content,
             },
           })
 
@@ -208,8 +239,9 @@ export async function POST(
       }
     },
 
-    onAbort: async () => {
+    onAbort: async ({ steps }) => {
       // save partial message
+      console.log('aborted response', steps)
       if (currentThreadId && partialContent.trim()) {
         try {
           await prisma.chatMessage.create({
@@ -235,7 +267,7 @@ export async function POST(
 
     onError: async (error) => {
       // handle error
-      console.error('ERRORRRR:', error)
+      console.error('Error during streaming response:', error)
     },
   })
   return result.toUIMessageStreamResponse()

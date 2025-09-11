@@ -36,7 +36,7 @@ export function RuntimeProvider({
   useEffect(() => {
     loadThreads(chatbotId)
     loadCredits(chatbotId)
-  }, [chatbotId, loadCredits])
+  }, [chatbotId, loadCredits, loadThreads])
 
   // init chat response handling hook
   const { generateChatResponse, abortControllerRef } = useChatResponse(

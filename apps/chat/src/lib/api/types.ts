@@ -10,16 +10,18 @@ export interface ApiThread {
 /**
  * API message content part
  */
-export interface ApiContentPart {
-  type: 'text'
-  text: string
-}
-
-/** TODO: Extend with other content types (tool calls, images, ...)
- * export type ApiContentPart =
- *   | { type: 'text'; text: string }
- *   | { type: 'tool-call'; toolCallId: string; toolName: string; args: any; result?: string }
- *  */
+export type ApiContentPart =
+  | { type: 'text'; text: string }
+  | {
+      type: 'tool-call'
+      toolCallId: string
+      toolName: string
+      args?: Record<string, unknown>
+      result?: {
+        content?: Array<{ text: string; type: string }>
+        isError?: boolean
+      }
+    }
 
 export interface ApiMessage {
   id: string
@@ -93,10 +95,24 @@ export const convertApiMessageToMessage = (
 ): ExtendedThreadMessageLike => ({
   id: apiMessage.id,
   role: apiMessage.role,
-  content: apiMessage.content.map((item) => ({
-    type: item.type,
-    text: item.text,
-  })),
+  content: apiMessage.content.map((item) => {
+    if (item.type === 'text') {
+      return {
+        type: item.type,
+        text: item.text,
+      }
+    } else if (item.type === 'tool-call') {
+      return {
+        type: item.type,
+        toolCallId: item.toolCallId,
+        toolName: item.toolName,
+        args: item.args,
+        result: item.result,
+      }
+    }
+    // fallback for unknown types
+    return item
+  }) as ExtendedThreadMessageLike['content'],
   createdAt: new Date(apiMessage.createdAt),
   parentId: apiMessage.parentId || undefined,
 })
