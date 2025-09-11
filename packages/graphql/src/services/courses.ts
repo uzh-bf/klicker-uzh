@@ -2020,6 +2020,7 @@ export async function getCoursePracticeQuiz(
     stacks: orderedStacks.slice(0, 25),
     numOfStacks: 25,
     availableFrom: null,
+    areInstancesOutdated: false,
     course,
     courseId,
     isDeleted: false,

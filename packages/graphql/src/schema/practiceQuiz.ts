@@ -176,11 +176,6 @@ export const ElementStack = ElementStackRef.implement({
 export interface IPracticeQuiz
   extends Pick<
     DB.PracticeQuiz,
-    | 'startedCount'
-    | 'completedCount'
-    | 'repeatedCount'
-    | 'areInstancesOutdated'
-    | 'scheduledPublicationTaskId'
     | 'id'
     | 'name'
     | 'displayName'
@@ -191,6 +186,7 @@ export interface IPracticeQuiz
     | 'orderType'
     | 'status'
     | 'availableFrom'
+    | 'areInstancesOutdated'
     | 'courseId'
     | 'createdAt'
     | 'updatedAt'

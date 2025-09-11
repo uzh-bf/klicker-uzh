@@ -3132,15 +3132,11 @@ export async function handlePublishScheduledLiveQuiz(
       })
       .exec()
 
-    // generate a random pin code
-    const pinCode = 100000 + Math.floor(Math.random() * 900000)
     const startedLiveQuiz = await ctx.prisma.liveQuiz.update({
       where: { id: liveQuizId },
       data: {
         status: DB.PublicationStatus.PUBLISHED,
         startedAt: new Date(),
-        pinCode:
-          liveQuiz.accessMode === DB.AccessMode.RESTRICTED ? pinCode : null,
       },
     })
 
