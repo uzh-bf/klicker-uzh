@@ -228,7 +228,23 @@ async function handleAddAssessmentResponse(
     message
   )
 
-  await hatchet.events.push('response-received:assessment', message)
+  try {
+    await hatchet.events.push('response-received:assessment', message)
+  } catch (error) {
+    try {
+      await hatchet.events.push('create-audit-log-entry', {
+        correlationId,
+        info: `[ERROR] [AddResponse Assessment] Failed to push response-received:assessment event for correlationId ${correlationId}: ${error}`,
+      })
+    } catch (loggingError) {
+      // TODO: send error directly to audit-logging service through network request
+      console.error('Failed to push create-audit-log-entry event', {
+        originalError: error,
+        loggingError,
+      })
+    }
+  }
+
   return sendJson(req, res, 200, { status: 'ok' })
 }
 
