@@ -1124,6 +1124,9 @@ importers:
       '@types/node':
         specifier: ^20.19.11
         version: 20.19.11
+      dotenv:
+        specifier: ~16.4.7
+        version: 16.4.7
       rollup:
         specifier: ~4.34.9
         version: 4.34.9
@@ -1167,6 +1170,9 @@ importers:
       '@types/node':
         specifier: ^20.19.11
         version: 20.19.11
+      dotenv:
+        specifier: ~16.4.7
+        version: 16.4.7
       rollup:
         specifier: ~4.34.9
         version: 4.34.9
