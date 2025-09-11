@@ -2505,8 +2505,6 @@ export async function handleEndExpiredGroupActivity(
       text: `Error ending group activity with ID ${groupActivityId}: ${error}`,
     })
     throw error // rethrow to allow Hatchet to handle retries
-  } finally {
-    await ctx.prisma.$disconnect()
   }
 }
 
@@ -2560,7 +2558,5 @@ export async function handlePublishScheduledGroupActivity(
       text: `Error publishing group activity with ID ${groupActivityId}: ${error}`,
     })
     throw error // rethrow to allow Hatchet to handle retries
-  } finally {
-    await ctx.prisma.$disconnect()
   }
 }

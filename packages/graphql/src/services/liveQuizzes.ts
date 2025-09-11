@@ -3168,8 +3168,6 @@ export async function handlePublishScheduledLiveQuiz(
       text: `Error publishing live quiz with ID ${liveQuizId}: ${error}`,
     })
     throw error // rethrow to allow Hatchet to handle retries
-  } finally {
-    await ctx.prisma.$disconnect()
   }
 }
 // #endregion

@@ -956,8 +956,6 @@ export async function handleEndExpiredMicroLearning(
       text: `Error ending microlearning with ID ${microLearningId}: ${error}`,
     })
     throw error // rethrow to allow Hatchet to handle retries
-  } finally {
-    await ctx.prisma.$disconnect()
   }
 }
 
@@ -1011,7 +1009,5 @@ export async function handlePublishScheduledMicroLearning(
       text: `Error publishing microlearning with ID ${microLearningId}: ${error}`,
     })
     throw error // rethrow to allow Hatchet to handle retries
-  } finally {
-    await ctx.prisma.$disconnect()
   }
 }

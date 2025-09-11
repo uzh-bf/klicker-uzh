@@ -862,7 +862,5 @@ export async function handlePublishScheduledPracticeQuiz(
       text: `Error publishing practice quiz with ID ${practiceQuizId}: ${error}`,
     })
     throw error // rethrow to allow Hatchet to handle retries
-  } finally {
-    await ctx.prisma.$disconnect()
   }
 }
