@@ -1,3 +1,4 @@
+import { getMCPTools } from '@/src/services/mcpClients'
 import { anthropic } from '@ai-sdk/anthropic'
 import { openai } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
@@ -14,7 +15,6 @@ import {
   getSystemPrompt,
   type ChatbotMode,
 } from '../../../../../lib/config/prompts'
-import { getContext7Tools } from '../../../../../services/mcpClients'
 import { ThreadService } from '../../../../../services/threads'
 import { RAGSearch } from '../../../../../services/tools'
 
@@ -139,14 +139,14 @@ export async function POST(
     parts: [{ type: 'text' as const, text: msg.content }],
   }))
 
-  const context7Tools = await getContext7Tools()
+  const mcpTools = await getMCPTools(chatbotId)
 
   const result = streamText({
     model: getModel(selectedModel),
     messages: convertToModelMessages(uiMessages),
     tools: {
       RAGSearch,
-      ...context7Tools,
+      ...mcpTools,
     },
     toolChoice: 'auto',
     stopWhen: stepCountIs(5),

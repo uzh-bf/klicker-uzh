@@ -6,7 +6,6 @@ import {
   type ThreadMessageLike,
 } from '@assistant-ui/react'
 import { useCallback, useEffect } from 'react'
-import { Context7ToolUI } from '../components/assistant-ui/tools-ui/context7-tool-ui'
 import { RAGToolUI } from '../components/assistant-ui/tools-ui/rag-tool-ui'
 import { useChatResponse } from '../hooks/useChatResponse'
 import { useThreadManagement } from '../hooks/useThreadManagement'
@@ -69,7 +68,6 @@ export function RuntimeProvider({
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <RAGToolUI />
-      <Context7ToolUI />
       {children}
     </AssistantRuntimeProvider>
   )

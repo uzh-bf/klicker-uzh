@@ -2,61 +2,58 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import { experimental_createMCPClient } from 'ai'
 
 /**
- * Creates and initializes Context7 MCP client using StreamableHTTPClientTransport
+ * Creates and initializes MCP client using StreamableHTTPClientTransport
  */
-export async function createContext7MCPClient() {
-  const apiKey = process.env.CONTEXT7_API_KEY
-  const port = process.env.CONTEXT7_PORT || '9000'
+export async function createMCPClient(chatbotId: string) {
+  const mcpKey = process.env.MCP_KEY
+  const mcpUrl = process.env.MCP_URL
 
-  console.log(
-    'Creating Context7 MCP client with StreamableHTTPClientTransport...'
-  )
+  if (!mcpUrl) {
+    throw new Error('MCP_URL environment variable is not defined')
+  }
 
   try {
-    const httpTransport = new StreamableHTTPClientTransport(
-      new URL(`http://localhost:${port}/mcp`),
-      {
-        requestInit: {
-          headers: apiKey
-            ? {
-                Authorization: `Bearer ${apiKey}`,
-                'Chatbot-ID': 'TODO',
-                'Content-Type': 'application/json',
-              }
-            : {
-                'Content-Type': 'application/json',
-              },
-        },
-      }
-    )
+    const httpTransport = new StreamableHTTPClientTransport(new URL(mcpUrl), {
+      requestInit: {
+        headers: mcpKey
+          ? {
+              Authorization: `Bearer ${mcpKey}`,
+              'Chatbot-ID': chatbotId,
+              'Content-Type': 'application/json',
+            }
+          : {
+              'Content-Type': 'application/json',
+            },
+      },
+    })
 
     // create MCP client
     const client = await experimental_createMCPClient({
       transport: httpTransport,
     })
-    console.log('✅ Context7 MCP Client initialized successfully')
+    console.log('✅ MCP Client initialized successfully')
 
     return client
   } catch (error) {
-    console.error('❌ Failed to create Context7 MCP client:', error)
+    console.error('❌ Failed to create MCP client:', error)
     throw error
   }
 }
 
 /**
- * Get Context7 tools from the MCP server
+ * Get tools from the MCP server
  */
-export async function getContext7Tools() {
-  console.log('Loading Context7 MCP Tools...')
+export async function getMCPTools(chatbotId: string) {
+  console.log('Loading MCP Tools...')
 
   try {
-    const client = await createContext7MCPClient()
+    const client = await createMCPClient(chatbotId)
     const tools = await client.tools()
 
-    console.log('Context7 MCP Tools loaded successfully:', Object.keys(tools))
+    console.log('MCP Tools loaded successfully:', Object.keys(tools))
     return tools
   } catch (error) {
-    console.error('Failed to load Context7 MCP Tools:', error)
+    console.error('Failed to load MCP Tools:', error)
     return {}
   }
 }
