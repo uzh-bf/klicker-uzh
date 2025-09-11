@@ -912,7 +912,7 @@ export async function handleEndExpiredMicroLearning(
     })
 
     if (!microLearning) {
-      handleSendTeamsNotification({
+      await handleSendTeamsNotification({
         scope: 'hatchet/microlearning-end',
         text: `Microlearning with ID ${microLearningId} not found or scheduled end time is not in the past yet.`,
       })
@@ -942,7 +942,7 @@ export async function handleEndExpiredMicroLearning(
     return true
   } catch (error) {
     console.error('Error ending expired microlearning:', error)
-    handleSendTeamsNotification({
+    await handleSendTeamsNotification({
       scope: 'hatchet/microlearning-end',
       text: `Error ending microlearning with ID ${microLearningId}: ${error}`,
     })
@@ -967,7 +967,7 @@ export async function handlePublishScheduledMicroLearning(
     })
 
     if (!microLearning) {
-      handleSendTeamsNotification({
+      await handleSendTeamsNotification({
         scope: 'hatchet/microlearning-start',
         text: `Microlearning with ID ${microLearningId} not found or scheduled start time is not in the past yet.`,
       })
@@ -997,7 +997,7 @@ export async function handlePublishScheduledMicroLearning(
     return true
   } catch (error) {
     console.error('Error publishing scheduled microlearning:', error)
-    handleSendTeamsNotification({
+    await handleSendTeamsNotification({
       scope: 'hatchet/microlearning-start',
       text: `Error publishing microlearning with ID ${microLearningId}: ${error}`,
     })

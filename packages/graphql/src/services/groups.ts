@@ -2526,7 +2526,7 @@ export async function handleEndExpiredGroupActivity(
     })
 
     if (!groupActivity) {
-      handleSendTeamsNotification({
+      await handleSendTeamsNotification({
         scope: 'hatchet/group-activity-end',
         text: `Group activity with ID ${groupActivityId} not found or scheduled end time is not in the past yet.`,
       })
@@ -2557,7 +2557,7 @@ export async function handleEndExpiredGroupActivity(
     return true
   } catch (error) {
     console.error('Error ending expired group activity:', error)
-    handleSendTeamsNotification({
+    await handleSendTeamsNotification({
       scope: 'hatchet/group-activity-end',
       text: `Error ending group activity with ID ${groupActivityId}: ${error}`,
     })
@@ -2582,7 +2582,7 @@ export async function handlePublishScheduledGroupActivity(
     })
 
     if (!groupActivity) {
-      handleSendTeamsNotification({
+      await handleSendTeamsNotification({
         scope: 'hatchet/group-activity-start',
         text: `Group activity with ID ${groupActivityId} not found or scheduled start time is not in the past yet.`,
       })
@@ -2612,7 +2612,7 @@ export async function handlePublishScheduledGroupActivity(
     return true
   } catch (error) {
     console.error('Error publishing scheduled group activity:', error)
-    handleSendTeamsNotification({
+    await handleSendTeamsNotification({
       scope: 'hatchet/group-activity-start',
       text: `Error publishing group activity with ID ${groupActivityId}: ${error}`,
     })

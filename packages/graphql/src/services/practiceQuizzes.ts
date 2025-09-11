@@ -813,7 +813,7 @@ export async function handlePublishScheduledPracticeQuiz(
     })
 
     if (!practiceQuiz) {
-      handleSendTeamsNotification({
+      await handleSendTeamsNotification({
         scope: 'hatchet/practice-quiz-start',
         text: `Practice quiz with ID ${practiceQuizId} not found or scheduled start time is not in the past yet.`,
       })
@@ -856,7 +856,7 @@ export async function handlePublishScheduledPracticeQuiz(
     return true
   } catch (error) {
     console.error('Error publishing scheduled practice quiz:', error)
-    handleSendTeamsNotification({
+    await handleSendTeamsNotification({
       scope: 'hatchet/practice-quiz-start',
       text: `Error publishing practice quiz with ID ${practiceQuizId}: ${error}`,
     })

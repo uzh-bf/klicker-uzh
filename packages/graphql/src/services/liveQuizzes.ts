@@ -1179,6 +1179,7 @@ export async function startLiveQuiz(
           data: {
             status: DB.PublicationStatus.PUBLISHED,
             startedAt: new Date(),
+            scheduledPublicationTaskId: null,
           },
         })
 
@@ -1244,7 +1245,11 @@ export async function unpublishLiveQuiz(
   // reset the status of the live quiz to draft and remove the availableFrom date
   const liveQuiz = await ctx.prisma.liveQuiz.update({
     where: { id, status: DB.PublicationStatus.SCHEDULED },
-    data: { availableFrom: null, status: DB.PublicationStatus.DRAFT },
+    data: {
+      availableFrom: null,
+      status: DB.PublicationStatus.DRAFT,
+      scheduledPublicationTaskId: null,
+    },
   })
 
   if (!liveQuiz) {
@@ -3114,7 +3119,7 @@ export async function handlePublishScheduledLiveQuiz(
     })
 
     if (!liveQuiz) {
-      handleSendTeamsNotification({
+      await handleSendTeamsNotification({
         scope: 'hatchet/live-quiz-start',
         text: `Live quiz with ID ${liveQuizId} not found or scheduled start time is not in the past yet.`,
       })
@@ -3154,7 +3159,7 @@ export async function handlePublishScheduledLiveQuiz(
     return true
   } catch (error) {
     console.error('Error publishing scheduled live quiz:', error)
-    handleSendTeamsNotification({
+    await handleSendTeamsNotification({
       scope: 'hatchet/live-quiz-start',
       text: `Error publishing live quiz with ID ${liveQuizId}: ${error}`,
     })
