@@ -1,3 +1,5 @@
+import { prisma } from '@klicker-uzh/prisma'
+import { notFound } from 'next/navigation'
 import { Assistant } from '../../components/assistant'
 
 interface ChatPageProps {
@@ -6,5 +8,19 @@ interface ChatPageProps {
 
 export default async function ChatPage({ params }: ChatPageProps) {
   const { chatbotId } = await params
-  return <Assistant chatbotId={chatbotId} />
+
+  try {
+    const chatbot = await prisma.chatbot.findUnique({
+      where: { id: chatbotId },
+      select: { id: true, name: true },
+    })
+
+    if (!chatbot) notFound()
+
+    return <Assistant chatbot={chatbot} />
+  } catch (error) {
+    // handle invalid UUID or other db errors
+    console.error('Error fetching chatbot:', error)
+    notFound()
+  }
 }

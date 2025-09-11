@@ -12,26 +12,37 @@ import {
   SidebarProvider,
 } from '@uzh-bf/design-system'
 import { RuntimeProvider } from '../app/RuntimeProvider'
+import { useChatStore } from '../stores/chatStore'
 import { AppSidebar } from './app-sidebar'
 import { Thread } from './assistant-ui/thread'
 
-export const Assistant = ({ chatbotId }: { chatbotId: string }) => {
+export const Assistant = ({
+  chatbot,
+}: {
+  chatbot: { id: string; name: string }
+}) => {
+  const { activeThreadId, threads } = useChatStore()
+
+  const activeThread = threads.find((t) => t.id === activeThreadId)
+
   return (
-    <RuntimeProvider chatbotId={chatbotId}>
+    <RuntimeProvider chatbotId={chatbot.id}>
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <header className="flex h-10 shrink-0 items-center gap-2 border-b bg-gray-50 px-4">
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
+                <BreadcrumbItem className="hidden sm:block">
                   <BreadcrumbLink asChild>
-                    <div className="cursor-pointer">Klicker Chat</div>
+                    <div className="cursor-pointer">{chatbot.name}</div>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbSeparator className="hidden sm:block" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>New Chat</BreadcrumbPage>
+                  <BreadcrumbPage>
+                    {activeThread?.title || 'New Chat'}
+                  </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
