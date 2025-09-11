@@ -3,10 +3,10 @@ import { HatchetClient, Priority } from '@hatchet-dev/typescript-sdk'
 export type SimpleInput = {}
 
 export function prepareHatchetTasks(hatchet: HatchetClient) {
-  const createAuditLogEntryTask = hatchet.durableTask({
+  const createAuditLogEntryTask = hatchet.task({
     name: 'create-audit-log-entry',
     retries: 3,
-    defaultPriority: Priority.MEDIUM,
+    defaultPriority: Priority.LOW,
     onEvents: ['create-audit-log-entry'],
     fn: (message: Record<string, string | undefined>, ctx) => {
       // TODO: implement audit log functionality beyond logging here

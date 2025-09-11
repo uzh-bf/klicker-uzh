@@ -135,6 +135,9 @@ async function handleAddAssessmentResponse(
   req: IncomingMessage,
   res: ServerResponse
 ) {
+  // track the time where the response was received
+  const responseTimestamp = Date.now()
+
   let payload: any
   try {
     payload = await readBody(req)
@@ -173,7 +176,7 @@ async function handleAddAssessmentResponse(
     )
     hatchet.events.push('create-audit-log-entry', {
       correlationId,
-      info: `[AddResponse Assessment] Participant with correlationId ${correlationId} already tried to answer instance ${instanceId} in session ${sessionId} again.`,
+      info: `[AddResponse Assessment] Participant with correlationId ${correlationId} tried to answer instance ${instanceId} in session ${sessionId} again.`,
     })
 
     // TODO: should we return a bad request or a success message, because the answer is already there?
@@ -216,7 +219,7 @@ async function handleAddAssessmentResponse(
     sessionId: String(sessionId),
     instanceId: String(instanceId),
     response, // pass through as-is; worker validates
-    responseTimestamp: Date.now(),
+    responseTimestamp,
   }
 
   // start the processing of an assessment response

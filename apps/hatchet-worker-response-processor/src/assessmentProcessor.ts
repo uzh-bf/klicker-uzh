@@ -388,7 +388,7 @@ export async function processAssessmentResponse(
       correlationId: message.correlationId,
       info: `[AddResponse Assessment] Failed to create live quiz response for instance ${message.instanceId} and participant ${message.participantId}.`,
     })
-    throw new NonRetryableError(
+    throw new Error(
       `Live quiz response creation failed with the following error: ${JSON.stringify(e)}`
     )
   }
