@@ -1,40 +1,31 @@
-// @ts-nocheck
-
 // TODO: code from azure function, requires a complete rework to hatchet best practices (e.g., as a DAG etc. for immutability and retriability)
 
+// TODO: add additional processor with assessment logic
 import type {
   Context,
   DurableContext,
+  JsonObject,
 } from '@hatchet-dev/typescript-sdk/index.js'
-import {
-  computeAwardedPoints,
-  computeAwardedXp,
-  gradeQuestionCaseStudy,
-  gradeQuestionFreeText,
-  gradeQuestionKPRIM,
-  gradeQuestionMC,
-  gradeQuestionNumerical,
-  gradeQuestionSC,
-  gradeQuestionSelection,
-} from '@klicker-uzh/grading'
 import type { ResponseInput } from '@klicker-uzh/types'
-import { verifyJWT } from '@klicker-uzh/util'
+import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
 import {
-  DEFAULT_CORRECT_POINTS,
-  DEFAULT_POINTS,
-  MAX_BONUS_POINTS,
-  TIME_TO_ZERO_BONUS,
-} from './constants.js'
+  getCaseStudyQuestionPoints,
+  getChoicesQuestionPoints,
+  getFreeTextQuestionPoints,
+  getNumericalQuestionPoints,
+  getSelectionQuestionPoints,
+  updateLeaderboards,
+} from './helpers.js'
 import getRedis from './redis.js'
 
 // TODO: what if the participant is not part of the course? when starting a session, prepopulate the leaderboard with all participations? what if a participant joins the course during a session? filter out all 0 point participants before rendering the LB
 // TODO: ensure that the response meets the restrictions specified in the element options
 
 export type Message = {
-  messageId: string // TODO: to be used as correlation id
+  messageId: string
   sessionId: string
   instanceId: string
   response: ResponseInput
@@ -44,58 +35,20 @@ export type Message = {
 
 const redisExec = getRedis()
 
-function updateLeaderboards({
-  redisMulti,
-  participantId,
-  participantRole,
-  sessionKey,
-  sessionBlockId,
-  pointsAwarded,
-  xpAwarded,
-}: {
-  redisMulti: ChainableCommander
-  participantId: string
-  participantRole: string
-  sessionKey: string
-  sessionBlockId: string
-  pointsAwarded: number
-  xpAwarded: number
-}) {
-  // depending on the participant account type (permanent student account or
-  // temporary pseudonym), set the correct points / experience points
-  if (participantRole === 'PARTICIPANT') {
-    redisMulti.hincrby(
-      `${sessionKey}:b:${sessionBlockId}:lb`,
-      participantId,
-      pointsAwarded
-    )
-    redisMulti.hincrby(`${sessionKey}:lb`, participantId, pointsAwarded)
-    redisMulti.hincrby(`${sessionKey}:xp`, participantId, xpAwarded)
-  } else if (participantRole === 'TEMPORARY_PARTICIPANT') {
-    // temporary participants are only granted points, xp cannot be collected
-    redisMulti.hincrby(
-      `${sessionKey}:b:${sessionBlockId}:lbTemporary`,
-      participantId,
-      pointsAwarded
-    )
-    redisMulti.hincrby(
-      `${sessionKey}:lbTemporary`,
-      participantId,
-      pointsAwarded
-    )
-  }
-}
-
 export async function processResponseMessage(
   message: Message,
-  ctx: Context | DurableContext
+  ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
 ) {
-  ctx.logger.info('ProcessResponse function processing a message', message)
+  ctx.logger.info('ProcessResponse: received message', {
+    messageId: message.messageId,
+    sessionId: message.sessionId,
+    instanceId: message.instanceId,
+  })
 
   try {
     assert(!!redisExec)
   } catch (e) {
-    ctx.logger.error('Redis connection error', e)
+    ctx.logger.error(`Redis connection error: ${JSON.stringify(e)}`)
     throw new Error(`Redis connection error ${String(e)}`)
   }
 
@@ -111,16 +64,23 @@ export async function processResponseMessage(
   redisMulti = redisExec.pipeline() // -> pipeline (not atomic)
 
   try {
-    const sessionKey = `lq:${message.sessionId}`
-    const instanceKey = `${sessionKey}:i:${message.instanceId}`
+    const liveQuizKey = `lq:${message.sessionId}`
+    const instanceKey = `${liveQuizKey}:i:${message.instanceId}`
     const responseTimestamp = message.responseTimestamp
     const response = message.response
     if (!response) {
-      ctx.logger.error('Missing response', message)
+      ctx.logger.error(
+        'Missing response ' +
+          JSON.stringify({
+            messageId: message.messageId,
+            sessionId: message.sessionId,
+            instanceId: message.instanceId,
+          })
+      )
       return { status: 400 }
     }
 
-    let participantData: { sub: string; role: string } | null = null
+    let participantData: JWTPayload | null = null
     if (typeof message.cookie === 'string') {
       try {
         const parsedCookies = message.cookie
@@ -142,7 +102,7 @@ export async function processResponseMessage(
           if (participantData.role !== 'PARTICIPANT') {
             participantData = null
           } else {
-            ctx.logger.info("Participant's JWT verified", participantData)
+            ctx.logger.info("Participant's JWT verified")
           }
         } else if (parsedCookies['temporary_participant_token'] !== undefined) {
           participantData = await verifyJWT(
@@ -153,14 +113,11 @@ export async function processResponseMessage(
           if (participantData.role !== 'TEMPORARY_PARTICIPANT') {
             participantData = null
           } else {
-            ctx.logger.info(
-              "Temporary Participant's JWT verified",
-              participantData
-            )
+            ctx.logger.info("Temporary Participant's JWT verified")
           }
         }
       } catch (e) {
-        ctx.logger.error('JWT verification failed', e, message.cookie)
+        ctx.logger.error(`JWT verification failed: ${String(e)}`)
       }
 
       // if the participant has already responded to the question instance, return instantly
@@ -182,16 +139,22 @@ export async function processResponseMessage(
 
     const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
     // if the instance metadata is not available, it has been closed and purged already
-    if (!instanceInfo) {
-      ctx.logger.info('Question instance metadata not found', message)
+    if (!instanceInfo || Object.keys(instanceInfo).length === 0) {
+      ctx.logger.info('Question instance metadata not found', {
+        messageId: message.messageId,
+        sessionId: message.sessionId,
+        instanceId: message.instanceId,
+      })
       return { status: 400 }
     }
-    ctx.logger.info('Instance info', instanceInfo)
+    ctx.logger.info('Instance info loaded', {
+      sessionId: message.sessionId,
+      instanceId: message.instanceId,
+    })
 
     const {
       type,
       solutions,
-      startedAt,
       firstResponseReceivedAt,
       sessionBlockId,
       choiceCount,
@@ -204,7 +167,7 @@ export async function processResponseMessage(
         parsedSolutions = JSON.parse(solutions)
       }
     } catch (e) {
-      ctx.logger.info('Error parsing solutions', e, message)
+      ctx.logger.info(`Error parsing solutions: ${String(e)}`)
     }
 
     let pointsAwarded: number | string = 0
@@ -214,6 +177,19 @@ export async function processResponseMessage(
       case 'SC':
       case 'MC':
       case 'KPRIM': {
+        // if response choices are not defined, return early
+        if (!response.choices) {
+          ctx.logger.error(
+            'Missing response choices ' +
+              JSON.stringify({
+                messageId: message.messageId,
+                sessionId: message.sessionId,
+                instanceId: message.instanceId,
+              })
+          )
+          return { status: 400 }
+        }
+
         // add the vote to the aggregated results
         response.choices
           .filter((choice) => choice.selected)
@@ -224,50 +200,32 @@ export async function processResponseMessage(
 
         // if the participant was logged in, award points (and xp if regular student acount was used)
         if (participantData) {
-          let pointsPercentage: number | null
-          if (type === 'SC') {
-            pointsPercentage = gradeQuestionSC({
-              responseCount: Number(choiceCount),
-              response: response.choices,
-              solution: parsedSolutions,
-            })
-          } else if (type === 'MC') {
-            pointsPercentage = gradeQuestionMC({
-              responseCount: Number(choiceCount),
-              response: response.choices,
-              solution: parsedSolutions,
-            })
-          } else {
-            pointsPercentage = gradeQuestionKPRIM({
-              responseCount: Number(choiceCount),
-              response: response.choices,
-              solution: parsedSolutions,
-            })
-          }
-          pointsAwarded = computeAwardedPoints({
+          // add the participant's response to the corresponding redis hash
+          redisMulti.hset(
+            `${instanceKey}:responses`,
+            participantData.role === 'TEMPORARY_PARTICIPANT'
+              ? `temporary-${participantData.sub}`
+              : participantData.sub,
+            JSON.stringify(response.choices)
+          )
+
+          const {
+            pointsAwarded: computedPoints,
+            xpAwarded: computedXp,
+            pointsPercentage,
+          } = getChoicesQuestionPoints({
+            type,
+            choiceCount,
+            response,
+            instanceInfo,
             firstResponseReceivedAt,
             responseTimestamp,
-            maxBonus: isNaN(parseInt(instanceInfo.maxBonusPoints, 10))
-              ? MAX_BONUS_POINTS
-              : parseInt(instanceInfo.maxBonusPoints, 10),
-            timeToZeroBonus: isNaN(parseInt(instanceInfo.timeToZeroBonus, 10))
-              ? TIME_TO_ZERO_BONUS
-              : parseInt(instanceInfo.timeToZeroBonus, 10),
-            defaultPoints: isNaN(parseInt(instanceInfo.defaultPoints, 10))
-              ? DEFAULT_POINTS
-              : parseInt(instanceInfo.defaultPoints, 10),
-            defaultCorrectPoints: isNaN(
-              parseInt(instanceInfo.defaultCorrectPoints, 10)
-            )
-              ? DEFAULT_CORRECT_POINTS
-              : parseInt(instanceInfo.defaultCorrectPoints, 10),
-            pointsPercentage,
-            basePoints: basePoints === 'false' ? false : true,
+            basePoints,
             pointsMultiplier,
+            parsedSolutions,
           })
-          xpAwarded = computeAwardedXp({
-            pointsPercentage,
-          })
+          pointsAwarded = computedPoints
+          xpAwarded = computedXp
 
           if (
             pointsPercentage !== null &&
@@ -283,21 +241,13 @@ export async function processResponseMessage(
             )
           }
 
-          redisMulti.hset(
-            `${instanceKey}:responses`,
-            participantData.role === 'TEMPORARY_PARTICIPANT'
-              ? `temporary-${participantData.sub}`
-              : participantData.sub,
-            `[${String(response.choices)}]`
-          )
-
           // update both the regular and temporary live quiz leaderboards
           updateLeaderboards({
             redisMulti,
             participantId: participantData.sub,
-            participantRole: participantData.role,
-            sessionKey,
-            sessionBlockId,
+            participantRole: participantData.role!,
+            liveQuizKey,
+            sessionBlockId: sessionBlockId!,
             pointsAwarded,
             xpAwarded,
           })
@@ -306,6 +256,19 @@ export async function processResponseMessage(
       }
       // TODO: points based on distance to correct range?
       case 'NUMERICAL': {
+        // if response value is not defined, return early
+        if (typeof response.value === 'undefined' || response.value === null) {
+          ctx.logger.error(
+            'Missing response value ' +
+              JSON.stringify({
+                messageId: message.messageId,
+                sessionId: message.sessionId,
+                instanceId: message.instanceId,
+              })
+          )
+          return { status: 400 }
+        }
+
         // add the response to the aggregated results
         const MD5 = createHash('md5')
         MD5.update(response.value)
@@ -320,44 +283,32 @@ export async function processResponseMessage(
 
         // if the participant was logged in, award points (and xp if regular student acount was used)
         if (participantData) {
-          const exactSolutionsDefined =
-            typeof parsedSolutions !== 'undefined' &&
-            parsedSolutions.length > 0 &&
-            (typeof parsedSolutions[0] === 'number' ||
-              typeof parsedSolutions[0] === 'string')
+          // add the participant's response to the corresponding redis hash
+          redisMulti.hset(
+            `${instanceKey}:responses`,
+            participantData.role === 'TEMPORARY_PARTICIPANT'
+              ? `temporary-${participantData.sub}`
+              : participantData.sub,
+            String(response.value)
+          )
 
-          const answerCorrect = gradeQuestionNumerical({
-            response: Number(response.value),
-            solutionRanges: exactSolutionsDefined ? undefined : parsedSolutions,
-            exactSolutions: exactSolutionsDefined ? parsedSolutions : undefined,
-          })
-
-          pointsAwarded = computeAwardedPoints({
+          const {
+            pointsAwarded: computedPoints,
+            xpAwarded: computedXp,
+            pointsPercentage,
+          } = getNumericalQuestionPoints({
+            response,
+            instanceInfo,
             firstResponseReceivedAt,
             responseTimestamp,
-            getsMaxPoints: parsedSolutions && answerCorrect === 1,
-            maxBonus: isNaN(parseInt(instanceInfo.maxBonusPoints, 10))
-              ? MAX_BONUS_POINTS
-              : parseInt(instanceInfo.maxBonusPoints, 10),
-            timeToZeroBonus: isNaN(parseInt(instanceInfo.timeToZeroBonus, 10))
-              ? TIME_TO_ZERO_BONUS
-              : parseInt(instanceInfo.timeToZeroBonus, 10),
-            defaultPoints: isNaN(parseInt(instanceInfo.defaultPoints, 10))
-              ? DEFAULT_POINTS
-              : parseInt(instanceInfo.defaultPoints, 10),
-            defaultCorrectPoints: isNaN(
-              parseInt(instanceInfo.defaultCorrectPoints, 10)
-            )
-              ? DEFAULT_CORRECT_POINTS
-              : parseInt(instanceInfo.defaultCorrectPoints, 10),
-            basePoints: basePoints === 'false' ? false : true,
+            basePoints,
             pointsMultiplier,
+            parsedSolutions,
           })
-          xpAwarded = computeAwardedXp({
-            pointsPercentage: answerCorrect ?? 0,
-          })
+          pointsAwarded = computedPoints
+          xpAwarded = computedXp
 
-          if (parsedSolutions && answerCorrect && !firstResponseReceivedAt) {
+          if (parsedSolutions && pointsPercentage && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
             redisExec.hset(
@@ -367,21 +318,13 @@ export async function processResponseMessage(
             )
           }
 
-          redisMulti.hset(
-            `${instanceKey}:responses`,
-            participantData.role === 'TEMPORARY_PARTICIPANT'
-              ? `temporary-${participantData.sub}`
-              : participantData.sub,
-            String(response.value)
-          )
-
           // update both the regular and temporary live quiz leaderboards
           updateLeaderboards({
             redisMulti,
             participantId: participantData.sub,
-            participantRole: participantData.role,
-            sessionKey,
-            sessionBlockId,
+            participantRole: participantData.role!,
+            liveQuizKey,
+            sessionBlockId: sessionBlockId!,
             pointsAwarded,
             xpAwarded,
           })
@@ -390,6 +333,19 @@ export async function processResponseMessage(
       }
       // TODO: future -> distance in embedding space?
       case 'FREE_TEXT': {
+        // if response value is not defined, return early
+        if (typeof response.value !== 'string') {
+          ctx.logger.error(
+            'Missing response value ' +
+              JSON.stringify({
+                messageId: message.messageId,
+                sessionId: message.sessionId,
+                instanceId: message.instanceId,
+              })
+          )
+          return { status: 400 }
+        }
+
         // add the response to the aggregated results
         const cleanResponseValue = response.value.trim()
         const MD5 = createHash('md5')
@@ -405,37 +361,32 @@ export async function processResponseMessage(
 
         // if the participant was logged in, award points (and xp if regular student acount was used)
         if (participantData) {
-          const answerCorrect = gradeQuestionFreeText({
-            response: cleanResponseValue,
-            solutions: parsedSolutions,
-          })
+          // add the participant's response to the corresponding redis hash
+          redisMulti.hset(
+            `${instanceKey}:responses`,
+            participantData.role === 'TEMPORARY_PARTICIPANT'
+              ? `temporary-${participantData.sub}`
+              : participantData.sub,
+            cleanResponseValue
+          )
 
-          pointsAwarded = computeAwardedPoints({
+          const {
+            pointsAwarded: computedPoints,
+            xpAwarded: computedXp,
+            pointsPercentage,
+          } = getFreeTextQuestionPoints({
+            response,
+            instanceInfo,
             firstResponseReceivedAt,
             responseTimestamp,
-            getsMaxPoints: Boolean(answerCorrect),
-            maxBonus: isNaN(parseInt(instanceInfo.maxBonusPoints, 10))
-              ? MAX_BONUS_POINTS
-              : parseInt(instanceInfo.maxBonusPoints, 10),
-            timeToZeroBonus: isNaN(parseInt(instanceInfo.timeToZeroBonus, 10))
-              ? TIME_TO_ZERO_BONUS
-              : parseInt(instanceInfo.timeToZeroBonus, 10),
-            defaultPoints: isNaN(parseInt(instanceInfo.defaultPoints, 10))
-              ? DEFAULT_POINTS
-              : parseInt(instanceInfo.defaultPoints, 10),
-            defaultCorrectPoints: isNaN(
-              parseInt(instanceInfo.defaultCorrectPoints, 10)
-            )
-              ? DEFAULT_CORRECT_POINTS
-              : parseInt(instanceInfo.defaultCorrectPoints, 10),
-            basePoints: basePoints === 'false' ? false : true,
+            basePoints,
             pointsMultiplier,
+            parsedSolutions,
           })
-          xpAwarded = computeAwardedXp({
-            pointsPercentage: answerCorrect ?? 0,
-          })
+          pointsAwarded = computedPoints
+          xpAwarded = computedXp
 
-          if (answerCorrect && !firstResponseReceivedAt) {
+          if (pointsPercentage && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
             redisExec.hset(
@@ -445,21 +396,13 @@ export async function processResponseMessage(
             )
           }
 
-          redisMulti.hset(
-            `${instanceKey}:responses`,
-            participantData.role === 'TEMPORARY_PARTICIPANT'
-              ? `temporary-${participantData.sub}`
-              : participantData.sub,
-            cleanResponseValue
-          )
-
           // update both the regular and temporary live quiz leaderboards
           updateLeaderboards({
             redisMulti,
             participantId: participantData.sub,
-            participantRole: participantData.role,
-            sessionKey,
-            sessionBlockId,
+            participantRole: participantData.role!,
+            liveQuizKey,
+            sessionBlockId: sessionBlockId!,
             pointsAwarded,
             xpAwarded,
           })
@@ -467,6 +410,19 @@ export async function processResponseMessage(
         break
       }
       case 'SELECTION': {
+        // if response selection is not defined, return early
+        if (!response.selection) {
+          ctx.logger.error(
+            'Missing response selection ' +
+              JSON.stringify({
+                messageId: message.messageId,
+                sessionId: message.sessionId,
+                instanceId: message.instanceId,
+              })
+          )
+          return { status: 400 }
+        }
+
         // add the response to the aggregated results
         response.selection.forEach((answerId: number) => {
           // skipped input fields should not be considered
@@ -480,37 +436,30 @@ export async function processResponseMessage(
 
         // if the participant was logged in, award points (and xp if regular student acount was used)
         if (participantData) {
-          const pointsPercentage = gradeQuestionSelection({
-            numberOfInputs: parseInt(instanceInfo.numberOfInputs),
-            response: response.selection.filter((r: number) => r !== -1), // filter out skipped response fields
-            correctAnswers: parsedSolutions,
-          })
+          // add the participant's response to the corresponding redis hash
+          redisMulti.hset(
+            `${instanceKey}:responses`,
+            participantData.role === 'TEMPORARY_PARTICIPANT'
+              ? `temporary-${participantData.sub}`
+              : participantData.sub,
+            `[${String(response.selection.filter((r: number) => r !== -1))}]` // filter out skipped response fields
+          )
 
-          pointsAwarded = computeAwardedPoints({
+          const {
+            pointsAwarded: computedPoints,
+            xpAwarded: computedXp,
+            pointsPercentage,
+          } = getSelectionQuestionPoints({
+            response,
+            instanceInfo,
             firstResponseReceivedAt,
             responseTimestamp,
-            maxBonus: isNaN(parseInt(instanceInfo.maxBonusPoints, 10))
-              ? MAX_BONUS_POINTS
-              : parseInt(instanceInfo.maxBonusPoints, 10),
-            timeToZeroBonus: isNaN(parseInt(instanceInfo.timeToZeroBonus, 10))
-              ? TIME_TO_ZERO_BONUS
-              : parseInt(instanceInfo.timeToZeroBonus, 10),
-            defaultPoints: isNaN(parseInt(instanceInfo.defaultPoints, 10))
-              ? DEFAULT_POINTS
-              : parseInt(instanceInfo.defaultPoints, 10),
-            defaultCorrectPoints: isNaN(
-              parseInt(instanceInfo.defaultCorrectPoints, 10)
-            )
-              ? DEFAULT_CORRECT_POINTS
-              : parseInt(instanceInfo.defaultCorrectPoints, 10),
-            pointsPercentage,
-            basePoints: basePoints === 'false' ? false : true,
+            basePoints,
             pointsMultiplier,
+            parsedSolutions,
           })
-
-          xpAwarded = computeAwardedXp({
-            pointsPercentage,
-          })
+          pointsAwarded = computedPoints
+          xpAwarded = computedXp
 
           if (
             pointsPercentage !== null &&
@@ -526,21 +475,13 @@ export async function processResponseMessage(
             )
           }
 
-          redisMulti.hset(
-            `${instanceKey}:responses`,
-            participantData.role === 'TEMPORARY_PARTICIPANT'
-              ? `temporary-${participantData.sub}`
-              : participantData.sub,
-            `[${String(response.selection.filter((r: number) => r !== -1))}]` // filter out skipped response fields
-          )
-
           // update both the regular and temporary live quiz leaderboards
           updateLeaderboards({
             redisMulti,
             participantId: participantData.sub,
-            participantRole: participantData.role,
-            sessionKey,
-            sessionBlockId,
+            participantRole: participantData.role!,
+            liveQuizKey,
+            sessionBlockId: sessionBlockId!,
             pointsAwarded,
             xpAwarded,
           })
@@ -548,6 +489,19 @@ export async function processResponseMessage(
         break
       }
       case 'CASE_STUDY': {
+        // if response assessment is not defined, return early
+        if (!response.assessment) {
+          ctx.logger.error(
+            'Missing response assessment ' +
+              JSON.stringify({
+                messageId: message.messageId,
+                sessionId: message.sessionId,
+                instanceId: message.instanceId,
+              })
+          )
+          return { status: 400 }
+        }
+
         // add the response to the aggregated results
         Object.entries(response.assessment).forEach(([caseId, caseData]) => {
           Object.entries(caseData).forEach(([itemId, itemData]) => {
@@ -583,35 +537,30 @@ export async function processResponseMessage(
 
         // if the participant was logged in, award points (and xp if regular student acount was used)
         if (participantData) {
-          const pointsPercentage = gradeQuestionCaseStudy({
-            response: response.assessment,
-            solutions: parsedSolutions,
-          })
+          // add the participant's response to the corresponding redis hash
+          redisMulti.hset(
+            `${instanceKey}:responses`,
+            participantData.role === 'TEMPORARY_PARTICIPANT'
+              ? `temporary-${participantData.sub}`
+              : participantData.sub,
+            JSON.stringify(response.assessment)
+          )
 
-          pointsAwarded = computeAwardedPoints({
+          const {
+            pointsAwarded: computedPoints,
+            xpAwarded: computedXp,
+            pointsPercentage,
+          } = getCaseStudyQuestionPoints({
+            response,
+            instanceInfo,
             firstResponseReceivedAt,
             responseTimestamp,
-            maxBonus: isNaN(parseInt(instanceInfo.maxBonusPoints, 10))
-              ? MAX_BONUS_POINTS
-              : parseInt(instanceInfo.maxBonusPoints, 10),
-            timeToZeroBonus: isNaN(parseInt(instanceInfo.timeToZeroBonus, 10))
-              ? TIME_TO_ZERO_BONUS
-              : parseInt(instanceInfo.timeToZeroBonus, 10),
-            defaultPoints: isNaN(parseInt(instanceInfo.defaultPoints, 10))
-              ? DEFAULT_POINTS
-              : parseInt(instanceInfo.defaultPoints, 10),
-            defaultCorrectPoints: isNaN(
-              parseInt(instanceInfo.defaultCorrectPoints, 10)
-            )
-              ? DEFAULT_CORRECT_POINTS
-              : parseInt(instanceInfo.defaultCorrectPoints, 10),
-            pointsPercentage,
-            basePoints: basePoints === 'false' ? false : true,
+            basePoints,
             pointsMultiplier,
+            parsedSolutions,
           })
-          xpAwarded = computeAwardedXp({
-            pointsPercentage,
-          })
+          pointsAwarded = computedPoints
+          xpAwarded = computedXp
 
           if (
             pointsPercentage !== null &&
@@ -626,21 +575,14 @@ export async function processResponseMessage(
               responseTimestamp
             )
           }
-          redisMulti.hset(
-            `${instanceKey}:responses`,
-            participantData.role === 'TEMPORARY_PARTICIPANT'
-              ? `temporary-${participantData.sub}`
-              : participantData.sub,
-            JSON.stringify(response.assessment)
-          )
 
           // update both the regular and temporary live quiz leaderboards
           updateLeaderboards({
             redisMulti,
             participantId: participantData.sub,
-            participantRole: participantData.role,
-            sessionKey,
-            sessionBlockId,
+            participantRole: participantData.role!,
+            liveQuizKey,
+            sessionBlockId: sessionBlockId!,
             pointsAwarded,
             xpAwarded,
           })
@@ -655,17 +597,35 @@ export async function processResponseMessage(
       }
     }
   } catch (e) {
-    ctx.logger.error('Error processing response', e, message)
+    ctx.logger.error(
+      `Error processing response: ${String(e)} ` +
+        JSON.stringify({
+          messageId: message.messageId,
+          sessionId: message.sessionId,
+          instanceId: message.instanceId,
+        })
+    )
     redisMulti?.discard()
     return { status: 500 }
   }
 
   try {
     await redisMulti.exec()
-    ctx.logger.info("Successfully processed participant's response", message)
+    ctx.logger.info("Successfully processed participant's response", {
+      messageId: message.messageId,
+      sessionId: message.sessionId,
+      instanceId: message.instanceId,
+    })
     return { status: 200 }
   } catch (e) {
-    ctx.logger.error('Redis transaction failed', e, message)
+    ctx.logger.error(
+      `Redis transaction failed: ${String(e)} ` +
+        JSON.stringify({
+          messageId: message.messageId,
+          sessionId: message.sessionId,
+          instanceId: message.instanceId,
+        })
+    )
     redisMulti?.discard()
     throw new Error(`Redis transaction failed ${String(e)}`)
   }

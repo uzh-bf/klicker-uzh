@@ -92,6 +92,7 @@ model ElementInstance {
 
   responses           QuestionResponse[]
   detailResponses     QuestionResponseDetail[]
+  liveQuizResponses   LiveQuizResponse[]
   feedbacks           ElementFeedback[]
   instanceStatistics  InstanceStatistics?
   instancePerformance InstancePerformance?
@@ -193,6 +194,9 @@ model ElementBlock {
   randomSelection Int?
   execution       Int                @default(0)
   status          ElementBlockStatus @default(SCHEDULED)
+
+  startedAt DateTime?
+  closedAt  DateTime?
 
   elements ElementInstance[]
 

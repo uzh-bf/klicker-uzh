@@ -194,7 +194,7 @@ services:
       - klicker_data:/var/lib/postgresql/data
       - ./util/init.sql:/docker-entrypoint-initdb.d/init.sql
 
-  # redis instance to support live quiz execution
+  # redis instance to support live quiz execution (including assessment)
   redis_exec:
     image: docker.io/library/redis:7
     ports:
