@@ -49,8 +49,12 @@ function Index() {
       router.locale &&
       selfData.self.locale !== router.locale
     ) {
-      // Only redirect if not already at correct locale
-      router.replace(`/${selfData.self.locale}`)
+      // only redirect if not already at correct locale
+      router.push(
+        { pathname: router.pathname, query: router.query },
+        undefined,
+        { locale: selfData.self.locale }
+      )
     }
   }, [selfData?.self?.locale, router.locale])
 
