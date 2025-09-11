@@ -20,7 +20,9 @@ export default async function getParticipantToken({
   // if the user already has a participant token, skip registration
   // fetch the relevant data directly
   let participantToken: string | undefined | null =
-    cookies['participant_token'] ?? query.participantToken
+    (process.env.ASSESSMENT_MODE === 'true'
+      ? cookies['next-auth.participant-session-token']
+      : cookies['participant_token']) ?? query.participantToken
 
   // TODO: only check for existing participantToken once participation issues with LTI are resolved
   if (
@@ -31,7 +33,10 @@ export default async function getParticipantToken({
   ) {
     return {
       participantToken,
-      cookiesAvailable: !!cookies['participant_token'],
+      cookiesAvailable:
+        process.env.ASSESSMENT_MODE === 'true'
+          ? !!cookies['next-auth.participant-session-token']
+          : !!cookies['participant_token'],
     }
   }
 

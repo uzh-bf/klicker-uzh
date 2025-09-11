@@ -1,5 +1,5 @@
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
-import { H3, TabContent, Tabs } from '@uzh-bf/design-system'
+import { H3, TabContent, Tabs, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
@@ -9,6 +9,16 @@ function StudentDocs() {
 
   return (
     <Layout displayName={t('shared.generic.documentation')}>
+      {process.env.NEXT_PUBLIC_IS_ASSESSMENT && (
+        <UserNotification
+          type="warning"
+          className={{ root: 'mx-auto mb-3 w-full max-w-5xl text-base' }}
+        >
+          {t.rich('pwa.studentDocs.assessmentInstanceWarning', {
+            b: (text) => <b>{text}</b>,
+          })}
+        </UserNotification>
+      )}
       <Tabs
         defaultValue="features-overview"
         tabs={[
