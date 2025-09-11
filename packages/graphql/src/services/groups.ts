@@ -45,21 +45,14 @@ import {
 export const POINTS_PER_GROUP_ACTIVITY_ELEMENT = 25
 
 export async function createParticipantGroup(
-  {
-    courseId,
-    name,
-  }: {
-    courseId: string
-    name: string
-  },
+  { courseId, name }: { courseId: string; name: string },
   ctx: ContextWithUser
 ) {
   // check if group creation is enabled on course
   const course = await ctx.prisma.course.findUnique({
-    where: {
-      id: courseId,
-    },
+    where: { id: courseId },
   })
+
   if (!course || !course.isGroupCreationEnabled || name.trim() === '') {
     return null
   }
@@ -72,10 +65,7 @@ export async function createParticipantGroup(
       course: { connect: { id: courseId } },
       participants: { connect: { id: ctx.user.sub } },
     },
-    include: {
-      participants: true,
-      course: true,
-    },
+    include: { participants: true, course: true },
   })
 
   // invalidate graphql response cache
@@ -99,6 +89,7 @@ export async function joinRandomCourseGroupPool(
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
   })
+
   if (!course || !course.isGroupCreationEnabled) {
     return false
   }
@@ -133,6 +124,7 @@ export async function leaveRandomCourseGroupPool(
       groupAssignmentPoolEntries: { where: { participantId: ctx.user.sub } },
     },
   })
+
   if (
     !course ||
     !course.isGroupCreationEnabled ||
@@ -206,17 +198,9 @@ export async function handleRunningRandomGroupAssignments(
     where: {
       randomAssignmentFinalized: false,
       isGroupCreationEnabled: true,
-      groupDeadlineDate: {
-        gt: new Date(),
-      },
+      groupDeadlineDate: { gt: new Date() },
     },
-    include: {
-      groupAssignmentPoolEntries: {
-        orderBy: {
-          createdAt: 'asc',
-        },
-      },
-    },
+    include: { groupAssignmentPoolEntries: { orderBy: { createdAt: 'asc' } } },
   })
 
   // filter the courses down to those, which contain more than 2 * preferredGroupSize participants in the pool
@@ -610,13 +594,7 @@ export async function manualRandomGroupAssignments(
 }
 
 export async function joinParticipantGroup(
-  {
-    courseId,
-    code,
-  }: {
-    courseId: string
-    code: number
-  },
+  { courseId, code }: { courseId: string; code: number },
   ctx: ContextWithUser
 ) {
   // find participantgroup with code
@@ -672,13 +650,7 @@ export async function joinParticipantGroup(
 }
 
 export async function leaveParticipantGroup(
-  {
-    groupId,
-    courseId,
-  }: {
-    groupId: string
-    courseId: string
-  },
+  { groupId, courseId }: { groupId: string; courseId: string },
   ctx: ContextWithUser
 ) {
   // find participantgroup with corresponding id
@@ -755,13 +727,7 @@ export async function leaveParticipantGroup(
 }
 
 export async function renameParticipantGroup(
-  {
-    groupId,
-    name,
-  }: {
-    groupId: string
-    name: string
-  },
+  { groupId, name }: { groupId: string; name: string },
   ctx: ContextWithUser
 ) {
   if (name.trim() === '') {
@@ -769,19 +735,11 @@ export async function renameParticipantGroup(
   }
 
   const updatedGroup = await ctx.prisma.participantGroup.update({
-    where: {
-      id: groupId,
-    },
-    data: {
-      name: name.trim(),
-    },
+    where: { id: groupId },
+    data: { name: name.trim() },
   })
 
-  ctx.emitter.emit('invalidate', {
-    typename: 'ParticipantGroup',
-    id: groupId,
-  })
-
+  ctx.emitter.emit('invalidate', { typename: 'ParticipantGroup', id: groupId })
   return updatedGroup
 }
 
@@ -1235,20 +1193,8 @@ export async function getGroupActivityDetails(
     },
     include: {
       course: true,
-      clues: {
-        orderBy: {
-          displayName: 'asc',
-        },
-      },
-      stacks: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
+      clues: { orderBy: { displayName: 'asc' } },
+      stacks: { include: { elements: { orderBy: { order: 'asc' } } } },
       parameters: true,
     },
   })
@@ -1337,29 +1283,15 @@ export async function startGroupActivity(
     where: { id: activityId, status: DB.PublicationStatus.PUBLISHED },
     include: {
       course: true,
-      clues: {
-        orderBy: {
-          displayName: 'asc',
-        },
-      },
-      stacks: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
+      clues: { orderBy: { displayName: 'asc' } },
+      stacks: { include: { elements: { orderBy: { order: 'asc' } } } },
       // parameters: true, // TODO: reintroduce as soon as these are used
     },
   })
 
   const group = await ctx.prisma.participantGroup.findUnique({
     where: { id: groupId },
-    include: {
-      participants: true,
-    },
+    include: { participants: true },
   })
 
   if (!groupActivity || !group) return null
@@ -1392,23 +1324,14 @@ export async function startGroupActivity(
     const activityInstance = await ctx.prisma.$transaction(async (prisma) => {
       const activityInstance = await prisma.groupActivityInstance.create({
         data: {
-          group: {
-            connect: { id: groupId },
-          },
-          groupActivity: {
-            connect: { id: activityId },
-          },
-          clues: {
-            create: allClues,
-          },
+          group: { connect: { id: groupId } },
+          groupActivity: { connect: { id: activityId } },
+          clues: { create: allClues },
         },
-        include: {
-          clues: true,
-        },
+        include: { clues: true },
       })
 
       const shuffledClues = shuffle(activityInstance.clues)
-
       const clueAssignments = group.participants.reduce<{
         remainingClues: number
         remainingMembers: number
@@ -1450,17 +1373,10 @@ export async function startGroupActivity(
       const updatedActivityInstance = await prisma.groupActivityInstance.update(
         {
           where: { id: activityInstance.id },
-          data: {
-            clueInstanceAssignment: {
-              create: clueAssignments.clues,
-            },
-          },
+          data: { clueInstanceAssignment: { create: clueAssignments.clues } },
           include: {
             clueInstanceAssignment: {
-              include: {
-                groupActivityClueInstance: true,
-                participant: true,
-              },
+              include: { groupActivityClueInstance: true, participant: true },
             },
           },
         }
@@ -1469,11 +1385,7 @@ export async function startGroupActivity(
       return updatedActivityInstance
     })
 
-    return {
-      ...groupActivity,
-      group,
-      activityInstance,
-    }
+    return { ...groupActivity, group, activityInstance }
   } catch (e) {
     console.error(e)
     return null
@@ -1492,15 +1404,7 @@ export async function submitGroupActivityDecisions(
       where: { id: activityId },
       include: {
         groupActivity: true,
-        group: {
-          include: {
-            participants: {
-              where: {
-                id: ctx.user.sub,
-              },
-            },
-          },
-        },
+        group: { include: { participants: { where: { id: ctx.user.sub } } } },
       },
     })
 
@@ -1722,19 +1626,19 @@ export async function openGroupActivity(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
     where: { id, status: DB.PublicationStatus.SCHEDULED },
-    data: {
-      status: DB.PublicationStatus.PUBLISHED,
-      scheduledStartAt: new Date(),
-    },
   })
 
-  // remove the scheduled hatchet task, if it exists
-  if (updatedGroupActivity.scheduledPublicationTaskId) {
+  if (!groupActivity) {
+    return null
+  }
+
+  // remove the scheduled hatchet publication task, if it exists
+  if (groupActivity.scheduledPublicationTaskId) {
     try {
       await ctx.hatchet.scheduled.delete(
-        updatedGroupActivity.scheduledPublicationTaskId
+        groupActivity.scheduledPublicationTaskId
       )
     } catch (error) {
       console.error(
@@ -1743,6 +1647,26 @@ export async function openGroupActivity(
       )
     }
   }
+
+  // check if the scheduled ending task is still in place and if not, create a new one
+  let scheduledCompletionTaskId: string | undefined
+  if (!groupActivity.scheduledCompletionTaskId) {
+    const completionTask = await ctx.tasks.endExpiredGroupActivity.schedule(
+      groupActivity.scheduledEndAt,
+      { groupActivityId: groupActivity.id }
+    )
+    scheduledCompletionTaskId = completionTask.metadata.id
+  }
+
+  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+    where: { id, status: DB.PublicationStatus.SCHEDULED },
+    data: {
+      status: DB.PublicationStatus.PUBLISHED,
+      scheduledStartAt: new Date(),
+      scheduledPublicationTaskId: null,
+      scheduledCompletionTaskId,
+    },
+  })
 
   // trigger subscription to immediately update student frontend
   ctx.pubSub.publish('groupActivityStarted', updatedGroupActivity)
@@ -1753,10 +1677,8 @@ export async function unpublishGroupActivity(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  // reset the status of the group activity to draft
-  const groupActivity = await ctx.prisma.groupActivity.update({
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
     where: { id, status: DB.PublicationStatus.SCHEDULED },
-    data: { status: DB.PublicationStatus.DRAFT },
   })
 
   if (!groupActivity) {
@@ -1791,27 +1713,37 @@ export async function unpublishGroupActivity(
     }
   }
 
+  // reset the status of the group activity to draft
+  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+    where: { id, status: DB.PublicationStatus.SCHEDULED },
+    data: {
+      status: DB.PublicationStatus.DRAFT,
+      scheduledPublicationTaskId: null,
+      scheduledCompletionTaskId: null,
+    },
+  })
+
   ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
-  return groupActivity
+  return updatedGroupActivity
 }
 
 export async function endGroupActivity(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
-    where: { id },
-    data: {
-      status: DB.PublicationStatus.ENDED,
-      scheduledEndAt: new Date(),
-    },
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id, status: DB.PublicationStatus.PUBLISHED },
   })
 
+  if (!groupActivity) {
+    return null
+  }
+
   // remove the scheduled completion task, if it exists
-  if (updatedGroupActivity.scheduledCompletionTaskId) {
+  if (groupActivity.scheduledCompletionTaskId) {
     try {
       await ctx.hatchet.scheduled.delete(
-        updatedGroupActivity.scheduledCompletionTaskId
+        groupActivity.scheduledCompletionTaskId
       )
     } catch (error) {
       console.error(
@@ -1820,6 +1752,16 @@ export async function endGroupActivity(
       )
     }
   }
+
+  // end the group activity and unset the completion task it
+  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+    where: { id },
+    data: {
+      status: DB.PublicationStatus.ENDED,
+      scheduledEndAt: new Date(),
+      scheduledCompletionTaskId: null,
+    },
+  })
 
   // trigger subscription to immediately update student frontend
   ctx.pubSub.publish('groupActivityEnded', updatedGroupActivity)
@@ -1887,11 +1829,7 @@ export async function deleteGroupActivity(
     where: { id },
     include: {
       activityInstances: true,
-      stacks: {
-        include: {
-          elements: true,
-        },
-      },
+      stacks: { include: { elements: true } },
     },
   })
 
@@ -1957,22 +1895,14 @@ export async function deleteGroupActivity(
     // if the group activity already has active instances, only soft delete it
     const updatedGroupActivity = await ctx.prisma.$transaction(
       async (prisma) => {
-        const updatedActivity = await prisma.groupActivity.update({
-          where: { id },
-          data: {
-            isDeleted: true,
-            directPermissions: { deleteMany: {} }, // delete all direct permissions on the activity
-          },
-        })
-
         // remove the scheduled completion task, if it exists (should only exist for published group activities)
         if (
-          updatedActivity.status === DB.PublicationStatus.PUBLISHED &&
-          updatedActivity.scheduledCompletionTaskId
+          groupActivity.status === DB.PublicationStatus.PUBLISHED &&
+          groupActivity.scheduledCompletionTaskId
         ) {
           try {
             await ctx.hatchet.scheduled.delete(
-              updatedActivity.scheduledCompletionTaskId
+              groupActivity.scheduledCompletionTaskId
             )
           } catch (error) {
             console.error(
@@ -1981,6 +1911,19 @@ export async function deleteGroupActivity(
             )
           }
         }
+
+        // soft delete the group activity and remove all direct permissions
+        const updatedActivity = await prisma.groupActivity.update({
+          where: { id },
+          data: {
+            isDeleted: true,
+            directPermissions: { deleteMany: {} }, // delete all direct permissions on the activity
+            scheduledCompletionTaskId:
+              groupActivity.status === DB.PublicationStatus.PUBLISHED
+                ? null
+                : undefined,
+          },
+        })
 
         // update derived permissions for this group activity (after soft deletion)
         // this function call automatically includes permission updates for all linked elements

@@ -542,11 +542,8 @@ export async function unpublishMicroLearning(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  // reset the status of the microlearning to draft
-  const microLearning = await ctx.prisma.microLearning.update({
-    where: { id, status: DB.PublicationStatus.SCHEDULED },
-    data: { status: DB.PublicationStatus.DRAFT },
-    include: { stacks: { include: { elements: true } } },
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: { id, isDeleted: false, status: DB.PublicationStatus.SCHEDULED },
   })
 
   if (!microLearning) {
@@ -581,8 +578,19 @@ export async function unpublishMicroLearning(
     }
   }
 
+  // reset the status of the microlearning to draft
+  const updatedMicroLearning = await ctx.prisma.microLearning.update({
+    where: { id, status: DB.PublicationStatus.SCHEDULED },
+    data: {
+      status: DB.PublicationStatus.DRAFT,
+      scheduledPublicationTaskId: null,
+      scheduledCompletionTaskId: null,
+    },
+    include: { stacks: { include: { elements: true } } },
+  })
+
   ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
-  return microLearning
+  return updatedMicroLearning
 }
 
 export async function extendMicroLearning(
@@ -805,22 +813,14 @@ export async function deleteMicroLearning(
     // if the microlearning is published and has responses -> soft deletion
     const updatedMicroLearning = await ctx.prisma.$transaction(
       async (prisma) => {
-        const updated = await prisma.microLearning.update({
-          where: { id },
-          data: {
-            isDeleted: true,
-            directPermissions: { deleteMany: {} }, // delete all direct permissions on the activity
-          },
-        })
-
         // remove the scheduled completion task, if it exists (should only exist for published microlearnings)
         if (
-          updated.status === DB.PublicationStatus.PUBLISHED &&
-          updated.scheduledCompletionTaskId
+          microLearning.status === DB.PublicationStatus.PUBLISHED &&
+          microLearning.scheduledCompletionTaskId
         ) {
           try {
             await ctx.hatchet.scheduled.delete(
-              updated.scheduledCompletionTaskId
+              microLearning.scheduledCompletionTaskId
             )
           } catch (error) {
             console.error(
@@ -830,14 +830,23 @@ export async function deleteMicroLearning(
           }
         }
 
+        const updatedMicroLearning = await prisma.microLearning.update({
+          where: { id },
+          data: {
+            isDeleted: true,
+            scheduledCompletionTaskId: null,
+            directPermissions: { deleteMany: {} }, // delete all direct permissions on the activity
+          },
+        })
+
         // update derived permissions for this microlearning (after soft deletion)
         // this function call automatically includes permission updates for all linked elements
         await recomputeDerivedPermissions(
-          { microLearningId: updated.id },
+          { microLearningId: updatedMicroLearning.id },
           prisma
         )
 
-        return updated
+        return updatedMicroLearning
       },
       { timeout: 60000 }
     )

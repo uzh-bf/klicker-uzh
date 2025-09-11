@@ -1210,9 +1210,7 @@ export async function scheduleLiveQuiz(
       // schedule the task to publish the live quiz
       const scheduledTask = await ctx.tasks.publishScheduledLiveQuiz.schedule(
         availableFrom,
-        {
-          liveQuizId: id,
-        }
+        { liveQuizId: id }
       )
       const taskId = scheduledTask.metadata.id
 
@@ -1242,14 +1240,8 @@ export async function unpublishLiveQuiz(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  // reset the status of the live quiz to draft and remove the availableFrom date
-  const liveQuiz = await ctx.prisma.liveQuiz.update({
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id, status: DB.PublicationStatus.SCHEDULED },
-    data: {
-      availableFrom: null,
-      status: DB.PublicationStatus.DRAFT,
-      scheduledPublicationTaskId: null,
-    },
   })
 
   if (!liveQuiz) {
@@ -1268,8 +1260,18 @@ export async function unpublishLiveQuiz(
     }
   }
 
+  // reset the status of the live quiz to draft and remove the availableFrom date
+  const updatedLiveQuiz = await ctx.prisma.liveQuiz.update({
+    where: { id, status: DB.PublicationStatus.SCHEDULED },
+    data: {
+      availableFrom: null,
+      status: DB.PublicationStatus.DRAFT,
+      scheduledPublicationTaskId: null,
+    },
+  })
+
   ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
-  return liveQuiz
+  return updatedLiveQuiz
 }
 
 export async function getCockpitQuiz(
@@ -3103,6 +3105,8 @@ export async function getLiveQuizLeaderboard(
 }
 // #endregion
 
+// ------ HATCHET SCHEDULED TASK HANDLER ------
+// #region
 export async function handlePublishScheduledLiveQuiz(
   { liveQuizId }: { liveQuizId: string },
   ctx: HatchetHandlerContext
@@ -3168,3 +3172,4 @@ export async function handlePublishScheduledLiveQuiz(
     await ctx.prisma.$disconnect()
   }
 }
+// #endregion

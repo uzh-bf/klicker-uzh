@@ -168,18 +168,11 @@ export async function getCoursePublishedPracticeQuizzes(
   ctx: Context
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: {
-      id: courseId,
-    },
+    where: { id: courseId },
     include: {
       practiceQuizzes: {
-        where: {
-          status: DB.PublicationStatus.PUBLISHED,
-          isDeleted: false,
-        },
-        orderBy: {
-          createdAt: 'asc',
-        },
+        where: { status: DB.PublicationStatus.PUBLISHED, isDeleted: false },
+        orderBy: { createdAt: 'asc' },
       },
     },
   })
@@ -632,11 +625,8 @@ export async function unpublishPracticeQuiz(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  // reset the status of the practice quiz to draft and remove the availableFrom date
-  const practiceQuiz = await ctx.prisma.practiceQuiz.update({
+  const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
     where: { id, status: DB.PublicationStatus.SCHEDULED },
-    data: { availableFrom: null, status: DB.PublicationStatus.DRAFT },
-    include: { stacks: { include: { elements: true } } },
   })
 
   if (!practiceQuiz) {
@@ -657,8 +647,19 @@ export async function unpublishPracticeQuiz(
     }
   }
 
+  // reset the status of the practice quiz to draft and remove the availableFrom date
+  const updatedPracticeQuiz = await ctx.prisma.practiceQuiz.update({
+    where: { id, status: DB.PublicationStatus.SCHEDULED },
+    data: {
+      availableFrom: null,
+      status: DB.PublicationStatus.DRAFT,
+      scheduledPublicationTaskId: null,
+    },
+    include: { stacks: { include: { elements: true } } },
+  })
+
   ctx.emitter.emit('invalidate', { typename: 'PracticeQuiz', id })
-  return practiceQuiz
+  return updatedPracticeQuiz
 }
 
 export async function deletePracticeQuiz(
