@@ -33,6 +33,7 @@ interface SettingsState {
   // Actions
   setSelectedModel: (model: ModelProvider) => void
   setSelectedMode: (mode: ChatbotMode) => void
+  loadCredits: (chatbotId: string) => Promise<void>
   decrementCredits: (amount: number) => void
   resetCredits: () => void
 }
@@ -44,8 +45,8 @@ export const useSettingsStore = create<SettingsState>()(
       selectedModel: 'openai',
       selectedMode: 'tutor',
       credits: {
-        current: 850,
-        total: 1000,
+        current: 0,
+        total: 0,
       },
 
       // available options
@@ -56,6 +57,21 @@ export const useSettingsStore = create<SettingsState>()(
       // actions
       setSelectedModel: (model) => set({ selectedModel: model }),
       setSelectedMode: (mode) => set({ selectedMode: mode }),
+
+      loadCredits: async (chatbotId) => {
+        try {
+          const response = await fetch(`/api/chatbots/${chatbotId}/credits`)
+          if (response.ok) {
+            const creditsData = await response.json()
+            set({ credits: creditsData })
+          } else {
+            console.error('Failed to load credits:', response.statusText)
+          }
+        } catch (error) {
+          console.error('Error loading credits:', error)
+        }
+      },
+
       decrementCredits: (amount) =>
         set((state) => ({
           credits: {
@@ -76,7 +92,6 @@ export const useSettingsStore = create<SettingsState>()(
       partialize: (state) => ({
         selectedModel: state.selectedModel,
         selectedMode: state.selectedMode,
-        credits: state.credits,
       }),
     }
   )

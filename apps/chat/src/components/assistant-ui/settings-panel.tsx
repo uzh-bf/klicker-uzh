@@ -18,7 +18,8 @@ export function SettingsPanel() {
     setSelectedMode,
   } = useSettingsStore()
 
-  const creditsPercentage = (credits.current / credits.total) * 100
+  const creditsPercentage =
+    credits.total > 0 ? (credits.current / credits.total) * 100 : 0
 
   const handleModelChange = (value: string) => {
     setSelectedModel(value as ModelProvider)
