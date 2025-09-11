@@ -355,7 +355,14 @@ export async function activateParticipantAccount(
 }
 
 export async function logoutParticipant(ctx: ContextWithUser) {
+  // invalidate regular participant token
   ctx.res.cookie('participant_token', 'logoutString', {
+    ...COOKIE_SETTINGS,
+    maxAge: 0,
+  })
+
+  // invalidate assessment / Edu-ID participant token
+  ctx.res.cookie('next-auth.participant-session-token', 'logoutString', {
     ...COOKIE_SETTINGS,
     maxAge: 0,
   })
