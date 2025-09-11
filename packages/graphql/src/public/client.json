@@ -230,7 +230,7 @@
    "GetPracticeQuizSummary": "01dada3ea64ea21a809b325f22580d5f4857b150f719c7a3134709185a708cbf",
    "GetPreviousStackEvaluation": "179a69cf889090027d3579581168954f5bf1c1cec2b5436ac1390717ff53b307",
    "GetPublicParticipantProfile": "840169ba8a67902da899e1f08c92668228657ba5c6af024e42737081179bb343",
-   "GetRunningLiveQuiz": "2a33a4712c969600fa8d89a85f5e4a09c51d8ea293f4d6ba18453c866720b723",
+   "GetRunningLiveQuiz": "11d094cd3842a1f13f57f13d5393445a74f096fb94a285387c5681aecb7bcacb",
    "GetShortnameQuizzes": "d7af38702df3fa265ccbefe9b2f133b67a27b462dcf28178c021cef21083c11f",
    "GetSingleAnswerCollection": "b586e9af280f888252c3549bf06d599addb7c0de0a9cd8c4aaca9ce746f069a0",
    "GetSingleCourse": "cd7386f6855835f281a1e5bf44e5d970c846b8c105bb31f0910304f5d4bd3838",
@@ -269,7 +269,7 @@
    "GroupActivityStarted": "68ba757fcf30a19c49cfdb2d47e803a0a4f0ed3ecf60a30e0b7ea3390ae0cf20",
    "LiveQuizSettingsChanged": "212af644b03fa955abc0a3c907b9543c9831e9432d5dcb0cdf6708a927b5886c",
    "MicroLearningEnded": "b296f5b68bb5cccea3da7f8947ee13a88ce78307e694e4caef561b3b5b8766cb",
-   "RunningLiveQuizUpdated": "f96e8e7520ced97fa4a53a29aeb34117774bc0cd0d207ac3ad8261f21e99843f",
+   "RunningLiveQuizUpdated": "46053718f2c109dc06db6bd55f84ac088f98f7b999543ddad8ee4d6c4cdd1140",
    "SingleGroupActivityEnded": "3b5bbe5b53ba4977f839f3bf2fd60f6776d1fea15166e1b151e6cddf3f0a814e",
    "UpdateParticipantAvatar": "9b52e4c15c3c5db55ae0521c9f74e815ead8a8c91ebfbdb6a488e648fe3d2514"
 }
