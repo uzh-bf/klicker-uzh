@@ -25,6 +25,7 @@ fragment StudentLiveQuizBlocksData on LiveQuiz {
       id
       type
       elementType
+      correlationKey
       ...ElementDataWithoutSolutions
     }
   }

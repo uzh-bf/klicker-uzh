@@ -53,12 +53,6 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
   async function jwtMiddleware(req: any, res: any, next: any) {
     let token = null
 
-    console.log(
-      'Processing token with ASSESSMENT_MODE',
-      process.env.ASSESSMENT_MODE,
-      req.cookies
-    )
-
     // Assessment mode: only check for student NextAuth cookie
     if (process.env.ASSESSMENT_MODE === 'true') {
       if (

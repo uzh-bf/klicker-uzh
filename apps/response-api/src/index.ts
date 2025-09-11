@@ -1,7 +1,8 @@
-import { verifyJWT } from '@klicker-uzh/util'
+import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
+import { createHash } from 'node:crypto'
 import { hatchet } from './hatchet-client.js'
 
 const redis = new Redis({
@@ -92,12 +93,12 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     return badRequest(req, res, 'Body must be a JSON object')
   }
 
-  const { response, sessionId, instanceId } = payload
-  if (!response || !sessionId || typeof instanceId === 'undefined') {
+  const { response, liveQuizId, instanceId } = payload
+  if (!response || !liveQuizId || typeof instanceId === 'undefined') {
     return badRequest(
       req,
       res,
-      'Missing required fields: response, sessionId, instanceId'
+      'Missing required fields: response, liveQuizId, instanceId'
     )
   }
 
@@ -108,7 +109,7 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
 
   const message = {
     messageId: randomUUID(),
-    sessionId: String(sessionId),
+    sessionId: String(liveQuizId),
     instanceId: String(instanceId),
     response: response, // pass through as-is; worker validates
     cookie,
@@ -142,45 +143,64 @@ async function handleAddAssessmentResponse(
   try {
     payload = await readBody(req)
   } catch (err: any) {
+    hatchet.events.push('create-audit-log-entry', {
+      info: `[ERROR] [AddResponse Assessment] Failed to read request body: ${err.message} for request ${JSON.stringify(req)}`,
+    })
     return badRequest(req, res, err.message)
   }
 
   if (!payload || typeof payload !== 'object') {
+    hatchet.events.push('create-audit-log-entry', {
+      info: `[ERROR] [AddResponse Assessment] Invalid request body: ${JSON.stringify(payload)}`,
+    })
     return badRequest(req, res, 'Body must be a JSON object')
   }
 
-  const { response, sessionId, instanceId, correlationId } = payload
+  const { correlationKey, response, liveQuizId, instanceId } = payload
   if (
     !response ||
-    !sessionId ||
+    !liveQuizId ||
     typeof instanceId === 'undefined' ||
-    !correlationId
+    !correlationKey
   ) {
+    hatchet.events.push('create-audit-log-entry', {
+      info: `[ERROR] [AddResponse Assessment] Missing required fields in request body: ${JSON.stringify(
+        payload
+      )}`,
+    })
+
     return badRequest(
       req,
       res,
-      'Missing required fields: response, sessionId, instanceId, correlationId'
+      'Missing required fields: response, liveQuizId, instanceId, correlationKey'
     )
   }
 
-  // TODO: validate correlationId?
-
-  // check if there already exists an entry in the votes table with the given correlationId
-  const votes = await redis.hget(
-    `lq:${sessionId}:i:${instanceId}:votes`,
-    correlationId
-  )
-  if (votes) {
-    console.log(
-      `Participant with correlationId ${correlationId} already answered instance ${instanceId} in session ${sessionId}`
+  // validate correlationKey (execution, quizId and instanceId same as passed arguments)
+  let correlationData: JWTPayload | null = null
+  try {
+    correlationData = await verifyJWT(
+      correlationKey,
+      process.env.APP_SECRET as string
     )
+  } catch (err) {
     hatchet.events.push('create-audit-log-entry', {
-      correlationId,
-      info: `[AddResponse Assessment] Participant with correlationId ${correlationId} tried to answer instance ${instanceId} in session ${sessionId} again.`,
+      info: `[ERROR] [AddResponse Assessment] Failed to verify correlationKey: ${err} for response ${JSON.stringify(
+        payload
+      )}`,
     })
+    return badRequest(req, res, 'Invalid correlationKey')
+  }
 
-    // TODO: should we return a bad request or a success message, because the answer is already there?
-    return badRequest(req, res, 'Response already recorded')
+  if (
+    !correlationData ||
+    correlationData.instanceId !== instanceId ||
+    correlationData.liveQuizId !== liveQuizId
+  ) {
+    hatchet.events.push('create-audit-log-entry', {
+      info: `[ERROR] [AddResponse Assessment] Invalid correlationKey in request body: ${correlationKey} for response ${JSON.stringify(payload)}`,
+    })
+    return badRequest(req, res, 'Invalid correlationKey')
   }
 
   const cookies =
@@ -199,24 +219,69 @@ async function handleAddAssessmentResponse(
 
   // TODO: add some verification mechanism that student did not set a regular participant cookie as their assessment cookie
   // check if the assessment cookie is present and valid
-  const user = parsedCookies['next-auth.participant-session-token']
-    ? await verifyJWT(
-        parsedCookies['next-auth.participant-session-token'],
-        process.env.APP_SECRET as string
-      )
-    : null
-  const isAssessmentCookieValid = !!user && user.role === 'PARTICIPANT'
+  let user: JWTPayload | null = null
+  try {
+    user = parsedCookies['next-auth.participant-session-token']
+      ? await verifyJWT(
+          parsedCookies['next-auth.participant-session-token'],
+          process.env.APP_SECRET as string
+        )
+      : null
+  } catch (err) {
+    hatchet.events.push('create-audit-log-entry', {
+      info: `[ERROR] [AddResponse Assessment] Failed to verify assessment cookie JWT: ${err} for response ${JSON.stringify(
+        payload
+      )}`,
+    })
+    return sendJson(req, res, 401, { error: 'Invalid assessment cookie' })
+  }
 
-  if (!isAssessmentCookieValid) {
+  const isAssessmentCookieValid = !!user && user.role === 'PARTICIPANT'
+  if (!user || !user.sub || !isAssessmentCookieValid) {
+    hatchet.events.push('create-audit-log-entry', {
+      info: `[ERROR] [AddResponse Assessment] Missing or invalid assessment cookie: ${cookies} for response ${JSON.stringify(payload)}`,
+    })
     return sendJson(req, res, 401, {
       error: 'Missing or invalid assessment cookie',
     })
   }
 
+  // set up correlation id as an MD5 hash of correlationKey and participantId to obtain tracking id
+  const combinedCorrelationKey = `${correlationKey}:${user.sub}`
+  const MD5 = createHash('md5')
+  MD5.update(combinedCorrelationKey)
+  const correlationId = MD5.digest('hex')
+
+  // audit log entry for received response
+  hatchet.events.push('create-audit-log-entry', {
+    correlationId,
+    info: `[AddResponse Assessment] Response-API received response for instance ${instanceId} in live quiz ${liveQuizId} from participant ${user.sub}: ${JSON.stringify(
+      response
+    )}`,
+  })
+
+  // check if there already exists an entry in the votes table with the given correlationId
+  const votes = await redis.hget(
+    `lq:${liveQuizId}:i:${instanceId}:votes`,
+    correlationId
+  )
+  if (votes) {
+    console.log(
+      `Participant with correlationId ${correlationId} already answered instance ${instanceId} in live quiz ${liveQuizId}`
+    )
+    hatchet.events.push('create-audit-log-entry', {
+      correlationId,
+      info: `[AddResponse Assessment] Participant with correlationId ${correlationId} tried to answer instance ${instanceId} in live quiz ${liveQuizId} again.`,
+    })
+
+    // show success message that response was already recorded before and that first response counts
+    return sendJson(req, res, 200, { status: 'response_recorded_before' })
+  }
+
   const message = {
     correlationId,
     participantId: user.sub,
-    sessionId: String(sessionId),
+    liveQuizId: String(liveQuizId),
     instanceId: String(instanceId),
     response, // pass through as-is; worker validates
     responseTimestamp,

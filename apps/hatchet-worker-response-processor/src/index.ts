@@ -42,7 +42,7 @@ export const processAuthenticatedResponseTask = hatchet.durableTask({
 export const processAssessmentResponseWorkflow = hatchet.workflow<{
   correlationId: string
   participantId: string
-  sessionId: string
+  liveQuizId: string
   instanceId: string
   response: ResponseInput
   cookie?: string

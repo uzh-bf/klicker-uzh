@@ -50,27 +50,31 @@ const DynamicAccountSelector = dynamic(
   { ssr: false }
 )
 
-async function handleNewResponse(
-  sessionId: string,
-  instanceId: number,
-  type: ElementType,
+async function handleNewResponse({
+  liveQuizId,
+  instanceId,
+  type,
+  answer,
+  correlationKey,
+}: {
+  liveQuizId: string
+  instanceId: number
+  type: ElementType
   answer: any
-) {
+  correlationKey?: string | null
+}) {
   let requestOptions: RequestInit = {
     method: 'POST',
     credentials: 'include',
   }
 
-  // TODO: provide proper correlationId
-  const correlationId = '18513af0-f4b8-4098-b93d-9a77e29f08a5'
-
   if (QUESTION_GROUPS.CHOICES.includes(type)) {
     requestOptions = {
       ...requestOptions,
       body: JSON.stringify({
-        correlationId,
+        correlationKey,
         instanceId,
-        sessionId,
+        liveQuizId,
         response: { choices: answer },
       }),
     }
@@ -81,9 +85,9 @@ async function handleNewResponse(
     requestOptions = {
       ...requestOptions,
       body: JSON.stringify({
-        correlationId,
+        correlationKey,
         instanceId,
-        sessionId,
+        liveQuizId,
         response: { value: answer },
       }),
     }
@@ -91,9 +95,9 @@ async function handleNewResponse(
     requestOptions = {
       ...requestOptions,
       body: JSON.stringify({
-        correlationId,
+        correlationKey,
         instanceId,
-        sessionId,
+        liveQuizId,
         response: { selection: answer },
       }),
     }
@@ -101,9 +105,9 @@ async function handleNewResponse(
     requestOptions = {
       ...requestOptions,
       body: JSON.stringify({
-        correlationId,
+        correlationKey,
         instanceId,
-        sessionId,
+        liveQuizId,
         response: { assessment: answer },
       }),
     }
@@ -111,9 +115,9 @@ async function handleNewResponse(
     requestOptions = {
       ...requestOptions,
       body: JSON.stringify({
-        correlationId,
+        correlationKey,
         instanceId,
-        sessionId,
+        liveQuizId,
         response: { read: true },
       }),
     }
@@ -514,7 +518,7 @@ function Index({ id }: { id: string }) {
                     gamificationEnabled={isGamificationEnabled}
                     instances={blocks?.[selectedBlock].elements ?? []}
                     execution={blocks?.[selectedBlock]?.execution ?? 0}
-                    handleNewResponse={() => {}} // submissions are no longer possible
+                    handleNewResponse={async () => null} // submissions are no longer possible
                   />
                 ) : null}
               </>
