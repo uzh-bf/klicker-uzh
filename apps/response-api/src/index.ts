@@ -1,4 +1,4 @@
-import { verifyJWT } from '@klicker-uzh/util'
+import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
@@ -177,10 +177,21 @@ async function handleAddAssessmentResponse(
   }
 
   // validate correlationKey (execution, quizId and instanceId same as passed arguments)
-  const correlationData = await verifyJWT(
-    correlationKey,
-    process.env.APP_SECRET as string
-  )
+  let correlationData: JWTPayload | null = null
+  try {
+    correlationData = await verifyJWT(
+      correlationKey,
+      process.env.APP_SECRET as string
+    )
+  } catch (err) {
+    hatchet.events.push('create-audit-log-entry', {
+      info: `[ERROR] [AddResponse Assessment] Failed to verify correlationKey: ${err} for response ${JSON.stringify(
+        payload
+      )}`,
+    })
+    return badRequest(req, res, 'Invalid correlationKey')
+  }
+
   if (
     !correlationData ||
     correlationData.instanceId !== instanceId ||
@@ -208,14 +219,24 @@ async function handleAddAssessmentResponse(
 
   // TODO: add some verification mechanism that student did not set a regular participant cookie as their assessment cookie
   // check if the assessment cookie is present and valid
-  const user = parsedCookies['next-auth.participant-session-token']
-    ? await verifyJWT(
-        parsedCookies['next-auth.participant-session-token'],
-        process.env.APP_SECRET as string
-      )
-    : null
-  const isAssessmentCookieValid = !!user && user.role === 'PARTICIPANT'
+  let user: JWTPayload | null = null
+  try {
+    user = parsedCookies['next-auth.participant-session-token']
+      ? await verifyJWT(
+          parsedCookies['next-auth.participant-session-token'],
+          process.env.APP_SECRET as string
+        )
+      : null
+  } catch (err) {
+    hatchet.events.push('create-audit-log-entry', {
+      info: `[ERROR] [AddResponse Assessment] Failed to verify assessment cookie JWT: ${err} for response ${JSON.stringify(
+        payload
+      )}`,
+    })
+    return sendJson(req, res, 401, { error: 'Invalid assessment cookie' })
+  }
 
+  const isAssessmentCookieValid = !!user && user.role === 'PARTICIPANT'
   if (!user || !user.sub || !isAssessmentCookieValid) {
     hatchet.events.push('create-audit-log-entry', {
       info: `[ERROR] [AddResponse Assessment] Missing or invalid assessment cookie: ${cookies} for response ${JSON.stringify(payload)}`,
