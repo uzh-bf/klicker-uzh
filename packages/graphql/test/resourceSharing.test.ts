@@ -85,9 +85,7 @@ describe('Integration tests for sharing functionalities of resources (e.g. answe
     userFiveCtx = ctx5
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   // TODO - as soon as elements and courses can also be shared, add additional small test suites with essential sharing functionalities
   // TODO: make sure to extend tests once element and activity sharing is available with modifications and impact on derived permissions when executing the following actions

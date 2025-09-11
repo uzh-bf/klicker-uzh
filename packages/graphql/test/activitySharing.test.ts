@@ -99,9 +99,7 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
     userFiveCtx = ctx5
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   // ! Catalog Operations with Live Quizzes (incl. Templates)
   // #region

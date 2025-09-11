@@ -83,9 +83,7 @@ describe('Integration tests for sharing functionalities of elements (questions, 
     userFiveCtx = ctx5
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   // ! Sharing functionalities for elements
   // #region

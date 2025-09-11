@@ -50,9 +50,7 @@ describe('Integration tests for assessment configuration functionalities', () =>
     userOneCtx = ctx1
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   describe('Integration tests for assessment settings on courses and activities', () => {
     // set default booleans for irrelevant interaction settings

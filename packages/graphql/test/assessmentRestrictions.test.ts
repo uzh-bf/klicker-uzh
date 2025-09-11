@@ -67,9 +67,7 @@ describe('Integration tests for assessment configuration functionalities', () =>
     userFiveCtx = ctx5
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   describe('Integration tests for restrictions that need to be enforced for assessment activities', () => {
     // helper function to seed courses with different gamification and assessment settings

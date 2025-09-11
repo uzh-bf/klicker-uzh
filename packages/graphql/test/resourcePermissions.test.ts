@@ -31,13 +31,9 @@ describe('Unit tests covering the creation of derived permissions for resources 
     await prisma.$disconnect()
   })
 
-  beforeEach(async () => {
-    const {} = await testInitialization(prisma, hatchet, emitter)
-  })
+  beforeEach(async () => testInitialization(prisma, hatchet, emitter))
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   // ! Answer collection permissions tests
   // #region

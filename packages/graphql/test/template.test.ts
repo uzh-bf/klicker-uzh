@@ -80,9 +80,7 @@ describe('Integration tests for template service', () => {
     userFiveCtx = ctx5
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   it('Verify that matching questions are correctly filtered when loaded from the database', async () => {
     // seed a number of minimal elements into the database

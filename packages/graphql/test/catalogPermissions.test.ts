@@ -31,13 +31,9 @@ describe('Unit tests covering the creation of derived permissions for catalog co
     await prisma.$disconnect()
   })
 
-  beforeEach(async () => {
-    const {} = await testInitialization(prisma, hatchet, emitter)
-  })
+  beforeEach(async () => await testInitialization(prisma, hatchet, emitter))
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   // ! Catalog collection permissions tests
   // #region

@@ -79,9 +79,7 @@ describe('Integration tests for resource management (e.g. answer collections)', 
     userFiveCtx = ctx5
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   // ! Answer Collection Management
   // #region

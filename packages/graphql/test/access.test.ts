@@ -86,9 +86,7 @@ describe('Integration tests for object access validation', () => {
     userFiveCtx = ctx5
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   // ! Access Validation
   // #region

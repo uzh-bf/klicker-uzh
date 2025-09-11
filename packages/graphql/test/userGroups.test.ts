@@ -68,9 +68,7 @@ describe('Integration tests for user group management', () => {
     userFourCtx = ctx4
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   describe('Integration tests for user group creation and manipulation, including member management', () => {
     it('Providing regular members should result in a successful group creation', async () => {

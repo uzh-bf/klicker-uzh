@@ -88,9 +88,7 @@ describe('Integration tests for sharing functionalities of catalog collections',
     userFiveCtx = ctx5
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   // ! Catalog Collection Access Validation
   // #region

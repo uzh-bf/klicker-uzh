@@ -52,9 +52,7 @@ describe('Unit tests batch operations on elements', () => {
     userTwoCtx = ctx2
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   async function seedElement(args: { [x: string]: any }, prisma: PrismaClient) {
     // Randomly choose one of the values of ElementType

@@ -82,9 +82,7 @@ describe('Integration tests for sharing functionalities of courses', () => {
     userThreeCtx = ctx3
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   async function seedCourseActivities(prisma) {
     // create a course with activities, elements and resources

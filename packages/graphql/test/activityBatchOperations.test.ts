@@ -64,9 +64,7 @@ describe('Integration tests for batch operations on activities', () => {
     userFiveCtx = ctx5
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   async function seedElement(
     args: { [x: string]: any },

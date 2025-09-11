@@ -36,13 +36,9 @@ describe('Unit tests covering the creation of derived permissions for activities
     await prisma.$disconnect()
   })
 
-  beforeEach(async () => {
-    const {} = await testInitialization(prisma, hatchet, emitter)
-  })
+  beforeEach(async () => await testInitialization(prisma, hatchet, emitter))
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   // ! Live quiz permissions tests
   // #region
