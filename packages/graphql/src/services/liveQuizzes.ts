@@ -1405,6 +1405,10 @@ export async function activateLiveQuizBlock(
       case DB.ElementType.NUMERICAL: {
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
+          ...(elementData.options.restrictions &&
+          Object.keys(elementData.options.restrictions).length > 0
+            ? { restrictions: JSON.stringify(elementData.options.restrictions) }
+            : {}),
           solutions:
             elementData.options.exactSolutions &&
             elementData.options.exactSolutions.length > 0
@@ -1423,6 +1427,10 @@ export async function activateLiveQuizBlock(
       case DB.ElementType.FREE_TEXT: {
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
+          ...(elementData.options.restrictions &&
+          Object.keys(elementData.options.restrictions).length > 0
+            ? { restrictions: JSON.stringify(elementData.options.restrictions) }
+            : {}),
           solutions: elementData.options.hasSampleSolution
             ? JSON.stringify(elementData.options.solutions)
             : undefined,

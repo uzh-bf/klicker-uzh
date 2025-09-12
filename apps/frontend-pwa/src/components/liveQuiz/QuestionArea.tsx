@@ -285,12 +285,10 @@ function QuestionArea({
         liveQuizId: quizId,
         instanceId,
         type,
-        answer: Object.entries(input.response)
-          .filter(([, value]) => value)
-          .map(([key, value]) => ({
-            ix: parseInt(key),
-            selected: value,
-          })),
+        answer: Object.entries(input.response).map(([key, value]) => ({
+          ix: parseInt(key),
+          selected: typeof value === 'boolean' ? value : false,
+        })),
         correlationKey,
       })
 

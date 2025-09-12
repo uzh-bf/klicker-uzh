@@ -519,6 +519,8 @@ export default {
         'Ihr Account wurde erstellt. Bitte überprüfen Sie Ihren Posteingang auf einen Aktivierungslink.',
       myCourses: 'Meine Kurse',
       myAssessmentCourses: 'Meine Assessment-Kurse',
+      noAssessmentCourseAssignments:
+        'Sie wurden bisher zu keinen Assessment-Kursen hinzugefügt. Bitte wenden Sie sich an Ihre Dozierenden.',
       insights: 'Einblicke',
       timeline: 'Zeitachse',
       myBookmarks: 'Meine Bookmarks',
