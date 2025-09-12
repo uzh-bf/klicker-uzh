@@ -21,9 +21,20 @@ concurrency:
 env:
   REGISTRY: ghcr.io
 
+# This workflow runs Cypress tests with two different strategies:
+# 1. Draft PRs: Fast parallel testing with cypress-split (8 containers, no Cloud)
+# 2. Non-draft PRs & v3 pushes: Full Cypress Cloud recording for production visibility
+#
+# The job conditions prevent duplicate triggers when pushing to PR branches:
+# - Push events to PR branches only trigger if pushing directly to v3
+# - Pull request events handle all PR-related testing based on draft status
+
 jobs:
+  # Runs parallel Cypress tests for DRAFT pull requests only
+  # Uses cypress-split to distribute tests across 8 containers for faster feedback
+  # No Cypress Cloud recording to save costs during development
   cypress-run-parallel-draft:
-    if: github.event.pull_request.draft == true
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -179,8 +190,13 @@ jobs:
           if-no-files-found: ignore
           retention-days: 1
 
+  # Runs Cypress tests with Cloud recording for production-ready code
+  # Triggers on:
+  # - Non-draft pull requests (for code review)
+  # - Direct pushes to v3 branch (for hotfixes/direct commits)
+  # Provides full video/screenshot recording and Cypress Dashboard visibility
   cypress-run-cloud:
-    if: github.event.pull_request.draft == false || (github.event_name == 'push' && github.event.pull_request.draft != true)
+    if: (github.event_name == 'pull_request' && github.event.pull_request.draft == false) || (github.event_name == 'push' && github.ref == 'refs/heads/v3')
     runs-on: ubuntu-24.04
     services:
       postgres:
