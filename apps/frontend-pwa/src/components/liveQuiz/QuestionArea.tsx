@@ -387,8 +387,8 @@ function QuestionArea({
       // if request was successful, store the submitted answer locally to be shown and remove any temporary saved response
       if (statusCode >= 200 && statusCode < 300) {
         // store the submitted answer locally to be shown and remove any temporary saved response
-        localforage.setItem(storageKey, input.response)
-        localforage.removeItem(`${storageKey}-temp`)
+        await localforage.setItem(storageKey, input.response)
+        await localforage.removeItem(`${storageKey}-temp`)
         return true
       } else {
         return false
@@ -411,8 +411,8 @@ function QuestionArea({
       showStatusCodeToast(statusCode)
 
       if (statusCode >= 200 && statusCode < 300) {
-        localforage.setItem(storageKey, input.response)
-        localforage.removeItem(`${storageKey}-temp`)
+        await localforage.setItem(storageKey, input.response)
+        await localforage.removeItem(`${storageKey}-temp`)
         return true
       } else {
         return false
@@ -435,8 +435,8 @@ function QuestionArea({
       showStatusCodeToast(statusCode)
 
       if (statusCode >= 200 && statusCode < 300) {
-        localforage.setItem(storageKey, input.response)
-        localforage.removeItem(`${storageKey}-temp`)
+        await localforage.setItem(storageKey, input.response)
+        await localforage.removeItem(`${storageKey}-temp`)
         return true
       } else {
         return false
@@ -459,8 +459,8 @@ function QuestionArea({
       showStatusCodeToast(statusCode)
 
       if (statusCode >= 200 && statusCode < 300) {
-        localforage.setItem(storageKey, input.response)
-        localforage.removeItem(`${storageKey}-temp`)
+        await localforage.setItem(storageKey, input.response)
+        await localforage.removeItem(`${storageKey}-temp`)
         return true
       } else {
         return false
@@ -483,8 +483,8 @@ function QuestionArea({
       showStatusCodeToast(statusCode)
 
       if (statusCode >= 200 && statusCode < 300) {
-        localforage.setItem(storageKey, input.response)
-        localforage.removeItem(`${storageKey}-temp`)
+        await localforage.setItem(storageKey, input.response)
+        await localforage.removeItem(`${storageKey}-temp`)
         return true
       } else {
         return false
@@ -503,8 +503,8 @@ function QuestionArea({
       showStatusCodeToast(statusCode)
 
       if (statusCode >= 200 && statusCode < 300) {
-        localforage.setItem(storageKey, input.response)
-        localforage.removeItem(`${storageKey}-temp`)
+        await localforage.setItem(storageKey, input.response)
+        await localforage.removeItem(`${storageKey}-temp`)
         return true
       } else {
         return false
