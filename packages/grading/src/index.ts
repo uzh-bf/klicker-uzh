@@ -1,3 +1,4 @@
+import { CaseStudyResponseObject } from '@klicker-uzh/types'
 import { isDeepEqual, toLowerCase } from 'remeda'
 
 interface GradeQuestionChoicesArgs {
@@ -193,14 +194,6 @@ interface GradeQuestionCaseStudyArgs {
         }[]
       }[]
     | null
-}
-
-type CaseStudyResponseObject = {
-  [caseId: string]: {
-    [itemId: number]: {
-      [criterionId: string]: number // value = response
-    }
-  }
 }
 
 export function gradeQuestionCaseStudy({

@@ -11,7 +11,7 @@ import {
   ResponseCorrectness,
   UserRole,
 } from '@klicker-uzh/prisma/client'
-import type { ResponseInput } from '@klicker-uzh/types'
+import type { LiveQuizResponseInput } from '@klicker-uzh/types'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import { DEFAULT_POINTS } from './constants.js'
@@ -22,6 +22,7 @@ import {
   getNumericalQuestionPointsDetails,
   getSelectionQuestionPointsDetails,
   updateLeaderboards,
+  validateStudentResponse,
 } from './helpers.js'
 import getRedis from './redis.js'
 
@@ -36,7 +37,7 @@ export async function processAssessmentResponse(
     participantId: string
     liveQuizId: string
     instanceId: string
-    response: ResponseInput
+    response: LiveQuizResponseInput
     cookie?: string
     responseTimestamp: number
   },
@@ -103,6 +104,7 @@ export async function processAssessmentResponse(
   const {
     type,
     solutions,
+    restrictions,
     firstResponseReceivedAt,
     sessionBlockId,
     choiceCount,
@@ -119,8 +121,24 @@ export async function processAssessmentResponse(
     )
   }
 
-  // ! Step 2: Switch between different types, validate response and compute awarded points and XP
+  // ! Step 1.2 Validation of response format
+  const { valid, message: validationError } = validateStudentResponse({
+    type: type as any,
+    response,
+    restrictions: restrictions
+      ? typeof restrictions === 'string'
+        ? JSON.parse(restrictions)
+        : restrictions
+      : undefined,
+  })
 
+  if (!valid) {
+    throw new NonRetryableError(
+      `Response to question instance ${message.instanceId} is not valid: ${validationError}`
+    )
+  }
+
+  // ! Step 2: Switch between different types, validate response and compute awarded points and XP
   let parsedSolutions = undefined
   try {
     if (solutions) {
@@ -374,7 +392,7 @@ export async function aggregateAssessmentResponses(
     isGamificationEnabled: boolean
     pointsAwarded: number
     xpAwarded: number
-    response: ResponseInput
+    response: LiveQuizResponseInput
   },
   ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
 ) {
