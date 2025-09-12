@@ -24,8 +24,7 @@ env:
 jobs:
   cypress-run:
     if: github.event.pull_request.draft == false
-    # runs-on: self-hosted
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:15
@@ -179,7 +178,8 @@ jobs:
           wait-on: 'http://127.0.0.1:3000/healthz, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010'
           wait-on-timeout: 300
           record: ${{ github.event.pull_request.draft != true }}
-          browser: electron
+          # browser: electron
+          browser: chrome
           working-directory: cypress
           # parallel: true
         env:
