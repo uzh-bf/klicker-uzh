@@ -295,9 +295,6 @@ export async function initializePrisma() {
   getDatabaseUrl()
 
   try {
-    // test database connection
-    await prisma.$connect()
-
     // create EventEmitter for test context
     const emitter = new EventEmitter()
 

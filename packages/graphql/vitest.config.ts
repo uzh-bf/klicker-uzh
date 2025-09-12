@@ -7,6 +7,7 @@ export default defineConfig({
     testTimeout: 30000,
     silent: false,
     reporters: ['verbose'],
+    setupFiles: ['dotenv/config'],
     pool: 'forks',
     poolOptions: {
       forks: {
