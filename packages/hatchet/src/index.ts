@@ -190,13 +190,15 @@ export function prepareHatchetTasks({
 
   const sendPushNotifications = hatchet.task({
     name: 'send-push-notifications',
-    retries: 3,
+    // retries: 3,
     onCrons: [
       '*/5 * * * *', // runs every 5 minutes
     ],
     fn: async () => {
-      const success = await handlers.handleSendPushNotifications({}, ctx)
-      return { success }
+      // TODO: clean implementation
+      return { success: true }
+      // const success = await handlers.handleSendPushNotifications({}, ctx)
+      // return { success }
     },
   })
   // #endregion

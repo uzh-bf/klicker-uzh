@@ -1,7 +1,6 @@
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { enhanceContext, handlers, schema } from '@klicker-uzh/graphql'
 import { prisma as prismaBase } from '@klicker-uzh/prisma'
-import { withOptimize } from '@prisma/extension-optimize'
 // import * as Sentry from '@sentry/node'
 // import '@sentry/tracing'
 import { createInMemoryCache, type Cache } from '@envelop/response-cache'
@@ -19,15 +18,14 @@ const emitter = new EventEmitter()
 
 let prisma = prismaBase
 
-if (
-  process.env.NODE_ENV === 'development' &&
-  process.env.PRISMA_OPTIMIZE === 'true'
-) {
-  prisma = prismaBase.$extends(
-    withOptimize({ apiKey: process.env.PRISMA_OPTIMIZE_API_KEY as string })
-  ) as typeof prisma
-}
-// #endregion
+// if (
+//   process.env.NODE_ENV === 'development' &&
+//   process.env.PRISMA_OPTIMIZE === 'true'
+// ) {
+//   prisma = prismaBase.$extends(
+//     withOptimize({ apiKey: process.env.PRISMA_OPTIMIZE_API_KEY as string })
+//   ) as typeof prisma
+// }
 
 // ! Redis setup
 // #region
@@ -93,20 +91,22 @@ emitter.on('invalidate', (resource) => {
 // ! PubSub setup
 const pubSub = createPubSub({ eventTarget })
 
-// initialize tasks to be able to call / schedule them inside service functions
-const tasks = prepareHatchetTasks({
-  hatchet: hatchetClient,
-  pubSub,
-  emitter,
-  redisCache,
-  redisExec,
-  handlers,
-})
-// #endregion
-
 // ! Server and context setup
 // #region
 migrate(prisma).then(() => {
+  // initialize tasks to be able to call / schedule them inside service functions
+  const tasks = prepareHatchetTasks({
+    hatchet: hatchetClient,
+    pubSub,
+    emitter,
+    redisCache,
+    redisExec,
+    handlers,
+  })
+
+  console.log('Hatchet tasks initialized.', Object.keys(tasks))
+  // #endregion
+
   const { app, yogaApp } = prepareApp({
     prisma,
     redisCache,
