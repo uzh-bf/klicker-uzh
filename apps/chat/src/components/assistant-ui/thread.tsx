@@ -22,6 +22,10 @@ import { BranchPicker } from './branch-picker'
 import { MarkdownText } from './markdown-text'
 import { ToolFallback } from './tool-fallback'
 
+import Image from 'next/image'
+
+import { twMerge } from 'tailwind-merge'
+
 export const Thread: FC = () => {
   return (
     <ThreadPrimitive.Root
@@ -249,6 +253,18 @@ const EditComposer: FC = () => {
 const AssistantMessage: FC = () => {
   return (
     <MessagePrimitive.Root className="relative grid w-full max-w-[var(--thread-max-width)] grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] py-4">
+      {/* Avatar image in first column */}
+      <div className="col-start-1 row-span-2 row-start-1 mr-3 mt-3 flex items-start pr-2">
+        <Image
+          src={'/user-solid.svg'}
+          alt=""
+          width={'35'}
+          height="35"
+          className={twMerge(
+            'hover:bg-uzh-red-20 cursor-pointer rounded-full bg-white p-1'
+          )}
+        />
+      </div>
       <div className="text-foreground col-span-2 col-start-2 row-start-1 my-1.5 max-w-[calc(var(--thread-max-width)*0.8)] break-words leading-7">
         <MessagePrimitive.Content
           components={{ Text: MarkdownText, tools: { Fallback: ToolFallback } }}
