@@ -7,6 +7,7 @@ import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
 import EventEmitter from 'events'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
+import logger from './logger.js'
 
 const HATCHET_WORKER_NAME =
   process.env.HATCHET_WORKER_NAME ?? 'hatchet-worker-general'
@@ -18,25 +19,34 @@ function selectWorkflows(workflows: PreparedHatchetTasks) {
     keyof PreparedHatchetTasks
   >
 
-  const requestedKeysRaw = process.env.HATCHET_WORKFLOWS?.split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
+  // Parse requested keys; treat empty/whitespace as "unset" so we default to all
+  const envRaw = process.env.HATCHET_WORKFLOWS
+  const requestedKeysRaw = envRaw
+    ? envRaw
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : undefined
+
+  const hasRequested = Array.isArray(requestedKeysRaw) && requestedKeysRaw.length > 0
 
   const validSelectedKeys = (
-    requestedKeysRaw
+    hasRequested
       ? requestedKeysRaw.filter(
           (k): k is keyof PreparedHatchetTasks => k in workflows
         )
       : defaultWorkflowKeys
   ) as Array<keyof PreparedHatchetTasks>
 
-  if (requestedKeysRaw) {
+  if (hasRequested) {
     const unknown = requestedKeysRaw.filter((k) => !(k in workflows))
     if (unknown.length) {
-      console.warn(
-        `HATCHET_WORKFLOWS contains unknown task keys: ${unknown.join(
-          ', '
-        )}. Available keys: ${Object.keys(workflows).join(', ')}`
+      logger.warn(
+        {
+          unknownKeys: unknown,
+          availableKeys: Object.keys(workflows),
+        },
+        'HATCHET_WORKFLOWS contains unknown task keys'
       )
     }
   }
@@ -47,6 +57,8 @@ function selectWorkflows(workflows: PreparedHatchetTasks) {
 }
 
 async function main() {
+  logger.info('Starting worker')
+
   const redisExec = new Redis({
     family: 4,
     host: process.env.REDIS_HOST ?? 'localhost',
@@ -88,6 +100,8 @@ async function main() {
 
   const emitter = new EventEmitter()
 
+  logger.info('Preparing workflows')
+
   const preparedWorkflows = prepareHatchetTasks({
     hatchet: hatchetClient,
     pubSub,
@@ -98,6 +112,10 @@ async function main() {
   })
 
   const workflows = selectWorkflows(preparedWorkflows)
+  const selectedKeys = Object.keys(preparedWorkflows).filter((k) =>
+    workflows.includes((preparedWorkflows as any)[k])
+  )
+  logger.info({ selectedKeys }, 'Selected workflows')
 
   const worker = await hatchetClient.worker(HATCHET_WORKER_NAME, {
     workflows,
@@ -105,5 +123,16 @@ async function main() {
 
   await worker.start()
 }
+
+process.on('unhandledRejection', (reason) => {
+  logger.fatal({ err: reason }, 'Unhandled promise rejection')
+  // Let the process crash; orchestration should restart it
+  process.exit(1)
+})
+
+process.on('uncaughtException', (err) => {
+  logger.fatal({ err }, 'Uncaught exception')
+  process.exit(1)
+})
 
 await main()

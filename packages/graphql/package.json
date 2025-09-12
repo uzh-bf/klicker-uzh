@@ -26,7 +26,7 @@
     "bcryptjs": "2.4.3",
     "dayjs": "1.11.13",
     "generate-password": "1.7.1",
-    "graphql": "16.9.0",
+    "graphql": "16.11.0",
     "graphql-scalars": "1.23.0",
     "graphql-yoga": "3.9.1",
     "ioredis": "5.4.1",
@@ -98,7 +98,7 @@
     "script:prod": "ENV=production doppler run --config prd -- tsx",
     "script:stg": "ENV=development doppler run --config stg -- tsx",
     "test": "vitest run",
-    "test:local": "bash ./run-tests-local.sh",
+    "test:local": "bash ./test/run-tests-local.sh",
     "test:watch": "vitest"
   },
   "engines": {
