@@ -1954,7 +1954,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
     cy.get(
       `[data-cy="catalog-collection-${this.data.CCPublic}-actions"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="delete-catalog-collection"]').click()
     cy.get('[data-cy="confirm-delete-collection"]').click()
     cy.get(
