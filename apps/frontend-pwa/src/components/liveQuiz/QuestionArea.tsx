@@ -176,12 +176,23 @@ function QuestionArea({
 
   useEffect(() => {
     // load the stored student response from the temporary or submission storage
+    // guard against race conditions by cancelling stale async completions
+    let cancelled = false
+    const safeSetStudentResponse: typeof setStudentResponse = (value) => {
+      if (cancelled) return
+      setStudentResponse(value as any)
+    }
+
     loadStoredResponse({
       quizId,
       execution,
       currentInstance,
-      setStudentResponse,
+      setStudentResponse: safeSetStudentResponse,
     })
+
+    return () => {
+      cancelled = true
+    }
 
     // re-run when quizId/execution/instance changes
   }, [quizId, execution, currentInstance?.id])
