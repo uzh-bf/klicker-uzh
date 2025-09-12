@@ -22,6 +22,7 @@ import {
 } from '@klicker-uzh/types'
 import bcrypt from 'bcryptjs'
 import { defineConfig } from 'cypress'
+import cypressSplit from 'cypress-split'
 // import cypressCodeCoverage from '@cypress/code-coverage/task'
 
 // ! Copy of seeded user ids from prisma/seedUsers.ts
@@ -175,6 +176,8 @@ export default defineConfig({
       config.env = { ...config.env, ...process.env }
 
       // cypressCodeCoverage(on, config)
+      cypressSplit(on, config)
+
       on('task', {
         // ! Helper functions
         // #region

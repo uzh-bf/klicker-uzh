@@ -22,8 +22,165 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  cypress-run:
-    if: github.event.pull_request.draft == false
+  cypress-run-parallel-draft:
+    if: github.event.pull_request.draft == true
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        containers: [1, 2, 3, 4, 5, 6, 7, 8]
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: klicker-prod
+          POSTGRES_PASSWORD: klicker
+          POSTGRES_DB: klicker-prod
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      postgres_hatchet:
+        image: postgres:15
+        env:
+          POSTGRES_USER: hatchet
+          POSTGRES_PASSWORD: hatchet
+          POSTGRES_DB: hatchet
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis_cache:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6380:6379
+      redis_exec:
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        image: redis:7
+        ports:
+          - 6379:6379
+      hatchet:
+        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:latest
+        ports:
+          - '8888:8888'
+          - '7077:7077'
+        env:
+          DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
+          SERVER_AUTH_COOKIE_DOMAIN: hatchet
+          SERVER_AUTH_COOKIE_INSECURE: 't'
+          SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
+          SERVER_GRPC_INSECURE: 't'
+          SERVER_GRPC_BROADCAST_ADDRESS: 127.0.0.1:7077
+          SERVER_GRPC_PORT: '7077'
+          SERVER_URL: http://127.0.0.1:8888
+          SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
+          SERVER_DEFAULT_ENGINE_VERSION: 'V1'
+
+    steps:
+      - run: echo "Running parallel Cypress tests for draft PR (container ${{ matrix.containers }})"
+
+      - name: Define node version
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 10.15.0
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - uses: actions/cache@v3
+        name: Setup pnpm cache
+        with:
+          path: |
+            ${{ env.STORE_PATH }}
+            ~/.cache/Cypress
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build all packages and apps
+        run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test
+
+      - name: Prepare .env files
+        run: |
+          ./util/_create_hatchet_token_cypress.sh
+
+      - name: Apply migrations and seed the database
+        run: |
+          cd packages/prisma
+          pnpm run prisma:reset:raw -f
+        env:
+          DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
+
+      - name: Start services and wait for readiness
+        run: |
+          chmod +x .github/scripts/wait-for-services.sh
+          .github/scripts/wait-for-services.sh
+        env:
+          APP_SECRET: abcd
+          DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
+          NODE_ENV: production
+          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010'
+          TIMEOUT_SECONDS: '300'
+          CHECK_INTERVAL: '5'
+
+      - name: Cypress run parallel with cypress-split
+        uses: cypress-io/github-action@v6
+        timeout-minutes: 120
+        with:
+          install: false
+          wait-on: 'http://127.0.0.1:3000/healthz, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010'
+          wait-on-timeout: 300
+          browser: chrome
+          working-directory: cypress
+        env:
+          APP_SECRET: abcd
+          DATABASE_URL: postgres://klicker-prod:klicker@127.0.0.1:5432/klicker-prod
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_ENV: production
+          HATCHET_API_URL: http://127.0.0.1:8888
+          HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
+          HATCHET_HOST_PORT: 7077
+          SPLIT: ${{ strategy.job-total }}
+          SPLIT_INDEX: ${{ strategy.job-index }}
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-artifacts-draft-${{ matrix.containers }}
+          path: |
+            cypress/cypress/videos
+            cypress/cypress/screenshots
+          if-no-files-found: ignore
+          retention-days: 1
+
+  cypress-run-cloud:
+    if: github.event.pull_request.draft == false || github.event_name == 'push'
     runs-on: ubuntu-24.04
     services:
       postgres:
@@ -85,12 +242,8 @@ jobs:
           SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
           SERVER_DEFAULT_ENGINE_VERSION: 'V1'
 
-    # strategy:
-    #   fail-fast: false # https://github.com/cypress-io/github-action/issues/48
-    #   matrix:
-    #     containers: [1, 2] # Run parallel instances
     steps:
-      - run: echo "The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "Running Cypress tests with Cloud recording for non-draft PR or push to v3"
 
       - name: Define node version
         uses: actions/setup-node@v3
@@ -120,24 +273,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
-      - uses: actions/cache@v3
-        name: Setup turbo cache
-        with:
-          path: |
-            .turbo
-          key: ${{ runner.os }}-turbo-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-turbo-
-
       - name: Install dependencies
         run: pnpm install
+
+      - name: Build all packages and apps
+        run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test
 
       - name: Prepare .env files
         run: |
           ./util/_create_hatchet_token_cypress.sh
-
-      - name: Build all packages and apps
-        run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test
 
       - name: Apply migrations and seed the database
         run: |
@@ -159,7 +303,7 @@ jobs:
           CHECK_INTERVAL: '5'
 
       - name: Upload service logs
-        if: always() # This ensures logs are uploaded even if the previous step fails
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: service-logs
@@ -167,18 +311,16 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      - name: Cypress run
+      - name: Cypress run with Cloud recording
         uses: cypress-io/github-action@v6
         timeout-minutes: 120
         with:
           install: false
           wait-on: 'http://127.0.0.1:3000/healthz, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010'
           wait-on-timeout: 300
-          record: ${{ github.event.pull_request.draft != true }}
-          # browser: electron
+          record: true
           browser: chrome
           working-directory: cypress
-          # parallel: true
         env:
           APP_SECRET: abcd
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
@@ -192,7 +334,7 @@ jobs:
       - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-artifacts
+          name: cypress-artifacts-cloud
           path: |
             cypress/cypress/videos
             cypress/cypress/screenshots

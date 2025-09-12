@@ -14,6 +14,7 @@
     "bcryptjs": "~2.4.3",
     "cypress": "~15.2.0",
     "cypress-real-events": "~1.15.0",
+    "cypress-split": "~1.24.2",
     "generate-password": "~1.7.1",
     "jose": "~5.9.4",
     "localforage": "~1.10.0",
