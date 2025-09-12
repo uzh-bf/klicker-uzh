@@ -36,9 +36,7 @@ jobs:
   # Uses cypress-split to distribute tests across 8 containers for faster feedback
   # No Cypress Cloud recording to save costs during development
   cypress-run-parallel-draft:
-    if: |
-      (github.event_name == 'pull_request' && github.event.pull_request.draft == true) ||
-      (github.event_name == 'push' && github.ref != 'refs/heads/v3')
+    if: (github.event_name == 'pull_request' && github.event.pull_request.draft == true)
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
