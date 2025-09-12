@@ -2,6 +2,8 @@ import messages from '../../../packages/i18n/messages/en'
 
 describe('Test all functionalities related to the creation, management, sharing and use of templates', function () {
   before(() => {
+    cy.cleanup()
+
     cy.seed()
 
     // set browser language to english (independent of local machine setting
@@ -9,10 +11,6 @@ describe('Test all functionalities related to the creation, management, sharing 
       command: 'Emulation.setLocaleOverride',
       params: { locale: 'en' },
     })
-  })
-
-  after(() => {
-    cy.cleanup()
   })
 
   beforeEach('Load fixture for this test case', function () {
@@ -569,11 +567,11 @@ describe('Test all functionalities related to the creation, management, sharing 
       .type(this.data.liveQuiz.template1Orig.name)
     cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
     cy.get('[data-cy="template-description"]')
-      .realClick()
+      .click()
       .type(this.data.liveQuiz.template1Orig.description)
     cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
     cy.get('[data-cy="template-instructions"]')
-      .realClick()
+      .click()
       .type(this.data.liveQuiz.template1Orig.instructions)
     cy.get('[data-cy="submit-template-creation"]').click()
 
@@ -604,7 +602,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(
       `[data-cy="template-from-live-quiz-${this.data.liveQuiz.name}"]`
     ).should('exist')
-    cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).click() // close dropdown
 
     cy.get(
       `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.template1Orig.name}"]`
@@ -617,7 +615,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     ).should('exist')
     cy.get(
       `[data-cy="activity-name-${this.data.liveQuiz.template1Orig.name}"]`
-    ).realClick() // close dropdown
+    ).click() // close dropdown
   })
 
   it('Convert the live quiz into a second template', function () {
@@ -648,11 +646,11 @@ describe('Test all functionalities related to the creation, management, sharing 
       .type(this.data.liveQuiz.template2.name)
     cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
     cy.get('[data-cy="template-description"]')
-      .realClick()
+      .click()
       .type(this.data.liveQuiz.template2.description)
     cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
     cy.get('[data-cy="template-instructions"]')
-      .realClick()
+      .click()
       .type(this.data.liveQuiz.template2.instructions)
     cy.get('[data-cy="submit-template-creation"]').click()
 
@@ -677,7 +675,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     ).should('exist')
     cy.get(
       `[data-cy="activity-name-${this.data.liveQuiz.template2.name}"]`
-    ).realClick() // close dropdown
+    ).click() // close dropdown
 
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'not.exist'
@@ -708,7 +706,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       this.data.liveQuiz.template1Orig.description
     )
     cy.get('[data-cy="template-description"]')
-      .realClick()
+      .click()
       .clear()
       .type(this.data.liveQuiz.template1.description)
 
@@ -717,7 +715,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       this.data.liveQuiz.template1Orig.instructions
     )
     cy.get('[data-cy="template-instructions"]')
-      .realClick()
+      .click()
       .clear()
       .type(this.data.liveQuiz.template1.instructions)
     cy.get('[data-cy="submit-template-edit"]').click()
@@ -772,10 +770,10 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="catalog"]').click()
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').realClick()
-    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).realClick()
-    cy.get('[data-cy="modal-object-access"]').realClick()
-    cy.get('[data-cy="object-access-public"]').realClick()
+    cy.get('[data-cy="object-type-selection"]').click()
+    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).click()
+    cy.get('[data-cy="modal-object-access"]').click()
+    cy.get('[data-cy="object-access-public"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessPUBLIC
     )
@@ -806,8 +804,8 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="catalog-collection-name-input"]')
       .click()
       .type(this.data.catalog.name)
-    cy.get('[data-cy="modal-object-access"]').realClick()
-    cy.get('[data-cy="object-access-restricted"]').realClick()
+    cy.get('[data-cy="modal-object-access"]').click()
+    cy.get('[data-cy="object-access-restricted"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessRESTRICTED
     )
@@ -817,10 +815,10 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(`[data-cy="catalog-object-${this.data.catalog.name}"]`).click()
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.catalog.name)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').realClick()
-    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).realClick()
-    cy.get('[data-cy="modal-object-access"]').realClick()
-    cy.get('[data-cy="object-access-public"]').realClick()
+    cy.get('[data-cy="object-type-selection"]').click()
+    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).click()
+    cy.get('[data-cy="modal-object-access"]').click()
+    cy.get('[data-cy="object-access-public"]').click()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessPUBLIC
     )
@@ -843,7 +841,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="leave-catalog-collection"]').click()
     cy.get(
       `[data-cy="catalog-collection-${this.data.catalog.name}-actions"]`
-    ).realClick()
+    ).click()
     cy.get('[data-cy="share-catalog-collection"]').click()
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
@@ -1174,10 +1172,8 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="template-live-quiz-course"]').contains(
       messages.manage.activityWizard.liveQuizNoCourse
     )
-    cy.get('[data-cy="template-live-quiz-course"]').realClick()
-    cy.get(
-      `[data-cy="select-course-${this.data.activity1.course}"]`
-    ).realClick()
+    cy.get('[data-cy="template-live-quiz-course"]').click()
+    cy.get(`[data-cy="select-course-${this.data.activity1.course}"]`).click()
     cy.get('[data-cy="template-live-quiz-course"]').contains(
       this.data.activity1.course
     )
@@ -1224,10 +1220,8 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="template-live-quiz-course"]').contains(
       messages.manage.activityWizard.liveQuizNoCourse
     )
-    cy.get('[data-cy="template-live-quiz-course"]').realClick()
-    cy.get(
-      `[data-cy="select-course-${this.data.activity1.course}"]`
-    ).realClick()
+    cy.get('[data-cy="template-live-quiz-course"]').click()
+    cy.get(`[data-cy="select-course-${this.data.activity1.course}"]`).click()
     cy.get('[data-cy="template-live-quiz-course"]').contains(
       this.data.activity1.course
     )
@@ -1350,7 +1344,7 @@ describe('Test all functionalities related to the creation, management, sharing 
           .clear()
           .type(newTitle)
         cy.get('[data-cy="insert-question-text"]')
-          .realClick()
+          .click()
           .clear()
           .type(newContent)
         cy.get('[data-cy="save-new-question"]').click()
@@ -1666,7 +1660,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(`[data-cy="catalog-object-${this.data.catalog.name}"]`).click()
     cy.get(
       `[data-cy="actions-dropdown-${this.data.liveQuiz.template2.name}"]`
-    ).realClick()
+    ).click()
     cy.get(
       `[data-cy="use-template-${this.data.liveQuiz.template2.name}"]`
     ).click()
@@ -2516,7 +2510,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     // open the template and complete the necessary parts of the settings step
     cy.get(
       `[data-cy="catalog-object-${this.data.liveQuiz.template1.name}"]`
-    ).realClick()
+    ).click()
     cy.get('[data-cy="live-quiz-template-settings"]').click()
     cy.get('[data-cy="template-live-quiz-name"]')
       .click()

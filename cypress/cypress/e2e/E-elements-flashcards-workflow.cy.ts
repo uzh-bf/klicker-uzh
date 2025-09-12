@@ -2,6 +2,8 @@ import messages from '../../../packages/i18n/messages/en'
 
 describe('Test creation and editing functionalities, validation, etc. for Flashcard elements', function () {
   before(() => {
+    cy.cleanup()
+
     cy.seed()
 
     // set browser language to english (independent of local machine setting
@@ -9,10 +11,6 @@ describe('Test creation and editing functionalities, validation, etc. for Flashc
       command: 'Emulation.setLocaleOverride',
       params: { locale: 'en' },
     })
-  })
-
-  after(() => {
-    cy.cleanup()
   })
 
   beforeEach('Login the lecturer and load data fixture', function () {
@@ -36,23 +34,23 @@ describe('Test creation and editing functionalities, validation, etc. for Flashc
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.SC.typeLabel)
-    cy.get('[data-cy="select-question-type"]').realClick()
+    cy.get('[data-cy="select-question-type"]').click()
     cy.get(
       `[data-cy="select-question-type-${messages.shared.FLASHCARD.typeLabel}"]`
-    ).realClick()
+    ).click()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.FLASHCARD.typeLabel)
     cy.get('[data-cy="insert-question-title"]').type(this.data.FC.title)
-    cy.get('[data-cy="select-question-status"]').realClick()
+    cy.get('[data-cy="select-question-status"]').click()
     cy.get(
       `[data-cy="select-question-status-${messages.shared.REVIEW.statusLabel}"]`
-    ).realClick()
+    ).click()
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .type(this.data.FC.content)
     cy.get('[data-cy="insert-question-explanation"]')
-      .realClick()
+      .click()
       .type(this.data.FC.explanation)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
@@ -80,10 +78,10 @@ describe('Test creation and editing functionalities, validation, etc. for Flashc
       .should('exist')
       .contains(messages.shared.REVIEW.statusLabel)
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .contains(this.data.FC.content)
     cy.get('[data-cy="insert-question-explanation"]')
-      .realClick()
+      .click()
       .contains(this.data.FC.explanation)
     cy.get('[data-cy="close-element-modal"]').click()
   })
@@ -93,16 +91,16 @@ describe('Test creation and editing functionalities, validation, etc. for Flashc
     cy.get('[data-cy="insert-question-title"]')
       .clear()
       .type(this.data.FC.titleEdited)
-    cy.get('[data-cy="select-question-status"]').realClick()
+    cy.get('[data-cy="select-question-status"]').click()
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
-    ).realClick()
+    ).click()
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .clear()
       .type(this.data.FC.contentEdited)
     cy.get('[data-cy="insert-question-explanation"]')
-      .realClick()
+      .click()
       .clear()
       .type(this.data.FC.explanationEdited)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
@@ -128,10 +126,10 @@ describe('Test creation and editing functionalities, validation, etc. for Flashc
       .should('exist')
       .contains(messages.shared.READY.statusLabel)
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .contains(this.data.FC.contentEdited)
     cy.get('[data-cy="insert-question-explanation"]')
-      .realClick()
+      .click()
       .contains(this.data.FC.explanationEdited)
     cy.get('[data-cy="close-element-modal"]').click()
   })

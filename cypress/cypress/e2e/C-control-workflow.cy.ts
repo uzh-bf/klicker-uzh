@@ -1,5 +1,7 @@
 describe('Test functionalities of frontend-control application', function () {
   before(() => {
+    cy.cleanup()
+
     cy.seed()
 
     // set browser language to english (independent of local machine setting
@@ -7,10 +9,6 @@ describe('Test functionalities of frontend-control application', function () {
       command: 'Emulation.setLocaleOverride',
       params: { locale: 'en' },
     })
-  })
-
-  after(() => {
-    cy.cleanup()
   })
 
   beforeEach('Load fixture for this test case', function () {
@@ -96,7 +94,7 @@ describe('Test functionalities of frontend-control application', function () {
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.quizName}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.quizName}"]`).realClick()
+    cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.quizName}"]`).click()
     cy.get(`[data-cy="delete-live-quiz-${this.data.quizName}"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.quizName).should('not.exist')

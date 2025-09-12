@@ -3,6 +3,8 @@ import { getDatetimeValidationString, getFutureDate } from './helpers'
 
 describe('Feature test for review functionalities and batch operations', function () {
   before(() => {
+    cy.cleanup()
+
     cy.seed()
 
     // set browser language to english (independent of local machine setting
@@ -10,10 +12,6 @@ describe('Feature test for review functionalities and batch operations', functio
       command: 'Emulation.setLocaleOverride',
       params: { locale: 'en' },
     })
-  })
-
-  after(() => {
-    cy.cleanup()
   })
 
   beforeEach('Load data fixture', function () {

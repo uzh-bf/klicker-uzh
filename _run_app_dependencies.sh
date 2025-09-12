@@ -47,11 +47,27 @@ cleanup() {
 # Trap common termination signals (Ctrl+C and kill/TERM), hangups, and normal exit
 trap cleanup INT TERM HUP EXIT
 
+## Determine mode from first argument
+# Modes: local (default) | cypress (when arg is 'test' or 'cypress')
+MODE="local"
+case "${1:-}" in
+    test|cypress)
+        MODE="cypress"
+        ;;
+    ""|local)
+        MODE="local"
+        ;;
+    *)
+        MODE="local"
+        ;;
+esac
+
 ## Resolve platform and proxy
 detect_platform
 determine_proxy
 echo "Platform: $PLATFORM"
 echo "Using proxy service: $PROXY"
+echo "Mode: $MODE"
 
 # copy the prisma schema for it to be available to python files
 ./util/sync-schema.sh
@@ -69,8 +85,28 @@ docker compose up --build -d postgres redis_exec redis_cache "$PROXY" hatchet ||
 
 sleep 15
 
-# create hatchet client token
-./util/_create_hatchet_token.sh
+# create hatchet client token (switch script for cypress/test mode)
+if [ "$MODE" = "cypress" ]; then
+    echo "Using cypress hatchet token script"
+    ./util/_create_hatchet_token_cypress.sh
+
+		# reset prisma database after tokens are created
+		echo "Resetting Prisma database (pnpm run prisma:reset)"
+		pnpm run prisma:reset -f || {
+				echo "Prisma reset failed" >&2
+				exit 1
+		}
+else
+    echo "Using local hatchet token script"
+    ./util/_create_hatchet_token.sh
+
+		# reset prisma database after tokens are created
+		echo "Preparing Prisma database (pnpm run prisma:setup)"
+		pnpm run prisma:setup -f || {
+				echo "Prisma setup failed" >&2
+				exit 1
+		}
+fi
 
 docker compose logs -f
 

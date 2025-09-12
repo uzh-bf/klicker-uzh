@@ -3,6 +3,8 @@ import { getDatetimeValidationString } from './helpers'
 
 describe('Test bookmarking and flagging workflows for practice quizzes and microlearnings', function () {
   before(() => {
+    cy.cleanup()
+
     cy.seed()
 
     // set browser language to english (independent of local machine setting
@@ -10,10 +12,6 @@ describe('Test bookmarking and flagging workflows for practice quizzes and micro
       command: 'Emulation.setLocaleOverride',
       params: { locale: 'en' },
     })
-  })
-
-  after(() => {
-    cy.cleanup()
   })
 
   beforeEach('Load fixture for this test case', function () {

@@ -5,6 +5,8 @@ describe('Test fundamental UI interactions and baseline operations', function ()
   // It should run before all other tests to ensure basic functionality
 
   before(() => {
+    cy.cleanup()
+
     cy.seed()
 
     // set browser language to english (independent of local machine setting
@@ -12,10 +14,6 @@ describe('Test fundamental UI interactions and baseline operations', function ()
       command: 'Emulation.setLocaleOverride',
       params: { locale: 'en' },
     })
-  })
-
-  after(() => {
-    cy.cleanup()
   })
 
   // ! DEV: if a test case fails, stop the test run
@@ -70,7 +68,7 @@ describe('Test fundamental UI interactions and baseline operations', function ()
     cy.get('[data-cy="insert-question-text"]')
       .scrollIntoView() // Ensure element is visible
       .should('be.visible')
-      .realClick()
+      .click()
       .type('This is a test of the Slate.js rich text editor.')
 
     // Verify content was entered
@@ -100,7 +98,7 @@ describe('Test fundamental UI interactions and baseline operations', function ()
     cy.get('[data-cy="insert-answer-field-0"]')
       .scrollIntoView()
       .should('be.visible')
-      .realClick()
+      .click()
       .type('Answer Option 1')
       .should('contain', 'Answer Option 1')
 
@@ -114,7 +112,7 @@ describe('Test fundamental UI interactions and baseline operations', function ()
     cy.get('[data-cy="insert-answer-field-1"]')
       .scrollIntoView()
       .should('be.visible')
-      .realClick()
+      .click()
       .type('Answer Option 2')
 
     // Close modal

@@ -86,10 +86,10 @@ describe('Create, edit and share answer collections', function () {
     )
 
     cy.get('[data-cy="answer-collection-description"]')
-      .realClick()
+      .click()
       .type(this.data.public.description)
     cy.get('[data-cy="answer-collection-description"]')
-      .realClick()
+      .click()
       .contains(this.data.public.description)
 
     cy.get('[data-cy="response-entry-0"]').type(this.data.public.items[0])
@@ -168,14 +168,14 @@ describe('Create, edit and share answer collections', function () {
     )
 
     cy.get('[data-cy="answer-collection-description"]')
-      .realClick()
+      .click()
       .contains(this.data.public.description)
     cy.get('[data-cy="answer-collection-description"]')
-      .realClick()
+      .click()
       .clear()
       .type(this.data.public.descriptionNew)
     cy.get('[data-cy="answer-collection-description"]')
-      .realClick()
+      .click()
       .contains(this.data.public.descriptionNew)
     cy.wait(100) // wait for states to propagate
     cy.get('[data-cy="save-changes-answer-collection"]').click()
@@ -260,7 +260,7 @@ describe('Create, edit and share answer collections', function () {
       this.data.public.nameNew
     )
     cy.get('[data-cy="answer-collection-description"]')
-      .realClick()
+      .click()
       .contains(this.data.public.descriptionNew)
     cy.wait(100) // wait for states to propagate
     cy.get('[data-cy="save-changes-answer-collection"]').click()
@@ -274,12 +274,12 @@ describe('Create, edit and share answer collections', function () {
   it('Verify that all answer collections can be used in selection questions by owner', function () {
     cy.loginLecturer()
     cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').realClick()
+    cy.get('[data-cy="select-question-type"]').click()
     cy.get(
       `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
-    ).realClick()
+    ).click()
 
-    cy.get('[data-cy="select-answer-collection"]').realClick()
+    cy.get('[data-cy="select-answer-collection"]').click()
     cy.get(
       `[data-cy="select-answer-collection-${this.data.public.nameNew}"]`
     ).should('exist')
@@ -335,10 +335,10 @@ describe('Create, edit and share answer collections', function () {
   it("Verify that the private answer collection cannot be integrated into a question by user 'pro1'", function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').realClick()
+    cy.get('[data-cy="select-question-type"]').click()
     cy.get(
       `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
-    ).realClick()
+    ).click()
 
     cy.get('[data-cy="select-answer-collection"]').should('not.exist')
   })
@@ -407,9 +407,7 @@ describe('Create, edit and share answer collections', function () {
     })
 
     // check that import and request functionalities are not available for owner (but deletion is)
-    cy.get(
-      `[data-cy="actions-dropdown-${this.data.restricted.name}"]`
-    ).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.restricted.name}"]`).click()
     cy.get(`[data-cy="copy-object-${this.data.restricted.name}"]`).should(
       'not.exist'
     )
@@ -451,18 +449,18 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="catalog-access-type-filter"]').contains(
       messages.manage.catalog.all
     )
-    cy.get('[data-cy="catalog-access-type-filter"]').realClick()
-    cy.get('[data-cy="catalog-access-public"]').realClick()
+    cy.get('[data-cy="catalog-access-type-filter"]').click()
+    cy.get('[data-cy="catalog-access-public"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.restricted.name}"]`).should(
       'not.exist'
     )
-    cy.get('[data-cy="catalog-access-type-filter"]').realClick()
-    cy.get('[data-cy="catalog-access-restricted"]').realClick()
+    cy.get('[data-cy="catalog-access-type-filter"]').click()
+    cy.get('[data-cy="catalog-access-restricted"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.restricted.name}"]`).should(
       'exist'
     )
-    cy.get('[data-cy="catalog-access-type-filter"]').realClick()
-    cy.get('[data-cy="catalog-access-all"]').realClick()
+    cy.get('[data-cy="catalog-access-type-filter"]').click()
+    cy.get('[data-cy="catalog-access-all"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.restricted.name}"]`).should(
       'exist'
     )
@@ -476,14 +474,10 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="catalog-object-${this.data.restricted.name}"]`).should(
       'exist'
     )
-    cy.get(
-      `[data-cy="actions-dropdown-${this.data.restricted.name}"]`
-    ).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.restricted.name}"]`).click()
     cy.get(`[data-cy="request-access-${this.data.restricted.name}"]`).click()
     cy.get('[data-cy="cancel-request-access"]').click()
-    cy.get(
-      `[data-cy="actions-dropdown-${this.data.restricted.name}"]`
-    ).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.restricted.name}"]`).click()
     cy.get(`[data-cy="request-access-${this.data.restricted.name}"]`).click()
     cy.get('[data-cy="confirm-request-access"]').click()
 
@@ -501,9 +495,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="catalog-object-${this.data.restricted.name}"]`).should(
       'exist'
     )
-    cy.get(
-      `[data-cy="actions-dropdown-${this.data.restricted.name}"]`
-    ).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.restricted.name}"]`).click()
     cy.get(`[data-cy="request-access-${this.data.restricted.name}"]`).click()
     cy.get('[data-cy="confirm-request-access"]').click()
 
@@ -645,10 +637,10 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="library"]').click()
 
     cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').realClick()
+    cy.get('[data-cy="select-question-type"]').click()
     cy.get(
       `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
-    ).realClick()
+    ).click()
     cy.get('[data-cy="select-answer-collection"]').should('not.exist')
   })
 
@@ -664,16 +656,12 @@ describe('Create, edit and share answer collections', function () {
     )
 
     // cancel the request
-    cy.get(
-      `[data-cy="actions-dropdown-${this.data.restricted.name}"]`
-    ).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.restricted.name}"]`).click()
     cy.get(`[data-cy="cancel-request-${this.data.restricted.name}"]`).click()
     cy.get('[data-cy="confirm-request-cancellation"]').click()
 
     // request the answer collection again (should be possible)
-    cy.get(
-      `[data-cy="actions-dropdown-${this.data.restricted.name}"]`
-    ).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.restricted.name}"]`).click()
     cy.get(`[data-cy="request-access-${this.data.restricted.name}"]`).click()
     cy.get('[data-cy="confirm-request-access"]').click()
 
@@ -696,8 +684,8 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="permission-level-select"]').contains(
       messages.manage.sharing.permissionsREAD
     )
-    cy.get('[data-cy="permission-level-select"]').realClick()
-    cy.get('[data-cy="permission-level-READ"]').realClick()
+    cy.get('[data-cy="permission-level-select"]').click()
+    cy.get('[data-cy="permission-level-READ"]').click()
     cy.get('[data-cy="confirm-approval"]').click()
   })
 
@@ -737,14 +725,14 @@ describe('Create, edit and share answer collections', function () {
     // check that the collection can be used in selection questions
     cy.get('[data-cy="library"]').click()
     cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').realClick()
+    cy.get('[data-cy="select-question-type"]').click()
     cy.get(
       `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
-    ).realClick()
-    cy.get('[data-cy="select-answer-collection"]').realClick()
+    ).click()
+    cy.get('[data-cy="select-answer-collection"]').click()
     cy.get(
       `[data-cy="select-answer-collection-${this.data.restricted.name}"]`
-    ).realClick()
+    ).click()
   })
 
   it('Verify that restricted answer collection is not visible in resources for user pro2', function () {
@@ -760,10 +748,10 @@ describe('Create, edit and share answer collections', function () {
     // check that the collection cannot be used in selection questions
     cy.get('[data-cy="library"]').click()
     cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').realClick()
+    cy.get('[data-cy="select-question-type"]').click()
     cy.get(
       `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
-    ).realClick()
+    ).click()
     cy.get('[data-cy="select-answer-collection"]').should('not.exist')
   })
 
@@ -879,9 +867,9 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="${this.data.restricted.name}-object-access"]`).contains(
       messages.manage.catalog.accessRESTRICTED
     )
-    cy.get(`[data-cy="${this.data.restricted.name}-object-access"]`).realClick()
+    cy.get(`[data-cy="${this.data.restricted.name}-object-access"]`).click()
     cy.get('[data-cy="object-access-restricted"]').should('exist')
-    cy.get('[data-cy="object-access-public"]').realClick()
+    cy.get('[data-cy="object-access-public"]').click()
     cy.get('[data-cy="confirm-access-change"]').click()
     cy.get(`[data-cy="${this.data.restricted.name}-object-access"]`).contains(
       messages.manage.catalog.accessPUBLIC
@@ -897,9 +885,7 @@ describe('Create, edit and share answer collections', function () {
       'exist'
     )
 
-    cy.get(
-      `[data-cy="actions-dropdown-${this.data.restricted.name}"]`
-    ).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.restricted.name}"]`).click()
     cy.get(`[data-cy="copy-object-${this.data.restricted.name}"]`).should(
       'exist'
     )
@@ -921,9 +907,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
-    cy.get(
-      `[data-cy="actions-dropdown-${this.data.restricted.name}"]`
-    ).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.restricted.name}"]`).click()
     cy.get(`[data-cy="remove-object-${this.data.restricted.name}"]`).click()
     cy.get('[data-cy="confirm-removal"]').click()
   })
@@ -990,8 +974,8 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="catalog"]').click()
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').realClick()
-    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).realClick()
+    cy.get('[data-cy="object-type-selection"]').click()
+    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).click()
     cy.get('[id="object-selection-catalog-addition"]').click()
     cy.get(
       '[id="react-select-object-selection-catalog-addition-option-0"]'
@@ -1056,8 +1040,8 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="catalog"]').click()
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').realClick()
-    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).realClick()
+    cy.get('[data-cy="object-type-selection"]').click()
+    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).click()
     cy.findByText(messages.manage.catalog.noObjectsAvailable)
     cy.get('[data-cy="close-add-object-modal"]').click()
 
@@ -1107,7 +1091,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="catalog-object-${this.data.public.name}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).click()
     cy.get(`[data-cy="copy-object-${this.data.public.name}"]`).should(
       'not.exist'
     )
@@ -1125,7 +1109,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="catalog-object-${this.data.public.name}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).click()
     cy.get(`[data-cy="request-access-${this.data.public.name}"]`).click()
     cy.findByText(messages.manage.catalog.requestPublicResource)
     cy.get('[data-cy="confirm-request-access"]').click()
@@ -1144,7 +1128,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="catalog-object-${this.data.public.name}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).click()
     cy.get(`[data-cy="request-access-${this.data.public.name}"]`).click()
     cy.get('[data-cy="confirm-request-access"]').click()
 
@@ -1192,8 +1176,8 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="permission-level-select"]').contains(
       messages.manage.sharing.permissionsREAD
     )
-    cy.get('[data-cy="permission-level-select"]').realClick()
-    cy.get('[data-cy="permission-level-READ"]').realClick()
+    cy.get('[data-cy="permission-level-select"]').click()
+    cy.get('[data-cy="permission-level-READ"]').click()
     cy.get('[data-cy="confirm-approval"]').click()
   })
 
@@ -1233,14 +1217,14 @@ describe('Create, edit and share answer collections', function () {
     // check that the collection can be used in selection questions
     cy.get('[data-cy="library"]').click()
     cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').realClick()
+    cy.get('[data-cy="select-question-type"]').click()
     cy.get(
       `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
-    ).realClick()
-    cy.get('[data-cy="select-answer-collection"]').realClick()
+    ).click()
+    cy.get('[data-cy="select-answer-collection"]').click()
     cy.get(
       `[data-cy="select-answer-collection-${this.data.public.name}"]`
-    ).realClick()
+    ).click()
   })
 
   it("Verify that the public answer collection is not visible in resources for user 'pro2'", function () {
@@ -1256,10 +1240,10 @@ describe('Create, edit and share answer collections', function () {
     // check that the collection cannot be used in selection questions
     cy.get('[data-cy="library"]').click()
     cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').realClick()
+    cy.get('[data-cy="select-question-type"]').click()
     cy.get(
       `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
-    ).realClick()
+    ).click()
     cy.get('[data-cy="select-answer-collection"]').should('not.exist')
   })
 
@@ -1271,14 +1255,14 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="catalog-object-${this.data.public.name}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).click()
     cy.get(`[data-cy="copy-object-${this.data.public.name}"]`).click()
     cy.get('[data-cy="close-object-copy-modal"]').click()
 
-    cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).click()
     cy.get(`[data-cy="copy-object-${this.data.public.name}"]`).click()
     cy.get('[data-cy="cancel-object-copy"]').click()
-    cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).click()
     cy.get(`[data-cy="copy-object-${this.data.public.name}"]`).click()
     cy.get('[data-cy="confirm-object-copy"]').click()
 
@@ -1300,11 +1284,11 @@ describe('Create, edit and share answer collections', function () {
     )
 
     // primary action should be import
-    cy.get(`[data-cy="catalog-object-${this.data.public.name}"]`).realClick()
+    cy.get(`[data-cy="catalog-object-${this.data.public.name}"]`).click()
     cy.get('[data-cy="cancel-object-import"]').click()
 
     // open import functionality through dropdown
-    cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.public.name}"]`).click()
     cy.get(`[data-cy="import-object-${this.data.public.name}"]`).click()
     cy.get('[data-cy="confirm-object-import"]').click()
 
@@ -1351,7 +1335,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="share-answer-collection"]').should('exist')
     cy.get('[data-cy="duplicate-answer-collection"]').should('exist')
     cy.get('[data-cy="delete-answer-collection"]').should('exist')
-    cy.get(`[data-cy="answer-collection-${duplicateName}"]`).realClick() // close the dropdown
+    cy.get(`[data-cy="answer-collection-${duplicateName}"]`).click() // close the dropdown
 
     // verify that the metadata of the collection and all answer option values can be edited
     cy.get(`[data-cy="answer-collection-actions-${duplicateName}"]`).click()
@@ -1558,7 +1542,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="member-shortname-email-0"]')
       .click()
       .type(Cypress.env('LECTURER_INST_EMAIL')) // pro2 is added as admin
-    cy.get('[data-cy="member-admin-0"]').realClick()
+    cy.get('[data-cy="member-admin-0"]').click()
     cy.get('[data-cy="submit-create-user-group"]').click()
 
     // check that the user group has been created correctly
@@ -1773,7 +1757,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="catalog-object-${this.data.private.name}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="actions-dropdown-${this.data.private.name}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.private.name}"]`).click()
     cy.get(`[data-cy="request-access-${this.data.private.name}"]`).click()
     cy.get('[data-cy="confirm-request-access"]').click()
 
@@ -1792,9 +1776,9 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="${this.data.private.name}-object-access"]`).contains(
       messages.manage.catalog.accessRESTRICTED
     )
-    cy.get(`[data-cy="${this.data.private.name}-object-access"]`).realClick()
+    cy.get(`[data-cy="${this.data.private.name}-object-access"]`).click()
     cy.get('[data-cy="object-access-restricted"]').should('exist')
-    cy.get('[data-cy="object-access-public"]').realClick()
+    cy.get('[data-cy="object-access-public"]').click()
     cy.get('[data-cy="confirm-access-change"]').click()
     cy.get(`[data-cy="${this.data.private.name}-object-access"]`).contains(
       messages.manage.catalog.accessPUBLIC
@@ -1835,7 +1819,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="catalog-object-${this.data.private.name}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="actions-dropdown-${this.data.private.name}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.private.name}"]`).click()
     cy.get(`[data-cy="copy-object-${this.data.private.name}"]`).should('exist')
   })
 
@@ -1847,7 +1831,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="catalog-object-${this.data.private.name}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="actions-dropdown-${this.data.private.name}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.private.name}"]`).click()
     cy.get(`[data-cy="request-access-${this.data.private.name}"]`).click()
     cy.get('[data-cy="confirm-request-access"]').click()
 
@@ -1866,8 +1850,8 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="${this.data.private.name}-object-access"]`).contains(
       messages.manage.catalog.accessPUBLIC
     )
-    cy.get(`[data-cy="${this.data.private.name}-object-access"]`).realClick()
-    cy.get('[data-cy="object-access-restricted"]').realClick()
+    cy.get(`[data-cy="${this.data.private.name}-object-access"]`).click()
+    cy.get('[data-cy="object-access-restricted"]').click()
     cy.get('[data-cy="confirm-access-change"]').click()
     cy.get(`[data-cy="${this.data.private.name}-object-access"]`).contains(
       messages.manage.catalog.accessRESTRICTED
@@ -1882,7 +1866,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="catalog-object-${this.data.private.name}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="actions-dropdown-${this.data.private.name}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.private.name}"]`).click()
     cy.get(`[data-cy="copy-object-${this.data.private.name}"]`).should(
       'not.exist'
     )
@@ -1901,8 +1885,8 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="permission-level-select"]').contains(
       messages.manage.sharing.permissionsREAD
     )
-    cy.get('[data-cy="permission-level-select"]').realClick()
-    cy.get('[data-cy="permission-level-READ"]').realClick()
+    cy.get('[data-cy="permission-level-select"]').click()
+    cy.get('[data-cy="permission-level-READ"]').click()
     cy.get('[data-cy="confirm-approval"]').click()
   })
 
@@ -1911,7 +1895,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
-    cy.get(`[data-cy="actions-dropdown-${this.data.private.name}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.private.name}"]`).click()
     cy.get(`[data-cy="remove-object-${this.data.private.name}"]`).click()
     cy.get('[data-cy="confirm-removal"]').click()
   })
@@ -2027,7 +2011,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get(`[data-cy="catalog-object-${this.data.direct.name}"]`).should(
       'exist'
     )
-    cy.get(`[data-cy="actions-dropdown-${this.data.direct.name}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.direct.name}"]`).click()
     cy.get(`[data-cy="request-access-${this.data.direct.name}"]`).click()
     cy.get('[data-cy="confirm-request-access"]').click()
   })
@@ -2095,14 +2079,14 @@ describe('Create, edit and share answer collections', function () {
     cy.loginIndividualCatalyst()
     cy.get('[data-cy="library"]').click()
     cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').realClick()
+    cy.get('[data-cy="select-question-type"]').click()
     cy.get(
       `[data-cy="select-question-type-${messages.shared.SELECTION.typeLabel}"]`
-    ).realClick()
-    cy.get('[data-cy="select-answer-collection"]').realClick()
+    ).click()
+    cy.get('[data-cy="select-answer-collection"]').click()
     cy.get(
       `[data-cy="select-answer-collection-${this.data.direct.name}"]`
-    ).realClick()
+    ).click()
   })
 
   it("Cleanup: Remove the shared answer collection from user 'pro1'", function () {
@@ -2558,8 +2542,8 @@ describe('Create, edit and share answer collections', function () {
     ).contains(messages.manage.sharing.permissionsREAD)
     cy.get(
       `[data-cy="permission-level-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
-    ).realClick()
-    cy.get('[data-cy="permission-level-WRITE"]').realClick()
+    ).click()
+    cy.get('[data-cy="permission-level-WRITE"]').click()
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).contains(messages.manage.sharing.permissionsWRITE)
@@ -2584,8 +2568,8 @@ describe('Create, edit and share answer collections', function () {
     ).contains(messages.manage.sharing.permissionsWRITE)
     cy.get(
       `[data-cy="permission-level-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
-    ).realClick()
-    cy.get('[data-cy="permission-level-READ"]').realClick()
+    ).click()
+    cy.get('[data-cy="permission-level-READ"]').click()
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).contains(messages.manage.sharing.permissionsREAD)
@@ -2884,13 +2868,13 @@ describe('Create, edit and share answer collections', function () {
     ).contains(messages.manage.sharing.permissionsADMIN)
     cy.get(
       `[data-cy="permission-level-${Cypress.env('LECTURER_SHORTNAME')}"]`
-    ).realClick()
-    cy.get('[data-cy="permission-level-READ"]').realClick()
+    ).click()
+    cy.get('[data-cy="permission-level-READ"]').click()
     cy.get('[data-cy="cancel-modify-own-permissions"]').click()
     cy.get(
       `[data-cy="permission-level-${Cypress.env('LECTURER_SHORTNAME')}"]`
-    ).realClick()
-    cy.get('[data-cy="permission-level-READ"]').realClick()
+    ).click()
+    cy.get('[data-cy="permission-level-READ"]').click()
     cy.get('[data-cy="confirm-modify-own-permissions"]').click()
 
     // modal has been closed and permission updated
@@ -2927,8 +2911,8 @@ describe('Create, edit and share answer collections', function () {
     ).contains(messages.manage.sharing.permissionsREAD)
     cy.get(
       `[data-cy="permission-level-${Cypress.env('LECTURER_SHORTNAME')}"]`
-    ).realClick()
-    cy.get('[data-cy="permission-level-ADMIN"]').realClick()
+    ).click()
+    cy.get('[data-cy="permission-level-ADMIN"]').click()
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
     ).contains(messages.manage.sharing.permissionsADMIN)

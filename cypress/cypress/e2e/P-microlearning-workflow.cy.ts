@@ -20,6 +20,8 @@ const extensionDate = getDatetimeValidationString(8, '15') + ', 18:50'
 // ? sometimes triggers a recomputation of the randomized question titles, not allowing for a comparison anymore
 describe('Different microlearning workflows', function () {
   before(() => {
+    cy.cleanup()
+
     cy.seed()
 
     // set browser language to english (independent of local machine setting
@@ -27,10 +29,6 @@ describe('Different microlearning workflows', function () {
       command: 'Emulation.setLocaleOverride',
       params: { locale: 'en' },
     })
-  })
-
-  after(() => {
-    cy.cleanup()
   })
 
   beforeEach('Load fixture for this test case', function () {
@@ -180,7 +178,7 @@ describe('Different microlearning workflows', function () {
       .click()
       .type(this.data.running.displayName)
     cy.get('[data-cy="insert-microlearning-description"]')
-      .realClick()
+      .click()
       .type(this.data.running.description)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="back-activity-creation"]').click()
@@ -222,10 +220,10 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier1)
-    cy.get('[data-cy="select-multiplier"]').realClick()
+    cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
       `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
-    ).realClick()
+    ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier2
     )
@@ -255,7 +253,7 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
 
     // add displayname and description to stacks
-    cy.get('[data-cy="open-stack-0-description"]').realClick()
+    cy.get('[data-cy="open-stack-0-description"]').click()
     cy.get('[data-cy="stack-0-displayname"]')
       .click()
       .type(this.data.stack.title1)
@@ -264,7 +262,7 @@ describe('Different microlearning workflows', function () {
       this.data.stack.title1
     )
     cy.get('[data-cy="close-stack-description"]').click()
-    cy.get('[data-cy="open-stack-1-description"]').realClick()
+    cy.get('[data-cy="open-stack-1-description"]').click()
     cy.get('[data-cy="stack-1-displayname"]')
       .click()
       .type(this.data.stack.title2)
@@ -280,13 +278,13 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="element-1-stack-1"]').contains(this.data.FTML.title)
     cy.get('[data-cy="element-0-stack-0"]').contains(this.data.FC.title)
     cy.get('[data-cy="element-1-stack-0"]').contains(this.data.CT.title)
-    cy.get('[data-cy="open-stack-0-description"]').realClick()
+    cy.get('[data-cy="open-stack-0-description"]').click()
     cy.get('[data-cy="stack-0-displayname"]').should(
       'have.value',
       this.data.stack.title2
     )
     cy.get('[data-cy="close-stack-description"]').click()
-    cy.get('[data-cy="open-stack-1-description"]').realClick()
+    cy.get('[data-cy="open-stack-1-description"]').click()
     cy.get('[data-cy="stack-1-displayname"]').should(
       'have.value',
       this.data.stack.title1
@@ -297,13 +295,13 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="element-1-stack-0"]').contains(this.data.FTML.title)
     cy.get('[data-cy="element-0-stack-1"]').contains(this.data.FC.title)
     cy.get('[data-cy="element-1-stack-1"]').contains(this.data.CT.title)
-    cy.get('[data-cy="open-stack-0-description"]').realClick()
+    cy.get('[data-cy="open-stack-0-description"]').click()
     cy.get('[data-cy="stack-0-displayname"]').should(
       'have.value',
       this.data.stack.title1
     )
     cy.get('[data-cy="close-stack-description"]').click()
-    cy.get('[data-cy="open-stack-1-description"]').realClick()
+    cy.get('[data-cy="open-stack-1-description"]').click()
     cy.get('[data-cy="stack-1-displayname"]').should(
       'have.value',
       this.data.stack.title2
@@ -361,7 +359,7 @@ describe('Different microlearning workflows', function () {
       this.data.running.description
     )
     cy.get('[data-cy="insert-microlearning-description"]')
-      .realClick()
+      .click()
       .clear()
       .type(this.data.running.descriptionNew)
     cy.get('[data-cy="next-or-submit"]').click()
@@ -406,10 +404,10 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier2)
-    cy.get('[data-cy="select-multiplier"]').realClick()
+    cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
       `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier4}"]`
-    ).realClick()
+    ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier4
     )
@@ -424,7 +422,7 @@ describe('Different microlearning workflows', function () {
     })
 
     // check stack descriptions
-    cy.get('[data-cy="open-stack-0-description"]').realClick()
+    cy.get('[data-cy="open-stack-0-description"]').click()
     cy.get('[data-cy="stack-0-displayname"]').should(
       'have.value',
       this.data.stack.title1
@@ -438,7 +436,7 @@ describe('Different microlearning workflows', function () {
       this.data.stack.title1New
     )
     cy.get('[data-cy="close-stack-description"]').click()
-    cy.get('[data-cy="open-stack-1-description"]').realClick()
+    cy.get('[data-cy="open-stack-1-description"]').click()
     cy.get('[data-cy="stack-1-displayname"]').should(
       'have.value',
       this.data.stack.title2
@@ -495,13 +493,13 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="element-1-stack-1"]').contains(this.data.CT.title)
     cy.get('[data-cy="element-0-stack-2"]').contains(this.data.SCML.title)
     cy.get('[data-cy="element-1-stack-2"]').contains(this.data.FTML.title)
-    cy.get('[data-cy="open-stack-0-description"]').realClick()
+    cy.get('[data-cy="open-stack-0-description"]').click()
     cy.get('[data-cy="stack-0-displayname"]').should(
       'have.value',
       this.data.stack.title1New
     )
     cy.get('[data-cy="close-stack-description"]').click()
-    cy.get('[data-cy="open-stack-1-description"]').realClick()
+    cy.get('[data-cy="open-stack-1-description"]').click()
     cy.get('[data-cy="stack-1-displayname"]').should(
       'have.value',
       this.data.stack.title2New
@@ -568,13 +566,13 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="element-1-stack-1"]').contains(this.data.CT.title)
     cy.get('[data-cy="element-0-stack-2"]').contains(this.data.SCML.title)
     cy.get('[data-cy="element-1-stack-2"]').contains(this.data.FTML.title)
-    cy.get('[data-cy="open-stack-0-description"]').realClick()
+    cy.get('[data-cy="open-stack-0-description"]').click()
     cy.get('[data-cy="stack-0-displayname"]').should(
       'have.value',
       this.data.stack.title1New
     )
     cy.get('[data-cy="close-stack-description"]').click()
-    cy.get('[data-cy="open-stack-1-description"]').realClick()
+    cy.get('[data-cy="open-stack-1-description"]').click()
     cy.get('[data-cy="stack-1-displayname"]').should(
       'have.value',
       this.data.stack.title2New
@@ -1483,10 +1481,10 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier1)
-    cy.get('[data-cy="select-multiplier"]').realClick()
+    cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
       `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
-    ).realClick()
+    ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier2
     )
@@ -1582,7 +1580,7 @@ describe('Different microlearning workflows', function () {
       .clear()
       .type(this.data.manipulation.newSETitle)
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .clear()
       .type(this.data.manipulation.newSEContent)
     cy.get('[data-cy="save-new-question"]').click()
@@ -2029,7 +2027,7 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).click() // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro1, data)
 
     // for a scheduled microlearning the following options should be available: access link, open preview, lti link, duplicate, share, unpublish, delete
@@ -2058,7 +2056,7 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).click() // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro2, data)
 
     // for a running microlearning the following options should be available: access link, evaluation, end, extend, open preview, lti link, duplicate, share, delete
@@ -2093,7 +2091,7 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro3}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.micro3}"]`).click() // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro3, data)
 
     // for a completed microlearning the following options should be available: evaluation, duplicate, convert, open preview, share, delete
@@ -2121,7 +2119,7 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).click() // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
   }
 
@@ -2173,7 +2171,7 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="remove-microlearning-${data.sharing.micro1}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).click() // close dropdown
 
     verifyMicroLearningDetailsModalContent(data.sharing.micro1, data)
 
@@ -2193,7 +2191,7 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="remove-microlearning-${data.sharing.micro2}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).click() // close dropdown
 
     verifyMicroLearningDetailsModalContent(data.sharing.micro2, data)
 
@@ -2217,7 +2215,7 @@ describe('Different microlearning workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro3}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.micro3}"]`).click() // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro3, data)
 
     // for a completed microlearning the following options should be available: evaluation, analytics, open preview, remove
@@ -2236,7 +2234,7 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="remove-microlearning-${data.sharing.micro4}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).click() // close dropdown
 
     verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
   }
@@ -2293,7 +2291,7 @@ describe('Different microlearning workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).click() // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro1, data)
 
     // for a scheduled microlearning the following options should be available: access link, open preview, lti link, unpublish, remove
@@ -2316,7 +2314,7 @@ describe('Different microlearning workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).click() // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro2, data)
 
     // for a running microlearning the following options should be available: access link, evaluation, end, extend, open preview, lti link, remove
@@ -2345,7 +2343,7 @@ describe('Different microlearning workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro3}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.micro3}"]`).click() // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro3, data)
 
     // for a completed microlearning the following options should be available: evaluation, analytics, open preview, remove
@@ -2364,7 +2362,7 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="remove-microlearning-${data.sharing.micro4}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).click() // close dropdown
 
     verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
   }
@@ -2429,7 +2427,7 @@ describe('Different microlearning workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).click() // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro1, data)
 
     // for a scheduled microlearning the following options should be available: access link, open preview, lti link, unpublish, remove
@@ -2452,7 +2450,7 @@ describe('Different microlearning workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).click() // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro2, data)
 
     // for a running microlearning the following options should be available: access link, evaluation, end, extend, open preview, lti link, remove
@@ -2481,7 +2479,7 @@ describe('Different microlearning workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro3}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.micro3}"]`).click() // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro3, data)
 
     // for a completed microlearning the following options should be available: evaluation, analytics, open preview, remove
@@ -2500,7 +2498,7 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="remove-microlearning-${data.sharing.micro4}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).click() // close dropdown
 
     verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
   }
@@ -2574,7 +2572,7 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).click() // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro1, data)
 
     // for a scheduled microlearning the following options should be available: access link, open preview, lti link, duplicate, share, unpublish, remove, delete
@@ -2606,7 +2604,7 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).click() // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro2, data)
 
     // for a running microlearning the following options should be available: access link, evaluation, end, extend, open preview, lti link, duplicate, share, remove, delete
@@ -2644,7 +2642,7 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro3}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.micro3}"]`).click() // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro3, data)
 
     // for a completed microlearning the following options should be available: evaluation, duplicate, convert, analytics, open preview, share, remove, delete
@@ -2675,7 +2673,7 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).click() // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
   }
 
@@ -3005,7 +3003,7 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="member-shortname-email-0"]')
       .click()
       .type(Cypress.env('LECTURER_IND_SHORTNAME')) // pro1 is added as admin
-    cy.get('[data-cy="member-admin-0"]').realClick()
+    cy.get('[data-cy="member-admin-0"]').click()
     cy.get('[data-cy="submit-create-user-group"]').click()
     cy.get(`[data-cy="user-group-${this.data.sharing.group1}"]`).should('exist')
 
@@ -3042,7 +3040,7 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="member-shortname-email-0"]')
       .click()
       .type(Cypress.env('LECTURER_EMAIL')) // lecturer is added as admin
-    cy.get('[data-cy="member-admin-0"]').realClick()
+    cy.get('[data-cy="member-admin-0"]').click()
     cy.get('[data-cy="submit-create-user-group"]').click()
     cy.get(`[data-cy="user-group-${this.data.sharing.group4}"]`).should('exist')
     cy.logoutUser()

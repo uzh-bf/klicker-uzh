@@ -28,7 +28,8 @@ function selectWorkflows(workflows: PreparedHatchetTasks) {
         .filter(Boolean)
     : undefined
 
-  const hasRequested = Array.isArray(requestedKeysRaw) && requestedKeysRaw.length > 0
+  const hasRequested =
+    Array.isArray(requestedKeysRaw) && requestedKeysRaw.length > 0
 
   const validSelectedKeys = (
     hasRequested

@@ -1,5 +1,7 @@
 describe('Tests the availability of certain functionalities to catalyst users only', () => {
   before(() => {
+    cy.cleanup()
+
     cy.seed()
     cy.seedActivities()
 
@@ -8,10 +10,6 @@ describe('Tests the availability of certain functionalities to catalyst users on
       command: 'Emulation.setLocaleOverride',
       params: { locale: 'en' },
     })
-  })
-
-  after(() => {
-    cy.cleanup()
   })
 
   beforeEach('Load fixture for this test case', function () {

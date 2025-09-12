@@ -5,6 +5,8 @@ const currentYear = new Date().getFullYear()
 
 describe('Create different types of elements (with and without sample solution) and edit them', function () {
   before(() => {
+    cy.cleanup()
+
     cy.seed()
 
     // set browser language to english (independent of local machine setting
@@ -12,10 +14,6 @@ describe('Create different types of elements (with and without sample solution) 
       command: 'Emulation.setLocaleOverride',
       params: { locale: 'en' },
     })
-  })
-
-  after(() => {
-    cy.cleanup()
   })
 
   beforeEach('Load data fixture', function () {

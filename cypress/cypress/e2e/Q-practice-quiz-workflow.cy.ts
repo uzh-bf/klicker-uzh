@@ -7,6 +7,8 @@ const currentYear = new Date().getFullYear()
 // ? For consistency, all creation / editing / duplication workflows are run before checking the student views
 describe('Different practice quiz workflows', function () {
   before(() => {
+    cy.cleanup()
+
     cy.seed()
 
     // set browser language to english (independent of local machine setting
@@ -14,10 +16,6 @@ describe('Different practice quiz workflows', function () {
       command: 'Emulation.setLocaleOverride',
       params: { locale: 'en' },
     })
-  })
-
-  after(() => {
-    cy.cleanup()
   })
 
   beforeEach('Load fixture for this test case', function () {
@@ -169,7 +167,7 @@ describe('Different practice quiz workflows', function () {
       .click()
       .type(this.data.running.displayName)
     cy.get('[data-cy="insert-practice-quiz-description"]')
-      .realClick()
+      .click()
       .type(this.data.running.description)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="back-activity-creation"]').click()
@@ -183,10 +181,10 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier1)
-    cy.get('[data-cy="select-multiplier"]').realClick()
+    cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
       `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
-    ).realClick()
+    ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier2
     )
@@ -286,7 +284,7 @@ describe('Different practice quiz workflows', function () {
       this.data.running.description
     )
     cy.get('[data-cy="insert-practice-quiz-description"]')
-      .realClick()
+      .click()
       .clear()
       .type(this.data.running.descriptionNew)
     cy.get('[data-cy="next-or-submit"]').click()
@@ -298,10 +296,10 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier2
     )
-    cy.get('[data-cy="select-multiplier"]').realClick()
+    cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
       `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier4}"]`
-    ).realClick()
+    ).click()
     cy.get('[data-cy="select-order"]')
       .should('exist')
       .contains(messages.manage.activityWizard.practiceQuizSPACED_REPETITION)
@@ -1240,7 +1238,7 @@ describe('Different practice quiz workflows', function () {
       .clear()
       .type(this.data.manipulation.newNRTitle)
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .clear()
       .type(this.data.manipulation.newNRContent)
     cy.get('[data-cy="save-new-question"]').click()
@@ -1580,7 +1578,7 @@ describe('Different practice quiz workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).click() // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz1, data)
 
     // for a scheduled practice quiz the following options should be available: access link, open preview, lti link, duplicate, share, unpublish, delete
@@ -1607,7 +1605,7 @@ describe('Different practice quiz workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).click() // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz2, data)
 
     // for a running practice quiz the following options should be available: evaluation, access link, open preview, lti link, duplicate, share, delete
@@ -1634,7 +1632,7 @@ describe('Different practice quiz workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).click() // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz3, data)
   }
 
@@ -1681,7 +1679,7 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz1}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).click() // close dropdown
 
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz1, data)
 
@@ -1699,7 +1697,7 @@ describe('Different practice quiz workflows', function () {
     cy.get(`[data-cy="remove-practice-quiz-${data.sharing.quiz2}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).click() // close dropdown
 
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz2, data)
 
@@ -1721,7 +1719,7 @@ describe('Different practice quiz workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).click() // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz3, data)
   }
 
@@ -1772,7 +1770,7 @@ describe('Different practice quiz workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).click() // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz1, data)
 
     // for a scheduled practice quiz the following options should be available: access link, open preview, lti link, unpublish, remove
@@ -1793,7 +1791,7 @@ describe('Different practice quiz workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).click() // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz2, data)
 
     // for a running practice quiz the following options should be available: evaluation, access link, open preview, lti link, remove
@@ -1814,7 +1812,7 @@ describe('Different practice quiz workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).click() // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz3, data)
   }
 
@@ -1868,7 +1866,7 @@ describe('Different practice quiz workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).click() // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz1, data)
 
     // for a scheduled practice quiz the following options should be available: access link, open preview, lti link, unpublish, remove
@@ -1889,7 +1887,7 @@ describe('Different practice quiz workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).click() // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz2, data)
 
     // for a running practice quiz the following options should be available: evaluation, access link, open preview, lti link, remove
@@ -1910,7 +1908,7 @@ describe('Different practice quiz workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).click() // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz3, data)
   }
 
@@ -1973,7 +1971,7 @@ describe('Different practice quiz workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz1}"]`).click() // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz1, data)
 
     // for a scheduled practice quiz the following options should be available: access link, open preview, lti link, duplicate, share, unpublish, remove, delete
@@ -2003,7 +2001,7 @@ describe('Different practice quiz workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz2}"]`).click() // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz2, data)
 
     // for a running practice quiz the following options should be available: evaluation, access link, open preview, lti link, duplicate, share, remove, delete
@@ -2033,7 +2031,7 @@ describe('Different practice quiz workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.quiz3}"]`).click() // close dropdown
     verifyPracticeQuizDetailsModalContent(data.sharing.quiz3, data)
   }
 
@@ -2319,7 +2317,7 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="member-shortname-email-0"]')
       .click()
       .type(Cypress.env('LECTURER_IND_SHORTNAME')) // pro1 is added as admin
-    cy.get('[data-cy="member-admin-0"]').realClick()
+    cy.get('[data-cy="member-admin-0"]').click()
     cy.get('[data-cy="submit-create-user-group"]').click()
     cy.get(`[data-cy="user-group-${this.data.sharing.group1}"]`).should('exist')
 
@@ -2356,7 +2354,7 @@ describe('Different practice quiz workflows', function () {
     cy.get('[data-cy="member-shortname-email-0"]')
       .click()
       .type(Cypress.env('LECTURER_EMAIL')) // lecturer is added as admin
-    cy.get('[data-cy="member-admin-0"]').realClick()
+    cy.get('[data-cy="member-admin-0"]').click()
     cy.get('[data-cy="submit-create-user-group"]').click()
     cy.get(`[data-cy="user-group-${this.data.sharing.group4}"]`).should('exist')
     cy.logoutUser()

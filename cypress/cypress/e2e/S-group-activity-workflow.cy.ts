@@ -24,6 +24,8 @@ const synchronousEndDate = getDatetimeValidationString(3, '20') + ', 14:00'
 
 describe('Create and solve a group activity', function () {
   before(() => {
+    cy.cleanup()
+
     cy.seed()
 
     // set browser language to english (independent of local machine setting
@@ -31,10 +33,6 @@ describe('Create and solve a group activity', function () {
       command: 'Emulation.setLocaleOverride',
       params: { locale: 'en' },
     })
-  })
-
-  after(() => {
-    cy.cleanup()
   })
 
   beforeEach('Load fixture for this test case', function () {
@@ -164,7 +162,7 @@ describe('Create and solve a group activity', function () {
       .click()
       .type(this.data.activity.displayName)
     cy.get('[data-cy="insert-groupactivity-description"]')
-      .realClick()
+      .click()
       .type(this.data.activity.task)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="back-activity-creation"]').click()
@@ -178,10 +176,10 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier1)
-    cy.get('[data-cy="select-multiplier"]').realClick()
+    cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
       `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
-    ).realClick()
+    ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier2
     )
@@ -239,8 +237,8 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
       .contains(messages.manage.activityWizard.textClue)
-    cy.get('[data-cy="group-activity-clue-type"]').realClick()
-    cy.get('[data-cy="group-activity-clue-type-number"]').realClick()
+    cy.get('[data-cy="group-activity-clue-type"]').click()
+    cy.get('[data-cy="group-activity-clue-type-number"]').click()
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
       .contains(messages.manage.activityWizard.numericalClue)
@@ -269,8 +267,8 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
       .contains(messages.manage.activityWizard.textClue)
-    cy.get('[data-cy="group-activity-clue-type"]').realClick()
-    cy.get('[data-cy="group-activity-clue-type-number"]').realClick()
+    cy.get('[data-cy="group-activity-clue-type"]').click()
+    cy.get('[data-cy="group-activity-clue-type-number"]').click()
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
       .contains(messages.manage.activityWizard.numericalClue)
@@ -410,10 +408,10 @@ describe('Create and solve a group activity', function () {
       .clear()
       .type(this.data.running.displayName)
     cy.get('[data-cy="insert-groupactivity-description"]')
-      .realClick()
+      .click()
       .contains(this.data.activity.task)
     cy.get('[data-cy="insert-groupactivity-description"]')
-      .realClick()
+      .click()
       .clear()
       .type(this.data.running.task)
     cy.get('[data-cy="next-or-submit"]').click()
@@ -422,10 +420,10 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier2)
-    cy.get('[data-cy="select-multiplier"]').realClick()
+    cy.get('[data-cy="select-multiplier"]').click()
     cy.get(
       `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier4}"]`
-    ).realClick()
+    ).click()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier4
     )
@@ -493,8 +491,8 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
       .contains(messages.manage.activityWizard.textClue)
-    cy.get('[data-cy="group-activity-clue-type"]').realClick()
-    cy.get('[data-cy="group-activity-clue-type-number"]').realClick()
+    cy.get('[data-cy="group-activity-clue-type"]').click()
+    cy.get('[data-cy="group-activity-clue-type-number"]').click()
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
       .contains(messages.manage.activityWizard.numericalClue)
@@ -1094,7 +1092,7 @@ describe('Create and solve a group activity', function () {
         .type(score)
       if (this.data.running.grading.comments1[ix]) {
         cy.get(`[data-cy="groupActivity-grading-comment-${ix}"]`)
-          .realClick()
+          .click()
           .type(this.data.running.grading.comments1[ix])
       }
 
@@ -1105,7 +1103,7 @@ describe('Create and solve a group activity', function () {
 
     if (this.data.running.grading.gradingComment1 !== null) {
       cy.get('[data-cy="groupActivity-general-grading-comment"]')
-        .realClick()
+        .click()
         .type(this.data.running.grading.gradingComment1)
     }
 
@@ -1132,7 +1130,7 @@ describe('Create and solve a group activity', function () {
       )
       if (this.data.running.grading.comments1[ix]) {
         cy.get(`[data-cy="groupActivity-grading-comment-${ix}"]`)
-          .realClick()
+          .click()
           .contains(this.data.running.grading.comments1[ix])
       }
     })
@@ -1151,7 +1149,7 @@ describe('Create and solve a group activity', function () {
         .type(score)
       if (this.data.running.grading.comments2[ix]) {
         cy.get(`[data-cy="groupActivity-grading-comment-${ix}"]`)
-          .realClick()
+          .click()
           .type(this.data.running.grading.comments2[ix])
       }
       cy.get('[data-cy="groupActivity-save-submission-grading"]').should(
@@ -1161,7 +1159,7 @@ describe('Create and solve a group activity', function () {
 
     if (this.data.running.grading.gradingComment2 !== null) {
       cy.get('[data-cy="groupActivity-general-grading-comment"]')
-        .realClick()
+        .click()
         .type(this.data.running.grading.gradingComment2)
     }
     cy.get('[data-cy="groupActivity-failed"]').click()
@@ -1645,7 +1643,7 @@ describe('Create and solve a group activity', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.ga1}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.ga1}"]`).click() // close dropdown
     verifyGroupActivityDetailsModalContent(data.sharing.ga1, data)
 
     // for a scheduled group activity the following options should be available: start, share, unpublish, delete
@@ -1665,7 +1663,7 @@ describe('Create and solve a group activity', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.ga2}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.ga2}"]`).click() // close dropdown
     verifyGroupActivityDetailsModalContent(data.sharing.ga2, data)
 
     // for a running group activity the following options should be available: extend, end, share, delete
@@ -1683,7 +1681,7 @@ describe('Create and solve a group activity', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.ga3}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.ga3}"]`).click() // close dropdown
     verifyGroupActivityDetailsModalContent(data.sharing.ga3, data)
 
     // for a completed group activity the following options should be available: grade, share, delete
@@ -1700,7 +1698,7 @@ describe('Create and solve a group activity', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.ga4}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.ga4}"]`).click() // close dropdown
     verifyGroupActivityDetailsModalContent(data.sharing.ga4, data)
 
     // for a graded group activity the following options should be available: grade, share, delete
@@ -1717,7 +1715,7 @@ describe('Create and solve a group activity', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.ga5}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.ga5}"]`).click() // close dropdown
     verifyGroupActivityDetailsModalContent(data.sharing.ga5, data)
   }
 
@@ -1767,7 +1765,7 @@ describe('Create and solve a group activity', function () {
       if (!groupPermission) {
         cy.get(`[data-cy="actions-GROUP_ACTIVITY-${quiz}"]`).click()
         cy.get(`[data-cy="remove-group-activity-${quiz}"]`).should('exist')
-        cy.get(`[data-cy="activity-name-${quiz}"]`).realClick() // close dropdown
+        cy.get(`[data-cy="activity-name-${quiz}"]`).click() // close dropdown
       }
 
       verifyGroupActivityDetailsModalContent(quiz, data)
@@ -1817,7 +1815,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="remove-group-activity-${data.sharing.ga1}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.ga1}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.ga1}"]`).click() // close dropdown
 
     verifyGroupActivityDetailsModalContent(data.sharing.ga1, data)
 
@@ -1834,7 +1832,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="remove-group-activity-${data.sharing.ga2}"]`).should(
       !groupPermission ? 'exist' : 'not.exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.ga2}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.ga2}"]`).click() // close dropdown
 
     verifyGroupActivityDetailsModalContent(data.sharing.ga2, data)
 
@@ -1849,7 +1847,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="remove-group-activity-${data.sharing.ga3}"]`).should(
       !groupPermission ? 'exist' : 'not.exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.ga3}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.ga3}"]`).click() // close dropdown
 
     verifyGroupActivityDetailsModalContent(data.sharing.ga3, data)
 
@@ -1863,7 +1861,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="remove-group-activity-${data.sharing.ga4}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.ga4}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.ga4}"]`).click() // close dropdown
 
     verifyGroupActivityDetailsModalContent(data.sharing.ga4, data)
 
@@ -1877,7 +1875,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="remove-group-activity-${data.sharing.ga5}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.ga5}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.ga5}"]`).click() // close dropdown
 
     verifyGroupActivityDetailsModalContent(data.sharing.ga5, data)
   }
@@ -1930,7 +1928,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="remove-group-activity-${data.sharing.ga1}"]`).should(
       !groupPermission ? 'exist' : 'not.exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.ga1}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.ga1}"]`).click() // close dropdown
 
     verifyGroupActivityDetailsModalContent(data.sharing.ga1, data)
 
@@ -1947,7 +1945,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="remove-group-activity-${data.sharing.ga2}"]`).should(
       !groupPermission ? 'exist' : 'not.exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.ga2}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.ga2}"]`).click() // close dropdown
 
     verifyGroupActivityDetailsModalContent(data.sharing.ga2, data)
 
@@ -1962,7 +1960,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="remove-group-activity-${data.sharing.ga3}"]`).should(
       !groupPermission ? 'exist' : 'not.exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.ga3}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.ga3}"]`).click() // close dropdown
 
     verifyGroupActivityDetailsModalContent(data.sharing.ga3, data)
 
@@ -1976,7 +1974,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="remove-group-activity-${data.sharing.ga4}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.ga4}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.ga4}"]`).click() // close dropdown
 
     verifyGroupActivityDetailsModalContent(data.sharing.ga4, data)
 
@@ -1990,7 +1988,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="remove-group-activity-${data.sharing.ga5}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.ga5}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.ga5}"]`).click() // close dropdown
 
     verifyGroupActivityDetailsModalContent(data.sharing.ga5, data)
   }
@@ -2050,7 +2048,7 @@ describe('Create and solve a group activity', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.ga1}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.ga1}"]`).click() // close dropdown
     verifyGroupActivityDetailsModalContent(data.sharing.ga1, data)
 
     // for a scheduled group activity the following options should be available: start, share, unpublish, remove, delete
@@ -2073,7 +2071,7 @@ describe('Create and solve a group activity', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.ga2}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.ga2}"]`).click() // close dropdown
     verifyGroupActivityDetailsModalContent(data.sharing.ga2, data)
 
     // for a running group activity the following options should be available: extend, end, share, remove, delete
@@ -2094,7 +2092,7 @@ describe('Create and solve a group activity', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.ga3}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.ga3}"]`).click() // close dropdown
     verifyGroupActivityDetailsModalContent(data.sharing.ga3, data)
 
     // for a completed group activity the following options should be available: grade, share, remove, delete
@@ -2114,7 +2112,7 @@ describe('Create and solve a group activity', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.ga4}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.ga4}"]`).click() // close dropdown
     verifyGroupActivityDetailsModalContent(data.sharing.ga4, data)
 
     // for a graded group activity the following options should be available: grade, share, remove, delete
@@ -2134,7 +2132,7 @@ describe('Create and solve a group activity', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.ga5}"]`).realClick() // close dropdown
+    cy.get(`[data-cy="activity-name-${data.sharing.ga5}"]`).click() // close dropdown
     verifyGroupActivityDetailsModalContent(data.sharing.ga5, data)
   }
 
@@ -2497,7 +2495,7 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="member-shortname-email-0"]')
       .click()
       .type(Cypress.env('LECTURER_IND_SHORTNAME')) // pro1 is added as admin
-    cy.get('[data-cy="member-admin-0"]').realClick()
+    cy.get('[data-cy="member-admin-0"]').click()
     cy.get('[data-cy="submit-create-user-group"]').click()
     cy.get(`[data-cy="user-group-${this.data.sharing.group1}"]`).should('exist')
 
@@ -2534,7 +2532,7 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="member-shortname-email-0"]')
       .click()
       .type(Cypress.env('LECTURER_EMAIL')) // lecturer is added as admin
-    cy.get('[data-cy="member-admin-0"]').realClick()
+    cy.get('[data-cy="member-admin-0"]').click()
     cy.get('[data-cy="submit-create-user-group"]').click()
     cy.get(`[data-cy="user-group-${this.data.sharing.group4}"]`).should('exist')
     cy.logoutUser()

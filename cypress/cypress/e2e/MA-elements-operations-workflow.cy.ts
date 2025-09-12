@@ -3,6 +3,8 @@ import { getDatetimeValidationString } from './helpers'
 
 describe('Create different types of elements (with and without sample solution) and edit them', function () {
   before(() => {
+    cy.cleanup()
+
     cy.seed()
 
     // set browser language to english (independent of local machine setting
@@ -10,10 +12,6 @@ describe('Create different types of elements (with and without sample solution) 
       command: 'Emulation.setLocaleOverride',
       params: { locale: 'en' },
     })
-  })
-
-  after(() => {
-    cy.cleanup()
   })
 
   beforeEach('Load data fixture', function () {
@@ -45,12 +43,12 @@ describe('Create different types of elements (with and without sample solution) 
       messages.shared.DRAFT.statusLabel
     )
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .type(this.data.duplication.content)
-    cy.get('[data-cy="insert-answer-field-0"]').realClick().type('50%')
+    cy.get('[data-cy="insert-answer-field-0"]').click().type('50%')
     cy.get('[data-cy="add-new-answer"]').click()
     cy.wait(500)
-    cy.get('[data-cy="insert-answer-field-1"]').realClick().type('100%')
+    cy.get('[data-cy="insert-answer-field-1"]').click().type('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
 
@@ -89,17 +87,17 @@ describe('Create different types of elements (with and without sample solution) 
   function enterSCQuestionContent(data) {
     cy.get('[data-cy="insert-question-title"]').type(data.autoSave.title)
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .type(data.autoSave.content)
     cy.get('[data-cy="insert-answer-field-0"]')
-      .realClick()
+      .click()
       .type(data.autoSave.choices[0].value)
     cy.wrap(data.autoSave.choices.slice(1)).each(
       (choice: { value: string }, ix) => {
         cy.get('[data-cy="add-new-answer"]').click()
         cy.wait(500)
         cy.get(`[data-cy="insert-answer-field-${ix + 1}"]`)
-          .realClick()
+          .click()
           .type(choice.value)
       }
     )
@@ -146,7 +144,7 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.autoSave.title
     )
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .contains(this.data.autoSave.content)
     cy.wrap(this.data.autoSave.choices).each(
       (choice: { value: string }, ix) => {
@@ -221,7 +219,7 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.autoSave.content
     )
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .clear()
       .type(this.data.autoSave.contentEdited)
     cy.wait(3000) // wait for auto-save to trigger
@@ -255,7 +253,7 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.autoSave.content
     )
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .clear()
       .type(this.data.autoSave.contentEdited)
     cy.wait(3000) // wait for auto-save to trigger
@@ -296,7 +294,7 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.autoSave.content
     )
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .clear()
       .type(this.data.autoSave.contentEdited)
     cy.wait(3000) // wait for auto-save to trigger
@@ -343,7 +341,7 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.autoSave.titleEditedDuplicated
     )
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .clear()
       .type(this.data.autoSave.contentEdited2)
     cy.wait(3000) // wait for auto-save to trigger
@@ -573,14 +571,14 @@ describe('Create different types of elements (with and without sample solution) 
       .clear()
       .type(this.data.update.title2)
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .clear()
       .type(this.data.update.content2)
 
     // update choices of the question
     cy.wrap(this.data.update.choices2).each((choice: { value: string }, ix) => {
       cy.get(`[data-cy="insert-answer-field-${ix}"]`)
-        .realClick()
+        .click()
         .clear()
         .type(choice.value)
     })
@@ -589,7 +587,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.wrap(this.data.update.choices2).each(
       (choice: { feedback: string }, ix) => {
         cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
-          .realClick()
+          .click()
           .clear()
           .type(choice.feedback)
       }
@@ -652,14 +650,14 @@ describe('Create different types of elements (with and without sample solution) 
       .clear()
       .type(this.data.update.title3)
     cy.get('[data-cy="insert-question-text"]')
-      .realClick()
+      .click()
       .clear()
       .type(this.data.update.content3)
 
     // update choices of the question
     cy.wrap(this.data.update.choices3).each((choice: { value: string }, ix) => {
       cy.get(`[data-cy="insert-answer-field-${ix}"]`)
-        .realClick()
+        .click()
         .clear()
         .type(choice.value)
     })
@@ -896,7 +894,7 @@ describe('Create different types of elements (with and without sample solution) 
 
       // delete live quiz
       cy.reload() // TODO: resolve issue that causes this to be required -> cache update works correctly locally
-      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="actions-LIVE_QUIZ-${quiz}"]`).click()
       cy.get(`[data-cy="delete-live-quiz-${quiz}"]`).click()
       cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
       cy.get('[data-cy="activities-search-input"]').clear()
@@ -911,7 +909,7 @@ describe('Create different types of elements (with and without sample solution) 
       this.data.update.practiceQuiz2,
       this.data.update.practiceQuiz3,
     ]).each((quiz: string) => {
-      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).realClick()
+      cy.get(`[data-cy="actions-PRACTICE_QUIZ-${quiz}"]`).click()
       cy.get(`[data-cy="delete-practice-quiz-${quiz}"]`).click()
       cy.get(`[data-cy="confirm-deletion-responses"]`).click()
       cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
@@ -989,7 +987,7 @@ describe('Create different types of elements (with and without sample solution) 
     })
 
     // check that import and request functionalities are not available for owner (but deletion is)
-    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="copy-object-${this.data.SEML.title}"]`).should(
       'not.exist'
     )
@@ -1048,10 +1046,10 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
-    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).click()
     cy.get('[data-cy="cancel-request-access"]').click()
-    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).click()
     cy.get('[data-cy="confirm-request-access"]').click()
 
@@ -1067,7 +1065,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
-    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).click()
     cy.get('[data-cy="confirm-request-access"]').click()
 
@@ -1207,12 +1205,12 @@ describe('Create different types of elements (with and without sample solution) 
     )
 
     // cancel the request
-    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="cancel-request-${this.data.SEML.title}"]`).click()
     cy.get('[data-cy="confirm-request-cancellation"]').click()
 
     // request the question again (should be possible)
-    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).click()
     cy.get('[data-cy="confirm-request-access"]').click()
 
@@ -1300,7 +1298,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
 
-    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="copy-object-${this.data.SEML.title}"]`).should('exist')
     cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).should('exist')
 
@@ -1318,7 +1316,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="analytics"]').should('exist')
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
-    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="remove-object-${this.data.SEML.title}"]`).click()
     cy.get('[data-cy="confirm-removal"]').click()
   })
@@ -1440,7 +1438,7 @@ describe('Create different types of elements (with and without sample solution) 
 
     // question should be visible to owner, but cannot be requested / imported
     cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
-    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="copy-object-${this.data.SEML.title}"]`).should(
       'not.exist'
     )
@@ -1456,7 +1454,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
-    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).click()
     cy.findByText(messages.manage.catalog.requestPublicResource)
     cy.get('[data-cy="confirm-request-access"]').click()
@@ -1473,7 +1471,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
-    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).click()
     cy.get('[data-cy="confirm-request-access"]').click()
 
@@ -1566,14 +1564,14 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
-    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="copy-object-${this.data.SEML.title}"]`).click()
     cy.get('[data-cy="close-object-copy-modal"]').click()
 
-    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="copy-object-${this.data.SEML.title}"]`).click()
     cy.get('[data-cy="cancel-object-copy"]').click()
-    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="copy-object-${this.data.SEML.title}"]`).click()
     cy.get('[data-cy="confirm-object-copy"]').click()
 
@@ -1833,7 +1831,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="member-shortname-email-0"]')
       .click()
       .type(Cypress.env('LECTURER_INST_EMAIL')) // pro2 is added as admin
-    cy.get('[data-cy="member-admin-0"]').realClick()
+    cy.get('[data-cy="member-admin-0"]').click()
     cy.get('[data-cy="submit-create-user-group"]').click()
 
     // check that the user group has been created correctly
