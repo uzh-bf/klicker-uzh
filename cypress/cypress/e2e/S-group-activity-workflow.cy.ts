@@ -140,14 +140,14 @@ describe('Create and solve a group activity', function () {
   // #region
   it('Create a group activity with the created questions', function () {
     cy.loginLecturer()
-
+    
     // Step 1: Name
     cy.get('[data-cy="create-group-activity"]').click()
     cy.get('[data-cy="insert-groupactivity-name"]')
       .click()
       .type(this.data.activity.name)
     cy.get('[data-cy="next-or-submit"]').click()
-
+    
     // Step 2: Display name and description
     cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
@@ -155,12 +155,12 @@ describe('Create and solve a group activity', function () {
       .click()
       .type(this.data.activity.displayName)
     cy.get('[data-cy="insert-groupactivity-description"]')
-      .click()
-      .type(this.data.activity.task)
+      .realClick()
+      .realType(this.data.activity.task)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
-
+    
     // Step 3: Settings
     cy.selectOption('[data-cy="select-course"]', this.data.course)
     cy.get('[data-cy="select-course"]')
@@ -176,7 +176,7 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier2
     )
-
+    
     // set the start date of the group activity to 2 months in the future at 12:30
     cy.setDatetime({
       cyString: 'select-start-date',
@@ -189,7 +189,7 @@ describe('Create and solve a group activity', function () {
         validation: startDate1,
       },
     })
-
+    
     // set the end date of the group activity to 3 months in the future at 14:00
     cy.setDatetime({
       cyString: 'select-end-date',
@@ -205,7 +205,7 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
-
+    
     // Step 4: Clues
     // 1) Text clue
     cy.get('[data-cy="add-group-activity-clue"]').click()
@@ -224,7 +224,7 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="group-activity-clue-save"]').click()
     cy.findByText(this.data.activity.clues[0].name).should('exist')
     cy.findByText(this.data.activity.clues[0].content).should('exist')
-
+    
     // 2) Numerical clue
     cy.get('[data-cy="add-group-activity-clue"]').click()
     cy.get('[data-cy="group-activity-clue-type"]')
@@ -254,7 +254,7 @@ describe('Create and solve a group activity', function () {
         ' ' +
         this.data.activity.clues[1].unit
     ).should('exist')
-
+    
     // 3) Numerical clue without unit
     cy.get('[data-cy="add-group-activity-clue"]').click()
     cy.get('[data-cy="group-activity-clue-type"]')
@@ -277,7 +277,7 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="group-activity-clue-save"]').click()
     cy.findByText(this.data.activity.clues[2].name).should('exist')
     cy.findByText(this.data.activity.clues[2].content).should('exist')
-
+    
     // Step 4: Questions / Elements
     cy.createStacks({
       stacks: [
@@ -294,11 +294,11 @@ describe('Create and solve a group activity', function () {
         },
       ],
     })
-
+    
     cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
-
+    
     // check if the created group activity exists
     cy.get('[data-cy="open-activity-overview"]').click()
     cy.get('[data-cy="tab-groupActivities"]').click()
