@@ -32,73 +32,10 @@ env:
 # - Concurrency group prevents duplicate runs when both events fire
 
 jobs:
-  # Builds the application once and uploads artifacts for both test scenarios
-  # Uses advanced caching for dependencies, build outputs, and Cypress binary
-  build:
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 10.15.0
-          run_install: false
-
-      - name: Setup Node.js with pnpm caching
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm'
-          cache-dependency-path: '**/pnpm-lock.yaml'
-
-      - name: Cache Cypress binary
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/Cypress
-          key: ${{ runner.os }}-cypress-${{ hashFiles('**/package.json') }}
-          restore-keys: |
-            ${{ runner.os }}-cypress-
-
-      - name: Cache build outputs
-        uses: actions/cache@v4
-        with:
-          path: |
-            .turbo
-            **/.next/cache
-            **/dist
-            apps/*/dist
-            apps/*/.next
-            packages/*/dist
-          key: ${{ runner.os }}-build-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ github.ref_name }}-
-            ${{ runner.os }}-build-
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build all packages and apps
-        run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts
-          path: |
-            .turbo
-            apps
-            packages
-            !**/node_modules
-          retention-days: 1
-          compression-level: 6
-
   # Runs parallel Cypress tests for development (draft PRs and feature branch pushes)
-  # Uses cypress-split to distribute tests across 10 containers for faster feedback
+  # Uses cypress-split to distribute tests across 8 containers for faster feedback
   # No Cypress Cloud recording to save costs during development
   cypress-run-parallel-draft:
-    needs: build
     if: |
       (github.event_name == 'pull_request' && github.event.pull_request.draft == true) ||
       (github.event_name == 'push' && github.ref != 'refs/heads/v3')
@@ -170,28 +107,39 @@ jobs:
     steps:
       - run: echo "Running parallel Cypress tests for draft PR (container ${{ matrix.containers }})"
 
-      - name: Check out repository code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Define node version
+        uses: actions/setup-node@v3
         with:
           node-version: 20
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - uses: pnpm/action-setup@v2
         with:
           version: 10.15.0
           run_install: false
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - uses: actions/cache@v3
+        name: Setup pnpm cache
         with:
-          name: build-artifacts
-          path: .
+          path: |
+            ${{ env.STORE_PATH }}
+            ~/.cache/Cypress
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
         run: pnpm install
+
+      - name: Build all packages and apps
+        run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test
 
       - name: Prepare .env files
         run: |
@@ -253,7 +201,6 @@ jobs:
   # - Direct pushes to v3 branch (for hotfixes/direct commits)
   # Provides full video/screenshot recording and Cypress Dashboard visibility
   cypress-run-cloud:
-    needs: build
     if: (github.event_name == 'pull_request' && github.event.pull_request.draft == false) || (github.event_name == 'push' && github.ref == 'refs/heads/v3')
     runs-on: ubuntu-24.04
     services:
@@ -319,28 +266,39 @@ jobs:
     steps:
       - run: echo "Running Cypress tests with Cloud recording for non-draft PR or push to v3"
 
-      - name: Check out repository code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Define node version
+        uses: actions/setup-node@v3
         with:
           node-version: 20
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - uses: pnpm/action-setup@v2
         with:
           version: 10.15.0
           run_install: false
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - uses: actions/cache@v3
+        name: Setup pnpm cache
         with:
-          name: build-artifacts
-          path: .
+          path: |
+            ${{ env.STORE_PATH }}
+            ~/.cache/Cypress
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
         run: pnpm install
+
+      - name: Build all packages and apps
+        run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test
 
       - name: Prepare .env files
         run: |
