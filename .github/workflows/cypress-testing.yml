@@ -87,7 +87,6 @@ jobs:
         with:
           name: build-artifacts
           path: |
-            node_modules
             .turbo
             apps/*/dist
             apps/*/.next
@@ -190,6 +189,9 @@ jobs:
         with:
           name: build-artifacts
           path: .
+
+      - name: Install dependencies
+        run: pnpm install
 
       - name: Prepare .env files
         run: |
@@ -336,6 +338,9 @@ jobs:
         with:
           name: build-artifacts
           path: .
+
+      - name: Install dependencies
+        run: pnpm install
 
       - name: Prepare .env files
         run: |
