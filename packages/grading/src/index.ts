@@ -1,4 +1,4 @@
-import { CaseStudyResponseObject } from '@klicker-uzh/types'
+import type { CaseStudyResponseObject } from '@klicker-uzh/types'
 import { isDeepEqual, toLowerCase } from 'remeda'
 
 interface GradeQuestionChoicesArgs {

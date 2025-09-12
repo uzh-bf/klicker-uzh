@@ -11,7 +11,11 @@ import {
   ResponseCorrectness,
   UserRole,
 } from '@klicker-uzh/prisma/client'
-import type { LiveQuizResponseInput } from '@klicker-uzh/types'
+import type {
+  FreeTextRestrictions,
+  LiveQuizResponseInput,
+  NumericalRestrictions,
+} from '@klicker-uzh/types'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import { DEFAULT_POINTS } from './constants.js'
@@ -122,14 +126,28 @@ export async function processAssessmentResponse(
   }
 
   // ! Step 1.2 Validation of response format
+  let parsedRestrictions:
+    | NumericalRestrictions
+    | FreeTextRestrictions
+    | undefined
+  try {
+    if (restrictions) {
+      parsedRestrictions = restrictions
+        ? typeof restrictions === 'string'
+          ? JSON.parse(restrictions)
+          : restrictions
+        : undefined
+    }
+  } catch (e) {
+    throw new NonRetryableError(
+      `Error ${String(e)} occurred when parsing restrictions: ${restrictions}`
+    )
+  }
+
   const { valid, message: validationError } = validateStudentResponse({
     type: type as any,
     response,
-    restrictions: restrictions
-      ? typeof restrictions === 'string'
-        ? JSON.parse(restrictions)
-        : restrictions
-      : undefined,
+    restrictions: parsedRestrictions,
   })
 
   if (!valid) {

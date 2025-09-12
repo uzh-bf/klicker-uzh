@@ -206,11 +206,12 @@ export function validateStudentResponse({
     }
 
     // if restrictions are defined, check that the response satisfies them
+    const trimmedResponse = response.value.trim()
     if (
       restrictions &&
       'maxLength' in restrictions &&
       typeof restrictions.maxLength === 'number' &&
-      response.value.length > restrictions.maxLength
+      trimmedResponse.length > restrictions.maxLength
     ) {
       return {
         valid: false,

@@ -6,7 +6,11 @@ import type {
   DurableContext,
   JsonObject,
 } from '@hatchet-dev/typescript-sdk/index.js'
-import type { LiveQuizResponseInput } from '@klicker-uzh/types'
+import type {
+  FreeTextRestrictions,
+  LiveQuizResponseInput,
+  NumericalRestrictions,
+} from '@klicker-uzh/types'
 import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
@@ -169,18 +173,32 @@ export async function processResponseMessage(
         parsedSolutions = JSON.parse(solutions)
       }
     } catch (e) {
-      ctx.logger.info(`Error parsing solutions: ${String(e)}`)
+      throw new Error('Error parsing solutions: ' + String(e))
     }
 
     // validate the incoming response
+    let parsedRestrictions:
+      | NumericalRestrictions
+      | FreeTextRestrictions
+      | undefined
+    try {
+      if (restrictions) {
+        parsedRestrictions = restrictions
+          ? typeof restrictions === 'string'
+            ? JSON.parse(restrictions)
+            : restrictions
+          : undefined
+      }
+    } catch (e) {
+      throw new Error(
+        `Error ${String(e)} occurred when parsing restrictions: ${restrictions}`
+      )
+    }
+
     const { valid, message: validationError } = validateStudentResponse({
       type: type as any,
       response,
-      restrictions: restrictions
-        ? typeof restrictions === 'string'
-          ? JSON.parse(restrictions)
-          : restrictions
-        : undefined,
+      restrictions: parsedRestrictions,
     })
 
     if (!valid) {
