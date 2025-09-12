@@ -12,10 +12,7 @@ import {
 } from 'ai'
 import { JWTPayload, jwtVerify } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
-import {
-  getSystemPrompt,
-  type ChatbotMode,
-} from '../../../../../lib/config/prompts'
+import { DEFAULT_PROMPT } from '../../../../../lib/config/prompts'
 import { CreditsService } from '../../../../../services/credits'
 import { ThreadService } from '../../../../../services/threads'
 import { RAGSearch } from '../../../../../services/tools'
@@ -59,20 +56,50 @@ export async function POST(
     messages,
     threadId,
     selectedModel,
-    chatMode,
+    selectedMode,
     parentId,
     assistantMessageId,
   }: {
     messages: Array<{ id: string; role: string; content: string }>
     threadId: string | null
     selectedModel: ModelID
-    chatMode?: ChatbotMode
+    selectedMode: string
     parentId?: string | null
     assistantMessageId: string
   } = await req.json()
 
   let currentThreadId = threadId
   let userMessageId: string | null = null
+
+  console.log('selectedMode (API)', selectedMode)
+  console.log('selectedModel (API)', selectedModel)
+
+  // fetch system prompt for the selected chat mode from the database
+  let systemPrompt = ''
+  if (selectedMode) {
+    try {
+      const chatbot = await prisma.chatbot.findUnique({
+        where: { id: chatbotId },
+      })
+      if (chatbot) {
+        const systemPrompts = chatbot.systemPrompts as Record<
+          string,
+          Record<string, string>
+        >
+        if (systemPrompts && systemPrompts[selectedMode]) {
+          systemPrompt =
+            systemPrompts[selectedMode].prompt ||
+            DEFAULT_PROMPT[selectedMode]?.prompt ||
+            ''
+        } else {
+          systemPrompt = DEFAULT_PROMPT[selectedMode]?.prompt || ''
+        }
+      }
+      console.log('systemPrompt', systemPrompt)
+    } catch (error) {
+      console.error('Failed to fetch system prompt:', error)
+    }
+  }
 
   // create a new thread if none exists
   if (!currentThreadId && messages.length > 0) {
@@ -150,7 +177,7 @@ export async function POST(
     },
     toolChoice: 'auto',
     stopWhen: stepCountIs(5),
-    system: getSystemPrompt(chatMode),
+    system: systemPrompt,
 
     abortSignal: req.signal,
 

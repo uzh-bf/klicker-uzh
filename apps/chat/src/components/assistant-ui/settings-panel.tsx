@@ -1,7 +1,6 @@
 'use client'
 
 import { type ModelID } from '../../lib/config/models'
-import { type ChatbotMode } from '../../lib/config/prompts'
 import { useSettingsStore } from '../../stores/settingsStore'
 
 import { Progress, Select, Separator } from '@uzh-bf/design-system'
@@ -26,7 +25,7 @@ export function SettingsPanel() {
   }
 
   const handleModeChange = (value: string) => {
-    setSelectedMode(value as ChatbotMode)
+    setSelectedMode(value as string)
   }
 
   return (
@@ -48,7 +47,7 @@ export function SettingsPanel() {
           onChange={(newValue) => {
             handleModelChange(newValue)
           }}
-          defaultValue={selectedModel}
+          value={selectedModel}
         />
         <p className="text-muted-foreground text-sm">
           {
@@ -63,20 +62,23 @@ export function SettingsPanel() {
         <label className="text-sm font-bold">Chat Mode</label>
         <Select
           placeholder="Select Chat Mode"
-          items={modeOptions.map((option) => ({
-            value: option.id,
-            label: option.name,
-          }))}
+          items={
+            Object.keys(modeOptions).length > 0
+              ? Object.entries(modeOptions).map(([key]) => ({
+                  value: key,
+                  label: key,
+                }))
+              : []
+          }
           onChange={(newValue) => {
             handleModeChange(newValue)
           }}
-          defaultValue={selectedMode}
+          value={selectedMode}
         />
         <p className="text-muted-foreground text-sm">
-          {
-            modeOptions.find((option) => option.id === selectedMode)
-              ?.description
-          }
+          {selectedMode
+            ? modeOptions[selectedMode] || 'No description available.'
+            : 'No mode selected.'}
         </p>
       </div>
 

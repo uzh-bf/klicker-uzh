@@ -55,6 +55,8 @@ model Chatbot {
   description String?
   avatar      String? // URL to avatar image
 
+  systemPrompts Json? // { tutor: {prompt: string; description: string}; explainer: {prompt: string; description: string}; ... }
+
   threads      ChatThread[]
   usageCredits ChatUsageCredits[]
 

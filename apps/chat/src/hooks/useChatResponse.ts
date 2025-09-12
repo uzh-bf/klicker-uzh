@@ -21,7 +21,7 @@ import { useSettingsStore } from '../stores/settingsStore'
  * @param chatMode - The chat mode/configuration
  * @returns Object containing generateChatResponse function and abort controller ref
  */
-export function useChatResponse(selectedModel: string, chatMode: string) {
+export function useChatResponse(selectedModel: string, selectedMode: string) {
   const { chatbotId } = useParams<{ chatbotId: string }>()
 
   const { setMessages, setIsRunning } = useChatStore()
@@ -79,7 +79,7 @@ export function useChatResponse(selectedModel: string, chatMode: string) {
             })),
             threadId,
             selectedModel,
-            chatMode,
+            selectedMode,
             parentId: parentId || undefined,
             assistantMessageId,
           }),
@@ -381,7 +381,14 @@ export function useChatResponse(selectedModel: string, chatMode: string) {
         }
       }
     },
-    [setMessages, setIsRunning, selectedModel, chatMode, chatbotId, loadCredits]
+    [
+      setMessages,
+      setIsRunning,
+      selectedModel,
+      selectedMode,
+      chatbotId,
+      loadCredits,
+    ]
   )
 
   return {
