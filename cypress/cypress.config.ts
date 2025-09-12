@@ -1911,7 +1911,7 @@ export default defineConfig({
         },
         async cleanupDatabase() {
           try {
-            await prisma.$transaction([
+            await Promise.all([
               // delete all activities
               prisma.liveQuiz.deleteMany(),
               prisma.microLearning.deleteMany(),
