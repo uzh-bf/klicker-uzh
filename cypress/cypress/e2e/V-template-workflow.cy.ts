@@ -559,8 +559,8 @@ describe('Test all functionalities related to the creation, management, sharing 
       .realType(this.data.liveQuiz.template1Orig.description)
     cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
     cy.get('[data-cy="template-instructions"]')
-      .click()
-      .type(this.data.liveQuiz.template1Orig.instructions)
+      .realClick()
+      .realType(this.data.liveQuiz.template1Orig.instructions)
     cy.get('[data-cy="submit-template-creation"]').click()
 
     // verify that the template has been created and that the original live quiz still exists with all functionalities
@@ -636,8 +636,8 @@ describe('Test all functionalities related to the creation, management, sharing 
       .realType(this.data.liveQuiz.template2.description)
     cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
     cy.get('[data-cy="template-instructions"]')
-      .click()
-      .type(this.data.liveQuiz.template2.instructions)
+      .realClick()
+      .realType(this.data.liveQuiz.template2.instructions)
     cy.get('[data-cy="submit-template-creation"]').click()
 
     // verify that the template has been created and that the original live quiz does not exist anymore
@@ -690,7 +690,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       this.data.liveQuiz.template1Orig.description
     )
     cy.get('[data-cy="template-description"]')
-      .click()
+      .realClick()
       .clear()
       .type(this.data.liveQuiz.template1.description)
 
@@ -699,7 +699,7 @@ describe('Test all functionalities related to the creation, management, sharing 
       this.data.liveQuiz.template1Orig.instructions
     )
     cy.get('[data-cy="template-instructions"]')
-      .click()
+      .realClick()
       .clear()
       .type(this.data.liveQuiz.template1.instructions)
     cy.get('[data-cy="submit-template-edit"]').click()
@@ -754,10 +754,10 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="catalog"]').click()
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-public"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessPUBLIC
     )
@@ -788,8 +788,8 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="catalog-collection-name-input"]')
       .click()
       .type(this.data.catalog.name)
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-restricted"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessRESTRICTED
     )
@@ -799,10 +799,10 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(`[data-cy="catalog-object-${this.data.catalog.name}"]`).click()
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.catalog.name)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-public"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessPUBLIC
     )
@@ -825,7 +825,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="leave-catalog-collection"]').click()
     cy.get(
       `[data-cy="catalog-collection-${this.data.catalog.name}-actions"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="share-catalog-collection"]').click()
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
@@ -1156,8 +1156,10 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="template-live-quiz-course"]').contains(
       messages.manage.activityWizard.liveQuizNoCourse
     )
-    cy.get('[data-cy="template-live-quiz-course"]').click()
-    cy.get(`[data-cy="select-course-${this.data.activity1.course}"]`).click()
+    cy.get('[data-cy="template-live-quiz-course"]').realClick()
+    cy.get(
+      `[data-cy="select-course-${this.data.activity1.course}"]`
+    ).realClick()
     cy.get('[data-cy="template-live-quiz-course"]').contains(
       this.data.activity1.course
     )
@@ -1204,8 +1206,10 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="template-live-quiz-course"]').contains(
       messages.manage.activityWizard.liveQuizNoCourse
     )
-    cy.get('[data-cy="template-live-quiz-course"]').click()
-    cy.get(`[data-cy="select-course-${this.data.activity1.course}"]`).click()
+    cy.get('[data-cy="template-live-quiz-course"]').realClick()
+    cy.get(
+      `[data-cy="select-course-${this.data.activity1.course}"]`
+    ).realClick()
     cy.get('[data-cy="template-live-quiz-course"]').contains(
       this.data.activity1.course
     )
@@ -1328,9 +1332,9 @@ describe('Test all functionalities related to the creation, management, sharing 
           .clear()
           .type(newTitle)
         cy.get('[data-cy="insert-question-text"]')
-          .click()
+          .realClick()
           .clear()
-          .type(newContent)
+          .realType(newContent)
         cy.get('[data-cy="save-new-question"]').click()
         cy.get('[data-cy="student-element-preview"]').contains(newContent)
         cy.get(`[data-cy="next-template-element-${identifier}"]`).click()

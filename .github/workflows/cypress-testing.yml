@@ -88,9 +88,9 @@ jobs:
           name: build-artifacts
           path: |
             .turbo
-            apps/*/dist
-            apps/*/.next
-            packages/*/dist
+            apps
+            packages
+            !**/node_modules
           retention-days: 1
           compression-level: 6
 
