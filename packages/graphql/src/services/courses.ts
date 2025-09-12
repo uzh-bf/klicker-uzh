@@ -79,6 +79,11 @@ export async function joinCourseWithPin(
     return null
   }
 
+  // Assessment courses can only be joined via invitation, not PIN
+  if (course.isAssessmentEnabled) {
+    throw new Error('Assessment courses can only be joined via invitation')
+  }
+
   // update the participants participations and set the newest one to be active
   const updatedParticipant = await ctx.prisma.participant.update({
     where: { id: ctx.user.sub },
@@ -729,6 +734,7 @@ interface CreateCourseArgs {
   language: DB.Locale
   notificationEmail?: string | null
   isGamificationEnabled: boolean
+  isAssessmentEnabled?: boolean | null
 }
 
 export async function createCourse(
@@ -746,11 +752,15 @@ export async function createCourse(
     language,
     notificationEmail,
     isGamificationEnabled,
+    isAssessmentEnabled,
   }: CreateCourseArgs,
   ctx: ContextWithUser
 ) {
   // TODO: ensure that PINs are unique
-  const randomPin = Math.floor(Math.random() * 900000000 + 100000000)
+  // Assessment courses don't get PINs - they use invitations instead
+  const randomPin = isAssessmentEnabled
+    ? null
+    : Math.floor(Math.random() * 900000000 + 100000000)
 
   // convert times from local time to UTC
   // startDate.setHours(startDate.getHours() - startDate.getTimezoneOffset() / 60)
@@ -775,6 +785,7 @@ export async function createCourse(
           preferredGroupSize: preferredGroupSize ?? defaultPreferredGroupSize,
           notificationEmail: notificationEmail,
           isGamificationEnabled: isGamificationEnabled,
+          isAssessmentEnabled: isAssessmentEnabled ?? false,
           pinCode: randomPin,
           owner: {
             connect: {
@@ -835,6 +846,7 @@ interface UpdateCourseSettingsArgs {
   language: DB.Locale
   notificationEmail?: string | null
   isGamificationEnabled?: boolean | null
+  isAssessmentEnabled?: boolean | null
 }
 
 export async function updateCourseSettings(
@@ -851,6 +863,7 @@ export async function updateCourseSettings(
     language,
     notificationEmail,
     isGamificationEnabled,
+    isAssessmentEnabled,
   }: UpdateCourseSettingsArgs,
   ctx: ContextWithUser
 ) {
@@ -907,6 +920,9 @@ export async function updateCourseSettings(
         isGamificationEnabled || (!containsActivities && !containsGroups)
           ? (isGamificationEnabled ?? false)
           : undefined,
+      // set assessment mode - if enabling, remove PIN
+      isAssessmentEnabled: isAssessmentEnabled ?? undefined,
+      pinCode: isAssessmentEnabled ? null : undefined,
       // reset the random assignment tracking if the group deadline is extended
       randomAssignmentFinalized: !newGroupDeadlinePast ? false : undefined,
       // if group creation is disabled and there are no groups, remove all participants from the random assignment pool

@@ -271,10 +271,15 @@ responseApi:
         paths:
           - path: /
             pathType: ImplementationSpecific
+      - host: response-api.klicker.uzh.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
     tls:
       - secretName: klicker-prod-response-api-tls
         hosts:
           - chat.klicker.uzh.ch
+          - response-api.klicker.uzh.ch
 
   strategy:
     type: Recreate

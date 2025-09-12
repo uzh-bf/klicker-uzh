@@ -60,12 +60,8 @@ function ChoicesOptions({
                     name={`options.choices.${index}.value`}
                     questionType={values.type}
                     shouldUpdate={(
-                      next?: {
-                        formik: { values: ElementFormTypes }
-                      },
-                      prev?: {
-                        formik: { values: ElementFormTypes }
-                      }
+                      next?: { formik: { values: ElementFormTypes } },
+                      prev?: { formik: { values: ElementFormTypes } }
                     ) =>
                       (next &&
                         prev &&
@@ -117,18 +113,14 @@ function ChoicesOptions({
                             disabled={inputsDisabled}
                             checked={field.value || false}
                             label=""
-                            className={{
-                              root: 'mr-0.5 gap-0',
-                            }}
+                            className={{ root: 'mr-0.5 gap-0' }}
                             onCheckedChange={(newValue: boolean) => {
                               setFieldValue(
                                 `options.choices.${index}.correct`,
                                 newValue
                               )
                             }}
-                            data={{
-                              cy: `set-correctness-${index}`,
-                            }}
+                            data={{ cy: `set-correctness-${index}` }}
                           />
                         )}
                       </FastField>
@@ -139,9 +131,7 @@ function ChoicesOptions({
                       className={{ root: 'px-auto py-0.5' }}
                       disabled={index === 0 || inputsDisabled}
                       onClick={() => move(index, index - 1)}
-                      data={{
-                        cy: `move-answer-option-ix-${index}-up`,
-                      }}
+                      data={{ cy: `move-answer-option-ix-${index}-up` }}
                     >
                       <Button.Icon
                         withoutLabel
@@ -156,9 +146,7 @@ function ChoicesOptions({
                         inputsDisabled
                       }
                       onClick={() => move(index, index + 1)}
-                      data={{
-                        cy: `move-answer-option-ix-${index}-down`,
-                      }}
+                      data={{ cy: `move-answer-option-ix-${index}-down` }}
                     >
                       <Button.Icon
                         withoutLabel

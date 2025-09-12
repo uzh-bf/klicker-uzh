@@ -138,18 +138,20 @@ function CourseOverviewHeader({
           <Button.Icon icon={faMessage} />
           <Button.Label>{t('shared.comments.tooltip')}</Button.Label>
         </Button>
-        <QRCodePopover
-          triggerStyle="button"
-          triggerText={t('manage.course.joinCourse')}
-          infoComponent={
-            <UserNotification
-              message={t('manage.course.courseQRDescription')}
-              className={{ root: 'mb-3 w-80' }}
-            />
-          }
-          relHref={`/${course.language}/course/${course.id}/join?pin=${course.pinCode}`}
-          data={{ cy: `course-join-qr-code` }}
-        />
+        {!course.isAssessmentEnabled && course.pinCode && (
+          <QRCodePopover
+            triggerStyle="button"
+            triggerText={t('manage.course.joinCourse')}
+            infoComponent={
+              <UserNotification
+                message={t('manage.course.courseQRDescription')}
+                className={{ root: 'mb-3 w-80' }}
+              />
+            }
+            relHref={`/${course.language}/course/${course.id}/join?pin=${course.pinCode}`}
+            data={{ cy: `course-join-qr-code` }}
+          />
+        )}
         {user?.publicPreview ? (
           <Button
             primary

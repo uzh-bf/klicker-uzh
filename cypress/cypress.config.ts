@@ -1,6 +1,7 @@
 import { prisma } from '@klicker-uzh/prisma'
 import {
   AchievementType,
+  CourseAuthType,
   ElementType,
   ObjectAccess,
   PermissionLevel,
@@ -1328,13 +1329,18 @@ export default defineConfig({
                 isAssessmentEnabled,
                 isGamificationEnabled,
                 color,
-                pinCode: Math.floor(100000000 + Math.random() * 900000000),
+                pinCode: !isAssessmentEnabled
+                  ? Math.floor(100000000 + Math.random() * 900000000)
+                  : null,
                 startDate,
                 endDate,
                 isGroupCreationEnabled,
                 groupDeadlineDate: groupDeadlineDate ?? endDate,
                 maxGroupSize,
                 preferredGroupSize,
+                authType: isAssessmentEnabled
+                  ? CourseAuthType.SSO
+                  : CourseAuthType.PIN,
                 owner: { connect: { id: USER_ID_TEST } },
               },
             })

@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.4...v3.4.0-alpha.5) (2025-09-11)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** ensure that course leaderboard join button is displayed correctly for long course names ([26ae99a](https://github.com/uzh-bf/klicker-uzh/commit/26ae99aedb13ede9fa1de540a1f8654c9de3f32b))
+* **apps/frontend-pwa:** resolve issue where locale lead to redirect on student application home ([ee622be](https://github.com/uzh-bf/klicker-uzh/commit/ee622be41608b9e9e8a09ae471bc4d14d2c070cf))
+* **cypress:** resolve cypress testing issues caused by erroneous typescript configuration ([#4889](https://github.com/uzh-bf/klicker-uzh/issues/4889)) ([b05436b](https://github.com/uzh-bf/klicker-uzh/commit/b05436bb796fbd8fa15d51948d91d77beb066b62))
+* **packages/graphql:** make sure lecturer join link displays shared and owned live quizzes ([#4891](https://github.com/uzh-bf/klicker-uzh/issues/4891)) ([9d125dd](https://github.com/uzh-bf/klicker-uzh/commit/9d125ddd07d788b7a76accc8eb61472ff024e6d5))
+* **packages/graphql:** make sure that archived courses are also listed on activity list course filter ([9def97e](https://github.com/uzh-bf/klicker-uzh/commit/9def97e176df58e168a890c0771510f4c92968f6))
+
+
+### Enhancements
+
+* add possibility to delete own comments on objects ([#4892](https://github.com/uzh-bf/klicker-uzh/issues/4892)) ([a475840](https://github.com/uzh-bf/klicker-uzh/commit/a4758400ee51a3c7f945ae35f26ddcfbc1645835))
+* **apps/frontend-pwa:** automatically save student responses every 10 seconds to localforage ([#4890](https://github.com/uzh-bf/klicker-uzh/issues/4890)) ([a1837e9](https://github.com/uzh-bf/klicker-uzh/commit/a1837e97b98da1482e49826846b8b6fe52e24cb8))
+
+## [3.4.0-alpha.4](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.3...v3.4.0-alpha.4) (2025-09-09)
+
+
+### Features
+
+* add possibility for students to navigate back to answered questions during live quiz ([#4884](https://github.com/uzh-bf/klicker-uzh/issues/4884)) ([9213bce](https://github.com/uzh-bf/klicker-uzh/commit/9213bceb1bdafa1531205c3ac6f4f514cbc90fd7))
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** only show confetti explosion when submitting an answer to the last question of a gamified live quiz block ([b350b23](https://github.com/uzh-bf/klicker-uzh/commit/b350b23ac93aa5b982016a132ce6a7a905a51ae0))
+
+
+### Documentation
+
+* **apps/frontend-pwa:** update student documentation with new screen shots and updated descriptions of application functionalities ([#4886](https://github.com/uzh-bf/klicker-uzh/issues/4886)) ([26b7910](https://github.com/uzh-bf/klicker-uzh/commit/26b791024bbaa41dfd02c3df9ee3fa8abe2e23d5))
+
 ## [3.4.0-alpha.3](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.2...v3.4.0-alpha.3) (2025-09-07)
 
 ## [3.4.0-alpha.2](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.1...v3.4.0-alpha.2) (2025-09-07)

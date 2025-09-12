@@ -65,12 +65,9 @@ export function KPAnswerOptions({
               <Button
                 className={{
                   root: twMerge(
-                    'p-0! h-9 w-9 border-slate-400',
-                    disabled && 'bg-accent disabled:opacity-90',
+                    'p-0! disabled:bg-accent disabled:hover:bg-accent h-9 w-9 border-slate-400 disabled:cursor-not-allowed disabled:opacity-90',
                     value?.[choice.ix] === true &&
-                      'bg-primary-20 border-primary-100 hover:bg-primary-20 cursor-not-allowed',
-                    value?.[choice.ix] === false &&
-                      'cursor-not-allowed bg-white hover:bg-white',
+                      'bg-primary-20 disabled:bg-primary-20 border-primary-100 hover:bg-primary-20 disabled:hover:bg-primary-20 disabled:cursor-not-allowed',
                     feedbacks?.[choice.ix]?.correct === true &&
                       'border-2 border-green-600',
                     feedbacks?.[choice.ix]?.correct === false &&
@@ -92,12 +89,9 @@ export function KPAnswerOptions({
               <Button
                 className={{
                   root: twMerge(
-                    'h-9 w-9 border-slate-400',
-                    disabled && 'bg-accent disabled:opacity-90',
+                    'disabled:bg-accent disabled:hover:bg-accent h-9 w-9 border-slate-400 disabled:cursor-not-allowed disabled:opacity-90',
                     value?.[choice.ix] === false &&
-                      'bg-primary-20 border-primary-100 hover:bg-primary-20 cursor-not-allowed',
-                    value?.[choice.ix] === true &&
-                      'cursor-not-allowed bg-white hover:bg-white',
+                      'bg-primary-20 disabled:bg-primary-20 border-primary-100 hover:bg-primary-20 disabled:hover:bg-primary-20 disabled:cursor-not-allowed',
                     feedbacks?.[choice.ix]?.correct === false &&
                       'border-2 border-green-600',
                     feedbacks?.[choice.ix]?.correct === true &&

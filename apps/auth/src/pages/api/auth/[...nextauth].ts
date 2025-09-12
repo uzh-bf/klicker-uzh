@@ -133,6 +133,35 @@ export async function encode({ token, secret }: JWTEncodeParams) {
   return signJWT((token as JWTPayload) ?? {}, secretString)
 }
 
+function extractProviderFromAffiliationId(
+  affiliationId: string
+): string | null {
+  try {
+    const parts = affiliationId.split('@')
+    if (parts.length < 2) return null
+
+    const domainParts = parts[1]?.split('.')
+    if (!domainParts || domainParts.length === 0) return null
+
+    const provider = domainParts[0]
+    return provider || null
+  } catch {
+    return null
+  }
+}
+
+function collectAllEmails(
+  primaryEmail?: string,
+  affiliationEmails?: string[]
+): string[] {
+  const emails = []
+  if (primaryEmail) emails.push(primaryEmail.toLowerCase())
+  if (affiliationEmails) {
+    emails.push(...affiliationEmails.map((email) => email.toLowerCase()))
+  }
+  return emails.filter(Boolean)
+}
+
 function generateRandomString(length: number) {
   let result = ''
   let characters
@@ -152,6 +181,95 @@ function generateRandomString(length: number) {
   return result
 }
 
+async function autoAcceptInvitations(emails: string[], participantId?: string) {
+  let matchingParticipantId: string | undefined = participantId
+
+  try {
+    if (!participantId) {
+      // Find participant account for any of the provided emails
+      const participant = await prisma.participant.findFirst({
+        where: {
+          email: {
+            in: emails.map((email) => email.toLowerCase()),
+          },
+        },
+      })
+
+      if (!participant) {
+        console.log('No participant found for emails:', emails)
+        return 0
+      }
+
+      matchingParticipantId = participant.id
+    }
+
+    // Find all pending invitations for any of the provided emails
+    const pendingInvitations = await prisma.participantInvitation.findMany({
+      where: {
+        email: { in: emails.map((email) => email.toLowerCase()) },
+        status: 'PENDING',
+      },
+    })
+
+    console.log(
+      `Found ${pendingInvitations.length} pending invitations for emails:`,
+      emails
+    )
+
+    let acceptedCount = 0
+    for (const invitation of pendingInvitations) {
+      try {
+        await prisma.$transaction(async (tx) => {
+          // Create or activate participation
+          await tx.participation.upsert({
+            where: {
+              courseId_participantId: {
+                courseId: invitation.courseId,
+                participantId: matchingParticipantId!,
+              },
+            },
+            create: {
+              courseId: invitation.courseId,
+              participantId: matchingParticipantId!,
+              isActive: true,
+            },
+            update: {
+              isActive: true,
+            },
+          })
+
+          // Mark invitation as accepted
+          await tx.participantInvitation.update({
+            where: { id: invitation.id },
+            data: {
+              status: 'ACCEPTED',
+              participantId,
+              acceptedAt: new Date(),
+            },
+          })
+        })
+
+        acceptedCount++
+      } catch (error) {
+        console.error(`Error accepting invitation ${invitation.id}:`, error)
+      }
+    }
+
+    if (acceptedCount > 0) {
+      await sendTeamsNotifications(
+        'auth/invitationAutoAccept',
+        `User with emails [${emails.join(', ')}] was automatically enrolled in ${acceptedCount} course(s) via invitations.`
+      )
+    }
+
+    return acceptedCount
+  } catch (error) {
+    console.error('Error in autoAcceptInvitations:', error)
+    return 0
+  }
+}
+
+// Helper function to create user affiliations
 async function createUserAffiliations(
   userId: string,
   affiliationIds?: string[]
@@ -160,15 +278,9 @@ async function createUserAffiliations(
   if (affiliationIds && affiliationIds.length > 0) {
     for (const affiliationId of affiliationIds) {
       try {
-        // get provider as the string between @ and .ch
-        const parts = affiliationId.split('@')
-        if (parts.length < 2) continue
-
-        const domainParts = parts[1]?.split('.')
-        if (!domainParts || domainParts.length === 0) continue
-
-        const provider = domainParts[0]
+        const provider = extractProviderFromAffiliationId(affiliationId)
         if (!provider) continue
+
         // upsert accounts for every affiliation
         await prisma.account.upsert({
           where: {
@@ -200,18 +312,19 @@ async function createUserAffiliations(
 // Helper function to create participant affiliations
 async function createParticipantAffiliations(
   participantId: string,
-  affiliationIds: string[]
+  affiliationIds: string[],
+  affiliationEmails?: string[] // Make emails optional
 ) {
-  for (const affiliationId of affiliationIds) {
+  let processedAffiliations = new Set<string>()
+
+  for (let i = 0; i < affiliationIds.length; i++) {
+    const affiliationId = affiliationIds[i]
+    const affiliationEmail = affiliationEmails?.[i]?.toLowerCase() || null
+
+    if (!affiliationId) continue // Only skip if ID is missing
+
     try {
-      // get provider as the string between @ and .ch
-      const parts = affiliationId.split('@')
-      if (parts.length < 2) continue
-
-      const domainParts = parts[1]?.split('.')
-      if (!domainParts || domainParts.length === 0) continue
-
-      const provider = domainParts[0]
+      const provider = extractProviderFromAffiliationId(affiliationId)
       if (!provider) continue
 
       // upsert participant accounts for every affiliation
@@ -225,23 +338,27 @@ async function createParticipantAffiliations(
         create: {
           ssoType: provider,
           ssoId: affiliationId,
+          ssoEmail: affiliationEmail, // Store email if available
           participant: { connect: { id: participantId } },
           type: 'affiliation',
           isVerified: true, // SSO affiliations are auto-verified
           isPrimary: false, // New affiliations are never primary by default
         },
         update: {
+          ssoEmail: affiliationEmail, // Update email if changed (can be null)
           isVerified: true, // Update verification status for SSO
         },
       })
+
+      processedAffiliations.add(affiliationId)
     } catch (error) {
       console.error(
         `Failed to add participant affiliation ${affiliationId}:`,
         error
       )
-      // Continue with other affiliations
     }
   }
+  return [...processedAffiliations]
 }
 
 // Enhanced participant authentication helper function
@@ -255,9 +372,33 @@ async function createOrLinkParticipant(profile: ExtendedProfile) {
   if (existing) {
     // Update affiliations for existing participant
     if (profile.swissEduIDLinkedAffiliationUniqueID) {
-      await createParticipantAffiliations(
+      const participantAffiliations = await createParticipantAffiliations(
         existing.participantId,
-        profile.swissEduIDLinkedAffiliationUniqueID
+        profile.swissEduIDLinkedAffiliationUniqueID,
+        profile.swissEduIDLinkedAffiliationMail // Pass undefined if not available
+      )
+    }
+
+    // auto-accept invitations for existing users
+    try {
+      // Extract all relevant emails for invitation checking
+      const allEmails = collectAllEmails(
+        profile.email,
+        profile.swissEduIDLinkedAffiliationMail
+      )
+
+      const acceptedCount = await autoAcceptInvitations(
+        allEmails,
+        existing.participantId
+      )
+      console.log(
+        `Auto-accepted ${acceptedCount} invitations for existing user with emails:`,
+        allEmails
+      )
+    } catch (error) {
+      console.error(
+        'Error auto-accepting invitations for existing user:',
+        error
       )
     }
 
@@ -265,6 +406,7 @@ async function createOrLinkParticipant(profile: ExtendedProfile) {
       where: { id: existing.participantId },
       data: { lastLoginAt: new Date() },
     })
+
     return existing.participant
   }
 
@@ -313,10 +455,11 @@ async function createOrLinkParticipant(profile: ExtendedProfile) {
     data: {
       ssoType: 'EDUID',
       ssoId: profile.sub as string,
+      ssoEmail: profile.email?.toLowerCase(), // Store primary email
       participant: { connect: { id: participant.id } },
       type: 'sso',
       isVerified: true, // SSO accounts are pre-verified
-      isPrimary: false, // SSO accounts are not necessarily primary
+      isPrimary: true, // SSO accounts are not necessarily primary
     },
   })
 
@@ -324,7 +467,28 @@ async function createOrLinkParticipant(profile: ExtendedProfile) {
   if (profile.swissEduIDLinkedAffiliationUniqueID) {
     await createParticipantAffiliations(
       participant.id,
-      profile.swissEduIDLinkedAffiliationUniqueID
+      profile.swissEduIDLinkedAffiliationUniqueID,
+      profile.swissEduIDLinkedAffiliationMail
+    )
+  }
+
+  // auto-accept invitations for newly created participants
+  try {
+    // Extract all relevant emails for invitation checking
+    const allEmails = collectAllEmails(
+      profile.email,
+      profile.swissEduIDLinkedAffiliationMail
+    )
+
+    const acceptedCount = await autoAcceptInvitations(allEmails, participant.id)
+    console.log(
+      `Auto-accepted ${acceptedCount} invitations for new participant with emails:`,
+      allEmails
+    )
+  } catch (error) {
+    console.error(
+      'Error auto-accepting invitations for new participant:',
+      error
     )
   }
 

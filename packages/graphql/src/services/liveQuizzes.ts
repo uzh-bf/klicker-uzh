@@ -22,6 +22,7 @@ import {
   levelFromXp,
   propagateActivityToElements,
   recomputeDerivedPermissions,
+  signJWT,
 } from '@klicker-uzh/util'
 import {
   createPinValidationFailedEvent,
@@ -362,32 +363,6 @@ async function getCachedBlockResults({
     instanceResults,
     activeInstanceIds: activeBlock.elements.map((instance) => instance.id),
   }
-}
-
-async function unlinkCachedBlockResults({
-  ctx,
-  quizId,
-  blockId,
-  activeInstanceIds,
-}: {
-  ctx: Context
-  quizId: string
-  blockId: number
-  activeInstanceIds: number[]
-}) {
-  // unlink everything regarding the block in redis
-  const unlinkMulti = ctx.redisExec.pipeline()
-
-  unlinkMulti.unlink(`lq:${quizId}:b:${blockId}:lb`)
-  unlinkMulti.unlink(`lq:${quizId}:b:${blockId}:lbTemporary`)
-  activeInstanceIds.forEach((instanceId) => {
-    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:info`)
-    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:responseHashes`)
-    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:responses`)
-    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:results`)
-  })
-
-  return unlinkMulti.exec()
 }
 // #endregion
 
@@ -1062,21 +1037,38 @@ export async function getShortnameQuizzes(
   const user = await ctx.prisma.user.findUnique({
     where: { shortname: shortname.trim() },
     include: {
-      liveQuizzes: {
+      objects: {
         where: {
-          accessMode: DB.AccessMode.PUBLIC,
-          status: DB.PublicationStatus.PUBLISHED,
+          // the shared object must be a live quiz that is published and accessible
+          liveQuizId: { not: null },
+          liveQuiz: {
+            status: DB.PublicationStatus.PUBLISHED,
+            accessMode: DB.AccessMode.PUBLIC,
+          },
+          // only users with at least execution permissions can execute a live quiz
+          permissionLevel: {
+            in: [
+              DB.PermissionLevel.OWNER,
+              DB.PermissionLevel.ADMIN,
+              DB.PermissionLevel.WRITE,
+              DB.PermissionLevel.EXECUTE,
+            ],
+          },
         },
-        include: { course: true },
+        include: { liveQuiz: { include: { course: true } } },
       },
     },
   })
 
   return (
-    user?.liveQuizzes.map((quiz) => ({
-      ...quiz,
-      isPinProtected: !!quiz.pinCode,
-    })) ?? []
+    user?.objects.flatMap((obj) =>
+      obj.liveQuiz
+        ? {
+            ...obj.liveQuiz,
+            isPinProtected: !!obj.liveQuiz.pinCode,
+          }
+        : []
+    ) ?? []
   )
 }
 
@@ -1143,6 +1135,8 @@ export async function startLiveQuiz(
           pipeline.hmset(`lq:${quiz.id}:meta`, {
             namespace: quiz.namespace,
             startedAt: Number(new Date()),
+            isGamificationEnabled: quiz.isGamificationEnabled,
+            isAssessmentEnabled: quiz.isAssessmentEnabled,
           })
 
           await pipeline.exec()
@@ -1299,6 +1293,7 @@ export async function activateLiveQuizBlock(
           where: { id: blockId },
           data: {
             status: DB.ElementBlockStatus.ACTIVE,
+            startedAt: new Date(),
             expiresAt: newBlock.timeLimit
               ? dayjs().add(newBlock.timeLimit, 'seconds').toDate()
               : undefined,
@@ -1308,7 +1303,10 @@ export async function activateLiveQuizBlock(
     },
     include: {
       activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
-      blocks: { orderBy: { order: 'asc' } },
+      blocks: {
+        include: { elements: { orderBy: { order: 'asc' } } },
+        orderBy: { order: 'asc' },
+      },
     },
   })
 
@@ -1325,7 +1323,46 @@ export async function activateLiveQuizBlock(
     )
   }
 
-  ctx.pubSub.publish('runningLiveQuizUpdated', updatedQuiz)
+  // update the quiz with an updated version through the corresponding subscription
+  ctx.pubSub.publish('runningLiveQuizUpdated', {
+    id: updatedQuiz.id,
+    beforeFirstBlock: false,
+    activeBlock: {
+      ...updatedQuiz.activeBlock,
+      elements: updatedQuiz.activeBlock?.elements
+        ? await Promise.all(
+            removeSolutionFromInstances({
+              instances: updatedQuiz.activeBlock.elements,
+            }).map(async (instance) => {
+              if (!quiz.isAssessmentEnabled) {
+                return instance
+              }
+
+              // for assessment quizzes, add a correlation key to verify a student's submission
+              const correlationKey = await signJWT(
+                {
+                  instanceId: instance.id,
+                  execution: updatedQuiz.activeBlock!.execution,
+                  liveQuizId: quiz.id,
+                  sub: '', // dummy sub, since this value is required
+                },
+                process.env.APP_SECRET as string
+              )
+
+              return { ...instance, correlationKey }
+            })
+          )
+        : [],
+    },
+    // for future blocks, do not return the elements
+    blocks: updatedQuiz.blocks.map((block) => ({
+      ...block,
+      elements:
+        block.status === DB.ElementBlockStatus.EXECUTED
+          ? removeSolutionFromInstances({ instances: block.elements })
+          : [],
+    })),
+  })
 
   // initialize the cache for the new active block
   const redisMulti = ctx.redisExec.pipeline()
@@ -1344,6 +1381,8 @@ export async function activateLiveQuizBlock(
       defaultCorrectPoints: updatedQuiz.defaultCorrectPoints,
       maxBonusPoints: updatedQuiz.maxBonusPoints,
       timeToZeroBonus: updatedQuiz.timeToZeroBonus,
+      blockExecution: updatedQuiz.activeBlock!.execution,
+      blockStartedAt: Number(updatedQuiz.activeBlock!.startedAt),
     }
 
     switch (elementData.type) {
@@ -1598,6 +1637,7 @@ export async function deactivateLiveQuizBlock(
             where: { id: blockId },
             data: {
               status: DB.ElementBlockStatus.EXECUTED,
+              closedAt: new Date(),
               elements: {
                 update: Object.entries(instanceResults).map(
                   ([id, instanceResult]) => ({
@@ -1676,12 +1716,27 @@ export async function deactivateLiveQuizBlock(
             }
           : undefined,
       },
-      include: { blocks: { orderBy: { order: 'asc' } } },
+      include: {
+        blocks: {
+          include: { elements: { orderBy: { order: 'asc' } } },
+          orderBy: { order: 'asc' },
+        },
+      },
     })
 
+    // update the running live quiz with the updated block information
     ctx.pubSub.publish('runningLiveQuizUpdated', {
-      ...updatedQuiz,
+      id: updatedQuiz.id,
+      beforeFirstBlock: false,
       activeBlock: null,
+      // for future blocks, do not return the elements
+      blocks: updatedQuiz.blocks.map((block) => ({
+        ...block,
+        elements:
+          block.status === DB.ElementBlockStatus.EXECUTED
+            ? removeSolutionFromInstances({ instances: block.elements })
+            : [],
+      })),
     })
 
     ctx.emitter.emit('invalidate', {
@@ -1694,12 +1749,20 @@ export async function deactivateLiveQuizBlock(
       delete scheduledJobs[blockId]
     }
 
-    unlinkCachedBlockResults({
-      ctx,
-      quizId,
-      blockId,
-      activeInstanceIds,
-    })
+    // add the closure timestamp of the block to the instance info in the redis cache
+    const updatedBlock = updatedQuiz.blocks.find(
+      (block) => block.id === blockId
+    )
+    if (updatedBlock && updatedBlock.closedAt) {
+      for (const instanceId of activeInstanceIds) {
+        // add the blockClosedAt timestamp to the instance info cache
+        await ctx.redisExec.hset(
+          `lq:${quiz.id}:i:${instanceId}:info`,
+          'blockClosedAt',
+          Number(updatedBlock.closedAt)
+        )
+      }
+    }
 
     return true
   } catch (error: any) {
@@ -1995,6 +2058,7 @@ export async function endLiveQuiz(
       })
     }
 
+    // TODO: make sure here that cache keys of instances in assessment live quizzes remain intact until the last response has been processed
     // Clean up Redis keys without using KEYS (iterate with SCAN to avoid blocking)
     const SCAN_COUNT = 1000
     let cursor = '0'
@@ -2255,6 +2319,8 @@ export async function cancelLiveQuiz(
               },
               data: {
                 status: DB.ElementBlockStatus.SCHEDULED,
+                startedAt: null,
+                closedAt: null,
                 expiresAt: null,
                 execution: { increment: 1 },
               },
@@ -2676,6 +2742,94 @@ export async function setLiveQuizPinCookie(
   return true
 }
 
+function removeSolutionFromInstances({
+  instances,
+}: {
+  instances: DB.ElementInstance[]
+}) {
+  return instances.map((instance) => {
+    const elementData = instance.elementData
+    if (
+      !elementData ||
+      typeof elementData !== 'object' ||
+      Array.isArray(elementData)
+    )
+      return instance
+
+    switch (elementData.type) {
+      case DB.ElementType.SC:
+      case DB.ElementType.MC:
+      case DB.ElementType.KPRIM:
+        return {
+          ...instance,
+          elementData: {
+            ...elementData,
+            options: {
+              ...elementData.options,
+              choices: elementData.options.choices.map((choice) => ({
+                ...pick(choice, ['ix', 'value']),
+              })),
+            },
+          },
+        }
+
+      case DB.ElementType.NUMERICAL:
+        return {
+          ...instance,
+          elementData: {
+            ...elementData,
+            options: {
+              ...elementData.options,
+              exactSolutions: undefined,
+              solutionRanges: undefined,
+            },
+          },
+        }
+
+      case DB.ElementType.FREE_TEXT:
+        return {
+          ...instance,
+          elementData: {
+            ...elementData,
+            options: {
+              ...elementData.options,
+              solutions: undefined,
+            },
+          },
+        }
+
+      case DB.ElementType.SELECTION:
+        return {
+          ...instance,
+          elementData: {
+            ...elementData,
+            options: {
+              ...elementData.options,
+              answerCollectionSolutionIds: undefined,
+            },
+          },
+        }
+
+      case DB.ElementType.CASE_STUDY:
+        return {
+          ...instance,
+          elementData: {
+            ...elementData,
+            options: {
+              ...elementData.options,
+              cases: elementData.options.cases.map((caseItem) => ({
+                ...omitBy(caseItem, (_, key) => key === 'solutions'),
+              })),
+            },
+          },
+        }
+
+      default:
+        return instance
+    }
+  })
+}
+
 export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
   // only get the minimal required information of the quiz
   const quizInfo = await ctx.prisma.liveQuiz.findUnique({
@@ -2718,16 +2872,13 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
     where: { id },
     include: {
       activeBlock: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
+        include: { elements: { orderBy: { order: 'asc' } } },
+      },
+      blocks: {
+        include: { elements: { orderBy: { order: 'asc' } } },
+        orderBy: { order: 'asc' },
       },
       course: true,
-      blocks: true,
     },
   })
 
@@ -2739,48 +2890,41 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
   // extract solution from instances in active block
   let quizWithoutSolutions: any
   if (quiz && quiz.activeBlock) {
+    const activeBlockInstances = await Promise.all(
+      removeSolutionFromInstances({
+        instances: quiz.activeBlock.elements,
+      }).map(async (instance) => {
+        if (!quiz.isAssessmentEnabled) {
+          return instance
+        }
+
+        // for assessment quizzes, add a correlation key to verify a student's submission
+        const correlationKey = await signJWT(
+          {
+            instanceId: instance.id,
+            execution: quiz.activeBlock!.execution,
+            liveQuizId: quiz.id,
+            sub: '', // dummy sub, since this value is required
+          },
+          process.env.APP_SECRET as string
+        )
+
+        return { ...instance, correlationKey }
+      })
+    )
+
     quizWithoutSolutions = {
       ...quiz,
       beforeFirstBlock,
-      activeBlock: {
-        ...quiz.activeBlock,
-        elements: quiz.activeBlock.elements.map((instance) => {
-          const elementData = instance.elementData
-          if (
-            !elementData ||
-            typeof elementData !== 'object' ||
-            Array.isArray(elementData)
-          )
-            return instance
-
-          switch (elementData.type) {
-            case DB.ElementType.SC:
-            case DB.ElementType.MC:
-              return {
-                ...instance,
-                elementData: {
-                  ...elementData,
-                  options: {
-                    ...elementData.options,
-                    choices: elementData.options.choices.map((choice) => ({
-                      ...pick(choice, ['ix', 'value']),
-                    })),
-                  },
-                },
-              }
-
-            case DB.ElementType.NUMERICAL:
-            case DB.ElementType.FREE_TEXT:
-              return {
-                ...instance,
-                elementData,
-              }
-
-            default:
-              return instance
-          }
-        }),
-      },
+      activeBlock: { ...quiz.activeBlock, elements: activeBlockInstances },
+      // for future blocks, do not return the elements
+      blocks: quiz.blocks.map((block) => ({
+        ...block,
+        elements:
+          block.status === DB.ElementBlockStatus.EXECUTED
+            ? removeSolutionFromInstances({ instances: block.elements })
+            : [],
+      })),
     }
   }
 

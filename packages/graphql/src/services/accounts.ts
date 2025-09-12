@@ -96,9 +96,7 @@ async function doParticipantLogin(
   })
 
   const jwt = await createParticipantToken(participantId)
-
   ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
-
   ctx.res.cookie('NEXT_LOCALE', participantLocale, COOKIE_SETTINGS)
 
   return jwt
@@ -525,6 +523,7 @@ export async function activateParticipantAccount(
 }
 
 export async function logoutParticipant(ctx: ContextWithUser) {
+  // invalidate regular participant token
   ctx.res.cookie('participant_token', 'logoutString', {
     ...COOKIE_SETTINGS,
     maxAge: 0,
@@ -533,7 +532,7 @@ export async function logoutParticipant(ctx: ContextWithUser) {
   // Log participant logout event
   await auditClient.log({
     tenantId: 'klicker-uzh',
-    subject: `participant:${ctx.user.email || ctx.user.sub}`,
+    subject: `participant:${ctx.user.sub}`,
     action: 'auth.participant.logout',
     userId: ctx.user.sub,
     attributes: {
@@ -542,6 +541,12 @@ export async function logoutParticipant(ctx: ContextWithUser) {
       userAgent: ctx.req?.headers?.['user-agent'],
       userRole: ctx.user.role,
     },
+  })
+
+  // invalidate assessment / Edu-ID participant token
+  ctx.res.cookie('next-auth.participant-session-token', 'logoutString', {
+    ...COOKIE_SETTINGS,
+    maxAge: 0,
   })
 
   return ctx.user.sub
@@ -555,7 +560,7 @@ export async function logoutTemporaryParticipant(
   if (ctx.user.role !== DB.UserRole.TEMPORARY_PARTICIPANT) {
     await auditClient.log({
       tenantId: 'klicker-uzh',
-      subject: `user:${ctx.user.email || ctx.user.sub}`,
+      subject: `participant:${ctx.user.sub}`,
       action: 'auth.temporary.logout.failed',
       userId: ctx.user.sub,
       attributes: {

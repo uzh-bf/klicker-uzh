@@ -1,5 +1,5 @@
-query Participations($endpoint: String) {
-  participations(endpoint: $endpoint) {
+query Participations($endpoint: String, $assessmentOnly: Boolean) {
+  participations(endpoint: $endpoint, assessmentOnly: $assessmentOnly) {
     id
     completedMicroLearnings
     subscriptions {

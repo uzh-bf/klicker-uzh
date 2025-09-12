@@ -220,7 +220,6 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api
-    tag: deploy-hatchet
     pullPolicy: Always
 
   autoscaling:
@@ -283,7 +282,8 @@ assessment:
       enabled: false
 
     image:
-      tag: v3-assessment
+      repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment
+      tag: '${APP_VERSION}'
 
     ingress:
       hosts:
@@ -312,9 +312,6 @@ assessment:
 
     autoscaling:
       enabled: false
-
-    image:
-      tag: v3-assessment
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -354,9 +351,6 @@ assessment:
     priorityClassName: staging-workload
 
     replicaCount: 1
-
-    image:
-      tag: v3-assessment
 
     autoscaling:
       enabled: false

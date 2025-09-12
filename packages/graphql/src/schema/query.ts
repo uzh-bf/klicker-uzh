@@ -903,6 +903,7 @@ export const Query = builder.queryType({
         type: [Participation], // TODO: if possible, link student course instead of normal course here
         args: {
           endpoint: t.arg.string({ required: false }),
+          assessmentOnly: t.arg.boolean({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await ParticipantService.getParticipations(args, ctx)

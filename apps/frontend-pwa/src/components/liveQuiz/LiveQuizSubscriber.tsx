@@ -1,6 +1,5 @@
 import { SubscribeToMoreOptions } from '@apollo/client'
 import {
-  ElementBlock,
   LiveQuiz,
   LiveQuizSettingsChangedDocument,
   LiveQuizStudentSettings,
@@ -19,20 +18,20 @@ function LiveQuizSubscriber({
     // update the active block on the student view through a subscription on block start / end
     const activeBlockChanged = subscribeToMore({
       document: RunningLiveQuizUpdatedDocument,
-      variables: { quizId: id },
+      variables: { id },
       updateQuery: (
         prev: { studentLiveQuiz: LiveQuiz },
         {
           subscriptionData,
         }: {
-          subscriptionData: { data: { runningLiveQuizUpdated: ElementBlock } }
+          subscriptionData: { data: { runningLiveQuizUpdated: LiveQuiz } }
         }
       ) => {
         if (!subscriptionData.data) return prev
         return Object.assign({}, prev, {
           studentLiveQuiz: {
             ...prev.studentLiveQuiz,
-            activeBlock: subscriptionData.data.runningLiveQuizUpdated,
+            ...subscriptionData.data.runningLiveQuizUpdated,
           },
         })
       },

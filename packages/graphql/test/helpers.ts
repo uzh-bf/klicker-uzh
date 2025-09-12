@@ -3,6 +3,7 @@ import { prisma } from '@klicker-uzh/prisma'
 import {
   AnswerCollection,
   CatalogCollection,
+  CourseAuthType,
   Element,
   ElementInstanceType,
   ElementStackType,
@@ -601,13 +602,16 @@ export async function seedCourse(
       name: uuidv4(),
       displayName: uuidv4(),
       description: uuidv4(),
-      pinCode: Math.floor(Math.random() * 9000 + 1000),
+      pinCode: !isAssessmentEnabled
+        ? Math.floor(Math.random() * 9000 + 1000)
+        : null,
       startDate: startDate ?? defaultStartDate,
       endDate: endDate ?? defaultEndDate,
       groupDeadlineDate: endDate ?? defaultEndDate,
       isGamificationEnabled,
       isAssessmentEnabled,
       ownerId: ctx.user.sub,
+      authType: isAssessmentEnabled ? CourseAuthType.SSO : CourseAuthType.PIN,
     },
   })
 

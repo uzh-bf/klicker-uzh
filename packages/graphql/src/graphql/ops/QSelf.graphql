@@ -7,6 +7,8 @@ query Self($liveQuizId: String) {
     isCourseParticipationActive
 
     email
+    institutionalEmail
+
     username
     locale
     avatar

@@ -18,19 +18,7 @@ query GetRunningLiveQuiz($id: String!) {
       displayName
       color
     }
-    activeBlock {
-      id
-      status
-      expiresAt
-      timeLimit
-      randomSelection
-      execution
-      elements {
-        id
-        type
-        elementType
-        ...ElementDataWithoutSolutions
-      }
-    }
+
+    ...StudentLiveQuizBlocksData
   }
 }

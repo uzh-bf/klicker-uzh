@@ -1,13 +1,10 @@
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
-import { PrismaPg } from '@prisma/adapter-pg'
 import { EventEmitter } from 'events'
 
 // ! Script to transfer the ownership of courses and their entire content to another user
 // ! NOTE: The script does not handle the reassignment of permissions, access requests, resources, etc. at the moment
 async function run() {
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-  const prisma = new PrismaClient({ adapter })
   const emitter = new EventEmitter()
 
   // ! Set old and new user IDs and the course IDs, which should be transferred including all activities and elements

@@ -127,6 +127,7 @@ type ActivityLogEntry {
   createdAt: Date!
   id: Int!
   isEdited: Boolean
+  isOwn: Boolean!
   message: String
   objectType: ObjectType!
   options: ActivityLogEntryOptions
@@ -949,6 +950,7 @@ type ElementFeedback {
 }
 
 type ElementInstance {
+  correlationKey: String
   elementData: ElementData!
   elementType: ElementType!
   feedbacks: [ElementFeedback!]
@@ -1648,6 +1650,7 @@ type Mutation {
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateLiveQuizBlock(blockId: Int!, quizId: String!): Boolean
   declineObjectSharingRequest(requestId: Int!, userId: String!): Boolean!
+  deleteActivityMessage(id: Int!): Boolean!
   deleteActivityTemplate(activityId: String!, activityType: ActivityType!): String
   deleteAnswerCollection(collectionId: Int!): Int
   deleteAnswerCollectionEntry(collectionId: Int!, id: Int!): Int
@@ -1961,6 +1964,7 @@ type Participant {
   avatarSettings: AvatarSettings
   email: String
   id: ID!
+  institutionalEmail: String
   isActive: Boolean!
   isCourseParticipant: Boolean
   isCourseParticipationActive: Boolean
@@ -2228,7 +2232,7 @@ type Query {
   microLearning(id: String!): MicroLearning
   participantCourses: [Course!]
   participantGroups(courseId: String!): [ParticipantGroup!]
-  participations(endpoint: String): [Participation!]
+  participations(assessmentOnly: Boolean, endpoint: String): [Participation!]
   practiceQuiz(id: String!): PracticeQuiz
   publicParticipantProfile(participantId: String!): Participant
   self(liveQuizId: String): Participant
@@ -2550,7 +2554,7 @@ type Subscription {
   groupActivityStarted(courseId: String!): GroupActivity!
   liveQuizSettingsChanged(quizId: String!): LiveQuizStudentSettings
   microLearningEnded(activityId: String!): MicroLearning!
-  runningLiveQuizUpdated(quizId: String!): ElementBlock
+  runningLiveQuizUpdated(id: String!): LiveQuiz!
   singleGroupActivityEnded(activityId: String!): GroupActivity!
 }
 

@@ -48,8 +48,10 @@ RUN pnpm i --frozen-lockfile --prod --ignore-scripts
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
-COPY --from=builder /app/packages/grading/dist/ /app/packages/grading/dist/
-COPY --from=builder /app/apps/hatchet-worker-response-processor/dist/ /app/apps/hatchet-worker-response-processor/dist/
+COPY --from=builder --chown=nodejs:nodejs /app/packages/grading/dist/ /app/packages/grading/dist/
+COPY --from=builder --chown=nodejs:nodejs /app/packages/util/dist/ /app/packages/util/dist/
+COPY --from=builder --chown=nodejs:nodejs /app/packages/prisma/dist/ /app/packages/prisma/dist/
+COPY --from=builder --chown=nodejs:nodejs /app/apps/hatchet-worker-response-processor/dist/ /app/apps/hatchet-worker-response-processor/dist/
 
 USER nodejs
 
