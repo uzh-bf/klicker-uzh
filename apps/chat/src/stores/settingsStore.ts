@@ -68,7 +68,6 @@ export const useSettingsStore = create<SettingsState>()(
             // Set the first mode as selectedMode
             const firstModeKey = Object.keys(modes)[0]
             if (firstModeKey) set({ selectedMode: firstModeKey })
-            console.log('First mode key:', firstModeKey)
           } else {
             console.warn(
               'No valid mode options found, falling back to defaults.'

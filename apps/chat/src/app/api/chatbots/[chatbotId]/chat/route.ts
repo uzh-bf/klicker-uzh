@@ -15,7 +15,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { DEFAULT_PROMPT } from '../../../../../lib/config/prompts'
 import { CreditsService } from '../../../../../services/credits'
 import { ThreadService } from '../../../../../services/threads'
-import { RAGSearch } from '../../../../../services/tools'
 
 export const maxDuration = 30
 
@@ -71,9 +70,6 @@ export async function POST(
   let currentThreadId = threadId
   let userMessageId: string | null = null
 
-  console.log('selectedMode (API)', selectedMode)
-  console.log('selectedModel (API)', selectedModel)
-
   // fetch system prompt for the selected chat mode from the database
   let systemPrompt = ''
   if (selectedMode) {
@@ -95,7 +91,6 @@ export async function POST(
           systemPrompt = DEFAULT_PROMPT[selectedMode]?.prompt || ''
         }
       }
-      console.log('systemPrompt', systemPrompt)
     } catch (error) {
       console.error('Failed to fetch system prompt:', error)
     }
@@ -172,7 +167,6 @@ export async function POST(
     model: getModel(selectedModel),
     messages: convertToModelMessages(uiMessages),
     tools: {
-      RAGSearch,
       ...mcpTools,
     },
     toolChoice: 'auto',
@@ -266,9 +260,8 @@ export async function POST(
       }
     },
 
-    onAbort: async ({ steps }) => {
+    onAbort: async () => {
       // save partial message
-      console.log('aborted response', steps)
       if (currentThreadId && partialContent.trim()) {
         try {
           await prisma.chatMessage.create({

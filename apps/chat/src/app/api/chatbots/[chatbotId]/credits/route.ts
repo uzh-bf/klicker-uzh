@@ -35,7 +35,6 @@ export async function GET(
   }
 
   try {
-    console.log('Fetching credits for participant:', participantData.sub)
     const credits = await CreditsService.getUserCredits(
       participantData.sub as string,
       chatbotId

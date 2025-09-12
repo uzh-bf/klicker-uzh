@@ -1,5 +1,5 @@
 // nextjs middleware that redirects to login if no participant_token cookie is set
-import { JWTPayload, jwtVerify } from 'jose'
+import { jwtVerify } from 'jose'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 
@@ -10,18 +10,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect('https://pwa.klicker.com', 302)
   }
 
-  let participantData: JWTPayload
-
   // verify with jose that the token is valid
   // if not valid, redirect to pwa.klicker.com
   // if valid, continue
   try {
-    const jwtPayload = await jwtVerify(
+    await jwtVerify(
       participantToken || '',
       new TextEncoder().encode(process.env.APP_SECRET || '')
     )
-    participantData = jwtPayload.payload
-    console.log('Participant data:', participantData)
   } catch (error) {
     console.error('Invalid participant token:', error)
     return NextResponse.redirect(process.env.NEXT_PUBLIC_PWA_URL as string, 302)
