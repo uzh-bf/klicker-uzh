@@ -79,10 +79,10 @@ describe('Test creation and editing functionalities, validation, etc. for select
     cy.get('[data-cy="select-answer-collection"]').contains(
       messages.manage.elements.selectCollection
     )
-    cy.get('[data-cy="select-answer-collection"]').realClick()
-    cy.get(
-      `[data-cy="select-answer-collection-${this.data.SE.collection}"]`
-    ).click()
+    cy.selectOption(
+      '[data-cy="select-answer-collection"]',
+      this.data.SE.collection
+    )
     cy.get('[data-cy="select-answer-collection"]').contains(
       this.data.SE.collection
     )

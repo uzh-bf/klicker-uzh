@@ -1722,7 +1722,7 @@ describe('Different live-quiz workflows', function () {
   it('Cleanup: Delete the live quiz used for the full cycle test', function () {
     cy.loginLecturer()
     cy.get(`[data-cy="activities"]`).click()
-
+    
     cy.get('[data-cy="activities-search-input"]').type(
       `${this.data.course2.quiz.name}{enter}`
     )
@@ -1736,7 +1736,8 @@ describe('Different live-quiz workflows', function () {
       `[data-cy="delete-live-quiz-${this.data.course2.quiz.name}"]`
     ).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).should('be.disabled')
-    cy.get(`[data-cy="confirm-deletion-responses"]`).should('not.exist') // ? azure functions do not work in cypress CI actions
+    cy.get('body').contains('16 response(s) in this live quiz')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
     cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).click()
     cy.get(`[data-cy="confirm-deletion-confusion-feedbacks"]`).should(
       'not.exist'
@@ -1750,6 +1751,7 @@ describe('Different live-quiz workflows', function () {
       `[data-cy="delete-live-quiz-${this.data.course2.quiz.name}"]`
     ).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).should('be.disabled')
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
     cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.course2.quiz.name).should('not.exist')
@@ -2196,15 +2198,17 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(`[data-cy="delete-live-quiz-${this.data.liveQuiz.name}"]`).click()
-    cy.get(`[data-cy="confirmation-modal-confirm"]`).click() // answer submission does not work in cypress
-
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
+    
     cy.get(
       `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.duplicateName}"]`
     ).click()
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.liveQuiz.duplicateName}"]`
     ).click()
-    cy.get(`[data-cy="confirmation-modal-confirm"]`).click() // answer submission does not work in cypress
+    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
   })
   // #endregion
 

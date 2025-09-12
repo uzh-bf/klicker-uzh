@@ -36,3 +36,12 @@ Cypress.on('window:before:load', (win) => {
   style.innerHTML = disableAnimationsCSS
   win.document.head.appendChild(style)
 })
+
+Cypress.on('test:before:run', () => {
+  Cypress.automation('remote:debugger:protocol', {
+    command: 'Emulation.setLocaleOverride',
+    params: {
+      locale: 'en',
+    },
+  })
+})
