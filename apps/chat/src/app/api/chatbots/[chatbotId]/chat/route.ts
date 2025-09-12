@@ -245,13 +245,11 @@ export async function POST(
               costBase.output * (result.totalUsage.outputTokens || 0)) /
             1000000
 
-          const costTotal = totalCost
-
           if (participantData.sub) {
             await CreditsService.decrementCredits(
               participantData.sub as string,
               chatbotId,
-              costTotal
+              totalCost
             )
           }
         } catch (error) {
