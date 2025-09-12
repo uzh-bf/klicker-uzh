@@ -171,8 +171,8 @@ describe('Different microlearning workflows', function () {
       .click()
       .type(this.data.running.displayName)
     cy.get('[data-cy="insert-microlearning-description"]')
-      .click()
-      .type(this.data.running.description)
+      .realClick()
+      .realType(this.data.running.description)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="back-activity-creation"]').click()
     cy.get('[data-cy="next-or-submit"]').click()
@@ -352,9 +352,9 @@ describe('Different microlearning workflows', function () {
       this.data.running.description
     )
     cy.get('[data-cy="insert-microlearning-description"]')
-      .click()
+      .realClick()
       .clear()
-      .type(this.data.running.descriptionNew)
+      .realType(this.data.running.descriptionNew)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.get('[data-cy="select-course"]')
       .should('exist')
@@ -2020,7 +2020,7 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro1, data)
 
     // for a scheduled microlearning the following options should be available: access link, open preview, lti link, duplicate, share, unpublish, delete
@@ -2049,7 +2049,7 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro2, data)
 
     // for a running microlearning the following options should be available: access link, evaluation, end, extend, open preview, lti link, duplicate, share, delete
@@ -2084,7 +2084,7 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro3}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro3, data)
 
     // for a completed microlearning the following options should be available: evaluation, duplicate, convert, open preview, share, delete
@@ -2112,7 +2112,7 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
   }
 
@@ -2164,7 +2164,7 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="remove-microlearning-${data.sharing.micro1}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyMicroLearningDetailsModalContent(data.sharing.micro1, data)
 
@@ -2184,7 +2184,7 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="remove-microlearning-${data.sharing.micro2}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyMicroLearningDetailsModalContent(data.sharing.micro2, data)
 
@@ -2208,7 +2208,7 @@ describe('Different microlearning workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro3}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro3, data)
 
     // for a completed microlearning the following options should be available: evaluation, analytics, open preview, remove
@@ -2227,7 +2227,7 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="remove-microlearning-${data.sharing.micro4}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
   }
@@ -2284,7 +2284,7 @@ describe('Different microlearning workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro1, data)
 
     // for a scheduled microlearning the following options should be available: access link, open preview, lti link, unpublish, remove
@@ -2307,7 +2307,7 @@ describe('Different microlearning workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro2, data)
 
     // for a running microlearning the following options should be available: access link, evaluation, end, extend, open preview, lti link, remove
@@ -2336,7 +2336,7 @@ describe('Different microlearning workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro3}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro3, data)
 
     // for a completed microlearning the following options should be available: evaluation, analytics, open preview, remove
@@ -2355,7 +2355,7 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="remove-microlearning-${data.sharing.micro4}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
   }
@@ -2420,7 +2420,7 @@ describe('Different microlearning workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro1, data)
 
     // for a scheduled microlearning the following options should be available: access link, open preview, lti link, unpublish, remove
@@ -2443,7 +2443,7 @@ describe('Different microlearning workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro2, data)
 
     // for a running microlearning the following options should be available: access link, evaluation, end, extend, open preview, lti link, remove
@@ -2472,7 +2472,7 @@ describe('Different microlearning workflows', function () {
       groupPermission ? 'not.exist' : 'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro3}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro3, data)
 
     // for a completed microlearning the following options should be available: evaluation, analytics, open preview, remove
@@ -2491,7 +2491,7 @@ describe('Different microlearning workflows', function () {
     cy.get(`[data-cy="remove-microlearning-${data.sharing.micro4}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
   }
@@ -2565,7 +2565,7 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro1}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro1, data)
 
     // for a scheduled microlearning the following options should be available: access link, open preview, lti link, duplicate, share, unpublish, remove, delete
@@ -2597,7 +2597,7 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro2}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro2, data)
 
     // for a running microlearning the following options should be available: access link, evaluation, end, extend, open preview, lti link, duplicate, share, remove, delete
@@ -2635,7 +2635,7 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro3}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro3, data)
 
     // for a completed microlearning the following options should be available: evaluation, duplicate, convert, analytics, open preview, share, remove, delete
@@ -2666,7 +2666,7 @@ describe('Different microlearning workflows', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.micro4}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyMicroLearningDetailsModalContent(data.sharing.micro4, data)
   }
 

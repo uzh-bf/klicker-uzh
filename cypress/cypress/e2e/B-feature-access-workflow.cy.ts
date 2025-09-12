@@ -58,7 +58,7 @@ describe('Tests the availability of certain functionalities to catalyst users on
     cy.get(`[data-cy="share-live-quiz-${data.seed.liveQuiz}"]`).should(
       privatePreview ? 'exist' : 'not.exist'
     )
-    cy.get('body').type('{esc}')
+    cy.get('body').type('{esc}') // close dropdown
 
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(
@@ -70,7 +70,7 @@ describe('Tests the availability of certain functionalities to catalyst users on
     cy.get(`[data-cy="share-microlearning-${data.seed.microlearning}"]`).should(
       privatePreview ? 'exist' : 'not.exist'
     )
-    cy.get('body').type('{esc}')
+    cy.get('body').type('{esc}') // close dropdown
 
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(
@@ -82,7 +82,7 @@ describe('Tests the availability of certain functionalities to catalyst users on
     cy.get(`[data-cy="share-practice-quiz-${data.seed.practiceQuiz}"]`).should(
       privatePreview ? 'exist' : 'not.exist'
     )
-    cy.get('body').type('{esc}')
+    cy.get('body').type('{esc}') // close dropdown
 
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(
@@ -94,7 +94,7 @@ describe('Tests the availability of certain functionalities to catalyst users on
     cy.get(
       `[data-cy="share-group-activity-${data.seed.groupActivity}"]`
     ).should(privatePreview ? 'exist' : 'not.exist')
-    cy.get('body').type('{esc}')
+    cy.get('body').type('{esc}') // close dropdown
   }
 
   it('Test login for catalyst users and non-catalyst users', function () {

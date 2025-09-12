@@ -1636,7 +1636,7 @@ describe('Create and solve a group activity', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.ga1}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyGroupActivityDetailsModalContent(data.sharing.ga1, data)
 
     // for a scheduled group activity the following options should be available: start, share, unpublish, delete
@@ -1656,7 +1656,7 @@ describe('Create and solve a group activity', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.ga2}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyGroupActivityDetailsModalContent(data.sharing.ga2, data)
 
     // for a running group activity the following options should be available: extend, end, share, delete
@@ -1674,7 +1674,7 @@ describe('Create and solve a group activity', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.ga3}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyGroupActivityDetailsModalContent(data.sharing.ga3, data)
 
     // for a completed group activity the following options should be available: grade, share, delete
@@ -1691,7 +1691,7 @@ describe('Create and solve a group activity', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.ga4}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyGroupActivityDetailsModalContent(data.sharing.ga4, data)
 
     // for a graded group activity the following options should be available: grade, share, delete
@@ -1708,7 +1708,7 @@ describe('Create and solve a group activity', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.ga5}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyGroupActivityDetailsModalContent(data.sharing.ga5, data)
   }
 
@@ -1758,7 +1758,7 @@ describe('Create and solve a group activity', function () {
       if (!groupPermission) {
         cy.get(`[data-cy="actions-GROUP_ACTIVITY-${quiz}"]`).click()
         cy.get(`[data-cy="remove-group-activity-${quiz}"]`).should('exist')
-        cy.get(`[data-cy="activity-name-${quiz}"]`).click() // close dropdown
+        cy.get('body').type('{esc}') // close dropdown
       }
 
       verifyGroupActivityDetailsModalContent(quiz, data)
@@ -1808,7 +1808,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="remove-group-activity-${data.sharing.ga1}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.ga1}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyGroupActivityDetailsModalContent(data.sharing.ga1, data)
 
@@ -1825,7 +1825,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="remove-group-activity-${data.sharing.ga2}"]`).should(
       !groupPermission ? 'exist' : 'not.exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.ga2}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyGroupActivityDetailsModalContent(data.sharing.ga2, data)
 
@@ -1840,7 +1840,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="remove-group-activity-${data.sharing.ga3}"]`).should(
       !groupPermission ? 'exist' : 'not.exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.ga3}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyGroupActivityDetailsModalContent(data.sharing.ga3, data)
 
@@ -1854,7 +1854,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="remove-group-activity-${data.sharing.ga4}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.ga4}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyGroupActivityDetailsModalContent(data.sharing.ga4, data)
 
@@ -1868,7 +1868,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="remove-group-activity-${data.sharing.ga5}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.ga5}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyGroupActivityDetailsModalContent(data.sharing.ga5, data)
   }
@@ -1921,7 +1921,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="remove-group-activity-${data.sharing.ga1}"]`).should(
       !groupPermission ? 'exist' : 'not.exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.ga1}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyGroupActivityDetailsModalContent(data.sharing.ga1, data)
 
@@ -1938,7 +1938,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="remove-group-activity-${data.sharing.ga2}"]`).should(
       !groupPermission ? 'exist' : 'not.exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.ga2}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyGroupActivityDetailsModalContent(data.sharing.ga2, data)
 
@@ -1953,7 +1953,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="remove-group-activity-${data.sharing.ga3}"]`).should(
       !groupPermission ? 'exist' : 'not.exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.ga3}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyGroupActivityDetailsModalContent(data.sharing.ga3, data)
 
@@ -1967,7 +1967,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="remove-group-activity-${data.sharing.ga4}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.ga4}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyGroupActivityDetailsModalContent(data.sharing.ga4, data)
 
@@ -1981,7 +1981,7 @@ describe('Create and solve a group activity', function () {
     cy.get(`[data-cy="remove-group-activity-${data.sharing.ga5}"]`).should(
       groupPermission ? 'not.exist' : 'exist'
     )
-    cy.get(`[data-cy="activity-name-${data.sharing.ga5}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     verifyGroupActivityDetailsModalContent(data.sharing.ga5, data)
   }
@@ -2041,7 +2041,7 @@ describe('Create and solve a group activity', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.ga1}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyGroupActivityDetailsModalContent(data.sharing.ga1, data)
 
     // for a scheduled group activity the following options should be available: start, share, unpublish, remove, delete
@@ -2064,7 +2064,7 @@ describe('Create and solve a group activity', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.ga2}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyGroupActivityDetailsModalContent(data.sharing.ga2, data)
 
     // for a running group activity the following options should be available: extend, end, share, remove, delete
@@ -2085,7 +2085,7 @@ describe('Create and solve a group activity', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.ga3}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyGroupActivityDetailsModalContent(data.sharing.ga3, data)
 
     // for a completed group activity the following options should be available: grade, share, remove, delete
@@ -2105,7 +2105,7 @@ describe('Create and solve a group activity', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.ga4}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyGroupActivityDetailsModalContent(data.sharing.ga4, data)
 
     // for a graded group activity the following options should be available: grade, share, remove, delete
@@ -2125,7 +2125,7 @@ describe('Create and solve a group activity', function () {
       'exist'
     )
 
-    cy.get(`[data-cy="activity-name-${data.sharing.ga5}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
     verifyGroupActivityDetailsModalContent(data.sharing.ga5, data)
   }
 

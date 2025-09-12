@@ -595,7 +595,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(
       `[data-cy="template-from-live-quiz-${this.data.liveQuiz.name}"]`
     ).should('exist')
-    cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     cy.get(
       `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.template1Orig.name}"]`
@@ -606,9 +606,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template1Orig.name}"]`
     ).should('exist')
-    cy.get(
-      `[data-cy="activity-name-${this.data.liveQuiz.template1Orig.name}"]`
-    ).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
   })
 
   it('Convert the live quiz into a second template', function () {
@@ -666,9 +664,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template2.name}"]`
     ).should('exist')
-    cy.get(
-      `[data-cy="activity-name-${this.data.liveQuiz.template2.name}"]`
-    ).click() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'not.exist'
