@@ -50,7 +50,6 @@ const DynamicAccountSelector = dynamic(
   { ssr: false }
 )
 
-// returns status code: 0 = success, 1 = invalid input / general error, error codes 200, 208, 400, 401, 404, 500
 async function handleNewResponse({
   liveQuizId,
   instanceId,
@@ -63,7 +62,8 @@ async function handleNewResponse({
   type: ElementType
   answer: any
   correlationKey?: string | null
-}): Promise<number> {
+}): // statusCode: 0 = client-side invalid input / general error; otherwise HTTP status codes 200, 208, 400, 401, 404, 500
+Promise<{ statusCode: number; responseTimestamp?: number }> {
   let requestOptions: RequestInit = {
     method: 'POST',
     credentials: 'include',
@@ -123,7 +123,7 @@ async function handleNewResponse({
       }),
     }
   } else {
-    return 1
+    return { statusCode: 1 }
   }
 
   try {
@@ -132,10 +132,19 @@ async function handleNewResponse({
       requestOptions
     )
 
-    return response.status
+    let responseTimestamp: number | undefined
+    try {
+      const json = await response.json()
+      if (json && typeof json.responseTimestamp === 'number') {
+        responseTimestamp = json.responseTimestamp
+      }
+    } catch (_) {
+      // ignore JSON parse errors; not all responses may have a body
+    }
+    return { statusCode: response.status, responseTimestamp }
   } catch (e) {
     console.log('error', e)
-    return 1
+    return { statusCode: 1 }
   }
 }
 
@@ -523,7 +532,7 @@ function Index({ id }: { id: string }) {
                     gamificationEnabled={isGamificationEnabled}
                     instances={blocks?.[selectedBlock].elements ?? []}
                     execution={blocks?.[selectedBlock]?.execution ?? 0}
-                    handleNewResponse={async () => 0} // submissions are no longer possible
+                    handleNewResponse={async () => ({ statusCode: 0 })} // submissions are no longer possible
                   />
                 ) : null}
               </>

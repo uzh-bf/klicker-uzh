@@ -1,3 +1,5 @@
+import { faCheck } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { ElementInstance, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
   InstanceStackStudentResponseType,
@@ -69,17 +71,19 @@ const loadStoredResponse = async ({
   execution,
   currentInstance,
   setStudentResponse,
+  setSubmittedAt,
 }: {
   quizId: string
   execution: number
   currentInstance: ElementInstance | undefined
   setStudentResponse: Dispatch<SetStateAction<InstanceStackStudentResponseType>>
+  setSubmittedAt: Dispatch<SetStateAction<number | null>>
 }) => {
   if (!currentInstance) return
   try {
     const key = `lq-${quizId}-ex-${execution}-i-${currentInstance.id}`
-    const stored = await localforage.getItem(key)
-    const tempStored = await localforage.getItem(`${key}-temp`)
+    const stored = (await localforage.getItem(key)) as any
+    const tempStored = (await localforage.getItem(`${key}-temp`)) as any
 
     // if neither a submitted response, nor a temporary response exists, return early
     if (!stored && !tempStored) return
@@ -88,11 +92,13 @@ const loadStoredResponse = async ({
     if (stored) {
       setStudentResponse({
         type: currentInstance.elementType,
-        // stored is saved as the raw input.response (or boolean/string for content/numerical)
-        // which matches the expected response shape per ElementType
-        response: stored as any,
+        response: stored.response as any,
         valid: true,
       })
+
+      if (typeof stored.responseTimestamp === 'number') {
+        setSubmittedAt(stored.responseTimestamp)
+      }
 
       // if still exists, remove the temporary response
       if (tempStored) {
@@ -127,7 +133,7 @@ interface QuestionAreaProps {
     type: ElementType
     answer: any
     correlationKey?: string | null
-  }) => Promise<number> // returns status code
+  }) => Promise<{ statusCode: number; responseTimestamp?: number }>
   quizId: string
   execution: number
   timeLimit?: number
@@ -150,6 +156,8 @@ function QuestionArea({
   const [remainingQuestions, setRemainingQuestions] = useState<number[] | null>(
     null
   )
+
+  const [submittedAt, setSubmittedAt] = useState<number | null>(null)
   const [activeInstance, setActiveInstance] = useState<number>(0)
   const currentInstance = instances[activeInstance]
 
@@ -183,11 +191,15 @@ function QuestionArea({
       setStudentResponse(value as any)
     }
 
+    // reset submittedAt when switching instances; will be set again if stored exists
+    setSubmittedAt(null)
+
     loadStoredResponse({
       quizId,
       execution,
       currentInstance,
       setStudentResponse: safeSetStudentResponse,
+      setSubmittedAt,
     })
 
     return () => {
@@ -381,7 +393,7 @@ function QuestionArea({
       typeof input.response !== 'undefined'
     ) {
       // submit responses as an array of objects with answer ix and selected boolean
-      const statusCode = await handleNewResponse({
+      const result = await handleNewResponse({
         liveQuizId: quizId,
         instanceId,
         type,
@@ -393,12 +405,16 @@ function QuestionArea({
       })
 
       // --> show toast based on status code
-      showStatusCodeToast(statusCode)
+      showStatusCodeToast(result.statusCode)
 
       // if request was successful, store the submitted answer locally to be shown and remove any temporary saved response
-      if (statusCode >= 200 && statusCode < 300) {
+      if (result.statusCode >= 200 && result.statusCode < 300) {
         // store the submitted answer locally to be shown and remove any temporary saved response
-        await localforage.setItem(storageKey, input.response)
+        await localforage.setItem(storageKey, {
+          response: input.response,
+          responseTimestamp: result.responseTimestamp ?? Date.now(),
+        } as any)
+        setSubmittedAt(result.responseTimestamp ?? Date.now())
         await localforage.removeItem(`${storageKey}-temp`)
         return true
       } else {
@@ -410,7 +426,7 @@ function QuestionArea({
       typeof input.response !== 'undefined'
     ) {
       // submit responses as a string
-      const statusCode = await handleNewResponse({
+      const result = await handleNewResponse({
         liveQuizId: quizId,
         instanceId,
         type,
@@ -419,10 +435,14 @@ function QuestionArea({
       })
 
       // --> show toast based on status code
-      showStatusCodeToast(statusCode)
+      showStatusCodeToast(result.statusCode)
 
-      if (statusCode >= 200 && statusCode < 300) {
-        await localforage.setItem(storageKey, input.response)
+      if (result.statusCode >= 200 && result.statusCode < 300) {
+        await localforage.setItem(storageKey, {
+          response: input.response,
+          responseTimestamp: result.responseTimestamp ?? Date.now(),
+        } as any)
+        setSubmittedAt(result.responseTimestamp ?? Date.now())
         await localforage.removeItem(`${storageKey}-temp`)
         return true
       } else {
@@ -434,7 +454,7 @@ function QuestionArea({
       typeof input.response !== 'undefined'
     ) {
       // submit responses as a number (float)
-      const statusCode = await handleNewResponse({
+      const result = await handleNewResponse({
         liveQuizId: quizId,
         instanceId,
         type,
@@ -443,10 +463,14 @@ function QuestionArea({
       })
 
       // --> show toast based on status code
-      showStatusCodeToast(statusCode)
+      showStatusCodeToast(result.statusCode)
 
-      if (statusCode >= 200 && statusCode < 300) {
-        await localforage.setItem(storageKey, input.response)
+      if (result.statusCode >= 200 && result.statusCode < 300) {
+        await localforage.setItem(storageKey, {
+          response: input.response,
+          responseTimestamp: result.responseTimestamp ?? Date.now(),
+        } as any)
+        setSubmittedAt(result.responseTimestamp ?? Date.now())
         await localforage.removeItem(`${storageKey}-temp`)
         return true
       } else {
@@ -458,7 +482,7 @@ function QuestionArea({
       typeof input.response !== 'undefined'
     ) {
       // submit responses as an array of answer ids that were selected
-      const statusCode = await handleNewResponse({
+      const result = await handleNewResponse({
         liveQuizId: quizId,
         instanceId,
         type,
@@ -467,10 +491,14 @@ function QuestionArea({
       })
 
       // --> show toast based on status code
-      showStatusCodeToast(statusCode)
+      showStatusCodeToast(result.statusCode)
 
-      if (statusCode >= 200 && statusCode < 300) {
-        await localforage.setItem(storageKey, input.response)
+      if (result.statusCode >= 200 && result.statusCode < 300) {
+        await localforage.setItem(storageKey, {
+          response: input.response,
+          responseTimestamp: result.responseTimestamp ?? Date.now(),
+        } as any)
+        setSubmittedAt(result.responseTimestamp ?? Date.now())
         await localforage.removeItem(`${storageKey}-temp`)
         return true
       } else {
@@ -482,7 +510,7 @@ function QuestionArea({
       typeof input.response !== 'undefined'
     ) {
       // submit responses as an object with case, item and criterion ids as nested keys
-      const statusCode = await handleNewResponse({
+      const result = await handleNewResponse({
         liveQuizId: quizId,
         instanceId,
         type,
@@ -491,10 +519,14 @@ function QuestionArea({
       })
 
       // --> show toast based on status code
-      showStatusCodeToast(statusCode)
+      showStatusCodeToast(result.statusCode)
 
-      if (statusCode >= 200 && statusCode < 300) {
-        await localforage.setItem(storageKey, input.response)
+      if (result.statusCode >= 200 && result.statusCode < 300) {
+        await localforage.setItem(storageKey, {
+          response: input.response,
+          responseTimestamp: result.responseTimestamp ?? Date.now(),
+        } as any)
+        setSubmittedAt(result.responseTimestamp ?? Date.now())
         await localforage.removeItem(`${storageKey}-temp`)
         return true
       } else {
@@ -502,7 +534,7 @@ function QuestionArea({
       }
     } else if (type === ElementType.Content) {
       // for content elements, only the number of reads / next clicks are counted
-      const statusCode = await handleNewResponse({
+      const result = await handleNewResponse({
         liveQuizId: quizId,
         instanceId,
         type,
@@ -511,10 +543,14 @@ function QuestionArea({
       })
 
       // --> show toast based on status code
-      showStatusCodeToast(statusCode)
+      showStatusCodeToast(result.statusCode)
 
-      if (statusCode >= 200 && statusCode < 300) {
-        await localforage.setItem(storageKey, input.response)
+      if (result.statusCode >= 200 && result.statusCode < 300) {
+        await localforage.setItem(storageKey, {
+          response: input.response,
+          responseTimestamp: result.responseTimestamp ?? Date.now(),
+        } as any)
+        setSubmittedAt(result.responseTimestamp ?? Date.now())
         await localforage.removeItem(`${storageKey}-temp`)
         return true
       } else {
@@ -537,7 +573,19 @@ function QuestionArea({
 
   return (
     <div className="min-h-content relative mt-1.5 h-full w-full">
-      <H2 className={{ root: 'mb-0 pt-2' }}>{t('shared.generic.questions')}</H2>
+      <div className="flex flex-row items-center justify-between">
+        <H2 className={{ root: 'mb-0 pt-2' }}>
+          {t('shared.generic.questions')}
+        </H2>
+        {submittedAt ? (
+          <div className="mb-0.5 mt-1 flex items-center gap-2 self-end text-sm text-green-700">
+            <FontAwesomeIcon icon={faCheck} className="h-4 w-4" />
+            <span>
+              {`Responded at ${dayjs(submittedAt).format('DD.MM.YYYY HH:mm')}`}
+            </span>
+          </div>
+        ) : null}
+      </div>
 
       <div className="flex w-full flex-col">
         {remainingQuestions.length === 0 && (

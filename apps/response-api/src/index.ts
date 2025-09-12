@@ -107,13 +107,14 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
       ? req.headers['cookie']
       : undefined
 
+  const responseTimestamp = Date.now()
   const message = {
     messageId: randomUUID(),
     sessionId: String(liveQuizId),
     instanceId: String(instanceId),
     response, // pass through as-is; worker validates
     cookie,
-    responseTimestamp: Date.now(),
+    responseTimestamp,
   }
 
   // determine if the participant is logged in with a valid student cookie (temporary or standard)
@@ -129,7 +130,7 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   console.log(`Pushing event ${eventName} with payload`, message)
 
   await hatchet.events.push(eventName, message)
-  return sendJson(req, res, 200, { status: 'ok' })
+  return sendJson(req, res, 200, { status: 'ok', responseTimestamp })
 }
 
 async function handleAddAssessmentResponse(
@@ -271,7 +272,10 @@ async function handleAddAssessmentResponse(
     })
 
     // show success message that response was already recorded before and that first response counts
-    return sendJson(req, res, 208, { status: 'response_recorded_before' })
+    return sendJson(req, res, 208, {
+      status: 'response_recorded_before',
+      responseTimestamp,
+    })
   }
 
   const message = {
@@ -306,7 +310,10 @@ async function handleAddAssessmentResponse(
     }
   }
 
-  return sendJson(req, res, 200, { status: 'response_submitted' })
+  return sendJson(req, res, 200, {
+    status: 'response_submitted',
+    responseTimestamp,
+  })
 }
 
 const server = createServer(async (req, res) => {
