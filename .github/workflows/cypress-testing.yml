@@ -79,9 +79,9 @@ jobs:
           SERVER_AUTH_COOKIE_INSECURE: 't'
           SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
           SERVER_GRPC_INSECURE: 't'
-          SERVER_GRPC_BROADCAST_ADDRESS: hatchet:7077
+          SERVER_GRPC_BROADCAST_ADDRESS: 127.0.0.1:7077
           SERVER_GRPC_PORT: '7077'
-          SERVER_URL: http://hatchet:8888
+          SERVER_URL: http://127.0.0.1:8888
           SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
           SERVER_DEFAULT_ENGINE_VERSION: 'V1'
 
@@ -131,9 +131,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
-
-      # - name: Install azure-functions-core-tools
-      #   run: npm i -g azure-functions-core-tools@4 --unsafe-perm true
 
       - name: Prepare .env files
         run: |
@@ -185,10 +182,10 @@ jobs:
         env:
           APP_SECRET: abcd
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
-          DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
+          DATABASE_URL: postgres://klicker-prod:klicker@127.0.0.1:5432/klicker-prod
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_ENV: production
-          HATCHET_API_URL: http://localhost:8888
+          HATCHET_API_URL: http://127.0.0.1:8888
           HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
           HATCHET_HOST_PORT: 7077
 
