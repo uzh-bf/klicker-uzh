@@ -1,13 +1,13 @@
 name: Klicker automated testing with cypress
 on:
   push:
-    branches: ['v3', 'v3*']
+    branches: ['v3']
     # paths:
     #   - apps/**
     #   - packages/**
   pull_request:
     branches: ['v3', 'v3*']
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - apps/**
       - packages/**
@@ -23,11 +23,12 @@ env:
 
 # This workflow runs Cypress tests with two different strategies:
 # 1. Draft PRs: Fast parallel testing with cypress-split (8 containers, no Cloud)
-# 2. Non-draft PRs & v3 pushes: Full Cypress Cloud recording for production visibility
+# 2. Non-draft PRs & direct v3 pushes: Full Cypress Cloud recording for production visibility
 #
-# The job conditions prevent duplicate triggers when pushing to PR branches:
-# - Push events to PR branches only trigger if pushing directly to v3
-# - Pull request events handle all PR-related testing based on draft status
+# Event handling strategy:
+# - Feature branches (v3-*): Only handled via pull_request events (synchronize on push)
+# - Direct v3 pushes: Handled via push events
+# - This prevents duplicate job triggers and ensures clean separation
 
 jobs:
   # Runs parallel Cypress tests for DRAFT pull requests only
