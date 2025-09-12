@@ -1648,7 +1648,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(`[data-cy="catalog-object-${this.data.catalog.name}"]`).click()
     cy.get(
       `[data-cy="actions-dropdown-${this.data.liveQuiz.template2.name}"]`
-    ).click()
+    ).realClick()
     cy.get(
       `[data-cy="use-template-${this.data.liveQuiz.template2.name}"]`
     ).click()
