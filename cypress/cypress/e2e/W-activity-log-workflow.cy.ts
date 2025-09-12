@@ -2,18 +2,6 @@ import messages from '../../../packages/i18n/messages/en'
 import { getDatetimeValidationString } from './helpers'
 
 describe('Feature test for activity logs', function () {
-  before(() => {
-    cy.cleanup()
-
-    cy.seed()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
   beforeEach('Load data fixture', function () {
     cy.fixture('questions.json').then((sharedData) => {
       this.data = sharedData
@@ -21,6 +9,18 @@ describe('Feature test for activity logs', function () {
     cy.fixture('W-activity-log.json').then((activityLogData) => {
       this.data = { ...this.data, ...activityLogData }
     })
+  })
+
+  // ! if a test case fails, stop the test run
+  afterEach(function () {
+    if (this.currentTest.state === 'failed') {
+      Cypress.stop()
+    }
+  })
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
   })
 
   function verifyActivityLogContent(

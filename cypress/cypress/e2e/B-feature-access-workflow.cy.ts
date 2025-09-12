@@ -1,17 +1,4 @@
 describe('Tests the availability of certain functionalities to catalyst users only', () => {
-  before(() => {
-    cy.cleanup()
-
-    cy.seed()
-    cy.seedActivities()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
@@ -21,12 +8,18 @@ describe('Tests the availability of certain functionalities to catalyst users on
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // ! if a test case fails, stop the test run
+  afterEach(function () {
+    if (this.currentTest.state === 'failed') {
+      Cypress.stop()
+    }
+  })
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+    cy.seedActivities()
+  })
 
   function validateFeatureAvailability({
     data,

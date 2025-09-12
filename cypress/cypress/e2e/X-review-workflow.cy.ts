@@ -2,18 +2,6 @@ import messages from '../../../packages/i18n/messages/en'
 import { getDatetimeValidationString, getFutureDate } from './helpers'
 
 describe('Feature test for review functionalities and batch operations', function () {
-  before(() => {
-    cy.cleanup()
-
-    cy.seed()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
   beforeEach('Load data fixture', function () {
     cy.fixture('questions.json').then((sharedData) => {
       this.data = sharedData
@@ -23,12 +11,17 @@ describe('Feature test for review functionalities and batch operations', functio
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // ! if a test case fails, stop the test run
+  afterEach(function () {
+    if (this.currentTest.state === 'failed') {
+      Cypress.stop()
+    }
+  })
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   // ! Part 1: Activity review functionality
   // #region

@@ -18,18 +18,6 @@ type CriterionDataType = {
 }
 
 describe('Test creation and editing functionalities, validation, etc. for case study elements', function () {
-  before(() => {
-    cy.cleanup()
-
-    cy.seed()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
   beforeEach('Login the lecturer and load data fixture', function () {
     cy.fixture('DM-questions.json').then((data) => {
       this.data = data
@@ -40,12 +28,17 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get('[data-cy="analytics"]').should('exist')
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // ! if a test case fails, stop the test run
+  afterEach(function () {
+    if (this.currentTest.state === 'failed') {
+      Cypress.stop()
+    }
+  })
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   // ! Case Study questions
   // #region

@@ -2,18 +2,6 @@ import messages from '../../../packages/i18n/messages/en'
 import { getDatetimeValidationString } from './helpers'
 
 describe('Create different types of elements (with and without sample solution) and edit them', function () {
-  before(() => {
-    cy.cleanup()
-
-    cy.seed()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
   beforeEach('Load data fixture', function () {
     cy.fixture('questions.json').then((sharedData) => {
       this.data = sharedData
@@ -23,11 +11,16 @@ describe('Create different types of elements (with and without sample solution) 
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
+  // ! if a test case fails, stop the test run
   afterEach(function () {
     if (this.currentTest.state === 'failed') {
       Cypress.stop()
     }
+  })
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
   })
 
   // ! Part 1: Question duplication
@@ -1048,9 +1041,9 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="catalog-object-${this.data.SEML.title}"]`).should('exist')
     cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).click()
     cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).click()
-    cy.get('[data-cy="cancel-request-access"]').click()
-    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).click()
-    cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).click()
+    cy.get('[data-cy="cancel-request-access"]').realClick()
+    cy.get(`[data-cy="actions-dropdown-${this.data.SEML.title}"]`).realClick()
+    cy.get(`[data-cy="request-access-${this.data.SEML.title}"]`).realClick()
     cy.get('[data-cy="confirm-request-access"]').click()
 
     // check that access request is pending

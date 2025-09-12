@@ -2,30 +2,23 @@ import messages from '../../../packages/i18n/messages/en'
 import { AvatarOptions } from '../../../packages/shared-components/src/constants'
 
 describe('Login / Logout workflows for lecturer and students', () => {
-  before(() => {
-    cy.cleanup()
-
-    cy.seed()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('A-login.json').then((data) => {
       this.data = data
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // ! if a test case fails, stop the test run
+  afterEach(function () {
+    if (this.currentTest.state === 'failed') {
+      Cypress.stop()
+    }
+  })
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   it('Sign in to student account', () => {
     cy.clearAllCookies()
