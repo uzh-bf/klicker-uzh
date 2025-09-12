@@ -1,7 +1,7 @@
 name: Klicker automated testing with cypress
 on:
   push:
-    branches: ['v3']
+    branches: ['v3', 'v3*']
     # paths:
     #   - apps/**
     #   - packages/**
@@ -25,17 +25,20 @@ env:
 # 1. Draft PRs: Fast parallel testing with cypress-split (8 containers, no Cloud)
 # 2. Non-draft PRs & direct v3 pushes: Full Cypress Cloud recording for production visibility
 #
-# Event handling strategy:
-# - Feature branches (v3-*): Only handled via pull_request events (synchronize on push)
-# - Direct v3 pushes: Handled via push events
-# - This prevents duplicate job triggers and ensures clean separation
+# Event handling strategy (with redundancy for reliability):
+# - Feature branches (v3-*): Handled by BOTH push and pull_request events for redundancy
+# - Draft PRs: Use parallel testing regardless of event type
+# - Non-draft PRs: Use Cypress Cloud with recording
+# - Concurrency group prevents duplicate runs when both events fire
 
 jobs:
-  # Runs parallel Cypress tests for DRAFT pull requests only
+  # Runs parallel Cypress tests for development (draft PRs and feature branch pushes)
   # Uses cypress-split to distribute tests across 8 containers for faster feedback
   # No Cypress Cloud recording to save costs during development
   cypress-run-parallel-draft:
-    if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
+    if: |
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == true) ||
+      (github.event_name == 'push' && github.ref != 'refs/heads/v3')
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
