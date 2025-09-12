@@ -225,7 +225,7 @@
    "GetPracticeQuizSummary": "01dada3ea64ea21a809b325f22580d5f4857b150f719c7a3134709185a708cbf",
    "GetPreviousStackEvaluation": "179a69cf889090027d3579581168954f5bf1c1cec2b5436ac1390717ff53b307",
    "GetPublicParticipantProfile": "840169ba8a67902da899e1f08c92668228657ba5c6af024e42737081179bb343",
-   "GetRunningLiveQuiz": "2a33a4712c969600fa8d89a85f5e4a09c51d8ea293f4d6ba18453c866720b723",
+   "GetRunningLiveQuiz": "11d094cd3842a1f13f57f13d5393445a74f096fb94a285387c5681aecb7bcacb",
    "GetShortnameQuizzes": "d7af38702df3fa265ccbefe9b2f133b67a27b462dcf28178c021cef21083c11f",
    "GetSingleAnswerCollection": "b586e9af280f888252c3549bf06d599addb7c0de0a9cd8c4aaca9ce746f069a0",
    "GetSingleCourse": "cd7386f6855835f281a1e5bf44e5d970c846b8c105bb31f0910304f5d4bd3838",
@@ -250,8 +250,8 @@
    "GetUserTags": "cfc63cede68a95d79f5fe5a79c7f6275abae9c47b25fcfc665cc8d3e00bac3db",
    "GetUsersPrivatePreview": "52292db88bbb87701a3604d85fa8600adf220ad1d10a94b7db47032bd9f24604",
    "GroupActivityDetails": "a607240e9ac750c122985a707c6ea8859945f8198d931f0037df6ec607c1a6b3",
-   "Participations": "dc9e8c61459be73030abcd6abb63ff5769785e3c85bf5fc60c37ee82d94f90e4",
-   "Self": "b2daad42bf0aba9b37a6111673358af491219a0078c771c8b216c2c8806b3f90",
+   "Participations": "c6f065a54c438a4da98a268e962e6c54850a1d599c908c291b77c695db75b7ef",
+   "Self": "9c4e2c9e5469cf452a1d5d4b814f22ba45ff56571946ab3ff59d403cb4a8aa9c",
    "SelfWithAchievements": "07ed90975e46d0b5a00efb45e844030ae6bf16653e39c53ecec5afddc72c62f2",
    "UserProfile": "f4a4fe22807e8c654b850a0f4e9f7356e798ac14ae35376a5f7004d935ccbd23",
    "ValidateAvailableLiveQuiz": "909f0d94f16f564e4587bad0865ed8ffb950cfbf47d008d8a52b2cad61f24ac6",
@@ -264,7 +264,7 @@
    "GroupActivityStarted": "68ba757fcf30a19c49cfdb2d47e803a0a4f0ed3ecf60a30e0b7ea3390ae0cf20",
    "LiveQuizSettingsChanged": "212af644b03fa955abc0a3c907b9543c9831e9432d5dcb0cdf6708a927b5886c",
    "MicroLearningEnded": "b296f5b68bb5cccea3da7f8947ee13a88ce78307e694e4caef561b3b5b8766cb",
-   "RunningLiveQuizUpdated": "f96e8e7520ced97fa4a53a29aeb34117774bc0cd0d207ac3ad8261f21e99843f",
+   "RunningLiveQuizUpdated": "46053718f2c109dc06db6bd55f84ac088f98f7b999543ddad8ee4d6c4cdd1140",
    "SingleGroupActivityEnded": "3b5bbe5b53ba4977f839f3bf2fd60f6776d1fea15166e1b151e6cddf3f0a814e",
    "UpdateParticipantAvatar": "9b52e4c15c3c5db55ae0521c9f74e815ead8a8c91ebfbdb6a488e648fe3d2514"
 }

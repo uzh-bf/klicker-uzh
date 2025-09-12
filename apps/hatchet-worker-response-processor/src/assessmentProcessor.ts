@@ -34,7 +34,7 @@ export async function processAssessmentResponse(
   message: {
     correlationId: string
     participantId: string
-    sessionId: string
+    liveQuizId: string
     instanceId: string
     response: ResponseInput
     cookie?: string
@@ -63,7 +63,7 @@ export async function processAssessmentResponse(
     throw new Error(`Prisma client error ${String(e)}`)
   }
 
-  if (message.sessionId === 'ping') {
+  if (message.liveQuizId === 'ping') {
     if (process.env.FUNCTION_HEARTBEAT_URL) {
       await fetch(process.env.FUNCTION_HEARTBEAT_URL)
     }
@@ -71,7 +71,7 @@ export async function processAssessmentResponse(
   }
 
   // extract the relevant information from the redis cache
-  const liveQuizKey = `lq:${message.sessionId}`
+  const liveQuizKey = `lq:${message.liveQuizId}`
   const instanceKey = `${liveQuizKey}:i:${message.instanceId}`
   const responseTimestamp = message.responseTimestamp
   const response = message.response
@@ -84,7 +84,7 @@ export async function processAssessmentResponse(
       'Missing response ' +
         JSON.stringify({
           correlationId: message.correlationId,
-          sessionId: message.sessionId,
+          liveQuizId: message.liveQuizId,
           instanceId: message.instanceId,
         })
     )
@@ -342,7 +342,7 @@ export async function processAssessmentResponse(
 
   // add the participant to the list of participants that have answered this question instance
   redisExec.hset(
-    `lq:${message.sessionId}:i:${message.instanceId}:votes`,
+    `lq:${message.liveQuizId}:i:${message.instanceId}:votes`,
     message.correlationId,
     'true'
   )
@@ -352,7 +352,7 @@ export async function processAssessmentResponse(
   ctx.v1.events.push('response-processed:aggregation', {
     correlationId: message.correlationId,
     participantId: message.participantId,
-    liveQuizId: message.sessionId,
+    liveQuizId: message.liveQuizId,
     blockId: sessionBlockId,
     instanceId: message.instanceId,
     elementType: type,
@@ -504,7 +504,7 @@ export async function aggregateAssessmentResponses(
     await redis.exec()
     ctx.logger.info("Successfully aggregated a participant's results", {
       correlationId: message.correlationId,
-      sessionId: message.liveQuizId,
+      liveQuizId: message.liveQuizId,
       instanceId: message.instanceId,
     })
     return { status: 200 }
@@ -513,7 +513,7 @@ export async function aggregateAssessmentResponses(
       `Redis pipeline for results aggregation failed: ${String(e)}` +
         JSON.stringify({
           correlationId: message.correlationId,
-          sessionId: message.liveQuizId,
+          liveQuizId: message.liveQuizId,
           instanceId: message.instanceId,
         })
     )

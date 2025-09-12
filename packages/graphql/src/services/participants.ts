@@ -33,6 +33,11 @@ export async function getSelf(
         participations: liveQuiz?.courseId
           ? { where: { courseId: liveQuiz.courseId } }
           : { take: 0 }, // make sure that no participations are fetched if courseid is not set
+        accounts: {
+          where: { ssoType: 'UZH' },
+          select: { ssoEmail: true },
+          take: 1,
+        },
       },
     })
 
@@ -47,6 +52,7 @@ export async function getSelf(
       role: DB.UserRole.PARTICIPANT,
       isCourseParticipant,
       isCourseParticipationActive,
+      institutionalEmail: participantData.accounts[0]?.ssoEmail ?? null,
       ...participantData,
     }
   }
@@ -176,13 +182,19 @@ export async function updateParticipantAvatar(
 }
 
 export async function getParticipations(
-  { endpoint }: { endpoint?: string | null },
+  {
+    endpoint,
+    assessmentOnly = false,
+  }: { endpoint?: string | null; assessmentOnly?: boolean | null },
   ctx: ContextWithUser
 ) {
   const participant = await ctx.prisma.participant.findUnique({
     where: { id: ctx.user.sub },
     include: {
       participations: {
+        where: assessmentOnly
+          ? { course: { isAssessmentEnabled: true } }
+          : undefined,
         include: {
           subscriptions: endpoint ? { where: { endpoint } } : undefined,
           course: {
@@ -196,7 +208,10 @@ export async function getParticipations(
                 },
               },
               liveQuizzes: {
-                where: { status: DB.PublicationStatus.PUBLISHED },
+                where: {
+                  status: DB.PublicationStatus.PUBLISHED,
+                  isDeleted: false,
+                },
               },
             },
           },

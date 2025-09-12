@@ -42,7 +42,7 @@ export function prepareHatchetTasks({
     onEvents: ['create-audit-log-entry'],
     fn: (
       message: Record<string, string | undefined> & {
-        correlationId: string
+        correlationId?: string
         info: string
       },
       ctx

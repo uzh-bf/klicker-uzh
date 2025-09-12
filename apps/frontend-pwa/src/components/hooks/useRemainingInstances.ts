@@ -49,7 +49,7 @@ function useRemainingInstances({
             return [...indices, index]
           }, [])
 
-        setActiveInstance(remaining[0] ?? 0)
+        setActiveInstance(remaining[0] ?? instances.length - 1)
         setRemainingQuestions(remaining)
       } catch (e) {
         console.error(e)

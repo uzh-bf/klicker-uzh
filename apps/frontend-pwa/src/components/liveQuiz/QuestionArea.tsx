@@ -75,12 +75,19 @@ interface QuestionAreaProps {
   gamificationEnabled: boolean
   expiresAt?: Date
   instances: ElementInstance[]
-  handleNewResponse: (
-    quizId: string,
-    instanceId: number,
-    type: ElementType,
+  handleNewResponse: ({
+    liveQuizId,
+    instanceId,
+    type,
+    answer,
+    correlationKey,
+  }: {
+    liveQuizId: string
+    instanceId: number
+    type: ElementType
     answer: any
-  ) => void
+    correlationKey?: string | null
+  }) => Promise<null | undefined>
   quizId: string
   execution: number
   timeLimit?: number
@@ -181,11 +188,20 @@ function QuestionArea({
   })
 
   const onSubmit = async (): Promise<void> => {
-    const { id: instanceId, elementType } = instances[activeInstance]
+    const {
+      id: instanceId,
+      elementType,
+      correlationKey,
+    } = instances[activeInstance]
 
     // if the question has been answered, add a response
     if (studentResponse.valid) {
-      answerQuestion({ instanceId, type: elementType, input: studentResponse })
+      answerQuestion({
+        instanceId,
+        type: elementType,
+        input: studentResponse,
+        correlationKey,
+      })
     } else {
       push(['trackEvent', 'Live Quiz', 'Question Skipped'])
     }
@@ -199,7 +215,7 @@ function QuestionArea({
     )
 
     // update the active instance and the remaining questions
-    setActiveInstance(newRemaining[0] || 0)
+    setActiveInstance(newRemaining[0] ?? instances.length - 1)
     setRemainingQuestions(newRemaining)
 
     // if this was the last question of the block and gamification is enabled, show confetti
@@ -209,11 +225,20 @@ function QuestionArea({
   }
 
   const onExpire = async (): Promise<void> => {
-    const { id: instanceId, elementType } = instances[activeInstance]
+    const {
+      id: instanceId,
+      elementType,
+      correlationKey,
+    } = instances[activeInstance]
 
     // save the response, if one was given before the time expired
     if (studentResponse.valid) {
-      answerQuestion({ instanceId, type: elementType, input: studentResponse })
+      answerQuestion({
+        instanceId,
+        type: elementType,
+        input: studentResponse,
+        correlationKey,
+      })
     }
 
     const remainingQuestionIds = (remainingQuestions ?? []).map(
@@ -223,6 +248,7 @@ function QuestionArea({
 
     // automatically skip all possibly remaining questions
     setRemainingQuestions([])
+    setActiveInstance(instances.length - 1)
 
     // if the live quiz is gamified, show a confetti explosion
     if (gamificationEnabled) {
@@ -237,10 +263,12 @@ function QuestionArea({
     instanceId,
     type,
     input,
+    correlationKey,
   }: {
     instanceId: number
     type: ElementType
     input: InstanceStackStudentResponseType
+    correlationKey?: string | null
   }): void => {
     const storageKey = `lq-${quizId}-ex-${execution}-i-${instanceId}`
 
@@ -253,17 +281,18 @@ function QuestionArea({
       typeof input.response !== 'undefined'
     ) {
       // submit responses as an array of objects with answer ix and selected boolean
-      handleNewResponse(
-        quizId,
+      handleNewResponse({
+        liveQuizId: quizId,
         instanceId,
         type,
-        Object.entries(input.response)
+        answer: Object.entries(input.response)
           .filter(([, value]) => value)
           .map(([key, value]) => ({
             ix: parseInt(key),
             selected: value,
-          }))
-      )
+          })),
+        correlationKey,
+      })
 
       // store the submitted answer locally to be shown and remove any temporary saved response
       localforage.setItem(storageKey, input.response)
@@ -274,7 +303,13 @@ function QuestionArea({
       typeof input.response !== 'undefined'
     ) {
       // submit responses as a string
-      handleNewResponse(quizId, instanceId, type, input.response)
+      handleNewResponse({
+        liveQuizId: quizId,
+        instanceId,
+        type,
+        answer: input.response,
+        correlationKey,
+      })
 
       // store the submitted answer locally to be shown and remove any temporary saved response
       localforage.setItem(storageKey, input.response)
@@ -285,12 +320,13 @@ function QuestionArea({
       typeof input.response !== 'undefined'
     ) {
       // submit responses as a number (float)
-      handleNewResponse(
-        quizId,
+      handleNewResponse({
+        liveQuizId: quizId,
         instanceId,
         type,
-        String(parseFloat(input.response))
-      )
+        answer: String(parseFloat(input.response)),
+        correlationKey,
+      })
 
       // store the submitted answer locally to be shown and remove any temporary saved response
       localforage.setItem(storageKey, String(parseFloat(input.response)))
@@ -301,7 +337,13 @@ function QuestionArea({
       typeof input.response !== 'undefined'
     ) {
       // submit responses as an array of answer ids that were selected
-      handleNewResponse(quizId, instanceId, type, Object.values(input.response))
+      handleNewResponse({
+        liveQuizId: quizId,
+        instanceId,
+        type,
+        answer: Object.values(input.response),
+        correlationKey,
+      })
 
       // store the submitted answer locally to be shown and remove any temporary saved response
       localforage.setItem(storageKey, input.response)
@@ -312,14 +354,26 @@ function QuestionArea({
       typeof input.response !== 'undefined'
     ) {
       // submit responses as an object with case, item and criterion ids as nested keys
-      handleNewResponse(quizId, instanceId, type, input.response)
+      handleNewResponse({
+        liveQuizId: quizId,
+        instanceId,
+        type,
+        answer: input.response,
+        correlationKey,
+      })
 
       // store the submitted answer locally to be shown and remove any temporary saved response
       localforage.setItem(storageKey, input.response)
       localforage.removeItem(`${storageKey}-temp`)
     } else if (type === ElementType.Content) {
       // for content elements, only the number of reads / next clicks are counted
-      handleNewResponse(quizId, instanceId, type, true)
+      handleNewResponse({
+        liveQuizId: quizId,
+        instanceId,
+        type,
+        answer: true,
+        correlationKey,
+      })
 
       // store the submitted answer locally to be shown and remove any temporary saved response
       localforage.setItem(storageKey, true)
