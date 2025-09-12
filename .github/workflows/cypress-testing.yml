@@ -192,6 +192,16 @@ jobs:
           HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
           HATCHET_HOST_PORT: 7077
 
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-artifacts
+          path: |
+            cypress/cypress/videos
+            cypress/cypress/screenshots
+          if-no-files-found: ignore
+          retention-days: 1
+
       # - name: Archive code coverage results
       #   uses: actions/upload-artifact@v3
       #   with:
