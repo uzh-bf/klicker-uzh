@@ -50,6 +50,7 @@ const DynamicAccountSelector = dynamic(
   { ssr: false }
 )
 
+// returns status code: 0 = success, 1 = invalid input / general error, error codes 200, 208, 400, 401, 404, 500
 async function handleNewResponse({
   liveQuizId,
   instanceId,
@@ -62,7 +63,7 @@ async function handleNewResponse({
   type: ElementType
   answer: any
   correlationKey?: string | null
-}) {
+}): Promise<number> {
   let requestOptions: RequestInit = {
     method: 'POST',
     credentials: 'include',
@@ -122,16 +123,19 @@ async function handleNewResponse({
       }),
     }
   } else {
-    return null
+    return 1
   }
 
   try {
-    await fetch(
+    const response = await fetch(
       process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string,
       requestOptions
     )
+
+    return response.status
   } catch (e) {
     console.log('error', e)
+    return 1
   }
 }
 
@@ -519,7 +523,7 @@ function Index({ id }: { id: string }) {
                     gamificationEnabled={isGamificationEnabled}
                     instances={blocks?.[selectedBlock].elements ?? []}
                     execution={blocks?.[selectedBlock]?.execution ?? 0}
-                    handleNewResponse={async () => null} // submissions are no longer possible
+                    handleNewResponse={async () => 0} // submissions are no longer possible
                   />
                 ) : null}
               </>
