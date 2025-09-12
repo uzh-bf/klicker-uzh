@@ -30,6 +30,11 @@ jobs:
         with:
           version: 10.15.0
           run_install: true
+      - name: Build types package
+        shell: bash
+        run: |
+          cd packages/types
+          pnpm run build
       - name: Test functions
         shell: bash
         run: |

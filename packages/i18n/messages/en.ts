@@ -517,6 +517,8 @@ export default {
         'Your account has been created. Please check your inbox for an activation link.',
       myCourses: 'My Courses',
       myAssessmentCourses: 'My Assessment Courses',
+      noAssessmentCourseAssignments:
+        'You have not been assigned to any assessment courses yet. Please contact your lecturers.',
       insights: 'Insights',
       timeline: 'Timeline',
       myBookmarks: 'My Bookmarks',

@@ -3,7 +3,7 @@ import {
   Priority,
 } from '@hatchet-dev/typescript-sdk/index.js'
 import { hatchetClient } from '@klicker-uzh/hatchet'
-import type { ResponseInput } from '@klicker-uzh/types'
+import type { LiveQuizResponseInput } from '@klicker-uzh/types'
 import {
   aggregateAssessmentResponses,
   processAssessmentResponse,
@@ -44,7 +44,7 @@ export const processAssessmentResponseWorkflow = hatchetClient.workflow<{
   participantId: string
   liveQuizId: string
   instanceId: string
-  response: ResponseInput
+  response: LiveQuizResponseInput
   cookie?: string
   responseTimestamp: number
 }>({

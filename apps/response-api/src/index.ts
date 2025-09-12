@@ -125,7 +125,7 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     messageId: randomUUID(),
     sessionId: String(liveQuizId),
     instanceId: String(instanceId),
-    response: response, // pass through as-is; worker validates
+    response, // pass through as-is; worker validates
     cookie,
     responseTimestamp: Date.now(),
   }

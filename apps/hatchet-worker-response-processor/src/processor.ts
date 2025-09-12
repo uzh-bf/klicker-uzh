@@ -6,7 +6,11 @@ import type {
   DurableContext,
   JsonObject,
 } from '@hatchet-dev/typescript-sdk/index.js'
-import type { ResponseInput } from '@klicker-uzh/types'
+import type {
+  FreeTextRestrictions,
+  LiveQuizResponseInput,
+  NumericalRestrictions,
+} from '@klicker-uzh/types'
 import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
@@ -18,6 +22,7 @@ import {
   getNumericalQuestionPoints,
   getSelectionQuestionPoints,
   updateLeaderboards,
+  validateStudentResponse,
 } from './helpers.js'
 import getRedis from './redis.js'
 
@@ -28,7 +33,7 @@ export type Message = {
   messageId: string
   sessionId: string
   instanceId: string
-  response: ResponseInput
+  response: LiveQuizResponseInput
   cookie?: string
   responseTimestamp: number
 }
@@ -155,6 +160,7 @@ export async function processResponseMessage(
     const {
       type,
       solutions,
+      restrictions,
       firstResponseReceivedAt,
       sessionBlockId,
       choiceCount,
@@ -167,7 +173,45 @@ export async function processResponseMessage(
         parsedSolutions = JSON.parse(solutions)
       }
     } catch (e) {
-      ctx.logger.info(`Error parsing solutions: ${String(e)}`)
+      throw new Error('Error parsing solutions: ' + String(e))
+    }
+
+    // validate the incoming response
+    let parsedRestrictions:
+      | NumericalRestrictions
+      | FreeTextRestrictions
+      | undefined
+    try {
+      if (restrictions) {
+        parsedRestrictions = restrictions
+          ? typeof restrictions === 'string'
+            ? JSON.parse(restrictions)
+            : restrictions
+          : undefined
+      }
+    } catch (e) {
+      throw new Error(
+        `Error ${String(e)} occurred when parsing restrictions: ${restrictions}`
+      )
+    }
+
+    const { valid, message: validationError } = validateStudentResponse({
+      type: type as any,
+      response,
+      restrictions: parsedRestrictions,
+    })
+
+    if (!valid) {
+      ctx.logger.error(
+        'Response validation failed: ' +
+          validationError +
+          JSON.stringify({
+            messageId: message.messageId,
+            sessionId: message.sessionId,
+            instanceId: message.instanceId,
+          })
+      )
+      return { status: 400 }
     }
 
     let pointsAwarded: number | string = 0
