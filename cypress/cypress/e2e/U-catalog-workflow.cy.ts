@@ -27,7 +27,9 @@ describe('Test all functionalities of catalog collections and objects contained 
     ownership: boolean
     elementOwnership: boolean
   }) {
-    cy.get(`[data-cy="catalog-collection-${data.CCPublic}-actions"]`).click()
+    cy.get(
+      `[data-cy="catalog-collection-${data.CCPublic}-actions"]`
+    ).realClick()
     cy.get('[data-cy="share-catalog-collection"]').click()
     cy.get('[data-cy="new-permission-username-or-email"]').should('exist')
     cy.get('[data-cy="transfer-ownership"]').should(
@@ -35,13 +37,15 @@ describe('Test all functionalities of catalog collections and objects contained 
     )
     cy.get('[data-cy="close-share-object"]').click()
 
-    cy.get(`[data-cy="catalog-collection-${data.CCPublic}-actions"]`).click()
+    cy.get(
+      `[data-cy="catalog-collection-${data.CCPublic}-actions"]`
+    ).realClick()
     cy.get('[data-cy="delete-catalog-collection"]').click()
     cy.get('[data-cy="cancel-delete-collection"]').click()
 
     cy.get(
       `[data-cy="change-catalog-collection-name-${data.CCPublic}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="insert-catalog-collection-name"]')
       .click()
       .clear()
@@ -50,7 +54,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${data.CCPublic} NEW"]`).should('exist')
     cy.get(
       `[data-cy="change-catalog-collection-name-${data.CCPublic} NEW"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="insert-catalog-collection-name"]')
       .click()
       .clear()
@@ -63,14 +67,14 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${data.AC1.name}"]`)
       .should('exist')
       .contains(messages.manage.catalog.accessPUBLIC)
-    cy.get(`[data-cy="actions-dropdown-${data.AC1.name}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${data.AC1.name}"]`).realClick()
     cy.get(`[data-cy="remove-object-${data.AC1.name}"]`).click()
     cy.get('[data-cy="cancel-removal"]').click()
 
     cy.get(`[data-cy="catalog-object-${data.AC2.name}"]`)
       .should('exist')
       .contains(messages.manage.catalog.accessRESTRICTED)
-    cy.get(`[data-cy="actions-dropdown-${data.AC2.name}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="remove-object-${data.AC2.name}"]`).click()
     cy.get('[data-cy="cancel-removal"]').click()
 
@@ -80,7 +84,7 @@ describe('Test all functionalities of catalog collections and objects contained 
       .contains(messages.manage.catalog.accessPUBLIC)
     cy.get(
       `[data-cy="actions-dropdown-${data.liveQuiz.template.name}"]`
-    ).click()
+    ).realClick()
     cy.get(`[data-cy="use-template-${data.liveQuiz.template.name}"]`).should(
       'exist'
     )
@@ -95,7 +99,7 @@ describe('Test all functionalities of catalog collections and objects contained 
         elementOwnership ? 'contain' : 'not.contain',
         messages.manage.catalog.accessRESTRICTED
       ) // user not admin on object -> object permissions relevant in top-level catalog collection
-    cy.get(`[data-cy="actions-dropdown-${data.SEML.title}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${data.SEML.title}"]`).realClick()
     cy.get(`[data-cy="copy-object-${data.SEML.title}"]`).should('not.exist') // restricted objects cannot be imported
     if (elementOwnership) {
       cy.get(`[data-cy="share-object-${data.SEML.title}"]`).click()
@@ -111,7 +115,7 @@ describe('Test all functionalities of catalog collections and objects contained 
         elementOwnership ? 'contain' : 'not.contain',
         messages.manage.catalog.accessPUBLIC
       ) // user not admin on object -> object permissions relevant in top-level catalog collection
-    cy.get(`[data-cy="actions-dropdown-${data.SEML2.title}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${data.SEML2.title}"]`).realClick()
     if (elementOwnership) {
       cy.get(`[data-cy="share-object-${data.SEML2.title}"]`).click()
       cy.get('[data-cy="close-share-object"]').click()
@@ -127,7 +131,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${data.SEML.title}"]`)
       .should('exist')
       .contains(messages.manage.catalog.accessRESTRICTED)
-    cy.get(`[data-cy="actions-dropdown-${data.SEML.title}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${data.SEML.title}"]`).realClick()
     if (elementOwnership) {
       cy.get(`[data-cy="share-object-${data.SEML.title}"]`).click()
       cy.get('[data-cy="close-share-object"]').click()
@@ -140,7 +144,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${data.SEML2.title}"]`)
       .should('exist')
       .contains(messages.manage.catalog.accessPUBLIC)
-    cy.get(`[data-cy="actions-dropdown-${data.SEML2.title}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${data.SEML2.title}"]`).realClick()
     if (elementOwnership) {
       cy.get(`[data-cy="share-object-${data.SEML2.title}"]`).click()
       cy.get('[data-cy="close-share-object"]').click()
@@ -155,7 +159,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${data.SEML.title}"]`)
       .should('exist')
       .contains(messages.manage.catalog.accessRESTRICTED)
-    cy.get(`[data-cy="actions-dropdown-${data.SEML.title}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${data.SEML.title}"]`).realClick()
     if (elementOwnership) {
       cy.get(`[data-cy="share-object-${data.SEML.title}"]`).click()
       cy.get('[data-cy="close-share-object"]').click()
@@ -168,7 +172,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${data.SEML2.title}"]`)
       .should('exist')
       .contains(messages.manage.catalog.accessPUBLIC)
-    cy.get(`[data-cy="actions-dropdown-${data.SEML2.title}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${data.SEML2.title}"]`).realClick()
     if (elementOwnership) {
       cy.get(`[data-cy="share-object-${data.SEML2.title}"]`).click()
       cy.get('[data-cy="close-share-object"]').click()
@@ -358,8 +362,8 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="catalog-collection-name-input"]')
       .click()
       .type(this.data.CCRestricted)
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-restricted"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessRESTRICTED
     )
@@ -404,10 +408,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click()
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCPublic)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-public"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessPUBLIC
     )
@@ -429,10 +433,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCRestricted)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-public"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessPUBLIC
     )
@@ -516,8 +520,8 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="permission-level-select"]').contains(
       messages.manage.sharing.permissionsREAD
     )
-    cy.get('[data-cy="permission-level-select"]').click()
-    cy.get('[data-cy="permission-level-WRITE"]').click()
+    cy.get('[data-cy="permission-level-select"]').realClick()
+    cy.get('[data-cy="permission-level-WRITE"]').realClick()
     cy.get('[data-cy="permission-level-select"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
@@ -526,7 +530,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     // share directly with pro2 (ADMIN permissions)
     cy.get(
       `[data-cy="catalog-collection-${this.data.CCRestricted}-actions"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="share-catalog-collection"]').click()
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
@@ -568,7 +572,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="catalog"]').click()
     cy.get(
       `[data-cy="catalog-collection-${this.data.CCPublic}-actions"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="share-catalog-collection"]').click()
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
@@ -596,10 +600,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click()
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCPublic)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-restricted"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessRESTRICTED
     )
@@ -620,10 +624,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCRestricted)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-ANSWER_COLLECTION"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-restricted"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessRESTRICTED
     )
@@ -650,10 +654,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click()
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCPublic)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-public"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessPUBLIC
     )
@@ -675,10 +679,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCRestricted)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-LIVE_QUIZ_TEMPLATE"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-public"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessPUBLIC
     )
@@ -703,10 +707,10 @@ describe('Test all functionalities of catalog collections and objects contained 
 
     // add the two selection questions to the top level of the catalog collection
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-restricted"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessRESTRICTED
     )
@@ -723,10 +727,10 @@ describe('Test all functionalities of catalog collections and objects contained 
       .contains(messages.manage.catalog.accessRESTRICTED)
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-public"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessPUBLIC
     )
@@ -746,10 +750,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click()
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCPublic)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-restricted"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessRESTRICTED
     )
@@ -766,10 +770,10 @@ describe('Test all functionalities of catalog collections and objects contained 
       .contains(messages.manage.catalog.accessRESTRICTED)
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-public"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessPUBLIC
     )
@@ -790,10 +794,10 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
     cy.get('[data-cy="catalog-browser-title"]').contains(this.data.CCRestricted)
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-restricted"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessRESTRICTED
     )
@@ -810,10 +814,10 @@ describe('Test all functionalities of catalog collections and objects contained 
       .contains(messages.manage.catalog.accessRESTRICTED)
 
     cy.get('[data-cy="add-object-to-catalog-button"]').click()
-    cy.get('[data-cy="object-type-selection"]').click()
-    cy.get(`[data-cy="object-type-ELEMENT"]`).click()
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-public"]').click()
+    cy.get('[data-cy="object-type-selection"]').realClick()
+    cy.get(`[data-cy="object-type-ELEMENT"]`).realClick()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-public"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessPUBLIC
     )
@@ -846,7 +850,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="leave-catalog-collection"]').click()
     cy.get(
       `[data-cy="catalog-collection-${this.data.CCRestricted}-actions"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="share-catalog-collection"]').click()
     cy.get('[data-cy="transfer-ownership"]').should('exist')
     cy.get('[data-cy="new-permission-username-or-email"]').should('exist')
@@ -854,7 +858,7 @@ describe('Test all functionalities of catalog collections and objects contained 
 
     cy.get(
       `[data-cy="catalog-collection-${this.data.CCRestricted}-actions"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="delete-catalog-collection"]').click()
     cy.get('[data-cy="cancel-delete-collection"]').click()
   })
@@ -882,14 +886,14 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="catalog-object-${this.data.AC1.name}"]`)
       .should('exist')
       .contains(messages.manage.catalog.accessPUBLIC)
-    cy.get(`[data-cy="actions-dropdown-${this.data.AC1.name}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${this.data.AC1.name}"]`).realClick()
     cy.get(`[data-cy="remove-object-${this.data.AC1.name}"]`).click()
     cy.get('[data-cy="cancel-removal"]').click()
 
     cy.get(`[data-cy="catalog-object-${this.data.AC2.name}"]`)
       .should('exist')
       .contains(messages.manage.catalog.accessRESTRICTED)
-    cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="remove-object-${this.data.AC2.name}"]`).click()
     cy.get('[data-cy="cancel-removal"]').click()
 
@@ -899,7 +903,7 @@ describe('Test all functionalities of catalog collections and objects contained 
       .contains(messages.manage.catalog.accessPUBLIC)
     cy.get(
       `[data-cy="actions-dropdown-${this.data.liveQuiz.template.name}"]`
-    ).click()
+    ).realClick()
     cy.get(
       `[data-cy="use-template-${this.data.liveQuiz.template.name}"]`
     ).should('exist')
@@ -919,8 +923,8 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="catalog-collection-name-input"]')
       .click()
       .type(this.data.CCRestricted2)
-    cy.get('[data-cy="modal-object-access"]').click()
-    cy.get('[data-cy="object-access-restricted"]').click()
+    cy.get('[data-cy="modal-object-access"]').realClick()
+    cy.get('[data-cy="object-access-restricted"]').realClick()
     cy.get('[data-cy="modal-object-access"]').contains(
       messages.manage.catalog.accessRESTRICTED
     )
@@ -971,7 +975,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="member-shortname-email-0"]')
       .click()
       .type(Cypress.env('LECTURER_INST_EMAIL')) // pro2 is added as admin
-    cy.get('[data-cy="member-admin-0"]').click()
+    cy.get('[data-cy="member-admin-0"]').realClick()
     cy.get('[data-cy="submit-create-user-group"]').click()
 
     // check that the user group has been created correctly
@@ -1033,7 +1037,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="catalog"]').click()
     cy.get(
       `[data-cy="catalog-collection-${this.data.CCRestricted2}-actions"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="share-catalog-collection"]').click()
 
     // grant direct READ permissions to group 1
@@ -1185,14 +1189,14 @@ describe('Test all functionalities of catalog collections and objects contained 
     )
     cy.get('[data-cy="add-object-to-catalog-button"]').should('not.exist')
 
-    cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="request-access-${this.data.AC2.name}"]`).click()
     cy.get(`[data-cy="cancel-request-access"]`).click()
 
     // test that the live quiz templates can be used
     cy.get(
       `[data-cy="actions-dropdown-${this.data.liveQuiz.template.name}"]`
-    ).click()
+    ).realClick()
     cy.get(
       `[data-cy="use-template-${this.data.liveQuiz.template.name}"]`
     ).click() // open template
@@ -1223,7 +1227,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     )
     cy.get('[data-cy="add-object-to-catalog-button"]').should('not.exist')
 
-    cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="request-access-${this.data.AC2.name}"]`).click()
     cy.get(`[data-cy="cancel-request-access"]`).click()
   })
@@ -1235,22 +1239,22 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click()
-    cy.get(`[data-cy="actions-dropdown-${this.data.AC1.name}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${this.data.AC1.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC1.name}"]`).click()
     cy.get('[data-cy="transfer-ownership"]').should('exist')
     cy.get('[data-cy="close-share-object"]').click()
-    cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC2.name}"]`).should('not.exist')
     cy.get(`[data-cy="request-access-${this.data.AC2.name}"]`).click()
     cy.get(`[data-cy="cancel-request-access"]`).click()
 
     cy.get('[data-cy="leave-catalog-collection"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
-    cy.get(`[data-cy="actions-dropdown-${this.data.AC1.name}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${this.data.AC1.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC1.name}"]`).click()
     cy.get('[data-cy="transfer-ownership"]').should('exist')
     cy.get('[data-cy="close-share-object"]').click()
-    cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC2.name}"]`).should('not.exist')
     cy.get(`[data-cy="request-access-${this.data.AC2.name}"]`).click()
     cy.get(`[data-cy="cancel-request-access"]`).click()
@@ -1262,22 +1266,22 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="resources"]').click()
     cy.get('[data-cy="catalog"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCPublic}"]`).click()
-    cy.get(`[data-cy="actions-dropdown-${this.data.AC1.name}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${this.data.AC1.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC1.name}"]`).click()
     cy.get('[data-cy="transfer-ownership"]').should('not.exist')
     cy.get('[data-cy="close-share-object"]').click()
-    cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC2.name}"]`).click()
     cy.get('[data-cy="transfer-ownership"]').should('exist')
     cy.get('[data-cy="close-share-object"]').click()
 
     cy.get('[data-cy="leave-catalog-collection"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
-    cy.get(`[data-cy="actions-dropdown-${this.data.AC1.name}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${this.data.AC1.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC1.name}"]`).click()
     cy.get('[data-cy="transfer-ownership"]').should('not.exist')
     cy.get('[data-cy="close-share-object"]').click()
-    cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC2.name}"]`).click()
     cy.get('[data-cy="transfer-ownership"]').should('exist')
     cy.get('[data-cy="close-share-object"]').click()
@@ -1295,18 +1299,18 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get(`[data-cy="actions-dropdown-${this.data.AC1.name}"]`).should(
       'not.exist'
     ) // actions not available - not sufficient permissions on object OR catalog collection
-    cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC2.name}"]`).should('not.exist')
     cy.get(`[data-cy="request-access-${this.data.AC2.name}"]`).click()
     cy.get(`[data-cy="cancel-request-access"]`).click()
 
     cy.get('[data-cy="leave-catalog-collection"]').click()
     cy.get(`[data-cy="catalog-object-${this.data.CCRestricted}"]`).click()
-    cy.get(`[data-cy="actions-dropdown-${this.data.AC1.name}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${this.data.AC1.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC1.name}"]`).should('not.exist')
     cy.get(`[data-cy="remove-object-${this.data.AC1.name}"]`).click()
     cy.get(`[data-cy="cancel-removal"]`).click()
-    cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).click()
+    cy.get(`[data-cy="actions-dropdown-${this.data.AC2.name}"]`).realClick()
     cy.get(`[data-cy="share-object-${this.data.AC2.name}"]`).should('not.exist')
     cy.get(`[data-cy="remove-object-${this.data.AC2.name}"]`).click()
     cy.get(`[data-cy="cancel-removal"]`).click()
@@ -1331,13 +1335,13 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="member-shortname-email-0"]')
       .click()
       .type(Cypress.env('LECTURER_IND_SHORTNAME')) // pro1 is added as admin
-    cy.get('[data-cy="member-admin-0"]').click()
+    cy.get('[data-cy="member-admin-0"]').realClick()
 
     cy.get('[data-cy="add-member"]').click()
     cy.get('[data-cy="member-shortname-email-1"]')
       .click()
       .type(Cypress.env('LECTURER_INST_EMAIL')) // pro2 is added as admin
-    cy.get('[data-cy="member-admin-1"]').click()
+    cy.get('[data-cy="member-admin-1"]').realClick()
 
     cy.get('[data-cy="add-member"]').click()
     cy.get('[data-cy="member-shortname-email-2"]')
@@ -1955,7 +1959,7 @@ describe('Test all functionalities of catalog collections and objects contained 
     cy.get('[data-cy="confirm-delete-collection"]').click()
     cy.get(
       `[data-cy="catalog-collection-${this.data.CCRestricted}-actions"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="delete-catalog-collection"]').click()
     cy.get('[data-cy="confirm-delete-collection"]').click()
 
