@@ -11,12 +11,7 @@ describe('Feature test for activity logs', function () {
     })
   })
 
-  // ! if a test case fails, stop the test run
-  afterEach(function () {
-    if (this.currentTest.state === 'failed') {
-      Cypress.stop()
-    }
-  })
+  // Fail-fast handled globally in support/e2e.ts
 
   it('CLEANUP', () => {
     cy.cleanup()

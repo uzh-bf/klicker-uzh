@@ -10,12 +10,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
   })
 
-  // ! if a test case fails, stop the test run
-  afterEach(function () {
-    if (this.currentTest.state === 'failed') {
-      Cypress.stop()
-    }
-  })
+  // Fail-fast handled globally in support/e2e.ts
 
   it('CLEANUP', () => {
     cy.cleanup()
@@ -560,8 +555,8 @@ describe('Test all functionalities related to the creation, management, sharing 
       .type(this.data.liveQuiz.template1Orig.name)
     cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
     cy.get('[data-cy="template-description"]')
-      .click()
-      .type(this.data.liveQuiz.template1Orig.description)
+      .realClick()
+      .realType(this.data.liveQuiz.template1Orig.description)
     cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
     cy.get('[data-cy="template-instructions"]')
       .click()
@@ -637,8 +632,8 @@ describe('Test all functionalities related to the creation, management, sharing 
       .type(this.data.liveQuiz.template2.name)
     cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
     cy.get('[data-cy="template-description"]')
-      .click()
-      .type(this.data.liveQuiz.template2.description)
+      .realClick()
+      .realType(this.data.liveQuiz.template2.description)
     cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
     cy.get('[data-cy="template-instructions"]')
       .click()

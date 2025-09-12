@@ -224,6 +224,7 @@ jobs:
           browser: chrome
           working-directory: cypress
         env:
+          CYPRESS_FAIL_FAST: 'false'
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@127.0.0.1:5432/klicker-prod
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -379,6 +380,7 @@ jobs:
           browser: chrome
           working-directory: cypress
         env:
+          CYPRESS_FAIL_FAST: 'false'
           APP_SECRET: abcd
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           DATABASE_URL: postgres://klicker-prod:klicker@127.0.0.1:5432/klicker-prod
