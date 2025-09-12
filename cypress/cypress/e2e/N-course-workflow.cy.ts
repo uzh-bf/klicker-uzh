@@ -340,7 +340,7 @@ describe('Test course creation and editing functionalities', function () {
           // join the course
           cy.get('[data-cy="join-new-course"]').click()
           cy.get('[data-cy="join-course-pin-field-1"]')
-            .click()
+            .realClick()
             .realType(String(pin))
           cy.get('[data-cy="join-course-submit-form"]').click()
 
@@ -385,7 +385,7 @@ describe('Test course creation and editing functionalities', function () {
         // join the course
         cy.get('[data-cy="join-new-course"]').click()
         cy.get('[data-cy="join-course-pin-field-1"]')
-          .click()
+          .realClick()
           .realType(String(pin))
         cy.get('[data-cy="join-course-submit-form"]').click()
 
@@ -415,7 +415,7 @@ describe('Test course creation and editing functionalities', function () {
         // join the course
         cy.get('[data-cy="join-new-course"]').click()
         cy.get('[data-cy="join-course-pin-field-1"]')
-          .click()
+          .realClick()
           .realType(String(pin))
         cy.get('[data-cy="join-course-submit-form"]').click()
 

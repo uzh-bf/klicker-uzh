@@ -250,10 +250,5 @@ volumes:
   klicker_data:
   klicker_data_diff:
   klicker_data_lti:
-  hatchet_postgres_data:
-  hatchet_rabbitmq_data:
-  hatchet_rabbitmq.conf:
-  hatchet_config:
-  hatchet_certs:
   redis_data:
   hatchet_lite_config:
