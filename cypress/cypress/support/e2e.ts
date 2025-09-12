@@ -48,7 +48,7 @@ Cypress.on('test:before:run', () => {
 
 // Gate fail-fast behavior behind an env flag (defaults to true for current behavior)
 // Configure via `CYPRESS_FAIL_FAST=true|false` (or `--env FAIL_FAST=true|false`)
-function envFlag(name: string, defaultValue = true): boolean {
+function envFlag(name: string, defaultValue = false): boolean {
   const raw = Cypress.env(name)
   if (typeof raw === 'boolean') return raw
   if (typeof raw === 'number') return raw === 1
@@ -62,7 +62,7 @@ function envFlag(name: string, defaultValue = true): boolean {
 
 // Single global hook: stop the run when a test fails and FAIL_FAST is enabled
 Cypress.on('test:after:run', (test /*, runnable*/) => {
-  if (envFlag('FAIL_FAST', true) && test.state === 'failed') {
+  if (envFlag('CYPRESS_FAIL_FAST', true) && test.state === 'failed') {
     Cypress.stop()
   }
 })
