@@ -278,8 +278,8 @@ describe('Different live-quiz workflows', function () {
       this.data.course1.quiz.displayName
     )
     cy.get('[data-cy="insert-live-description"]')
-      .click()
-      .type(this.data.course1.quiz.description)
+      .realClick()
+      .realType(this.data.course1.quiz.description)
     cy.get('[data-cy="insert-live-description"]').contains(
       this.data.course1.quiz.description
     )
@@ -537,11 +537,11 @@ describe('Different live-quiz workflows', function () {
       .click()
       .contains(this.data.course1.quiz.description)
     cy.get('[data-cy="insert-live-description"]')
-      .click()
+      .realClick()
       .clear()
-      .type(this.data.course1.quiz.descriptionNew)
+      .realType(this.data.course1.quiz.descriptionNew)
     cy.get('[data-cy="insert-live-description"]')
-      .click()
+      .realClick()
       .contains(this.data.course1.quiz.descriptionNew)
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -935,8 +935,8 @@ describe('Different live-quiz workflows', function () {
       this.data.course2.quiz.displayName
     )
     cy.get('[data-cy="insert-live-description"]')
-      .click()
-      .type(this.data.course2.quiz.description)
+      .realClick()
+      .realType(this.data.course2.quiz.description)
     cy.get('[data-cy="insert-live-description"]')
       .click()
       .contains(this.data.course2.quiz.description)
