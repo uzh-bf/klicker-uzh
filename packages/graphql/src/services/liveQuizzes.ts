@@ -2989,14 +2989,18 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
       )
       return false
     }
-    if (
-      block.elements.length === 0 ||
-      block.elements.every((el) => el.liveQuizResponses.length === 0)
-    ) {
+    if (block.elements.length === 0) {
       executionCtx.logger.error(
-        `Block with ID ${blockId} in quiz with ID ${liveQuizId} has no elements or no responses`
+        `Block with ID ${blockId} in quiz with ID ${liveQuizId} has no elements`
       )
       return false
+    }
+
+    if (block.elements.every((el) => el.liveQuizResponses.length === 0)) {
+      executionCtx.logger.info(
+        `No responses found for any element in block with ID ${blockId} in quiz with ID ${liveQuizId}`
+      )
+      return true
     }
 
     // results are aggregated based on db data, only update the leaderboard if this is the last block

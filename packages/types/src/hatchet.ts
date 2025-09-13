@@ -93,7 +93,7 @@ export interface HatchetHandlers {
 
 // Contract for the tasks that are passed into the GraphQL context.
 export interface PreparedHatchetTasks {
-  createAuditLoggingEntry: TaskWorkflowDeclaration<
+  createAuditLogEntry: TaskWorkflowDeclaration<
     {
       message: Record<string, string | undefined> & {
         correlationId: string

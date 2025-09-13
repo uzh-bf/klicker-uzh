@@ -133,7 +133,7 @@ export async function getCachedBlockResults({
                 typeof solutions[0] === 'string'
               grading =
                 gradeQuestionNumerical({
-                  response,
+                  response: parseFloat(String(response)),
                   solutionRanges: exactSolutionsDefined ? undefined : solutions,
                   exactSolutions: exactSolutionsDefined ? solutions : undefined,
                 }) ?? undefined
@@ -172,13 +172,10 @@ export async function getCachedBlockResults({
     } else if (instance.elementType === DB.ElementType.SELECTION) {
       const selections = Object.entries(
         omitBy(results, (_, key) => key === 'participants')
-      ).reduce<Record<string, number>>(
-        (acc, [answerId, count]) => {
-          acc[answerId] = (acc[answerId] ?? 0) + parseInt(count)
-          return acc
-        },
-        { ...(instance.anonymousResults as ElementResultsSelection).selections }
-      )
+      ).reduce<Record<string, number>>((acc, [answerId, count]) => {
+        acc[answerId] = (acc[answerId] ?? 0) + parseInt(count)
+        return acc
+      }, {})
 
       anonymousResults = {
         selections,
@@ -288,9 +285,7 @@ export async function getCachedBlockResults({
 
           return assessmentsAcc
         },
-        {
-          ...(instance.anonymousResults as ElementResultsCaseStudy).assessments,
-        }
+        {}
       )
 
       anonymousResults = {

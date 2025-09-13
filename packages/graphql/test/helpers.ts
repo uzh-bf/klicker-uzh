@@ -122,7 +122,7 @@ export async function testInitialization(
 
   // initialize tasks to be called
   const tasks = {
-    createAuditLoggingEntry: hatchet.task({
+    createAuditLogEntry: hatchet.task({
       name: 'create-audit-logging-entry',
       fn: async ({
         message,
