@@ -102,7 +102,7 @@ else
 
 		# reset prisma database after tokens are created
 		echo "Preparing Prisma database (pnpm run prisma:setup)"
-		pnpm run prisma:setup -f || {
+		pnpm run prisma:setup || {
 				echo "Prisma setup failed" >&2
 				exit 1
 		}
