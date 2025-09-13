@@ -319,6 +319,10 @@ describe('Integration tests for assessment configuration functionalities', () =>
       )
       await prisma.elementBlock.update({
         where: { id: endedQuiz.blocks[0]!.id },
+        data: { elements: { deleteMany: {} } },
+      })
+      await prisma.elementBlock.update({
+        where: { id: endedQuiz.blocks[0]!.id },
         data: {
           elements: {
             create: [
