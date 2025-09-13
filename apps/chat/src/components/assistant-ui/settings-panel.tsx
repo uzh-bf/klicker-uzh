@@ -110,7 +110,7 @@ export function SettingsPanel() {
           <div className="space-y-1">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">
-                {credits.current} / {credits.total}
+                {Math.round(credits.current)} / {credits.total}
               </span>
               <span className="text-muted-foreground">
                 {Math.round(creditsPercentage)}%
