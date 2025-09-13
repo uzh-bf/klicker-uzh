@@ -73,7 +73,7 @@ describe('Create, edit and share answer collections', function () {
 
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
-      .type(this.data.public.description)
+      .realType(this.data.public.description)
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
       .contains(this.data.public.description)
@@ -159,7 +159,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
       .clear()
-      .type(this.data.public.descriptionNew)
+      .realType(this.data.public.descriptionNew)
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
       .contains(this.data.public.descriptionNew)

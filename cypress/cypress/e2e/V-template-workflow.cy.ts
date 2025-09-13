@@ -692,7 +692,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="template-description"]')
       .realClick()
       .clear()
-      .type(this.data.liveQuiz.template1.description)
+      .realType(this.data.liveQuiz.template1.description)
 
     cy.get('[data-cy="submit-template-edit"]').should('not.be.disabled')
     cy.get('[data-cy="template-instructions"]').contains(
@@ -701,7 +701,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="template-instructions"]')
       .realClick()
       .clear()
-      .type(this.data.liveQuiz.template1.instructions)
+      .realType(this.data.liveQuiz.template1.instructions)
     cy.get('[data-cy="submit-template-edit"]').click()
 
     // verify that the template is shown in an updated version

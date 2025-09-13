@@ -221,15 +221,15 @@ describe('Feature test for activity logs', function () {
     cy.get('[data-cy="insert-question-title"]').type(this.data.SC.title)
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
-      .type(this.data.SC.content)
+      .realType(this.data.SC.content)
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
-      .type(this.data.SC.choices[0].value)
+      .realType(this.data.SC.choices[0].value)
     cy.get('[data-cy="add-new-answer"]').click()
     cy.wait(500)
     cy.get('[data-cy="insert-answer-field-1"]')
       .realClick()
-      .type(this.data.SC.choices[1].value)
+      .realType(this.data.SC.choices[1].value)
     cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
     cy.get('[data-cy="save-new-question"]').click()
 

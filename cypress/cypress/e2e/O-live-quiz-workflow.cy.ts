@@ -1812,7 +1812,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.liveQuiz.newSCContent)
+      .realType(this.data.liveQuiz.newSCContent)
     cy.get('[data-cy="save-new-question"]').click()
     cy.wait(1000) // wait for the question to be saved and the modal to be closed
 

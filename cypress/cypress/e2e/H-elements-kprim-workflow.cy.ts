@@ -37,10 +37,10 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
-      .type(this.data.KP.content)
+      .realType(this.data.KP.content)
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
-      .type(this.data.KP.choices[0])
+      .realType(this.data.KP.choices[0])
     cy.get('[data-cy="insert-answer-field-0"]').findByText(
       this.data.KP.choices[0]
     )
@@ -48,7 +48,7 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     cy.wait(500)
     cy.get('[data-cy="insert-answer-field-1"]')
       .realClick()
-      .type(this.data.KP.choices[1])
+      .realType(this.data.KP.choices[1])
     cy.get('[data-cy="insert-answer-field-1"]').findByText(
       this.data.KP.choices[1]
     )
@@ -56,7 +56,7 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     cy.wait(500)
     cy.get('[data-cy="insert-answer-field-2"]')
       .realClick()
-      .type(this.data.KP.choices[2])
+      .realType(this.data.KP.choices[2])
     cy.get('[data-cy="insert-answer-field-2"]').findByText(
       this.data.KP.choices[2]
     )
@@ -64,7 +64,7 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     cy.wait(500)
     cy.get('[data-cy="insert-answer-field-3"]')
       .realClick()
-      .type(this.data.KP.choices[3])
+      .realType(this.data.KP.choices[3])
     cy.get('[data-cy="insert-answer-field-3"]').findByText(
       this.data.KP.choices[3]
     )
@@ -76,7 +76,7 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
     cy.get('[data-cy="insert-answer-field-2"]')
       .realClick()
-      .type(this.data.KP.choices[2])
+      .realType(this.data.KP.choices[2])
     cy.get('[data-cy="insert-answer-field-2"]').findByText(
       this.data.KP.choices[2]
     )
@@ -205,19 +205,19 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.KP.contentEdited)
+      .realType(this.data.KP.contentEdited)
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
       .clear()
-      .type(this.data.KP.choicesEdited[0])
+      .realType(this.data.KP.choicesEdited[0])
     cy.get('[data-cy="insert-answer-field-1"]')
       .realClick()
       .clear()
-      .type(this.data.KP.choicesEdited[1])
+      .realType(this.data.KP.choicesEdited[1])
     cy.get('[data-cy="insert-answer-field-2"]')
       .realClick()
       .clear()
-      .type(this.data.KP.choicesEdited[2])
+      .realType(this.data.KP.choicesEdited[2])
     cy.get('[data-cy="delete-answer-option-ix-3"]').click()
     cy.get('[data-cy="insert-answer-field-3"]').should('not.exist')
     cy.get('[data-cy="add-new-answer"]').click()
@@ -225,7 +225,7 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     cy.get('[data-cy="insert-answer-field-3"]')
       .realClick()
       .clear()
-      .type(this.data.KP.choicesEdited[3])
+      .realType(this.data.KP.choicesEdited[3])
     cy.get('[data-cy="add-new-answer"]').should('be.disabled')
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
@@ -275,7 +275,7 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
       cy.get('[data-cy="save-new-question"]').should('be.disabled')
       cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
         .realClick()
-        .type(feedback)
+        .tyrealTypepe(feedback)
       cy.get(`[data-cy="insert-answer-feedback-${ix}"]`).contains(feedback)
     })
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
@@ -287,11 +287,11 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
     cy.get('[data-cy="insert-answer-feedback-0"]')
       .realClick()
-      .type(this.data.KP.choicesFeedbacks[0])
+      .realType(this.data.KP.choicesFeedbacks[0])
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
     cy.get('[data-cy="insert-answer-feedback-1"]')
       .realClick()
-      .type(this.data.KP.choicesFeedbacks[1])
+      .realType(this.data.KP.choicesFeedbacks[1])
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
     // verify that reordering answer options also reorders the corresponding feedbacks

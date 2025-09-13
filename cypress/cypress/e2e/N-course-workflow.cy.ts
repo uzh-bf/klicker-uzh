@@ -37,7 +37,7 @@ describe('Test course creation and editing functionalities', function () {
       .type(this.data.course1.displayName)
     cy.get('[data-cy="course-description"]')
       .realClick()
-      .type(this.data.course1.description)
+      .realType(this.data.course1.description)
 
     // change the course language from the user default locale (english) to german
     cy.get('[data-cy="course-language"]').should(

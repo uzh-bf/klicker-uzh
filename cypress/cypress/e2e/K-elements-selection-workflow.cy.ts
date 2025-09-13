@@ -64,10 +64,10 @@ describe('Test creation and editing functionalities, validation, etc. for select
     ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
-      .type(this.data.SE.content)
+      .realType(this.data.SE.content)
     cy.get('[data-cy="insert-question-explanation"]')
       .realClick()
-      .type(this.data.SE.explanation)
+      .realType(this.data.SE.explanation)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
 
     // select an answer collection
@@ -277,11 +277,11 @@ describe('Test creation and editing functionalities, validation, etc. for select
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.SE.contentEdited)
+      .realType(this.data.SE.contentEdited)
     cy.get('[data-cy="insert-question-explanation"]')
       .realClick()
       .clear()
-      .type(this.data.SE.explanationEdited)
+      .realType(this.data.SE.explanationEdited)
 
     cy.get('[data-cy="select-answer-collection"]').realClick()
     cy.get(
@@ -460,10 +460,10 @@ describe('Test creation and editing functionalities, validation, etc. for select
     ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
-      .type(this.data.SE_INLINE.content)
+      .realType(this.data.SE_INLINE.content)
     cy.get('[data-cy="insert-question-explanation"]')
       .realClick()
-      .type(this.data.SE_INLINE.explanation)
+      .realType(this.data.SE_INLINE.explanation)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
 
     // check if button for manual creation is present and click it
@@ -491,7 +491,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
     cy.wrap(this.data.SE_INLINE.solutions).each((solution: string) => {
       cy.get('[data-cy="choose-correct-answer-options"]')
         .realClick()
-        .type(`${solution}{enter}`)
+        .realType(`${solution}{enter}`)
     })
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
@@ -509,7 +509,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
     // select the additional item as correct answer
     cy.get('[data-cy="choose-correct-answer-options"]')
       .realClick()
-      .type(`${additionalItem}{enter}`)
+      .realType(`${additionalItem}{enter}`)
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
     // verify the additional item is selected as a correct answer
@@ -563,11 +563,11 @@ describe('Test creation and editing functionalities, validation, etc. for select
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.SE_INLINE.contentEdited)
+      .realType(this.data.SE_INLINE.contentEdited)
     cy.get('[data-cy="insert-question-explanation"]')
       .realClick()
       .clear()
-      .type(this.data.SE_INLINE.explanationEdited)
+      .realType(this.data.SE_INLINE.explanationEdited)
 
     // ensure that switching to manual item creation is not possible during editing
     cy.get('[data-cy="create-inline-answer-collection"]').should('not.exist')

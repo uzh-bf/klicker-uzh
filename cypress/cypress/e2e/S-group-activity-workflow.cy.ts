@@ -1092,7 +1092,7 @@ describe('Create and solve a group activity', function () {
     if (this.data.running.grading.gradingComment1 !== null) {
       cy.get('[data-cy="groupActivity-general-grading-comment"]')
         .realClick()
-        .type(this.data.running.grading.gradingComment1)
+        .realType(this.data.running.grading.gradingComment1)
     }
 
     // test submission switch and warning that should be visible
@@ -1138,7 +1138,7 @@ describe('Create and solve a group activity', function () {
       if (this.data.running.grading.comments2[ix]) {
         cy.get(`[data-cy="groupActivity-grading-comment-${ix}"]`)
           .realClick()
-          .type(this.data.running.grading.comments2[ix])
+          .realType(this.data.running.grading.comments2[ix])
       }
       cy.get('[data-cy="groupActivity-save-submission-grading"]').should(
         'be.disabled'
@@ -1148,7 +1148,7 @@ describe('Create and solve a group activity', function () {
     if (this.data.running.grading.gradingComment2 !== null) {
       cy.get('[data-cy="groupActivity-general-grading-comment"]')
         .realClick()
-        .type(this.data.running.grading.gradingComment2)
+        .realType(this.data.running.grading.gradingComment2)
     }
     cy.get('[data-cy="groupActivity-failed"]').click()
     cy.get('[data-cy="finalize-grading"]').should('be.disabled')

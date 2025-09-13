@@ -36,7 +36,7 @@ describe('Test creation and editing functionalities, validation, etc. for Conten
     ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
-      .type(this.data.CT.content)
+      .realType(this.data.CT.content)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 
@@ -80,7 +80,7 @@ describe('Test creation and editing functionalities, validation, etc. for Conten
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.CT.contentEdited)
+      .realType(this.data.CT.contentEdited)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 
