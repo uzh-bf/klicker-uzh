@@ -2292,6 +2292,9 @@ importers:
       '@klicker-uzh/types':
         specifier: workspace:*
         version: link:../types
+      ioredis:
+        specifier: 5.4.1
+        version: 5.4.1
       jose:
         specifier: 5.9.4
         version: 5.9.4

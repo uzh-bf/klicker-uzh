@@ -4245,7 +4245,7 @@ describe('Different live-quiz workflows', function () {
   function enterPinAnswerFirstBlock(pin: string, data: any) {
     cy.get('[data-cy="live-quiz-pin-input-1"]').should('exist')
     cy.get('[data-cy="live-quiz-submit-pin"]').should('be.disabled')
-    cy.get('[data-cy="live-quiz-pin-input-1"]').click().realType(pin)
+    cy.get('[data-cy="live-quiz-pin-input-1"]').realClick().realType(pin)
     cy.get('[data-cy="live-quiz-submit-pin"]').click()
 
     // verify and answer the contained questions
