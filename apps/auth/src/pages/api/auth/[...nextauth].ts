@@ -617,6 +617,8 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
         },
 
         async jwt({ token, profile }) {
+          token.scope = 'EDUID'
+
           // Handle initial sign-in with participant profile
           if (profile && (profile as any).participantId) {
             token.sub = (profile as any).participantId
