@@ -64,7 +64,9 @@ Provider.onConnect(async (token, req, res) => {
   console.log('LTI launch callback:', token)
 
   if (!process.env.JWT_ISSUER_LTI) {
-    console.error('JWT_ISSUER_LTI environment variable is required but not defined')
+    console.error(
+      'JWT_ISSUER_LTI environment variable is required but not defined'
+    )
     process.exit(1)
   }
 

@@ -6,3 +6,4 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  JWT_ISSUER_PWA: {{ .Values.jwtIssuers.assessmentPwa | quote }}

@@ -6,6 +6,8 @@ jwtIssuers:
   auth: 'https://auth.klicker-qa.bf-app.ch'
   lti: 'https://lti.klicker-qa.bf-app.ch'
   pwa: 'https://pwa.klicker-qa.bf-app.ch'
+  assessmentApi: 'https://assessment-api.klicker-qa.bf-app.ch'
+  assessmentPwa: 'https://assessment.klicker-qa.bf-app.ch'
 
 hatchet:
   client:

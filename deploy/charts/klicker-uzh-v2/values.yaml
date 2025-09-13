@@ -41,6 +41,8 @@ jwtIssuers:
   auth: ''
   lti: ''
   pwa: ''
+  assessmentApi: ''
+  assessmentPwa: ''
 
 hatchet:
   client:

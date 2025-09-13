@@ -45,4 +45,4 @@ data:
   {{- if .Values.assessment.backendGraphql.preserveRedisForComparison }}
   PRESERVE_REDIS_FOR_COMPARISON: {{ .Values.assessment.backendGraphql.preserveRedisForComparison | quote }}
   {{ end }}
-  JWT_ISSUER_API: {{ .Values.jwtIssuers.api | quote }}
+  JWT_ISSUER_API: {{ .Values.jwtIssuers.assessmentApi | quote }}
