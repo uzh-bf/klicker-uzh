@@ -33,7 +33,9 @@ export class AzureTableTestHelper {
   private client: TableClient
   private tableName: string
 
-  constructor(tableName = 'auditlogs') {
+  constructor(
+    tableName = process.env.AZURE_TABLES_TABLE_NAME || 'auditevents'
+  ) {
     this.tableName = tableName
 
     // Parse Azurite connection string

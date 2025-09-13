@@ -46,7 +46,7 @@ export default defineConfig({
     },
 
     // Setup files run before each test file
-    setupFiles: [],
+    setupFiles: ['./test/setup.ts'],
 
     // Global setup/teardown (runs once for entire test suite)
     // Note: Docker setup is handled in individual test files for now

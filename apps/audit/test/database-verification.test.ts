@@ -5,7 +5,7 @@ const BASE_URL = 'http://localhost:7080'
 const AUTH_TOKEN = process.env.INTERNAL_TOKEN || 'test-secret-token-123'
 
 // Test helper instance
-const tableHelper = new AzureTableTestHelper('auditlogs')
+const tableHelper = new AzureTableTestHelper()
 
 // Helper function to make authenticated requests
 async function makeAuthenticatedRequest(

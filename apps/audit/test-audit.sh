@@ -1,8 +1,13 @@
 #!/bin/bash
 
-# Audit Service Testing Script
-# Comprehensive testing setup for KlickerUZH Audit Service
-# Handles Azurite setup, test execution, and service verification
+# KlickerUZH Audit Service Test Runner
+# Usage: ./test-audit.sh [--db|--api|--integration|--help]
+# 
+# Test Categories:
+#   --db           Only database tests (requires Azurite)
+#   --api          Only API tests (requires running service)
+#   --integration  Only integration tests (requires both)
+#   (no flag)      Run all tests
 
 set -e  # Exit on error
 
@@ -22,8 +27,59 @@ INFO="ℹ️"
 ROCKET="🚀"
 GEAR="⚙️"
 
+# Help function
+show_help() {
+    echo -e "${BLUE}${ROCKET} KlickerUZH Audit Service Test Runner${NC}"
+    echo "=================================================="
+    echo ""
+    echo "Usage: $0 [OPTIONS]"
+    echo ""
+    echo "Test Categories:"
+    echo "  --db           Only database tests (requires Azurite)"
+    echo "  --api          Only API tests (requires running service on port 7080)"
+    echo "  --integration  Only integration tests (requires both Azurite and service)"
+    echo "  --help, -h     Show this help message"
+    echo ""
+    echo "If no option is provided, all tests will run."
+    echo ""
+    echo "Prerequisites:"
+    echo "  Database tests:     Azurite running on port 10002"
+    echo "  API tests:          Audit service running on port 7080"
+    echo "  Integration tests:  Both Azurite and audit service running"
+    echo ""
+    exit 0
+}
+
+# Parse command line arguments
+TEST_CATEGORY="all"
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --db)
+            TEST_CATEGORY="db"
+            shift
+            ;;
+        --api)
+            TEST_CATEGORY="api"
+            shift
+            ;;
+        --integration)
+            TEST_CATEGORY="integration"
+            shift
+            ;;
+        --help|-h)
+            show_help
+            ;;
+        *)
+            echo -e "${CROSS} Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+
 echo -e "${BLUE}${ROCKET} KlickerUZH Audit Service Test Runner${NC}"
 echo "=================================================="
+echo -e "Test Category: ${YELLOW}${TEST_CATEGORY}${NC}"
 
 # Function to check if a port is in use
 check_port() {
@@ -111,40 +167,82 @@ else
     fi
 fi
 
-# Step 2: Install dependencies
-echo -e "\n${GEAR} Step 2: Installing dependencies"
-if npm ci --silent; then
-    echo -e "${CHECK} Dependencies installed"
+# Step 2: Install dependencies (pnpm workspace)
+echo -e "\n\${GEAR} Step 2: Installing dependencies"
+if pnpm install > /dev/null 2>&1; then
+    echo -e "\${CHECK} Dependencies installed"
 else
-    echo -e "${CROSS} Failed to install dependencies"
+    echo -e "\${CROSS} Failed to install dependencies"
+    echo -e "\${INFO} Try running: pnpm install"
     exit 1
 fi
 
 # Step 3: Build the service
-echo -e "\n${GEAR} Step 3: Building TypeScript"
-if npm run build --silent; then
-    echo -e "${CHECK} Build successful"
+echo -e "\n\${GEAR} Step 3: Building TypeScript"
+if pnpm build > /dev/null 2>&1; then
+    echo -e "\${CHECK} Build successful"
 else
-    echo -e "${CROSS} Build failed"
+    echo -e "\${CROSS} Build failed"
+    echo -e "\${INFO} Try running: pnpm build"
     exit 1
 fi
 
-# Step 4: Run tests
-echo -e "\n${GEAR} Step 4: Running test suite"
-echo -e "${INFO} This may take a few minutes..."
+# Step 4: Run tests based on category
+echo -e "\n\${GEAR} Step 4: Running test suite (\${TEST_CATEGORY})"
 
-# Set test environment variables
-export NODE_ENV=test
-export INTERNAL_TOKEN="test-secret-token-123"
-export AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;"
-export AZURE_STORAGE_TABLE_NAME="auditlogs"
-
-# Run the tests with verbose output
-if npm test; then
-    echo -e "\n${CHECK} All tests passed!"
+# Load test environment variables from .env.test
+if [ -f ".env.test" ]; then
+    echo -e "${INFO} Loading test environment from .env.test..."
+    set -a  # Automatically export all variables
+    source .env.test
+    set +a  # Stop auto-exporting
 else
-    echo -e "\n${CROSS} Some tests failed. Check output above for details."
-    exit 1
+    echo -e "${WARN} .env.test not found, using fallback environment variables..."
+    # Fallback environment variables
+    export NODE_ENV=test
+    export INTERNAL_TOKEN="test-secret-token-123"
+    export AZURE_TABLES_CONNECTION_STRING="DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;"
+    export AZURE_TABLES_TABLE_NAME="auditevents"
+    export APP_SECRET="abcd"
+fi
+
+# Determine which tests to run
+case \$TEST_CATEGORY in
+    "db")
+        echo -e "\${INFO} Running database tests only..."
+        TEST_PATTERN="test/database-verification"
+        ;;
+    "api")
+        echo -e "\${INFO} Running API tests only..."
+        TEST_PATTERN="test/api test/public-endpoint"
+        ;;
+    "integration")
+        echo -e "\${INFO} Running integration tests only..."
+        TEST_PATTERN="test/integration test/scenarios test/performance"
+        ;;
+    "all")
+        echo -e "\${INFO} Running all tests (this may take a few minutes)..."
+        TEST_PATTERN=""
+        ;;
+esac
+
+# Run the tests
+if [ -z "\$TEST_PATTERN" ]; then
+    # Run all tests
+    if pnpm test; then
+        echo -e "\n\${CHECK} All tests passed!"
+    else
+        echo -e "\n\${CROSS} Some tests failed. Check output above for details."
+        exit 1
+    fi
+else
+    # Run specific test pattern
+    if pnpm vitest run \$TEST_PATTERN; then
+        echo -e "\n\${CHECK} \${TEST_CATEGORY} tests passed!"
+    else
+        echo -e "\n\${CROSS} Some \${TEST_CATEGORY} tests failed. Check output above for details."
+        exit 1
+    fi
 fi
 
 # Step 5: Optional service testing
@@ -156,7 +254,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo -e "${INFO} Starting audit service..."
     
     # Start service in background
-    npm run dev > audit-service.log 2>&1 &
+    pnpm dev > audit-service.log 2>&1 &
     SERVICE_PID=$!
     
     # Wait for service to be ready
