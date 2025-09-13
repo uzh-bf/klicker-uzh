@@ -79,6 +79,16 @@ export interface HatchetHandlers {
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
+  handleAssessmentLiveQuizBlockClosureAggregation: (
+    { liveQuizId, blockId }: { liveQuizId: string; blockId: number },
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
+  handleStandardLiveQuizBlockClosureAggregation: (
+    { liveQuizId, blockId }: { liveQuizId: string; blockId: number },
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
 }
 
 // Contract for the tasks that are passed into the GraphQL context.
@@ -93,39 +103,35 @@ export interface PreparedHatchetTasks {
     { success: boolean }
   >
   publishScheduledMicroLearning: TaskWorkflowDeclaration<
-    {
-      microLearningId: string
-    },
+    { microLearningId: string },
     { success: boolean }
   >
   publishScheduledPracticeQuiz: TaskWorkflowDeclaration<
-    {
-      practiceQuizId: string
-    },
+    { practiceQuizId: string },
     { success: boolean }
   >
   publishScheduledGroupActivity: TaskWorkflowDeclaration<
-    {
-      groupActivityId: string
-    },
+    { groupActivityId: string },
     { success: boolean }
   >
   publishScheduledLiveQuiz: TaskWorkflowDeclaration<
-    {
-      liveQuizId: string
-    },
+    { liveQuizId: string },
     { success: boolean }
   >
   endExpiredMicroLearning: TaskWorkflowDeclaration<
-    {
-      microLearningId: string
-    },
+    { microLearningId: string },
     { success: boolean }
   >
   endExpiredGroupActivity: TaskWorkflowDeclaration<
-    {
-      groupActivityId: string
-    },
+    { groupActivityId: string },
+    { success: boolean }
+  >
+  aggregateLiveQuizBlockResultsStandard: TaskWorkflowDeclaration<
+    { liveQuizId: string; blockId: number },
+    { success: boolean }
+  >
+  aggregateLiveQuizBlockResultsAssessment: TaskWorkflowDeclaration<
+    { liveQuizId: string; blockId: number },
     { success: boolean }
   >
 }

@@ -139,9 +139,7 @@ export async function testInitialization(
         executionCtx
       ) => {
         const success = await handlePublishScheduledMicroLearning(
-          {
-            microLearningId,
-          },
+          { microLearningId },
           hatchetCtx,
           executionCtx
         )

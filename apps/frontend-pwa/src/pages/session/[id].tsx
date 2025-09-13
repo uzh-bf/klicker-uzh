@@ -119,7 +119,7 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
         correlationKey,
         instanceId,
         liveQuizId,
-        response: { read: true },
+        response: { viewed: true },
       }),
     }
   } else {

@@ -43,7 +43,11 @@ import {
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,
 } from './services/groups.js'
-import { handlePublishScheduledLiveQuiz } from './services/liveQuizzes.js'
+import {
+  handleAssessmentLiveQuizBlockClosureAggregation,
+  handlePublishScheduledLiveQuiz,
+  handleStandardLiveQuizBlockClosureAggregation,
+} from './services/liveQuizzes.js'
 import {
   handleEndExpiredMicroLearning,
   handlePublishScheduledMicroLearning,
@@ -74,4 +78,6 @@ export const handlers: HatchetHandlers = {
   handlePublishScheduledPracticeQuiz,
   handlePublishScheduledGroupActivity,
   handlePublishScheduledMicroLearning,
+  handleStandardLiveQuizBlockClosureAggregation,
+  handleAssessmentLiveQuizBlockClosureAggregation,
 }

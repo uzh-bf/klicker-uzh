@@ -18,7 +18,8 @@ import type {
 } from '@klicker-uzh/types'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
-import { DEFAULT_POINTS } from './constants.js'
+import { DEFAULT_POINTS } from '../constants.js'
+import getRedis from '../redis.js'
 import {
   getCaseStudyQuestionPointsDetails,
   getChoicesQuestionPointsDetails,
@@ -28,7 +29,6 @@ import {
   updateLeaderboards,
   validateStudentResponse,
 } from './helpers.js'
-import getRedis from './redis.js'
 
 // TODO: Consider the following improvements
 // - ensure that the response meets the restrictions specified in the element options (as for standard processor)
