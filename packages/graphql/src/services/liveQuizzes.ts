@@ -1319,14 +1319,16 @@ export async function deactivateLiveQuizBlock(
       (block) => block.id === blockId
     )
     if (updatedBlock && updatedBlock.closedAt) {
+      const redis = ctx.redisExec.pipeline()
       for (const instanceId of activeInstanceIds) {
         // add the blockClosedAt timestamp to the instance info cache
-        await ctx.redisExec.hset(
+        redis.hset(
           `lq:${updatedQuiz.id}:i:${instanceId}:info`,
           'blockClosedAt',
           Number(updatedBlock.closedAt)
         )
       }
+      await redis.exec()
     }
   } catch (error: any) {
     await sendTeamsNotification({
