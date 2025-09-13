@@ -240,10 +240,11 @@ export async function POST(
         try {
           const costBase = getModelCost(selectedModel)
 
-          const totalCost =
-            (costBase.input * (result.totalUsage.inputTokens || 0) +
-              costBase.output * (result.totalUsage.outputTokens || 0)) /
-            1000000
+          const totalCost = calcCost(
+            costBase,
+            result.totalUsage.inputTokens || 0,
+            result.totalUsage.outputTokens || 0
+          )
 
           if (participantData.sub) {
             await CreditsService.decrementCredits(
@@ -258,7 +259,7 @@ export async function POST(
       }
     },
 
-    onAbort: async () => {
+    onAbort: async (steps) => {
       // save partial message
       if (currentThreadId && partialContent.trim()) {
         try {
@@ -281,6 +282,33 @@ export async function POST(
           console.error('Failed to save partial message:', error)
         }
       }
+
+      if (steps) {
+        let totalCost = 0
+        const costBase = getModelCost(selectedModel)
+        if (steps && Array.isArray(steps.steps)) {
+          for (const step of steps.steps) {
+            if (step.usage) {
+              totalCost += calcCost(
+                costBase,
+                step.usage.inputTokens || 0,
+                step.usage.outputTokens || 0
+              )
+            }
+          }
+          if (participantData.sub && totalCost > 0) {
+            try {
+              await CreditsService.decrementCredits(
+                participantData.sub as string,
+                chatbotId,
+                totalCost
+              )
+            } catch (error) {
+              console.error('Failed to deduct credits:', error)
+            }
+          }
+        }
+      }
     },
 
     onError: async (error) => {
@@ -289,4 +317,17 @@ export async function POST(
     },
   })
   return result.toUIMessageStreamResponse()
+}
+
+// Function to calculate cost based on token usage and model pricing
+function calcCost(
+  costBase: { input: number; output: number },
+  inputTokens: number,
+  outputTokens: number
+) {
+  return (
+    (costBase.input * (inputTokens || 0) +
+      costBase.output * (outputTokens || 0)) /
+    1000000
+  )
 }
