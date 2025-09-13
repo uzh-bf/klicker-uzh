@@ -134,62 +134,83 @@ export async function testInitialization(
     }),
     publishScheduledMicroLearning: hatchet.task({
       name: 'publish-scheduled-micro-learning',
-      fn: async ({ microLearningId }: { microLearningId: string }) => {
+      fn: async (
+        { microLearningId }: { microLearningId: string },
+        executionCtx
+      ) => {
         const success = await handlePublishScheduledMicroLearning(
           {
             microLearningId,
           },
-          hatchetCtx
+          hatchetCtx,
+          executionCtx
         )
         return { success }
       },
     }),
     publishScheduledPracticeQuiz: hatchet.task({
       name: 'publish-scheduled-practice-quiz',
-      fn: async ({ practiceQuizId }: { practiceQuizId: string }) => {
+      fn: async (
+        { practiceQuizId }: { practiceQuizId: string },
+        executionCtx
+      ) => {
         const success = await handlePublishScheduledPracticeQuiz(
           { practiceQuizId },
-          hatchetCtx
+          hatchetCtx,
+          executionCtx
         )
         return { success }
       },
     }),
     publishScheduledGroupActivity: hatchet.task({
       name: 'publish-scheduled-group-activity',
-      fn: async ({ groupActivityId }: { groupActivityId: string }) => {
+      fn: async (
+        { groupActivityId }: { groupActivityId: string },
+        executionCtx
+      ) => {
         const success = await handlePublishScheduledGroupActivity(
           { groupActivityId },
-          hatchetCtx
+          hatchetCtx,
+          executionCtx
         )
         return { success }
       },
     }),
     publishScheduledLiveQuiz: hatchet.task({
       name: 'publish-scheduled-live-quiz',
-      fn: async ({ liveQuizId }: { liveQuizId: string }) => {
+      fn: async ({ liveQuizId }: { liveQuizId: string }, executionCtx) => {
         const success = await handlePublishScheduledLiveQuiz(
           { liveQuizId },
-          hatchetCtx
+          hatchetCtx,
+          executionCtx
         )
         return { success }
       },
     }),
     endExpiredMicroLearning: hatchet.task({
       name: 'end-expired-micro-learning',
-      fn: async ({ microLearningId }: { microLearningId: string }) => {
+      fn: async (
+        { microLearningId }: { microLearningId: string },
+        executionCtx
+      ) => {
         const success = await handleEndExpiredMicroLearning(
           { microLearningId },
-          hatchetCtx
+          hatchetCtx,
+          executionCtx
         )
         return { success }
       },
     }),
     endExpiredGroupActivity: hatchet.task({
       name: 'end-expired-group-activity',
-      fn: async ({ groupActivityId }: { groupActivityId: string }) => {
+      fn: async (
+        { groupActivityId }: { groupActivityId: string },
+        executionCtx
+      ) => {
         const success = await handleEndExpiredGroupActivity(
           { groupActivityId },
-          hatchetCtx
+          hatchetCtx,
+          executionCtx
         )
         return { success }
       },
