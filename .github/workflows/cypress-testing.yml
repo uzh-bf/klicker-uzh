@@ -351,7 +351,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: service-logs
-          path: service.log
+          path: service-${{ matrix.containers }}.log
           if-no-files-found: warn
           retention-days: 7
 
@@ -380,7 +380,7 @@ jobs:
       - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-artifacts-cloud
+          name: cypress-artifacts-cloud-${{ matrix.containers }}
           path: |
             cypress/cypress/videos
             cypress/cypress/screenshots
