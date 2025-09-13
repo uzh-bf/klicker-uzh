@@ -1,0 +1,13 @@
+# Act configuration for running GitHub Actions locally
+# Use larger Docker images that include more tools
+-P ubuntu-24.04=catthehacker/ubuntu:act-24.04
+-P ubuntu-latest=catthehacker/ubuntu:act-24.04
+
+# Bind Docker socket for service containers
+--container-daemon-socket /var/run/docker.sock
+
+# Use host network for service communication
+--use-gitignore=false
+
+# Increase verbosity for debugging
+-v

@@ -11,6 +11,7 @@ __azurite**
 secrets*.yaml
 .env
 **/**/.env
+act.secrets
 .github/copilot-instructions.md
 
 **/.DS_Store

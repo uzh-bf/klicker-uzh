@@ -88,7 +88,10 @@
     "syncpack:mismatches:fix": "syncpack fix-mismatches",
     "syncpack:update": "syncpack update",
     "test:run": "turbo run test:run",
-    "test:watch": "run-p test dev:test"
+    "test:watch": "run-p test dev:test",
+    "test:act": "./run-act-local.sh",
+    "test:services:up": "docker-compose -f docker-compose.test.yml up -d",
+    "test:services:down": "docker-compose -f docker-compose.test.yml down"
   },
   "engines": {
     "node": "=20"

@@ -1,0 +1,13 @@
+{
+  "pull_request": {
+    "draft": true,
+    "number": 123,
+    "head": {
+      "ref": "feature-branch"
+    },
+    "base": {
+      "ref": "v3"
+    }
+  },
+  "action": "opened"
+}
