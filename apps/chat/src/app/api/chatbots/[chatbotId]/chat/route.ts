@@ -1,7 +1,10 @@
-import { getModelCost, type ModelID } from '@/src/lib/config/models'
+import {
+  getModelCost,
+  getModelLink,
+  type ModelID,
+} from '@/src/lib/config/models'
 import { getMCPTools } from '@/src/services/mcpClients'
-import { anthropic } from '@ai-sdk/anthropic'
-import { openai } from '@ai-sdk/openai'
+import { createAzure } from '@ai-sdk/azure'
 import { prisma } from '@klicker-uzh/prisma'
 import {
   convertToModelMessages,
@@ -138,16 +141,14 @@ export async function POST(
     }
   }
 
-  function getModel(modelId: ModelID): LanguageModel {
-    switch (modelId) {
-      case 'gpt-4.1':
-        return openai('gpt-4.1')
-      case 'claude-sonnet-4-0':
-        return anthropic('claude-sonnet-4-0')
-      default:
-        console.warn(`Unknown model: ${modelId}, defaulting to OpenAI GPT-4.1`)
-        return openai('gpt-4.1')
-    }
+  function getAzureModel(modelId: ModelID): LanguageModel {
+    const apiVersion = getModelLink(modelId).split('?api-version=')[1]
+
+    const azure = createAzure({
+      useDeploymentBasedUrls: true,
+      apiVersion: apiVersion || 'preview',
+    })
+    return azure(modelId)
   }
 
   // track partial content for cancelled streams
@@ -164,7 +165,7 @@ export async function POST(
   const mcpTools = await getMCPTools(chatbotId)
 
   const result = streamText({
-    model: getModel(selectedModel),
+    model: getAzureModel(selectedModel),
     messages: convertToModelMessages(uiMessages),
     tools: {
       ...mcpTools,

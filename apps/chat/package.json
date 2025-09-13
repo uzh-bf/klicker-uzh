@@ -4,8 +4,7 @@
   "version": "3.3.0-rc.0",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@ai-sdk/anthropic": "2.0.1",
-    "@ai-sdk/openai": "2.0.6",
+    "@ai-sdk/azure": "2.0.30",
     "@assistant-ui/react": "0.10.43",
     "@assistant-ui/react-ai-sdk": "1.0.3",
     "@assistant-ui/react-markdown": "0.10.9",

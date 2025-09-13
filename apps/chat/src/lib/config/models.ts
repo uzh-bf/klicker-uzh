@@ -1,7 +1,8 @@
-export type ModelID = 'gpt-4.1' | 'claude-sonnet-4-0'
+export type ModelID = 'gpt-4.1' | 'gpt-4.1-mini'
 
 export interface ModelConfiguration {
   id: ModelID
+  link: string
   name: string
   description: string
   cost: {
@@ -13,20 +14,22 @@ export interface ModelConfiguration {
 export const MODEL_CONFIGS: ModelConfiguration[] = [
   {
     id: 'gpt-4.1',
+    link: 'https://klicker-ai.openai.azure.com/openai/deployments/gpt-4.1/chat/completions?api-version=2025-01-01-preview',
     name: 'GPT-4.1',
     description: 'OpenAI model',
     cost: {
-      input: 0.25,
-      output: 2.0,
+      input: 2.0,
+      output: 8.0,
     },
   },
   {
-    id: 'claude-sonnet-4-0',
-    name: 'Claude 4 Sonnet',
-    description: 'Anthropic model',
+    id: 'gpt-4.1-mini',
+    link: 'https://klicker-ai.openai.azure.com/openai/deployments/gpt-4.1-mini/chat/completions?api-version=2025-01-01-preview',
+    name: 'GPT-4.1 Mini',
+    description: 'Small OpenAI model',
     cost: {
-      input: 3.0,
-      output: 15.0,
+      input: 0.4,
+      output: 1.6,
     },
   },
 ]
@@ -39,10 +42,20 @@ export function getModelOptions() {
   }))
 }
 
-export function getModelCost(modelId: string) {
+export function getModelById(modelId: string) {
   const model = MODEL_CONFIGS.find((m) => m.id === modelId)
   if (!model) {
     throw new Error(`Unknown model: ${modelId}`)
   }
+  return model
+}
+
+export function getModelCost(modelId: string) {
+  const model = getModelById(modelId)
   return model.cost
+}
+
+export function getModelLink(modelId: string) {
+  const model = getModelById(modelId)
+  return model.link
 }
