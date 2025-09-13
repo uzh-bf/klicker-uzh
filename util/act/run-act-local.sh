@@ -34,10 +34,17 @@ if [ -z "$GITHUB_TOKEN" ]; then
     exit 1
 fi
 
+# Store current directory and get absolute paths
+SCRIPT_DIR=$(pwd)
+ACT_SECRETS_PATH="$SCRIPT_DIR/act.secrets"
+ACT_SECRETS_TEMPLATE_PATH="$SCRIPT_DIR/act.secrets.template"
+WORKFLOWS_PATH="$SCRIPT_DIR/../../.github/workflows/cypress-testing.yml"
+EVENT_PATH="$SCRIPT_DIR/../../.github/events/pull_request_draft.json"
+
 # Create act.secrets if it doesn't exist
-if [ ! -f "act.secrets" ]; then
-    if [ -f "act.secrets.template" ]; then
-        cp act.secrets.template act.secrets
+if [ ! -f "$ACT_SECRETS_PATH" ]; then
+    if [ -f "$ACT_SECRETS_TEMPLATE_PATH" ]; then
+        cp "$ACT_SECRETS_TEMPLATE_PATH" "$ACT_SECRETS_PATH"
         echo "📋 Created act.secrets from template"
     else
         echo "❌ act.secrets.template not found. Please create it first."
@@ -46,24 +53,37 @@ if [ ! -f "act.secrets" ]; then
 fi
 
 # Update GITHUB_TOKEN in act.secrets
-if grep -q "^GITHUB_TOKEN=" act.secrets; then
+if grep -q "^GITHUB_TOKEN=" "$ACT_SECRETS_PATH"; then
     # Update existing token (use different delimiter to avoid issues with token content)
-    sed -i '' "s|^GITHUB_TOKEN=.*|GITHUB_TOKEN=$GITHUB_TOKEN|" act.secrets
+    sed -i '' "s|^GITHUB_TOKEN=.*|GITHUB_TOKEN=$GITHUB_TOKEN|" "$ACT_SECRETS_PATH"
 else
     # Add token if not present
-    echo "GITHUB_TOKEN=$GITHUB_TOKEN" >> act.secrets
+    echo "GITHUB_TOKEN=$GITHUB_TOKEN" >> "$ACT_SECRETS_PATH"
 fi
 
 echo "✅ GitHub token configured from gh CLI"
 
-# Run act with single matrix container
+# Change to project root directory so act uses it as the workspace
+echo "🔄 Changing to project root directory..."
+cd ../..
+
+# Run act with single matrix container from project root
 # This avoids port conflicts while still testing the actual service configuration
 echo "🎬 Running GitHub Actions workflow with act (single container)..."
 act pull_request \
-  --workflows ../../.github/workflows/cypress-testing.yml \
+  --workflows "$WORKFLOWS_PATH" \
   --job cypress-run-parallel-draft \
-  --secret-file act.secrets \
+  --secret-file "$ACT_SECRETS_PATH" \
   --matrix containers:1 \
-  --eventpath ../../.github/events/pull_request_draft.json
+  --eventpath "$EVENT_PATH" \
+  -P ubuntu-24.04=catthehacker/ubuntu:act-24.04 \
+  -P ubuntu-latest=catthehacker/ubuntu:act-24.04 \
+  --container-daemon-socket /var/run/docker.sock \
+  --use-gitignore=false \
+  --no-cache-server \
+  -v
+
+# Return to original directory
+cd "$SCRIPT_DIR"
 
 echo "✅ Workflow execution completed!"
