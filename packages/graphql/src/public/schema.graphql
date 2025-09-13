@@ -2672,6 +2672,7 @@ type UserLogin {
 enum UserLoginScope {
   ACCOUNT_OWNER
   ACTIVATION
+  EDUID
   FULL_ACCESS
   OTP
   READ_ONLY

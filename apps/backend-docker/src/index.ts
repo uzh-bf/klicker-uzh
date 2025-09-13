@@ -14,15 +14,7 @@ import * as WebSocket from 'ws'
 import prepareApp from './app.js'
 import { migrate } from './migration.js'
 
-// Validate required environment variables
-if (!process.env.JWT_ISSUER_API) {
-  console.error(
-    'JWT_ISSUER_API environment variable is required but not defined'
-  )
-  process.exit(1)
-}
-
-const emitter = new EventEmitter()()
+const emitter = new EventEmitter()
 
 let prisma = prismaBase
 
