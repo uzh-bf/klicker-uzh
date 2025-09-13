@@ -107,13 +107,14 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
       ? req.headers['cookie']
       : undefined
 
+  const responseTimestamp = Date.now()
   const message = {
     messageId: randomUUID(),
     sessionId: String(liveQuizId),
     instanceId: String(instanceId),
     response, // pass through as-is; worker validates
     cookie,
-    responseTimestamp: Date.now(),
+    responseTimestamp,
   }
 
   // determine if the participant is logged in with a valid student cookie (temporary or standard)
@@ -129,7 +130,7 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   console.log(`Pushing event ${eventName} with payload`, message)
 
   await hatchet.events.push(eventName, message)
-  return sendJson(req, res, 200, { status: 'ok' })
+  return sendJson(req, res, 200, { status: 'ok', responseTimestamp })
 }
 
 async function handleAddAssessmentResponse(
@@ -153,7 +154,7 @@ async function handleAddAssessmentResponse(
     hatchet.events.push('create-audit-log-entry', {
       info: `[ERROR] [AddResponse Assessment] Invalid request body: ${JSON.stringify(payload)}`,
     })
-    return badRequest(req, res, 'Body must be a JSON object')
+    return badRequest(req, res, 'submission_failure')
   }
 
   const { correlationKey, response, liveQuizId, instanceId } = payload
@@ -169,11 +170,7 @@ async function handleAddAssessmentResponse(
       )}`,
     })
 
-    return badRequest(
-      req,
-      res,
-      'Missing required fields: response, liveQuizId, instanceId, correlationKey'
-    )
+    return badRequest(req, res, 'missing_response')
   }
 
   // validate correlationKey (execution, quizId and instanceId same as passed arguments)
@@ -189,7 +186,7 @@ async function handleAddAssessmentResponse(
         payload
       )}`,
     })
-    return badRequest(req, res, 'Invalid correlationKey')
+    return badRequest(req, res, 'invalid_submission')
   }
 
   if (
@@ -200,7 +197,7 @@ async function handleAddAssessmentResponse(
     hatchet.events.push('create-audit-log-entry', {
       info: `[ERROR] [AddResponse Assessment] Invalid correlationKey in request body: ${correlationKey} for response ${JSON.stringify(payload)}`,
     })
-    return badRequest(req, res, 'Invalid correlationKey')
+    return badRequest(req, res, 'invalid_submission')
   }
 
   const cookies =
@@ -217,7 +214,7 @@ async function handleAddAssessmentResponse(
     })
   }
 
-  // TODO: add some verification mechanism that student did not set a regular participant cookie as their assessment cookie
+  // TODO: add verification mechanism that student did not set a regular participant cookie as their assessment cookie (-> issuer)
   // check if the assessment cookie is present and valid
   let user: JWTPayload | null = null
   try {
@@ -233,7 +230,7 @@ async function handleAddAssessmentResponse(
         payload
       )}`,
     })
-    return sendJson(req, res, 401, { error: 'Invalid assessment cookie' })
+    return sendJson(req, res, 401, { error: 'invalid_assessment_cookie' })
   }
 
   const isAssessmentCookieValid = !!user && user.role === 'PARTICIPANT'
@@ -242,7 +239,7 @@ async function handleAddAssessmentResponse(
       info: `[ERROR] [AddResponse Assessment] Missing or invalid assessment cookie: ${cookies} for response ${JSON.stringify(payload)}`,
     })
     return sendJson(req, res, 401, {
-      error: 'Missing or invalid assessment cookie',
+      error: 'missing_invalid_assessment_cookie',
     })
   }
 
@@ -275,7 +272,10 @@ async function handleAddAssessmentResponse(
     })
 
     // show success message that response was already recorded before and that first response counts
-    return sendJson(req, res, 200, { status: 'response_recorded_before' })
+    return sendJson(req, res, 208, {
+      status: 'response_recorded_before',
+      responseTimestamp,
+    })
   }
 
   const message = {
@@ -310,7 +310,10 @@ async function handleAddAssessmentResponse(
     }
   }
 
-  return sendJson(req, res, 200, { status: 'ok' })
+  return sendJson(req, res, 200, {
+    status: 'response_submitted',
+    responseTimestamp,
+  })
 }
 
 const server = createServer(async (req, res) => {

@@ -283,7 +283,6 @@ async function getCachedBlockResults({
             return assessmentsAcc
           }
 
-          // TODO: the grading process could potentially be sped up by iterating over the solutions array
           // only once and selecting all corresponding responses based on the combinedHash
           let grading: number | undefined
           if (solutions && solutions.length > 0) {
@@ -1212,10 +1211,7 @@ export async function getCockpitQuiz(
     const cacheContent = (await redisMulti.exec()) as
       | [
           Error | null,
-          {
-            // TODO: extend type with more content of cache (as needed)
-            participants: string
-          },
+          { participants: string }, // TODO: extend type with more content of cache (as needed)
         ][]
       | null
 
@@ -1322,10 +1318,10 @@ export async function activateLiveQuizBlock(
     beforeFirstBlock: false,
     activeBlock: {
       ...updatedQuiz.activeBlock,
-      elements: updatedQuiz.activeBlock?.elements
+      elements: updatedQuiz.activeBlock!.elements
         ? await Promise.all(
             removeSolutionFromInstances({
-              instances: updatedQuiz.activeBlock.elements,
+              instances: updatedQuiz.activeBlock!.elements,
             }).map(async (instance) => {
               if (!quiz.isAssessmentEnabled) {
                 return instance
@@ -1339,7 +1335,9 @@ export async function activateLiveQuizBlock(
                   liveQuizId: quiz.id,
                   sub: '', // dummy sub, since this value is required
                 },
-                process.env.APP_SECRET as string
+                process.env.APP_SECRET as string,
+                undefined,
+                updatedQuiz.activeBlock!.startedAt ?? new Date(0)
               )
 
               return { ...instance, correlationKey }
@@ -2852,7 +2850,9 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
             liveQuizId: quiz.id,
             sub: '', // dummy sub, since this value is required
           },
-          process.env.APP_SECRET as string
+          process.env.APP_SECRET as string,
+          undefined,
+          quiz.activeBlock?.startedAt ?? new Date(0)
         )
 
         return { ...instance, correlationKey }
