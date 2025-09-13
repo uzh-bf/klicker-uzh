@@ -31,7 +31,7 @@ import { createHash, createHmac } from 'node:crypto'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { getPermissionBooleans } from './courses.js'
+import { getPermissionBooleans } from './activities.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -497,7 +497,11 @@ export async function manipulateLiveQuiz(
     isRemovable,
     sharingType,
   } = getPermissionBooleans({
-    permission: activity.permissions[0]!,
+    permissionLevel,
+    derived,
+    directGroupPermission:
+      activity.permissions[0]?.directPermission &&
+      activity.permissions[0].directPermission.userGroupId !== null,
   })
 
   return {
@@ -2489,7 +2493,11 @@ export async function resetAssessmentLiveQuiz(
       isRemovable,
       sharingType,
     } = getPermissionBooleans({
-      permission: permission!,
+      permissionLevel: permission.permissionLevel,
+      derived: permission.derived,
+      directGroupPermission:
+        permission.directPermission &&
+        permission.directPermission.userGroupId !== null,
     })
 
     return {

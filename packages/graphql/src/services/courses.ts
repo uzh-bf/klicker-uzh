@@ -1270,7 +1270,7 @@ export async function getControlCourses(ctx: ContextWithUser) {
   return user?.courses ?? []
 }
 
-export function getPermissionBooleans({
+function getPermissionBooleans({
   permission,
 }: {
   permission: DB.DerivedPermission & { directPermission: DB.Permission | null }
