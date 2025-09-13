@@ -4,7 +4,6 @@ import type { AuditEvent } from '../schemas/audit-event.js'
 export interface AuditTableEntity {
   partitionKey: string
   rowKey: string
-  tenantId: string
   subject: string
   action: string
   timestamp: number
@@ -20,7 +19,6 @@ export interface AuditTableEntity {
  */
 function generateDeterministicEventId(event: AuditEvent): string {
   const data = JSON.stringify({
-    tenantId: event.tenantId,
     subject: event.subject,
     action: event.action,
     timestamp: event.timestamp,
@@ -46,17 +44,12 @@ export function createAuditEntity(event: AuditEvent): AuditTableEntity {
   // Enforce idempotency: use provided eventId or generate deterministic one
   const eventId = event.eventId || generateDeterministicEventId(event)
 
-  const partitionKey = generatePartitionKey(
-    event.tenantId,
-    event.timestamp,
-    eventId
-  )
+  const partitionKey = generatePartitionKey(event.timestamp, eventId)
   const rowKey = eventId
 
   return {
     partitionKey,
     rowKey,
-    tenantId: event.tenantId,
     subject: event.subject,
     action: event.action,
     timestamp: event.timestamp,
@@ -69,18 +62,13 @@ export function createAuditEntity(event: AuditEvent): AuditTableEntity {
 
 /**
  * Generate PartitionKey for optimal distribution and querying
- * Format: <tenantHash>-<YYYYMMDDHHmm>-<shard>
+ * Format: <YYYYMMDDHHmm>-<shard>
  *
  * This approach:
- * - Groups events by tenant and minute for efficient range queries
- * - Uses tenant hash to distribute across storage partitions
- * - Uses shard (derived from eventId) to further distribute load within a time bucket
+ * - Groups events by minute for efficient range queries
+ * - Uses shard (derived from eventId) to distribute load within a time bucket
  */
-function generatePartitionKey(
-  tenantId: string,
-  timestamp: number,
-  eventId?: string
-): string {
+function generatePartitionKey(timestamp: number, eventId?: string): string {
   const date = new Date(timestamp)
 
   // Create time bucket at minute granularity
@@ -91,17 +79,9 @@ function generatePartitionKey(
   const minute = date.getMinutes().toString().padStart(2, '0')
   const bucket = `${year}${month}${day}${hour}${minute}`
 
-  // Simple, fast hash for tenant distribution (avoids expensive crypto operations)
-  // Uses character sum with prime multiplication for good distribution
-  let hash = 0
-  for (let i = 0; i < tenantId.length; i++) {
-    hash = (hash * 31 + tenantId.charCodeAt(i)) % 10000
-  }
-  const tenantHash = (hash % 100).toString().padStart(2, '0')
-
   // Simple shard: use first character of eventId if provided, otherwise '0'
   // This avoids hashing the eventId entirely
   const shard = eventId ? eventId[0] : '0'
 
-  return `${tenantHash}-${bucket}-${shard}`
+  return `${bucket}-${shard}`
 }

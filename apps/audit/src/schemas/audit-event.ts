@@ -3,7 +3,6 @@ import { z } from 'zod'
 export const AuditEventSchema = z
   .object({
     // Required fields
-    tenantId: z.string().min(1).max(100),
     subject: z.string().min(1).max(500),
     action: z.string().min(1).max(200),
 

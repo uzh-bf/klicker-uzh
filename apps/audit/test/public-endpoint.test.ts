@@ -39,7 +39,6 @@ describe('Public Endpoint Authentication', () => {
   it('should accept valid participant_token cookie', async () => {
     const validToken = await createParticipantToken()
     const eventData = {
-      tenantId: 'test-tenant',
       action: 'response.submitted',
       timestamp: Date.now(),
       sessionId: 'test-session-123',
@@ -66,7 +65,6 @@ describe('Public Endpoint Authentication', () => {
 
   it('should reject requests without cookies', async () => {
     const eventData = {
-      tenantId: 'test-tenant',
       action: 'response.submitted',
     }
 
@@ -85,7 +83,6 @@ describe('Public Endpoint Authentication', () => {
 
   it('should reject requests without participant_token cookie', async () => {
     const eventData = {
-      tenantId: 'test-tenant',
       action: 'response.submitted',
     }
 
@@ -106,7 +103,6 @@ describe('Public Endpoint Authentication', () => {
   it('should reject invalid/expired tokens', async () => {
     const invalidToken = await createInvalidToken()
     const eventData = {
-      tenantId: 'test-tenant',
       action: 'response.submitted',
     }
 
@@ -126,7 +122,6 @@ describe('Public Endpoint Authentication', () => {
 
   it('should reject malformed JWT tokens', async () => {
     const eventData = {
-      tenantId: 'test-tenant',
       action: 'response.submitted',
     }
 
@@ -166,7 +161,6 @@ describe('Public Event Filtering', () => {
 
     for (const eventType of allowedEvents) {
       const eventData = {
-        tenantId: 'test-tenant',
         action: eventType,
         timestamp: Date.now(),
       }
@@ -197,7 +191,6 @@ describe('Public Event Filtering', () => {
 
     for (const eventType of forbiddenEvents) {
       const eventData = {
-        tenantId: 'test-tenant',
         action: eventType,
         timestamp: Date.now(),
       }
@@ -231,7 +224,6 @@ describe('Public Event Context Injection', () => {
     // The actual context injection is tested in integration tests
     // that can verify the stored data in Azure Table Storage
     const eventData = {
-      tenantId: 'test-tenant',
       action: 'response.submitted',
       timestamp: Date.now(),
       // Note: Even if these are provided, they should be overridden
@@ -268,7 +260,6 @@ describe('Public Event Context Injection', () => {
       'TEMPORARY_PARTICIPANT'
     )
     const eventData = {
-      tenantId: 'test-tenant',
       action: 'session.joined',
       timestamp: Date.now(),
     }
@@ -296,7 +287,7 @@ describe('Public Event Data Validation', () => {
   })
 
   it('should validate required fields', async () => {
-    // Missing tenantId
+    // Missing action
     let response = await fetch(`${BASE_URL}/audit/public`, {
       method: 'POST',
       headers: {
@@ -304,7 +295,7 @@ describe('Public Event Data Validation', () => {
         Cookie: `participant_token=${validToken}`,
       },
       body: JSON.stringify({
-        action: 'response.submitted',
+        // Missing action field
       }),
     })
 
@@ -317,9 +308,7 @@ describe('Public Event Data Validation', () => {
         'Content-Type': 'application/json',
         Cookie: `participant_token=${validToken}`,
       },
-      body: JSON.stringify({
-        tenantId: 'test-tenant',
-      }),
+      body: JSON.stringify({}),
     })
 
     expect(response.status).toBe(400)
@@ -327,7 +316,6 @@ describe('Public Event Data Validation', () => {
 
   it('should handle optional fields correctly', async () => {
     const eventData = {
-      tenantId: 'test-tenant',
       action: 'quiz.started',
       eventId: 'custom-event-id-123',
       resourceId: 'quiz-456',
@@ -356,7 +344,6 @@ describe('Public Event Data Validation', () => {
 
   it('should default timestamp if not provided', async () => {
     const eventData = {
-      tenantId: 'test-tenant',
       action: 'activity.accessed',
       // No timestamp provided
     }

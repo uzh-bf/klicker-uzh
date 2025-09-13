@@ -38,8 +38,7 @@ export async function logoutUser(_: any, ctx: ContextWithUser) {
 
   // Log user logout event
   await auditClient.log({
-    tenantId: 'klicker-uzh', // TODO: get from context when multi-tenant support is added
-    subject: `user:${ctx.user.email || ctx.user.sub}`,
+    subject: `user:${ctx.user.sub}`,
     action: 'auth.user.logout',
     userId: ctx.user.sub,
     attributes: {
@@ -123,7 +122,6 @@ export async function loginParticipant(
   // Log failed login attempt - participant not found
   if (!participant) {
     await auditClient.log({
-      tenantId: 'klicker-uzh', // TODO: get from context when multi-tenant support is added
       subject: `participant:${usernameOrEmail}`,
       action: 'auth.participant.login.failed',
       attributes: {
@@ -141,7 +139,6 @@ export async function loginParticipant(
   // Log failed login attempt - invalid password
   if (!isLoginValid) {
     await auditClient.log({
-      tenantId: 'klicker-uzh', // TODO: get from context when multi-tenant support is added
       subject: `participant:${participant.username || participant.email}`,
       action: 'auth.participant.login.failed',
       userId: participant.id,
@@ -165,7 +162,6 @@ export async function loginParticipant(
 
   // Log successful login attempt
   await auditClient.log({
-    tenantId: 'klicker-uzh', // TODO: get from context when multi-tenant support is added
     subject: `participant:${participant.username || participant.email}`,
     action: 'auth.participant.login.success',
     userId: participant.id,
@@ -198,7 +194,6 @@ export async function loginTemporaryParticipant(
 
   if (!liveQuiz) {
     await auditClient.log({
-      tenantId: 'klicker-uzh',
       subject: `temp-participant:${pseudonym}`,
       action: 'auth.temporary.login.failed',
       sessionId: liveQuizId,
@@ -221,7 +216,6 @@ export async function loginTemporaryParticipant(
 
   if (existingParticipant) {
     await auditClient.log({
-      tenantId: 'klicker-uzh',
       subject: `temp-participant:${pseudonym}`,
       action: 'auth.temporary.login.failed',
       sessionId: liveQuizId,
@@ -247,7 +241,6 @@ export async function loginTemporaryParticipant(
 
   if (existingTemporaryParticipant) {
     await auditClient.log({
-      tenantId: 'klicker-uzh',
       subject: `temp-participant:${pseudonym}`,
       action: 'auth.temporary.login.failed',
       sessionId: liveQuizId,
@@ -283,7 +276,6 @@ export async function loginTemporaryParticipant(
 
   // Log successful temporary participant login
   await auditClient.log({
-    tenantId: 'klicker-uzh',
     subject: `temp-participant:${pseudonym}`,
     action: 'auth.temporary.login.success',
     sessionId: liveQuizId,
@@ -413,7 +405,6 @@ export async function loginParticipantMagicLink(
 
   if (!tokenData.sub || tokenData.scope !== DB.UserLoginScope.OTP) {
     await auditClient.log({
-      tenantId: 'klicker-uzh',
       subject: `participant:unknown`,
       action: 'auth.magiclink.login.failed',
       attributes: {
@@ -445,7 +436,6 @@ export async function loginParticipantMagicLink(
 
     // Log successful magic link login
     await auditClient.log({
-      tenantId: 'klicker-uzh',
       subject: `participant:${participant.username || participant.email}`,
       action: 'auth.magiclink.login.success',
       userId: participant.id,
@@ -465,7 +455,6 @@ export async function loginParticipantMagicLink(
 
   // Log failed login - participant not found
   await auditClient.log({
-    tenantId: 'klicker-uzh',
     subject: `participant:${tokenData.sub}`,
     action: 'auth.magiclink.login.failed',
     userId: tokenData.sub,
@@ -531,7 +520,6 @@ export async function logoutParticipant(ctx: ContextWithUser) {
 
   // Log participant logout event
   await auditClient.log({
-    tenantId: 'klicker-uzh',
     subject: `participant:${ctx.user.sub}`,
     action: 'auth.participant.logout',
     userId: ctx.user.sub,
@@ -559,7 +547,6 @@ export async function logoutTemporaryParticipant(
   // verify that the requesting user is a temporary participant
   if (ctx.user.role !== DB.UserRole.TEMPORARY_PARTICIPANT) {
     await auditClient.log({
-      tenantId: 'klicker-uzh',
       subject: `participant:${ctx.user.sub}`,
       action: 'auth.temporary.logout.failed',
       userId: ctx.user.sub,
@@ -582,7 +569,6 @@ export async function logoutTemporaryParticipant(
 
   if (!lbEntry) {
     await auditClient.log({
-      tenantId: 'klicker-uzh',
       subject: `temp-participant:${ctx.user.sub}`,
       action: 'auth.temporary.logout.failed',
       userId: ctx.user.sub,
@@ -610,7 +596,6 @@ export async function logoutTemporaryParticipant(
 
   // Log successful temporary participant logout
   await auditClient.log({
-    tenantId: 'klicker-uzh',
     subject: `temp-participant:${lbEntry.username}`,
     action: 'auth.temporary.logout.success',
     userId: ctx.user.sub,
@@ -1013,7 +998,6 @@ export async function loginParticipantWithLti(
 
     if (!existingParticipant) {
       await auditClient.log({
-        tenantId: 'klicker-uzh',
         subject: `participant:${ltiData.email}`,
         action: 'auth.lti.login.failed',
         attributes: {
@@ -1048,7 +1032,6 @@ export async function loginParticipantWithLti(
 
   if (!account?.participant) {
     await auditClient.log({
-      tenantId: 'klicker-uzh',
       subject: `participant:${ltiData.email || ltiData.sub}`,
       action: 'auth.lti.login.failed',
       attributes: {
@@ -1101,7 +1084,6 @@ export async function loginParticipantWithLti(
 
   // Log successful LTI login
   await auditClient.log({
-    tenantId: 'klicker-uzh',
     subject: `participant:${account.participant.username || account.participant.email}`,
     action: 'auth.lti.login.success',
     userId: account.participant.id,

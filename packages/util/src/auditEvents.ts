@@ -101,7 +101,6 @@ export function hashSensitiveData(data: string | number): string {
  * Helper function to create PIN validation success audit event
  */
 export function createPinValidationSuccessEvent(
-  tenantId: string,
   subject: string,
   sessionId: string,
   liveQuizId: string,
@@ -109,7 +108,6 @@ export function createPinValidationSuccessEvent(
   metadata?: any
 ): Omit<AuditEvent, 'timestamp'> {
   return {
-    tenantId,
     subject,
     action: AUDIT_EVENTS.AUTH_PIN_VALIDATION_SUCCESS,
     sessionId,
@@ -127,7 +125,6 @@ export function createPinValidationSuccessEvent(
  * Helper function to create PIN validation failed audit event
  */
 export function createPinValidationFailedEvent(
-  tenantId: string,
   subject: string,
   sessionId: string,
   liveQuizId: string,
@@ -136,7 +133,6 @@ export function createPinValidationFailedEvent(
   metadata?: any
 ): Omit<AuditEvent, 'timestamp'> {
   return {
-    tenantId,
     subject,
     action: AUDIT_EVENTS.AUTH_PIN_VALIDATION_FAILED,
     sessionId,
@@ -155,14 +151,12 @@ export function createPinValidationFailedEvent(
  * Helper function to create course enrollment success audit event
  */
 export function createCourseEnrollmentSuccessEvent(
-  tenantId: string,
   participantId: string,
   courseId: string,
   pinHash: string,
   metadata?: any
 ): Omit<AuditEvent, 'timestamp'> {
   return {
-    tenantId,
     subject: `participant:${participantId}`,
     action: AUDIT_EVENTS.AUTH_COURSE_PIN_ENROLLMENT_SUCCESS,
     resourceId: courseId,
@@ -180,14 +174,12 @@ export function createCourseEnrollmentSuccessEvent(
  * Helper function to create course enrollment failed audit event
  */
 export function createCourseEnrollmentFailedEvent(
-  tenantId: string,
   subject: string,
   attemptedPinHash: string,
   reason: string,
   metadata?: any
 ): Omit<AuditEvent, 'timestamp'> {
   return {
-    tenantId,
     subject,
     action: AUDIT_EVENTS.AUTH_COURSE_PIN_ENROLLMENT_FAILED,
     attributes: {
@@ -203,7 +195,6 @@ export function createCourseEnrollmentFailedEvent(
  * Helper function to create answer change audit event
  */
 export function createAnswerChangeEvent(
-  tenantId: string,
   participantId: string,
   sessionId: string,
   quizId: string,
@@ -214,7 +205,6 @@ export function createAnswerChangeEvent(
   metadata?: any
 ): Omit<AuditEvent, 'timestamp'> {
   return {
-    tenantId,
     subject: `participant:${participantId}`,
     action: AUDIT_EVENTS.PARTICIPANT_CHANGE_ANSWER,
     sessionId,
@@ -242,7 +232,6 @@ export function createAnswerChangeEvent(
  * Helper function to create response submission audit event
  */
 export function createResponseSubmissionEvent(
-  tenantId: string,
   participantId: string,
   sessionId: string,
   requestId: string,
@@ -255,7 +244,6 @@ export function createResponseSubmissionEvent(
   const answerHash = hashSensitiveData(JSON.stringify(answer))
 
   return {
-    tenantId,
     subject: `participant:${participantId}`,
     action: AUDIT_EVENTS.PARTICIPANT_SUBMIT_RESPONSE,
     sessionId,
@@ -283,7 +271,6 @@ export function createResponseSubmissionEvent(
  * Helper function to create response save success audit event
  */
 export function createResponseSaveSuccessEvent(
-  tenantId: string,
   participantId: string,
   sessionId: string,
   requestId: string,
@@ -293,7 +280,6 @@ export function createResponseSaveSuccessEvent(
   metadata?: any
 ): Omit<AuditEvent, 'timestamp'> {
   return {
-    tenantId,
     subject: `participant:${participantId}`,
     action: AUDIT_EVENTS.RESPONSE_SAVED_SUCCESS,
     sessionId,
@@ -318,7 +304,6 @@ export function createResponseSaveSuccessEvent(
  * Helper function to create response save failed audit event
  */
 export function createResponseSaveFailedEvent(
-  tenantId: string,
   participantId: string,
   sessionId: string,
   requestId: string,
@@ -329,7 +314,6 @@ export function createResponseSaveFailedEvent(
   metadata?: any
 ): Omit<AuditEvent, 'timestamp'> {
   return {
-    tenantId,
     subject: `participant:${participantId}`,
     action: AUDIT_EVENTS.RESPONSE_SAVE_FAILED,
     sessionId,
@@ -356,7 +340,6 @@ export function createResponseSaveFailedEvent(
  * Helper function to create client error audit event
  */
 export function createClientErrorEvent(
-  tenantId: string,
   participantId: string,
   sessionId: string,
   error: Error,
@@ -365,7 +348,6 @@ export function createClientErrorEvent(
   metadata?: any
 ): Omit<AuditEvent, 'timestamp'> {
   return {
-    tenantId,
     subject: `participant:${participantId}`,
     action: AUDIT_EVENTS.PARTICIPANT_CLIENT_ERROR,
     sessionId,

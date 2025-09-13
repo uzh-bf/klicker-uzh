@@ -8,3 +8,4 @@ metadata:
 data:
   LOG_LEVEL: {{ .Values.audit.logLevel | quote }}
   AZURE_STORAGE_TABLE_NAME: {{ .Values.audit.azureStorage.tableName | quote }}
+  CORS_ORIGINS: {{ .Values.audit.corsOrigins | quote }}

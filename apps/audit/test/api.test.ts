@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 const BASE_URL = 'http://localhost:7080'
 const AUTH_TOKEN = process.env.INTERNAL_TOKEN || 'test-secret-token-123'
 
@@ -59,7 +61,6 @@ describe('Audit Service API Tests', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          tenantId: 'test-tenant',
           subject: 'test-subject',
           action: 'test-action',
         }),
@@ -78,7 +79,6 @@ describe('Audit Service API Tests', () => {
           'X-Internal-Token': 'wrong-token-123',
         },
         body: JSON.stringify({
-          tenantId: 'test-tenant',
           subject: 'test-subject',
           action: 'test-action',
         }),
@@ -98,7 +98,6 @@ describe('Audit Service API Tests', () => {
   describe('Valid Audit Events', () => {
     it('POST /audit with minimal valid event should return 200', async () => {
       const event = {
-        tenantId: 'tenant-123',
         subject: 'user:john@example.com',
         action: 'login.success',
       }
@@ -117,7 +116,6 @@ describe('Audit Service API Tests', () => {
 
     it('POST /audit with full event should return 200', async () => {
       const event = {
-        tenantId: 'tenant-456',
         subject: 'user:alice@example.com',
         action: 'document.created',
         resourceId: 'doc-789',
@@ -149,7 +147,6 @@ describe('Audit Service API Tests', () => {
     it('POST /audit with custom timestamp should return 200', async () => {
       const customTimestamp = Date.now() - 60000 // 1 minute ago
       const event = {
-        tenantId: 'tenant-789',
         subject: 'system:backup',
         action: 'backup.completed',
         timestamp: customTimestamp,
@@ -170,7 +167,6 @@ describe('Audit Service API Tests', () => {
   describe('Idempotency', () => {
     it('POST /audit with same eventId should be idempotent', async () => {
       const event = {
-        tenantId: 'tenant-idempotent',
         subject: 'user:test',
         action: 'test.idempotency',
         eventId: `test-event-${Date.now()}`,
@@ -197,7 +193,7 @@ describe('Audit Service API Tests', () => {
   })
 
   describe('Request Validation', () => {
-    it('POST /audit with missing tenantId should return 400', async () => {
+    it('POST /audit with missing subject should return 400', async () => {
       const event = {
         subject: 'user:test',
         action: 'test.action',
@@ -213,7 +209,6 @@ describe('Audit Service API Tests', () => {
 
     it('POST /audit with missing subject should return 400', async () => {
       const event = {
-        tenantId: 'tenant-123',
         action: 'test.action',
       }
 
@@ -227,7 +222,6 @@ describe('Audit Service API Tests', () => {
 
     it('POST /audit with missing action should return 400', async () => {
       const event = {
-        tenantId: 'tenant-123',
         subject: 'user:test',
       }
 
@@ -259,8 +253,7 @@ describe('Audit Service API Tests', () => {
 
     it('POST /audit with string fields too long should return 400', async () => {
       const event = {
-        tenantId: 'x'.repeat(101), // Exceeds max length of 100
-        subject: 'user:test',
+        subject: 'x'.repeat(501), // Exceeds max length of 500
         action: 'test.action',
       }
 

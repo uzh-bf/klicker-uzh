@@ -207,7 +207,6 @@ export class AuditTableClient {
         {
           partitionKey: entity.partitionKey,
           rowKey: entity.rowKey,
-          tenantId: entity.tenantId,
         },
         'Entity upserted successfully'
       )

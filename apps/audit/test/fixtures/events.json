@@ -1,12 +1,10 @@
 {
   "minimal": {
-    "tenantId": "tenant-minimal",
     "subject": "user:john@example.com",
     "action": "login.success"
   },
 
   "complete": {
-    "tenantId": "tenant-complete",
     "subject": "user:alice@example.com",
     "action": "document.created",
     "resourceId": "doc-12345",
@@ -27,7 +25,6 @@
 
   "authentication": [
     {
-      "tenantId": "tenant-auth",
       "subject": "user:bob@example.com",
       "action": "login.attempt",
       "attributes": {
@@ -37,7 +34,6 @@
       }
     },
     {
-      "tenantId": "tenant-auth",
       "subject": "user:bob@example.com",
       "action": "login.success",
       "attributes": {
@@ -47,7 +43,6 @@
       }
     },
     {
-      "tenantId": "tenant-auth",
       "subject": "user:bob@example.com",
       "action": "logout",
       "attributes": {
@@ -59,7 +54,6 @@
 
   "systemEvents": [
     {
-      "tenantId": "tenant-system",
       "subject": "system:backup-service",
       "action": "backup.started",
       "attributes": {
@@ -69,7 +63,6 @@
       }
     },
     {
-      "tenantId": "tenant-system",
       "subject": "system:backup-service",
       "action": "backup.completed",
       "attributes": {
@@ -83,7 +76,6 @@
 
   "securityEvents": [
     {
-      "tenantId": "tenant-security",
       "subject": "user:suspicious@external.com",
       "action": "login.failed",
       "attributes": {
@@ -94,7 +86,6 @@
       }
     },
     {
-      "tenantId": "tenant-security",
       "subject": "admin:security-system",
       "action": "account.locked",
       "resourceId": "user-suspicious-789",
@@ -108,7 +99,6 @@
 
   "businessEvents": [
     {
-      "tenantId": "tenant-business",
       "subject": "user:customer@example.com",
       "action": "order.created",
       "resourceId": "order-98765",
@@ -120,7 +110,6 @@
       }
     },
     {
-      "tenantId": "tenant-business",
       "subject": "system:payment-processor",
       "action": "payment.processed",
       "resourceId": "order-98765",
@@ -135,19 +124,16 @@
 
   "multiTenant": [
     {
-      "tenantId": "tenant-a",
       "subject": "user:a1@tenant-a.com",
       "action": "document.viewed",
       "resourceId": "doc-a-001"
     },
     {
-      "tenantId": "tenant-b",
       "subject": "user:b1@tenant-b.com",
       "action": "document.viewed",
       "resourceId": "doc-b-001"
     },
     {
-      "tenantId": "tenant-c",
       "subject": "user:c1@tenant-c.com",
       "action": "document.viewed",
       "resourceId": "doc-c-001"
@@ -156,18 +142,15 @@
 
   "timestampVariations": [
     {
-      "tenantId": "tenant-time",
       "subject": "system:scheduler",
       "action": "task.scheduled"
     },
     {
-      "tenantId": "tenant-time",
       "subject": "system:scheduler",
       "action": "task.executed",
       "timestamp": 1705276800000
     },
     {
-      "tenantId": "tenant-time",
       "subject": "system:scheduler",
       "action": "task.rescheduled",
       "timestamp": 1705276800000

@@ -937,7 +937,6 @@ export type ActivityQuizAnalytics = {
 // ----- AUDIT LOG TYPES -----
 // #region
 export interface AuditEvent {
-  tenantId: string
   subject: string
   action: string
   resourceId?: string

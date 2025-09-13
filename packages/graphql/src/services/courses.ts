@@ -2,14 +2,12 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType, SharingType } from '@klicker-uzh/types'
 import {
   auditClient,
-  levelFromXp,
-  recomputeDerivedPermissions,
-} from '@klicker-uzh/util'
-import {
   createCourseEnrollmentFailedEvent,
   createCourseEnrollmentSuccessEvent,
   hashSensitiveData,
-} from '@klicker-uzh/util/src/auditEvents'
+  levelFromXp,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
 import { random } from 'mathjs'
@@ -57,8 +55,7 @@ export async function joinCourseWithPin(
     // Log failed course enrollment attempt
     await auditClient.log(
       createCourseEnrollmentFailedEvent(
-        'klicker-uzh',
-        `participant:${ctx.user.email || ctx.user.sub}`,
+        `participant:${ctx.user.sub}`,
         pinHash,
         !course
           ? 'course_not_found'
@@ -104,19 +101,13 @@ export async function joinCourseWithPin(
 
   // Log successful course enrollment
   await auditClient.log(
-    createCourseEnrollmentSuccessEvent(
-      'klicker-uzh',
-      ctx.user.sub,
-      course.id,
-      pinHash,
-      {
-        userId: ctx.user.sub,
-        participantId: ctx.user.sub,
-        courseName: course.name,
-        ip: ctx.req?.ip,
-        userAgent: ctx.req?.headers?.['user-agent'],
-      }
-    )
+    createCourseEnrollmentSuccessEvent(ctx.user.sub, course.id, pinHash, {
+      userId: ctx.user.sub,
+      participantId: ctx.user.sub,
+      courseName: course.name,
+      ip: ctx.req?.ip,
+      userAgent: ctx.req?.headers?.['user-agent'],
+    })
   )
 
   ctx.emitter.emit('invalidate', {
@@ -2019,7 +2010,6 @@ export async function checkValidCoursePin(
   if (!course || course.pinCode !== pin) {
     // Log failed PIN validation attempt
     await auditClient.log({
-      tenantId: 'klicker-uzh',
       subject: `anonymous:${ctx.req?.ip || 'unknown'}`,
       action: 'course.pin.validation.failed',
       attributes: {
@@ -2036,7 +2026,6 @@ export async function checkValidCoursePin(
 
   // Log successful PIN validation
   await auditClient.log({
-    tenantId: 'klicker-uzh',
     subject: `anonymous:${ctx.req?.ip || 'unknown'}`,
     action: 'course.pin.validation.success',
     resourceId: course.id,

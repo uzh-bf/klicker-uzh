@@ -41,13 +41,11 @@ describe('Database Verification Tests', () => {
       const testId = Date.now()
       const events = [
         {
-          tenantId: 'persist-test',
           subject: 'user:test1',
           action: 'test.action1',
           eventId: `persist-${testId}-1`,
         },
         {
-          tenantId: 'persist-test',
           subject: 'user:test2',
           action: 'test.action2',
           eventId: `persist-${testId}-2`,
@@ -68,8 +66,7 @@ describe('Database Verification Tests', () => {
       await tableHelper.waitForEntityCount(2, 10000)
 
       // Verify both events are actually in the database
-      const persistedEntities =
-        await tableHelper.getEntitiesForTenant('persist-test')
+      const persistedEntities = await tableHelper.getAllEntities()
       expect(persistedEntities.length).toBe(2)
 
       // Verify data integrity
@@ -77,7 +74,6 @@ describe('Database Verification Tests', () => {
         const found = persistedEntities.find((e) => e.rowKey === event.eventId)
         expect(found).toBeTruthy()
         if (!found) continue
-        expect(found.tenantId).toBe(event.tenantId)
         expect(found.subject).toBe(event.subject)
         expect(found.action).toBe(event.action)
 
@@ -91,7 +87,6 @@ describe('Database Verification Tests', () => {
     it('should verify that duplicate eventIds result in only one database record', async () => {
       const testId = Date.now()
       const event = {
-        tenantId: 'duplicate-test',
         subject: 'user:duplicate',
         action: 'test.duplicate',
         eventId: `duplicate-${testId}`,
@@ -118,7 +113,7 @@ describe('Database Verification Tests', () => {
 
       // Wait and verify only one record exists
       await new Promise((resolve) => setTimeout(resolve, 2000))
-      const entities = await tableHelper.getEntitiesForTenant('duplicate-test')
+      const entities = await tableHelper.getAllEntities()
       const duplicateEntities = entities.filter(
         (e) => e.rowKey === event.eventId
       )
@@ -132,7 +127,6 @@ describe('Database Verification Tests', () => {
       const baseTimestamp = Date.now()
 
       const event = {
-        tenantId: 'partition-test',
         subject: 'user:partition',
         action: 'test.partition',
         eventId: `partition-${testId}`,
@@ -148,7 +142,7 @@ describe('Database Verification Tests', () => {
 
       // Wait for persistence and get the entity
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      const entities = await tableHelper.getEntitiesForTenant('partition-test')
+      const entities = await tableHelper.getAllEntities()
       expect(entities.length).toBe(1)
 
       const entity = entities[0]!
@@ -176,7 +170,6 @@ describe('Database Verification Tests', () => {
 
       // Create events with timestamps 5 minutes apart to ensure different partitions
       const events = Array.from({ length: 3 }, (_, i) => ({
-        tenantId: 'time-partition-test',
         subject: `user:time${i}`,
         action: 'test.time-partition',
         eventId: `time-partition-${testId}-${i}`,
@@ -196,9 +189,7 @@ describe('Database Verification Tests', () => {
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
       // Get all entities and check partition distribution
-      const entities = await tableHelper.getEntitiesForTenant(
-        'time-partition-test'
-      )
+      const entities = await tableHelper.getAllEntities()
       expect(entities.length).toBe(3)
 
       // Extract unique partition keys
@@ -214,7 +205,6 @@ describe('Database Verification Tests', () => {
 
       // Create multiple events with same timestamp but different eventIds for sharding
       const events = Array.from({ length: 5 }, (_, i) => ({
-        tenantId: 'shard-test',
         subject: `user:shard${i}`,
         action: 'test.shard',
         eventId: `shard-${testId}-${i.toString().padStart(10, '0')}`, // Different eventIds for sharding
@@ -233,7 +223,7 @@ describe('Database Verification Tests', () => {
       // Wait for persistence
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
-      const entities = await tableHelper.getEntitiesForTenant('shard-test')
+      const entities = await tableHelper.getAllEntities()
       expect(entities.length).toBe(5)
 
       // Check that sharding distributes across different partition keys
@@ -249,13 +239,11 @@ describe('Database Verification Tests', () => {
       const testId = Date.now()
       const events = [
         {
-          tenantId: 'rowkey-test',
           subject: 'user:row1',
           action: 'test.rowkey',
           eventId: `rowkey-${testId}-1`,
         },
         {
-          tenantId: 'rowkey-test',
           subject: 'user:row2',
           action: 'test.rowkey',
           eventId: `rowkey-${testId}-2`,
@@ -273,7 +261,7 @@ describe('Database Verification Tests', () => {
 
       // Verify row keys
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      const entities = await tableHelper.getEntitiesForTenant('rowkey-test')
+      const entities = await tableHelper.getAllEntities()
 
       // Check that row keys match eventIds
       for (const entity of entities) {
@@ -289,7 +277,6 @@ describe('Database Verification Tests', () => {
 
     it('should handle auto-generated eventIds correctly', async () => {
       const event = {
-        tenantId: 'auto-eventid-test',
         subject: 'user:auto',
         action: 'test.auto-eventid',
         // No eventId provided - should be auto-generated
@@ -306,8 +293,7 @@ describe('Database Verification Tests', () => {
 
       // Verify in database
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      const entities =
-        await tableHelper.getEntitiesForTenant('auto-eventid-test')
+      const entities = await tableHelper.getAllEntities()
       expect(entities.length).toBe(1)
       expect(entities[0]!.rowKey).toBe(responseData.eventId)
     })
@@ -317,7 +303,6 @@ describe('Database Verification Tests', () => {
     it('should properly serialize and deserialize complex attributes', async () => {
       const testId = Date.now()
       const complexEvent = {
-        tenantId: 'serialization-test',
         subject: 'user:complex',
         action: 'test.complex-data',
         eventId: `complex-${testId}`,
@@ -348,8 +333,7 @@ describe('Database Verification Tests', () => {
 
       // Verify serialization integrity
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      const entities =
-        await tableHelper.getEntitiesForTenant('serialization-test')
+      const entities = await tableHelper.getAllEntities()
       expect(entities.length).toBe(1)
 
       const entity = entities[0]!
@@ -370,7 +354,6 @@ describe('Database Verification Tests', () => {
     it('should handle events with no attributes', async () => {
       const testId = Date.now()
       const event = {
-        tenantId: 'no-attributes-test',
         subject: 'user:simple',
         action: 'test.no-attributes',
         eventId: `no-attrs-${testId}`,
@@ -385,8 +368,7 @@ describe('Database Verification Tests', () => {
 
       // Verify in database
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      const entities =
-        await tableHelper.getEntitiesForTenant('no-attributes-test')
+      const entities = await tableHelper.getAllEntities()
       expect(entities.length).toBe(1)
 
       const entity = entities[0]!
@@ -408,14 +390,12 @@ describe('Database Verification Tests', () => {
 
       const events = [
         {
-          tenantId: 'timestamp-test',
           subject: 'user:time1',
           action: 'test.timestamp',
           eventId: `timestamp-${testId}-1`,
           timestamp: baseTimestamp,
         },
         {
-          tenantId: 'timestamp-test',
           subject: 'user:time2',
           action: 'test.timestamp',
           eventId: `timestamp-${testId}-2`,
@@ -434,7 +414,7 @@ describe('Database Verification Tests', () => {
 
       // Verify timestamp storage
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      const entities = await tableHelper.getEntitiesForTenant('timestamp-test')
+      const entities = await tableHelper.getAllEntities()
       expect(entities.length).toBe(2)
 
       for (const entity of entities) {
@@ -451,7 +431,6 @@ describe('Database Verification Tests', () => {
     it('should handle server-generated timestamps consistently', async () => {
       const testId = Date.now()
       const event = {
-        tenantId: 'server-timestamp-test',
         subject: 'user:server-time',
         action: 'test.server-timestamp',
         eventId: `server-time-${testId}`,
@@ -469,9 +448,7 @@ describe('Database Verification Tests', () => {
 
       // Verify server-generated timestamp
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      const entities = await tableHelper.getEntitiesForTenant(
-        'server-timestamp-test'
-      )
+      const entities = await tableHelper.getAllEntities()
       expect(entities.length).toBe(1)
 
       const entity = entities[0]!
@@ -483,11 +460,8 @@ describe('Database Verification Tests', () => {
   describe('Query Performance and Indexing', () => {
     it('should efficiently query entities by tenant', async () => {
       const testId = Date.now()
-      const tenantId = 'performance-test'
-
       // Create multiple events for the same tenant
       const events = Array.from({ length: 10 }, (_, i) => ({
-        tenantId,
         subject: `user:perf${i}`,
         action: 'test.performance',
         eventId: `perf-${testId}-${i}`,
@@ -507,18 +481,19 @@ describe('Database Verification Tests', () => {
 
       // Measure query performance
       const startTime = Date.now()
-      const tenantEntities = await tableHelper.getEntitiesForTenant(tenantId)
+      const allEntities = await tableHelper.getAllEntities()
       const queryTime = Date.now() - startTime
 
       // Verify results
-      expect(tenantEntities.length).toBe(10)
+      expect(allEntities.length).toBe(10)
 
       // Query should be reasonably fast (under 1 second for 10 entities)
       expect(queryTime).toBeLessThan(1000)
 
-      // All entities should belong to the correct tenant
-      tenantEntities.forEach((entity) => {
-        expect(entity.tenantId).toBe(tenantId)
+      // All entities should have valid structure
+      allEntities.forEach((entity) => {
+        expect(entity.subject).toBeDefined()
+        expect(entity.action).toBeDefined()
       })
     })
   })
@@ -529,7 +504,6 @@ describe('Database Verification Tests', () => {
       // In a real scenario, we might temporarily stop Azurite to test connectivity issues
 
       const event = {
-        tenantId: 'connectivity-test',
         subject: 'user:connectivity',
         action: 'test.connectivity',
         eventId: `connectivity-${Date.now()}`,

@@ -7,7 +7,6 @@ import { z } from 'zod'
 export const PublicAuditEventSchema = z
   .object({
     // Required fields
-    tenantId: z.string().min(1).max(100),
     action: z.string().min(1).max(200), // Will be validated against whitelist
 
     // Timestamp - if omitted, default to server time (epoch ms)

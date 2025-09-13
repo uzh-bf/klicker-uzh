@@ -25,9 +25,8 @@ async function makeAuthenticatedRequest(
 }
 
 // Helper to generate test events
-function generateTestEvent(index: number, tenantId = 'perf-test') {
+function generateTestEvent(index: number) {
   return {
-    tenantId,
     subject: `user:perf-user-${index}`,
     action: `test.performance.action${index % 5}`, // 5 different actions
     eventId: `perf-${Date.now()}-${index}`,
@@ -87,7 +86,7 @@ describe('Performance and Load Tests', () => {
 
   describe('Single Request Performance', () => {
     it('should process simple events quickly (under 100ms)', async () => {
-      const event = generateTestEvent(1, 'single-perf-test')
+      const event = generateTestEvent(1)
 
       const { duration } = await measurePerformance(
         'Single Simple Event',
@@ -106,14 +105,12 @@ describe('Performance and Load Tests', () => {
 
       // Verify persistence
       await new Promise((resolve) => setTimeout(resolve, 500))
-      const entities =
-        await tableHelper.getEntitiesForTenant('single-perf-test')
+      const entities = await tableHelper.getAllEntities()
       expect(entities.length).toBe(1)
     })
 
     it('should process complex events efficiently (under 200ms)', async () => {
       const complexEvent = {
-        tenantId: 'complex-perf-test',
         subject: 'user:complex-perf',
         action: 'test.complex-performance',
         eventId: `complex-perf-${Date.now()}`,
@@ -162,8 +159,7 @@ describe('Performance and Load Tests', () => {
 
       // Verify persistence and data integrity
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      const entities =
-        await tableHelper.getEntitiesForTenant('complex-perf-test')
+      const entities = await tableHelper.getAllEntities()
       expect(entities.length).toBe(1)
 
       const attributes = JSON.parse(entities[0]!.attributes!)
@@ -173,7 +169,6 @@ describe('Performance and Load Tests', () => {
 
   describe('Concurrent Request Handling', () => {
     it('should handle 50 concurrent requests efficiently', async () => {
-      const tenantId = 'concurrent-50-test'
       const eventCount = 50
 
       const { result: responses, duration } = await measurePerformance(
@@ -182,7 +177,7 @@ describe('Performance and Load Tests', () => {
           const requests = Array.from({ length: eventCount }, (_, i) =>
             makeAuthenticatedRequest('/audit', {
               method: 'POST',
-              body: JSON.stringify(generateTestEvent(i, tenantId)),
+              body: JSON.stringify(generateTestEvent(i)),
             })
           )
 
@@ -204,12 +199,11 @@ describe('Performance and Load Tests', () => {
 
       // Verify all events were persisted
       await tableHelper.waitForEntityCount(eventCount, 15000)
-      const entities = await tableHelper.getEntitiesForTenant(tenantId)
+      const entities = await tableHelper.getAllEntities()
       expect(entities.length).toBe(eventCount)
     })
 
     it('should handle 200 concurrent requests with reasonable performance', async () => {
-      const tenantId = 'concurrent-200-test'
       const eventCount = 200
 
       const { result: responses, duration } = await measurePerformance(
@@ -218,7 +212,7 @@ describe('Performance and Load Tests', () => {
           const requests = Array.from({ length: eventCount }, (_, i) =>
             makeAuthenticatedRequest('/audit', {
               method: 'POST',
-              body: JSON.stringify(generateTestEvent(i, tenantId)),
+              body: JSON.stringify(generateTestEvent(i)),
             })
           )
 
@@ -245,7 +239,7 @@ describe('Performance and Load Tests', () => {
 
       // Verify persistence (allow for some eventual consistency)
       await new Promise((resolve) => setTimeout(resolve, 5000)) // Extra wait time
-      const entities = await tableHelper.getEntitiesForTenant(tenantId)
+      const entities = await tableHelper.getAllEntities()
 
       // Should persist at least 95% of successful submissions
       const persistenceRate =
@@ -259,7 +253,6 @@ describe('Performance and Load Tests', () => {
 
   describe('Sustained Load Testing', () => {
     it('should handle sustained load over time without degradation', async () => {
-      const tenantId = 'sustained-load-test'
       const batchSize = 25
       const numBatches = 10
       const batchDelayMs = 500
@@ -282,7 +275,7 @@ describe('Performance and Load Tests', () => {
               const eventIndex = batch * batchSize + i
               return makeAuthenticatedRequest('/audit', {
                 method: 'POST',
-                body: JSON.stringify(generateTestEvent(eventIndex, tenantId)),
+                body: JSON.stringify(generateTestEvent(eventIndex)),
               })
             })
 
@@ -335,7 +328,7 @@ describe('Performance and Load Tests', () => {
 
       // Verify persistence
       await new Promise((resolve) => setTimeout(resolve, 3000))
-      const entities = await tableHelper.getEntitiesForTenant(tenantId)
+      const entities = await tableHelper.getAllEntities()
       const persistenceRate = (entities.length / totalEvents) * 100
       console.log(
         `  Final persistence rate: ${persistenceRate.toFixed(1)}% (${entities.length}/${totalEvents})`
@@ -346,7 +339,6 @@ describe('Performance and Load Tests', () => {
 
   describe('Memory Usage and Resource Management', () => {
     it('should not have significant memory leaks during high load', async () => {
-      const tenantId = 'memory-test'
       const iterations = 5
       const eventsPerIteration = 50
 
@@ -371,7 +363,7 @@ describe('Performance and Load Tests', () => {
           const eventIndex = iteration * eventsPerIteration + i
           return makeAuthenticatedRequest('/audit', {
             method: 'POST',
-            body: JSON.stringify(generateTestEvent(eventIndex, tenantId)),
+            body: JSON.stringify(generateTestEvent(eventIndex)),
           })
         })
 
@@ -414,7 +406,7 @@ describe('Performance and Load Tests', () => {
       // Verify all events were processed
       await new Promise((resolve) => setTimeout(resolve, 2000))
       const totalExpectedEvents = iterations * eventsPerIteration
-      const entities = await tableHelper.getEntitiesForTenant(tenantId)
+      const entities = await tableHelper.getAllEntities()
 
       const persistenceRate = (entities.length / totalExpectedEvents) * 100
       expect(persistenceRate).toBeGreaterThanOrEqual(90)
@@ -423,7 +415,6 @@ describe('Performance and Load Tests', () => {
 
   describe('Error Rate and Reliability', () => {
     it('should maintain low error rates under normal load', async () => {
-      const tenantId = 'error-rate-test'
       const totalRequests = 100
 
       const { result: responses, duration } = await measurePerformance(
@@ -434,7 +425,7 @@ describe('Performance and Load Tests', () => {
             (_, i) =>
               makeAuthenticatedRequest('/audit', {
                 method: 'POST',
-                body: JSON.stringify(generateTestEvent(i, tenantId)),
+                body: JSON.stringify(generateTestEvent(i)),
               }).catch((error) => ({ status: 0, error }) as any) // Catch network errors
           )
 
@@ -465,7 +456,7 @@ describe('Performance and Load Tests', () => {
 
       // Verify persistence
       await new Promise((resolve) => setTimeout(resolve, 2000))
-      const entities = await tableHelper.getEntitiesForTenant(tenantId)
+      const entities = await tableHelper.getAllEntities()
       const persistenceRate = (entities.length / successCount) * 100
       expect(persistenceRate).toBeGreaterThanOrEqual(95)
     })
@@ -473,15 +464,13 @@ describe('Performance and Load Tests', () => {
 
   describe('Database Performance Impact', () => {
     it('should not significantly slow down due to large numbers of existing records', async () => {
-      const tenantId = 'db-perf-test'
-
       // First, populate database with many records
       console.log('  Populating database with existing records...')
       const populateCount = 1000
       const populateRequests = Array.from({ length: populateCount }, (_, i) =>
         makeAuthenticatedRequest('/audit', {
           method: 'POST',
-          body: JSON.stringify(generateTestEvent(i, tenantId)),
+          body: JSON.stringify(generateTestEvent(i)),
         })
       )
 
@@ -493,7 +482,7 @@ describe('Performance and Load Tests', () => {
       console.log(`  Database populated with ${existingCount} total records`)
 
       // Now test performance with existing data
-      const testEvent = generateTestEvent(9999, tenantId)
+      const testEvent = generateTestEvent(9999)
 
       const { duration } = await measurePerformance(
         'Performance With Existing Data',
@@ -512,7 +501,7 @@ describe('Performance and Load Tests', () => {
 
       // Verify the new event was persisted
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      const entities = await tableHelper.getEntitiesForTenant(tenantId)
+      const entities = await tableHelper.getAllEntities()
       const testEntity = entities.find((e) => e.rowKey === testEvent.eventId)
       expect(testEntity).toBeTruthy()
     })

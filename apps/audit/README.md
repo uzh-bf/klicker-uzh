@@ -68,7 +68,7 @@ curl http://localhost:7080/healthz
 curl -X POST http://localhost:7080/audit \
   -H "Content-Type: application/json" \
   -H "X-Internal-Token: test-secret-token-123" \
-  -d '{"tenantId":"test","subject":"user:test","action":"test.setup"}'
+  -d '{"subject":"user:test","action":"test.setup"}'
 ```
 
 ## API Usage
@@ -80,7 +80,6 @@ curl -X POST http://localhost:7080/audit \
   -H "Content-Type: application/json" \
   -H "X-Internal-Token: your-secret-token" \
   -d '{
-    "tenantId": "klicker-tenant-123",
     "subject": "user:john.doe@uzh.ch",
     "action": "session.started",
     "resourceId": "live-session-abc",
@@ -102,7 +101,6 @@ curl -X POST http://localhost:7080/audit \
   -H "Content-Type: application/json" \
   -H "X-Internal-Token: your-secret-token" \
   -d '{
-    "tenantId": "uzh-tenant",
     "subject": "user:alice@uzh.ch",
     "action": "auth.login.attempt",
     "sessionId": "session-abc123",
@@ -118,7 +116,6 @@ curl -X POST http://localhost:7080/audit \
   -H "Content-Type: application/json" \
   -H "X-Internal-Token: your-secret-token" \
   -d '{
-    "tenantId": "uzh-tenant",
     "subject": "user:alice@uzh.ch",
     "action": "auth.login.success",
     "sessionId": "session-abc123",
@@ -139,7 +136,6 @@ curl -X POST http://localhost:7080/audit \
   -H "Content-Type: application/json" \
   -H "X-Internal-Token: your-secret-token" \
   -d '{
-    "tenantId": "uzh-tenant",
     "subject": "user:professor@uzh.ch",
     "action": "document.created",
     "resourceId": "lecture-notes-2024",
@@ -157,7 +153,6 @@ curl -X POST http://localhost:7080/audit \
   -H "Content-Type: application/json" \
   -H "X-Internal-Token: your-secret-token" \
   -d '{
-    "tenantId": "uzh-tenant",
     "subject": "user:professor@uzh.ch",
     "action": "document.shared",
     "resourceId": "lecture-notes-2024",
@@ -178,7 +173,6 @@ curl -X POST http://localhost:7080/audit \
   -H "Content-Type: application/json" \
   -H "X-Internal-Token: your-secret-token" \
   -d '{
-    "tenantId": "uzh-tenant",
     "subject": "user:suspicious@external.com",
     "action": "auth.login.failed",
     "attributes": {
@@ -194,7 +188,6 @@ curl -X POST http://localhost:7080/audit \
   -H "Content-Type: application/json" \
   -H "X-Internal-Token: your-secret-token" \
   -d '{
-    "tenantId": "uzh-tenant",
     "subject": "user:admin@uzh.ch",
     "action": "system.user.suspended",
     "resourceId": "user-suspicious-123",
@@ -211,7 +204,6 @@ curl -X POST http://localhost:7080/audit \
 
 | Field        | Type   | Required | Description                               |
 | ------------ | ------ | -------- | ----------------------------------------- |
-| `tenantId`   | string | ✅       | Tenant identifier (1-100 chars)           |
 | `subject`    | string | ✅       | Who performed the action (1-500 chars)    |
 | `action`     | string | ✅       | What action was performed (1-200 chars)   |
 | `timestamp`  | number | -        | Unix timestamp (defaults to server time)  |
@@ -232,9 +224,27 @@ curl -X POST http://localhost:7080/audit \
 
 ## Testing
 
-### Comprehensive Test Suite
+### Quick Testing with Test Script
 
-The audit service includes extensive testing with actual database persistence verification:
+The easiest way to test the audit service is using the comprehensive testing script:
+
+```bash
+# Run all tests with automatic setup
+./test-audit.sh
+```
+
+This script will:
+
+- ✅ Check and optionally start Azurite storage emulator
+- ✅ Install dependencies and build the service
+- ✅ Run the complete test suite
+- ✅ Optionally start the service for manual testing
+- ✅ Submit test events to verify end-to-end functionality
+- ✅ Provide color-coded results and clear status
+
+### Manual Test Commands
+
+Alternatively, run individual test suites:
 
 ```bash
 # Basic API functionality tests
@@ -348,20 +358,19 @@ LOG_LEVEL=warn
 Events are stored in Azure Table Storage with optimized partitioning:
 
 ```
-PartitionKey: <tenantHash>-<YYYYMMDDHHmm>-<shard>
+PartitionKey: <YYYYMMDDHHmm>-<shard>
 RowKey: <eventId> or <ULID>
 ```
 
-**Example**: `42-202501031425-a`
+**Example**: `202501031425-a`
 
-- `42`: Hash of tenant ID (for distribution)
 - `202501031425`: Time bucket (January 3, 2025, 14:25)
 - `a`: Shard (first char of eventId, or '0')
 
 This partitioning strategy:
 
-- ✅ **Distributes load** across Azure's physical partitions
-- ✅ **Enables efficient queries** by tenant and time range
+- ✅ **Distributes load** across Azure's physical partitions with time-based buckets
+- ✅ **Enables efficient queries** by time range
 - ✅ **Supports high throughput** with minimal hotspotting
 
 ### Performance Optimizations
@@ -383,7 +392,6 @@ This partitioning strategy:
 import fetch from 'node-fetch'
 
 interface AuditEvent {
-  tenantId: string
   subject: string
   action: string
   timestamp?: number
@@ -425,7 +433,6 @@ class AuditClient {
 const auditClient = new AuditClient('http://localhost:7080', 'your-token')
 
 await auditClient.submitEvent({
-  tenantId: 'tenant-123',
   subject: 'user:john@example.com',
   action: 'document.created',
   resourceId: 'doc-456',
@@ -498,14 +505,10 @@ class BatchAuditClient extends AuditClient {
 import { ulid } from 'ulidx'
 
 // Generate deterministic event IDs for idempotency
-function generateEventId(
-  tenantId: string,
-  action: string,
-  resourceId?: string
-): string {
+function generateEventId(action: string, resourceId?: string): string {
   // For operations that should be unique per resource
   if (resourceId && ['created', 'deleted'].some((op) => action.includes(op))) {
-    return `${tenantId}-${action}-${resourceId}`
+    return `${action}-${resourceId}`
   }
 
   // For general events, use ULID for uniqueness
@@ -514,11 +517,10 @@ function generateEventId(
 
 // Usage
 await auditClient.submitEvent({
-  tenantId: 'tenant-123',
   subject: 'user:john@example.com',
   action: 'document.created',
   resourceId: 'doc-456',
-  eventId: generateEventId('tenant-123', 'document.created', 'doc-456'),
+  eventId: generateEventId('document.created', 'doc-456'),
 })
 ```
 
@@ -715,8 +717,7 @@ LOG_LEVEL=warn
 {
   "level": "INFO",
   "msg": "Audit event written successfully",
-  "tenantId": "tenant-123",
-  "partitionKey": "42-202501031425-a",
+  "partitionKey": "202501031425-a",
   "duration": 45
 }
 ```
@@ -728,7 +729,7 @@ LOG_LEVEL=warn
   "level": "ERROR",
   "msg": "Failed to write audit event",
   "error": "EntityTooLarge",
-  "tenantId": "tenant-123"
+  "subject": "user:example"
 }
 ```
 
@@ -758,8 +759,7 @@ Access at: http://localhost:7080/metrics
   "level": "INFO",
   "time": "2025-01-03T14:25:30.123Z",
   "service": "audit-service",
-  "tenantId": "tenant-123",
-  "partitionKey": "42-202501031425-a",
+  "partitionKey": "202501031425-a",
   "rowKey": "01HN2K8X9QGJ1K8H3P4M7R2N8T",
   "duration": 45,
   "msg": "Audit event written successfully"

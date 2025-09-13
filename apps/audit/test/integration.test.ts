@@ -1,3 +1,4 @@
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import events from './fixtures/events.json'
 import { AzureTableTestHelper } from './utils/azure-table-helper.js'
 
@@ -26,7 +27,6 @@ async function makeAuthenticatedRequest(
 
 // Generate expected partition key for verification
 function generateExpectedPartitionKey(
-  tenantId: string,
   timestamp: number,
   eventId?: string
 ): string {
@@ -38,17 +38,10 @@ function generateExpectedPartitionKey(
   const minute = date.getMinutes().toString().padStart(2, '0')
   const bucket = `${year}${month}${day}${hour}${minute}`
 
-  // Simple, fast hash for tenant distribution (matches the service implementation)
-  let hash = 0
-  for (let i = 0; i < tenantId.length; i++) {
-    hash = (hash * 31 + tenantId.charCodeAt(i)) % 10000
-  }
-  const tenantHash = (hash % 100).toString().padStart(2, '0')
-
   // Simple shard: use first character of eventId if provided, otherwise '0'
   const shard = eventId ? eventId[0] : '0'
 
-  return `${tenantHash}-${bucket}-${shard}`
+  return `${bucket}-${shard}`
 }
 
 describe('Audit Service Integration Tests', () => {
@@ -81,7 +74,6 @@ describe('Audit Service Integration Tests', () => {
 
       // Wait for persistence and verify in database
       const expectedPartitionKey = generateExpectedPartitionKey(
-        event.tenantId,
         Date.now(),
         event.eventId
       )
@@ -92,7 +84,6 @@ describe('Audit Service Integration Tests', () => {
       )
 
       // Verify entity fields
-      expect(persistedEntity.tenantId).toBe(event.tenantId)
       expect(persistedEntity.subject).toBe(event.subject)
       expect(persistedEntity.action).toBe(event.action)
       expect(persistedEntity.rowKey).toBe(event.eventId)
@@ -114,7 +105,6 @@ describe('Audit Service Integration Tests', () => {
 
       // Verify in database
       const expectedPartitionKey = generateExpectedPartitionKey(
-        event.tenantId,
         Date.now(),
         event.eventId
       )
@@ -150,7 +140,6 @@ describe('Audit Service Integration Tests', () => {
 
       // Verify in database using the returned eventId
       const expectedPartitionKey = generateExpectedPartitionKey(
-        event.tenantId,
         Date.now(),
         responseData.eventId
       )
@@ -179,7 +168,6 @@ describe('Audit Service Integration Tests', () => {
 
       // Verify timestamp was used for partition key
       const expectedPartitionKey = generateExpectedPartitionKey(
-        event.tenantId,
         customTimestamp,
         event.eventId
       )
@@ -216,7 +204,6 @@ describe('Audit Service Integration Tests', () => {
 
       // Verify only one entity exists in database
       const expectedPartitionKey = generateExpectedPartitionKey(
-        event.tenantId,
         Date.now(),
         event.eventId
       )
@@ -230,10 +217,8 @@ describe('Audit Service Integration Tests', () => {
       expect(persistedEntity.subject).toBe(event.subject)
 
       // Count entities to ensure no duplicates
-      const entitiesForTenant = await tableHelper.getEntitiesForTenant(
-        event.tenantId
-      )
-      const matchingEntities = entitiesForTenant.filter(
+      const allEntities = await tableHelper.getAllEntities()
+      const matchingEntities = allEntities.filter(
         (e) => e.rowKey === event.eventId
       )
       expect(matchingEntities.length).toBe(1)
@@ -241,41 +226,44 @@ describe('Audit Service Integration Tests', () => {
   })
 
   describe('Multi-Tenant Data Isolation', () => {
-    it('should properly isolate data between tenants', async () => {
+    it('should properly store and retrieve events', async () => {
+      // Submit a few events
       const testId = Date.now()
+      const events = [
+        {
+          subject: `user:isolation-test-${testId}`,
+          action: 'test.isolation',
+          eventId: `isolation-${testId}-1`,
+        },
+        {
+          subject: `user:isolation-test-${testId}`,
+          action: 'test.isolation',
+          eventId: `isolation-${testId}-2`,
+        },
+      ]
 
-      // Submit events for multiple tenants
-      const promises = events.multiTenant.map((event: any, index: number) =>
-        makeAuthenticatedRequest('/audit', {
+      for (const event of events) {
+        const response = await makeAuthenticatedRequest('/audit', {
           method: 'POST',
-          body: JSON.stringify({
-            ...event,
-            eventId: `multi-tenant-${testId}-${index}`,
-          }),
+          body: JSON.stringify(event),
         })
+        expect(response.status).toBe(200)
+      }
+
+      // Wait for persistence
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // Verify all events are stored
+      const allEntities = await tableHelper.getAllEntities()
+      const testEntities = allEntities.filter((e) =>
+        e.subject?.includes(`isolation-test-${testId}`)
       )
+      expect(testEntities.length).toBe(2)
 
-      const responses = await Promise.all(promises)
-      responses.forEach((response) => expect(response.status).toBe(200))
-
-      // Wait for all events to be persisted
-      await tableHelper.waitForEntityCount(3, 10000)
-
-      // Verify each tenant only sees their own data
-      for (const tenant of ['tenant-a', 'tenant-b', 'tenant-c']) {
-        const tenantEntities = await tableHelper.getEntitiesForTenant(tenant)
-
-        // Should have exactly one entity for this tenant
-        expect(tenantEntities.length).toBe(1)
-        expect(tenantEntities[0]!.tenantId).toBe(tenant)
-
-        // Should not see other tenants' data
-        const otherTenants = ['tenant-a', 'tenant-b', 'tenant-c'].filter(
-          (t) => t !== tenant
-        )
-        for (const otherEntity of tenantEntities) {
-          expect(otherTenants.includes(otherEntity.tenantId)).toBe(false)
-        }
+      // Verify event data integrity
+      for (const entity of testEntities) {
+        expect(entity.subject).toContain(`isolation-test-${testId}`)
+        expect(entity.action).toBe('test.isolation')
       }
     })
   })
@@ -304,12 +292,14 @@ describe('Audit Service Integration Tests', () => {
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
       // Verify all auth events are stored
-      const tenantEntities =
-        await tableHelper.getEntitiesForTenant('tenant-auth')
-      expect(tenantEntities.length).toBe(3)
+      const allEntities = await tableHelper.getAllEntities()
+      const authEntities = allEntities.filter((e) =>
+        e.subject?.includes(`auth-test-${testId}`)
+      )
+      expect(authEntities.length).toBe(3)
 
       // Verify event sequence
-      const actions = tenantEntities.map((e) => e.action).sort()
+      const actions = authEntities.map((e) => e.action).sort()
       expect(actions).toEqual(['login.attempt', 'login.success', 'logout'])
     })
 
@@ -334,8 +324,10 @@ describe('Audit Service Integration Tests', () => {
 
       // Verify system events
       await new Promise((resolve) => setTimeout(resolve, 2000))
-      const systemEntities =
-        await tableHelper.getEntitiesForTenant('tenant-system')
+      const allEntities = await tableHelper.getAllEntities()
+      const systemEntities = allEntities.filter((e) =>
+        e.subject?.includes(`system-test-${testId}`)
+      )
       expect(systemEntities.length).toBe(2)
 
       // Verify backup flow
@@ -366,8 +358,10 @@ describe('Audit Service Integration Tests', () => {
 
       // Verify business events with complex attributes
       await new Promise((resolve) => setTimeout(resolve, 2000))
-      const businessEntities =
-        await tableHelper.getEntitiesForTenant('tenant-business')
+      const allEntities = await tableHelper.getAllEntities()
+      const businessEntities = allEntities.filter((e) =>
+        e.subject?.includes(`business-test-${testId}`)
+      )
       expect(businessEntities.length).toBe(2)
 
       // Verify order event has complex attributes
@@ -390,7 +384,6 @@ describe('Audit Service Integration Tests', () => {
 
       // Create events with different timestamps to ensure different partitions
       const testEvents = Array.from({ length: 5 }, (_, i) => ({
-        tenantId: 'tenant-partition-test',
         subject: `user:test${i}`,
         action: 'test.action',
         eventId: `partition-test-${testId}-${i}`,
@@ -421,7 +414,6 @@ describe('Audit Service Integration Tests', () => {
     it('should handle events with large but acceptable attributes', async () => {
       // Create event with substantial but acceptable attributes
       const event = {
-        tenantId: 'tenant-large-test',
         subject: 'system:data-processor',
         action: 'data.processed',
         eventId: `large-${Date.now()}`,
@@ -448,7 +440,6 @@ describe('Audit Service Integration Tests', () => {
 
       // Verify persistence
       const expectedPartitionKey = generateExpectedPartitionKey(
-        event.tenantId,
         Date.now(),
         event.eventId
       )
@@ -468,7 +459,6 @@ describe('Audit Service Integration Tests', () => {
   describe('Timestamp Edge Cases', () => {
     it('should handle events submitted without timestamp (server-generated)', async () => {
       const event = {
-        tenantId: 'tenant-timestamp-test',
         subject: 'user:timestamp-test',
         action: 'timestamp.test',
         eventId: `timestamp-${Date.now()}`,
@@ -487,7 +477,6 @@ describe('Audit Service Integration Tests', () => {
 
       // Verify entity has server-generated timestamp
       const expectedPartitionKey = generateExpectedPartitionKey(
-        event.tenantId,
         afterSubmission,
         event.eventId
       )

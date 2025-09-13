@@ -25,7 +25,6 @@ async function makeAuthenticatedRequest(
 }
 
 interface AuditEvent {
-  tenantId: string
   subject: string
   action: string
   eventId: string
@@ -36,7 +35,7 @@ interface AuditEvent {
 }
 
 // Helper to submit events with verification
-async function submitAndVerifyEvents(events: AuditEvent[], tenantId: string) {
+async function submitAndVerifyEvents(events: AuditEvent[]) {
   const results = []
 
   for (const event of events) {
@@ -58,7 +57,7 @@ async function submitAndVerifyEvents(events: AuditEvent[], tenantId: string) {
   await new Promise((resolve) => setTimeout(resolve, 2000))
 
   // Verify all events are persisted
-  const persistedEntities = await tableHelper.getEntitiesForTenant(tenantId)
+  const persistedEntities = await tableHelper.getAllEntities()
   expect(persistedEntities.length).toBe(events.length)
 
   return { results, persistedEntities }
@@ -79,14 +78,13 @@ describe('Real-World Scenario Tests', () => {
   describe('User Authentication and Session Management', () => {
     it('should track complete user login session with audit trail', async () => {
       const testId = Date.now()
-      const tenantId = 'auth-session-test'
+
       const userId = 'user-auth-test'
       const sessionId = `session-${testId}`
 
       // Complete authentication flow
       const authFlow: AuditEvent[] = [
         {
-          tenantId,
           subject: `user:${userId}@company.com`,
           action: 'auth.login.attempt',
           eventId: `auth-${testId}-01`,
@@ -100,7 +98,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: `user:${userId}@company.com`,
           action: 'auth.mfa.challenge',
           eventId: `auth-${testId}-02`,
@@ -111,7 +108,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: `user:${userId}@company.com`,
           action: 'auth.mfa.success',
           eventId: `auth-${testId}-03`,
@@ -122,7 +118,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: `user:${userId}@company.com`,
           action: 'auth.login.success',
           eventId: `auth-${testId}-04`,
@@ -136,10 +131,7 @@ describe('Real-World Scenario Tests', () => {
         },
       ]
 
-      const { persistedEntities } = await submitAndVerifyEvents(
-        authFlow,
-        tenantId
-      )
+      const { persistedEntities } = await submitAndVerifyEvents(authFlow)
 
       // Verify complete audit trail
       const authEvents = persistedEntities.sort(
@@ -176,13 +168,12 @@ describe('Real-World Scenario Tests', () => {
 
     it('should track failed authentication attempts and account lockout', async () => {
       const testId = Date.now()
-      const tenantId = 'auth-failure-test'
+
       const userId = 'user-failure-test'
       const sessionId = `session-fail-${testId}`
 
       const failureFlow: AuditEvent[] = [
         {
-          tenantId,
           subject: `user:${userId}@company.com`,
           action: 'auth.login.attempt',
           eventId: `fail-${testId}-01`,
@@ -190,7 +181,6 @@ describe('Real-World Scenario Tests', () => {
           attributes: { ipAddress: '203.0.113.42', attemptNumber: 1 },
         },
         {
-          tenantId,
           subject: `user:${userId}@company.com`,
           action: 'auth.login.failed',
           eventId: `fail-${testId}-02`,
@@ -198,7 +188,6 @@ describe('Real-World Scenario Tests', () => {
           attributes: { reason: 'invalid_password', attemptNumber: 1 },
         },
         {
-          tenantId,
           subject: `user:${userId}@company.com`,
           action: 'auth.login.attempt',
           eventId: `fail-${testId}-03`,
@@ -206,7 +195,6 @@ describe('Real-World Scenario Tests', () => {
           attributes: { ipAddress: '203.0.113.42', attemptNumber: 2 },
         },
         {
-          tenantId,
           subject: `user:${userId}@company.com`,
           action: 'auth.login.failed',
           eventId: `fail-${testId}-04`,
@@ -214,7 +202,6 @@ describe('Real-World Scenario Tests', () => {
           attributes: { reason: 'invalid_password', attemptNumber: 2 },
         },
         {
-          tenantId,
           subject: 'system:auth-service',
           action: 'auth.account.locked',
           eventId: `fail-${testId}-05`,
@@ -228,10 +215,7 @@ describe('Real-World Scenario Tests', () => {
         },
       ]
 
-      const { persistedEntities } = await submitAndVerifyEvents(
-        failureFlow,
-        tenantId
-      )
+      const { persistedEntities } = await submitAndVerifyEvents(failureFlow)
 
       // Verify failure tracking
       const failureEvents = persistedEntities.filter((e) =>
@@ -255,13 +239,12 @@ describe('Real-World Scenario Tests', () => {
   describe('Document and Resource Management', () => {
     it('should track complete document lifecycle', async () => {
       const testId = Date.now()
-      const tenantId = 'document-lifecycle-test'
+
       const userId = 'user-doc-test'
       const documentId = `doc-${testId}`
 
       const documentFlow: AuditEvent[] = [
         {
-          tenantId,
           subject: `user:${userId}@company.com`,
           action: 'document.created',
           eventId: `doc-${testId}-01`,
@@ -281,7 +264,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: `user:${userId}@company.com`,
           action: 'document.viewed',
           eventId: `doc-${testId}-02`,
@@ -294,7 +276,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: `user:reviewer@company.com`,
           action: 'document.viewed',
           eventId: `doc-${testId}-03`,
@@ -307,7 +288,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: `user:${userId}@company.com`,
           action: 'document.edited',
           eventId: `doc-${testId}-04`,
@@ -322,7 +302,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: `user:${userId}@company.com`,
           action: 'document.shared',
           eventId: `doc-${testId}-05`,
@@ -336,7 +315,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: `user:approver@company.com`,
           action: 'document.approved',
           eventId: `doc-${testId}-06`,
@@ -350,10 +328,7 @@ describe('Real-World Scenario Tests', () => {
         },
       ]
 
-      const { persistedEntities } = await submitAndVerifyEvents(
-        documentFlow,
-        tenantId
-      )
+      const { persistedEntities } = await submitAndVerifyEvents(documentFlow)
 
       // Verify document lifecycle tracking
       const docEvents = persistedEntities.sort(
@@ -403,13 +378,12 @@ describe('Real-World Scenario Tests', () => {
 
     it('should track compliance-sensitive file operations', async () => {
       const testId = Date.now()
-      const tenantId = 'compliance-test'
+
       const userId = 'user-compliance'
       const fileId = `file-${testId}`
 
       const complianceFlow: AuditEvent[] = [
         {
-          tenantId,
           subject: `user:${userId}@company.com`,
           action: 'file.uploaded',
           eventId: `comp-${testId}-01`,
@@ -430,7 +404,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: 'system:dlp-scanner',
           action: 'file.scanned',
           eventId: `comp-${testId}-02`,
@@ -444,7 +417,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: `user:compliance-officer@company.com`,
           action: 'file.reviewed',
           eventId: `comp-${testId}-03`,
@@ -458,7 +430,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: 'system:encryption-service',
           action: 'file.encrypted',
           eventId: `comp-${testId}-04`,
@@ -470,7 +441,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: `user:${userId}@company.com`,
           action: 'file.accessed',
           eventId: `comp-${testId}-05`,
@@ -485,10 +455,7 @@ describe('Real-World Scenario Tests', () => {
         },
       ]
 
-      const { persistedEntities } = await submitAndVerifyEvents(
-        complianceFlow,
-        tenantId
-      )
+      const { persistedEntities } = await submitAndVerifyEvents(complianceFlow)
 
       // Verify compliance audit trail
       const compEvents = persistedEntities.sort(
@@ -530,12 +497,11 @@ describe('Real-World Scenario Tests', () => {
   describe('System Operations and Security', () => {
     it('should track security incident response workflow', async () => {
       const testId = Date.now()
-      const tenantId = 'security-incident-test'
+
       const incidentId = `inc-${testId}`
 
       const securityFlow: AuditEvent[] = [
         {
-          tenantId,
           subject: 'system:intrusion-detection',
           action: 'security.threat.detected',
           eventId: `sec-${testId}-01`,
@@ -550,7 +516,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: 'system:incident-response',
           action: 'security.incident.created',
           eventId: `sec-${testId}-02`,
@@ -564,7 +529,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: 'system:firewall',
           action: 'security.ip.blocked',
           eventId: `sec-${testId}-03`,
@@ -577,7 +541,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: 'user:security-analyst@company.com',
           action: 'security.incident.investigated',
           eventId: `sec-${testId}-04`,
@@ -595,7 +558,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: 'user:security-manager@company.com',
           action: 'security.incident.resolved',
           eventId: `sec-${testId}-05`,
@@ -610,10 +572,7 @@ describe('Real-World Scenario Tests', () => {
         },
       ]
 
-      const { persistedEntities } = await submitAndVerifyEvents(
-        securityFlow,
-        tenantId
-      )
+      const { persistedEntities } = await submitAndVerifyEvents(securityFlow)
 
       // Verify security incident workflow
       const secEvents = persistedEntities.sort(
@@ -660,13 +619,12 @@ describe('Real-World Scenario Tests', () => {
 
     it('should track privileged access and administrative operations', async () => {
       const testId = Date.now()
-      const tenantId = 'admin-operations-test'
+
       const userId = 'admin-user'
       const sessionId = `admin-session-${testId}`
 
       const adminFlow: AuditEvent[] = [
         {
-          tenantId,
           subject: `user:${userId}@company.com`,
           action: 'admin.privilege.escalated',
           eventId: `admin-${testId}-01`,
@@ -681,7 +639,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: `user:${userId}@company.com`,
           action: 'system.database.accessed',
           eventId: `admin-${testId}-02`,
@@ -696,7 +653,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: `user:${userId}@company.com`,
           action: 'system.configuration.changed',
           eventId: `admin-${testId}-03`,
@@ -711,7 +667,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: `user:${userId}@company.com`,
           action: 'system.backup.initiated',
           eventId: `admin-${testId}-04`,
@@ -725,7 +680,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: `user:${userId}@company.com`,
           action: 'admin.privilege.revoked',
           eventId: `admin-${testId}-05`,
@@ -745,10 +699,7 @@ describe('Real-World Scenario Tests', () => {
         },
       ]
 
-      const { persistedEntities } = await submitAndVerifyEvents(
-        adminFlow,
-        tenantId
-      )
+      const { persistedEntities } = await submitAndVerifyEvents(adminFlow)
 
       // Verify privileged access tracking
       const adminEvents = persistedEntities.sort(
@@ -807,13 +758,12 @@ describe('Real-World Scenario Tests', () => {
   describe('Business Process Workflows', () => {
     it('should track financial transaction approval workflow', async () => {
       const testId = Date.now()
-      const tenantId = 'financial-workflow-test'
+
       const transactionId = `txn-${testId}`
       const amount = 25000.0
 
       const financialFlow: AuditEvent[] = [
         {
-          tenantId,
           subject: 'user:employee@company.com',
           action: 'finance.expense.submitted',
           eventId: `fin-${testId}-01`,
@@ -830,7 +780,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: 'user:manager@company.com',
           action: 'finance.expense.reviewed',
           eventId: `fin-${testId}-02`,
@@ -844,7 +793,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: 'system:finance-system',
           action: 'finance.expense.budget_checked',
           eventId: `fin-${testId}-03`,
@@ -859,7 +807,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: 'user:finance-director@company.com',
           action: 'finance.expense.approved',
           eventId: `fin-${testId}-04`,
@@ -876,7 +823,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: 'system:payment-processor',
           action: 'finance.payment.processed',
           eventId: `fin-${testId}-05`,
@@ -892,10 +838,7 @@ describe('Real-World Scenario Tests', () => {
         },
       ]
 
-      const { persistedEntities } = await submitAndVerifyEvents(
-        financialFlow,
-        tenantId
-      )
+      const { persistedEntities } = await submitAndVerifyEvents(financialFlow)
 
       // Verify financial workflow tracking
       const finEvents = persistedEntities.sort(
@@ -953,13 +896,12 @@ describe('Real-World Scenario Tests', () => {
 
     it('should track customer data request fulfillment (GDPR compliance)', async () => {
       const testId = Date.now()
-      const tenantId = 'gdpr-request-test'
+
       const requestId = `req-${testId}`
       const customerId = 'customer-12345'
 
       const gdprFlow: AuditEvent[] = [
         {
-          tenantId,
           subject: `customer:${customerId}@example.com`,
           action: 'privacy.data_request.submitted',
           eventId: `gdpr-${testId}-01`,
@@ -978,7 +920,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: 'system:privacy-system',
           action: 'privacy.request.validated',
           eventId: `gdpr-${testId}-02`,
@@ -993,7 +934,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: 'system:data-discovery',
           action: 'privacy.data.located',
           eventId: `gdpr-${testId}-03`,
@@ -1012,7 +952,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: 'user:privacy-officer@company.com',
           action: 'privacy.data.reviewed',
           eventId: `gdpr-${testId}-04`,
@@ -1027,7 +966,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: 'system:data-export',
           action: 'privacy.data.exported',
           eventId: `gdpr-${testId}-05`,
@@ -1048,7 +986,6 @@ describe('Real-World Scenario Tests', () => {
           },
         },
         {
-          tenantId,
           subject: `customer:${customerId}@example.com`,
           action: 'privacy.data.downloaded',
           eventId: `gdpr-${testId}-06`,
@@ -1062,10 +999,7 @@ describe('Real-World Scenario Tests', () => {
         },
       ]
 
-      const { persistedEntities } = await submitAndVerifyEvents(
-        gdprFlow,
-        tenantId
-      )
+      const { persistedEntities } = await submitAndVerifyEvents(gdprFlow)
 
       // Verify GDPR compliance workflow
       const gdprEvents = persistedEntities.sort(

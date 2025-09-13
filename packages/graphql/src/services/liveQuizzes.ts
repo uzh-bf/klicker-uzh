@@ -17,19 +17,17 @@ import {
 } from '@klicker-uzh/types'
 import {
   auditClient,
+  createPinValidationFailedEvent,
+  createPinValidationSuccessEvent,
+  generateSessionId,
   getActivityInstanceConnectOrCreate,
   getInitialInstanceResults,
+  hashSensitiveData,
   levelFromXp,
   propagateActivityToElements,
   recomputeDerivedPermissions,
   signJWT,
 } from '@klicker-uzh/util'
-import {
-  createPinValidationFailedEvent,
-  createPinValidationSuccessEvent,
-  generateSessionId,
-  hashSensitiveData,
-} from '@klicker-uzh/util/src/auditEvents'
 import dayjs from 'dayjs'
 import generatePassword from 'generate-password'
 import { GraphQLError } from 'graphql'
@@ -2660,7 +2658,6 @@ export async function setLiveQuizPinCookie(
     // Log failed PIN validation - quiz not found or not published
     await auditClient.log(
       createPinValidationFailedEvent(
-        'klicker-uzh',
         `anonymous:session-${sessionId}`,
         sessionId,
         liveQuizId,
@@ -2692,7 +2689,6 @@ export async function setLiveQuizPinCookie(
     // Log failed PIN validation - incorrect PIN
     await auditClient.log(
       createPinValidationFailedEvent(
-        'klicker-uzh',
         `anonymous:session-${sessionId}`,
         sessionId,
         liveQuizId,
@@ -2714,7 +2710,6 @@ export async function setLiveQuizPinCookie(
   // Log successful PIN validation
   await auditClient.log(
     createPinValidationSuccessEvent(
-      'klicker-uzh',
       `anonymous:session-${sessionId}`,
       sessionId,
       liveQuizId,

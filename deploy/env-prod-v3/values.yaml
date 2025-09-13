@@ -313,6 +313,8 @@ audit:
   azureStorage:
     tableName: 'auditlogs-prod'
 
+  corsOrigins: 'https://assessment.klicker.uzh.ch'
+
 redis:
   auth:
     enabled: false

@@ -17,6 +17,9 @@ const configSchema = z.object({
   // JWT authentication for public endpoints
   APP_SECRET: z.string().min(1),
 
+  // CORS configuration (comma-separated origins)
+  CORS_ORIGINS: z.string().default('https://assessment.klicker.com'),
+
   // Logging configuration
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 })

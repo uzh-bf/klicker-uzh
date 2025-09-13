@@ -2628,7 +2628,6 @@ export async function respondToQuestion(
   // Log response submission attempt
   if (participantId && ctx.user?.role === DB.UserRole.PARTICIPANT) {
     await auditClient.log({
-      tenantId: 'klicker-uzh',
       subject: `participant:${participantId}`,
       action: 'response.submitted',
       resourceId: id.toString(),
@@ -2665,7 +2664,6 @@ export async function respondToQuestion(
         // Log validation failure
         if (participantId && ctx.user?.role === DB.UserRole.PARTICIPANT) {
           await auditClient.log({
-            tenantId: 'klicker-uzh',
             subject: `participant:${participantId}`,
             action: 'response.validation.failed',
             resourceId: id.toString(),
@@ -2822,7 +2820,6 @@ export async function respondToQuestion(
           // Log validation failure for aggregated responses computation
           if (participantId && ctx.user?.role === DB.UserRole.PARTICIPANT) {
             await auditClient.log({
-              tenantId: 'klicker-uzh',
               subject: `participant:${participantId}`,
               action: 'response.validation.failed',
               resourceId: id.toString(),
@@ -2942,7 +2939,6 @@ export async function respondToQuestion(
     // Log successful response save
     if (result && participantId && ctx.user?.role === DB.UserRole.PARTICIPANT) {
       await auditClient.log({
-        tenantId: 'klicker-uzh',
         subject: `participant:${participantId}`,
         action: 'response.saved',
         resourceId: id.toString(),
@@ -2964,7 +2960,6 @@ export async function respondToQuestion(
     // Log failed response save
     if (participantId && ctx.user?.role === DB.UserRole.PARTICIPANT) {
       await auditClient.log({
-        tenantId: 'klicker-uzh',
         subject: `participant:${participantId}`,
         action: 'response.failed',
         resourceId: id.toString(),

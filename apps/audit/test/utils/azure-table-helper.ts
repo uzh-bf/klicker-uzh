@@ -8,7 +8,6 @@ const AZURITE_CONNECTION_STRING =
   'DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;'
 
 interface AuditTableEntity extends TableEntity {
-  tenantId: string
   subject: string
   action: string
   timestamp: number
@@ -21,7 +20,6 @@ interface AuditTableEntity extends TableEntity {
 interface TableStats {
   totalEntities: number
   partitionCount: number
-  tenants: string[]
   actions: string[]
   oldestTimestamp: number | null
   newestTimestamp: number | null
@@ -127,18 +125,12 @@ export class AzureTableTestHelper {
   }
 
   /**
-   * Get all entities for a specific tenant
+   * Get all entities (without tenant filtering)
    */
-  async getEntitiesForTenant(
-    tenantId: string,
-    limit = 1000
-  ): Promise<AuditTableEntity[]> {
+  async getAllEntities(limit = 1000): Promise<AuditTableEntity[]> {
     const entities: AuditTableEntity[] = []
-    const filter = `tenantId eq '${tenantId}'`
 
-    for await (const entity of this.client.listEntities<AuditTableEntity>({
-      queryOptions: { filter },
-    })) {
+    for await (const entity of this.client.listEntities<AuditTableEntity>()) {
       entities.push(entity)
       if (entities.length >= limit) break
     }
@@ -284,18 +276,15 @@ export class AzureTableTestHelper {
     const stats: TableStats = {
       totalEntities: 0,
       partitionCount: 0,
-      tenants: [],
       actions: [],
       oldestTimestamp: null,
       newestTimestamp: null,
     }
 
-    const tenantsSet = new Set<string>()
     const actionsSet = new Set<string>()
 
     for await (const entity of this.client.listEntities<AuditTableEntity>()) {
       stats.totalEntities++
-      tenantsSet.add(entity.tenantId)
       actionsSet.add(entity.action)
 
       if (entity.timestamp) {
@@ -315,7 +304,6 @@ export class AzureTableTestHelper {
     }
 
     stats.partitionCount = (await this.getPartitionKeys()).length
-    stats.tenants = Array.from(tenantsSet)
     stats.actions = Array.from(actionsSet)
 
     return stats

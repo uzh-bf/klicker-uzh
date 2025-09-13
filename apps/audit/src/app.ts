@@ -49,7 +49,7 @@ app.use('*', honoLogger(customLoggerPrintFunc)) // Log all requests
 app.use(
   '/audit/public',
   cors({
-    origin: ['http://localhost:3000', 'https://app.klicker.uzh.ch'], // TODO: Configure from environment
+    origin: config.CORS_ORIGINS.split(',').map((origin) => origin.trim()),
     credentials: true, // Allow cookies for JWT auth
     allowMethods: ['POST', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Cookie'],
@@ -154,7 +154,7 @@ app.post(
       logger.info(
         {
           requestId: c.get('requestId'),
-          tenantId: event.tenantId,
+
           action: event.action,
           eventId: event.eventId,
           timestamp: event.timestamp,
@@ -175,7 +175,7 @@ app.post(
       logger.info(
         {
           requestId: c.get('requestId'),
-          tenantId: event.tenantId,
+
           partitionKey: entity.partitionKey,
           rowKey: entity.rowKey,
           duration: Date.now() - startTime,
@@ -198,7 +198,7 @@ app.post(
       logger.error(
         {
           requestId: c.get('requestId'),
-          tenantId: event.tenantId,
+
           eventId: event.eventId,
           error: error instanceof Error ? error.message : 'Unknown error',
           duration: Date.now() - startTime,
@@ -269,12 +269,12 @@ app.post(
     metrics.requestsTotal.inc()
 
     try {
-      // Rate limit check per tenant (prevent DoS attacks)
-      if (!checkRateLimit(`tenant:${event.tenantId}`, 100, 60000)) {
+      // Rate limit check to prevent DoS attacks
+      if (!checkRateLimit(`public-endpoint`, 100, 60000)) {
         logger.warn(
           {
             requestId: c.get('requestId'),
-            tenantId: event.tenantId,
+
             path: c.req.path,
           },
           'Public endpoint rate limit exceeded'
@@ -347,7 +347,7 @@ app.post(
       logger.info(
         {
           requestId: c.get('requestId'),
-          tenantId: event.tenantId,
+
           action: event.action,
           eventId: event.eventId,
           participantId: participant.participantId,
@@ -381,7 +381,7 @@ app.post(
       logger.info(
         {
           requestId: c.get('requestId'),
-          tenantId: event.tenantId,
+
           partitionKey: entity.partitionKey,
           rowKey: entity.rowKey,
           participantId: participant.participantId,
@@ -405,7 +405,7 @@ app.post(
       logger.error(
         {
           requestId: c.get('requestId'),
-          tenantId: event.tenantId,
+
           eventId: event.eventId,
           error: error instanceof Error ? error.message : 'Unknown error',
           duration: Date.now() - startTime,

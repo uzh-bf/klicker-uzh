@@ -268,6 +268,8 @@ audit:
   azureStorage:
     tableName: 'auditlogs-qa'
 
+  corsOrigins: 'https://assessment.klicker-qa.bf-app.ch'
+
 redis:
   priorityClassName: staging-workload
   architecture: standalone

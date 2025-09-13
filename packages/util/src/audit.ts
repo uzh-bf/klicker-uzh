@@ -79,13 +79,11 @@ export class AuditClient {
    * Convenience method to log login events
    */
   async logLogin(
-    tenantId: string,
     userId: string,
     success: boolean,
     metadata?: any
   ): Promise<AuditResponse | null> {
     return this.log({
-      tenantId,
       subject: `user:${userId}`,
       action: success ? 'login.success' : 'login.failed',
       userId,
@@ -97,14 +95,12 @@ export class AuditClient {
    * Convenience method to log data access events
    */
   async logDataAccess(
-    tenantId: string,
     userId: string,
     resource: string,
     action: string,
     resourceId?: string
   ): Promise<AuditResponse | null> {
     return this.log({
-      tenantId,
       subject: `user:${userId}`,
       action: `data.${action}`,
       resourceId,
@@ -120,13 +116,11 @@ export class AuditClient {
    * Convenience method to log system errors
    */
   async logError(
-    tenantId: string,
     subject: string,
     error: Error,
     context?: any
   ): Promise<AuditResponse | null> {
     return this.log({
-      tenantId,
       subject,
       action: 'error.system',
       attributes: {
@@ -141,14 +135,12 @@ export class AuditClient {
    * Convenience method to log user actions
    */
   async logUserAction(
-    tenantId: string,
     userId: string,
     action: string,
     resourceId?: string,
     metadata?: any
   ): Promise<AuditResponse | null> {
     return this.log({
-      tenantId,
       subject: `user:${userId}`,
       action,
       resourceId,
