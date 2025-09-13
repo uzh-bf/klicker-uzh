@@ -46,3 +46,6 @@ data:
   PRESERVE_REDIS_FOR_COMPARISON: {{ .Values.assessment.backendGraphql.preserveRedisForComparison | quote }}
   {{ end }}
   JWT_ISSUER_API: {{ .Values.jwtIssuers.assessmentApi | quote }}
+  JWT_ISSUER_AUTH: {{ .Values.jwtIssuers.auth | quote }}
+  JWT_ISSUER_LTI: {{ .Values.jwtIssuers.lti | quote }}
+  JWT_ISSUER_PWA: {{ .Values.jwtIssuers.assessmentPwa | quote }}

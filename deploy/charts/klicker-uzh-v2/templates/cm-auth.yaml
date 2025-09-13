@@ -6,4 +6,7 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  JWT_ISSUER_API: {{ .Values.jwtIssuers.api | quote }}
   JWT_ISSUER_AUTH: {{ .Values.jwtIssuers.auth | quote }}
+  JWT_ISSUER_LTI: {{ .Values.jwtIssuers.lti | quote }}
+  JWT_ISSUER_PWA: {{ .Values.jwtIssuers.pwa | quote }}

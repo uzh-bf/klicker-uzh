@@ -10,6 +10,12 @@ data:
   HATCHET_TENANT_ID: {{ .Values.hatchet.client.tenantId | quote }}
   HATCHET_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  JWT_ISSUER_API: {{ .Values.jwtIssuers.api | quote }}
+  JWT_ISSUER_AUTH: {{ .Values.jwtIssuers.auth | quote }}
+  JWT_ISSUER_LTI: {{ .Values.jwtIssuers.lti | quote }}
+  JWT_ISSUER_PWA: {{ .Values.jwtIssuers.pwa | quote }}
+  JWT_ISSUER_ASSESSMENT_API: {{ .Values.jwtIssuers.assessmentApi | quote }}
+  JWT_ISSUER_ASSESSMENT_PWA: {{ .Values.jwtIssuers.assessmentPwa | quote }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -22,3 +28,9 @@ data:
   HATCHET_TENANT_ID: {{ .Values.hatchet.client.tenantId | quote }}
   HATCHET_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  JWT_ISSUER_API: {{ .Values.jwtIssuers.api | quote }}
+  JWT_ISSUER_AUTH: {{ .Values.jwtIssuers.auth | quote }}
+  JWT_ISSUER_LTI: {{ .Values.jwtIssuers.lti | quote }}
+  JWT_ISSUER_PWA: {{ .Values.jwtIssuers.pwa | quote }}
+  JWT_ISSUER_ASSESSMENT_API: {{ .Values.jwtIssuers.assessmentApi | quote }}
+  JWT_ISSUER_ASSESSMENT_PWA: {{ .Values.jwtIssuers.assessmentPwa | quote }}
