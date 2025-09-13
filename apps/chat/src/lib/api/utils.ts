@@ -1,13 +1,6 @@
 import { ExtendedThreadMessageLike } from '../../stores/chatStore'
 
 /**
- * Generates unique thread ID with timestamp and random suffix
- * @returns A unique thread identifier string
- */
-export const generateThreadId = (): string =>
-  `thread-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-
-/**
  * Builds path from leaf message to the root of the conversation tree
  * Used to reconstruct a specific conversation branch from all messages
  *
