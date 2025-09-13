@@ -1911,33 +1911,31 @@ export default defineConfig({
         },
         async cleanupDatabase() {
           try {
-            await Promise.all([
-              // delete all activities
-              prisma.liveQuiz.deleteMany(),
-              prisma.microLearning.deleteMany(),
-              prisma.practiceQuiz.deleteMany(),
-              prisma.groupActivity.deleteMany(),
+            // delete all activities
+            await prisma.liveQuiz.deleteMany()
+            await prisma.microLearning.deleteMany()
+            await prisma.practiceQuiz.deleteMany()
+            await prisma.groupActivity.deleteMany()
 
-              // delete all courses
-              prisma.course.deleteMany(),
+            // delete all courses
+            await prisma.course.deleteMany()
 
-              // delete all elements and resources
-              prisma.element.deleteMany(),
-              prisma.answerCollection.deleteMany(),
-              prisma.mediaFile.deleteMany(),
+            // delete all elements and resources
+            await prisma.element.deleteMany(),
+              await prisma.answerCollection.deleteMany()
+            await prisma.mediaFile.deleteMany()
 
-              // delete all catalog collections
-              prisma.catalogCollection.deleteMany(),
+            // delete all catalog collections
+            await prisma.catalogCollection.deleteMany()
 
-              // delete all audit data
-              prisma.auditLogEntry.deleteMany(),
+            // delete all audit data
+            await prisma.auditLogEntry.deleteMany()
 
-              // delete all users, participants and groups
-              prisma.userGroup.deleteMany(),
-              prisma.user.deleteMany(),
-              prisma.participantGroup.deleteMany(),
-              prisma.participant.deleteMany(),
-            ])
+            // delete all users, participants and groups
+            await prisma.userGroup.deleteMany()
+            await prisma.user.deleteMany()
+            await prisma.participantGroup.deleteMany()
+            await prisma.participant.deleteMany()
 
             return true
           } catch (error) {
