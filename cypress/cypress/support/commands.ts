@@ -1,3 +1,4 @@
+import { configure } from '@testing-library/cypress'
 import '@testing-library/cypress/add-commands'
 import 'cypress-real-events'
 import * as jose from 'jose'
@@ -5,6 +6,18 @@ import localforage from 'localforage'
 import messages from '../../../packages/i18n/messages/en'
 
 /// <reference types="cypress" />
+
+// Only do this in headless/CI runs to keep rich errors locally
+if (!Cypress.config('isInteractive')) {
+  configure({
+    // Return only the message, skip prettyDOM DOM dump
+    getElementError: (message /*, container */) => {
+      const err = new Error(message)
+      err.name = 'TestingLibraryElementError'
+      return err
+    },
+  })
+}
 
 // Custom command for reliable select interactions
 Cypress.Commands.add('selectOption', (selector: string, optionText: string) => {
