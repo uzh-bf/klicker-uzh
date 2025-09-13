@@ -16,7 +16,6 @@ import {
 import type { FC } from 'react'
 
 import { Button } from '@uzh-bf/design-system'
-import { getThreadSuggestions } from '../../lib/config/suggestions'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 import { BranchPicker } from './branch-picker'
 import { MarkdownText } from './markdown-text'
@@ -81,33 +80,33 @@ const ThreadWelcome: FC = () => {
         <div className="flex w-full flex-grow flex-col items-center justify-center">
           <p className="mt-4 font-medium">How can I help you today?</p>
         </div>
-        <ThreadWelcomeSuggestions />
+        {/* <ThreadWelcomeSuggestions /> */}
       </div>
     </ThreadPrimitive.Empty>
   )
 }
 
-const ThreadWelcomeSuggestions: FC = () => {
-  const suggestions = getThreadSuggestions()
+// const ThreadWelcomeSuggestions: FC = () => {
+//   const suggestions = getThreadSuggestions()
 
-  return (
-    <div className="mt-3 flex w-full items-stretch justify-center gap-4">
-      {suggestions.map((suggestion) => (
-        <ThreadPrimitive.Suggestion
-          key={suggestion.id}
-          className="hover:bg-muted/80 flex max-w-sm grow basis-0 flex-col items-center justify-center rounded-lg border p-3 transition-colors ease-in"
-          prompt={suggestion.prompt}
-          method="replace"
-          autoSend
-        >
-          <span className="line-clamp-2 text-ellipsis text-sm font-semibold">
-            {suggestion.text}
-          </span>
-        </ThreadPrimitive.Suggestion>
-      ))}
-    </div>
-  )
-}
+//   return (
+//     <div className="mt-3 flex w-full items-stretch justify-center gap-4">
+//       {suggestions.map((suggestion) => (
+//         <ThreadPrimitive.Suggestion
+//           key={suggestion.id}
+//           className="hover:bg-muted/80 flex max-w-sm grow basis-0 flex-col items-center justify-center rounded-lg border p-3 transition-colors ease-in"
+//           prompt={suggestion.prompt}
+//           method="replace"
+//           autoSend
+//         >
+//           <span className="line-clamp-2 text-ellipsis text-sm font-semibold">
+//             {suggestion.text}
+//           </span>
+//         </ThreadPrimitive.Suggestion>
+//       ))}
+//     </div>
+//   )
+// }
 
 const Composer: FC = () => {
   return (
