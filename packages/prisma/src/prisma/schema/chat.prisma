@@ -1,8 +1,8 @@
 model ChatUsageCredits {
   id String @id @default(uuid()) @db.Uuid
 
-  total   Int @default(0)
-  current Int @default(0)
+  total   Decimal @default(0) @db.Decimal(18, 6)
+  current Decimal @default(0) @db.Decimal(18, 6)
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid

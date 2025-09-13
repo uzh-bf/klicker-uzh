@@ -31,15 +31,15 @@ export class CreditsService {
         data: {
           participantId,
           chatbotId,
-          total: 0,
-          current: 0,
+          total: 0.0,
+          current: 0.0,
         },
       })
     }
 
     return {
-      current: credits.current,
-      total: credits.total,
+      current: credits.current.toNumber(),
+      total: credits.total.toNumber(),
     }
   }
 
@@ -59,13 +59,13 @@ export class CreditsService {
         },
       },
       data: {
-        current: Math.max(0, newCurrent),
+        current: Math.max(0.0, newCurrent).toFixed(6),
       },
     })
 
     return {
-      current: credits.current,
-      total: credits.total,
+      current: credits.current.toNumber(),
+      total: credits.total.toNumber(),
     }
   }
 
@@ -78,7 +78,7 @@ export class CreditsService {
     amount: number
   ): Promise<UserCredits> {
     const currentCredits = await this.getUserCredits(participantId, chatbotId)
-    const newCurrent = Math.max(0, currentCredits.current - amount)
+    const newCurrent = Math.max(0.0, currentCredits.current - amount)
 
     return await this.updateCredits(participantId, chatbotId, newCurrent)
   }
