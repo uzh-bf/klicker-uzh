@@ -1418,6 +1418,15 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
+      resetAssessmentLiveQuiz: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: ActivityInfo,
+        args: { id: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await LiveQuizService.resetAssessmentLiveQuiz(args, ctx)
+        },
+      }),
+
       changeActivityName: t.withAuth(asUserFullAccess).boolean({
         nullable: true,
         args: {

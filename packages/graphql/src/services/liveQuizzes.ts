@@ -31,7 +31,7 @@ import { createHash, createHmac } from 'node:crypto'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { getPermissionBooleans } from './activities.js'
+import { getPermissionBooleans } from './courses.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -497,11 +497,7 @@ export async function manipulateLiveQuiz(
     isRemovable,
     sharingType,
   } = getPermissionBooleans({
-    permissionLevel,
-    derived,
-    directGroupPermission:
-      activity.permissions[0]?.directPermission &&
-      activity.permissions[0].directPermission.userGroupId !== null,
+    permission: activity.permissions[0]!,
   })
 
   return {
@@ -2115,13 +2111,8 @@ export async function cancelLiveQuiz(
         const initialResults = getInitialInstanceResults(instance.elementData)
 
         return ctx.prisma.elementInstance.update({
-          where: {
-            id: instance.id,
-          },
-          data: {
-            results: initialResults,
-            anonymousResults: initialResults,
-          },
+          where: { id: instance.id },
+          data: { results: initialResults, anonymousResults: initialResults },
         })
       }),
     ])
@@ -2369,6 +2360,176 @@ export async function deleteLiveQuiz(
     })
 
     return deletedLiveQuiz
+  }
+}
+
+export async function resetAssessmentLiveQuiz(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  // the live quiz that should be reset must be an ended assessment quiz
+  // the user that is resetting the quiz must be an admin or owner of the corresponding assessment course
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id,
+      isAssessmentEnabled: true,
+      status: DB.PublicationStatus.ENDED,
+      course: {
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+            },
+          },
+        },
+      },
+    },
+    include: {
+      blocks: {
+        include: {
+          elements: {
+            include: { liveQuizResponses: true },
+            orderBy: { order: 'asc' },
+          },
+        },
+        orderBy: { order: 'asc' },
+      },
+    },
+  })
+
+  if (!liveQuiz) return null
+
+  try {
+    ctx.hatchet.events.push('create-audit-log-entry', {
+      info: `[INFO] [Reset Assessment Live Quiz] Assessment course admin with ID ${ctx.user.sub} initiated reset of live quiz with ID ${id}.`,
+    })
+
+    // loop through the blocks and element instances and document the number of deducted points
+    for (const block of liveQuiz.blocks) {
+      for (const instance of block.elements) {
+        await Promise.all(
+          instance.liveQuizResponses.map(async (response) => {
+            await ctx.hatchet.events.push('create-audit-log-entry', {
+              info: `[INFO] [Reset Assessment Live Quiz] Deducted ${response.basePoints} base points, ${response.correctnessPoints} correctness points, and ${response.bonusPoints} bonus points from participant with ID ${response.participantId} for element instance with ID ${instance.id} in block with ID ${block.id} in live quiz with ID ${id}.`,
+            })
+          })
+        )
+      }
+    }
+
+    // update the live quiz (reset it to draft status, remove all responses, reset results)
+    const updatedQuiz = await ctx.prisma.$transaction(async (tx) => {
+      // reset the live quiz
+      const updatedLiveQuiz = await tx.liveQuiz.update({
+        where: { id },
+        data: {
+          status: DB.PublicationStatus.DRAFT,
+          startedAt: null,
+          finishedAt: null,
+          feedbacks: { deleteMany: {} },
+          confusionFeedbacks: { deleteMany: {} },
+          leaderboard: { deleteMany: {} },
+        },
+        include: {
+          course: true,
+          permissions: {
+            where: { userId: ctx.user.sub },
+            include: { directPermission: true },
+          },
+          _count: { select: { permissions: true } },
+        },
+      })
+
+      // reset all blocks and the contained element instances
+      for (const block of liveQuiz.blocks) {
+        // reset the block status
+        await tx.elementBlock.update({
+          where: { id: block.id },
+          data: {
+            status: DB.ElementBlockStatus.SCHEDULED,
+            startedAt: null,
+            closedAt: null,
+            expiresAt: null,
+            execution: { increment: 1 },
+          },
+        })
+
+        // reset all instances with their results and delete the responses
+        for (const instance of block.elements) {
+          const initialResults = getInitialInstanceResults(instance.elementData)
+
+          await tx.elementInstance.update({
+            where: { id: instance.id },
+            data: {
+              liveQuizResponses: { deleteMany: {} },
+              results: initialResults,
+              anonymousResults: initialResults,
+            },
+          })
+        }
+      }
+
+      return updatedLiveQuiz
+    })
+
+    await ctx.hatchet.events.push('create-audit-log-entry', {
+      info: `[INFO] [Reset Assessment Live Quiz] Successfully reset assessment live quiz with ID ${id}.`,
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
+    const permission = updatedQuiz.permissions[0]!
+
+    const {
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+    } = getPermissionBooleans({
+      permission: permission!,
+    })
+
+    return {
+      id: updatedQuiz.id,
+      templateId: null,
+      name: updatedQuiz.name,
+      displayName: updatedQuiz.displayName,
+      reviewStatus: updatedQuiz.reviewStatus,
+      isGamificationEnabled: updatedQuiz.isGamificationEnabled,
+      isAssessmentEnabled: updatedQuiz.isAssessmentEnabled,
+      type: ActivityType.LIVE_QUIZ,
+      status: updatedQuiz.status,
+      courseId: updatedQuiz.course!.id,
+      courseName: updatedQuiz.course!.name,
+      courseStartDate: updatedQuiz.course!.startDate,
+      courseLanguage: updatedQuiz.course!.language,
+      numOfStacks: liveQuiz.blocks.length,
+      numOfElements: liveQuiz.blocks.reduce(
+        (acc, block) => acc + block.elements.length,
+        0
+      ),
+      permissionLevel: permission.permissionLevel,
+      derivedAccess: permission.derived,
+      areInstancesOutdated: updatedQuiz.areInstancesOutdated,
+      numSharedUsers: updatedQuiz._count.permissions - 1,
+      pinCode: updatedQuiz.pinCode,
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      isActivityReviewer: true, // requirement for this action
+      sharingType,
+      updatedAt: updatedQuiz.updatedAt,
+    }
+  } catch (error) {
+    await ctx.hatchet.events.push('create-audit-log-entry', {
+      info: `[ERROR] [Reset Assessment Live Quiz] Failed to reset live quiz with ID ${id}: ${error}`,
+    })
   }
 }
 

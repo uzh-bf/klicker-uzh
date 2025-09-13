@@ -2244,7 +2244,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       blockXQuestions: 'Block {block} ({questions} question(s))',
       shareLiveQuiz: 'Share Live Quiz',
       removeLiveQuiz: 'Remove Live Quiz',
+      resetLiveQuiz: 'Reset Live Quiz',
       deleteLiveQuiz: 'Delete Live Quiz',
+      resetLiveQuizMessage:
+        'Please confirm the reset of this assessment live quiz. All responses from students and collected points will be deleted. This action will be documented in the audit log and cannot be undone.',
       deleteLiveQuizMessage:
         'Please confirm the deletion of all results and feedbacks associated with this live quiz. Points collected by participants will not be affected by the deletion.',
       noResponsesToDelete:
@@ -2259,6 +2262,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'For this live quiz no confusion feedbacks have been submitted yet.',
       deleteConfusionFeedbacks:
         '{number} confusion feedback(s) will be irreversibly deleted.',
+      noLeaderboardEntriesToDelete:
+        'For this live quiz no quiz leaderboard entries have been created yet.',
+      deleteLeaderboardEntries:
+        '{number} quiz leaderboard entries will be deleted and all participants will loose their collected points.',
       evaluationLinksEmbedding: 'Links for Embedding Evaluation Views',
       noLiveQuizzes: 'No live quizzes available',
       creationExplanation:
