@@ -1,4 +1,5 @@
 import type {
+  Context,
   HatchetClient,
   TaskWorkflowDeclaration,
 } from '@hatchet-dev/typescript-sdk/index.js'
@@ -7,7 +8,7 @@ import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 
-export interface HatchetHandlerContext {
+export interface HatchetHandlerGlobalContext {
   hatchet: HatchetClient
   pubSub: PubSub<any>
   emitter: EventEmitter
@@ -20,51 +21,63 @@ export interface HatchetHandlerContext {
 export interface HatchetHandlers {
   handleSendTeamsNotification: (
     { scope, text }: { scope: string; text: string },
-    ctx: HatchetHandlerContext
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
   ) => Promise<unknown> | void
   handleUpdateGroupAverageScores: (
     {},
-    ctx: HatchetHandlerContext
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleRunningRandomGroupAssignments: (
     {},
-    ctx: HatchetHandlerContext
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleFinalRandomGroupAssignments: (
     {},
-    ctx: HatchetHandlerContext
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleUpdateWeeklyTimelineEntries: (
     {},
-    ctx: HatchetHandlerContext
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleSendPushNotifications: (
     {},
-    ctx: HatchetHandlerContext
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleEndExpiredGroupActivity: (
     { groupActivityId }: { groupActivityId: string },
-    ctx: HatchetHandlerContext
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleEndExpiredMicroLearning: (
     { microLearningId }: { microLearningId: string },
-    ctx: HatchetHandlerContext
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
   ) => Promise<boolean>
   handlePublishScheduledLiveQuiz: (
     { liveQuizId }: { liveQuizId: string },
-    ctx: HatchetHandlerContext
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
   ) => Promise<boolean>
   handlePublishScheduledPracticeQuiz: (
     { practiceQuizId }: { practiceQuizId: string },
-    ctx: HatchetHandlerContext
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
   ) => Promise<boolean>
   handlePublishScheduledGroupActivity: (
     { groupActivityId }: { groupActivityId: string },
-    ctx: HatchetHandlerContext
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
   ) => Promise<boolean>
   handlePublishScheduledMicroLearning: (
     { microLearningId }: { microLearningId: string },
-    ctx: HatchetHandlerContext
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
   ) => Promise<boolean>
 }
 

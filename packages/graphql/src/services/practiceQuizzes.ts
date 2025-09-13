@@ -1,7 +1,7 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
-  HatchetHandlerContext,
+  HatchetHandlers,
   type ElementStackInput,
 } from '@klicker-uzh/types'
 import {
@@ -16,7 +16,7 @@ import type { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks } from '../lib/util.js'
 import { getPermissionBooleans } from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
-import { handleSendTeamsNotification } from './notifications.js'
+import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
 
 export async function getPracticeQuizData(
@@ -798,69 +798,67 @@ export async function removePracticeQuiz(
   return id
 }
 
-export async function handlePublishScheduledPracticeQuiz(
-  { practiceQuizId }: { practiceQuizId: string },
-  ctx: HatchetHandlerContext
-) {
-  try {
-    // check if the practice quiz exists and if its availableFrom date is in the past
-    const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-      where: {
-        id: practiceQuizId,
-        isDeleted: false,
-        status: DB.PublicationStatus.SCHEDULED,
-        availableFrom: { lte: new Date() },
-      },
-    })
-
-    if (!practiceQuiz) {
-      await handleSendTeamsNotification({
-        scope: 'hatchet/practice-quiz-start',
-        text: `Practice quiz with ID ${practiceQuizId} not found or scheduled start time is not in the past yet.`,
-      })
-      throw new Error(
-        `Practice quiz with ID ${practiceQuizId} not found or scheduled start time is not in the past yet.`
-      )
-    }
-
-    // publish the practice quiz
-    const updatedPracticeQuiz = await ctx.prisma.practiceQuiz.update({
-      where: { id: practiceQuizId, isDeleted: false },
-      data: { status: DB.PublicationStatus.PUBLISHED },
-      include: { stacks: true },
-    })
-
-    // send a teams notification
-    await handleSendTeamsNotification({
-      scope: 'graphql/publishScheduledPracticeQuizs',
-      text: `Successfully published scheduled practice quiz ${updatedPracticeQuiz.id}`,
-    })
-
-    // link stacks of practice quiz to course
-    await ctx.prisma.course.update({
-      where: { id: updatedPracticeQuiz.courseId },
-      data: {
-        elementStacks: {
-          connect: updatedPracticeQuiz.stacks.map((stack) => ({
-            id: stack.id,
-          })),
+export const handlePublishScheduledPracticeQuiz: HatchetHandlers['handlePublishScheduledPracticeQuiz'] =
+  async ({ practiceQuizId }, globalCtx) => {
+    try {
+      // check if the practice quiz exists and if its availableFrom date is in the past
+      const practiceQuiz = await globalCtx.prisma.practiceQuiz.findUnique({
+        where: {
+          id: practiceQuizId,
+          isDeleted: false,
+          status: DB.PublicationStatus.SCHEDULED,
+          availableFrom: { lte: new Date() },
         },
-      },
-    })
+      })
 
-    // invalidate the cache for the microlearning
-    ctx.emitter.emit('invalidate', {
-      typename: 'PracticeQuiz',
-      id: updatedPracticeQuiz.id,
-    })
+      if (!practiceQuiz) {
+        await sendTeamsNotification({
+          scope: 'hatchet/practice-quiz-start',
+          text: `Practice quiz with ID ${practiceQuizId} not found or scheduled start time is not in the past yet.`,
+        })
+        throw new Error(
+          `Practice quiz with ID ${practiceQuizId} not found or scheduled start time is not in the past yet.`
+        )
+      }
 
-    return true
-  } catch (error) {
-    console.error('Error publishing scheduled practice quiz:', error)
-    await handleSendTeamsNotification({
-      scope: 'hatchet/practice-quiz-start',
-      text: `Error publishing practice quiz with ID ${practiceQuizId}: ${error}`,
-    })
-    throw error // rethrow to allow Hatchet to handle retries
+      // publish the practice quiz
+      const updatedPracticeQuiz = await globalCtx.prisma.practiceQuiz.update({
+        where: { id: practiceQuizId, isDeleted: false },
+        data: { status: DB.PublicationStatus.PUBLISHED },
+        include: { stacks: true },
+      })
+
+      // send a teams notification
+      await sendTeamsNotification({
+        scope: 'graphql/publishScheduledPracticeQuizs',
+        text: `Successfully published scheduled practice quiz ${updatedPracticeQuiz.id}`,
+      })
+
+      // link stacks of practice quiz to course
+      await globalCtx.prisma.course.update({
+        where: { id: updatedPracticeQuiz.courseId },
+        data: {
+          elementStacks: {
+            connect: updatedPracticeQuiz.stacks.map((stack) => ({
+              id: stack.id,
+            })),
+          },
+        },
+      })
+
+      // invalidate the cache for the microlearning
+      globalCtx.emitter.emit('invalidate', {
+        typename: 'PracticeQuiz',
+        id: updatedPracticeQuiz.id,
+      })
+
+      return true
+    } catch (error) {
+      console.error('Error publishing scheduled practice quiz:', error)
+      await sendTeamsNotification({
+        scope: 'hatchet/practice-quiz-start',
+        text: `Error publishing practice quiz with ID ${practiceQuizId}: ${error}`,
+      })
+      throw error // rethrow to allow Hatchet to handle retries
+    }
   }
-}
