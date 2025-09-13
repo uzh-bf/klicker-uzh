@@ -709,7 +709,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       signup: 'Sign up',
       coursePinInvalid: 'The entered course PIN is invalid.',
     },
-
     courses: {
       courseInformation: 'Course Information',
       createJoinGroup: 'Create/Join Group',
@@ -1067,6 +1066,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'This is an assessment application. All your data and activities will be visible to your lecturers.',
       loginWithEduId: 'Login with Edu-ID',
       eduIdRequired: 'Edu-ID authentication is required for assessments',
+      submissionInputsInvalid:
+        'An error occurred while submitting your answer. Please check your inputs for error messages.',
+      submissionSuccessful:
+        'Your answer has been successfully submitted and saved.',
+      submissionGeneralError:
+        'An error occurred while submitting your answer. Please try again.',
+      submissionAlreadyRecorded:
+        'You have already answered this question. Your previous response has been saved.',
+      submissionUnauthorizedError:
+        'Your login could not be verified correctly. Please log in again and answer the question again.',
+      submissionServerError:
+        'A server error occurred while submitting your answer. Please try again.',
     },
   },
   manage: {

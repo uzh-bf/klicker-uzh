@@ -711,7 +711,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       signup: 'Registrieren',
       coursePinInvalid: 'Die von Ihnen eingebene Kurs-PIN ist ungültig.',
     },
-
     courses: {
       courseInformation: 'Kursinformationen',
       createJoinGroup: 'Gruppe erstellen/beitreten',
@@ -1068,6 +1067,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       loginWithEduId: 'Login mit Edu-ID',
       eduIdRequired:
         'Edu-ID-Authentifizierung ist für Assessments erforderlich',
+      submissionInputsInvalid:
+        'Beim Abschicken Ihrer Antwort ist ein Fehler aufgetreten. Bitte überprüfen Sie Ihre Eingaben auf Fehlermeldungen.',
+      submissionSuccessful:
+        'Ihre Antwort wurde erfolgreich abgeschickt und gespeichert.',
+      submissionGeneralError:
+        'Beim Abschicken Ihrer Antwort ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+      submissionAlreadyRecorded:
+        'Sie haben diese Frage bereits beantwortet. Ihre vorherige Antwort wurde gespeichert.',
+      submissionUnauthorizedError:
+        'Ihr Login konnte nicht korrekt verifiziert werden. Bitte loggen Sie sich erneut ein und beantworten Sie die Frage nochmals.',
+      submissionServerError:
+        'Beim Abschicken Ihrer Antwort ist ein Serverfehler aufgetreten. Bitte versuchen Sie es erneut.',
     },
   },
   manage: {

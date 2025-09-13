@@ -62,7 +62,8 @@ async function handleNewResponse({
   type: ElementType
   answer: any
   correlationKey?: string | null
-}) {
+}): // statusCode: 0 = client-side invalid input / general error; otherwise HTTP status codes 200, 208, 400, 401, 404, 500
+Promise<{ statusCode: number; responseTimestamp?: number }> {
   let requestOptions: RequestInit = {
     method: 'POST',
     credentials: 'include',
@@ -122,16 +123,28 @@ async function handleNewResponse({
       }),
     }
   } else {
-    return null
+    return { statusCode: 1 }
   }
 
   try {
-    await fetch(
+    const response = await fetch(
       process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string,
       requestOptions
     )
+
+    let responseTimestamp: number | undefined
+    try {
+      const json = await response.json()
+      if (json && typeof json.responseTimestamp === 'number') {
+        responseTimestamp = json.responseTimestamp
+      }
+    } catch (_) {
+      // ignore JSON parse errors; not all responses may have a body
+    }
+    return { statusCode: response.status, responseTimestamp }
   } catch (e) {
-    console.log('Error sending response to secondary endpoint:', e)
+    console.log('error', e)
+    return { statusCode: 1 }
   }
 }
 
@@ -519,7 +532,7 @@ function Index({ id }: { id: string }) {
                     gamificationEnabled={isGamificationEnabled}
                     instances={blocks?.[selectedBlock].elements ?? []}
                     execution={blocks?.[selectedBlock]?.execution ?? 0}
-                    handleNewResponse={async () => null} // submissions are no longer possible
+                    handleNewResponse={async () => ({ statusCode: 0 })} // submissions are no longer possible
                   />
                 ) : null}
               </>
