@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { type ModelID } from '../../lib/config/models'
 import { useSettingsStore } from '../../stores/settingsStore'
 
-import { Progress, Select, Separator } from '@uzh-bf/design-system'
-import { Settings2, Zap } from 'lucide-react'
+import { Progress, Select } from '@uzh-bf/design-system'
+import { ChevronDown, ChevronUp, Settings2, Zap } from 'lucide-react'
 
 export function SettingsPanel() {
   const {
@@ -33,14 +33,22 @@ export function SettingsPanel() {
   return (
     <div>
       <div
-        className="flex cursor-pointer items-center gap-2 border-t px-4 pt-4"
+        className="flex cursor-pointer items-center gap-2 border-t p-4 hover:bg-gray-100"
         onClick={() => setOpen(!open)}
       >
         <Settings2 className="h-4 w-4" />
         <span className="text-basefont-medium">Settings</span>
+        {/* up and down arrow on the right based on whether is opened or not */}
+        <span className="ml-auto">
+          {!open ? (
+            <ChevronUp className="h-4 w-4" />
+          ) : (
+            <ChevronDown className="h-4 w-4" />
+          )}
+        </span>
       </div>
-      <div className="space-y-4 p-4">
-        {open && (
+      {open && (
+        <div className="border-muted space-y-4 border-t p-4">
           <div>
             {/* model selection */}
             <div className="space-y-2">
@@ -89,9 +97,10 @@ export function SettingsPanel() {
               </p>
             </div>
           </div>
-        )}
-        <Separator />
+        </div>
+      )}
 
+      <div className="border-t p-4">
         {/* credits display */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
