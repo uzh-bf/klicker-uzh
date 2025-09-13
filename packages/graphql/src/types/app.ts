@@ -9,6 +9,7 @@ import type {
   GroupActivityDecisions,
   GroupActivityResults,
   SingleQuestionResponse,
+  SingleQuestionResponseLiveQuiz,
 } from '@klicker-uzh/types'
 
 export type PrismaMigrationClient = Omit<
@@ -31,6 +32,7 @@ declare global {
 declare global {
   namespace PrismaJson {
     type PrismaSingleQuestionResponse = SingleQuestionResponse
+    type PrismaSingleQuestionResponseLiveQuiz = SingleQuestionResponseLiveQuiz
     type PrismaElementOptions = ElementOptions
     type PrismaElementResults = ElementInstanceResults
     type PrismaElementData = ElementData

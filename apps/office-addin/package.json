@@ -53,8 +53,8 @@
     "typescript": "~5.6.3"
   },
   "scripts": {
-    "build": "rollup -c --environment BUILD:production",
     "build:dev": "rollup -c -w --environment BUILD:development",
+    "build:office": "rollup -c --environment BUILD:production",
     "check": "tsc --noEmit",
     "clean:cache": "node scripts/clean-cache.js",
     "prettier": "office-addin-lint prettier",

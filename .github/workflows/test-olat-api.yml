@@ -39,5 +39,9 @@ jobs:
         run: |
           cd packages/prisma
           pnpm run build
+          cd ../grading
+          pnpm run build
+          cd ../util
+          pnpm run build
           cd ../../apps/olat-api
           pnpm run test

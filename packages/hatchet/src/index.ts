@@ -117,7 +117,6 @@ export function prepareHatchetTasks({
       return { success }
     },
   })
-
   // #endregion
 
   // ! ACTIVITY ENDING TASKS
@@ -153,7 +152,57 @@ export function prepareHatchetTasks({
       return { success }
     },
   })
+  // #endregion
 
+  // ! LIVE QUIZ RESULT AGGREGATION TASKS
+  // #region
+  const aggregateLiveQuizBlockResultsStandard = hatchet.task({
+    name: 'aggregate-block-closure-standard',
+    retries: 3,
+    defaultPriority: Priority.MEDIUM,
+    fn: async (
+      {
+        liveQuizId,
+        blockId,
+      }: {
+        liveQuizId: string
+        blockId: number
+      },
+      executionContext
+    ) => {
+      const success =
+        await handlers.handleStandardLiveQuizBlockClosureAggregation(
+          { liveQuizId, blockId },
+          globalContext,
+          executionContext
+        )
+      return { success }
+    },
+  })
+
+  const aggregateLiveQuizBlockResultsAssessment = hatchet.task({
+    name: 'aggregate-block-closure-assessment',
+    retries: 3,
+    defaultPriority: Priority.MEDIUM,
+    fn: async (
+      {
+        liveQuizId,
+        blockId,
+      }: {
+        liveQuizId: string
+        blockId: number
+      },
+      executionContext
+    ) => {
+      const success =
+        await handlers.handleAssessmentLiveQuizBlockClosureAggregation(
+          { liveQuizId, blockId },
+          globalContext,
+          executionContext
+        )
+      return { success }
+    },
+  })
   // #endregion
 
   // ! CRONJOBS
@@ -222,12 +271,11 @@ export function prepareHatchetTasks({
     },
   })
 
+  // ? temporarily paused workflow, since the functionality is currently not available and needs fixing
   const sendPushNotifications = hatchet.task({
     name: 'send-push-notifications',
     // retries: 3,
-    onCrons: [
-      '*/5 * * * *', // runs every 5 minutes
-    ],
+    // onCrons: ['*/5 * * * *'], // runs every 5 minutes
     fn: async (_, executionContext) => {
       // TODO: clean implementation
       return { success: true }
@@ -249,6 +297,8 @@ export function prepareHatchetTasks({
     publishScheduledPracticeQuiz,
     endExpiredGroupActivity,
     endExpiredMicroLearning,
+    aggregateLiveQuizBlockResultsStandard,
+    aggregateLiveQuizBlockResultsAssessment,
     createAuditLogEntry,
   }
 }

@@ -29,7 +29,11 @@ import {
   handleEndExpiredGroupActivity,
   handlePublishScheduledGroupActivity,
 } from 'src/services/groups.js'
-import { handlePublishScheduledLiveQuiz } from 'src/services/liveQuizzes.js'
+import {
+  handleAssessmentLiveQuizBlockClosureAggregation,
+  handlePublishScheduledLiveQuiz,
+  handleStandardLiveQuizBlockClosureAggregation,
+} from 'src/services/liveQuizzes.js'
 import {
   handleEndExpiredMicroLearning,
   handlePublishScheduledMicroLearning,
@@ -118,7 +122,7 @@ export async function testInitialization(
 
   // initialize tasks to be called
   const tasks = {
-    createAuditLoggingEntry: hatchet.task({
+    createAuditLogEntry: hatchet.task({
       name: 'create-audit-logging-entry',
       fn: async ({
         message,
@@ -139,9 +143,7 @@ export async function testInitialization(
         executionCtx
       ) => {
         const success = await handlePublishScheduledMicroLearning(
-          {
-            microLearningId,
-          },
+          { microLearningId },
           hatchetCtx,
           executionCtx
         )
@@ -211,6 +213,48 @@ export async function testInitialization(
           { groupActivityId },
           hatchetCtx,
           executionCtx
+        )
+        return { success }
+      },
+    }),
+    aggregateLiveQuizBlockResultsStandard: hatchet.task({
+      name: 'aggregate-block-closure-standard',
+      retries: 3,
+      fn: async (
+        {
+          liveQuizId,
+          blockId,
+        }: {
+          liveQuizId: string
+          blockId: number
+        },
+        executionContext
+      ) => {
+        const success = await handleStandardLiveQuizBlockClosureAggregation(
+          { liveQuizId, blockId },
+          hatchetCtx,
+          executionContext
+        )
+        return { success }
+      },
+    }),
+    aggregateLiveQuizBlockResultsAssessment: hatchet.task({
+      name: 'aggregate-block-closure-assessment',
+      retries: 3,
+      fn: async (
+        {
+          liveQuizId,
+          blockId,
+        }: {
+          liveQuizId: string
+          blockId: number
+        },
+        executionContext
+      ) => {
+        const success = await handleAssessmentLiveQuizBlockClosureAggregation(
+          { liveQuizId, blockId },
+          hatchetCtx,
+          executionContext
         )
         return { success }
       },
