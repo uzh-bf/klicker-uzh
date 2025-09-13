@@ -1481,10 +1481,10 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="evaluate-question-select"]')
       .should('exist')
       .contains(this.data.SCML.title)
-    cy.get('[data-cy="evaluate-question-select"]').click()
+    cy.get('[data-cy="evaluate-question-select"]').realClick()
     cy.get(
       `[data-cy="evaluation-select-instance-${this.data.KPML.title}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="evaluate-question-select"]').contains(
       this.data.KPML.title
     )
