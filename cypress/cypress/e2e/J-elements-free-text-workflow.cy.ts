@@ -22,20 +22,20 @@ describe('Test creation and editing functionalities, validation, etc. for free t
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.SC.typeLabel)
-    cy.get('[data-cy="select-question-type"]').click()
+    cy.get('[data-cy="select-question-type"]').realClick()
     cy.get(
       `[data-cy="select-question-type-${messages.shared.FREE_TEXT.typeLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.FREE_TEXT.typeLabel)
     cy.get('[data-cy="insert-question-title"]').click().type(this.data.FT.title)
-    cy.get('[data-cy="select-question-status"]').click()
+    cy.get('[data-cy="select-question-status"]').realClick()
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .type(this.data.FT.content)
     cy.get('[data-cy="set-free-text-length"]')
       .click()
@@ -66,7 +66,7 @@ describe('Test creation and editing functionalities, validation, etc. for free t
       .should('exist')
       .contains(messages.shared.READY.statusLabel)
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .contains(this.data.FT.content)
     cy.get('[data-cy="set-free-text-length"]').should(
       'have.value',
@@ -82,7 +82,7 @@ describe('Test creation and editing functionalities, validation, etc. for free t
       .clear()
       .type(this.data.FT.titleEdited)
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .clear()
       .type(this.data.FT.contentEdited)
     cy.get('[data-cy="set-free-text-length"]')
@@ -113,7 +113,7 @@ describe('Test creation and editing functionalities, validation, etc. for free t
       this.data.FT.titleEdited
     )
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .contains(this.data.FT.contentEdited)
     cy.get('[data-cy="set-free-text-length"]').should(
       'have.value',

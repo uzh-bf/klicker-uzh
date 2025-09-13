@@ -2498,7 +2498,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     // open the template and complete the necessary parts of the settings step
     cy.get(
       `[data-cy="catalog-object-${this.data.liveQuiz.template1.name}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="live-quiz-template-settings"]').click()
     cy.get('[data-cy="template-live-quiz-name"]')
       .click()

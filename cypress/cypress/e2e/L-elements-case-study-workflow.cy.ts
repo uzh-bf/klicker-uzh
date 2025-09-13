@@ -63,10 +63,10 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.SC.typeLabel)
-    cy.get('[data-cy="select-question-type"]').click()
+    cy.get('[data-cy="select-question-type"]').realClick()
     cy.get(
       `[data-cy="select-question-type-${messages.shared.CASE_STUDY.typeLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.CASE_STUDY.typeLabel)
@@ -75,15 +75,15 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     // enter question data
     cy.get('[data-cy="insert-question-title"]').click().type(this.data.CS.title)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
-    cy.get('[data-cy="select-question-status"]').click()
+    cy.get('[data-cy="select-question-status"]').realClick()
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .type(this.data.CS.content)
     cy.get('[data-cy="insert-question-explanation"]')
-      .click()
+      .realClick()
       .type(this.data.CS.explanation)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
 
@@ -103,7 +103,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     // select items for case study
     cy.wrap(this.data.CS.items).each((item: string) => {
       cy.get('[data-cy="choose-case-study-items"]').click()
-      cy.findByText(item).click()
+      cy.findByText(item).realClick()
       cy.get('[data-cy="choose-case-study-items"]').contains(item)
     })
 
@@ -215,7 +215,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
         cy.get('[data-cy="add-new-case"]').click()
         cy.get(`[data-cy="case-title-${ix}"]`).click().type(caseItem.title)
         cy.get(`[data-cy="case-description-${ix}"]`)
-          .click()
+          .realClick()
           .type(caseItem.description)
 
         cy.get(`[data-cy="case-title-${ix}"]`).should(
@@ -539,18 +539,18 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
     // missing question content -> invalid
-    cy.get('[data-cy="insert-question-text"]').click().clear()
+    cy.get('[data-cy="insert-question-text"]').realClick().clear()
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .type(this.data.CS.content)
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
     // missing question explanation -> valid
-    cy.get('[data-cy="insert-question-explanation"]').click().clear()
+    cy.get('[data-cy="insert-question-explanation"]').realClick().clear()
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
     cy.get('[data-cy="insert-question-explanation"]')
-      .click()
+      .realClick()
       .type(this.data.CS.explanation)
 
     // range criterion name, min, max, step required -> invalid (if removed)
@@ -848,7 +848,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       .clear()
       .type(this.data.CS.titleEdited)
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .clear()
       .type(this.data.CS.contentEdited)
 
@@ -870,7 +870,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
     // select items for case study
     cy.wrap(this.data.CS.itemsEdited).each((item: string) => {
       cy.get('[data-cy="choose-case-study-items"]').click()
-      cy.findByText(item).click()
+      cy.findByText(item).realClick()
       cy.get('[data-cy="choose-case-study-items"]').contains(item)
     })
 
@@ -1005,7 +1005,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
         cy.get('[data-cy="add-new-case"]').click()
         cy.get(`[data-cy="case-title-${ix}"]`).click().type(caseItem.title)
         cy.get(`[data-cy="case-description-${ix}"]`)
-          .click()
+          .realClick()
           .type(caseItem.description)
 
         cy.get(`[data-cy="case-title-${ix}"]`).should(
@@ -1048,7 +1048,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       this.data.CS.titleEdited
     )
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .contains(this.data.CS.contentEdited)
 
     cy.get('[data-cy="select-answer-collection"]').contains(
@@ -1239,10 +1239,10 @@ describe('Test creation and editing functionalities, validation, etc. for case s
   // #region
   it('Create a case study question with inline answer collection', function () {
     cy.get('[data-cy="create-question"]').click()
-    cy.get('[data-cy="select-question-type"]').click()
+    cy.get('[data-cy="select-question-type"]').realClick()
     cy.get(
       `[data-cy="select-question-type-${messages.shared.CASE_STUDY.typeLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.CASE_STUDY.typeLabel)
@@ -1253,15 +1253,15 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       .click()
       .type(this.data.CS_INLINE.title)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
-    cy.get('[data-cy="select-question-status"]').click()
+    cy.get('[data-cy="select-question-status"]').realClick()
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .type(this.data.CS_INLINE.content)
     cy.get('[data-cy="insert-question-explanation"]')
-      .click()
+      .realClick()
       .type(this.data.CS_INLINE.explanation)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
 
@@ -1336,7 +1336,7 @@ describe('Test creation and editing functionalities, validation, etc. for case s
         cy.get('[data-cy="add-new-case"]').click()
         cy.get(`[data-cy="case-title-${ix}"]`).click().type(caseItem.title)
         cy.get(`[data-cy="case-description-${ix}"]`)
-          .click()
+          .realClick()
           .type(caseItem.description)
       }
     )
@@ -1452,11 +1452,11 @@ describe('Test creation and editing functionalities, validation, etc. for case s
       .clear()
       .type(this.data.CS_INLINE.titleEdited)
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .clear()
       .type(this.data.CS_INLINE.contentEdited)
     cy.get('[data-cy="insert-question-explanation"]')
-      .click()
+      .realClick()
       .clear()
       .type(this.data.CS_INLINE.explanationEdited)
 

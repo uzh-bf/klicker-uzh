@@ -22,21 +22,21 @@ describe('Test creation and editing functionalities, validation, etc. for numeri
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.SC.typeLabel)
-    cy.get('[data-cy="select-question-type"]').click()
+    cy.get('[data-cy="select-question-type"]').realClick()
     cy.get(
       `[data-cy="select-question-type-${messages.shared.NUMERICAL.typeLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-question-type"]')
       .should('exist')
       .contains(messages.shared.NUMERICAL.typeLabel)
     cy.get('[data-cy="insert-question-title"]').click().type(this.data.NR.title)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
-    cy.get('[data-cy="select-question-status"]').click()
+    cy.get('[data-cy="select-question-status"]').realClick()
     cy.get(
       `[data-cy="select-question-status-${messages.shared.READY.statusLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .type(this.data.NR.content)
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
     cy.get('[data-cy="set-numerical-minimum"]')
@@ -83,7 +83,7 @@ describe('Test creation and editing functionalities, validation, etc. for numeri
       .should('exist')
       .contains(messages.shared.READY.statusLabel)
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .contains(this.data.NR.content)
     cy.get('[data-cy="set-numerical-minimum"]').should(
       'have.value',
@@ -111,7 +111,7 @@ describe('Test creation and editing functionalities, validation, etc. for numeri
       .clear()
       .type(this.data.NR.titleEdited)
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .clear()
       .type(this.data.NR.contentEdited)
     cy.get('[data-cy="set-numerical-minimum"]')
@@ -197,7 +197,7 @@ describe('Test creation and editing functionalities, validation, etc. for numeri
       this.data.NR.titleEdited
     )
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .contains(this.data.NR.contentEdited)
     cy.get('[data-cy="set-numerical-minimum"]').should(
       'have.value',

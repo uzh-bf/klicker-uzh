@@ -220,15 +220,15 @@ describe('Feature test for activity logs', function () {
     cy.get('[data-cy="create-question"]').click()
     cy.get('[data-cy="insert-question-title"]').type(this.data.SC.title)
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .type(this.data.SC.content)
     cy.get('[data-cy="insert-answer-field-0"]')
-      .click()
+      .realClick()
       .type(this.data.SC.choices[0].value)
     cy.get('[data-cy="add-new-answer"]').click()
     cy.wait(500)
     cy.get('[data-cy="insert-answer-field-1"]')
-      .click()
+      .realClick()
       .type(this.data.SC.choices[1].value)
     cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
     cy.get('[data-cy="save-new-question"]').click()
@@ -291,10 +291,10 @@ describe('Feature test for activity logs', function () {
 
     // change the title of the question
     cy.get(`[data-cy="edit-element-${this.data.SC.title}"]`).click()
-    cy.get('[data-cy="select-question-status"]').click()
+    cy.get('[data-cy="select-question-status"]').realClick()
     cy.get(
       `[data-cy="select-question-status-${messages.shared.REVIEW.statusLabel}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-question-status"]').contains(
       messages.shared.REVIEW.statusLabel
     ) // wait for change to go into effect
@@ -387,7 +387,7 @@ describe('Feature test for activity logs', function () {
     cy.get('[data-cy="close-activity-log"]').click()
 
     // click on the title of the element to open the element edit modal and check out the activity log
-    cy.get(`[data-cy="element-title-${this.data.SC.title}"]`).click()
+    cy.get(`[data-cy="element-title-${this.data.SC.title}"]`).realClick()
     cy.get('[data-cy="element-activity-tab"]').click()
     verifyActivityLogContent(Cypress.env('LECTURER_SHORTNAME'), this.data)
   })
@@ -412,7 +412,7 @@ describe('Feature test for activity logs', function () {
     cy.get('[data-cy="close-activity-log"]').click()
 
     // click on the title of the element to open the element edit modal and check out the activity log
-    cy.get(`[data-cy="element-title-${this.data.SC.title}"]`).click()
+    cy.get(`[data-cy="element-title-${this.data.SC.title}"]`).realClick()
     cy.get('[data-cy="element-activity-tab"]').click()
     verifyActivityLogContent(Cypress.env('LECTURER_SHORTNAME'), this.data, true)
   })
@@ -442,7 +442,7 @@ describe('Feature test for activity logs', function () {
     cy.get('[data-cy="close-activity-log"]').click()
 
     // click on the title of the element to open the element edit modal and check out the activity log
-    cy.get(`[data-cy="element-title-${this.data.SC.title}"]`).click()
+    cy.get(`[data-cy="element-title-${this.data.SC.title}"]`).realClick()
     cy.get('[data-cy="element-activity-tab"]').click()
     verifyActivityLogContent(
       Cypress.env('LECTURER_SHORTNAME'),

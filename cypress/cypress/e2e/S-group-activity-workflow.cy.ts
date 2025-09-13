@@ -164,10 +164,10 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier1)
-    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get('[data-cy="select-multiplier"]').realClick()
     cy.get(
       `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier2
     )
@@ -225,8 +225,8 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
       .contains(messages.manage.activityWizard.textClue)
-    cy.get('[data-cy="group-activity-clue-type"]').click()
-    cy.get('[data-cy="group-activity-clue-type-number"]').click()
+    cy.get('[data-cy="group-activity-clue-type"]').realClick()
+    cy.get('[data-cy="group-activity-clue-type-number"]').realClick()
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
       .contains(messages.manage.activityWizard.numericalClue)
@@ -396,10 +396,10 @@ describe('Create and solve a group activity', function () {
       .clear()
       .type(this.data.running.displayName)
     cy.get('[data-cy="insert-groupactivity-description"]')
-      .click()
+      .realClick()
       .contains(this.data.activity.task)
     cy.get('[data-cy="insert-groupactivity-description"]')
-      .click()
+      .realClick()
       .clear()
       .type(this.data.running.task)
     cy.get('[data-cy="next-or-submit"]').click()
@@ -408,10 +408,10 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier2)
-    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get('[data-cy="select-multiplier"]').realClick()
     cy.get(
       `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier4}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier4
     )
@@ -479,8 +479,8 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
       .contains(messages.manage.activityWizard.textClue)
-    cy.get('[data-cy="group-activity-clue-type"]').click()
-    cy.get('[data-cy="group-activity-clue-type-number"]').click()
+    cy.get('[data-cy="group-activity-clue-type"]').realClick()
+    cy.get('[data-cy="group-activity-clue-type-number"]').realClick()
     cy.get('[data-cy="group-activity-clue-type"]')
       .should('exist')
       .contains(messages.manage.activityWizard.numericalClue)
@@ -1080,7 +1080,7 @@ describe('Create and solve a group activity', function () {
         .type(score)
       if (this.data.running.grading.comments1[ix]) {
         cy.get(`[data-cy="groupActivity-grading-comment-${ix}"]`)
-          .click()
+          .realClick()
           .type(this.data.running.grading.comments1[ix])
       }
 
@@ -1091,7 +1091,7 @@ describe('Create and solve a group activity', function () {
 
     if (this.data.running.grading.gradingComment1 !== null) {
       cy.get('[data-cy="groupActivity-general-grading-comment"]')
-        .click()
+        .realClick()
         .type(this.data.running.grading.gradingComment1)
     }
 
@@ -1118,7 +1118,7 @@ describe('Create and solve a group activity', function () {
       )
       if (this.data.running.grading.comments1[ix]) {
         cy.get(`[data-cy="groupActivity-grading-comment-${ix}"]`)
-          .click()
+          .realClick()
           .contains(this.data.running.grading.comments1[ix])
       }
     })
@@ -1137,7 +1137,7 @@ describe('Create and solve a group activity', function () {
         .type(score)
       if (this.data.running.grading.comments2[ix]) {
         cy.get(`[data-cy="groupActivity-grading-comment-${ix}"]`)
-          .click()
+          .realClick()
           .type(this.data.running.grading.comments2[ix])
       }
       cy.get('[data-cy="groupActivity-save-submission-grading"]').should(
@@ -1147,7 +1147,7 @@ describe('Create and solve a group activity', function () {
 
     if (this.data.running.grading.gradingComment2 !== null) {
       cy.get('[data-cy="groupActivity-general-grading-comment"]')
-        .click()
+        .realClick()
         .type(this.data.running.grading.gradingComment2)
     }
     cy.get('[data-cy="groupActivity-failed"]').click()
@@ -2483,7 +2483,7 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="member-shortname-email-0"]')
       .click()
       .type(Cypress.env('LECTURER_IND_SHORTNAME')) // pro1 is added as admin
-    cy.get('[data-cy="member-admin-0"]').click()
+    cy.get('[data-cy="member-admin-0"]').realClick()
     cy.get('[data-cy="submit-create-user-group"]').click()
     cy.get(`[data-cy="user-group-${this.data.sharing.group1}"]`).should('exist')
 
@@ -2520,7 +2520,7 @@ describe('Create and solve a group activity', function () {
     cy.get('[data-cy="member-shortname-email-0"]')
       .click()
       .type(Cypress.env('LECTURER_EMAIL')) // lecturer is added as admin
-    cy.get('[data-cy="member-admin-0"]').click()
+    cy.get('[data-cy="member-admin-0"]').realClick()
     cy.get('[data-cy="submit-create-user-group"]').click()
     cy.get(`[data-cy="user-group-${this.data.sharing.group4}"]`).should('exist')
     cy.logoutUser()

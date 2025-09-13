@@ -36,7 +36,7 @@ describe('Test course creation and editing functionalities', function () {
       .click()
       .type(this.data.course1.displayName)
     cy.get('[data-cy="course-description"]')
-      .click()
+      .realClick()
       .type(this.data.course1.description)
 
     // change the course language from the user default locale (english) to german
@@ -61,11 +61,11 @@ describe('Test course creation and editing functionalities', function () {
       .type(this.data.course1.notificationEmail)
 
     // change the start date (2 months in the future on the 15th - default is start of next month)
-    cy.get('[data-cy="course-start-date"]').click()
-    cy.get('[data-cy="course-start-date-next-month"]').click().wait(100)
+    cy.get('[data-cy="course-start-date"]').realClick()
+    cy.get('[data-cy="course-start-date-next-month"]').realClick().wait(100)
     cy.get('[data-cy="course-start-date-calendar"]')
       .findByText('15')
-      .click()
+      .realClick()
       .wait(100)
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
 
@@ -76,11 +76,11 @@ describe('Test course creation and editing functionalities', function () {
     )
 
     // change the end date (8 months in the future on the 15th - default is start + 6 months)
-    cy.get('[data-cy="course-end-date"]').click()
-    cy.get('[data-cy="course-end-date-next-month"]').click().wait(100)
+    cy.get('[data-cy="course-end-date"]').realClick()
+    cy.get('[data-cy="course-end-date-next-month"]').realClick().wait(100)
     cy.get('[data-cy="course-end-date-calendar"]')
       .findByText('15')
-      .click()
+      .realClick()
       .wait(100)
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
 
@@ -167,15 +167,15 @@ describe('Test course creation and editing functionalities', function () {
       .type(this.data.course2.notificationEmail)
 
     // change the start date (3 months in the future on the 15th)
-    cy.get('[data-cy="course-start-date"]').click()
+    cy.get('[data-cy="course-start-date"]').realClick()
     cy.get('[data-cy="course-start-date-next-month"]')
-      .click()
+      .realClick()
       .wait(100)
-      .click()
+      .realClick()
       .wait(100)
     cy.get('[data-cy="course-start-date-calendar"]')
       .findByText('15')
-      .click()
+      .realClick()
       .wait(100)
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
 
@@ -186,15 +186,15 @@ describe('Test course creation and editing functionalities', function () {
     )
 
     // change the end date (9 months in the future on the 15th - default is start + 6 months)
-    cy.get('[data-cy="course-end-date"]').click().wait(100)
+    cy.get('[data-cy="course-end-date"]').realClick().wait(100)
     cy.get('[data-cy="course-end-date-next-month"]')
-      .click()
+      .realClick()
       .wait(100)
-      .click()
+      .realClick()
       .wait(100)
     cy.get('[data-cy="course-end-date-calendar"]')
       .findByText('15')
-      .click()
+      .realClick()
       .wait(100)
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
 
@@ -233,11 +233,13 @@ describe('Test course creation and editing functionalities', function () {
 
     // enter an invalid group creation deadline date (after end date - 10 months in the future)
     // when field becomes visible, it is initialized with the current course date
-    cy.get('[data-cy="group-creation-deadline"]').click()
-    cy.get('[data-cy="group-creation-deadline-next-month"]').click().wait(100)
+    cy.get('[data-cy="group-creation-deadline"]').realClick()
+    cy.get('[data-cy="group-creation-deadline-next-month"]')
+      .realClick()
+      .wait(100)
     cy.get('[data-cy="group-creation-deadline-calendar"]')
       .findByText('15')
-      .click()
+      .realClick()
       .wait(100)
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
 
@@ -250,21 +252,21 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="manipulate-course-submit"]').should('be.disabled')
 
     // change this back to a valid date (5 months in the future)
-    cy.get('[data-cy="group-creation-deadline"]').click()
+    cy.get('[data-cy="group-creation-deadline"]').realClick()
     cy.get('[data-cy="group-creation-deadline-previous-month"]')
-      .click()
+      .realClick()
       .wait(100)
-      .click()
+      .realClick()
       .wait(100)
-      .click()
+      .realClick()
       .wait(100)
-      .click()
+      .realClick()
       .wait(100)
-      .click()
+      .realClick()
       .wait(100)
     cy.get('[data-cy="group-creation-deadline-calendar"]')
       .findByText('15')
-      .click()
+      .realClick()
       .wait(100)
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
 
@@ -471,19 +473,19 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="course-settings-button"]').click()
 
     // change the group deadline date (4 months in the future on the 15th - random group generation changed it to today)
-    cy.get('[data-cy="group-creation-deadline"]').click()
+    cy.get('[data-cy="group-creation-deadline"]').realClick()
     cy.get('[data-cy="group-creation-deadline-next-month"]')
-      .click()
+      .realClick()
       .wait(100)
-      .click()
+      .realClick()
       .wait(100)
-      .click()
+      .realClick()
       .wait(100)
-      .click()
+      .realClick()
       .wait(100)
     cy.get('[data-cy="group-creation-deadline-calendar"]')
       .findByText('15')
-      .click()
+      .realClick()
       .wait(100)
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
 
@@ -582,11 +584,11 @@ describe('Test course creation and editing functionalities', function () {
       getDatetimeValidationString(2, '15')
     )
 
-    cy.get('[data-cy="course-start-date"]').click()
-    cy.get('[data-cy="course-start-date-next-month"]').click().wait(100)
+    cy.get('[data-cy="course-start-date"]').realClick()
+    cy.get('[data-cy="course-start-date-next-month"]').realClick().wait(100)
     cy.get('[data-cy="course-start-date-calendar"]')
       .findByText('15')
-      .click()
+      .realClick()
       .wait(100)
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
 
@@ -602,15 +604,15 @@ describe('Test course creation and editing functionalities', function () {
       getDatetimeValidationString(8, '15')
     )
 
-    cy.get('[data-cy="course-end-date"]').click()
+    cy.get('[data-cy="course-end-date"]').realClick()
     cy.get('[data-cy="course-end-date-next-month"]')
-      .click()
+      .realClick()
       .wait(100)
-      .click()
+      .realClick()
       .wait(100)
     cy.get('[data-cy="course-end-date-calendar"]')
       .findByText('15')
-      .click()
+      .realClick()
       .wait(100)
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
 
@@ -677,15 +679,15 @@ describe('Test course creation and editing functionalities', function () {
       'contain',
       getDatetimeValidationString(10, '15')
     )
-    cy.get('[data-cy="group-creation-deadline"]').click()
+    cy.get('[data-cy="group-creation-deadline"]').realClick()
     cy.get('[data-cy="group-creation-deadline-previous-month"]')
-      .click()
+      .realClick()
       .wait(100)
-      .click()
+      .realClick()
       .wait(100)
     cy.get('[data-cy="group-creation-deadline-calendar"]')
       .findByText('15')
-      .click()
+      .realClick()
       .wait(100)
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
 
@@ -1417,13 +1419,15 @@ describe('Test course creation and editing functionalities', function () {
       .type(this.data.sharing.courseNotificationEmail)
 
     // set course start date one year into the past
-    cy.get('[data-cy="course-start-date"]').click().wait(100)
+    cy.get('[data-cy="course-start-date"]').realClick().wait(100)
     cy.wrap(Array(13).fill(null)).each(() => {
-      cy.get('[data-cy="course-start-date-previous-month"]').click().wait(100)
+      cy.get('[data-cy="course-start-date-previous-month"]')
+        .realClick()
+        .wait(100)
     })
     cy.get('[data-cy="course-start-date-calendar"]')
       .findByText('15')
-      .click()
+      .realClick()
       .wait(100)
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
     cy.get('[data-cy="course-start-date"]').should(
@@ -1433,13 +1437,13 @@ describe('Test course creation and editing functionalities', function () {
 
     // move the course date 4 years into the future
     // skip to 48 months in the future (default is already first day of next month + 6 months)
-    cy.get('[data-cy="course-end-date"]').click().wait(100)
+    cy.get('[data-cy="course-end-date"]').realClick().wait(100)
     cy.wrap(Array(48 - 7).fill(null)).each(() => {
-      cy.get('[data-cy="course-end-date-next-month"]').click().wait(100)
+      cy.get('[data-cy="course-end-date-next-month"]').realClick().wait(100)
     })
     cy.get('[data-cy="course-end-date-calendar"]')
       .findByText('15')
-      .click()
+      .realClick()
       .wait(100)
     cy.get('[data-cy="course-name"]').click() // click outside to save the value
     cy.get('[data-cy="course-end-date"]').should(
@@ -1702,7 +1706,7 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
-    cy.get('[data-cy="new-permission-propagation"]').click()
+    cy.get('[data-cy="new-permission-propagation"]').realClick()
     cy.get('[data-cy="new-permission-propagation"]').should(
       'have.attr',
       'data-state',
@@ -1779,8 +1783,8 @@ describe('Test course creation and editing functionalities', function () {
     ).contains(messages.manage.sharing.permissionsADMIN)
     cy.get(
       `[data-cy="permission-level-${Cypress.env('LECTURER_INST4_SHORTNAME')}"]`
-    ).click()
-    cy.get('[data-cy="permission-level-WRITE"]').click()
+    ).realClick()
+    cy.get('[data-cy="permission-level-WRITE"]').realClick()
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_INST4_SHORTNAME')}"]`
     ).contains(messages.manage.sharing.permissionsWRITE)
@@ -1802,7 +1806,7 @@ describe('Test course creation and editing functionalities', function () {
     ).should('have.attr', 'data-state', 'unchecked')
     cy.get(
       `[data-cy="permission-propagation-${Cypress.env('LECTURER_INST4_SHORTNAME')}"]`
-    ).click()
+    ).realClick()
     cy.get(
       `[data-cy="permission-propagation-${Cypress.env('LECTURER_INST4_SHORTNAME')}"]`
     ).should('have.attr', 'data-state', 'checked')
@@ -1895,7 +1899,7 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="member-shortname-email-0"]')
       .click()
       .type(Cypress.env('LECTURER_INST_EMAIL')) // pro2 is added as admin
-    cy.get('[data-cy="member-admin-0"]').click()
+    cy.get('[data-cy="member-admin-0"]').realClick()
     cy.get('[data-cy="submit-create-user-group"]').click()
 
     cy.get('[data-cy="create-user-group"]').click()
@@ -1903,7 +1907,7 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="member-shortname-email-0"]')
       .click()
       .type(Cypress.env('LECTURER_INST2_SHORTNAME')) // pro3 is added as admin
-    cy.get('[data-cy="member-admin-0"]').click()
+    cy.get('[data-cy="member-admin-0"]').realClick()
     cy.get('[data-cy="submit-create-user-group"]').click()
     cy.logoutUser()
 
@@ -1930,7 +1934,7 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="member-shortname-email-0"]')
       .click()
       .type(Cypress.env('LECTURER_SHORTNAME'))
-    cy.get('[data-cy="member-admin-0"]').click()
+    cy.get('[data-cy="member-admin-0"]').realClick()
     cy.get('[data-cy="submit-create-user-group"]').click()
     cy.logoutUser()
 
@@ -2055,7 +2059,7 @@ describe('Test course creation and editing functionalities', function () {
     cy.get('[data-cy="new-permission-access-level"]').contains(
       messages.manage.sharing.permissionsWRITE
     )
-    cy.get('[data-cy="new-permission-propagation"]').click()
+    cy.get('[data-cy="new-permission-propagation"]').realClick()
     cy.get('[data-cy="new-permission-propagation"]').should(
       'have.attr',
       'data-state',
@@ -2136,8 +2140,10 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(`[data-cy="permission-${this.data.sharing.group5}"]`).contains(
       messages.manage.sharing.permissionsADMIN
     )
-    cy.get(`[data-cy="permission-level-${this.data.sharing.group5}"]`).click()
-    cy.get('[data-cy="permission-level-WRITE"]').click()
+    cy.get(
+      `[data-cy="permission-level-${this.data.sharing.group5}"]`
+    ).realClick()
+    cy.get('[data-cy="permission-level-WRITE"]').realClick()
     cy.get(`[data-cy="permission-${this.data.sharing.group5}"]`).contains(
       messages.manage.sharing.permissionsWRITE
     )
@@ -2159,7 +2165,7 @@ describe('Test course creation and editing functionalities', function () {
     ).should('have.attr', 'data-state', 'unchecked')
     cy.get(
       `[data-cy="permission-propagation-${this.data.sharing.group5}"]`
-    ).click()
+    ).realClick()
     cy.get(
       `[data-cy="permission-propagation-${this.data.sharing.group5}"]`
     ).should('have.attr', 'data-state', 'checked')

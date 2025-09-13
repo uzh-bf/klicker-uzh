@@ -208,10 +208,10 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier1)
-    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get('[data-cy="select-multiplier"]').realClick()
     cy.get(
       `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier2
     )
@@ -241,7 +241,7 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="next-or-submit"]').should('not.be.disabled')
 
     // add displayname and description to stacks
-    cy.get('[data-cy="open-stack-0-description"]').click()
+    cy.get('[data-cy="open-stack-0-description"]').realClick()
     cy.get('[data-cy="stack-0-displayname"]')
       .click()
       .type(this.data.stack.title1)
@@ -250,7 +250,7 @@ describe('Different microlearning workflows', function () {
       this.data.stack.title1
     )
     cy.get('[data-cy="close-stack-description"]').click()
-    cy.get('[data-cy="open-stack-1-description"]').click()
+    cy.get('[data-cy="open-stack-1-description"]').realClick()
     cy.get('[data-cy="stack-1-displayname"]')
       .click()
       .type(this.data.stack.title2)
@@ -266,13 +266,13 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="element-1-stack-1"]').contains(this.data.FTML.title)
     cy.get('[data-cy="element-0-stack-0"]').contains(this.data.FC.title)
     cy.get('[data-cy="element-1-stack-0"]').contains(this.data.CT.title)
-    cy.get('[data-cy="open-stack-0-description"]').click()
+    cy.get('[data-cy="open-stack-0-description"]').realClick()
     cy.get('[data-cy="stack-0-displayname"]').should(
       'have.value',
       this.data.stack.title2
     )
     cy.get('[data-cy="close-stack-description"]').click()
-    cy.get('[data-cy="open-stack-1-description"]').click()
+    cy.get('[data-cy="open-stack-1-description"]').realClick()
     cy.get('[data-cy="stack-1-displayname"]').should(
       'have.value',
       this.data.stack.title1
@@ -283,13 +283,13 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="element-1-stack-0"]').contains(this.data.FTML.title)
     cy.get('[data-cy="element-0-stack-1"]').contains(this.data.FC.title)
     cy.get('[data-cy="element-1-stack-1"]').contains(this.data.CT.title)
-    cy.get('[data-cy="open-stack-0-description"]').click()
+    cy.get('[data-cy="open-stack-0-description"]').realClick()
     cy.get('[data-cy="stack-0-displayname"]').should(
       'have.value',
       this.data.stack.title1
     )
     cy.get('[data-cy="close-stack-description"]').click()
-    cy.get('[data-cy="open-stack-1-description"]').click()
+    cy.get('[data-cy="open-stack-1-description"]').realClick()
     cy.get('[data-cy="stack-1-displayname"]').should(
       'have.value',
       this.data.stack.title2
@@ -392,10 +392,10 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier2)
-    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get('[data-cy="select-multiplier"]').realClick()
     cy.get(
       `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier4}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier4
     )
@@ -410,7 +410,7 @@ describe('Different microlearning workflows', function () {
     })
 
     // check stack descriptions
-    cy.get('[data-cy="open-stack-0-description"]').click()
+    cy.get('[data-cy="open-stack-0-description"]').realClick()
     cy.get('[data-cy="stack-0-displayname"]').should(
       'have.value',
       this.data.stack.title1
@@ -424,7 +424,7 @@ describe('Different microlearning workflows', function () {
       this.data.stack.title1New
     )
     cy.get('[data-cy="close-stack-description"]').click()
-    cy.get('[data-cy="open-stack-1-description"]').click()
+    cy.get('[data-cy="open-stack-1-description"]').realClick()
     cy.get('[data-cy="stack-1-displayname"]').should(
       'have.value',
       this.data.stack.title2
@@ -481,13 +481,13 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="element-1-stack-1"]').contains(this.data.CT.title)
     cy.get('[data-cy="element-0-stack-2"]').contains(this.data.SCML.title)
     cy.get('[data-cy="element-1-stack-2"]').contains(this.data.FTML.title)
-    cy.get('[data-cy="open-stack-0-description"]').click()
+    cy.get('[data-cy="open-stack-0-description"]').realClick()
     cy.get('[data-cy="stack-0-displayname"]').should(
       'have.value',
       this.data.stack.title1New
     )
     cy.get('[data-cy="close-stack-description"]').click()
-    cy.get('[data-cy="open-stack-1-description"]').click()
+    cy.get('[data-cy="open-stack-1-description"]').realClick()
     cy.get('[data-cy="stack-1-displayname"]').should(
       'have.value',
       this.data.stack.title2New
@@ -554,13 +554,13 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="element-1-stack-1"]').contains(this.data.CT.title)
     cy.get('[data-cy="element-0-stack-2"]').contains(this.data.SCML.title)
     cy.get('[data-cy="element-1-stack-2"]').contains(this.data.FTML.title)
-    cy.get('[data-cy="open-stack-0-description"]').click()
+    cy.get('[data-cy="open-stack-0-description"]').realClick()
     cy.get('[data-cy="stack-0-displayname"]').should(
       'have.value',
       this.data.stack.title1New
     )
     cy.get('[data-cy="close-stack-description"]').click()
-    cy.get('[data-cy="open-stack-1-description"]').click()
+    cy.get('[data-cy="open-stack-1-description"]').realClick()
     cy.get('[data-cy="stack-1-displayname"]').should(
       'have.value',
       this.data.stack.title2New
@@ -1469,10 +1469,10 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier1)
-    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get('[data-cy="select-multiplier"]').realClick()
     cy.get(
       `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier2
     )
@@ -1568,7 +1568,7 @@ describe('Different microlearning workflows', function () {
       .clear()
       .type(this.data.manipulation.newSETitle)
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .clear()
       .type(this.data.manipulation.newSEContent)
     cy.get('[data-cy="save-new-question"]').click()
@@ -2991,7 +2991,7 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="member-shortname-email-0"]')
       .click()
       .type(Cypress.env('LECTURER_IND_SHORTNAME')) // pro1 is added as admin
-    cy.get('[data-cy="member-admin-0"]').click()
+    cy.get('[data-cy="member-admin-0"]').realClick()
     cy.get('[data-cy="submit-create-user-group"]').click()
     cy.get(`[data-cy="user-group-${this.data.sharing.group1}"]`).should('exist')
 
@@ -3028,7 +3028,7 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="member-shortname-email-0"]')
       .click()
       .type(Cypress.env('LECTURER_EMAIL')) // lecturer is added as admin
-    cy.get('[data-cy="member-admin-0"]').click()
+    cy.get('[data-cy="member-admin-0"]').realClick()
     cy.get('[data-cy="submit-create-user-group"]').click()
     cy.get(`[data-cy="user-group-${this.data.sharing.group4}"]`).should('exist')
     cy.logoutUser()

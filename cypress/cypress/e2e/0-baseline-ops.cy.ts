@@ -56,7 +56,7 @@ describe('Test fundamental UI interactions and baseline operations', function ()
     cy.get('[data-cy="insert-question-text"]')
       .scrollIntoView() // Ensure element is visible
       .should('be.visible')
-      .click()
+      .realClick()
       .type('This is a test of the Slate.js rich text editor.')
 
     // Verify content was entered
@@ -86,7 +86,7 @@ describe('Test fundamental UI interactions and baseline operations', function ()
     cy.get('[data-cy="insert-answer-field-0"]')
       .scrollIntoView()
       .should('be.visible')
-      .click()
+      .realClick()
       .type('Answer Option 1')
       .should('contain', 'Answer Option 1')
 
@@ -100,7 +100,7 @@ describe('Test fundamental UI interactions and baseline operations', function ()
     cy.get('[data-cy="insert-answer-field-1"]')
       .scrollIntoView()
       .should('be.visible')
-      .click()
+      .realClick()
       .type('Answer Option 2')
 
     // Close modal

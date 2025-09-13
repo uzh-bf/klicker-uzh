@@ -351,10 +351,10 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier1)
-    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get('[data-cy="select-multiplier"]').realClick()
     cy.get(
       `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier2
     )
@@ -529,7 +529,7 @@ describe('Different live-quiz workflows', function () {
       .clear()
       .type(this.data.course1.quiz.displayNameNew)
     cy.get('[data-cy="insert-live-description"]')
-      .click()
+      .realClick()
       .contains(this.data.course1.quiz.description)
     cy.get('[data-cy="insert-live-description"]')
       .realClick()
@@ -594,10 +594,10 @@ describe('Different live-quiz workflows', function () {
       'disabled'
     )
 
-    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get('[data-cy="select-multiplier"]').realClick()
     cy.get(
       `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier4}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier4
     )
@@ -688,7 +688,7 @@ describe('Different live-quiz workflows', function () {
       this.data.course1.quiz.displayNameNew
     )
     cy.get('[data-cy="insert-live-description"]')
-      .click()
+      .realClick()
       .contains(this.data.course1.quiz.descriptionNew)
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -771,7 +771,7 @@ describe('Different live-quiz workflows', function () {
       this.data.course1.quiz.displayNameNew
     )
     cy.get('[data-cy="insert-live-description"]')
-      .click()
+      .realClick()
       .contains(this.data.course1.quiz.descriptionNew)
     cy.get('[data-cy="next-or-submit"]').click()
     cy.selectOption('[data-cy="select-course"]', this.data.course1.name)
@@ -933,7 +933,7 @@ describe('Different live-quiz workflows', function () {
       .realClick()
       .realType(this.data.course2.quiz.description)
     cy.get('[data-cy="insert-live-description"]')
-      .click()
+      .realClick()
       .contains(this.data.course2.quiz.description)
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -954,10 +954,10 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="select-multiplier"]')
       .should('exist')
       .contains(messages.manage.activityWizard.multiplier1)
-    cy.get('[data-cy="select-multiplier"]').click()
+    cy.get('[data-cy="select-multiplier"]').realClick()
     cy.get(
       `[data-cy="select-multiplier-${messages.manage.activityWizard.multiplier2}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="select-multiplier"]').contains(
       messages.manage.activityWizard.multiplier2
     )
@@ -1488,10 +1488,10 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="evaluate-question-select"]').contains(
       this.data.KPML.title
     )
-    cy.get('[data-cy="evaluate-question-select"]').click()
+    cy.get('[data-cy="evaluate-question-select"]').realClick()
     cy.get(
       `[data-cy="evaluation-select-instance-${this.data.SCML.title}"]`
-    ).click()
+    ).realClick()
     cy.get('[data-cy="evaluate-question-select"]').contains(
       this.data.SCML.title
     )
@@ -1732,7 +1732,7 @@ describe('Different live-quiz workflows', function () {
     ).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).should('be.disabled')
     cy.get('body').contains('16 response(s) in this live quiz')
-    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="confirm-deletion-responses"]`).realClick()
     cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).click()
     cy.get(`[data-cy="confirm-deletion-confusion-feedbacks"]`).should(
       'not.exist'
@@ -1746,7 +1746,7 @@ describe('Different live-quiz workflows', function () {
       `[data-cy="delete-live-quiz-${this.data.course2.quiz.name}"]`
     ).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).should('be.disabled')
-    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
+    cy.get(`[data-cy="confirm-deletion-responses"]`).realClick()
     cy.get(`[data-cy="confirm-deletion-qa-feedbacks"]`).click()
     cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
     cy.findByText(this.data.course2.quiz.name).should('not.exist')
@@ -1810,7 +1810,7 @@ describe('Different live-quiz workflows', function () {
       .clear()
       .type(this.data.liveQuiz.newSCTitle)
     cy.get('[data-cy="insert-question-text"]')
-      .click()
+      .realClick()
       .clear()
       .type(this.data.liveQuiz.newSCContent)
     cy.get('[data-cy="save-new-question"]').click()
@@ -2193,8 +2193,8 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).click()
     cy.get(`[data-cy="delete-live-quiz-${this.data.liveQuiz.name}"]`).click()
-    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirm-deletion-responses"]`).realClick()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).realClick()
 
     cy.get(
       `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.duplicateName}"]`
@@ -2202,8 +2202,8 @@ describe('Different live-quiz workflows', function () {
     cy.get(
       `[data-cy="delete-live-quiz-${this.data.liveQuiz.duplicateName}"]`
     ).click()
-    cy.get(`[data-cy="confirm-deletion-responses"]`).click()
-    cy.get(`[data-cy="confirmation-modal-confirm"]`).click()
+    cy.get(`[data-cy="confirm-deletion-responses"]`).realClick()
+    cy.get(`[data-cy="confirmation-modal-confirm"]`).realClick()
   })
   // #endregion
 
@@ -3112,7 +3112,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="member-shortname-email-0"]')
       .click()
       .type(Cypress.env('LECTURER_IND_SHORTNAME')) // pro1 is added as admin
-    cy.get('[data-cy="member-admin-0"]').click()
+    cy.get('[data-cy="member-admin-0"]').realClick()
     cy.get('[data-cy="submit-create-user-group"]').click()
     cy.get(`[data-cy="user-group-${this.data.sharing.group1}"]`).should('exist')
 
@@ -3149,7 +3149,7 @@ describe('Different live-quiz workflows', function () {
     cy.get('[data-cy="member-shortname-email-0"]')
       .click()
       .type(Cypress.env('LECTURER_EMAIL')) // lecturer is added as admin
-    cy.get('[data-cy="member-admin-0"]').click()
+    cy.get('[data-cy="member-admin-0"]').realClick()
     cy.get('[data-cy="submit-create-user-group"]').click()
     cy.get(`[data-cy="user-group-${this.data.sharing.group4}"]`).should('exist')
     cy.logoutUser()
