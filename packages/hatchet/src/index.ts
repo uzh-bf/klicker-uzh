@@ -24,7 +24,7 @@ export function prepareHatchetTasks({
   redisCache?: Redis
   handlers: HatchetHandlers
 }) {
-  const ctx = {
+  const globalContext = {
     hatchet,
     pubSub,
     emitter,
@@ -60,10 +60,14 @@ export function prepareHatchetTasks({
   const publishScheduledMicroLearning = hatchet.task({
     name: 'publish-scheduled-microlearning',
     retries: 3,
-    fn: async ({ microLearningId }: { microLearningId: string }) => {
+    fn: async (
+      { microLearningId }: { microLearningId: string },
+      executionContext
+    ) => {
       const success = await handlers.handlePublishScheduledMicroLearning(
         { microLearningId },
-        ctx
+        globalContext,
+        executionContext
       )
       return { success }
     },
@@ -72,10 +76,14 @@ export function prepareHatchetTasks({
   const publishScheduledGroupActivity = hatchet.task({
     name: 'publish-scheduled-group-activity',
     retries: 3,
-    fn: async ({ groupActivityId }: { groupActivityId: string }) => {
+    fn: async (
+      { groupActivityId }: { groupActivityId: string },
+      executionContext
+    ) => {
       const success = await handlers.handlePublishScheduledGroupActivity(
         { groupActivityId },
-        ctx
+        globalContext,
+        executionContext
       )
       return { success }
     },
@@ -84,10 +92,14 @@ export function prepareHatchetTasks({
   const publishScheduledPracticeQuiz = hatchet.task({
     name: 'publish-scheduled-practice-quiz',
     retries: 3,
-    fn: async ({ practiceQuizId }: { practiceQuizId: string }) => {
+    fn: async (
+      { practiceQuizId }: { practiceQuizId: string },
+      executionContext
+    ) => {
       const success = await handlers.handlePublishScheduledPracticeQuiz(
         { practiceQuizId },
-        ctx
+        globalContext,
+        executionContext
       )
       return { success }
     },
@@ -96,10 +108,11 @@ export function prepareHatchetTasks({
   const publishScheduledLiveQuiz = hatchet.task({
     name: 'publish-scheduled-live-quiz',
     retries: 3,
-    fn: async ({ liveQuizId }: { liveQuizId: string }) => {
+    fn: async ({ liveQuizId }: { liveQuizId: string }, executionContext) => {
       const success = await handlers.handlePublishScheduledLiveQuiz(
         { liveQuizId },
-        ctx
+        globalContext,
+        executionContext
       )
       return { success }
     },
@@ -112,10 +125,14 @@ export function prepareHatchetTasks({
   const endExpiredMicroLearning = hatchet.task({
     name: 'end-expired-micro-learnings',
     retries: 3,
-    fn: async ({ microLearningId }: { microLearningId: string }) => {
+    fn: async (
+      { microLearningId }: { microLearningId: string },
+      executionContext
+    ) => {
       const success = await handlers.handleEndExpiredMicroLearning(
         { microLearningId },
-        ctx
+        globalContext,
+        executionContext
       )
       return { success }
     },
@@ -124,10 +141,14 @@ export function prepareHatchetTasks({
   const endExpiredGroupActivity = hatchet.task({
     name: 'end-expired-group-activities',
     retries: 3,
-    fn: async ({ groupActivityId }: { groupActivityId: string }) => {
+    fn: async (
+      { groupActivityId }: { groupActivityId: string },
+      executionContext
+    ) => {
       const success = await handlers.handleEndExpiredGroupActivity(
         { groupActivityId },
-        ctx
+        globalContext,
+        executionContext
       )
       return { success }
     },
@@ -143,8 +164,12 @@ export function prepareHatchetTasks({
     onCrons: [
       '5 0 * * *', // running daily at 12:05 AM (UTC)
     ],
-    fn: async () => {
-      const success = await handlers.handleUpdateGroupAverageScores({}, ctx)
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleUpdateGroupAverageScores(
+        {},
+        globalContext,
+        executionContext
+      )
       return { success }
     },
   })
@@ -155,10 +180,11 @@ export function prepareHatchetTasks({
     onCrons: [
       '10 0 * * *', // running daily at 12:10 AM (UTC)
     ],
-    fn: async () => {
+    fn: async (_, executionContext) => {
       const success = await handlers.handleRunningRandomGroupAssignments(
         {},
-        ctx
+        globalContext,
+        executionContext
       )
       return { success }
     },
@@ -170,8 +196,12 @@ export function prepareHatchetTasks({
     onCrons: [
       '15 0 * * *', // running daily at 12:15 AM (UTC)
     ],
-    fn: async () => {
-      const success = await handlers.handleFinalRandomGroupAssignments({}, ctx)
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleFinalRandomGroupAssignments(
+        {},
+        globalContext,
+        executionContext
+      )
       return { success }
     },
   })
@@ -182,8 +212,12 @@ export function prepareHatchetTasks({
     onCrons: [
       '20 0 * * *', // running daily at 12:20 AM (UTC)
     ],
-    fn: async () => {
-      const success = await handlers.handleUpdateWeeklyTimelineEntries({}, ctx)
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleUpdateWeeklyTimelineEntries(
+        {},
+        globalContext,
+        executionContext
+      )
       return { success }
     },
   })
@@ -194,10 +228,10 @@ export function prepareHatchetTasks({
     onCrons: [
       '*/5 * * * *', // runs every 5 minutes
     ],
-    fn: async () => {
+    fn: async (_, executionContext) => {
       // TODO: clean implementation
       return { success: true }
-      // const success = await handlers.handleSendPushNotifications({}, ctx)
+      // const success = await handlers.handleSendPushNotifications({}, globalContext, executionContext)
       // return { success }
     },
   })

@@ -1,4 +1,5 @@
 // import webpush, { WebPushError } from 'web-push'
+import { HatchetHandlers } from '@klicker-uzh/types'
 import axios from 'axios'
 import type { ContextWithUser } from '../lib/context.js'
 
@@ -135,76 +136,82 @@ export async function unsubscribeFromPush(
 //   }
 // }
 
-export async function handleSendPushNotifications() {
-  if (
-    !process.env.VAPID_PUBLIC_KEY ||
-    !process.env.VAPID_PRIVATE_KEY ||
-    !process.env.NOTIFICATION_SUPPORT_MAIL
-  ) {
-    throw new Error('VAPID keys or support email not available.')
+export const handleSendPushNotifications: HatchetHandlers['handleSendPushNotifications'] =
+  async () => {
+    if (
+      !process.env.VAPID_PUBLIC_KEY ||
+      !process.env.VAPID_PRIVATE_KEY ||
+      !process.env.NOTIFICATION_SUPPORT_MAIL
+    ) {
+      throw new Error('VAPID keys or support email not available.')
+    }
+
+    // webpush.setVapidDetails(
+    //   `mailto:${process.env.NOTIFICATION_SUPPORT_MAIL as String}`,
+    //   process.env.VAPID_PUBLIC_KEY as string,
+    //   process.env.VAPID_PRIVATE_KEY as string
+    // )
+
+    // const microLearnings = await ctx.prisma.microLearning.findMany({
+    //   where: {
+    //     status: PublicationStatus.PUBLISHED,
+    //     scheduledStartAt: {
+    //       lte: new Date(),
+    //     },
+    //     scheduledEndAt: {
+    //       gt: new Date(),
+    //     },
+    //     arePushNotificationsSent: false,
+    //   },
+    //   include: {
+    //     course: {
+    //       include: {
+    //         subscriptions: true,
+    //       },
+    //     },
+    //   },
+    // })
+
+    // let allSuccessful = true
+
+    // // TODO: improve scalability of push notification dispatch:
+    // // 1. Investigate implementing this method as a background process to reduce the load on the main thread.
+    // // 2. Investigate implementing this method in Azure
+    // await Promise.all(
+    //   microLearnings.map(async (microLearning) => {
+    //     try {
+    //       await sendPushNotificationsToSubscribers(microLearning, ctx)
+
+    //       //update microLearning to prevent sending push notifications multiple times
+    //       await ctx.prisma.microLearning.update({
+    //         where: {
+    //           id: microLearning.id,
+    //         },
+    //         data: {
+    //           arePushNotificationsSent: true,
+    //         },
+    //       })
+    //     } catch (error) {
+    //       allSuccessful = false
+    //       console.error(
+    //         'An error occured while trying to send the push notifications: ',
+    //         error
+    //       )
+    //     }
+    //   })
+    // )
+
+    // return allSuccessful
+
+    return true
   }
 
-  // webpush.setVapidDetails(
-  //   `mailto:${process.env.NOTIFICATION_SUPPORT_MAIL as String}`,
-  //   process.env.VAPID_PUBLIC_KEY as string,
-  //   process.env.VAPID_PRIVATE_KEY as string
-  // )
+export const handleSendTeamsNotification: HatchetHandlers['handleSendTeamsNotification'] =
+  async ({ scope, text }) => {
+    return sendTeamsNotification({ scope, text })
+  }
 
-  // const microLearnings = await ctx.prisma.microLearning.findMany({
-  //   where: {
-  //     status: PublicationStatus.PUBLISHED,
-  //     scheduledStartAt: {
-  //       lte: new Date(),
-  //     },
-  //     scheduledEndAt: {
-  //       gt: new Date(),
-  //     },
-  //     arePushNotificationsSent: false,
-  //   },
-  //   include: {
-  //     course: {
-  //       include: {
-  //         subscriptions: true,
-  //       },
-  //     },
-  //   },
-  // })
-
-  // let allSuccessful = true
-
-  // // TODO: improve scalability of push notification dispatch:
-  // // 1. Investigate implementing this method as a background process to reduce the load on the main thread.
-  // // 2. Investigate implementing this method in Azure
-  // await Promise.all(
-  //   microLearnings.map(async (microLearning) => {
-  //     try {
-  //       await sendPushNotificationsToSubscribers(microLearning, ctx)
-
-  //       //update microLearning to prevent sending push notifications multiple times
-  //       await ctx.prisma.microLearning.update({
-  //         where: {
-  //           id: microLearning.id,
-  //         },
-  //         data: {
-  //           arePushNotificationsSent: true,
-  //         },
-  //       })
-  //     } catch (error) {
-  //       allSuccessful = false
-  //       console.error(
-  //         'An error occured while trying to send the push notifications: ',
-  //         error
-  //       )
-  //     }
-  //   })
-  // )
-
-  // return allSuccessful
-
-  return true
-}
-
-export async function handleSendTeamsNotification({
+export async function sendTeamsNotification({
   scope,
   text,
 }: {

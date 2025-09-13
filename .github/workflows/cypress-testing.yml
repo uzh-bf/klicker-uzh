@@ -212,6 +212,10 @@ jobs:
   cypress-run-cloud:
     if: (github.event_name == 'pull_request' && github.event.pull_request.draft == false) || (github.event_name == 'push' && github.ref == 'refs/heads/v3')
     runs-on: ubuntu-24.04
+    # strategy:
+    #   fail-fast: false
+    #   matrix:
+    #     containers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     services:
       postgres:
         image: postgres:15
@@ -347,6 +351,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: service-logs
+          # path: service-${{ matrix.containers }}.log
           path: service.log
           if-no-files-found: warn
           retention-days: 7
@@ -360,6 +365,7 @@ jobs:
           wait-on-timeout: 300
           record: true
           browser: electron
+          # parallel: true
           working-directory: cypress
         env:
           CYPRESS_FAIL_FAST: 'false'
@@ -375,6 +381,7 @@ jobs:
       - if: always()
         uses: actions/upload-artifact@v4
         with:
+          # name: cypress-artifacts-cloud-${{ matrix.containers }}
           name: cypress-artifacts-cloud
           path: |
             cypress/cypress/videos
