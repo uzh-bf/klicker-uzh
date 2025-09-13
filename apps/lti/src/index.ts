@@ -65,6 +65,7 @@ Provider.onConnect(async (token, req, res) => {
     {
       algorithm: 'HS256',
       expiresIn: '5m',
+      issuer: process.env.JWT_ISSUER_LTI,
     }
   )
 

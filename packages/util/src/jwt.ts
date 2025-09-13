@@ -22,16 +22,22 @@ export async function signJWT(
   options: {
     algorithm?: 'HS256'
     expiresIn?: string | number
+    issuer?: string
+    issuedAt?: Date
   } = {},
   issuedAt?: Date
 ): Promise<string> {
   const alg = options.algorithm ?? 'HS256'
   let jwt = new jose.SignJWT(payload as Record<string, unknown>)
     .setProtectedHeader({ alg, typ: 'JWT' })
-    .setIssuedAt(issuedAt)
+    .setIssuedAt(options.issuedAt ?? issuedAt)
 
   if (options.expiresIn) {
     jwt = jwt.setExpirationTime(options.expiresIn)
+  }
+
+  if (options.issuer) {
+    jwt = jwt.setIssuer(options.issuer)
   }
 
   return jwt.sign(getSecretKey(secret))
@@ -43,11 +49,13 @@ export async function verifyJWT(
   opts: {
     algorithms?: 'HS256'[]
     clockTolerance?: string | number
+    issuer?: string
   } = {}
 ): Promise<JWTPayload> {
   const { payload } = await jose.jwtVerify(token, getSecretKey(secret), {
     algorithms: opts.algorithms ?? ['HS256'],
     clockTolerance: opts.clockTolerance ?? '5s',
+    issuer: opts.issuer,
   })
   return payload as JWTPayload
 }

@@ -98,6 +98,7 @@ export default async function getParticipantToken({
           {
             algorithm: 'HS256',
             expiresIn: '5m',
+            issuer: process.env.JWT_ISSUER_PWA,
           }
         )
 

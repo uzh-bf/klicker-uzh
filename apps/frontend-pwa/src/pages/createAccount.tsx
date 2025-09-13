@@ -153,6 +153,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           {
             algorithm: 'HS256',
             expiresIn: '5m',
+            issuer: process.env.JWT_ISSUER_PWA,
           }
         )
         signedLtiData.ssoId = request.body.lis_person_sourcedid

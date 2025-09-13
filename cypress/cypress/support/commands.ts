@@ -144,6 +144,7 @@ const loginFactory = (
         .setProtectedHeader({ alg })
         .setIssuedAt()
         .setExpirationTime('2h')
+        .setIssuer(process.env.JWT_ISSUER_AUTH)
         .sign(secret)
 
       cy.setCookie('next-auth.session-token', token, {

@@ -24,6 +24,7 @@ async function run(username: string) {
     {
       algorithm: 'HS256',
       expiresIn: '4w',
+      issuer: process.env.JWT_ISSUER_API,
     }
   )
 
