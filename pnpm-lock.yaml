@@ -1370,9 +1370,6 @@ importers:
 
   apps/olat-api:
     dependencies:
-      '@klicker-uzh/grading':
-        specifier: workspace:*
-        version: link:../../packages/grading
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma

@@ -8,7 +8,6 @@
     "dist"
   ],
   "dependencies": {
-    "@klicker-uzh/grading": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@prisma/adapter-pg": "6.14.0",
