@@ -1422,9 +1422,13 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: ActivityInfo,
         args: { id: t.arg.string({ required: true }) },
-        resolve: async (_, args, ctx) => {
-          return await LiveQuizService.resetAssessmentLiveQuiz(args, ctx)
-        },
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await LiveQuizService.resetAssessmentLiveQuiz(args, ctx)
+          }
+        ),
       }),
 
       changeActivityName: t.withAuth(asUserFullAccess).boolean({
