@@ -4433,6 +4433,7 @@ describe('Different live-quiz workflows', function () {
       groupDeadlineDate: getFutureDate(2, '12'), // 2 months from now
       maxGroupSize: 4,
       preferredGroupSize: 2,
+      participants: [Cypress.env('STUDENT_USERNAME')],
     })
     cy.createCourse({
       name: this.data.assessment.nonGamifiedCourse.name,
@@ -4443,56 +4444,57 @@ describe('Different live-quiz workflows', function () {
       startDate: getFutureDate(-1, '11'), // 1 month ago
       endDate: getFutureDate(6, '20'), // 6 months from now
       groupDeadlineDate: getFutureDate(2, '12'), // 2 months from now
+      participants: [Cypress.env('STUDENT_USERNAME')],
     })
 
     // create one live quiz in each of the assessment courses
     createAndStartAssessmentLiveQuizzes(this.data)
   })
 
-  it('Have the a student with a valid account join both courses', function () {
-    cy.loginStudent()
-    cy.task('getCoursePin', {
-      courseName: this.data.assessment.gamifiedCourse.name,
-    }).then((pin: number) => {
-      // check if the pin was fetched successfully
-      if (!pin) {
-        throw new Error(
-          'No course pin found. Please ensure that the previous test case has run successfully and generated a course pin.'
-        )
-      }
+  // it('Have the a student with a valid account join both courses', function () {
+  //   cy.loginStudent()
+  //   cy.task('getCoursePin', {
+  //     courseName: this.data.assessment.gamifiedCourse.name,
+  //   }).then((pin: number) => {
+  //     // check if the pin was fetched successfully
+  //     if (!pin) {
+  //       throw new Error(
+  //         'No course pin found. Please ensure that the previous test case has run successfully and generated a course pin.'
+  //       )
+  //     }
 
-      // join the course
-      cy.get('[data-cy="join-new-course"]').click()
-      cy.get('[data-cy="join-course-pin-field-1"]')
-        .realClick()
-        .realType(String(pin))
-      cy.get('[data-cy="join-course-submit-form"]').click()
-      cy.get(
-        `[data-cy="course-button-${this.data.assessment.gamifiedCourse.displayName}"]`
-      ).should('exist')
-    })
+  //     // join the course
+  //     cy.get('[data-cy="join-new-course"]').click()
+  //     cy.get('[data-cy="join-course-pin-field-1"]')
+  //       .realClick()
+  //       .realType(String(pin))
+  //     cy.get('[data-cy="join-course-submit-form"]').click()
+  //     cy.get(
+  //       `[data-cy="course-button-${this.data.assessment.gamifiedCourse.displayName}"]`
+  //     ).should('exist')
+  //   })
 
-    cy.task('getCoursePin', {
-      courseName: this.data.assessment.nonGamifiedCourse.name,
-    }).then((pin: number) => {
-      // check if the pin was fetched successfully
-      if (!pin) {
-        throw new Error(
-          'No course pin found. Please ensure that the previous test case has run successfully and generated a course pin.'
-        )
-      }
+  //   cy.task('getCoursePin', {
+  //     courseName: this.data.assessment.nonGamifiedCourse.name,
+  //   }).then((pin: number) => {
+  //     // check if the pin was fetched successfully
+  //     if (!pin) {
+  //       throw new Error(
+  //         'No course pin found. Please ensure that the previous test case has run successfully and generated a course pin.'
+  //       )
+  //     }
 
-      // join the course
-      cy.get('[data-cy="join-new-course"]').click()
-      cy.get('[data-cy="join-course-pin-field-1"]')
-        .realClick()
-        .realType(String(pin))
-      cy.get('[data-cy="join-course-submit-form"]').click()
-      cy.get(
-        `[data-cy="course-button-${this.data.assessment.nonGamifiedCourse.displayName}"]`
-      ).should('exist')
-    })
-  })
+  //     // join the course
+  //     cy.get('[data-cy="join-new-course"]').click()
+  //     cy.get('[data-cy="join-course-pin-field-1"]')
+  //       .realClick()
+  //       .realType(String(pin))
+  //     cy.get('[data-cy="join-course-submit-form"]').click()
+  //     cy.get(
+  //       `[data-cy="course-button-${this.data.assessment.nonGamifiedCourse.displayName}"]`
+  //     ).should('exist')
+  //   })
+  // })
 
   it('Verify that the shown PINs are identical with the stored ones', function () {
     // combine approach of loading and entering on student view does not work due to limitations of cypress

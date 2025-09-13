@@ -1866,6 +1866,7 @@ export default defineConfig({
           groupDeadlineDate,
           maxGroupSize = 4,
           preferredGroupSize = 2,
+          participants = [],
         }: {
           name: string
           displayName: string
@@ -1880,6 +1881,7 @@ export default defineConfig({
           groupDeadlineDate?: Date
           maxGroupSize?: number
           preferredGroupSize?: number
+          participants?: string[]
         }) {
           try {
             const course = await prisma.course.create({
@@ -1921,6 +1923,21 @@ export default defineConfig({
               },
               update: { permissionLevel: PermissionLevel.OWNER },
             })
+
+            for (const username of participants) {
+              const participant = await prisma.participant.findUnique({
+                where: { username },
+              })
+
+              if (participant) {
+                await prisma.participation.create({
+                  data: {
+                    participant: { connect: { id: participant.id } },
+                    course: { connect: { id: course.id } },
+                  },
+                })
+              }
+            }
 
             return !!course
           } finally {

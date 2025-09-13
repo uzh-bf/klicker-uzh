@@ -1360,6 +1360,7 @@ interface CreateCourseArgs {
   groupDeadlineDate?: Date
   maxGroupSize?: number
   preferredGroupSize?: number
+  participants?: string[]
 }
 
 Cypress.Commands.add(
@@ -1378,6 +1379,7 @@ Cypress.Commands.add(
     groupDeadlineDate,
     maxGroupSize = 4,
     preferredGroupSize = 2,
+    participants = [],
   }: CreateCourseArgs) => {
     // trigger answer collection creation directly through prisma action
     cy.get('[data-cy="courses"]').click()
@@ -1395,6 +1397,7 @@ Cypress.Commands.add(
       groupDeadlineDate,
       maxGroupSize,
       preferredGroupSize,
+      participants,
     }).then((result: boolean) => {
       // check if the query was successful
       if (result === false) {
