@@ -6,19 +6,23 @@ This setup allows you to run your GitHub Actions Cypress workflow locally using 
 
 You need the following installed:
 
-1. **Docker & Docker Compose** - For running services
+1. **Docker** - Act will create service containers automatically
 2. **Act** - For simulating GitHub Actions
-3. **pnpm** - Your package manager (should already be installed)
-4. **Node 20** - Should already be configured via Volta
+3. **GitHub CLI (gh)** - For authentication with GitHub Actions repositories
+4. **pnpm** - Your package manager (should already be installed)  
+5. **Node 20** - Should already be configured via Volta
 
-### Installing Act
+### Installing Required Tools
 
 ```bash
-# macOS
-brew install act
+# macOS - Install both act and GitHub CLI
+brew install act gh
 
 # Or manually (Linux/macOS)
 curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+
+# Install GitHub CLI separately if needed
+# See: https://cli.github.com/
 ```
 
 ## Quick Start
@@ -26,11 +30,11 @@ curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
 ### 1. One-time Setup
 
 ```bash
-# Copy secrets template (if not already done)
-cp act.secrets.template act.secrets
+# Authenticate with GitHub CLI (required for act)
+gh auth login
 
-# Edit act.secrets if needed (default values should work for local testing)
-# vim act.secrets
+# The setup script will automatically handle act.secrets creation
+# No manual copying or editing needed!
 ```
 
 ### 2. Run the Complete Workflow
@@ -40,8 +44,9 @@ npm run test:act
 ```
 
 This command will:
-- Start infrastructure services (PostgreSQL, Redis, Hatchet) via Docker Compose
-- Run the complete `cypress-run-parallel-draft` GitHub Actions workflow
+- Automatically authenticate with GitHub using your gh CLI credentials
+- Run the complete `cypress-run-parallel-draft` GitHub Actions workflow using act
+- Act will automatically create service containers (PostgreSQL, Redis, Hatchet) as defined in the workflow
 - The workflow itself will handle:
   - Installing dependencies
   - Building the application
@@ -49,66 +54,86 @@ This command will:
   - Running database migrations
   - Starting application services
   - Waiting for services to be ready
-  - Running Cypress tests
+  - Running Cypress tests (single container for local testing)
 - Clean up when complete
 
 ## How It Works
 
-The setup uses a **three-layer approach**:
+Act simulates the GitHub Actions environment by:
 
-1. **Infrastructure Services** (Docker Compose) - PostgreSQL, Redis, Hatchet
-2. **GitHub Actions Simulation** (Act) - Runs the complete CI workflow
-3. **Application Services** (Started by the workflow) - Your actual applications
+1. **Creating Service Containers** - PostgreSQL, Redis, Hatchet (from workflow definition)
+2. **Running the Workflow** - Executes the exact same steps as in CI
+3. **Single Container Mode** - Runs one test container instead of 10 parallel ones (to avoid port conflicts)
 
-This approach ensures that your local testing environment matches CI exactly.
+This approach ensures that your local testing environment matches CI exactly, including testing the service configuration.
 
 ## Manual Commands
 
 If you need more control:
 
 ```bash
-# Start infrastructure services only
-npm run test:services:up
-
-# Run act manually with specific options
+# Run act manually with specific options (from util/act directory)
+cd util/act
 act pull_request \
-  -j cypress-run-parallel-draft \
+  --workflows ../../.github/workflows/cypress-testing.yml \
+  --job cypress-run-parallel-draft \
   --secret-file act.secrets \
-  --container-architecture linux/amd64
+  --matrix containers:1 \
+  --eventpath ../../.github/events/pull_request_draft.json
 
-# Stop infrastructure services
-npm run test:services:down
+# Check running containers created by act
+docker ps
 
-# Check service status
-docker-compose -f docker-compose.test.yml ps
+# Clean up any leftover containers
+docker container prune
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-**1. Services won't start**
+**1. GitHub CLI not authenticated**
+```bash
+# Check authentication status
+gh auth status
+
+# Authenticate if needed
+gh auth login
+
+# Verify token works
+gh auth token
+```
+
+**2. Act fails to start services**
 ```bash
 # Check if Docker is running
 docker info
 
-# Check for port conflicts
-lsof -i :5432 -i :6379 -i :8888
+# Check for existing containers using the same ports
+docker ps | grep -E "(5432|6379|8888|7077)"
 
-# Clean up and retry
-docker-compose -f docker-compose.test.yml down -v
-npm run test:services:up
+# Clean up any existing containers
+docker container prune
+docker system prune
 ```
 
-**2. Act fails with "pull access denied"**
+**3. Act fails with "authentication required"**
+```bash
+# This usually means gh CLI authentication failed
+# Re-run with debugging to see the error
+cd util/act
+./run-act-local.sh
+
+# Or manually check the GitHub token
+echo "Token: $(gh auth token)"
+```
+
+**4. Act fails with "pull access denied"**
 ```bash
 # Try with explicit architecture (for Apple Silicon Macs)
-act pull_request -j cypress-run-parallel-draft --secret-file act.secrets --container-architecture linux/amd64
-```
-
-**3. "act.secrets file not found"**
-```bash
-cp act.secrets.template act.secrets
+# The .actrc file should handle this automatically
+cd util/act
+./run-act-local.sh
 ```
 
 **4. Workflow fails during build/test steps**
@@ -129,20 +154,27 @@ cp act.secrets.template act.secrets
 
 ### Debugging Tips
 
-1. **Use verbose mode**: Edit `.actrc` to add `-v` for more detailed output
-2. **Check Docker logs**: `docker-compose -f docker-compose.test.yml logs`
+1. **Use verbose mode**: The `.actrc` already includes `-v` for detailed output
+2. **Check Docker logs**: `docker logs <container-name>` for specific service containers
 3. **Monitor resource usage**: `docker stats` (act can be resource-intensive)
-4. **Test services individually**: Start services manually and test connectivity
+4. **Clean up**: `docker container prune` and `docker system prune` to remove leftover containers
 
 ## What Gets Created
 
-When you run the setup, these files are created/used:
+When you run the setup, these files are used:
 
 - `.actrc` - Act configuration for Docker and container settings
-- `docker-compose.test.yml` - Infrastructure service definitions matching CI
-- `act.secrets` - Local secrets (gitignored, created from template)
-- `run-act-local.sh` - Main runner script that orchestrates everything
+- `act.secrets` - Local secrets (auto-generated with GitHub token from gh CLI)
+- `act.secrets.template` - Template with instructions for manual setup
+- `run-act-local.sh` - Main runner script with gh CLI integration
 - `.github/events/pull_request_draft.json` - Mock event data for act
+
+The script automatically:
+- Gets your GitHub token from gh CLI
+- Creates/updates act.secrets with the token
+- Runs act with the correct parameters
+
+Act will automatically create and manage all service containers based on the workflow definition.
 
 ## Performance Notes
 
@@ -153,30 +185,24 @@ When you run the setup, these files are created/used:
 
 ## Alternative: Manual Testing (Without Act)
 
-If act is too resource-intensive or complex, you can also run tests manually:
+If act is too resource-intensive, you can run tests manually, but this won't test your service configuration:
 
 ```bash
-# 1. Start infrastructure services
-npm run test:services:up
+# 1. Start services manually (you'll need to create your own docker-compose.yml)
+docker run -d --name postgres -p 5432:5432 -e POSTGRES_USER=klicker-prod -e POSTGRES_PASSWORD=klicker -e POSTGRES_DB=klicker-prod postgres:15
+docker run -d --name redis -p 6379:6379 redis:7
+# ... (set up all other services)
 
 # 2. Build the application
 pnpm install
 pnpm run --filter @klicker-uzh/prisma build:test
 pnpm run build:test
 
-# 3. Setup environment
-./util/_create_hatchet_token_cypress.sh
-
-# 4. Run database migrations
-cd packages/prisma
-pnpm run prisma:reset:raw -f
-cd ../..
-
-# 5. Start application services
-pnpm run start:test:ci &
-
-# 6. Wait for services and run tests manually
-# (This is more complex and doesn't guarantee CI parity)
+# 3. Setup environment and run tests manually
+# (This is much more complex and doesn't test CI configuration)
 ```
 
-However, using `act` is recommended as it ensures your local environment exactly matches CI.
+**However, using `act` is strongly recommended** as it:
+- Tests your actual GitHub Actions workflow configuration
+- Ensures service definitions work correctly
+- Matches your CI environment exactly

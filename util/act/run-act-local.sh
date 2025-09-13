@@ -3,56 +3,67 @@ set -e
 
 echo "🚀 Starting local GitHub Actions execution with act..."
 
-# Check if act.secrets exists
-if [ ! -f "act.secrets" ]; then
-    echo "❌ act.secrets file not found. Please create it from the template:"
-    echo "   cp act.secrets.template act.secrets"
+# Check if gh CLI is installed
+if ! command -v gh &> /dev/null; then
+    echo "❌ GitHub CLI (gh) is not installed."
+    echo "   Please install it with:"
+    echo "   brew install gh"
+    echo ""
+    echo "   This is required because act has a bug that requires authentication"
+    echo "   even for public GitHub Actions repositories."
     exit 1
 fi
 
-# Start services with Docker Compose
-echo "🐳 Starting test services..."
-docker-compose -f docker-compose.yml up -d
-
-# Wait for infrastructure services to be healthy
-echo "⏳ Waiting for infrastructure services to be ready..."
-echo "Checking PostgreSQL, Redis, and Hatchet services..."
-
-# Simple wait for the docker-compose services to be healthy
-max_attempts=30
-attempt=1
-while [ $attempt -le $max_attempts ]; do
-  if docker-compose -f docker-compose.yml ps | grep -E "(postgres|redis|hatchet)" | grep -q "Up (healthy)"; then
-    echo "✅ Infrastructure services are ready!"
-    break
-  fi
-  echo "⏳ Waiting for services to be healthy (attempt $attempt/$max_attempts)..."
-  sleep 5
-  attempt=$((attempt + 1))
-done
-
-if [ $attempt -gt $max_attempts ]; then
-  echo "❌ Services failed to become healthy within timeout"
-  docker-compose -f docker-compose.yml ps
-  exit 1
+# Check if gh is authenticated
+if ! gh auth status &> /dev/null; then
+    echo "❌ GitHub CLI is not authenticated."
+    echo "   Please authenticate with:"
+    echo "   gh auth login"
+    echo ""
+    echo "   This provides the token that act needs to clone GitHub Actions."
+    exit 1
 fi
 
-# Run act for the draft PR job (faster, no cloud recording)
-echo "🎬 Running GitHub Actions workflow with act..."
+# Get token from gh CLI
+echo "🔑 Getting GitHub token from gh CLI..."
+GITHUB_TOKEN=$(gh auth token)
+
+if [ -z "$GITHUB_TOKEN" ]; then
+    echo "❌ Failed to get GitHub token from gh CLI."
+    echo "   Try re-authenticating with: gh auth login"
+    exit 1
+fi
+
+# Create act.secrets if it doesn't exist
+if [ ! -f "act.secrets" ]; then
+    if [ -f "act.secrets.template" ]; then
+        cp act.secrets.template act.secrets
+        echo "📋 Created act.secrets from template"
+    else
+        echo "❌ act.secrets.template not found. Please create it first."
+        exit 1
+    fi
+fi
+
+# Update GITHUB_TOKEN in act.secrets
+if grep -q "^GITHUB_TOKEN=" act.secrets; then
+    # Update existing token (use different delimiter to avoid issues with token content)
+    sed -i '' "s|^GITHUB_TOKEN=.*|GITHUB_TOKEN=$GITHUB_TOKEN|" act.secrets
+else
+    # Add token if not present
+    echo "GITHUB_TOKEN=$GITHUB_TOKEN" >> act.secrets
+fi
+
+echo "✅ GitHub token configured from gh CLI"
+
+# Run act with single matrix container
+# This avoids port conflicts while still testing the actual service configuration
+echo "🎬 Running GitHub Actions workflow with act (single container)..."
 act pull_request \
   --workflows ../../.github/workflows/cypress-testing.yml \
   --job cypress-run-parallel-draft \
   --secret-file act.secrets \
-  --env GITHUB_EVENT_NAME=pull_request \
+  --matrix containers:1 \
   --eventpath ../../.github/events/pull_request_draft.json
-
-# Cleanup function
-cleanup() {
-  echo "🧹 Stopping test services..."
-  docker-compose -f docker-compose.yml down
-}
-
-# Set up trap for cleanup on script exit
-trap cleanup EXIT
 
 echo "✅ Workflow execution completed!"
