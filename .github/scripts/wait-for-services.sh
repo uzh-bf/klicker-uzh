@@ -3,6 +3,9 @@
 # Exit on error
 set -e
 
+# Detect if running in act
+IS_ACT="${ACT:-false}"
+
 # Validate required environment variables
 if [ -z "${SERVICE_ENDPOINTS:-}" ]; then
   # Default endpoints if not specified
@@ -17,23 +20,107 @@ if [ -z "${CHECK_INTERVAL:-}" ]; then
   CHECK_INTERVAL=5
 fi
 
-# Check Redis
+# Enhanced Redis check
 check_redis() {
-  if ! nc -z localhost 6379 2>/dev/null; then
-    echo "❌ Redis is not running on port 6379"
-    return 1
+  if [ "$IS_ACT" = "true" ]; then
+    # Try both localhost and 127.0.0.1 in act
+    if nc -z localhost 6379 2>/dev/null || nc -z 127.0.0.1 6379 2>/dev/null; then
+      echo "✅ Redis is running on port 6379"
+      return 0
+    fi
+  else
+    if ! nc -z localhost 6379 2>/dev/null; then
+      echo "❌ Redis is not running on port 6379"
+      return 1
+    fi
+    echo "✅ Redis is running on port 6379"
+    return 0
   fi
-  echo "✅ Redis is running on port 6379"
-  return 0
+  echo "❌ Redis is not running on port 6379"
+  return 1
 }
 
-# Check PostgreSQL
+# Enhanced PostgreSQL check
 check_postgres() {
-  if ! nc -z localhost 5432 2>/dev/null; then
-    echo "❌ PostgreSQL is not running on port 5432"
+  if [ "$IS_ACT" = "true" ]; then
+    # Try both localhost and 127.0.0.1 in act
+    if nc -z localhost 5432 2>/dev/null || nc -z 127.0.0.1 5432 2>/dev/null; then
+      echo "✅ PostgreSQL is running on port 5432"
+      return 0
+    fi
+  else
+    if ! nc -z localhost 5432 2>/dev/null; then
+      echo "❌ PostgreSQL is not running on port 5432"
+      return 1
+    fi
+    echo "✅ PostgreSQL is running on port 5432"
+    return 0
+  fi
+  echo "❌ PostgreSQL is not running on port 5432"
+  return 1
+}
+
+# Add comprehensive Hatchet check with token verification
+check_hatchet() {
+  echo "🔍 Checking Hatchet services..."
+  
+  # Check HTTP API on port 8888
+  local http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:8888 2>/dev/null || echo "000")
+  if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 400 ]; then
+    echo "✅ Hatchet HTTP API is running on port 8888 (HTTP $http_code)"
+  else
+    echo "⚠️ Hatchet HTTP API not yet ready on port 8888 (HTTP $http_code)"
     return 1
   fi
-  echo "✅ PostgreSQL is running on port 5432"
+  
+  # Check gRPC on port 7077
+  if nc -z 127.0.0.1 7077 2>/dev/null; then
+    echo "✅ Hatchet gRPC is running on port 7077"
+  else
+    echo "⚠️ Hatchet gRPC not yet ready on port 7077"
+    return 1
+  fi
+  
+  # Verify Hatchet token if .env file exists
+  if [ -f "apps/backend-docker/.env" ]; then
+    echo "🔑 Verifying Hatchet token..."
+    
+    # Extract token from .env file
+    HATCHET_TOKEN=$(grep "^HATCHET_CLIENT_TOKEN=" apps/backend-docker/.env | cut -d'=' -f2 | tr -d '"')
+    
+    if [ -z "$HATCHET_TOKEN" ] || [ "$HATCHET_TOKEN" = "__HATCHET_CLIENT_TOKEN__" ]; then
+      echo "⚠️ Hatchet token not yet generated"
+      return 1
+    fi
+    
+    # Test API with token - check tenant endpoint
+    local api_response=$(curl -s -o /dev/null -w "%{http_code}" \
+      -H "Authorization: Bearer $HATCHET_TOKEN" \
+      -H "Content-Type: application/json" \
+      --max-time 5 \
+      http://127.0.0.1:8888/api/v1/tenants/707d0855-80ab-4e1f-a156-f1c4546cbf52 2>/dev/null || echo "000")
+    
+    if [ "$api_response" -eq 200 ] || [ "$api_response" -eq 201 ] || [ "$api_response" -eq 204 ]; then
+      echo "✅ Hatchet API accepts the generated token (HTTP $api_response)"
+    else
+      echo "⚠️ Hatchet API token verification failed (HTTP $api_response)"
+      echo "   Token might not be properly configured or Hatchet is not fully ready"
+      
+      # Try a simpler health check endpoint
+      local health_response=$(curl -s -o /dev/null -w "%{http_code}" \
+        --max-time 5 \
+        http://127.0.0.1:8888/api/readyz 2>/dev/null || echo "000")
+      
+      if [ "$health_response" -eq 200 ]; then
+        echo "   Note: Hatchet health endpoint is responding, but token auth may need time"
+      fi
+      
+      return 1
+    fi
+  else
+    echo "⚠️ Backend .env file not found - token verification skipped"
+  fi
+  
   return 0
 }
 
@@ -61,10 +148,33 @@ cleanup() {
 trap 'cleanup TERM' TERM
 trap cleanup EXIT
 
+# Add extra wait time for act environment
+if [ "$IS_ACT" = "true" ]; then
+  echo "🎭 Running in act environment - allowing extra time for services"
+  sleep 10
+fi
+
 # Check dependencies before starting
 echo "🔍 Checking dependencies..."
 check_redis || { echo "❌ Redis check failed"; exit 1; }
 check_postgres || { echo "❌ PostgreSQL check failed"; exit 1; }
+
+# Check Hatchet with retries (it may take time to fully start)
+HATCHET_RETRIES=0
+MAX_HATCHET_RETRIES=5
+while [ $HATCHET_RETRIES -lt $MAX_HATCHET_RETRIES ]; do
+  if check_hatchet; then
+    break
+  fi
+  HATCHET_RETRIES=$((HATCHET_RETRIES + 1))
+  if [ $HATCHET_RETRIES -lt $MAX_HATCHET_RETRIES ]; then
+    echo "⏳ Retrying Hatchet check in 5 seconds... (attempt $HATCHET_RETRIES/$MAX_HATCHET_RETRIES)"
+    sleep 5
+  else
+    echo "❌ Hatchet service check failed after $MAX_HATCHET_RETRIES attempts"
+    exit 1
+  fi
+done
 
 # Start the service in the background and capture all output
 echo "🚀 Starting service..."

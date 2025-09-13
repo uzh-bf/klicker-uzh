@@ -81,6 +81,7 @@ act pull_request \
   --container-daemon-socket /var/run/docker.sock \
   --use-gitignore=false \
   --no-cache-server \
+  --network host \
   -v
 
 # Return to original directory
