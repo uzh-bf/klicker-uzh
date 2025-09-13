@@ -138,6 +138,7 @@ export async function decode({ token, secret }: JWTDecodeParams) {
 
 export async function encode({ token, secret }: JWTEncodeParams) {
   const secretString = typeof secret === 'string' ? secret : secret.toString()
+
   return signJWT((token as JWTPayload) ?? {}, secretString, {
     issuer: process.env.JWT_ISSUER_AUTH,
   })

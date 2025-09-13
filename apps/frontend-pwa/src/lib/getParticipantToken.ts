@@ -95,6 +95,10 @@ export default async function getParticipantToken({
       })
 
       if (request?.body?.lis_person_sourcedid) {
+        if (!process.env.JWT_ISSUER_PWA) {
+          throw new Error('JWT_ISSUER_PWA environment variable is required but not defined')
+        }
+
         // send along a JWT to ensure only the next server is allowed to register participants from LTI
         const signedLtiData = await signJWT(
           {

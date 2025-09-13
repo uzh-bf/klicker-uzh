@@ -143,6 +143,10 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       })
 
       if (request?.body?.lis_person_sourcedid) {
+        if (!process.env.JWT_ISSUER_PWA) {
+          throw new Error('JWT_ISSUER_PWA environment variable is required but not defined')
+        }
+
         signedLtiData.token = await signJWT(
           {
             sub: request.body.lis_person_sourcedid,
