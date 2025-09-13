@@ -23,6 +23,7 @@ export async function createMCPClient(chatbotId: string) {
             }
           : {
               'Content-Type': 'application/json',
+              'Chatbot-ID': chatbotId,
             },
       },
     })
