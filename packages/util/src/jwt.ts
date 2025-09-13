@@ -24,13 +24,12 @@ export async function signJWT(
     expiresIn?: string | number
     issuer?: string
     issuedAt?: Date
-  } = {},
-  issuedAt?: Date
+  } = {}
 ): Promise<string> {
   const alg = options.algorithm ?? 'HS256'
   let jwt = new jose.SignJWT(payload as Record<string, unknown>)
     .setProtectedHeader({ alg, typ: 'JWT' })
-    .setIssuedAt(options.issuedAt ?? issuedAt)
+    .setIssuedAt(options.issuedAt)
 
   if (options.expiresIn) {
     jwt = jwt.setExpirationTime(options.expiresIn)

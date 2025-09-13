@@ -23,7 +23,7 @@ async function run(username: string) {
     process.env.APP_SECRET as string,
     {
       algorithm: 'HS256',
-      expiresIn: '4w',
+      expiresIn: '2h',
       issuer: process.env.JWT_ISSUER_API,
     }
   )

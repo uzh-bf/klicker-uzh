@@ -1427,8 +1427,7 @@ export async function activateLiveQuizBlock(
                 {
                   issuer: process.env.JWT_ISSUER_API,
                   issuedAt: updatedQuiz.activeBlock!.startedAt ?? new Date(0),
-                },
-                updatedQuiz.activeBlock!.startedAt ?? new Date(0)
+                }
               )
 
               return { ...instance, correlationKey }
@@ -2960,8 +2959,7 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
           {
             issuer: process.env.JWT_ISSUER_API,
             issuedAt: quiz.activeBlock?.startedAt ?? new Date(0),
-          },
-          quiz.activeBlock?.startedAt ?? new Date(0)
+          }
         )
 
         return { ...instance, correlationKey }
