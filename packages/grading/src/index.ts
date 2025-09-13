@@ -1,9 +1,15 @@
-import type { CaseStudyResponseObject } from '@klicker-uzh/types'
+import type {
+  CaseStudyCaseResponse,
+  CaseStudyCaseSolution,
+  CaseStudyResponseObject,
+  ChoicesResponse,
+  NumericalSolutionRange,
+} from '@klicker-uzh/types'
 import { isDeepEqual, toLowerCase } from 'remeda'
 
 interface GradeQuestionChoicesArgs {
   responseCount: number
-  response: { ix: number; selected: boolean }[]
+  response: ChoicesResponse[]
   solution: number[]
 }
 
@@ -84,12 +90,7 @@ export function gradeQuestionKPRIM({
 
 interface GradeQuestionNumericalArgs {
   response: number
-  solutionRanges?:
-    | {
-        min?: number | null
-        max?: number | null
-      }[]
-    | null
+  solutionRanges?: NumericalSolutionRange[] | null
   exactSolutions?: number[] | null
 }
 
@@ -176,22 +177,11 @@ export function gradeQuestionSelection({
 }
 
 interface GradeQuestionCaseStudyArgs {
-  response:
-    | {
-        caseId: string
-        itemResponses: {
-          itemId: number
-          criterionResponses: { criterionId: string; response: number }[]
-        }[]
-      }[]
-    | CaseStudyResponseObject
+  response: CaseStudyCaseResponse[] | CaseStudyResponseObject
   solutions?:
     | {
         caseId: string
-        itemSolutions: {
-          itemId: number
-          criteriaSolutions: { criterionId: string; min: number; max: number }[]
-        }[]
+        itemSolutions: CaseStudyCaseSolution[]
       }[]
     | null
 }

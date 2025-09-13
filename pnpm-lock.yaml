@@ -2286,6 +2286,9 @@ importers:
 
   packages/util:
     dependencies:
+      '@klicker-uzh/grading':
+        specifier: workspace:*
+        version: link:../grading
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../prisma

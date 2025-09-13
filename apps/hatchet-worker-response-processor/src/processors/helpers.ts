@@ -21,7 +21,7 @@ import {
   DEFAULT_POINTS,
   MAX_BONUS_POINTS,
   TIME_TO_ZERO_BONUS,
-} from './constants.js'
+} from '../constants.js'
 
 export function updateLeaderboards({
   redisMulti,
@@ -225,7 +225,8 @@ export function validateStudentResponse({
     if (
       !Array.isArray(response.selection) ||
       response.selection.length === 0 ||
-      !response.selection.every((r) => typeof r === 'number')
+      !response.selection.every((r) => typeof r === 'number') ||
+      response.selection.filter((r) => r !== -1).length === 0 // at least one selection must be made (excluding skipped fields with value -1)
     ) {
       return {
         valid: false,
@@ -264,7 +265,7 @@ export function validateStudentResponse({
     return { valid: true }
   } else if (type === 'CONTENT') {
     // response should be boolean with value true
-    if (!response.read) {
+    if (!response.viewed) {
       return {
         valid: false,
         message: `Invalid response submitted for content question ${JSON.stringify(response)}`,
