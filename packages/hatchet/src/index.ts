@@ -117,7 +117,6 @@ export function prepareHatchetTasks({
       return { success }
     },
   })
-
   // #endregion
 
   // ! ACTIVITY ENDING TASKS
@@ -153,7 +152,6 @@ export function prepareHatchetTasks({
       return { success }
     },
   })
-
   // #endregion
 
   // ! LIVE QUIZ RESULT AGGREGATION TASKS
