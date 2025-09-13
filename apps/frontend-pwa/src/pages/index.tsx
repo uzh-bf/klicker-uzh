@@ -326,6 +326,11 @@ function Index() {
               : t('pwa.general.myCourses')}
           </H1>
           <div className="flex flex-col gap-2">
+            {process.env.NEXT_PUBLIC_IS_ASSESSMENT && courses.length === 0 ? (
+              <UserNotification type="warning">
+                {t('pwa.general.noAssessmentCourseAssignments')}
+              </UserNotification>
+            ) : null}
             {courses.map((course) => (
               <CourseElement
                 key={course.id}

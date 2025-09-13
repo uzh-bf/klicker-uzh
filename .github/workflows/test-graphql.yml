@@ -7,8 +7,14 @@ on:
       - 'packages/graphql/**'
       - '.github/workflows/test-graphql.yml'
   pull_request:
-    branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'packages/graphql/**'
+      - '.github/workflows/test-graphql.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -18,19 +24,77 @@ jobs:
       contents: read
       packages: write
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: klicker
+          POSTGRES_PASSWORD: klicker
+          POSTGRES_DB: klicker-prod
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      postgres_hatchet:
+        image: postgres:15
+        env:
+          POSTGRES_USER: hatchet
+          POSTGRES_PASSWORD: hatchet
+          POSTGRES_DB: hatchet
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5433:5432
+
+      hatchet:
+        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:latest
+        env:
+          DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
+          SERVER_AUTH_COOKIE_DOMAIN: localhost
+          SERVER_AUTH_COOKIE_INSECURE: 't'
+          SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
+          SERVER_GRPC_INSECURE: 't'
+          SERVER_GRPC_BROADCAST_ADDRESS: localhost:7077
+          SERVER_GRPC_PORT: '7077'
+          SERVER_URL: http://localhost:8888
+          SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
+          SERVER_DEFAULT_ENGINE_VERSION: 'V1'
+        options: >-
+          --health-cmd "curl -f http://localhost:8888/healthz"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 10
+        ports:
+          - 8888:8888
+          - 7077:7077
+
+      redis_exec:
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        image: redis:7
+        ports:
+          - 6379:6379
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v2
         with:
-          version: 9.15.4
+          version: 10.15.0
           run_install: true
 
-      - name: Run tests using Docker
+      - name: Build dependency packages
         run: |
           cd packages/prisma
           pnpm run build
@@ -40,5 +104,25 @@ jobs:
           pnpm run build
           cd ../grading
           pnpm run build
-          cd ../graphql
-          pnpm run test:docker
+          cd ../hatchet
+          pnpm run build
+
+      - name: Setup database
+        run: |
+          cd packages/prisma
+          pnpm run prisma:reset:raw -f
+        env:
+          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+
+      - name: Run tests
+        run: |
+          . ./util/_create_hatchet_token_graphql.sh
+          cd packages/graphql
+          pnpm vitest run
+        env:
+          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+          HATCHET_CLIENT_TLS_STRATEGY: none
+          NODE_ENV: test
+          HATCHET_API_URL: http://localhost:8888
+          HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
+          HATCHET_HOST_PORT: 7077

@@ -1,3 +1,4 @@
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   AuditLogType,
   ElementType,
@@ -30,6 +31,7 @@ import { userFour, userOne, userThree, userTwo } from './userData.js'
 describe('Integration tests for user group management', () => {
   // shared resources used across tests
   let prisma: PrismaClient
+  let hatchet: Hatchet
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
@@ -37,8 +39,13 @@ describe('Integration tests for user group management', () => {
   let userFourCtx: ContextWithUser
 
   beforeAll(async () => {
-    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    const {
+      prisma: newPrisma,
+      hatchet: newHatchet,
+      emitter: newEmitter,
+    } = await initializePrisma()
     prisma = newPrisma
+    hatchet = newHatchet
     emitter = newEmitter
   })
 
@@ -53,7 +60,7 @@ describe('Integration tests for user group management', () => {
       userTwoCtx: ctx2,
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
-    } = await testInitialization(prisma, emitter)
+    } = await testInitialization(prisma, hatchet, emitter)
 
     userOneCtx = ctx1
     userTwoCtx = ctx2
@@ -61,9 +68,7 @@ describe('Integration tests for user group management', () => {
     userFourCtx = ctx4
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   describe('Integration tests for user group creation and manipulation, including member management', () => {
     it('Providing regular members should result in a successful group creation', async () => {

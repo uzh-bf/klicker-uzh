@@ -12,6 +12,10 @@ on:
       - apps/**
       - packages/**
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
 env:
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
   TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
@@ -26,7 +30,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9.15.4
+          version: 10.15.0
           run_install: true
 
       - name: Build relevant packages
@@ -43,11 +47,10 @@ jobs:
           pnpm run build
           cd ../graphql
           pnpm run build
-          cd ../hatchet-tasks
-          pnpm run build
-          cd ../../apps/backend-docker
+          cd ../hatchet
           pnpm run build
 
       - name: Check the typescript types of all packages and apps
         shell: bash
-        run: pnpm run check
+        run: |
+          pnpm run check

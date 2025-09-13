@@ -1,0 +1,8 @@
+mutation ScheduleLiveQuiz($id: String!, $availableFrom: Date!) {
+  scheduleLiveQuiz(id: $id, availableFrom: $availableFrom) {
+    id
+    name
+    status
+    availableFrom
+  }
+}

@@ -1,20 +1,6 @@
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test creation and editing functionalities, validation, etc. for Content elements', function () {
-  before(() => {
-    cy.seed()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Login the lecturer and load data fixture', function () {
     cy.loginLecturer()
     cy.fixture('DM-questions.json').then((data) => {
@@ -22,12 +8,12 @@ describe('Test creation and editing functionalities, validation, etc. for Conten
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   // ! Content elements
   // #region
@@ -50,7 +36,7 @@ describe('Test creation and editing functionalities, validation, etc. for Conten
     ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
-      .type(this.data.CT.content)
+      .realType(this.data.CT.content)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 
@@ -94,7 +80,7 @@ describe('Test creation and editing functionalities, validation, etc. for Conten
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.CT.contentEdited)
+      .realType(this.data.CT.contentEdited)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 

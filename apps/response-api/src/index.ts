@@ -1,9 +1,9 @@
+import { hatchetClient } from '@klicker-uzh/hatchet'
 import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
 import { createHash } from 'node:crypto'
-import { hatchet } from './hatchet-client.js'
 
 const redis = new Redis({
   family: 4,
@@ -102,18 +102,33 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     )
   }
 
-  const cookie =
-    typeof req.headers['cookie'] === 'string'
-      ? req.headers['cookie']
-      : undefined
+  // Only forward participant-related cookies. If both exist, include both.
+  let cookie: string | undefined
+  if (typeof req.headers['cookie'] === 'string') {
+    const raw = req.headers['cookie']
+    const parts = raw.split(';').map((s) => s.trim())
+    const participantPair = parts.find((p) =>
+      p.startsWith('participant_token=')
+    )
+    const temporaryPair = parts.find((p) =>
+      p.startsWith('temporary_participant_token=')
+    )
+    const forwarded: string[] = []
+    if (participantPair) forwarded.push(participantPair)
+    if (temporaryPair) forwarded.push(temporaryPair)
+    if (forwarded.length > 0) {
+      cookie = forwarded.join('; ')
+    }
+  }
 
+  const responseTimestamp = Date.now()
   const message = {
     messageId: randomUUID(),
     sessionId: String(liveQuizId),
     instanceId: String(instanceId),
-    response: response, // pass through as-is; worker validates
+    response, // pass through as-is; worker validates
     cookie,
-    responseTimestamp: Date.now(),
+    responseTimestamp,
   }
 
   // determine if the participant is logged in with a valid student cookie (temporary or standard)
@@ -128,8 +143,8 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     : 'response-received:anonymous'
   console.log(`Pushing event ${eventName} with payload`, message)
 
-  await hatchet.events.push(eventName, message)
-  return sendJson(req, res, 200, { status: 'ok' })
+  await hatchetClient.events.push(eventName, message)
+  return sendJson(req, res, 200, { status: 'ok', responseTimestamp })
 }
 
 async function handleAddAssessmentResponse(
@@ -143,17 +158,17 @@ async function handleAddAssessmentResponse(
   try {
     payload = await readBody(req)
   } catch (err: any) {
-    hatchet.events.push('create-audit-log-entry', {
+    hatchetClient.events.push('create-audit-log-entry', {
       info: `[ERROR] [AddResponse Assessment] Failed to read request body: ${err.message} for request ${JSON.stringify(req)}`,
     })
     return badRequest(req, res, err.message)
   }
 
   if (!payload || typeof payload !== 'object') {
-    hatchet.events.push('create-audit-log-entry', {
+    hatchetClient.events.push('create-audit-log-entry', {
       info: `[ERROR] [AddResponse Assessment] Invalid request body: ${JSON.stringify(payload)}`,
     })
-    return badRequest(req, res, 'Body must be a JSON object')
+    return badRequest(req, res, 'submission_failure')
   }
 
   const { correlationKey, response, liveQuizId, instanceId } = payload
@@ -163,17 +178,13 @@ async function handleAddAssessmentResponse(
     typeof instanceId === 'undefined' ||
     !correlationKey
   ) {
-    hatchet.events.push('create-audit-log-entry', {
+    hatchetClient.events.push('create-audit-log-entry', {
       info: `[ERROR] [AddResponse Assessment] Missing required fields in request body: ${JSON.stringify(
         payload
       )}`,
     })
 
-    return badRequest(
-      req,
-      res,
-      'Missing required fields: response, liveQuizId, instanceId, correlationKey'
-    )
+    return badRequest(req, res, 'missing_response')
   }
 
   // validate correlationKey (execution, quizId and instanceId same as passed arguments)
@@ -184,12 +195,12 @@ async function handleAddAssessmentResponse(
       process.env.APP_SECRET as string
     )
   } catch (err) {
-    hatchet.events.push('create-audit-log-entry', {
+    hatchetClient.events.push('create-audit-log-entry', {
       info: `[ERROR] [AddResponse Assessment] Failed to verify correlationKey: ${err} for response ${JSON.stringify(
         payload
       )}`,
     })
-    return badRequest(req, res, 'Invalid correlationKey')
+    return badRequest(req, res, 'invalid_submission')
   }
 
   if (
@@ -197,10 +208,10 @@ async function handleAddAssessmentResponse(
     correlationData.instanceId !== instanceId ||
     correlationData.liveQuizId !== liveQuizId
   ) {
-    hatchet.events.push('create-audit-log-entry', {
+    hatchetClient.events.push('create-audit-log-entry', {
       info: `[ERROR] [AddResponse Assessment] Invalid correlationKey in request body: ${correlationKey} for response ${JSON.stringify(payload)}`,
     })
-    return badRequest(req, res, 'Invalid correlationKey')
+    return badRequest(req, res, 'invalid_submission')
   }
 
   const cookies =
@@ -217,7 +228,7 @@ async function handleAddAssessmentResponse(
     })
   }
 
-  // TODO: add some verification mechanism that student did not set a regular participant cookie as their assessment cookie
+  // TODO: add verification mechanism that student did not set a regular participant cookie as their assessment cookie (-> issuer)
   // check if the assessment cookie is present and valid
   let user: JWTPayload | null = null
   try {
@@ -228,21 +239,21 @@ async function handleAddAssessmentResponse(
         )
       : null
   } catch (err) {
-    hatchet.events.push('create-audit-log-entry', {
+    hatchetClient.events.push('create-audit-log-entry', {
       info: `[ERROR] [AddResponse Assessment] Failed to verify assessment cookie JWT: ${err} for response ${JSON.stringify(
         payload
       )}`,
     })
-    return sendJson(req, res, 401, { error: 'Invalid assessment cookie' })
+    return sendJson(req, res, 401, { error: 'invalid_assessment_cookie' })
   }
 
   const isAssessmentCookieValid = !!user && user.role === 'PARTICIPANT'
   if (!user || !user.sub || !isAssessmentCookieValid) {
-    hatchet.events.push('create-audit-log-entry', {
+    hatchetClient.events.push('create-audit-log-entry', {
       info: `[ERROR] [AddResponse Assessment] Missing or invalid assessment cookie: ${cookies} for response ${JSON.stringify(payload)}`,
     })
     return sendJson(req, res, 401, {
-      error: 'Missing or invalid assessment cookie',
+      error: 'missing_invalid_assessment_cookie',
     })
   }
 
@@ -253,7 +264,7 @@ async function handleAddAssessmentResponse(
   const correlationId = MD5.digest('hex')
 
   // audit log entry for received response
-  hatchet.events.push('create-audit-log-entry', {
+  hatchetClient.events.push('create-audit-log-entry', {
     correlationId,
     info: `[AddResponse Assessment] Response-API received response for instance ${instanceId} in live quiz ${liveQuizId} from participant ${user.sub}: ${JSON.stringify(
       response
@@ -269,13 +280,16 @@ async function handleAddAssessmentResponse(
     console.log(
       `Participant with correlationId ${correlationId} already answered instance ${instanceId} in live quiz ${liveQuizId}`
     )
-    hatchet.events.push('create-audit-log-entry', {
+    hatchetClient.events.push('create-audit-log-entry', {
       correlationId,
       info: `[AddResponse Assessment] Participant with correlationId ${correlationId} tried to answer instance ${instanceId} in live quiz ${liveQuizId} again.`,
     })
 
     // show success message that response was already recorded before and that first response counts
-    return sendJson(req, res, 200, { status: 'response_recorded_before' })
+    return sendJson(req, res, 208, {
+      status: 'response_recorded_before',
+      responseTimestamp,
+    })
   }
 
   const message = {
@@ -294,10 +308,10 @@ async function handleAddAssessmentResponse(
   )
 
   try {
-    await hatchet.events.push('response-received:assessment', message)
+    await hatchetClient.events.push('response-received:assessment', message)
   } catch (error) {
     try {
-      await hatchet.events.push('create-audit-log-entry', {
+      await hatchetClient.events.push('create-audit-log-entry', {
         correlationId,
         info: `[ERROR] [AddResponse Assessment] Failed to push response-received:assessment event for correlationId ${correlationId}: ${error}`,
       })
@@ -310,7 +324,10 @@ async function handleAddAssessmentResponse(
     }
   }
 
-  return sendJson(req, res, 200, { status: 'ok' })
+  return sendJson(req, res, 200, {
+    status: 'response_submitted',
+    responseTimestamp,
+  })
 }
 
 const server = createServer(async (req, res) => {

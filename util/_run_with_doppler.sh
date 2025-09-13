@@ -33,8 +33,8 @@
 set -euo pipefail
 
 if [[ -z "${CONFIG:-}" ]]; then
-  echo "CONFIG environment variable not set. Please set CONFIG before calling this script." >&2
-  exit 1
+  CONFIG="dev"
+  echo "ℹ️  CONFIG not set, defaulting to 'dev' environment"
 fi
 
 # Validate parameters – we expect at least one argument (the command to run)

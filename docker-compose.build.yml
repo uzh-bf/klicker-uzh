@@ -1,0 +1,45 @@
+services:
+  analytics:
+    build:
+      context: .
+      dockerfile: apps/analytics/Dockerfile
+  auth:
+    build:
+      context: .
+      dockerfile: apps/auth/Dockerfile
+  backend-docker:
+    build:
+      context: .
+      dockerfile: apps/backend-docker/Dockerfile
+  frontend-control:
+    build:
+      context: .
+      dockerfile: apps/frontend-control/Dockerfile
+  frontend-manage:
+    build:
+      context: .
+      dockerfile: apps/frontend-manage/Dockerfile
+  frontend-pwa:
+    build:
+      context: .
+      dockerfile: apps/frontend-pwa/Dockerfile
+  hatchet-worker-general:
+    build:
+      context: .
+      dockerfile: apps/hatchet-worker-general/Dockerfile
+  hatchet-worker-response-processor:
+    build:
+      context: .
+      dockerfile: apps/hatchet-worker-response-processor/Dockerfile
+  lti:
+    build:
+      context: .
+      dockerfile: apps/lti/Dockerfile
+  olat-api:
+    build:
+      context: .
+      dockerfile: apps/olat-api/Dockerfile
+  response-api:
+    build:
+      context: .
+      dockerfile: apps/response-api/Dockerfile

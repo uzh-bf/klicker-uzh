@@ -1,16 +1,16 @@
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
-import { enhanceContext, schema } from '@klicker-uzh/graphql'
+import { enhanceContext, handlers, schema } from '@klicker-uzh/graphql'
 import { prisma as prismaBase } from '@klicker-uzh/prisma'
-import { withOptimize } from '@prisma/extension-optimize'
 // import * as Sentry from '@sentry/node'
 // import '@sentry/tracing'
 import { createInMemoryCache, type Cache } from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'
+import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
 import { useServer } from 'graphql-ws/lib/use/ws'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import { EventEmitter } from 'node:events'
-import { WebSocketServer } from 'ws'
+import * as WebSocket from 'ws'
 import prepareApp from './app.js'
 import { migrate } from './migration.js'
 
@@ -18,29 +18,22 @@ const emitter = new EventEmitter()
 
 let prisma = prismaBase
 
-if (
-  process.env.NODE_ENV === 'development' &&
-  process.env.PRISMA_OPTIMIZE === 'true'
-) {
-  prisma = prismaBase.$extends(
-    withOptimize({ apiKey: process.env.PRISMA_OPTIMIZE_API_KEY as string })
-  ) as typeof prisma
-}
-
-// if (process.env.SENTRY_DSN) {
-//   Sentry.init({
-//     debug: !!process.env.DEBUG,
-//     tracesSampleRate: process.env.SENTRY_SAMPLE_RATE
-//       ? Number(process.env.SENTRY_SAMPLE_RATE)
-//       : 1,
-//   })
+// if (
+//   process.env.NODE_ENV === 'development' &&
+//   process.env.PRISMA_OPTIMIZE === 'true'
+// ) {
+//   prisma = prismaBase.$extends(
+//     withOptimize({ apiKey: process.env.PRISMA_OPTIMIZE_API_KEY as string })
+//   ) as typeof prisma
 // }
 
+// ! Redis setup
+// #region
 const redisExec = new Redis({
   family: 4,
   host: process.env.REDIS_HOST ?? 'localhost',
   password: process.env.REDIS_PASS ?? '',
-  port: Number(process.env.REDIS_PORT) ?? 6379,
+  port: Number(process.env.REDIS_PORT ?? 6379),
   tls: process.env.REDIS_TLS ? {} : undefined,
 })
 
@@ -48,7 +41,7 @@ const redisCache = new Redis({
   family: 4,
   host: process.env.REDIS_CACHE_HOST ?? 'localhost',
   password: process.env.REDIS_CACHE_PASS ?? '',
-  port: Number(process.env.REDIS_CACHE_PORT) ?? 6380,
+  port: Number(process.env.REDIS_CACHE_PORT ?? 6380),
   tls: process.env.REDIS_CACHE_TLS ? {} : undefined,
 })
 
@@ -56,7 +49,7 @@ const publishClient = new Redis({
   family: 4,
   host: process.env.REDIS_CACHE_HOST ?? 'localhost',
   password: process.env.REDIS_CACHE_PASS ?? '',
-  port: Number(process.env.REDIS_CACHE_PORT) ?? 6380,
+  port: Number(process.env.REDIS_CACHE_PORT ?? 6380),
   tls: process.env.REDIS_CACHE_TLS ? {} : undefined,
 })
 
@@ -64,7 +57,7 @@ const subscribeClient = new Redis({
   family: 4,
   host: process.env.REDIS_CACHE_HOST ?? 'localhost',
   password: process.env.REDIS_CACHE_PASS ?? '',
-  port: Number(process.env.REDIS_CACHE_PORT) ?? 6380,
+  port: Number(process.env.REDIS_CACHE_PORT ?? 6380),
   tls: process.env.REDIS_CACHE_TLS ? {} : undefined,
 })
 
@@ -93,10 +86,27 @@ emitter.on('invalidate', (resource) => {
     },
   ])
 })
+// #endregion
 
+// ! PubSub setup
 const pubSub = createPubSub({ eventTarget })
 
+// ! Server and context setup
+// #region
 migrate(prisma).then(() => {
+  // initialize tasks to be able to call / schedule them inside service functions
+  const tasks = prepareHatchetTasks({
+    hatchet: hatchetClient,
+    pubSub,
+    emitter,
+    redisCache,
+    redisExec,
+    handlers,
+  })
+
+  console.log('Hatchet tasks initialized.', Object.keys(tasks))
+  // #endregion
+
   const { app, yogaApp } = prepareApp({
     prisma,
     redisCache,
@@ -104,12 +114,14 @@ migrate(prisma).then(() => {
     pubSub,
     cache,
     emitter,
+    hatchet: hatchetClient,
+    tasks,
   })
 
   const server = app.listen(3000, () => {
     console.log(`GraphQL API located at 0.0.0.0:3000${yogaApp.graphqlEndpoint}`)
 
-    const wsServer = new WebSocketServer({
+    const wsServer = new WebSocket.WebSocketServer({
       server,
       path: yogaApp.graphqlEndpoint,
     })
@@ -117,7 +129,13 @@ migrate(prisma).then(() => {
     useServer(
       {
         schema,
-        context: enhanceContext({ prisma, redisExec, pubSub, emitter }),
+        context: enhanceContext({
+          prisma,
+          redisExec,
+          pubSub,
+          emitter,
+          tasks,
+        }),
         execute: (args: any) => args.rootValue.execute(args),
         subscribe: (args: any) => args.rootValue.subscribe(args),
         onSubscribe: async (ctx, msg) => {
@@ -152,7 +170,8 @@ migrate(prisma).then(() => {
           return args
         },
       },
-      wsServer
+      wsServer as Parameters<typeof useServer>[1]
     )
   })
 })
+// #endregion

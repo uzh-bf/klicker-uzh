@@ -8,6 +8,9 @@ import type {
   PerformanceLevel,
 } from '@klicker-uzh/prisma/client'
 
+// ----- HATCHET (WORKER/TASK) TYPES -----
+export * from './hatchet.js'
+
 // ----- ACTIVITY LOG TYPES -----
 // #region
 export enum ActivityLogModificationFieldType {
@@ -90,6 +93,14 @@ export type CaseStudyItemResponse = {
 export type CaseStudyCaseResponse = {
   caseId: string
   itemResponses: CaseStudyItemResponse[]
+}
+
+export type CaseStudyResponseObject = {
+  [caseId: string]: {
+    [itemId: number]: {
+      [criterionId: string]: number // value = response
+    }
+  }
 }
 
 export type ChoiceInput = {
@@ -194,10 +205,19 @@ export type OptionsSelectionInput = {
 }
 
 export type ResponseInput = {
-  choices?: ChoicesResponse[] | null
-  value?: string | null
-  selection?: number[] | null
-  assessment?: CaseStudyCaseResponse[] | null
+  choices?: ChoicesResponse[] | null // SC / MC / KPRIM
+  value?: string | null // FREE_TEXT / NUMERICAL
+  selection?: number[] | null // SELECTION
+  assessment?: CaseStudyCaseResponse[] | null // CASE_STUDY
+  read?: boolean | null // CONTENT
+}
+
+export type LiveQuizResponseInput = {
+  choices?: ChoicesResponse[] | null // SC / MC / KPRIM
+  value?: string | null // FREE_TEXT / NUMERICAL
+  selection?: number[] | null // SELECTION
+  assessment?: CaseStudyResponseObject | null // CASE_STUDY - no need to convert to array for pothos validation in live quiz submissions
+  read?: boolean | null // CONTENT
 }
 
 export type ElementOptionsInput = OptionsChoicesInput &

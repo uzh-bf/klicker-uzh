@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import { HatchetHandlers } from '@klicker-uzh/types'
 import { PrismaTransactionClient } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import dayjs from 'dayjs'
@@ -6,7 +7,7 @@ import isoWeek from 'dayjs/plugin/isoWeek.js'
 import { prop, sortBy } from 'remeda'
 import isEmail from 'validator/lib/isEmail.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { sendTeamsNotifications } from '../lib/util.js'
+import { sendTeamsNotification } from './notifications.js'
 
 dayjs.extend(isoWeek)
 
@@ -920,35 +921,39 @@ export async function upsertDailyTimelineEntry({
 }
 
 // cronjob function to aggregate daily timeline entries into weekly ones once per day (for the ongoing and last week)
-export async function updateWeeklyTimelineEntries(ctx: Context) {
-  // get all course ids
-  const courses = await ctx.prisma.course.findMany({
-    select: {
-      id: true,
-    },
-  })
-
-  // iterate over all courses and update weekly timeline entries
-  for (const course of courses) {
-    await updateWeeklyTimelineEntriesCourse({ courseId: course.id }, ctx)
-  }
-
-  // remove all daily timeline entries older than 2 weeks
-  await ctx.prisma.timelineEntry.deleteMany({
-    where: {
-      type: DB.TimelineEntryType.DAILY,
-      timestamp: {
-        lt: dayjs().utc().subtract(30, 'days').toDate(),
+export const handleUpdateWeeklyTimelineEntries: HatchetHandlers['handleUpdateWeeklyTimelineEntries'] =
+  async (_, globalCtx) => {
+    // get all course ids
+    const courses = await globalCtx.prisma.course.findMany({
+      select: {
+        id: true,
       },
-    },
-  })
+    })
 
-  return true
-}
+    // iterate over all courses and update weekly timeline entries
+    for (const course of courses) {
+      await updateWeeklyTimelineEntriesCourse(
+        { courseId: course.id },
+        globalCtx.prisma
+      )
+    }
+
+    // remove all daily timeline entries older than 2 weeks
+    await globalCtx.prisma.timelineEntry.deleteMany({
+      where: {
+        type: DB.TimelineEntryType.DAILY,
+        timestamp: {
+          lt: dayjs().utc().subtract(30, 'days').toDate(),
+        },
+      },
+    })
+
+    return true
+  }
 
 export async function updateWeeklyTimelineEntriesCourse(
   { courseId }: { courseId: string },
-  ctx: Context
+  prisma: DB.PrismaClient
 ) {
   // get start date of current week (monday) in UTC
   const startDateCurrentWeek = dayjs().utc().startOf('isoWeek').toDate()
@@ -962,7 +967,7 @@ export async function updateWeeklyTimelineEntriesCourse(
 
   // fetch all timeline entries (weekly and daily) within the restrictions for the current course
   // if the function is not called from within a cronjob, make sure that the user is the owner of the course
-  const courseTimelineLastWeek = await ctx.prisma.course.findUnique({
+  const courseTimelineLastWeek = await prisma.course.findUnique({
     where: { id: courseId },
     include: {
       timelineEntries: {
@@ -979,7 +984,7 @@ export async function updateWeeklyTimelineEntriesCourse(
       },
     },
   })
-  const courseTimelineCurrentWeek = await ctx.prisma.course.findUnique({
+  const courseTimelineCurrentWeek = await prisma.course.findUnique({
     where: { id: courseId },
     include: {
       timelineEntries: {
@@ -1002,10 +1007,10 @@ export async function updateWeeklyTimelineEntriesCourse(
 
   // if no course was found, return early
   if (!courseTimelineLastWeek || !courseTimelineCurrentWeek) {
-    await sendTeamsNotifications(
-      'graphql/updateWeeklyTimelineEntriesCourse',
-      `COURSE NOT FOUND: The course with id ${courseId} could not be found in the database for the computation of weekly timeline entries.`
-    )
+    await sendTeamsNotification({
+      scope: 'graphql/updateWeeklyTimelineEntriesCourse',
+      text: `COURSE NOT FOUND: The course with id ${courseId} could not be found in the database for the computation of weekly timeline entries.`,
+    })
 
     return false
   }
@@ -1053,16 +1058,16 @@ export async function updateWeeklyTimelineEntriesCourse(
 
   // execute all weekly timeline updates in a single transaction and log the number of updateså
   if (updates.length > 0) {
-    await ctx.prisma.$transaction(async (prisma) => {
+    await prisma.$transaction(async (prisma) => {
       for (const update of updates) {
         await prisma.timelineEntry.upsert(update)
       }
     })
 
-    await sendTeamsNotifications(
-      'graphql/updateWeeklyTimelineEntriesCourse',
-      `Successfully updated ${updates.length} weekly timeline entries for course ${courseTimelineLastWeek.name} (${numUpdatesLastWeek} for last week with start date ${startDateLastWeek} and ${lastWeekDailys.length} daily entries, ${numUpdatesCurrentWeek} for the current week with start date ${startDateCurrentWeek} and ${currentWeekDailys.length} daily entries).`
-    )
+    await sendTeamsNotification({
+      scope: 'graphql/updateWeeklyTimelineEntriesCourse',
+      text: `Successfully updated ${updates.length} weekly timeline entries for course ${courseTimelineLastWeek.name} (${numUpdatesLastWeek} for last week with start date ${startDateLastWeek} and ${lastWeekDailys.length} daily entries, ${numUpdatesCurrentWeek} for the current week with start date ${startDateCurrentWeek} and ${currentWeekDailys.length} daily entries).`,
+    })
   }
 
   return true

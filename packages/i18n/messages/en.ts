@@ -517,6 +517,8 @@ export default {
         'Your account has been created. Please check your inbox for an activation link.',
       myCourses: 'My Courses',
       myAssessmentCourses: 'My Assessment Courses',
+      noAssessmentCourseAssignments:
+        'You have not been assigned to any assessment courses yet. Please contact your lecturers.',
       insights: 'Insights',
       timeline: 'Timeline',
       myBookmarks: 'My Bookmarks',
@@ -707,7 +709,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       signup: 'Sign up',
       coursePinInvalid: 'The entered course PIN is invalid.',
     },
-
     courses: {
       courseInformation: 'Course Information',
       createJoinGroup: 'Create/Join Group',
@@ -1065,6 +1066,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'This is an assessment application. All your data and activities will be visible to your lecturers.',
       loginWithEduId: 'Login with Edu-ID',
       eduIdRequired: 'Edu-ID authentication is required for assessments',
+      submissionInputsInvalid:
+        'An error occurred while submitting your answer. Please check your inputs for error messages.',
+      submissionSuccessful:
+        'Your answer has been successfully submitted and saved.',
+      submissionGeneralError:
+        'An error occurred while submitting your answer. Please try again.',
+      submissionAlreadyRecorded:
+        'You have already answered this question. Your previous response has been saved.',
+      submissionUnauthorizedError:
+        'Your login could not be verified correctly. Please log in again and answer the question again.',
+      submissionServerError:
+        'A server error occurred while submitting your answer. Please try again.',
     },
   },
   manage: {
@@ -2216,6 +2229,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       lecturerCockpit: 'Lecturer Cockpit',
       liveQuizEvaluation: 'Quiz Evaluation',
       startLiveQuiz: 'Start Quiz',
+      scheduleLiveQuiz: 'Schedule Live Quiz',
+      unpublishLiveQuiz: 'Unpublish Live Quiz',
       editLiveQuiz: 'Edit Quiz',
       duplicateLiveQuiz: 'Duplicate Live Quiz',
       viewLiveQuiz: 'View Live Quiz',
@@ -2250,6 +2265,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'To create your first live quiz, go back to the <link>question pool</link>. There you can create all different types of KlickerUZH activities and add questions from the question pool.',
       embeddingLinkCopied:
         'The embedding link has been copied to the clipboard successfully.',
+      liveQuizSchedulingDateRequired:
+        'Please enter a date for the automatic start of the live quiz.',
+      liveQuizSchedulingFutureAfterCourseStart:
+        'The date for the automatic start of the live quiz must be in the future and, if associated with a course, after the start time of that course.',
+      scheduleLiveQuizHint:
+        'When scheduling the live quiz "{title}", it will automatically start at the time you set. Before the scheduled publication date is reached, the quiz can still be unpublished and edited.',
     },
     practiceQuizzes: {
       viewPracticeQuiz: 'View Practice Quiz',

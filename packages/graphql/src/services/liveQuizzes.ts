@@ -5,6 +5,7 @@ import {
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
+  HatchetHandlers,
   type CaseStudyCaseSolution,
   type ElementBlockInput,
   type ElementResultsCaseStudy,
@@ -37,8 +38,8 @@ import { createHmac } from 'node:crypto'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { sendTeamsNotifications } from '../lib/util.js'
 import { getPermissionBooleans } from './activities.js'
+import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { computeStackEvaluation } from './stacks.js'
 
@@ -288,7 +289,6 @@ async function getCachedBlockResults({
             return assessmentsAcc
           }
 
-          // TODO: the grading process could potentially be sped up by iterating over the solutions array
           // only once and selecting all corresponding responses based on the combinedHash
           let grading: number | undefined
           if (solutions && solutions.length > 0) {
@@ -1142,30 +1142,117 @@ export async function startLiveQuiz(
           console.error(e)
         }
 
+        // remove the scheduled hatchet publication task, if it exists
+        if (quiz.scheduledPublicationTaskId) {
+          try {
+            await ctx.hatchet.scheduled.delete(quiz.scheduledPublicationTaskId)
+          } catch (error) {
+            console.error(
+              `Failed to delete scheduled task for live quiz ${id}:`,
+              error
+            )
+          }
+        }
+
         // generate a random pin code
         const startedLiveQuiz = await ctx.prisma.liveQuiz.update({
           where: { id },
           data: {
             status: DB.PublicationStatus.PUBLISHED,
             startedAt: new Date(),
+            scheduledPublicationTaskId: null,
           },
         })
 
-        await sendTeamsNotifications(
-          'graphql/startLiveQuiz',
-          `START Live quiz ${quiz.name} with id ${quiz.id}.`
-        )
+        await sendTeamsNotification({
+          scope: 'graphql/startLiveQuiz',
+          text: `START Live quiz ${quiz.name} with id ${quiz.id}.`,
+        })
 
         return startedLiveQuiz
       }
     }
   } catch (error) {
-    await sendTeamsNotifications(
-      'graphql/startLiveQuiz',
-      `ERROR - failed to start live quiz: ${error}`
-    )
+    await sendTeamsNotification({
+      scope: 'graphql/startLiveQuiz',
+      text: `ERROR - failed to start live quiz: ${error}`,
+    })
     throw error
   }
+}
+
+export async function scheduleLiveQuiz(
+  { id, availableFrom }: { id: string; availableFrom?: Date | null },
+  ctx: ContextWithUser
+) {
+  // if the live quiz starts in the future, change its status to scheduled, otherwise publish it
+  if (availableFrom && dayjs(availableFrom).isAfter(dayjs())) {
+    try {
+      // schedule the task to publish the live quiz
+      const scheduledTask = await ctx.tasks.publishScheduledLiveQuiz.schedule(
+        availableFrom,
+        { liveQuizId: id }
+      )
+      const taskId = scheduledTask.metadata.id
+
+      // change the status of the live quiz to scheduled
+      const updatedQuiz = await ctx.prisma.liveQuiz.update({
+        where: { id, isDeleted: false },
+        data: {
+          availableFrom,
+          status: DB.PublicationStatus.SCHEDULED,
+          scheduledPublicationTaskId: taskId,
+        },
+      })
+
+      ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
+      return updatedQuiz
+    } catch (error) {
+      console.error('Error scheduling live quiz publication:', error)
+      return null
+    }
+  } else {
+    const startedLiveQuiz = await startLiveQuiz({ id }, ctx)
+    return startedLiveQuiz
+  }
+}
+
+export async function unpublishLiveQuiz(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: { id, status: DB.PublicationStatus.SCHEDULED },
+  })
+
+  if (!liveQuiz) {
+    return null
+  }
+
+  // remove the scheduled hatchet publication task, if it exists
+  if (liveQuiz.scheduledPublicationTaskId) {
+    try {
+      await ctx.hatchet.scheduled.delete(liveQuiz.scheduledPublicationTaskId)
+    } catch (error) {
+      console.error(
+        `Failed to delete scheduled task for live quiz ${id}:`,
+        error
+      )
+    }
+  }
+
+  // reset the status of the live quiz to draft and remove the availableFrom date
+  const updatedLiveQuiz = await ctx.prisma.liveQuiz.update({
+    where: { id, status: DB.PublicationStatus.SCHEDULED },
+    data: {
+      availableFrom: null,
+      status: DB.PublicationStatus.DRAFT,
+      scheduledPublicationTaskId: null,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
+  return updatedLiveQuiz
 }
 
 export async function getCockpitQuiz(
@@ -1217,10 +1304,7 @@ export async function getCockpitQuiz(
     const cacheContent = (await redisMulti.exec()) as
       | [
           Error | null,
-          {
-            // TODO: extend type with more content of cache (as needed)
-            participants: string
-          },
+          { participants: string }, // TODO: extend type with more content of cache (as needed)
         ][]
       | null
 
@@ -1327,10 +1411,10 @@ export async function activateLiveQuizBlock(
     beforeFirstBlock: false,
     activeBlock: {
       ...updatedQuiz.activeBlock,
-      elements: updatedQuiz.activeBlock?.elements
+      elements: updatedQuiz.activeBlock!.elements
         ? await Promise.all(
             removeSolutionFromInstances({
-              instances: updatedQuiz.activeBlock.elements,
+              instances: updatedQuiz.activeBlock!.elements,
             }).map(async (instance) => {
               if (!quiz.isAssessmentEnabled) {
                 return instance
@@ -1344,7 +1428,9 @@ export async function activateLiveQuizBlock(
                   liveQuizId: quiz.id,
                   sub: '', // dummy sub, since this value is required
                 },
-                process.env.APP_SECRET as string
+                process.env.APP_SECRET as string,
+                undefined,
+                updatedQuiz.activeBlock!.startedAt ?? new Date(0)
               )
 
               return { ...instance, correlationKey }
@@ -1410,6 +1496,10 @@ export async function activateLiveQuizBlock(
       case DB.ElementType.NUMERICAL: {
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
+          ...(elementData.options.restrictions &&
+          Object.keys(elementData.options.restrictions).length > 0
+            ? { restrictions: JSON.stringify(elementData.options.restrictions) }
+            : {}),
           solutions:
             elementData.options.exactSolutions &&
             elementData.options.exactSolutions.length > 0
@@ -1428,6 +1518,10 @@ export async function activateLiveQuizBlock(
       case DB.ElementType.FREE_TEXT: {
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
+          ...(elementData.options.restrictions &&
+          Object.keys(elementData.options.restrictions).length > 0
+            ? { restrictions: JSON.stringify(elementData.options.restrictions) }
+            : {}),
           solutions: elementData.options.hasSampleSolution
             ? JSON.stringify(elementData.options.solutions)
             : undefined,
@@ -1764,12 +1858,12 @@ export async function deactivateLiveQuizBlock(
 
     return true
   } catch (error: any) {
-    await sendTeamsNotifications(
-      'graphql/deactivateLiveQuizBlock',
-      `ERROR - failed to deactivate block ${blockId} in live quiz ${
+    await sendTeamsNotification({
+      scope: 'graphql/deactivateLiveQuizBlock',
+      text: `ERROR - failed to deactivate block ${blockId} in live quiz ${
         quiz.id
-      } with active block ${quiz.activeBlockId}: ${error?.message || error}`
-    )
+      } with active block ${quiz.activeBlockId}: ${error?.message || error}`,
+    })
 
     throw error
   }
@@ -2087,17 +2181,17 @@ export async function endLiveQuiz(
       },
     })
 
-    await sendTeamsNotifications(
-      'graphql/endLiveQuiz',
-      `END Live quiz ${quiz.name} with id ${quiz.id}.`
-    )
+    await sendTeamsNotification({
+      scope: 'graphql/endLiveQuiz',
+      text: `END Live quiz ${quiz.name} with id ${quiz.id}.`,
+    })
 
     return endedLiveQuiz
   } catch (error) {
-    await sendTeamsNotifications(
-      'graphql/endLiveQuiz',
-      `ERROR - failed to end live quiz ${quiz.name} with id ${quiz.id}: ${error}`
-    )
+    await sendTeamsNotification({
+      scope: 'graphql/endLiveQuiz',
+      text: `ERROR - failed to end live quiz ${quiz.name} with id ${quiz.id}: ${error}`,
+    })
     throw error
   }
 }
@@ -2353,17 +2447,17 @@ export async function cancelLiveQuiz(
     }
     await pipe.exec()
 
-    await sendTeamsNotifications(
-      'graphql/abortLiveQuiz',
-      `CANCEL Live quiz ${quiz.name} with id ${quiz.id}.`
-    )
+    await sendTeamsNotification({
+      scope: 'graphql/abortLiveQuiz',
+      text: `CANCEL Live quiz ${quiz.name} with id ${quiz.id}.`,
+    })
 
     return updatedQuiz
   } catch (error) {
-    await sendTeamsNotifications(
-      'graphql/abortLiveQuiz',
-      `ERROR - failed to cancel live quiz ${quiz.name} with id ${quiz.id}: ${error}`
-    )
+    await sendTeamsNotification({
+      scope: 'graphql/abortLiveQuiz',
+      text: `ERROR - failed to cancel live quiz ${quiz.name} with id ${quiz.id}: ${error}`,
+    })
     throw error
   }
 }
@@ -2554,6 +2648,21 @@ export async function deleteLiveQuiz(
             },
           },
         })
+
+        // remove the scheduled hatchet publication task, if it exists
+        if (
+          quiz.status === DB.PublicationStatus.SCHEDULED &&
+          quiz.scheduledPublicationTaskId
+        ) {
+          try {
+            await ctx.hatchet.scheduled.delete(quiz.scheduledPublicationTaskId)
+          } catch (error) {
+            console.error(
+              `Failed to delete scheduled task for live quiz ${id}:`,
+              error
+            )
+          }
+        }
 
         // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
         // this case cannot be handled by the permissions module, since the live quiz is already hard deleted
@@ -2901,7 +3010,9 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
             liveQuizId: quiz.id,
             sub: '', // dummy sub, since this value is required
           },
-          process.env.APP_SECRET as string
+          process.env.APP_SECRET as string,
+          undefined,
+          quiz.activeBlock?.startedAt ?? new Date(0)
         )
 
         return { ...instance, correlationKey }
@@ -3088,4 +3199,73 @@ export async function getLiveQuizLeaderboard(
 
   return filteredEntries
 }
+// #endregion
+
+// ------ HATCHET SCHEDULED TASK HANDLER ------
+// #region
+export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishScheduledLiveQuiz'] =
+  async ({ liveQuizId }, globalCtx, executionCtx) => {
+    executionCtx.logger.info(
+      `Publishing scheduled live quiz with ID ${liveQuizId}`
+    )
+
+    try {
+      // check if the live quiz exists and if its availableFrom date is in the past
+      const liveQuiz = await globalCtx.prisma.liveQuiz.findUnique({
+        where: {
+          id: liveQuizId,
+          isDeleted: false,
+          status: DB.PublicationStatus.SCHEDULED,
+          availableFrom: { lte: new Date() },
+        },
+      })
+
+      if (!liveQuiz) {
+        await sendTeamsNotification({
+          scope: 'hatchet/live-quiz-start',
+          text: `Live quiz with ID ${liveQuizId} not found or scheduled start time is not in the past yet.`,
+        })
+        throw new Error(
+          `Live quiz with ID ${liveQuizId} not found or scheduled start time is not in the past yet.`
+        )
+      }
+
+      // start the live quiz
+      await globalCtx.redisExec
+        .pipeline()
+        .hmset(`lq:${liveQuiz.id}:meta`, {
+          namespace: liveQuiz.namespace,
+          startedAt: Number(new Date()),
+        })
+        .exec()
+
+      const startedLiveQuiz = await globalCtx.prisma.liveQuiz.update({
+        where: { id: liveQuizId },
+        data: {
+          status: DB.PublicationStatus.PUBLISHED,
+          startedAt: new Date(),
+        },
+      })
+
+      await sendTeamsNotification({
+        scope: 'hatchet/live-quiz-start',
+        text: `START Live quiz ${startedLiveQuiz.name} with id ${startedLiveQuiz.id}.`,
+      })
+
+      // invalidate the cache for the live quiz
+      globalCtx.emitter.emit('invalidate', {
+        typename: 'LiveQuiz',
+        id: startedLiveQuiz.id,
+      })
+
+      return true
+    } catch (error) {
+      console.error('Error publishing scheduled live quiz:', error)
+      await sendTeamsNotification({
+        scope: 'hatchet/live-quiz-start',
+        text: `Error publishing live quiz with ID ${liveQuizId}: ${error}`,
+      })
+      throw error // rethrow to allow Hatchet to handle retries
+    }
+  }
 // #endregion

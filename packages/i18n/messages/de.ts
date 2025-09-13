@@ -519,6 +519,8 @@ export default {
         'Ihr Account wurde erstellt. Bitte überprüfen Sie Ihren Posteingang auf einen Aktivierungslink.',
       myCourses: 'Meine Kurse',
       myAssessmentCourses: 'Meine Assessment-Kurse',
+      noAssessmentCourseAssignments:
+        'Sie wurden bisher zu keinen Assessment-Kursen hinzugefügt. Bitte wenden Sie sich an Ihre Dozierenden.',
       insights: 'Einblicke',
       timeline: 'Zeitachse',
       myBookmarks: 'Meine Bookmarks',
@@ -709,7 +711,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       signup: 'Registrieren',
       coursePinInvalid: 'Die von Ihnen eingebene Kurs-PIN ist ungültig.',
     },
-
     courses: {
       courseInformation: 'Kursinformationen',
       createJoinGroup: 'Gruppe erstellen/beitreten',
@@ -1066,6 +1067,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       loginWithEduId: 'Login mit Edu-ID',
       eduIdRequired:
         'Edu-ID-Authentifizierung ist für Assessments erforderlich',
+      submissionInputsInvalid:
+        'Beim Abschicken Ihrer Antwort ist ein Fehler aufgetreten. Bitte überprüfen Sie Ihre Eingaben auf Fehlermeldungen.',
+      submissionSuccessful:
+        'Ihre Antwort wurde erfolgreich abgeschickt und gespeichert.',
+      submissionGeneralError:
+        'Beim Abschicken Ihrer Antwort ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+      submissionAlreadyRecorded:
+        'Sie haben diese Frage bereits beantwortet. Ihre vorherige Antwort wurde gespeichert.',
+      submissionUnauthorizedError:
+        'Ihr Login konnte nicht korrekt verifiziert werden. Bitte loggen Sie sich erneut ein und beantworten Sie die Frage nochmals.',
+      submissionServerError:
+        'Beim Abschicken Ihrer Antwort ist ein Serverfehler aufgetreten. Bitte versuchen Sie es erneut.',
     },
   },
   manage: {
@@ -2250,6 +2263,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       lecturerCockpit: 'Dozierenden Cockpit',
       liveQuizEvaluation: 'Live Quiz Evaluation',
       startLiveQuiz: 'Start Quiz',
+      scheduleLiveQuiz: 'Live Quiz planen',
+      unpublishLiveQuiz: 'Geplante Veröffentlichung aufheben',
       editLiveQuiz: 'Quiz bearbeiten',
       duplicateLiveQuiz: 'Live Quiz duplizieren',
       viewLiveQuiz: 'Live Quiz einsehen',
@@ -2284,6 +2299,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Um Ihr erstes Live Quiz zu erstellen, gehen Sie zurück in den <link>Fragepool</link>. Dort können alle verschiedenen Arten von KlickerUZH-Elementen erstellt und Fragen aus dem Fragepool hinzufügen werden.',
       embeddingLinkCopied:
         'Der Einbettungslink wurde erfolgreich in die Zwischenablage kopiert.',
+      liveQuizSchedulingDateRequired:
+        'Bitte geben Sie ein Datum für den automatischen Start des Live-Quiz an.',
+      liveQuizSchedulingFutureAfterCourseStart:
+        'Das Datum zum automatischen Start des Live Quizzes muss in der Zukunft und falls zugehörig zu einem Kurs, nach dessen Startzeitpunkt liegen.',
+      scheduleLiveQuizHint:
+        'Bei der geplanten Veröffentlichung des Live Quizzes "{title}" wird dieses automatisch zum von Ihnen festgelegten Zeitpunkt gestartet. Bevor das geplante Veröffentlichungsdatum erreicht ist, kann das Quiz noch unveröffentlicht und bearbeitet werden.',
     },
     practiceQuizzes: {
       viewPracticeQuiz: 'Übungs-Quiz einsehen',

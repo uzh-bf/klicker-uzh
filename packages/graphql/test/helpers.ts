@@ -1,4 +1,5 @@
-import { jest } from '@jest/globals'
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
+import { hatchetClient } from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
 import {
   AnswerCollection,
@@ -22,8 +23,20 @@ import {
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import generatePassword from 'generate-password'
-import { Repeater } from 'graphql-yoga'
+import { createPubSub, Repeater } from 'graphql-yoga'
+import { Redis } from 'ioredis'
+import {
+  handleEndExpiredGroupActivity,
+  handlePublishScheduledGroupActivity,
+} from 'src/services/groups.js'
+import { handlePublishScheduledLiveQuiz } from 'src/services/liveQuizzes.js'
+import {
+  handleEndExpiredMicroLearning,
+  handlePublishScheduledMicroLearning,
+} from 'src/services/microLearning.js'
+import { handlePublishScheduledPracticeQuiz } from 'src/services/practiceQuizzes.js'
 import { v4 as uuidv4 } from 'uuid'
+import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { createAnswerCollection } from '../src/services/resources.js'
 import { createCatalogCollection } from '../src/services/sharing.js'
@@ -44,7 +57,11 @@ import {
 
 // ! General Test Suite Helpers (general setup, user seeding, database connections, cleanup, etc.)
 // #region
-export async function testInitialization(prisma: PrismaClient, emitter) {
+export async function testInitialization(
+  prisma: PrismaClient,
+  hatchet: Hatchet,
+  emitter: EventEmitter
+) {
   // upsert all users in the database
   await Promise.all(
     [userOne, userTwo, userThree, userFour, userFive, userSix].map(
@@ -88,6 +105,118 @@ export async function testInitialization(prisma: PrismaClient, emitter) {
     update: {},
   })
 
+  const pubSub = createPubSub()
+  const redisExec = new Redis()
+
+  const hatchetCtx = {
+    hatchet,
+    pubSub,
+    emitter,
+    redisExec,
+    prisma,
+  }
+
+  // initialize tasks to be called
+  const tasks = {
+    createAuditLoggingEntry: hatchet.task({
+      name: 'create-audit-logging-entry',
+      fn: async ({
+        message,
+      }: {
+        message: Record<string, string | undefined> & {
+          correlationId: string
+          info: string
+        }
+      }) => {
+        console.info('Audit log triggered', message)
+        return { success: true }
+      },
+    }),
+    publishScheduledMicroLearning: hatchet.task({
+      name: 'publish-scheduled-micro-learning',
+      fn: async (
+        { microLearningId }: { microLearningId: string },
+        executionCtx
+      ) => {
+        const success = await handlePublishScheduledMicroLearning(
+          {
+            microLearningId,
+          },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      },
+    }),
+    publishScheduledPracticeQuiz: hatchet.task({
+      name: 'publish-scheduled-practice-quiz',
+      fn: async (
+        { practiceQuizId }: { practiceQuizId: string },
+        executionCtx
+      ) => {
+        const success = await handlePublishScheduledPracticeQuiz(
+          { practiceQuizId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      },
+    }),
+    publishScheduledGroupActivity: hatchet.task({
+      name: 'publish-scheduled-group-activity',
+      fn: async (
+        { groupActivityId }: { groupActivityId: string },
+        executionCtx
+      ) => {
+        const success = await handlePublishScheduledGroupActivity(
+          { groupActivityId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      },
+    }),
+    publishScheduledLiveQuiz: hatchet.task({
+      name: 'publish-scheduled-live-quiz',
+      fn: async ({ liveQuizId }: { liveQuizId: string }, executionCtx) => {
+        const success = await handlePublishScheduledLiveQuiz(
+          { liveQuizId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      },
+    }),
+    endExpiredMicroLearning: hatchet.task({
+      name: 'end-expired-micro-learning',
+      fn: async (
+        { microLearningId }: { microLearningId: string },
+        executionCtx
+      ) => {
+        const success = await handleEndExpiredMicroLearning(
+          { microLearningId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      },
+    }),
+    endExpiredGroupActivity: hatchet.task({
+      name: 'end-expired-group-activity',
+      fn: async (
+        { groupActivityId }: { groupActivityId: string },
+        executionCtx
+      ) => {
+        const success = await handleEndExpiredGroupActivity(
+          { groupActivityId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      },
+    }),
+  }
+
   // mock context with user including all required properties
   const userOneCtx = {
     user: {
@@ -98,11 +227,13 @@ export async function testInitialization(prisma: PrismaClient, emitter) {
       catalystIndividual: true,
     },
     prisma,
+    hatchet,
+    tasks,
     emitter,
-    redisExec: jest.fn() as unknown as ContextWithUser['redisExec'],
+    redisExec: vi.fn() as unknown as ContextWithUser['redisExec'],
     pubSub: {
-      publish: jest.fn(),
-      subscribe: jest.fn().mockReturnValue(new Repeater(() => {})),
+      publish: vi.fn(),
+      subscribe: vi.fn().mockReturnValue(new Repeater(() => {})),
     } as ContextWithUser['pubSub'],
     req: {} as any,
     res: {} as any,
@@ -185,13 +316,10 @@ export async function initializePrisma() {
   getDatabaseUrl()
 
   try {
-    // test database connection
-    await prisma.$connect()
-
     // create EventEmitter for test context
     const emitter = new EventEmitter()
 
-    return { prisma, emitter }
+    return { prisma, hatchet: hatchetClient, emitter }
   } catch (error) {
     console.error('Failed to initialize test environment:', error)
     throw new Error(`Database connection failed: ${error}`)

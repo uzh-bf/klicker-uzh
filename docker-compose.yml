@@ -27,7 +27,7 @@ services:
     ports:
       - 80:80
       - 443:443
-      - 8080:8080
+      - 8090:8080
     volumes:
       - './util/traefik/rules_docker.yaml:/etc/traefik/rules.yaml'
       - './util/traefik/ssl:/etc/certs:ro'
@@ -64,7 +64,7 @@ services:
     ports:
       - 80:80
       - 443:443
-      - 8080:8080
+      - 8090:8080
     volumes:
       - './util/traefik/rules_docker.yaml:/etc/traefik/rules.yaml'
       - './util/traefik/ssl:/etc/certs:ro'
@@ -99,7 +99,7 @@ services:
     ports:
       - 80:80
       - 443:443
-      - 8080:8080
+      - 8090:8080
     volumes:
       - './util/traefik/rules_wsl.yaml:/etc/traefik/rules.yaml'
       - './util/traefik/ssl:/etc/certs:ro'
@@ -266,6 +266,8 @@ networks:
 
 volumes:
   klicker_data:
+  klicker_data_diff:
+  klicker_data_lti:
   redis_data:
   hatchet_lite_config:
   azurite_data:

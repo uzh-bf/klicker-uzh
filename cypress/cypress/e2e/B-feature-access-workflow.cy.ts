@@ -1,19 +1,4 @@
 describe('Tests the availability of certain functionalities to catalyst users only', () => {
-  before(() => {
-    cy.seed()
-    cy.seedActivities()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
@@ -23,12 +8,13 @@ describe('Tests the availability of certain functionalities to catalyst users on
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+    cy.seedActivities()
+  })
 
   function validateFeatureAvailability({
     data,
@@ -67,7 +53,7 @@ describe('Tests the availability of certain functionalities to catalyst users on
     cy.get(`[data-cy="share-live-quiz-${data.seed.liveQuiz}"]`).should(
       privatePreview ? 'exist' : 'not.exist'
     )
-    cy.get(`[data-cy="activity-name-${data.seed.liveQuiz}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     cy.get('[data-cy="tab-microLearnings"]').click()
     cy.get(
@@ -79,7 +65,7 @@ describe('Tests the availability of certain functionalities to catalyst users on
     cy.get(`[data-cy="share-microlearning-${data.seed.microlearning}"]`).should(
       privatePreview ? 'exist' : 'not.exist'
     )
-    cy.get(`[data-cy="activity-name-${data.seed.microlearning}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     cy.get('[data-cy="tab-practiceQuizzes"]').click()
     cy.get(
@@ -91,7 +77,7 @@ describe('Tests the availability of certain functionalities to catalyst users on
     cy.get(`[data-cy="share-practice-quiz-${data.seed.practiceQuiz}"]`).should(
       privatePreview ? 'exist' : 'not.exist'
     )
-    cy.get(`[data-cy="activity-name-${data.seed.practiceQuiz}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     cy.get('[data-cy="tab-groupActivities"]').click()
     cy.get(
@@ -103,7 +89,7 @@ describe('Tests the availability of certain functionalities to catalyst users on
     cy.get(
       `[data-cy="share-group-activity-${data.seed.groupActivity}"]`
     ).should(privatePreview ? 'exist' : 'not.exist')
-    cy.get(`[data-cy="activity-name-${data.seed.groupActivity}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
   }
 
   it('Test login for catalyst users and non-catalyst users', function () {

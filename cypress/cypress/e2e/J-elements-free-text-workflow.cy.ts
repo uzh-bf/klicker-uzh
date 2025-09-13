@@ -1,20 +1,6 @@
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test creation and editing functionalities, validation, etc. for free text elements', function () {
-  before(() => {
-    cy.seed()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Login the lecturer and load data fixture', function () {
     cy.loginLecturer()
     cy.fixture('DM-questions.json').then((data) => {
@@ -22,12 +8,12 @@ describe('Test creation and editing functionalities, validation, etc. for free t
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   // ! Free Text questions
   // #region
@@ -50,7 +36,7 @@ describe('Test creation and editing functionalities, validation, etc. for free t
     ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
-      .type(this.data.FT.content)
+      .realType(this.data.FT.content)
     cy.get('[data-cy="set-free-text-length"]')
       .click()
       .type(String(this.data.FT.maxLength))
@@ -98,7 +84,7 @@ describe('Test creation and editing functionalities, validation, etc. for free t
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.FT.contentEdited)
+      .realType(this.data.FT.contentEdited)
     cy.get('[data-cy="set-free-text-length"]')
       .click()
       .clear()

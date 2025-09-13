@@ -1648,7 +1648,7 @@ export function updateChoicesResults({
     response.choices === null ||
     typeof response.choices === 'undefined'
   ) {
-    return { results: results, modified: false }
+    return { results, modified: false }
   }
 
   updatedResults.choices = (
@@ -1688,7 +1688,7 @@ export function updateNumericalResults({
     response.value === null ||
     response.value === ''
   ) {
-    return { results: results, modified: false }
+    return { results, modified: false }
   }
 
   // make sure that restrictions are fulfilled
@@ -1702,7 +1702,7 @@ export function updateNumericalResults({
     parsedValue > 1e30 || // prevent overflow
     parsedValue < -1e30 // prevent underflow
   ) {
-    return { results: results, modified: false }
+    return { results, modified: false }
   }
 
   const value = String(parsedValue)
@@ -1756,7 +1756,7 @@ export function updateFreeTextResults({
     (typeof elementData.options.restrictions?.maxLength === 'number' &&
       response.value.length > elementData.options.restrictions?.maxLength)
   ) {
-    return { results: results, modified: false }
+    return { results, modified: false }
   }
 
   const value = toLowerCase(response.value.trim())
