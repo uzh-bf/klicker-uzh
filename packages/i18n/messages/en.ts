@@ -2229,6 +2229,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       lecturerCockpit: 'Lecturer Cockpit',
       liveQuizEvaluation: 'Quiz Evaluation',
       startLiveQuiz: 'Start Quiz',
+      scheduleLiveQuiz: 'Schedule Live Quiz',
+      unpublishLiveQuiz: 'Unpublish Live Quiz',
       editLiveQuiz: 'Edit Quiz',
       duplicateLiveQuiz: 'Duplicate Live Quiz',
       viewLiveQuiz: 'View Live Quiz',
@@ -2263,6 +2265,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'To create your first live quiz, go back to the <link>question pool</link>. There you can create all different types of KlickerUZH activities and add questions from the question pool.',
       embeddingLinkCopied:
         'The embedding link has been copied to the clipboard successfully.',
+      liveQuizSchedulingDateRequired:
+        'Please enter a date for the automatic start of the live quiz.',
+      liveQuizSchedulingFutureAfterCourseStart:
+        'The date for the automatic start of the live quiz must be in the future and, if associated with a course, after the start time of that course.',
+      scheduleLiveQuizHint:
+        'When scheduling the live quiz "{title}", it will automatically start at the time you set. Before the scheduled publication date is reached, the quiz can still be unpublished and edited.',
     },
     practiceQuizzes: {
       viewPracticeQuiz: 'View Practice Quiz',

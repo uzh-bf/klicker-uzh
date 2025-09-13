@@ -1,3 +1,5 @@
+import type { HatchetHandlers } from '@klicker-uzh/types'
+
 export { default as enhanceContext } from './lib/context.js'
 
 import builder from './builder.js'
@@ -34,8 +36,42 @@ import './schema/subscription.js'
 //   })
 // }
 
+import {
+  handleEndExpiredGroupActivity,
+  handleFinalRandomGroupAssignments,
+  handlePublishScheduledGroupActivity,
+  handleRunningRandomGroupAssignments,
+  handleUpdateGroupAverageScores,
+} from './services/groups.js'
+import { handlePublishScheduledLiveQuiz } from './services/liveQuizzes.js'
+import {
+  handleEndExpiredMicroLearning,
+  handlePublishScheduledMicroLearning,
+} from './services/microLearning.js'
+import {
+  handleSendPushNotifications,
+  handleSendTeamsNotification,
+} from './services/notifications.js'
+import { handleUpdateWeeklyTimelineEntries } from './services/participants.js'
+import { handlePublishScheduledPracticeQuiz } from './services/practiceQuizzes.js'
+
 export const schema = builder.toSchema({
   schemaDirectives: {
     // oneOf: upperDirectiveTransformer,
   },
 })
+
+export const handlers: HatchetHandlers = {
+  handleFinalRandomGroupAssignments,
+  handleRunningRandomGroupAssignments,
+  handleUpdateGroupAverageScores,
+  handleSendPushNotifications,
+  handleSendTeamsNotification,
+  handleUpdateWeeklyTimelineEntries,
+  handleEndExpiredGroupActivity,
+  handleEndExpiredMicroLearning,
+  handlePublishScheduledLiveQuiz,
+  handlePublishScheduledPracticeQuiz,
+  handlePublishScheduledGroupActivity,
+  handlePublishScheduledMicroLearning,
+}

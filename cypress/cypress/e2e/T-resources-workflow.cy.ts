@@ -1,32 +1,18 @@
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Create, edit and share answer collections', function () {
-  before(() => {
-    cy.seed()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('T-resources.json').then((data) => {
       this.data = data
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   // ! Helper functions
   // #region
@@ -87,7 +73,7 @@ describe('Create, edit and share answer collections', function () {
 
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
-      .type(this.data.public.description)
+      .realType(this.data.public.description)
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
       .contains(this.data.public.description)
@@ -173,7 +159,7 @@ describe('Create, edit and share answer collections', function () {
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
       .clear()
-      .type(this.data.public.descriptionNew)
+      .realType(this.data.public.descriptionNew)
     cy.get('[data-cy="answer-collection-description"]')
       .realClick()
       .contains(this.data.public.descriptionNew)

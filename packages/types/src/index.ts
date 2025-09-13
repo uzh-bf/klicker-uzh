@@ -8,6 +8,9 @@ import type {
   PerformanceLevel,
 } from '@klicker-uzh/prisma/client'
 
+// ----- HATCHET (WORKER/TASK) TYPES -----
+export * from './hatchet.js'
+
 // ----- ACTIVITY LOG TYPES -----
 // #region
 export enum ActivityLogModificationFieldType {

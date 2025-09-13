@@ -12,8 +12,8 @@ import bcrypt from 'bcryptjs'
 import type { CookieOptions } from 'express'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { sendTeamsNotifications } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
+import { sendTeamsNotification } from './notifications.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -253,15 +253,15 @@ export async function sendMagicLink(
       templateName: 'MagicLinkRequested',
       variables: { LINK: magicLink },
     },
-    ctx
+    ctx.prisma
   )
 
   if (!emailHtml) return null
 
-  await sendTeamsNotifications(
-    'graphql/sendMagicLink',
-    `One-time login token created for ${usernameOrEmail}: ${magicLink}`
-  )
+  await sendTeamsNotification({
+    scope: 'graphql/sendMagicLink',
+    text: `One-time login token created for ${usernameOrEmail}: ${magicLink}`,
+  })
 
   await EmailService.sendEmail({
     to: participantData.email,
@@ -467,10 +467,10 @@ export async function grantPrivatePreviewAccess(
     where: { id: newUser.id },
     data: { privatePreview: true },
   })
-  await sendTeamsNotifications(
-    'graphql/grantPrivatePreviewAccess',
-    `User ${newUser.shortname} (${newUser.email}) granted private preview access`
-  )
+  await sendTeamsNotification({
+    scope: 'graphql/grantPrivatePreviewAccess',
+    text: `User ${newUser.shortname} (${newUser.email}) granted private preview access`,
+  })
 
   return 0
 }
@@ -711,15 +711,15 @@ export async function createParticipantAccount(
         templateName: 'ParticipantAccountActivation',
         variables: { LINK: activationLink },
       },
-      ctx
+      ctx.prisma
     )
 
     if (!emailHtml) return null
 
-    await sendTeamsNotifications(
-      'graphql/createParticipantAccount',
-      `New participant account created: ${participant.email} with activation link ${activationLink}`
-    )
+    await sendTeamsNotification({
+      scope: 'graphql/createParticipantAccount',
+      text: `New participant account created: ${participant.email} with activation link ${activationLink}`,
+    })
 
     await EmailService.sendEmail({
       to: email,
@@ -733,12 +733,12 @@ export async function createParticipantAccount(
     }
   } catch (e) {
     console.error(e)
-    await sendTeamsNotifications(
-      'graphql/createParticipantAccount',
-      `Failed to create participant account: ${email} with error: ${
+    await sendTeamsNotification({
+      scope: 'graphql/createParticipantAccount',
+      text: `Failed to create participant account: ${email} with error: ${
         e || 'missing'
-      }`
-    )
+      }`,
+    })
 
     return null
   }

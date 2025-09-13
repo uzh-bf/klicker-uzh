@@ -1,3 +1,4 @@
 #!/bin/sh
 
-docker compose down postgres redis_exec redis_cache reverse_proxy_docker hatchet
+echo "Stopping docker compose stack (down)"
+docker compose down

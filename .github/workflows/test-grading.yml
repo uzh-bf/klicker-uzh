@@ -7,8 +7,14 @@ on:
       - 'packages/grading/**'
       - '.github/workflows/test-grading.yml'
   pull_request:
-    branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'packages/grading/**'
+      - '.github/workflows/test-grading.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -22,12 +28,14 @@ jobs:
         uses: actions/checkout@v3
       - uses: pnpm/action-setup@v2
         with:
-          version: 9.15.4
+          version: 10.15.0
           run_install: true
       - name: Build types package
         shell: bash
         run: |
-          cd packages/types
+          cd packages/prisma
+          pnpm run build
+          cd ../types
           pnpm run build
       - name: Test functions
         shell: bash

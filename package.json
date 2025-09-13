@@ -7,7 +7,6 @@
   "homepage": "https://www.klicker.uzh.ch/",
   "bugs": "https://github.com/uzh-bf/klicker-uzh/issues",
   "license": "AGPL-3.0",
-  "main": "apps/func/dist/index.js",
   "maintainers": [
     "Roland Schlaefli <roland.schlaefli@df.uzh.ch>",
     "Julius Schlapbach <julius.schlapbach@df.uzh.ch>"
@@ -32,10 +31,10 @@
     "npm-run-all": "~4.1.5",
     "prettier": "~3.3.3",
     "prettier-plugin-organize-imports": "~4.1.0",
-    "prettier-plugin-tailwindcss": "~0.6.9",
+    "prettier-plugin-tailwindcss": "~0.6.14",
     "standard-version": "~9.5.0",
-    "syncpack": "~13.0.0",
-    "turbo": "~2.3.3",
+    "syncpack": "~13.0.4",
+    "turbo": "~2.5.6",
     "typescript": "~5.6.3",
     "yaml": "~2.6.1"
   },
@@ -47,7 +46,7 @@
     "check:format": "lint-staged",
     "check:lint": "turbo run lint --parallel --continue",
     "check:syncpack": "syncpack lint",
-    "dev": "doppler run --config dev -- pnpm run dev:raw",
+    "dev": "CONFIG=dev ./util/_run_with_doppler.sh pnpm dev:raw",
     "dev:assessment": "CONFIG=dev_assessment ./util/_run_with_doppler.sh turbo run dev:assessment --concurrency 30",
     "dev:cleverreach": "doppler run --config dev_cleverreach -- pnpm run dev:raw",
     "dev:docs": "turbo run dev:docs",
@@ -63,7 +62,9 @@
     "prisma:deploy": "pnpm run --filter @klicker-uzh/prisma prisma:deploy",
     "prisma:migrate": "pnpm run --filter @klicker-uzh/prisma prisma:migrate",
     "prisma:reset": "pnpm run --filter @klicker-uzh/prisma prisma:reset",
-    "prisma:setup": "pnpm run --filter @klicker-uzh/prisma prisma:setup",
+    "prisma:setup": "run-s prisma:setup:1 prisma:setup:2",
+    "prisma:setup:1": "pnpm run --filter @klicker-uzh/prisma prisma:setup",
+    "prisma:setup:2": "pnpm run --filter @klicker-uzh/prisma-data seed",
     "prisma:setup:raw": "pnpm run --filter @klicker-uzh/prisma prisma:setup:raw",
     "prisma:setup:yes": "pnpm run --filter @klicker-uzh/prisma prisma:setup:yes",
     "prisma:studio": "pnpm run --filter @klicker-uzh/prisma prisma:studio",
@@ -93,8 +94,8 @@
     "node": "=20"
   },
   "volta": {
-    "node": "20.18.1",
-    "pnpm": "10.0.0"
+    "node": "20.19.4",
+    "pnpm": "10.15.0"
   },
-  "packageManager": "pnpm@9.15.4"
+  "packageManager": "pnpm@10.15.0"
 }

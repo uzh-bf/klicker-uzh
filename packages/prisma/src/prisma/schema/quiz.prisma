@@ -30,8 +30,10 @@ model PracticeQuiz {
   resetTimeDays    Int               @default(6)
   orderType        ElementOrderType  @default(SPACED_REPETITION)
   status           PublicationStatus @default(DRAFT)
-  reviewStatus     ReviewStatus      @default(INCOMPLETE)
-  availableFrom    DateTime?
+
+  availableFrom              DateTime?
+  scheduledPublicationTaskId String? // task id of the scheduled hatchet task (to be removed on unpublishing)
+  reviewStatus               ReviewStatus @default(INCOMPLETE)
 
   areInstancesOutdated  Boolean @default(false) // flag to indicate if the any instances in this practice quiz are outdated due to changes in the corresponding element
   isGamificationEnabled Boolean @default(false)
@@ -89,6 +91,9 @@ model LiveQuiz {
   isDeleted                  Boolean @default(false)
 
   areInstancesOutdated Boolean @default(false) // flag to indicate if the any instances in this live quiz are outdated due to changes in the corresponding element
+
+  availableFrom              DateTime?
+  scheduledPublicationTaskId String? // task id of the scheduled hatchet task (to be removed on unpublishing)
 
   namespace            String    @default(uuid()) @db.Uuid
   pinCode              String?   @unique
@@ -150,8 +155,10 @@ model MicroLearning {
   status           PublicationStatus @default(DRAFT)
   reviewStatus     ReviewStatus      @default(INCOMPLETE)
 
-  scheduledStartAt DateTime
-  scheduledEndAt   DateTime
+  scheduledStartAt           DateTime
+  scheduledEndAt             DateTime
+  scheduledPublicationTaskId String? // task id of the scheduled hatchet task (to be removed on unpublishing)
+  scheduledCompletionTaskId  String? // task id of the scheduled hatchet task (to be removed on unpublishing)
 
   arePushNotificationsSent Boolean @default(false)
   isGamificationEnabled    Boolean @default(false)
@@ -252,14 +259,16 @@ model GroupActivity {
 
   name         String
   displayName  String
+  description  String?
   status       PublicationStatus @default(DRAFT)
   reviewStatus ReviewStatus      @default(INCOMPLETE)
 
   pointsMultiplier Int @default(1)
 
-  description      String?
-  scheduledStartAt DateTime
-  scheduledEndAt   DateTime
+  scheduledStartAt           DateTime
+  scheduledEndAt             DateTime
+  scheduledPublicationTaskId String? // task id of the scheduled hatchet task (to be removed on unpublishing)
+  scheduledCompletionTaskId  String? // task id of the scheduled hatchet task (to be removed on unpublishing)
 
   areInstancesOutdated  Boolean @default(false) // flag to indicate if the any instances in this group activity are outdated due to changes in the corresponding element
   isGamificationEnabled Boolean @default(false)

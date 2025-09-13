@@ -1,20 +1,6 @@
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test creation and editing functionalities, validation, etc. for Single Choice elements', function () {
-  before(() => {
-    cy.seed()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Login the lecturer and load data fixture', function () {
     cy.loginLecturer()
     cy.fixture('DM-questions.json').then((data) => {
@@ -22,12 +8,12 @@ describe('Test creation and editing functionalities, validation, etc. for Single
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   // ! Single choice questions
   // #region
@@ -41,11 +27,11 @@ describe('Test creation and editing functionalities, validation, etc. for Single
     ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
-      .type(this.data.SC.content)
+      .realType(this.data.SC.content)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
-      .type(this.data.SC.choices[0])
+      .realType(this.data.SC.choices[0])
     cy.get('[data-cy="insert-answer-field-0"]').findByText(
       this.data.SC.choices[0]
     )
@@ -55,7 +41,7 @@ describe('Test creation and editing functionalities, validation, etc. for Single
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
     cy.get('[data-cy="insert-answer-field-1"]')
       .realClick()
-      .type(this.data.SC.choices[1])
+      .realType(this.data.SC.choices[1])
     cy.get('[data-cy="insert-answer-field-1"]').findByText(
       this.data.SC.choices[1]
     )
@@ -67,7 +53,7 @@ describe('Test creation and editing functionalities, validation, etc. for Single
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
     cy.get('[data-cy="insert-answer-field-1"]')
       .realClick()
-      .type(this.data.SC.choices[1])
+      .realType(this.data.SC.choices[1])
     cy.get('[data-cy="insert-answer-field-1"]').findByText(
       this.data.SC.choices[1]
     )
@@ -144,11 +130,11 @@ describe('Test creation and editing functionalities, validation, etc. for Single
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.SC.contentEdited)
+      .realType(this.data.SC.contentEdited)
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
       .clear()
-      .type(this.data.SC.choicesEdited[0])
+      .realType(this.data.SC.choicesEdited[0])
     cy.get('[data-cy="delete-answer-option-ix-1"]').click()
     cy.get('[data-cy="insert-answer-field-1"]').should('not.exist')
     cy.get('[data-cy="add-new-answer"]').click()
@@ -156,13 +142,13 @@ describe('Test creation and editing functionalities, validation, etc. for Single
     cy.get('[data-cy="insert-answer-field-1"]')
       .realClick()
       .clear()
-      .type(this.data.SC.choicesEdited[1])
+      .realType(this.data.SC.choicesEdited[1])
     cy.get('[data-cy="add-new-answer"]').click()
     cy.wait(500)
     cy.get('[data-cy="insert-answer-field-2"]')
       .realClick()
       .clear()
-      .type(this.data.SC.choicesEdited[2])
+      .realType(this.data.SC.choicesEdited[2])
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
     // add a sample solution and check that exactly one correct answer is required
@@ -211,11 +197,11 @@ describe('Test creation and editing functionalities, validation, etc. for Single
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
     cy.get('[data-cy="insert-answer-feedback-0"]')
       .realClick()
-      .type(this.data.SC.choicesFeedbacks[0])
+      .realType(this.data.SC.choicesFeedbacks[0])
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
     cy.get('[data-cy="insert-answer-feedback-1"]')
       .realClick()
-      .type(this.data.SC.choicesFeedbacks[1])
+      .realType(this.data.SC.choicesFeedbacks[1])
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
     // verify that reordering answer options also reorders the corresponding feedbacks

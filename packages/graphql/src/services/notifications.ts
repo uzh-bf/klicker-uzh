@@ -1,6 +1,7 @@
-import { GraphQLError } from 'graphql'
 // import webpush, { WebPushError } from 'web-push'
-import type { Context, ContextWithUser } from '../lib/context.js'
+import { HatchetHandlers } from '@klicker-uzh/types'
+import axios from 'axios'
+import type { ContextWithUser } from '../lib/context.js'
 
 interface SubscriptionObjectInput {
   endpoint: string
@@ -79,79 +80,10 @@ export async function unsubscribeFromPush(
   }
 }
 
-export async function sendPushNotifications(_ctx: Context) {
-  if (
-    !process.env.VAPID_PUBLIC_KEY ||
-    !process.env.VAPID_PRIVATE_KEY ||
-    !process.env.NOTIFICATION_SUPPORT_MAIL
-  ) {
-    throw new GraphQLError('VAPID keys or support email not available.')
-  }
-
-  // webpush.setVapidDetails(
-  //   `mailto:${process.env.NOTIFICATION_SUPPORT_MAIL as String}`,
-  //   process.env.VAPID_PUBLIC_KEY as string,
-  //   process.env.VAPID_PRIVATE_KEY as string
-  // )
-
-  // const microLearnings = await ctx.prisma.microLearning.findMany({
-  //   where: {
-  //     status: PublicationStatus.PUBLISHED,
-  //     scheduledStartAt: {
-  //       lte: new Date(),
-  //     },
-  //     scheduledEndAt: {
-  //       gt: new Date(),
-  //     },
-  //     arePushNotificationsSent: false,
-  //   },
-  //   include: {
-  //     course: {
-  //       include: {
-  //         subscriptions: true,
-  //       },
-  //     },
-  //   },
-  // })
-
-  // let allSuccessful = true
-
-  // // TODO: improve scalability of push notification dispatch:
-  // // 1. Investigate implementing this method as a background process to reduce the load on the main thread.
-  // // 2. Investigate implementing this method in Azure
-  // await Promise.all(
-  //   microLearnings.map(async (microLearning) => {
-  //     try {
-  //       await sendPushNotificationsToSubscribers(microLearning, ctx)
-
-  //       //update microLearning to prevent sending push notifications multiple times
-  //       await ctx.prisma.microLearning.update({
-  //         where: {
-  //           id: microLearning.id,
-  //         },
-  //         data: {
-  //           arePushNotificationsSent: true,
-  //         },
-  //       })
-  //     } catch (error) {
-  //       allSuccessful = false
-  //       console.error(
-  //         'An error occured while trying to send the push notifications: ',
-  //         error
-  //       )
-  //     }
-  //   })
-  // )
-
-  // return allSuccessful
-
-  return true
-}
-
 //TODO: how to address translation of the message when switching to multi language support?
 //E.g., store the language on the course entity and use it here to translate the message or
 // store the language on the user subscription entity and use this language when sending to the specific user?
-// async function sendPushNotificationsToSubscribers(
+// export async function sendPushNotificationsToSubscribers(
 //   microLearning: DB.MicroLearning & {
 //     course: null | (DB.Course & { subscriptions: PushSubscription[] })
 //   },
@@ -203,3 +135,103 @@ export async function sendPushNotifications(_ctx: Context) {
 //     }
 //   }
 // }
+
+export const handleSendPushNotifications: HatchetHandlers['handleSendPushNotifications'] =
+  async () => {
+    if (
+      !process.env.VAPID_PUBLIC_KEY ||
+      !process.env.VAPID_PRIVATE_KEY ||
+      !process.env.NOTIFICATION_SUPPORT_MAIL
+    ) {
+      throw new Error('VAPID keys or support email not available.')
+    }
+
+    // webpush.setVapidDetails(
+    //   `mailto:${process.env.NOTIFICATION_SUPPORT_MAIL as String}`,
+    //   process.env.VAPID_PUBLIC_KEY as string,
+    //   process.env.VAPID_PRIVATE_KEY as string
+    // )
+
+    // const microLearnings = await ctx.prisma.microLearning.findMany({
+    //   where: {
+    //     status: PublicationStatus.PUBLISHED,
+    //     scheduledStartAt: {
+    //       lte: new Date(),
+    //     },
+    //     scheduledEndAt: {
+    //       gt: new Date(),
+    //     },
+    //     arePushNotificationsSent: false,
+    //   },
+    //   include: {
+    //     course: {
+    //       include: {
+    //         subscriptions: true,
+    //       },
+    //     },
+    //   },
+    // })
+
+    // let allSuccessful = true
+
+    // // TODO: improve scalability of push notification dispatch:
+    // // 1. Investigate implementing this method as a background process to reduce the load on the main thread.
+    // // 2. Investigate implementing this method in Azure
+    // await Promise.all(
+    //   microLearnings.map(async (microLearning) => {
+    //     try {
+    //       await sendPushNotificationsToSubscribers(microLearning, ctx)
+
+    //       //update microLearning to prevent sending push notifications multiple times
+    //       await ctx.prisma.microLearning.update({
+    //         where: {
+    //           id: microLearning.id,
+    //         },
+    //         data: {
+    //           arePushNotificationsSent: true,
+    //         },
+    //       })
+    //     } catch (error) {
+    //       allSuccessful = false
+    //       console.error(
+    //         'An error occured while trying to send the push notifications: ',
+    //         error
+    //       )
+    //     }
+    //   })
+    // )
+
+    // return allSuccessful
+
+    return true
+  }
+
+export const handleSendTeamsNotification: HatchetHandlers['handleSendTeamsNotification'] =
+  async ({ scope, text }) => {
+    return sendTeamsNotification({ scope, text })
+  }
+
+export async function sendTeamsNotification({
+  scope,
+  text,
+}: {
+  scope: string
+  text: string
+}) {
+  if (process.env.TEAMS_WEBHOOK_URL) {
+    try {
+      return await axios.post(process.env.TEAMS_WEBHOOK_URL, {
+        '@context': 'https://schema.org/extensions',
+        '@type': 'MessageCard',
+        themeColor: '0076D7',
+        title: scope,
+        text: `[${process.env.NODE_ENV}:${scope}] ${text}`,
+      })
+    } catch (error) {
+      console.error('Failed to send Teams notification:', error)
+      return null
+    }
+  }
+
+  return null
+}
