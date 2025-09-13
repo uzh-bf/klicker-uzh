@@ -13,3 +13,4 @@ data:
   {{- if .Values.frontendPWA.sentryEnv }}
   SENTRY_ENVIRONMENT: {{ .Values.frontendPWA.sentryEnv | quote }}
   {{ end }}
+  JWT_ISSUER_PWA: {{ .Values.jwtIssuers.pwa | quote }}

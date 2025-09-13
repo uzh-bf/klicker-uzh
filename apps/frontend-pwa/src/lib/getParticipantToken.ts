@@ -5,6 +5,14 @@ import bodyParser from 'body-parser'
 import { GetServerSidePropsContext } from 'next'
 import nookies from 'nookies'
 
+// Validate required environment variables
+if (!process.env.JWT_ISSUER_PWA) {
+  console.error(
+    'JWT_ISSUER_PWA environment variable is required but not defined'
+  )
+  process.exit(1)
+}
+
 export default async function getParticipantToken({
   apolloClient,
   courseId,

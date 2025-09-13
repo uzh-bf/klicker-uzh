@@ -3,6 +3,14 @@ import { Provider } from 'ltijs'
 // @ts-ignore
 import Database from 'ltijs-sequelize'
 
+// Validate required environment variables
+if (!process.env.JWT_ISSUER_LTI) {
+  console.error(
+    'JWT_ISSUER_LTI environment variable is required but not defined'
+  )
+  process.exit(1)
+}
+
 const PROVIDER_OPTIONS = {
   appRoute: '/',
   loginRoute: '/login',

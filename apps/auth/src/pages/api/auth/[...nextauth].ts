@@ -18,6 +18,14 @@ export const PARTICIPANT_COOKIE_NAME = 'next-auth.participant-session-token'
 // Export for discourse.ts and other consumers
 export const APP_SECRET = process.env.APP_SECRET
 
+// Validate required environment variables
+if (!process.env.JWT_ISSUER_AUTH) {
+  console.error(
+    'JWT_ISSUER_AUTH environment variable is required but not defined'
+  )
+  process.exit(1)
+}
+
 // Stateless context detection - no persistent cookies, URL and referrer based only
 function getAuthContext(req: NextApiRequest): 'lecturer' | 'participant' {
   const { participant, nextauth } = req.query
