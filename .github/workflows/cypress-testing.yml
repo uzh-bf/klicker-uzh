@@ -171,6 +171,9 @@ jobs:
           SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010'
           TIMEOUT_SECONDS: '300'
           CHECK_INTERVAL: '5'
+          JWT_ISSUER_AUTH: http://127.0.0.1:3010
+          JWT_ISSUER_API: http://127.0.0.1:3000
+          JWT_ISSUER_PWA: http://127.0.0.1:3002
 
       - name: Cypress run parallel with cypress-split
         uses: cypress-io/github-action@v6
@@ -193,8 +196,6 @@ jobs:
           SPLIT: ${{ strategy.job-total }}
           SPLIT_INDEX: ${{ strategy.job-index }}
           SPLIT_FILE: timings.json
-          JWT_ISSUER_AUTH: http://127.0.0.1:3010
-          JWT_ISSUER_API: http://127.0.0.1:3000
 
       - if: always()
         uses: actions/upload-artifact@v4
@@ -347,6 +348,9 @@ jobs:
           SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010'
           TIMEOUT_SECONDS: '300'
           CHECK_INTERVAL: '5'
+          JWT_ISSUER_AUTH: http://127.0.0.1:3010
+          JWT_ISSUER_API: http://127.0.0.1:3000
+          JWT_ISSUER_PWA: http://127.0.0.1:3002
 
       - name: Upload service logs
         if: always()
@@ -379,8 +383,6 @@ jobs:
           HATCHET_API_URL: http://127.0.0.1:8888
           HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
           HATCHET_HOST_PORT: 7077
-          JWT_ISSUER_AUTH: http://127.0.0.1:3010
-          JWT_ISSUER_API: http://127.0.0.1:3000
 
       - if: always()
         uses: actions/upload-artifact@v4
