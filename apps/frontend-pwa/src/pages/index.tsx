@@ -48,6 +48,7 @@ function Index() {
       toast({
         type: 'error',
         message: t('pwa.assessment.missingAssessmentCourseParticipation'),
+        options: { duration: 7000 },
       })
 
       // remove the error query param from the URL after showing the toast
