@@ -1,7 +1,7 @@
 # Hono Response-API Refactoring Plan
 
 ## Overview
-Refactor the response-api from Node.js built-in HTTP server to Hono framework, implementing security best practices, type-safe validation, and structured logging while maintaining all existing functionality.
+Refactor the response-api from Node.js built-in HTTP server to Hono framework, implementing security best practices, type-safe validation, and structured logging while maintaining all existing functionality. Adopt pragmatic defaults, keep current API contracts, and design for future hardening without adding unnecessary complexity.
 
 ## Phase 1: Setup and Dependencies
 1. **Update package.json**
@@ -22,11 +22,11 @@ Refactor the response-api from Node.js built-in HTTP server to Hono framework, i
 1. **Create new app structure** (`src/app.ts`)
    - Initialize Hono application
    - Configure global middleware stack:
-     - CORS with dynamic origin validation
+     - CORS with dynamic origin validation (strict allowlist; reject "null" and unknown origins)
+     - Enforce JSON-only POSTs (`Content-Type: application/json`)
      - Body limit (1MB as currently configured)
      - Secure headers
-     - CSRF protection for POST endpoints
-     - Request logging with hono-pino
+     - Request logging with hono-pino (pino under the hood)
    
 2. **Implement validation schemas**
    - AddResponse schema for standard mode
@@ -47,7 +47,7 @@ Refactor the response-api from Node.js built-in HTTP server to Hono framework, i
 3. **Error handling**
    - Global error handler for uncaught errors
    - Validation error formatting
-   - Consistent error response structure
+   - Consistent error response structure (see Error Model)
 
 ## Phase 4: Middleware Configuration
 1. **CORS Middleware**
@@ -55,15 +55,17 @@ Refactor the response-api from Node.js built-in HTTP server to Hono framework, i
    - Credentials support for cookies
    - Proper preflight handling
 
-2. **Security Middleware**
-   - CSRF protection with origin validation
+2. **Security Controls**
+   - No CSRF tokens (not needed for our current threat model). Enforce strict Origin validation, JSON-only POST, and credentials only for allowed origins.
    - Secure headers configuration
    - Body size limit enforcement
 
 3. **Logging Middleware**
-   - Request/response logging with pino
-   - Correlation ID tracking
-   - Performance metrics
+   - Structured request/response logging with pino via hono-pino
+   - Request ID generation + propagation (`X-Request-Id` header)
+   - Correlation ID tracking in assessment flow
+   - Redaction of sensitive fields by default (see Logging & Redaction)
+   - Performance metrics (duration) in logs
 
 ## Phase 5: Service Integration
 1. **Redis connection**
@@ -131,6 +133,10 @@ Refactor the response-api from Node.js built-in HTTP server to Hono framework, i
 - Environment variables remain compatible
 - Docker deployment unchanged
 
+Notes:
+- Two separate instances will continue to run (standard vs assessment) with physical separation and distinct hostnames. CORS allowlists will be tailored per instance.
+- Error response strings currently used by clients remain unchanged; we will add structured fields alongside for future migration.
+
 ## Implementation Checklist
 
 ### Dependencies to Add
@@ -153,6 +159,7 @@ Refactor the response-api from Node.js built-in HTTP server to Hono framework, i
 - [ ] `src/middleware/index.ts` - Custom middleware
 - [ ] `src/lib/redis.ts` - Redis client setup
 - [ ] `src/lib/logger.ts` - Logger configuration
+ - [ ] `src/lib/env.ts` - Environment schema (zod) and loader
 
 ### Files to Modify
 - [ ] `src/index.ts` - Server startup
@@ -163,13 +170,14 @@ Refactor the response-api from Node.js built-in HTTP server to Hono framework, i
 - [ ] Standard response mode works
 - [ ] Assessment response mode works
 - [ ] CORS headers are correct
-- [ ] CSRF protection is active
 - [ ] Body size limits work
 - [ ] Error responses are structured
 - [ ] Logging captures all requests
 - [ ] Performance is acceptable
 - [ ] Docker container builds
 - [ ] Deployment works in K8s
+ - [ ] Health indicates Redis state without failing the endpoint
+ - [ ] Both hostnames (standard and assessment) behave with correct CORS allowlists
 
 ### Rollback Plan
 If issues arise during deployment:
@@ -177,3 +185,144 @@ If issues arise during deployment:
 2. Use feature flag to switch between implementations
 3. Monitor error rates and performance
 4. Quick rollback via container image swap
+
+---
+
+## Detailed Design Decisions
+
+### 1) CSRF Posture
+- We will NOT implement CSRF tokens. For our REST-style API that accepts cross-origin credentialed requests only from a strict Origin allowlist, CSRF tokens do not materially improve the posture.
+- Controls in place:
+  - Strict dynamic Origin allowlist (reject "null" and unknown).
+  - JSON-only POST (`Content-Type: application/json`).
+  - Credentials permitted only for allowed origins.
+- We will leave a hook to introduce CSRF later if the threat model changes.
+
+### 2) Correlation ID Hashing
+- Purpose is stable compaction for audit correlation and Redis de-duplication, not cryptographic verification.
+- Default: continue using MD5 for correlationId to preserve behavior and avoid breaking duplicate detection.
+- Future hardening: introduce optional `CORRELATION_HASH_ALGO` env with values `md5` (default) or `hmac-sha256`. When `hmac-sha256`, compute `HMAC(APP_SECRET, correlationKey + ':' + participantId)`.
+- Migration strategy: roll out new algo behind env flag per instance; maintain Redis de-dup semantics.
+
+### 3) Logging & Redaction
+- Use `hono-pino` with pino. Generate and attach a `requestId` (UUIDv4) to all logs and responses (`X-Request-Id`).
+- Default log level via `LOG_LEVEL`. When `debug`, include raw `response` payload in logs for troubleshooting; otherwise omit.
+- Redact by default (both request and response logs):
+  - `req.headers.cookie`, `req.headers.authorization`, `res.headers['set-cookie']`
+  - Body fields likely to carry secrets: `correlationKey`, JWT-like strings
+  - Note: Conditional logging of `body.response` at debug level only
+- Include `correlationId` (assessment flow) in logs where available.
+- On Hatchet push failures, create an audit log event and include `requestId`.
+
+### 4) Error Model
+- Maintain current `error` string values for compatibility in responses where present today.
+- Add structured fields universally:
+  - `code`: machine-friendly enum string
+  - `message`: optional human-readable explanation (omitted in production responses unless useful)
+  - `requestId`: to correlate with logs
+- Proposed codes and HTTP statuses:
+  - `OK` (200): success path with `{ status: 'ok' | 'response_submitted' }`
+  - `ALREADY_SUBMITTED` (208): duplicate submission in assessment
+  - `INVALID_JSON` (400): malformed JSON
+  - `MISSING_FIELDS` (400): missing required fields (e.g., response, liveQuizId, instanceId[, correlationKey])
+  - `INVALID_SUBMISSION` (400): invalid correlationKey or mismatched ids
+  - `INVALID_ASSESSMENT_COOKIE` (401): missing/invalid assessment cookie
+  - `NOT_FOUND` (404): route not found
+  - `SERVER_ERROR` (500): unexpected error
+- Validation (zod) errors will be mapped to `MISSING_FIELDS` with compact field issue list in `details` at `debug` log level only; response stays minimal.
+
+### 5) Health Checks
+- `GET /healthz` and `GET /` always return `200` with `{ status: 'ok', redis: 'up' | 'down' }`.
+- Implement a fast Redis ping with short timeout; if it fails, report `redis: 'down'` but do not fail the endpoint.
+- Log a warning when Redis is down with `requestId`.
+
+### 6) CORS & Dual Instances
+- Two physical instances and hostnames remain (standard vs assessment). Each instance has its own `CORS_ALLOWED_ORIGINS` allowlist.
+- Use `hono/cors` with a dynamic `origin` function:
+  - Allow only exact matches from the env list; set `Vary: Origin`; `credentials: true`.
+  - Expose only necessary headers; do NOT include `Cookie` in `Access-Control-Allow-Headers` (browsers never set it manually).
+- Enforce JSON-only POST and reject unknown `Content-Type` values.
+
+### 7) Security Headers
+- Apply `hono/secure-headers` with minimal tweaks to avoid breaking clients. Start with defaults; adjust `frameguard`/CSP only if needed.
+
+### 8) Body Size Limit
+- Apply `hono/body-limit` to enforce a 1MB limit on applicable routes.
+
+### 9) Cookie Handling
+- Use `hono/cookie` helpers to read cookies. For standard mode, forward only:
+  - `participant_token`
+  - `temporary_participant_token`
+- Do not log cookie values; consider redaction at the logger level.
+
+### 10) Environment Validation
+- Add `src/lib/env.ts` using zod to validate and parse env at startup.
+- Required envs (per instance): `PORT`, `CORS_ALLOWED_ORIGINS`, `APP_SECRET`, `REDIS_*`, Hatchet config, `ASSESSMENT_MODE`.
+- Optional: `CORRELATION_HASH_ALGO`, `LOG_LEVEL`.
+
+### 11) Rate Limiting (Hook Only)
+- Leave an integration point for future rate limiting (per-IP / per-session) on `/AddResponse` standard mode.
+- Do not implement now; add plan steps and config placeholder.
+
+### 12) Secret Rotation & Future Asymmetric Keys
+- Short-term: support rotation by allowing verification with a list of secrets.
+  - Env: `APP_SECRET` (current) and optional `APP_SECRETS_PREVIOUS` (comma-separated). Verify against current first then fallbacks.
+- Mid-term: design for JWKS/asymmetric verification by issuer. Keep API surface compatible (the cookie and correlationKey verification calls remain the same; only the implementation changes).
+
+---
+
+## Phase Breakdown (Updated)
+
+1. Setup and Dependencies
+   - Add Hono, node adapter, zod, @hono/zod-validator, hono-pino, pino
+   - Add `src/lib/env.ts` and validate env at startup
+
+2. Core Application Structure
+   - Initialize Hono app and variables typing (logger, redis, requestId)
+   - Global middleware: secure headers, CORS (strict Origin), JSON-only, body limit, logging, cookie helper
+
+3. Schemas & Types
+   - Zod schemas for Standard and Assessment payloads
+   - Types inferred from schemas and exported
+
+4. Routes
+   - Health: `GET /healthz`, `GET /` with Redis health indicator
+   - Responses: `POST /AddResponse` branching by `ASSESSMENT_MODE`
+
+5. Error Handling
+   - Global `onError` mapping to structured error model without leaking internals
+   - Zod error mapping
+
+6. Integrations
+   - Redis client with event handlers and short ping helper
+   - Hatchet event push with error handling and audit log fallback
+   - JWT verification using existing util
+
+7. Server
+   - `@hono/node-server` startup, graceful shutdown (server.close, redis.quit)
+
+8. Testing & Validation
+   - Contract tests for both modes; CORS behavior per hostname; body limit; error shapes; logging at debug vs info
+
+9. Rate Limiting (Hook)
+   - Document integration point and config. No runtime change yet.
+
+10. Documentation & Cleanup
+   - Document middleware, error model, env, and ops notes (dual instances)
+   - Remove legacy HTTP server code post-cutover
+
+---
+
+## Implementation Checklist (Updated)
+
+- [ ] Add dependencies and env loader
+- [ ] Scaffold app with global middleware
+- [ ] Implement health routes with Redis indicator
+- [ ] Implement response route (standard)
+- [ ] Implement response route (assessment)
+- [ ] Add structured error handling
+- [ ] Configure logger with redaction and requestId
+- [ ] Wire Redis and Hatchet integrations
+- [ ] Graceful shutdown
+- [ ] Tests for both instances and CORS
+- [ ] Update docs and configs
