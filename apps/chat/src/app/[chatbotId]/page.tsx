@@ -12,12 +12,16 @@ export default async function ChatPage({ params }: ChatPageProps) {
   try {
     const chatbot = await prisma.chatbot.findUnique({
       where: { id: chatbotId },
-      select: { id: true, name: true },
+      select: { id: true, name: true, avatar: true },
     })
 
     if (!chatbot) notFound()
 
-    return <Assistant chatbot={chatbot} />
+    return (
+      <Assistant
+        chatbot={{ ...chatbot, avatar: chatbot.avatar ?? undefined }}
+      />
+    )
   } catch (error) {
     // handle invalid UUID or other db errors
     console.error('Error fetching chatbot:', error)

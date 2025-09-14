@@ -25,7 +25,9 @@ import Image from 'next/image'
 
 import { twMerge } from 'tailwind-merge'
 
-export const Thread: FC = () => {
+type ThreadProps = { chatbotAvatar: string }
+
+export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
   return (
     <ThreadPrimitive.Root
       className="bg-background box-border flex h-full flex-col overflow-hidden"
@@ -40,7 +42,9 @@ export const Thread: FC = () => {
           components={{
             UserMessage: UserMessage,
             EditComposer: EditComposer,
-            AssistantMessage: AssistantMessage,
+            AssistantMessage: (props) => (
+              <AssistantMessage {...props} chatbotAvatar={chatbotAvatar} />
+            ),
           }}
         />
 
@@ -249,18 +253,23 @@ const EditComposer: FC = () => {
   )
 }
 
-const AssistantMessage: FC = () => {
+const AssistantMessage: FC<{ chatbotAvatar: string }> = ({ chatbotAvatar }) => {
   return (
     <MessagePrimitive.Root className="relative grid w-full max-w-[var(--thread-max-width)] grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] py-4">
       {/* Avatar image in first column */}
       <div className="col-start-1 row-span-2 row-start-1 mr-3 mt-3 flex items-start pr-2">
         <Image
-          src={'/user-solid.svg'}
+          src={
+            chatbotAvatar
+              ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbotAvatar}.svg`
+              : '../../public/user-solid.svg'
+          }
           alt=""
-          width={'35'}
+          width={chatbotAvatar ? '35' : '32'}
           height="35"
           className={twMerge(
-            'hover:bg-uzh-red-20 cursor-pointer rounded-full bg-white p-1'
+            'hover:bg-uzh-red-20 cursor-pointer rounded-full bg-white',
+            chatbotAvatar ? '' : 'p-1'
           )}
         />
       </div>

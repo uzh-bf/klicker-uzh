@@ -19,7 +19,7 @@ import { Thread } from './thread'
 export const Assistant = ({
   chatbot,
 }: {
-  chatbot: { id: string; name: string }
+  chatbot: { id: string; name: string; avatar?: string }
 }) => {
   const { activeThreadId, threads } = useChatStore()
 
@@ -48,7 +48,7 @@ export const Assistant = ({
             </Breadcrumb>
           </header>
           <div className="flex flex-1 flex-col">
-            <Thread />
+            <Thread chatbotAvatar={chatbot.avatar ?? ''} />
             <Footer />
           </div>
         </SidebarInset>
