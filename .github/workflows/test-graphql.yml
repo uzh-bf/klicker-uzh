@@ -54,7 +54,7 @@ jobs:
           - 5433:5432
 
       hatchet:
-        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:latest
+        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:v0.73.1
         env:
           DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
           SERVER_AUTH_COOKIE_DOMAIN: localhost
@@ -62,10 +62,13 @@ jobs:
           SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
           SERVER_GRPC_INSECURE: 't'
           SERVER_GRPC_BROADCAST_ADDRESS: localhost:7077
+          SERVER_INTERNAL_CLIENT_INTERNAL_GRPC_BROADCAST_ADDRESS: localhost:7077
           SERVER_GRPC_PORT: '7077'
           SERVER_URL: http://localhost:8888
           SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
           SERVER_DEFAULT_ENGINE_VERSION: 'V1'
+          SERVER_LOGGER_LEVEL: debug
+          SERVER_LOGGER_FORMAT: console
         options: >-
           --health-cmd "curl -f http://localhost:8888/healthz"
           --health-interval 30s
@@ -124,7 +127,5 @@ jobs:
         env:
           DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
           HATCHET_CLIENT_TLS_STRATEGY: none
+          HATCHET_CLIENT_HOST_PORT: localhost:7077
           NODE_ENV: test
-          HATCHET_API_URL: http://localhost:8888
-          HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
-          HATCHET_HOST_PORT: 7077
