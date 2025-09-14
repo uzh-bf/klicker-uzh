@@ -369,6 +369,31 @@ const server = createServer(async (req, res) => {
   }
 })
 
+// Test connections at startup
+async function initializeService() {
+  console.log('Starting response-api service...')
+  console.log(`Port: ${PORT}`)
+  console.log(
+    `Assessment mode: ${process.env.ASSESSMENT_MODE === 'true' ? 'enabled' : 'disabled'}`
+  )
+  console.log(`CORS origins: ${CORS_ALLOWED_ORIGINS.join(', ')}`)
+
+  // Test Redis connection
+  console.log('Testing Redis connection...')
+  try {
+    await redis.ping()
+    console.log('Redis connection established')
+  } catch (error) {
+    console.error('Failed to connect to Redis:', error)
+    throw error
+  }
+
+  console.log('All connections established successfully')
+}
+
+// Initialize and start server
+await initializeService()
+
 server.listen(PORT, () => {
-  console.log(`[response-api] Listening on http://localhost:${PORT}`)
+  console.log(`[response-api] Ready and listening on http://localhost:${PORT}`)
 })

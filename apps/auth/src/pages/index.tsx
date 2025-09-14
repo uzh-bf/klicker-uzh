@@ -68,8 +68,8 @@ function SignInOutButton() {
       onClick={() =>
         signIn(process.env.NEXT_PUBLIC_EDUID_ID, {
           callbackUrl:
-            (router.query?.redirectTo as string) ??
-            process.env.NEXT_PUBLIC_DEFAULT_REDIRECT,
+            (router.query?.redirectTo as string) ||
+            process.env.NEXT_PUBLIC_MANAGE_URL,
         })
       }
     >
@@ -147,8 +147,8 @@ function SignInOutButton() {
         onClick={() =>
           signIn('delegation', {
             callbackUrl:
-              (router.query?.redirectTo as string) ??
-              process.env.NEXT_PUBLIC_DEFAULT_REDIRECT,
+              (router.query?.redirectTo as string) ||
+              process.env.NEXT_PUBLIC_MANAGE_URL,
           })
         }
       >
