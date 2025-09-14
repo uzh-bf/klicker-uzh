@@ -116,11 +116,15 @@ jobs:
 
       - name: Wait for Hatchet health
         run: |
+          ready=0
           for i in {1..30}; do
             if curl -fsS http://127.0.0.1:8888/healthz >/dev/null; then
-              echo "Hatchet is ready"; break; fi
+              echo "Hatchet is ready"; ready=1; break; fi
             echo "Waiting for Hatchet... ($i/30)"; sleep 2; done
-          echo "Timeout after waiting for Hatchet for 60 seconds"; exit 1
+          if [ "$ready" -ne 1 ]; then
+            echo "ERROR: Hatchet did not become ready within 60 seconds" >&2
+            exit 1
+          fi
 
       - name: Run tests
         run: |
