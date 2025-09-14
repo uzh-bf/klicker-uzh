@@ -1,3 +1,5 @@
+'use server'
+
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { experimental_createMCPClient } from 'ai'
 
