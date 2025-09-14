@@ -1409,7 +1409,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       scheduledStartAt: new Date(
         currentDate.getTime() - 2 * 24 * 60 * 60 * 1000
       ),
-      scheduledEndAt: new Date(currentDate.getTime() + 6 * 60 * 60 * 1000),
+      scheduledEndAt: new Date(currentDate.getTime() + 6 * 24 * 60 * 60 * 1000),
       isGamificationEnabled: true,
       isAssessmentEnabled: false,
       parameters: {},
@@ -2330,10 +2330,8 @@ Once this microlearning is published, it will be immediately accessible
       course: { connect: { id: COURSE_ID_CALENDAR } },
       pointsMultiplier: 2.5,
       status: Prisma.PublicationStatus.SCHEDULED,
-      scheduledStartAt: new Date(currentDate.getTime()),
-      scheduledEndAt: new Date(
-        currentDate.getTime() + 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000
-      ),
+      scheduledStartAt: new Date(currentDate.getTime() + 10 * 60 * 60 * 1000),
+      scheduledEndAt: new Date(currentDate.getTime() + 24 * 60 * 60 * 1000),
       isGamificationEnabled: true,
       isAssessmentEnabled: false,
       stacks: {

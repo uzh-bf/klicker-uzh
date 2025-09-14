@@ -1080,59 +1080,6 @@ export async function deleteCourse(
         await recomputeDerivedPermissions({ liveQuizId: liveQuiz.id }, prisma)
       }
 
-      // cancel any remaining scheduled publication or ending hatchet jobs for the asynchronous activities of the course
-      for (const pq of course.practiceQuizzes) {
-        if (pq.scheduledPublicationTaskId) {
-          try {
-            await ctx.hatchet.scheduled.delete(pq.scheduledPublicationTaskId)
-          } catch (e) {
-            console.log(
-              `Failed to delete scheduled publication hatchet job for practice quiz ${pq.id}`
-            )
-          }
-        }
-      }
-      for (const ml of course.microLearnings) {
-        if (ml.scheduledPublicationTaskId) {
-          try {
-            await ctx.hatchet.scheduled.delete(ml.scheduledPublicationTaskId)
-          } catch (e) {
-            console.log(
-              `Failed to delete scheduled publication hatchet job for micro learning ${ml.id}`
-            )
-          }
-        }
-        if (ml.scheduledCompletionTaskId) {
-          try {
-            await ctx.hatchet.scheduled.delete(ml.scheduledCompletionTaskId)
-          } catch (e) {
-            console.log(
-              `Failed to delete scheduled completion hatchet job for micro learning ${ml.id}`
-            )
-          }
-        }
-      }
-      for (const ga of course.groupActivities) {
-        if (ga.scheduledPublicationTaskId) {
-          try {
-            await ctx.hatchet.scheduled.delete(ga.scheduledPublicationTaskId)
-          } catch (e) {
-            console.log(
-              `Failed to delete scheduled publication hatchet job for group activity ${ga.id}`
-            )
-          }
-        }
-        if (ga.scheduledCompletionTaskId) {
-          try {
-            await ctx.hatchet.scheduled.delete(ga.scheduledCompletionTaskId)
-          } catch (e) {
-            console.log(
-              `Failed to delete scheduled completion hatchet job for group activity ${ga.id}`
-            )
-          }
-        }
-      }
-
       // trigger a recomputation of all permissions on element contained in the stacks of the deleted activities
       // this action should be executed sequentially to avoid race conditions (same resource in multiple elements)
       const elementIds = [
@@ -1163,6 +1110,59 @@ export async function deleteCourse(
     },
     { timeout: 60000 }
   )
+
+  // cancel any remaining scheduled publication or ending hatchet jobs for the asynchronous activities of the course
+  for (const pq of course.practiceQuizzes) {
+    if (pq.scheduledPublicationTaskId) {
+      try {
+        await ctx.hatchet.scheduled.delete(pq.scheduledPublicationTaskId)
+      } catch (e) {
+        console.log(
+          `Failed to delete scheduled publication hatchet job for practice quiz ${pq.id}`
+        )
+      }
+    }
+  }
+  for (const ml of course.microLearnings) {
+    if (ml.scheduledPublicationTaskId) {
+      try {
+        await ctx.hatchet.scheduled.delete(ml.scheduledPublicationTaskId)
+      } catch (e) {
+        console.log(
+          `Failed to delete scheduled publication hatchet job for micro learning ${ml.id}`
+        )
+      }
+    }
+    if (ml.scheduledCompletionTaskId) {
+      try {
+        await ctx.hatchet.scheduled.delete(ml.scheduledCompletionTaskId)
+      } catch (e) {
+        console.log(
+          `Failed to delete scheduled completion hatchet job for micro learning ${ml.id}`
+        )
+      }
+    }
+  }
+  for (const ga of course.groupActivities) {
+    if (ga.scheduledPublicationTaskId) {
+      try {
+        await ctx.hatchet.scheduled.delete(ga.scheduledPublicationTaskId)
+      } catch (e) {
+        console.log(
+          `Failed to delete scheduled publication hatchet job for group activity ${ga.id}`
+        )
+      }
+    }
+    if (ga.scheduledCompletionTaskId) {
+      try {
+        await ctx.hatchet.scheduled.delete(ga.scheduledCompletionTaskId)
+      } catch (e) {
+        console.log(
+          `Failed to delete scheduled completion hatchet job for group activity ${ga.id}`
+        )
+      }
+    }
+  }
 
   ctx.emitter.emit('invalidate', { typename: 'Course', id })
   return deletedCourse
