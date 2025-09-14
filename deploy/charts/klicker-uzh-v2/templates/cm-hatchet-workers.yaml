@@ -7,6 +7,8 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
 data:
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
+  HATCHET_CLIENT_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
+  # Deprecated - kept for backward compatibility during transition
   HATCHET_TENANT_ID: {{ .Values.hatchet.client.tenantId | quote }}
   HATCHET_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
@@ -27,6 +29,8 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
 data:
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
+  HATCHET_CLIENT_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
+  # Deprecated - kept for backward compatibility during transition
   HATCHET_TENANT_ID: {{ .Values.hatchet.client.tenantId | quote }}
   HATCHET_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
@@ -47,6 +51,8 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
 data:
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
+  HATCHET_CLIENT_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
+  # Deprecated - kept for backward compatibility during transition
   HATCHET_TENANT_ID: {{ .Values.hatchet.client.tenantId | quote }}
   HATCHET_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}

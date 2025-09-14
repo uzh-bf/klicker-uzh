@@ -58,7 +58,7 @@ function selectWorkflows(workflows: PreparedHatchetTasks) {
 }
 
 async function main() {
-  logger.info('Starting worker')
+  logger.info({ workerName: HATCHET_WORKER_NAME }, 'Starting Hatchet worker')
 
   const redisExec = new Redis({
     family: 4,
@@ -101,7 +101,7 @@ async function main() {
 
   const emitter = new EventEmitter()
 
-  logger.info('Preparing workflows')
+  logger.info('Connecting to Hatchet...')
 
   const preparedWorkflows = prepareHatchetTasks({
     hatchet: hatchetClient,
@@ -118,11 +118,19 @@ async function main() {
   )
   logger.info({ selectedKeys }, 'Selected workflows')
 
+  logger.info(
+    { workerName: HATCHET_WORKER_NAME, workflowCount: workflows.length },
+    'Creating Hatchet worker'
+  )
+
   const worker = await hatchetClient.worker(HATCHET_WORKER_NAME, {
     workflows,
   })
 
+  logger.info('Starting worker to process jobs...')
   await worker.start()
+
+  logger.info('Worker started successfully and ready to process jobs')
 }
 
 process.on('unhandledRejection', (reason) => {
