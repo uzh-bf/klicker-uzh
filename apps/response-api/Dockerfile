@@ -49,6 +49,8 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
 COPY --from=builder /app/packages/util/dist/ /app/packages/util/dist/
+COPY --from=builder /app/packages/hatchet/dist/ /app/packages/hatchet/dist/
+COPY --from=builder /app/packages/types/dist/ /app/packages/types/dist/
 COPY --from=builder /app/apps/response-api/dist/ /app/apps/response-api/dist/
 
 USER nodejs

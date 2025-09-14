@@ -32,5 +32,20 @@ data:
   JWT_ISSUER_AUTH: {{ .Values.jwtIssuers.auth | quote }}
   JWT_ISSUER_LTI: {{ .Values.jwtIssuers.lti | quote }}
   JWT_ISSUER_PWA: {{ .Values.jwtIssuers.pwa | quote }}
-  JWT_ISSUER_ASSESSMENT_API: {{ .Values.jwtIssuers.assessmentApi | quote }}
-  JWT_ISSUER_ASSESSMENT_PWA: {{ .Values.jwtIssuers.assessmentPwa | quote }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-hatchet-worker-response-processor-assessment
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
+  HATCHET_TENANT_ID: {{ .Values.hatchet.client.tenantId | quote }}
+  HATCHET_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
+  HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  ASSESSMENT_MODE: 'true'
+  JWT_ISSUER_API: {{ .Values.jwtIssuers.assessmentApi | quote }}
+  JWT_ISSUER_AUTH: {{ .Values.jwtIssuers.auth | quote }}
+  JWT_ISSUER_LTI: {{ .Values.jwtIssuers.lti | quote }}
+  JWT_ISSUER_PWA: {{ .Values.jwtIssuers.assessmentPwa | quote }}

@@ -6,13 +6,6 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
-  {{- if .Values.frontendPWA.sentryDSN }}
-  SENTRY_DSN: {{ .Values.frontendPWA.sentryDSN | quote }}
-  SENTRY_RELEASE: {{ .Chart.AppVersion | quote }}
-  {{ end }}
-  {{- if .Values.frontendPWA.sentryEnv }}
-  SENTRY_ENVIRONMENT: {{ .Values.frontendPWA.sentryEnv | quote }}
-  {{ end }}
   JWT_ISSUER_API: {{ .Values.jwtIssuers.api | quote }}
   JWT_ISSUER_AUTH: {{ .Values.jwtIssuers.auth | quote }}
   JWT_ISSUER_LTI: {{ .Values.jwtIssuers.lti | quote }}
