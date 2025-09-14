@@ -441,7 +441,18 @@ export async function seedElements(
       type: ElementType.SC,
       name: 'SC Element',
       content: 'SC Content',
-      options: {},
+      explanation: 'SC Explanation',
+      options: {
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: true,
+        displayMode: 'LIST',
+        choices: [
+          { ix: 0, value: 'Choice 1', correct: true, feedback: 'Feedback 1' },
+          { ix: 1, value: 'Choice 2', correct: false, feedback: 'Feedback 2' },
+          { ix: 2, value: 'Choice 3', correct: false, feedback: 'Feedback 3' },
+          { ix: 3, value: 'Choice 4', correct: true, feedback: 'Feedback 4' },
+        ],
+      },
       ownerId: userContext.user.sub,
     },
   })
@@ -828,13 +839,15 @@ export async function seedLiveQuiz(
       ownerId: ctx.user.sub,
       isAssessmentEnabled: course?.isAssessmentEnabled ?? false,
       isGamificationEnabled: course?.isGamificationEnabled ?? false,
-      pinCode: generatePassword.generate({
-        length: 6,
-        numbers: true,
-        uppercase: true,
-        lowercase: false,
-        symbols: false,
-      }),
+      pinCode: course?.isAssessmentEnabled
+        ? generatePassword.generate({
+            length: 6,
+            numbers: true,
+            uppercase: true,
+            lowercase: false,
+            symbols: false,
+          })
+        : null,
       blocks: {
         create: elements.map((element, index) => ({
           order: index,

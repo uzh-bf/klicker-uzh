@@ -37,13 +37,14 @@ function CourseElement({
   const isPast = dayjs().isAfter(course.endDate)
 
   return (
-    <div key={course.id} className="flex w-full flex-row">
+    <div key={course.id} className="flex w-full flex-row items-stretch">
       <LinkButton
         disabled={disabled}
         icon={(isFuture && faCalendar) || (isPast && faCheck) || faBolt}
         className={{
           root: twMerge(
-            'h-full flex-1 rounded-r-none border-r-0',
+            'h-full flex-1',
+            !!onSubscribeClick && 'rounded-r-none border-r-0',
             isPast && 'text-slate-600',
             disabled && 'text-slate-600 hover:bg-slate-200'
           ),
@@ -68,38 +69,40 @@ function CourseElement({
         </div>
       </LinkButton>
       {onSubscribeClick && (
-        <Button
-          className={{
-            root: twMerge(
-              'rounded-l-none! p-3',
-              pushDisabled
-                ? 'border-slate-400 bg-slate-400 hover:bg-slate-500'
-                : 'border-slate-600 bg-slate-600 hover:bg-slate-500',
-              !course.isSubscribed && !pushDisabled && 'cursor-pointer'
-            ),
-          }}
-          disabled={!!pushDisabled}
-          onClick={() => {
-            if (disabled) return
-            onSubscribeClick(course.isSubscribed, course.id)
-          }}
-          data={{ cy: `course-${course.displayName}-subscribe` }}
-        >
-          {course.isSubscribed ? (
-            <FontAwesomeIcon
-              className="text-uzh-yellow-100"
-              icon={faBell}
-              fixedWidth
-            />
-          ) : (
-            <FontAwesomeIcon
-              icon={faBellSlash}
-              fixedWidth
-              flip="horizontal"
-              className="text-red-500"
-            />
-          )}
-        </Button>
+        <div className="self-stretch">
+          <Button
+            className={{
+              root: twMerge(
+                'rounded-l-none! h-full p-3',
+                pushDisabled
+                  ? 'border-slate-400 bg-slate-400 hover:bg-slate-500'
+                  : 'border-slate-600 bg-slate-600 hover:bg-slate-500',
+                !course.isSubscribed && !pushDisabled && 'cursor-pointer'
+              ),
+            }}
+            disabled={!!pushDisabled}
+            onClick={() => {
+              if (disabled) return
+              onSubscribeClick(course.isSubscribed, course.id)
+            }}
+            data={{ cy: `course-${course.displayName}-subscribe` }}
+          >
+            {course.isSubscribed ? (
+              <FontAwesomeIcon
+                className="text-uzh-yellow-100"
+                icon={faBell}
+                fixedWidth
+              />
+            ) : (
+              <FontAwesomeIcon
+                icon={faBellSlash}
+                fixedWidth
+                flip="horizontal"
+                className="text-red-500"
+              />
+            )}
+          </Button>
+        </div>
       )}
     </div>
   )
