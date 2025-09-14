@@ -32,7 +32,7 @@ const ThreadListNew: FC = () => {
       onClick={handleNewThread}
       basic
       className={{
-        root: 'hover:bg-muted mx-6 my-2 flex items-center rounded-lg border-2 px-2.5 py-1',
+        root: 'hover:bg-muted border-1 mx-6 my-2 flex items-center rounded-lg px-2.5 py-1 shadow-sm',
       }}
     >
       <Button.Icon icon={faPlus} />

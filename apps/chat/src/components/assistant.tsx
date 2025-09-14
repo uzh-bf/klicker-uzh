@@ -30,23 +30,25 @@ export const Assistant = ({
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
-          <header className="flex h-10 shrink-0 items-center gap-2 border-b bg-gray-50 px-4">
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden sm:block">
-                  <BreadcrumbLink asChild>
-                    <div className="cursor-pointer">{chatbot.name}</div>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden sm:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>
-                    {activeThread?.title || 'New Chat'}
-                  </BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </header>
+          <div className="p-4">
+            <header className="flex h-10 shrink-0 items-center gap-2 rounded-md border-b bg-gray-50 px-4">
+              <Breadcrumb>
+                <BreadcrumbList>
+                  <BreadcrumbItem className="hidden sm:block">
+                    <BreadcrumbLink asChild>
+                      <div className="cursor-pointer">{chatbot.name}</div>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="hidden sm:block" />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>
+                      {activeThread?.title || 'New Chat'}
+                    </BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
+            </header>
+          </div>
           <div className="flex flex-1 flex-col">
             <Thread chatbotAvatar={chatbot.avatar ?? ''} />
             <Footer />

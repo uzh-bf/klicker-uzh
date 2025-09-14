@@ -23,7 +23,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className="flex items-center justify-between gap-2 p-2 pr-0">
+            <div className="mt-2 flex items-center justify-between gap-2 p-2 pr-0">
               <div className="flex items-center gap-2">
                 <MessagesSquare className="size-6" />
                 <span className="text-lg font-semibold">Chat History</span>
