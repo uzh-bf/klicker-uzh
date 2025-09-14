@@ -165,8 +165,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
             expiresIn: '5m',
             issuer:
               process.env.ASSESSMENT_MODE === 'true'
-                ? process.env.APP_ORIGIN_ASSESSMENT_PWA ||
-                  process.env.APP_ORIGIN_PWA
+                ? process.env.APP_ORIGIN_ASSESSMENT_PWA
                 : process.env.APP_ORIGIN_PWA,
           }
         )
