@@ -2423,60 +2423,65 @@ export async function resetAssessmentLiveQuiz(
     }
 
     // update the live quiz (reset it to draft status, remove all responses, reset results)
-    const updatedQuiz = await ctx.prisma.$transaction(async (tx) => {
-      // reset the live quiz
-      const updatedLiveQuiz = await tx.liveQuiz.update({
-        where: { id },
-        data: {
-          status: DB.PublicationStatus.DRAFT,
-          startedAt: null,
-          finishedAt: null,
-          feedbacks: { deleteMany: {} },
-          confusionFeedbacks: { deleteMany: {} },
-          leaderboard: { deleteMany: {} },
-          temporaryLeaderboard: { deleteMany: {} }, // should not be set for assessment live quizzes
-        },
-        include: {
-          course: true,
-          permissions: {
-            where: { userId: ctx.user.sub },
-            include: { directPermission: true },
-          },
-          _count: { select: { permissions: true } },
-        },
-      })
-
-      // reset all blocks and the contained element instances
-      for (const block of liveQuiz.blocks) {
-        // reset the block status
-        await tx.elementBlock.update({
-          where: { id: block.id },
+    const updatedQuiz = await ctx.prisma.$transaction(
+      async (tx) => {
+        // reset the live quiz
+        const updatedLiveQuiz = await tx.liveQuiz.update({
+          where: { id },
           data: {
-            status: DB.ElementBlockStatus.SCHEDULED,
+            status: DB.PublicationStatus.DRAFT,
             startedAt: null,
-            closedAt: null,
-            expiresAt: null,
-            execution: { increment: 1 },
+            finishedAt: null,
+            feedbacks: { deleteMany: {} },
+            confusionFeedbacks: { deleteMany: {} },
+            leaderboard: { deleteMany: {} },
+            temporaryLeaderboard: { deleteMany: {} }, // should not be set for assessment live quizzes
+          },
+          include: {
+            course: true,
+            permissions: {
+              where: { userId: ctx.user.sub },
+              include: { directPermission: true },
+            },
+            _count: { select: { permissions: true } },
           },
         })
 
-        // reset all instances with their results and delete the responses
-        for (const instance of block.elements) {
-          const initialResults = getInitialInstanceResults(instance.elementData)
-
-          await tx.elementInstance.update({
-            where: { id: instance.id },
+        // reset all blocks and the contained element instances
+        for (const block of liveQuiz.blocks) {
+          // reset the block status
+          await tx.elementBlock.update({
+            where: { id: block.id },
             data: {
-              liveQuizResponses: { deleteMany: {} },
-              results: initialResults,
-              anonymousResults: initialResults,
+              status: DB.ElementBlockStatus.SCHEDULED,
+              startedAt: null,
+              closedAt: null,
+              expiresAt: null,
+              execution: { increment: 1 },
             },
           })
-        }
-      }
 
-      return updatedLiveQuiz
-    })
+          // reset all instances with their results and delete the responses
+          for (const instance of block.elements) {
+            const initialResults = getInitialInstanceResults(
+              instance.elementData
+            )
+
+            await tx.elementInstance.update({
+              where: { id: instance.id },
+              data: {
+                liveQuizResponses: { deleteMany: {} },
+                results: initialResults,
+                anonymousResults: initialResults,
+              },
+            })
+          }
+        }
+
+        return updatedLiveQuiz
+      },
+      { timeout: 60000 }
+    )
 
     await ctx.hatchet.events.push('create-audit-log-entry', {
       info: `[INFO] [Reset Assessment Live Quiz] Successfully reset assessment live quiz with ID ${id}.`,
