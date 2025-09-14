@@ -2538,6 +2538,8 @@ export async function resetAssessmentLiveQuiz(
     await ctx.hatchet.events.push('create-audit-log-entry', {
       info: `[ERROR] [Reset Assessment Live Quiz] Failed to reset live quiz with ID ${id}: ${error}`,
     })
+
+    return null
   }
 }
 
