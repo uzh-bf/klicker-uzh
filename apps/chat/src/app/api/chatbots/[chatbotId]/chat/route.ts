@@ -163,15 +163,21 @@ export async function POST(
       userMessageId = lastMessage.id
 
       try {
-        await prisma.chatMessage.create({
-          data: {
-            id: lastMessage.id,
-            threadId: currentThreadId,
-            parentId: parentId || null,
-            role: lastMessage.role,
-            content: [{ type: 'text', text: lastMessage.content }],
-          },
+        // check if message already exists (e.g. in case of retries)
+        const existingMessage = await prisma.chatMessage.findUnique({
+          where: { id: userMessageId },
         })
+        if (!existingMessage) {
+          await prisma.chatMessage.create({
+            data: {
+              id: lastMessage.id,
+              threadId: currentThreadId,
+              parentId: parentId || null,
+              role: lastMessage.role,
+              content: [{ type: 'text', text: lastMessage.content }],
+            },
+          })
+        }
 
         // update thread's timestamp
         await prisma.chatThread.update({
@@ -266,15 +272,21 @@ export async function POST(
               }
             }
           }
-          await prisma.chatMessage.create({
-            data: {
-              id: assistantMessageId,
-              threadId: currentThreadId,
-              parentId: userMessageId,
-              role: 'assistant',
-              content: content,
-            },
+          // save assistant message to db
+          const existingMessage = await prisma.chatMessage.findUnique({
+            where: { id: assistantMessageId },
           })
+          if (!existingMessage) {
+            await prisma.chatMessage.create({
+              data: {
+                id: assistantMessageId,
+                threadId: currentThreadId,
+                parentId: userMessageId,
+                role: 'assistant',
+                content: content,
+              },
+            })
+          }
 
           // update thread's timestamp
           await prisma.chatThread.update({
@@ -286,6 +298,7 @@ export async function POST(
         }
       }
 
+      // deduct credits
       if (result.totalUsage) {
         try {
           const costBase = getModelCost(selectedModel)
@@ -313,15 +326,20 @@ export async function POST(
       // save partial message
       if (currentThreadId && partialContent.trim()) {
         try {
-          await prisma.chatMessage.create({
-            data: {
-              id: assistantMessageId,
-              threadId: currentThreadId,
-              parentId: userMessageId,
-              role: 'assistant',
-              content: [{ type: 'text', text: partialContent }],
-            },
+          const existingMessage = await prisma.chatMessage.findUnique({
+            where: { id: assistantMessageId },
           })
+          if (!existingMessage) {
+            await prisma.chatMessage.create({
+              data: {
+                id: assistantMessageId,
+                threadId: currentThreadId,
+                parentId: userMessageId,
+                role: 'assistant',
+                content: [{ type: 'text', text: partialContent }],
+              },
+            })
+          }
 
           // update thread's timestamp
           await prisma.chatThread.update({
