@@ -107,6 +107,11 @@ jobs:
           cd ../hatchet
           pnpm run build
 
+      - name: Build Hatchet worker
+        run: |
+          cd apps/hatchet-worker-general
+          pnpm run build
+
       - name: Setup database
         run: |
           cd packages/prisma
@@ -128,7 +133,18 @@ jobs:
 
       - name: Run tests
         run: |
-          . ./util/_create_hatchet_token_graphql.sh
+          ./util/_create_hatchet_token_cypress.sh
+          ./util/_create_hatchet_token_graphql.sh
+          # start hatchet worker in background, configured to use the same Redis and DB
+          (cd apps/hatchet-worker-general && \
+            DATABASE_URL=$DATABASE_URL \
+            HATCHET_API_URL=$HATCHET_API_URL \
+            HATCHET_TENANT_ID=$HATCHET_TENANT_ID \
+            HATCHET_HOST_PORT=$HATCHET_HOST_PORT \
+            REDIS_HOST=127.0.0.1 REDIS_PORT=6379 \
+            REDIS_CACHE_HOST=127.0.0.1 REDIS_CACHE_PORT=6379 \
+            pnpm run start:test &)
+          sleep 3
           cd packages/graphql
           pnpm vitest run
         env:
