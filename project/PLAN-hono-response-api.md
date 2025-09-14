@@ -70,7 +70,9 @@ Refactor the response-api from Node.js built-in HTTP server to Hono framework, i
 ## Phase 5: Service Integration
 1. **Redis connection**
    - Maintain existing Redis client setup
-   - Error handling for connection issues
+   - Implement graceful degradation: wrap all Redis operations in try-catch
+   - If Redis fails, log warning but continue processing (let Hatchet handle deduplication)
+   - Redis is purely an optimization, not a requirement for operation
 
 2. **Hatchet integration**
    - Preserve event publishing logic
@@ -79,6 +81,13 @@ Refactor the response-api from Node.js built-in HTTP server to Hono framework, i
 3. **JWT verification**
    - Keep existing JWT utility usage
    - Type-safe payload handling
+
+4. **Audit Service integration**
+   - Create `src/lib/audit.ts` module for network-based audit logging
+   - Environment variables for audit service endpoint/credentials
+   - Implement retry logic for critical audit events
+   - Structured audit event types (response received, duplicate detected, authentication failure)
+   - Consider batching for non-critical events
 
 ## Phase 6: Server Configuration
 1. **Update index.ts**
@@ -129,12 +138,13 @@ Refactor the response-api from Node.js built-in HTTP server to Hono framework, i
 - All existing API contracts remain unchanged
 - Cookie handling logic preserved
 - Hatchet event publishing unchanged
-- Redis operations maintain same patterns
+- Redis operations maintain same patterns with added graceful degradation
 - Environment variables remain compatible
 - Docker deployment unchanged
-
-Notes:
-- Two separate instances will continue to run (standard vs assessment) with physical separation and distinct hostnames. CORS allowlists will be tailored per instance.
+- **Runtime switching**: Single container image with `ASSESSMENT_MODE` flag for mode selection
+- **Deployment model**: Two physical instances (standard vs assessment) with separate infrastructure for resource and security isolation
+- **CORS configuration**: Each instance has tailored allowlists via environment configuration
+- **Audit trail**: Network-based audit service integration for compliance and security monitoring
 - Error response strings currently used by clients remain unchanged; we will add structured fields alongside for future migration.
 
 ## Implementation Checklist
@@ -157,9 +167,10 @@ Notes:
 - [ ] `src/routes/health.ts` - Health check routes
 - [ ] `src/routes/response.ts` - Response handling routes
 - [ ] `src/middleware/index.ts` - Custom middleware
-- [ ] `src/lib/redis.ts` - Redis client setup
+- [ ] `src/lib/redis.ts` - Redis client setup with graceful degradation
 - [ ] `src/lib/logger.ts` - Logger configuration
- - [ ] `src/lib/env.ts` - Environment schema (zod) and loader
+- [ ] `src/lib/env.ts` - Environment schema (zod) and loader
+- [ ] `src/lib/audit.ts` - Audit service client with retry logic
 
 ### Files to Modify
 - [ ] `src/index.ts` - Server startup
@@ -200,9 +211,9 @@ If issues arise during deployment:
 
 ### 2) Correlation ID Hashing
 - Purpose is stable compaction for audit correlation and Redis de-duplication, not cryptographic verification.
-- Default: continue using MD5 for correlationId to preserve behavior and avoid breaking duplicate detection.
-- Future hardening: introduce optional `CORRELATION_HASH_ALGO` env with values `md5` (default) or `hmac-sha256`. When `hmac-sha256`, compute `HMAC(APP_SECRET, correlationKey + ':' + participantId)`.
-- Migration strategy: roll out new algo behind env flag per instance; maintain Redis de-dup semantics.
+- **Decision**: Continue using MD5 for correlationId as it's 3-5x faster than HMAC-SHA256 and sufficient for deduplication purposes.
+- Performance consideration: MD5 is optimal for this use case (deduplication, not security).
+- Future option: Could introduce `CORRELATION_HASH_ALGO` env if security requirements change, but not currently planned.
 
 ### 3) Logging & Redaction
 - Use `hono-pino` with pino. Generate and attach a `requestId` (UUIDv4) to all logs and responses (`X-Request-Id`).
@@ -234,10 +245,13 @@ If issues arise during deployment:
 ### 5) Health Checks
 - `GET /healthz` and `GET /` always return `200` with `{ status: 'ok', redis: 'up' | 'down' }`.
 - Implement a fast Redis ping with short timeout; if it fails, report `redis: 'down'` but do not fail the endpoint.
+- **Redis as optional optimization**: The service can function without Redis - it's used purely for deduplication to save Hatchet processing. If Redis is down, responses are still processed and sent to Hatchet.
 - Log a warning when Redis is down with `requestId`.
 
 ### 6) CORS & Dual Instances
-- Two physical instances and hostnames remain (standard vs assessment). Each instance has its own `CORS_ALLOWED_ORIGINS` allowlist.
+- **Runtime switching**: Single container image with `ASSESSMENT_MODE` environment flag controlling behavior at runtime. This avoids separate builds and simplifies CI/CD.
+- **Physical isolation**: Two physical deployments with separate infrastructure for resource isolation and security, each with its own hostname and CORS configuration.
+- Each instance has its own `CORS_ALLOWED_ORIGINS` allowlist configured via environment.
 - Use `hono/cors` with a dynamic `origin` function:
   - Allow only exact matches from the env list; set `Vary: Origin`; `credentials: true`.
   - Expose only necessary headers; do NOT include `Cookie` in `Access-Control-Allow-Headers` (browsers never set it manually).
@@ -258,7 +272,8 @@ If issues arise during deployment:
 ### 10) Environment Validation
 - Add `src/lib/env.ts` using zod to validate and parse env at startup.
 - Required envs (per instance): `PORT`, `CORS_ALLOWED_ORIGINS`, `APP_SECRET`, `REDIS_*`, Hatchet config, `ASSESSMENT_MODE`.
-- Optional: `CORRELATION_HASH_ALGO`, `LOG_LEVEL`.
+- Optional: `LOG_LEVEL`, `AUDIT_SERVICE_URL`, `AUDIT_SERVICE_TOKEN`.
+- Runtime behavior changes based on `ASSESSMENT_MODE` flag (true/false).
 
 ### 11) Rate Limiting (Hook Only)
 - Leave an integration point for future rate limiting (per-IP / per-session) on `/AddResponse` standard mode.
@@ -268,6 +283,47 @@ If issues arise during deployment:
 - Short-term: support rotation by allowing verification with a list of secrets.
   - Env: `APP_SECRET` (current) and optional `APP_SECRETS_PREVIOUS` (comma-separated). Verify against current first then fallbacks.
 - Mid-term: design for JWKS/asymmetric verification by issuer. Keep API surface compatible (the cookie and correlationKey verification calls remain the same; only the implementation changes).
+
+### 13) Redis Graceful Degradation Pattern
+- **Design principle**: Redis is an optimization layer, not a critical dependency.
+- **Implementation approach**:
+  ```typescript
+  // All Redis operations wrapped with fallback
+  async function checkDuplicate(key: string, value: string): Promise<boolean> {
+    try {
+      const exists = await redis.hget(key, value);
+      return !!exists;
+    } catch (error) {
+      logger.warn({ error, key }, 'Redis check failed, proceeding without dedup');
+      return false; // Let Hatchet handle deduplication
+    }
+  }
+  
+  async function recordVote(key: string, value: string, data: any): Promise<void> {
+    try {
+      await redis.hset(key, value, JSON.stringify(data));
+    } catch (error) {
+      logger.warn({ error, key }, 'Redis write failed, continuing without cache');
+      // Continue processing - Hatchet will handle it
+    }
+  }
+  ```
+- **Health check behavior**: Redis status reported but never fails the health endpoint
+- **Monitoring**: Track Redis failure rate via logs for operational awareness
+
+### 14) Audit Service Integration
+- **Network-based audit logging**: Separate service handles audit trail
+- **Event types**:
+  - Response received (standard and assessment)
+  - Duplicate submission detected
+  - Authentication failures
+  - Correlation ID generation
+  - Processing errors
+- **Implementation considerations**:
+  - Async fire-and-forget for non-critical events
+  - Retry logic for critical security events
+  - Structured event format with correlation IDs
+  - Fallback to local logging if audit service unavailable
 
 ---
 
