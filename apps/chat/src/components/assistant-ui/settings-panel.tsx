@@ -125,6 +125,12 @@ export function SettingsPanel() {
               }}
               formatter={() => null}
             />
+            {credits.current === 0 ? (
+              <div className="text-muted-foreground text-sm">
+                You have used up all your credits. However, you can still use
+                the smaller model.
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

@@ -9,6 +9,7 @@ export interface ModelConfiguration {
     input: number // cost per 1M tokens in USD
     output: number // cost per 1M tokens in USD
   }
+  fallback: boolean // whether this is allowed when credits are 0
 }
 
 export const MODEL_CONFIGS: ModelConfiguration[] = [
@@ -21,6 +22,7 @@ export const MODEL_CONFIGS: ModelConfiguration[] = [
       input: 2.0,
       output: 8.0,
     },
+    fallback: false,
   },
   {
     id: 'gpt-4.1-mini',
@@ -31,14 +33,16 @@ export const MODEL_CONFIGS: ModelConfiguration[] = [
       input: 0.4,
       output: 1.6,
     },
+    fallback: true,
   },
 ]
 
 export function getModelOptions() {
-  return MODEL_CONFIGS.map(({ id, name, description }) => ({
+  return MODEL_CONFIGS.map(({ id, name, description, fallback }) => ({
     id,
     name,
     description,
+    fallback,
   }))
 }
 

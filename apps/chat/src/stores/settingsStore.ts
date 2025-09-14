@@ -8,6 +8,7 @@ interface ModelOption {
   id: ModelID
   name: string
   description: string
+  fallback: boolean
 }
 
 export interface ModeOption {
@@ -50,7 +51,8 @@ export const useSettingsStore = create<SettingsState>()(
       modeOptions: {},
 
       // available options
-      modelOptions: getModelOptions(),
+
+      modelOptions: getModelOptions().filter((m) => m.fallback),
 
       // get mode options from db; if not available, use default prompt
       loadModeOptions: async (chatbotId: string) => {
@@ -96,7 +98,31 @@ export const useSettingsStore = create<SettingsState>()(
           const response = await fetch(`/api/chatbots/${chatbotId}/credits`)
           if (response.ok) {
             const creditsData = await response.json()
-            set({ credits: creditsData })
+
+            const allModels = getModelOptions()
+            const availableModels =
+              creditsData.current > 0
+                ? allModels
+                : allModels.filter((m) => m.fallback)
+
+            set((state) => {
+              // select first available model if current selected model not available
+              const isSelectedModelAvailable = availableModels.some(
+                (m) => m.id === state.selectedModel
+              )
+              if (!isSelectedModelAvailable) {
+                return {
+                  credits: creditsData,
+                  modelOptions: availableModels,
+                  selectedModel: availableModels[0]?.id,
+                }
+              }
+
+              return {
+                credits: creditsData,
+                modelOptions: availableModels,
+              }
+            })
           } else {
             console.error('Failed to load credits:', response.statusText)
           }
