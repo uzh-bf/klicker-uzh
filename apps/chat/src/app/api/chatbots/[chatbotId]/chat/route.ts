@@ -2,6 +2,7 @@ import { allowedTools } from '@/src/lib/config/allowedTools'
 import {
   getModelCost,
   getModelLink,
+  MODEL_IDS,
   type ModelID,
 } from '@/src/lib/config/models'
 import { getMCPTools } from '@/src/services/mcpClients'
@@ -16,6 +17,7 @@ import {
 } from 'ai'
 import { JWTPayload, jwtVerify } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { DEFAULT_PROMPT } from '../../../../../lib/config/prompts'
 import { CreditsService } from '../../../../../services/credits'
 import { ThreadService } from '../../../../../services/threads'
@@ -97,6 +99,27 @@ export async function POST(
     )
   }
 
+  const bodySchema = z.object({
+    messages: z.array(
+      z.object({
+        id: z.string().min(1),
+        role: z.enum(['user', 'assistant']),
+        content: z.string(),
+      })
+    ),
+    threadId: z.string().min(1).nullable().optional(),
+    selectedModel: z.enum(MODEL_IDS),
+    selectedMode: z.string().optional().default('Tutor'),
+    parentId: z.string().min(1).nullable().optional(),
+    assistantMessageId: z.string().min(1),
+  })
+  let parsed
+  try {
+    parsed = bodySchema.parse(await req.json())
+  } catch (e) {
+    console.error('Invalid request body:', e)
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
   const {
     messages,
     threadId,
@@ -104,14 +127,7 @@ export async function POST(
     selectedMode,
     parentId,
     assistantMessageId,
-  }: {
-    messages: Array<{ id: string; role: string; content: string }>
-    threadId: string | null
-    selectedModel: ModelID
-    selectedMode: string
-    parentId?: string | null
-    assistantMessageId: string
-  } = await req.json()
+  } = parsed
 
   let currentThreadId = threadId
   let userMessageId: string | null = null

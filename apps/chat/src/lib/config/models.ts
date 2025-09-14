@@ -1,4 +1,5 @@
-export type ModelID = 'gpt-4.1' | 'gpt-4.1-mini'
+export const MODEL_IDS = ['gpt-4.1', 'gpt-4.1-mini'] as const
+export type ModelID = (typeof MODEL_IDS)[number]
 
 export interface ModelConfiguration {
   id: ModelID
