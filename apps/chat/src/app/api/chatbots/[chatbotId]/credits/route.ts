@@ -20,12 +20,23 @@ export async function GET(
   }
 
   let participantData: JWTPayload
+  let participantId: string | null = null
   try {
     const jwtPayload = await jwtVerify(
       participantToken,
       new TextEncoder().encode(process.env.APP_SECRET || '')
     )
     participantData = jwtPayload.payload
+    participantId =
+      typeof participantData.sub === 'string' && participantData.sub
+        ? participantData.sub
+        : null
+    if (!participantId) {
+      return NextResponse.json(
+        { error: 'Invalid authentication token' },
+        { status: 401 }
+      )
+    }
   } catch (error) {
     console.error('JWT verification failed:', error)
     return NextResponse.json(
@@ -36,7 +47,7 @@ export async function GET(
 
   try {
     const credits = await CreditsService.getUserCredits(
-      participantData.sub as string,
+      participantId as string,
       chatbotId
     )
 

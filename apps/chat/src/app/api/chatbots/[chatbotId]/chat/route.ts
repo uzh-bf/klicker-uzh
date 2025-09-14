@@ -40,12 +40,23 @@ export async function POST(
   }
 
   let participantData: JWTPayload
+  let participantId: string | null = null
   try {
     const jwtPayload = await jwtVerify(
       participantToken,
       new TextEncoder().encode(process.env.APP_SECRET || '')
     )
     participantData = jwtPayload.payload
+    participantId =
+      typeof participantData.sub === 'string' && participantData.sub
+        ? participantData.sub
+        : null
+    if (!participantId) {
+      return NextResponse.json(
+        { error: 'Invalid authentication token' },
+        { status: 401 }
+      )
+    }
   } catch (error) {
     console.error('Unexpected JWT verification failure in API route:', error)
     return NextResponse.json(
@@ -66,7 +77,7 @@ export async function POST(
                 select: { courseId: true },
               })
             )?.courseId ?? '',
-          participantId: participantData.sub as string,
+          participantId: participantId,
         },
       },
     })
