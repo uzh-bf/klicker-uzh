@@ -2810,8 +2810,43 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
   const quizInfo = await ctx.prisma.liveQuiz.findUnique({ where: { id } })
 
   // if the quiz is not available, return early
-  if (!quizInfo || quizInfo.status !== DB.PublicationStatus.PUBLISHED)
+  if (!quizInfo || quizInfo.status !== DB.PublicationStatus.PUBLISHED) {
     return null
+  }
+
+  // if the live quiz is an assessment live quiz, verify that the user
+  // is logged in and a participant in the corresponding course
+  if (quizInfo.isAssessmentEnabled) {
+    // if the user is not logged in, send them to the the assessment login page
+    if (
+      !ctx.user?.sub ||
+      ctx.user.role !== DB.UserRole.PARTICIPANT ||
+      ctx.user.scope !== DB.UserLoginScope.EDUID
+    ) {
+      throw new GraphQLError('UNAUTHORIZED_ASSESSMENT', {
+        extensions: { code: 'FORBIDDEN' },
+      })
+    }
+
+    // if the user is logged in as an eduid participant, but not part of the course, return an error
+    // -> frontend should redirect to the assessment home page
+    if (quizInfo.courseId) {
+      const participation = await ctx.prisma.participation.findUnique({
+        where: {
+          courseId_participantId: {
+            courseId: quizInfo.courseId,
+            participantId: ctx.user.sub,
+          },
+        },
+      })
+
+      if (!participation) {
+        throw new GraphQLError('MISSING_ASSESSMENT_COURSE_PARTICIPATION', {
+          extensions: { code: 'FORBIDDEN' },
+        })
+      }
+    }
+  }
 
   // if a pin code is required, verify that the user has already entered a valid one
   if (quizInfo.pinCode) {

@@ -99,6 +99,7 @@ function prepareApp({
       }
     }
 
+    // ! DO NOT TOUCH - assessment live quiz mode relies on it
     token =
       token ?? req.headers['authorization']?.replace('Bearer ', '') ?? null
 

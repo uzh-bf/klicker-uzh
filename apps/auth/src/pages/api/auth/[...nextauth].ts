@@ -621,8 +621,7 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
         },
 
         async jwt({ token, profile }) {
-          token.scope = 'EDUID'
-
+          token.scope = UserLoginScope.EDUID
           console.log(`[AUTH ${requestId}] [participant] jwt`, {
             hasProfile: Boolean(profile),
             role: token?.role,

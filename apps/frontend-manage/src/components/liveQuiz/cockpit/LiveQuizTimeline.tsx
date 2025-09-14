@@ -153,21 +153,26 @@ function LiveQuizTimeline({
               <Button.Icon icon={faQrcode} />
               <Button.Label> {t('manage.general.qrCode')}</Button.Label>
             </Button>
-            <a
-              className="flex-1"
-              href={`${assessmentMode ? process.env.NEXT_PUBLIC_ASSESSMENT_URL : process.env.NEXT_PUBLIC_PWA_URL}/${locale}/session/${quizId}`}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              <Button
-                fluid
-                className={{ root: 'h-8' }}
-                data={{ cy: 'audience-view-cockpit' }}
+            {/* // TODO: allow owners to access live quiz, but reject / ignore responses in response-api */}
+            {!assessmentMode && (
+              <a
+                className="flex-1"
+                href={`${assessmentMode ? process.env.NEXT_PUBLIC_ASSESSMENT_URL : process.env.NEXT_PUBLIC_PWA_URL}/${locale}/session/${quizId}`}
+                rel="noopener noreferrer"
+                target="_blank"
               >
-                <Button.Icon icon={faUpRightFromSquare} />
-                <Button.Label>{t('manage.cockpit.audienceView')}</Button.Label>
-              </Button>
-            </a>
+                <Button
+                  fluid
+                  className={{ root: 'h-8' }}
+                  data={{ cy: 'audience-view-cockpit' }}
+                >
+                  <Button.Icon icon={faUpRightFromSquare} />
+                  <Button.Label>
+                    {t('manage.cockpit.audienceView')}
+                  </Button.Label>
+                </Button>
+              </a>
+            )}
             <Link
               passHref
               href={`/quizzes/${quizId}/evaluation`}

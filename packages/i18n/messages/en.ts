@@ -1078,6 +1078,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Your login could not be verified correctly. Please log in again and answer the question again.',
       submissionServerError:
         'A server error occurred while submitting your answer. Please try again.',
+      missingAssessmentCourseParticipation:
+        'You are not part of the assessment course to which this quiz belongs. Please contact your lecturers.',
     },
   },
   manage: {
@@ -1324,6 +1326,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       READ_ONLY: 'Read Only',
       ACCOUNT_OWNER: 'Account Owner',
       OTP: 'One-Time Password',
+      EDUID: 'Edu-ID',
       ACTIVATION: 'Activation',
       lastUsed: 'last used: {date}',
       lastUsedNever: 'last used: never',

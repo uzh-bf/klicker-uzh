@@ -18,7 +18,7 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import usePushNotifications from '@klicker-uzh/shared-components/src/hooks/usePushNotifications'
 import useStickyState from '@klicker-uzh/shared-components/src/hooks/useStickyState'
-import { H1, UserNotification } from '@uzh-bf/design-system'
+import { H1, toast, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -41,6 +41,28 @@ function Index() {
   const { data: selfData } = useQuery(SelfDocument, {
     fetchPolicy: 'cache-and-network',
   })
+
+  // if the user is not part of the required assessment course, show an error toast
+  useEffect(() => {
+    if (router.query.error === 'missing_assessment_course_participation') {
+      toast({
+        type: 'error',
+        message: t('pwa.assessment.missingAssessmentCourseParticipation'),
+        options: { duration: 7000 },
+      })
+
+      // remove the error query param from the URL after showing the toast
+      const { error, ...rest } = router.query
+      router.replace(
+        {
+          pathname: router.pathname,
+          query: { ...rest },
+        },
+        undefined,
+        { shallow: true }
+      )
+    }
+  }, [router.query.error])
 
   // redirect to stored locale if different
   useEffect(() => {

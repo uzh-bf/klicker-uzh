@@ -4468,6 +4468,7 @@ export type UserLogin = {
 export enum UserLoginScope {
   AccountOwner = 'ACCOUNT_OWNER',
   Activation = 'ACTIVATION',
+  Eduid = 'EDUID',
   FullAccess = 'FULL_ACCESS',
   Otp = 'OTP',
   ReadOnly = 'READ_ONLY',
