@@ -144,7 +144,13 @@ function SignInOutButton() {
         }}
         disabled={!tosChecked}
         data={{ cy: 'delegated-login-button' }}
-        onClick={() => signIn('delegation')}
+        onClick={() =>
+          signIn('delegation', {
+            callbackUrl:
+              (router.query?.redirectTo as string) ||
+              process.env.NEXT_PUBLIC_MANAGE_URL,
+          })
+        }
       >
         {t('auth.delegatedAccess')}
       </Button>
