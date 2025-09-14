@@ -37,6 +37,24 @@ check_postgres() {
   return 0
 }
 
+# Check Hatchet
+check_hatchet() {
+  # Check HTTP endpoint
+  if ! curl -s -f http://localhost:8888/healthz >/dev/null 2>&1; then
+    echo "❌ Hatchet HTTP is not ready on port 8888"
+    return 1
+  fi
+  
+  # Check gRPC port
+  if ! nc -z localhost 7077 2>/dev/null; then
+    echo "❌ Hatchet gRPC is not ready on port 7077"
+    return 1
+  fi
+  
+  echo "✅ Hatchet is ready (HTTP: 8888, gRPC: 7077)"
+  return 0
+}
+
 # Cleanup function
 cleanup() {
   local exit_code=$?
@@ -65,6 +83,7 @@ trap cleanup EXIT
 echo "🔍 Checking dependencies..."
 check_redis || { echo "❌ Redis check failed"; exit 1; }
 check_postgres || { echo "❌ PostgreSQL check failed"; exit 1; }
+check_hatchet || { echo "❌ Hatchet check failed"; exit 1; }
 
 # Start the service in the background and capture all output
 echo "🚀 Starting service..."
