@@ -29,38 +29,55 @@ function StudentSignIn() {
       </Head>
 
       {status === 'authenticated' ? (
-        <UserNotification
-          type="info"
-          message={t('auth.signedInAs', { username: session?.user?.email! })}
-        />
+        <>
+          <UserNotification
+            type="info"
+            message={t('auth.signedInAs', { username: session?.user?.email! })}
+          />
+          <Button
+            primary
+            fluid
+            className={{ root: 'p-4' }}
+            data={{ cy: 'student-open-app-button' }}
+            onClick={() => {
+              // Use full navigation to assessment
+              if (typeof window !== 'undefined') {
+                window.location.href = redirectTo
+              }
+            }}
+          >
+            {t('shared.generic.openApplication')}
+          </Button>
+        </>
       ) : (
-        <UserNotification type="warning">
-          {t('pwa.assessment.eduIdRequired', {
-            default: 'Edu-ID account required to continue.',
-          })}
-        </UserNotification>
+        <>
+          <UserNotification type="warning">
+            {t('pwa.assessment.eduIdRequired', {
+              default: 'Edu-ID account required to continue.',
+            })}
+          </UserNotification>
+          <Button
+            fluid
+            className={{ root: 'p-4' }}
+            data={{ cy: 'student-eduid-login-button' }}
+            onClick={() =>
+              signIn(
+                process.env.NEXT_PUBLIC_EDUID_ID,
+                { callbackUrl: redirectTo },
+                { participant: 'true' }
+              )
+            }
+          >
+            <Image
+              src="/edu-id-logo.svg"
+              width={300}
+              height={90}
+              alt="Edu-ID Logo"
+              className="mx-auto"
+            />
+          </Button>
+        </>
       )}
-
-      <Button
-        fluid
-        className={{ root: 'p-4' }}
-        data={{ cy: 'student-eduid-login-button' }}
-        onClick={() =>
-          signIn(
-            process.env.NEXT_PUBLIC_EDUID_ID,
-            { callbackUrl: redirectTo },
-            { participant: 'true' }
-          )
-        }
-      >
-        <Image
-          src="/edu-id-logo.svg"
-          width={300}
-          height={90}
-          alt="Edu-ID Logo"
-          className="mx-auto"
-        />
-      </Button>
     </div>
   )
 }
