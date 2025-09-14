@@ -115,6 +115,37 @@ export async function POST(
     )
   }
 
+  // check participation
+  try {
+    const participation = await prisma.participation.findUnique({
+      where: {
+        courseId_participantId: {
+          courseId:
+            (
+              await prisma.chatbot.findUnique({
+                where: { id: chatbotId },
+                select: { courseId: true },
+              })
+            )?.courseId ?? '',
+          participantId: participantData.sub as string,
+        },
+      },
+    })
+
+    if (!participation) {
+      return NextResponse.json(
+        { error: 'No valid participation found for this chatbot' },
+        { status: 403 }
+      )
+    }
+  } catch (error) {
+    console.error('Error checking participation:', error)
+    return NextResponse.json(
+      { error: 'Error checking participation' },
+      { status: 500 }
+    )
+  }
+
   try {
     const { title } = await req.json()
     const thread = await ThreadService.createThread(
