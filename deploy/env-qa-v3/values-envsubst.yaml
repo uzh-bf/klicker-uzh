@@ -164,10 +164,10 @@ assessment:
       pass: ''
 
     redisExec:
-      host: '${REDIS_HOST}'
-      port: '${REDIS_PORT}'
-      tls: '${REDIS_TLS}'
-      pass: '${REDIS_PASS}'
+      host: '${REDIS_ASSESSMENT_HOST}'
+      port: '${REDIS_ASSESSMENT_PORT}'
+      tls: '${REDIS_ASSESSMENT_TLS}'
+      pass: '${REDIS_ASSESSMENT_PASS}'
 
   responseApi:
     image:
