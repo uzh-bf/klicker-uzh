@@ -1,14 +1,8 @@
 export const MANAGER_COOKIE_NAME = 'next-auth.session-token'
 export const PARTICIPANT_COOKIE_NAME = 'next-auth.participant-session-token'
 
-export const STUDENT_REDIRECT_COOKIE_NAME =
-  process.env.NODE_ENV === 'production'
-    ? '__Secure-klicker_student_redirect_to'
-    : 'klicker_student_redirect_to'
-export const LECTURER_REDIRECT_COOKIE_NAME =
-  process.env.NODE_ENV === 'production'
-    ? '__Secure-klicker_lecturer_redirect_to'
-    : 'klicker_lecturer_redirect_to'
+export const STUDENT_REDIRECT_COOKIE_NAME = 'klicker_student_redirect_to'
+export const LECTURER_REDIRECT_COOKIE_NAME = 'klicker_lecturer_redirect_to'
 
 export const DEFAULT_STUDENT_HOSTS = [
   'assessment.klicker.uzh.ch',
