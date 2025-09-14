@@ -1,3 +1,4 @@
+import { allowedTools } from '@/src/lib/config/allowedTools'
 import {
   getModelCost,
   getModelLink,
@@ -205,6 +206,12 @@ export async function POST(
   }))
 
   const mcpTools = await getMCPTools(chatbotId)
+  // filter tools based on allowed tools
+  Object.keys(mcpTools).forEach((toolName) => {
+    if (!allowedTools.includes(toolName as (typeof allowedTools)[number])) {
+      delete mcpTools[toolName as keyof typeof mcpTools]
+    }
+  })
 
   const result = streamText({
     model: getAzureModel(selectedModel),
