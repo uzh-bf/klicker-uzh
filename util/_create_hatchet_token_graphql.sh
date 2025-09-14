@@ -28,8 +28,7 @@ fi
 echo "[hatchet-token] Using container: ${CONTAINER_NAME}"
 
 echo "[hatchet-token] Creating tenant token..."
-# Disable TTY allocation to avoid hanging in CI
-TOKEN=$(docker exec -T "${CONTAINER_NAME}" /hatchet-admin token create --config /config --tenant-id "${TENANT_ID}" | xargs)
+TOKEN=$(docker exec "${CONTAINER_NAME}" /hatchet-admin token create --config /config --tenant-id "${TENANT_ID}" | xargs)
 
 if [[ -z "${TOKEN}" ]]; then
   echo "[hatchet-token] Failed to generate Hatchet token (empty response)." >&2
