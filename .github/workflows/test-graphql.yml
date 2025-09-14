@@ -56,17 +56,17 @@ jobs:
         image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:latest
         env:
           DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
-          SERVER_AUTH_COOKIE_DOMAIN: localhost
+          SERVER_AUTH_COOKIE_DOMAIN: 127.0.0.1
           SERVER_AUTH_COOKIE_INSECURE: 't'
           SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
           SERVER_GRPC_INSECURE: 't'
-          SERVER_GRPC_BROADCAST_ADDRESS: localhost:7077
+          SERVER_GRPC_BROADCAST_ADDRESS: 127.0.0.1:7077
           SERVER_GRPC_PORT: '7077'
-          SERVER_URL: http://localhost:8888
+          SERVER_URL: http://127.0.0.1:8888
           SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
           SERVER_DEFAULT_ENGINE_VERSION: 'V1'
         options: >-
-          --health-cmd "curl -f http://localhost:8888/healthz"
+          --health-cmd "curl -f http://127.0.0.1:8888/healthz"
           --health-interval 30s
           --health-timeout 10s
           --health-retries 10
@@ -129,9 +129,31 @@ jobs:
             exit 1
           fi
 
+      - name: Prepare Hatchet tokens
+        run: |
+          ./util/_create_hatchet_token_cypress.sh
+          ./util/_create_hatchet_token_graphql.sh
+
+      - name: Start Hatchet worker
+        run: |
+          cd apps/hatchet-worker-general
+          # Start the worker in background with CI hosts
+          DATABASE_URL=${{ env.DATABASE_URL }} \
+          HATCHET_API_URL=${{ env.HATCHET_API_URL }} \
+          HATCHET_TENANT_ID=${{ env.HATCHET_TENANT_ID }} \
+          HATCHET_HOST_PORT=${{ env.HATCHET_HOST_PORT }} \
+          REDIS_HOST=127.0.0.1 REDIS_PORT=6379 \
+          REDIS_CACHE_HOST=127.0.0.1 REDIS_CACHE_PORT=6380 \
+          pnpm run start:test &
+          sleep 3
+        env:
+          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+          HATCHET_API_URL: http://127.0.0.1:8888
+          HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
+          HATCHET_HOST_PORT: 7077
+
       - name: Run tests
         run: |
-          . ./util/_create_hatchet_token_graphql.sh
           cd packages/graphql
           pnpm vitest run
         env:
