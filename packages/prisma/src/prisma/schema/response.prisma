@@ -112,7 +112,7 @@ model LiveQuizResponse {
   id          Int      @id @default(autoincrement())
   submittedAt DateTime
 
-  /// [PrismaSingleQuestionResponse]
+  /// [PrismaSingleQuestionResponseLiveQuiz]
   response Json
 
   // statistics

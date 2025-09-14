@@ -74,7 +74,8 @@ const usePushNotifications = ({
           'An error occured while subscribing a user to push notifications: ',
           e
         )
-        // Push notifications are disabled
+
+        // push notifications are disabled
         if (Notification.permission === 'denied') {
           setPushDisabled(true)
           setUserInfo(

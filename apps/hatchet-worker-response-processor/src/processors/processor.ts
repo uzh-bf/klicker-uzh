@@ -15,6 +15,7 @@ import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
+import getRedis from '../redis.js'
 import {
   getCaseStudyQuestionPoints,
   getChoicesQuestionPoints,
@@ -24,24 +25,21 @@ import {
   updateLeaderboards,
   validateStudentResponse,
 } from './helpers.js'
-import getRedis from './redis.js'
 
 // TODO: what if the participant is not part of the course? when starting a session, prepopulate the leaderboard with all participations? what if a participant joins the course during a session? filter out all 0 point participants before rendering the LB
 // TODO: ensure that the response meets the restrictions specified in the element options
 
-export type Message = {
-  messageId: string
-  sessionId: string
-  instanceId: string
-  response: LiveQuizResponseInput
-  cookie?: string
-  responseTimestamp: number
-}
-
 const redisExec = getRedis()
 
 export async function processResponseMessage(
-  message: Message,
+  message: {
+    messageId: string
+    sessionId: string
+    instanceId: string
+    response: LiveQuizResponseInput
+    cookie?: string
+    responseTimestamp: number
+  },
   ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
 ) {
   ctx.logger.info('ProcessResponse: received message', {

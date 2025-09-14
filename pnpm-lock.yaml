@@ -1187,6 +1187,9 @@ importers:
       pino:
         specifier: 9.9.5
         version: 9.9.5
+      pino-pretty:
+        specifier: 13.1.1
+        version: 13.1.1
     devDependencies:
       '@rollup/plugin-node-resolve':
         specifier: ~15.3.1
@@ -1197,9 +1200,6 @@ importers:
       '@types/node':
         specifier: ^20.19.11
         version: 20.19.14
-      pino-pretty:
-        specifier: ~13.1.1
-        version: 13.1.1
       rollup:
         specifier: ~4.34.9
         version: 4.34.9
@@ -1255,6 +1255,9 @@ importers:
 
   apps/lti:
     dependencies:
+      '@klicker-uzh/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@klicker-uzh/util':
         specifier: workspace:*
         version: link:../../packages/util
@@ -1519,6 +1522,9 @@ importers:
       '@klicker-uzh/hatchet':
         specifier: workspace:*
         version: link:../../packages/hatchet
+      '@klicker-uzh/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@klicker-uzh/util':
         specifier: workspace:*
         version: link:../../packages/util
@@ -1585,7 +1591,7 @@ importers:
         version: 1.15.0(cypress@15.2.0)
       cypress-split:
         specifier: ~1.24.2
-        version: 1.24.21(@babel/core@7.26.0)
+        version: 1.24.22(@babel/core@7.26.0)
       generate-password:
         specifier: ~1.7.1
         version: 1.7.1
@@ -2356,6 +2362,9 @@ importers:
 
   packages/util:
     dependencies:
+      '@klicker-uzh/grading':
+        specifier: workspace:*
+        version: link:../grading
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../prisma
@@ -10019,8 +10028,8 @@ packages:
     peerDependencies:
       cypress: ^4.x || ^5.x || ^6.x || ^7.x || ^8.x || ^9.x || ^10.x || ^11.x || ^12.x || ^13.x || ^14.x || ^15.x
 
-  cypress-split@1.24.21:
-    resolution: {integrity: sha512-lF0iwZk6FYmo3h2US0GwvNolCPRgrPcxjefN7JN+1RkC2t09potYfWJXFdjlGtWB5hv9mBkL4KY8HJU7YDl7KA==}
+  cypress-split@1.24.22:
+    resolution: {integrity: sha512-7YkqFBEZLUkd/2YepZo59zCjDxO69IvQkDaGgflSDvPkxYLA08Tg0LCNtzoq+ZFhccvSDIsWrbYPU3PGJN253g==}
     hasBin: true
 
   cypress@15.2.0:
@@ -15632,6 +15641,7 @@ packages:
     engines: {node: '>=0.6.0', teleport: '>=0.2.0'}
     deprecated: |-
       You or someone you depend on is using Q, the JavaScript Promise library that gave JavaScript developers strong feelings about promises. They can almost certainly migrate to the native JavaScript promise now. Thank you literally everyone for joining me in this bet against the odds. Be excellent to each other.
+
       (For a CapTP with native promises, see @endo/eventual-send and @endo/captp)
 
   qrcode-generator@1.4.4:
@@ -17845,8 +17855,8 @@ packages:
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
-  undici@5.29.0:
-    resolution: {integrity: sha512-raqeBD6NQK4SkWhQzeYKd1KmIG6dllBOTt55Rmkt4HtI9mwdWtJljnrXjAFUBLTSN67HWrOIZ3EPF4kjUw80Bg==}
+  undici@5.28.4:
+    resolution: {integrity: sha512-72RFADWFqKmUb2hmmvNODKL3p9hcB6Gt2DOQMis1SEBaV6a4MH8soBvzg+95CYhCKPFedut2JY9bMfrDl9D23g==}
     engines: {node: '>=14.0'}
 
   undici@6.21.3:
@@ -18669,7 +18679,7 @@ snapshots:
   '@actions/http-client@2.2.3':
     dependencies:
       tunnel: 0.0.6
-      undici: 5.29.0
+      undici: 5.28.4
 
   '@actions/io@1.1.3': {}
 
@@ -19635,12 +19645,12 @@ snapshots:
   '@babel/plugin-syntax-async-generators@7.8.4(@babel/core@7.26.0)':
     dependencies:
       '@babel/core': 7.26.0
-      '@babel/helper-plugin-utils': 7.27.1
+      '@babel/helper-plugin-utils': 7.26.5
 
   '@babel/plugin-syntax-bigint@7.8.3(@babel/core@7.26.0)':
     dependencies:
       '@babel/core': 7.26.0
-      '@babel/helper-plugin-utils': 7.27.1
+      '@babel/helper-plugin-utils': 7.26.5
 
   '@babel/plugin-syntax-class-properties@7.12.13(@babel/core@7.26.0)':
     dependencies:
@@ -19650,7 +19660,7 @@ snapshots:
   '@babel/plugin-syntax-class-static-block@7.14.5(@babel/core@7.26.0)':
     dependencies:
       '@babel/core': 7.26.0
-      '@babel/helper-plugin-utils': 7.27.1
+      '@babel/helper-plugin-utils': 7.26.5
 
   '@babel/plugin-syntax-dynamic-import@7.8.3(@babel/core@7.26.0)':
     dependencies:
@@ -19675,12 +19685,12 @@ snapshots:
   '@babel/plugin-syntax-import-meta@7.10.4(@babel/core@7.26.0)':
     dependencies:
       '@babel/core': 7.26.0
-      '@babel/helper-plugin-utils': 7.27.1
+      '@babel/helper-plugin-utils': 7.26.5
 
   '@babel/plugin-syntax-json-strings@7.8.3(@babel/core@7.26.0)':
     dependencies:
       '@babel/core': 7.26.0
-      '@babel/helper-plugin-utils': 7.27.1
+      '@babel/helper-plugin-utils': 7.26.5
 
   '@babel/plugin-syntax-jsx@7.25.9(@babel/core@7.26.0)':
     dependencies:
@@ -19695,17 +19705,17 @@ snapshots:
   '@babel/plugin-syntax-logical-assignment-operators@7.10.4(@babel/core@7.26.0)':
     dependencies:
       '@babel/core': 7.26.0
-      '@babel/helper-plugin-utils': 7.27.1
+      '@babel/helper-plugin-utils': 7.26.5
 
   '@babel/plugin-syntax-nullish-coalescing-operator@7.8.3(@babel/core@7.26.0)':
     dependencies:
       '@babel/core': 7.26.0
-      '@babel/helper-plugin-utils': 7.27.1
+      '@babel/helper-plugin-utils': 7.26.5
 
   '@babel/plugin-syntax-numeric-separator@7.10.4(@babel/core@7.26.0)':
     dependencies:
       '@babel/core': 7.26.0
-      '@babel/helper-plugin-utils': 7.27.1
+      '@babel/helper-plugin-utils': 7.26.5
 
   '@babel/plugin-syntax-object-rest-spread@7.8.3(@babel/core@7.26.0)':
     dependencies:
@@ -19715,22 +19725,22 @@ snapshots:
   '@babel/plugin-syntax-optional-catch-binding@7.8.3(@babel/core@7.26.0)':
     dependencies:
       '@babel/core': 7.26.0
-      '@babel/helper-plugin-utils': 7.27.1
+      '@babel/helper-plugin-utils': 7.26.5
 
   '@babel/plugin-syntax-optional-chaining@7.8.3(@babel/core@7.26.0)':
     dependencies:
       '@babel/core': 7.26.0
-      '@babel/helper-plugin-utils': 7.27.1
+      '@babel/helper-plugin-utils': 7.26.5
 
   '@babel/plugin-syntax-private-property-in-object@7.14.5(@babel/core@7.26.0)':
     dependencies:
       '@babel/core': 7.26.0
-      '@babel/helper-plugin-utils': 7.27.1
+      '@babel/helper-plugin-utils': 7.26.5
 
   '@babel/plugin-syntax-top-level-await@7.14.5(@babel/core@7.26.0)':
     dependencies:
       '@babel/core': 7.26.0
-      '@babel/helper-plugin-utils': 7.27.1
+      '@babel/helper-plugin-utils': 7.26.5
 
   '@babel/plugin-syntax-typescript@7.25.9(@babel/core@7.26.0)':
     dependencies:
@@ -25666,24 +25676,24 @@ snapshots:
 
   '@types/babel__core@7.20.5':
     dependencies:
-      '@babel/parser': 7.28.4
-      '@babel/types': 7.28.4
+      '@babel/parser': 7.26.5
+      '@babel/types': 7.26.5
       '@types/babel__generator': 7.6.8
       '@types/babel__template': 7.4.4
       '@types/babel__traverse': 7.20.6
 
   '@types/babel__generator@7.6.8':
     dependencies:
-      '@babel/types': 7.28.4
+      '@babel/types': 7.26.5
 
   '@types/babel__template@7.4.4':
     dependencies:
-      '@babel/parser': 7.28.4
-      '@babel/types': 7.28.4
+      '@babel/parser': 7.26.5
+      '@babel/types': 7.26.5
 
   '@types/babel__traverse@7.20.6':
     dependencies:
-      '@babel/types': 7.28.4
+      '@babel/types': 7.26.5
 
   '@types/bcryptjs@2.4.6': {}
 
@@ -27341,7 +27351,7 @@ snapshots:
 
   babel-plugin-istanbul@6.1.1:
     dependencies:
-      '@babel/helper-plugin-utils': 7.27.1
+      '@babel/helper-plugin-utils': 7.26.5
       '@istanbuljs/load-nyc-config': 1.1.0
       '@istanbuljs/schema': 0.1.3
       istanbul-lib-instrument: 5.2.1
@@ -27352,7 +27362,7 @@ snapshots:
   babel-plugin-jest-hoist@29.6.3:
     dependencies:
       '@babel/template': 7.25.9
-      '@babel/types': 7.28.4
+      '@babel/types': 7.26.5
       '@types/babel__core': 7.20.5
       '@types/babel__traverse': 7.20.6
 
@@ -28705,7 +28715,7 @@ snapshots:
     dependencies:
       cypress: 15.2.0
 
-  cypress-split@1.24.21(@babel/core@7.26.0):
+  cypress-split@1.24.22(@babel/core@7.26.0):
     dependencies:
       '@actions/core': 1.11.1
       arg: 5.0.2
@@ -31757,7 +31767,7 @@ snapshots:
   istanbul-lib-instrument@5.2.1:
     dependencies:
       '@babel/core': 7.26.0
-      '@babel/parser': 7.28.4
+      '@babel/parser': 7.26.5
       '@istanbuljs/schema': 0.1.3
       istanbul-lib-coverage: 3.2.2
       semver: 6.3.1
@@ -32916,7 +32926,7 @@ snapshots:
     dependencies:
       '@babel/traverse': 7.26.5
       '@babel/traverse--for-generate-function-map': '@babel/traverse@7.26.5'
-      '@babel/types': 7.28.4
+      '@babel/types': 7.26.5
       flow-enums-runtime: 0.0.6
       invariant: 2.2.4
       metro-symbolicate: 0.82.4
@@ -32953,8 +32963,8 @@ snapshots:
     dependencies:
       '@babel/core': 7.26.0
       '@babel/generator': 7.26.5
-      '@babel/parser': 7.28.4
-      '@babel/types': 7.28.4
+      '@babel/parser': 7.26.5
+      '@babel/types': 7.26.5
       flow-enums-runtime: 0.0.6
       metro: 0.82.4
       metro-babel-transformer: 0.82.4
@@ -32974,10 +32984,10 @@ snapshots:
       '@babel/code-frame': 7.26.2
       '@babel/core': 7.26.0
       '@babel/generator': 7.26.5
-      '@babel/parser': 7.28.4
+      '@babel/parser': 7.26.5
       '@babel/template': 7.25.9
       '@babel/traverse': 7.26.5
-      '@babel/types': 7.28.4
+      '@babel/types': 7.26.5
       accepts: 1.3.8
       chalk: 4.1.2
       ci-info: 2.0.0
@@ -37255,7 +37265,7 @@ snapshots:
 
   simple-update-notifier@2.0.0:
     dependencies:
-      semver: 7.6.3
+      semver: 7.7.2
 
   simple-websocket@9.1.0:
     dependencies:
@@ -38436,7 +38446,7 @@ snapshots:
 
   undici-types@6.21.0: {}
 
-  undici@5.29.0:
+  undici@5.28.4:
     dependencies:
       '@fastify/busboy': 2.1.1
 
