@@ -66,6 +66,7 @@ enum UserLoginScope {
   READ_ONLY
   OTP
   ACTIVATION
+  EDUID
 }
 
 model UserLogin {

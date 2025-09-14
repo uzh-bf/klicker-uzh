@@ -655,6 +655,15 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     liveQuiz = await apolloClient.query({
       query: GetRunningLiveQuizDocument,
       variables: { id: ctx.query?.id as string },
+      context: {
+        headers: {
+          authorization: ctx.req.cookies?.[
+            'next-auth.participant-session-token'
+          ]
+            ? `Bearer ${ctx.req.cookies?.['next-auth.participant-session-token'] ?? ''}`
+            : undefined,
+        },
+      },
     })
   } catch (e: any) {
     // if the user is requesting an assessment quiz from the PWA domain, redirect them to the assessment domain
@@ -688,6 +697,38 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           destination: `${
             process.env.JWT_ISSUER_PWA ?? ''
           }${ctx.locale ? `/${ctx.locale}` : ''}/session/${ctx.params?.id as string}`,
+          permanent: false,
+        },
+      }
+    }
+
+    // if the user is requesting access to an assessment live quiz and is not authenticated, redirect to the assessment login
+    if (
+      e.graphQLErrors?.some(
+        (err: any) => err.message === 'UNAUTHORIZED_ASSESSMENT'
+      )
+    ) {
+      return {
+        redirect: {
+          destination: `${
+            process.env.JWT_ISSUER_ASSESSMENT ?? ''
+          }${ctx.locale ? `/${ctx.locale}` : ''}/login`,
+          permanent: false,
+        },
+      }
+    }
+
+    // if the user does not have a valid participation in the requested live quiz, redirect to the assessment home page with a warning toast
+    if (
+      e.graphQLErrors?.some(
+        (err: any) => err.message === 'MISSING_ASSESSMENT_COURSE_PARTICIPATION'
+      )
+    ) {
+      return {
+        redirect: {
+          destination: `${
+            process.env.JWT_ISSUER_ASSESSMENT ?? ''
+          }${ctx.locale ? `/${ctx.locale}` : ''}/?error=missing_assessment_course_participation`,
           permanent: false,
         },
       }
