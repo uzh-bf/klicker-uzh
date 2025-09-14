@@ -324,6 +324,7 @@ function LiveQuizActions({
           <LiveQuizQRModal
             quizId={liveQuiz.id}
             quizPin={liveQuiz.pinCode}
+            isAssessmentEnabled={liveQuiz.isAssessmentEnabled ?? false}
             language={liveQuiz.courseLanguage}
             onClose={() => setQRModal(false)}
           />
