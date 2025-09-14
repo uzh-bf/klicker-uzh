@@ -20,7 +20,7 @@
     "outDir": "dist",
     "sourceMap": true,
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
-    /* If your code doesn't run in the DOM: */
-    "lib": ["es2022"]
+    /* Web-standard Request/Response types for Hono */
+    "lib": ["es2022", "dom"]
   }
 }

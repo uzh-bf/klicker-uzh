@@ -1449,6 +1449,12 @@ importers:
       '@hatchet-dev/typescript-sdk':
         specifier: 1.9.4
         version: 1.9.4
+      '@hono/node-server':
+        specifier: 1.19.2
+        version: 1.19.2(hono@4.9.7)
+      '@hono/zod-validator':
+        specifier: 0.7.2
+        version: 0.7.2(hono@4.9.7)(zod@3.23.8)
       '@klicker-uzh/hatchet':
         specifier: workspace:*
         version: link:../../packages/hatchet
@@ -1458,9 +1464,21 @@ importers:
       '@klicker-uzh/util':
         specifier: workspace:*
         version: link:../../packages/util
+      hono:
+        specifier: 4.9.7
+        version: 4.9.7
+      hono-pino:
+        specifier: 0.10.2
+        version: 0.10.2(hono@4.9.7)(pino@9.9.5)
       ioredis:
         specifier: 5.4.1
         version: 5.4.1
+      pino:
+        specifier: 9.9.5
+        version: 9.9.5
+      zod:
+        specifier: 3.23.8
+        version: 3.23.8
     devDependencies:
       '@rollup/plugin-node-resolve':
         specifier: ~15.3.1
@@ -5033,6 +5051,18 @@ packages:
 
   '@hatchet-dev/typescript-sdk@1.9.4':
     resolution: {integrity: sha512-y3jOGZCumgniWezLVwFQ9VjJYizcZWsEDYFkizYfl61vrP1umxn4voN8rPrxlGMFTRA+NtXIZRLS4GhZyqN7Pw==}
+
+  '@hono/node-server@1.19.2':
+    resolution: {integrity: sha512-lndWsd9De/btN998Aiv6gkeMVV2h9Cc0AR0qwFTmxx/YFh/PbrjgoxTpHaNaRn6F4GAkPiVJwI0W0gQF4Wn8EA==}
+    engines: {node: '>=18.14.1'}
+    peerDependencies:
+      hono: ^4
+
+  '@hono/zod-validator@0.7.2':
+    resolution: {integrity: sha512-ub5eL/NeZ4eLZawu78JpW/J+dugDAYhwqUIdp9KYScI6PZECij4Hx4UsrthlEUutqDDhPwRI0MscUfNkvn/mqQ==}
+    peerDependencies:
+      hono: '>=3.9.0'
+      zod: ^3.25.0 || ^4.0.0
 
   '@hookform/resolvers@5.1.1':
     resolution: {integrity: sha512-J/NVING3LMAEvexJkyTLjruSm7aOFx7QX21pzkiJfMoNG0wl5aFEjLTl7ay7IQb9EWY6AkrBy7tHL2Alijpdcg==}
@@ -12214,6 +12244,17 @@ packages:
 
   hoist-non-react-statics@3.3.2:
     resolution: {integrity: sha512-/gGivxi8JPKWNm/W0jSmzcMPpfpPLc3dY/6GxhX2hQ9iGj3aDfklV4ET7NjKpSinLpJ5vafa9iiGIEZg10SfBw==}
+
+  hono-pino@0.10.2:
+    resolution: {integrity: sha512-h8h4jODUoWdY7n7J1GsOO5Szpf0KH0+bdh8inJVTFrud/R/cxNjKty/pEaJIYSY9+enP0dfAiY+gjXTEFkARYg==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      hono: '>=4.0.0'
+      pino: '>=7.1.0'
+
+  hono@4.9.7:
+    resolution: {integrity: sha512-t4Te6ERzIaC48W3x4hJmBwgNlLhmiEdEE5ViYb02ffw4ignHNHa5IBtPjmbKstmtKa8X6C35iWwK4HaqvrzG9w==}
+    engines: {node: '>=16.9.0'}
 
   hosted-git-info@2.8.9:
     resolution: {integrity: sha512-mxIDAb9Lsm6DoOJ7xH+5+X4y1LU/4Hi50L9C5sIswK3JzULS4bwk1FvjdBgvYR4bzT4tuUQiC15FE2f5HbLvYw==}
@@ -23402,6 +23443,15 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
+  '@hono/node-server@1.19.2(hono@4.9.7)':
+    dependencies:
+      hono: 4.9.7
+
+  '@hono/zod-validator@0.7.2(hono@4.9.7)(zod@3.23.8)':
+    dependencies:
+      hono: 4.9.7
+      zod: 3.23.8
+
   '@hookform/resolvers@5.1.1(react-hook-form@7.59.0(react@19.1.0))':
     dependencies:
       '@standard-schema/utils': 0.3.0
@@ -32078,6 +32128,14 @@ snapshots:
   hoist-non-react-statics@3.3.2:
     dependencies:
       react-is: 16.13.1
+
+  hono-pino@0.10.2(hono@4.9.7)(pino@9.9.5):
+    dependencies:
+      defu: 6.1.4
+      hono: 4.9.7
+      pino: 9.9.5
+
+  hono@4.9.7: {}
 
   hosted-git-info@2.8.9: {}
 
