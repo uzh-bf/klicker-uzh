@@ -382,3 +382,15 @@ If issues arise during deployment:
 - [ ] Graceful shutdown
 - [ ] Tests for both instances and CORS
 - [ ] Update docs and configs
+ 
+Progress:
+- [x] Dependencies added and env loader implemented (`src/lib/env.ts`)
+- [x] Global middleware scaffolded (secure headers, CORS, body limit, JSON-only, origin guard, requestId, logging)
+- [x] Health routes with Redis indicator (`src/routes/health.ts`)
+- [x] Response routes implemented (`src/routes/response.ts`) with zod validation and dual-mode handling
+- [x] Structured error handling via `app.onError` and consistent error shapes
+- [x] Logger configured with redaction and conditional debug (`src/lib/logger.ts` + middleware)
+- [x] Redis and Hatchet wired (`src/lib/redis.ts`, hatchetClient usage)
+- [x] Graceful shutdown (`src/index.ts`)
+- [ ] Tests for instances and CORS
+- [ ] Documentation updates
