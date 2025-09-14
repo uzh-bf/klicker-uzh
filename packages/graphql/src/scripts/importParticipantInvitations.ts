@@ -7,7 +7,7 @@ import * as R from 'remeda'
 import { createParticipantInvitations } from '../services/participantInvitations.js'
 
 // Configuration - adjust these values as needed
-const CSV_FILE = 'src/scripts/invitations_dev.csv'
+const CSV_FILE = `src/scripts/invitations_${process.env.CONFIG}.csv`
 
 async function run() {
   console.log('=== Participant Invitation Import ===')

@@ -7,9 +7,7 @@ import {
   STUDENT_REDIRECT_COOKIE_NAME,
 } from './lib/constants'
 
-const _TTL_RAW = Number(process.env.REDIRECT_COOKIE_TTL_SECONDS || '3600')
-const REDIRECT_COOKIE_TTL_SECONDS =
-  Number.isFinite(_TTL_RAW) && _TTL_RAW > 0 ? _TTL_RAW : 3600
+const REDIRECT_COOKIE_TTL_MS = 10000
 
 function parseCsvHosts(value: string | undefined): string[] {
   if (!value) return []
@@ -145,7 +143,7 @@ export async function middleware(request: NextRequest) {
       // Set lecturer-specific cookie, scoped to auth host
       response.cookies.set(LECTURER_REDIRECT_COOKIE_NAME, redirectTo, {
         ...commonCookieOpts,
-        maxAge: REDIRECT_COOKIE_TTL_SECONDS,
+        maxAge: REDIRECT_COOKIE_TTL_MS,
       })
       console.log('Root route: lecturer redirect cookie set')
       return response
@@ -174,7 +172,7 @@ export async function middleware(request: NextRequest) {
     // Set lecturer-specific cookie, scoped to auth host
     response.cookies.set(LECTURER_REDIRECT_COOKIE_NAME, redirectTo, {
       ...commonCookieOpts,
-      maxAge: REDIRECT_COOKIE_TTL_SECONDS,
+      maxAge: REDIRECT_COOKIE_TTL_MS,
     })
     console.log(
       'Lecturer route: set cookie and redirect to index UI:',
@@ -204,7 +202,7 @@ export async function middleware(request: NextRequest) {
     // Set student-specific cookie, scoped to auth host
     response.cookies.set(STUDENT_REDIRECT_COOKIE_NAME, redirectTo, {
       ...commonCookieOpts,
-      maxAge: REDIRECT_COOKIE_TTL_SECONDS,
+      maxAge: REDIRECT_COOKIE_TTL_MS,
     })
     console.log('Student route: cookie set, rendering student login page')
     return response
@@ -317,7 +315,7 @@ export async function middleware(request: NextRequest) {
           : LECTURER_REDIRECT_COOKIE_NAME
         response.cookies.set(cookieName, cb, {
           ...commonCookieOpts,
-          maxAge: REDIRECT_COOKIE_TTL_SECONDS,
+          maxAge: REDIRECT_COOKIE_TTL_MS,
         })
         console.log('Set redirect cookie on signin:', {
           cb,

@@ -215,11 +215,9 @@ async function autoAcceptInvitations(emails: string[], participantId?: string) {
             create: {
               courseId: invitation.courseId,
               participantId: matchingParticipantId!,
-              isActive: true,
+              isActive: false,
             },
-            update: {
-              isActive: true,
-            },
+            update: {},
           })
 
           // Mark invitation as accepted
