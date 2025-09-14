@@ -395,7 +395,5 @@ async function initializeService() {
 await initializeService()
 
 server.listen(PORT, () => {
-  console.log(
-    `✅ [response-api] Ready and listening on http://localhost:${PORT}`
-  )
+  console.log(`[response-api] Ready and listening on http://localhost:${PORT}`)
 })

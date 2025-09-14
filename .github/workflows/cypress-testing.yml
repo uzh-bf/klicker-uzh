@@ -177,6 +177,9 @@ jobs:
           SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010'
           TIMEOUT_SECONDS: '300'
           CHECK_INTERVAL: '5'
+          REDIS_HOST: localhost
+          REDIS_PASS: ''
+          REDIS_PORT: 6379
 
       - name: Cypress run parallel with cypress-split
         uses: cypress-io/github-action@v6
