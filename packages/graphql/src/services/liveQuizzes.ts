@@ -2330,21 +2330,6 @@ export async function deleteLiveQuiz(
           },
         })
 
-        // remove the scheduled hatchet publication task, if it exists
-        if (
-          quiz.status === DB.PublicationStatus.SCHEDULED &&
-          quiz.scheduledPublicationTaskId
-        ) {
-          try {
-            await ctx.hatchet.scheduled.delete(quiz.scheduledPublicationTaskId)
-          } catch (error) {
-            console.error(
-              `Failed to delete scheduled task for live quiz ${id}:`,
-              error
-            )
-          }
-        }
-
         // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
         // this case cannot be handled by the permissions module, since the live quiz is already hard deleted
         // access requests need to be updated as well, since the derived permissions on elements might have changed
@@ -2371,6 +2356,7 @@ export async function resetAssessmentLiveQuiz(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
+  // TODO: course leaderboard entries are currently not considered / reset / decremented through this function
   // the live quiz that should be reset must be an ended assessment quiz
   // the user that is resetting the quiz must be an admin or owner of the corresponding assessment course
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
@@ -2405,23 +2391,6 @@ export async function resetAssessmentLiveQuiz(
   if (!liveQuiz) return null
 
   try {
-    await ctx.hatchet.events.push('create-audit-log-entry', {
-      info: `[INFO] [Reset Assessment Live Quiz] Assessment course admin with ID ${ctx.user.sub} initiated reset of live quiz with ID ${id}.`,
-    })
-
-    // loop through the blocks and element instances and document the number of deducted points
-    for (const block of liveQuiz.blocks) {
-      for (const instance of block.elements) {
-        await Promise.all(
-          instance.liveQuizResponses.map(async (response) => {
-            await ctx.hatchet.events.push('create-audit-log-entry', {
-              info: `[INFO] [Reset Assessment Live Quiz] Deducted ${response.basePoints} base points, ${response.correctnessPoints} correctness points, and ${response.bonusPoints} bonus points from participant with ID ${response.participantId} for element instance with ID ${instance.id} in block with ID ${block.id} in live quiz with ID ${id}.`,
-            })
-          })
-        )
-      }
-    }
-
     // update the live quiz (reset it to draft status, remove all responses, reset results)
     const updatedQuiz = await ctx.prisma.$transaction(
       async (tx) => {
@@ -2483,10 +2452,6 @@ export async function resetAssessmentLiveQuiz(
       { timeout: 60000 }
     )
 
-    await ctx.hatchet.events.push('create-audit-log-entry', {
-      info: `[INFO] [Reset Assessment Live Quiz] Successfully reset assessment live quiz with ID ${id}.`,
-    })
-
     ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
     const permission = updatedQuiz.permissions[0]!
 
@@ -2541,10 +2506,6 @@ export async function resetAssessmentLiveQuiz(
       updatedAt: updatedQuiz.updatedAt,
     }
   } catch (error) {
-    await ctx.hatchet.events.push('create-audit-log-entry', {
-      info: `[ERROR] [Reset Assessment Live Quiz] Failed to reset live quiz with ID ${id}: ${error}`,
-    })
-
     return null
   }
 }
