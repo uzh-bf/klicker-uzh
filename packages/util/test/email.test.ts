@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
+  collapsedUzhVariant,
   collectAllEmails,
   normalizeEmail,
-  collapsedUzhVariant,
 } from '../src/email.js'
 
 describe('Email utilities', () => {
@@ -36,7 +36,9 @@ describe('Email utilities', () => {
         'user@uzh.ch',
         'USER@df.uzh.ch',
       ])
-      expect(new Set(result)).toEqual(new Set(['user@df.uzh.ch', 'user@uzh.ch']))
+      expect(new Set(result)).toEqual(
+        new Set(['user@df.uzh.ch', 'user@uzh.ch'])
+      )
     })
 
     it('adds collapsed @uzh.ch variant when applicable', () => {
@@ -57,8 +59,9 @@ describe('Email utilities', () => {
         '',
         'also.invalid',
       ])
-      expect(new Set(result)).toEqual(new Set(['user@df.uzh.ch', 'user@uzh.ch']))
+      expect(new Set(result)).toEqual(
+        new Set(['user@df.uzh.ch', 'user@uzh.ch'])
+      )
     })
   })
 })
-

@@ -12,7 +12,13 @@ import { prisma } from '@klicker-uzh/prisma'
 import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
 import {
   collectAllEmails,
+  deriveCookieDomainFromURL,
+  extractProviderFromAffiliationId,
+  generateRandomString,
   JWTPayload,
+  parseCookiesHeader,
+  parseCsvHosts,
+  reduceCatalyst,
   signJWT,
   verifyJWT,
 } from '@klicker-uzh/util'
@@ -33,31 +39,6 @@ if (!process.env.APP_ORIGIN_AUTH) {
 
 // Context detection: prefer explicit URL params and paths; fall back to
 // referer and an ephemeral redirect cookie set by middleware on signin.
-function parseCookies(req: NextApiRequest): Record<string, string> {
-  const cookieHeader = req.headers.cookie || ''
-  const map: Record<string, string> = {}
-  cookieHeader.split(';').forEach((part) => {
-    const [rawKey, ...rawVal] = part.split('=')
-    if (!rawKey) return
-    const key = rawKey.trim()
-    const value = rawVal.join('=').trim()
-    if (!key) return
-    try {
-      map[key] = decodeURIComponent(value)
-    } catch {
-      map[key] = value
-    }
-  })
-  return map
-}
-
-function parseCsvHosts(value?: string | null): string[] {
-  if (!value) return []
-  return value
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-}
 
 function getStudentHosts(): string[] {
   const env = parseCsvHosts(process.env.AUTH_STUDENT_ALLOWED_HOSTS)
@@ -84,7 +65,7 @@ function getAuthContext(
     participant?: string
     callbackUrl?: string
   }
-  const cookies = parseCookies(req)
+  const cookies = parseCookiesHeader(req.headers.cookie)
   const studentRedirect = cookies[STUDENT_REDIRECT_COOKIE_NAME]
   const lecturerRedirect = cookies[LECTURER_REDIRECT_COOKIE_NAME]
 
@@ -166,22 +147,6 @@ export interface ExtendedUser {
   catalystIndividual: boolean
 }
 
-function reduceCatalyst(acc: boolean, affiliation: string) {
-  try {
-    const parts = affiliation.split('@')
-    if (parts.length < 2) return acc || false
-
-    const domain = parts[1]
-    if (domain?.includes('uzh.ch') || domain?.includes('usz.ch')) {
-      return true
-    }
-
-    return acc || false
-  } catch (e) {
-    return false
-  }
-}
-
 export async function decode({ token, secret }: JWTDecodeParams) {
   if (!token) return null
   const secretString = typeof secret === 'string' ? secret : secret.toString()
@@ -196,41 +161,9 @@ export async function encode({ token, secret }: JWTEncodeParams) {
   })
 }
 
-function extractProviderFromAffiliationId(
-  affiliationId: string
-): string | null {
-  try {
-    const parts = affiliationId.split('@')
-    if (parts.length < 2) return null
+// extractProviderFromAffiliationId moved to @klicker-uzh/util
 
-    const domainParts = parts[1]?.split('.')
-    if (!domainParts || domainParts.length === 0) return null
-
-    const provider = domainParts[0]
-    return provider || null
-  } catch {
-    return null
-  }
-}
-
-function generateRandomString(length: number) {
-  let result = ''
-  let characters
-  for (let i = 0; i < length; i++) {
-    if (i === 0 || i === length - 1) {
-      characters =
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-    } else {
-      // TODO: re-introduce allowance for hyphens and underscores again when they are fully supported by manipulation forms
-      characters =
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-      // 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
-    }
-    const charactersLength = characters.length
-    result += characters.charAt(Math.floor(Math.random() * charactersLength))
-  }
-  return result
-}
+// generateRandomString moved to @klicker-uzh/util
 
 async function autoAcceptInvitations(emails: string[], participantId?: string) {
   let matchingParticipantId: string | undefined = participantId
@@ -570,20 +503,7 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
   // label from the NEXTAUTH_URL hostname (e.g., auth.klicker.com -> klicker.com).
   // Avoid setting Domain for localhost or IPs.
   const cookieDomain: string | undefined = (() => {
-    try {
-      if (!process.env.NEXTAUTH_URL) return undefined
-      const hostname = new URL(process.env.NEXTAUTH_URL).hostname
-      if (hostname === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
-        return undefined
-      }
-      const parts = hostname.split('.')
-      if (parts.length < 2) return undefined
-      parts.shift()
-      if (parts.length < 2) return undefined
-      return parts.join('.')
-    } catch {
-      return undefined
-    }
+    return deriveCookieDomainFromURL(process.env.NEXTAUTH_URL)
   })()
 
   let sharedOptions: Partial<NextAuthOptions> = {
