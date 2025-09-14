@@ -6,8 +6,11 @@ export const getServerSideProps: GetServerSideProps = async ({ query }) => {
   if (typeof chatbotId === 'string') {
     return {
       redirect: {
-        destination: `${process.env.NEXT_PUBLIC_CHAT_URL}/${chatbotId}`,
-        permanent: true,
+        destination: new URL(
+          encodeURIComponent(chatbotId),
+          process.env.NEXT_PUBLIC_CHAT_URL
+        ).toString(),
+        permanent: false,
       },
     }
   }
