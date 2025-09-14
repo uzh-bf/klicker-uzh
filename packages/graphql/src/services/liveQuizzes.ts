@@ -1139,6 +1139,8 @@ export async function activateLiveQuizBlock(
       namespace: updatedQuiz.namespace,
       startedAt: Number(new Date()),
       sessionBlockId: blockId,
+      liveQuizId: updatedQuiz.id,
+      courseId: updatedQuiz.courseId ?? '',
       type: elementData.type,
       basePoints: instance.options.basePoints,
       pointsMultiplier: instance.options.pointsMultiplier,
