@@ -65,8 +65,7 @@ function getAuthContext(
   req: NextApiRequest,
   reqId: string
 ): 'lecturer' | 'participant' {
-  const { participant, nextauth } = req.query
-  const referer = req.headers.referer || ''
+  const { participant } = req.query
   const cookies = parseCookies(req)
   const redirectCookie = cookies[REDIRECT_COOKIE_NAME]
   let redirectHost: string | null = null
@@ -82,50 +81,19 @@ function getAuthContext(
 
   console.log(`[AUTH ${reqId}] Context detection input:`, {
     participant,
-    nextauth,
-    referer,
     url: req.url,
     method: req.method,
     hasRedirectCookie: Boolean(redirectCookie),
     redirectCookieHost: redirectHost,
   })
 
-  // Check for explicit participant parameter (from middleware /student route)
+  // 1) Explicit participant flag wins
   if (participant === 'true') {
     console.log(`[AUTH ${reqId}] Context: participant (explicit param)`)
     return 'participant'
   }
 
-  // Check URL route patterns for participant context
-  if (
-    req.url &&
-    (req.url.includes('/student') || req.url.includes('participant=true'))
-  ) {
-    console.log(`[AUTH ${reqId}] Context: participant (URL pattern)`)
-    return 'participant'
-  }
-
-  // Check referrer patterns for participant context
-  if (
-    referer &&
-    (referer.includes('assessment.') ||
-      referer.includes('/student') ||
-      referer.includes('participant=true'))
-  ) {
-    console.log(`[AUTH ${reqId}] Context: participant (referrer)`)
-    return 'participant'
-  }
-
-  // Check referrer patterns for explicit lecturer context
-  if (
-    referer &&
-    (referer.includes('manage.') || referer.includes('/lecturer'))
-  ) {
-    console.log(`[AUTH ${reqId}] Context: lecturer (referrer)`)
-    return 'lecturer'
-  }
-
-  // Infer context from redirect cookie host if present
+  // 2) Derive from redirect cookie host
   if (redirectHost) {
     if (isAssessmentHost(redirectHost)) {
       console.log(`[AUTH ${reqId}] Context: participant (redirect cookie host)`)
@@ -137,7 +105,7 @@ function getAuthContext(
     }
   }
 
-  // Default to lecturer authentication for all other cases
+  // 3) Default to lecturer
   console.log(`[AUTH ${reqId}] Context: lecturer (default)`)
   return 'lecturer'
 }

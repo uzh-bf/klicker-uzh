@@ -43,7 +43,6 @@ function StudentSignIn() {
 
       <Button
         fluid
-        primary
         className={{ root: 'p-4' }}
         data={{ cy: 'student-eduid-login-button' }}
         onClick={() =>
