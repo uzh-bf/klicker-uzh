@@ -1,11 +1,5 @@
-import {
-  faBell,
-  faBellSlash,
-  faCalendar,
-} from '@fortawesome/free-regular-svg-icons'
+import { faCalendar } from '@fortawesome/free-regular-svg-icons'
 import { faBolt, faCheck } from '@fortawesome/free-solid-svg-icons'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Button } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import { useTranslations } from 'next-intl'
@@ -44,7 +38,7 @@ function CourseElement({
         className={{
           root: twMerge(
             'h-full flex-1',
-            !!onSubscribeClick && 'rounded-r-none border-r-0',
+            // !!onSubscribeClick && 'rounded-r-none border-r-0',
             isPast && 'text-slate-600',
             disabled && 'text-slate-600 hover:bg-slate-200'
           ),
@@ -68,7 +62,8 @@ function CourseElement({
           </div>
         </div>
       </LinkButton>
-      {onSubscribeClick && (
+      {/* // TODO: re-introduce icon for push notifications once they have been fixed */}
+      {/* {onSubscribeClick && (
         <div className="self-stretch">
           <Button
             className={{
@@ -103,7 +98,7 @@ function CourseElement({
             )}
           </Button>
         </div>
-      )}
+      )} */}
     </div>
   )
 }
