@@ -21,7 +21,7 @@
     "@pothos/plugin-prisma": "4.10.0",
     "@pothos/plugin-scope-auth": "4.1.0",
     "@pothos/plugin-zod": "4.1.0",
-    "@prisma/adapter-pg": "6.14.0",
+    "@prisma/adapter-pg": "6.16.1",
     "axios": "1.7.9",
     "bcryptjs": "2.4.3",
     "dayjs": "1.11.13",

@@ -82,20 +82,30 @@ export const aggregateAssessmentResponsesTask = hatchetClient.durableTask({
 })
 
 async function main() {
+  console.log('Starting response processor worker...')
+
+  const mode =
+    process.env.ASSESSMENT_MODE === 'true' ? 'assessment' : 'live-quiz'
+  const workflows =
+    process.env.ASSESSMENT_MODE === 'true'
+      ? [processAssessmentResponseWorkflow, aggregateAssessmentResponsesTask]
+      : [processAuthenticatedResponseTask, processAnonymousResponseTask]
+
+  console.log(`Mode: ${mode}`)
+  console.log(`Workflows: ${workflows.length}`)
+
+  console.log('Creating worker...')
   const worker = await hatchetClient.worker(
     'hatchet-worker-response-processor',
     {
-      workflows:
-        process.env.ASSESSMENT_MODE === 'true'
-          ? [
-              processAssessmentResponseWorkflow,
-              aggregateAssessmentResponsesTask,
-            ]
-          : [processAuthenticatedResponseTask, processAnonymousResponseTask],
+      workflows,
     }
   )
 
+  console.log('▶Starting worker to process responses...')
   await worker.start()
+
+  console.log('Response processor worker started successfully!')
 }
 
 await main()
