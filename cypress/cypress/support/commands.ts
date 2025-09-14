@@ -156,9 +156,7 @@ const loginFactory = (
       })
     })
 
-    cy.visit(
-      redirectUrl ?? Cypress.env('URL_MANAGE') ?? process.env.APP_ORIGIN_MANAGE
-    )
+    cy.visit(redirectUrl ?? Cypress.env('URL_MANAGE'))
   }
 }
 

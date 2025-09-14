@@ -7,6 +7,8 @@ global:
     auth: 'https://auth.klicker.uzh.ch'
     lti: 'https://lti.klicker.uzh.ch'
     pwa: 'https://pwa.klicker.uzh.ch'
+    manage: 'https://manage.klicker.uzh.ch'
+    control: 'https://control.klicker.uzh.ch'
     assessmentApi: 'https://assessment-api.klicker.uzh.ch'
     assessmentPwa: 'https://assessment.klicker.uzh.ch'
 

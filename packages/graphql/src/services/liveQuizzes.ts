@@ -1110,7 +1110,7 @@ export async function activateLiveQuizBlock(
                 process.env.APP_SECRET as string,
                 {
                   issuer: process.env.APP_ORIGIN_ASSESSMENT_API,
-                  issuedAt: updatedQuiz.activeBlock!.startedAt ?? new Date(0),
+                  issuedAt: updatedQuiz.activeBlock?.startedAt ?? new Date(0),
                 }
               )
 
