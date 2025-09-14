@@ -236,7 +236,7 @@ async function handleAddAssessmentResponse(
       ? await verifyJWT(
           parsedCookies['next-auth.participant-session-token'],
           process.env.APP_SECRET as string,
-          { issuer: process.env.APP_ORIGIN_AUTH }
+          { issuer: process.env.APP_ORIGIN_API }
         )
       : null
   } catch (err) {
