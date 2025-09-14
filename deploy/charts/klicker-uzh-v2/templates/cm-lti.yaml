@@ -23,3 +23,7 @@ data:
   COOKIE_DOMAIN: {{ .Values.lti.cookieDomain | quote }}
   LTI_DEV_MODE: {{ .Values.lti.devMode | quote }}
   LTI_AAS_MODE: {{ .Values.lti.ltiaas | quote }}
+  JWT_ISSUER_API: {{ .Values.jwtIssuers.api | quote }}
+  JWT_ISSUER_AUTH: {{ .Values.jwtIssuers.auth | quote }}
+  JWT_ISSUER_LTI: {{ .Values.jwtIssuers.lti | quote }}
+  JWT_ISSUER_PWA: {{ .Values.jwtIssuers.pwa | quote }}

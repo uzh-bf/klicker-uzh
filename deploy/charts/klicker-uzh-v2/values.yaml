@@ -36,6 +36,14 @@ vapid:
   publicKey: ''
   privateKey: ''
 
+jwtIssuers:
+  api: ''
+  auth: ''
+  lti: ''
+  pwa: ''
+  assessmentApi: ''
+  assessmentPwa: ''
+
 hatchet:
   client:
     token: ""

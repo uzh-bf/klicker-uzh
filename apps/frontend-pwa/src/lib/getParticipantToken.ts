@@ -5,6 +5,14 @@ import bodyParser from 'body-parser'
 import { GetServerSidePropsContext } from 'next'
 import nookies from 'nookies'
 
+// Validate required environment variables
+if (!process.env.JWT_ISSUER_PWA) {
+  console.error(
+    'JWT_ISSUER_PWA environment variable is required but not defined'
+  )
+  process.exit(1)
+}
+
 export default async function getParticipantToken({
   apolloClient,
   courseId,
@@ -87,6 +95,12 @@ export default async function getParticipantToken({
       })
 
       if (request?.body?.lis_person_sourcedid) {
+        if (!process.env.JWT_ISSUER_PWA) {
+          throw new Error(
+            'JWT_ISSUER_PWA environment variable is required but not defined'
+          )
+        }
+
         // send along a JWT to ensure only the next server is allowed to register participants from LTI
         const signedLtiData = await signJWT(
           {
@@ -98,6 +112,7 @@ export default async function getParticipantToken({
           {
             algorithm: 'HS256',
             expiresIn: '5m',
+            issuer: process.env.JWT_ISSUER_PWA,
           }
         )
 

@@ -78,7 +78,7 @@ if (redisCache) {
   cache = createInMemoryCache()
 }
 
-emitter.on('invalidate', (resource) => {
+emitter.on('invalidate', (resource: any) => {
   cache.invalidate([
     {
       typename: resource.typename,
@@ -117,6 +117,14 @@ migrate(prisma).then(() => {
     hatchet: hatchetClient,
     tasks,
   })
+
+  // Validate required environment variables at startup
+  if (!process.env.JWT_ISSUER_API) {
+    console.error(
+      'JWT_ISSUER_API environment variable is required but not defined'
+    )
+    process.exit(1)
+  }
 
   const server = app.listen(3000, () => {
     console.log(`GraphQL API located at 0.0.0.0:3000${yogaApp.graphqlEndpoint}`)

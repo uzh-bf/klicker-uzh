@@ -1108,7 +1108,10 @@ export async function activateLiveQuizBlock(
                   sub: '', // dummy sub, since this value is required
                 },
                 process.env.APP_SECRET as string,
-                { issuedAt: updatedQuiz.activeBlock!.startedAt ?? new Date(0) }
+                {
+                  issuer: process.env.JWT_ISSUER_API,
+                  issuedAt: updatedQuiz.activeBlock!.startedAt ?? new Date(0),
+                }
               )
 
               return { ...instance, correlationKey }
@@ -2822,7 +2825,10 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
             sub: '', // dummy sub, since this value is required
           },
           process.env.APP_SECRET as string,
-          { issuedAt: quiz.activeBlock?.startedAt ?? new Date(0) }
+          {
+            issuer: process.env.JWT_ISSUER_API,
+            issuedAt: quiz.activeBlock?.startedAt ?? new Date(0),
+          }
         )
 
         return { ...instance, correlationKey }

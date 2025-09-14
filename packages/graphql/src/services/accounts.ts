@@ -46,6 +46,7 @@ export async function createParticipantToken(participantId: string) {
     {
       algorithm: 'HS256',
       expiresIn: '2w',
+      issuer: process.env.JWT_ISSUER_API,
     }
   )
 }
@@ -61,6 +62,7 @@ export async function createTemporaryParticipantToken(participantId: string) {
     {
       algorithm: 'HS256',
       expiresIn: '2w',
+      issuer: process.env.JWT_ISSUER_API,
     }
   )
 }
@@ -241,6 +243,7 @@ export async function sendMagicLink(
     {
       algorithm: 'HS256',
       expiresIn: '15m',
+      issuer: process.env.JWT_ISSUER_API,
     }
   )
 
@@ -699,6 +702,7 @@ export async function createParticipantAccount(
       {
         algorithm: 'HS256',
         expiresIn: '60m',
+        issuer: process.env.JWT_ISSUER_API,
       }
     )
 

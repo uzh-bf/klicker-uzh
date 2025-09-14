@@ -18,6 +18,14 @@ export const PARTICIPANT_COOKIE_NAME = 'next-auth.participant-session-token'
 // Export for discourse.ts and other consumers
 export const APP_SECRET = process.env.APP_SECRET
 
+// Validate required environment variables
+if (!process.env.JWT_ISSUER_AUTH) {
+  console.error(
+    'JWT_ISSUER_AUTH environment variable is required but not defined'
+  )
+  process.exit(1)
+}
+
 // Stateless context detection - no persistent cookies, URL and referrer based only
 function getAuthContext(req: NextApiRequest): 'lecturer' | 'participant' {
   const { participant, nextauth } = req.query
@@ -130,7 +138,10 @@ export async function decode({ token, secret }: JWTDecodeParams) {
 
 export async function encode({ token, secret }: JWTEncodeParams) {
   const secretString = typeof secret === 'string' ? secret : secret.toString()
-  return signJWT((token as JWTPayload) ?? {}, secretString)
+
+  return signJWT((token as JWTPayload) ?? {}, secretString, {
+    issuer: process.env.JWT_ISSUER_AUTH,
+  })
 }
 
 function extractProviderFromAffiliationId(
@@ -615,6 +626,8 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
         },
 
         async jwt({ token, profile }) {
+          token.scope = 'EDUID'
+
           // Handle initial sign-in with participant profile
           if (profile && (profile as any).participantId) {
             token.sub = (profile as any).participantId
