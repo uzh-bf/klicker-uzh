@@ -2405,7 +2405,7 @@ export async function resetAssessmentLiveQuiz(
   if (!liveQuiz) return null
 
   try {
-    ctx.hatchet.events.push('create-audit-log-entry', {
+    await ctx.hatchet.events.push('create-audit-log-entry', {
       info: `[INFO] [Reset Assessment Live Quiz] Assessment course admin with ID ${ctx.user.sub} initiated reset of live quiz with ID ${id}.`,
     })
 
