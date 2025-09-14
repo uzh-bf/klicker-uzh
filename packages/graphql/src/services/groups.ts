@@ -399,9 +399,7 @@ export const handleFinalRandomGroupAssignments: HatchetHandlers['handleFinalRand
 
         // if only one participant is in the pool, send an email to the lecturer to extend group deadline
         if (poolParticipantIds.length === 1) {
-          const courseGroupsOverviewLink = `${
-            process.env.NODE_ENV === 'production' ? 'https' : 'http'
-          }://${process.env.APP_MANAGE_DOMAIN}/courses/${course.id}?gamificationTab=groups`
+          const courseGroupsOverviewLink = `${process.env.APP_ORIGIN_MANAGE}/courses/${course.id}?gamificationTab=groups`
 
           const emailHtml = await EmailService.hydrateTemplate(
             {

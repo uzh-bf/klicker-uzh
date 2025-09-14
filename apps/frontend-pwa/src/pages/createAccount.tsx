@@ -143,6 +143,16 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       })
 
       if (request?.body?.lis_person_sourcedid) {
+        const pwaOrigin =
+          process.env.ASSESSMENT_MODE === 'true'
+            ? process.env.APP_ORIGIN_ASSESSMENT_PWA
+            : process.env.APP_ORIGIN_PWA
+        if (!pwaOrigin) {
+          throw new Error(
+            'APP_ORIGIN_PWA and APP_ORIGIN_ASSESSMENT_PWA are required but not defined'
+          )
+        }
+
         signedLtiData.token = await signJWT(
           {
             sub: request.body.lis_person_sourcedid,
@@ -153,6 +163,10 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           {
             algorithm: 'HS256',
             expiresIn: '5m',
+            issuer:
+              process.env.ASSESSMENT_MODE === 'true'
+                ? process.env.APP_ORIGIN_ASSESSMENT_PWA
+                : process.env.APP_ORIGIN_PWA,
           }
         )
         signedLtiData.ssoId = request.body.lis_person_sourcedid

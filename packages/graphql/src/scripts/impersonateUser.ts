@@ -26,7 +26,8 @@ async function run(email: string) {
     process.env.APP_SECRET as string,
     {
       algorithm: 'HS256',
-      expiresIn: '4w',
+      expiresIn: '2h',
+      issuer: process.env.APP_ORIGIN_API,
     }
   )
 

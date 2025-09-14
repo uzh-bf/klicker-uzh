@@ -20,6 +20,12 @@ import { DefaultJWT, JWTDecodeParams, JWTEncodeParams } from 'next-auth/jwt'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { Provider } from 'next-auth/providers/index'
 
+// Validate required environment variables
+if (!process.env.APP_ORIGIN_AUTH) {
+  console.error('APP_ORIGIN_AUTH is required but not defined')
+  process.exit(1)
+}
+
 // Context detection: prefer explicit URL params and paths; fall back to
 // referer and an ephemeral redirect cookie set by middleware on signin.
 function parseCookies(req: NextApiRequest): Record<string, string> {
@@ -179,7 +185,10 @@ export async function decode({ token, secret }: JWTDecodeParams) {
 
 export async function encode({ token, secret }: JWTEncodeParams) {
   const secretString = typeof secret === 'string' ? secret : secret.toString()
-  return signJWT((token as JWTPayload) ?? {}, secretString)
+
+  return signJWT((token as JWTPayload) ?? {}, secretString, {
+    issuer: process.env.APP_ORIGIN_AUTH,
+  })
 }
 
 function extractProviderFromAffiliationId(
@@ -701,10 +710,13 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
         },
 
         async jwt({ token, profile }) {
+          token.scope = 'EDUID'
+
           console.log(`[AUTH ${requestId}] [participant] jwt`, {
             hasProfile: Boolean(profile),
             role: token?.role,
           })
+
           // Handle initial sign-in with participant profile
           if (profile && (profile as any).participantId) {
             token.sub = (profile as any).participantId

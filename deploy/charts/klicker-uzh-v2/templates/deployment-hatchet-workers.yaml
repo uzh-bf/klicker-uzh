@@ -45,6 +45,8 @@ spec:
           imagePullPolicy: {{ .Values.hatchet.workers.general.image.pullPolicy }}
           envFrom:
             - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
+            - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-hatchet-worker-general
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-hatchet-worker-general
@@ -121,6 +123,8 @@ spec:
 
           envFrom:
             - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
+            - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-hatchet-worker-response-processor
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-hatchet-worker-response-processor
@@ -196,6 +200,8 @@ spec:
           imagePullPolicy: {{ .Values.hatchet.workers.responseProcessor.image.pullPolicy }}
 
           envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
             - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-hatchet-worker-response-processor-assessment
             - secretRef:

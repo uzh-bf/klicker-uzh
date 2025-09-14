@@ -3,6 +3,12 @@ import { Provider } from 'ltijs'
 // @ts-ignore
 import Database from 'ltijs-sequelize'
 
+// Validate required environment variables
+if (!process.env.APP_ORIGIN_LTI) {
+  console.error('APP_ORIGIN_LTI is required but not defined')
+  process.exit(1)
+}
+
 const PROVIDER_OPTIONS = {
   appRoute: '/',
   loginRoute: '/login',
@@ -55,6 +61,11 @@ if (process.env.LTI_DB_TYPE === 'postgres') {
 Provider.onConnect(async (token, req, res) => {
   console.log('LTI launch callback:', token)
 
+  if (!process.env.APP_ORIGIN_LTI) {
+    console.error('APP_ORIGIN_LTI is required but not defined')
+    process.exit(1)
+  }
+
   const jwt = await signJWT(
     {
       sub: token.user,
@@ -65,6 +76,7 @@ Provider.onConnect(async (token, req, res) => {
     {
       algorithm: 'HS256',
       expiresIn: '5m',
+      issuer: process.env.APP_ORIGIN_LTI,
     }
   )
 

@@ -180,6 +180,15 @@ jobs:
           REDIS_HOST: localhost
           REDIS_PASS: ''
           REDIS_PORT: 6379
+          # Provide all app origins to the services and tests
+          APP_ORIGIN_API: http://127.0.0.1:3000
+          APP_ORIGIN_AUTH: http://127.0.0.1:3010
+          APP_ORIGIN_LTI: http://127.0.0.1:3005
+          APP_ORIGIN_PWA: http://127.0.0.1:3001
+          APP_ORIGIN_MANAGE: http://127.0.0.1:3002
+          APP_ORIGIN_CONTROL: http://127.0.0.1:3003
+          APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
+          APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
 
       - name: Cypress run parallel with cypress-split
         uses: cypress-io/github-action@v6
@@ -196,6 +205,18 @@ jobs:
           DATABASE_URL: postgres://klicker-prod:klicker@127.0.0.1:5432/klicker-prod
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_ENV: production
+          HATCHET_API_URL: http://127.0.0.1:8888
+          HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
+          HATCHET_HOST_PORT: 7077
+          # Ensure Cypress process has all origins, too
+          APP_ORIGIN_API: http://127.0.0.1:3000
+          APP_ORIGIN_AUTH: http://127.0.0.1:3010
+          APP_ORIGIN_LTI: http://127.0.0.1:3005
+          APP_ORIGIN_PWA: http://127.0.0.1:3001
+          APP_ORIGIN_MANAGE: http://127.0.0.1:3002
+          APP_ORIGIN_CONTROL: http://127.0.0.1:3003
+          APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
+          APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
           SPLIT: ${{ strategy.job-total }}
           SPLIT_INDEX: ${{ strategy.job-index }}
           SPLIT_FILE: timings.json
@@ -357,6 +378,15 @@ jobs:
           SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010'
           TIMEOUT_SECONDS: '300'
           CHECK_INTERVAL: '5'
+          # Provide all app origins to the services and tests
+          APP_ORIGIN_API: http://127.0.0.1:3000
+          APP_ORIGIN_AUTH: http://127.0.0.1:3010
+          APP_ORIGIN_LTI: http://127.0.0.1:3005
+          APP_ORIGIN_PWA: http://127.0.0.1:3001
+          APP_ORIGIN_MANAGE: http://127.0.0.1:3002
+          APP_ORIGIN_CONTROL: http://127.0.0.1:3003
+          APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
+          APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
 
       - name: Upload service logs
         if: always()
@@ -386,6 +416,18 @@ jobs:
           DATABASE_URL: postgres://klicker-prod:klicker@127.0.0.1:5432/klicker-prod
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_ENV: production
+          HATCHET_API_URL: http://127.0.0.1:8888
+          HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
+          HATCHET_HOST_PORT: 7077
+          # Ensure Cypress process has all origins, too
+          APP_ORIGIN_API: http://127.0.0.1:3000
+          APP_ORIGIN_AUTH: http://127.0.0.1:3010
+          APP_ORIGIN_LTI: http://127.0.0.1:3005
+          APP_ORIGIN_PWA: http://127.0.0.1:3001
+          APP_ORIGIN_MANAGE: http://127.0.0.1:3002
+          APP_ORIGIN_CONTROL: http://127.0.0.1:3003
+          APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
+          APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
 
       - if: always()
         uses: actions/upload-artifact@v4

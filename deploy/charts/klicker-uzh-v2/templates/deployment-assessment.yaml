@@ -49,6 +49,8 @@ spec:
               protocol: TCP
           envFrom:
             - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
+            - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-frontend-assessment
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-frontend-assessment
@@ -128,6 +130,8 @@ spec:
             - name: NODE_ENV
               value: production
           envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
             - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-backend-assessment
             - secretRef:
