@@ -7,6 +7,7 @@ function isValidStudentRedirectUrl(url: string): boolean {
     const parsed = new URL(url)
     const allowedDomains = [
       'assessment.klicker.uzh.ch',
+      'assessment.klicker-qa.bf-app.ch',
       'assessment.klicker.com',
       'localhost:3001',
       '127.0.0.1:3001',
@@ -27,6 +28,7 @@ function isValidLecturerRedirectUrl(url: string): boolean {
     const parsed = new URL(url)
     const allowedDomains = [
       'manage.klicker.uzh.ch',
+      'manage.klicker-qa.bf-app.ch',
       'manage.klicker.com',
       'localhost:3002',
       '127.0.0.1:3002',

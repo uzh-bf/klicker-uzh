@@ -1117,6 +1117,9 @@ importers:
       pino:
         specifier: 9.9.5
         version: 9.9.5
+      pino-pretty:
+        specifier: 13.1.1
+        version: 13.1.1
     devDependencies:
       '@rollup/plugin-node-resolve':
         specifier: ~15.3.1
@@ -1127,9 +1130,6 @@ importers:
       '@types/node':
         specifier: ^20.19.11
         version: 20.19.11
-      pino-pretty:
-        specifier: ~13.1.1
-        version: 13.1.1
       rollup:
         specifier: ~4.34.9
         version: 4.34.9
@@ -1185,6 +1185,9 @@ importers:
 
   apps/lti:
     dependencies:
+      '@klicker-uzh/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@klicker-uzh/util':
         specifier: workspace:*
         version: link:../../packages/util
@@ -1449,6 +1452,9 @@ importers:
       '@klicker-uzh/hatchet':
         specifier: workspace:*
         version: link:../../packages/hatchet
+      '@klicker-uzh/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@klicker-uzh/util':
         specifier: workspace:*
         version: link:../../packages/util
