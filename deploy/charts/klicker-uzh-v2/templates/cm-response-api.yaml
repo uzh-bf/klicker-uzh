@@ -11,3 +11,6 @@ data:
   HATCHET_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
+  REDIS_HOST: {{ .Values.backendGraphql.redisExec.host | quote }}
+  REDIS_PORT: {{ .Values.backendGraphql.redisExec.port | quote }}
+  REDIS_TLS: {{ .Values.backendGraphql.redisExec.tls | quote }}
