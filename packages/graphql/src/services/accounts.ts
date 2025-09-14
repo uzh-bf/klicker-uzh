@@ -63,6 +63,7 @@ export async function createParticipantToken(participantId: string) {
     {
       algorithm: 'HS256',
       expiresIn: '2w',
+      issuer: process.env.APP_ORIGIN_API,
     }
   )
 }
@@ -78,6 +79,7 @@ export async function createTemporaryParticipantToken(participantId: string) {
     {
       algorithm: 'HS256',
       expiresIn: '2w',
+      issuer: process.env.APP_ORIGIN_API,
     }
   )
 }
@@ -358,12 +360,11 @@ export async function sendMagicLink(
     {
       algorithm: 'HS256',
       expiresIn: '15m',
+      issuer: process.env.APP_ORIGIN_API,
     }
   )
 
-  const magicLink = `${
-    process.env.NODE_ENV === 'production' ? 'https' : 'http'
-  }://${process.env.APP_STUDENT_DOMAIN}/magicLogin?token=${magicLinkJWT}`
+  const magicLink = `${process.env.APP_ORIGIN_PWA}/magicLogin?token=${magicLinkJWT}`
 
   const emailHtml = await EmailService.hydrateTemplate(
     {
@@ -768,6 +769,17 @@ export async function createParticipantAccount(
   }: CreateParticipantAccountArgs,
   ctx: Context
 ) {
+  // verify that the course that should be joined is not an assessment course
+  if (courseId) {
+    const course = await ctx.prisma.course.findUnique({
+      where: { id: courseId },
+    })
+
+    if (!course || course.isAssessmentEnabled) {
+      return null
+    }
+  }
+
   if (signedLtiData) {
     const account = await ctx.prisma.$transaction(async (prisma) => {
       const ltiData = (await verifyJWT(
@@ -807,9 +819,7 @@ export async function createParticipantAccount(
             },
           },
         },
-        include: {
-          participant: true,
-        },
+        include: { participant: true },
       })
 
       // if a courseId is specified, add a participation in the corresponding course
@@ -822,16 +832,8 @@ export async function createParticipantAccount(
             },
           },
           create: {
-            course: {
-              connect: {
-                id: courseId,
-              },
-            },
-            participant: {
-              connect: {
-                id: account.participant.id,
-              },
-            },
+            course: { connect: { id: courseId } },
+            participant: { connect: { id: account.participant.id } },
           },
           update: {},
         })
@@ -885,16 +887,8 @@ export async function createParticipantAccount(
             },
           },
           create: {
-            course: {
-              connect: {
-                id: courseId,
-              },
-            },
-            participant: {
-              connect: {
-                id: participant.id,
-              },
-            },
+            course: { connect: { id: courseId } },
+            participant: { connect: { id: participant.id } },
           },
           update: {},
         })
@@ -913,12 +907,11 @@ export async function createParticipantAccount(
       {
         algorithm: 'HS256',
         expiresIn: '60m',
+        issuer: process.env.APP_ORIGIN_API,
       }
     )
 
-    const activationLink = `${
-      process.env.NODE_ENV === 'production' ? 'https' : 'http'
-    }://${process.env.APP_STUDENT_DOMAIN}/activation?token=${activationJWT}`
+    const activationLink = `${process.env.APP_ORIGIN_PWA}/activation?token=${activationJWT}`
 
     const emailHtml = await EmailService.hydrateTemplate(
       {
@@ -967,6 +960,17 @@ export async function loginParticipantWithLti(
   { signedLtiData, courseId }: LoginParticipantWithLtiArgs,
   ctx: Context
 ) {
+  // verify that the course that should be joined is not an assessment course
+  if (courseId) {
+    const course = await ctx.prisma.course.findUnique({
+      where: { id: courseId },
+    })
+
+    if (!course || course.isAssessmentEnabled) {
+      return null
+    }
+  }
+
   const ltiData = (await verifyJWT(
     signedLtiData,
     process.env.APP_SECRET as string
@@ -980,9 +984,7 @@ export async function loginParticipantWithLti(
 
   let account = await ctx.prisma.participantAccount.findUnique({
     where: { ssoId: ltiData.sub as string },
-    include: {
-      participant: true,
-    },
+    include: { participant: true },
   })
 
   console.log('account', account)
@@ -1024,9 +1026,7 @@ export async function loginParticipantWithLti(
           },
         },
       },
-      include: {
-        participant: true,
-      },
+      include: { participant: true },
     })
   }
 
@@ -1057,16 +1057,8 @@ export async function loginParticipantWithLti(
         },
       },
       create: {
-        course: {
-          connect: {
-            id: courseId,
-          },
-        },
-        participant: {
-          connect: {
-            id: account.participant.id,
-          },
-        },
+        course: { connect: { id: courseId } },
+        participant: { connect: { id: account.participant.id } },
       },
       update: {},
     })
@@ -1110,17 +1102,9 @@ export async function loginParticipantWithLti(
 
 export async function getUserLogins(ctx: ContextWithUser) {
   const logins = await ctx.prisma.userLogin.findMany({
-    where: {
-      user: {
-        id: ctx.user.sub,
-      },
-    },
-    include: {
-      user: true,
-    },
-    orderBy: {
-      scope: 'asc',
-    },
+    where: { user: { id: ctx.user.sub } },
+    include: { user: true },
+    orderBy: { scope: 'asc' },
   })
 
   return logins

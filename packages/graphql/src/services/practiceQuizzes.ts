@@ -42,22 +42,12 @@ export async function getPracticeQuizData(
           elements: {
             include:
               ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT
-                ? {
-                    responses: {
-                      where: {
-                        participantId: ctx.user.sub,
-                      },
-                    },
-                  }
+                ? { responses: { where: { participantId: ctx.user.sub } } }
                 : undefined,
-            orderBy: {
-              order: 'asc',
-            },
+            orderBy: { order: 'asc' },
           },
         },
-        orderBy: {
-          order: 'asc',
-        },
+        orderBy: { order: 'asc' },
       },
     },
   })
@@ -96,23 +86,11 @@ export async function getPracticeQuizEvaluation(
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: {
-      id,
-      status: DB.PublicationStatus.PUBLISHED,
-      isDeleted: false,
-    },
+    where: { id, status: DB.PublicationStatus.PUBLISHED, isDeleted: false },
     include: {
       stacks: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-        orderBy: {
-          order: 'asc',
-        },
+        include: { elements: { orderBy: { order: 'asc' } } },
+        orderBy: { order: 'asc' },
       },
     },
   })
@@ -139,23 +117,12 @@ export async function getSinglePracticeQuiz(
   ctx: Context
 ) {
   const quiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: {
-      id,
-      isDeleted: false,
-    },
+    where: { id, isDeleted: false },
     include: {
       course: true,
       stacks: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-        orderBy: {
-          order: 'asc',
-        },
+        include: { elements: { orderBy: { order: 'asc' } } },
+        orderBy: { order: 'asc' },
       },
     },
   })

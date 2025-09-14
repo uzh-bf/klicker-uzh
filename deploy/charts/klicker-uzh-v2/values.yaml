@@ -36,6 +36,18 @@ vapid:
   publicKey: ''
   privateKey: ''
 
+global:
+  appOrigins:
+    # Canonical origins per app (scheme + host[:port])
+    api: ''
+    auth: ''
+    lti: ''
+    pwa: ''
+    manage: ''
+    control: ''
+    assessmentApi: ''
+    assessmentPwa: ''
+
 hatchet:
   client:
     token: ""

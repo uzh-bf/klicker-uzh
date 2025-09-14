@@ -1,6 +1,17 @@
 heartbeats:
   dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
 
+global:
+  appOrigins:
+    api: 'https://api.klicker-qa.bf-app.ch'
+    auth: 'https://auth.klicker-qa.bf-app.ch'
+    lti: 'https://lti.klicker-qa.bf-app.ch'
+    pwa: 'https://pwa.klicker-qa.bf-app.ch'
+    manage: 'https://manage.klicker-qa.bf-app.ch'
+    control: 'https://control.klicker-qa.bf-app.ch'
+    assessmentApi: 'https://assessment-api.klicker-qa.bf-app.ch'
+    assessmentPwa: 'https://assessment.klicker-qa.bf-app.ch'
+
 hatchet:
   client:
     tlsStrategy: 'none'

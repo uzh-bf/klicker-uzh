@@ -1,6 +1,7 @@
 generator client {
+  engineType             = "client" // enable Prisma ORM without Rust
   provider               = "prisma-client"
-  previewFeatures        = ["postgresqlExtensions", "views", "queryCompiler", "driverAdapters"]
+  previewFeatures        = ["postgresqlExtensions", "views"]
   output                 = "../client"
   runtime                = "nodejs"
   moduleFormat           = "esm"

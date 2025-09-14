@@ -1,19 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
+import {
+  DEFAULT_LECTURER_HOSTS,
+  DEFAULT_PWA_HOSTS,
+  DEFAULT_STUDENT_HOSTS,
+  LECTURER_REDIRECT_COOKIE_NAME,
+  STUDENT_REDIRECT_COOKIE_NAME,
+} from './lib/constants'
 
-function isValidStudentRedirectUrl(url: string): boolean {
-  if (!url) return false
+const REDIRECT_COOKIE_TTL_MS = 10000
 
+function parseCsvHosts(value: string | undefined): string[] {
+  if (!value) return []
+  return value
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+const _STUDENT = parseCsvHosts(process.env.AUTH_STUDENT_ALLOWED_HOSTS)
+const STUDENT_HOSTS = _STUDENT.length ? _STUDENT : DEFAULT_STUDENT_HOSTS
+const _LECTURER = parseCsvHosts(process.env.AUTH_LECTURER_ALLOWED_HOSTS)
+const LECTURER_HOSTS = _LECTURER.length ? _LECTURER : DEFAULT_LECTURER_HOSTS
+const _PWA = parseCsvHosts(process.env.AUTH_PWA_HOSTS)
+const PWA_HOSTS = _PWA.length ? _PWA : DEFAULT_PWA_HOSTS
+
+function isAllowedHost(url: string, allowed: string[]): boolean {
   try {
     const parsed = new URL(url)
-    const allowedDomains = [
-      'assessment.klicker.uzh.ch',
-      'assessment.klicker-qa.bf-app.ch',
-      'assessment.klicker.com',
-      'localhost:3001',
-      '127.0.0.1:3001',
-    ]
-
-    return allowedDomains.some(
+    return allowed.some(
       (domain) => parsed.host === domain || parsed.host.endsWith(`.${domain}`)
     )
   } catch {
@@ -21,24 +35,23 @@ function isValidStudentRedirectUrl(url: string): boolean {
   }
 }
 
+function isValidStudentRedirectUrl(url: string): boolean {
+  if (!url) return false
+  return isAllowedHost(url, STUDENT_HOSTS)
+}
+
 function isValidLecturerRedirectUrl(url: string): boolean {
   if (!url) return false
+  return isAllowedHost(url, LECTURER_HOSTS)
+}
 
+function getHostFromHeaderUrl(h?: string | null): string | null {
+  if (!h) return null
   try {
-    const parsed = new URL(url)
-    const allowedDomains = [
-      'manage.klicker.uzh.ch',
-      'manage.klicker-qa.bf-app.ch',
-      'manage.klicker.com',
-      'localhost:3002',
-      '127.0.0.1:3002',
-    ]
-
-    return allowedDomains.some(
-      (domain) => parsed.host === domain || parsed.host.endsWith(`.${domain}`)
-    )
+    const u = new URL(h)
+    return u.host
   } catch {
-    return false
+    return null
   }
 }
 
@@ -52,7 +65,92 @@ export async function middleware(request: NextRequest) {
     searchParams: Object.fromEntries(request.nextUrl.searchParams.entries()),
   })
 
-  // Handle /lecturer route - redirect to OAuth immediately for lecturer auth
+  // If the request is initiated from the PWA, redirect to the PWA login
+  const referer = request.headers.get('referer')
+  const refererHost = getHostFromHeaderUrl(referer)
+  const redirectToParam = request.nextUrl.searchParams.get('redirectTo')
+  const redirectToHost = getHostFromHeaderUrl(redirectToParam || undefined)
+  const currentHost = request.headers.get('host') || request.nextUrl.host
+  let envAuthHost: string | null = null
+  try {
+    envAuthHost = process.env.NEXTAUTH_URL
+      ? new URL(process.env.NEXTAUTH_URL).host
+      : null
+  } catch {
+    envAuthHost = null
+  }
+  const cookieDomain =
+    envAuthHost && envAuthHost === currentHost ? envAuthHost : undefined
+  const commonCookieOpts = {
+    httpOnly: true,
+    sameSite: 'lax' as const,
+    secure: process.env.NODE_ENV === 'production',
+    // Limit to auth endpoints only
+    path: '/api/auth',
+    ...(cookieDomain ? { domain: cookieDomain } : {}),
+  }
+  const clearCookieOpts = {
+    path: '/api/auth',
+    maxAge: 0,
+    ...(cookieDomain ? { domain: cookieDomain } : {}),
+  }
+
+  function clearAllRedirectCookies(resp: NextResponse) {
+    // Clear for both current host-only cookies (no domain) and domain-scoped (auth host), and for both paths
+    const paths = ['/', '/api/auth']
+    const domains = [undefined, cookieDomain].filter(Boolean) as (
+      | string
+      | undefined
+    )[]
+
+    for (const name of [
+      STUDENT_REDIRECT_COOKIE_NAME,
+      LECTURER_REDIRECT_COOKIE_NAME,
+    ]) {
+      for (const p of paths) {
+        // Host-only
+        resp.cookies.set(name, '', { path: p, maxAge: 0 })
+        // With domain
+        for (const d of domains) {
+          if (d) resp.cookies.set(name, '', { path: p, maxAge: 0, domain: d })
+        }
+      }
+    }
+  }
+  const pwaLoginUrl = process.env.NEXT_PUBLIC_PWA_URL
+    ? `${process.env.NEXT_PUBLIC_PWA_URL.replace(/\/$/, '')}/login`
+    : 'https://pwa.klicker.uzh.ch/login'
+
+  if (
+    (refererHost && PWA_HOSTS.includes(refererHost)) ||
+    (redirectToHost && PWA_HOSTS.includes(redirectToHost))
+  ) {
+    console.log('PWA origin detected. Redirecting to PWA login.', {
+      referer,
+      refererHost,
+      redirectToParam,
+      redirectToHost,
+      pwaLoginUrl,
+    })
+    return NextResponse.redirect(pwaLoginUrl)
+  }
+
+  // Handle root (lecturer login UI). If a redirectTo is provided, set cookie early.
+  if (pathname === '/') {
+    const redirectTo = request.nextUrl.searchParams.get('redirectTo')
+    if (redirectTo && isValidLecturerRedirectUrl(redirectTo)) {
+      const response = NextResponse.next()
+      // Set lecturer-specific cookie, scoped to auth host
+      response.cookies.set(LECTURER_REDIRECT_COOKIE_NAME, redirectTo, {
+        ...commonCookieOpts,
+        maxAge: REDIRECT_COOKIE_TTL_MS,
+      })
+      console.log('Root route: lecturer redirect cookie set')
+      return response
+    }
+  }
+
+  // Handle /lecturer route - redirect to lecturer UI and set cookie early
   if (pathname === '/lecturer') {
     console.log('LECTURER ROUTE MATCHED!')
     const redirectTo =
@@ -67,22 +165,23 @@ export async function middleware(request: NextRequest) {
       return new NextResponse('Invalid redirect URL', { status: 400 })
     }
 
-    console.log('Valid lecturer redirect URL, proceeding with OAuth redirect')
-
-    // Redirect to lecturer signin with both EduID and credentials options
-    const signinUrl = new URL('/api/auth/signin', request.url)
-    signinUrl.searchParams.set('callbackUrl', redirectTo)
-    // No participant parameter - default to lecturer context
-
-    console.log('Lecturer route redirect to:', signinUrl.toString())
-
-    const response = NextResponse.redirect(signinUrl)
-
-    console.log('Returning lecturer redirect response')
+    // Set/refresh cookie and show index login page (UI offers EduID or delegated)
+    const dest = new URL('/', request.url)
+    dest.searchParams.set('redirectTo', redirectTo)
+    const response = NextResponse.redirect(dest)
+    // Set lecturer-specific cookie, scoped to auth host
+    response.cookies.set(LECTURER_REDIRECT_COOKIE_NAME, redirectTo, {
+      ...commonCookieOpts,
+      maxAge: REDIRECT_COOKIE_TTL_MS,
+    })
+    console.log(
+      'Lecturer route: set cookie and redirect to index UI:',
+      dest.toString()
+    )
     return response
   }
 
-  // Handle /student route - redirect to OAuth immediately
+  // Handle /student route - render login page and set cookie early (belt-and-suspenders)
   if (pathname === '/student') {
     console.log('STUDENT ROUTE MATCHED!')
     const redirectTo =
@@ -97,18 +196,15 @@ export async function middleware(request: NextRequest) {
       return new NextResponse('Invalid redirect URL', { status: 400 })
     }
 
-    console.log('Valid redirect URL, proceeding with OAuth redirect')
-
-    // Redirect directly to the EduID OAuth flow
-    const signinUrl = new URL('/api/auth/signin/eduid-participant', request.url)
-    signinUrl.searchParams.set('callbackUrl', redirectTo)
-    signinUrl.searchParams.set('participant', 'true')
-
-    console.log('Student route redirect to:', signinUrl.toString())
-
-    const response = NextResponse.redirect(signinUrl)
-
-    console.log('Returning redirect response')
+    // Set/refresh the redirect cookie so it's available on callback even if
+    // NextAuth posts the callbackUrl in the body (not readable in middleware)
+    const response = NextResponse.next()
+    // Set student-specific cookie, scoped to auth host
+    response.cookies.set(STUDENT_REDIRECT_COOKIE_NAME, redirectTo, {
+      ...commonCookieOpts,
+      maxAge: REDIRECT_COOKIE_TTL_MS,
+    })
+    console.log('Student route: cookie set, rendering student login page')
     return response
   }
 
@@ -120,7 +216,6 @@ export async function middleware(request: NextRequest) {
     // Only detect participant context from explicit parameters and current request context
     const isParticipantContext =
       participantParam === 'true' ||
-      pathname.includes('eduid-participant') ||
       referer.includes('assessment.') ||
       referer.includes('/student')
 
@@ -131,26 +226,110 @@ export async function middleware(request: NextRequest) {
       pathname,
     })
 
-    // For participant context, ensure participant parameter is present in URL
-    if (isParticipantContext && participantParam !== 'true') {
-      const url = request.nextUrl.clone()
-      url.searchParams.set('participant', 'true')
-      console.log('Adding participant parameter to URL:', url.toString())
-      return NextResponse.redirect(url)
+    // If handling provider callback, ensure we carry the intended callbackUrl from cookie
+    if (pathname.startsWith('/api/auth/callback')) {
+      const studentRedirect = request.cookies.get(
+        STUDENT_REDIRECT_COOKIE_NAME
+      )?.value
+      const lecturerRedirect = request.cookies.get(
+        LECTURER_REDIRECT_COOKIE_NAME
+      )?.value
+      const effectiveRedirect = studentRedirect || lecturerRedirect
+      if (effectiveRedirect) {
+        const cookieSaysParticipant =
+          isValidStudentRedirectUrl(effectiveRedirect)
+        const cookieSaysLecturer = isValidLecturerRedirectUrl(effectiveRedirect)
+
+        const url = request.nextUrl.clone()
+        let modified = false
+
+        // Ensure callbackUrl is present from cookie
+        if (
+          !url.searchParams.has('callbackUrl') &&
+          (cookieSaysParticipant ||
+            cookieSaysLecturer ||
+            isValidStudentRedirectUrl(effectiveRedirect) ||
+            isValidLecturerRedirectUrl(effectiveRedirect))
+        ) {
+          url.searchParams.set('callbackUrl', effectiveRedirect)
+          modified = true
+        }
+
+        // Ensure participant parameter aligns with cookie host
+        const currentParticipant = url.searchParams.get('participant')
+        if (cookieSaysParticipant && currentParticipant !== 'true') {
+          url.searchParams.set('participant', 'true')
+          modified = true
+        } else if (cookieSaysLecturer && currentParticipant === 'true') {
+          url.searchParams.delete('participant')
+          modified = true
+        }
+
+        if (modified) {
+          const resp = NextResponse.redirect(url)
+          // Clear all redirect cookies on callback (scoped + legacy)
+          clearAllRedirectCookies(resp)
+          console.log('Callback: injected params from cookie and cleared it', {
+            url: url.toString(),
+            cookieSaysParticipant,
+            cookieSaysLecturer,
+          })
+          return resp
+        }
+
+        // Clear the cookies in any case on callback to avoid lingering state
+        const passthrough = NextResponse.next()
+        clearAllRedirectCookies(passthrough)
+        console.log('Callback: cleared unused redirect cookies')
+        return passthrough
+      }
+      // If generic cookie is not present, still clear any specific cookies
+      const passthrough = NextResponse.next()
+      let clearedAny = false
+      if (studentRedirect) {
+        clearAllRedirectCookies(passthrough)
+        clearedAny = true
+      }
+      if (lecturerRedirect) {
+        clearAllRedirectCookies(passthrough)
+        clearedAny = true
+      }
+      if (clearedAny) console.log('Callback: cleared specific redirect cookies')
+      return passthrough
     }
 
-    // For lecturer context (default), clear any participant parameters
-    if (!isParticipantContext && participantParam === 'true') {
-      const url = request.nextUrl.clone()
-      url.searchParams.delete('participant')
-      console.log('Removing participant parameter from URL:', url.toString())
-      return NextResponse.redirect(url)
+    // Default passthrough for auth routes; avoid unnecessary URL rewrites
+    let response: NextResponse | null = NextResponse.next()
+
+    // On signin routes, set the short-lived redirect cookie based on callbackUrl (set after user triggers sign-in)
+    if (pathname.startsWith('/api/auth/signin')) {
+      const cb = request.nextUrl.searchParams.get('callbackUrl') || ''
+      const valid = isParticipantContext
+        ? isValidStudentRedirectUrl(cb)
+        : isValidLecturerRedirectUrl(cb)
+
+      if (valid) {
+        // Set audience-specific cookie, scoped to auth host
+        const cookieName = isParticipantContext
+          ? STUDENT_REDIRECT_COOKIE_NAME
+          : LECTURER_REDIRECT_COOKIE_NAME
+        response.cookies.set(cookieName, cb, {
+          ...commonCookieOpts,
+          maxAge: REDIRECT_COOKIE_TTL_MS,
+        })
+        console.log('Set redirect cookie on signin:', {
+          cb,
+          isParticipantContext,
+        })
+      }
     }
+
+    return response
   }
 
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/api/auth/:path*', '/student', '/lecturer'],
+  matcher: ['/', '/student', '/lecturer', '/api/auth/:path*'],
 }

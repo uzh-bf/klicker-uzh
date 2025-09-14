@@ -6,3 +6,6 @@ src/public/emails
 dist/
 instrumented/
 hive.json
+
+!invitations_dev.csv
+invitations_*.csv

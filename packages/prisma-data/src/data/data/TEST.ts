@@ -859,6 +859,7 @@ export const LIVE_QUIZZES = [
     isGamificationEnabled: true,
     isAssessmentEnabled: false,
     status: PublicationStatus.SCHEDULED,
+    availableFrom: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // 10 days in the future
     blocks: [
       {
         questions: [0, 1, 2, 3, 4, 5, 6, 7, 8],

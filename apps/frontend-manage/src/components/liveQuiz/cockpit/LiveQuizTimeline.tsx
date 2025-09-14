@@ -155,7 +155,7 @@ function LiveQuizTimeline({
             </Button>
             <a
               className="flex-1"
-              href={`${process.env.NEXT_PUBLIC_PWA_URL}/${locale}/session/${quizId}`}
+              href={`${assessmentMode ? process.env.NEXT_PUBLIC_ASSESSMENT_URL : process.env.NEXT_PUBLIC_PWA_URL}/${locale}/session/${quizId}`}
               rel="noopener noreferrer"
               target="_blank"
             >
@@ -356,6 +356,7 @@ function LiveQuizTimeline({
         <LiveQuizQRModal
           quizId={quizId}
           quizPin={quizPin}
+          isAssessmentEnabled={assessmentMode}
           language={language}
           onClose={() => setQRModal(false)}
         />

@@ -1,8 +1,27 @@
+import {
+  DEFAULT_LECTURER_HOSTS,
+  DEFAULT_STUDENT_HOSTS,
+  LECTURER_REDIRECT_COOKIE_NAME,
+  MANAGER_COOKIE_NAME,
+  PARTICIPANT_COOKIE_NAME,
+  STUDENT_REDIRECT_COOKIE_NAME,
+} from '@/lib/constants'
 import { sendTeamsNotifications } from '@/lib/util'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@klicker-uzh/prisma'
 import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
-import { JWTPayload, signJWT, verifyJWT } from '@klicker-uzh/util'
+import {
+  collectAllEmails,
+  deriveCookieDomainFromURL,
+  extractProviderFromAffiliationId,
+  generateRandomString,
+  JWTPayload,
+  parseCookiesHeader,
+  parseCsvHosts,
+  reduceCatalyst,
+  signJWT,
+  verifyJWT,
+} from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import type { NextApiRequest, NextApiResponse } from 'next'
@@ -12,76 +31,98 @@ import { DefaultJWT, JWTDecodeParams, JWTEncodeParams } from 'next-auth/jwt'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { Provider } from 'next-auth/providers/index'
 
-export const COOKIE_NAME = 'next-auth.session-token'
-export const PARTICIPANT_COOKIE_NAME = 'next-auth.participant-session-token'
+// Validate required environment variables
+if (!process.env.APP_ORIGIN_AUTH) {
+  console.error('APP_ORIGIN_AUTH is required but not defined')
+  process.exit(1)
+}
 
-// Export for discourse.ts and other consumers
-export const APP_SECRET = process.env.APP_SECRET
+// Context detection: prefer explicit URL params and paths; fall back to
+// referer and an ephemeral redirect cookie set by middleware on signin.
 
-// Stateless context detection - no persistent cookies, URL and referrer based only
-function getAuthContext(req: NextApiRequest): 'lecturer' | 'participant' {
-  const { participant, nextauth } = req.query
-  const referer = req.headers.referer || ''
+function getStudentHosts(): string[] {
+  const env = parseCsvHosts(process.env.AUTH_STUDENT_ALLOWED_HOSTS)
+  return env.length ? env : DEFAULT_STUDENT_HOSTS
+}
+function getLecturerHosts(): string[] {
+  const env = parseCsvHosts(process.env.AUTH_LECTURER_ALLOWED_HOSTS)
+  return env.length ? env : DEFAULT_LECTURER_HOSTS
+}
 
-  console.log('NextAuth stateless context detection:', {
-    participant,
-    nextauth,
-    referer,
+function isAssessmentHost(host: string): boolean {
+  return getStudentHosts().includes(host)
+}
+
+function isManageHost(host: string): boolean {
+  return getLecturerHosts().includes(host)
+}
+
+function getAuthContext(
+  req: NextApiRequest,
+  reqId: string
+): 'lecturer' | 'participant' {
+  const { participant, callbackUrl } = req.query as {
+    participant?: string
+    callbackUrl?: string
+  }
+  const cookies = parseCookiesHeader(req.headers.cookie)
+  const studentRedirect = cookies[STUDENT_REDIRECT_COOKIE_NAME]
+  const lecturerRedirect = cookies[LECTURER_REDIRECT_COOKIE_NAME]
+
+  const hostFrom = (val?: string) => {
+    if (!val) return null
+    try {
+      return new URL(val).host
+    } catch {
+      return null
+    }
+  }
+
+  const hosts = {
+    student: hostFrom(studentRedirect),
+    lecturer: hostFrom(lecturerRedirect),
+    callback: hostFrom(callbackUrl),
+  }
+
+  console.log(`[AUTH ${reqId}] Context detection input:`, {
     url: req.url,
     method: req.method,
+    participant,
+    hasStudentCookie: Boolean(studentRedirect),
+    hasLecturerCookie: Boolean(lecturerRedirect),
+    hosts,
   })
 
-  // Check for explicit participant parameter (from middleware /student route)
+  // 1) Explicit participant flag wins
   if (participant === 'true') {
-    console.log('Context: participant (explicit param)')
+    console.log(`[AUTH ${reqId}] Context: participant (explicit param)`)
     return 'participant'
   }
 
-  // Check URL route patterns for participant context
-  if (
-    req.url &&
-    (req.url.includes('/student') ||
-      req.url.includes('eduid-participant') ||
-      req.url.includes('participant=true'))
-  ) {
-    console.log('Context: participant (URL pattern)')
-    return 'participant'
+  // 2) callbackUrl host is authoritative when present
+  if (hosts.callback) {
+    if (isAssessmentHost(hosts.callback)) {
+      console.log(`[AUTH ${reqId}] Context: participant (callbackUrl host)`)
+      return 'participant'
+    }
+    if (isManageHost(hosts.callback)) {
+      console.log(`[AUTH ${reqId}] Context: lecturer (callbackUrl host)`)
+      return 'lecturer'
+    }
   }
 
-  // Check if this is a participant provider callback/signin
-  if (
-    Array.isArray(nextauth) &&
-    (nextauth.includes('eduid-participant') ||
-      (nextauth.includes('callback') &&
-        nextauth.includes('eduid-participant')) ||
-      (nextauth.includes('signin') && nextauth.includes('eduid-participant')))
-  ) {
-    console.log('Context: participant (provider route)')
+  // 3) Specific cookies (student first)
+  if (hosts.student && isAssessmentHost(hosts.student)) {
+    console.log(`[AUTH ${reqId}] Context: participant (student cookie host)`)
     return 'participant'
   }
-
-  // Check referrer patterns for participant context
-  if (
-    referer &&
-    (referer.includes('assessment.') ||
-      referer.includes('/student') ||
-      referer.includes('participant=true'))
-  ) {
-    console.log('Context: participant (referrer)')
-    return 'participant'
-  }
-
-  // Check referrer patterns for explicit lecturer context
-  if (
-    referer &&
-    (referer.includes('manage.') || referer.includes('/lecturer'))
-  ) {
-    console.log('Context: lecturer (referrer)')
+  if (hosts.lecturer && isManageHost(hosts.lecturer)) {
+    console.log(`[AUTH ${reqId}] Context: lecturer (lecturer cookie host)`)
     return 'lecturer'
   }
 
-  // Default to lecturer authentication for all other cases
-  console.log('Context: lecturer (default)')
+  // 4) Default to lecturer
+  console.log(`[AUTH ${reqId}] Context: lecturer (default)`)
   return 'lecturer'
 }
 
@@ -106,22 +147,6 @@ export interface ExtendedUser {
   catalystIndividual: boolean
 }
 
-function reduceCatalyst(acc: boolean, affiliation: string) {
-  try {
-    const parts = affiliation.split('@')
-    if (parts.length < 2) return acc || false
-
-    const domain = parts[1]
-    if (domain?.includes('uzh.ch') || domain?.includes('usz.ch')) {
-      return true
-    }
-
-    return acc || false
-  } catch (e) {
-    return false
-  }
-}
-
 export async function decode({ token, secret }: JWTDecodeParams) {
   if (!token) return null
   const secretString = typeof secret === 'string' ? secret : secret.toString()
@@ -130,56 +155,15 @@ export async function decode({ token, secret }: JWTDecodeParams) {
 
 export async function encode({ token, secret }: JWTEncodeParams) {
   const secretString = typeof secret === 'string' ? secret : secret.toString()
-  return signJWT((token as JWTPayload) ?? {}, secretString)
+
+  return signJWT((token as JWTPayload) ?? {}, secretString, {
+    issuer: process.env.APP_ORIGIN_AUTH,
+  })
 }
 
-function extractProviderFromAffiliationId(
-  affiliationId: string
-): string | null {
-  try {
-    const parts = affiliationId.split('@')
-    if (parts.length < 2) return null
+// extractProviderFromAffiliationId moved to @klicker-uzh/util
 
-    const domainParts = parts[1]?.split('.')
-    if (!domainParts || domainParts.length === 0) return null
-
-    const provider = domainParts[0]
-    return provider || null
-  } catch {
-    return null
-  }
-}
-
-function collectAllEmails(
-  primaryEmail?: string,
-  affiliationEmails?: string[]
-): string[] {
-  const emails = []
-  if (primaryEmail) emails.push(primaryEmail.toLowerCase())
-  if (affiliationEmails) {
-    emails.push(...affiliationEmails.map((email) => email.toLowerCase()))
-  }
-  return emails.filter(Boolean)
-}
-
-function generateRandomString(length: number) {
-  let result = ''
-  let characters
-  for (let i = 0; i < length; i++) {
-    if (i === 0 || i === length - 1) {
-      characters =
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-    } else {
-      // TODO: re-introduce allowance for hyphens and underscores again when they are fully supported by manipulation forms
-      characters =
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-      // 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
-    }
-    const charactersLength = characters.length
-    result += characters.charAt(Math.floor(Math.random() * charactersLength))
-  }
-  return result
-}
+// generateRandomString moved to @klicker-uzh/util
 
 async function autoAcceptInvitations(emails: string[], participantId?: string) {
   let matchingParticipantId: string | undefined = participantId
@@ -231,11 +215,9 @@ async function autoAcceptInvitations(emails: string[], participantId?: string) {
             create: {
               courseId: invitation.courseId,
               participantId: matchingParticipantId!,
-              isActive: true,
+              isActive: false,
             },
-            update: {
-              isActive: true,
-            },
+            update: {},
           })
 
           // Mark invitation as accepted
@@ -497,10 +479,30 @@ async function createOrLinkParticipant(profile: ExtendedProfile) {
 
 // Dynamic NextAuth configuration based on context
 export default async function auth(req: NextApiRequest, res: NextApiResponse) {
-  const context = getAuthContext(req)
+  const headerRequestId = Array.isArray(req.headers['x-request-id'])
+    ? req.headers['x-request-id'][0]
+    : req.headers['x-request-id']
+  const requestId =
+    headerRequestId || `na-${crypto.randomBytes(6).toString('hex')}`
+
+  console.log(`[AUTH ${requestId}] Request start`, {
+    url: req.url,
+    method: req.method,
+    ua: req.headers['user-agent'],
+  })
+
+  const context = getAuthContext(req, requestId)
+  console.log(`[AUTH ${requestId}] Using context: ${context}`)
 
   // Configure providers based on context
   let authOptions: NextAuthOptions
+
+  // Derive shared cookie domain for NextAuth session cookies by removing the first
+  // label from the NEXTAUTH_URL hostname (e.g., auth.klicker.com -> klicker.com).
+  // Avoid setting Domain for localhost or IPs.
+  const cookieDomain: string | undefined = (() => {
+    return deriveCookieDomainFromURL(process.env.NEXTAUTH_URL)
+  })()
 
   let sharedOptions: Partial<NextAuthOptions> = {
     secret: process.env.APP_SECRET,
@@ -520,10 +522,10 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
     const EduIDParticipantProvider: Provider | null =
       typeof process.env.EDUID_CLIENT_SECRET !== 'undefined'
         ? {
-            id: 'eduid-participant',
-            wellKnown: process.env.EDUID_WELL_KNOWN as string,
-            clientId: process.env.EDUID_CLIENT_ID as string,
-            clientSecret: process.env.EDUID_CLIENT_SECRET as string,
+            id: process.env.NEXT_PUBLIC_EDUID_ID || 'eduid',
+            wellKnown: process.env.EDUID_WELL_KNOWN,
+            clientId: process.env.EDUID_CLIENT_ID,
+            clientSecret: process.env.EDUID_CLIENT_SECRET,
 
             name: 'EduID',
             type: 'oauth',
@@ -572,7 +574,8 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
         sessionToken: {
           name: PARTICIPANT_COOKIE_NAME,
           options: {
-            domain: process.env.COOKIE_DOMAIN,
+            // Scope cookie to auth host only (no sharing across apps)
+            ...(cookieDomain ? { domain: cookieDomain } : {}),
             path: '/',
             httpOnly: true,
             sameSite: 'lax',
@@ -583,7 +586,10 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
 
       callbacks: {
         async signIn({ user, account, profile, email }) {
-          console.log('signIn', user, account, profile, email)
+          console.log(`[AUTH ${requestId}] [participant] signIn`, {
+            provider: account?.provider,
+            hasProfile: Boolean(profile),
+          })
 
           if (!profile) {
             console.error('No profile provided for participant sign-in')
@@ -615,6 +621,13 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
         },
 
         async jwt({ token, profile }) {
+          token.scope = 'EDUID'
+
+          console.log(`[AUTH ${requestId}] [participant] jwt`, {
+            hasProfile: Boolean(profile),
+            role: token?.role,
+          })
+
           // Handle initial sign-in with participant profile
           if (profile && (profile as any).participantId) {
             token.sub = (profile as any).participantId
@@ -644,41 +657,43 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
         },
 
         async redirect({ url, baseUrl }) {
+          console.log(`[AUTH ${requestId}] [participant] redirect check`, {
+            url,
+            baseUrl,
+          })
           // Handle relative URLs
           if (url.startsWith('/')) {
-            return `${baseUrl}${url}`
+            const out = `${baseUrl}${url}`
+            console.log(
+              `[AUTH ${requestId}] [participant] redirect relative ->`,
+              out
+            )
+            return out
           }
 
           // Parse and validate against allowed hostnames
           try {
             const parsedUrl = new URL(url)
-            const allowedHosts = [
-              'assessment.klicker.uzh.ch',
-              'assessment.klicker.com',
-              // Add localhost for development
-              'localhost:3001',
-              '127.0.0.1:3001',
-            ]
+            const allowedHosts = getStudentHosts()
 
-            if (allowedHosts.includes(parsedUrl.host)) {
+            if (
+              allowedHosts.includes(parsedUrl.host) ||
+              allowedHosts.includes(parsedUrl.hostname)
+            ) {
+              console.log(
+                `[AUTH ${requestId}] [participant] redirect allow ->`,
+                url
+              )
               return url
             }
           } catch {
             // Invalid URL, fall through to baseUrl
           }
 
-          // Check for cookie domain (if different from assessment domains)
-          if (process.env.COOKIE_DOMAIN) {
-            try {
-              const parsedUrl = new URL(url)
-              if (parsedUrl.host === process.env.COOKIE_DOMAIN) {
-                return url
-              }
-            } catch {
-              // Invalid URL, fall through
-            }
-          }
-
+          console.log(
+            `[AUTH ${requestId}] [participant] redirect fallback ->`,
+            baseUrl
+          )
           return baseUrl
         },
       },
@@ -688,10 +703,10 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
     const EduIDLecturerProvider: Provider | null =
       typeof process.env.EDUID_CLIENT_SECRET !== 'undefined'
         ? {
-            id: process.env.NEXT_PUBLIC_EDUID_ID as string,
-            wellKnown: process.env.EDUID_WELL_KNOWN as string,
-            clientId: process.env.EDUID_CLIENT_ID as string,
-            clientSecret: process.env.EDUID_CLIENT_SECRET as string,
+            id: process.env.NEXT_PUBLIC_EDUID_ID || 'eduid',
+            wellKnown: process.env.EDUID_WELL_KNOWN,
+            clientId: process.env.EDUID_CLIENT_ID,
+            clientSecret: process.env.EDUID_CLIENT_SECRET,
 
             name: 'EduID',
             type: 'oauth',
@@ -800,9 +815,10 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
 
       cookies: {
         sessionToken: {
-          name: COOKIE_NAME,
+          name: MANAGER_COOKIE_NAME,
           options: {
-            domain: process.env.COOKIE_DOMAIN,
+            // Scope cookie to auth host only (no sharing across apps)
+            ...(cookieDomain ? { domain: cookieDomain } : {}),
             path: '/',
             httpOnly: true,
             sameSite: 'lax',
@@ -813,7 +829,10 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
 
       callbacks: {
         async signIn({ user, account, profile, email }) {
-          console.log('signIn', user, account, profile, email)
+          console.log(`[AUTH ${requestId}] [lecturer] signIn`, {
+            provider: account?.provider,
+            hasProfile: Boolean(profile),
+          })
 
           // Lecturer authentication flow (existing logic)
           const profileData = profile as ExtendedProfile
@@ -863,6 +882,11 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
         },
 
         async jwt({ token, user, profile }) {
+          console.log(`[AUTH ${requestId}] [lecturer] jwt`, {
+            hasProfile: Boolean(profile),
+            hasUser: Boolean(user),
+            role: token?.role,
+          })
           // Lecturer JWT handling (existing logic)
           const profileData = profile as ExtendedProfile
           const userData = user as ExtendedUser
@@ -904,42 +928,43 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
         },
 
         async redirect({ url, baseUrl }) {
+          console.log(`[AUTH ${requestId}] [lecturer] redirect check`, {
+            url,
+            baseUrl,
+          })
           // Handle relative URLs
           if (url.startsWith('/')) {
-            return `${baseUrl}${url}`
+            const out = `${baseUrl}${url}`
+            console.log(
+              `[AUTH ${requestId}] [lecturer] redirect relative ->`,
+              out
+            )
+            return out
           }
 
           // Parse and validate against allowed hostnames
           try {
             const parsedUrl = new URL(url)
-            const allowedHosts = [
-              'manage.klicker.uzh.ch',
-              'manage.klicker.com',
-              // Add localhost/127.0.0.1 for development
-              '127.0.0.1',
-              '127.0.0.1:3002',
-              'localhost:3002',
-            ]
+            const allowedHosts = getLecturerHosts()
 
-            // Check exact host match
             if (
               allowedHosts.includes(parsedUrl.host) ||
               allowedHosts.includes(parsedUrl.hostname)
             ) {
-              return url
-            }
-
-            // Check cookie domain if configured
-            if (
-              process.env.COOKIE_DOMAIN &&
-              parsedUrl.host === process.env.COOKIE_DOMAIN
-            ) {
+              console.log(
+                `[AUTH ${requestId}] [lecturer] redirect allow ->`,
+                url
+              )
               return url
             }
           } catch {
             // Invalid URL, fall through to baseUrl
           }
 
+          console.log(
+            `[AUTH ${requestId}] [lecturer] redirect fallback ->`,
+            baseUrl
+          )
           return baseUrl
         },
       },
