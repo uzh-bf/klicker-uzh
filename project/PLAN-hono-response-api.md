@@ -61,7 +61,7 @@ Refactor the response-api from Node.js built-in HTTP server to Hono framework, i
    - Body size limit enforcement
 
 3. **Logging Middleware**
-   - Structured request/response logging with pino via hono-pino
+   - Structured request/response logging with pino (custom middleware)
    - Request ID generation + propagation (`X-Request-Id` header)
    - Correlation ID tracking in assessment flow
    - Redaction of sensitive fields by default (see Logging & Redaction)
@@ -82,12 +82,9 @@ Refactor the response-api from Node.js built-in HTTP server to Hono framework, i
    - Keep existing JWT utility usage
    - Type-safe payload handling
 
-4. **Audit Service integration**
-   - Create `src/lib/audit.ts` module for network-based audit logging
-   - Environment variables for audit service endpoint/credentials
-   - Implement retry logic for critical audit events
-   - Structured audit event types (response received, duplicate detected, authentication failure)
-   - Consider batching for non-critical events
+4. (Deferred) **Audit Service integration**
+   - Keep current Hatchet audit event pattern. A direct audit service client can be added later if required by compliance.
+   - See Backlog for proposed approach.
 
 ## Phase 6: Server Configuration
 1. **Update index.ts**
@@ -170,6 +167,8 @@ Refactor the response-api from Node.js built-in HTTP server to Hono framework, i
 - [ ] `src/lib/redis.ts` - Redis client setup with graceful degradation
 - [ ] `src/lib/logger.ts` - Logger configuration
 - [ ] `src/lib/env.ts` - Environment schema (zod) and loader
+
+Deferred (Backlog):
 - [ ] `src/lib/audit.ts` - Audit service client with retry logic
 
 ### Files to Modify
@@ -211,9 +210,8 @@ If issues arise during deployment:
 
 ### 2) Correlation ID Hashing
 - Purpose is stable compaction for audit correlation and Redis de-duplication, not cryptographic verification.
-- **Decision**: Continue using MD5 for correlationId as it's 3-5x faster than HMAC-SHA256 and sufficient for deduplication purposes.
-- Performance consideration: MD5 is optimal for this use case (deduplication, not security).
-- Future option: Could introduce `CORRELATION_HASH_ALGO` env if security requirements change, but not currently planned.
+- **Decision**: Continue using MD5 for correlationId by default as it's faster and sufficient for deduplication.
+- Optional hardening implemented: `CORRELATION_HASH_ALGO=hmac-sha256` computes an HMAC with `APP_SECRET`.
 
 ### 3) Logging & Redaction
 - Use `hono-pino` with pino. Generate and attach a `requestId` (UUIDv4) to all logs and responses (`X-Request-Id`).
@@ -272,7 +270,7 @@ If issues arise during deployment:
 ### 10) Environment Validation
 - Add `src/lib/env.ts` using zod to validate and parse env at startup.
 - Required envs (per instance): `PORT`, `CORS_ALLOWED_ORIGINS`, `APP_SECRET`, `REDIS_*`, Hatchet config, `ASSESSMENT_MODE`.
-- Optional: `LOG_LEVEL`, `AUDIT_SERVICE_URL`, `AUDIT_SERVICE_TOKEN`.
+- Optional: `LOG_LEVEL`.
 - Runtime behavior changes based on `ASSESSMENT_MODE` flag (true/false).
 
 ### 11) Rate Limiting (Hook Only)
@@ -311,7 +309,7 @@ If issues arise during deployment:
 - **Health check behavior**: Redis status reported but never fails the health endpoint
 - **Monitoring**: Track Redis failure rate via logs for operational awareness
 
-### 14) Audit Service Integration
+### 14) Audit Service Integration (Backlog)
 - **Network-based audit logging**: Separate service handles audit trail
 - **Event types**:
   - Response received (standard and assessment)
@@ -371,26 +369,22 @@ If issues arise during deployment:
 
 ## Implementation Checklist (Updated)
 
-- [ ] Add dependencies and env loader
-- [ ] Scaffold app with global middleware
-- [ ] Implement health routes with Redis indicator
-- [ ] Implement response route (standard)
-- [ ] Implement response route (assessment)
-- [ ] Add structured error handling
-- [ ] Configure logger with redaction and requestId
-- [ ] Wire Redis and Hatchet integrations
-- [ ] Graceful shutdown
+- [x] Add dependencies and env loader
+- [x] Scaffold app with global middleware
+- [x] Implement health routes with Redis indicator
+- [x] Implement response route (standard)
+- [x] Implement response route (assessment)
+- [x] Add structured error handling
+- [x] Configure logger with redaction and requestId
+- [x] Wire Redis and Hatchet integrations
+- [x] Graceful shutdown
 - [ ] Tests for both instances and CORS
 - [ ] Update docs and configs
- 
-Progress:
-- [x] Dependencies added and env loader implemented (`src/lib/env.ts`)
-- [x] Global middleware scaffolded (secure headers, CORS, body limit, JSON-only, origin guard, requestId, logging)
-- [x] Health routes with Redis indicator (`src/routes/health.ts`)
-- [x] Response routes implemented (`src/routes/response.ts`) with zod validation and dual-mode handling
-- [x] Structured error handling via `app.onError` and consistent error shapes
-- [x] Logger configured with redaction and conditional debug (`src/lib/logger.ts` + middleware)
-- [x] Redis and Hatchet wired (`src/lib/redis.ts`, hatchetClient usage)
-- [x] Graceful shutdown (`src/index.ts`)
-- [ ] Tests for instances and CORS
-- [ ] Documentation updates
+
+Remaining Work
+- Tests: CORS allow/deny, JSON-only enforcement, standard vs assessment happy paths, duplicate 208, Redis-down fallback, error shapes and codes.
+- Documentation: env variables (APP_SECRET, ASSESSMENT_MODE, LOG_LEVEL, CORS_ALLOWED_ORIGINS, optional CORRELATION_HASH_ALGO), request/response examples, ops notes for dual instances and CORS.
+- Optional: swap custom pino middleware to hono-pino for consistency (no behavior change), or keep current.
+- Optional: secret rotation implementation using APP_SECRETS_PREVIOUS fallbacks (verify JWT against current then previous secrets).
+- Backlog: audit service client module if direct audit sink is required.
+- Backlog: rate limiting integration point on standard mode submissions.
