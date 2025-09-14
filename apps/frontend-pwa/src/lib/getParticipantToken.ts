@@ -5,14 +5,6 @@ import bodyParser from 'body-parser'
 import { GetServerSidePropsContext } from 'next'
 import nookies from 'nookies'
 
-// Validate required environment variables
-if (!process.env.JWT_ISSUER_PWA) {
-  console.error(
-    'JWT_ISSUER_PWA environment variable is required but not defined'
-  )
-  process.exit(1)
-}
-
 export default async function getParticipantToken({
   apolloClient,
   courseId,
@@ -95,9 +87,13 @@ export default async function getParticipantToken({
       })
 
       if (request?.body?.lis_person_sourcedid) {
-        if (!process.env.JWT_ISSUER_PWA) {
+        const pwaOrigin =
+          process.env.ASSESSMENT_MODE === 'true'
+            ? process.env.APP_ORIGIN_ASSESSMENT_PWA
+            : process.env.APP_ORIGIN_PWA
+        if (!pwaOrigin) {
           throw new Error(
-            'JWT_ISSUER_PWA environment variable is required but not defined'
+            'APP_ORIGIN_PWA and APP_ORIGIN_ASSESSMENT_PWA are required but not defined'
           )
         }
 
@@ -112,7 +108,10 @@ export default async function getParticipantToken({
           {
             algorithm: 'HS256',
             expiresIn: '5m',
-            issuer: process.env.JWT_ISSUER_PWA,
+            issuer:
+              process.env.ASSESSMENT_MODE === 'true'
+                ? process.env.APP_ORIGIN_ASSESSMENT_PWA
+                : process.env.APP_ORIGIN_PWA,
           }
         )
 

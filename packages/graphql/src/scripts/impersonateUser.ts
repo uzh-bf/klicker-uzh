@@ -27,7 +27,7 @@ async function run(email: string) {
     {
       algorithm: 'HS256',
       expiresIn: '2h',
-      issuer: process.env.JWT_ISSUER_API,
+      issuer: process.env.APP_ORIGIN_API,
     }
   )
 

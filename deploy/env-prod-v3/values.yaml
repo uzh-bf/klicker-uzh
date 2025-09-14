@@ -1,13 +1,14 @@
 heartbeats:
   dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/gmMi315s2532oozauJa18ckx
 
-jwtIssuers:
-  api: 'https://backend-sls.klicker.uzh.ch'
-  auth: 'https://auth.klicker.uzh.ch'
-  lti: 'https://lti.klicker.uzh.ch'
-  pwa: 'https://pwa.klicker.uzh.ch'
-  assessmentApi: 'https://assessment-api.klicker.uzh.ch'
-  assessmentPwa: 'https://assessment.klicker.uzh.ch'
+global:
+  appOrigins:
+    api: 'https://backend-sls.klicker.uzh.ch'
+    auth: 'https://auth.klicker.uzh.ch'
+    lti: 'https://lti.klicker.uzh.ch'
+    pwa: 'https://pwa.klicker.uzh.ch'
+    assessmentApi: 'https://assessment-api.klicker.uzh.ch'
+    assessmentPwa: 'https://assessment.klicker.uzh.ch'
 
 hatchet:
   client:

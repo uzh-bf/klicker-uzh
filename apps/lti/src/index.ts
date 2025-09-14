@@ -4,10 +4,8 @@ import { Provider } from 'ltijs'
 import Database from 'ltijs-sequelize'
 
 // Validate required environment variables
-if (!process.env.JWT_ISSUER_LTI) {
-  console.error(
-    'JWT_ISSUER_LTI environment variable is required but not defined'
-  )
+if (!process.env.APP_ORIGIN_LTI) {
+  console.error('APP_ORIGIN_LTI is required but not defined')
   process.exit(1)
 }
 
@@ -63,10 +61,8 @@ if (process.env.LTI_DB_TYPE === 'postgres') {
 Provider.onConnect(async (token, req, res) => {
   console.log('LTI launch callback:', token)
 
-  if (!process.env.JWT_ISSUER_LTI) {
-    console.error(
-      'JWT_ISSUER_LTI environment variable is required but not defined'
-    )
+  if (!process.env.APP_ORIGIN_LTI) {
+    console.error('APP_ORIGIN_LTI is required but not defined')
     process.exit(1)
   }
 
@@ -80,7 +76,7 @@ Provider.onConnect(async (token, req, res) => {
     {
       algorithm: 'HS256',
       expiresIn: '5m',
-      issuer: process.env.JWT_ISSUER_LTI,
+      issuer: process.env.APP_ORIGIN_LTI,
     }
   )
 

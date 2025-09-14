@@ -79,7 +79,9 @@ function createIsomorphLink() {
   let link: ApolloLink = new HttpLink({
     uri: isBrowser
       ? process.env.NEXT_PUBLIC_API_URL
-      : process.env.NEXT_PUBLIC_API_URL_SSR || process.env.NEXT_PUBLIC_API_URL,
+      : process.env['API_URL_SSR'] ||
+        process.env.NEXT_PUBLIC_API_URL_SSR ||
+        process.env.NEXT_PUBLIC_API_URL,
     credentials: 'include',
     headers: {
       'x-graphql-yoga-csrf': 'true',

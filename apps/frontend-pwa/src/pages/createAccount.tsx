@@ -143,9 +143,13 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       })
 
       if (request?.body?.lis_person_sourcedid) {
-        if (!process.env.JWT_ISSUER_PWA) {
+        const pwaOrigin =
+          process.env.ASSESSMENT_MODE === 'true'
+            ? process.env.APP_ORIGIN_ASSESSMENT_PWA
+            : process.env.APP_ORIGIN_PWA
+        if (!pwaOrigin) {
           throw new Error(
-            'JWT_ISSUER_PWA environment variable is required but not defined'
+            'APP_ORIGIN_PWA and APP_ORIGIN_ASSESSMENT_PWA are required but not defined'
           )
         }
 
@@ -159,7 +163,11 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           {
             algorithm: 'HS256',
             expiresIn: '5m',
-            issuer: process.env.JWT_ISSUER_PWA,
+            issuer:
+              process.env.ASSESSMENT_MODE === 'true'
+                ? process.env.APP_ORIGIN_ASSESSMENT_PWA ||
+                  process.env.APP_ORIGIN_PWA
+                : process.env.APP_ORIGIN_PWA,
           }
         )
         signedLtiData.ssoId = request.body.lis_person_sourcedid

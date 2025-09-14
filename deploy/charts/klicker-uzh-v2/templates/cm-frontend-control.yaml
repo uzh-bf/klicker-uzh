@@ -6,3 +6,5 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  # SSR-only GraphQL endpoint for Control frontend (internal service DNS)
+  API_URL_SSR: "http://{{ include \"chart.fullname\" . }}-backend-graphql:3000/api/graphql"

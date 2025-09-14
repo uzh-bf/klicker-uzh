@@ -24,7 +24,10 @@ async function run(username: string) {
     {
       algorithm: 'HS256',
       expiresIn: '2h',
-      issuer: process.env.JWT_ISSUER_API,
+      issuer:
+        process.env.ASSESSMENT_MODE === 'true'
+          ? process.env.APP_ORIGIN_AUTH
+          : process.env.APP_ORIGIN_API,
     }
   )
 

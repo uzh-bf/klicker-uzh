@@ -1,0 +1,23 @@
+{{- $fullName := include "chart.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-global
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  # Canonical app origins (single source of truth)
+  APP_ORIGIN_API: {{ .Values.global.appOrigins.api | quote }}
+  APP_ORIGIN_AUTH: {{ .Values.global.appOrigins.auth | quote }}
+  APP_ORIGIN_LTI: {{ .Values.global.appOrigins.lti | quote }}
+  APP_ORIGIN_PWA: {{ .Values.global.appOrigins.pwa | quote }}
+  APP_ORIGIN_MANAGE: {{ .Values.global.appOrigins.manage | quote }}
+  APP_ORIGIN_CONTROL: {{ .Values.global.appOrigins.control | quote }}
+  {{- if .Values.global.appOrigins.assessmentApi }}
+  APP_ORIGIN_ASSESSMENT_API: {{ .Values.global.appOrigins.assessmentApi | quote }}
+  {{- end }}
+  {{- if .Values.global.appOrigins.assessmentPwa }}
+  APP_ORIGIN_ASSESSMENT_PWA: {{ .Values.global.appOrigins.assessmentPwa | quote }}
+  {{- end }}
+
+  # JWT issuer equals corresponding APP_ORIGIN_* — no separate vars exported

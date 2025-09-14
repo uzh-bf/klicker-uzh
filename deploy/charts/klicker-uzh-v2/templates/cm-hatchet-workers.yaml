@@ -18,12 +18,6 @@ data:
   {{- if .Values.backendGraphql.redisCache.tls }}
   REDIS_CACHE_TLS: {{ .Values.backendGraphql.redisCache.tls | quote }}
   {{ end }}
-  JWT_ISSUER_API: {{ .Values.jwtIssuers.api | quote }}
-  JWT_ISSUER_AUTH: {{ .Values.jwtIssuers.auth | quote }}
-  JWT_ISSUER_LTI: {{ .Values.jwtIssuers.lti | quote }}
-  JWT_ISSUER_PWA: {{ .Values.jwtIssuers.pwa | quote }}
-  JWT_ISSUER_ASSESSMENT_API: {{ .Values.jwtIssuers.assessmentApi | quote }}
-  JWT_ISSUER_ASSESSMENT_PWA: {{ .Values.jwtIssuers.assessmentPwa | quote }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -44,10 +38,6 @@ data:
   {{- if .Values.backendGraphql.redisCache.tls }}
   REDIS_CACHE_TLS: {{ .Values.backendGraphql.redisCache.tls | quote }}
   {{ end }}
-  JWT_ISSUER_API: {{ .Values.jwtIssuers.api | quote }}
-  JWT_ISSUER_AUTH: {{ .Values.jwtIssuers.auth | quote }}
-  JWT_ISSUER_LTI: {{ .Values.jwtIssuers.lti | quote }}
-  JWT_ISSUER_PWA: {{ .Values.jwtIssuers.pwa | quote }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -69,7 +59,3 @@ data:
   REDIS_CACHE_TLS: {{ .Values.backendGraphql.redisCache.tls | quote }}
   {{ end }}
   ASSESSMENT_MODE: 'true'
-  JWT_ISSUER_API: {{ .Values.jwtIssuers.assessmentApi | quote }}
-  JWT_ISSUER_AUTH: {{ .Values.jwtIssuers.auth | quote }}
-  JWT_ISSUER_LTI: {{ .Values.jwtIssuers.lti | quote }}
-  JWT_ISSUER_PWA: {{ .Values.jwtIssuers.assessmentPwa | quote }}

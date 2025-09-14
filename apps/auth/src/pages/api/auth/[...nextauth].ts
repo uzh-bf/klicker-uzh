@@ -19,10 +19,8 @@ export const PARTICIPANT_COOKIE_NAME = 'next-auth.participant-session-token'
 export const APP_SECRET = process.env.APP_SECRET
 
 // Validate required environment variables
-if (!process.env.JWT_ISSUER_AUTH) {
-  console.error(
-    'JWT_ISSUER_AUTH environment variable is required but not defined'
-  )
+if (!process.env.APP_ORIGIN_AUTH) {
+  console.error('APP_ORIGIN_AUTH is required but not defined')
   process.exit(1)
 }
 
@@ -140,7 +138,7 @@ export async function encode({ token, secret }: JWTEncodeParams) {
   const secretString = typeof secret === 'string' ? secret : secret.toString()
 
   return signJWT((token as JWTPayload) ?? {}, secretString, {
-    issuer: process.env.JWT_ISSUER_AUTH,
+    issuer: process.env.APP_ORIGIN_AUTH,
   })
 }
 

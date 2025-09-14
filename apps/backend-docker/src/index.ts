@@ -119,10 +119,8 @@ migrate(prisma).then(() => {
   })
 
   // Validate required environment variables at startup
-  if (!process.env.JWT_ISSUER_API) {
-    console.error(
-      'JWT_ISSUER_API environment variable is required but not defined'
-    )
+  if (!process.env.APP_ORIGIN_API) {
+    console.error('APP_ORIGIN_API is required but not defined')
     process.exit(1)
   }
 

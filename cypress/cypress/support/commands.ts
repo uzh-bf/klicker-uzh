@@ -144,7 +144,7 @@ const loginFactory = (
         .setProtectedHeader({ alg })
         .setIssuedAt()
         .setExpirationTime('2h')
-        .setIssuer(process.env.JWT_ISSUER_AUTH)
+        .setIssuer(process.env.APP_ORIGIN_AUTH)
         .sign(secret)
 
       cy.setCookie('next-auth.session-token', token, {
@@ -156,7 +156,9 @@ const loginFactory = (
       })
     })
 
-    cy.visit(redirectUrl ?? Cypress.env('URL_MANAGE'))
+    cy.visit(
+      redirectUrl ?? Cypress.env('URL_MANAGE') ?? process.env.APP_ORIGIN_MANAGE
+    )
   }
 }
 

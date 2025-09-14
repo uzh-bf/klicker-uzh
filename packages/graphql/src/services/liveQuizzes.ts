@@ -1109,7 +1109,7 @@ export async function activateLiveQuizBlock(
                 },
                 process.env.APP_SECRET as string,
                 {
-                  issuer: process.env.JWT_ISSUER_API,
+                  issuer: process.env.APP_ORIGIN_ASSESSMENT_API,
                   issuedAt: updatedQuiz.activeBlock!.startedAt ?? new Date(0),
                 }
               )
@@ -2826,7 +2826,7 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
           },
           process.env.APP_SECRET as string,
           {
-            issuer: process.env.JWT_ISSUER_API,
+            issuer: process.env.APP_ORIGIN_ASSESSMENT_API,
             issuedAt: quiz.activeBlock?.startedAt ?? new Date(0),
           }
         )
