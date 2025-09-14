@@ -59,6 +59,11 @@ check_hatchet() {
 cleanup() {
   local exit_code=$?
 
+  # Stop log streaming
+  if [ ! -z "${TAIL_PID:-}" ]; then
+    kill $TAIL_PID 2>/dev/null || true
+  fi
+
   # If we have a service PID and either we're exiting with an error or received a signal
   if [ ! -z "${SERVICE_PID:-}" ] && { [ $exit_code -ne 0 ] || [ "${1:-}" = "TERM" ]; }; then
     echo "🛑 Cleaning up service process (PID: $SERVICE_PID)..."
@@ -87,10 +92,18 @@ check_hatchet || { echo "❌ Hatchet check failed"; exit 1; }
 
 # Start the service in the background and capture all output
 echo "🚀 Starting service..."
+echo "📋 Service logs will be streamed below:"
+echo "----------------------------------------"
+
+# Start service and stream logs in real-time
 pnpm run start:test:ci > service.log 2>&1 &
 
 # Store the PID of the background process
 SERVICE_PID=$!
+
+# Start background log streaming
+tail -f service.log &
+TAIL_PID=$!
 
 # Give the process a moment to fail fast if it's going to
 sleep 2
@@ -165,6 +178,13 @@ while [ $elapsed -lt $TIMEOUT_SECONDS ]; do
   # Try to access all endpoints
   if check_endpoints; then
     echo "✨ All services are ready!"
+    
+    # Stop log streaming but keep service running
+    if [ ! -z "${TAIL_PID:-}" ]; then
+      kill $TAIL_PID 2>/dev/null || true
+      echo "📋 Service logs are available in service.log"
+    fi
+    
     # Keep the background process running but exit the script successfully
     trap - TERM  # Remove SIGTERM trap as we want to keep the service running
     trap - EXIT  # Remove exit trap as we want to keep the service running

@@ -63,10 +63,13 @@ jobs:
           POSTGRES_PASSWORD: hatchet
           POSTGRES_DB: hatchet
         options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-cmd "pg_isready -U hatchet -d hatchet"
+          --health-interval 5s
+          --health-timeout 10s
+          --health-retries 10
+          --health-start-period 30s
+        ports:
+          - 5433:5432
       redis_cache:
         image: redis:7
         options: >-
@@ -237,10 +240,13 @@ jobs:
           POSTGRES_PASSWORD: hatchet
           POSTGRES_DB: hatchet
         options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-cmd "pg_isready -U hatchet -d hatchet"
+          --health-interval 5s
+          --health-timeout 10s
+          --health-retries 10
+          --health-start-period 30s
+        ports:
+          - 5433:5432
       redis_cache:
         image: redis:7
         options: >-
