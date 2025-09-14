@@ -46,6 +46,7 @@ export async function createParticipantToken(participantId: string) {
     {
       algorithm: 'HS256',
       expiresIn: '2w',
+      issuer: process.env.APP_ORIGIN_API,
     }
   )
 }
@@ -61,6 +62,7 @@ export async function createTemporaryParticipantToken(participantId: string) {
     {
       algorithm: 'HS256',
       expiresIn: '2w',
+      issuer: process.env.APP_ORIGIN_API,
     }
   )
 }
@@ -241,12 +243,11 @@ export async function sendMagicLink(
     {
       algorithm: 'HS256',
       expiresIn: '15m',
+      issuer: process.env.APP_ORIGIN_API,
     }
   )
 
-  const magicLink = `${
-    process.env.NODE_ENV === 'production' ? 'https' : 'http'
-  }://${process.env.APP_STUDENT_DOMAIN}/magicLogin?token=${magicLinkJWT}`
+  const magicLink = `${process.env.APP_ORIGIN_PWA}/magicLogin?token=${magicLinkJWT}`
 
   const emailHtml = await EmailService.hydrateTemplate(
     {
@@ -692,12 +693,11 @@ export async function createParticipantAccount(
       {
         algorithm: 'HS256',
         expiresIn: '60m',
+        issuer: process.env.APP_ORIGIN_API,
       }
     )
 
-    const activationLink = `${
-      process.env.NODE_ENV === 'production' ? 'https' : 'http'
-    }://${process.env.APP_STUDENT_DOMAIN}/activation?token=${activationJWT}`
+    const activationLink = `${process.env.APP_ORIGIN_PWA}/activation?token=${activationJWT}`
 
     const emailHtml = await EmailService.hydrateTemplate(
       {

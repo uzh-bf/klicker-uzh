@@ -52,6 +52,8 @@ spec:
               value: production
           envFrom:
             - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
+            - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-response-api
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-response-api
@@ -133,6 +135,8 @@ spec:
             - name: NODE_ENV
               value: production
           envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
             - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-response-api-assessment
             - secretRef:
