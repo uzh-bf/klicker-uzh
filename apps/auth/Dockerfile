@@ -30,14 +30,11 @@ COPY --from=builder /app/out/pnpm* .
 RUN pnpm i --ignore-scripts
 
 ARG NODE_ENV="production"
-ARG COOKIE_DOMAIN
 ARG NEXTAUTH_URL
 ARG EDUID_CLIENT_ID
 ARG EDUID_WELL_KNOWN
 ARG NEXT_PUBLIC_EDUID_ID
-ARG NEXT_PUBLIC_DEFAULT_REDIRECT
 ARG NEXT_PUBLIC_ENV=production
-ENV NEXT_PUBLIC_ENV=${NEXT_PUBLIC_ENV}
 
 COPY --from=builder /app/out/full/ .
 RUN pnpm run build --filter=@klicker-uzh/auth

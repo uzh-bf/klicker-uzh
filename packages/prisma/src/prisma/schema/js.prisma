@@ -1,6 +1,6 @@
 generator client {
   provider               = "prisma-client"
-  previewFeatures        = ["postgresqlExtensions", "views"]
+  previewFeatures        = ["postgresqlExtensions", "views", "queryCompiler", "driverAdapters"]
   output                 = "../client"
   runtime                = "nodejs"
   moduleFormat           = "esm"

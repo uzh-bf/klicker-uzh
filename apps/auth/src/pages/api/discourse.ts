@@ -1,8 +1,9 @@
+import { MANAGER_COOKIE_NAME } from '@/lib/constants'
 import { UserRole } from '@klicker-uzh/prisma/client'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getToken } from 'next-auth/jwt'
 import crypto from 'node:crypto'
-import { APP_SECRET, COOKIE_NAME, decode } from './auth/[...nextauth]'
+import { decode } from './auth/[...nextauth]'
 
 type ResponseData = {
   redirectURL: string
@@ -15,8 +16,8 @@ export default async function handler(
   const session = await getToken({
     req,
     decode,
-    cookieName: COOKIE_NAME,
-    secret: APP_SECRET,
+    cookieName: MANAGER_COOKIE_NAME,
+    secret: process.env.APP_SECRET,
   })
 
   const sso = req.body['sso']

@@ -62,7 +62,7 @@ function StudentSignIn() {
             data={{ cy: 'student-eduid-login-button' }}
             onClick={() =>
               signIn(
-                process.env.NEXT_PUBLIC_EDUID_ID,
+                process.env.NEXT_PUBLIC_EDUID_ID || 'eduid',
                 { callbackUrl: redirectTo },
                 { participant: 'true' }
               )
