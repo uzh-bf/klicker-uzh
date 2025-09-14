@@ -14,11 +14,13 @@ import React from 'react'
 function LiveQuizQRModal({
   quizId,
   quizPin,
+  isAssessmentEnabled,
   language,
   onClose,
 }: {
   quizId: string
   quizPin?: string | null
+  isAssessmentEnabled: boolean
   language?: LocaleType | null
   onClose: () => void
 }): React.ReactElement {
@@ -60,10 +62,11 @@ function LiveQuizQRModal({
 
           <div>
             <QR
-              className={{ title: 'text-base', canvas: 'flex justify-center' }}
+              assessmentMode={isAssessmentEnabled}
               path={accountRelativeLink}
               width={100}
               data={{ cy: 'qr-link-shortname' }}
+              className={{ title: 'text-base', canvas: 'flex justify-center' }}
             />
             <Link passHref href={`/qr${accountRelativeLink}`} target="_blank">
               <Button
@@ -95,10 +98,11 @@ function LiveQuizQRModal({
 
           <div>
             <QR
-              className={{ title: 'text-base', canvas: 'flex justify-center' }}
+              assessmentMode={isAssessmentEnabled}
               path={quizRelativeLink}
               width={100}
               data={{ cy: 'qr-link-direct' }}
+              className={{ title: 'text-base', canvas: 'flex justify-center' }}
             />
             <Link passHref href={`/qr${quizRelativeLink}`} target="_blank">
               <Button fluid primary className={{ root: 'mt-2' }}>

@@ -2750,10 +2750,7 @@ function removeSolutionFromInstances({
 
 export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
   // only get the minimal required information of the quiz
-  const quizInfo = await ctx.prisma.liveQuiz.findUnique({
-    where: { id },
-    select: { id: true, status: true, pinCode: true },
-  })
+  const quizInfo = await ctx.prisma.liveQuiz.findUnique({ where: { id } })
 
   // if the quiz is not available, return early
   if (!quizInfo || quizInfo.status !== DB.PublicationStatus.PUBLISHED)
@@ -2765,9 +2762,14 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
     const providedPin = ctx.req.cookies?.[cookieName]
 
     if (!providedPin) {
-      throw new GraphQLError('LIVE_QUIZ_PIN_MISSING', {
-        extensions: { code: 'FORBIDDEN' },
-      })
+      throw new GraphQLError(
+        quizInfo.isAssessmentEnabled
+          ? 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT'
+          : 'LIVE_QUIZ_PIN_MISSING',
+        {
+          extensions: { code: 'FORBIDDEN' },
+        }
+      )
     }
 
     if (providedPin !== quizInfo.pinCode) {

@@ -555,6 +555,17 @@ export async function createParticipantAccount(
   }: CreateParticipantAccountArgs,
   ctx: Context
 ) {
+  // verify that the course that should be joined is not an assessment course
+  if (courseId) {
+    const course = await ctx.prisma.course.findUnique({
+      where: { id: courseId },
+    })
+
+    if (!course || course.isAssessmentEnabled) {
+      return null
+    }
+  }
+
   if (signedLtiData) {
     const account = await ctx.prisma.$transaction(async (prisma) => {
       const ltiData = (await verifyJWT(
@@ -594,9 +605,7 @@ export async function createParticipantAccount(
             },
           },
         },
-        include: {
-          participant: true,
-        },
+        include: { participant: true },
       })
 
       // if a courseId is specified, add a participation in the corresponding course
@@ -609,16 +618,8 @@ export async function createParticipantAccount(
             },
           },
           create: {
-            course: {
-              connect: {
-                id: courseId,
-              },
-            },
-            participant: {
-              connect: {
-                id: account.participant.id,
-              },
-            },
+            course: { connect: { id: courseId } },
+            participant: { connect: { id: account.participant.id } },
           },
           update: {},
         })
@@ -672,16 +673,8 @@ export async function createParticipantAccount(
             },
           },
           create: {
-            course: {
-              connect: {
-                id: courseId,
-              },
-            },
-            participant: {
-              connect: {
-                id: participant.id,
-              },
-            },
+            course: { connect: { id: courseId } },
+            participant: { connect: { id: participant.id } },
           },
           update: {},
         })
@@ -753,6 +746,17 @@ export async function loginParticipantWithLti(
   { signedLtiData, courseId }: LoginParticipantWithLtiArgs,
   ctx: Context
 ) {
+  // verify that the course that should be joined is not an assessment course
+  if (courseId) {
+    const course = await ctx.prisma.course.findUnique({
+      where: { id: courseId },
+    })
+
+    if (!course || course.isAssessmentEnabled) {
+      return null
+    }
+  }
+
   const ltiData = (await verifyJWT(
     signedLtiData,
     process.env.APP_SECRET as string
@@ -766,9 +770,7 @@ export async function loginParticipantWithLti(
 
   let account = await ctx.prisma.participantAccount.findUnique({
     where: { ssoId: ltiData.sub as string },
-    include: {
-      participant: true,
-    },
+    include: { participant: true },
   })
 
   console.log('account', account)
@@ -796,9 +798,7 @@ export async function loginParticipantWithLti(
           },
         },
       },
-      include: {
-        participant: true,
-      },
+      include: { participant: true },
     })
   }
 
@@ -813,16 +813,8 @@ export async function loginParticipantWithLti(
         },
       },
       create: {
-        course: {
-          connect: {
-            id: courseId,
-          },
-        },
-        participant: {
-          connect: {
-            id: account.participant.id,
-          },
-        },
+        course: { connect: { id: courseId } },
+        participant: { connect: { id: account.participant.id } },
       },
       update: {},
     })
@@ -846,17 +838,9 @@ export async function loginParticipantWithLti(
 
 export async function getUserLogins(ctx: ContextWithUser) {
   const logins = await ctx.prisma.userLogin.findMany({
-    where: {
-      user: {
-        id: ctx.user.sub,
-      },
-    },
-    include: {
-      user: true,
-    },
-    orderBy: {
-      scope: 'asc',
-    },
+    where: { user: { id: ctx.user.sub } },
+    include: { user: true },
+    orderBy: { scope: 'asc' },
   })
 
   return logins
