@@ -528,6 +528,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
         isGamificationEnabled: data.isGamificationEnabled,
         isAssessmentEnabled: data.isAssessmentEnabled,
         status: data.status ?? Prisma.PublicationStatus.DRAFT,
+        availableFrom: data.availableFrom,
         pointsMultiplier: data.pointsMultiplier,
         defaultPoints: data.defaultPoints,
         defaultCorrectPoints: data.defaultCorrectPoints,
@@ -1286,7 +1287,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       scheduledStartAt: new Date(
         currentDate.getTime() - 14 * 24 * 60 * 60 * 1000
       ),
-      scheduledEndAt: new Date(currentDate.getTime() - 4 * 24 * 60 * 60 * 1000),
+      scheduledEndAt: new Date(currentDate.getTime() + 4 * 24 * 60 * 60 * 1000),
       isGamificationEnabled: true,
       isAssessmentEnabled: false,
       parameters: {},
@@ -1326,7 +1327,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       scheduledStartAt: new Date(
         currentDate.getTime() - 9 * 24 * 60 * 60 * 1000
       ),
-      scheduledEndAt: new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000),
+      scheduledEndAt: new Date(currentDate.getTime() + 7 * 24 * 60 * 60 * 1000),
       isGamificationEnabled: true,
       isAssessmentEnabled: false,
       parameters: {},
@@ -1408,9 +1409,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       scheduledStartAt: new Date(
         currentDate.getTime() - 2 * 24 * 60 * 60 * 1000
       ),
-      scheduledEndAt: new Date(
-        currentDate.getTime() - 2 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000
-      ),
+      scheduledEndAt: new Date(currentDate.getTime() + 6 * 60 * 60 * 1000),
       isGamificationEnabled: true,
       isAssessmentEnabled: false,
       parameters: {},
@@ -2298,9 +2297,7 @@ Once this microlearning is published, it will be immediately accessible
       scheduledStartAt: new Date(
         currentDate.getTime() - 10 * 24 * 60 * 60 * 1000
       ),
-      scheduledEndAt: new Date(
-        currentDate.getTime() - 6 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000
-      ),
+      scheduledEndAt: new Date(currentDate.getTime() + 6 * 24 * 60 * 60 * 1000),
       isGamificationEnabled: true,
       isAssessmentEnabled: false,
       stacks: {

@@ -450,7 +450,7 @@ export async function seedElements(
           { ix: 0, value: 'Choice 1', correct: true, feedback: 'Feedback 1' },
           { ix: 1, value: 'Choice 2', correct: false, feedback: 'Feedback 2' },
           { ix: 2, value: 'Choice 3', correct: false, feedback: 'Feedback 3' },
-          { ix: 3, value: 'Choice 4', correct: true, feedback: 'Feedback 4' },
+          { ix: 3, value: 'Choice 4', correct: false, feedback: 'Feedback 4' },
         ],
       },
       ownerId: userContext.user.sub,

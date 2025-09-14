@@ -93,7 +93,7 @@
     "dev:test": "pnpm run dev",
     "dev:ts": "cross-env NODE_ENV=development rollup -c --watch",
     "generate": "graphql-codegen --config codegen.ts",
-    "script": "ENV=development doppler run --config dev -- tsx",
+    "script": "ENV=development doppler run --config dev -- tsx --env-file=.env",
     "script:invitations:dev": "CONFIG=dev_assessment ../../util/_run_with_doppler.sh tsx src/scripts/importParticipantInvitations.ts",
     "script:prod": "ENV=production doppler run --config prd -- tsx",
     "script:stg": "ENV=development doppler run --config stg -- tsx",
