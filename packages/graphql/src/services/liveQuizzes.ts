@@ -2434,6 +2434,7 @@ export async function resetAssessmentLiveQuiz(
           feedbacks: { deleteMany: {} },
           confusionFeedbacks: { deleteMany: {} },
           leaderboard: { deleteMany: {} },
+          temporaryLeaderboard: { deleteMany: {} }, // should not be set for assessment live quizzes
         },
         include: {
           course: true,
