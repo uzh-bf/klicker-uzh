@@ -1,19 +1,19 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import { DisplayMode } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
   processElementData,
   recomputeDerivedPermissions,
+  signJWT,
+  verifyJWT,
 } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
-import dayjs from 'dayjs'
 import type { CookieOptions } from 'express'
-import JWT from 'jsonwebtoken'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { sendTeamsNotifications } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
+import { sendTeamsNotification } from './notifications.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -26,62 +26,6 @@ const COOKIE_SETTINGS: CookieOptions = {
   sameSite: 'lax',
 }
 
-interface LoginUserTokenArgs {
-  shortname: string
-  token: string
-}
-
-export async function loginUserToken(
-  { shortname, token }: LoginUserTokenArgs,
-  ctx: Context
-) {
-  const user = await ctx.prisma.user.findUnique({
-    where: { shortname: shortname.trim() },
-  })
-
-  if (!user) {
-    await sendTeamsNotifications(
-      'graphql/loginUserToken',
-      `LOGIN FAILED: User with shortname ${shortname} not found.`
-    )
-    return null
-  }
-
-  const isLoginValid =
-    token === user.loginToken &&
-    dayjs(user.loginTokenExpiresAt).isAfter(dayjs())
-
-  if (!isLoginValid) return null
-
-  ctx.prisma.user.update({
-    where: { id: user.id },
-    data: { lastLoginAt: new Date() },
-  })
-
-  const jwt = JWT.sign(
-    {
-      sub: user.id,
-      role: user.role,
-      scope: DB.UserLoginScope.SESSION_EXEC,
-    },
-    // TODO: use structured configuration approach
-    process.env.APP_SECRET as string,
-    {
-      algorithm: 'HS256',
-      expiresIn: '4w',
-    }
-  )
-
-  ctx.res.cookie('next-auth.session-token', jwt, {
-    ...COOKIE_SETTINGS,
-    maxAge: 1000 * 60 * 60 * 24 * 30,
-  })
-
-  ctx.res.cookie('NEXT_LOCALE', user.locale, COOKIE_SETTINGS)
-
-  return user.id
-}
-
 export async function logoutUser(_: any, ctx: ContextWithUser) {
   ctx.res.cookie('next-auth.session-token', 'logoutString', {
     ...COOKIE_SETTINGS,
@@ -91,8 +35,8 @@ export async function logoutUser(_: any, ctx: ContextWithUser) {
   return ctx.user.sub
 }
 
-export function createParticipantToken(participantId: string) {
-  return JWT.sign(
+export async function createParticipantToken(participantId: string) {
+  return signJWT(
     {
       sub: participantId,
       role: DB.UserRole.PARTICIPANT,
@@ -102,12 +46,13 @@ export function createParticipantToken(participantId: string) {
     {
       algorithm: 'HS256',
       expiresIn: '2w',
+      issuer: process.env.APP_ORIGIN_API,
     }
   )
 }
 
-export function createTemporaryParticipantToken(participantId: string) {
-  return JWT.sign(
+export async function createTemporaryParticipantToken(participantId: string) {
+  return signJWT(
     {
       sub: participantId,
       role: DB.UserRole.TEMPORARY_PARTICIPANT,
@@ -117,6 +62,7 @@ export function createTemporaryParticipantToken(participantId: string) {
     {
       algorithm: 'HS256',
       expiresIn: '2w',
+      issuer: process.env.APP_ORIGIN_API,
     }
   )
 }
@@ -133,10 +79,8 @@ async function doParticipantLogin(
     data: { lastLoginAt: new Date() },
   })
 
-  const jwt = createParticipantToken(participantId)
-
+  const jwt = await createParticipantToken(participantId)
   ctx.res.cookie('participant_token', jwt, COOKIE_SETTINGS)
-
   ctx.res.cookie('NEXT_LOCALE', participantLocale, COOKIE_SETTINGS)
 
   return jwt
@@ -230,7 +174,7 @@ export async function loginTemporaryParticipant(
     })
 
   // create and return a new valid token for the temporary participant
-  const jwt = createTemporaryParticipantToken(temporaryParticipant.id)
+  const jwt = await createTemporaryParticipantToken(temporaryParticipant.id)
   ctx.res.cookie('temporary_participant_token', jwt, COOKIE_SETTINGS)
   return jwt
 }
@@ -289,7 +233,7 @@ export async function sendMagicLink(
   // TODO: should we disable magic link login until the email has been verified?
   if (!participantData?.email) return false
 
-  const magicLinkJWT = JWT.sign(
+  const magicLinkJWT = await signJWT(
     {
       sub: participantData.id,
       role: DB.UserRole.PARTICIPANT,
@@ -298,28 +242,27 @@ export async function sendMagicLink(
     process.env.APP_SECRET as string,
     {
       algorithm: 'HS256',
-      expiresIn: '15 minutes',
+      expiresIn: '15m',
+      issuer: process.env.APP_ORIGIN_API,
     }
   )
 
-  const magicLink = `${
-    process.env.NODE_ENV === 'production' ? 'https' : 'http'
-  }://${process.env.APP_STUDENT_DOMAIN}/magicLogin?token=${magicLinkJWT}`
+  const magicLink = `${process.env.APP_ORIGIN_PWA}/magicLogin?token=${magicLinkJWT}`
 
   const emailHtml = await EmailService.hydrateTemplate(
     {
       templateName: 'MagicLinkRequested',
       variables: { LINK: magicLink },
     },
-    ctx
+    ctx.prisma
   )
 
   if (!emailHtml) return null
 
-  await sendTeamsNotifications(
-    'graphql/sendMagicLink',
-    `One-time login token created for ${usernameOrEmail}: ${magicLink}`
-  )
+  await sendTeamsNotification({
+    scope: 'graphql/sendMagicLink',
+    text: `One-time login token created for ${usernameOrEmail}: ${magicLink}`,
+  })
 
   await EmailService.sendEmail({
     to: participantData.email,
@@ -336,7 +279,10 @@ export async function loginParticipantMagicLink(
   ctx: Context
 ) {
   //
-  const tokenData = JWT.verify(token, process.env.APP_SECRET as string) as {
+  const tokenData = (await verifyJWT(
+    token,
+    process.env.APP_SECRET as string
+  )) as {
     sub: string
     scope: DB.UserLoginScope
   }
@@ -371,7 +317,10 @@ export async function activateParticipantAccount(
   ctx: Context
 ) {
   //
-  const tokenData = JWT.verify(token, process.env.APP_SECRET as string) as {
+  const tokenData = (await verifyJWT(
+    token,
+    process.env.APP_SECRET as string
+  )) as {
     sub: string
     scope: DB.UserLoginScope
   }
@@ -405,7 +354,14 @@ export async function activateParticipantAccount(
 }
 
 export async function logoutParticipant(ctx: ContextWithUser) {
+  // invalidate regular participant token
   ctx.res.cookie('participant_token', 'logoutString', {
+    ...COOKIE_SETTINGS,
+    maxAge: 0,
+  })
+
+  // invalidate assessment / Edu-ID participant token
+  ctx.res.cookie('next-auth.participant-session-token', 'logoutString', {
     ...COOKIE_SETTINGS,
     maxAge: 0,
   })
@@ -424,7 +380,7 @@ export async function logoutTemporaryParticipant(
 
   // check if there exists a temporary leaderboard entry for the current user
   const lbEntry = await ctx.prisma.temporaryLeaderboardEntry.findUnique({
-    where: { id: ctx.user.sub, quizId: liveQuizId },
+    where: { id_quizId: { id: ctx.user.sub, quizId: liveQuizId } },
   })
 
   if (!lbEntry) {
@@ -433,7 +389,7 @@ export async function logoutTemporaryParticipant(
 
   // delete the temporary leaderboard entry
   await ctx.prisma.temporaryLeaderboardEntry.delete({
-    where: { id: ctx.user.sub, quizId: liveQuizId },
+    where: { id_quizId: { id: ctx.user.sub, quizId: liveQuizId } },
   })
 
   // delete the cookie
@@ -443,37 +399,6 @@ export async function logoutTemporaryParticipant(
   })
 
   return true
-}
-
-export async function generateLoginToken(ctx: ContextWithUser) {
-  const expirationDate = dayjs().add(10, 'minute').toDate()
-  const loginToken = Math.floor(
-    100000000 + Math.random() * 900000000
-  ).toString()
-
-  const user = await ctx.prisma.user.update({
-    where: { id: ctx.user.sub },
-    data: { loginToken: loginToken, loginTokenExpiresAt: expirationDate },
-  })
-
-  return user
-}
-
-export async function getLoginToken(ctx: ContextWithUser) {
-  const user = await ctx.prisma.user.findUnique({
-    where: { id: ctx.user.sub },
-  })
-
-  if (!user) return null
-
-  if (
-    !user.loginTokenExpiresAt ||
-    dayjs(user.loginTokenExpiresAt).isBefore(dayjs())
-  ) {
-    return null
-  }
-
-  return user
 }
 
 export async function changeUserLocale(
@@ -503,13 +428,8 @@ export async function getUsersPrivatePreview(ctx: ContextWithUser) {
   }
 
   const users = await ctx.prisma.user.findMany({
-    where: {
-      privatePreview: true,
-    },
-    select: {
-      shortname: true,
-      email: true,
-    },
+    where: { privatePreview: true },
+    select: { shortname: true, email: true },
   })
 
   return users.map((user) => ({
@@ -548,10 +468,10 @@ export async function grantPrivatePreviewAccess(
     where: { id: newUser.id },
     data: { privatePreview: true },
   })
-  await sendTeamsNotifications(
-    'graphql/grantPrivatePreviewAccess',
-    `User ${newUser.shortname} (${newUser.email}) granted private preview access`
-  )
+  await sendTeamsNotification({
+    scope: 'graphql/grantPrivatePreviewAccess',
+    text: `User ${newUser.shortname} (${newUser.email}) granted private preview access`,
+  })
 
   return 0
 }
@@ -635,12 +555,23 @@ export async function createParticipantAccount(
   }: CreateParticipantAccountArgs,
   ctx: Context
 ) {
+  // verify that the course that should be joined is not an assessment course
+  if (courseId) {
+    const course = await ctx.prisma.course.findUnique({
+      where: { id: courseId },
+    })
+
+    if (!course || course.isAssessmentEnabled) {
+      return null
+    }
+  }
+
   if (signedLtiData) {
     const account = await ctx.prisma.$transaction(async (prisma) => {
-      const ltiData = JWT.verify(
+      const ltiData = (await verifyJWT(
         signedLtiData,
         process.env.APP_SECRET as string
-      ) as { email: string; sub: string; scope: 'LTI1.1' | 'LTI1.3' }
+      )) as { email: string; sub: string; scope: 'LTI1.1' | 'LTI1.3' }
       // check if the username is already taken by another user
       const existingUser = await prisma.participant.findMany({
         where: {
@@ -674,9 +605,7 @@ export async function createParticipantAccount(
             },
           },
         },
-        include: {
-          participant: true,
-        },
+        include: { participant: true },
       })
 
       // if a courseId is specified, add a participation in the corresponding course
@@ -689,16 +618,8 @@ export async function createParticipantAccount(
             },
           },
           create: {
-            course: {
-              connect: {
-                id: courseId,
-              },
-            },
-            participant: {
-              connect: {
-                id: account.participant.id,
-              },
-            },
+            course: { connect: { id: courseId } },
+            participant: { connect: { id: account.participant.id } },
           },
           update: {},
         })
@@ -752,16 +673,8 @@ export async function createParticipantAccount(
             },
           },
           create: {
-            course: {
-              connect: {
-                id: courseId,
-              },
-            },
-            participant: {
-              connect: {
-                id: participant.id,
-              },
-            },
+            course: { connect: { id: courseId } },
+            participant: { connect: { id: participant.id } },
           },
           update: {},
         })
@@ -770,7 +683,7 @@ export async function createParticipantAccount(
       return participant
     })
 
-    const activationJWT = JWT.sign(
+    const activationJWT = await signJWT(
       {
         sub: participant.id,
         role: DB.UserRole.PARTICIPANT,
@@ -779,28 +692,27 @@ export async function createParticipantAccount(
       process.env.APP_SECRET as string,
       {
         algorithm: 'HS256',
-        expiresIn: '60 minutes',
+        expiresIn: '60m',
+        issuer: process.env.APP_ORIGIN_API,
       }
     )
 
-    const activationLink = `${
-      process.env.NODE_ENV === 'production' ? 'https' : 'http'
-    }://${process.env.APP_STUDENT_DOMAIN}/activation?token=${activationJWT}`
+    const activationLink = `${process.env.APP_ORIGIN_PWA}/activation?token=${activationJWT}`
 
     const emailHtml = await EmailService.hydrateTemplate(
       {
         templateName: 'ParticipantAccountActivation',
         variables: { LINK: activationLink },
       },
-      ctx
+      ctx.prisma
     )
 
     if (!emailHtml) return null
 
-    await sendTeamsNotifications(
-      'graphql/createParticipantAccount',
-      `New participant account created: ${participant.email} with activation link ${activationLink}`
-    )
+    await sendTeamsNotification({
+      scope: 'graphql/createParticipantAccount',
+      text: `New participant account created: ${participant.email} with activation link ${activationLink}`,
+    })
 
     await EmailService.sendEmail({
       to: email,
@@ -814,12 +726,12 @@ export async function createParticipantAccount(
     }
   } catch (e) {
     console.error(e)
-    await sendTeamsNotifications(
-      'graphql/createParticipantAccount',
-      `Failed to create participant account: ${email} with error: ${
+    await sendTeamsNotification({
+      scope: 'graphql/createParticipantAccount',
+      text: `Failed to create participant account: ${email} with error: ${
         e || 'missing'
-      }`
-    )
+      }`,
+    })
 
     return null
   }
@@ -834,10 +746,21 @@ export async function loginParticipantWithLti(
   { signedLtiData, courseId }: LoginParticipantWithLtiArgs,
   ctx: Context
 ) {
-  const ltiData = JWT.verify(
+  // verify that the course that should be joined is not an assessment course
+  if (courseId) {
+    const course = await ctx.prisma.course.findUnique({
+      where: { id: courseId },
+    })
+
+    if (!course || course.isAssessmentEnabled) {
+      return null
+    }
+  }
+
+  const ltiData = (await verifyJWT(
     signedLtiData,
     process.env.APP_SECRET as string
-  ) as {
+  )) as {
     sub: string
     email?: string
     scope: string
@@ -847,9 +770,7 @@ export async function loginParticipantWithLti(
 
   let account = await ctx.prisma.participantAccount.findUnique({
     where: { ssoId: ltiData.sub as string },
-    include: {
-      participant: true,
-    },
+    include: { participant: true },
   })
 
   console.log('account', account)
@@ -877,9 +798,7 @@ export async function loginParticipantWithLti(
           },
         },
       },
-      include: {
-        participant: true,
-      },
+      include: { participant: true },
     })
   }
 
@@ -894,16 +813,8 @@ export async function loginParticipantWithLti(
         },
       },
       create: {
-        course: {
-          connect: {
-            id: courseId,
-          },
-        },
-        participant: {
-          connect: {
-            id: account.participant.id,
-          },
-        },
+        course: { connect: { id: courseId } },
+        participant: { connect: { id: account.participant.id } },
       },
       update: {},
     })
@@ -927,17 +838,9 @@ export async function loginParticipantWithLti(
 
 export async function getUserLogins(ctx: ContextWithUser) {
   const logins = await ctx.prisma.userLogin.findMany({
-    where: {
-      user: {
-        id: ctx.user.sub,
-      },
-    },
-    include: {
-      user: true,
-    },
-    orderBy: {
-      scope: 'asc',
-    },
+    where: { user: { id: ctx.user.sub } },
+    include: { user: true },
+    orderBy: { scope: 'asc' },
   })
 
   return logins
@@ -981,7 +884,7 @@ interface UserLoginProps {
 }
 
 export async function createUserLogin(
-  { password, name, scope }: UserLoginProps,
+  { password, name }: UserLoginProps,
   ctx: ContextWithUser
 ) {
   // verify that the user is account owner
@@ -1062,9 +965,15 @@ export async function changeShortname(
   { shortname }: { shortname: string },
   ctx: ContextWithUser
 ) {
+  // verify that the trimmed shortname does not have a length of less than 5 and more than 10 characters (limit)
+  const trimmedShortname = shortname.trim()
+  if (trimmedShortname.length < 5 || trimmedShortname.length > 10) {
+    return null
+  }
+
   // check if the shortname is already taken
   const existingUser = await ctx.prisma.user.findUnique({
-    where: { shortname: shortname.trim() },
+    where: { shortname: trimmedShortname },
   })
 
   if (existingUser && existingUser.id !== ctx.user.sub) {
@@ -1078,7 +987,7 @@ export async function changeShortname(
 
   const user = await ctx.prisma.user.update({
     where: { id: ctx.user.sub },
-    data: { shortname: shortname.trim() },
+    data: { shortname: trimmedShortname },
   })
 
   return user

@@ -10,7 +10,7 @@ import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 import { useTranslations } from 'next-intl'
 import { Suspense, useState } from 'react'
-import useCourseWeeklyDates from '~/lib/hooks/useCourseWeeklyDates'
+import useCourseWeeklyDates from '../../lib/hooks/useCourseWeeklyDates'
 import SuspendedCourseLeaderboard from './SuspendedCourseLeaderboard'
 
 dayjs.extend(customParseFormat)
@@ -54,7 +54,7 @@ function IndividualLeaderboard({
   const weeklyDates = useCourseWeeklyDates({ courseStart, courseEnd })
 
   return (
-    <TabContent value="ind-leaderboard" className={{ root: 'h-full p-2' }}>
+    <TabContent value="ind-leaderboard" className={{ root: 'h-full p-2 pt-0' }}>
       <div className="mb-3 flex flex-col">
         <div className="mb-0.5 flex flex-row items-end gap-3">
           <SelectField

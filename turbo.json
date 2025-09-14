@@ -11,6 +11,7 @@
     "APP_STUDENT_DOMAIN",
     "APP_STUDENT_SUBDOMAIN",
     "APP_SECRET",
+    "ASSESSMENT_MODE",
     "AZUREWEBJOBSFEATUREFLAGS",
     "AZUREWEBJOBSSTORAGE",
     "BLOB_STORAGE_ACCESS_KEY",
@@ -30,6 +31,9 @@
     "FUNCTIONS_EXTENSION_VERSION",
     "FUNCTIONS_WORKER_PROCESS_COUNT",
     "FUNCTIONS_WORKER_RUNTIME",
+    "HATCHET_CLIENT_TLS_STRATEGY",
+    "HATCHET_CLIENT_TOKEN",
+    "HATCHET_LOG_LEVEL",
     "LTI_DB_TYPE",
     "LTI_DB_HOST",
     "LTI_DB_PORT",
@@ -72,7 +76,7 @@
     },
     "check": {
       "cache": false,
-      "outputLogs": "errors-only",
+      "outputLogs": "new-only",
       "dependsOn": ["^build"]
     },
     "build": {
@@ -116,6 +120,17 @@
       ],
       "persistent": true
     },
+    "dev:assessment": {
+      "cache": false,
+      "dependsOn": [
+        "@klicker-uzh/util#build",
+        "@klicker-uzh/prisma#build",
+        "@klicker-uzh/graphql#build",
+        "@klicker-uzh/markdown#build",
+        "@klicker-uzh/transactional#build"
+      ],
+      "persistent": true
+    },
     "dev:docs": {
       "cache": false,
       "persistent": true
@@ -133,7 +148,6 @@
       "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
     },
     "start:test": {
-      "dependsOn": ["^build:test", "build:test"],
       "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
     },
     "test": {

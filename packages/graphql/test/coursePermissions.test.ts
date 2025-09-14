@@ -1,30 +1,31 @@
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   ElementInstanceType,
   ElementStackType,
   ElementType,
   PermissionLevel,
   PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import { ChoicesElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
-import type { ContextWithUser } from '../src/lib/context.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
 import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 
 describe('Unit tests covering the creation of derived permissions for courses', () => {
   // shared resources used across tests
   let prisma: PrismaClient
+  let hatchet: Hatchet
   let emitter: EventEmitter
-  let userOneCtx: ContextWithUser
-  let userTwoCtx: ContextWithUser
-  let userThreeCtx: ContextWithUser
-  let userFourCtx: ContextWithUser
-  let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
-    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    const {
+      prisma: newPrisma,
+      hatchet: newHatchet,
+      emitter: newEmitter,
+    } = await initializePrisma()
     prisma = newPrisma
+    hatchet = newHatchet
     emitter = newEmitter
   })
 
@@ -33,25 +34,9 @@ describe('Unit tests covering the creation of derived permissions for courses', 
     await prisma.$disconnect()
   })
 
-  beforeEach(async () => {
-    const {
-      userOneCtx: ctx1,
-      userTwoCtx: ctx2,
-      userThreeCtx: ctx3,
-      userFourCtx: ctx4,
-      userFiveCtx: ctx5,
-    } = await testInitialization(prisma, emitter)
+  beforeEach(async () => testInitialization(prisma, hatchet, emitter))
 
-    userOneCtx = ctx1
-    userTwoCtx = ctx2
-    userThreeCtx = ctx3
-    userFourCtx = ctx4
-    userFiveCtx = ctx5
-  })
-
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   // ! Course permissions tests
   // #region
@@ -259,7 +244,7 @@ describe('Unit tests covering the creation of derived permissions for courses', 
         permissionLevel: PermissionLevel.ADMIN,
       },
     })
-    const activityExecutePermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userGroupId: userGroup5.id,
         courseId: course.id,
@@ -389,7 +374,7 @@ describe('Unit tests covering the creation of derived permissions for courses', 
     })
 
     // grant individual READ, WRITE, ADMIN and EXECUTE permissions to users 2, 3, 4, and 5
-    const individualReadPermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userTwo.id,
         courseId: course.id,
@@ -410,7 +395,7 @@ describe('Unit tests covering the creation of derived permissions for courses', 
         permissionLevel: PermissionLevel.ADMIN,
       },
     })
-    const individualExecutePermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userFive.id,
         courseId: course.id,
@@ -611,7 +596,7 @@ describe('Unit tests covering the creation of derived permissions for courses', 
         permissionLevel: PermissionLevel.READ,
       },
     })
-    const courseWritePermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userThree.id,
         courseId: course.id,
@@ -771,7 +756,7 @@ describe('Unit tests covering the creation of derived permissions for courses', 
   }
 
   it('Verify that revoking access to the course also revokes access to the activity (assuming no direct access)', async () => {
-    const { element, activity, course } = await createPracticeQuiz(prisma)
+    const { activity, course } = await createPracticeQuiz(prisma)
 
     // grant individual WRITE permission to user 2
     const individualWritePermission = await prisma.permission.create({
@@ -827,7 +812,7 @@ describe('Unit tests covering the creation of derived permissions for courses', 
   })
 
   it('Verify that revoking group access to the course also revokes access to the activity (assuming no direct access)', async () => {
-    const { element, activity, course } = await createPracticeQuiz(prisma)
+    const { activity, course } = await createPracticeQuiz(prisma)
 
     // create a user group with users 2 and 3
     const userGroup = await prisma.userGroup.create({
@@ -894,7 +879,7 @@ describe('Unit tests covering the creation of derived permissions for courses', 
   })
 
   it('Verify that revoking group access to the course does not revoke access to the activity if individual access exists', async () => {
-    const { element, activity, course } = await createPracticeQuiz(prisma)
+    const { activity, course } = await createPracticeQuiz(prisma)
 
     // create a user group with users 2 and 3
     const userGroup = await prisma.userGroup.create({
@@ -1010,10 +995,10 @@ describe('Unit tests covering the creation of derived permissions for courses', 
     individualRecompute,
     propagation
   ) {
-    const { element, activity, course } = await createPracticeQuiz(prisma)
+    const { activity, course } = await createPracticeQuiz(prisma)
 
     // grant individual READ, EXECUTE, WRITE, and ADMIN access on course to users 2, 3, 4, and 5
-    const directReadPermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userTwo.id,
         courseId: course.id,
@@ -1021,7 +1006,7 @@ describe('Unit tests covering the creation of derived permissions for courses', 
         propagation,
       },
     })
-    const directExecutePermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userThree.id,
         courseId: course.id,
@@ -1069,7 +1054,7 @@ describe('Unit tests covering the creation of derived permissions for courses', 
         permissionLevel: PermissionLevel.EXECUTE,
       },
     })
-    const activityReadPermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userId: userFive.id,
         practiceQuizId: activity.id,
@@ -1226,7 +1211,7 @@ describe('Unit tests covering the creation of derived permissions for courses', 
     individualRecompute,
     propagation
   ) {
-    const { element, activity, course } = await createPracticeQuiz(prisma)
+    const { activity, course } = await createPracticeQuiz(prisma)
 
     // create single pariticipant user groups with users 2, 3, 4, and 5
     const userGroupTwo = await prisma.userGroup.create({
@@ -1267,7 +1252,7 @@ describe('Unit tests covering the creation of derived permissions for courses', 
     })
 
     // grant group READ, EXECUTE, WRITE, and ADMIN access on course to users 2, 3, 4, and 5
-    const directReadPermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userGroupId: userGroupTwo.id,
         courseId: course.id,
@@ -1275,7 +1260,7 @@ describe('Unit tests covering the creation of derived permissions for courses', 
         propagation,
       },
     })
-    const directExecutePermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userGroupId: userGroupThree.id,
         courseId: course.id,
@@ -1323,7 +1308,7 @@ describe('Unit tests covering the creation of derived permissions for courses', 
         permissionLevel: PermissionLevel.EXECUTE,
       },
     })
-    const activityReadPermission = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         userGroupId: userGroupFive.id,
         practiceQuizId: activity.id,
@@ -2411,7 +2396,7 @@ describe('Unit tests covering the creation of derived permissions for courses', 
   })
 
   it('Verify that revoking access to the course also revokes access to the elements and answer collection (assuming no direct access)', async () => {
-    const { answerCollection, element, activity, course } =
+    const { answerCollection, course } =
       await createCourseWithActivityElementResource(prisma)
 
     // grant individual admin access to the course to user 3

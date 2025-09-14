@@ -1,10 +1,40 @@
 heartbeats:
   dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/gmMi315s2532oozauJa18ckx
 
-cron:
-  dailyGroupScores: '5 6,20 * * *'
+global:
+  appOrigins:
+    api: 'https://backend-sls.klicker.uzh.ch'
+    auth: 'https://auth.klicker.uzh.ch'
+    lti: 'https://lti.klicker.uzh.ch'
+    pwa: 'https://pwa.klicker.uzh.ch'
+    manage: 'https://manage.klicker.uzh.ch'
+    control: 'https://control.klicker.uzh.ch'
+    assessmentApi: 'https://assessment-api.klicker.uzh.ch'
+    assessmentPwa: 'https://assessment.klicker.uzh.ch'
+
+hatchet:
+  client:
+    tlsStrategy: 'none'
+    apiUrl: 'hatchet-prod-api:8080'
+    hostPort: 'hatchet-grpc:7070'
+  workers:
+    general:
+      replicaCount: 2
+      priorityClassName: production-workload
+      image:
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general
+        pullPolicy: Always
+
+    responseProcessor:
+      replicaCount: 3
+      priorityClassName: production-workload
+      image:
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
+        pullPolicy: Always
 
 auth:
+  replicaCount: 2
+
   autoscaling:
     enabled: false
 
@@ -35,12 +65,18 @@ auth:
       cpu: 150m
       memory: 150Mi
     limits:
-      cpu: 300m
-      memory: 300Mi
+      cpu: 1000m
+      memory: 1000Mi
 
 frontendPWA:
+  replicaCount: 3
+
   autoscaling:
     enabled: false
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
 
   ingress:
     hosts:
@@ -73,8 +109,14 @@ frontendPWA:
       memory: 1000Mi
 
 frontendManage:
+  replicaCount: 3
+
   autoscaling:
     enabled: false
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
 
   ingress:
     hosts:
@@ -107,8 +149,14 @@ frontendManage:
       memory: 1000Mi
 
 frontendControl:
+  replicaCount: 1
+
   autoscaling:
     enabled: false
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
 
   ingress:
     hosts:
@@ -137,12 +185,18 @@ frontendControl:
       cpu: 150m
       memory: 150Mi
     limits:
-      cpu: 1000m
-      memory: 1000Mi
+      cpu: 500m
+      memory: 500Mi
 
 backendGraphql:
+  replicaCount: 3
+
   autoscaling:
     enabled: false
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
 
   ingress:
     hosts:
@@ -175,6 +229,8 @@ backendGraphql:
       memory: 1000Mi
 
 olatApi:
+  replicaCount: 1
+
   autoscaling:
     enabled: false
 
@@ -205,10 +261,12 @@ olatApi:
       cpu: 150m
       memory: 150Mi
     limits:
-      cpu: 1000m
-      memory: 1000Mi
+      cpu: 500m
+      memory: 500Mi
 
 lti:
+  replicaCount: 2
+
   ingress:
     hosts:
       - host: lti.klicker.uzh.ch
@@ -227,6 +285,176 @@ lti:
         hosts:
           - lti.klicker-prod.bf-app.ch
 
+responseApi:
+  replicaCount: 3
+
+  corsAllowedOrigins: 'https://pwa.klicker.uzh.ch'
+
+  priorityClassName: production-workload
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/response-api
+    pullPolicy: Always
+
+  autoscaling:
+    enabled: false
+
+  ingress:
+    hosts:
+      - host: response-api.klicker.uzh.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-prod-response-api-tls
+        hosts:
+          - response-api.klicker.uzh.ch
+
+  strategy:
+    type: Recreate
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 100Mi
+    limits:
+      cpu: 400m
+      memory: 400Mi
+
 redis:
   auth:
     enabled: false
+
+assessment:
+  frontendPWA:
+    replicaCount: 3
+
+    priorityClassName: production-workload
+
+    autoscaling:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 8
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+
+    image:
+      repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment
+      pullPolicy: Always
+
+    ingress:
+      hosts:
+        - host: assessment.klicker.uzh.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+        - host: assessment.klicker-prod.bf-app.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: klicker-prod-frontend-assessment-tls-uzh
+          hosts:
+            - assessment.klicker.uzh.ch
+        - secretName: klicker-prod-frontend-assessment-tls
+          hosts:
+            - assessment.klicker-prod.bf-app.ch
+
+    strategy:
+      type: RollingUpdate
+
+    resources:
+      requests:
+        cpu: 150m
+        memory: 150Mi
+      limits:
+        cpu: 1000m
+        memory: 1000Mi
+
+  backendGraphql:
+    replicaCount: 3
+
+    priorityClassName: production-workload
+
+    autoscaling:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+
+    appManageSubdomain: manage
+    appStudentSubdomain: assessment
+    appControlSubdomain: control
+
+    ingress:
+      hosts:
+        - host: chat.klicker.uzh.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+        - host: assessment-api.klicker-prod.bf-app.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: klicker-prod-backend-assessment-tls-uzh
+          hosts:
+            - chat.klicker.uzh.ch
+        - secretName: klicker-prod-backend-assessment-tls
+          hosts:
+            - assessment-api.klicker-prod.bf-app.ch
+
+    strategy:
+      type: RollingUpdate
+
+    resources:
+      requests:
+        cpu: 150m
+        memory: 150Mi
+      limits:
+        cpu: 1000m
+        memory: 1000Mi
+
+  responseApi:
+    replicaCount: 3
+
+    corsAllowedOrigins: 'https://assessment.klicker.uzh.ch'
+
+    priorityClassName: production-workload
+
+    autoscaling:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+
+    ingress:
+      hosts:
+        - host: assessment-response-api.klicker.uzh.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+        - host: response-api-assessment.klicker-prod.bf-app.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: klicker-prod-response-api-assessment-tls-uzh
+          hosts:
+            - assessment-response-api.klicker.uzh.ch
+        - secretName: klicker-prod-response-api-assessment-tls
+          hosts:
+            - response-api-assessment.klicker-prod.bf-app.ch
+
+    strategy:
+      type: RollingUpdate
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 100Mi
+      limits:
+        cpu: 400m
+        memory: 400Mi

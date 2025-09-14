@@ -1,7 +1,7 @@
 import { useMutation } from '@apollo/client'
 import { faPeopleGroup } from '@fortawesome/free-solid-svg-icons'
 import {
-  GetCourseOverviewDataDocument,
+  GetParticipantGroupsDocument,
   JoinParticipantGroupDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { toast } from '@uzh-bf/design-system'
@@ -40,11 +40,11 @@ function GroupJoinBlock({
               courseId: courseId,
               code: Number(value) >> 0,
             },
+            // refetch is more effective here to avoid code duplication for participant aggregation
+            // -> performance implications are not relevant here, short loading circle is acceptable
+            // participant groups query is joint between course and separate -> separate call sufficient
             refetchQueries: [
-              {
-                query: GetCourseOverviewDataDocument,
-                variables: { courseId },
-              },
+              { query: GetParticipantGroupsDocument, variables: { courseId } },
             ],
           })
 

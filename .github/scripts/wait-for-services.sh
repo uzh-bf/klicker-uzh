@@ -37,9 +37,32 @@ check_postgres() {
   return 0
 }
 
+# Check Hatchet
+check_hatchet() {
+  # Check HTTP endpoint
+  if ! curl -s -f http://localhost:8888/healthz >/dev/null 2>&1; then
+    echo "❌ Hatchet HTTP is not ready on port 8888"
+    return 1
+  fi
+  
+  # Check gRPC port
+  if ! nc -z localhost 7077 2>/dev/null; then
+    echo "❌ Hatchet gRPC is not ready on port 7077"
+    return 1
+  fi
+  
+  echo "✅ Hatchet is ready (HTTP: 8888, gRPC: 7077)"
+  return 0
+}
+
 # Cleanup function
 cleanup() {
   local exit_code=$?
+
+  # Stop log streaming
+  if [ ! -z "${TAIL_PID:-}" ]; then
+    kill $TAIL_PID 2>/dev/null || true
+  fi
 
   # If we have a service PID and either we're exiting with an error or received a signal
   if [ ! -z "${SERVICE_PID:-}" ] && { [ $exit_code -ne 0 ] || [ "${1:-}" = "TERM" ]; }; then
@@ -65,13 +88,22 @@ trap cleanup EXIT
 echo "🔍 Checking dependencies..."
 check_redis || { echo "❌ Redis check failed"; exit 1; }
 check_postgres || { echo "❌ PostgreSQL check failed"; exit 1; }
+check_hatchet || { echo "❌ Hatchet check failed"; exit 1; }
 
 # Start the service in the background and capture all output
 echo "🚀 Starting service..."
-pnpm run start:test > service.log 2>&1 &
+echo "📋 Service logs will be streamed below:"
+echo "----------------------------------------"
+
+# Start service and stream logs in real-time
+pnpm run start:test:ci > service.log 2>&1 &
 
 # Store the PID of the background process
 SERVICE_PID=$!
+
+# Start background log streaming
+tail -f service.log &
+TAIL_PID=$!
 
 # Give the process a moment to fail fast if it's going to
 sleep 2
@@ -146,6 +178,13 @@ while [ $elapsed -lt $TIMEOUT_SECONDS ]; do
   # Try to access all endpoints
   if check_endpoints; then
     echo "✨ All services are ready!"
+    
+    # Stop log streaming but keep service running
+    if [ ! -z "${TAIL_PID:-}" ]; then
+      kill $TAIL_PID 2>/dev/null || true
+      echo "📋 Service logs are available in service.log"
+    fi
+    
     # Keep the background process running but exit the script successfully
     trap - TERM  # Remove SIGTERM trap as we want to keep the service running
     trap - EXIT  # Remove exit trap as we want to keep the service running

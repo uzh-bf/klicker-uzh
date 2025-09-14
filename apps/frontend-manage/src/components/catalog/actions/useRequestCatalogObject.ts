@@ -30,29 +30,24 @@ function useRequestCatalogObject({
         const res = await requestCatalogCollection({
           variables: { catalogCollectionId: objectId as string },
           update: (cache, { data }) => {
+            // check if request was successful
             if (!data?.requestCatalogCollection) return
 
-            const prevCollections = cache.readQuery({
-              query: GetCatalogCollectionsListDocument,
-            })
-
-            if (!prevCollections?.getCatalogCollectionsList) {
-              return
-            }
-
-            const newCollections =
-              prevCollections.getCatalogCollectionsList.map((collection) =>
-                collection.id === objectId
-                  ? data.requestCatalogCollection!
-                  : collection
-              )
-
-            cache.writeQuery({
-              query: GetCatalogCollectionsListDocument,
-              data: {
-                getCatalogCollectionsList: newCollections,
-              },
-            })
+            // update lists of answer collections
+            cache.updateQuery(
+              { query: GetCatalogCollectionsListDocument },
+              (qData) => {
+                if (!qData?.getCatalogCollectionsList) return qData
+                return {
+                  getCatalogCollectionsList:
+                    qData.getCatalogCollectionsList.map((collection) =>
+                      collection.id === objectId
+                        ? data.requestCatalogCollection!
+                        : collection
+                    ),
+                }
+              }
+            )
           },
         })
 
@@ -85,10 +80,27 @@ function useRequestCatalogObject({
         },
         update: (cache, { data }) => {
           // check if request was successful
-          const requestedObject = data?.requestCatalogObject
-          if (!requestedObject) return
+          if (!data?.requestCatalogObject) return
 
           // update lists of answer collections
+          cache.updateQuery(
+            {
+              query: GetCatalogObjectsDocument,
+              variables: { catalogCollectionId },
+            },
+            (qData) => {
+              if (!qData?.getCatalogObjects) return qData
+              return {
+                getCatalogObjects: qData.getCatalogObjects.map((obj) =>
+                  (typeof objectId === 'number' && obj.objectId === objectId) ||
+                  (typeof objectId === 'string' && obj.objectUuid === objectId)
+                    ? { ...obj, isRequested: true }
+                    : obj
+                ),
+              }
+            }
+          )
+
           const catalogObjects = cache.readQuery({
             query: GetCatalogObjectsDocument,
             variables: {

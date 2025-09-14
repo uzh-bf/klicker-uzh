@@ -1,8 +1,9 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import {
   CaseStudyCaseResponse as CaseStudyCaseResponseType,
   CaseStudyCriterionResponse as CaseStudyCriterionResponseType,
   CaseStudyItemResponse as CaseStudyItemResponseType,
+  ChoicesResponse as ChoicesResponseType,
   ElementBlockInput as ElementBlockInputType,
   ElementInstanceInput as ElementInstanceInputType,
   ElementStackInput as ElementStackInputType,
@@ -12,9 +13,9 @@ import {
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { CourseRef, type ICourse } from './course.js'
+import { ElementInstanceRef, InstanceEvaluation } from './element.js'
 import { ElementType } from './elementData.js'
 import { IStackFeedback } from './evaluation.js'
-import { ElementInstanceRef, InstanceEvaluation } from './question.js'
 
 export const ElementOrderType = builder.enumType('ElementOrderType', {
   values: Object.values(DB.ElementOrderType),
@@ -22,6 +23,10 @@ export const ElementOrderType = builder.enumType('ElementOrderType', {
 
 export const PublicationStatus = builder.enumType('PublicationStatus', {
   values: Object.values(DB.PublicationStatus),
+})
+
+export const ReviewStatus = builder.enumType('ReviewStatus', {
+  values: Object.values(DB.ReviewStatus),
 })
 
 export const ElementStackType = builder.enumType('ElementStackType', {
@@ -102,7 +107,15 @@ export const CaseStudyCaseResponse = CaseStudyCaseResponseRef.implement({
   }),
 })
 
-// this type needs to be consistent with the ElementResponseInput type in the stacks service
+export const ChoicesResponseRef =
+  builder.inputRef<ChoicesResponseType>('ChoicesResponse')
+export const ChoicesResponse = ChoicesResponseRef.implement({
+  fields: (t) => ({
+    ix: t.int({ required: true }),
+    selected: t.boolean({ required: true }),
+  }),
+})
+
 export const StackResponseInputRef =
   builder.inputRef<StackResponseInputType>('StackResponseInput')
 export const StackResponseInput = StackResponseInputRef.implement({
@@ -114,7 +127,10 @@ export const StackResponseInput = StackResponseInputRef.implement({
       required: false,
     }),
     contentReponse: t.boolean({ required: false }),
-    choicesResponse: t.intList({ required: false }),
+    choicesResponse: t.field({
+      type: [ChoicesResponse],
+      required: false,
+    }),
     numericalResponse: t.float({ required: false }),
     freeTextResponse: t.string({ required: false }),
     selectionResponse: t.intList({ required: false }),
@@ -158,9 +174,22 @@ export const ElementStack = ElementStackRef.implement({
 })
 
 export interface IPracticeQuiz
-  extends Omit<
+  extends Pick<
     DB.PracticeQuiz,
-    'startedCount' | 'completedCount' | 'repeatedCount' | 'areInstancesOutdated'
+    | 'id'
+    | 'name'
+    | 'displayName'
+    | 'description'
+    | 'templateName'
+    | 'pointsMultiplier'
+    | 'resetTimeDays'
+    | 'orderType'
+    | 'status'
+    | 'availableFrom'
+    | 'areInstancesOutdated'
+    | 'courseId'
+    | 'createdAt'
+    | 'updatedAt'
   > {
   course?: ICourse
   stacks?: IElementStack[]

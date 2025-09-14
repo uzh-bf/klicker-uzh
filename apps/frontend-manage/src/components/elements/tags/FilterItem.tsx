@@ -1,0 +1,51 @@
+import { IconDefinition } from '@fortawesome/free-regular-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Tooltip } from '@uzh-bf/design-system'
+import { twMerge } from 'tailwind-merge'
+
+interface FilterItemProps {
+  text: string
+  icon: IconDefinition[]
+  active: boolean
+  disabled?: boolean
+  onClick: () => void
+  tooltip?: string
+  data?: { cy?: string; test?: string }
+}
+
+function FilterItem({
+  text,
+  icon,
+  active,
+  disabled,
+  onClick,
+  tooltip,
+  data,
+}: FilterItemProps) {
+  const filterItemElement = (
+    <li
+      className={twMerge(
+        'hover:text-primary-100 line-clamp-1 cursor-pointer px-2 py-0.5',
+        active && 'text-primary-100',
+        disabled &&
+          'hover:text-uzh-grey-100 text-uzh-grey-100 cursor-not-allowed'
+      )}
+      onClick={disabled ? undefined : onClick}
+      data-cy={data?.cy}
+      data-test={data?.test}
+    >
+      <FontAwesomeIcon icon={active ? icon[1] : icon[0]} className="mr-2 w-4" />
+      {text}
+    </li>
+  )
+
+  return tooltip ? (
+    <Tooltip tooltip={tooltip} delay={700}>
+      {filterItemElement}
+    </Tooltip>
+  ) : (
+    filterItemElement
+  )
+}
+
+export default FilterItem

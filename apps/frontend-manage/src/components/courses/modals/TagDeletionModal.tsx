@@ -1,7 +1,6 @@
 import { useMutation } from '@apollo/client'
 import {
   DeleteTagDocument,
-  GetUserElementsDocument,
   GetUserTagsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
@@ -11,35 +10,29 @@ function TagDeletionModal({
   id,
   name,
   onClose,
+  refetchElements,
 }: {
   id: number
   name: string
   onClose: () => void
+  refetchElements: () => Promise<void>
 }) {
   const t = useTranslations()
   const [deleteTag, { loading: deleting }] = useMutation(DeleteTagDocument, {
-    variables: {
-      id,
-    },
+    variables: { id },
     update: (cache, { data }) => {
       if (!data?.deleteTag) return
 
-      const deletedId = data.deleteTag.id
-      const prevUserTags = cache.readQuery({
-        query: GetUserTagsDocument,
-      })
-      if (!prevUserTags?.userTags) return
+      cache.updateQuery({ query: GetUserTagsDocument }, (qData) => {
+        if (!qData?.userTags) return qData
 
-      cache.writeQuery({
-        query: GetUserTagsDocument,
-        data: {
-          userTags: prevUserTags.userTags.filter(
-            (tag: { id: number }) => tag.id !== deletedId
+        return {
+          userTags: qData.userTags.filter(
+            (tag) => tag.id !== data.deleteTag?.id
           ),
-        },
+        }
       })
     },
-    refetchQueries: [{ query: GetUserElementsDocument }],
     optimisticResponse: {
       deleteTag: {
         id: id,
@@ -58,6 +51,7 @@ function TagDeletionModal({
       primaryButtonStyle="destructive"
       onPrimaryAction={async () => {
         await deleteTag()
+        await refetchElements()
         onClose()
       }}
       dataPrimaryAction={{ cy: 'confirm-delete-tag' }}

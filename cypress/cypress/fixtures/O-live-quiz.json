@@ -60,5 +60,27 @@
     "microLearningDisplayName": "Micro Learning Quiz (Display)",
     "pseudonym": "klickerMaster",
     "pseudonym2": "klickerAmateur"
+  },
+  "details": {
+    "name": "Live Quiz Activity Details",
+    "displayName": "Live Quiz Activity Details (Display)",
+    "courseName": "Testkurs",
+    "nameNonGamified": "Non-Gamified Live Quiz Details",
+    "displayNameNonGamified": "Non-Gamified Live Quiz Details (Display)",
+    "courseNonGamified": "Non-Gamified Course",
+    "nameNoCourse": "Live Quiz Details without Course",
+    "displayNameNoCourse": "Live Quiz Details without Course (Display)"
+  },
+  "assessment": {
+    "gamifiedCourse": {
+      "name": "Assessment Course 1",
+      "displayName": "Assessment Course 1 (Display)",
+      "liveQuiz": "Assessment Live Quiz Gamified"
+    },
+    "nonGamifiedCourse": {
+      "name": "Assessment Course 2",
+      "displayName": "Assessment Course 2 (Display)",
+      "liveQuiz": "Assessment Live Quiz Non-Gamified"
+    }
   }
 }

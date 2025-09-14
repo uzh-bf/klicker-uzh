@@ -58,6 +58,8 @@ function AdminPanel() {
                   onSubmit={async (values, { resetForm }) => {
                     const { data: success } = await grantPrivatePreviewAccess({
                       variables: { email: values.email },
+                      // performance is not relevant for admin access operations
+                      // prefer additional fetches over potentially outdated data
                       refetchQueries: [
                         { query: GetUsersPrivatePreviewDocument },
                       ],

@@ -28,6 +28,7 @@ function MicroLearningSettingsStep({
   validationSchema,
   gamifiedCourses,
   nonGamifiedCourses,
+  assessmentCourses,
   setStepValidity,
   onNextStep,
   onPrevStep,
@@ -39,6 +40,7 @@ function MicroLearningSettingsStep({
   const groupedCourses = useGamifiedCourseGrouping({
     gamifiedCourses: gamifiedCourses ?? [],
     nonGamifiedCourses: nonGamifiedCourses ?? [],
+    assessmentCourses: assessmentCourses ?? [],
   })
 
   return (
@@ -68,7 +70,7 @@ function MicroLearningSettingsStep({
             <div className="flex flex-col justify-center gap-4 md:flex-row">
               <div
                 className={twMerge(
-                  'border-uzh-grey-40 w-full rounded-md border border-solid p-2 shadow-md md:w-72',
+                  'border-border w-full rounded-md border border-solid p-2 shadow-md md:w-72',
                   courseGamified && 'border-orange-400'
                 )}
               >
@@ -109,7 +111,7 @@ function MicroLearningSettingsStep({
                   />
                 )}
               </div>
-              <div className="border-uzh-grey-40 w-full rounded-md border border-solid p-2 shadow-md md:w-72">
+              <div className="border-border w-full rounded-md border border-solid p-2 shadow-md md:w-72">
                 <div className="flex flex-row items-center justify-center gap-2">
                   <FontAwesomeIcon icon={faClock} />
                   <div

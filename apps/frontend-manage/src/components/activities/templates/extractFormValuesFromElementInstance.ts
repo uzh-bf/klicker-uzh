@@ -15,7 +15,7 @@ import {
   ElementFormTypes,
   ElementFormTypesCaseStudySolution,
   ElementFormTypesCaseStudySolutions,
-} from '../../questions/manipulation/types'
+} from '../../elements/manipulation/types'
 
 function extractFormValuesFromElementInstance({
   instance,

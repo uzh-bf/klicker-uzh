@@ -4,14 +4,6 @@ import { getDatetimeValidationString } from './helpers'
 const currentYear = new Date().getFullYear()
 
 describe('Create different types of elements (with and without sample solution) and edit them', function () {
-  before(() => {
-    cy.seed()
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Load data fixture', function () {
     cy.fixture('questions.json').then((sharedData) => {
       this.data = sharedData
@@ -21,12 +13,12 @@ describe('Create different types of elements (with and without sample solution) 
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   it('Create different elements and activities of each type', function () {
     cy.loginLecturer()
@@ -105,14 +97,14 @@ describe('Create different types of elements (with and without sample solution) 
       displayName: this.data.instanceUpdates.microlearningName,
       courseName: this.data.instanceUpdates.courseName,
       startDate: {
-        monthDelta: -3,
+        monthDelta: -2,
         day: 16,
         hour: 2,
         minute: 0,
         validation: getDatetimeValidationString(-2, '16') + ', 02:00',
       }, // 2 months in the past at 2:00
       endDate: {
-        monthDelta: 3,
+        monthDelta: 4,
         day: 14,
         hour: 18,
         minute: 0,
@@ -144,14 +136,14 @@ describe('Create different types of elements (with and without sample solution) 
       task: 'Task Description',
       courseName: this.data.instanceUpdates.courseName,
       scheduledStartDate: {
-        monthDelta: -2,
+        monthDelta: -1,
         day: 10,
         hour: 12,
         minute: 30,
         validation: getDatetimeValidationString(-1, '10') + ', 12:30',
       }, // 1 month in the past at 12:30
       scheduledEndDate: {
-        monthDelta: 1,
+        monthDelta: 2,
         day: 20,
         hour: 14,
         minute: 0,
@@ -359,7 +351,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.loginLecturer()
 
     // update the single choice question
-    cy.get(`[data-cy="edit-element-${this.data.SCML.title}"]`).click()
+    cy.editElement({ element: this.data.SCML.title })
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.SCML.title
@@ -370,9 +362,7 @@ describe('Create different types of elements (with and without sample solution) 
       .type(this.data.instanceUpdates.newSCTitle)
     cy.get('[data-cy="instance-update-switch"]').click() // disable instance updates to verify option for manual updates
     cy.get('[data-cy="save-new-question"]').click()
-    cy.get(
-      `[data-cy="edit-element-${this.data.instanceUpdates.newSCTitle}"]`
-    ).should('exist') // verify that the change went into effect
+    cy.validateElement({ element: this.data.instanceUpdates.newSCTitle }) // verify that the change went into effect
 
     // open the live quiz editing dialog and update the second instance of the single choice question
     cy.get('[data-cy="activities"]').click()
@@ -419,9 +409,11 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.liveQuizName}"]`
     ).click()
+
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.KPML.title)
+
     cy.get('[data-cy="stack-1-instance-0"]').contains(
       this.data.instanceUpdates.newSCTitle
     ) // updated title
@@ -474,6 +466,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.practiceQuizName}"]`
     ).click()
+
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.KPML.title)
@@ -529,6 +522,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.microlearningName}"]`
     ).click()
+
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.KPML.title)
@@ -572,6 +566,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="update-element-4-stack-0"]').should('not.exist')
     cy.get('[data-cy="update-element-5-stack-0"]').should('not.exist')
     cy.get('[data-cy="next-or-submit"]').click()
+    cy.wait(1000) // wait for the submission to complete
 
     // verify that the instance update for the group activity went into effect
     cy.get('[data-cy="activities"]').click()
@@ -584,6 +579,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.groupActivityName}"]`
     ).click()
+
     cy.get('[data-cy="stack-0-instance-0"]').contains(this.data.SCML.title)
     cy.get('[data-cy="stack-0-instance-1"]').contains(this.data.MCML.title)
     cy.get('[data-cy="stack-0-instance-2"]').contains(this.data.KPML.title)
@@ -739,7 +735,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.loginLecturer()
 
     // update the multiple choice question
-    cy.get(`[data-cy="edit-element-${this.data.MCML.title}"]`).click()
+    cy.editElement({ element: this.data.MCML.title })
     cy.get('[data-cy="insert-question-title"]').should(
       'have.value',
       this.data.MCML.title
@@ -750,9 +746,7 @@ describe('Create different types of elements (with and without sample solution) 
       .type(this.data.instanceUpdates.newMCTitle)
     cy.get('[data-cy="instance-update-switch"]').click() // disable instance updates to verify option for manual updates
     cy.get('[data-cy="save-new-question"]').click()
-    cy.get(
-      `[data-cy="edit-element-${this.data.instanceUpdates.newMCTitle}"]`
-    ).should('exist') // verify that the change went into effect
+    cy.validateElement({ element: this.data.instanceUpdates.newMCTitle }) // verify that the change went into effect
 
     // open the live quiz editing dialog and update all instances of the multiple choice question
     cy.get('[data-cy="activities"]').click()
@@ -799,6 +793,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.liveQuizName}"]`
     ).click()
+
     cy.get('[data-cy="stack-0-instance-0"]').contains(
       this.data.instanceUpdates.newSCTitle
     ) // updated title
@@ -860,6 +855,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="activity-name-${this.data.instanceUpdates.practiceQuizName}"]`
     ).click()
+
     cy.get('[data-cy="stack-0-instance-0"]').contains(
       this.data.instanceUpdates.newSCTitle
     ) // updated title

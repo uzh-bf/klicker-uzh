@@ -1,4 +1,4 @@
-FROM docker.io/library/node:20.18.1-alpine AS base
+FROM docker.io/library/node:20.19.4-alpine AS base
 
 ARG NODE_ENV production
 ENV NODE_ENV $NODE_ENV
@@ -9,7 +9,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@9.15.4 turbo@2.1.0
+RUN npm i -g --ignore-scripts pnpm@10.15.0 turbo@2.5.6
 
 COPY . .
 
@@ -22,23 +22,19 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@9.15.4 turbo@2.1.0
+RUN npm i -g --ignore-scripts pnpm@10.15.0 turbo@2.5.6
 
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm* .
 
-# RUN pnpm i --frozen-lockfile
-RUN pnpm i
+RUN pnpm i --ignore-scripts
 
 ARG NODE_ENV="production"
-ARG COOKIE_DOMAIN
 ARG NEXTAUTH_URL
 ARG EDUID_CLIENT_ID
 ARG EDUID_WELL_KNOWN
 ARG NEXT_PUBLIC_EDUID_ID
-ARG NEXT_PUBLIC_DEFAULT_REDIRECT
 ARG NEXT_PUBLIC_ENV=production
-ENV NEXT_PUBLIC_ENV=${NEXT_PUBLIC_ENV}
 
 COPY --from=builder /app/out/full/ .
 RUN pnpm run build --filter=@klicker-uzh/auth

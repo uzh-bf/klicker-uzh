@@ -17,7 +17,7 @@ import {
   SessionBlock,
   SessionBlockStatus,
   SessionStatus,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import {
   AllElementTypeData,
   ElementInstanceResults,

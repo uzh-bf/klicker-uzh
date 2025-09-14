@@ -1,3 +1,4 @@
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   AuditLogType,
   ElementInstanceType,
@@ -6,7 +7,7 @@ import {
   ObjectType,
   PermissionLevel,
   PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import { ChoicesElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
@@ -39,9 +40,10 @@ import {
 } from './helpers.js'
 import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 
-describe('Unit tests for sharing functionalities of elements (questions, content snippets, flashcards)', () => {
+describe('Integration tests for sharing functionalities of elements (questions, content snippets, flashcards)', () => {
   // shared resources used across tests
   let prisma: PrismaClient
+  let hatchet: Hatchet
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
@@ -50,8 +52,13 @@ describe('Unit tests for sharing functionalities of elements (questions, content
   let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
-    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    const {
+      prisma: newPrisma,
+      hatchet: newHatchet,
+      emitter: newEmitter,
+    } = await initializePrisma()
     prisma = newPrisma
+    hatchet = newHatchet
     emitter = newEmitter
   })
 
@@ -67,7 +74,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
       userFiveCtx: ctx5,
-    } = await testInitialization(prisma, emitter)
+    } = await testInitialization(prisma, hatchet, emitter)
 
     userOneCtx = ctx1
     userTwoCtx = ctx2
@@ -76,9 +83,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     userFiveCtx = ctx5
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   // ! Sharing functionalities for elements
   // #region
@@ -1215,7 +1220,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     await recomputeDerivedPermissions({ answerCollectionId: AC1!.id }, prisma)
 
     // fetch the direct permissions and make sure that they are correct
-    const directPermissions = await getElementPermissions(
+    const { permissions: directPermissions } = await getElementPermissions(
       { id: SE.id },
       userOneCtx
     )
@@ -1270,7 +1275,7 @@ describe('Unit tests for sharing functionalities of elements (questions, content
 
     // derived permissions that are copies of direct permissions / resolved group permissions,
     // should not show up in the derived permissions query
-    const permission4 = await prisma.derivedPermission.create({
+    await prisma.derivedPermission.create({
       data: {
         permissionLevel: PermissionLevel.READ,
         userId: userFive.id,
@@ -1760,21 +1765,21 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     const { SC, MC } = await seedElements(userOneCtx, AC1!.id)
 
     // grant admin permissions to users 2 and 3, and write permissions to user 4 on the single choice question
-    const permission1 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         permissionLevel: PermissionLevel.ADMIN,
         userId: userTwo.id,
         elementId: SC!.id,
       },
     })
-    const permission2 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         permissionLevel: PermissionLevel.ADMIN,
         userId: userThree.id,
         elementId: SC!.id,
       },
     })
-    const permission3 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         permissionLevel: PermissionLevel.WRITE,
         userId: userFour.id,
@@ -1784,21 +1789,21 @@ describe('Unit tests for sharing functionalities of elements (questions, content
     await recomputeDerivedPermissions({ elementId: SC!.id }, prisma)
 
     // grant admin, write and read permissions to users 2, 3, and 4 on the multiple choice question
-    const permission4 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         permissionLevel: PermissionLevel.ADMIN,
         userId: userTwo.id,
         elementId: MC!.id,
       },
     })
-    const permission5 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         permissionLevel: PermissionLevel.WRITE,
         userId: userThree.id,
         elementId: MC!.id,
       },
     })
-    const permission6 = await prisma.permission.create({
+    await prisma.permission.create({
       data: {
         permissionLevel: PermissionLevel.READ,
         userId: userFour.id,

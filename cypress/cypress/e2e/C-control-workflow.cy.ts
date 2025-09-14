@@ -1,26 +1,18 @@
 describe('Test functionalities of frontend-control application', function () {
-  before(() => {
-    cy.seed()
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('C-control.json').then((data) => {
       this.data = data
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
 
-  it('Create a new SC question to use it in a live quiz', function () {
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
+
+  it('Create a live quiz with a new SC question to test execution from control app', function () {
     cy.loginLecturer()
 
     // create single choice question for use in test live quiz
@@ -30,10 +22,6 @@ describe('Test functionalities of frontend-control application', function () {
       choices: [{ value: '50%' }, { value: '100%' }],
       userId: Cypress.env('LECTURER_ID'),
     })
-  })
-
-  it('Create a new live quiz with the SC question', function () {
-    cy.loginLecturer()
 
     // create live quiz with single choice question
     cy.createLiveQuiz({
@@ -53,88 +41,37 @@ describe('Test functionalities of frontend-control application', function () {
     )
   })
 
-  it('Generate a token to log into the control-frontend application, execute quiz', function () {
-    cy.loginLecturer()
+  it('Log in as the lecturer in the control application and test different screen sizes', function () {
+    cy.loginLecturerControl()
+
+    // check ppt links and start the quiz
+    cy.get('[data-cy="unassigned-live-quizzes"]').click()
+    cy.get(`[data-cy="ppt-link-${this.data.quizName}"]`).should('exist').click()
+    cy.get('[data-cy="close-embedding-modal"]').click()
+    cy.get(`[data-cy="start-live-quiz-${this.data.quizName}"]`).click()
+    cy.get('[data-cy="confirm-start-live-quiz"]').click()
+
+    // test the mobile menu of the control app
+    cy.viewport('iphone-6')
+    cy.get('[data-cy="ppt-button"]').click()
+    cy.get('[data-cy="close-embedding-modal"]').click()
+    cy.get('[data-cy="home-button"]').click()
+    cy.get('[data-cy="unassigned-live-quizzes"]').click()
+    cy.get(`[data-cy="running-live-quiz-${this.data.quizName}"]`).click()
+    cy.get('[data-cy="back-button"]').click()
+    cy.get(`[data-cy="running-live-quiz-${this.data.quizName}"]`).click()
     cy.viewport('macbook-16')
 
-    cy.get('[data-cy="user-menu"]').click()
-    cy.get('[data-cy="token-generation-page"]').click()
-    cy.get('[data-cy="generate-token"]').click()
-
-    // save the token
-    cy.get('[data-cy="control-login-token"]')
-      .invoke('text')
-      .then(($token) => {
-        // verify that the token shown in the UI is correct
-        cy.task('verifyControlToken', {
-          token: $token,
-        }).then((result: boolean) => {
-          // check if the validation was successful
-          if (result === false) {
-            throw new Error(
-              `Shown token "${$token}" does not match the expected token.`
-            )
-          }
-
-          // dummy action
-          cy.visit(Cypress.env('URL_MANAGE'))
-        })
-      })
-  })
-
-  it('Log in as the lecturer in the control application using the previously generated token', function () {
-    cy.clearAllCookies()
-    cy.clearAllLocalStorage()
-    cy.visit(Cypress.env('URL_CONTROL'))
-
-    // get the token from the previous test case
-    cy.task('getControlToken').then((token: string) => {
-      // check if the token was fetched successfully
-      if (!token) {
-        throw new Error(
-          'No token found. Please ensure that the previous test case has run successfully and generated a token.'
-        )
-      }
-
-      // login into the control-frontend application
-      cy.get('[data-cy="login-logo"]').should('exist')
-      cy.get('[data-cy="shortname-field"]').type(
-        Cypress.env('LECTURER_SHORTNAME')
-      )
-      cy.get('[data-cy="token-field-1"]').realClick().realType(String(token))
-      cy.get('[data-cy="submit-login"]').click()
-
-      // check ppt links and start the quiz
-      cy.get('[data-cy="unassigned-live-quizzes"]').click()
-      cy.get(`[data-cy="ppt-link-${this.data.quizName}"]`)
-        .should('exist')
-        .click()
-      cy.get('[data-cy="close-embedding-modal"]').click()
-      cy.get(`[data-cy="start-live-quiz-${this.data.quizName}"]`).click()
-      cy.get('[data-cy="confirm-start-live-quiz"]').click()
-
-      // test the mobile menu of the control app
-      cy.viewport('iphone-6')
-      cy.get('[data-cy="ppt-button"]').click()
-      cy.get('[data-cy="close-embedding-modal"]').click()
-      cy.get('[data-cy="home-button"]').click()
-      cy.get('[data-cy="unassigned-live-quizzes"]').click()
-      cy.get(`[data-cy="running-live-quiz-${this.data.quizName}"]`).click()
-      cy.get('[data-cy="back-button"]').click()
-      cy.get(`[data-cy="running-live-quiz-${this.data.quizName}"]`).click()
-      cy.viewport('macbook-16')
-
-      // open and close block, end the quiz
-      cy.get('[data-cy="activate-next-block"]').click()
-      cy.get('[data-cy="deactivate-block"]').click()
-      cy.get('[data-cy="end-live-quiz"]').click()
-      cy.get(`[data-cy="start-live-quiz-${this.data.quizName}"]`).should(
-        'not.exist'
-      )
-      cy.get(`[data-cy="running-live-quiz-${this.data.quizName}"]`).should(
-        'not.exist'
-      )
-    })
+    // open and close block, end the quiz
+    cy.get('[data-cy="activate-next-block"]').click()
+    cy.get('[data-cy="deactivate-block"]').click()
+    cy.get('[data-cy="end-live-quiz"]').click()
+    cy.get(`[data-cy="start-live-quiz-${this.data.quizName}"]`).should(
+      'not.exist'
+    )
+    cy.get(`[data-cy="running-live-quiz-${this.data.quizName}"]`).should(
+      'not.exist'
+    )
   })
 
   // ! Cleanup

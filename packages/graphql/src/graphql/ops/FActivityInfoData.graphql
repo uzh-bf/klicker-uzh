@@ -6,25 +6,16 @@ fragment ActivityInfoData on ActivityInfo {
   courseId
   courseName
   courseStartDate
+  courseLanguage
 
   numOfStacks
   numOfElements
+  reviewStatus
   automaticPublicationAt
   scheduledStartAt
   scheduledEndAt
   groupDeadlineDate
   numOfParticipantGroups
-
-  stacks {
-    id
-    numOfParticipants
-    timeLimit
-    elements {
-      id
-      name
-      type
-    }
-  }
 
   name
   displayName
@@ -32,6 +23,10 @@ fragment ActivityInfoData on ActivityInfo {
   permissionLevel
   derivedAccess
   areInstancesOutdated
+  isGamificationEnabled
+  isAssessmentEnabled
+  pinCode
+
   numSharedUsers
   isOwner
   isManager
@@ -39,6 +34,7 @@ fragment ActivityInfoData on ActivityInfo {
   isExecutor
   isShared
   isRemovable
+  isActivityReviewer
   sharingType
 
   updatedAt

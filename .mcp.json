@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "serena": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server"
+      ]
+    },
+    "dbhub": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@bytebase/dbhub",
+        "--readonly",
+        "--transport",
+        "stdio",
+        "--dsn",
+        "postgres://klicker-prod:klicker@localhost:5432/klicker-prod?sslmode=disable"
+      ]
+    }
+  }
+}

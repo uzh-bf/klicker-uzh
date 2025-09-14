@@ -1,4 +1,5 @@
 import { faX } from '@fortawesome/free-solid-svg-icons'
+import { LocaleType } from '@klicker-uzh/graphql/dist/ops'
 import QR from '@pages/qr/[...args]'
 import { Button } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
@@ -6,11 +7,13 @@ import { Dispatch, SetStateAction } from 'react'
 
 function LiveQuizEvaluationQRCode({
   setHideQR,
+  language,
 }: {
   setHideQR: Dispatch<SetStateAction<boolean>>
+  language?: LocaleType | null
 }) {
   const router = useRouter()
-  const liveQuizRelativeLink = `/session/${router.query.id}`
+  const liveQuizRelativeLink = `${language ? `/${language}` : ''}/session/${router.query.id}`
 
   return (
     <div className="group relative float-end hidden h-max w-full items-center justify-center lg:flex">

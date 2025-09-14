@@ -1,0 +1,167 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart.fullname" . }}-response-api
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: response-api
+spec:
+  {{- with .Values.responseApi.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if not .Values.responseApi.autoscaling.enabled }}
+  replicas: {{ .Values.responseApi.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: response-api
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/cm-response-api.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret-response-api.yaml") . | sha256sum }}
+        release: {{ .Chart.AppVersion }}
+      {{- with .Values.responseApi.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: response-api
+    spec:
+      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.responseApi.priorityClassName }}
+      {{- with .Values.responseApi.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.responseApi.podSecurityContext | nindent 8 }}
+      containers:
+        - name: response-api
+          securityContext:
+            {{- toYaml .Values.responseApi.securityContext | nindent 12 }}
+          image: "{{ .Values.responseApi.image.repository }}:{{ .Values.responseApi.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.responseApi.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 7078
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: production
+          envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-response-api
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-response-api
+          # TODO: add liveness and readiness probes to container
+          # livenessProbe:
+          #   httpGet:
+          #     path: /healthz
+          #     port: http
+          #   initialDelaySeconds: 600
+          # readinessProbe:
+          #   httpGet:
+          #     path: /healthz
+          #     port: http
+          resources:
+            {{- toYaml .Values.responseApi.resources | nindent 12 }}
+      {{- with .Values.responseApi.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.responseApi.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.responseApi.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart.fullname" . }}-response-api-assessment
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: response-api-assessment
+spec:
+  {{- with .Values.assessment.responseApi.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if not .Values.responseApi.autoscaling.enabled }}
+  replicas: {{ .Values.responseApi.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: response-api-assessment
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/cm-response-api-assessment.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret-response-api-assessment.yaml") . | sha256sum }}
+        release: {{ .Chart.AppVersion }}
+      {{- with .Values.assessment.responseApi.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: response-api-assessment
+    spec:
+      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.assessment.responseApi.priorityClassName }}
+      {{- with .Values.assessment.responseApi.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.assessment.responseApi.podSecurityContext | nindent 8 }}
+      containers:
+        - name: response-api-assessment
+          securityContext:
+            {{- toYaml .Values.assessment.responseApi.securityContext | nindent 12 }}
+          image: "{{ .Values.assessment.responseApi.image.repository }}:{{ .Values.assessment.responseApi.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.assessment.responseApi.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 7078
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: production
+          envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-response-api-assessment
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-response-api-assessment
+          # TODO: add liveness and readiness probes to container
+          # livenessProbe:
+          #   httpGet:
+          #     path: /healthz
+          #     port: http
+          #   initialDelaySeconds: 600
+          # readinessProbe:
+          #   httpGet:
+          #     path: /healthz
+          #     port: http
+          resources:
+            {{- toYaml .Values.assessment.responseApi.resources | nindent 12 }}
+      {{- with .Values.assessment.responseApi.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.assessment.responseApi.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.assessment.responseApi.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -2,14 +2,6 @@ import messages from '../../../packages/i18n/messages/en'
 import { getDatetimeValidationString } from './helpers'
 
 describe('Test course creation and editing functionalities', function () {
-  before(() => {
-    cy.seed()
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
@@ -19,12 +11,12 @@ describe('Test course creation and editing functionalities', function () {
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   // ! Part 1: Course creation
   // #region
@@ -45,7 +37,18 @@ describe('Test course creation and editing functionalities', function () {
       .type(this.data.course1.displayName)
     cy.get('[data-cy="course-description"]')
       .realClick()
-      .type(this.data.course1.description)
+      .realType(this.data.course1.description)
+
+    // change the course language from the user default locale (english) to german
+    cy.get('[data-cy="course-language"]').should(
+      'contain',
+      messages.shared.generic.en
+    )
+    cy.selectOption('[data-cy="course-language"]', messages.shared.generic.de)
+    cy.get('[data-cy="course-language"]').should(
+      'contain',
+      messages.shared.generic.de
+    )
 
     // enter a course notification email (should be pre-filled with the user email)
     cy.get('[data-cy="course-notification-email"]').should(
@@ -142,6 +145,17 @@ describe('Test course creation and editing functionalities', function () {
       this.data.course2.displayName
     )
 
+    // keep the course language as english
+    cy.get('[data-cy="course-language"]').should(
+      'contain',
+      messages.shared.generic.en
+    )
+    cy.selectOption('[data-cy="course-language"]', messages.shared.generic.en)
+    cy.get('[data-cy="course-language"]').should(
+      'contain',
+      messages.shared.generic.en
+    )
+
     // enter a course notification email
     cy.get('[data-cy="course-notification-email"]').should(
       'have.value',
@@ -196,11 +210,9 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'checked'
     )
-    cy.get('[data-cy="toggle-group-creation-enabled"]').should(
-      'not.be.disabled'
-    )
+    cy.get('[data-cy="course-group-creation"]').should('not.be.disabled')
     cy.get('[data-cy="course-gamification"]').click()
-    cy.get('[data-cy="toggle-group-creation-enabled"]').should('be.disabled')
+    cy.get('[data-cy="course-group-creation"]').should('be.disabled')
     cy.get('[data-cy="group-creation-deadline"]').should('not.exist')
     cy.get('[data-cy="max-group-size"]').should('not.exist')
     cy.get('[data-cy="preferred-group-size"]').should('not.exist')
@@ -208,7 +220,7 @@ describe('Test course creation and editing functionalities', function () {
     // check if the values of the form are properly reset if gamification is disabled
     cy.get('[data-cy="manipulate-course-submit"]').should('not.be.disabled')
     cy.get('[data-cy="course-gamification"]').click()
-    cy.get('[data-cy="toggle-group-creation-enabled"]').click()
+    cy.get('[data-cy="course-group-creation"]').click()
     cy.get('[data-cy="max-group-size"]').clear()
     cy.get('[data-cy="manipulate-course-submit"]').should('be.disabled')
     cy.get('[data-cy="course-gamification"]').click()
@@ -216,10 +228,8 @@ describe('Test course creation and editing functionalities', function () {
 
     // change group settings
     cy.get('[data-cy="course-gamification"]').click()
-    cy.get('[data-cy="toggle-group-creation-enabled"]').should(
-      'not.be.disabled'
-    )
-    cy.get('[data-cy="toggle-group-creation-enabled"]').click()
+    cy.get('[data-cy="course-group-creation"]').should('not.be.disabled')
+    cy.get('[data-cy="course-group-creation"]').click()
 
     // enter an invalid group creation deadline date (after end date - 10 months in the future)
     // when field becomes visible, it is initialized with the current course date
@@ -537,6 +547,19 @@ describe('Test course creation and editing functionalities', function () {
       .clear()
       .type(this.data.course1.displayNameNew)
 
+    // check if the course language is set correctly
+    cy.get('[data-cy="course-language"]').should(
+      'contain',
+      messages.shared.generic.de
+    )
+
+    // change the course language to english
+    cy.selectOption('[data-cy="course-language"]', messages.shared.generic.en)
+    cy.get('[data-cy="course-language"]').should(
+      'contain',
+      messages.shared.generic.en
+    )
+
     // check if the notification email is set correctly
     cy.get('[data-cy="course-notification-email"]').should(
       'have.value',
@@ -623,6 +646,10 @@ describe('Test course creation and editing functionalities', function () {
       'have.value',
       this.data.course1.displayNameNew
     )
+    cy.get('[data-cy="course-language"]').should(
+      'contain',
+      messages.shared.generic.en
+    )
     cy.get('[data-cy="course-notification-email"]').should(
       'have.value',
       this.data.course1.notificationEmailNew
@@ -640,18 +667,8 @@ describe('Test course creation and editing functionalities', function () {
       'data-state',
       'checked'
     )
-    cy.get('[data-cy="course-gamification"]').should(
-      'have.attr',
-      'disabled',
-      'disabled'
-    )
-    cy.get('[data-cy="toggle-group-creation-enabled"]').should(
-      'not.have.attr',
-      'disabled',
-      'disabled'
-    )
-    cy.get('[data-cy="toggle-group-creation-enabled"]').click()
-    cy.get('[data-cy="toggle-group-creation-enabled"]').should(
+    cy.get('[data-cy="course-group-creation"]').click()
+    cy.get('[data-cy="course-group-creation"]').should(
       'have.attr',
       'data-state',
       'checked'
@@ -831,14 +848,14 @@ describe('Test course creation and editing functionalities', function () {
       name: this.data.deletion.mlName,
       displayName: this.data.deletion.mlName,
       startDate: {
-        monthDelta: -3,
+        monthDelta: -2,
         day: 16,
         hour: 2,
         minute: 0,
         validation: getDatetimeValidationString(-2, '16') + ', 02:00',
       }, // 2 months in the past at 2:00
       endDate: {
-        monthDelta: 3,
+        monthDelta: 4,
         day: 14,
         hour: 18,
         minute: 0,
@@ -941,13 +958,12 @@ describe('Test course creation and editing functionalities', function () {
     cy.findByText(this.data.course2.name).should('not.exist')
 
     cy.get('[data-cy="library"]').click()
-    cy.get(`[data-cy="element-item-${this.data.deletion.qTitle}"]`).should(
-      'exist'
-    )
+    cy.validateElement({ element: this.data.deletion.qTitle })
     cy.deleteElement({ elementName: this.data.deletion.qTitle })
-    cy.get(`[data-cy="element-item-${this.data.deletion.qTitle}"]`).should(
-      'not.exist'
-    )
+    cy.validateElement({
+      element: this.data.deletion.qTitle,
+      shouldExist: false,
+    })
   })
   // #endregion
 
@@ -960,8 +976,8 @@ describe('Test course creation and editing functionalities', function () {
       data.NRML.title,
       data.SEML.title,
       data.CSML.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // check that the answer collection is not visible to the user
@@ -1049,8 +1065,8 @@ describe('Test course creation and editing functionalities', function () {
       data.NRML.title,
       data.SEML.title,
       data.CSML.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // check that the answer collection is not visible to the user
@@ -1144,8 +1160,8 @@ describe('Test course creation and editing functionalities', function () {
       data.NRML.title,
       data.SEML.title,
       data.CSML.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // check that the answer collection is not visible to the user
@@ -1271,11 +1287,11 @@ describe('Test course creation and editing functionalities', function () {
       data.NRML.title,
       data.SEML.title,
       data.CSML.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('exist')
-      cy.get(`[data-cy="element-item-${title}"]`)
-        .get(`[data-cy="permission-level-${title}-ADMIN"]`)
-        .should('exist')
+    ]).each((title: string) => {
+      cy.validateElement({
+        element: title,
+        contains: [messages.manage.sharing.permissionsADMIN],
+      })
     })
 
     // check that the answer collection is visible to the user
@@ -1365,8 +1381,8 @@ describe('Test course creation and editing functionalities', function () {
       data.NRML.title,
       data.SEML.title,
       data.CSML.title,
-    ]).each((title) => {
-      cy.get(`[data-cy="element-item-${title}"]`).should('not.exist')
+    ]).each((title: string) => {
+      cy.validateElement({ element: title, shouldExist: false })
     })
 
     // verify that the user has no access to the answer collection
@@ -1515,14 +1531,14 @@ describe('Test course creation and editing functionalities', function () {
       name: this.data.sharing.microLearning,
       displayName: this.data.sharing.microLearning,
       startDate: {
-        monthDelta: 11,
+        monthDelta: 12,
         day: 16,
         hour: 2,
         minute: 0,
         validation: getDatetimeValidationString(12, '16') + ', 02:00',
       }, // 2 months in the past at 2:00
       endDate: {
-        monthDelta: 23,
+        monthDelta: 24,
         day: 14,
         hour: 18,
         minute: 0,
@@ -1540,14 +1556,14 @@ describe('Test course creation and editing functionalities', function () {
       task: 'Task Description',
       courseName: this.data.sharing.course,
       scheduledStartDate: {
-        monthDelta: 11,
+        monthDelta: 12,
         day: 16,
         hour: 2,
         minute: 0,
         validation: getDatetimeValidationString(12, '16') + ', 02:00',
       }, // 2 months in the past at 2:00
       scheduledEndDate: {
-        monthDelta: 23,
+        monthDelta: 24,
         day: 14,
         hour: 18,
         minute: 0,

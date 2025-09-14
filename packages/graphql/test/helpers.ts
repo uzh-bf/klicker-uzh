@@ -1,6 +1,10 @@
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
+import { hatchetClient } from '@klicker-uzh/hatchet'
+import { prisma } from '@klicker-uzh/prisma'
 import {
   AnswerCollection,
   CatalogCollection,
+  CourseAuthType,
   Element,
   ElementInstanceType,
   ElementStackType,
@@ -11,14 +15,32 @@ import {
   PublicationStatus,
   UserLoginScope,
   UserRole,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import { ElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import {
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
+import generatePassword from 'generate-password'
+import { createPubSub, Repeater } from 'graphql-yoga'
+import { Redis } from 'ioredis'
+import {
+  handleEndExpiredGroupActivity,
+  handlePublishScheduledGroupActivity,
+} from 'src/services/groups.js'
+import {
+  handleAssessmentLiveQuizBlockClosureAggregation,
+  handlePublishScheduledLiveQuiz,
+  handleStandardLiveQuizBlockClosureAggregation,
+} from 'src/services/liveQuizzes.js'
+import {
+  handleEndExpiredMicroLearning,
+  handlePublishScheduledMicroLearning,
+} from 'src/services/microLearning.js'
+import { handlePublishScheduledPracticeQuiz } from 'src/services/practiceQuizzes.js'
 import { v4 as uuidv4 } from 'uuid'
+import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { createAnswerCollection } from '../src/services/resources.js'
 import { createCatalogCollection } from '../src/services/sharing.js'
@@ -39,7 +61,11 @@ import {
 
 // ! General Test Suite Helpers (general setup, user seeding, database connections, cleanup, etc.)
 // #region
-export async function testInitialization(prisma: PrismaClient, emitter) {
+export async function testInitialization(
+  prisma: PrismaClient,
+  hatchet: Hatchet,
+  emitter: EventEmitter
+) {
   // upsert all users in the database
   await Promise.all(
     [userOne, userTwo, userThree, userFour, userFive, userSix].map(
@@ -83,6 +109,158 @@ export async function testInitialization(prisma: PrismaClient, emitter) {
     update: {},
   })
 
+  const pubSub = createPubSub()
+  const redisExec = new Redis()
+
+  const hatchetCtx = {
+    hatchet,
+    pubSub,
+    emitter,
+    redisExec,
+    prisma,
+  }
+
+  // initialize tasks to be called
+  const tasks = {
+    createAuditLogEntry: hatchet.task({
+      name: 'create-audit-logging-entry',
+      fn: async ({
+        message,
+      }: {
+        message: Record<string, string | undefined> & {
+          correlationId: string
+          info: string
+        }
+      }) => {
+        console.info('Audit log triggered', message)
+        return { success: true }
+      },
+    }),
+    publishScheduledMicroLearning: hatchet.task({
+      name: 'publish-scheduled-micro-learning',
+      fn: async (
+        { microLearningId }: { microLearningId: string },
+        executionCtx
+      ) => {
+        const success = await handlePublishScheduledMicroLearning(
+          { microLearningId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      },
+    }),
+    publishScheduledPracticeQuiz: hatchet.task({
+      name: 'publish-scheduled-practice-quiz',
+      fn: async (
+        { practiceQuizId }: { practiceQuizId: string },
+        executionCtx
+      ) => {
+        const success = await handlePublishScheduledPracticeQuiz(
+          { practiceQuizId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      },
+    }),
+    publishScheduledGroupActivity: hatchet.task({
+      name: 'publish-scheduled-group-activity',
+      fn: async (
+        { groupActivityId }: { groupActivityId: string },
+        executionCtx
+      ) => {
+        const success = await handlePublishScheduledGroupActivity(
+          { groupActivityId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      },
+    }),
+    publishScheduledLiveQuiz: hatchet.task({
+      name: 'publish-scheduled-live-quiz',
+      fn: async ({ liveQuizId }: { liveQuizId: string }, executionCtx) => {
+        const success = await handlePublishScheduledLiveQuiz(
+          { liveQuizId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      },
+    }),
+    endExpiredMicroLearning: hatchet.task({
+      name: 'end-expired-micro-learning',
+      fn: async (
+        { microLearningId }: { microLearningId: string },
+        executionCtx
+      ) => {
+        const success = await handleEndExpiredMicroLearning(
+          { microLearningId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      },
+    }),
+    endExpiredGroupActivity: hatchet.task({
+      name: 'end-expired-group-activity',
+      fn: async (
+        { groupActivityId }: { groupActivityId: string },
+        executionCtx
+      ) => {
+        const success = await handleEndExpiredGroupActivity(
+          { groupActivityId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      },
+    }),
+    aggregateLiveQuizBlockResultsStandard: hatchet.task({
+      name: 'aggregate-block-closure-standard',
+      retries: 3,
+      fn: async (
+        {
+          liveQuizId,
+          blockId,
+        }: {
+          liveQuizId: string
+          blockId: number
+        },
+        executionContext
+      ) => {
+        const success = await handleStandardLiveQuizBlockClosureAggregation(
+          { liveQuizId, blockId },
+          hatchetCtx,
+          executionContext
+        )
+        return { success }
+      },
+    }),
+    aggregateLiveQuizBlockResultsAssessment: hatchet.task({
+      name: 'aggregate-block-closure-assessment',
+      retries: 3,
+      fn: async (
+        {
+          liveQuizId,
+          blockId,
+        }: {
+          liveQuizId: string
+          blockId: number
+        },
+        executionContext
+      ) => {
+        const success = await handleAssessmentLiveQuizBlockClosureAggregation(
+          { liveQuizId, blockId },
+          hatchetCtx,
+          executionContext
+        )
+        return { success }
+      },
+    }),
+  }
+
   // mock context with user including all required properties
   const userOneCtx = {
     user: {
@@ -93,9 +271,14 @@ export async function testInitialization(prisma: PrismaClient, emitter) {
       catalystIndividual: true,
     },
     prisma,
+    hatchet,
+    tasks,
     emitter,
-    redisExec: jest.fn() as unknown as ContextWithUser['redisExec'],
-    pubSub: { publish: jest.fn(), subscribe: jest.fn() },
+    redisExec: vi.fn() as unknown as ContextWithUser['redisExec'],
+    pubSub: {
+      publish: vi.fn(),
+      subscribe: vi.fn().mockReturnValue(new Repeater(() => {})),
+    } as ContextWithUser['pubSub'],
     req: {} as any,
     res: {} as any,
   }
@@ -168,29 +351,19 @@ export function getDatabaseUrl() {
   }
 
   // as a fallback, use default PostgreSQL connection
-  return 'postgresql://klicker:klicker@localhost:5432/klicker'
+  process.env.DATABASE_URL =
+    'postgresql://klicker-prod:klicker@localhost:5432/klicker-prod'
 }
 
 export async function initializePrisma() {
   // configure database
-  const databaseUrl = getDatabaseUrl()
+  getDatabaseUrl()
 
   try {
-    // initialize PrismaClient with the database URL
-    const prisma = new PrismaClient({
-      datasources: {
-        db: { url: databaseUrl },
-      },
-      log: ['error', 'warn'],
-    })
-
-    // test database connection
-    await prisma.$connect()
-
     // create EventEmitter for test context
     const emitter = new EventEmitter()
 
-    return { prisma, emitter }
+    return { prisma, hatchet: hatchetClient, emitter }
   } catch (error) {
     console.error('Failed to initialize test environment:', error)
     throw new Error(`Database connection failed: ${error}`)
@@ -268,7 +441,18 @@ export async function seedElements(
       type: ElementType.SC,
       name: 'SC Element',
       content: 'SC Content',
-      options: {},
+      explanation: 'SC Explanation',
+      options: {
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: true,
+        displayMode: 'LIST',
+        choices: [
+          { ix: 0, value: 'Choice 1', correct: true, feedback: 'Feedback 1' },
+          { ix: 1, value: 'Choice 2', correct: false, feedback: 'Feedback 2' },
+          { ix: 2, value: 'Choice 3', correct: false, feedback: 'Feedback 3' },
+          { ix: 3, value: 'Choice 4', correct: false, feedback: 'Feedback 4' },
+        ],
+      },
       ownerId: userContext.user.sub,
     },
   })
@@ -584,9 +768,13 @@ export async function seedCourse(
   {
     startDate,
     endDate,
+    isGamificationEnabled,
+    isAssessmentEnabled,
   }: {
     startDate?: Date
     endDate?: Date
+    isGamificationEnabled?: boolean
+    isAssessmentEnabled?: boolean
   },
   ctx: ContextWithUser
 ) {
@@ -597,11 +785,16 @@ export async function seedCourse(
       name: uuidv4(),
       displayName: uuidv4(),
       description: uuidv4(),
-      pinCode: Math.floor(Math.random() * 9000 + 1000),
+      pinCode: !isAssessmentEnabled
+        ? Math.floor(Math.random() * 9000 + 1000)
+        : null,
       startDate: startDate ?? defaultStartDate,
       endDate: endDate ?? defaultEndDate,
       groupDeadlineDate: endDate ?? defaultEndDate,
+      isGamificationEnabled,
+      isAssessmentEnabled,
       ownerId: ctx.user.sub,
+      authType: isAssessmentEnabled ? CourseAuthType.SSO : CourseAuthType.PIN,
     },
   })
 
@@ -629,6 +822,13 @@ export async function seedLiveQuiz(
   },
   ctx: ContextWithUser
 ) {
+  // if a courseId is defined, fetch the corresponding course
+  const course = courseId
+    ? await ctx.prisma.course.findUnique({
+        where: { id: courseId },
+      })
+    : null
+
   const liveQuiz = await ctx.prisma.liveQuiz.create({
     data: {
       name: uuidv4(),
@@ -637,6 +837,17 @@ export async function seedLiveQuiz(
       status,
       courseId,
       ownerId: ctx.user.sub,
+      isAssessmentEnabled: course?.isAssessmentEnabled ?? false,
+      isGamificationEnabled: course?.isGamificationEnabled ?? false,
+      pinCode: course?.isAssessmentEnabled
+        ? generatePassword.generate({
+            length: 6,
+            numbers: true,
+            uppercase: true,
+            lowercase: false,
+            symbols: false,
+          })
+        : null,
       blocks: {
         create: elements.map((element, index) => ({
           order: index,
@@ -658,6 +869,7 @@ export async function seedLiveQuiz(
         })),
       },
     },
+    include: { blocks: true },
   })
 
   return liveQuiz

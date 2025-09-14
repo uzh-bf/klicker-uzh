@@ -1,10 +1,11 @@
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   AuditLogType,
   ElementType,
   ObjectType,
   PermissionLevel,
   PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
@@ -27,19 +28,24 @@ import {
 } from './helpers.js'
 import { userFour, userOne, userThree, userTwo } from './userData.js'
 
-describe('Unit tests for user group management', () => {
+describe('Integration tests for user group management', () => {
   // shared resources used across tests
   let prisma: PrismaClient
+  let hatchet: Hatchet
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
   let userThreeCtx: ContextWithUser
   let userFourCtx: ContextWithUser
-  let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
-    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    const {
+      prisma: newPrisma,
+      hatchet: newHatchet,
+      emitter: newEmitter,
+    } = await initializePrisma()
     prisma = newPrisma
+    hatchet = newHatchet
     emitter = newEmitter
   })
 
@@ -54,21 +60,17 @@ describe('Unit tests for user group management', () => {
       userTwoCtx: ctx2,
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
-      userFiveCtx: ctx5,
-    } = await testInitialization(prisma, emitter)
+    } = await testInitialization(prisma, hatchet, emitter)
 
     userOneCtx = ctx1
     userTwoCtx = ctx2
     userThreeCtx = ctx3
     userFourCtx = ctx4
-    userFiveCtx = ctx5
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
-  describe('Unit tests for user group creation and manipulation, including member management', () => {
+  describe('Integration tests for user group creation and manipulation, including member management', () => {
     it('Providing regular members should result in a successful group creation', async () => {
       // create a group with two regular members (not admins)
       const groupName = 'Test Group'

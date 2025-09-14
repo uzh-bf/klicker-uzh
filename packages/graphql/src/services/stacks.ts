@@ -9,12 +9,13 @@ import {
   gradeQuestionSC,
   gradeQuestionSelection,
 } from '@klicker-uzh/grading'
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import type {
   CaseStudyElementData,
   CaseStudySolutionsObject,
   Choice,
   ChoicesElementData,
+  ChoicesResponse,
   ContentElementData,
   ElementData,
   ElementInstanceResults,
@@ -74,7 +75,7 @@ type ExistingInstanceType = DB.ElementInstance & {
   } | null
 }
 
-const POINTS_PER_INSTANCE = 10
+export const POINTS_PER_INSTANCE = 10
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 const XP_AWARD_TIMEFRAME_DAYS = 1
 
@@ -1646,18 +1647,15 @@ export function updateChoicesResults({
     response.choices === null ||
     typeof response.choices === 'undefined'
   ) {
-    return { results: results, modified: false }
+    return { results, modified: false }
   }
 
   updatedResults.choices = (
     response as SingleQuestionResponseChoices
-  ).choices.reduce(
-    (acc, ix) => ({
-      ...acc,
-      [ix]: acc[ix]! + 1,
-    }),
-    results.choices
-  )
+  ).choices.reduce((acc, choiceResponse) => {
+    acc[choiceResponse.ix] = (acc[choiceResponse.ix] ?? 0) + 1
+    return acc
+  }, results.choices)
   updatedResults.total = results.total + 1
   return { results: updatedResults, modified: true }
 }
@@ -1689,7 +1687,7 @@ export function updateNumericalResults({
     response.value === null ||
     response.value === ''
   ) {
-    return { results: results, modified: false }
+    return { results, modified: false }
   }
 
   // make sure that restrictions are fulfilled
@@ -1703,7 +1701,7 @@ export function updateNumericalResults({
     parsedValue > 1e30 || // prevent overflow
     parsedValue < -1e30 // prevent underflow
   ) {
-    return { results: results, modified: false }
+    return { results, modified: false }
   }
 
   const value = String(parsedValue)
@@ -1757,7 +1755,7 @@ export function updateFreeTextResults({
     (typeof elementData.options.restrictions?.maxLength === 'number' &&
       response.value.length > elementData.options.restrictions?.maxLength)
   ) {
-    return { results: results, modified: false }
+    return { results, modified: false }
   }
 
   const value = toLowerCase(response.value.trim())
@@ -2172,13 +2170,10 @@ function computeAggregatedResponsesChoices({
   // update aggregated responses for choices
   newAggResponses.choices = (
     response as SingleQuestionResponseChoices
-  ).choices.reduce(
-    (acc, ix) => ({
-      ...acc,
-      [ix]: acc[ix]! + 1,
-    }),
-    newAggResponses.choices
-  )
+  ).choices.reduce((acc, choiceResponse) => {
+    acc[choiceResponse.ix] = (acc[choiceResponse.ix] ?? 0) + 1
+    return acc
+  }, newAggResponses.choices)
   newAggResponses.total = newAggResponses.total + 1
 
   return newAggResponses
@@ -2606,15 +2601,15 @@ async function updateLeaderboardOnQuestionResponse({
 
 export async function respondToQuestion(
   {
-    courseId,
     id,
+    courseId,
     response,
     answerTime,
     participation,
     skipTracking,
   }: {
-    courseId: string
     id: number
+    courseId: string
     response: ResponseInput
     answerTime: number
     participation: (DB.Participation & { participant: DB.Participant }) | null
@@ -2877,13 +2872,12 @@ export async function respondToQuestion(
 
 // ! Element & Stack Response & Combination Logic
 // #region
-
 interface ElementResponseInput {
   instanceId: number
   type: DB.ElementType
   flashcardResponse?: FlashcardCorrectness | null
   contentReponse?: boolean | null
-  choicesResponse?: number[] | null
+  choicesResponse?: ChoicesResponse[] | null
   numericalResponse?: number | null
   freeTextResponse?: string | null
   selectionResponse?: number[] | null
@@ -2934,7 +2928,7 @@ async function respondToElement({
     const result = await respondToFlashcard(
       {
         id: response.instanceId,
-        courseId: courseId,
+        courseId,
         response: response.flashcardResponse!,
         answerTime,
         participation,
@@ -2969,7 +2963,7 @@ async function respondToElement({
     const result = await respondToContent(
       {
         id: response.instanceId,
-        courseId: courseId,
+        courseId,
         answerTime,
         participation,
         skipTracking,
@@ -3003,8 +2997,8 @@ async function respondToElement({
   ) {
     const result = await respondToQuestion(
       {
-        courseId: courseId,
         id: response.instanceId,
+        courseId,
         response: { choices: response.choicesResponse },
         answerTime,
         participation,
@@ -3032,8 +3026,8 @@ async function respondToElement({
   } else if (response.type === DB.ElementType.NUMERICAL) {
     const result = await respondToQuestion(
       {
-        courseId: courseId,
         id: response.instanceId,
+        courseId,
         response: { value: String(response.numericalResponse) },
         answerTime,
         participation,
@@ -3061,8 +3055,8 @@ async function respondToElement({
   } else if (response.type === DB.ElementType.FREE_TEXT) {
     const result = await respondToQuestion(
       {
-        courseId: courseId,
         id: response.instanceId,
+        courseId,
         response: { value: response.freeTextResponse },
         answerTime,
         participation,
@@ -3090,8 +3084,8 @@ async function respondToElement({
   } else if (response.type === DB.ElementType.SELECTION) {
     const result = await respondToQuestion(
       {
-        courseId: courseId,
         id: response.instanceId,
+        courseId,
         response: {
           selection: response.selectionResponse?.filter((r) => r !== -1), // only forward valid responses
         },
@@ -3121,8 +3115,8 @@ async function respondToElement({
   } else if (response.type === DB.ElementType.CASE_STUDY) {
     const result = await respondToQuestion(
       {
-        courseId: courseId,
         id: response.instanceId,
+        courseId,
         response: {
           assessment: response.caseStudyResponse,
         },
@@ -3465,6 +3459,9 @@ function combineCaseStudyResults({
               // extract values from merged results
               const responses = Object.values(mergedResults)
 
+              // if the criterion is a liker criterion, make sure the entire valid bar is included in the solution interval
+              const isLikertCriterion = !!criterion.labels
+
               return {
                 criterionId: criterion.id,
                 name: criterion.name,
@@ -3474,8 +3471,16 @@ function combineCaseStudyResults({
                 unit: criterion.unit,
                 labels: criterion.labels,
 
-                solutionMin: criterionSolution?.min,
-                solutionMax: criterionSolution?.max,
+                solutionMin: criterionSolution?.min
+                  ? isLikertCriterion
+                    ? criterionSolution?.min - 0.5
+                    : criterionSolution?.min
+                  : undefined,
+                solutionMax: criterionSolution?.max
+                  ? isLikertCriterion
+                    ? criterionSolution?.max + 0.5
+                    : criterionSolution?.max
+                  : undefined,
 
                 statistics:
                   responses && responses.length > 0
@@ -3819,8 +3824,8 @@ function computeInstanceEvaluation({
 
 export function computeStackEvaluation(
   stacks: (
-    | (DB.ElementStack & { elements: DB.ElementInstance[] })
-    | (DB.ElementBlock & { elements: DB.ElementInstance[] })
+    | (DB.ElementStack & { elements: DB.ElementInstance[]; active?: boolean })
+    | (DB.ElementBlock & { elements: DB.ElementInstance[]; active?: boolean })
   )[]
 ) {
   return stacks.map((stack) => ({
@@ -3828,7 +3833,10 @@ export function computeStackEvaluation(
     stackName: 'displayName' in stack ? stack.displayName : null,
     stackDescription: 'description' in stack ? stack.description : null,
     stackOrder: stack.order,
-
+    stackActive: stack.active ?? false,
+    status: 'status' in stack ? stack.status : null,
+    expiresAt: 'expiresAt' in stack ? stack.expiresAt : null,
+    timeLimit: 'timeLimit' in stack ? stack.timeLimit : null,
     instances: stack.elements
       .map((instance) => computeInstanceEvaluation({ instance }))
       .filter((instance) => typeof instance !== 'undefined'),

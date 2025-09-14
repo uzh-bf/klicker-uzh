@@ -1,14 +1,6 @@
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test creation and editing functionalities, validation, etc. for Multiple Choice elements', function () {
-  before(() => {
-    cy.seed()
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Login the lecturer and load data fixture', function () {
     cy.loginLecturer()
     cy.fixture('DM-questions.json').then((data) => {
@@ -16,12 +8,12 @@ describe('Test creation and editing functionalities, validation, etc. for Multip
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   // ! Multiple choice questions
   // #region
@@ -45,12 +37,12 @@ describe('Test creation and editing functionalities, validation, etc. for Multip
     ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
-      .type(this.data.MC.content)
+      .realType(this.data.MC.content)
 
     // insert answer options for MC question
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
-      .type(this.data.MC.choices[0])
+      .realType(this.data.MC.choices[0])
     cy.get('[data-cy="insert-answer-field-0"]').findByText(
       this.data.MC.choices[0]
     )
@@ -58,7 +50,7 @@ describe('Test creation and editing functionalities, validation, etc. for Multip
     cy.wait(500)
     cy.get('[data-cy="insert-answer-field-1"]')
       .realClick()
-      .type(this.data.MC.choices[1])
+      .realType(this.data.MC.choices[1])
     cy.get('[data-cy="insert-answer-field-1"]').findByText(
       this.data.MC.choices[1]
     )
@@ -66,7 +58,7 @@ describe('Test creation and editing functionalities, validation, etc. for Multip
     cy.wait(500)
     cy.get('[data-cy="insert-answer-field-2"]')
       .realClick()
-      .type(this.data.MC.choices[2])
+      .realType(this.data.MC.choices[2])
     cy.get('[data-cy="insert-answer-field-2"]').findByText(
       this.data.MC.choices[2]
     )
@@ -74,7 +66,7 @@ describe('Test creation and editing functionalities, validation, etc. for Multip
     cy.wait(500)
     cy.get('[data-cy="insert-answer-field-3"]')
       .realClick()
-      .type(this.data.MC.choices[3])
+      .realType(this.data.MC.choices[3])
     cy.get('[data-cy="insert-answer-field-3"]').findByText(
       this.data.MC.choices[3]
     )
@@ -122,15 +114,14 @@ describe('Test creation and editing functionalities, validation, etc. for Multip
     cy.wait(500)
 
     // verify that question is correctly created
-    cy.get(`[data-cy="element-item-${this.data.MC.title}"]`).contains(
-      this.data.MC.content
-    )
-    cy.get(`[data-cy="element-item-${this.data.MC.title}"]`).contains(
-      this.data.MC.title
-    )
-    cy.get(`[data-cy="element-item-${this.data.MC.title}"]`).contains(
-      messages.shared.READY.statusLabel
-    )
+    cy.validateElement({
+      element: this.data.MC.title,
+      contains: [
+        this.data.MC.content,
+        this.data.MC.title,
+        messages.shared.READY.statusLabel,
+      ],
+    })
     cy.get(`[data-cy="edit-element-${this.data.MC.title}"]`).click()
     cy.get('[data-cy="mc-0-answer-option-0"]').should('exist')
     cy.get('[data-cy="mc-0-answer-option-1"]').should('exist')
@@ -167,19 +158,19 @@ describe('Test creation and editing functionalities, validation, etc. for Multip
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.MC.contentEdited)
+      .realType(this.data.MC.contentEdited)
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
       .clear()
-      .type(this.data.MC.choicesEdited[0])
+      .realType(this.data.MC.choicesEdited[0])
     cy.get('[data-cy="insert-answer-field-1"]')
       .realClick()
       .clear()
-      .type(this.data.MC.choicesEdited[1])
+      .realType(this.data.MC.choicesEdited[1])
     cy.get('[data-cy="insert-answer-field-2"]')
       .realClick()
       .clear()
-      .type(this.data.MC.choicesEdited[2])
+      .realType(this.data.MC.choicesEdited[2])
     cy.get('[data-cy="delete-answer-option-ix-3"]').click() // test deleting answer options
     cy.get('[data-cy="insert-answer-field-3"]').should('not.exist')
     cy.get('[data-cy="add-new-answer"]').click()
@@ -187,25 +178,25 @@ describe('Test creation and editing functionalities, validation, etc. for Multip
     cy.get('[data-cy="insert-answer-field-3"]')
       .realClick()
       .clear()
-      .type(this.data.MC.choicesEdited[3])
+      .realType(this.data.MC.choicesEdited[3])
     cy.get('[data-cy="add-new-answer"]').click()
     cy.wait(500)
     cy.get('[data-cy="insert-answer-field-4"]')
       .realClick()
       .clear()
-      .type(this.data.MC.choicesEdited[4])
+      .realType(this.data.MC.choicesEdited[4])
     cy.get('[data-cy="add-new-answer"]').click()
     cy.wait(500)
     cy.get('[data-cy="insert-answer-field-5"]')
       .realClick()
       .clear()
-      .type(this.data.MC.choicesEdited[5])
+      .realType(this.data.MC.choicesEdited[5])
     cy.get('[data-cy="add-new-answer"]').click()
     cy.wait(500)
     cy.get('[data-cy="insert-answer-field-6"]')
       .realClick()
       .clear()
-      .type(this.data.MC.choicesEdited[6])
+      .realType(this.data.MC.choicesEdited[6])
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
     // enable sample solution and check that at least one correct answer is required
@@ -224,12 +215,10 @@ describe('Test creation and editing functionalities, validation, etc. for Multip
     cy.wait(1000)
 
     // verify that the updated content of the MC question is correctly displayed
-    cy.get(`[data-cy="element-item-${this.data.MC.titleEdited}"]`).contains(
-      this.data.MC.titleEdited
-    )
-    cy.get(`[data-cy="element-item-${this.data.MC.titleEdited}"]`).contains(
-      this.data.MC.contentEdited
-    )
+    cy.validateElement({
+      element: this.data.MC.titleEdited,
+      contains: [this.data.MC.contentEdited, this.data.MC.titleEdited],
+    })
   })
 
   it('Edit the multiple choice question again and add answer feedbacks', function () {
@@ -243,7 +232,7 @@ describe('Test creation and editing functionalities, validation, etc. for Multip
       cy.get('[data-cy="save-new-question"]').should('be.disabled')
       cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
         .realClick()
-        .type(feedback)
+        .realType(feedback)
       cy.get(`[data-cy="insert-answer-feedback-${ix}"]`).contains(feedback)
     })
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
@@ -253,7 +242,7 @@ describe('Test creation and editing functionalities, validation, etc. for Multip
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
     cy.get('[data-cy="insert-answer-feedback-1"]')
       .realClick()
-      .type(this.data.MC.choicesFeedbacks[1])
+      .realType(this.data.MC.choicesFeedbacks[1])
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
     // verify that reordering answer options also reorders the corresponding feedbacks

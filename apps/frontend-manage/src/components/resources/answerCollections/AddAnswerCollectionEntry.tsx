@@ -80,35 +80,49 @@ function AddAnswerCollectionEntry({
             value: values.newValue!,
           },
           update: (cache, { data }) => {
+            // check if the addition of the answer collection entry was successful
             if (!data?.addAnswerCollectionOption) return
 
             // update the currently displayed collection
-            const collectionQuery = cache.readQuery({
-              query: GetSingleAnswerCollectionDocument,
-              variables: {
-                id: collectionId,
+            cache.updateQuery(
+              {
+                query: GetSingleAnswerCollectionDocument,
+                variables: { id: collectionId },
               },
-            })
-            const collection = collectionQuery?.getSingleAnswerCollection
-            if (!collection) return
+              (qData) => {
+                if (!qData?.getSingleAnswerCollection) return qData
 
-            cache.writeQuery({
-              query: GetSingleAnswerCollectionDocument,
-              variables: {
-                id: collectionId,
-              },
-              data: {
-                getSingleAnswerCollection: {
-                  ...collection,
-                  entries: [
-                    ...(collection.entries ?? []),
-                    data.addAnswerCollectionOption!,
-                  ],
-                },
-              },
-            })
+                return {
+                  getSingleAnswerCollection: {
+                    ...qData.getSingleAnswerCollection,
+                    entries: [
+                      ...(qData.getSingleAnswerCollection.entries ?? []),
+                      data.addAnswerCollectionOption!,
+                    ],
+                  },
+                }
+              }
+            )
+
+            // increase the count of entries on the overview
+            cache.updateQuery(
+              { query: GetAnswerCollectionsInfoDocument },
+              (qData) => {
+                if (!qData?.getAnswerCollectionsInfo) return qData
+                return {
+                  getAnswerCollectionsInfo: qData.getAnswerCollectionsInfo.map(
+                    (collection) =>
+                      collection.id === collectionId
+                        ? {
+                            ...collection,
+                            numOfEntries: (collection.numOfEntries ?? 0) + 1,
+                          }
+                        : collection
+                  ),
+                }
+              }
+            )
           },
-          refetchQueries: [{ query: GetAnswerCollectionsInfoDocument }],
         })
 
         // if the answer collection is edited inline (in a question context), refetch the selection

@@ -1,0 +1,67 @@
+{{- $fullName := include "chart.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-hatchet-worker-general
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
+  HATCHET_CLIENT_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
+  # Deprecated - kept for backward compatibility during transition
+  HATCHET_TENANT_ID: {{ .Values.hatchet.client.tenantId | quote }}
+  HATCHET_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
+  HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  REDIS_HOST: {{ .Values.backendGraphql.redisExec.host | quote }}
+  REDIS_PORT: {{ .Values.backendGraphql.redisExec.port | quote }}
+  REDIS_TLS: {{ .Values.backendGraphql.redisExec.tls | quote }}
+  REDIS_CACHE_HOST: {{ .Values.backendGraphql.redisCache.host | quote }}
+  REDIS_CACHE_PORT: {{ .Values.backendGraphql.redisCache.port | quote }}
+  {{- if .Values.backendGraphql.redisCache.tls }}
+  REDIS_CACHE_TLS: {{ .Values.backendGraphql.redisCache.tls | quote }}
+  {{ end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-hatchet-worker-response-processor
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
+  HATCHET_CLIENT_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
+  # Deprecated - kept for backward compatibility during transition
+  HATCHET_TENANT_ID: {{ .Values.hatchet.client.tenantId | quote }}
+  HATCHET_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
+  HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  REDIS_HOST: {{ .Values.backendGraphql.redisExec.host | quote }}
+  REDIS_PORT: {{ .Values.backendGraphql.redisExec.port | quote }}
+  REDIS_TLS: {{ .Values.backendGraphql.redisExec.tls | quote }}
+  REDIS_CACHE_HOST: {{ .Values.backendGraphql.redisCache.host | quote }}
+  REDIS_CACHE_PORT: {{ .Values.backendGraphql.redisCache.port | quote }}
+  {{- if .Values.backendGraphql.redisCache.tls }}
+  REDIS_CACHE_TLS: {{ .Values.backendGraphql.redisCache.tls | quote }}
+  {{ end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-hatchet-worker-response-processor-assessment
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
+  HATCHET_CLIENT_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
+  # Deprecated - kept for backward compatibility during transition
+  HATCHET_TENANT_ID: {{ .Values.hatchet.client.tenantId | quote }}
+  HATCHET_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
+  HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  REDIS_HOST: {{ .Values.assessment.backendGraphql.redisExec.host | quote }}
+  REDIS_PORT: {{ .Values.assessment.backendGraphql.redisExec.port | quote }}
+  REDIS_TLS: {{ .Values.assessment.backendGraphql.redisExec.tls | quote }}
+  REDIS_CACHE_HOST: {{ .Values.backendGraphql.redisCache.host | quote }}
+  REDIS_CACHE_PORT: {{ .Values.backendGraphql.redisCache.port | quote }}
+  {{- if .Values.backendGraphql.redisCache.tls }}
+  REDIS_CACHE_TLS: {{ .Values.backendGraphql.redisCache.tls | quote }}
+  {{ end }}
+  ASSESSMENT_MODE: 'true'

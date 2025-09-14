@@ -7,59 +7,69 @@ WORKDIR /app
 
 # Create database initialization script
 RUN echo '#!/bin/bash\n\
-set -e\n\
-\n\
-echo "Running tests from container..."\n\
-\n\
-cd /usr/src/app\n\
-\n\
-# Ensure PostgreSQL is ready\n\
-echo "Waiting for PostgreSQL to be ready..."\n\
-for i in {1..10}; do\n\
+  set -e\n\
+  \n\
+  echo "Running tests from container..."\n\
+  \n\
+  cd /usr/src/app\n\
+  \n\
+  # Ensure PostgreSQL is ready\n\
+  echo "Waiting for PostgreSQL to be ready..."\n\
+  for i in {1..10}; do\n\
   echo "Attempt $i to connect to PostgreSQL..."\n\
   if pg_isready -h postgres -U postgres; then\n\
-    echo "PostgreSQL is ready!"\n\
-    break\n\
+  echo "PostgreSQL is ready!"\n\
+  break\n\
   fi\n\
   if [ "$i" = "10" ]; then\n\
-    echo "PostgreSQL failed to become ready. Exiting."\n\
-    exit 1\n\
+  echo "PostgreSQL failed to become ready. Exiting."\n\
+  exit 1\n\
   fi\n\
   echo "Waiting..."\n\
   sleep 2\n\
-done\n\
-\n\
-# Setup Prisma\n\
-echo "Setting up Prisma..."\n\
-cd /usr/src/app/packages/prisma\n\
-echo "Current directory: $(pwd)"\n\
-\n\
-# Build the prisma package first\n\
-echo "Building prisma package..."\n\
-pnpm run build\n\
-\n\
-# Run migrations using the prisma CLI commands configured for this project\n\
-echo "Running migrations..."\n\
-pnpm run prisma:reset:raw -f\n\
-\n\
-# Run tests\n\
-echo "Running tests..."\n\
-cd /usr/src/app/apps/olat-api\n\
-pnpm run build\n\
-DATABASE_URL=$DATABASE_URL OLAT_API_KEY=$OLAT_API_KEY pnpm vitest run --reporter=verbose\n\
-\n\
-TEST_EXIT=$?\n\
-echo "Tests completed with exit code: $TEST_EXIT"\n\
-exit $TEST_EXIT\n\
-' > /app/run-tests.sh
+  done\n\
+  \n\
+  # Build the types package\n\
+  echo "Building types package..."\n\
+  cd /usr/src/app/packages/types\n\
+  pnpm run build\n\
+  \n\
+  # Build the utils package\n\
+  echo "Building util package..."\n\
+  cd /usr/src/app/packages/util\n\
+  pnpm run build\n\
+  \n\
+  # Setup Prisma\n\
+  echo "Setting up Prisma..."\n\
+  cd /usr/src/app/packages/prisma\n\
+  echo "Current directory: $(pwd)"\n\
+  \n\
+  # Build the prisma package first\n\
+  echo "Building prisma package..."\n\
+  pnpm run build\n\
+  \n\
+  # Run migrations using the prisma CLI commands configured for this project\n\
+  echo "Running migrations..."\n\
+  pnpm run prisma:reset:raw -f\n\
+  \n\
+  # Run tests\n\
+  echo "Running tests..."\n\
+  cd /usr/src/app/apps/olat-api\n\
+  pnpm run build\n\
+  DATABASE_URL=$DATABASE_URL OLAT_API_KEY=$OLAT_API_KEY pnpm vitest run --reporter=verbose\n\
+  \n\
+  TEST_EXIT=$?\n\
+  echo "Tests completed with exit code: $TEST_EXIT"\n\
+  exit $TEST_EXIT\n\
+  ' > /app/run-tests.sh
 
 # Make the script executable
 RUN chmod +x /app/run-tests.sh
 
 # Install PostgreSQL client and dependencies
 RUN apt-get update && \
-    apt-get install -y postgresql-client && \
-    rm -rf /var/lib/apt/lists/*
+  apt-get install -y postgresql-client && \
+  rm -rf /var/lib/apt/lists/*
 
 # Set the command to run the script
 CMD ["/app/run-tests.sh"]

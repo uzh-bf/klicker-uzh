@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import {
   CaseStudyCriterionLabelsInput,
   FlashcardCorrectness as FlashcardCorrectnessType,
@@ -7,7 +7,13 @@ import {
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { CaseStudyCriterionLabels, ElementType } from './elementData.js'
-import { ConfusionTimestepRef, FeedbackRef, IFeedback } from './liveQuiz.js'
+import {
+  ConfusionTimestepRef,
+  ElementBlockStatus,
+  FeedbackRef,
+  IFeedback,
+} from './liveQuiz.js'
+import { LocaleType } from './user.js'
 
 export interface IActivityEvaluation {
   id: string
@@ -15,6 +21,7 @@ export interface IActivityEvaluation {
   displayName?: string | null
   description?: string | null
   courseId?: string | null
+  courseLanguage?: DB.Locale | null
   results: IStackEvaluation[]
   feedbacks?: IFeedback[] | null
   confusionFeedbacks?: DB.ConfusionTimestep[] | null
@@ -32,7 +39,11 @@ export interface IStackEvaluation {
   stackName?: string | null
   stackDescription?: string | null
   stackOrder: number
+  stackActive: boolean
   instances: IElementInstanceEvaluation[]
+  status?: DB.ElementBlockStatus | null
+  expiresAt?: Date | null
+  timeLimit?: number | null
 }
 
 export interface IElementInstanceEvaluation {
@@ -228,6 +239,10 @@ export const ActivityEvaluation = ActivityEvaluationRef.implement({
     displayName: t.exposeString('displayName', { nullable: true }),
     description: t.exposeString('description', { nullable: true }),
     courseId: t.exposeString('courseId', { nullable: true }),
+    courseLanguage: t.expose('courseLanguage', {
+      type: LocaleType,
+      nullable: true,
+    }),
     results: t.expose('results', {
       type: [StackEvaluation],
     }),
@@ -253,6 +268,16 @@ export const StackEvaluation = StackEvaluationRef.implement({
     stackName: t.exposeString('stackName', { nullable: true }),
     stackDescription: t.exposeString('stackDescription', { nullable: true }),
     stackOrder: t.exposeInt('stackOrder'),
+    stackActive: t.exposeBoolean('stackActive'),
+    status: t.expose('status', {
+      type: ElementBlockStatus,
+      nullable: true,
+    }),
+    expiresAt: t.expose('expiresAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+    timeLimit: t.exposeInt('timeLimit', { nullable: true }),
     instances: t.field({
       type: [ElementInstanceEvaluation],
       resolve: (s) => s.instances,

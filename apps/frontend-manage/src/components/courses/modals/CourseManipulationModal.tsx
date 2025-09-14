@@ -1,10 +1,15 @@
 import { useQuery } from '@apollo/client'
-import { Course, UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  Course,
+  LocaleType,
+  UserProfileDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
   FormikColorPicker,
   FormikDatePicker,
   FormikNumberField,
+  FormikSelectField,
   FormikSwitchField,
   FormikTextField,
   H3,
@@ -26,6 +31,8 @@ interface CourseManipulationModalProps {
   earliestGroupDeadline?: string
   earliestStartDate?: string
   latestEndDate?: string
+  containsActivities?: boolean
+  containsGroups?: boolean
   onModalClose: () => void
   onSubmit: (
     values: CourseManipulationFormData,
@@ -41,6 +48,7 @@ export interface CourseManipulationFormData {
   color: string
   startDate: Date
   endDate: Date
+  language: LocaleType
   notificationEmail: string
   isGamificationEnabled: boolean
   isGroupCreationEnabled: boolean
@@ -54,6 +62,8 @@ function CourseManipulationModal({
   earliestGroupDeadline,
   earliestStartDate,
   latestEndDate,
+  containsActivities = false,
+  containsGroups = false,
   onModalClose,
   onSubmit,
 }: CourseManipulationModalProps) {
@@ -80,6 +90,7 @@ function CourseManipulationModal({
       .string()
       .required(t('manage.courseList.courseDisplayNameReq')),
     description: yup.string(),
+    language: yup.string().required(),
     color: yup.string().required(t('manage.courseList.courseColorReq')),
     startDate: yup
       .date()
@@ -136,10 +147,15 @@ function CourseManipulationModal({
             yup.ref('startDate'),
             t('manage.courseList.groupDeadlineAfterStart')
           )
-          .max(
-            yup.ref('endDate'),
-            t('manage.courseList.groupDeadlineBeforeEnd')
-          )
+          .when('isGroupCreationEnabled', {
+            is: true,
+            then: (schema) =>
+              schema.max(
+                yup.ref('endDate'),
+                t('manage.courseList.groupDeadlineBeforeEnd')
+              ),
+            otherwise: (schema) => schema,
+          })
           .test(
             'isBeforeFirstGroupActivity',
             t('manage.courseList.groupDeadlineBeforeFirstGroupActivity', {
@@ -154,10 +170,15 @@ function CourseManipulationModal({
       : yup
           .date()
           .min(new Date(), t('manage.courseList.groupDeadlineFuture'))
-          .max(
-            yup.ref('endDate'),
-            t('manage.courseList.groupDeadlineBeforeEnd')
-          )
+          .when('isGroupCreationEnabled', {
+            is: true,
+            then: (schema) =>
+              schema.max(
+                yup.ref('endDate'),
+                t('manage.courseList.groupDeadlineBeforeEnd')
+              ),
+            otherwise: (schema) => schema,
+          })
           .required(t('manage.courseList.groupDeadlineReq')),
     maxGroupSize: yup
       .number()
@@ -218,6 +239,10 @@ function CourseManipulationModal({
             initialValues?.notificationEmail ??
             dataUser?.userProfile?.email ??
             '',
+          language:
+            initialValues?.language ??
+            dataUser?.userProfile?.locale ??
+            LocaleType.En,
           color: initialValues?.color ?? '#0028A5',
           startDate: startDateInit,
           endDate: endDateInit,
@@ -245,6 +270,7 @@ function CourseManipulationModal({
       >
         {({
           values,
+          touched,
           errors,
           isValid,
           isSubmitting,
@@ -331,6 +357,18 @@ function CourseManipulationModal({
                       root: 'w-max',
                     }}
                   />
+                  <FormikSelectField
+                    required
+                    name="language"
+                    label={t('shared.generic.language')}
+                    tooltip={t('manage.courseList.languageTooltip')}
+                    items={Object.values(LocaleType).map((locale) => ({
+                      value: locale,
+                      label: t(`shared.generic.${locale}`),
+                    }))}
+                    className={{ root: 'w-full' }}
+                    data={{ cy: 'course-language' }}
+                  />
                   <FormikTextField
                     required
                     name="notificationEmail"
@@ -352,7 +390,10 @@ function CourseManipulationModal({
                     <FormikSwitchField
                       required
                       labelLeft
-                      disabled={initialValues?.isGamificationEnabled}
+                      disabled={
+                        initialValues?.isGamificationEnabled &&
+                        (containsActivities || containsGroups)
+                      }
                       name="isGamificationEnabled"
                       label={t('shared.generic.gamification')}
                       tooltip={t('manage.courseList.gamificationTooltip')}
@@ -366,7 +407,8 @@ function CourseManipulationModal({
                       labelLeft
                       disabled={
                         !values.isGamificationEnabled ||
-                        initialValues?.isGroupCreationEnabled
+                        (initialValues?.isGroupCreationEnabled &&
+                          containsGroups)
                       }
                       name="isGroupCreationEnabled"
                       label={t('manage.courseList.groupCreationEnabled')}
@@ -378,7 +420,7 @@ function CourseManipulationModal({
                       className={{
                         label: 'font-bold text-gray-600',
                       }}
-                      data={{ cy: 'toggle-group-creation-enabled' }}
+                      data={{ cy: 'course-group-creation' }}
                     />
                   </div>
                   {values.isGamificationEnabled &&
@@ -437,6 +479,7 @@ function CourseManipulationModal({
                 </div>
               </div>
               {initialValues?.groupDeadlineDate &&
+                touched.groupCreationDeadline &&
                 values.groupCreationDeadline !== groupDeadlineDateInit &&
                 dayjs(values.groupCreationDeadline) < dayjs() && (
                   <UserNotification

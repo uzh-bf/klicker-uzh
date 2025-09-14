@@ -6,16 +6,16 @@ hide_title: true
 # Integration with PowerPoint
 
 :::info
-This integration is showcased on the example of UZH MS365 and might look differently for other institutions.
+This integration is showcased using the example of UZH MS365 and might look differently for other institutions.
 :::
 
-When using KlickerUZH live quizzes, most lecturers want to display the responses received for the posed questions and their evaluation in real-time. While the live quiz evaluation screen offers this functionality, users inside UZH and other universities that have deployed the corresponding Add-In can now directly integrate this live quiz evaluation view into their PowerPoint presentations.
+When using KlickerUZH live quizzes in a lecture, most lecturers want to display the responses received for the posed questions and their evaluation in real-time. While the live quiz evaluation screen offers this functionality, users inside UZH and other universities that have deployed the corresponding Add-In can directly integrate this evaluation view into their PowerPoint presentations.
 
 <iframe
-  id="kmsembed-0_9hd9vzds"
+  id="kmsembed-0_1cv812a8"
   width="100%"
-  height="400"
-  src="https://uzh.mediaspace.cast.switch.ch/embed/secure/iframe/entryId/0_9hd9vzds/uiConfId/23449004/st/0"
+  height="465"
+  src="https://uzh.mediaspace.cast.switch.ch/embed/secure/iframe/entryId/0_1cv812a8/uiConfId/23448425/st/0"
   class="kmsembed"
   allowfullscreen
   webkitallowfullscreen
@@ -24,19 +24,35 @@ When using KlickerUZH live quizzes, most lecturers want to display the responses
   referrerPolicy="no-referrer-when-downgrade"
   sandbox="allow-downloads allow-forms allow-same-origin allow-scripts allow-top-navigation allow-pointer-lock allow-popups allow-modals allow-orientation-lock allow-popups-to-escape-sandbox allow-presentation allow-top-navigation-by-user-activation"
   frameborder="0"
-  title="KlickerUZH - PowerPoint Integration (Evaluation)"
+  title="KlickerUZH v3.3 - Integration with PowerPoint"
 ></iframe>
 
-## Why should I integrate the live quiz evaluation into my PowerPoint presentation?
+## Why should I integrate the live quiz evaluation into my PowerPoint presentation and what settings are available?
 
-Integrating the evaluation view directly into your PowerPoint presentation allows you to display the responses to the questions and their evaluation in real-time without having to switch between your presentation and your browser, where KlickerUZH is running.
+Integrating the evaluation view directly into your PowerPoint presentation allows you to display the responses to the questions and their respective evaluation in real-time, without having to switch between your presentation and your browser, where KlickerUZH is running.
 
-Moreover, you can already embed the evaluation view inside your presentation before you start the live quiz. The view will automatically update as soon as you open or close the corresponding blocks during the execution of the quiz. For your convenience, KlickerUZH offers different embedding screens:
+Moreover, you can already embed the evaluation view inside your presentation before you start the live quiz. The view will automatically update as soon as you open or close the corresponding blocks during the execution of the quiz.
 
-- **Question Evaluation**: For most use cases, we recommend creating separate slides to evaluate the different questions in your live quiz sequentially. By choosing the question-specific evaluation link, all navigational elements will automatically be hidden to focus on the evaluation of the current question.
-- **Evaluation View**: If you choose this link during the embedding, the entire KlickerUZH evaluation view will be embedded into your presentation, including navigational elements to switch between the different stacks and elements.
-- **Leaderboard**: In gamified live quizzes, you can choose to embed the leaderboard view to show the current ranking of the participants.
+## How can I integrate the evaluation view into my PowerPoint presentation?
+
+![Embedding Dialog for Live Quizzes](/img/ppt_integration/embedding_modal.png)
+
+:::tip
+If you would like to discuss a question with sample solution during a lecture, simply embed the question evaluation with the sample solution enabled. The tool will automatically hide solution and explanation, while the block is active and students can still submit answers. Once the block is closed, the solution setting will be set according to your pre-configured settings. This way, you can already show the question and incoming results before showing the correct solution and discussing it with your students.
+:::
+
+For your convenience, KlickerUZH offers different embedding screens. Links for the following predefined views can be copied from the live quiz embedding dialog, accessible through the actions menu of the corresponding live quiz (on the activity list or course overview):
+
+- **Element Evaluation**: For most use cases, we recommend creating separate slides to evaluate each individual element in your live quiz sequentially. By choosing one of the element-specific evaluation links listed for all questions, all navigational elements will automatically be hidden to focus on the evaluation of the current element.
+- **Evaluation View**: To embed the entire evaluation view of your live quiz into your PowerPoint presentation, including navigational components to switch between the different stacks and elements, choose the generic evaluation link at the top of the list. Please keep in mind that due to limitations of the window focus during PowerPoint presentations, it can be challenging to use the navigational components of the evaluation view during a presentation.
+- **Leaderboard**: In gamified live quizzes, you can choose to embed the quiz leaderboard in your slides, illustrating the current ranking of the participants.
+
+Additionally, we also offer you the possibility to pre-configure certain settings of the evaluation view before exporting the corresponding embedding links. Using the corresponding toggles at the top of the embedding dialog, you can choose to **show or hide the sample solution and/or explanation** of a specific question. Please note that these settings will only go into effect once the corresponding block is closed in order to avoid showing the solutions prematurely, while participants can still submit answers. Additionally, you can choose the **language** in which the evaluation view should be displayed when being embedded into your PowerPoint presentation. All settings can still be modified on the embedded version of the evaluation view.
+
+![Add-In in PowerPoint](/img/ppt_integration/ppt_add_in.png)
+
+Once you have pre-configured and copied the desired evaluation embedding link, open your Add-Ins, select "More Add-Ins" > "Admin managed" and search for the **KlickerUZH Evaluation** Add-in (UZH-specific). Once you have added the Add-in to your slide, drag it to the full size of the slide and paste the copied embedding link into the input field. Do not worry if a gray notification message is shown; the answers to your question will automatically be displayed once the live quiz is started and the corresponding question block is opened.
 
 ## How can I use the PowerPoint Add-In outside of UZH?
 
-The KlickerUZH Evaluation PowerPoint Add-In has been deployed by the central IT department of UZH to be available for all users inside UZH. Since KlickerUZH is developed as an open-source project, other organizations can easily deploy the Add-In themselves by using the manifest file provided in the [GitHub repository](https://github.com/uzh-bf/klicker-uzh/blob/f5c1554f332f2dafb513346078b581274f93824f/apps/office-addin/manifest-content.xml). A publication in the Microsoft Store is currently not planned.
+The KlickerUZH Evaluation PowerPoint Add-In has been deployed by the central IT department of UZH to be available for all users inside UZH (staff and students). Since KlickerUZH is developed as an open-source project, other organizations can easily deploy the Add-In themselves by using the manifest file provided in the [GitHub repository](https://github.com/uzh-bf/klicker-uzh/blob/f5c1554f332f2dafb513346078b581274f93824f/apps/office-addin/manifest-content.xml). A publication in the Microsoft Store is currently not planned.

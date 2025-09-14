@@ -1,14 +1,6 @@
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test all functionalities of catalog collections and objects contained therein', function () {
-  before(() => {
-    cy.seed()
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('U-catalog.json').then((data) => {
       this.data = data
@@ -18,12 +10,12 @@ describe('Test all functionalities of catalog collections and objects contained 
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   // ! Helpers
   function verifyAdminOwnerPermissionsCCPublic({
@@ -236,7 +228,8 @@ describe('Test all functionalities of catalog collections and objects contained 
       collectionName: this.data.AC2.name,
       userId: Cypress.env('LECTURER_IND_ID'),
     })
-    cy.get(`[data-cy="element-item-${this.data.SEML.title}"]`).should('exist')
+    cy.validateElement({ element: this.data.SEML.title })
+
     cy.createQuestionSE({
       name: this.data.SEML2.title,
       content: this.data.SEML2.content,
@@ -244,7 +237,7 @@ describe('Test all functionalities of catalog collections and objects contained 
       collectionName: this.data.AC2.name,
       userId: Cypress.env('LECTURER_IND_ID'),
     })
-    cy.get(`[data-cy="element-item-${this.data.SEML2.title}"]`).should('exist')
+    cy.validateElement({ element: this.data.SEML2.title })
   })
 
   it('Create the questions that will be required for this test workflow', function () {

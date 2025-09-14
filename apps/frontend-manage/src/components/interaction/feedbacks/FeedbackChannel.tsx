@@ -3,7 +3,6 @@
 import useFeedbackFilter from '../../../lib/hooks/useFeedbackFilter'
 // import { createNotification, requestNotificationPermissions } from '../../../lib/utils/notifications'
 import { Feedback as FeedbackType } from '@klicker-uzh/graphql/dist/ops'
-import { useTranslations } from 'next-intl'
 import FeedbacksPrintView from '../../evaluation/feedbacks/FeedbacksPrintView'
 import FeedbackList from './FeedbackList'
 import FeedbackOverviewFilters from './FeedbackOverviewFilters'
@@ -34,7 +33,6 @@ function FeedbackChannel({
   handleRespondToFeedback,
   handleDeleteFeedbackResponse,
 }: Props) {
-  const t = useTranslations()
   const { sortedFeedbacks, filterProps } = useFeedbackFilter(feedbacks, {
     withSearch: true,
   })

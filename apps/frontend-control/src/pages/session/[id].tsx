@@ -26,6 +26,7 @@ function RunningLiveQuiz() {
   const [currentBlockOrder, setCurrentBlockOrder] = useState<
     number | undefined
   >(undefined)
+
   const [activateLiveQuizBlock, { loading: activatingBlock }] = useMutation(
     ActivateLiveQuizBlockDocument
   )
@@ -35,19 +36,23 @@ function RunningLiveQuiz() {
   const [endLiveQuiz, { loading: endingLiveQuiz }] = useMutation(
     EndLiveQuizDocument,
     {
-      update(cache, res) {
-        const data = cache.readQuery({
-          query: GetUnassignedLiveQuizzesDocument,
-        })
-        cache.writeQuery({
-          query: GetUnassignedLiveQuizzesDocument,
-          data: {
-            unassignedLiveQuizzes:
-              data?.unassignedLiveQuizzes?.filter(
-                (q) => q.id !== res.data?.endLiveQuiz?.id
-              ) ?? [],
-          },
-        })
+      update(cache, { data }) {
+        // verify that the quiz has been ended successfully
+        if (!data?.endLiveQuiz) return
+
+        // remove the ended live quiz from the unassigned list in control application (not shown here)
+        cache.updateQuery(
+          { query: GetUnassignedLiveQuizzesDocument },
+          (qData) => {
+            if (!qData?.unassignedLiveQuizzes) return qData
+
+            return {
+              unassignedLiveQuizzes: qData.unassignedLiveQuizzes.filter(
+                (q) => q.id !== data.endLiveQuiz!.id
+              ),
+            }
+          }
+        )
       },
     }
   )

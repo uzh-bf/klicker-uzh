@@ -1,20 +1,29 @@
+enum CourseAuthType {
+  SSO
+  PIN
+}
+
 model Course {
   id String @id @default(uuid()) @db.Uuid
 
-  isArchived Boolean @default(false)
-  pinCode    Int     @unique
+  name              String
+  displayName       String
+  description       String?
+  language          Locale   @default(en)
+  color             String   @default("#eaa07d")
+  startDate         DateTime
+  endDate           DateTime
+  notificationEmail String?
+  areAnalyticsValid Boolean  @default(false)
+  isArchived        Boolean  @default(false)
 
-  name                  String
-  displayName           String
-  description           String?
-  color                 String   @default("#eaa07d")
-  startDate             DateTime
-  endDate               DateTime
-  notificationEmail     String?
-  isGamificationEnabled Boolean  @default(true)
-  areAnalyticsValid     Boolean  @default(false)
+  authType CourseAuthType @default(PIN)
+  pinCode  Int?           @unique
 
-  isGroupCreationEnabled    Boolean  @default(true)
+  isGamificationEnabled  Boolean @default(true)
+  isGroupCreationEnabled Boolean @default(true)
+  isAssessmentEnabled    Boolean @default(false)
+
   groupDeadlineDate         DateTime
   preferredGroupSize        Int      @default(3)
   maxGroupSize              Int      @default(5)
@@ -44,6 +53,7 @@ model Course {
   responses                  QuestionResponse[]
   groupAssignmentPoolEntries GroupAssignmentPoolEntry[]
   timelineEntries            TimelineEntry[]
+  participantInvitations     ParticipantInvitation[]
 
   directPermissions  Permission[]
   permissions        DerivedPermission[]

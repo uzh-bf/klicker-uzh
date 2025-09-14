@@ -78,6 +78,8 @@ function Header({
           alt="KlickerUZH Logo"
           width={35}
           height={35}
+          onClick={() => router.push('/')}
+          className="cursor-pointer"
         />
 
         {title && course?.displayName && (
@@ -86,6 +88,7 @@ function Header({
               className={{
                 root: 'text-uzh-grey-60 m-0 line-clamp-1 text-xs md:text-sm',
               }}
+              data={{ cy: 'header-course-display-name' }}
             >
               {course.displayName}
             </H1>
@@ -93,6 +96,7 @@ function Header({
               className={{
                 root: 'm-0 line-clamp-1 text-sm md:text-base',
               }}
+              data={{ cy: 'header-page-title' }}
             >
               {title}
             </H2>
@@ -157,7 +161,10 @@ function Header({
                       <div className="font-bold">
                         <div>{t('pwa.profile.loggedInAs')}</div>
                         <div className="font-normal">
-                          {`${participant?.username}${participant.role === UserRole.TemporaryParticipant ? ` (${t('pwa.profile.temporaryPseudonym')})` : ''}`}
+                          {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
+                            ? (participant.institutionalEmail ??
+                              participant.email)
+                            : `${participant?.username}${participant.role === UserRole.TemporaryParticipant ? ` (${t('pwa.profile.temporaryPseudonym')})` : ''}`}
                         </div>
                       </div>
                     ),
@@ -219,25 +226,21 @@ function Header({
                   },
                 ]
               : []),
-            ...(course?.id
-              ? [
-                  {
-                    id: 'docs',
-                    type: 'standard' as 'standard',
-                    label: (
-                      <div>
-                        <FontAwesomeIcon
-                          icon={faCircleQuestion}
-                          className="mr-2 w-4"
-                        />
-                        <span>{t('shared.generic.documentation')}</span>
-                      </div>
-                    ),
-                    onClick: () => router.push(`/course/${course.id}/docs`),
-                    data: { cy: 'course-docs' },
-                  },
-                ]
-              : []),
+            {
+              id: 'docs',
+              type: 'standard' as 'standard',
+              label: (
+                <div>
+                  <FontAwesomeIcon
+                    icon={faCircleQuestion}
+                    className="mr-2 w-4"
+                  />
+                  <span>{t('shared.generic.documentation')}</span>
+                </div>
+              ),
+              onClick: () => router.push(`/docs`),
+              data: { cy: 'course-docs' },
+            },
             {
               id: 'languageSwitch',
               label: (
@@ -332,7 +335,9 @@ function Header({
                         // log out temporary participant for this live quiz
                         const { data } = await logoutTemporaryParticipant({
                           variables: { liveQuizId },
-                          refetchQueries: [{ query: SelfDocument }],
+                          refetchQueries: [
+                            { query: SelfDocument, variables: { liveQuizId } },
+                          ],
                         })
 
                         if (data?.logoutTemporaryParticipant) {

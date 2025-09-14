@@ -1,4 +1,4 @@
-import * as DB from '@klicker-uzh/prisma'
+import * as DB from '@klicker-uzh/prisma/client'
 import builder from '../builder.js'
 
 export const LocaleType = builder.enumType('LocaleType', {
@@ -29,12 +29,6 @@ export const User = UserRef.implement({
     shortname: t.exposeString('shortname'),
     locale: t.expose('locale', { type: LocaleType }),
     role: t.expose('role', { type: UserRole }),
-
-    loginToken: t.exposeString('loginToken', { nullable: true }),
-    loginTokenExpiresAt: t.expose('loginTokenExpiresAt', {
-      type: 'Date',
-      nullable: true,
-    }),
 
     catalyst: t.boolean({
       resolve: (user) => user.catalystInstitutional || user.catalystIndividual,

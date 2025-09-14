@@ -38,5 +38,9 @@
     {
       "pattern": "packages/*/"
     }
-  ]
+  ],
+  "chatgpt.commentCodeLensEnabled": false,
+  "search.exclude": {
+    "project": true
+  }
 }

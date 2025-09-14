@@ -6,9 +6,6 @@ import {
   GetCatalogSharingRequestsDocument,
   GetObjectPermissionsDocument,
   GetSingleCourseDocument,
-  GetUserActivitiesDocument,
-  GetUserElementsDocument,
-  GetUserLiveQuizzesDocument,
   ObjectType,
   TransferObjectOwnershipDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -38,6 +35,7 @@ function useTransferObjectOwnership({
           objectType,
           shortnameOrEmail,
         },
+        // TODO: evaluate if more evolved and type-dependent cache updates are helpful here performance-wise
         refetchQueries: [
           // use refetch query instead of cache update, because new owner permissions might also
           // be removed in addition to the added new admin permission for the previous owner
@@ -58,9 +56,6 @@ function useTransferObjectOwnership({
                 { query: GetAnswerCollectionsInfoDocument },
               ]
             : []),
-          ...(objectType === ObjectType.Element
-            ? [{ query: GetUserElementsDocument }]
-            : []),
           ...(objectType === ObjectType.Course
             ? [
                 {
@@ -68,21 +63,6 @@ function useTransferObjectOwnership({
                   variables: { courseId: String(objectId) },
                 },
               ]
-            : []),
-          ...(objectType === ObjectType.LiveQuiz
-            ? [
-                { query: GetUserLiveQuizzesDocument },
-                { query: GetUserActivitiesDocument },
-              ]
-            : []),
-          ...(objectType === ObjectType.PracticeQuiz
-            ? [{ query: GetUserActivitiesDocument }]
-            : []),
-          ...(objectType === ObjectType.MicroLearning
-            ? [{ query: GetUserActivitiesDocument }]
-            : []),
-          ...(objectType === ObjectType.GroupActivity
-            ? [{ query: GetUserActivitiesDocument }]
             : []),
         ],
       })

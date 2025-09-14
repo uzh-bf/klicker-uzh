@@ -4,7 +4,7 @@ import {
   GroupActivityStatus,
   PrismaClient,
   PublicationStatus,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 
 // ? This script will migrate the old group activity status and element
 // ? stack types to the new unified enums (old values persist for now)

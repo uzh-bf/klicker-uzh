@@ -7,6 +7,12 @@ enum PublicationStatus {
   TEMPLATE // activity template state - activity is locked from being edited / executed, deletion allowed
 }
 
+enum ReviewStatus {
+  INCOMPLETE // review is not yet started
+  REVIEWED // review is completed
+  MODIFIED_AFTER_REVIEW // review is completed, but the activity was modified after the review
+}
+
 // ----- PRACTICE QUIZZES -----
 // #region
 enum ElementOrderType {
@@ -24,11 +30,15 @@ model PracticeQuiz {
   resetTimeDays    Int               @default(6)
   orderType        ElementOrderType  @default(SPACED_REPETITION)
   status           PublicationStatus @default(DRAFT)
-  availableFrom    DateTime?
 
-  isDeleted Boolean @default(false)
+  availableFrom              DateTime?
+  scheduledPublicationTaskId String? // task id of the scheduled hatchet task (to be removed on unpublishing)
+  reviewStatus               ReviewStatus @default(INCOMPLETE)
 
-  areInstancesOutdated Boolean @default(false) // flag to indicate if the any instances in this practice quiz are outdated due to changes in the corresponding element
+  areInstancesOutdated  Boolean @default(false) // flag to indicate if the any instances in this practice quiz are outdated due to changes in the corresponding element
+  isGamificationEnabled Boolean @default(false)
+  isAssessmentEnabled   Boolean @default(false)
+  isDeleted             Boolean @default(false)
 
   stacks ElementStack[]
 
@@ -77,12 +87,16 @@ model LiveQuiz {
   isConfusionFeedbackEnabled Boolean @default(true)
   isModerationEnabled        Boolean @default(true)
   isGamificationEnabled      Boolean @default(false)
+  isAssessmentEnabled        Boolean @default(false)
   isDeleted                  Boolean @default(false)
 
   areInstancesOutdated Boolean @default(false) // flag to indicate if the any instances in this live quiz are outdated due to changes in the corresponding element
 
+  availableFrom              DateTime?
+  scheduledPublicationTaskId String? // task id of the scheduled hatchet task (to be removed on unpublishing)
+
   namespace            String    @default(uuid()) @db.Uuid
-  pinCode              Int?
+  pinCode              String?   @unique
   name                 String
   displayName          String
   description          String?
@@ -94,8 +108,9 @@ model LiveQuiz {
   maxBonusPoints       Int       @default(45)
   timeToZeroBonus      Int       @default(20)
 
-  accessMode AccessMode        @default(PUBLIC)
-  status     PublicationStatus @default(DRAFT)
+  accessMode   AccessMode        @default(PUBLIC)
+  status       PublicationStatus @default(DRAFT)
+  reviewStatus ReviewStatus      @default(INCOMPLETE)
 
   activeBlock   ElementBlock? @relation(name: "ActiveElementBlock", fields: [activeBlockId], references: [id])
   activeBlockId Int?
@@ -138,11 +153,16 @@ model MicroLearning {
   pointsMultiplier Int               @default(1)
   description      String?
   status           PublicationStatus @default(DRAFT)
+  reviewStatus     ReviewStatus      @default(INCOMPLETE)
 
-  scheduledStartAt DateTime
-  scheduledEndAt   DateTime
+  scheduledStartAt           DateTime
+  scheduledEndAt             DateTime
+  scheduledPublicationTaskId String? // task id of the scheduled hatchet task (to be removed on unpublishing)
+  scheduledCompletionTaskId  String? // task id of the scheduled hatchet task (to be removed on unpublishing)
 
   arePushNotificationsSent Boolean @default(false)
+  isGamificationEnabled    Boolean @default(false)
+  isAssessmentEnabled      Boolean @default(false)
   isDeleted                Boolean @default(false)
 
   areInstancesOutdated Boolean @default(false) // flag to indicate if the any instances in this microlearning are outdated due to changes in the corresponding element
@@ -237,19 +257,23 @@ model GroupActivityClueInstance {
 model GroupActivity {
   id String @id @default(uuid()) @db.Uuid
 
-  name        String
-  displayName String
-  status      PublicationStatus @default(DRAFT)
+  name         String
+  displayName  String
+  description  String?
+  status       PublicationStatus @default(DRAFT)
+  reviewStatus ReviewStatus      @default(INCOMPLETE)
 
   pointsMultiplier Int @default(1)
 
-  description      String?
-  scheduledStartAt DateTime
-  scheduledEndAt   DateTime
+  scheduledStartAt           DateTime
+  scheduledEndAt             DateTime
+  scheduledPublicationTaskId String? // task id of the scheduled hatchet task (to be removed on unpublishing)
+  scheduledCompletionTaskId  String? // task id of the scheduled hatchet task (to be removed on unpublishing)
 
-  isDeleted Boolean @default(false)
-
-  areInstancesOutdated Boolean @default(false) // flag to indicate if the any instances in this group activity are outdated due to changes in the corresponding element
+  areInstancesOutdated  Boolean @default(false) // flag to indicate if the any instances in this group activity are outdated due to changes in the corresponding element
+  isGamificationEnabled Boolean @default(false)
+  isAssessmentEnabled   Boolean @default(false)
+  isDeleted             Boolean @default(false)
 
   stacks ElementStack[]
 
@@ -363,6 +387,77 @@ model ConfusionTimestep {
   liveQuizId String?   @db.Uuid
 
   createdAt DateTime @default(now())
+}
+
+// #endregion
+
+// ----- USER ACTIVITIES VIEW -----
+// #region
+/// A unified view of all user activities across different activity types
+/// This view combines data from LiveQuiz, PracticeQuiz, MicroLearning, and GroupActivity
+/// along with permission and course information for efficient querying and sorting
+view UserActivities {
+  // core activity fields
+  id           String            @db.Uuid
+  type         String // 'LIVE_QUIZ', 'PRACTICE_QUIZ', 'MICRO_LEARNING', 'GROUP_ACTIVITY'
+  typeOrder    Int // custom order for sorting by activity type (in order as listed above)
+  name         String
+  displayName  String
+  description  String?
+  status       PublicationStatus
+  reviewStatus ReviewStatus
+  isDeleted    Boolean
+
+  // activity flags
+  areInstancesOutdated  Boolean
+  isGamificationEnabled Boolean
+  isAssessmentEnabled   Boolean
+  pointsMultiplier      Int
+  pinCode               String?
+
+  // template information
+  templateId   String?
+  templateName String?
+
+  // timestamps
+  createdAt DateTime
+  updatedAt DateTime
+
+  // type-specific scheduling fields
+  availableFrom    DateTime? // practice quiz / live quiz only (scheduled publication date)
+  scheduledStartAt DateTime? // micro learning and group activity
+  scheduledEndAt   DateTime? // micro learning and group activity
+
+  // course information
+  courseId        String?   @db.Uuid
+  courseName      String?
+  courseLanguage  Locale?
+  courseStartDate DateTime?
+
+  // group activity specific
+  groupDeadlineDate      DateTime? // group activity only via course
+  numOfParticipantGroups Int? // group activity only
+
+  // content metrics
+  numOfStacks   Int
+  numOfElements Int
+
+  // user permission information on activity
+  userId          String          @db.Uuid
+  permissionLevel PermissionLevel
+  derived         Boolean
+
+  // permission information for potential direct permission linked to derived permission
+  directPermissionUserGroupId Int?
+
+  // owner information
+  ownerId String @db.Uuid
+
+  // permission counts for numSharedUsers and isActivityReviewer calculation
+  numActivityPermissions Int // total permissions on this activity
+  isUserCourseAdmin      Boolean // true if user has admin/owner permissions on the course (false if no course or no permissions)
+
+  @@unique([id, userId])
 }
 
 // #endregion

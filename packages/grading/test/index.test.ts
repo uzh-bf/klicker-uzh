@@ -15,7 +15,14 @@ describe('@klicker-uzh/grading', () => {
   it('should grade MC questions correctly', () => {
     const points = gradeQuestionMC({
       responseCount: 6,
-      response: [0, 1, 2, 3, 4, 5],
+      response: [
+        { ix: 0, selected: true },
+        { ix: 1, selected: true },
+        { ix: 2, selected: true },
+        { ix: 3, selected: true },
+        { ix: 4, selected: true },
+        { ix: 5, selected: true },
+      ],
       solution: [0, 1, 3],
     })
 
@@ -23,7 +30,15 @@ describe('@klicker-uzh/grading', () => {
 
     const points2 = gradeQuestionMC({
       responseCount: 6,
-      response: [0, 1, 3],
+      // response: [0, 1, 3],
+      response: [
+        { ix: 0, selected: true },
+        { ix: 1, selected: true },
+        { ix: 2, selected: false },
+        { ix: 3, selected: true },
+        { ix: 4, selected: false },
+        { ix: 5, selected: false },
+      ],
       solution: [0, 1, 3],
     })
 
@@ -31,7 +46,12 @@ describe('@klicker-uzh/grading', () => {
 
     const points3 = gradeQuestionMC({
       responseCount: 4,
-      response: [0, 1, 3],
+      response: [
+        { ix: 0, selected: true },
+        { ix: 1, selected: true },
+        { ix: 2, selected: false },
+        { ix: 3, selected: true },
+      ],
       solution: [0, 1],
     })
 
@@ -41,7 +61,14 @@ describe('@klicker-uzh/grading', () => {
   it('should grade SC questions correctly', () => {
     const points = gradeQuestionSC({
       responseCount: 6,
-      response: [0, 1, 2, 3, 4, 5],
+      response: [
+        { ix: 0, selected: false },
+        { ix: 1, selected: true },
+        { ix: 2, selected: false },
+        { ix: 3, selected: false },
+        { ix: 4, selected: false },
+        { ix: 5, selected: false },
+      ],
       solution: [0],
     })
 
@@ -49,7 +76,12 @@ describe('@klicker-uzh/grading', () => {
 
     const points2 = gradeQuestionSC({
       responseCount: 4,
-      response: [3],
+      response: [
+        { ix: 0, selected: false },
+        { ix: 1, selected: false },
+        { ix: 2, selected: false },
+        { ix: 3, selected: true },
+      ],
       solution: [3],
     })
 
@@ -58,53 +90,88 @@ describe('@klicker-uzh/grading', () => {
 
   it('should grade KPRIM questions correctly', () => {
     const points = gradeQuestionKPRIM({
-      responseCount: 6,
-      response: [0, 1, 2, 3, 4, 5],
+      responseCount: 4,
+      response: [
+        { ix: 0, selected: false },
+        { ix: 1, selected: true },
+        { ix: 2, selected: true },
+        { ix: 3, selected: true },
+      ],
       solution: [0, 1, 3],
     })
     expect(points).toEqual(0)
 
     const points2 = gradeQuestionKPRIM({
-      responseCount: 6,
-      response: [0, 1, 3],
+      responseCount: 4,
+      response: [
+        { ix: 0, selected: false },
+        { ix: 1, selected: false },
+        { ix: 2, selected: true },
+        { ix: 3, selected: false },
+      ],
       solution: [0, 1, 3],
     })
-    expect(points2).toEqual(1)
+    expect(points2).toEqual(0)
 
     const points3 = gradeQuestionKPRIM({
       responseCount: 4,
-      response: [0, 1, 3],
-      solution: [0, 1],
+      response: [
+        { ix: 0, selected: true },
+        { ix: 1, selected: true },
+        { ix: 2, selected: false },
+        { ix: 3, selected: true },
+      ],
+      solution: [0, 1, 3],
     })
-    expect(points3).toEqual(0.5)
+    expect(points3).toEqual(1)
 
     const points4 = gradeQuestionKPRIM({
       responseCount: 4,
-      response: [],
-      solution: [],
+      response: [
+        { ix: 0, selected: true },
+        { ix: 1, selected: true },
+        { ix: 2, selected: false },
+        { ix: 3, selected: true },
+      ],
+      solution: [0, 1],
     })
-    expect(points4).toEqual(1)
+    expect(points4).toEqual(0.5)
 
     const points5 = gradeQuestionKPRIM({
       responseCount: 4,
-      response: [2],
+      response: [
+        { ix: 0, selected: false },
+        { ix: 1, selected: false },
+        { ix: 2, selected: false },
+        { ix: 3, selected: false },
+      ],
       solution: [],
     })
-    expect(points5).toEqual(0.5)
+    expect(points5).toEqual(1)
 
     const points6 = gradeQuestionKPRIM({
       responseCount: 4,
-      response: [1, 3],
+      response: [
+        { ix: 0, selected: true },
+        { ix: 1, selected: true },
+        { ix: 2, selected: true },
+        { ix: 3, selected: true },
+      ],
       solution: [],
     })
     expect(points6).toEqual(0)
 
     const points7 = gradeQuestionKPRIM({
       responseCount: 4,
-      response: [1, 2, 3, 4],
+      response: [
+        { ix: 0, selected: true },
+        { ix: 1, selected: false },
+        { ix: 2, selected: false },
+        { ix: 3, selected: false },
+      ],
       solution: [],
     })
-    expect(points7).toEqual(0)
+    expect(points7).toEqual(0.5)
   })
 
   it('should grade NUMERICAL questions correctly', () => {
@@ -882,6 +949,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       basePoints: true,
       pointsPercentage: 1,
+      roundedResult: true,
     })
     expect(points).toEqual(45)
 
@@ -896,6 +964,7 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: 1,
       basePoints: true,
       pointsMultiplier: 2,
+      roundedResult: true,
     })
     expect(pointsMultiplier).toEqual(80)
 
@@ -909,6 +978,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       pointsPercentage: null,
       basePoints: true,
+      roundedResult: true,
     })
     expect(points2).toEqual(45)
 
@@ -923,6 +993,7 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: null,
       basePoints: true,
       pointsMultiplier: 3,
+      roundedResult: true,
     })
     expect(points2Multiplier).toEqual(115)
 
@@ -936,6 +1007,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       pointsPercentage: 0.5,
       basePoints: true,
+      roundedResult: true,
     })
     expect(points3).toEqual(28)
 
@@ -950,6 +1022,7 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: 0.5,
       basePoints: true,
       pointsMultiplier: 2,
+      roundedResult: true,
     })
     expect(points3Multiplier).toEqual(45)
 
@@ -963,6 +1036,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       pointsPercentage: 1,
       basePoints: true,
+      roundedResult: true,
     })
     expect(points4).toEqual(30)
 
@@ -977,6 +1051,7 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: 1,
       basePoints: true,
       pointsMultiplier: 2,
+      roundedResult: true,
     })
     expect(points4Multiplier).toEqual(50)
 
@@ -990,6 +1065,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       pointsPercentage: 0.5,
       basePoints: true,
+      roundedResult: true,
     })
     expect(points5).toEqual(20)
 
@@ -1003,6 +1079,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       pointsPercentage: null,
       basePoints: true,
+      roundedResult: true,
     })
     expect(points6).toEqual(30)
 
@@ -1017,6 +1094,7 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: null,
       basePoints: true,
       pointsMultiplier: 2,
+      roundedResult: true,
     })
     expect(points6Multiplier).toEqual(50)
 
@@ -1030,6 +1108,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       pointsPercentage: 0,
       basePoints: true,
+      roundedResult: true,
     })
     expect(points7).toEqual(10)
 
@@ -1044,6 +1123,7 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: 0,
       basePoints: true,
       pointsMultiplier: 3,
+      roundedResult: true,
     })
     expect(points7Multiplier).toEqual(10)
 
@@ -1057,6 +1137,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       pointsPercentage: 1,
       basePoints: true,
+      roundedResult: true,
     })
     expect(points8).toEqual(15)
 
@@ -1071,6 +1152,7 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: 1,
       basePoints: true,
       pointsMultiplier: 2,
+      roundedResult: true,
     })
     expect(points8Multiplier).toEqual(20)
 
@@ -1084,6 +1166,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       basePoints: true,
       pointsPercentage: 0,
+      roundedResult: true,
     })
     expect(points9).toEqual(10)
 
@@ -1098,6 +1181,7 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: 0,
       basePoints: true,
       pointsMultiplier: 2,
+      roundedResult: true,
     })
     expect(points9Multiplier).toEqual(10)
 
@@ -1111,6 +1195,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       basePoints: true,
       pointsPercentage: 0.5,
+      roundedResult: true,
     })
     expect(points10).toEqual(13)
 
@@ -1125,6 +1210,7 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: 0.5,
       basePoints: true,
       pointsMultiplier: 2,
+      roundedResult: true,
     })
     expect(points10Multiplier).toEqual(15)
 
@@ -1139,6 +1225,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       basePoints: false,
       pointsPercentage: 1,
+      roundedResult: true,
     })
     expect(points11).toEqual(35)
 
@@ -1153,6 +1240,7 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: 1,
       basePoints: false,
       pointsMultiplier: 2,
+      roundedResult: true,
     })
     expect(points11Multiplier).toEqual(70)
 
@@ -1166,6 +1254,7 @@ describe('@klicker-uzh/grading', () => {
       defaultCorrectPoints: 5,
       pointsPercentage: null,
       basePoints: false,
+      roundedResult: true,
     })
     expect(points12).toEqual(35)
 
@@ -1180,8 +1269,66 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: null,
       basePoints: false,
       pointsMultiplier: 3,
+      roundedResult: true,
     })
     expect(points12Multiplier).toEqual(105)
+
+    // verify that rounding parameter is handled correclty
+    const floatPoints = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: 5,
+      pointsPercentage: 0.5,
+      basePoints: true,
+      roundedResult: false,
+    })
+    expect(floatPoints).toEqual(27.5)
+
+    const roundedPoints = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: 5,
+      pointsPercentage: 0.5,
+      basePoints: true,
+      roundedResult: true,
+    })
+    expect(roundedPoints).toEqual(28)
+
+    const floatPoints2 = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: 4.5,
+      pointsPercentage: 0.5,
+      basePoints: true,
+      roundedResult: false,
+    })
+    expect(floatPoints2).toEqual(27.25)
+
+    const roundedPoints2 = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: 4.5,
+      pointsPercentage: 0.5,
+      basePoints: true,
+      roundedResult: true,
+    })
+    expect(roundedPoints2).toEqual(27)
   })
 
   it('should compute the awarded points correctly for practice quizzes and microlearnings', () => {

@@ -1,14 +1,6 @@
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test creation and editing functionalities, validation, etc. for KPRIM elements', function () {
-  before(() => {
-    cy.seed()
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Login the lecturer and load data fixture', function () {
     cy.loginLecturer()
     cy.fixture('DM-questions.json').then((data) => {
@@ -16,12 +8,12 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   // ! KPRIM questions
   // #region
@@ -45,10 +37,10 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
-      .type(this.data.KP.content)
+      .realType(this.data.KP.content)
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
-      .type(this.data.KP.choices[0])
+      .realType(this.data.KP.choices[0])
     cy.get('[data-cy="insert-answer-field-0"]').findByText(
       this.data.KP.choices[0]
     )
@@ -56,7 +48,7 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     cy.wait(500)
     cy.get('[data-cy="insert-answer-field-1"]')
       .realClick()
-      .type(this.data.KP.choices[1])
+      .realType(this.data.KP.choices[1])
     cy.get('[data-cy="insert-answer-field-1"]').findByText(
       this.data.KP.choices[1]
     )
@@ -64,7 +56,7 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     cy.wait(500)
     cy.get('[data-cy="insert-answer-field-2"]')
       .realClick()
-      .type(this.data.KP.choices[2])
+      .realType(this.data.KP.choices[2])
     cy.get('[data-cy="insert-answer-field-2"]').findByText(
       this.data.KP.choices[2]
     )
@@ -72,7 +64,7 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     cy.wait(500)
     cy.get('[data-cy="insert-answer-field-3"]')
       .realClick()
-      .type(this.data.KP.choices[3])
+      .realType(this.data.KP.choices[3])
     cy.get('[data-cy="insert-answer-field-3"]').findByText(
       this.data.KP.choices[3]
     )
@@ -84,7 +76,7 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
     cy.get('[data-cy="insert-answer-field-2"]')
       .realClick()
-      .type(this.data.KP.choices[2])
+      .realType(this.data.KP.choices[2])
     cy.get('[data-cy="insert-answer-field-2"]').findByText(
       this.data.KP.choices[2]
     )
@@ -161,15 +153,14 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     cy.wait(500)
 
     // verify that the created KPRIM question is correctly displayed in the question pool
-    cy.get(`[data-cy="element-item-${this.data.KP.title}"]`).contains(
-      this.data.KP.content
-    )
-    cy.get(`[data-cy="element-item-${this.data.KP.title}"]`).contains(
-      this.data.KP.title
-    )
-    cy.get(`[data-cy="element-item-${this.data.KP.title}"]`).contains(
-      messages.shared.READY.statusLabel
-    )
+    cy.validateElement({
+      element: this.data.KP.title,
+      contains: [
+        this.data.KP.content,
+        this.data.KP.title,
+        messages.shared.READY.statusLabel,
+      ],
+    })
     cy.get(`[data-cy="edit-element-${this.data.KP.title}"]`).click()
     cy.get('[data-cy="kp-answer-options"]').should('have.length', 4)
   })
@@ -214,19 +205,19 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.KP.contentEdited)
+      .realType(this.data.KP.contentEdited)
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
       .clear()
-      .type(this.data.KP.choicesEdited[0])
+      .realType(this.data.KP.choicesEdited[0])
     cy.get('[data-cy="insert-answer-field-1"]')
       .realClick()
       .clear()
-      .type(this.data.KP.choicesEdited[1])
+      .realType(this.data.KP.choicesEdited[1])
     cy.get('[data-cy="insert-answer-field-2"]')
       .realClick()
       .clear()
-      .type(this.data.KP.choicesEdited[2])
+      .realType(this.data.KP.choicesEdited[2])
     cy.get('[data-cy="delete-answer-option-ix-3"]').click()
     cy.get('[data-cy="insert-answer-field-3"]').should('not.exist')
     cy.get('[data-cy="add-new-answer"]').click()
@@ -234,7 +225,7 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     cy.get('[data-cy="insert-answer-field-3"]')
       .realClick()
       .clear()
-      .type(this.data.KP.choicesEdited[3])
+      .realType(this.data.KP.choicesEdited[3])
     cy.get('[data-cy="add-new-answer"]').should('be.disabled')
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
@@ -249,12 +240,10 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     cy.wait(1000)
 
     // verify that the updated KPRIM question is correctly displayed in the question pool
-    cy.get(`[data-cy="element-item-${this.data.KP.titleEdited}"]`).contains(
-      this.data.KP.titleEdited
-    )
-    cy.get(`[data-cy="element-item-${this.data.KP.titleEdited}"]`).contains(
-      this.data.KP.contentEdited
-    )
+    cy.validateElement({
+      element: this.data.KP.titleEdited,
+      contains: [this.data.KP.contentEdited, this.data.KP.titleEdited],
+    })
   })
 
   it('Check that edited KPRIM question is stored and loaded correctly', function () {
@@ -286,7 +275,7 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
       cy.get('[data-cy="save-new-question"]').should('be.disabled')
       cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
         .realClick()
-        .type(feedback)
+        .realType(feedback)
       cy.get(`[data-cy="insert-answer-feedback-${ix}"]`).contains(feedback)
     })
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
@@ -298,11 +287,11 @@ describe('Test creation and editing functionalities, validation, etc. for KPRIM 
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
     cy.get('[data-cy="insert-answer-feedback-0"]')
       .realClick()
-      .type(this.data.KP.choicesFeedbacks[0])
+      .realType(this.data.KP.choicesFeedbacks[0])
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
     cy.get('[data-cy="insert-answer-feedback-1"]')
       .realClick()
-      .type(this.data.KP.choicesFeedbacks[1])
+      .realType(this.data.KP.choicesFeedbacks[1])
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
     // verify that reordering answer options also reorders the corresponding feedbacks

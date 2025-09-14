@@ -49,10 +49,26 @@ function AnswerCollectionRemovalModal({
               objectId: String(id),
               objectType: ObjectType.AnswerCollection,
             },
-            optimisticResponse: {
-              removeObject: String(id),
+            update: (cache, { data }) => {
+              // check if the removal was successful
+              if (!data?.removeObject) return
+
+              // update the cache to remove the deleted collection
+              const answerCollectionId = parseInt(data.removeObject, 10)
+              cache.updateQuery(
+                { query: GetAnswerCollectionsInfoDocument },
+                (qData) => {
+                  if (!qData?.getAnswerCollectionsInfo) return qData
+
+                  return {
+                    getAnswerCollectionsInfo:
+                      qData.getAnswerCollectionsInfo.filter(
+                        (collection) => collection.id !== answerCollectionId
+                      ),
+                  }
+                }
+              )
             },
-            refetchQueries: [{ query: GetAnswerCollectionsInfoDocument }],
           })
 
           if (

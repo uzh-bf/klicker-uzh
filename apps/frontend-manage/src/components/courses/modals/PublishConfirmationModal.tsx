@@ -8,7 +8,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ElementInstanceType,
   GetSingleCourseDocument,
-  GetUserActivitiesDocument,
   PublishGroupActivityDocument,
   PublishMicroLearningDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -26,6 +25,7 @@ interface PublishConfirmationModalProps {
   endAt: Date
   title: string
   courseId: string
+  refetchActivities?: () => Promise<void>
 }
 
 function PublishConfirmationModal({
@@ -36,6 +36,7 @@ function PublishConfirmationModal({
   endAt,
   title,
   courseId,
+  refetchActivities,
 }: PublishConfirmationModalProps) {
   const t = useTranslations()
 
@@ -43,22 +44,63 @@ function PublishConfirmationModal({
     PublishMicroLearningDocument,
     {
       variables: { id: activityId },
-      // TODO: replace with proper cache update
-      refetchQueries: [
-        { query: GetUserActivitiesDocument },
-        { query: GetSingleCourseDocument, variables: { id: courseId } },
-      ],
+      update(cache, { data }) {
+        cache.updateQuery(
+          { query: GetSingleCourseDocument, variables: { courseId } },
+          (qData) => {
+            const publishedMicro = data?.publishMicroLearning
+            if (!qData?.course?.microLearningsInfo || !publishedMicro)
+              return qData
+
+            return {
+              course: {
+                ...qData.course,
+                microLearningsInfo: qData.course.microLearningsInfo.map(
+                  (micro) =>
+                    micro.id === publishedMicro.id
+                      ? {
+                          ...micro,
+                          status: publishedMicro.status,
+                        }
+                      : micro
+                ),
+              },
+            }
+          }
+        )
+      },
     }
   )
+
   const [publishGroupActivity, { loading: gaPublishLoading }] = useMutation(
     PublishGroupActivityDocument,
     {
       variables: { id: activityId },
-      // TODO: replace with proper cache update
-      refetchQueries: [
-        { query: GetUserActivitiesDocument },
-        { query: GetSingleCourseDocument, variables: { id: courseId } },
-      ],
+      update(cache, { data }) {
+        cache.updateQuery(
+          { query: GetSingleCourseDocument, variables: { courseId } },
+          (qData) => {
+            const publishedGa = data?.publishGroupActivity
+            if (!qData?.course?.groupActivitiesInfo || !publishedGa)
+              return qData
+
+            return {
+              course: {
+                ...qData.course,
+                groupActivitiesInfo: qData.course.groupActivitiesInfo.map(
+                  (groupActivity) =>
+                    groupActivity.id === publishedGa.id
+                      ? {
+                          ...groupActivity,
+                          status: publishedGa.status,
+                        }
+                      : groupActivity
+                ),
+              },
+            }
+          }
+        )
+      },
     }
   )
 
@@ -74,6 +116,7 @@ function PublishConfirmationModal({
         } else if (activityType === ElementInstanceType.GroupActivity) {
           await publishGroupActivity()
         }
+        await refetchActivities?.()
         onClose()
       }}
       dataPrimaryAction={{ cy: 'confirm-publish-action' }}
@@ -99,7 +142,7 @@ function PublishConfirmationModal({
           <div className="flex items-center">
             <FontAwesomeIcon
               icon={faHourglassStart}
-              className="mr-2 text-green-600"
+              className="mr-2 text-green-700"
             />
             <span className="font-medium">
               {t('shared.generic.startAt', {

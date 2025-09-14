@@ -6,7 +6,10 @@ import type {
   ObjectType,
   ParameterType,
   PerformanceLevel,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
+
+// ----- HATCHET (WORKER/TASK) TYPES -----
+export * from './hatchet.js'
 
 // ----- ACTIVITY LOG TYPES -----
 // #region
@@ -29,6 +32,14 @@ export type ElementKeys = keyof Element
 export enum DisplayMode {
   LIST = 'LIST',
   GRID = 'GRID',
+}
+
+export enum SortByType {
+  TITLE = 'TITLE',
+  TYPE = 'TYPE',
+  STATUS = 'STATUS',
+  CREATED = 'CREATED',
+  MODIFIED = 'MODIFIED',
 }
 
 export enum ActivityType {
@@ -82,6 +93,14 @@ export type CaseStudyItemResponse = {
 export type CaseStudyCaseResponse = {
   caseId: string
   itemResponses: CaseStudyItemResponse[]
+}
+
+export type CaseStudyResponseObject = {
+  [caseId: string]: {
+    [itemId: number]: {
+      [criterionId: string]: number // value = response
+    }
+  }
 }
 
 export type ChoiceInput = {
@@ -186,10 +205,19 @@ export type OptionsSelectionInput = {
 }
 
 export type ResponseInput = {
-  choices?: number[] | null
-  value?: string | null
-  selection?: number[] | null
-  assessment?: CaseStudyCaseResponse[] | null
+  choices?: ChoicesResponse[] | null // SC / MC / KPRIM
+  value?: string | null // FREE_TEXT / NUMERICAL
+  selection?: number[] | null // SELECTION
+  assessment?: CaseStudyCaseResponse[] | null // CASE_STUDY
+  viewed?: boolean | null // CONTENT
+}
+
+export type LiveQuizResponseInput = {
+  choices?: ChoicesResponse[] | null // SC / MC / KPRIM
+  value?: string | null // FREE_TEXT / NUMERICAL
+  selection?: number[] | null // SELECTION
+  assessment?: CaseStudyResponseObject | null // CASE_STUDY - no need to convert to array for pothos validation in live quiz submissions
+  viewed?: boolean | null // CONTENT
 }
 
 export type ElementOptionsInput = OptionsChoicesInput &
@@ -232,12 +260,17 @@ export type TemplateBlockInput = {
   elements: TemplateBlockElementInput[]
 }
 
+export type ChoicesResponse = {
+  ix: number
+  selected: boolean
+}
+
 export type StackResponseInput = {
   instanceId: number
   type: ElementType
   flashcardResponse?: FlashcardCorrectness | null
   contentReponse?: boolean | null
-  choicesResponse?: number[] | null
+  choicesResponse?: ChoicesResponse[] | null
   numericalResponse?: number | null
   freeTextResponse?: string | null
   selectionResponse?: number[] | null
@@ -373,7 +406,6 @@ export type CatalogObject = {
   isRequested: boolean
   isShared: boolean
 }
-
 // #endregion
 
 // ----- ELEMENT DATA AND INSTANCES -----
@@ -399,7 +431,7 @@ export enum StackFeedbackStatus {
 }
 
 export type SingleQuestionResponseChoices = {
-  choices: number[]
+  choices: ChoicesResponse[]
 }
 
 export type SingleQuestionResponseValue = {
@@ -439,6 +471,18 @@ export type SingleQuestionResponse =
   | SingleQuestionResponseContent
   | SingleQuestionResponseSelection
   | SingleQuestionResponseCaseStudy
+
+export type SingleQuestionResponseLiveQuizCaseStudy = {
+  assessment: CaseStudyResponseObject
+}
+
+export type SingleQuestionResponseLiveQuiz =
+  | SingleQuestionResponseChoices
+  | SingleQuestionResponseValue
+  | SingleQuestionResponseFlashcard
+  | SingleQuestionResponseContent
+  | SingleQuestionResponseSelection
+  | SingleQuestionResponseLiveQuizCaseStudy
 
 export type Choice = {
   ix: number

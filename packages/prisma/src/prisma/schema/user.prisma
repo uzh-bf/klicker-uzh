@@ -11,18 +11,31 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
+
+  // Validation and primary email management
+  isPrimary  Boolean @default(false) // Only one primary per user
+  isVerified Boolean @default(true) // OAuth accounts are auto-verified
+
+  refresh_token String? @db.Text
+  access_token  String? @db.Text
+  expires_at    Int?
+  token_type    String?
+  scope         String?
+  id_token      String? @db.Text
+  session_state String?
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String @db.Uuid
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
   @@unique([provider, providerAccountId])
+  // Ensure only one primary affiliation per user
+  @@unique([userId, isPrimary])
+  // Performance indexes
+  @@index([providerAccountId, isVerified])
+  @@index([type, isVerified])
 }
 
 model Session {
@@ -33,6 +46,9 @@ model Session {
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 }
 
 model VerificationToken {
@@ -50,6 +66,7 @@ enum UserLoginScope {
   READ_ONLY
   OTP
   ACTIVATION
+  EDUID
 }
 
 model UserLogin {
@@ -84,8 +101,6 @@ model User {
   lastLoginAt         DateTime?
   deletionToken       String?
   deletionRequestedAt DateTime?
-  loginToken          String?
-  loginTokenExpiresAt DateTime?
 
   locale Locale @default(en)
 

@@ -2,7 +2,7 @@ import {
   LeaderboardType,
   PrismaClient,
   TimelineEntryType,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 dayjs.extend(utc)

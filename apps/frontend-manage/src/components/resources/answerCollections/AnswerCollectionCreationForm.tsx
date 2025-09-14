@@ -72,23 +72,22 @@ function AnswerCollectionCreationForm({ onClose }: { onClose: () => void }) {
               answers: values.entries.map((entry) => entry.value!),
             },
             update: (cache, { data }) => {
+              // check if the creation was successful
               if (!data?.createAnswerCollection) return
 
-              const queryData = cache.readQuery({
-                query: GetAnswerCollectionsInfoDocument,
-              })
-              const previousCollections = queryData?.getAnswerCollectionsInfo
-              if (!previousCollections) return
+              cache.updateQuery(
+                { query: GetAnswerCollectionsInfoDocument },
+                (qData) => {
+                  if (!qData?.getAnswerCollectionsInfo) return qData
 
-              cache.writeQuery({
-                query: GetAnswerCollectionsInfoDocument,
-                data: {
-                  getAnswerCollectionsInfo: [
-                    ...previousCollections,
-                    data.createAnswerCollection,
-                  ],
-                },
-              })
+                  return {
+                    getAnswerCollectionsInfo: [
+                      ...qData.getAnswerCollectionsInfo,
+                      data.createAnswerCollection!,
+                    ],
+                  }
+                }
+              )
             },
           })
 

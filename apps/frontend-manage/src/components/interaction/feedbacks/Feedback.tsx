@@ -77,9 +77,9 @@ function Feedback({
                   <>
                     <FontAwesomeIcon
                       icon={faCheck}
-                      className="text-green-600"
+                      className="text-green-700"
                     />
-                    <span className="text-green-600">
+                    <span className="text-green-700">
                       {t('manage.cockpit.filterSolved')}
                     </span>
                   </>
@@ -184,7 +184,7 @@ function Feedback({
                       <span>{response.positiveReactions}</span>
                       <FontAwesomeIcon
                         icon={faThumbsUp}
-                        className="text-green-600"
+                        className="text-green-700"
                       />
                     </div>
                     <div className="flex items-center gap-1 text-base text-gray-500">

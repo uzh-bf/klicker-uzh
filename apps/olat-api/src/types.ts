@@ -10,7 +10,10 @@ export enum StatusCode {
 
 export interface ActivityType {
   id: string
-  title: string
+  title_de: string
+  title_en: string
+  title_fr: string
+  title_it: string
   path: string
   olatConfigurationKey: ActivityOlatConfigurationKey
   isSubselectionRequired: boolean
@@ -19,7 +22,10 @@ export interface ActivityType {
 
 export interface ActivityTypeOfCourse {
   id: string
-  title: string
+  title_de: string
+  title_en: string
+  title_fr: string
+  title_it: string
   olatConfigurationKey: ActivityOlatConfigurationKey
   isSubselectionRequired: boolean
 }

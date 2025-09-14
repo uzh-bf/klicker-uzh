@@ -77,6 +77,8 @@ function AccountSelector({
 
   // check if the user is already logged in as a participant or temporary participant of this quiz
   const { data, loading, refetch } = useQuery(SelfDocument, {
+    variables: { liveQuizId: quizId },
+    fetchPolicy: 'network-only',
     skip: loginState === 'anonymous', // if the user has already opted to participate anonymously, skip the query
   })
   useEffect(() => {
@@ -96,6 +98,7 @@ function AccountSelector({
     }
 
     // if the user is logged in as a participant, set the login state to 'loggedIn'
+    // depending on whether the user has a participation on the course, a notification / warning will be shown
     if (data.self.role === UserRole.Participant) {
       setLoginState('loggedIn')
     }
@@ -192,6 +195,7 @@ function AccountSelector({
                 pseudonym: values.pseudonym,
                 avatar: values.avatar !== '' ? values.avatar : undefined,
               },
+              // refetch is required here to ensure up-to-date data with temporary leaderboard entry
               refetchQueries: [{ query: SelfDocument }],
             })
 
@@ -337,7 +341,7 @@ function AccountSelector({
                           <div className="absolute bottom-0 left-0 right-0 z-10 mx-auto flex w-fit flex-row items-center gap-2.5 rounded-md border-2 border-green-600 bg-white px-2 py-1 text-sm">
                             <FontAwesomeIcon
                               icon={faCheck}
-                              className="h-4 w-4 font-bold text-green-600"
+                              className="h-4 w-4 font-bold text-green-700"
                             />
                             {t('shared.generic.selected')}
                           </div>

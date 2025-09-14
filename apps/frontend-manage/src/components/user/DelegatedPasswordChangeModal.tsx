@@ -44,10 +44,7 @@ function DelegatedPasswordChangeModal({
         onSubmit={async (values, { setSubmitting }) => {
           setSubmitting(true)
           await updateUserLogin({
-            variables: {
-              id: loginId!,
-              password: values.password,
-            },
+            variables: { id: loginId!, password: values.password },
           })
           setSubmitting(false)
           onClose()

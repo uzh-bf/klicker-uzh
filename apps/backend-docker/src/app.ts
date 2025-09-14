@@ -4,13 +4,12 @@ import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
 import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
 // import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
+import { verifyJWT } from '@klicker-uzh/util'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
-import express, { type Request } from 'express'
+import express from 'express'
 import { createYoga } from 'graphql-yoga'
 import { createRequire } from 'node:module'
-import passport from 'passport'
-import { Strategy as JWTStrategy } from 'passport-jwt'
 
 const require = createRequire(import.meta.url)
 const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
@@ -18,7 +17,15 @@ declare namespace global {
   let __coverage__: any
 }
 
-function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
+function prepareApp({
+  prisma,
+  redisExec,
+  pubSub,
+  cache,
+  emitter,
+  hatchet,
+  tasks,
+}: any) {
   const armor = new EnvelopArmor({
     maxDepth: {
       enabled: false,
@@ -50,59 +57,68 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
     })
   )
 
-  passport.use(
-    new JWTStrategy(
-      {
-        jwtFromRequest(req: Request) {
-          let token = null
+  // Custom JWT middleware to replace passport-jwt
+  async function jwtMiddleware(req: any, res: any, next: any) {
+    let token = null
 
-          if (
-            req.headers.origin?.includes(
-              process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
-            ) ||
-            req.headers.origin?.includes(
-              process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
-            )
-          ) {
-            token = req.cookies?.['next-auth.session-token']
-          } else if (
-            req.headers.origin?.includes(
-              process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa'
-            )
-          ) {
-            token =
-              req.cookies?.['participant_token'] ??
-              req.cookies?.['temporary_participant_token'] ??
-              req.cookies?.['next-auth.session-token']
-          }
-
-          return (
-            token ??
-            req.headers['authorization']?.replace('Bearer ', '') ??
-            null
-          )
-        },
-        // TODO: persist both JWT in separate ctx objects? (allow for parallel logins as user and participant)
-        secretOrKey: process.env.APP_SECRET as string,
-        // issuer: 'abcd',
-        // audience: 'localhost',
-      },
-      (jwt, done) => {
-        // TODO: if there is a user matching the JWT, return it
-        // TODO: if there was an error, return it
-        // TODO: if there was no user and no error, return
-        return done(null, jwt)
+    // Assessment mode: only check for student NextAuth cookie
+    if (process.env.ASSESSMENT_MODE === 'true') {
+      if (
+        req.headers.origin?.includes(
+          process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
+        ) ||
+        req.headers.origin?.includes(
+          process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
+        )
+      ) {
+        token = req.cookies?.['next-auth.session-token']
+      } else if (
+        req.headers.origin?.includes(
+          process.env.APP_ASSESSMENT_SUBDOMAIN ?? 'assessment'
+        )
+      ) {
+        token = req.cookies?.['next-auth.participant-session-token']
       }
-    )
-  )
+    } else {
+      if (
+        req.headers.origin?.includes(
+          process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
+        ) ||
+        req.headers.origin?.includes(
+          process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
+        )
+      ) {
+        token = req.cookies?.['next-auth.session-token']
+      } else if (
+        req.headers.origin?.includes(process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa')
+      ) {
+        token =
+          req.cookies?.['participant_token'] ??
+          req.cookies?.['temporary_participant_token'] ??
+          req.cookies?.['next-auth.session-token']
+      }
+    }
+
+    // ! DO NOT TOUCH - assessment live quiz mode relies on it
+    token =
+      token ?? req.headers['authorization']?.replace('Bearer ', '') ?? null
+
+    let user = null
+    if (token) {
+      try {
+        user = await verifyJWT(token, process.env.APP_SECRET as string)
+      } catch (error) {
+        // JWT verification failed, continue with user = null
+        console.log('JWT verification failed:', error)
+      }
+    }
+
+    req.locals = { user }
+    next()
+  }
 
   app.use(cookieParser())
-  app.use((req: any, res, next) =>
-    passport.authenticate('jwt', { session: false }, (_: any, user: any) => {
-      req.locals = { user }
-      next()
-    })(req, res, next)
-  )
+  app.use(jwtMiddleware)
 
   const yogaApp = createYoga({
     schema,
@@ -155,7 +171,14 @@ function prepareApp({ prisma, redisExec, pubSub, cache, emitter }: any) {
       // useGraphQlJit(),
       ...enhancements.plugins,
     ].filter(Boolean) as Plugin[],
-    context: enhanceContext({ prisma, redisExec, pubSub, emitter }),
+    context: enhanceContext({
+      prisma,
+      redisExec,
+      pubSub,
+      emitter,
+      hatchet,
+      tasks,
+    }),
     logging: true,
     cors: false,
     maskedErrors: !process.env.DEBUG,

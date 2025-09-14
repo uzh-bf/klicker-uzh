@@ -48,10 +48,7 @@ function EditableGroupName({ groupId, groupName }: EditableGroupNameProps) {
           }
 
           await renameParticipantGroup({
-            variables: {
-              groupId,
-              name: groupNameValue.trim(),
-            },
+            variables: { groupId, name: groupNameValue.trim() },
           })
           setEditMode(false)
         }}

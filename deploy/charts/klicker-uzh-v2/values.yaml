@@ -36,15 +36,71 @@ vapid:
   publicKey: ''
   privateKey: ''
 
-cron:
-  dailyGroupScores: "* * * * *" # runs every minute - overridden in deployment config
-  pushNotifications: "*/5 * * * *" # runs every 5 minutes
-  activityPublications: "*/5 * * * *" # runs every 5 minutes
-  activityEndings: "*/5 * * * *" # runs every 5 minutes
-  runningRandomGroups: "5 0 * * *" # running daily at midnight (UTC)
-  finalRandomGroups: "10 0 * * *" # running daily at midnight (UTC)
-  updateWeeklyTimelineEntries: "15 0 * * *" # running daily at midnight (UTC
-  token: ""
+global:
+  appOrigins:
+    # Canonical origins per app (scheme + host[:port])
+    api: ''
+    auth: ''
+    lti: ''
+    pwa: ''
+    manage: ''
+    control: ''
+    assessmentApi: ''
+    assessmentPwa: ''
+
+hatchet:
+  client:
+    token: ""
+    tlsStrategy: "none"
+    apiUrl: ""
+    tenantId: ""
+    hostPort: ""
+  workers:
+    general:
+      replicaCount: 1
+      priorityClassName: production-workload
+      image:
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general
+        pullPolicy: Always
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+      autoscaling:
+        enabled: false
+        minReplicas: 1
+        maxReplicas: 3
+        targetCPUUtilizationPercentage: 80
+        targetMemoryUtilizationPercentage: 80
+      nodeSelector: {}
+      tolerations: []
+      affinity: {}
+
+    responseProcessor:
+      replicaCount: 1
+      priorityClassName: production-workload
+      image:
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
+        pullPolicy: Always
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+      autoscaling:
+        enabled: false
+        minReplicas: 1
+        maxReplicas: 3
+        targetCPUUtilizationPercentage: 80
+        targetMemoryUtilizationPercentage: 80
+      nodeSelector: {}
+      tolerations: []
+      affinity: {}
 
 auth:
   priorityClassName: production-workload
@@ -352,5 +408,170 @@ olatApi:
 
   affinity: {}
 
+responseApi:
+  corsAllowedOrigins: ''
+
+  priorityClassName: production-workload
+
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/response-api
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 7078
+
+  ingress:
+    enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 256m
+      cert-manager.io/cluster-issuer: letsencrypt
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
 heartbeats:
   dailyGroupScores:
+
+assessment:
+  frontendPWA:
+    priorityClassName: production-workload
+
+    replicaCount: 3
+
+    image:
+      repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa
+      pullPolicy: Always
+
+    service:
+      type: ClusterIP
+      port: 3000
+
+    ingress:
+      enabled: true
+      annotations:
+        nginx.ingress.kubernetes.io/proxy-body-size: 256m
+        cert-manager.io/cluster-issuer: letsencrypt
+
+    resources:
+      requests:
+        cpu: 200m
+        memory: 200Mi
+      limits:
+        cpu: 1000m
+        memory: 1000Mi
+
+    autoscaling:
+      enabled: false
+      minReplicas: 3
+      maxReplicas: 10
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+
+    nodeSelector: {}
+
+    tolerations: []
+
+    affinity: {}
+
+  backendGraphql:
+    priorityClassName: production-workload
+
+    replicaCount: 3
+
+    image:
+      repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker
+      pullPolicy: Always
+
+    service:
+      type: ClusterIP
+      port: 3000
+
+    ingress:
+      enabled: true
+      annotations:
+        nginx.ingress.kubernetes.io/proxy-body-size: 256m
+        cert-manager.io/cluster-issuer: letsencrypt
+
+    resources:
+      requests:
+        cpu: 200m
+        memory: 200Mi
+      limits:
+        cpu: 1000m
+        memory: 1000Mi
+
+    autoscaling:
+      enabled: false
+      minReplicas: 1
+      maxReplicas: 4
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+
+    nodeSelector: {}
+
+    tolerations: []
+
+    affinity: {}
+
+  responseApi:
+    corsAllowedOrigins: ''
+
+    priorityClassName: production-workload
+
+    replicaCount: 1
+
+    image:
+      repository: ghcr.io/uzh-bf/klicker-uzh/response-api
+      pullPolicy: Always
+
+    service:
+      type: ClusterIP
+      port: 7078
+
+    ingress:
+      enabled: true
+      annotations:
+        nginx.ingress.kubernetes.io/proxy-body-size: 256m
+        cert-manager.io/cluster-issuer: letsencrypt
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+
+    autoscaling:
+      enabled: false
+      minReplicas: 1
+      maxReplicas: 4
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+
+    nodeSelector: {}
+
+    tolerations: []
+
+    affinity: {}

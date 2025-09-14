@@ -1,14 +1,6 @@
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test creation and editing functionalities, validation, etc. for selection elements', function () {
-  before(() => {
-    cy.seed()
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Login the lecturer and load data fixture', function () {
     cy.fixture('DM-questions.json').then((data) => {
       this.data = data
@@ -19,12 +11,12 @@ describe('Test creation and editing functionalities, validation, etc. for select
     cy.get('[data-cy="analytics"]').should('exist')
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   // ! Selection questions
   // #region
@@ -72,20 +64,20 @@ describe('Test creation and editing functionalities, validation, etc. for select
     ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
-      .type(this.data.SE.content)
+      .realType(this.data.SE.content)
     cy.get('[data-cy="insert-question-explanation"]')
       .realClick()
-      .type(this.data.SE.explanation)
+      .realType(this.data.SE.explanation)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
 
     // select an answer collection
     cy.get('[data-cy="select-answer-collection"]').contains(
       messages.manage.elements.selectCollection
     )
-    cy.get('[data-cy="select-answer-collection"]').realClick()
-    cy.get(
-      `[data-cy="select-answer-collection-${this.data.SE.collection}"]`
-    ).realClick()
+    cy.selectOption(
+      '[data-cy="select-answer-collection"]',
+      this.data.SE.collection
+    )
     cy.get('[data-cy="select-answer-collection"]').contains(
       this.data.SE.collection
     )
@@ -128,15 +120,14 @@ describe('Test creation and editing functionalities, validation, etc. for select
     cy.get('[data-cy="save-new-question"]').click()
     cy.wait(500)
 
-    cy.get(`[data-cy="element-item-${this.data.SE.title}"]`).contains(
-      this.data.SE.content
-    )
-    cy.get(`[data-cy="element-item-${this.data.SE.title}"]`).contains(
-      this.data.SE.title
-    )
-    cy.get(`[data-cy="element-item-${this.data.SE.title}"]`).contains(
-      messages.shared.READY.statusLabel
-    )
+    cy.validateElement({
+      element: this.data.SE.title,
+      contains: [
+        this.data.SE.content,
+        this.data.SE.title,
+        messages.shared.READY.statusLabel,
+      ],
+    })
   })
 
   it('Verify that the correct content has been saved', function () {
@@ -166,12 +157,6 @@ describe('Test creation and editing functionalities, validation, etc. for select
 
   it('Verify that creation was successful and that preview is visible and correct', function () {
     cy.get(`[data-cy="edit-element-${this.data.SE.title}"]`).click()
-    cy.get(`[data-cy="element-item-${this.data.SE.title}"]`).contains(
-      this.data.SE.title
-    )
-    cy.get(`[data-cy="element-item-${this.data.SE.title}"]`).contains(
-      this.data.SE.content
-    )
 
     // check that inputs are available
     for (let i = 1; i < this.data.SE.inputs; i++) {
@@ -292,11 +277,11 @@ describe('Test creation and editing functionalities, validation, etc. for select
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.SE.contentEdited)
+      .realType(this.data.SE.contentEdited)
     cy.get('[data-cy="insert-question-explanation"]')
       .realClick()
       .clear()
-      .type(this.data.SE.explanationEdited)
+      .realType(this.data.SE.explanationEdited)
 
     cy.get('[data-cy="select-answer-collection"]').realClick()
     cy.get(
@@ -475,10 +460,10 @@ describe('Test creation and editing functionalities, validation, etc. for select
     ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
-      .type(this.data.SE_INLINE.content)
+      .realType(this.data.SE_INLINE.content)
     cy.get('[data-cy="insert-question-explanation"]')
       .realClick()
-      .type(this.data.SE_INLINE.explanation)
+      .realType(this.data.SE_INLINE.explanation)
     cy.get('[data-cy="save-new-question"]').should('be.disabled')
 
     // check if button for manual creation is present and click it
@@ -506,7 +491,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
     cy.wrap(this.data.SE_INLINE.solutions).each((solution: string) => {
       cy.get('[data-cy="choose-correct-answer-options"]')
         .realClick()
-        .type(`${solution}{enter}`)
+        .realType(`${solution}{enter}`)
     })
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
@@ -524,7 +509,7 @@ describe('Test creation and editing functionalities, validation, etc. for select
     // select the additional item as correct answer
     cy.get('[data-cy="choose-correct-answer-options"]')
       .realClick()
-      .type(`${additionalItem}{enter}`)
+      .realType(`${additionalItem}{enter}`)
     cy.get('[data-cy="save-new-question"]').should('not.be.disabled')
 
     // verify the additional item is selected as a correct answer
@@ -541,9 +526,10 @@ describe('Test creation and editing functionalities, validation, etc. for select
     cy.get('[data-cy="save-new-question"]').click()
     cy.wait(500)
 
-    cy.get(`[data-cy="element-item-${this.data.SE_INLINE.title}"]`).contains(
-      this.data.SE_INLINE.content
-    )
+    cy.validateElement({
+      element: this.data.SE_INLINE.title,
+      contains: [this.data.SE_INLINE.content, this.data.SE_INLINE.title],
+    })
   })
 
   it('Verify that a new answer collection was created when creating the selection question', function () {
@@ -577,11 +563,11 @@ describe('Test creation and editing functionalities, validation, etc. for select
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.SE_INLINE.contentEdited)
+      .realType(this.data.SE_INLINE.contentEdited)
     cy.get('[data-cy="insert-question-explanation"]')
       .realClick()
       .clear()
-      .type(this.data.SE_INLINE.explanationEdited)
+      .realType(this.data.SE_INLINE.explanationEdited)
 
     // ensure that switching to manual item creation is not possible during editing
     cy.get('[data-cy="create-inline-answer-collection"]').should('not.exist')
@@ -612,9 +598,13 @@ describe('Test creation and editing functionalities, validation, etc. for select
     cy.wait(500)
 
     // verify the changes were saved
-    cy.get(
-      `[data-cy="element-item-${this.data.SE_INLINE.titleEdited}"]`
-    ).contains(this.data.SE_INLINE.contentEdited)
+    cy.validateElement({
+      element: this.data.SE_INLINE.titleEdited,
+      contains: [
+        this.data.SE_INLINE.contentEdited,
+        this.data.SE_INLINE.titleEdited,
+      ],
+    })
   })
 
   it('Delete the inline created selection question', function () {

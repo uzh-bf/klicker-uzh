@@ -3,6 +3,9 @@ query GetShortnameQuizzes($shortname: String!) {
     id
     name
     displayName
+    isGamificationEnabled
+    isAssessmentEnabled
+    isPinProtected
     course {
       id
       displayName

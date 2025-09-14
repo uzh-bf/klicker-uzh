@@ -12,65 +12,45 @@ function useDemoteGroupAdminToMember() {
   const onDemotion = async ({
     groupId,
     adminId,
-    adminShortname,
-    adminEmail,
   }: {
     groupId: number
     adminId: string
-    adminShortname: string
-    adminEmail: string
   }) => {
     try {
       await demoteGroupAdminToMember({
-        variables: {
-          groupId: groupId,
-          adminId: adminId!,
+        variables: { groupId, adminId },
+        optimisticResponse: { demoteGroupAdminToMember: true },
+        update: (cache, { data }) => {
+          // verify that the demotion was successful
+          if (!data?.demoteGroupAdminToMember) return
+
+          cache.updateQuery({ query: GetUserGroupsUserDocument }, (qData) => {
+            if (!qData?.getUserGroupsUser) return qData
+
+            return {
+              getUserGroupsUser: qData.getUserGroupsUser.map(
+                (existingGroup) => {
+                  if (groupId === existingGroup.id) {
+                    const removedAdmin = existingGroup.admins?.find(
+                      (a) => a.id === adminId
+                    )
+                    if (!removedAdmin) return existingGroup
+
+                    return {
+                      ...existingGroup,
+                      admins: existingGroup.admins?.filter(
+                        (a) => a.id !== adminId
+                      ),
+                      members: [...(existingGroup.members ?? []), removedAdmin],
+                    }
+                  }
+
+                  return existingGroup
+                }
+              ),
+            }
+          })
         },
-        optimisticResponse: {
-          demoteGroupAdminToMember: true,
-        },
-        // TODO: re-introduce once UI updates correctly with corresponding changes
-        // update: (cache, { data }) => {
-        //   // check if request was successful
-        //   const success = data?.demoteGroupAdminToMember
-        //   if (!success) return
-
-        //   // update members and admins of user group
-        //   const userGroups = cache.readQuery({
-        //     query: GetUserGroupsUserDocument,
-        //   })
-
-        //   if (userGroups?.getUserGroupsUser) {
-        //     cache.writeQuery({
-        //       query: GetUserGroupsUserDocument,
-        //       data: {
-        //         getUserGroupsUser: userGroups?.getUserGroupsUser.map(
-        //           (existingGroup) => {
-        //             if (groupId === existingGroup.id) {
-        //               return {
-        //                 ...existingGroup,
-        //                 admins: existingGroup.admins?.filter(
-        //                   (a) => a.id !== adminId
-        //                 ),
-        //                 members: [
-        //                   ...(existingGroup.members ?? []),
-        //                   {
-        //                     id: adminId,
-        //                     shortname: adminShortname,
-        //                     email: adminEmail,
-        //                   },
-        //                 ],
-        //               }
-        //             }
-
-        //             return existingGroup
-        //           }
-        //         ),
-        //       },
-        //     })
-        //   }
-        // },
-        refetchQueries: [{ query: GetUserGroupsUserDocument }],
       })
     } catch (e) {
       console.error(e)

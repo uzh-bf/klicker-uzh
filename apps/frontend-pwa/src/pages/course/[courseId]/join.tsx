@@ -28,13 +28,11 @@ function JoinCourse({
   courseId,
   displayName,
   color,
-  description,
   courseLoading,
 }: {
   courseId: string
   displayName: string
   color: string
-  description: string
   courseLoading: boolean
 }) {
   const t = useTranslations()
@@ -190,7 +188,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   if (typeof ctx.params?.courseId !== 'string') {
     return {
       redirect: {
-        destination: '/404',
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
         statusCode: 302,
       },
     }
@@ -218,7 +216,12 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       },
     }
   } catch {
-    return { redirect: { destination: '/404', statusCode: 302 } }
+    return {
+      redirect: {
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/404`,
+        statusCode: 302,
+      },
+    }
   }
 }
 

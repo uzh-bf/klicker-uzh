@@ -1,19 +1,21 @@
+import { prisma } from '@klicker-uzh/prisma'
 import {
-  Element,
   ElementInstanceType,
   ElementStackType,
   ElementType,
-  PermissionLevel,
   PrismaClient,
-} from '@klicker-uzh/prisma'
+} from '@klicker-uzh/prisma/client'
 import {
   ElementData,
   ElementInstanceResults,
   ElementOptionsNumerical,
 } from '@klicker-uzh/types'
+import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { expect } from 'vitest'
 import {
   Course,
+  courseArchivedOne,
+  courseArchivedTwo,
   courseFive,
   courseFour,
   courseOne,
@@ -32,8 +34,10 @@ export async function createElements(
   user: User
 ) {
   const elements = []
+
   for (let i = 1; i <= n; i++) {
-    const element: Element = await prisma.element.create({
+    // create the element in the database
+    const element = await prisma.element.create({
       data: {
         type: ElementType.NUMERICAL,
         name: `Element ${i}`,
@@ -54,44 +58,32 @@ export async function createElements(
       },
     })
 
-    // permissions
-    await prisma.derivedPermission.upsert({
-      where: {
-        elementId_userId: {
-          elementId: element.id,
-          userId: user.id,
-        },
-      },
-      create: {
-        permissionLevel: PermissionLevel.OWNER,
-        element: {
-          connect: { id: element.id },
-        },
-        user: {
-          connect: { id: user.id },
-        },
-      },
-      update: {
-        permissionLevel: PermissionLevel.OWNER,
-      },
-    })
+    // recompute the derived permissions for the element owner
+    await recomputeDerivedPermissions(
+      { elementId: element.id, userId: user.id },
+      prisma
+    )
+
     elements.push({
       id: element.id,
       type: element.type as ElementType,
     })
   }
+
   return elements
 }
 
 export async function createCourse(
   prisma: PrismaClient,
   course: Course,
-  isGamificationEnabled: boolean
+  isGamificationEnabled: boolean,
+  isArchived: boolean = false
 ) {
   const defaultStartDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // one week ago
   const defaultEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) // two weeks in future
 
-  return await prisma.course.create({
+  // create course in the database
+  const dbCourse = await prisma.course.create({
     data: {
       id: course.id,
       name: course.name,
@@ -102,9 +94,16 @@ export async function createCourse(
       endDate: defaultEndDate,
       groupDeadlineDate: defaultEndDate,
       ownerId: course.owner.id,
-      isGamificationEnabled: isGamificationEnabled,
+      isGamificationEnabled,
+      isArchived,
     },
   })
+
+  // recompute the derived permissions for the course owner
+  await recomputeDerivedPermissions(
+    { courseId: dbCourse.id, userId: course.owner.id },
+    prisma
+  )
 }
 
 export async function createLiveQuiz(
@@ -113,7 +112,8 @@ export async function createLiveQuiz(
   i: number,
   elements: { id: number; type: ElementType }[]
 ) {
-  return await prisma.liveQuiz.create({
+  // create a live quiz in the database
+  const dbLiveQuiz = await prisma.liveQuiz.create({
     data: {
       name: `Live Quiz ${i} for ${course.name}`,
       displayName: `Live Quiz ${i} for ${course.name}`,
@@ -142,21 +142,32 @@ export async function createLiveQuiz(
       },
     },
   })
+
+  // recompute the derived permissions for the course owner
+  await recomputeDerivedPermissions(
+    { liveQuizId: dbLiveQuiz.id, userId: course.owner.id },
+    prisma
+  )
+
+  return dbLiveQuiz
 }
 
 export async function createPracticeQuiz(
   prisma: PrismaClient,
   course: Course,
-  i: number,
+  ix: number,
   elements: { id: number; type: ElementType }[]
 ) {
-  return await prisma.practiceQuiz.create({
+  // create a practice quiz in the database
+  const dbPracticeQuiz = await prisma.practiceQuiz.create({
     data: {
-      name: `Practice Quiz ${i} for ${course.name}`,
-      displayName: `Practice Quiz ${i} for ${course.name}`,
+      name: `Practice Quiz ${ix} for ${course.name}`,
+      displayName: `Practice Quiz ${ix} for ${course.name}`,
       description: '',
       courseId: course.id,
       ownerId: course.owner.id,
+      availableFrom:
+        ix > 1 ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : undefined, // one week in the future
       stacks: {
         create: elements.map((element, index) => ({
           order: index,
@@ -180,22 +191,31 @@ export async function createPracticeQuiz(
       },
     },
   })
+
+  // recompute the derived permissions for the course owner
+  await recomputeDerivedPermissions(
+    { practiceQuizId: dbPracticeQuiz.id, userId: course.owner.id },
+    prisma
+  )
+
+  return dbPracticeQuiz
 }
 
 export async function createMicroLearning(
   prisma: PrismaClient,
   course: Course,
-  i: number,
+  ix: number,
   elements: { id: number; type: ElementType }[]
 ) {
-  return await prisma.microLearning.create({
+  // create a microlearning in the database
+  const dbMicroLearning = await prisma.microLearning.create({
     data: {
-      name: `Micro Learning ${i} for ${course.name}`,
-      displayName: `Micro Learning ${i} for ${course.name}`,
+      name: `Microlearning ${ix} for ${course.name}`,
+      displayName: `Microlearning ${ix} for ${course.name}`,
       description: '',
       courseId: course.id,
-      scheduledStartAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // one week ago
-      scheduledEndAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // two weeks in future
+      scheduledStartAt: new Date(Date.now() - ix * 7 * 24 * 60 * 60 * 1000), // ix * one week ago
+      scheduledEndAt: new Date(Date.now() + ix * 14 * 24 * 60 * 60 * 1000), // ix * two weeks in future
       ownerId: course.owner.id,
       stacks: {
         create: elements.map((element, index) => ({
@@ -220,6 +240,14 @@ export async function createMicroLearning(
       },
     },
   })
+
+  // recompute the derived permissions for the course owner
+  await recomputeDerivedPermissions(
+    { microLearningId: dbMicroLearning.id, userId: course.owner.id },
+    prisma
+  )
+
+  return dbMicroLearning
 }
 
 export async function testInitialization(prisma: PrismaClient) {
@@ -248,7 +276,7 @@ export async function testInitialization(prisma: PrismaClient) {
   )
   expect(actualEmails).toHaveLength(2)
 
-  const res = await Promise.all(
+  await Promise.all(
     [userOne, userTwo].map(async (user) => {
       let userPrisma = await prisma.user.findUnique({
         where: { id: user.id },
@@ -298,29 +326,31 @@ export async function testInitialization(prisma: PrismaClient) {
   const e1 = await createElements(prisma, 2, userOne)
   const e2 = await createElements(prisma, 3, userTwo)
 
-  const c1 = await createCourse(prisma, courseOne, true)
-  const c2 = await createCourse(prisma, courseTwo, false)
-  const c3 = await createCourse(prisma, courseThree, true)
-  const c4 = await createCourse(prisma, courseFour, true)
-  const c5 = await createCourse(prisma, courseFive, false)
+  await createCourse(prisma, courseOne, true)
+  await createCourse(prisma, courseTwo, false)
+  await createCourse(prisma, courseThree, true)
+  await createCourse(prisma, courseFour, true)
+  await createCourse(prisma, courseFive, false)
+  await createCourse(prisma, courseArchivedOne, true, true)
+  await createCourse(prisma, courseArchivedTwo, true, true)
 
-  const l1 = await createLiveQuiz(prisma, courseOne, 1, e1)
-  const l2 = await createLiveQuiz(prisma, courseOne, 2, e1)
-  const l3 = await createLiveQuiz(prisma, courseOne, 3, e1)
-  const p1 = await createPracticeQuiz(prisma, courseOne, 1, e1)
-  const p2 = await createPracticeQuiz(prisma, courseOne, 2, e1)
-  const m1 = await createMicroLearning(prisma, courseOne, 1, e1)
+  await createLiveQuiz(prisma, courseOne, 1, e1)
+  await createLiveQuiz(prisma, courseOne, 2, e1)
+  await createLiveQuiz(prisma, courseOne, 3, e1)
+  await createPracticeQuiz(prisma, courseOne, 1, e1)
+  await createPracticeQuiz(prisma, courseOne, 2, e1)
+  await createMicroLearning(prisma, courseOne, 1, e1)
 
-  const p3 = await createPracticeQuiz(prisma, courseTwo, 1, e1)
-  const m2 = await createMicroLearning(prisma, courseTwo, 1, e1)
-  const m3 = await createMicroLearning(prisma, courseTwo, 2, e1)
+  await createPracticeQuiz(prisma, courseTwo, 1, e1)
+  await createMicroLearning(prisma, courseTwo, 1, e1)
+  await createMicroLearning(prisma, courseTwo, 2, e1)
 
-  const l4 = await createLiveQuiz(prisma, courseThree, 1, e2)
-  const l5 = await createLiveQuiz(prisma, courseThree, 2, e2)
-  const p4 = await createPracticeQuiz(prisma, courseThree, 1, e2)
-  const m4 = await createMicroLearning(prisma, courseThree, 1, e2)
+  await createLiveQuiz(prisma, courseThree, 1, e2)
+  await createLiveQuiz(prisma, courseThree, 2, e2)
+  await createPracticeQuiz(prisma, courseThree, 1, e2)
+  await createMicroLearning(prisma, courseThree, 1, e2)
 
-  const l7 = await createLiveQuiz(prisma, courseFive, 1, e2)
+  await createLiveQuiz(prisma, courseFive, 1, e2)
 }
 
 // function to be run at the end of a test suite / test case to ensure complete deletion of all test data
@@ -359,22 +389,15 @@ export function getDatabaseUrl() {
   }
 
   // as a fallback, use default PostgreSQL connection
-  return 'postgresql://klicker:klicker@localhost:5432/klicker'
+  process.env.DATABASE_URL =
+    'postgresql://klicker-prod:klicker@localhost:5432/klicker-prod'
 }
 
 export async function initializePrisma() {
   // configure database
-  const databaseUrl = getDatabaseUrl()
+  getDatabaseUrl()
 
   try {
-    // initialize PrismaClient with the database URL
-    const prisma = new PrismaClient({
-      datasources: {
-        db: { url: databaseUrl },
-      },
-      log: ['error', 'warn'],
-    })
-
     // test database connection
     await prisma.$connect()
 

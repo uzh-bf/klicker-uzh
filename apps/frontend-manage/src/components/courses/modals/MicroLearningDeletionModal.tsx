@@ -3,7 +3,6 @@ import {
   DeleteMicroLearningDocument,
   GetMicroLearningSummaryDocument,
   GetSingleCourseDocument,
-  GetUserActivitiesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -14,10 +13,12 @@ function MicroLearningDeletionModal({
   onClose,
   activityId,
   courseId,
+  refetchActivities,
 }: {
   onClose: () => void
   activityId: string
   courseId: string
+  refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
   const { data: summaryData, loading: summaryLoading } = useQuery(
@@ -32,18 +33,31 @@ function MicroLearningDeletionModal({
     DeleteMicroLearningDocument,
     {
       variables: { id: activityId },
-      optimisticResponse: {
-        __typename: 'Mutation',
-        deleteMicroLearning: {
-          __typename: 'MicroLearning',
-          id: activityId,
-        },
+      update: (cache, { data: res }) => {
+        // if the microlearning is not part of a course or the mutation was not successful, return early
+        if (!res?.deleteMicroLearning?.id) return
+
+        // change the status of the microlearning on the course overview back to draft
+        cache.updateQuery(
+          {
+            query: GetSingleCourseDocument,
+            variables: { courseId },
+          },
+          (data) => {
+            if (!data?.course) return data
+
+            return {
+              course: {
+                ...data.course,
+                microLearningsInfo:
+                  data.course.microLearningsInfo?.filter(
+                    (ml) => ml.id !== res.deleteMicroLearning!.id
+                  ) ?? [],
+              },
+            }
+          }
+        )
       },
-      // TODO: replace with proper cache update
-      refetchQueries: [
-        { query: GetUserActivitiesDocument },
-        { query: GetSingleCourseDocument, variables: { courseId } },
-      ],
     }
   )
 
@@ -72,7 +86,10 @@ function MicroLearningDeletionModal({
       onClose={onClose}
       title={t('manage.course.deleteMicroLearning')}
       message={t('manage.course.deleteMicroLearningMessage')}
-      onSubmit={async () => await deleteMicroLearning()}
+      onSubmit={async () => {
+        await deleteMicroLearning()
+        await refetchActivities?.()
+      }}
       submitting={deletingMicroLearning}
       confirmations={confirmations}
       confirmationsInitializing={summaryLoading}

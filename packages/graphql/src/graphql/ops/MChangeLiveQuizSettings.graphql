@@ -3,19 +3,16 @@ mutation ChangeLiveQuizSettings(
   $isLiveQAEnabled: Boolean
   $isConfusionFeedbackEnabled: Boolean
   $isModerationEnabled: Boolean
-  $isGamificationEnabled: Boolean
 ) {
   changeLiveQuizSettings(
     id: $id
     isLiveQAEnabled: $isLiveQAEnabled
     isConfusionFeedbackEnabled: $isConfusionFeedbackEnabled
     isModerationEnabled: $isModerationEnabled
-    isGamificationEnabled: $isGamificationEnabled
   ) {
     id
     isLiveQAEnabled
     isConfusionFeedbackEnabled
     isModerationEnabled
-    isGamificationEnabled
   }
 }

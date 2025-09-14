@@ -22,7 +22,6 @@ function TransferOwnershipModal({
   catalogCollectionId?: string
 }) {
   const t = useTranslations()
-
   const onTransferFailure = () =>
     toast({
       type: 'error',

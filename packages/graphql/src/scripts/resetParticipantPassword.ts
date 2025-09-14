@@ -1,10 +1,8 @@
-import { PrismaClient } from '@klicker-uzh/prisma'
+import { prisma } from '@klicker-uzh/prisma'
 import bcrypt from 'bcryptjs'
 import generatePassword from 'generate-password'
 
 async function run(email: string) {
-  const prisma = new PrismaClient()
-
   const user = await prisma.participant.findUnique({
     where: {
       email,

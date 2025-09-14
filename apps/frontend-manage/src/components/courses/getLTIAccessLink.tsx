@@ -1,21 +1,20 @@
 import { faLink } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { useTranslations } from 'next-intl'
+import { toast } from '@uzh-bf/design-system'
 
 function getLTIAccessLink({
   t,
   name,
   href,
-  onSuccess,
   label,
 }: {
-  t: ReturnType<typeof useTranslations>
+  t: any
   name: string
   href: string
-  onSuccess: () => void
   label?: string
 }) {
   return {
+    id: `copy-lti-link-${name}`,
     label: (
       <div className="text-primary-100 flex cursor-pointer flex-row items-center gap-1">
         <FontAwesomeIcon icon={faLink} size="sm" className="w-4" />
@@ -29,8 +28,17 @@ function getLTIAccessLink({
       try {
         const link = `${process.env.NEXT_PUBLIC_LTI_URL}?redirectTo=${href}`
         await navigator.clipboard.writeText(link)
-        onSuccess()
-      } catch (e) {}
+        toast({
+          type: 'success',
+          message: t('manage.course.linkLTICopied'),
+        })
+      } catch (e) {
+        console.error(e)
+        toast({
+          type: 'error',
+          message: t('manage.course.linkLTIError'),
+        })
+      }
     },
     data: {
       cy: `copy-lti-link-${name}`,

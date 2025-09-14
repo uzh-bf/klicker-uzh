@@ -111,7 +111,6 @@ function GroupActivityStackClues({
               <StackBlockCreation
                 singleStackMode
                 stackIx={0}
-                key={`stack-${values.stack.elements.map((e) => e.id).join('-')}`}
                 stack={values.stack}
                 acceptedTypes={acceptedTypes}
                 replace={(_, newValue) => setFieldValue('stack', newValue)}
@@ -184,7 +183,7 @@ function GroupActivityStackClues({
                                 errors.clues.length > ix &&
                                 errors.clues[ix]
                                 ? 'border-red-600'
-                                : 'border-uzh-grey-40'
+                                : 'border-border'
                             )}
                             data-cy={`groupActivity-clue-${clue.name}`}
                           >

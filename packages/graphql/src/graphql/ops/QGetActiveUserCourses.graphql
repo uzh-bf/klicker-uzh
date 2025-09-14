@@ -7,11 +7,16 @@ query GetActiveUserCourses($activityId: String, $activityType: ActivityType) {
     pinCode
     isArchived
     isGamificationEnabled
+    isAssessmentEnabled
     isGroupCreationEnabled
     description
     startDate
     endDate
     groupDeadlineDate
+    isOwner
+    isManager
+    isEditor
+    isShared
     createdAt
     updatedAt
   }

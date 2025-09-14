@@ -1,3 +1,4 @@
+import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import { ActivityLogEntry, ObjectType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, TextareaField } from '@uzh-bf/design-system'
@@ -5,34 +6,22 @@ import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { useObjectActivity } from '../../lib/hooks/useObjectActivity'
 
 dayjs.extend(relativeTime)
 
-export interface ActivityLogProps {
-  // The ID of the object to fetch activity for
-  objectId: string | number
-  // The type of object (Element, Course, etc.)
-  objectType: ObjectType
-  // Optional function to resolve/unresolve a message (when not using internal data fetching)
-  onResolveMessage?: (id: number, resolved: boolean) => Promise<any>
-  // Optional flag for resolving message state (when not using internal data fetching)
-  isResolvingMessage?: boolean
-  // Optional flag to indicate if the modal/component is currently visible
-  visible?: boolean
-}
-
-/**
- * A component that displays activity entries for an object (messages, modifications, etc.)
- * This component handles both the data fetching and the UI rendering
- */
 function ActivityLog({
   objectId,
   objectType,
-  onResolveMessage: propOnResolveMessage,
-  isResolvingMessage: propIsResolvingMessage,
-  visible = true,
-}: ActivityLogProps) {
+  visible,
+  className = '',
+}: {
+  objectId: string | number
+  objectType: ObjectType
+  visible?: boolean
+  className?: string
+}) {
   const t = useTranslations()
   const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -43,12 +32,15 @@ function ActivityLog({
     error: queryError,
     addActivityMessage,
     resolveActivityLogEntry,
+    deleteActivityMessage,
     isAddingMessage: hookIsAddingMessage,
     isResolvingMessage: hookIsResolvingMessage,
+    isDeletingMessage: hookIsDeletingMessage,
     refetch,
   } = useObjectActivity({
     objectId,
     objectType,
+    visible,
   })
 
   // handle message submission
@@ -69,24 +61,10 @@ function ActivityLog({
     }
   }
 
-  // handle resolving/unresolving a message
-  // const handleResolve = async (id: number, currentResolvedStatus: boolean) => {
-  //   try {
-  //     if (propOnResolveMessage) {
-  //       await propOnResolveMessage(id, !currentResolvedStatus)
-  //     } else {
-  //       await resolveActivityLogEntry(id, !currentResolvedStatus)
-  //     }
-  //   } catch (error) {
-  //     console.error('[ActivityLog] Failed to toggle resolved status:', error)
-  //   }
-  // }
-
   // determine which entries, loading and error states to use
   const loading = queryLoading
   const error = !!queryError
   const isAddingMessage = hookIsAddingMessage
-  const isResolvingMessage = hookIsResolvingMessage
 
   if (loading) {
     return (
@@ -136,21 +114,11 @@ function ActivityLog({
 
   return (
     <div className="flex w-full flex-col">
-      {/* Filter toggle */}
-      {/* <div className="flex justify-end border-b p-2">
-        <label className="flex items-center text-xs text-gray-600">
-          <input
-            type="checkbox"
-            checked={filterResolved}
-            onChange={() => setFilterResolved(!filterResolved)}
-            className="mr-2 h-3 w-3"
-          />
-          {t('shared.comments.hideResolved')}
-        </label>
-      </div> */}
-
       <div
-        className="max-h-80 overflow-y-auto scroll-smooth p-2"
+        className={twMerge(
+          'max-h-80 overflow-y-auto scroll-smooth p-2',
+          className
+        )}
         style={{ overscrollBehavior: 'contain' }}
         ref={(el) => {
           // scroll to bottom when component mounts or updates
@@ -182,34 +150,55 @@ function ActivityLog({
                 </div>
 
                 {groupedEntries[date].map((entry) => {
-                  const isOwnMessage = entry.username === 'self' // TODO: replace with actual logic to check if message is from current user
-
                   if (entry.message !== null) {
                     return (
                       <div
                         key={entry.id}
-                        className="mb-2"
+                        className="group mb-2"
                         data-cy={`activity-log-entry-${entry.message}`}
                       >
                         <div className="rounded-lg border bg-white p-3 shadow-sm">
                           <div className="mb-2 flex flex-row items-center justify-between text-xs">
-                            {!isOwnMessage && (
-                              <div className="flex items-center">
-                                <div className="mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-xs text-white">
-                                  {(entry.username || 'U')[0].toUpperCase()}
-                                </div>
-                                <span className="font-medium text-gray-700">
-                                  {entry.username || 'Unknown user'}
-                                </span>
+                            <div className="flex items-center">
+                              <div className="mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-xs text-white">
+                                {(entry.username !== ''
+                                  ? entry.username
+                                  : 'U')[0].toUpperCase()}
                               </div>
-                            )}
+                              <span className="font-medium text-gray-700">
+                                {entry.username !== ''
+                                  ? entry.username
+                                  : t('shared.generic.unknownUser')}
+                              </span>
+                            </div>
 
-                            <div className="ml-auto text-slate-400">
+                            <div
+                              className={twMerge(
+                                'ml-auto text-slate-400',
+                                entry.isOwn && 'group-hover:hidden'
+                              )}
+                            >
                               {dayjs(entry.createdAt).format(
                                 'DD.MM.YYYY HH:mm'
                               )}
                               {entry.isEdited && ' (edited)'}
                             </div>
+
+                            <Button
+                              basic
+                              className={{
+                                root: twMerge(
+                                  'hidden px-3 py-0 text-red-600 hover:text-red-600',
+                                  entry.isOwn && 'group-hover:block'
+                                ),
+                              }}
+                              onClick={async () =>
+                                await deleteActivityMessage(entry.id)
+                              }
+                              data={{ cy: 'activity-log-delete-message' }}
+                            >
+                              <Button.Icon withoutLabel icon={faTrashCan} />
+                            </Button>
                           </div>
 
                           <div className="prose prose-sm w-full max-w-none break-words text-gray-700">

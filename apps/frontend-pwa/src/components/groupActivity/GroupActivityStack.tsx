@@ -17,6 +17,7 @@ import StudentElement, {
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
 import getEmptySelectionResponse from '@klicker-uzh/shared-components/src/utils/getEmptySelectionResponse'
+import { ChoicesResponse } from '@klicker-uzh/types'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -47,6 +48,8 @@ function GroupActivityStack({
 
   const [submitGroupActivityDecisions, { loading: submitLoading }] =
     useMutation(SubmitGroupActivityDecisionsDocument, {
+      // previous submissions need to be loaded in the correct format
+      // duplication of logic for rarely called function is probably not worth it
       refetchQueries: [
         {
           query: GroupActivityDetailsDocument,
@@ -84,7 +87,7 @@ function GroupActivityStack({
           acc[decision.instanceId] = {
             type: decision.type,
             response: decision.choicesResponse?.reduce<Record<number, boolean>>(
-              (acc, choice) => ({ ...acc, [choice]: true }),
+              (acc, choice) => ({ ...acc, [choice.ix]: true }),
               {}
             ),
             valid: true,
@@ -98,7 +101,7 @@ function GroupActivityStack({
           acc[decision.instanceId] = {
             type: decision.type,
             response: decision.choicesResponse?.reduce<Record<number, boolean>>(
-              (acc, choice) => ({ ...acc, [choice]: true }),
+              (acc, choice) => ({ ...acc, [choice.ix]: true }),
               responseObj
             ),
             valid: true,
@@ -287,9 +290,14 @@ function GroupActivityStack({
                       value.type === ElementType.Kprim
                     ) {
                       // convert the solution objects into integer lists
-                      const responseList = Object.entries(value.response!)
+                      const responseList: ChoicesResponse[] = Object.entries(
+                        value.response!
+                      )
                         .filter(([, value]) => value)
-                        .map(([key]) => parseInt(key))
+                        .map(([key, value]) => ({
+                          ix: parseInt(key),
+                          selected: value ?? false,
+                        }))
 
                       return {
                         instanceId: parseInt(instanceId),
