@@ -16,10 +16,10 @@ import {
 import type { FC } from 'react'
 
 import { Button } from '@uzh-bf/design-system'
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 import { BranchPicker } from './branch-picker'
 import { MarkdownText } from './markdown-text'
 import { ToolFallback } from './tool-fallback'
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 import Image from 'next/image'
 

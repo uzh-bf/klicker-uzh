@@ -7,8 +7,8 @@ import { useState } from 'react'
 
 import { Button, TextField } from '@uzh-bf/design-system'
 import { useParams } from 'next/navigation'
-import { useChatStore, type Thread } from '../../stores/chatStore'
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
+import { useChatStore, type Thread } from '../stores/chatStore'
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 export const ThreadList: FC = () => {
   return (

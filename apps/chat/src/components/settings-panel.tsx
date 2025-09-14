@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { type ModelID } from '../../lib/config/models'
-import { useSettingsStore } from '../../stores/settingsStore'
+import { type ModelID } from '../lib/config/models'
+import { useSettingsStore } from '../stores/settingsStore'
 
 import { Progress, Select } from '@uzh-bf/design-system'
 import { ChevronDown, ChevronUp, Settings2, Zap } from 'lucide-react'

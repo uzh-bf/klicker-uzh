@@ -2,8 +2,8 @@
 
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
-import { useChatStore } from '../../stores/chatStore'
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
+import { useChatStore } from '../stores/chatStore'
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 interface BranchPickerProps {
   messageId: string

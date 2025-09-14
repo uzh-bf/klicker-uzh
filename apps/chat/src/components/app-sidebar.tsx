@@ -13,8 +13,8 @@ import { MessagesSquare } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import * as React from 'react'
-import { SettingsPanel } from './assistant-ui/settings-panel'
-import { ThreadList } from './assistant-ui/thread-list'
+import { SettingsPanel } from './settings-panel'
+import { ThreadList } from './thread-list'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {

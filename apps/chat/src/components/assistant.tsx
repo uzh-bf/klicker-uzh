@@ -14,7 +14,7 @@ import {
 import { RuntimeProvider } from '../app/RuntimeProvider'
 import { useChatStore } from '../stores/chatStore'
 import { AppSidebar } from './app-sidebar'
-import { Thread } from './assistant-ui/thread'
+import { Thread } from './thread'
 
 export const Assistant = ({
   chatbot,
