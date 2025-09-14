@@ -9,8 +9,8 @@ ADD COLUMN     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
 -- CreateTable
 CREATE TABLE "public"."ChatUsageCredits" (
     "id" UUID NOT NULL,
-    "total" INTEGER NOT NULL DEFAULT 0,
-    "current" INTEGER NOT NULL DEFAULT 0,
+    "total" DECIMAL(18,6) NOT NULL DEFAULT 0,
+    "current" DECIMAL(18,6) NOT NULL DEFAULT 0,
     "participantId" UUID NOT NULL,
     "chatbotId" UUID NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
