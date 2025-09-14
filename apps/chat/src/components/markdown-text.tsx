@@ -14,7 +14,7 @@ import { CheckIcon, CopyIcon } from 'lucide-react'
 import { FC, memo, useState } from 'react'
 import remarkGfm from 'remark-gfm'
 
-import { cn } from '../lib/utils'
+import { cn } from '../lib/utils/ui'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 const MarkdownTextImpl = () => {
