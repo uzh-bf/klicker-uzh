@@ -140,10 +140,12 @@ jobs:
         run: |
           cd apps/hatchet-worker-general
           # Start the worker in background with CI hosts
-          DATABASE_URL=${{ env.DATABASE_URL }} \
-          HATCHET_API_URL=${{ env.HATCHET_API_URL }} \
-          HATCHET_TENANT_ID=${{ env.HATCHET_TENANT_ID }} \
-          HATCHET_HOST_PORT=${{ env.HATCHET_HOST_PORT }} \
+          HATCHET_WORKFLOWS=createAuditLogEntry \
+          HATCHET_CLIENT_TLS_STRATEGY=none \
+          DATABASE_URL=$DATABASE_URL \
+          HATCHET_API_URL=$HATCHET_API_URL \
+          HATCHET_TENANT_ID=$HATCHET_TENANT_ID \
+          HATCHET_HOST_PORT=$HATCHET_HOST_PORT \
           REDIS_HOST=127.0.0.1 REDIS_PORT=6379 \
           REDIS_CACHE_HOST=127.0.0.1 REDIS_CACHE_PORT=6380 \
           pnpm run start:test &
