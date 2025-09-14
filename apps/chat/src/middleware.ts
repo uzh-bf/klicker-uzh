@@ -6,13 +6,14 @@ import { NextResponse } from 'next/server'
 export async function middleware(request: NextRequest) {
   const participantToken = request.cookies.get('participant_token')?.value
 
+  const loginUrl = `${process.env.NEXT_PUBLIC_PWA_URL}/login?redirectTo=${process.env.NEXT_PUBLIC_CHAT_URL}`
+
   if (!participantToken) {
-    return NextResponse.redirect('https://pwa.klicker.com', 302)
+    return NextResponse.redirect(loginUrl, 302)
   }
 
   // verify with jose that the token is valid
-  // if not valid, redirect to pwa.klicker.com
-  // if valid, continue
+  // if not valid, redirect to login with redirectTo
   try {
     await jwtVerify(
       participantToken || '',
@@ -20,7 +21,7 @@ export async function middleware(request: NextRequest) {
     )
   } catch (error) {
     console.error('Invalid participant token:', error)
-    return NextResponse.redirect(process.env.NEXT_PUBLIC_PWA_URL as string, 302)
+    return NextResponse.redirect(loginUrl, 302)
   }
 
   // TODO: relay participant data to api routes or similar
