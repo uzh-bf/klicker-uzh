@@ -356,6 +356,7 @@ function LiveQuizTimeline({
         <LiveQuizQRModal
           quizId={quizId}
           quizPin={quizPin}
+          isAssessmentEnabled={assessmentMode}
           language={language}
           onClose={() => setQRModal(false)}
         />

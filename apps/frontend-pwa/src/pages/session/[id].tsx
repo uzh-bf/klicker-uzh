@@ -244,8 +244,13 @@ function Index({ id }: { id: string }) {
 
   // pin error handling
   const isPinMissing =
-    error?.graphQLErrors?.some((e) => e.message === 'LIVE_QUIZ_PIN_MISSING') ||
-    error?.message === 'LIVE_QUIZ_PIN_MISSING'
+    error?.graphQLErrors?.some(
+      (e) =>
+        e.message === 'LIVE_QUIZ_PIN_MISSING' ||
+        e.message === 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT'
+    ) ||
+    error?.message === 'LIVE_QUIZ_PIN_MISSING' ||
+    error?.message === 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT'
   const isPinInvalid =
     error?.graphQLErrors?.some((e) => e.message === 'LIVE_QUIZ_PIN_INVALID') ||
     error?.message === 'LIVE_QUIZ_PIN_INVALID'
@@ -645,13 +650,84 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   const apolloClient = initializeApollo()
 
+  let liveQuiz = null
   try {
-    await apolloClient.query({
+    liveQuiz = await apolloClient.query({
       query: GetRunningLiveQuizDocument,
       variables: { id: ctx.query?.id as string },
     })
-  } catch (e) {
-    // intentionally ignore GraphQL errors here (e.g., pin missing/invalid) -> handled in UI
+  } catch (e: any) {
+    // if the user is requesting an assessment quiz from the PWA domain, redirect them to the assessment domain
+    if (
+      e.graphQLErrors?.some(
+        (err: any) => err.message === 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT'
+      ) &&
+      ctx.req.headers.host &&
+      !process.env.JWT_ISSUER_ASSESSMENT!.includes(ctx.req.headers.host)
+    ) {
+      return {
+        redirect: {
+          destination: `${
+            process.env.JWT_ISSUER_ASSESSMENT ?? ''
+          }${ctx.locale ? `/${ctx.locale}` : ''}/session/${ctx.params?.id as string}`,
+          permanent: false,
+        },
+      }
+    }
+
+    // if the user is requesting a standard PWA quiz with PIN protection from the assessment domain, redirect them to the PWA domain
+    if (
+      e.graphQLErrors?.some(
+        (err: any) => err.message === 'LIVE_QUIZ_PIN_MISSING'
+      ) &&
+      ctx.req.headers.host &&
+      !process.env.JWT_ISSUER_PWA!.includes(ctx.req.headers.host)
+    ) {
+      return {
+        redirect: {
+          destination: `${
+            process.env.JWT_ISSUER_PWA ?? ''
+          }${ctx.locale ? `/${ctx.locale}` : ''}/session/${ctx.params?.id as string}`,
+          permanent: false,
+        },
+      }
+    }
+
+    // ignore all other errors that might be thrown -> they will be handled in the component
+  }
+
+  // if the fetch was successful, redirect based on the assessment boolean
+  // -> if student entered valid PIN for an assessment quiz and then visits quiz through PWA domain (or vice-versa)
+  if (liveQuiz?.data.studentLiveQuiz) {
+    if (
+      liveQuiz.data.studentLiveQuiz.isAssessmentEnabled &&
+      ctx.req.headers.host &&
+      !process.env.JWT_ISSUER_ASSESSMENT!.includes(ctx.req.headers.host)
+    ) {
+      return {
+        redirect: {
+          destination: `${
+            process.env.JWT_ISSUER_ASSESSMENT ?? ''
+          }${ctx.locale ? `/${ctx.locale}` : ''}/session/${ctx.params?.id as string}`,
+          permanent: false,
+        },
+      }
+    }
+
+    if (
+      !liveQuiz.data.studentLiveQuiz.isAssessmentEnabled &&
+      ctx.req.headers.host &&
+      !process.env.JWT_ISSUER_PWA!.includes(ctx.req.headers.host)
+    ) {
+      return {
+        redirect: {
+          destination: `${
+            process.env.JWT_ISSUER_PWA ?? ''
+          }${ctx.locale ? `/${ctx.locale}` : ''}/session/${ctx.params?.id as string}`,
+          permanent: false,
+        },
+      }
+    }
   }
 
   await apolloClient.query({

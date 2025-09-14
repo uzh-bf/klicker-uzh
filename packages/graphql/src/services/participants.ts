@@ -1183,15 +1183,11 @@ export async function getCourseStudentTimelines(ctx: ContextWithUser) {
               OR: [
                 {
                   type: DB.TimelineEntryType.WEEKLY,
-                  timestamp: {
-                    lt: dayjs().subtract(14, 'days').toDate(),
-                  },
+                  timestamp: { lt: dayjs().subtract(14, 'days').toDate() },
                 },
                 {
                   type: DB.TimelineEntryType.DAILY,
-                  timestamp: {
-                    gte: dayjs().subtract(14, 'days').toDate(),
-                  },
+                  timestamp: { gte: dayjs().subtract(14, 'days').toDate() },
                 },
               ],
             },
