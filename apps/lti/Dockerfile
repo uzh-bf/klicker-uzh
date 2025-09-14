@@ -48,6 +48,7 @@ RUN pnpm i --frozen-lockfile --prod --ignore-scripts
 COPY --from=builder --chown=nodejs:nodejs /app/packages/util/dist/ ./packages/util/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/packages/types/dist/ ./packages/types/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/packages/prisma/dist/ ./packages/prisma/dist/
+COPY --from=builder --chown=nodejs:nodejs /app/packages/grading/dist/ ./packages/grading/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/apps/lti/dist ./apps/lti/dist
 
 USER nodejs

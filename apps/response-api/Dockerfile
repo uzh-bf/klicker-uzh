@@ -51,6 +51,7 @@ RUN adduser --system --uid 1001 nodejs
 COPY --from=builder /app/packages/util/dist/ /app/packages/util/dist/
 COPY --from=builder /app/packages/hatchet/dist/ /app/packages/hatchet/dist/
 COPY --from=builder /app/packages/types/dist/ /app/packages/types/dist/
+COPY --from=builder --chown=nodejs:nodejs /app/packages/prisma/dist/ ./packages/prisma/dist/
 COPY --from=builder /app/apps/response-api/dist/ /app/apps/response-api/dist/
 
 USER nodejs

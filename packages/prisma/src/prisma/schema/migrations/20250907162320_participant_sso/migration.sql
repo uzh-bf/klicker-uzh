@@ -13,7 +13,7 @@ ADD COLUMN     "isVerified" BOOLEAN NOT NULL DEFAULT true;
 ALTER TABLE "public"."ParticipantAccount" ADD COLUMN     "isPrimary" BOOLEAN NOT NULL DEFAULT false,
 ADD COLUMN     "isVerified" BOOLEAN NOT NULL DEFAULT false,
 ADD COLUMN     "type" TEXT NOT NULL DEFAULT 'sso',
-ADD COLUMN     "updatedAt" TIMESTAMP(3) NOT NULL;
+ADD COLUMN     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
 
 -- CreateIndex
 CREATE INDEX "Account_providerAccountId_isVerified_idx" ON "public"."Account"("providerAccountId", "isVerified");
