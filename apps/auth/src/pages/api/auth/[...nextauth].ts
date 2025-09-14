@@ -10,7 +10,12 @@ import { sendTeamsNotifications } from '@/lib/util'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@klicker-uzh/prisma'
 import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
-import { JWTPayload, signJWT, verifyJWT } from '@klicker-uzh/util'
+import {
+  collectAllEmails,
+  JWTPayload,
+  signJWT,
+  verifyJWT,
+} from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import type { NextApiRequest, NextApiResponse } from 'next'
@@ -206,18 +211,6 @@ function extractProviderFromAffiliationId(
   } catch {
     return null
   }
-}
-
-function collectAllEmails(
-  primaryEmail?: string,
-  affiliationEmails?: string[]
-): string[] {
-  const emails = []
-  if (primaryEmail) emails.push(primaryEmail.toLowerCase())
-  if (affiliationEmails) {
-    emails.push(...affiliationEmails.map((email) => email.toLowerCase()))
-  }
-  return emails.filter(Boolean)
 }
 
 function generateRandomString(length: number) {
