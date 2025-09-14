@@ -83,7 +83,9 @@ docker compose up --build -d postgres redis_exec redis_cache "$PROXY" hatchet ||
 	exit 1
 }
 
-sleep 15
+pnpm run build
+
+sleep 10
 
 # create hatchet client token (switch script for cypress/test mode)
 if [ "$MODE" = "cypress" ]; then

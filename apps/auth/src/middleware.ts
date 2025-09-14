@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Short-lived cookie to persist redirect target through OAuth dance
+const REDIRECT_COOKIE_NAME = 'klicker_redirect_to'
+
 function isValidStudentRedirectUrl(url: string): boolean {
   if (!url) return false
 
@@ -52,7 +55,24 @@ export async function middleware(request: NextRequest) {
     searchParams: Object.fromEntries(request.nextUrl.searchParams.entries()),
   })
 
-  // Handle /lecturer route - redirect to OAuth immediately for lecturer auth
+  // Handle root (lecturer login UI). If a redirectTo is provided, set cookie early.
+  if (pathname === '/') {
+    const redirectTo = request.nextUrl.searchParams.get('redirectTo')
+    if (redirectTo && isValidLecturerRedirectUrl(redirectTo)) {
+      const response = NextResponse.next()
+      response.cookies.set(REDIRECT_COOKIE_NAME, redirectTo, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        maxAge: 60 * 10,
+      })
+      console.log('Root route: lecturer redirect cookie set')
+      return response
+    }
+  }
+
+  // Handle /lecturer route - redirect to lecturer UI and set cookie early
   if (pathname === '/lecturer') {
     console.log('LECTURER ROUTE MATCHED!')
     const redirectTo =
@@ -67,22 +87,25 @@ export async function middleware(request: NextRequest) {
       return new NextResponse('Invalid redirect URL', { status: 400 })
     }
 
-    console.log('Valid lecturer redirect URL, proceeding with OAuth redirect')
-
-    // Redirect to lecturer signin with both EduID and credentials options
-    const signinUrl = new URL('/api/auth/signin', request.url)
-    signinUrl.searchParams.set('callbackUrl', redirectTo)
-    // No participant parameter - default to lecturer context
-
-    console.log('Lecturer route redirect to:', signinUrl.toString())
-
-    const response = NextResponse.redirect(signinUrl)
-
-    console.log('Returning lecturer redirect response')
+    // Set/refresh cookie and show index login page (UI offers EduID or delegated)
+    const dest = new URL('/', request.url)
+    dest.searchParams.set('redirectTo', redirectTo)
+    const response = NextResponse.redirect(dest)
+    response.cookies.set(REDIRECT_COOKIE_NAME, redirectTo, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 60 * 10,
+    })
+    console.log(
+      'Lecturer route: set cookie and redirect to index UI:',
+      dest.toString()
+    )
     return response
   }
 
-  // Handle /student route - redirect to OAuth immediately
+  // Handle /student route - render login page and set cookie early (belt-and-suspenders)
   if (pathname === '/student') {
     console.log('STUDENT ROUTE MATCHED!')
     const redirectTo =
@@ -97,18 +120,17 @@ export async function middleware(request: NextRequest) {
       return new NextResponse('Invalid redirect URL', { status: 400 })
     }
 
-    console.log('Valid redirect URL, proceeding with OAuth redirect')
-
-    // Redirect directly to the EduID OAuth flow
-    const signinUrl = new URL('/api/auth/signin/eduid-participant', request.url)
-    signinUrl.searchParams.set('callbackUrl', redirectTo)
-    signinUrl.searchParams.set('participant', 'true')
-
-    console.log('Student route redirect to:', signinUrl.toString())
-
-    const response = NextResponse.redirect(signinUrl)
-
-    console.log('Returning redirect response')
+    // Set/refresh the redirect cookie so it's available on callback even if
+    // NextAuth posts the callbackUrl in the body (not readable in middleware)
+    const response = NextResponse.next()
+    response.cookies.set(REDIRECT_COOKIE_NAME, redirectTo, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 60 * 10, // 10 minutes to account for user delays
+    })
+    console.log('Student route: cookie set, rendering student login page')
     return response
   }
 
@@ -120,7 +142,6 @@ export async function middleware(request: NextRequest) {
     // Only detect participant context from explicit parameters and current request context
     const isParticipantContext =
       participantParam === 'true' ||
-      pathname.includes('eduid-participant') ||
       referer.includes('assessment.') ||
       referer.includes('/student')
 
@@ -131,26 +152,88 @@ export async function middleware(request: NextRequest) {
       pathname,
     })
 
-    // For participant context, ensure participant parameter is present in URL
-    if (isParticipantContext && participantParam !== 'true') {
-      const url = request.nextUrl.clone()
-      url.searchParams.set('participant', 'true')
-      console.log('Adding participant parameter to URL:', url.toString())
-      return NextResponse.redirect(url)
+    // If handling provider callback, ensure we carry the intended callbackUrl from cookie
+    if (pathname.startsWith('/api/auth/callback')) {
+      const redirectCookie = request.cookies.get(REDIRECT_COOKIE_NAME)?.value
+      if (redirectCookie) {
+        const cookieSaysParticipant = isValidStudentRedirectUrl(redirectCookie)
+        const cookieSaysLecturer = isValidLecturerRedirectUrl(redirectCookie)
+
+        const url = request.nextUrl.clone()
+        let modified = false
+
+        // Ensure callbackUrl is present from cookie
+        if (
+          !url.searchParams.has('callbackUrl') &&
+          (cookieSaysParticipant || cookieSaysLecturer)
+        ) {
+          url.searchParams.set('callbackUrl', redirectCookie)
+          modified = true
+        }
+
+        // Ensure participant parameter aligns with cookie host
+        const currentParticipant = url.searchParams.get('participant')
+        if (cookieSaysParticipant && currentParticipant !== 'true') {
+          url.searchParams.set('participant', 'true')
+          modified = true
+        } else if (cookieSaysLecturer && currentParticipant === 'true') {
+          url.searchParams.delete('participant')
+          modified = true
+        }
+
+        if (modified) {
+          const resp = NextResponse.redirect(url)
+          resp.cookies.set(REDIRECT_COOKIE_NAME, '', { path: '/', maxAge: 0 })
+          console.log('Callback: injected params from cookie and cleared it', {
+            url: url.toString(),
+            cookieSaysParticipant,
+            cookieSaysLecturer,
+          })
+          return resp
+        }
+
+        // Clear the cookie in any case on callback to avoid lingering state
+        const passthrough = NextResponse.next()
+        passthrough.cookies.set(REDIRECT_COOKIE_NAME, '', {
+          path: '/',
+          maxAge: 0,
+        })
+        console.log('Callback: cleared unused redirect cookie')
+        return passthrough
+      }
     }
 
-    // For lecturer context (default), clear any participant parameters
-    if (!isParticipantContext && participantParam === 'true') {
-      const url = request.nextUrl.clone()
-      url.searchParams.delete('participant')
-      console.log('Removing participant parameter from URL:', url.toString())
-      return NextResponse.redirect(url)
+    // Default passthrough for auth routes; avoid unnecessary URL rewrites
+    let response: NextResponse | null = NextResponse.next()
+
+    // On signin routes, set the short-lived redirect cookie based on callbackUrl (set after user triggers sign-in)
+    if (pathname.startsWith('/api/auth/signin')) {
+      const cb = request.nextUrl.searchParams.get('callbackUrl') || ''
+      const valid = isParticipantContext
+        ? isValidStudentRedirectUrl(cb)
+        : isValidLecturerRedirectUrl(cb)
+
+      if (valid) {
+        response.cookies.set(REDIRECT_COOKIE_NAME, cb, {
+          httpOnly: true,
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+          path: '/',
+          maxAge: 60 * 10, // 10 minutes to account for user delays
+        })
+        console.log('Set redirect cookie on signin:', {
+          cb,
+          isParticipantContext,
+        })
+      }
     }
+
+    return response
   }
 
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/api/auth/:path*', '/student', '/lecturer'],
+  matcher: ['/', '/student', '/lecturer', '/api/auth/:path*'],
 }
