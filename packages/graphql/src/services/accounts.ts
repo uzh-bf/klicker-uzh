@@ -596,7 +596,10 @@ export async function createParticipantAccount(
           participant: {
             connectOrCreate: {
               where: {
-                email: ltiData.email.toLowerCase(),
+                email_isSSOAccount: {
+                  email: ltiData.email.toLowerCase(),
+                  isSSOAccount: true,
+                },
               },
               create: {
                 email: ltiData.email.toLowerCase(),
@@ -785,7 +788,7 @@ export async function loginParticipantWithLti(
   if (!account && ltiData.email) {
     const existingParticipant = await ctx.prisma.participant.findUnique({
       where: {
-        email_isSSOAccount: { email: ltiData.email, isSSOAccount: false },
+        email_isSSOAccount: { email: ltiData.email, isSSOAccount: true },
       },
     })
 
