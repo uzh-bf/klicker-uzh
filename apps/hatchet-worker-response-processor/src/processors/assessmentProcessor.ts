@@ -125,9 +125,11 @@ export async function processAssessmentResponse(
   }
 
   if (blockClosedAt && Number(responseTimestamp) > Number(blockClosedAt)) {
-    throw new NonRetryableError(
-      `Response received after block of element instance ${message.instanceId} was closed at ${new Date(Number(blockClosedAt))}.`
+    ctx.logger.error(
+      `[CANCEL] [AddResponse Assessment] Response received after block of element instance ${message.instanceId} was closed at ${new Date(Number(blockClosedAt))}.`
     )
+    ctx.cancel()
+    return
   }
 
   // ! Step 1.2 Validation of response format
@@ -371,6 +373,25 @@ export async function processAssessmentResponse(
   }
 
   // ! Step 4: Directly store the submitted response in the live quiz responses table and add entry to redis votes list for successful response
+  // verify that the participant has not votes on the same question before
+  const existingVote = await prisma.liveQuizResponse.findUnique({
+    where: {
+      instanceId_elementBlockExecution_participantId: {
+        instanceId: Number(message.instanceId),
+        elementBlockExecution: parseInt(blockExecution ?? '0', 10),
+        participantId: message.participantId,
+      },
+    },
+  })
+
+  if (existingVote) {
+    ctx.logger.error(
+      `[CANCEL] [AddResponse Assessment] Participant ${message.participantId} has already submitted a response for instance ${message.instanceId} and block execution ${blockExecution}.`
+    )
+    ctx.cancel()
+    return
+  }
+
   try {
     await prisma.liveQuizResponse.create({
       data: {
