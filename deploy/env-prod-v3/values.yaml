@@ -9,7 +9,8 @@ global:
     pwa: 'https://pwa.klicker.uzh.ch'
     manage: 'https://manage.klicker.uzh.ch'
     control: 'https://control.klicker.uzh.ch'
-    assessmentApi: 'https://assessment-api.klicker.uzh.ch'
+    # assessmentApi: 'https://assessment-api.klicker.uzh.ch'
+    assessmentApi: 'https://chat.klicker.uzh.ch'
     assessmentPwa: 'https://assessment.klicker.uzh.ch'
 
 hatchet:
@@ -104,6 +105,8 @@ auth:
             topologyKey: kubernetes.io/hostname
 
   ingress:
+    enabled: true
+
     hosts:
       - host: auth.klicker.uzh.ch
         paths:
@@ -157,6 +160,8 @@ frontendPWA:
             topologyKey: kubernetes.io/hostname
 
   ingress:
+    enabled: true
+
     hosts:
       - host: pwa.klicker.uzh.ch
         paths:
@@ -210,6 +215,8 @@ frontendManage:
             topologyKey: kubernetes.io/hostname
 
   ingress:
+    enabled: true
+
     hosts:
       - host: manage.klicker.uzh.ch
         paths:
@@ -263,6 +270,8 @@ frontendControl:
             topologyKey: kubernetes.io/hostname
 
   ingress:
+    enabled: true
+
     hosts:
       - host: control.klicker.uzh.ch
         paths:
@@ -316,6 +325,8 @@ backendGraphql:
             topologyKey: kubernetes.io/hostname
 
   ingress:
+    enabled: true
+
     hosts:
       - host: backend-sls.klicker.uzh.ch
         paths:
@@ -352,6 +363,8 @@ olatApi:
     enabled: false
 
   ingress:
+    enabled: true
+
     hosts:
       - host: olat-api.klicker.uzh.ch
         paths:
@@ -385,6 +398,8 @@ lti:
   replicaCount: 2
 
   ingress:
+    enabled: true
+
     hosts:
       - host: lti.klicker.uzh.ch
         paths:
@@ -430,6 +445,8 @@ responseApi:
             topologyKey: kubernetes.io/hostname
 
   ingress:
+    enabled: true
+
     hosts:
       - host: response-api.klicker.uzh.ch
         paths:
@@ -500,6 +517,8 @@ assessment:
             app.kubernetes.io/component: frontend-assessment
 
     ingress:
+      enabled: true
+
       hosts:
         - host: assessment.klicker.uzh.ch
           paths:
@@ -572,6 +591,8 @@ assessment:
             app.kubernetes.io/component: backend-assessment
 
     ingress:
+      enabled: true
+
       hosts:
         - host: chat.klicker.uzh.ch
           paths:
@@ -628,6 +649,8 @@ assessment:
               topologyKey: kubernetes.io/hostname
 
     ingress:
+      enabled: true
+
       hosts:
         - host: assessment-response-api.klicker.uzh.ch
           paths:
