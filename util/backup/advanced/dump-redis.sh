@@ -7,10 +7,11 @@
 # This script creates a Redis data dump for a specified environment.
 # It supports all environments (dev/stg/prd) via Doppler configuration.
 #
-# Usage: ./dump-redis.sh [environment]
+# Usage: ./dump-redis.sh [environment] [instance]
 #
 # Arguments:
 #   environment    Target environment (dev|stg|prd). Defaults to 'prd'
+#   instance       Redis instance type (main|assessment). Defaults to 'main'
 #
 # Features:
 # - Environment-specific configuration via Doppler
@@ -35,23 +36,30 @@ REPO_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
 # Function to display usage information
 show_usage() {
     cat << EOF
-Usage: $0 [ENVIRONMENT]
+Usage: $0 [ENVIRONMENT] [INSTANCE]
 
 Redis Data Dump Script
 
 ARGUMENTS:
     ENVIRONMENT    Target environment for dump (dev|stg|prd). Defaults to 'prd'
+    INSTANCE       Redis instance type (main|assessment). Defaults to 'main'
 
 ENVIRONMENTS:
     dev           Development environment
     stg           Staging environment  
     prd           Production environment (default)
 
+INSTANCES:
+    main          Main Redis instance (default)
+    assessment    Assessment Redis instance
+
 EXAMPLES:
-    $0            # Dump production Redis (default)
-    $0 prd        # Dump production Redis (explicit)
-    $0 stg        # Dump staging Redis
-    $0 dev        # Dump development Redis
+    $0            # Dump production main Redis (default)
+    $0 prd        # Dump production main Redis (explicit)
+    $0 prd main   # Dump production main Redis (explicit)
+    $0 prd assessment # Dump production assessment Redis
+    $0 stg        # Dump staging main Redis
+    $0 dev assessment # Dump development assessment Redis
 
 DESCRIPTION:
     Creates a Redis data dump for the specified environment using
@@ -79,12 +87,17 @@ EOF
 
 # Parse command line arguments
 ENVIRONMENT=""
+INSTANCE=""
 INTERNAL_DOPPLER_LOADED=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
         dev|stg|prd)
             ENVIRONMENT="$1"
+            shift
+            ;;
+        main|assessment)
+            INSTANCE="$1"
             shift
             ;;
         --internal-doppler-loaded)
@@ -109,10 +122,16 @@ if [[ -z "$ENVIRONMENT" ]]; then
     ENVIRONMENT="prd"
 fi
 
+# Set default instance if not provided (for backward compatibility)
+if [[ -z "$INSTANCE" ]]; then
+    INSTANCE="main"
+fi
+
 # Validate environment parameter
 case "$ENVIRONMENT" in
     "dev"|"stg"|"prd")
         echo "🎯 Target environment: $ENVIRONMENT"
+echo "🎯 Target instance: $INSTANCE"
         ;;
     *)
         echo "ERROR: Invalid environment '$ENVIRONMENT'. Valid environments: dev, stg, prd"
@@ -131,7 +150,7 @@ if [[ "$INTERNAL_DOPPLER_LOADED" != "true" ]]; then
     echo "🔄 Delegating to Doppler with environment: $ENVIRONMENT"
     
     # Set CONFIG and execute via _run_with_doppler.sh
-    CONFIG="$ENVIRONMENT" exec "${REPO_ROOT}/util/_run_with_doppler.sh" "$0" "$ENVIRONMENT" "--internal-doppler-loaded"
+    CONFIG="$ENVIRONMENT" exec "${REPO_ROOT}/util/_run_with_doppler.sh" "$0" "$ENVIRONMENT" "$INSTANCE" "--internal-doppler-loaded"
 fi
 
 # =============================================================================
@@ -164,7 +183,8 @@ echo "========================================"
 # Additional cleanup for dump-specific variables
 cleanup_dump() {
     log "Cleaning up dump-specific environment variables..."
-    unset REDIS_HOST REDIS_PORT REDIS_PASS REDIS_URL 2>/dev/null || true
+    unset REDIS_HOST REDIS_PORT REDIS_PASS REDIS_URL REDIS_TLS 2>/dev/null || true
+    unset REDIS_ASSESSMENT_HOST REDIS_ASSESSMENT_PORT REDIS_ASSESSMENT_PASS REDIS_ASSESSMENT_TLS 2>/dev/null || true
     unset BACKUP_ENCRYPTION_KEY 2>/dev/null || true
 }
 
@@ -178,17 +198,34 @@ log "Doppler environment loaded successfully for config: ${CONFIG:-unknown}"
 echo "\n🔍 Step 2: Validating Redis Connection Variables"
 echo "---------------------------------------------------"
 
-# Validate required environment variables
-if [[ -z "${REDIS_HOST:-}" ]]; then
-    error_exit "REDIS_HOST environment variable is not set"
-fi
-
-if [[ -z "${REDIS_PORT:-}" ]]; then
-    error_exit "REDIS_PORT environment variable is not set"
-fi
-
-if [[ -z "${REDIS_PASS:-}" ]]; then
-    error_exit "REDIS_PASS environment variable is not set"
+# Validate required environment variables based on instance
+if [[ "$INSTANCE" == "assessment" ]]; then
+    if [[ -z "${REDIS_ASSESSMENT_HOST:-}" ]]; then
+        error_exit "REDIS_ASSESSMENT_HOST environment variable is not set"
+    fi
+    if [[ -z "${REDIS_ASSESSMENT_PORT:-}" ]]; then
+        error_exit "REDIS_ASSESSMENT_PORT environment variable is not set"
+    fi
+    if [[ -z "${REDIS_ASSESSMENT_PASS:-}" ]]; then
+        error_exit "REDIS_ASSESSMENT_PASS environment variable is not set"
+    fi
+    
+    # Set working variables for assessment Redis
+    REDIS_HOST="$REDIS_ASSESSMENT_HOST"
+    REDIS_PORT="$REDIS_ASSESSMENT_PORT"
+    REDIS_PASS="$REDIS_ASSESSMENT_PASS"
+    REDIS_TLS="${REDIS_ASSESSMENT_TLS:-false}"
+else
+    # Main Redis instance (existing logic)
+    if [[ -z "${REDIS_HOST:-}" ]]; then
+        error_exit "REDIS_HOST environment variable is not set"
+    fi
+    if [[ -z "${REDIS_PORT:-}" ]]; then
+        error_exit "REDIS_PORT environment variable is not set"
+    fi
+    if [[ -z "${REDIS_PASS:-}" ]]; then
+        error_exit "REDIS_PASS environment variable is not set"
+    fi
 fi
 
 # Check if upstash-redis-dump executable exists
@@ -207,12 +244,20 @@ log_info "Using upstash-redis-dump: $UPSTASH_REDIS_DUMP"
 # Generate timestamp and prepare dump location
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 
-# Get the appropriate dump directory
-DUMP_DIR=$(get_dump_directory "redis")
+# Get the appropriate dump directory based on instance
+if [[ "$INSTANCE" == "assessment" ]]; then
+    DUMP_DIR=$(get_dump_directory "redis-assessment")
+else
+    DUMP_DIR=$(get_dump_directory "redis")
+fi
 mkdir -p "$DUMP_DIR"
 
-# Set full path for dump file
-DUMP_FILE="$DUMP_DIR/redis_dump_${TIMESTAMP}.dump"
+# Set full path for dump file with instance-specific naming
+if [[ "$INSTANCE" == "assessment" ]]; then
+    DUMP_FILE="$DUMP_DIR/redis_assessment_dump_${TIMESTAMP}.dump"
+else
+    DUMP_FILE="$DUMP_DIR/redis_dump_${TIMESTAMP}.dump"
+fi
 
 log "Creating Redis dump: $DUMP_FILE"
 log_info "Dump directory: $DUMP_DIR"

@@ -34,10 +34,10 @@ BACKUP_ENCRYPTION_KEY=your-key ./prepare_local_prod.sh
 
 This script automatically:
 
-1. Discovers latest database and Redis dumps
+1. Discovers latest database and Redis dumps (including optional assessment Redis)
 2. Resets Docker environment and volumes
 3. Starts local PostgreSQL and Redis services
-4. Restores both dumps to local development environment
+4. Restores all available dumps to local development environment
 5. Leaves services running for development
 
 ## Common Operations
@@ -45,21 +45,34 @@ This script automatically:
 ### Creating Dumps (Recommended: Use Unified Interface)
 
 ```bash
-./dump.sh both prd      # Backup both database and Redis (recommended)
-./dump.sh db prd        # Production database dump only
-./dump.sh redis prd     # Production Redis dump only
+# Comprehensive backups (recommended)
+./dump.sh all prd       # Database + both Redis instances (main + assessment)
+./dump.sh both prd      # Database + main Redis only (backward compatible)
 
-./dump.sh both stg      # Staging dumps
+# Individual service dumps
+./dump.sh db prd        # Production database dump only
+./dump.sh redis prd     # Production main Redis dump only
+./dump.sh redis-assessment prd  # Production assessment Redis dump only
+
+# Staging environment
+./dump.sh all stg       # All services from staging
+./dump.sh both stg      # Database + main Redis from staging
 ```
 
 ### Restoring to Development/Staging
 
 ```bash
+# Database and main Redis restoration
 ./restore.sh db dev     # Restore database to development
-./restore.sh redis dev  # Restore Redis to development
+./restore.sh redis dev  # Restore main Redis to development
 
+# Assessment Redis restoration
+./restore.sh redis-assessment dev  # Restore assessment Redis to development
+
+# Staging environment
 ./restore.sh db stg     # Restore to staging
-./restore.sh redis stg
+./restore.sh redis stg  # Restore main Redis to staging
+./restore.sh redis-assessment stg  # Restore assessment Redis to staging
 ```
 
 ### Using Specific Dump Files
@@ -68,6 +81,7 @@ This script automatically:
 # Restore specific dumps
 DUMP_FILE=/path/to/dump.tar.gpg ./restore.sh db dev
 DUMP_FILE=/path/to/redis.dump.gpg ./restore.sh redis dev
+DUMP_FILE=/path/to/redis_assessment.dump.gpg ./restore.sh redis-assessment dev
 ```
 
 ## Configuration
@@ -79,10 +93,17 @@ DUMP_FILE=/path/to/redis.dump.gpg ./restore.sh redis dev
 - `DATABASE_URL` - PostgreSQL connection string (preferred)
 - Or individual: `DATABASE_HOST`, `DATABASE_USER`, `DATABASE_PASS`, `DATABASE_NAME`
 
-**Redis:**
+**Redis (Main Instance):**
 
 - `REDIS_URL` - Redis connection string (preferred)
 - Or individual: `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASS`
+
+**Redis (Assessment Instance - Optional):**
+
+- `REDIS_ASSESSMENT_HOST` - Assessment Redis host
+- `REDIS_ASSESSMENT_PORT` - Assessment Redis port
+- `REDIS_ASSESSMENT_PASS` - Assessment Redis password
+- `REDIS_ASSESSMENT_TLS` - Enable TLS (optional, default: false)
 
 **Encryption (Required):**
 
@@ -103,16 +124,60 @@ Scripts automatically load environment variables via Doppler:
 - **Automatic cleanup** of sensitive environment variables
 - **Comprehensive error handling** with secure temporary file management
 
+## Multi-Redis Instance Support
+
+The backup system supports multiple Redis instances to accommodate different application architectures:
+
+### Architecture
+
+- **Main Redis** (`redis`): Primary Redis instance for caching, sessions, and general data
+- **Assessment Redis** (`redis-assessment`): Dedicated Redis instance for assessment/quiz execution data
+
+### Service Options
+
+| Service            | Description           | Includes                                    |
+| ------------------ | --------------------- | ------------------------------------------- |
+| `all`              | Comprehensive backup  | Database + Main Redis + Assessment Redis    |
+| `both`             | Traditional backup    | Database + Main Redis (backward compatible) |
+| `redis`            | Main Redis only       | Main Redis instance                         |
+| `redis-assessment` | Assessment Redis only | Assessment Redis instance                   |
+| `db`               | Database only         | PostgreSQL database                         |
+
+### Usage Examples
+
+```bash
+# Backup strategies
+./dump.sh all prd               # Complete backup (recommended if using assessment Redis)
+./dump.sh both prd              # Traditional backup (main Redis + database)
+./dump.sh redis-assessment prd  # Assessment data only
+
+# Restore strategies
+./restore.sh redis dev          # Restore main Redis to development
+./restore.sh redis-assessment dev # Restore assessment Redis to development
+
+# Check if assessment Redis is configured
+./dump.sh redis-assessment prd  # Will show error if not configured
+```
+
+### Configuration Detection
+
+- Assessment Redis backup is **automatic** when `REDIS_ASSESSMENT_HOST` is configured
+- If assessment Redis variables are not set, only main Redis is backed up
+- Local development automatically handles both instances if dumps are available
+
 ## Troubleshooting
 
 ### No dumps found
 
 ```bash
 # Create production dumps first
-./dump.sh both prd      # Recommended: backup both services
+./dump.sh all prd       # Recommended: backup all services (if using assessment Redis)
+./dump.sh both prd      # Alternative: backup database + main Redis
+
 # OR individually:
 ./dump.sh db prd
 ./dump.sh redis prd
+./dump.sh redis-assessment prd  # Only if assessment Redis is configured
 ```
 
 ### Docker not running
@@ -184,6 +249,22 @@ export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
 # Check Docker Compose status
 docker compose ps
 docker compose logs postgres redis_exec
+```
+
+### Assessment Redis issues
+
+```bash
+# Check if assessment Redis is configured
+./dump.sh redis-assessment prd 2>&1 | head -10
+
+# If you see "REDIS_ASSESSMENT_HOST environment variable is not set":
+# - Assessment Redis is not configured for this environment
+# - Use ./dump.sh both prd instead of ./dump.sh all prd
+
+# To configure assessment Redis, set these environment variables:
+# REDIS_ASSESSMENT_HOST=your-assessment-redis-host
+# REDIS_ASSESSMENT_PORT=6379
+# REDIS_ASSESSMENT_PASS=your-password
 ```
 
 ## Getting Help

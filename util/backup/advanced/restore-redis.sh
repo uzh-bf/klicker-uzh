@@ -7,10 +7,11 @@
 # This script restores Redis data from a dump file for any environment.
 # It supports all environments (dev/stg/prd) via Doppler configuration.
 #
-# Usage: ./restore-redis.sh [environment]
+# Usage: ./restore-redis.sh [environment] [instance]
 #
 # Arguments:
 #   environment    Target environment (dev|stg|prd). Defaults to 'dev'
+#   instance       Redis instance type (main|assessment). Defaults to 'main'
 #
 # Features:
 # - Environment-specific configuration via Doppler (stg/prd) or local config (dev)
@@ -43,6 +44,7 @@ Unified Redis Data Restore Script
 
 ARGUMENTS:
     ENVIRONMENT    Target environment for restore (dev|stg|prd). Defaults to 'dev'
+    INSTANCE       Redis instance type (main|assessment). Defaults to 'main'
 
 ENVIRONMENTS:
     dev           Development environment (local configuration)
@@ -50,10 +52,13 @@ ENVIRONMENTS:
     prd           Production environment (uses Doppler, requires safety confirmation)
 
 EXAMPLES:
-    $0            # Restore to development (default)
-    $0 dev        # Restore to development (explicit)
-    $0 stg        # Restore to staging
-    $0 prd        # Restore to production (with safety prompts)
+    $0            # Restore to development (default, main Redis)
+    $0 dev        # Restore to development (explicit, main Redis)
+    $0 dev main   # Restore to development (main Redis, explicit)
+    $0 dev assessment # Restore to development (assessment Redis)
+    $0 stg        # Restore to staging (main Redis)
+    $0 stg assessment # Restore to staging (assessment Redis)
+    $0 prd        # Restore to production (main Redis, with safety prompts)
 
 DESCRIPTION:
     Restores Redis data from dump files with automatic discovery.
@@ -82,13 +87,43 @@ if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
     exit 0
 fi
 
-# Get environment parameter (default to 'dev' for safety)
-ENVIRONMENT="${1:-dev}"
+# Parse command line arguments
+ENVIRONMENT=""
+INSTANCE=""
+
+# Parse arguments allowing for flexible order
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        dev|stg|prd)
+            ENVIRONMENT="$1"
+            shift
+            ;;
+        main|assessment)
+            INSTANCE="$1"
+            shift
+            ;;
+        -h|--help)
+            show_usage
+            exit 0
+            ;;
+        *)
+            echo "ERROR: Unknown argument '$1'"
+            echo ""
+            show_usage
+            exit 1
+            ;;
+    esac
+done
+
+# Set defaults if not provided
+ENVIRONMENT="${ENVIRONMENT:-dev}"
+INSTANCE="${INSTANCE:-main}"
 
 # Validate environment parameter
 case "$ENVIRONMENT" in
     "dev"|"stg"|"prd")
         echo "🎯 Target environment: $ENVIRONMENT"
+        echo "🎯 Target instance: $INSTANCE"
         ;;
     *)
         echo "ERROR: Invalid environment '$ENVIRONMENT'. Valid environments: dev, stg, prd"
@@ -107,7 +142,7 @@ if [[ "$ENVIRONMENT" == "stg" || "$ENVIRONMENT" == "prd" ]]; then
     echo "🔄 Delegating to Doppler with environment: $ENVIRONMENT"
     
     # Set CONFIG and execute via _run_with_doppler.sh
-    CONFIG="$ENVIRONMENT" exec "${REPO_ROOT}/util/_run_with_doppler.sh" "$0" "$ENVIRONMENT" "--internal-doppler-loaded"
+    CONFIG="$ENVIRONMENT" exec "${REPO_ROOT}/util/_run_with_doppler.sh" "$0" "$ENVIRONMENT" "$INSTANCE" "--internal-doppler-loaded"
 fi
 
 # =============================================================================
@@ -117,10 +152,17 @@ fi
 if [[ "$ENVIRONMENT" == "dev" ]]; then
     echo "🏠 Using development environment configuration"
     
-    # Development Redis configuration
-    export REDIS_URL="redis://localhost:6379"
-    
-    echo "   Redis URL: ${REDIS_URL}"
+    # Development Redis configuration based on instance
+    if [[ "$INSTANCE" == "assessment" ]]; then
+        # For assessment Redis, use the same execution Redis instance for dev
+        # (In development, both main and assessment use the same redis_exec container)
+        export REDIS_URL="redis://localhost:6379"
+        echo "   Assessment Redis URL: ${REDIS_URL}"
+    else
+        # Main Redis configuration
+        export REDIS_URL="redis://localhost:6379"
+        echo "   Main Redis URL: ${REDIS_URL}"
+    fi
 fi
 
 # =============================================================================
@@ -128,7 +170,16 @@ fi
 # =============================================================================
 
 # For Doppler environments, ensure we have the --internal-doppler-loaded flag
-if [[ "$ENVIRONMENT" != "dev" && "${2:-}" != "--internal-doppler-loaded" ]]; then
+# Parameters could be in different positions due to flexible parsing, so check all args
+INTERNAL_FLAG_FOUND=false
+for arg in "$@"; do
+    if [[ "$arg" == "--internal-doppler-loaded" ]]; then
+        INTERNAL_FLAG_FOUND=true
+        break
+    fi
+done
+
+if [[ "$ENVIRONMENT" != "dev" && "$INTERNAL_FLAG_FOUND" != "true" ]]; then
     echo "ERROR: Non-dev environments should be called with --internal-doppler-loaded flag"
     exit 1
 fi
@@ -160,16 +211,27 @@ fi
 echo "========================================"
 echo "Starting Redis Data Restore"
 echo "Environment: $ENVIRONMENT"
+echo "Instance: $INSTANCE"
 echo "========================================"
 
 # Try to find the latest dump file automatically
 if [[ -z "${DUMP_FILE:-}" ]]; then
-    if DISCOVERED_DUMP=$(find_latest_dump "redis"); then
+    # Use instance-specific service name for dump discovery
+    service_name="redis"
+    if [[ "$INSTANCE" == "assessment" ]]; then
+        service_name="redis-assessment"
+    fi
+    
+    if DISCOVERED_DUMP=$(find_latest_dump "$service_name"); then
         DUMP_FILE="$DISCOVERED_DUMP"
         log_info "Auto-discovered dump file: $DUMP_FILE"
     else
         # Fallback to default location for backward compatibility
-        DUMP_FILE="${SCRIPT_DIR}/../redis.dump"
+        if [[ "$INSTANCE" == "assessment" ]]; then
+            DUMP_FILE="${SCRIPT_DIR}/../redis_assessment.dump"
+        else
+            DUMP_FILE="${SCRIPT_DIR}/../redis.dump"
+        fi
         log_warning "No dumps found, using fallback: $DUMP_FILE"
     fi
 else
@@ -228,11 +290,12 @@ fi
 cleanup_redis_restore() {
     log_info "Performing cleanup..."
     
-    # Clean up sensitive environment variables
+    # Clean up sensitive environment variables (includes assessment Redis vars)
     cleanup_redis
     
     # Remove any log files (temp decrypted files handled by secure system)
     rm -f /tmp/${ENVIRONMENT}_redis_restore_*.log 2>/dev/null || true
+    rm -f /tmp/${ENVIRONMENT}_redis_${INSTANCE}_restore_*.log 2>/dev/null || true
     
     log_info "Cleanup completed"
 }
@@ -246,10 +309,14 @@ register_cleanup_function cleanup_redis_restore
 # =============================================================================
 
 restore_redis() {
-    log_step "Starting Redis Restore for $ENVIRONMENT Environment"
+    log_step "Starting Redis Restore for $ENVIRONMENT Environment ($INSTANCE instance)"
     
-    # Initialize restore environment
-    init_restore_environment "redis"
+    # Initialize restore environment with instance-specific service name
+    service_name="redis"
+    if [[ "$INSTANCE" == "assessment" ]]; then
+        service_name="redis-assessment"
+    fi
+    init_restore_environment "$service_name"
     
     # Check for required tools
     check_redis_tools
@@ -464,6 +531,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     echo "======================================================================"
     echo "Started at: $(date '+%Y-%m-%d %H:%M:%S')"
     echo "Environment: $ENVIRONMENT"
+    echo "Instance: $INSTANCE"
     echo "Script: ${BASH_SOURCE[0]}"
     echo "Working directory: $(pwd)"
     echo "======================================================================"
@@ -477,6 +545,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     echo "✅ Redis Restore Completed Successfully"
     echo "======================================================================"
     echo "Environment: $ENVIRONMENT"
+    echo "Instance: $INSTANCE"
     echo "Completed at: $(date '+%Y-%m-%d %H:%M:%S')"
     echo "======================================================================"
 fi

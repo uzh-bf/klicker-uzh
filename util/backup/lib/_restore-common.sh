@@ -91,7 +91,8 @@ cleanup_database() {
 # Function for cleanup on Redis restore failure
 cleanup_redis() {
     log_info "Cleaning up Redis-specific variables..."
-    unset REDIS_HOST REDIS_PORT REDIS_PASS REDIS_URL 2>/dev/null || true
+    unset REDIS_HOST REDIS_PORT REDIS_PASS REDIS_URL REDIS_TLS 2>/dev/null || true
+    unset REDIS_ASSESSMENT_HOST REDIS_ASSESSMENT_PORT REDIS_ASSESSMENT_PASS REDIS_ASSESSMENT_TLS 2>/dev/null || true
 }
 
 # =============================================================================
@@ -132,9 +133,29 @@ validate_database_env() {
     log_success "Database environment validation completed"
 }
 
+# Helper function to select Redis variables based on instance
+select_redis_variables() {
+    local instance="${1:-main}"
+    
+    if [[ "$instance" == "assessment" ]]; then
+        # Assessment Redis instance variables
+        REDIS_HOST="${REDIS_ASSESSMENT_HOST:-}"
+        REDIS_PORT="${REDIS_ASSESSMENT_PORT:-}"
+        REDIS_PASS="${REDIS_ASSESSMENT_PASS:-}"
+        REDIS_TLS="${REDIS_ASSESSMENT_TLS:-false}"
+        # Assessment Redis typically doesn't use REDIS_URL, use individual vars
+        unset REDIS_URL 2>/dev/null || true
+    fi
+    # For main instance, variables are already set correctly (REDIS_HOST, etc.)
+}
+
 # Function to validate Redis connection variables
 validate_redis_env() {
-    log_step "Validating Redis Environment Variables"
+    local instance="${INSTANCE:-main}"
+    log_step "Validating Redis Environment Variables (${instance} instance)"
+
+    # Select appropriate Redis variables based on instance
+    select_redis_variables "$instance"
 
     # Check if we have REDIS_URL or individual vars
     if [[ -n "${REDIS_URL:-}" ]]; then
@@ -437,6 +458,8 @@ find_latest_dump() {
     local pattern
     if [[ "$service" == "db" ]]; then
         pattern="dump_*.tar*"
+    elif [[ "$service" == "redis-assessment" ]]; then
+        pattern="redis_assessment_dump_*.dump*"
     else
         pattern="redis_dump_*.dump*"
     fi
@@ -454,6 +477,9 @@ find_latest_dump() {
         return 0
     elif [[ "$service" == "redis" ]] && [[ -f "${script_dir}/../redis.dump" ]]; then
         echo "${script_dir}/../redis.dump"
+        return 0
+    elif [[ "$service" == "redis-assessment" ]] && [[ -f "${script_dir}/../redis_assessment.dump" ]]; then
+        echo "${script_dir}/../redis_assessment.dump"
         return 0
     fi
 
@@ -812,7 +838,7 @@ init_restore_environment() {
 export -f log log_info log_warning log_step log_success
 export -f error_exit validation_error
 export -f cleanup_common cleanup_database cleanup_redis
-export -f validate_env_var validate_database_env validate_redis_env
+export -f validate_env_var validate_database_env validate_redis_env select_redis_variables
 export -f check_command check_database_tools check_redis_tools
 export -f validate_dump_file
 export -f load_doppler_secrets load_doppler_secrets_simple

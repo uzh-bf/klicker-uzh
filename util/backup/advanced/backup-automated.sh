@@ -126,14 +126,28 @@ fi
 
 log_success "Database dump completed"
 
-log "Starting Redis dump..."
+log "Starting main Redis dump..."
 
-# Execute Redis dump with environment parameter
-if ! "$SCRIPT_DIR/dump-redis.sh" "$ENVIRONMENT"; then
-    error_exit "Redis dump failed"
+# Execute main Redis dump with environment parameter
+if ! "$SCRIPT_DIR/dump-redis.sh" "$ENVIRONMENT" "main"; then
+    error_exit "Main Redis dump failed"
 fi
 
-log_success "Redis dump completed"
+log_success "Main Redis dump completed"
+
+# Check if assessment Redis should be backed up (optional, based on environment variables)
+if [[ -n "${REDIS_ASSESSMENT_HOST:-}" ]]; then
+    log "Starting assessment Redis dump..."
+    
+    # Execute assessment Redis dump with environment parameter
+    if ! "$SCRIPT_DIR/dump-redis.sh" "$ENVIRONMENT" "assessment"; then
+        error_exit "Assessment Redis dump failed"
+    fi
+    
+    log_success "Assessment Redis dump completed"
+else
+    log "Assessment Redis backup skipped - REDIS_ASSESSMENT_HOST not configured"
+fi
 
 # Calculate total execution time
 end_time=$(date +%s)
@@ -176,6 +190,11 @@ fi
 
 log "Automated backup process completed successfully"
 log "Database and Redis dumps created with timestamp: $(date '+%Y%m%d_%H%M%S')"
+if [[ -n "${REDIS_ASSESSMENT_HOST:-}" ]]; then
+    log "Both main and assessment Redis instances backed up"
+else
+    log "Only main Redis instance backed up (assessment Redis not configured)"
+fi
 
 if [[ -n "${BACKUP_VOLUME_PATH:-}" ]]; then
     log "Backup files stored in: $BACKUP_VOLUME_PATH"

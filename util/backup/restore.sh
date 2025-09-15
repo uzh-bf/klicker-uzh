@@ -30,7 +30,7 @@ set -euo pipefail
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Available services and environments
-VALID_SERVICES=("db" "redis")
+VALID_SERVICES=("db" "redis" "redis-assessment")
 VALID_ENVIRONMENTS=("dev" "stg")
 
 # =============================================================================
@@ -70,18 +70,21 @@ ARGUMENTS:
     ENVIRONMENT    Target environment for restore (dev|stg)
 
 SERVICES:
-    db            PostgreSQL database restore
-    redis         Redis data restore
+    db               PostgreSQL database restore
+    redis            Main Redis data restore
+    redis-assessment Assessment Redis data restore
 
 ENVIRONMENTS:
     dev           Development environment (local services)
     stg           Staging environment (uses Doppler for configuration)
 
 EXAMPLES:
-    $0 db dev     # Restore database in development environment
-    $0 db stg     # Restore database in staging environment
-    $0 redis dev  # Restore Redis in development environment
-    $0 redis stg  # Restore Redis in staging environment
+    $0 db dev             # Restore database in development environment
+    $0 db stg             # Restore database in staging environment
+    $0 redis dev          # Restore main Redis in development environment
+    $0 redis stg          # Restore main Redis in staging environment
+    $0 redis-assessment dev # Restore assessment Redis in development environment
+    $0 redis-assessment stg # Restore assessment Redis in staging environment
 
 PRODUCTION OPERATIONS:
     For production restores, use the orchestrator for safety:
@@ -194,11 +197,20 @@ restore_service() {
     # Execute the environment-specific restore script
     log_info "Executing environment-specific restore script: $script_path"
     
-    # Run the script with environment parameter and capture its exit code
+    # Run the script with appropriate parameters
     local exit_code=0
-    if ! bash "$script_path" "$environment"; then
-        exit_code=$?
-        error_exit "$service restore failed with exit code $exit_code"
+    if [[ "$service" == "redis-assessment" ]]; then
+        # For redis-assessment, call restore-redis.sh with assessment instance parameter
+        if ! bash "${SCRIPT_DIR}/advanced/restore-redis.sh" "$environment" "assessment"; then
+            exit_code=$?
+            error_exit "$service restore failed with exit code $exit_code"
+        fi
+    else
+        # For other services, use the provided script path
+        if ! bash "$script_path" "$environment"; then
+            exit_code=$?
+            error_exit "$service restore failed with exit code $exit_code"
+        fi
     fi
     
     log_success "$service restore completed successfully for environment: $environment"
@@ -271,12 +283,14 @@ main() {
         error_exit "Invalid environment: $environment. Valid environments: ${VALID_ENVIRONMENTS[*]}"
     fi
     
-    # Get the path to the environment-specific script
-    local script_path
-    script_path="$(get_restore_script_path "$service" "$environment")"
-    
-    # Validate that the target script exists and is executable
-    validate_target_script "$script_path" "$service" "$environment"
+    # Get the path to the environment-specific script (unless it's redis-assessment)
+    local script_path=""
+    if [[ "$service" != "redis-assessment" ]]; then
+        script_path="$(get_restore_script_path "$service" "$environment")"
+        
+        # Validate that the target script exists and is executable
+        validate_target_script "$script_path" "$service" "$environment"
+    fi
     
     # Print header
     echo "======================================================================"

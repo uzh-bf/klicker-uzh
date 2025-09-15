@@ -174,11 +174,19 @@ fi
 
 REDIS_DUMP=""
 if REDIS_DUMP=$(find_latest_dump "redis" 2>/dev/null); then
-    log "Found Redis dump: $REDIS_DUMP"
+    log "Found main Redis dump: $REDIS_DUMP"
 else
-    log "ERROR: No Redis dump found. Please create a Redis dump first using:"
+    log "ERROR: No main Redis dump found. Please create a Redis dump first using:"
     log "  ${SCRIPT_DIR}/dump.sh redis prd"
     exit 1
+fi
+
+# Optional: Look for assessment Redis dump
+REDIS_ASSESSMENT_DUMP=""
+if REDIS_ASSESSMENT_DUMP=$(find_latest_dump "redis-assessment" 2>/dev/null); then
+    log "Found assessment Redis dump: $REDIS_ASSESSMENT_DUMP"
+else
+    log "No assessment Redis dump found (optional)"
 fi
 
 # Function to load encryption key from Doppler production config if needed
@@ -192,6 +200,7 @@ load_encryption_key_if_needed() {
     # Resolve symlinks to get actual filenames for encryption check
     local actual_db_dump="$DB_DUMP"
     local actual_redis_dump="$REDIS_DUMP"
+    local actual_redis_assessment_dump=""
 
     if [[ -L "$DB_DUMP" ]]; then
         actual_db_dump=$(readlink -f "$DB_DUMP" 2>/dev/null || readlink "$DB_DUMP" 2>/dev/null || echo "$DB_DUMP")
@@ -201,14 +210,23 @@ load_encryption_key_if_needed() {
         actual_redis_dump=$(readlink -f "$REDIS_DUMP" 2>/dev/null || readlink "$REDIS_DUMP" 2>/dev/null || echo "$REDIS_DUMP")
     fi
 
-    # Check if either dump is encrypted (check the actual target files)
-    if [[ "$actual_db_dump" == *.gpg ]] || [[ "$actual_redis_dump" == *.gpg ]]; then
+    if [[ -n "$REDIS_ASSESSMENT_DUMP" && -L "$REDIS_ASSESSMENT_DUMP" ]]; then
+        actual_redis_assessment_dump=$(readlink -f "$REDIS_ASSESSMENT_DUMP" 2>/dev/null || readlink "$REDIS_ASSESSMENT_DUMP" 2>/dev/null || echo "$REDIS_ASSESSMENT_DUMP")
+    elif [[ -n "$REDIS_ASSESSMENT_DUMP" ]]; then
+        actual_redis_assessment_dump="$REDIS_ASSESSMENT_DUMP"
+    fi
+
+    # Check if any dump is encrypted (check the actual target files)
+    if [[ "$actual_db_dump" == *.gpg ]] || [[ "$actual_redis_dump" == *.gpg ]] || [[ "$actual_redis_assessment_dump" == *.gpg ]]; then
         log "🔑 Encrypted dumps detected:"
         if [[ "$actual_db_dump" == *.gpg ]]; then
             log "   📦 Database: $(basename "$actual_db_dump") (encrypted)"
         fi
         if [[ "$actual_redis_dump" == *.gpg ]]; then
-            log "   📦 Redis: $(basename "$actual_redis_dump") (encrypted)"
+            log "   📦 Main Redis: $(basename "$actual_redis_dump") (encrypted)"
+        fi
+        if [[ "$actual_redis_assessment_dump" == *.gpg ]]; then
+            log "   📦 Assessment Redis: $(basename "$actual_redis_assessment_dump") (encrypted)"
         fi
         log "   Attempting to load BACKUP_ENCRYPTION_KEY from Doppler..."
 
@@ -256,11 +274,17 @@ load_encryption_key_if_needed() {
         log "❌ Security Policy Violation: Unencrypted dumps detected"
         log "🔒 All dump files must be encrypted for security"
         log "   📦 Database: $(basename "$actual_db_dump")"
-        log "   📦 Redis: $(basename "$actual_redis_dump")"
+        log "   📦 Main Redis: $(basename "$actual_redis_dump")"
+        if [[ -n "$actual_redis_assessment_dump" ]]; then
+            log "   📦 Assessment Redis: $(basename "$actual_redis_assessment_dump")"
+        fi
         log ""
         log "💡 Please ensure all dumps are created with encryption enabled"
         log "   Use: BACKUP_ENCRYPTION_KEY='your-key' ./dump.sh db prd"
         log "   Use: BACKUP_ENCRYPTION_KEY='your-key' ./dump.sh redis prd"
+        if [[ -n "$actual_redis_assessment_dump" ]]; then
+            log "   Use: BACKUP_ENCRYPTION_KEY='your-key' ./dump.sh redis-assessment prd"
+        fi
         return 1
     fi
 }
@@ -419,18 +443,18 @@ else
     fi
 fi
 
-# Step 5: Load Redis dump
-log_step "Step 5: Restoring Redis Dump"
-log "Loading Redis dump with enhanced logging..."
+# Step 5: Load main Redis dump
+log_step "Step 5: Restoring Main Redis Dump"
+log "Loading main Redis dump with enhanced logging..."
 export DUMP_FILE="$REDIS_DUMP"
 
-if "${SCRIPT_DIR}/advanced/restore-redis.sh" dev; then
-    log_success "Redis dump restored successfully"
+if "${SCRIPT_DIR}/advanced/restore-redis.sh" dev main; then
+    log_success "Main Redis dump restored successfully"
 else
-    log "ERROR: Failed to load Redis dump"
+    log "ERROR: Failed to load main Redis dump"
     echo ""
     echo "🔍 Redis restore failure details:"
-    echo "   • Redis dump restoration failed completely"
+    echo "   • Main Redis dump restoration failed completely"
     echo "   • This could be due to encryption issues, corruption, or Redis connectivity"
     echo ""
     echo "🛠️  Troubleshooting steps:"
@@ -441,6 +465,23 @@ else
     echo ""
     cleanup_on_failure
     exit 1
+fi
+
+# Step 5.5: Load assessment Redis dump (optional)
+if [[ -n "$REDIS_ASSESSMENT_DUMP" ]]; then
+    log_step "Step 5.5: Restoring Assessment Redis Dump"
+    log "Loading assessment Redis dump with enhanced logging..."
+    export DUMP_FILE="$REDIS_ASSESSMENT_DUMP"
+
+    if "${SCRIPT_DIR}/advanced/restore-redis.sh" dev assessment; then
+        log_success "Assessment Redis dump restored successfully"
+    else
+        log_warning "Failed to load assessment Redis dump (non-fatal)"
+        log "Assessment Redis restore failed but continuing with setup..."
+        log "Main Redis is available for development, assessment features may not work"
+    fi
+else
+    log "Skipping assessment Redis restore (no dump found)"
 fi
 
 # Note: Prisma migrations are NOT automatically applied
@@ -457,9 +498,17 @@ echo "  ✅ Database restored from: $(basename "$DB_DUMP")"
 if [[ "${DB_DUMP}" == *.gpg ]]; then
     echo "     🔓 (was encrypted, decrypted successfully)"
 fi
-echo "  ✅ Redis restored from: $(basename "$REDIS_DUMP")"
+echo "  ✅ Main Redis restored from: $(basename "$REDIS_DUMP")"
 if [[ "${REDIS_DUMP}" == *.gpg ]]; then
     echo "     🔓 (was encrypted, decrypted successfully)"
+fi
+if [[ -n "$REDIS_ASSESSMENT_DUMP" ]]; then
+    echo "  ✅ Assessment Redis restored from: $(basename "$REDIS_ASSESSMENT_DUMP")"
+    if [[ "${REDIS_ASSESSMENT_DUMP}" == *.gpg ]]; then
+        echo "     🔓 (was encrypted, decrypted successfully)"
+    fi
+else
+    echo "  ⏭️ Assessment Redis: Not available (no dump found)"
 fi
 echo "  ✅ Database integrity verified"
 echo "  ✅ Database restored exactly as in production"
