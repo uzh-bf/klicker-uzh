@@ -14,6 +14,14 @@ const redis = new Redis({
   tls: process.env.REDIS_TLS ? {} : undefined,
 })
 
+const assessmentRedis = new Redis({
+  family: 4,
+  host: process.env.REDIS_ASSESSMENT_HOST,
+  password: process.env.REDIS_ASSESSMENT_PASS ?? '',
+  port: Number(process.env.REDIS_ASSESSMENT_PORT ?? 6381),
+  tls: process.env.REDIS_ASSESSMENT_TLS ? {} : undefined,
+})
+
 const PORT = Number(process.env.PORT ?? 7078)
 const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || '')
   .split(',')
@@ -275,7 +283,7 @@ async function handleAddAssessmentResponse(
   })
 
   // check if there already exists an entry in the votes table with the given correlationId
-  const votes = await redis.hget(
+  const votes = await assessmentRedis.hget(
     `lq:${liveQuizId}:i:${instanceId}:votes`,
     correlationId
   )
@@ -372,7 +380,6 @@ const server = createServer(async (req, res) => {
   }
 })
 
-// Test connections at startup
 async function initializeService() {
   console.log('Starting response-api service...')
   console.log(`Port: ${PORT}`)
@@ -381,8 +388,8 @@ async function initializeService() {
   )
   console.log(`CORS origins: ${CORS_ALLOWED_ORIGINS.join(', ')}`)
 
-  // Test Redis connection
-  console.log('Testing Redis connection...')
+  // test connection to Redis cache for standard responses
+  console.log('Testing Redis (standard responses) connection...')
   try {
     await redis.ping()
     console.log('Redis connection established')
@@ -391,10 +398,20 @@ async function initializeService() {
     throw error
   }
 
+  // test connection to Redis cache for assessment responses
+  console.log('Testing Redis (assessment responses) connection...')
+  try {
+    await assessmentRedis.ping()
+    console.log('Assessment Redis connection established')
+  } catch (error) {
+    console.error('Failed to connect to assessment Redis:', error)
+    throw error
+  }
+
   console.log('All connections established successfully')
 }
 
-// Initialize and start server
+// initialize and start server
 await initializeService()
 
 server.listen(PORT, () => {

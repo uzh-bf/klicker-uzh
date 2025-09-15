@@ -14,6 +14,7 @@ export function prepareHatchetTasks({
   pubSub,
   emitter,
   redisExec,
+  redisAssessmentExec,
   redisCache,
   handlers,
 }: {
@@ -21,6 +22,7 @@ export function prepareHatchetTasks({
   pubSub: PubSub<any>
   emitter: EventEmitter
   redisExec: Redis
+  redisAssessmentExec: Redis
   redisCache?: Redis
   handlers: HatchetHandlers
 }) {
@@ -29,6 +31,7 @@ export function prepareHatchetTasks({
     pubSub,
     emitter,
     redisExec,
+    redisAssessmentExec,
     redisCache,
     prisma,
   }

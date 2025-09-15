@@ -5,7 +5,6 @@ import {
   ElementInstanceResults,
   ElementResultsCaseStudy,
   ElementResultsOpen,
-  HatchetHandlerGlobalContext,
   HatchetHandlers,
   type ElementBlockInput,
   type ElementResultsChoices,
@@ -25,6 +24,7 @@ import {
 import dayjs from 'dayjs'
 import generatePassword from 'generate-password'
 import { GraphQLError } from 'graphql'
+import type { Redis } from 'ioredis'
 import { min } from 'mathjs'
 import schedule from 'node-schedule'
 import { createHash, createHmac } from 'node:crypto'
@@ -801,6 +801,11 @@ export async function startLiveQuiz(
       return null
     }
 
+    // depending on the quiz assessment setting, select the corresponding redis instance
+    const redis = quiz.isAssessmentEnabled
+      ? ctx.redisAssessmentExec
+      : ctx.redisExec
+
     switch (quiz.status) {
       case DB.PublicationStatus.PUBLISHED:
         return quiz
@@ -808,7 +813,7 @@ export async function startLiveQuiz(
       case DB.PublicationStatus.DRAFT:
       case DB.PublicationStatus.SCHEDULED: {
         try {
-          const pipeline = ctx.redisExec.pipeline()
+          const pipeline = redis.pipeline()
           pipeline.hmset(`lq:${quiz.id}:meta`, {
             namespace: quiz.namespace,
             startedAt: Number(new Date()),
@@ -956,6 +961,11 @@ export async function getCockpitQuiz(
     return null
   }
 
+  // depending on the quiz assessment setting, select the corresponding redis instance
+  const redis = liveQuiz.isAssessmentEnabled
+    ? ctx.redisAssessmentExec
+    : ctx.redisExec
+
   // number of participants per block
   const blockParticipants = liveQuiz.blocks.reduce<Record<number, number>>(
     (acc, block) => {
@@ -976,7 +986,7 @@ export async function getCockpitQuiz(
     const activeInstanceIds = liveQuiz.activeBlock?.elements.map(
       (instance) => instance.id
     )
-    const redisMulti = ctx.redisExec.pipeline()
+    const redisMulti = redis.pipeline()
     activeInstanceIds?.forEach((instanceId) => {
       redisMulti.hgetall(`lq:${id}:i:${instanceId}:results`)
     })
@@ -1130,7 +1140,9 @@ export async function activateLiveQuizBlock(
   })
 
   // initialize the cache for the new active block
-  const redisMulti = ctx.redisExec.pipeline()
+  const redisMulti = updatedQuiz.isAssessmentEnabled
+    ? ctx.redisAssessmentExec.pipeline()
+    : ctx.redisExec.pipeline()
 
   updatedQuiz.activeBlock!.elements.forEach((instance) => {
     const elementData = instance.elementData
@@ -1283,6 +1295,7 @@ export async function deactivateLiveQuizBlock(
       blockId,
       prisma: ctx.prisma,
       redisExec: ctx.redisExec,
+      redisAssessmentExec: ctx.redisAssessmentExec,
       updateResults: true,
       updateLeaderboards: true, // always update the leaderboard when a block is closed
     })
@@ -1324,9 +1337,13 @@ export async function deactivateLiveQuizBlock(
       (block) => block.id === blockId
     )
     if (updatedBlock && updatedBlock.closedAt) {
-      const redis = ctx.redisExec.pipeline()
+      // select the correct redis cache for the live quiz depending on the assessment flag
+      const redis = updatedQuiz.isAssessmentEnabled
+        ? ctx.redisAssessmentExec.pipeline()
+        : ctx.redisExec.pipeline()
+
+      // add the blockClosedAt timestamp to the instance info cache
       for (const instanceId of activeInstanceIds) {
-        // add the blockClosedAt timestamp to the instance info cache
         redis.hset(
           `lq:${updatedQuiz.id}:i:${instanceId}:info`,
           'blockClosedAt',
@@ -1363,25 +1380,24 @@ export async function deactivateLiveQuizBlock(
   return true
 }
 
-async function removeCacheEntriesBlock(
-  {
-    liveQuizId,
-    blockId,
-    block,
-    isLastBlock,
-  }: {
-    liveQuizId: string
-    blockId: number
-    block: DB.ElementBlock & { elements: DB.ElementInstance[] }
-    isLastBlock: boolean
-  },
-  ctx: HatchetHandlerGlobalContext
-) {
+async function removeCacheEntriesBlock({
+  liveQuizId,
+  blockId,
+  block,
+  isLastBlock,
+  redis,
+}: {
+  liveQuizId: string
+  blockId: number
+  block: DB.ElementBlock & { elements: DB.ElementInstance[] }
+  isLastBlock: boolean
+  redis: Redis
+}) {
   if (isLastBlock) {
     // if the last block was closed, clean up the entire cache for this live quiz
-    const keys = await ctx.redisExec.keys(`lq:${liveQuizId}:*`)
+    const keys = await redis.keys(`lq:${liveQuizId}:*`)
     if (keys.length > 0) {
-      const pipe = ctx.redisExec.pipeline()
+      const pipe = redis.pipeline()
       for (const key of keys) {
         pipe.unlink(key)
       }
@@ -1391,16 +1407,14 @@ async function removeCacheEntriesBlock(
     // only remove information from the cache that is specific to the closed block and the instances therein
     const instanceIds = block.elements.map((instance) => instance.id)
     const instanceKeysNested = await Promise.all(
-      instanceIds.map((id) => ctx.redisExec.keys(`lq:${liveQuizId}:i:${id}:*`))
+      instanceIds.map((id) => redis.keys(`lq:${liveQuizId}:i:${id}:*`))
     )
     const instanceKeys = instanceKeysNested.flat()
-    const blockKeys = await ctx.redisExec.keys(
-      `lq:${liveQuizId}:b:${blockId}:*`
-    )
+    const blockKeys = await redis.keys(`lq:${liveQuizId}:b:${blockId}:*`)
     const keys = [...instanceKeys, ...blockKeys]
 
     if (keys.length > 0) {
-      const pipe = ctx.redisExec.pipeline()
+      const pipe = redis.pipeline()
       for (const key of keys) {
         pipe.unlink(key)
       }
@@ -1613,10 +1627,15 @@ export async function endLiveQuiz(
     return null
   }
 
+  // depending on the quiz assessment setting, select the corresponding redis instance
+  const redis = quiz.isAssessmentEnabled
+    ? ctx.redisAssessmentExec
+    : ctx.redisExec
+
   // update course leaderboard and participant XP
   try {
-    const quizLB = await ctx.redisExec.hgetall(`lq:${id}:lb`)
-    const quizXP = await ctx.redisExec.hgetall(`lq:${id}:xp`)
+    const quizLB = await redis.hgetall(`lq:${id}:lb`)
+    const quizXP = await redis.hgetall(`lq:${id}:xp`)
     const participants: Record<string, any> = {}
 
     Object.entries(quizXP).forEach(([id, xp]) => {
@@ -2005,6 +2024,11 @@ export async function getLiveQuizSummary(
 
   if (!liveQuiz) return null
 
+  // depending on the quiz assessment setting, select the corresponding redis instance
+  const redis = liveQuiz.isAssessmentEnabled
+    ? ctx.redisAssessmentExec
+    : ctx.redisExec
+
   // get responses for completed blocks
   let storedResponses = liveQuiz.blocks.reduce((acc_b, block) => {
     acc_b += block.elements.reduce((acc_i, instance) => {
@@ -2017,7 +2041,7 @@ export async function getLiveQuizSummary(
   // get results for active blocks
   if (liveQuiz.activeBlock) {
     const cachedResults = await getCachedBlockResults({
-      redisExec: ctx.redisExec,
+      redisExec: redis,
       activeBlock: liveQuiz.activeBlock,
     })
 
@@ -2126,8 +2150,14 @@ export async function cancelLiveQuiz(
       }),
     ])
 
-    const keys = await ctx.redisExec.keys(`lq:${id}:*`)
-    const pipe = ctx.redisExec.multi()
+    // depending on the quiz assessment setting, select the corresponding redis instance
+    const redis = quiz.isAssessmentEnabled
+      ? ctx.redisAssessmentExec
+      : ctx.redisExec
+
+    // unlink all cache keys from the redis cache
+    const keys = await redis.keys(`lq:${id}:*`)
+    const pipe = redis.multi()
     for (const key of keys) {
       pipe.unlink(key)
     }
@@ -2195,13 +2225,18 @@ export async function getLiveQuizEvaluation(
     }
   }
 
+  // depending on the quiz assessment setting, select the corresponding redis instance
+  const redis = liveQuiz.isAssessmentEnabled
+    ? ctx.redisAssessmentExec
+    : ctx.redisExec
+
   // load results from active block as well
   let activeBlockWithResults:
     | (DB.ElementBlock & { elements: DB.ElementInstance[] })
     | undefined
   if (liveQuiz.activeBlockId && liveQuiz.activeBlock) {
     const cachedResults = await getCachedBlockResults({
-      redisExec: ctx.redisExec,
+      redisExec: redis,
       activeBlock: liveQuiz.activeBlock,
     })
 
@@ -3085,8 +3120,13 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
         )
       }
 
+      // depending on the quiz assessment setting, select the corresponding redis instance
+      const redis = liveQuiz.isAssessmentEnabled
+        ? globalCtx.redisAssessmentExec
+        : globalCtx.redisExec
+
       // start the live quiz
-      await globalCtx.redisExec
+      await redis
         .pipeline()
         .hmset(`lq:${liveQuiz.id}:meta`, {
           namespace: liveQuiz.namespace,
@@ -3156,6 +3196,7 @@ export const handleStandardLiveQuizBlockClosureAggregation: HatchetHandlers['han
       blockId,
       prisma: globalCtx.prisma,
       redisExec: globalCtx.redisExec,
+      redisAssessmentExec: globalCtx.redisAssessmentExec,
       // update the instance results based on the cache data again with the latest information
       updateResults: true,
       // only update the leaderboard for the quiz, if this is the last block of the quiz
@@ -3164,10 +3205,13 @@ export const handleStandardLiveQuizBlockClosureAggregation: HatchetHandlers['han
     })
 
     // remove all cache entries related to this block only (or the entire live quiz, if this was the last block)
-    await removeCacheEntriesBlock(
-      { liveQuizId, blockId, block, isLastBlock },
-      globalCtx
-    )
+    await removeCacheEntriesBlock({
+      liveQuizId,
+      blockId,
+      block,
+      isLastBlock,
+      redis: globalCtx.redisExec,
+    })
 
     return true
   }
@@ -3238,6 +3282,7 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
         blockId,
         prisma: globalCtx.prisma,
         redisExec: globalCtx.redisExec,
+        redisAssessmentExec: globalCtx.redisAssessmentExec,
         updateResults: false,
         updateLeaderboards: true,
       })
@@ -3285,10 +3330,13 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
 
     try {
       // remove all cache entries related to this block only (or the entire live quiz, if this was the last block)
-      await removeCacheEntriesBlock(
-        { liveQuizId, blockId, block, isLastBlock },
-        globalCtx
-      )
+      await removeCacheEntriesBlock({
+        liveQuizId,
+        blockId,
+        block,
+        isLastBlock,
+        redis: globalCtx.redisAssessmentExec,
+      })
     } catch (error) {
       executionCtx.logger.error(
         `Error removing cache entries for block with ID ${blockId} in quiz with ID ${liveQuizId}: ${error}`
