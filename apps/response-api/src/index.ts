@@ -193,7 +193,8 @@ async function handleAddAssessmentResponse(
   try {
     correlationData = await verifyJWT(
       correlationKey,
-      process.env.APP_SECRET as string
+      process.env.APP_SECRET as string,
+      { issuer: process.env.APP_ORIGIN_ASSESSMENT_API }
     )
   } catch (err) {
     hatchetClient.events.push('create-audit-log-entry', {
