@@ -1452,6 +1452,9 @@ importers:
       '@klicker-uzh/hatchet':
         specifier: workspace:*
         version: link:../../packages/hatchet
+      '@klicker-uzh/prisma':
+        specifier: workspace:*
+        version: link:../../packages/prisma
       '@klicker-uzh/types':
         specifier: workspace:*
         version: link:../../packages/types
