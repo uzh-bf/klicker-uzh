@@ -1562,7 +1562,7 @@ function aggregateLiveQuizResponses({
                         criterionId
                       ] === 'undefined'
                     ) {
-                      return
+                      return acc
                     }
 
                     // compute the hash of the response
