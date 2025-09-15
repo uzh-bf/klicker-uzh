@@ -1081,6 +1081,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Abschicken Ihrer Antwort ist ein Serverfehler aufgetreten. Bitte versuchen Sie es erneut.',
       missingAssessmentCourseParticipation:
         'Sie sind nicht Teil des Assessment-Kurses, zu welchem dieses Quiz gehört. Bitte kontaktieren Sie Ihre Dozierenden.',
+      accountDeletionMessage:
+        'Da Sie Ihr KlickerUZH-Konto derzeit zur Teilnahme an einem Assessment-Kurs verwenden, können Sie Ihr Konto nicht selbst löschen. Für weitere Informationen zur Löschung Ihres Kontos und zum Verlassen des Kurses wenden Sie sich bitte an Ihre Dozierenden.',
     },
   },
   manage: {
