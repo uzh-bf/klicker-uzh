@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.10](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.9...v3.4.0-alpha.10) (2025-09-15)
+
+
+### Bug Fixes
+
+* **packages/graphql:** last fixes for email_isSSOAccount in LTI login ([56033ca](https://github.com/uzh-bf/klicker-uzh/commit/56033ca68a6e4e06db768b23fbb009f0aecf02c0))
+
 ## [3.4.0-alpha.9](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.8...v3.4.0-alpha.9) (2025-09-15)
 
 
