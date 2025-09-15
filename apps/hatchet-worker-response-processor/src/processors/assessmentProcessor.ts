@@ -30,9 +30,6 @@ import {
   validateStudentResponse,
 } from './helpers.js'
 
-// TODO: Consider the following improvements
-// - ensure that the response meets the restrictions specified in the element options (as for standard processor)
-
 const redisExec = getRedis()
 
 export async function processAssessmentResponse(
@@ -111,6 +108,7 @@ export async function processAssessmentResponse(
     restrictions,
     firstResponseReceivedAt,
     sessionBlockId,
+    courseId,
     choiceCount,
     basePoints,
     defaultPoints,
@@ -118,6 +116,13 @@ export async function processAssessmentResponse(
     blockExecution,
     blockClosedAt,
   } = instanceInfo
+
+  // instances in assessment live quizzes always need to have a type, course linked to the activity and session block id
+  if (!type || !courseId || !sessionBlockId) {
+    throw new NonRetryableError(
+      `Instance ${message.instanceId} does not have a type (${type}) or is not linked to a course (${courseId}) or session block (${sessionBlockId}).`
+    )
+  }
 
   if (blockClosedAt && Number(responseTimestamp) > Number(blockClosedAt)) {
     throw new NonRetryableError(
@@ -349,7 +354,23 @@ export async function processAssessmentResponse(
     info: gradingLog,
   })
 
-  // ! Step 3: Directly store the submitted response in the live quiz responses table and add entry to redis votes list for successful response
+  // ! Step 3: Validate that the submitting user has a valid participation in the assessment course (requirement for assessment responses)
+  const participation = await prisma.participation.findUnique({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: message.participantId,
+      },
+    },
+  })
+
+  if (!participation) {
+    throw new NonRetryableError(
+      `Participant ${message.participantId} does not have a participation in course ${courseId} linked to assessment live quiz ${message.liveQuizId}.`
+    )
+  }
+
+  // ! Step 4: Directly store the submitted response in the live quiz responses table and add entry to redis votes list for successful response
   try {
     await prisma.liveQuizResponse.create({
       data: {
@@ -383,7 +404,7 @@ export async function processAssessmentResponse(
     'true'
   )
 
-  // ! Step 4: Schedule additional hatchet task with response details to update aggregated results in redis & update leaderboard if gamification is enabled
+  // ! Step 5: Schedule additional hatchet task with response details to update aggregated results in redis & update leaderboard if gamification is enabled
   const quizInfo = await redisExec.hgetall(`${instanceKey}:info`)
   ctx.v1.events.push('response-processed:aggregation', {
     correlationId: message.correlationId,

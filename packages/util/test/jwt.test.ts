@@ -49,6 +49,14 @@ describe('JWT Utilities', () => {
       expect(decoded.iat).toBeGreaterThanOrEqual(beforeSign)
       expect(decoded.iat).toBeLessThanOrEqual(afterSign)
     })
+
+    it('should set issuer (iss) when provided', async () => {
+      const issuer = 'klicker-uzh'
+      const token = await signJWT(testPayload, testSecret, { issuer })
+
+      const decoded = decodeJWT<JWTPayload & { iss: string }>(token)
+      expect(decoded.iss).toBe(issuer)
+    })
   })
 
   describe('verifyJWT', () => {
@@ -117,6 +125,45 @@ describe('JWT Utilities', () => {
       const payload = await verifyJWT(validToken, testSecret, {
         algorithms: ['HS256'],
       })
+      expect(payload.sub).toBe(testPayload.sub)
+    })
+
+    it('should verify when issuer matches', async () => {
+      const issuer = 'expected-issuer'
+      const token = await signJWT(testPayload, testSecret, { issuer })
+
+      const payload = await verifyJWT(token, testSecret, { issuer })
+      expect(payload.sub).toBe(testPayload.sub)
+
+      // Double-check the claim is present
+      const decoded = decodeJWT<JWTPayload & { iss: string }>(token)
+      expect(decoded.iss).toBe(issuer)
+    })
+
+    it('should reject when issuer does not match', async () => {
+      const token = await signJWT(testPayload, testSecret, {
+        issuer: 'issuer-a',
+      })
+
+      await expect(
+        verifyJWT(token, testSecret, { issuer: 'issuer-b' })
+      ).rejects.toThrow()
+    })
+
+    it('should reject when issuer is required but missing', async () => {
+      const tokenWithoutIssuer = await signJWT(testPayload, testSecret)
+
+      await expect(
+        verifyJWT(tokenWithoutIssuer, testSecret, { issuer: 'some-issuer' })
+      ).rejects.toThrow()
+    })
+
+    it('should verify without requiring issuer even if present', async () => {
+      const token = await signJWT(testPayload, testSecret, {
+        issuer: 'optional-issuer',
+      })
+
+      const payload = await verifyJWT(token, testSecret)
       expect(payload.sub).toBe(testPayload.sub)
     })
   })
