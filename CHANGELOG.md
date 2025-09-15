@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.10](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.9...v3.4.0-alpha.10) (2025-09-15)
+
+
+### Bug Fixes
+
+* **packages/graphql:** last fixes for email_isSSOAccount in LTI login ([56033ca](https://github.com/uzh-bf/klicker-uzh/commit/56033ca68a6e4e06db768b23fbb009f0aecf02c0))
+
+## [3.4.0-alpha.9](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.8...v3.4.0-alpha.9) (2025-09-15)
+
+
+### Bug Fixes
+
+* BOM issue in invitations ([ae22fc7](https://github.com/uzh-bf/klicker-uzh/commit/ae22fc7d1266b7203967691c73eed23c51a8a43b))
+* **deploy:** redis pass from assessment linked to normal ([7718172](https://github.com/uzh-bf/klicker-uzh/commit/771817221827b96c9ab49b6232f6bbfcff63ab35))
+* **deploy:** wrong cache connected to assessment ([a360a24](https://github.com/uzh-bf/klicker-uzh/commit/a360a24797f2142835dc6633ca02ec9f5a81f98c))
+* **packages/graphql:** ensure that cache keys are cleared correctly on assessment live quiz reset ([03c0706](https://github.com/uzh-bf/klicker-uzh/commit/03c0706304df18e5bf51736b5d058b3023eb3303))
+* relax SSO unique constraint ([#4914](https://github.com/uzh-bf/klicker-uzh/issues/4914)) ([bc6b5e6](https://github.com/uzh-bf/klicker-uzh/commit/bc6b5e6133825bfcd4167e55d52ad3295c949698))
+* usage of new combined unique constraint on email_isSSOAccount ([4161bc2](https://github.com/uzh-bf/klicker-uzh/commit/4161bc2d1bb19fcbab54edc31ae3c7ed6956ab9b))
+
 ## [3.4.0-alpha.8](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.7...v3.4.0-alpha.8) (2025-09-15)
 
 

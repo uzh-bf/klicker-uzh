@@ -397,7 +397,12 @@ async function createOrLinkParticipant(profile: ExtendedProfile) {
   if (profile.email) {
     // Try to find by primary email first
     participant = await prisma.participant.findUnique({
-      where: { email: profile.email.toLowerCase() },
+      where: {
+        email_isSSOAccount: {
+          email: profile.email.toLowerCase(),
+          isSSOAccount: true,
+        },
+      },
     })
 
     // If not found by primary email, check affiliations
