@@ -152,7 +152,7 @@ assessment:
       privateKey: '${VAPID_PRIVATE_KEY}'
 
     redisCache:
-      host: klicker-v2-qa-redis-master
+      host: klicker-v2-prod-redis-master
       port: 6379
       pass: ''
 
