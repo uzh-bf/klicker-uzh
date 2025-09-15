@@ -2,11 +2,7 @@
 
 import { prisma } from '@klicker-uzh/prisma'
 import { InvitationStatus } from '@klicker-uzh/prisma/client'
-import {
-  DEFAULT_INVITATION_EMAIL_MODE,
-  InvitationEmailMode,
-  resolveInvitationEmailMode,
-} from '@klicker-uzh/util'
+import { InvitationEmailMode } from '@klicker-uzh/util'
 import { parse } from 'csv-parse/sync'
 import { readFileSync } from 'fs'
 import * as R from 'remeda'
@@ -54,10 +50,7 @@ type ExistingInvitationInfo = {
 async function run() {
   console.log('=== Participant Invitation Import ===')
   console.log('CSV File:', CSV_FILE)
-  const emailMode = resolveInvitationEmailMode(
-    process.env.PARTICIPANT_INVITATION_EMAIL_MODE ??
-      DEFAULT_INVITATION_EMAIL_MODE
-  )
+  const emailMode = InvitationEmailMode.AffiliationsOnly
   console.log('Invitation email mode:', emailMode)
   console.log('Dry run:', DRY_RUN ? 'enabled' : 'disabled')
   console.log()

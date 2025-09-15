@@ -1,11 +1,9 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { CourseAuthType, InvitationStatus } from '@klicker-uzh/prisma/client'
-import type { InvitationEmailMode } from '@klicker-uzh/util'
 import {
-  DEFAULT_INVITATION_EMAIL_MODE,
+  InvitationEmailMode,
   InvitationEmailMode as InvitationEmailModeValue,
   normalizeEmail,
-  resolveInvitationEmailMode,
 } from '@klicker-uzh/util'
 import * as R from 'remeda'
 
@@ -41,12 +39,7 @@ export async function createParticipantInvitations(
 ): Promise<CreateInvitationsResponse> {
   const results: InvitationResult[] = []
 
-  const emailMode =
-    options.emailMode ??
-    resolveInvitationEmailMode(
-      process.env.PARTICIPANT_INVITATION_EMAIL_MODE ??
-        DEFAULT_INVITATION_EMAIL_MODE
-    )
+  const emailMode = options.emailMode ?? InvitationEmailMode.AffiliationsOnly
 
   // Validate course exists and has SSO enabled
   const course = await prisma.course.findUnique({
