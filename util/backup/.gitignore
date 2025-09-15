@@ -4,6 +4,7 @@ dumps/**/*.tar
 dumps/**/*.tar.gpg
 dumps/**/*.dump
 dumps/**/*.dump.gpg
+dumps/**/*.sha256
 
 # Temporary files
 *.tmp
