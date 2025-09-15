@@ -34,7 +34,7 @@ export async function getSelf(
           ? { where: { courseId: liveQuiz.courseId } }
           : { take: 0 }, // make sure that no participations are fetched if courseid is not set
         accounts: {
-          where: { ssoType: 'UZH' },
+          where: { ssoType: 'uzh' },
           select: { ssoEmail: true },
           take: 1,
         },
