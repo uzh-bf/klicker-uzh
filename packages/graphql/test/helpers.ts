@@ -276,10 +276,8 @@ export async function testInitialization(
     hatchet,
     tasks,
     emitter,
-    // Provide actual Redis clients so cache operations (e.g., keys/unlink) work
-    redisExec: redisExec as unknown as ContextWithUser['redisExec'],
-    redisAssessmentExec:
-      redisAssessmentExec as unknown as ContextWithUser['redisAssessmentExec'],
+    redisExec,
+    redisAssessmentExec,
     pubSub: {
       publish: vi.fn(),
       subscribe: vi.fn().mockReturnValue(new Repeater(() => {})),
