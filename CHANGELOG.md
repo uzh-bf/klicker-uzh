@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.11](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.10...v3.4.0-alpha.11) (2025-09-15)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** validate loaded temporarily stored responses before enabling submission ([c56bc56](https://github.com/uzh-bf/klicker-uzh/commit/c56bc5614de819a0fbb57738dc150277b549e664))
+* **packages/graphql:** return uzh affiliation email for eduid accounts if available ([c265545](https://github.com/uzh-bf/klicker-uzh/commit/c26554510b7f9d89a5cb1e729ee753681a04c363))
+
 ## [3.4.0-alpha.10](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.9...v3.4.0-alpha.10) (2025-09-15)
 
 
