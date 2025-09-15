@@ -1,6 +1,5 @@
 # Backup dumps and archives
-dumps/db/latest
-dumps/redis/latest
+dumps/**/latest
 dumps/**/*.tar
 dumps/**/*.tar.gpg
 dumps/**/*.dump

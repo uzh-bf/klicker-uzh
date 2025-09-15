@@ -13,6 +13,17 @@
 #   environment    Target environment (dev|stg|prd). Defaults to 'dev'
 #   instance       Redis instance type (main|assessment). Defaults to 'main'
 #
+# Environment Variables:
+#   DUMP_FILE           Path to specific dump file to restore
+#   BACKUP_ENCRYPTION_KEY  Required for encrypted dumps
+#   DEBUG_RESTORE       Set to 'true' to enable verbose debugging output
+#
+# Debug Mode:
+#   DEBUG_RESTORE=true ./restore-redis.sh dev main
+#   - Shows detailed GPG error messages
+#   - Displays Redis connection details
+#   - Provides comprehensive troubleshooting information
+#
 # Features:
 # - Environment-specific configuration via Doppler (stg/prd) or local config (dev)
 # - Automatic dump file discovery with priority order
@@ -27,9 +38,26 @@
 # Enable strict error handling
 set -euo pipefail
 
+# Debug mode support
+if [[ "${DEBUG_RESTORE:-}" == "true" ]]; then
+    echo "🐛 DEBUG MODE ENABLED - Verbose output activated"
+    echo "🐛 Script: $(basename "$0")"
+    echo "🐛 PID: $$"
+    echo "🐛 Debug variables will be shown throughout the restore process"
+    echo ""
+fi
+
 # Get the directory where the script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 REPO_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
+
+# Debug mode directory information
+if [[ "${DEBUG_RESTORE:-}" == "true" ]]; then
+    echo "🐛 Debug - Directory paths:"
+    echo "🐛   Script directory: $SCRIPT_DIR"
+    echo "🐛   Repository root: $REPO_ROOT"
+    echo ""
+fi
 
 # =============================================================================
 # PARAMETER VALIDATION AND HELP

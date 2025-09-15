@@ -541,9 +541,93 @@ cleanup_old_dumps() {
     fi
 }
 
+# Function to validate GPG setup and encryption key
+validate_gpg_setup() {
+    local dump_file="${1:-}"
+    
+    log_step "Validating GPG Setup"
+    
+    # Check if GPG is available
+    if ! command -v gpg &> /dev/null; then
+        log_warning "❌ GPG tool not found"
+        log_warning "💡 Install GPG:"
+        log_warning "   • macOS: brew install gnupg"
+        log_warning "   • Ubuntu/Debian: apt-get install gnupg"
+        log_warning "   • CentOS/RHEL: yum install gnupg2"
+        error_exit "GPG is required for encrypted backup operations"
+    fi
+    
+    log_info "✅ GPG tool is available: $(gpg --version | head -1)"
+    
+    # Validate encryption key is present and not empty
+    if [[ -z "${BACKUP_ENCRYPTION_KEY:-}" ]]; then
+        log_warning "❌ BACKUP_ENCRYPTION_KEY is not set"
+        error_exit "Encryption key is required for decryption"
+    fi
+    
+    # Basic encryption key validation (without revealing the key)
+    local key_length=${#BACKUP_ENCRYPTION_KEY}
+    if [[ $key_length -lt 8 ]]; then
+        log_warning "❌ Encryption key appears too short ($key_length characters)"
+        log_warning "💡 Typical encryption keys are at least 8 characters long"
+        error_exit "Encryption key validation failed"
+    fi
+    
+    log_info "✅ Encryption key is present ($key_length characters)"
+    
+    # If dump file is provided, validate it's a proper GPG file
+    if [[ -n "$dump_file" ]]; then
+        log_info "🔍 Validating encrypted file format..."
+        
+        # Check file exists and is readable
+        if [[ ! -f "$dump_file" ]]; then
+            error_exit "Dump file does not exist: $dump_file"
+        fi
+        
+        if [[ ! -r "$dump_file" ]]; then
+            error_exit "Dump file is not readable: $dump_file"
+        fi
+        
+        # Check if file has GPG signature
+        local file_type
+        file_type=$(file "$dump_file" 2>/dev/null || echo "unknown")
+        
+        if [[ "$file_type" == *"GPG symmetrically encrypted data"* ]]; then
+            log_info "✅ File is properly GPG encrypted"
+        elif [[ "$file_type" == *"data"* ]]; then
+            log_info "✅ File appears to be encrypted binary data"
+        else
+            log_warning "⚠️  File type: $file_type"
+            log_warning "⚠️  File may not be properly encrypted"
+            log_warning "💡 Expected: GPG symmetrically encrypted data"
+            
+            if [[ "${DEBUG_RESTORE:-}" == "true" ]]; then
+                log_warning "🐛 Debug - File details:"
+                log_warning "   Size: $(du -h "$dump_file" | cut -f1)"
+                log_warning "   Permissions: $(ls -la "$dump_file" | awk '{print $1, $3, $4}')"
+            fi
+        fi
+        
+        # Check file size (encrypted files should not be empty)
+        local file_size
+        file_size=$(stat -c%s "$dump_file" 2>/dev/null || stat -f%z "$dump_file" 2>/dev/null || echo "0")
+        
+        if [[ "$file_size" -eq 0 ]]; then
+            error_exit "Encrypted dump file is empty: $dump_file"
+        fi
+        
+        log_info "✅ File size validation passed ($(du -h "$dump_file" | cut -f1))"
+    fi
+    
+    log_success "GPG setup validation completed"
+}
+
 # Function to decrypt dump file (all dumps must be encrypted)
 decrypt_dump_if_needed() {
     local dump_file="$1"
+
+    # Validate GPG setup before attempting decryption
+    validate_gpg_setup "$dump_file"
 
     # Resolve symlink to get actual filename for encryption check
     local actual_file="$dump_file"
@@ -580,17 +664,84 @@ decrypt_dump_if_needed() {
     # Show progress for large files
     echo "   🔄 Decryption in progress..." >&2
 
+    # Create temporary file for GPG error output (for diagnosis while maintaining security)
+    local gpg_error_file
+    gpg_error_file=$(create_secure_temp_file "gpg_error" ".log")
+
+    # Attempt decryption with error capture
+    local gpg_exit_code=0
     if ! gpg --batch --yes --passphrase "$BACKUP_ENCRYPTION_KEY" \
-            --decrypt "$actual_file" > "$temp_dump" 2>/dev/null; then
+            --decrypt "$actual_file" > "$temp_dump" 2>"$gpg_error_file"; then
+        gpg_exit_code=$?
+        
         # Secure cleanup on failure
         secure_delete_file "$temp_dump"
-        log_warning "❌ GPG decryption failed"
-        log_warning "💡 Possible causes:"
-        log_warning "   • Incorrect BACKUP_ENCRYPTION_KEY"
-        log_warning "   • Corrupted encrypted dump file"
-        log_warning "   • GPG tool not available or misconfigured"
+        
+        # Read and analyze GPG error output
+        local gpg_error_output=""
+        if [[ -s "$gpg_error_file" ]]; then
+            gpg_error_output=$(cat "$gpg_error_file")
+        fi
+        
+        # Clean up error file
+        secure_delete_file "$gpg_error_file"
+        
+        log_warning "❌ GPG decryption failed (exit code: $gpg_exit_code)"
+        log_warning "🔍 Analyzing GPG error..."
+        
+        # Provide specific error guidance based on GPG output
+        if [[ "$gpg_error_output" == *"Bad session key"* ]] || [[ "$gpg_error_output" == *"decryption failed"* ]]; then
+            log_warning "🔑 Issue: Incorrect encryption key"
+            log_warning "💡 Solutions:"
+            log_warning "   • Verify BACKUP_ENCRYPTION_KEY matches the key used during backup creation"
+            log_warning "   • Check if the key contains special characters that need proper escaping"
+            log_warning "   • Contact admin to verify the correct encryption key"
+        elif [[ "$gpg_error_output" == *"invalid packet"* ]] || [[ "$gpg_error_output" == *"premature eof"* ]]; then
+            log_warning "📁 Issue: Corrupted or invalid encrypted file"
+            log_warning "💡 Solutions:"
+            log_warning "   • Try downloading the backup file again"
+            log_warning "   • Verify file integrity with checksums if available"
+            log_warning "   • Use a different/newer backup file"
+        elif [[ "$gpg_error_output" == *"can't connect"* ]] || [[ "$gpg_error_output" == *"No such file"* ]]; then
+            log_warning "🛠️  Issue: GPG tool configuration problem"
+            log_warning "💡 Solutions:"
+            log_warning "   • Ensure GPG is properly installed: brew install gnupg"
+            log_warning "   • Check GPG version: gpg --version"
+            log_warning "   • Verify file permissions and accessibility"
+        elif [[ "$gpg_error_output" == *"no valid OpenPGP data"* ]]; then
+            log_warning "📄 Issue: File is not a valid GPG encrypted file"
+            log_warning "💡 Solutions:"
+            log_warning "   • Verify you're using the correct encrypted backup file"
+            log_warning "   • Check if file was corrupted during transfer"
+            log_warning "   • Ensure file has .gpg extension and was properly encrypted"
+        else
+            log_warning "🔍 General GPG error occurred"
+            log_warning "💡 Possible causes:"
+            log_warning "   • Incorrect BACKUP_ENCRYPTION_KEY"
+            log_warning "   • Corrupted encrypted dump file"
+            log_warning "   • GPG tool not available or misconfigured"
+            
+            # In debug mode, show sanitized error output
+            if [[ "${DEBUG_RESTORE:-}" == "true" && -n "$gpg_error_output" ]]; then
+                log_warning "🐛 Debug - GPG error details (sanitized):"
+                # Show error but remove potential sensitive info
+                echo "$gpg_error_output" | sed 's/passphrase.*/[PASSPHRASE REDACTED]/g' | sed 's/key.*/[KEY REDACTED]/g' >&2
+            fi
+        fi
+        
+        log_warning ""
+        log_warning "🔧 Troubleshooting steps:"
+        log_warning "   1. Verify encryption key: echo \$BACKUP_ENCRYPTION_KEY | wc -c"
+        log_warning "   2. Test GPG installation: gpg --version"
+        log_warning "   3. Check file integrity: file \"$actual_file\""
+        log_warning "   4. Enable debug mode: DEBUG_RESTORE=true for more details"
+        log_warning ""
+        
         error_exit "Failed to decrypt dump file"
     fi
+    
+    # Clean up error file on success
+    secure_delete_file "$gpg_error_file"
 
     # Verify the decrypted file is not empty
     if [[ ! -s "$temp_dump" ]]; then
