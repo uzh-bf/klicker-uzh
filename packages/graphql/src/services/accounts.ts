@@ -99,7 +99,7 @@ export async function loginParticipant(
     where: { username: usernameOrEmail.trim() },
   })
   const participantWithEmail = await ctx.prisma.participant.findUnique({
-    where: { email: usernameOrEmail.trim().toLowerCase() },
+    where: { email: usernameOrEmail.trim().toLowerCase(), isSSOAccount: false },
   })
 
   const participant = participantWithUsername || participantWithEmail
@@ -779,7 +779,7 @@ export async function loginParticipantWithLti(
   // if so, create a new participant account with the LTI data and new sub
   if (!account && ltiData.email) {
     const existingParticipant = await ctx.prisma.participant.findUnique({
-      where: { email: ltiData.email },
+      where: { email: ltiData.email, isSSOAccount: false },
     })
 
     console.log('existingParticipant', existingParticipant)
