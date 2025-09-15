@@ -1407,7 +1407,9 @@ async function removeCacheEntriesBlock({
     // only remove information from the cache that is specific to the closed block and the instances therein
     const instanceIds = block.elements.map((instance) => instance.id)
     const instanceKeysNested = await Promise.all(
-      instanceIds.map((id) => redis.keys(`lq:${liveQuizId}:i:${id}:*`))
+      instanceIds.map(
+        async (id) => await redis.keys(`lq:${liveQuizId}:i:${id}:*`)
+      )
     )
     const instanceKeys = instanceKeysNested.flat()
     const blockKeys = await redis.keys(`lq:${liveQuizId}:b:${blockId}:*`)

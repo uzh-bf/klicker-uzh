@@ -38,7 +38,25 @@ function LiveQuizQRModal({
   return (
     <Modal
       open
-      title={t('manage.cockpit.liveQuizQRCodes')}
+      title={
+        <div className="relative mb-2 w-full">
+          <span className="block text-left">
+            {t('manage.cockpit.liveQuizQRCodes')}
+          </span>
+          {quizPin ? (
+            <span
+              className="border-uzh-grey-100 text-uzh-red-100 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md border bg-white px-2.5 py-0.5 text-xl tracking-wide md:text-2xl"
+              data-cy="live-quiz-pin-header"
+            >
+              <span>{t('shared.generic.pin')}: </span>
+              <span className="inline-flex gap-1">
+                <span>{quizPin.slice(0, 3)}</span>
+                <span>{quizPin.slice(3)}</span>
+              </span>
+            </span>
+          ) : null}
+        </div>
+      }
       onClose={onClose}
       className={{ content: 'w-full! max-w-6xl pb-2' }}
       dataCloseButton={{ cy: 'live-quiz-qr-modal-close' }}
