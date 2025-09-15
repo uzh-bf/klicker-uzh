@@ -1,6 +1,7 @@
 #!/usr/bin/env tsx
 
 import { prisma } from '@klicker-uzh/prisma'
+import { InvitationStatus } from '@klicker-uzh/prisma/client'
 import {
   DEFAULT_INVITATION_EMAIL_MODE,
   InvitationEmailMode,
@@ -10,7 +11,10 @@ import { parse } from 'csv-parse/sync'
 import { readFileSync } from 'fs'
 import * as R from 'remeda'
 import * as z from 'zod'
-import type { CreateInvitationsResponse } from '../services/participantInvitations.js'
+import type {
+  CreateInvitationsResponse,
+  InvitationResult,
+} from '../services/participantInvitations.js'
 import { createParticipantInvitations } from '../services/participantInvitations.js'
 
 // Configuration - adjust these values as needed
@@ -37,6 +41,15 @@ const csvRowSchema = z
   })
 
 type CsvRow = z.infer<typeof csvRowSchema>
+
+type ExistingInvitationInfo = {
+  id: number
+  email: string
+  status: InvitationStatus
+  participantId: string | null
+  acceptedAt: Date | null
+  courseId: string
+}
 
 async function run() {
   console.log('=== Participant Invitation Import ===')
@@ -121,23 +134,47 @@ async function run() {
           new Set(emails.map((email) => email.toLowerCase()))
         )
 
-        const existingInvitations = await prisma.participantInvitation.findMany(
-          {
+        const existingInvitations: ExistingInvitationInfo[] =
+          await prisma.participantInvitation.findMany({
             where: {
               courseId,
               email: { in: normalizedUniqueEmails },
             },
             select: {
+              id: true,
               email: true,
+              status: true,
+              participantId: true,
+              acceptedAt: true,
+              courseId: true,
             },
-          }
-        )
+          })
 
         const existingEmailSet = new Set(
           existingInvitations.map((invitation) =>
             invitation.email.toLowerCase()
           )
         )
+
+        const brokenInvitations = existingInvitations.filter(
+          (invitation) =>
+            invitation.status === InvitationStatus.ACCEPTED &&
+            !invitation.participantId
+        )
+
+        if (brokenInvitations.length > 0) {
+          console.log(
+            `Found ${brokenInvitations.length} accepted invitation(s) without participant link.`
+          )
+
+          for (const invitation of brokenInvitations) {
+            await resolveBrokenAcceptedInvitation(
+              invitation,
+              emailMode,
+              DRY_RUN
+            )
+          }
+        }
 
         const filteredEmails = emails.filter(
           (email) => !existingEmailSet.has(email.toLowerCase())
@@ -150,114 +187,140 @@ async function run() {
           )
         }
 
-        if (filteredEmails.length === 0) {
-          console.log('Created (PENDING): 0')
-          console.log('Auto-accepted (existing users): 0')
-          console.log(`Skipped (duplicates): ${skippedExistingCount}`)
-          console.log('Errors: 0')
+        const manualResults: InvitationResult[] = []
+        const remainingEmails: string[] = []
 
-          totalCreated += 0
-          totalAutoAccepted += 0
-          totalDuplicates += skippedExistingCount
-          totalErrors += 0
-          totalProcessed += emails.length
-
-          console.log()
-          continue
-        }
-
-        let result: CreateInvitationsResponse
-
-        if (DRY_RUN) {
-          const normalizedFiltered = filteredEmails.map((email) =>
-            email.toLowerCase()
-          )
-
-          const autoAcceptCandidates = await prisma.participantAccount.findMany(
-            {
-              where: {
-                ssoEmail: { in: normalizedFiltered },
-                isVerified: true,
-                ...(emailMode === InvitationEmailMode.AffiliationsOnly
-                  ? { type: 'affiliation' }
-                  : {}),
-              },
-              select: {
-                ssoEmail: true,
-              },
-            }
-          )
-
-          const autoAcceptSet = new Set(
-            autoAcceptCandidates
-              .map((account) => account.ssoEmail?.toLowerCase())
-              .filter((email): email is string => Boolean(email))
-          )
-
-          const seen = new Set<string>()
-          let created = 0
-          let autoAccepted = 0
-          let duplicates = 0
-
-          const results = filteredEmails.map((email) => {
-            const normalized = email.toLowerCase()
-
-            if (seen.has(normalized)) {
-              duplicates += 1
-              return {
-                email,
-                status: 'duplicate' as const,
-              }
-            }
-
-            seen.add(normalized)
-
-            if (autoAcceptSet.has(normalized)) {
-              autoAccepted += 1
-              return {
-                email,
-                status: 'auto_accepted' as const,
-              }
-            }
-
-            created += 1
-            return {
-              email,
-              status: 'created' as const,
-            }
-          })
-
-          result = {
-            created,
-            autoAccepted,
-            duplicates,
-            errors: 0,
-            totalProcessed: filteredEmails.length,
-            results,
-          }
-
-          console.log(
-            `Dry run: would create ${created}, auto-accept ${autoAccepted}, skip ${duplicates}.`
-          )
-        } else {
-          result = await createParticipantInvitations(
+        for (const email of filteredEmails) {
+          const manualResult = await resolveParticipantWithoutInvitation(
+            email,
             courseId,
-            filteredEmails,
-            {
-              emailMode,
-            }
+            emailMode,
+            DRY_RUN
           )
+
+          if (manualResult) {
+            manualResults.push(manualResult)
+          } else {
+            remainingEmails.push(email)
+          }
         }
 
-        console.log(`Created (PENDING): ${result.created}`)
-        console.log(`Auto-accepted (existing users): ${result.autoAccepted}`)
+        const manualSummary = summarizeInvitationResults(manualResults)
+
+        let result: CreateInvitationsResponse = {
+          created: 0,
+          autoAccepted: 0,
+          duplicates: 0,
+          errors: 0,
+          totalProcessed: 0,
+          results: [],
+        }
+
+        if (remainingEmails.length > 0) {
+          if (DRY_RUN) {
+            const normalizedFiltered = remainingEmails.map((email) =>
+              email.toLowerCase()
+            )
+
+            const autoAcceptCandidates =
+              await prisma.participantAccount.findMany({
+                where: {
+                  ssoEmail: { in: normalizedFiltered },
+                  isVerified: true,
+                  ...(emailMode === InvitationEmailMode.AffiliationsOnly
+                    ? { type: 'affiliation' }
+                    : {}),
+                },
+                select: {
+                  ssoEmail: true,
+                },
+              })
+
+            const autoAcceptSet = new Set(
+              autoAcceptCandidates
+                .map((account) => account.ssoEmail?.toLowerCase())
+                .filter((email): email is string => Boolean(email))
+            )
+
+            const seen = new Set<string>()
+            let created = 0
+            let autoAccepted = 0
+            let duplicates = 0
+
+            const results = remainingEmails.map((email) => {
+              const normalized = email.toLowerCase()
+
+              if (seen.has(normalized)) {
+                duplicates += 1
+                return {
+                  email,
+                  status: 'duplicate' as const,
+                }
+              }
+
+              seen.add(normalized)
+
+              if (autoAcceptSet.has(normalized)) {
+                autoAccepted += 1
+                return {
+                  email,
+                  status: 'auto_accepted' as const,
+                }
+              }
+
+              created += 1
+              return {
+                email,
+                status: 'created' as const,
+              }
+            })
+
+            result = {
+              created,
+              autoAccepted,
+              duplicates,
+              errors: 0,
+              totalProcessed: remainingEmails.length,
+              results,
+            }
+
+            console.log(
+              `Dry run: would create ${created}, auto-accept ${autoAccepted}, skip ${duplicates}.`
+            )
+          } else {
+            result = await createParticipantInvitations(
+              courseId,
+              remainingEmails,
+              {
+                emailMode,
+              }
+            )
+          }
+        }
+
+        const combinedResult: CreateInvitationsResponse = {
+          created: result.created + manualSummary.created,
+          autoAccepted: result.autoAccepted + manualSummary.autoAccepted,
+          duplicates: result.duplicates + manualSummary.duplicates,
+          errors: result.errors + manualSummary.errors,
+          totalProcessed: result.totalProcessed + manualSummary.totalProcessed,
+          results: [...manualResults, ...result.results],
+        }
+
+        console.log(`Created (PENDING): ${combinedResult.created}`)
         console.log(
-          `Skipped (duplicates): ${result.duplicates + skippedExistingCount}`
+          `Auto-accepted (existing users): ${combinedResult.autoAccepted}`
         )
-        console.log(`Errors: ${result.errors}`)
+        console.log(
+          `Skipped (duplicates): ${combinedResult.duplicates + skippedExistingCount}`
+        )
+        console.log(`Errors: ${combinedResult.errors}`)
 
         // Group results by status for this course
-        const resultsByStatus = R.groupBy(result.results, R.prop('status'))
+        const resultsByStatus = R.groupBy(
+          combinedResult.results,
+          R.prop('status')
+        )
 
         // Show auto-accepted users for this course
         const autoAcceptedResults = resultsByStatus.auto_accepted || []
@@ -278,10 +341,10 @@ async function run() {
         }
 
         // Aggregate totals
-        totalCreated += result.created
-        totalAutoAccepted += result.autoAccepted
-        totalDuplicates += result.duplicates + skippedExistingCount
-        totalErrors += result.errors
+        totalCreated += combinedResult.created
+        totalAutoAccepted += combinedResult.autoAccepted
+        totalDuplicates += combinedResult.duplicates + skippedExistingCount
+        totalErrors += combinedResult.errors
         totalProcessed += emails.length
       } catch (error: any) {
         console.error(`Failed to process course ${courseId}: ${error.message}`)
@@ -321,6 +384,222 @@ async function run() {
   } finally {
     await prisma.$disconnect()
   }
+}
+
+function summarizeInvitationResults(results: InvitationResult[]) {
+  return results.reduce(
+    (summary, result) => {
+      summary.totalProcessed += 1
+
+      switch (result.status) {
+        case 'created':
+          summary.created += 1
+          break
+        case 'auto_accepted':
+          summary.autoAccepted += 1
+          break
+        case 'duplicate':
+          summary.duplicates += 1
+          break
+        case 'error':
+          summary.errors += 1
+          break
+      }
+
+      return summary
+    },
+    {
+      created: 0,
+      autoAccepted: 0,
+      duplicates: 0,
+      errors: 0,
+      totalProcessed: 0,
+    }
+  )
+}
+
+async function resolveParticipantWithoutInvitation(
+  email: string,
+  courseId: string,
+  emailMode: InvitationEmailMode,
+  dryRun: boolean
+): Promise<InvitationResult | null> {
+  const normalizedEmail = email.toLowerCase()
+
+  const participantAccount = await prisma.participantAccount.findFirst({
+    where: {
+      ssoEmail: normalizedEmail,
+      isVerified: true,
+      ...(emailMode === InvitationEmailMode.AffiliationsOnly
+        ? { type: 'affiliation' }
+        : {}),
+    },
+    include: {
+      participant: true,
+    },
+  })
+
+  if (!participantAccount || !participantAccount.participant) {
+    return null
+  }
+
+  const participantId = participantAccount.participantId
+
+  const existingParticipation = await prisma.participation.findUnique({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId,
+      },
+    },
+  })
+  const hadParticipation = Boolean(existingParticipation)
+
+  if (dryRun) {
+    console.log(
+      `  Dry run: would create ACCEPTED invitation for ${normalizedEmail} and ${existingParticipation ? 'activate existing participation' : 'create participation'} for participant ${participantId}.`
+    )
+
+    return {
+      email,
+      status: 'auto_accepted',
+      participantId,
+    }
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    const invitation = await tx.participantInvitation.create({
+      data: {
+        email: normalizedEmail,
+        courseId,
+        status: InvitationStatus.ACCEPTED,
+        participantId,
+        acceptedAt: new Date(),
+      },
+    })
+
+    await tx.participation.upsert({
+      where: {
+        courseId_participantId: {
+          courseId,
+          participantId,
+        },
+      },
+      create: {
+        courseId,
+        participantId,
+        isActive: true,
+      },
+      update: {
+        isActive: true,
+      },
+    })
+
+    return invitation.id
+  })
+
+  console.log(
+    `  Linked participant ${participantId} to new ACCEPTED invitation for ${normalizedEmail} (${hadParticipation ? 'reactivated participation' : 'created participation'}).`
+  )
+
+  return {
+    email,
+    status: 'auto_accepted',
+    invitationId: result,
+    participantId,
+  }
+}
+
+async function resolveBrokenAcceptedInvitation(
+  invitation: ExistingInvitationInfo,
+  emailMode: InvitationEmailMode,
+  dryRun: boolean
+) {
+  const normalizedEmail = invitation.email.toLowerCase()
+
+  console.log(
+    `Checking accepted invitation ${invitation.id} for ${normalizedEmail}`
+  )
+
+  const participantAccounts = await prisma.participantAccount.findMany({
+    where: {
+      ssoEmail: normalizedEmail,
+      isVerified: true,
+      ...(emailMode === InvitationEmailMode.AffiliationsOnly
+        ? { type: 'affiliation' }
+        : {}),
+    },
+    include: {
+      participant: true,
+    },
+  })
+
+  const accountWithParticipant = participantAccounts.find(
+    (account) => account.participant
+  )
+
+  if (!accountWithParticipant || !accountWithParticipant.participant) {
+    console.warn(
+      `  Warning: No verified participant account found for ${normalizedEmail}. Manual review required.`
+    )
+    return
+  }
+
+  if (participantAccounts.length > 1) {
+    console.warn(
+      `  Note: Multiple participant accounts found for ${normalizedEmail}. Using ${accountWithParticipant.participantId}.`
+    )
+  }
+
+  const participantId = accountWithParticipant.participantId
+
+  const existingParticipation = await prisma.participation.findUnique({
+    where: {
+      courseId_participantId: {
+        courseId: invitation.courseId,
+        participantId,
+      },
+    },
+  })
+
+  if (dryRun) {
+    console.log(
+      `  Dry run: would link invitation ${invitation.id} to participant ${participantId} and ${existingParticipation ? 'activate existing participation' : 'create participation'}.`
+    )
+    return
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.participantInvitation.update({
+      where: { id: invitation.id },
+      data: {
+        participantId,
+        status: InvitationStatus.ACCEPTED,
+        acceptedAt: invitation.acceptedAt ?? new Date(),
+      },
+    })
+
+    await tx.participation.upsert({
+      where: {
+        courseId_participantId: {
+          courseId: invitation.courseId,
+          participantId,
+        },
+      },
+      create: {
+        courseId: invitation.courseId,
+        participantId,
+        isActive: true,
+      },
+      update: {
+        isActive: true,
+      },
+    })
+  })
+
+  console.log(
+    `  Fixed: linked invitation ${invitation.id} to participant ${participantId} and ensured course participation.`
+  )
 }
 
 // Run the script
