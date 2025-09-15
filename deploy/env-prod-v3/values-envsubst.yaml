@@ -123,13 +123,10 @@ lti:
 
 assessment:
   frontendPWA:
-    replicaCount: '${APP_REPLICAS}'
     image:
       tag: '${APP_VERSION}'
 
   backendGraphql:
-    replicaCount: '${APP_REPLICAS}'
-
     image:
       tag: '${APP_VERSION}'
 
@@ -155,7 +152,7 @@ assessment:
       privateKey: '${VAPID_PRIVATE_KEY}'
 
     redisCache:
-      host: klicker-v2-qa-redis-master
+      host: klicker-v2-prod-redis-master
       port: 6379
       pass: ''
 

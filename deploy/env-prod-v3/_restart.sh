@@ -16,9 +16,9 @@ kubectl rollout restart -n klicker-v2-prod deployment klicker-v2-prod-klicker-uz
 
 kubectl rollout restart -n klicker-v2-prod deployment controllers
 kubectl rollout restart -n klicker-v2-prod deployment hatchet-grpc
-kubectl rollout restart -n klicker-v2-prod deployment hatchet-qa-api
-kubectl rollout restart -n klicker-v2-prod deployment hatchet-qa-caddy
-kubectl rollout restart -n klicker-v2-prod deployment hatchet-qa-frontend
+kubectl rollout restart -n klicker-v2-prod deployment hatchet-prod-api
+kubectl rollout restart -n klicker-v2-prod deployment hatchet-prod-caddy
+kubectl rollout restart -n klicker-v2-prod deployment hatchet-prod-frontend
 kubectl rollout restart -n klicker-v2-prod deployment scheduler
 
 kubectl get pods -n klicker-v2-prod

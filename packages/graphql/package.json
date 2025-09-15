@@ -95,6 +95,7 @@
     "generate": "graphql-codegen --config codegen.ts",
     "script": "ENV=development CONFIG=dev ../../util/_run_with_doppler.sh tsx --env-file=.env",
     "script:invitations:dev": "CONFIG=dev_assessment ../../util/_run_with_doppler.sh tsx src/scripts/importParticipantInvitations.ts",
+    "script:invitations:prd": "CONFIG=prd ../../util/_run_with_doppler.sh tsx src/scripts/importParticipantInvitations.ts",
     "script:invitations:stg": "CONFIG=stg ../../util/_run_with_doppler.sh tsx src/scripts/importParticipantInvitations.ts",
     "script:prod": "CONFIG=prd ../../util/_run_with_doppler.sh  tsx",
     "script:stg": "CONFIG=stg ../../util/_run_with_doppler.sh  tsx",
