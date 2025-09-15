@@ -2,7 +2,7 @@ name: Claude Code Review
 
 on:
   pull_request:
-    branches: [v3]
+    branches: ['v3', 'v3*']
     types: [opened, synchronize]
 
 concurrency:
@@ -227,16 +227,3 @@ jobs:
             --allowedTools mcp__context7__*
             --allowedTools mcp__sequential-thinking__*
             --system-prompt "You are operating in remote agent mode with full MCP server access. Use serena MCP for semantic code analysis and project understanding. Use context7 MCP for up-to-date library documentation. Use sequential-thinking MCP for complex problem breakdown and structured analysis. Always leverage these MCP tools to provide deeper insights."
-
-          # Custom environment variables for MCP servers
-          settings: |
-            {
-              "env": {
-                "CONTEXT7_API_KEY": "${{ secrets.CONTEXT7_API_KEY }}"
-              }
-            }
-
-        # Skip review for certain conditions
-        if: |
-          !contains(github.event.pull_request.title, '[skip-review]') &&
-          !contains(github.event.pull_request.title, 'WIP')
