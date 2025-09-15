@@ -2546,6 +2546,20 @@ export async function resetAssessmentLiveQuiz(
         permission.directPermission.userGroupId !== null,
     })
 
+    // reset all cache entries for the live quiz that potentially remain (due to pending block aggregations)
+    // remaining pending aggregation tasks will automatically be aborted, since they are only executed for published or ended live quizzes
+    const redis = liveQuiz.isAssessmentEnabled
+      ? ctx.redisAssessmentExec
+      : ctx.redisExec
+    const keys = await redis.keys(`lq:${liveQuiz.id}:*`)
+    if (keys.length > 0) {
+      const pipe = redis.pipeline()
+      for (const key of keys) {
+        pipe.unlink(key)
+      }
+      await pipe.exec()
+    }
+
     return {
       id: updatedQuiz.id,
       templateId: null,
