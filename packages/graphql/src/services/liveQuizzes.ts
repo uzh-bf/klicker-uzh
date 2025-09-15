@@ -1363,17 +1363,24 @@ export async function deactivateLiveQuizBlock(
     throw error
   }
 
-  // schedule another aggregation event through hatchet that runs 5 minutes after block closure
-  // -> heuristic: by then, all submissions should have been processed and the aggregated results on the instance should be final
-  if (isAssessmentEnabled) {
-    await ctx.tasks.aggregateLiveQuizBlockResultsAssessment.schedule(
-      dayjs().add(5, 'minute').toDate(),
-      { liveQuizId: quizId, blockId }
-    )
-  } else {
-    await ctx.tasks.aggregateLiveQuizBlockResultsStandard.schedule(
-      dayjs().add(5, 'minute').toDate(),
-      { liveQuizId: quizId, blockId }
+  try {
+    // schedule another aggregation event through hatchet that runs 5 minutes after block closure
+    // -> heuristic: by then, all submissions should have been processed and the aggregated results on the instance should be final
+    if (isAssessmentEnabled) {
+      await ctx.tasks.aggregateLiveQuizBlockResultsAssessment.schedule(
+        dayjs().add(5, 'minute').toDate(),
+        { liveQuizId: quizId, blockId }
+      )
+    } else {
+      await ctx.tasks.aggregateLiveQuizBlockResultsStandard.schedule(
+        dayjs().add(5, 'minute').toDate(),
+        { liveQuizId: quizId, blockId }
+      )
+    }
+  } catch (error) {
+    console.error(
+      `Failed to schedule aggregation task for closed block ${blockId} in live quiz ${quizId}:`,
+      error
     )
   }
 
