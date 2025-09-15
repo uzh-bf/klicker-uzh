@@ -712,11 +712,11 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         redirect: {
           destination: `${
             process.env.APP_ORIGIN_ASSESSMENT_PWA ?? ''
-          }${ctx.locale ? `/${ctx.locale}` : ''}/login&redirect_to=${
-            encodeURIComponent(
-              window?.location?.pathname + (window?.location?.search ?? '')
-            ) ?? '/'
-          }`,
+          }${ctx.locale ? `/${ctx.locale}` : ''}/login?redirect_to=${encodeURIComponent(
+            ctx.req.url && ctx.req.url.startsWith('/')
+              ? ctx.req.url
+              : `/session/${ctx.params?.id as string}`
+          )}`,
           permanent: false,
         },
       }
