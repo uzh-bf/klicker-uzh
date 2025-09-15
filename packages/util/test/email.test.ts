@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   collapsedUzhVariant,
   collectAllEmails,
+  collectInvitationEmails,
   normalizeEmail,
 } from '../src/email.js'
 
@@ -62,6 +63,33 @@ describe('Email utilities', () => {
       expect(new Set(result)).toEqual(
         new Set(['user@df.uzh.ch', 'user@uzh.ch'])
       )
+    })
+  })
+
+  describe('collectInvitationEmails', () => {
+    it('tracks profile and affiliation emails separately', () => {
+      const result = collectInvitationEmails('User@df.uzh.ch', [
+        'user@phil.uzh.ch',
+        'user@uzh.ch',
+      ])
+
+      expect(new Set(result.profileEmails)).toEqual(
+        new Set(['user@df.uzh.ch', 'user@uzh.ch'])
+      )
+      expect(new Set(result.affiliationEmails)).toEqual(
+        new Set(['user@phil.uzh.ch', 'user@uzh.ch'])
+      )
+      expect(new Set(result.allEmails)).toEqual(
+        new Set(['user@df.uzh.ch', 'user@phil.uzh.ch', 'user@uzh.ch'])
+      )
+    })
+
+    it('omits invalid emails from both collections', () => {
+      const result = collectInvitationEmails('invalid', ['also.invalid'])
+
+      expect(result.profileEmails).toEqual([])
+      expect(result.affiliationEmails).toEqual([])
+      expect(result.allEmails).toEqual([])
     })
   })
 })
