@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.12](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.11...v3.4.0-alpha.12) (2025-09-15)
+
+
+### Features
+
+* implement initial assessment-readiness ([#4874](https://github.com/uzh-bf/klicker-uzh/issues/4874)) ([0dff544](https://github.com/uzh-bf/klicker-uzh/commit/0dff5442752b1c4ec0adea2d0eaf53bca8c1fc7b))
+
+
+### Bug Fixes
+
+* **packages/graphql:** correctly skip invalid submissions for case study question in assessment live quiz response aggregation ([#4915](https://github.com/uzh-bf/klicker-uzh/issues/4915)) ([548ef32](https://github.com/uzh-bf/klicker-uzh/commit/548ef320af229c75fcafd73d35536050a73e94e0))
+
+
+### Enhancements
+
+* **apps/auth:** improve authentication workflow including participant invitations and SSO ([#4916](https://github.com/uzh-bf/klicker-uzh/issues/4916)) ([41a4359](https://github.com/uzh-bf/klicker-uzh/commit/41a435961ef2a45f38d73e9c060f03f0667f82c6))
+
 ## [3.4.0-alpha.11](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.10...v3.4.0-alpha.11) (2025-09-15)
 
 

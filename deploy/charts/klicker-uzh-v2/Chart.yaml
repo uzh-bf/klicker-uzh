@@ -2,8 +2,8 @@ apiVersion: v2
 name: klicker-uzh-v2
 description: A Helm chart for the KlickerUZH
 type: application
-version: 3.4.0-alpha.11
-appVersion: v3.4.0-alpha.11
+version: 3.4.0-alpha.12
+appVersion: v3.4.0-alpha.12
 dependencies:
   - name: redis
     version: 17.6.0
