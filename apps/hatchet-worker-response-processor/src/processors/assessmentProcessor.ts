@@ -126,7 +126,7 @@ export async function processAssessmentResponse(
 
   if (blockClosedAt && Number(responseTimestamp) > Number(blockClosedAt)) {
     throw new NonRetryableError(
-      `Response received after block of element instance ${message.instanceId} was closed at ${new Date(blockClosedAt)}.`
+      `Response received after block of element instance ${message.instanceId} was closed at ${new Date(Number(blockClosedAt))}.`
     )
   }
 
