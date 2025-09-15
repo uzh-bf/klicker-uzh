@@ -41,12 +41,21 @@ async function run() {
     tls: process.env.REDIS_TLS ? {} : undefined,
   })
 
+  const redisAssessmentExec = new Redis({
+    family: 4,
+    host: process.env.REDIS_ASSESSMENT_HOST ?? 'localhost',
+    password: process.env.REDIS_ASSESSMENT_PASS ?? '',
+    port: Number(process.env.REDIS_ASSESSMENT_PORT ?? 6381),
+    tls: process.env.REDIS_ASSESSMENT_TLS ? {} : undefined,
+  })
+
   // get all hatchet tasks
   const tasks = prepareHatchetTasks({
     hatchet: hatchetClient,
     pubSub: {} as any,
     emitter,
     redisExec,
+    redisAssessmentExec,
     handlers: {
       handleFinalRandomGroupAssignments,
       handleRunningRandomGroupAssignments,

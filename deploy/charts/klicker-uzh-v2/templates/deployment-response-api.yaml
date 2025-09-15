@@ -94,8 +94,8 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.responseApi.autoscaling.enabled }}
-  replicas: {{ .Values.responseApi.replicaCount }}
+  {{- if not .Values.assessment.responseApi.autoscaling.enabled }}
+  replicas: {{ .Values.assessment.responseApi.replicaCount }}
   {{- end }}
   selector:
     matchLabels:

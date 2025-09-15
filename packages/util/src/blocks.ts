@@ -320,6 +320,7 @@ export async function updateLiveQuizBlockResultsFromCache({
   blockId,
   prisma,
   redisExec,
+  redisAssessmentExec,
   updateResults,
   updateLeaderboards,
 }: {
@@ -327,6 +328,7 @@ export async function updateLiveQuizBlockResultsFromCache({
   blockId: number
   prisma: DB.PrismaClient
   redisExec: Redis
+  redisAssessmentExec: Redis
   updateResults: boolean
   updateLeaderboards: boolean
 }) {
@@ -346,7 +348,7 @@ export async function updateLiveQuizBlockResultsFromCache({
 
   try {
     const cachedResults = await getCachedBlockResults({
-      redisExec,
+      redisExec: quiz.isAssessmentEnabled ? redisAssessmentExec : redisExec,
       activeBlock: quiz.activeBlock,
     })
 

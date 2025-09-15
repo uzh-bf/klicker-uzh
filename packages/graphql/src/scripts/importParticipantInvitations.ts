@@ -22,6 +22,8 @@ async function run() {
       columns: true,
       skip_empty_lines: true,
       trim: true,
+      // Handle UTF-8 BOM in files exported from Excel/Numbers (as in PRD CSV)
+      bom: true,
     })
 
     console.log(`Found ${records.length} rows in CSV`)

@@ -111,12 +111,14 @@ export async function testInitialization(
 
   const pubSub = createPubSub()
   const redisExec = new Redis()
+  const redisAssessmentExec = new Redis()
 
   const hatchetCtx = {
     hatchet,
     pubSub,
     emitter,
     redisExec,
+    redisAssessmentExec,
     prisma,
   }
 
@@ -275,6 +277,8 @@ export async function testInitialization(
     tasks,
     emitter,
     redisExec: vi.fn() as unknown as ContextWithUser['redisExec'],
+    redisAssessmentExec:
+      vi.fn() as unknown as ContextWithUser['redisAssessmentExec'],
     pubSub: {
       publish: vi.fn(),
       subscribe: vi.fn().mockReturnValue(new Repeater(() => {})),

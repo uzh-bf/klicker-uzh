@@ -19,7 +19,7 @@ import type {
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import { DEFAULT_POINTS } from '../constants.js'
-import getRedis from '../redis.js'
+import { getAssessmentRedis } from '../redis.js'
 import {
   getCaseStudyQuestionPointsDetails,
   getChoicesQuestionPointsDetails,
@@ -30,7 +30,7 @@ import {
   validateStudentResponse,
 } from './helpers.js'
 
-const redisExec = getRedis()
+const redisExec = getAssessmentRedis() // use assessment redis instance for assessment response processor
 
 export async function processAssessmentResponse(
   message: {

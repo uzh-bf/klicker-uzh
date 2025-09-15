@@ -12,8 +12,8 @@ model Account {
   provider          String
   providerAccountId String
 
-  // Validation and primary email management
-  isPrimary  Boolean @default(false) // Only one primary per user
+  // validation and primary email management
+  isPrimary  Boolean @default(false) // only one primary per user
   isVerified Boolean @default(true) // OAuth accounts are auto-verified
 
   refresh_token String? @db.Text
@@ -31,9 +31,6 @@ model Account {
   updatedAt DateTime @default(now()) @updatedAt
 
   @@unique([provider, providerAccountId])
-  // Ensure only one primary affiliation per user
-  @@unique([userId, isPrimary])
-  // Performance indexes
   @@index([providerAccountId, isVerified])
   @@index([type, isVerified])
 }
