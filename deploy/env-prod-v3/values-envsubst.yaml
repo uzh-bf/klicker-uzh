@@ -123,13 +123,10 @@ lti:
 
 assessment:
   frontendPWA:
-    replicaCount: '${APP_REPLICAS}'
     image:
       tag: '${APP_VERSION}'
 
   backendGraphql:
-    replicaCount: '${APP_REPLICAS}'
-
     image:
       tag: '${APP_VERSION}'
 

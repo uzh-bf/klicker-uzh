@@ -46,18 +46,18 @@ hatchet:
                 topologyKey: kubernetes.io/hostname
 
     responseProcessor:
-      replicaCount: 3
+      replicaCount: 4
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
         pullPolicy: Always
       resources:
         requests:
-          cpu: 300m
-          memory: 300Mi
+          cpu: 200m
+          memory: 200Mi
         limits:
-          cpu: 800m
-          memory: 800Mi
+          cpu: 500m
+          memory: 500Mi
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -86,7 +86,7 @@ hatchet:
               app.kubernetes.io/component: hatchet-worker-response-processor
 
 auth:
-  replicaCount: 2
+  replicaCount: 3
 
   autoscaling:
     enabled: false
@@ -247,7 +247,7 @@ frontendManage:
       memory: 1000Mi
 
 frontendControl:
-  replicaCount: 2
+  replicaCount: 1
 
   autoscaling:
     enabled: false
@@ -418,7 +418,7 @@ lti:
           - lti.klicker-prod.bf-app.ch
 
 responseApi:
-  replicaCount: 3
+  replicaCount: 4
 
   corsAllowedOrigins: 'https://pwa.klicker.uzh.ch'
 
@@ -479,7 +479,7 @@ assessment:
     priorityClassName: production-workload
 
     autoscaling:
-      enabled: true
+      enabled: false
       minReplicas: 3
       maxReplicas: 8
       targetCPUUtilizationPercentage: 70
@@ -553,7 +553,7 @@ assessment:
     priorityClassName: production-workload
 
     autoscaling:
-      enabled: true
+      enabled: false
       minReplicas: 3
       maxReplicas: 6
       targetCPUUtilizationPercentage: 70
@@ -629,7 +629,7 @@ assessment:
     priorityClassName: production-workload
 
     autoscaling:
-      enabled: true
+      enabled: false
       minReplicas: 3
       maxReplicas: 6
       targetCPUUtilizationPercentage: 70
