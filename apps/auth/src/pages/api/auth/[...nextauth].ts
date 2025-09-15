@@ -151,7 +151,9 @@ export interface ExtendedUser {
 export async function decode({ token, secret }: JWTDecodeParams) {
   if (!token) return null
   const secretString = typeof secret === 'string' ? secret : secret.toString()
-  return (await verifyJWT(token, secretString)) as DefaultJWT
+  return (await verifyJWT(token, secretString, {
+    issuer: process.env.APP_ORIGIN_AUTH,
+  })) as DefaultJWT
 }
 
 export async function encode({ token, secret }: JWTEncodeParams) {
@@ -419,7 +421,7 @@ async function createOrLinkParticipant(profile: ExtendedProfile) {
         const affiliatedAccount = await tx.participantAccount.findFirst({
           where: {
             type: 'affiliation',
-            ssoId: profile.email.toLowerCase(),
+            ssoEmail: profile.email.toLowerCase(),
             isVerified: true,
           },
           include: { participant: true },
@@ -494,6 +496,9 @@ async function createOrLinkParticipant(profile: ExtendedProfile) {
         error
       )
     }
+
+    // Ensure the transaction returns the participant for the caller
+    return participant
   })
 
   return participant
