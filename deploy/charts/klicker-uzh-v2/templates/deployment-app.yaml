@@ -49,6 +49,8 @@ spec:
               protocol: TCP
           envFrom:
             - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
+            - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-auth
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-auth
@@ -125,6 +127,8 @@ spec:
               containerPort: 3000
               protocol: TCP
           envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
             - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-frontend-pwa
             - secretRef:
@@ -203,6 +207,8 @@ spec:
               protocol: TCP
           envFrom:
             - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
+            - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-frontend-manage
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-frontend-manage
@@ -279,6 +285,8 @@ spec:
               containerPort: 3000
               protocol: TCP
           envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
             - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-frontend-control
             - secretRef:
@@ -360,6 +368,8 @@ spec:
               value: production
           envFrom:
             - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
+            - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-backend-graphql
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-backend-graphql
@@ -439,6 +449,8 @@ spec:
             - name: NODE_ENV
               value: production
           envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-olat-api
           livenessProbe:
@@ -518,6 +530,8 @@ spec:
             - name: NODE_ENV
               value: production
           envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
             - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-lti
             - secretRef:

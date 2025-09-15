@@ -1,5 +1,5 @@
+import { signJWT, verifyJWT } from '@klicker-uzh/util'
 import generatePassword from 'generate-password'
-import JWT from 'jsonwebtoken'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -117,10 +117,10 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     if (cookies['lti-token'] || query.jwt) {
       const token = cookies['lti-token'] ?? query.jwt
 
-      const parsedToken = JWT.verify(
+      const parsedToken = (await verifyJWT(
         token,
         process.env.APP_SECRET as string
-      ) as {
+      )) as {
         sub: string
         email: string
         scope: string
@@ -143,7 +143,17 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       })
 
       if (request?.body?.lis_person_sourcedid) {
-        signedLtiData.token = JWT.sign(
+        const pwaOrigin =
+          process.env.ASSESSMENT_MODE === 'true'
+            ? process.env.APP_ORIGIN_ASSESSMENT_PWA
+            : process.env.APP_ORIGIN_PWA
+        if (!pwaOrigin) {
+          throw new Error(
+            'APP_ORIGIN_PWA and APP_ORIGIN_ASSESSMENT_PWA are required but not defined'
+          )
+        }
+
+        signedLtiData.token = await signJWT(
           {
             sub: request.body.lis_person_sourcedid,
             email: request.body.lis_person_contact_email_primary,
@@ -153,6 +163,10 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           {
             algorithm: 'HS256',
             expiresIn: '5m',
+            issuer:
+              process.env.ASSESSMENT_MODE === 'true'
+                ? process.env.APP_ORIGIN_ASSESSMENT_PWA
+                : process.env.APP_ORIGIN_PWA,
           }
         )
         signedLtiData.ssoId = request.body.lis_person_sourcedid

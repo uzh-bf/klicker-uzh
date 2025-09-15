@@ -36,3 +36,33 @@ Cypress.on('window:before:load', (win) => {
   style.innerHTML = disableAnimationsCSS
   win.document.head.appendChild(style)
 })
+
+Cypress.on('test:before:run', () => {
+  Cypress.automation('remote:debugger:protocol', {
+    command: 'Emulation.setLocaleOverride',
+    params: {
+      locale: 'en',
+    },
+  })
+})
+
+// Gate fail-fast behavior behind an env flag (defaults to true for current behavior)
+// Configure via `CYPRESS_FAIL_FAST=true|false` (or `--env FAIL_FAST=true|false`)
+function envFlag(name: string, defaultValue = false): boolean {
+  const raw = Cypress.env(name)
+  if (typeof raw === 'boolean') return raw
+  if (typeof raw === 'number') return raw === 1
+  if (typeof raw === 'string') {
+    const v = raw.toLowerCase().trim()
+    if (v === '1' || v === 'true' || v === 'yes' || v === 'on') return true
+    if (v === '0' || v === 'false' || v === 'no' || v === 'off') return false
+  }
+  return defaultValue
+}
+
+// Single global hook: stop the run when a test fails and FAIL_FAST is enabled
+Cypress.on('test:after:run', (test /*, runnable*/) => {
+  if (envFlag('CYPRESS_FAIL_FAST', true) && test.state === 'failed') {
+    Cypress.stop()
+  }
+})

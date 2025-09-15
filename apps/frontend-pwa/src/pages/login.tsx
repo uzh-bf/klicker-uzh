@@ -6,7 +6,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
-import { GetStaticPropsContext } from 'next'
+import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
@@ -157,7 +157,28 @@ function Login() {
   )
 }
 
-export async function getStaticProps({ locale }: GetStaticPropsContext) {
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+  // In assessment mode, SSR-redirect to Auth /student to avoid client-side flash
+  if (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true') {
+    const proto = (ctx.req.headers['x-forwarded-proto'] || 'https') as string
+    const host = ctx.req.headers.host as string
+    const base = `${proto}://${host}`
+
+    const redirectParam = (ctx.query.redirect_to as string) || '/'
+    const targetUrl = new URL(redirectParam, base).toString()
+    const authBase =
+      process.env.NEXT_PUBLIC_AUTH_URL || 'https://auth.klicker.uzh.ch'
+
+    return {
+      redirect: {
+        destination: `${authBase}/student?redirectTo=${encodeURIComponent(targetUrl)}`,
+        permanent: false,
+      },
+    }
+  }
+
+  // Non-assessment mode: render as usual with messages
+  const locale = ctx.locale || ctx.defaultLocale || 'en'
   return {
     props: {
       messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,

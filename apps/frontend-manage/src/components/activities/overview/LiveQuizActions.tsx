@@ -11,7 +11,9 @@ import {
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
+import LiveQuizSchedulingModal from '~/components/courses/modals/LiveQuizSchedulingModal'
 import LiveQuizDeletionModal from '../../courses/modals/LiveQuizDeletionModal'
+import LiveQuizResetModal from '../../courses/modals/LiveQuizResetModal'
 import TemplateConversionModal from '../../courses/modals/TemplateConversionModal'
 import TemplateDeletionModal from '../../courses/modals/TemplateDeletionModal'
 import TemplateEditModal from '../../courses/modals/TemplateEditModal'
@@ -29,6 +31,7 @@ import ActivityRemovalModal from './ActivityRemovalModal'
 const statusActionMap = {
   [PublicationStatus.Draft]: [
     'startLiveQuiz',
+    'scheduleLiveQuiz',
     'editLiveQuiz',
     'qrCode',
     'embeddingEvaluation',
@@ -46,6 +49,7 @@ const statusActionMap = {
     'embeddingEvaluation',
     'activityLog',
     'shareLiveQuiz',
+    'unpublishLiveQuiz',
     'removeLiveQuiz',
     'deleteLiveQuiz',
   ],
@@ -66,6 +70,7 @@ const statusActionMap = {
     'activityLog',
     'shareLiveQuiz',
     'removeLiveQuiz',
+    'resetLiveQuiz',
     'deleteLiveQuiz',
   ],
   [PublicationStatus.Template]: [
@@ -93,9 +98,11 @@ function LiveQuizActions({
 }) {
   const t = useTranslations()
   const [activityLogOpen, setActivityLogOpen] = useState(false)
+  const [schedulingModal, setSchedulingModal] = useState(false)
   const [embeddingModal, setEmbeddingModal] = useState(false)
   const [qrModal, setQRModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
+  const [resetModal, setResetModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
   const [templateEditingModal, setTemplateEditingModal] = useState(false)
   const [templateDeletionModal, setTemplateDeletionModal] = useState(false)
@@ -162,10 +169,19 @@ function LiveQuizActions({
                 liveQuiz.status === PublicationStatus.Scheduled)
             ? ['deleteLiveQuiz']
             : []),
+        // completed assessment live quizzes can be reset by assessment course admins
+        ...(liveQuiz.isAssessmentEnabled && liveQuiz.isActivityReviewer
+          ? ['resetLiveQuiz']
+          : []),
         'deleteTemplate',
       ],
       isEditor: ['editLiveQuiz', 'editTemplate'],
-      isExecutor: ['startLiveQuiz', 'lecturerCockpit'],
+      isExecutor: [
+        'startLiveQuiz',
+        'scheduleLiveQuiz',
+        'unpublishLiveQuiz',
+        'lecturerCockpit',
+      ],
       isShared: [
         'qrCode',
         'embeddingEvaluation',
@@ -187,6 +203,7 @@ function LiveQuizActions({
     quiz: liveQuiz,
     onStart,
     starting,
+    setSchedulingModal,
     setEmbeddingModal,
     setQRModal,
     setTemplateEditingModal,
@@ -196,6 +213,7 @@ function LiveQuizActions({
     setRemovalModal,
     setDeletionModal,
     setActivityLogOpen,
+    setResetModal,
   })
 
   // get all available actions based on permissions and status
@@ -222,6 +240,16 @@ function LiveQuizActions({
         openActivityDetailsModal={() => setShowDetails(true)}
       />
       <div>
+        {schedulingModal && (
+          <LiveQuizSchedulingModal
+            activityId={liveQuiz.id}
+            title={liveQuiz.name}
+            courseId={liveQuiz.courseId}
+            courseStartDate={liveQuiz.courseStartDate}
+            onClose={() => setSchedulingModal(false)}
+          />
+        )}
+
         {deletionModal && (
           <LiveQuizDeletionModal
             quizId={liveQuiz.id}
@@ -231,6 +259,18 @@ function LiveQuizActions({
               await refetchActivities?.()
             }}
             deleting={deleting}
+          />
+        )}
+
+        {resetModal && (
+          <LiveQuizResetModal
+            quizId={liveQuiz.id}
+            courseId={liveQuiz.courseId}
+            isGamificationEnabled={liveQuiz.isGamificationEnabled}
+            onClose={() => setResetModal(false)}
+            onSuccess={async () => {
+              await refetchActivities?.()
+            }}
           />
         )}
 
@@ -284,6 +324,7 @@ function LiveQuizActions({
           <LiveQuizQRModal
             quizId={liveQuiz.id}
             quizPin={liveQuiz.pinCode}
+            isAssessmentEnabled={liveQuiz.isAssessmentEnabled ?? false}
             language={liveQuiz.courseLanguage}
             onClose={() => setQRModal(false)}
           />

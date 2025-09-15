@@ -1,3 +1,4 @@
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   ElementType,
   PermissionLevel,
@@ -11,11 +12,17 @@ import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 describe('Unit tests covering the creation of derived permissions for resources (e.g. answer collections)', () => {
   // shared resources used across tests
   let prisma: PrismaClient
+  let hatchet: Hatchet
   let emitter: EventEmitter
 
   beforeAll(async () => {
-    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    const {
+      prisma: newPrisma,
+      hatchet: newHatchet,
+      emitter: newEmitter,
+    } = await initializePrisma()
     prisma = newPrisma
+    hatchet = newHatchet
     emitter = newEmitter
   })
 
@@ -24,13 +31,9 @@ describe('Unit tests covering the creation of derived permissions for resources 
     await prisma.$disconnect()
   })
 
-  beforeEach(async () => {
-    await testInitialization(prisma, emitter)
-  })
+  beforeEach(async () => testInitialization(prisma, hatchet, emitter))
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   // ! Answer collection permissions tests
   // #region

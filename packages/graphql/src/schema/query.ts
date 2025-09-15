@@ -709,9 +709,7 @@ export const Query = builder.queryType({
       getCourseGroups: t.withAuth(asUser).field({
         nullable: true,
         type: Course,
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
+        args: { courseId: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ courseId: args.courseId }),
           DB.PermissionLevel.READ,
@@ -737,9 +735,7 @@ export const Query = builder.queryType({
       getLecturerViewLiveQuiz: t.withAuth(asUser).field({
         nullable: true,
         type: LiveQuiz,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ liveQuizId: args.id }),
           DB.PermissionLevel.READ,
@@ -752,9 +748,7 @@ export const Query = builder.queryType({
       course: t.withAuth(asUser).field({
         nullable: true,
         type: Course,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
+        args: { id: t.arg.string({ required: true }) },
         resolve: withPermission(
           (args) => ({ courseId: args.id }),
           DB.PermissionLevel.READ,
@@ -903,6 +897,7 @@ export const Query = builder.queryType({
         type: [Participation], // TODO: if possible, link student course instead of normal course here
         args: {
           endpoint: t.arg.string({ required: false }),
+          assessmentOnly: t.arg.boolean({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await ParticipantService.getParticipations(args, ctx)

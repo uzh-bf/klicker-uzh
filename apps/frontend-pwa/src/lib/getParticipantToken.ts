@@ -1,7 +1,7 @@
 import { ApolloClient, NormalizedCacheObject } from '@apollo/client'
 import { LoginParticipantWithLtiDocument } from '@klicker-uzh/graphql/dist/ops'
+import { signJWT, verifyJWT } from '@klicker-uzh/util'
 import bodyParser from 'body-parser'
-import JWT from 'jsonwebtoken'
 import { GetServerSidePropsContext } from 'next'
 import nookies from 'nookies'
 
@@ -20,7 +20,9 @@ export default async function getParticipantToken({
   // if the user already has a participant token, skip registration
   // fetch the relevant data directly
   let participantToken: string | undefined | null =
-    cookies['participant_token'] ?? query.participantToken
+    (process.env.ASSESSMENT_MODE === 'true'
+      ? cookies['next-auth.participant-session-token']
+      : cookies['participant_token']) ?? query.participantToken
 
   // TODO: only check for existing participantToken once participation issues with LTI are resolved
   if (
@@ -31,7 +33,10 @@ export default async function getParticipantToken({
   ) {
     return {
       participantToken,
-      cookiesAvailable: !!cookies['participant_token'],
+      cookiesAvailable:
+        process.env.ASSESSMENT_MODE === 'true'
+          ? !!cookies['next-auth.participant-session-token']
+          : !!cookies['participant_token'],
     }
   }
 
@@ -52,10 +57,10 @@ export default async function getParticipantToken({
       }
 
       try {
-        const signedLtiData = JWT.verify(
+        const signedLtiData = (await verifyJWT(
           token,
           process.env.APP_SECRET as string
-        ) as { sub: string; email: string; scope: string }
+        )) as { sub: string; email: string; scope: string }
 
         if (signedLtiData.scope === 'LTI1.3') {
           result = await apolloClient.mutate({
@@ -82,8 +87,18 @@ export default async function getParticipantToken({
       })
 
       if (request?.body?.lis_person_sourcedid) {
+        const pwaOrigin =
+          process.env.ASSESSMENT_MODE === 'true'
+            ? process.env.APP_ORIGIN_ASSESSMENT_PWA
+            : process.env.APP_ORIGIN_PWA
+        if (!pwaOrigin) {
+          throw new Error(
+            'APP_ORIGIN_PWA and APP_ORIGIN_ASSESSMENT_PWA are required but not defined'
+          )
+        }
+
         // send along a JWT to ensure only the next server is allowed to register participants from LTI
-        const signedLtiData = JWT.sign(
+        const signedLtiData = await signJWT(
           {
             sub: request?.body?.lis_person_sourcedid,
             email: request?.body?.lis_person_contact_email_primary,
@@ -93,6 +108,10 @@ export default async function getParticipantToken({
           {
             algorithm: 'HS256',
             expiresIn: '5m',
+            issuer:
+              process.env.ASSESSMENT_MODE === 'true'
+                ? process.env.APP_ORIGIN_ASSESSMENT_PWA
+                : process.env.APP_ORIGIN_PWA,
           }
         )
 

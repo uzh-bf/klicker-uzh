@@ -2,20 +2,6 @@ import messages from '../../../packages/i18n/messages/en'
 import { getDatetimeValidationString } from './helpers'
 
 describe('Test course creation and editing functionalities', function () {
-  before(() => {
-    cy.seed()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
@@ -25,12 +11,12 @@ describe('Test course creation and editing functionalities', function () {
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   // ! Part 1: Course creation
   // #region
@@ -51,7 +37,7 @@ describe('Test course creation and editing functionalities', function () {
       .type(this.data.course1.displayName)
     cy.get('[data-cy="course-description"]')
       .realClick()
-      .type(this.data.course1.description)
+      .realType(this.data.course1.description)
 
     // change the course language from the user default locale (english) to german
     cy.get('[data-cy="course-language"]').should(

@@ -1,8 +1,17 @@
 heartbeats:
   dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/gmMi315s2532oozauJa18ckx
 
-cron:
-  dailyGroupScores: '5 6,20 * * *'
+global:
+  appOrigins:
+    api: 'https://backend-sls.klicker.uzh.ch'
+    auth: 'https://auth.klicker.uzh.ch'
+    lti: 'https://lti.klicker.uzh.ch'
+    pwa: 'https://pwa.klicker.uzh.ch'
+    manage: 'https://manage.klicker.uzh.ch'
+    control: 'https://control.klicker.uzh.ch'
+    # assessmentApi: 'https://assessment-api.klicker.uzh.ch'
+    assessmentApi: 'https://chat.klicker.uzh.ch'
+    assessmentPwa: 'https://assessment.klicker.uzh.ch'
 
 hatchet:
   client:
@@ -11,26 +20,93 @@ hatchet:
     hostPort: 'hatchet-grpc:7070'
   workers:
     general:
-      replicaCount: 1
+      replicaCount: 2
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general
         pullPolicy: Always
+      resources:
+        requests:
+          cpu: 200m
+          memory: 200Mi
+        limits:
+          cpu: 500m
+          memory: 500Mi
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/component
+                      operator: In
+                      values:
+                        - hatchet-worker-general
+                topologyKey: kubernetes.io/hostname
 
     responseProcessor:
-      replicaCount: 2
+      replicaCount: 4
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
         pullPolicy: Always
+      resources:
+        requests:
+          cpu: 200m
+          memory: 200Mi
+        limits:
+          cpu: 500m
+          memory: 500Mi
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/component
+                      operator: In
+                      values:
+                        - hatchet-worker-response-processor
+                topologyKey: kubernetes.io/hostname
+
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: hatchet-worker-response-processor
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: hatchet-worker-response-processor
 
 auth:
-  replicaCount: 1
+  replicaCount: 3
 
   autoscaling:
     enabled: false
 
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - auth
+            topologyKey: kubernetes.io/hostname
+
   ingress:
+    enabled: true
+
     hosts:
       - host: auth.klicker.uzh.ch
         paths:
@@ -57,14 +133,35 @@ auth:
       cpu: 150m
       memory: 150Mi
     limits:
-      cpu: 300m
-      memory: 300Mi
+      cpu: 1000m
+      memory: 1000Mi
 
 frontendPWA:
+  replicaCount: 3
+
   autoscaling:
     enabled: false
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - frontend-pwa
+            topologyKey: kubernetes.io/hostname
 
   ingress:
+    enabled: true
+
     hosts:
       - host: pwa.klicker.uzh.ch
         paths:
@@ -95,10 +192,31 @@ frontendPWA:
       memory: 1000Mi
 
 frontendManage:
+  replicaCount: 3
+
   autoscaling:
     enabled: false
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - frontend-manage
+            topologyKey: kubernetes.io/hostname
 
   ingress:
+    enabled: true
+
     hosts:
       - host: manage.klicker.uzh.ch
         paths:
@@ -129,10 +247,31 @@ frontendManage:
       memory: 1000Mi
 
 frontendControl:
+  replicaCount: 1
+
   autoscaling:
     enabled: false
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - frontend-control
+            topologyKey: kubernetes.io/hostname
 
   ingress:
+    enabled: true
+
     hosts:
       - host: control.klicker.uzh.ch
         paths:
@@ -159,14 +298,35 @@ frontendControl:
       cpu: 150m
       memory: 150Mi
     limits:
-      cpu: 1000m
-      memory: 1000Mi
+      cpu: 500m
+      memory: 500Mi
 
 backendGraphql:
+  replicaCount: 3
+
   autoscaling:
     enabled: false
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - backend-graphql
+            topologyKey: kubernetes.io/hostname
 
   ingress:
+    enabled: true
+
     hosts:
       - host: backend-sls.klicker.uzh.ch
         paths:
@@ -197,10 +357,14 @@ backendGraphql:
       memory: 1000Mi
 
 olatApi:
+  replicaCount: 1
+
   autoscaling:
     enabled: false
 
   ingress:
+    enabled: true
+
     hosts:
       - host: olat-api.klicker.uzh.ch
         paths:
@@ -227,13 +391,15 @@ olatApi:
       cpu: 150m
       memory: 150Mi
     limits:
-      cpu: 1000m
-      memory: 1000Mi
+      cpu: 500m
+      memory: 500Mi
 
 lti:
   replicaCount: 2
 
   ingress:
+    enabled: true
+
     hosts:
       - host: lti.klicker.uzh.ch
         paths:
@@ -252,11 +418,11 @@ lti:
           - lti.klicker-prod.bf-app.ch
 
 responseApi:
+  replicaCount: 4
+
   corsAllowedOrigins: 'https://pwa.klicker.uzh.ch'
 
   priorityClassName: production-workload
-
-  replicaCount: 2
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api
@@ -265,12 +431,23 @@ responseApi:
   autoscaling:
     enabled: false
 
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - response-api
+            topologyKey: kubernetes.io/hostname
+
   ingress:
+    enabled: true
+
     hosts:
-      - host: chat.klicker.uzh.ch
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
       - host: response-api.klicker.uzh.ch
         paths:
           - path: /
@@ -278,7 +455,6 @@ responseApi:
     tls:
       - secretName: klicker-prod-response-api-tls
         hosts:
-          - chat.klicker.uzh.ch
           - response-api.klicker.uzh.ch
 
   strategy:
@@ -286,12 +462,219 @@ responseApi:
 
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
-    limits:
       cpu: 200m
       memory: 200Mi
+    limits:
+      cpu: 400m
+      memory: 400Mi
 
 redis:
   auth:
     enabled: false
+
+assessment:
+  frontendPWA:
+    replicaCount: 3
+
+    priorityClassName: production-workload
+
+    autoscaling:
+      enabled: false
+      minReplicas: 3
+      maxReplicas: 8
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+
+    image:
+      repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment
+      pullPolicy: Always
+
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/component
+                    operator: In
+                    values:
+                      - frontend-assessment
+              topologyKey: kubernetes.io/hostname
+
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: frontend-assessment
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: frontend-assessment
+
+    ingress:
+      enabled: true
+
+      hosts:
+        - host: assessment.klicker.uzh.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+        - host: assessment.klicker-prod.bf-app.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: klicker-prod-frontend-assessment-tls-uzh
+          hosts:
+            - assessment.klicker.uzh.ch
+        - secretName: klicker-prod-frontend-assessment-tls
+          hosts:
+            - assessment.klicker-prod.bf-app.ch
+
+    strategy:
+      type: RollingUpdate
+
+    resources:
+      requests:
+        cpu: 150m
+        memory: 150Mi
+      limits:
+        cpu: 1000m
+        memory: 1000Mi
+
+  backendGraphql:
+    replicaCount: 3
+
+    priorityClassName: production-workload
+
+    autoscaling:
+      enabled: false
+      minReplicas: 3
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+
+    appManageSubdomain: manage
+    appStudentSubdomain: assessment
+    appControlSubdomain: control
+
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/component
+                    operator: In
+                    values:
+                      - backend-assessment
+              topologyKey: kubernetes.io/hostname
+
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: backend-assessment
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: backend-assessment
+
+    ingress:
+      enabled: true
+
+      hosts:
+        - host: chat.klicker.uzh.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+        - host: assessment-api.klicker-prod.bf-app.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: klicker-prod-backend-assessment-tls-uzh
+          hosts:
+            - chat.klicker.uzh.ch
+        - secretName: klicker-prod-backend-assessment-tls
+          hosts:
+            - assessment-api.klicker-prod.bf-app.ch
+
+    strategy:
+      type: RollingUpdate
+
+    resources:
+      requests:
+        cpu: 150m
+        memory: 150Mi
+      limits:
+        cpu: 1000m
+        memory: 1000Mi
+
+  responseApi:
+    replicaCount: 3
+
+    corsAllowedOrigins: 'https://assessment.klicker.uzh.ch'
+
+    priorityClassName: production-workload
+
+    autoscaling:
+      enabled: false
+      minReplicas: 3
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/component
+                    operator: In
+                    values:
+                      - response-api-assessment
+              topologyKey: kubernetes.io/hostname
+
+    ingress:
+      enabled: true
+
+      hosts:
+        - host: assessment-response-api.klicker.uzh.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+        - host: response-api-assessment.klicker-prod.bf-app.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: klicker-prod-response-api-assessment-tls-uzh
+          hosts:
+            - assessment-response-api.klicker.uzh.ch
+        - secretName: klicker-prod-response-api-assessment-tls
+          hosts:
+            - response-api-assessment.klicker-prod.bf-app.ch
+
+    strategy:
+      type: RollingUpdate
+
+    resources:
+      requests:
+        cpu: 200m
+        memory: 200Mi
+      limits:
+        cpu: 400m
+        memory: 400Mi

@@ -1,20 +1,6 @@
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test all functionalities related to the creation, management, sharing and use of templates', function () {
-  before(() => {
-    cy.seed()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Load fixture for this test case', function () {
     cy.fixture('questions.json').then((questionData) => {
       this.data = questionData
@@ -24,12 +10,12 @@ describe('Test all functionalities related to the creation, management, sharing 
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   // ! Part 0: Preparation
   // #region
@@ -570,11 +556,11 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
     cy.get('[data-cy="template-description"]')
       .realClick()
-      .type(this.data.liveQuiz.template1Orig.description)
+      .realType(this.data.liveQuiz.template1Orig.description)
     cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
     cy.get('[data-cy="template-instructions"]')
       .realClick()
-      .type(this.data.liveQuiz.template1Orig.instructions)
+      .realType(this.data.liveQuiz.template1Orig.instructions)
     cy.get('[data-cy="submit-template-creation"]').click()
 
     // verify that the template has been created and that the original live quiz still exists with all functionalities
@@ -604,7 +590,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(
       `[data-cy="template-from-live-quiz-${this.data.liveQuiz.name}"]`
     ).should('exist')
-    cy.get(`[data-cy="activity-name-${this.data.liveQuiz.name}"]`).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     cy.get(
       `[data-cy="actions-LIVE_QUIZ-${this.data.liveQuiz.template1Orig.name}"]`
@@ -615,9 +601,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template1Orig.name}"]`
     ).should('exist')
-    cy.get(
-      `[data-cy="activity-name-${this.data.liveQuiz.template1Orig.name}"]`
-    ).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
   })
 
   it('Convert the live quiz into a second template', function () {
@@ -649,11 +633,11 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
     cy.get('[data-cy="template-description"]')
       .realClick()
-      .type(this.data.liveQuiz.template2.description)
+      .realType(this.data.liveQuiz.template2.description)
     cy.get('[data-cy="submit-template-creation"]').should('be.disabled')
     cy.get('[data-cy="template-instructions"]')
       .realClick()
-      .type(this.data.liveQuiz.template2.instructions)
+      .realType(this.data.liveQuiz.template2.instructions)
     cy.get('[data-cy="submit-template-creation"]').click()
 
     // verify that the template has been created and that the original live quiz does not exist anymore
@@ -675,9 +659,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get(
       `[data-cy="delete-template-${this.data.liveQuiz.template2.name}"]`
     ).should('exist')
-    cy.get(
-      `[data-cy="activity-name-${this.data.liveQuiz.template2.name}"]`
-    ).realClick() // close dropdown
+    cy.get('body').type('{esc}') // close dropdown
 
     cy.get(`[data-cy="activity-LIVE_QUIZ-${this.data.liveQuiz.name}"]`).should(
       'not.exist'
@@ -710,7 +692,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="template-description"]')
       .realClick()
       .clear()
-      .type(this.data.liveQuiz.template1.description)
+      .realType(this.data.liveQuiz.template1.description)
 
     cy.get('[data-cy="submit-template-edit"]').should('not.be.disabled')
     cy.get('[data-cy="template-instructions"]').contains(
@@ -719,7 +701,7 @@ describe('Test all functionalities related to the creation, management, sharing 
     cy.get('[data-cy="template-instructions"]')
       .realClick()
       .clear()
-      .type(this.data.liveQuiz.template1.instructions)
+      .realType(this.data.liveQuiz.template1.instructions)
     cy.get('[data-cy="submit-template-edit"]').click()
 
     // verify that the template is shown in an updated version
@@ -1352,7 +1334,7 @@ describe('Test all functionalities related to the creation, management, sharing 
         cy.get('[data-cy="insert-question-text"]')
           .realClick()
           .clear()
-          .type(newContent)
+          .realType(newContent)
         cy.get('[data-cy="save-new-question"]').click()
         cy.get('[data-cy="student-element-preview"]').contains(newContent)
         cy.get(`[data-cy="next-template-element-${identifier}"]`).click()

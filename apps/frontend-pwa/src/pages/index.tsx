@@ -17,7 +17,8 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import usePushNotifications from '@klicker-uzh/shared-components/src/hooks/usePushNotifications'
-import { H1, UserNotification } from '@uzh-bf/design-system'
+import useStickyState from '@klicker-uzh/shared-components/src/hooks/useStickyState'
+import { H1, toast, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -33,10 +34,35 @@ function Index() {
   const router = useRouter()
   const t = useTranslations()
 
+  const { value: showAssessmentHint, setValue: setShowAssessmentHint } =
+    useStickyState('showAssessmentHint', 'true')
+
   // fetch user info for locale
   const { data: selfData } = useQuery(SelfDocument, {
     fetchPolicy: 'cache-and-network',
   })
+
+  // if the user is not part of the required assessment course, show an error toast
+  useEffect(() => {
+    if (router.query.error === 'missing_assessment_course_participation') {
+      toast({
+        type: 'error',
+        message: t('pwa.assessment.missingAssessmentCourseParticipation'),
+        options: { duration: 7000 },
+      })
+
+      // remove the error query param from the URL after showing the toast
+      const { error, ...rest } = router.query
+      router.replace(
+        {
+          pathname: router.pathname,
+          query: { ...rest },
+        },
+        undefined,
+        { shallow: true }
+      )
+    }
+  }, [router.query.error])
 
   // redirect to stored locale if different
   useEffect(() => {
@@ -79,7 +105,10 @@ function Index() {
       refetchQueries: [
         {
           query: ParticipationsDocument,
-          variables: { endpoint: subscriptionObject.endpoint },
+          variables: {
+            endpoint: subscriptionObject.endpoint,
+            assessmentOnly: process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
+          },
         },
       ],
     })
@@ -97,7 +126,10 @@ function Index() {
       refetchQueries: [
         {
           query: ParticipationsDocument,
-          variables: { endpoint: subscriptionObject.endpoint },
+          variables: {
+            endpoint: subscriptionObject.endpoint,
+            assessmentOnly: process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
+          },
         },
       ],
     })
@@ -115,7 +147,10 @@ function Index() {
   })
 
   const { data, loading, subscribeToMore } = useQuery(ParticipationsDocument, {
-    variables: { endpoint: subscription?.endpoint },
+    variables: {
+      endpoint: subscription?.endpoint,
+      assessmentOnly: process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
+    },
     fetchPolicy: 'network-only',
   })
 
@@ -148,7 +183,41 @@ function Index() {
   }
 
   return (
-    <Layout key="pwa-home-layout" displayName={t('shared.generic.title')}>
+    <Layout
+      key="pwa-home-layout"
+      displayName={
+        process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
+          ? `${t('shared.generic.title')} (${t('shared.generic.assessment')})`
+          : t('shared.generic.title')
+      }
+    >
+      {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true' && (
+        <UserNotification
+          dismissible
+          type="info"
+          hidden={showAssessmentHint !== 'true'}
+          onDismiss={() => setShowAssessmentHint('false')}
+          className={{
+            root: 'mb-4 md:mx-auto md:w-full md:max-w-xl',
+            closeIcon: 'h-6 w-6 text-lg',
+          }}
+        >
+          {t.rich('pwa.assessment.homepageHint', {
+            pwa_url: process.env.NEXT_PUBLIC_PWA_URL!,
+            link: (children) => (
+              <a
+                href={process.env.NEXT_PUBLIC_PWA_URL!}
+                target="_blank"
+                rel="noreferrer"
+                className="font-bold"
+              >
+                {children}
+              </a>
+            ),
+          })}
+        </UserNotification>
+      )}
+
       <div
         className="flex flex-col gap-4 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8"
         data-cy="homepage"
@@ -177,7 +246,9 @@ function Index() {
         {activeLiveQuizzes.length !== 0 && (
           <div>
             <H1 className={{ root: 'mb-2 text-xl' }}>
-              {t('shared.generic.activeLiveQuizzes')}
+              {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
+                ? t('shared.generic.assessmentLiveQuizzes')
+                : t('shared.generic.activeLiveQuizzes')}
             </H1>
             <div className="flex flex-col gap-2">
               {activeLiveQuizzes.map((quiz) => (
@@ -197,36 +268,39 @@ function Index() {
           </div>
         )}
 
-        <div>
-          <H1 className={{ root: 'mb-2 text-xl' }}>
-            {t('shared.generic.practice')}
-          </H1>
-          <div className="flex flex-col gap-2">
-            <LinkButton
-              data={{ cy: 'practice-pool' }}
-              href="/practice"
-              icon={faRepeat}
-            >
-              {t('shared.generic.practicePool')}
-            </LinkButton>
-            <LinkButton
-              data={{ cy: 'quizzes' }}
-              href="/repetition"
-              icon={faGraduationCap}
-            >
-              {t('shared.generic.practiceQuizzes')}
-            </LinkButton>
-            <LinkButton
-              data={{ cy: 'bookmarks' }}
-              href="/bookmarks"
-              icon={faBookmark}
-            >
-              {t('pwa.general.myBookmarks')}
-            </LinkButton>
+        {process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' && (
+          <div>
+            <H1 className={{ root: 'mb-2 text-xl' }}>
+              {t('shared.generic.practice')}
+            </H1>
+            <div className="flex flex-col gap-2">
+              <LinkButton
+                data={{ cy: 'practice-pool' }}
+                href="/practice"
+                icon={faRepeat}
+              >
+                {t('shared.generic.practicePool')}
+              </LinkButton>
+              <LinkButton
+                data={{ cy: 'quizzes' }}
+                href="/repetition"
+                icon={faGraduationCap}
+              >
+                {t('shared.generic.practiceQuizzes')}
+              </LinkButton>
+              <LinkButton
+                data={{ cy: 'bookmarks' }}
+                href="/bookmarks"
+                icon={faBookmark}
+              >
+                {t('pwa.general.myBookmarks')}
+              </LinkButton>
+            </div>
           </div>
-        </div>
+        )}
 
-        {activeMicrolearning.length > 0 && (
+        {process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
+        activeMicrolearning.length > 0 ? (
           <div data-cy="microlearnings">
             <H1 className={{ root: 'mb-2 text-xl' }}>
               {t('shared.generic.microlearning')}
@@ -265,13 +339,20 @@ function Index() {
               ))}
             </div>
           </div>
-        )}
+        ) : null}
 
         <div>
           <H1 className={{ root: 'mb-2 text-xl' }}>
-            {t('pwa.general.myCourses')}
+            {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
+              ? t('pwa.general.myAssessmentCourses')
+              : t('pwa.general.myCourses')}
           </H1>
           <div className="flex flex-col gap-2">
+            {process.env.NEXT_PUBLIC_IS_ASSESSMENT && courses.length === 0 ? (
+              <UserNotification type="warning">
+                {t('pwa.general.noAssessmentCourseAssignments')}
+              </UserNotification>
+            ) : null}
             {courses.map((course) => (
               <CourseElement
                 key={course.id}
@@ -282,30 +363,34 @@ function Index() {
             {oldCourses.map((course) => (
               <CourseElement key={course.id} course={course} />
             ))}
-            <LinkButton
-              icon={faCirclePlus}
-              href="/join"
-              data={{ cy: 'join-new-course' }}
-            >
-              {t('pwa.general.joinCourse')}
-            </LinkButton>
+            {process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' && (
+              <LinkButton
+                icon={faCirclePlus}
+                href="/join"
+                data={{ cy: 'join-new-course' }}
+              >
+                {t('pwa.general.joinCourse')}
+              </LinkButton>
+            )}
           </div>
         </div>
 
-        <div>
-          <H1 className={{ root: 'mb-2 text-xl' }}>
-            {t('pwa.general.insights')}
-          </H1>
-          <div className="flex flex-col gap-2">
-            <LinkButton
-              icon={faChartLine}
-              href="/insights/timeline"
-              data={{ cy: 'insights-student-timeline' }}
-            >
-              {t('pwa.general.timeline')}
-            </LinkButton>
+        {process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' && (
+          <div>
+            <H1 className={{ root: 'mb-2 text-xl' }}>
+              {t('pwa.general.insights')}
+            </H1>
+            <div className="flex flex-col gap-2">
+              <LinkButton
+                icon={faChartLine}
+                href="/insights/timeline"
+                data={{ cy: 'insights-student-timeline' }}
+              >
+                {t('pwa.general.timeline')}
+              </LinkButton>
+            </div>
           </div>
-        </div>
+        )}
 
         {userInfo && <UserNotification type="info" message={userInfo} />}
         {/* <SurveyPromotion courseId={courses?.[0]?.id} /> */}

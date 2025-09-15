@@ -1,3 +1,4 @@
+import { configure } from '@testing-library/cypress'
 import '@testing-library/cypress/add-commands'
 import 'cypress-real-events'
 import * as jose from 'jose'
@@ -5,6 +6,18 @@ import localforage from 'localforage'
 import messages from '../../../packages/i18n/messages/en'
 
 /// <reference types="cypress" />
+
+// Only do this in headless/CI runs to keep rich errors locally
+if (!Cypress.config('isInteractive')) {
+  configure({
+    // Return only the message, skip prettyDOM DOM dump
+    getElementError: (message /*, container */) => {
+      const err = new Error(message)
+      err.name = 'TestingLibraryElementError'
+      return err
+    },
+  })
+}
 
 // Custom command for reliable select interactions
 Cypress.Commands.add('selectOption', (selector: string, optionText: string) => {
@@ -123,7 +136,7 @@ const loginFactory = (
     cy.viewport('macbook-16')
     localforage.setItem('hideLecturerSurvey', 'true')
 
-    const secret = new TextEncoder().encode('abcd')
+    const secret = new TextEncoder().encode(Cypress.env('APP_SECRET'))
     const alg = 'HS256'
 
     cy.wrap(null).then(async () => {
@@ -131,6 +144,7 @@ const loginFactory = (
         .setProtectedHeader({ alg })
         .setIssuedAt()
         .setExpirationTime('2h')
+        .setIssuer(process.env.APP_ORIGIN_AUTH)
         .sign(secret)
 
       cy.setCookie('next-auth.session-token', token, {
@@ -1360,6 +1374,7 @@ interface CreateCourseArgs {
   groupDeadlineDate?: Date
   maxGroupSize?: number
   preferredGroupSize?: number
+  participants?: string[]
 }
 
 Cypress.Commands.add(
@@ -1378,6 +1393,7 @@ Cypress.Commands.add(
     groupDeadlineDate,
     maxGroupSize = 4,
     preferredGroupSize = 2,
+    participants = [],
   }: CreateCourseArgs) => {
     // trigger answer collection creation directly through prisma action
     cy.get('[data-cy="courses"]').click()
@@ -1395,6 +1411,7 @@ Cypress.Commands.add(
       groupDeadlineDate,
       maxGroupSize,
       preferredGroupSize,
+      participants,
     }).then((result: boolean) => {
       // check if the query was successful
       if (result === false) {

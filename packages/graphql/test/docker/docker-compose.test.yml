@@ -1,30 +1,101 @@
 services:
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_DB: klicker_test
+  # Reverse proxy for local development
+  reverse_proxy_macos:
+    build:
+      context: ../../../../util/traefik
+      dockerfile: Dockerfile
+    command:
+      # Rules
+      - --providers.file=true
+      - --providers.file.filename=/etc/traefik/rules.yaml
+      - --providers.file.watch=true
+
+      # API and dashboard
+      - '--api.insecure=true'
+      - '--api.dashboard=true'
+
+      # Entry points configuration
+      - '--entrypoints.web.address=:80'
+      - '--entrypoints.websecure.address=:443'
+
+      # HTTP/2 configuration (critical for subscriptions)
+      - '--entrypoints.websecure.http.tls=true'
+      - '--entrypoints.websecure.http2.maxConcurrentStreams=250'
     ports:
-      - '5432:5432'
+      - 80:80
+      - 443:443
+      - 8090:8080
+    volumes:
+      - '../../../../util/traefik/rules_docker.yaml:/etc/traefik/rules.yaml'
+      - '../../../../util/traefik/ssl:/etc/certs:ro'
+    networks:
+      - klicker
+
+  # Main database for testing
+  postgres:
+    image: docker.io/library/postgres:15
+    environment:
+      POSTGRES_USER: klicker
+      POSTGRES_PASSWORD: klicker
+      POSTGRES_DB: klicker-prod
+    ports:
+      - 5432:5432
     healthcheck:
-      test: ['CMD', 'pg_isready', '-U', 'postgres']
+      test: ['CMD', 'pg_isready', '-U', 'klicker', '-d', 'klicker-prod']
       interval: 5s
       timeout: 5s
       retries: 5
-
-  test:
-    build:
-      context: ../..
-      dockerfile: test/docker/Dockerfile.test
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/klicker_test
-      NODE_ENV: test
-      PNPM_HOME: '/tmp/.pnpm'
+      start_period: 10s
+    networks:
+      - klicker
     volumes:
-      - ../../../../:/usr/src/app
-    depends_on:
-      postgres:
-        condition: service_healthy
-    # Run as root to avoid permission issues with volume mounts
-    user: root
+      - ../../../../util/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # Hatchet service for workflow orchestration
+  hatchet:
+    image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:latest
+    ports:
+      - '8888:8888'
+      - '7077:7077'
+    environment:
+      DATABASE_URL: 'postgresql://hatchet:hatchet@postgres:5432/hatchet?sslmode=disable'
+      SERVER_AUTH_COOKIE_DOMAIN: localhost
+      SERVER_AUTH_COOKIE_INSECURE: 't'
+      SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
+      SERVER_GRPC_INSECURE: 't'
+      SERVER_GRPC_BROADCAST_ADDRESS: localhost:7077
+      SERVER_GRPC_PORT: '7077'
+      SERVER_URL: http://localhost:8888
+      SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
+      SERVER_DEFAULT_ENGINE_VERSION: 'V1'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8888/healthz']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    volumes:
+      - 'hatchet_lite_config:/config'
+    networks:
+      - klicker
+
+  redis_exec:
+    image: docker.io/library/redis:7
+    ports:
+      - 6379:6379
+    networks:
+      - klicker
+
+  redis_assessment:
+    image: docker.io/library/redis:7
+    ports:
+      - 6380:6379
+    networks:
+      - klicker
+
+networks:
+  klicker:
+    driver: bridge
+
+volumes:
+  hatchet_lite_config:

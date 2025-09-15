@@ -11,10 +11,7 @@ export default function Discourse() {
     ) {
       location.replace(
         `/api/auth/signin?callbackUrl=${encodeURIComponent(
-          `${process.env.NEXT_PUBLIC_AUTH_URL}/discourse_handoff?sso=` +
-            router.query.sso +
-            '&sig=' +
-            router.query.sig
+          `/discourse_handoff?sso=${router.query.sso}&sig=${router.query.sig}`
         )}`
       )
     }

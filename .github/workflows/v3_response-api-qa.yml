@@ -12,6 +12,10 @@ on:
       - 'apps/response-api/**'
       - '.github/workflows/v3_response-api**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/response-api

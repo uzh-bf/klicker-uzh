@@ -1,4 +1,25 @@
 packages:
-  - 'apps/*'
-  - 'packages/*'
-  - 'cypress'
+  - apps/*
+  - packages/*
+  - cypress
+
+ignoredBuiltDependencies:
+  - '@microsoft/teamsapp-cli'
+  - keytar
+
+onlyBuiltDependencies:
+  - '@apollo/protobufjs'
+  - '@hatchet-dev/typescript-sdk'
+  - '@prisma/client'
+  - '@prisma/engines'
+  - '@swc/core'
+  - '@tailwindcss/oxide'
+  - azure-functions-core-tools
+  - core-js
+  - core-js-pure
+  - cypress
+  - esbuild
+  - prisma
+  - protobufjs
+  - sharp
+  - unrs-resolver

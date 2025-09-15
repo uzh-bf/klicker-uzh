@@ -9,6 +9,7 @@ import { twMerge } from 'tailwind-merge'
 
 interface Props {
   path: string
+  assessmentMode?: boolean
   width?: number
   className?: {
     root?: string
@@ -23,6 +24,7 @@ interface Props {
 
 export function QR({
   path,
+  assessmentMode = false,
   width = 200,
   className,
   showLink = true,
@@ -42,14 +44,12 @@ export function QR({
     ref.current?.download('png', `klickeruzh-${path}.png`)
   }, [ref, path])
 
+  const link = `${assessmentMode ? process.env.NEXT_PUBLIC_ASSESSMENT_URL : process.env.NEXT_PUBLIC_PWA_URL}${path}`
+
   return (
     <div className={twMerge('flex flex-col items-center', className?.root)}>
       {showLink && (
-        <Link
-          passHref
-          legacyBehavior
-          href={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
-        >
+        <Link passHref legacyBehavior href={link}>
           <a
             className={twMerge(
               'text-primary-100 mt-4 text-6xl',
@@ -60,8 +60,7 @@ export function QR({
             data-cy={data?.cy}
             data-test={data?.test}
           >
-            {process.env.NEXT_PUBLIC_PWA_URL}
-            {path}
+            {link}
           </a>
         </Link>
       )}
@@ -73,13 +72,13 @@ export function QR({
             logoImage="/img/KlickerLogo.png"
             logoWidth={width}
             size={width * 3}
-            value={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
+            value={link}
           />
         ) : (
           <QRCode
             ref={ref as MutableRefObject<QRCode>}
             style={{ width: '100%', height: '100%' }}
-            value={`${process.env.NEXT_PUBLIC_PWA_URL}${path}`}
+            value={link}
           />
         )}
       </div>

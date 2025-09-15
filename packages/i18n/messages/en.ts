@@ -201,6 +201,7 @@ export default {
       microlearnings: 'Microlearnings',
       microlearning: 'Microlearning',
       activeLiveQuizzes: 'Active Live Quizzes',
+      assessmentLiveQuizzes: 'Assessment Live Quizzes',
       activePracticeQuizzes: 'Active Practice Quizzes',
       activeMicroLearnings: 'Active Microlearnings',
       groupActivity: 'Group Activity',
@@ -515,6 +516,9 @@ export default {
       waitingForActivation:
         'Your account has been created. Please check your inbox for an activation link.',
       myCourses: 'My Courses',
+      myAssessmentCourses: 'My Assessment Courses',
+      noAssessmentCourseAssignments:
+        'You have not been assigned to any assessment courses yet. Please contact your lecturers.',
       insights: 'Insights',
       timeline: 'Timeline',
       myBookmarks: 'My Bookmarks',
@@ -577,6 +581,8 @@ Your data will never be shared with other parties beside the above and will neve
         'I agree to the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy) and [terms of service](https://www.klicker.uzh.ch/terms_of_service) and consent to the processing of my data as described therein. I am aware that I can participate in learning activities anonymously and without an account if I do not agree to these conditions.',
     },
     studentDocs: {
+      assessmentInstanceWarning:
+        'Please note that you are currently in the <b>assessment instance</b> of KlickerUZH. The following documentation refers to the regular student application, which may differ from the assessment instance.',
       pageList: `
 In this documentation you will find the most important information about KlickerUZH in your course:
 
@@ -703,7 +709,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       signup: 'Sign up',
       coursePinInvalid: 'The entered course PIN is invalid.',
     },
-
     courses: {
       courseInformation: 'Course Information',
       createJoinGroup: 'Create/Join Group',
@@ -772,6 +777,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       coursePinFormat: 'Course-PIN (format: ### ### ###)',
       coursePinNumerical: 'Please enter a numerical course PIN.',
       coursePinRequired: 'Please enter the course PIN.',
+      invalidPin: 'PIN invalid',
+      genericError:
+        'There was an error when trying to join the course. Please try again or ask your lecturer for assistance.',
     },
     practiceQuiz: {
       flashcardClick: 'Click to turn card',
@@ -1050,6 +1058,31 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       groupActivityEnded:
         'This group activity has ended already. You cannot start it anymore or submit any answers.',
     },
+    assessment: {
+      homepageHint:
+        'Welcome to the assessment instance of KlickerUZH! If you want to use activities outside of an assessment course, please log in at <link>{pwa_url}</link> instead.',
+      title: 'Assessment Login',
+      warning:
+        'This is an assessment application. All your data and activities will be visible to your lecturers.',
+      loginWithEduId: 'Login with Edu-ID',
+      eduIdRequired: 'Edu-ID authentication is required for assessments',
+      submissionInputsInvalid:
+        'An error occurred while submitting your answer. Please check your inputs for error messages.',
+      submissionSuccessful:
+        'Your answer has been successfully submitted and saved.',
+      submissionGeneralError:
+        'An error occurred while submitting your answer. Please try again.',
+      submissionAlreadyRecorded:
+        'You have already answered this question. Your previous response has been saved.',
+      submissionUnauthorizedError:
+        'Your login could not be verified correctly. Please log in again and answer the question again.',
+      submissionServerError:
+        'A server error occurred while submitting your answer. Please try again.',
+      missingAssessmentCourseParticipation:
+        'You are not part of the assessment course to which this quiz belongs. Please contact your lecturers.',
+      accountDeletionMessage:
+        'Since you are currently using your KlickerUZH account to participate in an assessment course, you cannot delete your account yourself. For more information on how to delete your account and leave the course, please contact your course instructors.',
+    },
   },
   manage: {
     general: {
@@ -1295,6 +1328,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       READ_ONLY: 'Read Only',
       ACCOUNT_OWNER: 'Account Owner',
       OTP: 'One-Time Password',
+      EDUID: 'Edu-ID',
       ACTIVATION: 'Activation',
       lastUsed: 'last used: {date}',
       lastUsedNever: 'last used: never',
@@ -2200,6 +2234,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       lecturerCockpit: 'Lecturer Cockpit',
       liveQuizEvaluation: 'Quiz Evaluation',
       startLiveQuiz: 'Start Quiz',
+      scheduleLiveQuiz: 'Schedule Live Quiz',
+      unpublishLiveQuiz: 'Unpublish Live Quiz',
       editLiveQuiz: 'Edit Quiz',
       duplicateLiveQuiz: 'Duplicate Live Quiz',
       viewLiveQuiz: 'View Live Quiz',
@@ -2213,7 +2249,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       blockXQuestions: 'Block {block} ({questions} question(s))',
       shareLiveQuiz: 'Share Live Quiz',
       removeLiveQuiz: 'Remove Live Quiz',
+      resetLiveQuiz: 'Reset Live Quiz',
       deleteLiveQuiz: 'Delete Live Quiz',
+      resetLiveQuizMessage:
+        'Please confirm the reset of this assessment live quiz. All responses from students and collected points will be deleted. This action will be documented in the audit log and cannot be undone.',
       deleteLiveQuizMessage:
         'Please confirm the deletion of all results and feedbacks associated with this live quiz. Points collected by participants will not be affected by the deletion.',
       noResponsesToDelete:
@@ -2228,12 +2267,22 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'For this live quiz no confusion feedbacks have been submitted yet.',
       deleteConfusionFeedbacks:
         '{number} confusion feedback(s) will be irreversibly deleted.',
+      noLeaderboardEntriesToDelete:
+        'For this live quiz no quiz leaderboard entries have been created yet.',
+      deleteLeaderboardEntries:
+        '{number} quiz leaderboard entries will be deleted and all participants will lose their collected points.',
       evaluationLinksEmbedding: 'Links for Embedding Evaluation Views',
       noLiveQuizzes: 'No live quizzes available',
       creationExplanation:
         'To create your first live quiz, go back to the <link>question pool</link>. There you can create all different types of KlickerUZH activities and add questions from the question pool.',
       embeddingLinkCopied:
         'The embedding link has been copied to the clipboard successfully.',
+      liveQuizSchedulingDateRequired:
+        'Please enter a date for the automatic start of the live quiz.',
+      liveQuizSchedulingFutureAfterCourseStart:
+        'The date for the automatic start of the live quiz must be in the future and, if associated with a course, after the start time of that course.',
+      scheduleLiveQuizHint:
+        'When scheduling the live quiz "{title}", it will automatically start at the time you set. Before the scheduled publication date is reached, the quiz can still be unpublished and edited.',
     },
     practiceQuizzes: {
       viewPracticeQuiz: 'View Practice Quiz',
@@ -2299,7 +2348,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       noLeaderboardEntriesToDelete:
         'For this live quiz no quiz leaderboard entries have been created yet.',
       deleteLeaderboardEntries:
-        '{number} quiz leaderboard entries will be deleted and all participants will loose their collected points.',
+        '{number} quiz leaderboard entries will be deleted and all participants will lose their collected points.',
       printTitle: 'Live Quiz "{name}" - Feedback Channel',
       lecturerView: 'Lecturer View',
       liveQA: 'Live Q&A',
@@ -2568,7 +2617,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Please confirm the deletion of all elements associated with this course and the irreversible deletion of the course. Note that all students will lose access to the course alongside all associated course materials and activities.',
       noParticipationsToDelete: 'This course contains no participations.',
       deleteParticipations:
-        '{number} participant(s) of this course will loose their collected points and access to all course materials and activities.',
+        '{number} participant(s) of this course will lose their collected points and access to all course materials and activities.',
       noLiveQuizzesDisconnected: 'This course contains no live quizzes.',
       disconnectLiveQuizzes:
         '{number} live quizze(s) will be disconnected from the course. They can still be accessed through the activity list.',

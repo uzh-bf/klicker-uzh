@@ -50,22 +50,32 @@ const DynamicAccountSelector = dynamic(
   { ssr: false }
 )
 
-async function handleNewResponse(
-  sessionId: string,
-  instanceId: number,
-  type: ElementType,
+async function handleNewResponse({
+  liveQuizId,
+  instanceId,
+  type,
+  answer,
+  correlationKey,
+}: {
+  liveQuizId: string
+  instanceId: number
+  type: ElementType
   answer: any
-) {
+  correlationKey?: string | null
+}): // statusCode: 0 = client-side invalid input / general error; otherwise HTTP status codes 200, 208, 400, 401, 404, 500
+Promise<{ statusCode: number; responseTimestamp?: number }> {
   let requestOptions: RequestInit = {
     method: 'POST',
     credentials: 'include',
   }
+
   if (QUESTION_GROUPS.CHOICES.includes(type)) {
     requestOptions = {
       ...requestOptions,
       body: JSON.stringify({
+        correlationKey,
         instanceId,
-        sessionId,
+        liveQuizId,
         response: { choices: answer },
       }),
     }
@@ -76,8 +86,9 @@ async function handleNewResponse(
     requestOptions = {
       ...requestOptions,
       body: JSON.stringify({
+        correlationKey,
         instanceId,
-        sessionId,
+        liveQuizId,
         response: { value: answer },
       }),
     }
@@ -85,8 +96,9 @@ async function handleNewResponse(
     requestOptions = {
       ...requestOptions,
       body: JSON.stringify({
+        correlationKey,
         instanceId,
-        sessionId,
+        liveQuizId,
         response: { selection: answer },
       }),
     }
@@ -94,8 +106,9 @@ async function handleNewResponse(
     requestOptions = {
       ...requestOptions,
       body: JSON.stringify({
+        correlationKey,
         instanceId,
-        sessionId,
+        liveQuizId,
         response: { assessment: answer },
       }),
     }
@@ -103,22 +116,35 @@ async function handleNewResponse(
     requestOptions = {
       ...requestOptions,
       body: JSON.stringify({
+        correlationKey,
         instanceId,
-        sessionId,
-        response: { read: true },
+        liveQuizId,
+        response: { viewed: true },
       }),
     }
   } else {
-    return null
+    return { statusCode: 1 }
   }
 
   try {
-    await fetch(
+    const response = await fetch(
       process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string,
       requestOptions
     )
+
+    let responseTimestamp: number | undefined
+    try {
+      const json = await response.json()
+      if (json && typeof json.responseTimestamp === 'number') {
+        responseTimestamp = json.responseTimestamp
+      }
+    } catch (_) {
+      // ignore JSON parse errors; not all responses may have a body
+    }
+    return { statusCode: response.status, responseTimestamp }
   } catch (e) {
     console.log('error', e)
+    return { statusCode: 1 }
   }
 }
 
@@ -152,10 +178,11 @@ function Index({ id }: { id: string }) {
       if (activeBlockIndex !== -1 && typeof activeBlockIndex === 'number') {
         setSelectedBlock(activeBlockIndex)
       }
-    } else if (selectedBlock === null) {
-      const lastCompletedBlockIndex = data?.studentLiveQuiz?.blocks?.findIndex(
-        (b) => b.status === ElementBlockStatus.Executed
-      )
+    } else if (selectedBlock === null || selectedBlock === -1) {
+      const lastCompletedBlockIndex =
+        data?.studentLiveQuiz?.blocks?.findLastIndex(
+          (b) => b.status === ElementBlockStatus.Executed
+        )
 
       if (
         lastCompletedBlockIndex !== -1 &&
@@ -217,8 +244,13 @@ function Index({ id }: { id: string }) {
 
   // pin error handling
   const isPinMissing =
-    error?.graphQLErrors?.some((e) => e.message === 'LIVE_QUIZ_PIN_MISSING') ||
-    error?.message === 'LIVE_QUIZ_PIN_MISSING'
+    error?.graphQLErrors?.some(
+      (e) =>
+        e.message === 'LIVE_QUIZ_PIN_MISSING' ||
+        e.message === 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT'
+    ) ||
+    error?.message === 'LIVE_QUIZ_PIN_MISSING' ||
+    error?.message === 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT'
   const isPinInvalid =
     error?.graphQLErrors?.some((e) => e.message === 'LIVE_QUIZ_PIN_INVALID') ||
     error?.message === 'LIVE_QUIZ_PIN_INVALID'
@@ -505,7 +537,7 @@ function Index({ id }: { id: string }) {
                     gamificationEnabled={isGamificationEnabled}
                     instances={blocks?.[selectedBlock].elements ?? []}
                     execution={blocks?.[selectedBlock]?.execution ?? 0}
-                    handleNewResponse={() => {}} // submissions are no longer possible
+                    handleNewResponse={async () => ({ statusCode: 0 })} // submissions are no longer possible
                   />
                 ) : null}
               </>
@@ -618,13 +650,129 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   const apolloClient = initializeApollo()
 
+  let liveQuiz = null
   try {
-    await apolloClient.query({
+    liveQuiz = await apolloClient.query({
       query: GetRunningLiveQuizDocument,
       variables: { id: ctx.query?.id as string },
+      context: {
+        headers: {
+          authorization: ctx.req.cookies?.[
+            'next-auth.participant-session-token'
+          ]
+            ? `Bearer ${ctx.req.cookies?.['next-auth.participant-session-token'] ?? ''}`
+            : undefined,
+        },
+      },
     })
-  } catch (e) {
-    // intentionally ignore GraphQL errors here (e.g., pin missing/invalid) -> handled in UI
+  } catch (e: any) {
+    // if the user is requesting an assessment quiz from the PWA domain, redirect them to the assessment domain
+    if (
+      e.graphQLErrors?.some(
+        (err: any) => err.message === 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT'
+      ) &&
+      ctx.req.headers.host &&
+      !process.env.APP_ORIGIN_ASSESSMENT_PWA!.includes(ctx.req.headers.host)
+    ) {
+      return {
+        redirect: {
+          destination: `${
+            process.env.APP_ORIGIN_ASSESSMENT_PWA ?? ''
+          }${ctx.locale ? `/${ctx.locale}` : ''}/session/${ctx.params?.id as string}`,
+          permanent: false,
+        },
+      }
+    }
+
+    // if the user is requesting a standard PWA quiz with PIN protection from the assessment domain, redirect them to the PWA domain
+    if (
+      e.graphQLErrors?.some(
+        (err: any) => err.message === 'LIVE_QUIZ_PIN_MISSING'
+      ) &&
+      ctx.req.headers.host &&
+      !process.env.APP_ORIGIN_PWA!.includes(ctx.req.headers.host)
+    ) {
+      return {
+        redirect: {
+          destination: `${
+            process.env.APP_ORIGIN_PWA ?? ''
+          }${ctx.locale ? `/${ctx.locale}` : ''}/session/${ctx.params?.id as string}`,
+          permanent: false,
+        },
+      }
+    }
+
+    // if the user is requesting access to an assessment live quiz and is not authenticated, redirect to the assessment login
+    if (
+      e.graphQLErrors?.some(
+        (err: any) => err.message === 'UNAUTHORIZED_ASSESSMENT'
+      )
+    ) {
+      return {
+        redirect: {
+          destination: `${
+            process.env.APP_ORIGIN_ASSESSMENT_PWA ?? ''
+          }${ctx.locale ? `/${ctx.locale}` : ''}/login?redirect_to=${encodeURIComponent(
+            ctx.req.url && ctx.req.url.startsWith('/')
+              ? ctx.req.url
+              : `/session/${ctx.params?.id as string}`
+          )}`,
+          permanent: false,
+        },
+      }
+    }
+
+    // if the user does not have a valid participation in the requested live quiz, redirect to the assessment home page with a warning toast
+    if (
+      e.graphQLErrors?.some(
+        (err: any) => err.message === 'MISSING_ASSESSMENT_COURSE_PARTICIPATION'
+      )
+    ) {
+      return {
+        redirect: {
+          destination: `${
+            process.env.APP_ORIGIN_ASSESSMENT_PWA ?? ''
+          }${ctx.locale ? `/${ctx.locale}` : ''}/?error=missing_assessment_course_participation`,
+          permanent: false,
+        },
+      }
+    }
+
+    // ignore all other errors that might be thrown -> they will be handled in the component
+  }
+
+  // if the fetch was successful, redirect based on the assessment boolean
+  // -> if student entered valid PIN for an assessment quiz and then visits quiz through PWA domain (or vice-versa)
+  if (liveQuiz?.data.studentLiveQuiz) {
+    if (
+      liveQuiz.data.studentLiveQuiz.isAssessmentEnabled &&
+      ctx.req.headers.host &&
+      !process.env.APP_ORIGIN_ASSESSMENT_PWA!.includes(ctx.req.headers.host)
+    ) {
+      return {
+        redirect: {
+          destination: `${
+            process.env.APP_ORIGIN_ASSESSMENT_PWA ?? ''
+          }${ctx.locale ? `/${ctx.locale}` : ''}/session/${ctx.params?.id as string}`,
+          permanent: false,
+        },
+      }
+    }
+
+    if (
+      !liveQuiz.data.studentLiveQuiz.isAssessmentEnabled &&
+      ctx.req.headers.host &&
+      !process.env.APP_ORIGIN_PWA!.includes(ctx.req.headers.host)
+    ) {
+      return {
+        redirect: {
+          destination: `${
+            process.env.APP_ORIGIN_PWA ?? ''
+          }${ctx.locale ? `/${ctx.locale}` : ''}/session/${ctx.params?.id as string}`,
+          permanent: false,
+        },
+      }
+    }
   }
 
   await apolloClient.query({

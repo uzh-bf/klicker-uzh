@@ -108,6 +108,7 @@ export interface IParticipant
   scopeQuizId?: string | null // live quiz id for which the temporary participant is scoped -> null for regular participants
   isCourseParticipant?: boolean | null // if a live quiz id is provided, flag if the user is participant of the course
   isCourseParticipationActive?: boolean | null // if a live quiz id is provided, flag if the user is active in the course (on course leaderboard)
+  institutionalEmail?: string | null // UZH email (if available)
   xp?: number | null
   locale?: DB.Locale | null
   rank?: number
@@ -137,6 +138,9 @@ export const Participant = ParticipantRef.implement({
 
     locale: t.expose('locale', { type: LocaleType, nullable: true }),
     email: t.exposeString('email', { nullable: true }),
+    institutionalEmail: t.exposeString('institutionalEmail', {
+      nullable: true,
+    }),
     username: t.exposeString('username', { nullable: false }),
     isActive: t.exposeBoolean('isActive', { nullable: false }),
     isProfilePublic: t.exposeBoolean('isProfilePublic', { nullable: true }),

@@ -1,6 +1,17 @@
 heartbeats:
   dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
 
+global:
+  appOrigins:
+    api: 'https://api.klicker-qa.bf-app.ch'
+    auth: 'https://auth.klicker-qa.bf-app.ch'
+    lti: 'https://lti.klicker-qa.bf-app.ch'
+    pwa: 'https://pwa.klicker-qa.bf-app.ch'
+    manage: 'https://manage.klicker-qa.bf-app.ch'
+    control: 'https://control.klicker-qa.bf-app.ch'
+    assessmentApi: 'https://assessment-api.klicker-qa.bf-app.ch'
+    assessmentPwa: 'https://assessment.klicker-qa.bf-app.ch'
+
 hatchet:
   client:
     tlsStrategy: 'none'
@@ -220,7 +231,6 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api
-    tag: deploy-hatchet
     pullPolicy: Always
 
   autoscaling:
@@ -253,3 +263,106 @@ redis:
   architecture: standalone
   auth:
     enabled: false
+
+assessment:
+  frontendPWA:
+    priorityClassName: staging-workload
+
+    autoscaling:
+      enabled: false
+
+    image:
+      repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment
+      tag: '${APP_VERSION}'
+
+    ingress:
+      hosts:
+        - host: assessment.klicker-qa.bf-app.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: klicker-qa-frontend-assessment-tls
+          hosts:
+            - assessment.klicker-qa.bf-app.ch
+
+    strategy:
+      type: Recreate
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 50Mi
+      limits:
+        cpu: 200m
+        memory: 200Mi
+
+  backendGraphql:
+    priorityClassName: staging-workload
+
+    autoscaling:
+      enabled: false
+
+    appManageSubdomain: manage
+    appStudentSubdomain: assessment
+    appControlSubdomain: control
+
+    # Enable dual Redis mode for parallel testing
+    dualRedisMode: true
+
+    # Preserve Redis data after quiz ends for comparison
+    preserveRedisForComparison: true
+
+    ingress:
+      hosts:
+        - host: assessment-api.klicker-qa.bf-app.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: klicker-qa-backend-assessment-tls
+          hosts:
+            - assessment-api.klicker-qa.bf-app.ch
+
+    strategy:
+      type: Recreate
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 50Mi
+      limits:
+        cpu: 200m
+        memory: 200Mi
+
+  responseApi:
+    corsAllowedOrigins: 'https://assessment.klicker-qa.bf-app.ch'
+
+    priorityClassName: staging-workload
+
+    replicaCount: 1
+
+    autoscaling:
+      enabled: false
+
+    ingress:
+      hosts:
+        - host: response-api-assessment.klicker-qa.bf-app.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: klicker-qa-response-api-assessment-tls
+          hosts:
+            - response-api-assessment.klicker-qa.bf-app.ch
+
+    strategy:
+      type: Recreate
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 50Mi
+      limits:
+        cpu: 200m
+        memory: 200Mi

@@ -1,6 +1,6 @@
 {
   "include": ["./**/*"],
-  "exclude": ["node_modules", "dist", "src/scripts"],
+  "exclude": ["node_modules", "dist", "src/scripts", "instrumented/"],
   "compilerOptions": {
     "baseUrl": ".",
     "rootDir": ".",
@@ -32,7 +32,9 @@
     "declarationMap": true,
     /* If your code doesn't run in the DOM: */
     "lib": ["es2022"],
-    "noErrorTruncation": true
+    "noErrorTruncation": true,
     // "preserveSymlinks": true
+    /* Vitest global types */
+    "types": ["vitest/globals"]
   }
 }

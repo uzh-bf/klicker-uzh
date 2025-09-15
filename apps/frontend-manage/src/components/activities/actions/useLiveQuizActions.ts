@@ -1,10 +1,17 @@
+import { useMutation } from '@apollo/client'
 import { faWpforms } from '@fortawesome/free-brands-svg-icons'
-import { faCopy, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
+  faClock,
+  faCopy,
+  faTrashCan,
+} from '@fortawesome/free-regular-svg-icons'
+import {
+  faArrowsRotate,
   faChalkboardUser,
   faChartSimple,
   faCode,
   faFilePen,
+  faLock,
   faMessage,
   faPencil,
   faPlay,
@@ -12,7 +19,13 @@ import {
   faShare,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
-import { ActivityInfo, ActivityType } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ActivityInfo,
+  ActivityType,
+  GetSingleCourseDocument,
+  GetUserActivitiesDocument,
+  UnpublishLiveQuizDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction, useMemo } from 'react'
@@ -22,6 +35,7 @@ function useLiveQuizActions({
   quiz,
   onStart,
   starting,
+  setSchedulingModal,
   setEmbeddingModal,
   setQRModal,
   setTemplateEditingModal,
@@ -31,10 +45,12 @@ function useLiveQuizActions({
   setRemovalModal,
   setDeletionModal,
   setActivityLogOpen,
+  setResetModal,
 }: {
   quiz: ActivityInfo
   onStart: any
   starting: boolean
+  setSchedulingModal: Dispatch<SetStateAction<boolean>>
   setEmbeddingModal: Dispatch<SetStateAction<boolean>>
   setQRModal: Dispatch<SetStateAction<boolean>>
   setTemplateEditingModal: Dispatch<SetStateAction<boolean>>
@@ -50,9 +66,11 @@ function useLiveQuizActions({
   setRemovalModal: Dispatch<SetStateAction<boolean>>
   setDeletionModal: Dispatch<SetStateAction<boolean>>
   setActivityLogOpen: Dispatch<SetStateAction<boolean>>
+  setResetModal: Dispatch<SetStateAction<boolean>>
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
+  const [unpublishLiveQuiz] = useMutation(UnpublishLiveQuizDocument)
 
   const actions = useMemo(
     () => [
@@ -66,6 +84,13 @@ function useLiveQuizActions({
         },
         disabled: starting,
         data: { cy: `start-live-quiz-${quiz.name}` },
+      },
+      {
+        id: 'scheduleLiveQuiz',
+        label: t('manage.liveQuizzes.scheduleLiveQuiz'),
+        icon: faClock,
+        onClick: async () => setSchedulingModal(true),
+        data: { cy: `schedule-live-quiz-${quiz.name}` },
       },
       {
         id: 'editLiveQuiz',
@@ -169,11 +194,42 @@ function useLiveQuizActions({
         data: { cy: `share-live-quiz-${quiz.name}` },
       },
       {
+        id: 'unpublishLiveQuiz',
+        label: t('manage.liveQuizzes.unpublishLiveQuiz'),
+        icon: faLock,
+        onClick: async () => {
+          await unpublishLiveQuiz({
+            variables: { id: quiz.id },
+            refetchQueries: [
+              ...(quiz.courseId
+                ? [
+                    {
+                      query: GetSingleCourseDocument,
+                      variables: { courseId: quiz.courseId },
+                    },
+                  ]
+                : []),
+              { query: GetUserActivitiesDocument },
+            ],
+          })
+        },
+        data: { cy: `unpublish-live-quiz-${quiz.name}` },
+        className: 'border-red-600 text-red-600 hover:text-red-600',
+      },
+      {
         id: 'removeLiveQuiz',
         label: t('manage.liveQuizzes.removeLiveQuiz'),
         icon: faX,
         onClick: () => setRemovalModal(true),
         data: { cy: `remove-live-quiz-${quiz.name}` },
+        className: 'border-red-600 text-red-600 hover:text-red-600',
+      },
+      {
+        id: 'resetLiveQuiz',
+        label: t('manage.liveQuizzes.resetLiveQuiz'),
+        icon: faArrowsRotate,
+        onClick: () => setResetModal(true),
+        data: { cy: `reset-assessment-live-quiz-${quiz.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
       {

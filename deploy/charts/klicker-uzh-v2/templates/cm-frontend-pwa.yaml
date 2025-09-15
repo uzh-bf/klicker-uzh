@@ -6,10 +6,5 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
-  {{- if .Values.frontendPWA.sentryDSN }}
-  SENTRY_DSN: {{ .Values.frontendPWA.sentryDSN | quote }}
-  SENTRY_RELEASE: {{ .Chart.AppVersion | quote }}
-  {{ end }}
-  {{- if .Values.frontendPWA.sentryEnv }}
-  SENTRY_ENVIRONMENT: {{ .Values.frontendPWA.sentryEnv | quote }}
-  {{ end }}
+  # SSR-only GraphQL endpoint for PWA (internal service DNS)
+  API_URL_SSR: "http://{{ include "chart.fullname" . }}-backend-graphql:3000/api/graphql"

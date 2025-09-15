@@ -1,6 +1,7 @@
 import { prisma } from '@klicker-uzh/prisma'
 import {
   AchievementType,
+  CourseAuthType,
   ElementType,
   ObjectAccess,
   PermissionLevel,
@@ -21,6 +22,7 @@ import {
 } from '@klicker-uzh/types'
 import bcrypt from 'bcryptjs'
 import { defineConfig } from 'cypress'
+import cypressSplit from 'cypress-split'
 // import cypressCodeCoverage from '@cypress/code-coverage/task'
 
 // ! Copy of seeded user ids from prisma/seedUsers.ts
@@ -111,6 +113,560 @@ const PARTICIPANT_GROUP_IDS_SINGLE = [
   'd9f23367-32b9-45ba-9bd6-06b6d96a5829',
 ]
 
+async function seedDatabase() {
+  try {
+    // ? User seeding section (identical to seedUsers logic, different uuids)
+    const password = 'abcd'
+    const hashedPassword = await bcrypt.hash(password, 12)
+
+    await Promise.all(
+      [
+        {
+          id: USER_ID_TEST,
+          name: 'Lecturer',
+          email: 'lecturer@df.uzh.ch',
+          shortname: 'lecturer',
+          catalystIndividual: true,
+          catalystInstitutional: true,
+          publicPreview: true,
+          privatePreview: true,
+          role: UserRole.ADMIN,
+          firstLogin: false,
+          logins: {
+            create: {
+              name: 'lecturer',
+              password: hashedPassword,
+              scope: UserLoginScope.FULL_ACCESS,
+            },
+          },
+        },
+        {
+          id: USER_ID_TEST2,
+          name: 'Free Tier User',
+          email: 'free@df.uzh.ch',
+          shortname: 'free',
+          catalystIndividual: false,
+          catalystInstitutional: false,
+          publicPreview: false,
+          privatePreview: false,
+          firstLogin: false,
+        },
+        {
+          id: USER_ID_TEST3,
+          name: 'Individual Pro User',
+          email: 'pro1@df.uzh.ch',
+          shortname: 'pro1',
+          catalystIndividual: true,
+          catalystInstitutional: false,
+          publicPreview: true,
+          privatePreview: true,
+          firstLogin: false,
+        },
+        {
+          id: USER_ID_TEST4,
+          name: 'Institutional Pro User',
+          email: 'pro2@df.uzh.ch',
+          shortname: 'pro2',
+          catalystIndividual: false,
+          catalystInstitutional: true,
+          publicPreview: true,
+          privatePreview: true,
+          firstLogin: false,
+        },
+        {
+          id: USER_ID_TEST5,
+          name: 'Institutional Pro User 2',
+          email: 'pro3@df.uzh.ch',
+          shortname: 'pro3',
+          catalystIndividual: false,
+          catalystInstitutional: true,
+          publicPreview: true,
+          privatePreview: true,
+          firstLogin: false,
+        },
+        {
+          id: USER_ID_TEST6,
+          name: 'Institutional Pro User 3',
+          email: 'pro4@df.uzh.ch',
+          shortname: 'pro4',
+          catalystIndividual: false,
+          catalystInstitutional: true,
+          publicPreview: true,
+          privatePreview: true,
+          firstLogin: false,
+        },
+        {
+          id: USER_ID_TEST7,
+          name: 'Institutional Pro User 4',
+          email: 'pro5@df.uzh.ch',
+          shortname: 'pro5',
+          catalystIndividual: false,
+          catalystInstitutional: true,
+          publicPreview: true,
+          privatePreview: true,
+          firstLogin: false,
+        },
+      ].map((userData) =>
+        prisma.user.upsert({
+          where: { id: userData.id },
+          create: userData,
+          update: {},
+        })
+      )
+    )
+
+    // ? Test course seeding
+    const currentYear = new Date().getFullYear()
+    await prisma.course.upsert({
+      where: { id: COURSE_ID_TEST },
+      create: {
+        id: COURSE_ID_TEST,
+        name: 'Testkurs',
+        displayName: 'Testkurs',
+        description: 'Das ist ein Testkurs. Hier wird getestet. Viel Spass!',
+        isGamificationEnabled: true,
+        color: '#016272',
+        pinCode: 123456789,
+        startDate: new Date(`${currentYear - 1}-01-01T00:00`),
+        endDate: new Date(`${currentYear + 10}-01-01T23:59`),
+        isGroupCreationEnabled: true,
+        groupDeadlineDate: new Date('2021-01-01T00:01'),
+        maxGroupSize: 5,
+        preferredGroupSize: 3,
+        owner: {
+          connect: { id: USER_ID_TEST },
+        },
+      },
+      update: {},
+    })
+    await prisma.derivedPermission.upsert({
+      where: {
+        courseId_userId: {
+          courseId: COURSE_ID_TEST,
+          userId: USER_ID_TEST,
+        },
+      },
+      create: {
+        permissionLevel: PermissionLevel.OWNER,
+        course: {
+          connect: { id: COURSE_ID_TEST },
+        },
+        user: {
+          connect: { id: USER_ID_TEST },
+        },
+      },
+      update: {
+        permissionLevel: PermissionLevel.OWNER,
+      },
+    })
+
+    await prisma.course.upsert({
+      where: { id: COURSE_ID_TEST2 },
+      create: {
+        id: COURSE_ID_TEST2,
+        name: 'Testkurs 2',
+        displayName: 'Testkurs 2',
+        description:
+          'Das ist ein abgeschlossener Testkurs. Hier wird getestet. Viel Spass!',
+        isGamificationEnabled: true,
+        color: '#016272',
+        pinCode: 111333555,
+        startDate: new Date('2010-01-01T00:00'),
+        endDate: new Date('2020-01-01T23:59'),
+        isGroupCreationEnabled: true,
+        groupDeadlineDate: new Date('2015-01-01T00:01'),
+        maxGroupSize: 5,
+        preferredGroupSize: 3,
+        owner: {
+          connect: { id: USER_ID_TEST },
+        },
+      },
+      update: {},
+    })
+    await prisma.derivedPermission.upsert({
+      where: {
+        courseId_userId: {
+          courseId: COURSE_ID_TEST2,
+          userId: USER_ID_TEST,
+        },
+      },
+      create: {
+        permissionLevel: PermissionLevel.OWNER,
+        course: { connect: { id: COURSE_ID_TEST2 } },
+        user: { connect: { id: USER_ID_TEST } },
+      },
+      update: {
+        permissionLevel: PermissionLevel.OWNER,
+      },
+    })
+
+    await prisma.course.upsert({
+      where: {
+        id: COURSE_ID_TEST3,
+      },
+      create: {
+        id: COURSE_ID_TEST3,
+        name: 'Non-Gamified Course',
+        displayName: 'Non-Gamified Course',
+        description: 'This is a course without gamification.',
+        isGamificationEnabled: false,
+        color: '#166b16',
+        pinCode: 482748273,
+        startDate: new Date('2023-01-01T00:00'),
+        endDate: new Date('2030-01-01T23:59'),
+        isGroupCreationEnabled: false,
+        groupDeadlineDate: new Date('2025-01-01T00:01'),
+        maxGroupSize: 5,
+        preferredGroupSize: 3,
+        owner: {
+          connect: { id: USER_ID_TEST },
+        },
+      },
+      update: {},
+    })
+    await prisma.derivedPermission.upsert({
+      where: {
+        courseId_userId: {
+          courseId: COURSE_ID_TEST3,
+          userId: USER_ID_TEST,
+        },
+      },
+      create: {
+        permissionLevel: PermissionLevel.OWNER,
+        course: {
+          connect: { id: COURSE_ID_TEST3 },
+        },
+        user: {
+          connect: { id: USER_ID_TEST },
+        },
+      },
+      update: {
+        permissionLevel: PermissionLevel.OWNER,
+      },
+    })
+
+    // ? Seed participant accounts
+    const participantPassword = await bcrypt.hash('abcdabcd', 12)
+    await Promise.all(
+      PARTICIPANT_IDS.map(async (id, ix) => {
+        const username = `testuser${ix + 1}`
+
+        return prisma.participant.upsert({
+          where: { id },
+          create: {
+            id,
+            password: participantPassword,
+            username: username,
+            email: `${username}@test.uzh.ch`,
+            participations: { create: { courseId: COURSE_ID_TEST } },
+          },
+          update: {},
+        })
+      })
+    )
+
+    // ? Seed participant groups
+    const participantGroupsTesting = await Promise.all(
+      PARTICIPANT_GROUP_IDS.map(async (id, ix) => {
+        const code = 100000 + Math.floor(Math.random() * 900000)
+
+        return prisma.participantGroup.upsert({
+          where: {
+            id,
+          },
+          create: {
+            id,
+            name: `Gruppe ${ix + 1}`,
+            code: code,
+            course: { connect: { id: COURSE_ID_TEST } },
+            participants: {
+              connect: [
+                {
+                  id: PARTICIPANT_IDS[ix],
+                },
+                {
+                  id: PARTICIPANT_IDS[ix + PARTICIPANT_GROUP_IDS.length],
+                },
+              ],
+            },
+            averageMemberScore: Math.round(ix * 100 + 500),
+          },
+          update: {
+            name: `Gruppe ${ix + 1}`,
+            code: code,
+          },
+        })
+      })
+    )
+    await Promise.all(
+      PARTICIPANT_GROUP_IDS_SINGLE.map(async (id, ix) => {
+        const code = 100000 + Math.floor(Math.random() * 900000)
+
+        return prisma.participantGroup.upsert({
+          where: {
+            id,
+          },
+          create: {
+            id,
+            name: `Single Gruppe ${ix + 1}`,
+            code: code,
+            course: { connect: { id: COURSE_ID_TEST } },
+            participants: {
+              connect: [
+                {
+                  id: PARTICIPANT_IDS[ix + 29],
+                },
+              ],
+            },
+            averageMemberScore: Math.round(ix * 100 + 500),
+          },
+          update: {
+            name: `Single Gruppe ${ix + 1}`,
+            code: code,
+          },
+        })
+      })
+    )
+
+    // ? Top-level catalog collection seeding
+    await prisma.catalogCollection.upsert({
+      where: {
+        id: 'fde06b3c-d515-4907-99cf-c2ba67583155',
+      },
+      create: {
+        id: 'fde06b3c-d515-4907-99cf-c2ba67583155',
+        name: '',
+        access: ObjectAccess.PUBLIC,
+      },
+      update: { name: '', access: ObjectAccess.PUBLIC },
+    })
+
+    // ? Achievements
+    const ACHIEVEMENTS = [
+      {
+        id: 8,
+        nameDE: 'Dream Team',
+        nameEN: 'Dream Team',
+        descriptionDE:
+          'Du hast im Gruppentask über die Hälfte der Punkte erreicht.',
+        descriptionEN:
+          'You have reached more than half of the points in the group task.',
+        icon: '/achievements/Dreamteam.svg',
+        rewardedPoints: 500,
+        rewardedXP: 500,
+        type: AchievementType.PARTICIPANT,
+      },
+      {
+        id: 9,
+        nameDE: 'Teamgeist',
+        nameEN: 'Team Spirit',
+        descriptionDE: 'Du hast einen Gruppentask absolviert.',
+        descriptionEN: 'You have completed a group task.',
+        icon: '/achievements/Teamgeist.svg',
+        rewardedPoints: 0,
+        rewardedXP: 100,
+        type: AchievementType.PARTICIPANT,
+      },
+    ]
+    await Promise.all(
+      ACHIEVEMENTS.map(async (achievement) => {
+        await prisma.achievement.upsert({
+          where: { id: achievement.id },
+          create: {
+            id: achievement.id,
+            nameDE: achievement.nameDE,
+            nameEN: achievement.nameEN,
+            descriptionDE: achievement.descriptionDE,
+            descriptionEN: achievement.descriptionEN,
+            icon: achievement.icon,
+            rewardedPoints: achievement.rewardedPoints,
+            rewardedXP: achievement.rewardedXP,
+            type: achievement.type,
+          },
+          update: {
+            nameDE: achievement.nameDE,
+            nameEN: achievement.nameEN,
+            descriptionDE: achievement.descriptionDE,
+            descriptionEN: achievement.descriptionEN,
+            icon: achievement.icon,
+            rewardedPoints: achievement.rewardedPoints,
+            rewardedXP: achievement.rewardedXP,
+          },
+        })
+      })
+    )
+
+    return true
+  } catch (error) {
+    throw error
+  }
+}
+
+async function seedActivities() {
+  try {
+    const liveQuizId = 'c4196bea-e0c8-49f2-9669-7fdb78bb030c'
+    await prisma.liveQuiz.upsert({
+      where: { id: liveQuizId },
+      create: {
+        id: liveQuizId,
+        name: 'Seed Live Quiz',
+        displayName: 'Seed Live Quiz (Displayname)',
+        courseId: COURSE_ID_TEST,
+        ownerId: USER_ID_TEST,
+      },
+      update: {},
+    })
+    await prisma.derivedPermission.upsert({
+      where: {
+        liveQuizId_userId: {
+          liveQuizId: liveQuizId,
+          userId: USER_ID_TEST,
+        },
+      },
+      create: {
+        permissionLevel: PermissionLevel.OWNER,
+        liveQuiz: { connect: { id: liveQuizId } },
+        user: { connect: { id: USER_ID_TEST } },
+      },
+      update: {
+        permissionLevel: PermissionLevel.OWNER,
+      },
+    })
+
+    const microlearningId = '52a038e5-495e-4262-bd97-f30c3540122a'
+    await prisma.microLearning.upsert({
+      where: {
+        id: microlearningId,
+      },
+      create: {
+        id: microlearningId,
+        name: 'Seed Microlearning',
+        displayName: 'Seed Microlearning (Displayname)',
+        scheduledStartAt: new Date('2020-01-01T00:00'),
+        scheduledEndAt: new Date('2050-01-01T23:59'),
+        courseId: COURSE_ID_TEST,
+        ownerId: USER_ID_TEST,
+      },
+      update: {},
+    })
+    await prisma.derivedPermission.upsert({
+      where: {
+        microLearningId_userId: {
+          microLearningId: microlearningId,
+          userId: USER_ID_TEST,
+        },
+      },
+      create: {
+        permissionLevel: PermissionLevel.OWNER,
+        microLearning: { connect: { id: microlearningId } },
+        user: { connect: { id: USER_ID_TEST } },
+      },
+      update: {
+        permissionLevel: PermissionLevel.OWNER,
+      },
+    })
+
+    const practiceQuizId = '8ef0c8b3-b39d-4a3e-8219-c663a7a36063'
+    await prisma.practiceQuiz.upsert({
+      where: { id: practiceQuizId },
+      create: {
+        id: practiceQuizId,
+        name: 'Seed Practice Quiz',
+        displayName: 'Seed Practice Quiz (Displayname)',
+        courseId: COURSE_ID_TEST,
+        ownerId: USER_ID_TEST,
+      },
+      update: {},
+    })
+    await prisma.derivedPermission.upsert({
+      where: {
+        practiceQuizId_userId: {
+          practiceQuizId: practiceQuizId,
+          userId: USER_ID_TEST,
+        },
+      },
+      create: {
+        permissionLevel: PermissionLevel.OWNER,
+        practiceQuiz: { connect: { id: practiceQuizId } },
+        user: { connect: { id: USER_ID_TEST } },
+      },
+      update: {
+        permissionLevel: PermissionLevel.OWNER,
+      },
+    })
+
+    const groupActivityId = '72999654-72b6-47bf-a822-76e1125f4b96'
+    await prisma.groupActivity.upsert({
+      where: { id: groupActivityId },
+      create: {
+        id: groupActivityId,
+        name: 'Seed Group Activity',
+        displayName: 'Seed Group Activity (Displayname)',
+        scheduledStartAt: new Date('2020-01-01T00:00'),
+        scheduledEndAt: new Date('2050-01-01T23:59'),
+        courseId: COURSE_ID_TEST,
+        ownerId: USER_ID_TEST,
+      },
+      update: {},
+    })
+    await prisma.derivedPermission.upsert({
+      where: {
+        groupActivityId_userId: {
+          groupActivityId: groupActivityId,
+          userId: USER_ID_TEST,
+        },
+      },
+      create: {
+        permissionLevel: PermissionLevel.OWNER,
+        groupActivity: { connect: { id: groupActivityId } },
+        user: { connect: { id: USER_ID_TEST } },
+      },
+      update: {
+        permissionLevel: PermissionLevel.OWNER,
+      },
+    })
+
+    return true
+  } catch (error) {
+    console.error('Error seeding activities:', error)
+    return null
+  }
+}
+
+async function cleanupDatabase() {
+  try {
+    // delete all activities
+    await prisma.liveQuiz.deleteMany()
+    await prisma.microLearning.deleteMany()
+    await prisma.practiceQuiz.deleteMany()
+    await prisma.groupActivity.deleteMany()
+
+    // delete all courses
+    await prisma.course.deleteMany()
+
+    // delete all elements and resources
+    await prisma.element.deleteMany(),
+      await prisma.answerCollection.deleteMany()
+    await prisma.mediaFile.deleteMany()
+
+    // delete all catalog collections
+    await prisma.catalogCollection.deleteMany()
+
+    // delete all audit data
+    await prisma.auditLogEntry.deleteMany()
+
+    // delete all users, participants and groups
+    await prisma.userGroup.deleteMany()
+    await prisma.user.deleteMany()
+    await prisma.participantGroup.deleteMany()
+    await prisma.participant.deleteMany()
+
+    return true
+  } catch (error) {
+    throw error
+  }
+}
+
 export default defineConfig({
   watchForFileChanges: true,
   projectId: 'y436dx',
@@ -141,6 +697,7 @@ export default defineConfig({
     LECTURER_INST4_SHORTNAME: 'pro5',
     LECTURER_INST4_EMAIL: 'pro5@df.uzh.ch',
     LECTURER_PASSWORD: 'abcd',
+    APP_SECRET: 'abcd',
     STUDENT_USERNAME: 'testuser1',
     STUDENT_USERNAME2: 'testuser2',
     STUDENT_USERNAME3: 'testuser3',
@@ -173,6 +730,13 @@ export default defineConfig({
       config.env = { ...config.env, ...process.env }
 
       // cypressCodeCoverage(on, config)
+      cypressSplit(on, config)
+
+      on('before:run', async () => {
+        await cleanupDatabase()
+        await seedDatabase()
+      })
+
       on('task', {
         // ! Helper functions
         // #region
@@ -1302,6 +1866,7 @@ export default defineConfig({
           groupDeadlineDate,
           maxGroupSize = 4,
           preferredGroupSize = 2,
+          participants = [],
         }: {
           name: string
           displayName: string
@@ -1316,6 +1881,7 @@ export default defineConfig({
           groupDeadlineDate?: Date
           maxGroupSize?: number
           preferredGroupSize?: number
+          participants?: string[]
         }) {
           try {
             const course = await prisma.course.create({
@@ -1327,13 +1893,18 @@ export default defineConfig({
                 isAssessmentEnabled,
                 isGamificationEnabled,
                 color,
-                pinCode: Math.floor(100000000 + Math.random() * 900000000),
+                pinCode: !isAssessmentEnabled
+                  ? Math.floor(100000000 + Math.random() * 900000000)
+                  : null,
                 startDate,
                 endDate,
                 isGroupCreationEnabled,
                 groupDeadlineDate: groupDeadlineDate ?? endDate,
                 maxGroupSize,
                 preferredGroupSize,
+                authType: isAssessmentEnabled
+                  ? CourseAuthType.SSO
+                  : CourseAuthType.PIN,
                 owner: { connect: { id: USER_ID_TEST } },
               },
             })
@@ -1352,6 +1923,21 @@ export default defineConfig({
               },
               update: { permissionLevel: PermissionLevel.OWNER },
             })
+
+            for (const username of participants) {
+              const participant = await prisma.participant.findUnique({
+                where: { username },
+              })
+
+              if (participant) {
+                await prisma.participation.create({
+                  data: {
+                    participant: { connect: { id: participant.id } },
+                    course: { connect: { id: course.id } },
+                  },
+                })
+              }
+            }
 
             return !!course
           } finally {
@@ -1378,562 +1964,12 @@ export default defineConfig({
 
         // ! Cleanup / Seeding
         // #region
-        async seedDatabase() {
-          try {
-            // ? User seeding section (identical to seedUsers logic, different uuids)
-            const password = 'abcd'
-            const hashedPassword = await bcrypt.hash(password, 12)
-
-            await Promise.all(
-              [
-                {
-                  id: USER_ID_TEST,
-                  name: 'Lecturer',
-                  email: 'lecturer@df.uzh.ch',
-                  shortname: 'lecturer',
-                  catalystIndividual: true,
-                  catalystInstitutional: true,
-                  publicPreview: true,
-                  privatePreview: true,
-                  role: UserRole.ADMIN,
-                  firstLogin: false,
-                  logins: {
-                    create: {
-                      name: 'lecturer',
-                      password: hashedPassword,
-                      scope: UserLoginScope.FULL_ACCESS,
-                    },
-                  },
-                },
-                {
-                  id: USER_ID_TEST2,
-                  name: 'Free Tier User',
-                  email: 'free@df.uzh.ch',
-                  shortname: 'free',
-                  catalystIndividual: false,
-                  catalystInstitutional: false,
-                  publicPreview: false,
-                  privatePreview: false,
-                  firstLogin: false,
-                },
-                {
-                  id: USER_ID_TEST3,
-                  name: 'Individual Pro User',
-                  email: 'pro1@df.uzh.ch',
-                  shortname: 'pro1',
-                  catalystIndividual: true,
-                  catalystInstitutional: false,
-                  publicPreview: true,
-                  privatePreview: true,
-                  firstLogin: false,
-                },
-                {
-                  id: USER_ID_TEST4,
-                  name: 'Institutional Pro User',
-                  email: 'pro2@df.uzh.ch',
-                  shortname: 'pro2',
-                  catalystIndividual: false,
-                  catalystInstitutional: true,
-                  publicPreview: true,
-                  privatePreview: true,
-                  firstLogin: false,
-                },
-                {
-                  id: USER_ID_TEST5,
-                  name: 'Institutional Pro User 2',
-                  email: 'pro3@df.uzh.ch',
-                  shortname: 'pro3',
-                  catalystIndividual: false,
-                  catalystInstitutional: true,
-                  publicPreview: true,
-                  privatePreview: true,
-                  firstLogin: false,
-                },
-                {
-                  id: USER_ID_TEST6,
-                  name: 'Institutional Pro User 3',
-                  email: 'pro4@df.uzh.ch',
-                  shortname: 'pro4',
-                  catalystIndividual: false,
-                  catalystInstitutional: true,
-                  publicPreview: true,
-                  privatePreview: true,
-                  firstLogin: false,
-                },
-                {
-                  id: USER_ID_TEST7,
-                  name: 'Institutional Pro User 4',
-                  email: 'pro5@df.uzh.ch',
-                  shortname: 'pro5',
-                  catalystIndividual: false,
-                  catalystInstitutional: true,
-                  publicPreview: true,
-                  privatePreview: true,
-                  firstLogin: false,
-                },
-              ].map((userData) =>
-                prisma.user.upsert({
-                  where: { id: userData.id },
-                  create: userData,
-                  update: {},
-                })
-              )
-            )
-
-            // ? Test course seeding
-            const currentYear = new Date().getFullYear()
-            await prisma.course.upsert({
-              where: { id: COURSE_ID_TEST },
-              create: {
-                id: COURSE_ID_TEST,
-                name: 'Testkurs',
-                displayName: 'Testkurs',
-                description:
-                  'Das ist ein Testkurs. Hier wird getestet. Viel Spass!',
-                isGamificationEnabled: true,
-                color: '#016272',
-                pinCode: 123456789,
-                startDate: new Date(`${currentYear - 1}-01-01T00:00`),
-                endDate: new Date(`${currentYear + 10}-01-01T23:59`),
-                isGroupCreationEnabled: true,
-                groupDeadlineDate: new Date('2021-01-01T00:01'),
-                maxGroupSize: 5,
-                preferredGroupSize: 3,
-                owner: {
-                  connect: { id: USER_ID_TEST },
-                },
-              },
-              update: {},
-            })
-            await prisma.derivedPermission.upsert({
-              where: {
-                courseId_userId: {
-                  courseId: COURSE_ID_TEST,
-                  userId: USER_ID_TEST,
-                },
-              },
-              create: {
-                permissionLevel: PermissionLevel.OWNER,
-                course: {
-                  connect: { id: COURSE_ID_TEST },
-                },
-                user: {
-                  connect: { id: USER_ID_TEST },
-                },
-              },
-              update: {
-                permissionLevel: PermissionLevel.OWNER,
-              },
-            })
-
-            await prisma.course.upsert({
-              where: { id: COURSE_ID_TEST2 },
-              create: {
-                id: COURSE_ID_TEST2,
-                name: 'Testkurs 2',
-                displayName: 'Testkurs 2',
-                description:
-                  'Das ist ein abgeschlossener Testkurs. Hier wird getestet. Viel Spass!',
-                isGamificationEnabled: true,
-                color: '#016272',
-                pinCode: 111333555,
-                startDate: new Date('2010-01-01T00:00'),
-                endDate: new Date('2020-01-01T23:59'),
-                isGroupCreationEnabled: true,
-                groupDeadlineDate: new Date('2015-01-01T00:01'),
-                maxGroupSize: 5,
-                preferredGroupSize: 3,
-                owner: {
-                  connect: { id: USER_ID_TEST },
-                },
-              },
-              update: {},
-            })
-            await prisma.derivedPermission.upsert({
-              where: {
-                courseId_userId: {
-                  courseId: COURSE_ID_TEST2,
-                  userId: USER_ID_TEST,
-                },
-              },
-              create: {
-                permissionLevel: PermissionLevel.OWNER,
-                course: { connect: { id: COURSE_ID_TEST2 } },
-                user: { connect: { id: USER_ID_TEST } },
-              },
-              update: {
-                permissionLevel: PermissionLevel.OWNER,
-              },
-            })
-
-            await prisma.course.upsert({
-              where: {
-                id: COURSE_ID_TEST3,
-              },
-              create: {
-                id: COURSE_ID_TEST3,
-                name: 'Non-Gamified Course',
-                displayName: 'Non-Gamified Course',
-                description: 'This is a course without gamification.',
-                isGamificationEnabled: false,
-                color: '#166b16',
-                pinCode: 482748273,
-                startDate: new Date('2023-01-01T00:00'),
-                endDate: new Date('2030-01-01T23:59'),
-                isGroupCreationEnabled: false,
-                groupDeadlineDate: new Date('2025-01-01T00:01'),
-                maxGroupSize: 5,
-                preferredGroupSize: 3,
-                owner: {
-                  connect: { id: USER_ID_TEST },
-                },
-              },
-              update: {},
-            })
-            await prisma.derivedPermission.upsert({
-              where: {
-                courseId_userId: {
-                  courseId: COURSE_ID_TEST3,
-                  userId: USER_ID_TEST,
-                },
-              },
-              create: {
-                permissionLevel: PermissionLevel.OWNER,
-                course: {
-                  connect: { id: COURSE_ID_TEST3 },
-                },
-                user: {
-                  connect: { id: USER_ID_TEST },
-                },
-              },
-              update: {
-                permissionLevel: PermissionLevel.OWNER,
-              },
-            })
-
-            // ? Seed participant accounts
-            const participantPassword = await bcrypt.hash('abcdabcd', 12)
-            await Promise.all(
-              PARTICIPANT_IDS.map(async (id, ix) => {
-                const username = `testuser${ix + 1}`
-
-                return prisma.participant.upsert({
-                  where: { id },
-                  create: {
-                    id,
-                    password: participantPassword,
-                    username: username,
-                    email: `${username}@test.uzh.ch`,
-                    participations: { create: { courseId: COURSE_ID_TEST } },
-                  },
-                  update: {},
-                })
-              })
-            )
-
-            // ? Seed participant groups
-            const participantGroupsTesting = await Promise.all(
-              PARTICIPANT_GROUP_IDS.map(async (id, ix) => {
-                const code = 100000 + Math.floor(Math.random() * 900000)
-
-                return prisma.participantGroup.upsert({
-                  where: {
-                    id,
-                  },
-                  create: {
-                    id,
-                    name: `Gruppe ${ix + 1}`,
-                    code: code,
-                    course: { connect: { id: COURSE_ID_TEST } },
-                    participants: {
-                      connect: [
-                        {
-                          id: PARTICIPANT_IDS[ix],
-                        },
-                        {
-                          id: PARTICIPANT_IDS[
-                            ix + PARTICIPANT_GROUP_IDS.length
-                          ],
-                        },
-                      ],
-                    },
-                    averageMemberScore: Math.round(ix * 100 + 500),
-                  },
-                  update: {
-                    name: `Gruppe ${ix + 1}`,
-                    code: code,
-                  },
-                })
-              })
-            )
-            await Promise.all(
-              PARTICIPANT_GROUP_IDS_SINGLE.map(async (id, ix) => {
-                const code = 100000 + Math.floor(Math.random() * 900000)
-
-                return prisma.participantGroup.upsert({
-                  where: {
-                    id,
-                  },
-                  create: {
-                    id,
-                    name: `Single Gruppe ${ix + 1}`,
-                    code: code,
-                    course: { connect: { id: COURSE_ID_TEST } },
-                    participants: {
-                      connect: [
-                        {
-                          id: PARTICIPANT_IDS[ix + 29],
-                        },
-                      ],
-                    },
-                    averageMemberScore: Math.round(ix * 100 + 500),
-                  },
-                  update: {
-                    name: `Single Gruppe ${ix + 1}`,
-                    code: code,
-                  },
-                })
-              })
-            )
-
-            // ? Top-level catalog collection seeding
-            await prisma.catalogCollection.upsert({
-              where: {
-                id: 'fde06b3c-d515-4907-99cf-c2ba67583155',
-              },
-              create: {
-                id: 'fde06b3c-d515-4907-99cf-c2ba67583155',
-                name: '',
-                access: ObjectAccess.PUBLIC,
-              },
-              update: { name: '', access: ObjectAccess.PUBLIC },
-            })
-
-            // ? Achievements
-            const ACHIEVEMENTS = [
-              {
-                id: 8,
-                nameDE: 'Dream Team',
-                nameEN: 'Dream Team',
-                descriptionDE:
-                  'Du hast im Gruppentask über die Hälfte der Punkte erreicht.',
-                descriptionEN:
-                  'You have reached more than half of the points in the group task.',
-                icon: '/achievements/Dreamteam.svg',
-                rewardedPoints: 500,
-                rewardedXP: 500,
-                type: AchievementType.PARTICIPANT,
-              },
-              {
-                id: 9,
-                nameDE: 'Teamgeist',
-                nameEN: 'Team Spirit',
-                descriptionDE: 'Du hast einen Gruppentask absolviert.',
-                descriptionEN: 'You have completed a group task.',
-                icon: '/achievements/Teamgeist.svg',
-                rewardedPoints: 0,
-                rewardedXP: 100,
-                type: AchievementType.PARTICIPANT,
-              },
-            ]
-            await Promise.all(
-              ACHIEVEMENTS.map(async (achievement) => {
-                await prisma.achievement.upsert({
-                  where: { id: achievement.id },
-                  create: {
-                    id: achievement.id,
-                    nameDE: achievement.nameDE,
-                    nameEN: achievement.nameEN,
-                    descriptionDE: achievement.descriptionDE,
-                    descriptionEN: achievement.descriptionEN,
-                    icon: achievement.icon,
-                    rewardedPoints: achievement.rewardedPoints,
-                    rewardedXP: achievement.rewardedXP,
-                    type: achievement.type,
-                  },
-                  update: {
-                    nameDE: achievement.nameDE,
-                    nameEN: achievement.nameEN,
-                    descriptionDE: achievement.descriptionDE,
-                    descriptionEN: achievement.descriptionEN,
-                    icon: achievement.icon,
-                    rewardedPoints: achievement.rewardedPoints,
-                    rewardedXP: achievement.rewardedXP,
-                  },
-                })
-              })
-            )
-
-            return true
-          } catch (error) {
-            throw error
-          }
-        },
-        async seedActivities() {
-          try {
-            const liveQuizId = 'c4196bea-e0c8-49f2-9669-7fdb78bb030c'
-            await prisma.liveQuiz.upsert({
-              where: { id: liveQuizId },
-              create: {
-                id: liveQuizId,
-                name: 'Seed Live Quiz',
-                displayName: 'Seed Live Quiz (Displayname)',
-                courseId: COURSE_ID_TEST,
-                ownerId: USER_ID_TEST,
-              },
-              update: {},
-            })
-            await prisma.derivedPermission.upsert({
-              where: {
-                liveQuizId_userId: {
-                  liveQuizId: liveQuizId,
-                  userId: USER_ID_TEST,
-                },
-              },
-              create: {
-                permissionLevel: PermissionLevel.OWNER,
-                liveQuiz: { connect: { id: liveQuizId } },
-                user: { connect: { id: USER_ID_TEST } },
-              },
-              update: {
-                permissionLevel: PermissionLevel.OWNER,
-              },
-            })
-
-            const microlearningId = '52a038e5-495e-4262-bd97-f30c3540122a'
-            await prisma.microLearning.upsert({
-              where: {
-                id: microlearningId,
-              },
-              create: {
-                id: microlearningId,
-                name: 'Seed Microlearning',
-                displayName: 'Seed Microlearning (Displayname)',
-                scheduledStartAt: new Date('2020-01-01T00:00'),
-                scheduledEndAt: new Date('2050-01-01T23:59'),
-                courseId: COURSE_ID_TEST,
-                ownerId: USER_ID_TEST,
-              },
-              update: {},
-            })
-            await prisma.derivedPermission.upsert({
-              where: {
-                microLearningId_userId: {
-                  microLearningId: microlearningId,
-                  userId: USER_ID_TEST,
-                },
-              },
-              create: {
-                permissionLevel: PermissionLevel.OWNER,
-                microLearning: { connect: { id: microlearningId } },
-                user: { connect: { id: USER_ID_TEST } },
-              },
-              update: {
-                permissionLevel: PermissionLevel.OWNER,
-              },
-            })
-
-            const practiceQuizId = '8ef0c8b3-b39d-4a3e-8219-c663a7a36063'
-            await prisma.practiceQuiz.upsert({
-              where: { id: practiceQuizId },
-              create: {
-                id: practiceQuizId,
-                name: 'Seed Practice Quiz',
-                displayName: 'Seed Practice Quiz (Displayname)',
-                courseId: COURSE_ID_TEST,
-                ownerId: USER_ID_TEST,
-              },
-              update: {},
-            })
-            await prisma.derivedPermission.upsert({
-              where: {
-                practiceQuizId_userId: {
-                  practiceQuizId: practiceQuizId,
-                  userId: USER_ID_TEST,
-                },
-              },
-              create: {
-                permissionLevel: PermissionLevel.OWNER,
-                practiceQuiz: { connect: { id: practiceQuizId } },
-                user: { connect: { id: USER_ID_TEST } },
-              },
-              update: {
-                permissionLevel: PermissionLevel.OWNER,
-              },
-            })
-
-            const groupActivityId = '72999654-72b6-47bf-a822-76e1125f4b96'
-            await prisma.groupActivity.upsert({
-              where: { id: groupActivityId },
-              create: {
-                id: groupActivityId,
-                name: 'Seed Group Activity',
-                displayName: 'Seed Group Activity (Displayname)',
-                scheduledStartAt: new Date('2020-01-01T00:00'),
-                scheduledEndAt: new Date('2050-01-01T23:59'),
-                courseId: COURSE_ID_TEST,
-                ownerId: USER_ID_TEST,
-              },
-              update: {},
-            })
-            await prisma.derivedPermission.upsert({
-              where: {
-                groupActivityId_userId: {
-                  groupActivityId: groupActivityId,
-                  userId: USER_ID_TEST,
-                },
-              },
-              create: {
-                permissionLevel: PermissionLevel.OWNER,
-                groupActivity: { connect: { id: groupActivityId } },
-                user: { connect: { id: USER_ID_TEST } },
-              },
-              update: {
-                permissionLevel: PermissionLevel.OWNER,
-              },
-            })
-
-            return true
-          } catch (error) {
-            console.error('Error seeding activities:', error)
-            return null
-          }
-        },
-        async cleanupDatabase() {
-          try {
-            // delete all activities
-            await prisma.liveQuiz.deleteMany()
-            await prisma.microLearning.deleteMany()
-            await prisma.practiceQuiz.deleteMany()
-            await prisma.groupActivity.deleteMany()
-
-            // delete all courses
-            await prisma.course.deleteMany()
-
-            // delete all elements and resources
-            await prisma.element.deleteMany()
-            await prisma.answerCollection.deleteMany()
-            await prisma.mediaFile.deleteMany()
-
-            // delete all catalog collections
-            await prisma.catalogCollection.deleteMany()
-
-            // delete all audit data
-            await prisma.auditLogEntry.deleteMany()
-
-            // delete all users, participants and groups
-            await prisma.userGroup.deleteMany()
-            await prisma.user.deleteMany()
-            await prisma.participantGroup.deleteMany()
-            await prisma.participant.deleteMany()
-
-            return true
-          } catch (error) {
-            throw error
-          }
-        },
+        cleanupDatabase,
+        seedDatabase,
+        seedActivities,
         // #endregion
       })
+
       return config
     },
   },

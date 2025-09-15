@@ -1,38 +1,38 @@
-import {
-  gradeQuestionFreeText,
-  gradeQuestionNumerical,
-} from '@klicker-uzh/grading'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
-  type CaseStudyCaseSolution,
+  ElementData,
+  ElementInstanceResults,
+  ElementResultsCaseStudy,
+  ElementResultsOpen,
+  HatchetHandlers,
   type ElementBlockInput,
-  type ElementResultsCaseStudy,
   type ElementResultsChoices,
-  type ElementResultsContent,
-  type ElementResultsFlashcard,
-  type ElementResultsOpen,
   type ElementResultsSelection,
   type ElementStackInput,
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
+  getCachedBlockResults,
   getInitialInstanceResults,
   levelFromXp,
   propagateActivityToElements,
   recomputeDerivedPermissions,
+  signJWT,
+  updateLiveQuizBlockResultsFromCache,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import generatePassword from 'generate-password'
 import { GraphQLError } from 'graphql'
+import type { Redis } from 'ioredis'
 import { min } from 'mathjs'
 import schedule from 'node-schedule'
-import { createHmac } from 'node:crypto'
+import { createHash, createHmac } from 'node:crypto'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { sendTeamsNotifications } from '../lib/util.js'
 import { getPermissionBooleans } from './activities.js'
+import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { computeStackEvaluation } from './stacks.js'
 
@@ -42,347 +42,6 @@ const scheduledJobs: Record<string, any> = {}
 const FIRST_ACHIEVEMENT_ID = 5
 const SECOND_ACHIEVEMENT_ID = 6
 const THIRD_ACHIEVEMENT_ID = 7
-
-// ------ HELPER FUNCTIONS ------
-// #region
-async function getCachedBlockResults({
-  ctx,
-  activeBlock,
-}: {
-  ctx: Context
-  activeBlock: DB.ElementBlock & { elements: DB.ElementInstance[] }
-}) {
-  const redisMultiLb = ctx.redisExec.multi()
-
-  redisMultiLb.hgetall(`lq:${activeBlock.liveQuizId}:lb`)
-  redisMultiLb.hgetall(`lq:${activeBlock.liveQuizId}:b:${activeBlock.id}:lb`)
-  redisMultiLb.hgetall(`lq:${activeBlock.liveQuizId}:lbTemporary`)
-  redisMultiLb.hgetall(
-    `lq:${activeBlock.liveQuizId}:b:${activeBlock.id}:lbTemporary`
-  )
-
-  const cacheData = await redisMultiLb.exec()
-
-  if (!cacheData) {
-    return null
-  }
-
-  const mappedResults: any[] = cacheData.map(([_, result]) => result)
-
-  const liveQuizLeaderboard: Record<string, string> = mappedResults[0]
-  const blockLeaderboard: Record<string, string> = mappedResults[1]
-  const liveQuizLeaderboardTemporary: Record<string, string> = mappedResults[2]
-  const blockLeaderboardTemporary: Record<string, string> = mappedResults[3]
-
-  const instanceResults: Record<
-    string,
-    {
-      info: Record<string, string>
-      responseHashes: Record<string, string>
-      anonymousResults:
-        | ElementResultsChoices
-        | ElementResultsOpen
-        | ElementResultsFlashcard
-        | ElementResultsContent
-        | ElementResultsSelection
-    }
-  > = {}
-
-  for (const instance of activeBlock.elements) {
-    const redisMulti = ctx.redisExec.multi()
-
-    redisMulti.hgetall(`lq:${activeBlock.liveQuizId}:i:${instance.id}:info`)
-    redisMulti.hgetall(
-      `lq:${activeBlock.liveQuizId}:i:${instance.id}:responseHashes`
-    )
-    redisMulti.hgetall(
-      `lq:${activeBlock.liveQuizId}:i:${instance.id}:responses`
-    )
-    redisMulti.hgetall(`lq:${activeBlock.liveQuizId}:i:${instance.id}:results`)
-
-    const cacheData = await redisMulti.exec()
-
-    if (!cacheData) return
-
-    const mappedResults: any[] = cacheData.map(([_, result]) => result)
-
-    const [info, responseHashes, _, results] = mappedResults
-
-    // TODO: if possible, split up results and anonymous results here (potentially the cache content needs to augmented)
-    let anonymousResults:
-      | ElementResultsChoices
-      | ElementResultsOpen
-      | ElementResultsFlashcard
-      | ElementResultsContent
-      | ElementResultsSelection
-      | undefined
-
-    if (
-      instance.elementType === DB.ElementType.SC ||
-      instance.elementType === DB.ElementType.MC ||
-      instance.elementType === DB.ElementType.KPRIM
-    ) {
-      const choices = Object.entries(
-        omitBy(results, (_, key) => key === 'participants')
-      ).reduce<ElementResultsChoices['choices']>(
-        (acc, [responseHash, count]) => {
-          return {
-            ...acc,
-            [responseHash]: (acc[responseHash] ?? 0) + parseInt(count),
-          }
-        },
-        {}
-      )
-
-      anonymousResults = {
-        choices,
-        total: parseInt(results.participants),
-      } as ElementResultsChoices
-    } else if (
-      instance.elementType === DB.ElementType.NUMERICAL ||
-      instance.elementType === DB.ElementType.FREE_TEXT
-    ) {
-      const responses = Object.entries(
-        omitBy(results, (_, key) => key === 'participants')
-      ).reduce<ElementResultsOpen['responses']>(
-        (responses_acc, [responseHash, count]) => {
-          let solutions = []
-          try {
-            solutions =
-              'hasSampleSolution' in instance.elementData.options &&
-              instance.elementData.options.hasSampleSolution
-                ? JSON.parse(info.solutions)
-                : []
-          } catch (e) {
-            console.log(
-              'An error occured while parsing the solutions array from the cache:'
-            )
-            console.error(e)
-          }
-
-          const response = responseHashes[responseHash] ?? responseHash
-          let grading: number | undefined
-          if (solutions && solutions.length > 0) {
-            if (instance.elementType === DB.ElementType.NUMERICAL) {
-              const exactSolutionsDefined =
-                typeof solutions[0] === 'number' ||
-                typeof solutions[0] === 'string'
-              grading =
-                gradeQuestionNumerical({
-                  response,
-                  solutionRanges: exactSolutionsDefined ? undefined : solutions,
-                  exactSolutions: exactSolutionsDefined ? solutions : undefined,
-                }) ?? undefined
-            } else if (instance.elementType === DB.ElementType.FREE_TEXT) {
-              grading =
-                gradeQuestionFreeText({
-                  response,
-                  solutions,
-                }) ?? undefined
-            }
-          }
-
-          const updatedResponse = {
-            value: responseHashes[responseHash] ?? responseHash,
-            count: (responses_acc[responseHash]?.count ?? 0) + parseInt(count),
-          }
-
-          return {
-            ...responses_acc,
-            [responseHash]:
-              typeof grading !== 'undefined'
-                ? {
-                    ...updatedResponse,
-                    correct: grading === 1 ? true : false,
-                  }
-                : updatedResponse,
-          }
-        },
-        {}
-      )
-
-      anonymousResults = {
-        responses,
-        total: parseInt(results.participants),
-      } as ElementResultsOpen
-    } else if (instance.elementType === DB.ElementType.SELECTION) {
-      const selections = Object.entries(
-        omitBy(results, (_, key) => key === 'participants')
-      ).reduce<Record<string, number>>(
-        (acc, [answerId, count]) => {
-          acc[answerId] = (acc[answerId] ?? 0) + parseInt(count)
-          return acc
-        },
-        { ...(instance.anonymousResults as ElementResultsSelection).selections }
-      )
-
-      anonymousResults = {
-        selections,
-        total: parseInt(results.participants),
-      } as ElementResultsSelection
-    } else if (instance.elementType === DB.ElementType.CASE_STUDY) {
-      const assessments = Object.entries(
-        omitBy(results, (_, key) => key === 'participants')
-      ).reduce<ElementResultsCaseStudy['assessments']>(
-        (assessmentsAcc, [combinedHash, answerCount]) => {
-          let solutions: {
-            caseId: string
-            itemSolutions: CaseStudyCaseSolution[]
-          }[] = []
-          try {
-            solutions =
-              'hasSampleSolution' in instance.elementData.options &&
-              instance.elementData.options.hasSampleSolution
-                ? JSON.parse(info.solutions)
-                : []
-          } catch (e) {
-            console.log(
-              'An error occured while parsing the solutions array from the cache:'
-            )
-            console.error(e)
-          }
-
-          const responseValue: number | undefined =
-            responseHashes[combinedHash] ?? undefined
-
-          if (responseValue === null || typeof responseValue === 'undefined') {
-            console.log('An error occured while parsing the response value:')
-            console.error('responseValue: ', responseValue)
-            return assessmentsAcc
-          }
-
-          // split up combined hash into caseId, itemId, criterionId and responseHash
-          const [caseId, itemId, criterionId, responseHash] =
-            combinedHash.split(':')
-
-          // if any of the ids or the hash are invalid, skip this response
-          if (
-            !caseId ||
-            !itemId ||
-            !criterionId ||
-            !responseHash ||
-            !responseValue
-          ) {
-            console.log('An error occured while parsing the combinedHash:')
-            console.error('combinedHash: ', combinedHash)
-            return assessmentsAcc
-          }
-
-          // verify that the corresponding case-item-criterion combination exists in the results
-          if (
-            typeof assessmentsAcc[caseId]?.[itemId]?.[criterionId] ===
-            'undefined'
-          ) {
-            console.log(
-              'An error occured while verifying the case-item-criterion combination:'
-            )
-            console.error('caseId', caseId)
-            console.error('itemId', itemId)
-            console.error('criterionId', criterionId)
-            return assessmentsAcc
-          }
-
-          // TODO: the grading process could potentially be sped up by iterating over the solutions array
-          // only once and selecting all corresponding responses based on the combinedHash
-          let grading: number | undefined
-          if (solutions && solutions.length > 0) {
-            const caseSolutions = solutions.find(
-              (solution) => solution.caseId === caseId
-            )
-            if (caseSolutions) {
-              const itemSolution = caseSolutions.itemSolutions.find(
-                (itemSolution) => itemSolution.itemId === parseInt(itemId)
-              )
-              if (itemSolution) {
-                const criterionSolution = itemSolution.criteriaSolutions.find(
-                  (criterionSolution) =>
-                    criterionSolution.criterionId === criterionId
-                )
-                if (criterionSolution) {
-                  grading =
-                    responseValue >= criterionSolution.min &&
-                    responseValue <= criterionSolution.max
-                      ? 1
-                      : 0
-                }
-              }
-            }
-          }
-
-          assessmentsAcc[caseId][itemId][criterionId] = {
-            ...assessmentsAcc[caseId][itemId][criterionId],
-            [responseHash]: {
-              value: responseValue,
-              count: parseInt(answerCount),
-              correct:
-                typeof grading !== 'undefined'
-                  ? grading === 1
-                    ? true
-                    : false
-                  : undefined,
-            },
-          }
-
-          return assessmentsAcc
-        },
-        {
-          ...(instance.anonymousResults as ElementResultsCaseStudy).assessments,
-        }
-      )
-
-      anonymousResults = {
-        assessments,
-        total: parseInt(results.participants),
-      } as ElementResultsCaseStudy
-    } else if (instance.elementType === DB.ElementType.CONTENT) {
-      anonymousResults = {
-        total: parseInt(results.participants),
-      } as ElementResultsChoices
-    }
-
-    instanceResults[instance.id] = {
-      info,
-      responseHashes,
-      anonymousResults: anonymousResults ?? { total: 0 },
-    }
-  }
-
-  return {
-    liveQuizLeaderboard,
-    liveQuizLeaderboardTemporary,
-    blockLeaderboard,
-    blockLeaderboardTemporary,
-    instanceResults,
-    activeInstanceIds: activeBlock.elements.map((instance) => instance.id),
-  }
-}
-
-async function unlinkCachedBlockResults({
-  ctx,
-  quizId,
-  blockId,
-  activeInstanceIds,
-}: {
-  ctx: Context
-  quizId: string
-  blockId: number
-  activeInstanceIds: number[]
-}) {
-  // unlink everything regarding the block in redis
-  const unlinkMulti = ctx.redisExec.pipeline()
-
-  unlinkMulti.unlink(`lq:${quizId}:b:${blockId}:lb`)
-  unlinkMulti.unlink(`lq:${quizId}:b:${blockId}:lbTemporary`)
-  activeInstanceIds.forEach((instanceId) => {
-    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:info`)
-    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:responseHashes`)
-    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:responses`)
-    unlinkMulti.unlink(`lq:${quizId}:i:${instanceId}:results`)
-  })
-
-  return unlinkMulti.exec()
-}
-// #endregion
 
 // ------ LIVE QUIZ CREATION / EDITING ------
 // #region
@@ -1142,6 +801,11 @@ export async function startLiveQuiz(
       return null
     }
 
+    // depending on the quiz assessment setting, select the corresponding redis instance
+    const redis = quiz.isAssessmentEnabled
+      ? ctx.redisAssessmentExec
+      : ctx.redisExec
+
     switch (quiz.status) {
       case DB.PublicationStatus.PUBLISHED:
         return quiz
@@ -1149,15 +813,29 @@ export async function startLiveQuiz(
       case DB.PublicationStatus.DRAFT:
       case DB.PublicationStatus.SCHEDULED: {
         try {
-          const pipeline = ctx.redisExec.pipeline()
+          const pipeline = redis.pipeline()
           pipeline.hmset(`lq:${quiz.id}:meta`, {
             namespace: quiz.namespace,
             startedAt: Number(new Date()),
+            isGamificationEnabled: quiz.isGamificationEnabled,
+            isAssessmentEnabled: quiz.isAssessmentEnabled,
           })
 
           await pipeline.exec()
         } catch (e) {
           console.error(e)
+        }
+
+        // remove the scheduled hatchet publication task, if it exists
+        if (quiz.scheduledPublicationTaskId) {
+          try {
+            await ctx.hatchet.scheduled.delete(quiz.scheduledPublicationTaskId)
+          } catch (error) {
+            console.error(
+              `Failed to delete scheduled task for live quiz ${id}:`,
+              error
+            )
+          }
         }
 
         // generate a random pin code
@@ -1166,24 +844,99 @@ export async function startLiveQuiz(
           data: {
             status: DB.PublicationStatus.PUBLISHED,
             startedAt: new Date(),
+            scheduledPublicationTaskId: null,
           },
         })
 
-        await sendTeamsNotifications(
-          'graphql/startLiveQuiz',
-          `START Live quiz ${quiz.name} with id ${quiz.id}.`
-        )
+        await sendTeamsNotification({
+          scope: 'graphql/startLiveQuiz',
+          text: `START Live quiz ${quiz.name} with id ${quiz.id}.`,
+        })
 
         return startedLiveQuiz
       }
     }
   } catch (error) {
-    await sendTeamsNotifications(
-      'graphql/startLiveQuiz',
-      `ERROR - failed to start live quiz: ${error}`
-    )
+    await sendTeamsNotification({
+      scope: 'graphql/startLiveQuiz',
+      text: `ERROR - failed to start live quiz: ${error}`,
+    })
     throw error
   }
+}
+
+export async function scheduleLiveQuiz(
+  { id, availableFrom }: { id: string; availableFrom?: Date | null },
+  ctx: ContextWithUser
+) {
+  // if the live quiz starts in the future, change its status to scheduled, otherwise publish it
+  if (availableFrom && dayjs(availableFrom).isAfter(dayjs())) {
+    try {
+      // schedule the task to publish the live quiz
+      const scheduledTask = await ctx.tasks.publishScheduledLiveQuiz.schedule(
+        availableFrom,
+        { liveQuizId: id }
+      )
+      const taskId = scheduledTask.metadata.id
+
+      // change the status of the live quiz to scheduled
+      const updatedQuiz = await ctx.prisma.liveQuiz.update({
+        where: { id, isDeleted: false },
+        data: {
+          availableFrom,
+          status: DB.PublicationStatus.SCHEDULED,
+          scheduledPublicationTaskId: taskId,
+        },
+      })
+
+      ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
+      return updatedQuiz
+    } catch (error) {
+      console.error('Error scheduling live quiz publication:', error)
+      return null
+    }
+  } else {
+    const startedLiveQuiz = await startLiveQuiz({ id }, ctx)
+    return startedLiveQuiz
+  }
+}
+
+export async function unpublishLiveQuiz(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: { id, status: DB.PublicationStatus.SCHEDULED },
+  })
+
+  if (!liveQuiz) {
+    return null
+  }
+
+  // remove the scheduled hatchet publication task, if it exists
+  if (liveQuiz.scheduledPublicationTaskId) {
+    try {
+      await ctx.hatchet.scheduled.delete(liveQuiz.scheduledPublicationTaskId)
+    } catch (error) {
+      console.error(
+        `Failed to delete scheduled task for live quiz ${id}:`,
+        error
+      )
+    }
+  }
+
+  // reset the status of the live quiz to draft and remove the availableFrom date
+  const updatedLiveQuiz = await ctx.prisma.liveQuiz.update({
+    where: { id, status: DB.PublicationStatus.SCHEDULED },
+    data: {
+      availableFrom: null,
+      status: DB.PublicationStatus.DRAFT,
+      scheduledPublicationTaskId: null,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
+  return updatedLiveQuiz
 }
 
 export async function getCockpitQuiz(
@@ -1208,6 +961,11 @@ export async function getCockpitQuiz(
     return null
   }
 
+  // depending on the quiz assessment setting, select the corresponding redis instance
+  const redis = liveQuiz.isAssessmentEnabled
+    ? ctx.redisAssessmentExec
+    : ctx.redisExec
+
   // number of participants per block
   const blockParticipants = liveQuiz.blocks.reduce<Record<number, number>>(
     (acc, block) => {
@@ -1228,17 +986,14 @@ export async function getCockpitQuiz(
     const activeInstanceIds = liveQuiz.activeBlock?.elements.map(
       (instance) => instance.id
     )
-    const redisMulti = ctx.redisExec.pipeline()
+    const redisMulti = redis.pipeline()
     activeInstanceIds?.forEach((instanceId) => {
       redisMulti.hgetall(`lq:${id}:i:${instanceId}:results`)
     })
     const cacheContent = (await redisMulti.exec()) as
       | [
           Error | null,
-          {
-            // TODO: extend type with more content of cache (as needed)
-            participants: string
-          },
+          { participants: string }, // TODO: extend type with more content of cache (as needed)
         ][]
       | null
 
@@ -1309,6 +1064,7 @@ export async function activateLiveQuizBlock(
           where: { id: blockId },
           data: {
             status: DB.ElementBlockStatus.ACTIVE,
+            startedAt: new Date(),
             expiresAt: newBlock.timeLimit
               ? dayjs().add(newBlock.timeLimit, 'seconds').toDate()
               : undefined,
@@ -1344,9 +1100,34 @@ export async function activateLiveQuizBlock(
     beforeFirstBlock: false,
     activeBlock: {
       ...updatedQuiz.activeBlock,
-      elements: removeSolutionFromInstances({
-        instances: updatedQuiz.activeBlock?.elements ?? [],
-      }),
+      elements: updatedQuiz.activeBlock!.elements
+        ? await Promise.all(
+            removeSolutionFromInstances({
+              instances: updatedQuiz.activeBlock!.elements,
+            }).map(async (instance) => {
+              if (!quiz.isAssessmentEnabled) {
+                return instance
+              }
+
+              // for assessment quizzes, add a correlation key to verify a student's submission
+              const correlationKey = await signJWT(
+                {
+                  instanceId: instance.id,
+                  execution: updatedQuiz.activeBlock!.execution,
+                  liveQuizId: quiz.id,
+                  sub: '', // dummy sub, since this value is required
+                },
+                process.env.APP_SECRET as string,
+                {
+                  issuer: process.env.APP_ORIGIN_ASSESSMENT_API,
+                  issuedAt: updatedQuiz.activeBlock?.startedAt ?? new Date(0),
+                }
+              )
+
+              return { ...instance, correlationKey }
+            })
+          )
+        : [],
     },
     // for future blocks, do not return the elements
     blocks: updatedQuiz.blocks.map((block) => ({
@@ -1359,7 +1140,9 @@ export async function activateLiveQuizBlock(
   })
 
   // initialize the cache for the new active block
-  const redisMulti = ctx.redisExec.pipeline()
+  const redisMulti = updatedQuiz.isAssessmentEnabled
+    ? ctx.redisAssessmentExec.pipeline()
+    : ctx.redisExec.pipeline()
 
   updatedQuiz.activeBlock!.elements.forEach((instance) => {
     const elementData = instance.elementData
@@ -1368,6 +1151,8 @@ export async function activateLiveQuizBlock(
       namespace: updatedQuiz.namespace,
       startedAt: Number(new Date()),
       sessionBlockId: blockId,
+      liveQuizId: updatedQuiz.id,
+      courseId: updatedQuiz.courseId ?? '',
       type: elementData.type,
       basePoints: instance.options.basePoints,
       pointsMultiplier: instance.options.pointsMultiplier,
@@ -1375,6 +1160,8 @@ export async function activateLiveQuizBlock(
       defaultCorrectPoints: updatedQuiz.defaultCorrectPoints,
       maxBonusPoints: updatedQuiz.maxBonusPoints,
       timeToZeroBonus: updatedQuiz.timeToZeroBonus,
+      blockExecution: updatedQuiz.activeBlock!.execution,
+      blockStartedAt: Number(updatedQuiz.activeBlock!.startedAt),
     }
 
     switch (elementData.type) {
@@ -1404,6 +1191,10 @@ export async function activateLiveQuizBlock(
       case DB.ElementType.NUMERICAL: {
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
+          ...(elementData.options.restrictions &&
+          Object.keys(elementData.options.restrictions).length > 0
+            ? { restrictions: JSON.stringify(elementData.options.restrictions) }
+            : {}),
           solutions:
             elementData.options.exactSolutions &&
             elementData.options.exactSolutions.length > 0
@@ -1422,6 +1213,10 @@ export async function activateLiveQuizBlock(
       case DB.ElementType.FREE_TEXT: {
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
+          ...(elementData.options.restrictions &&
+          Object.keys(elementData.options.restrictions).length > 0
+            ? { restrictions: JSON.stringify(elementData.options.restrictions) }
+            : {}),
           solutions: elementData.options.hasSampleSolution
             ? JSON.stringify(elementData.options.solutions)
             : undefined,
@@ -1493,227 +1288,24 @@ export async function deactivateLiveQuizBlock(
   ctx: ContextWithUser,
   isScheduled?: boolean
 ) {
-  const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id: quizId },
-    include: {
-      course: true,
-      activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
-      blocks: { orderBy: { id: 'asc' } },
-    },
-  })
-
-  if (!quiz || !quiz.activeBlock) return false
-
-  // if the block is not the active one, return early
-  if (quiz.activeBlockId !== blockId) return false
-
+  let isAssessmentEnabled = false
   try {
-    const cachedResults = await getCachedBlockResults({
-      ctx,
-      activeBlock: quiz.activeBlock,
+    const res = await updateLiveQuizBlockResultsFromCache({
+      quizId,
+      blockId,
+      prisma: ctx.prisma,
+      redisExec: ctx.redisExec,
+      redisAssessmentExec: ctx.redisAssessmentExec,
+      updateResults: true,
+      updateLeaderboards: true, // always update the leaderboard when a block is closed
     })
 
-    if (!cachedResults) return false
+    // if the update was not successful, return false
+    if (!res) return false
 
-    const {
-      instanceResults,
-      liveQuizLeaderboard,
-      liveQuizLeaderboardTemporary,
-      activeInstanceIds,
-    } = cachedResults
-
-    // filter the leaderboard entries to only include those that have a valid participant id
-    const { regularParticipantLeaderboard, temporaryParticipantLeaderboard } = (
-      await Promise.allSettled(
-        Object.entries(liveQuizLeaderboard).map(async ([id, score]) => {
-          const participant = await ctx.prisma.participant.findUnique({
-            where: { id },
-            include: {
-              participations: quiz.courseId
-                ? { where: { courseId: quiz.courseId } }
-                : { take: 0 },
-            },
-          })
-
-          if (!participant) return null
-          return {
-            participantId: id,
-            participantUsername: participant.username,
-            participantAvatar: participant.avatar,
-            gamifiedCourseParticipation:
-              !!quiz.courseId &&
-              quiz.course?.isGamificationEnabled &&
-              !!participant.participations?.[0],
-            courseParticipationActive:
-              !!quiz.courseId &&
-              !!participant.participations?.[0] &&
-              participant.participations?.[0].isActive,
-            score,
-          }
-        })
-      )
-    ).reduce<{
-      regularParticipantLeaderboard: { participantId: string; score: number }[]
-      temporaryParticipantLeaderboard: {
-        participantId: string
-        participantUsername: string
-        participantAvatar: string | null
-        score: number
-      }[]
-    }>(
-      (acc, result) => {
-        // filter out failed requests and those which have a valid gamified course participation,
-        // which is not active -> active decision to not be on leaderboard
-        if (
-          result.status !== 'fulfilled' ||
-          !result.value ||
-          (result.value.gamifiedCourseParticipation &&
-            !result.value.courseParticipationActive)
-        ) {
-          return acc
-        }
-
-        if (result.value.gamifiedCourseParticipation) {
-          // active gamified course participation (inactive already filtered) -> regular leaderboard
-          acc.regularParticipantLeaderboard.push({
-            participantId: result.value.participantId,
-            score: parseInt(result.value.score, 10),
-          })
-        } else {
-          // no gamified course participation -> temporary leaderboard
-          acc.temporaryParticipantLeaderboard.push({
-            participantId: result.value.participantId,
-            participantUsername: result.value.participantUsername,
-            participantAvatar: result.value.participantAvatar,
-            score: parseInt(result.value.score, 10),
-          })
-        }
-
-        return acc
-      },
-      { regularParticipantLeaderboard: [], temporaryParticipantLeaderboard: [] }
-    )
-
-    // filter temporary leaderboard entries to only include those that have a valid temporary leaderboard entry for this live quiz
-    // technically, this should not be required, since all ids should be valid, but it is a safety check
-    const existingTemporaryLB = (
-      await Promise.allSettled(
-        Object.entries(liveQuizLeaderboardTemporary).map(
-          async ([id, score]) => {
-            const tempLeadeboardEntry =
-              await ctx.prisma.temporaryLeaderboardEntry.findUnique({
-                where: { id_quizId: { id, quizId } },
-              })
-
-            if (!tempLeadeboardEntry) return null
-            return {
-              participantId: id,
-              participantUsername: undefined,
-              participantAvatar: undefined,
-              score: parseInt(score, 10),
-            }
-          }
-        )
-      )
-    ).flatMap((result) => {
-      if (result.status !== 'fulfilled' || !result.value) return []
-      return [result.value]
-    })
-
-    const updatedQuiz = await ctx.prisma.liveQuiz.update({
-      where: { id: quizId },
-      data: {
-        activeBlock: { disconnect: true },
-        blocks: {
-          update: {
-            where: { id: blockId },
-            data: {
-              status: DB.ElementBlockStatus.EXECUTED,
-              elements: {
-                update: Object.entries(instanceResults).map(
-                  ([id, instanceResult]) => ({
-                    where: { id: Number(id) },
-                    data: { anonymousResults: instanceResult.anonymousResults },
-                  })
-                ),
-              },
-            },
-          },
-        },
-        leaderboard: quiz.isGamificationEnabled
-          ? {
-              upsert: regularParticipantLeaderboard.map(
-                ({ participantId, score }) => ({
-                  where: {
-                    type_participantId_liveQuizId: {
-                      type: DB.LeaderboardType.SESSION,
-                      participantId,
-                      liveQuizId: quizId,
-                    },
-                  },
-                  create: {
-                    type: DB.LeaderboardType.SESSION,
-                    participant: { connect: { id: participantId } },
-                    score: score,
-                    sessionParticipation: quiz.courseId
-                      ? {
-                          connectOrCreate: {
-                            where: {
-                              courseId_participantId: {
-                                courseId: quiz.courseId,
-                                participantId,
-                              },
-                            },
-                            create: {
-                              course: { connect: { id: quiz.courseId! } },
-                              participant: { connect: { id: participantId } },
-                            },
-                          },
-                        }
-                      : undefined,
-                  },
-                  update: { score },
-                })
-              ),
-            }
-          : undefined,
-        temporaryLeaderboard: quiz.isGamificationEnabled
-          ? {
-              upsert: [
-                ...temporaryParticipantLeaderboard,
-                ...existingTemporaryLB,
-              ].map(
-                ({
-                  participantId,
-                  participantUsername,
-                  participantAvatar,
-                  score,
-                }) => ({
-                  where: {
-                    id_quizId: {
-                      id: participantId,
-                      quizId,
-                    },
-                  },
-                  create: {
-                    id: participantId,
-                    username: participantUsername ?? '', // fallback should never be used
-                    avatar: participantAvatar ?? undefined,
-                    score,
-                  },
-                  update: { score },
-                })
-              ),
-            }
-          : undefined,
-      },
-      include: {
-        blocks: {
-          include: { elements: { orderBy: { order: 'asc' } } },
-          orderBy: { order: 'asc' },
-        },
-      },
-    })
+    const updatedQuiz = res.updatedQuiz
+    const activeInstanceIds = res.activeInstanceIds
+    isAssessmentEnabled = updatedQuiz.isAssessmentEnabled
 
     // update the running live quiz with the updated block information
     ctx.pubSub.publish('runningLiveQuizUpdated', {
@@ -1732,7 +1324,7 @@ export async function deactivateLiveQuizBlock(
 
     ctx.emitter.emit('invalidate', {
       typename: 'LiveQuiz',
-      id: quiz.id,
+      id: updatedQuiz.id,
     })
 
     if (!isScheduled && scheduledJobs[blockId]) {
@@ -1740,23 +1332,277 @@ export async function deactivateLiveQuizBlock(
       delete scheduledJobs[blockId]
     }
 
-    unlinkCachedBlockResults({
-      ctx,
-      quizId,
-      blockId,
-      activeInstanceIds,
+    // add the closure timestamp of the block to the instance info in the redis cache
+    const updatedBlock = updatedQuiz.blocks.find(
+      (block) => block.id === blockId
+    )
+    if (updatedBlock && updatedBlock.closedAt) {
+      // select the correct redis cache for the live quiz depending on the assessment flag
+      const redis = updatedQuiz.isAssessmentEnabled
+        ? ctx.redisAssessmentExec.pipeline()
+        : ctx.redisExec.pipeline()
+
+      // add the blockClosedAt timestamp to the instance info cache
+      for (const instanceId of activeInstanceIds) {
+        redis.hset(
+          `lq:${updatedQuiz.id}:i:${instanceId}:info`,
+          'blockClosedAt',
+          Number(updatedBlock.closedAt)
+        )
+      }
+      await redis.exec()
+    }
+  } catch (error: any) {
+    await sendTeamsNotification({
+      scope: 'graphql/deactivateLiveQuizBlock',
+      text: `ERROR - failed to deactivate block ${blockId} in live quiz ${
+        quizId
+      } with active block ${blockId}: ${error?.message || error}`,
     })
 
-    return true
-  } catch (error: any) {
-    await sendTeamsNotifications(
-      'graphql/deactivateLiveQuizBlock',
-      `ERROR - failed to deactivate block ${blockId} in live quiz ${
-        quiz.id
-      } with active block ${quiz.activeBlockId}: ${error?.message || error}`
-    )
-
     throw error
+  }
+
+  try {
+    // schedule another aggregation event through hatchet that runs 5 minutes after block closure
+    // -> heuristic: by then, all submissions should have been processed and the aggregated results on the instance should be final
+    if (isAssessmentEnabled) {
+      await ctx.tasks.aggregateLiveQuizBlockResultsAssessment.schedule(
+        dayjs().add(5, 'minute').toDate(),
+        { liveQuizId: quizId, blockId }
+      )
+    } else {
+      await ctx.tasks.aggregateLiveQuizBlockResultsStandard.schedule(
+        dayjs().add(5, 'minute').toDate(),
+        { liveQuizId: quizId, blockId }
+      )
+    }
+  } catch (error) {
+    console.error(
+      `Failed to schedule aggregation task for closed block ${blockId} in live quiz ${quizId}:`,
+      error
+    )
+  }
+
+  return true
+}
+
+async function removeCacheEntriesBlock({
+  liveQuizId,
+  blockId,
+  block,
+  isLastBlock,
+  redis,
+}: {
+  liveQuizId: string
+  blockId: number
+  block: DB.ElementBlock & { elements: DB.ElementInstance[] }
+  isLastBlock: boolean
+  redis: Redis
+}) {
+  if (isLastBlock) {
+    // if the last block was closed, clean up the entire cache for this live quiz
+    const keys = await redis.keys(`lq:${liveQuizId}:*`)
+    if (keys.length > 0) {
+      const pipe = redis.pipeline()
+      for (const key of keys) {
+        pipe.unlink(key)
+      }
+      await pipe.exec()
+    }
+  } else {
+    // only remove information from the cache that is specific to the closed block and the instances therein
+    const instanceIds = block.elements.map((instance) => instance.id)
+    const instanceKeysNested = await Promise.all(
+      instanceIds.map(
+        async (id) => await redis.keys(`lq:${liveQuizId}:i:${id}:*`)
+      )
+    )
+    const instanceKeys = instanceKeysNested.flat()
+    const blockKeys = await redis.keys(`lq:${liveQuizId}:b:${blockId}:*`)
+    const keys = [...instanceKeys, ...blockKeys]
+
+    if (keys.length > 0) {
+      const pipe = redis.pipeline()
+      for (const key of keys) {
+        pipe.unlink(key)
+      }
+      await pipe.exec()
+    }
+  }
+}
+
+function aggregateLiveQuizResponses({
+  responses,
+  elementData,
+}: {
+  responses: DB.LiveQuizResponse[]
+  elementData: ElementData
+}): ElementInstanceResults {
+  switch (elementData.type) {
+    case DB.ElementType.SC:
+    case DB.ElementType.MC:
+    case DB.ElementType.KPRIM: {
+      const initialResults = getInitialInstanceResults(
+        elementData
+      ) as ElementResultsChoices
+      return responses.reduce<ElementResultsChoices>((acc, submission) => {
+        if (!('choices' in submission.response)) return acc
+
+        acc.total += 1
+        submission.response.choices.forEach((choice) => {
+          if (choice.selected && choice.ix in acc.choices) {
+            acc.choices[choice.ix] = (acc.choices[choice.ix] ?? 0) + 1
+          }
+        })
+
+        return acc
+      }, initialResults)
+    }
+    case DB.ElementType.NUMERICAL: {
+      const initialResults = getInitialInstanceResults(
+        elementData
+      ) as ElementResultsOpen
+
+      return responses.reduce<ElementResultsOpen>((acc, submission) => {
+        if (!('value' in submission.response)) return acc
+
+        const cleanResponseValue = parseFloat(String(submission.response.value))
+        if (!isNaN(cleanResponseValue)) {
+          const MD5 = createHash('md5')
+          MD5.update(String(cleanResponseValue))
+          const responseHash = MD5.digest('hex')
+          if (responseHash in acc.responses) {
+            acc.responses[responseHash]!.count += 1
+          } else {
+            acc.responses[responseHash] = {
+              value: String(cleanResponseValue),
+              count: 1,
+              correct: elementData.options.hasSampleSolution
+                ? submission.correctness === DB.ResponseCorrectness.CORRECT
+                : undefined,
+            }
+          }
+
+          acc.total += 1
+        }
+
+        return acc
+      }, initialResults)
+    }
+    case DB.ElementType.FREE_TEXT: {
+      const initialResults = getInitialInstanceResults(
+        elementData
+      ) as ElementResultsOpen
+
+      return responses.reduce<ElementResultsOpen>((acc, submission) => {
+        if (!('value' in submission.response)) return acc
+
+        const cleanResponseValue = submission.response.value.trim()
+        if (cleanResponseValue.length > 0) {
+          const MD5 = createHash('md5')
+          MD5.update(cleanResponseValue)
+          const responseHash = MD5.digest('hex')
+          if (responseHash in acc.responses) {
+            acc.responses[responseHash]!.count += 1
+          } else {
+            acc.responses[responseHash] = {
+              value: cleanResponseValue,
+              count: 1,
+              correct: elementData.options.hasSampleSolution
+                ? submission.correctness === DB.ResponseCorrectness.CORRECT
+                : undefined,
+            }
+          }
+
+          acc.total += 1
+        }
+
+        return acc
+      }, initialResults)
+    }
+    case DB.ElementType.SELECTION: {
+      const initialResults = getInitialInstanceResults(
+        elementData
+      ) as ElementResultsSelection
+
+      return responses.reduce<ElementResultsSelection>((acc, submission) => {
+        if (!('selection' in submission.response)) return acc
+
+        submission.response.selection
+          .filter((ix) => ix !== -1)
+          .forEach((ix) => {
+            if (ix in acc.selections) {
+              acc.selections[ix] = (acc.selections[ix] ?? 0) + 1
+            }
+          })
+
+        acc.total += 1
+        return acc
+      }, initialResults)
+    }
+    case DB.ElementType.CASE_STUDY: {
+      const initialResults = getInitialInstanceResults(
+        elementData
+      ) as ElementResultsCaseStudy
+
+      return responses.reduce<ElementResultsCaseStudy>((acc, submission) => {
+        if (!('assessment' in submission.response)) return acc
+
+        Object.entries(submission.response.assessment).forEach(
+          ([caseId, itemResponses]) => {
+            Object.entries(itemResponses).forEach(
+              ([itemId, criterionResponses]) => {
+                Object.entries(criterionResponses).forEach(
+                  ([criterionId, criterionResponse]) => {
+                    if (
+                      criterionResponse === null ||
+                      typeof criterionResponse !== 'number' ||
+                      typeof acc.assessments[caseId]?.[itemId]?.[
+                        criterionId
+                      ] === 'undefined'
+                    ) {
+                      return acc
+                    }
+
+                    // compute the hash of the response
+                    const MD5 = createHash('md5')
+                    MD5.update(String(criterionResponse))
+                    const responseHash = MD5.digest('hex')
+
+                    // if the response already exists, increment the counter, otherwise create a new entry
+                    if (
+                      acc.assessments[caseId]![itemId]![criterionId]![
+                        responseHash
+                      ]
+                    ) {
+                      acc.assessments[caseId]![itemId]![criterionId]![
+                        responseHash
+                      ]!.count += 1
+                    } else {
+                      acc.assessments[caseId]![itemId]![criterionId]![
+                        responseHash
+                      ] = {
+                        value: criterionResponse,
+                        count: 1,
+                      }
+                    }
+                  }
+                )
+              }
+            )
+          }
+        )
+
+        acc.total += 1
+        return acc
+      }, initialResults)
+    }
+    case DB.ElementType.CONTENT: {
+      return { total: responses.length }
+    }
+    default:
+      return { total: 0 }
   }
 }
 
@@ -1790,10 +1636,15 @@ export async function endLiveQuiz(
     return null
   }
 
+  // depending on the quiz assessment setting, select the corresponding redis instance
+  const redis = quiz.isAssessmentEnabled
+    ? ctx.redisAssessmentExec
+    : ctx.redisExec
+
   // update course leaderboard and participant XP
   try {
-    const quizLB = await ctx.redisExec.hgetall(`lq:${id}:lb`)
-    const quizXP = await ctx.redisExec.hgetall(`lq:${id}:xp`)
+    const quizLB = await redis.hgetall(`lq:${id}:lb`)
+    const quizXP = await redis.hgetall(`lq:${id}:xp`)
     const participants: Record<string, any> = {}
 
     Object.entries(quizXP).forEach(([id, xp]) => {
@@ -2041,28 +1892,6 @@ export async function endLiveQuiz(
       })
     }
 
-    // Clean up Redis keys without using KEYS (iterate with SCAN to avoid blocking)
-    const SCAN_COUNT = 1000
-    let cursor = '0'
-    do {
-      const [nextCursor, keys] = await ctx.redisExec.scan(
-        cursor,
-        'MATCH',
-        `lq:${id}:*`,
-        'COUNT',
-        SCAN_COUNT
-      )
-      cursor = nextCursor
-
-      if (keys.length > 0) {
-        const pipe = ctx.redisExec.pipeline()
-        for (const key of keys) {
-          pipe.unlink(key)
-        }
-        await pipe.exec()
-      }
-    } while (cursor !== '0')
-
     const endedLiveQuiz = await ctx.prisma.liveQuiz.update({
       where: { id },
       data: {
@@ -2071,17 +1900,17 @@ export async function endLiveQuiz(
       },
     })
 
-    await sendTeamsNotifications(
-      'graphql/endLiveQuiz',
-      `END Live quiz ${quiz.name} with id ${quiz.id}.`
-    )
+    await sendTeamsNotification({
+      scope: 'graphql/endLiveQuiz',
+      text: `END Live quiz ${quiz.name} with id ${quiz.id}.`,
+    })
 
     return endedLiveQuiz
   } catch (error) {
-    await sendTeamsNotifications(
-      'graphql/endLiveQuiz',
-      `ERROR - failed to end live quiz ${quiz.name} with id ${quiz.id}: ${error}`
-    )
+    await sendTeamsNotification({
+      scope: 'graphql/endLiveQuiz',
+      text: `ERROR - failed to end live quiz ${quiz.name} with id ${quiz.id}: ${error}`,
+    })
     throw error
   }
 }
@@ -2204,6 +2033,11 @@ export async function getLiveQuizSummary(
 
   if (!liveQuiz) return null
 
+  // depending on the quiz assessment setting, select the corresponding redis instance
+  const redis = liveQuiz.isAssessmentEnabled
+    ? ctx.redisAssessmentExec
+    : ctx.redisExec
+
   // get responses for completed blocks
   let storedResponses = liveQuiz.blocks.reduce((acc_b, block) => {
     acc_b += block.elements.reduce((acc_i, instance) => {
@@ -2216,7 +2050,7 @@ export async function getLiveQuizSummary(
   // get results for active blocks
   if (liveQuiz.activeBlock) {
     const cachedResults = await getCachedBlockResults({
-      ctx,
+      redisExec: redis,
       activeBlock: liveQuiz.activeBlock,
     })
 
@@ -2301,6 +2135,8 @@ export async function cancelLiveQuiz(
               },
               data: {
                 status: DB.ElementBlockStatus.SCHEDULED,
+                startedAt: null,
+                closedAt: null,
                 expiresAt: null,
                 execution: { increment: 1 },
               },
@@ -2317,35 +2153,36 @@ export async function cancelLiveQuiz(
         const initialResults = getInitialInstanceResults(instance.elementData)
 
         return ctx.prisma.elementInstance.update({
-          where: {
-            id: instance.id,
-          },
-          data: {
-            results: initialResults,
-            anonymousResults: initialResults,
-          },
+          where: { id: instance.id },
+          data: { results: initialResults, anonymousResults: initialResults },
         })
       }),
     ])
 
-    const keys = await ctx.redisExec.keys(`lq:${id}:*`)
-    const pipe = ctx.redisExec.multi()
+    // depending on the quiz assessment setting, select the corresponding redis instance
+    const redis = quiz.isAssessmentEnabled
+      ? ctx.redisAssessmentExec
+      : ctx.redisExec
+
+    // unlink all cache keys from the redis cache
+    const keys = await redis.keys(`lq:${id}:*`)
+    const pipe = redis.multi()
     for (const key of keys) {
       pipe.unlink(key)
     }
     await pipe.exec()
 
-    await sendTeamsNotifications(
-      'graphql/abortLiveQuiz',
-      `CANCEL Live quiz ${quiz.name} with id ${quiz.id}.`
-    )
+    await sendTeamsNotification({
+      scope: 'graphql/abortLiveQuiz',
+      text: `CANCEL Live quiz ${quiz.name} with id ${quiz.id}.`,
+    })
 
     return updatedQuiz
   } catch (error) {
-    await sendTeamsNotifications(
-      'graphql/abortLiveQuiz',
-      `ERROR - failed to cancel live quiz ${quiz.name} with id ${quiz.id}: ${error}`
-    )
+    await sendTeamsNotification({
+      scope: 'graphql/abortLiveQuiz',
+      text: `ERROR - failed to cancel live quiz ${quiz.name} with id ${quiz.id}: ${error}`,
+    })
     throw error
   }
 }
@@ -2397,13 +2234,18 @@ export async function getLiveQuizEvaluation(
     }
   }
 
+  // depending on the quiz assessment setting, select the corresponding redis instance
+  const redis = liveQuiz.isAssessmentEnabled
+    ? ctx.redisAssessmentExec
+    : ctx.redisExec
+
   // load results from active block as well
   let activeBlockWithResults:
     | (DB.ElementBlock & { elements: DB.ElementInstance[] })
     | undefined
   if (liveQuiz.activeBlockId && liveQuiz.activeBlock) {
     const cachedResults = await getCachedBlockResults({
-      ctx,
+      redisExec: redis,
       activeBlock: liveQuiz.activeBlock,
     })
 
@@ -2537,6 +2379,21 @@ export async function deleteLiveQuiz(
           },
         })
 
+        // remove the scheduled hatchet publication task, if it exists
+        if (
+          quiz.status === DB.PublicationStatus.SCHEDULED &&
+          quiz.scheduledPublicationTaskId
+        ) {
+          try {
+            await ctx.hatchet.scheduled.delete(quiz.scheduledPublicationTaskId)
+          } catch (error) {
+            console.error(
+              `Failed to delete scheduled task for live quiz ${id}:`,
+              error
+            )
+          }
+        }
+
         // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
         // this case cannot be handled by the permissions module, since the live quiz is already hard deleted
         // access requests need to be updated as well, since the derived permissions on elements might have changed
@@ -2556,6 +2413,202 @@ export async function deleteLiveQuiz(
     })
 
     return deletedLiveQuiz
+  }
+}
+
+export async function resetAssessmentLiveQuiz(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  // the live quiz that should be reset must be an ended assessment quiz
+  // the user that is resetting the quiz must be an admin or owner of the corresponding assessment course
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id,
+      isAssessmentEnabled: true,
+      status: DB.PublicationStatus.ENDED,
+      course: {
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+            },
+          },
+        },
+      },
+    },
+    include: {
+      blocks: {
+        include: {
+          elements: {
+            include: { liveQuizResponses: true },
+            orderBy: { order: 'asc' },
+          },
+        },
+        orderBy: { order: 'asc' },
+      },
+    },
+  })
+
+  if (!liveQuiz) return null
+
+  try {
+    await ctx.hatchet.events.push('create-audit-log-entry', {
+      info: `[INFO] [Reset Assessment Live Quiz] Assessment course admin with ID ${ctx.user.sub} initiated reset of live quiz with ID ${id}.`,
+    })
+
+    // loop through the blocks and element instances and document the number of deducted points
+    for (const block of liveQuiz.blocks) {
+      for (const instance of block.elements) {
+        await Promise.all(
+          instance.liveQuizResponses.map(async (response) => {
+            await ctx.hatchet.events.push('create-audit-log-entry', {
+              info: `[INFO] [Reset Assessment Live Quiz] Deducted ${response.basePoints} base points, ${response.correctnessPoints} correctness points, and ${response.bonusPoints} bonus points from participant with ID ${response.participantId} for element instance with ID ${instance.id} in block with ID ${block.id} in live quiz with ID ${id}.`,
+            })
+          })
+        )
+      }
+    }
+
+    // update the live quiz (reset it to draft status, remove all responses, reset results)
+    const updatedQuiz = await ctx.prisma.$transaction(
+      async (tx) => {
+        // reset the live quiz
+        const updatedLiveQuiz = await tx.liveQuiz.update({
+          where: { id },
+          data: {
+            status: DB.PublicationStatus.DRAFT,
+            startedAt: null,
+            finishedAt: null,
+            feedbacks: { deleteMany: {} },
+            confusionFeedbacks: { deleteMany: {} },
+            leaderboard: { deleteMany: {} },
+            temporaryLeaderboard: { deleteMany: {} }, // should not be set for assessment live quizzes
+          },
+          include: {
+            course: true,
+            permissions: {
+              where: { userId: ctx.user.sub },
+              include: { directPermission: true },
+            },
+            _count: { select: { permissions: true } },
+          },
+        })
+
+        // reset all blocks and the contained element instances
+        for (const block of liveQuiz.blocks) {
+          // reset the block status
+          await tx.elementBlock.update({
+            where: { id: block.id },
+            data: {
+              status: DB.ElementBlockStatus.SCHEDULED,
+              startedAt: null,
+              closedAt: null,
+              expiresAt: null,
+              execution: { increment: 1 },
+            },
+          })
+
+          // reset all instances with their results and delete the responses
+          for (const instance of block.elements) {
+            const initialResults = getInitialInstanceResults(
+              instance.elementData
+            )
+
+            await tx.elementInstance.update({
+              where: { id: instance.id },
+              data: {
+                liveQuizResponses: { deleteMany: {} },
+                results: initialResults,
+                anonymousResults: initialResults,
+              },
+            })
+          }
+        }
+
+        return updatedLiveQuiz
+      },
+      { timeout: 60000 }
+    )
+
+    await ctx.hatchet.events.push('create-audit-log-entry', {
+      info: `[INFO] [Reset Assessment Live Quiz] Successfully reset assessment live quiz with ID ${id}.`,
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
+    const permission = updatedQuiz.permissions[0]!
+
+    const {
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      sharingType,
+    } = getPermissionBooleans({
+      permissionLevel: permission.permissionLevel,
+      derived: permission.derived,
+      directGroupPermission:
+        permission.directPermission &&
+        permission.directPermission.userGroupId !== null,
+    })
+
+    // reset all cache entries for the live quiz that potentially remain (due to pending block aggregations)
+    // remaining pending aggregation tasks will automatically be aborted, since they are only executed for published or ended live quizzes
+    const redis = liveQuiz.isAssessmentEnabled
+      ? ctx.redisAssessmentExec
+      : ctx.redisExec
+    const keys = await redis.keys(`lq:${liveQuiz.id}:*`)
+    if (keys.length > 0) {
+      const pipe = redis.pipeline()
+      for (const key of keys) {
+        pipe.unlink(key)
+      }
+      await pipe.exec()
+    }
+
+    return {
+      id: updatedQuiz.id,
+      templateId: null,
+      name: updatedQuiz.name,
+      displayName: updatedQuiz.displayName,
+      reviewStatus: updatedQuiz.reviewStatus,
+      isGamificationEnabled: updatedQuiz.isGamificationEnabled,
+      isAssessmentEnabled: updatedQuiz.isAssessmentEnabled,
+      type: ActivityType.LIVE_QUIZ,
+      status: updatedQuiz.status,
+      courseId: updatedQuiz.course!.id,
+      courseName: updatedQuiz.course!.name,
+      courseStartDate: updatedQuiz.course!.startDate,
+      courseLanguage: updatedQuiz.course!.language,
+      numOfStacks: liveQuiz.blocks.length,
+      numOfElements: liveQuiz.blocks.reduce(
+        (acc, block) => acc + block.elements.length,
+        0
+      ),
+      permissionLevel: permission.permissionLevel,
+      derivedAccess: permission.derived,
+      areInstancesOutdated: updatedQuiz.areInstancesOutdated,
+      numSharedUsers: updatedQuiz._count.permissions - 1,
+      pinCode: updatedQuiz.pinCode,
+      isOwner,
+      isManager,
+      isEditor,
+      isExecutor,
+      isShared,
+      isRemovable,
+      isActivityReviewer: true, // requirement for this action
+      sharingType,
+      updatedAt: updatedQuiz.updatedAt,
+    }
+  } catch (error) {
+    await ctx.hatchet.events.push('create-audit-log-entry', {
+      info: `[ERROR] [Reset Assessment Live Quiz] Failed to reset live quiz with ID ${id}: ${error}`,
+    })
+
+    return null
   }
 }
 
@@ -2757,14 +2810,46 @@ function removeSolutionFromInstances({
 
 export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
   // only get the minimal required information of the quiz
-  const quizInfo = await ctx.prisma.liveQuiz.findUnique({
-    where: { id },
-    select: { id: true, status: true, pinCode: true },
-  })
+  const quizInfo = await ctx.prisma.liveQuiz.findUnique({ where: { id } })
 
   // if the quiz is not available, return early
-  if (!quizInfo || quizInfo.status !== DB.PublicationStatus.PUBLISHED)
+  if (!quizInfo || quizInfo.status !== DB.PublicationStatus.PUBLISHED) {
     return null
+  }
+
+  // if the live quiz is an assessment live quiz, verify that the user
+  // is logged in and a participant in the corresponding course
+  if (quizInfo.isAssessmentEnabled) {
+    // if the user is not logged in, send them to the the assessment login page
+    if (
+      !ctx.user?.sub ||
+      ctx.user.role !== DB.UserRole.PARTICIPANT ||
+      ctx.user.scope !== DB.UserLoginScope.EDUID
+    ) {
+      throw new GraphQLError('UNAUTHORIZED_ASSESSMENT', {
+        extensions: { code: 'FORBIDDEN' },
+      })
+    }
+
+    // if the user is logged in as an eduid participant, but not part of the course, return an error
+    // -> frontend should redirect to the assessment home page
+    if (quizInfo.courseId) {
+      const participation = await ctx.prisma.participation.findUnique({
+        where: {
+          courseId_participantId: {
+            courseId: quizInfo.courseId,
+            participantId: ctx.user.sub,
+          },
+        },
+      })
+
+      if (!participation) {
+        throw new GraphQLError('MISSING_ASSESSMENT_COURSE_PARTICIPATION', {
+          extensions: { code: 'FORBIDDEN' },
+        })
+      }
+    }
+  }
 
   // if a pin code is required, verify that the user has already entered a valid one
   if (quizInfo.pinCode) {
@@ -2772,9 +2857,14 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
     const providedPin = ctx.req.cookies?.[cookieName]
 
     if (!providedPin) {
-      throw new GraphQLError('LIVE_QUIZ_PIN_MISSING', {
-        extensions: { code: 'FORBIDDEN' },
-      })
+      throw new GraphQLError(
+        quizInfo.isAssessmentEnabled
+          ? 'LIVE_QUIZ_PIN_MISSING_ASSESSMENT'
+          : 'LIVE_QUIZ_PIN_MISSING',
+        {
+          extensions: { code: 'FORBIDDEN' },
+        }
+      )
     }
 
     if (providedPin !== quizInfo.pinCode) {
@@ -2815,15 +2905,37 @@ export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
   // extract solution from instances in active block
   let quizWithoutSolutions: any
   if (quiz && quiz.activeBlock) {
+    const activeBlockInstances = await Promise.all(
+      removeSolutionFromInstances({
+        instances: quiz.activeBlock.elements,
+      }).map(async (instance) => {
+        if (!quiz.isAssessmentEnabled) {
+          return instance
+        }
+
+        // for assessment quizzes, add a correlation key to verify a student's submission
+        const correlationKey = await signJWT(
+          {
+            instanceId: instance.id,
+            execution: quiz.activeBlock!.execution,
+            liveQuizId: quiz.id,
+            sub: '', // dummy sub, since this value is required
+          },
+          process.env.APP_SECRET as string,
+          {
+            issuer: process.env.APP_ORIGIN_ASSESSMENT_API,
+            issuedAt: quiz.activeBlock?.startedAt ?? new Date(0),
+          }
+        )
+
+        return { ...instance, correlationKey }
+      })
+    )
+
     quizWithoutSolutions = {
       ...quiz,
       beforeFirstBlock,
-      activeBlock: {
-        ...quiz.activeBlock,
-        elements: removeSolutionFromInstances({
-          instances: quiz.activeBlock.elements,
-        }),
-      },
+      activeBlock: { ...quiz.activeBlock, elements: activeBlockInstances },
       // for future blocks, do not return the elements
       blocks: quiz.blocks.map((block) => ({
         ...block,
@@ -3000,4 +3112,264 @@ export async function getLiveQuizLeaderboard(
 
   return filteredEntries
 }
+// #endregion
+
+// ------ HATCHET SCHEDULED TASK HANDLER ------
+// #region
+export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishScheduledLiveQuiz'] =
+  async ({ liveQuizId }, globalCtx, executionCtx) => {
+    executionCtx.logger.info(
+      `Publishing scheduled live quiz with ID ${liveQuizId}`
+    )
+
+    try {
+      // check if the live quiz exists and if its availableFrom date is in the past
+      const liveQuiz = await globalCtx.prisma.liveQuiz.findUnique({
+        where: {
+          id: liveQuizId,
+          isDeleted: false,
+          status: DB.PublicationStatus.SCHEDULED,
+          availableFrom: { lte: new Date() },
+        },
+      })
+
+      if (!liveQuiz) {
+        await sendTeamsNotification({
+          scope: 'hatchet/live-quiz-start',
+          text: `Live quiz with ID ${liveQuizId} not found or scheduled start time is not in the past yet.`,
+        })
+        throw new Error(
+          `Live quiz with ID ${liveQuizId} not found or scheduled start time is not in the past yet.`
+        )
+      }
+
+      // depending on the quiz assessment setting, select the corresponding redis instance
+      const redis = liveQuiz.isAssessmentEnabled
+        ? globalCtx.redisAssessmentExec
+        : globalCtx.redisExec
+
+      // start the live quiz
+      await redis
+        .pipeline()
+        .hmset(`lq:${liveQuiz.id}:meta`, {
+          namespace: liveQuiz.namespace,
+          startedAt: Number(new Date()),
+        })
+        .exec()
+
+      const startedLiveQuiz = await globalCtx.prisma.liveQuiz.update({
+        where: { id: liveQuizId },
+        data: {
+          status: DB.PublicationStatus.PUBLISHED,
+          startedAt: new Date(),
+        },
+      })
+
+      await sendTeamsNotification({
+        scope: 'hatchet/live-quiz-start',
+        text: `START Live quiz ${startedLiveQuiz.name} with id ${startedLiveQuiz.id}.`,
+      })
+
+      // invalidate the cache for the live quiz
+      globalCtx.emitter.emit('invalidate', {
+        typename: 'LiveQuiz',
+        id: startedLiveQuiz.id,
+      })
+
+      return true
+    } catch (error) {
+      console.error('Error publishing scheduled live quiz:', error)
+      await sendTeamsNotification({
+        scope: 'hatchet/live-quiz-start',
+        text: `Error publishing live quiz with ID ${liveQuizId}: ${error}`,
+      })
+      throw error // rethrow to allow Hatchet to handle retries
+    }
+  }
+
+export const handleStandardLiveQuizBlockClosureAggregation: HatchetHandlers['handleStandardLiveQuizBlockClosureAggregation'] =
+  async ({ liveQuizId, blockId }, globalCtx, executionCtx) => {
+    executionCtx.logger.info(
+      `Aggregating results for standard live quiz with ID ${liveQuizId} and block ID ${blockId}`
+    )
+
+    // verify that the live quiz is still running or ended (-> results of aborted live quizzes should not be updated)
+    const quiz = await globalCtx.prisma.liveQuiz.findUnique({
+      where: {
+        id: liveQuizId,
+        status: {
+          in: [DB.PublicationStatus.PUBLISHED, DB.PublicationStatus.ENDED],
+        },
+      },
+      include: {
+        blocks: { include: { elements: true }, orderBy: { order: 'asc' } },
+      },
+    })
+    if (!quiz) return true
+    if (quiz.blocks.length === 0) return false
+
+    // check if the block that was closed is the last one of the quiz
+    const isLastBlock = quiz.blocks[quiz.blocks.length - 1]!.id === blockId
+    const block = quiz.blocks.find((b) => b.id === blockId)
+    if (!block) return false
+
+    // update the aggregated instance results based on the cache data after a waiting period for processing remaining submissions
+    await updateLiveQuizBlockResultsFromCache({
+      quizId: liveQuizId,
+      blockId,
+      prisma: globalCtx.prisma,
+      redisExec: globalCtx.redisExec,
+      redisAssessmentExec: globalCtx.redisAssessmentExec,
+      // update the instance results based on the cache data again with the latest information
+      updateResults: true,
+      // only update the leaderboard for the quiz, if this is the last block of the quiz
+      // -> otherwise leaderboard updates at the block closures of other blocks might interfere with this update
+      updateLeaderboards: isLastBlock,
+    })
+
+    // remove all cache entries related to this block only (or the entire live quiz, if this was the last block)
+    await removeCacheEntriesBlock({
+      liveQuizId,
+      blockId,
+      block,
+      isLastBlock,
+      redis: globalCtx.redisExec,
+    })
+
+    return true
+  }
+
+export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['handleAssessmentLiveQuizBlockClosureAggregation'] =
+  async ({ liveQuizId, blockId }, globalCtx, executionCtx) => {
+    executionCtx.logger.info(
+      `Aggregating results for assessment live quiz with ID ${liveQuizId} and block ID ${blockId}`
+    )
+
+    // verify that the live quiz is still running or ended (-> results of aborted live quizzes should not be updated)
+    const quiz = await globalCtx.prisma.liveQuiz.findUnique({
+      where: {
+        id: liveQuizId,
+        status: {
+          in: [DB.PublicationStatus.PUBLISHED, DB.PublicationStatus.ENDED],
+        },
+      },
+      include: {
+        blocks: {
+          include: { elements: { include: { liveQuizResponses: true } } },
+          orderBy: { order: 'asc' },
+        },
+      },
+    })
+    if (!quiz) {
+      executionCtx.logger.info(
+        `No quiz found for ID ${liveQuizId} in status PUBLISHED or ENDED`
+      )
+      return true
+    }
+    if (quiz.blocks.length === 0) {
+      executionCtx.logger.error(`Quiz with ID ${liveQuizId} has no blocks`)
+      return false
+    }
+
+    // check if the block that was closed is the last one of the quiz
+    const isLastBlock = quiz.blocks[quiz.blocks.length - 1]!.id === blockId
+    const block = quiz.blocks.find((b) => b.id === blockId)
+    if (!block) {
+      executionCtx.logger.error(
+        `No block found with ID ${blockId} in quiz with ID ${liveQuizId}`
+      )
+      return false
+    }
+    if (block.elements.length === 0) {
+      executionCtx.logger.error(
+        `Block with ID ${blockId} in quiz with ID ${liveQuizId} has no elements`
+      )
+      return false
+    }
+
+    if (block.elements.every((el) => el.liveQuizResponses.length === 0)) {
+      executionCtx.logger.info(
+        `No responses found for any element in block with ID ${blockId} in quiz with ID ${liveQuizId}`
+      )
+      return true
+    }
+
+    // results are aggregated based on db data, only update the leaderboard if this is the last block
+    if (isLastBlock && quiz.isGamificationEnabled) {
+      executionCtx.logger.info(
+        `Updating leaderboard in gamified live quiz with ID ${liveQuizId}`
+      )
+
+      await updateLiveQuizBlockResultsFromCache({
+        quizId: liveQuizId,
+        blockId,
+        prisma: globalCtx.prisma,
+        redisExec: globalCtx.redisExec,
+        redisAssessmentExec: globalCtx.redisAssessmentExec,
+        updateResults: false,
+        updateLeaderboards: true,
+      })
+    }
+
+    try {
+      // update the instance results based on the live quiz response entries
+      await globalCtx.prisma.liveQuiz.update({
+        where: { id: liveQuizId },
+        data: {
+          blocks: {
+            update: {
+              where: { id: blockId },
+              data: {
+                elements: {
+                  update: block.elements.map((instance) => ({
+                    where: { id: Number(instance.id) },
+                    // update the anonymous results for regular live quizzes and the normal results for assessment live quizzes
+                    data: {
+                      anonymousResults: quiz.isAssessmentEnabled
+                        ? undefined
+                        : aggregateLiveQuizResponses({
+                            responses: instance.liveQuizResponses,
+                            elementData: instance.elementData,
+                          }),
+                      results: quiz.isAssessmentEnabled
+                        ? aggregateLiveQuizResponses({
+                            responses: instance.liveQuizResponses,
+                            elementData: instance.elementData,
+                          })
+                        : undefined,
+                    },
+                  })),
+                },
+              },
+            },
+          },
+        },
+      })
+    } catch (error) {
+      executionCtx.logger.error(
+        `Error updating instance results for block with ID ${blockId} in quiz with ID ${liveQuizId} based on live quiz responses: ${error}`
+      )
+    }
+
+    try {
+      // remove all cache entries related to this block only (or the entire live quiz, if this was the last block)
+      await removeCacheEntriesBlock({
+        liveQuizId,
+        blockId,
+        block,
+        isLastBlock,
+        redis: globalCtx.redisAssessmentExec,
+      })
+    } catch (error) {
+      executionCtx.logger.error(
+        `Error removing cache entries for block with ID ${blockId} in quiz with ID ${liveQuizId}: ${error}`
+      )
+    }
+
+    executionCtx.logger.info(
+      `Successfully conducted final results update for instances in block with ID ${blockId} in quiz with ID ${liveQuizId}`
+    )
+
+    return true
+  }
 // #endregion
