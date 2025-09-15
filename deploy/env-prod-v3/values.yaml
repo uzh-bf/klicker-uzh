@@ -24,6 +24,25 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general
         pullPolicy: Always
+      resources:
+        requests:
+          cpu: 200m
+          memory: 200Mi
+        limits:
+          cpu: 500m
+          memory: 500Mi
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/component
+                      operator: In
+                      values:
+                        - hatchet-worker-general
+                topologyKey: kubernetes.io/hostname
 
     responseProcessor:
       replicaCount: 3
@@ -31,12 +50,58 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
         pullPolicy: Always
+      resources:
+        requests:
+          cpu: 300m
+          memory: 300Mi
+        limits:
+          cpu: 800m
+          memory: 800Mi
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/component
+                      operator: In
+                      values:
+                        - hatchet-worker-response-processor
+                topologyKey: kubernetes.io/hostname
+
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: hatchet-worker-response-processor
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: hatchet-worker-response-processor
 
 auth:
   replicaCount: 2
 
   autoscaling:
     enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - auth
+            topologyKey: kubernetes.io/hostname
 
   ingress:
     hosts:
@@ -78,6 +143,19 @@ frontendPWA:
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
 
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - frontend-pwa
+            topologyKey: kubernetes.io/hostname
+
   ingress:
     hosts:
       - host: pwa.klicker.uzh.ch
@@ -118,6 +196,19 @@ frontendManage:
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
 
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - frontend-manage
+            topologyKey: kubernetes.io/hostname
+
   ingress:
     hosts:
       - host: manage.klicker.uzh.ch
@@ -149,7 +240,7 @@ frontendManage:
       memory: 1000Mi
 
 frontendControl:
-  replicaCount: 1
+  replicaCount: 2
 
   autoscaling:
     enabled: false
@@ -157,6 +248,19 @@ frontendControl:
     maxReplicas: 6
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - frontend-control
+            topologyKey: kubernetes.io/hostname
 
   ingress:
     hosts:
@@ -197,6 +301,19 @@ backendGraphql:
     maxReplicas: 8
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - backend-graphql
+            topologyKey: kubernetes.io/hostname
 
   ingress:
     hosts:
@@ -299,6 +416,19 @@ responseApi:
   autoscaling:
     enabled: false
 
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - response-api
+            topologyKey: kubernetes.io/hostname
+
   ingress:
     hosts:
       - host: response-api.klicker.uzh.ch
@@ -315,8 +445,8 @@ responseApi:
 
   resources:
     requests:
-      cpu: 100m
-      memory: 100Mi
+      cpu: 200m
+      memory: 200Mi
     limits:
       cpu: 400m
       memory: 400Mi
@@ -332,8 +462,8 @@ assessment:
     priorityClassName: production-workload
 
     autoscaling:
-      enabled: false
-      minReplicas: 2
+      enabled: true
+      minReplicas: 3
       maxReplicas: 8
       targetCPUUtilizationPercentage: 70
       targetMemoryUtilizationPercentage: 80
@@ -341,6 +471,33 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment
       pullPolicy: Always
+
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/component
+                    operator: In
+                    values:
+                      - frontend-assessment
+              topologyKey: kubernetes.io/hostname
+
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: frontend-assessment
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: frontend-assessment
 
     ingress:
       hosts:
@@ -377,8 +534,8 @@ assessment:
     priorityClassName: production-workload
 
     autoscaling:
-      enabled: false
-      minReplicas: 2
+      enabled: true
+      minReplicas: 3
       maxReplicas: 6
       targetCPUUtilizationPercentage: 70
       targetMemoryUtilizationPercentage: 80
@@ -386,6 +543,33 @@ assessment:
     appManageSubdomain: manage
     appStudentSubdomain: assessment
     appControlSubdomain: control
+
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/component
+                    operator: In
+                    values:
+                      - backend-assessment
+              topologyKey: kubernetes.io/hostname
+
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: backend-assessment
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/component: backend-assessment
 
     ingress:
       hosts:
@@ -424,11 +608,24 @@ assessment:
     priorityClassName: production-workload
 
     autoscaling:
-      enabled: false
-      minReplicas: 2
+      enabled: true
+      minReplicas: 3
       maxReplicas: 6
       targetCPUUtilizationPercentage: 70
       targetMemoryUtilizationPercentage: 80
+
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/component
+                    operator: In
+                    values:
+                      - response-api-assessment
+              topologyKey: kubernetes.io/hostname
 
     ingress:
       hosts:
@@ -453,8 +650,8 @@ assessment:
 
     resources:
       requests:
-        cpu: 100m
-        memory: 100Mi
+        cpu: 200m
+        memory: 200Mi
       limits:
         cpu: 400m
         memory: 400Mi
