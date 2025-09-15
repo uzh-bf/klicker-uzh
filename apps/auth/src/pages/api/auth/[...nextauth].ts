@@ -18,6 +18,7 @@ import {
   JWTPayload,
   parseCookiesHeader,
   parseCsvHosts,
+  PrismaTransactionClient,
   reduceCatalyst,
   signJWT,
   verifyJWT,
@@ -165,13 +166,17 @@ export async function encode({ token, secret }: JWTEncodeParams) {
 
 // generateRandomString moved to @klicker-uzh/util
 
-async function autoAcceptInvitations(emails: string[], participantId?: string) {
+async function autoAcceptInvitations(
+  tx: PrismaTransactionClient,
+  emails: string[],
+  participantId?: string
+) {
   let matchingParticipantId: string | undefined = participantId
 
   try {
     if (!participantId) {
       // Find participant account for any of the provided emails
-      const participant = await prisma.participant.findFirst({
+      const participant = await tx.participant.findFirst({
         where: {
           email: {
             in: emails.map((email) => email.toLowerCase()),
@@ -188,7 +193,7 @@ async function autoAcceptInvitations(emails: string[], participantId?: string) {
     }
 
     // Find all pending invitations for any of the provided emails
-    const pendingInvitations = await prisma.participantInvitation.findMany({
+    const pendingInvitations = await tx.participantInvitation.findMany({
       where: {
         email: { in: emails.map((email) => email.toLowerCase()) },
         status: 'PENDING',
@@ -203,32 +208,30 @@ async function autoAcceptInvitations(emails: string[], participantId?: string) {
     let acceptedCount = 0
     for (const invitation of pendingInvitations) {
       try {
-        await prisma.$transaction(async (tx) => {
-          // Create or activate participation
-          await tx.participation.upsert({
-            where: {
-              courseId_participantId: {
-                courseId: invitation.courseId,
-                participantId: matchingParticipantId!,
-              },
-            },
-            create: {
+        // Create or activate participation
+        await tx.participation.upsert({
+          where: {
+            courseId_participantId: {
               courseId: invitation.courseId,
               participantId: matchingParticipantId!,
-              isActive: false,
             },
-            update: {},
-          })
+          },
+          create: {
+            courseId: invitation.courseId,
+            participantId: matchingParticipantId!,
+            isActive: false,
+          },
+          update: {},
+        })
 
-          // Mark invitation as accepted
-          await tx.participantInvitation.update({
-            where: { id: invitation.id },
-            data: {
-              status: 'ACCEPTED',
-              participantId,
-              acceptedAt: new Date(),
-            },
-          })
+        // Mark invitation as accepted
+        await tx.participantInvitation.update({
+          where: { id: invitation.id },
+          data: {
+            status: 'ACCEPTED',
+            participantId,
+            acceptedAt: new Date(),
+          },
         })
 
         acceptedCount++
@@ -293,6 +296,7 @@ async function createUserAffiliations(
 
 // Helper function to create participant affiliations
 async function createParticipantAffiliations(
+  tx: PrismaTransactionClient,
   participantId: string,
   affiliationIds: string[],
   affiliationEmails?: string[] // Make emails optional
@@ -310,7 +314,7 @@ async function createParticipantAffiliations(
       if (!provider) continue
 
       // upsert participant accounts for every affiliation
-      await prisma.participantAccount.upsert({
+      await tx.participantAccount.upsert({
         where: {
           participantId_ssoType: {
             participantId,
@@ -345,23 +349,129 @@ async function createParticipantAffiliations(
 
 // Enhanced participant authentication helper function
 async function createOrLinkParticipant(profile: ExtendedProfile) {
-  // Lookup existing account via ssoId (Edu-ID sub)
-  const existing = await prisma.participantAccount.findUnique({
-    where: { ssoId: profile.sub },
-    include: { participant: true },
-  })
+  const randomUsername = generateRandomString(10)
 
-  if (existing) {
-    // Update affiliations for existing participant
+  const participant = await prisma.$transaction(async (tx) => {
+    // Lookup existing account via ssoId (Edu-ID sub)
+    const existing = await tx.participantAccount.findUnique({
+      where: { ssoId: profile.sub },
+      include: { participant: true },
+    })
+
+    if (existing) {
+      // Update affiliations for existing participant
+      if (profile.swissEduIDLinkedAffiliationUniqueID) {
+        const participantAffiliations = await createParticipantAffiliations(
+          tx,
+          existing.participantId,
+          profile.swissEduIDLinkedAffiliationUniqueID,
+          profile.swissEduIDLinkedAffiliationMail // Pass undefined if not available
+        )
+      }
+
+      // auto-accept invitations for existing users
+      try {
+        // Extract all relevant emails for invitation checking
+        const allEmails = collectAllEmails(
+          profile.email,
+          profile.swissEduIDLinkedAffiliationMail
+        )
+
+        const acceptedCount = await autoAcceptInvitations(
+          tx,
+          allEmails,
+          existing.participantId
+        )
+        console.log(
+          `Auto-accepted ${acceptedCount} invitations for existing user with emails:`,
+          allEmails
+        )
+      } catch (error) {
+        console.error(
+          'Error auto-accepting invitations for existing user:',
+          error
+        )
+      }
+
+      await tx.participant.update({
+        where: { id: existing.participantId },
+        data: { lastLoginAt: new Date() },
+      })
+
+      return existing.participant
+    }
+
+    // Check for existing participant by any affiliation (including primary email)
+    let participant: any = null
+    if (profile.email) {
+      // Try to find by primary email first
+      participant = await tx.participant.findUnique({
+        where: {
+          email_isSSOAccount: {
+            email: profile.email.toLowerCase(),
+            isSSOAccount: true,
+          },
+        },
+      })
+
+      // If not found by primary email, check affiliations
+      if (!participant) {
+        const affiliatedAccount = await tx.participantAccount.findFirst({
+          where: {
+            type: 'affiliation',
+            ssoId: profile.email.toLowerCase(),
+            isVerified: true,
+          },
+          include: { participant: true },
+        })
+
+        if (affiliatedAccount) {
+          participant = affiliatedAccount.participant
+        }
+      }
+    }
+
+    // Create new participant if none exists
+    if (!participant) {
+      participant = await tx.participant.create({
+        data: {
+          username: randomUsername,
+          email: profile.email?.toLowerCase(),
+          password: await bcrypt.hash(
+            crypto.randomBytes(32).toString('hex'),
+            10
+          ),
+          isEmailValid: true, // Edu-ID emails are pre-validated
+          isSSOAccount: true,
+          lastLoginAt: new Date(),
+        },
+      })
+    }
+
+    // Create enhanced ParticipantAccount link
+    await tx.participantAccount.create({
+      data: {
+        ssoType: 'EDUID',
+        ssoId: profile.sub as string,
+        ssoEmail: profile.email?.toLowerCase(), // Store primary email
+        participant: { connect: { id: participant.id } },
+        type: 'sso',
+        isVerified: true, // SSO accounts are pre-verified
+        isPrimary: true, // SSO accounts are not necessarily primary
+      },
+    })
+
+    // Add affiliations for participant
     if (profile.swissEduIDLinkedAffiliationUniqueID) {
-      const participantAffiliations = await createParticipantAffiliations(
-        existing.participantId,
+      await createParticipantAffiliations(
+        tx,
+        participant.id,
         profile.swissEduIDLinkedAffiliationUniqueID,
-        profile.swissEduIDLinkedAffiliationMail // Pass undefined if not available
+        profile.swissEduIDLinkedAffiliationMail
       )
     }
 
-    // auto-accept invitations for existing users
+    // auto-accept invitations for newly created participants
     try {
       // Extract all relevant emails for invitation checking
       const allEmails = collectAllEmails(
@@ -370,114 +480,21 @@ async function createOrLinkParticipant(profile: ExtendedProfile) {
       )
 
       const acceptedCount = await autoAcceptInvitations(
+        tx,
         allEmails,
-        existing.participantId
+        participant.id
       )
       console.log(
-        `Auto-accepted ${acceptedCount} invitations for existing user with emails:`,
+        `Auto-accepted ${acceptedCount} invitations for new participant with emails:`,
         allEmails
       )
     } catch (error) {
       console.error(
-        'Error auto-accepting invitations for existing user:',
+        'Error auto-accepting invitations for new participant:',
         error
       )
     }
-
-    await prisma.participant.update({
-      where: { id: existing.participantId },
-      data: { lastLoginAt: new Date() },
-    })
-
-    return existing.participant
-  }
-
-  // Check for existing participant by any affiliation (including primary email)
-  let participant: any = null
-  if (profile.email) {
-    // Try to find by primary email first
-    participant = await prisma.participant.findUnique({
-      where: {
-        email_isSSOAccount: {
-          email: profile.email.toLowerCase(),
-          isSSOAccount: true,
-        },
-      },
-    })
-
-    // If not found by primary email, check affiliations
-    if (!participant) {
-      const affiliatedAccount = await prisma.participantAccount.findFirst({
-        where: {
-          type: 'affiliation',
-          ssoId: profile.email.toLowerCase(),
-          isVerified: true,
-        },
-        include: { participant: true },
-      })
-
-      if (affiliatedAccount) {
-        participant = affiliatedAccount.participant
-      }
-    }
-  }
-
-  // Create new participant if none exists
-  if (!participant) {
-    const username = generateRandomString(10)
-    participant = await prisma.participant.create({
-      data: {
-        username,
-        email: profile.email?.toLowerCase(),
-        password: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10),
-        isEmailValid: true, // Edu-ID emails are pre-validated
-        isSSOAccount: true,
-        lastLoginAt: new Date(),
-      },
-    })
-  }
-
-  // Create enhanced ParticipantAccount link
-  await prisma.participantAccount.create({
-    data: {
-      ssoType: 'EDUID',
-      ssoId: profile.sub as string,
-      ssoEmail: profile.email?.toLowerCase(), // Store primary email
-      participant: { connect: { id: participant.id } },
-      type: 'sso',
-      isVerified: true, // SSO accounts are pre-verified
-      isPrimary: true, // SSO accounts are not necessarily primary
-    },
   })
-
-  // Add affiliations for participant
-  if (profile.swissEduIDLinkedAffiliationUniqueID) {
-    await createParticipantAffiliations(
-      participant.id,
-      profile.swissEduIDLinkedAffiliationUniqueID,
-      profile.swissEduIDLinkedAffiliationMail
-    )
-  }
-
-  // auto-accept invitations for newly created participants
-  try {
-    // Extract all relevant emails for invitation checking
-    const allEmails = collectAllEmails(
-      profile.email,
-      profile.swissEduIDLinkedAffiliationMail
-    )
-
-    const acceptedCount = await autoAcceptInvitations(allEmails, participant.id)
-    console.log(
-      `Auto-accepted ${acceptedCount} invitations for new participant with emails:`,
-      allEmails
-    )
-  } catch (error) {
-    console.error(
-      'Error auto-accepting invitations for new participant:',
-      error
-    )
-  }
 
   return participant
 }
