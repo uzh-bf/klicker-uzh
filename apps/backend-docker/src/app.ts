@@ -20,6 +20,7 @@ declare namespace global {
 function prepareApp({
   prisma,
   redisExec,
+  redisAssessmentExec,
   pubSub,
   cache,
   emitter,
@@ -174,6 +175,7 @@ function prepareApp({
     context: enhanceContext({
       prisma,
       redisExec,
+      redisAssessmentExec,
       pubSub,
       emitter,
       hatchet,

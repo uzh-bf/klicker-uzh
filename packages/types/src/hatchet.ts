@@ -13,6 +13,7 @@ export interface HatchetHandlerGlobalContext {
   pubSub: PubSub<any>
   emitter: EventEmitter
   redisExec: Redis
+  redisAssessmentExec: Redis
   redisCache?: Redis
   prisma: PrismaClient
 }
