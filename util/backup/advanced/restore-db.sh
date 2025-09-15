@@ -195,6 +195,14 @@ else
     exit 1
 fi
 
+# Source checksum verification utility functions (optional)
+if [[ -f "${SCRIPT_DIR}/../lib/_checksum.sh" ]]; then
+    source "${SCRIPT_DIR}/../lib/_checksum.sh"
+else
+    echo "WARNING: Checksum utilities not found at ${SCRIPT_DIR}/../lib/_checksum.sh"
+    echo "Checksum verification will be skipped"
+fi
+
 # =============================================================================
 # SCRIPT CONFIGURATION
 # =============================================================================
@@ -334,6 +342,20 @@ restore_database() {
     fi
 
     log_info "🔑 Encryption key available, will decrypt dump automatically"
+
+    # Verify file integrity with checksum before decryption
+    if command -v verify_checksum &> /dev/null; then
+        log_info "🔍 Verifying file integrity with checksum..."
+        if verify_checksum "$actual_file" "" true; then
+            log_info "✅ File integrity verification passed"
+        else
+            log_warning "❌ File integrity verification failed"
+            log_warning "💡 Use --skip-checksum to bypass verification (not recommended)"
+            error_exit "File integrity check failed - backup may be corrupted"
+        fi
+    else
+        log_info "⚠️  Checksum verification not available (skipping)"
+    fi
 
     # Perform decryption with enhanced logging
     DUMP_FILE=$(decrypt_dump_if_needed "$DUMP_FILE")

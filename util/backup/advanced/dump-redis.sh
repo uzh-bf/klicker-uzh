@@ -321,6 +321,14 @@ echo "-------------------------------------"
 # Source the verification utility
 source "$(dirname "$0")/../lib/_verify-dump-file.sh"
 
+# Source the checksum utility
+if [[ -f "$(dirname "$0")/../lib/_checksum.sh" ]]; then
+    source "$(dirname "$0")/../lib/_checksum.sh"
+else
+    echo "WARNING: Checksum utilities not found at $(dirname "$0")/../lib/_checksum.sh"
+    echo "Checksums will not be generated for this backup"
+fi
+
 # Verify the dump file with minimum size of 1 byte for Redis dumps
 if ! verify_dump_file "$DUMP_FILE" 1; then
   error_exit "Redis dump file verification failed"
@@ -349,6 +357,18 @@ fi
 rm -f "$DUMP_FILE"
 DUMP_FILE="${DUMP_FILE}.gpg"
 echo "  ✅ Dump file encrypted successfully"
+
+# Generate checksum for encrypted file (for integrity verification)
+echo "  🔍 Generating integrity checksum..."
+if command -v generate_checksum &> /dev/null; then
+    if generate_checksum "$DUMP_FILE" >/dev/null; then
+        echo "  ✅ Checksum generated successfully"
+    else
+        echo "  ⚠️  Warning: Failed to generate checksum (backup still valid)"
+    fi
+else
+    echo "  ⚠️  Warning: Checksum generation not available (backup still valid)"
+fi
 
 # Update latest symlink
 if should_update_latest; then
