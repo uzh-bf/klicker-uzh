@@ -1,4 +1,5 @@
 import { hatchetClient } from '@klicker-uzh/hatchet'
+import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
@@ -9,7 +10,7 @@ const redis = new Redis({
   family: 4,
   host: process.env.REDIS_HOST,
   password: process.env.REDIS_PASS ?? '',
-  port: Number(process.env.REDIS_PORT) ?? 6379,
+  port: Number(process.env.REDIS_PORT ?? 6379),
   tls: process.env.REDIS_TLS ? {} : undefined,
 })
 
@@ -192,7 +193,8 @@ async function handleAddAssessmentResponse(
   try {
     correlationData = await verifyJWT(
       correlationKey,
-      process.env.APP_SECRET as string
+      process.env.APP_SECRET as string,
+      { issuer: process.env.APP_ORIGIN_ASSESSMENT_API }
     )
   } catch (err) {
     hatchetClient.events.push('create-audit-log-entry', {
@@ -228,14 +230,14 @@ async function handleAddAssessmentResponse(
     })
   }
 
-  // TODO: add verification mechanism that student did not set a regular participant cookie as their assessment cookie (-> issuer)
   // check if the assessment cookie is present and valid
   let user: JWTPayload | null = null
   try {
     user = parsedCookies['next-auth.participant-session-token']
       ? await verifyJWT(
           parsedCookies['next-auth.participant-session-token'],
-          process.env.APP_SECRET as string
+          process.env.APP_SECRET as string,
+          { issuer: process.env.APP_ORIGIN_AUTH }
         )
       : null
   } catch (err) {
@@ -247,7 +249,8 @@ async function handleAddAssessmentResponse(
     return sendJson(req, res, 401, { error: 'invalid_assessment_cookie' })
   }
 
-  const isAssessmentCookieValid = !!user && user.role === 'PARTICIPANT'
+  const isAssessmentCookieValid =
+    !!user && user.role === 'PARTICIPANT' && user.scope === UserLoginScope.EDUID
   if (!user || !user.sub || !isAssessmentCookieValid) {
     hatchetClient.events.push('create-audit-log-entry', {
       info: `[ERROR] [AddResponse Assessment] Missing or invalid assessment cookie: ${cookies} for response ${JSON.stringify(payload)}`,
