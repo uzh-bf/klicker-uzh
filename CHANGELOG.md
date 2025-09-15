@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.7](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.6...v3.4.0-alpha.7) (2025-09-15)
+
+
+### Bug Fixes
+
+* change api domain for assessment pwa ([b21c2a4](https://github.com/uzh-bf/klicker-uzh/commit/b21c2a46c7884164759c027b9b02587205eccd14))
+
+
+### Enhancements
+
+* distinguish between redis cache for regular and assessment live quizzes ([#4913](https://github.com/uzh-bf/klicker-uzh/issues/4913)) ([72e0d41](https://github.com/uzh-bf/klicker-uzh/commit/72e0d418a2ce4434be5bcf78820a473d27142896))
+
 ## [3.4.0-alpha.6](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.5...v3.4.0-alpha.6) (2025-09-15)
 
 
