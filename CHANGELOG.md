@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.8](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.7...v3.4.0-alpha.8) (2025-09-15)
+
+
+### Bug Fixes
+
+* remove conflicting uniqueness constraint on user account table ([1cb71d1](https://github.com/uzh-bf/klicker-uzh/commit/1cb71d142bb3f227b0c84c8fdfa5d0ef904aa98e))
+
 ## [3.4.0-alpha.7](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.6...v3.4.0-alpha.7) (2025-09-15)
 
 
