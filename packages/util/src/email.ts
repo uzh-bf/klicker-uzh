@@ -27,22 +27,58 @@ export function collapsedUzhVariant(email: string): string | null {
  * - add collapsed @uzh.ch variant for departmental addresses
  * - deduplicate
  */
+export const InvitationEmailMode = {
+  AffiliationsOnly: 'AffiliationsOnly',
+  ProfileAndAffiliations: 'ProfileAndAffiliations',
+} as const
+
+export type InvitationEmailMode =
+  (typeof InvitationEmailMode)[keyof typeof InvitationEmailMode]
+
+export const DEFAULT_INVITATION_EMAIL_MODE: InvitationEmailMode =
+  InvitationEmailMode.AffiliationsOnly
+
+export interface CollectedInvitationEmails {
+  profileEmails: string[]
+  affiliationEmails: string[]
+  allEmails: string[]
+}
+
+function addEmailToSet(target: Set<string>, email?: string | null) {
+  const normalized = normalizeEmail(email ?? undefined)
+  if (!normalized) return
+
+  target.add(normalized)
+
+  const collapsed = collapsedUzhVariant(normalized)
+  if (collapsed) target.add(collapsed)
+}
+
+export function collectInvitationEmails(
+  primaryEmail?: string,
+  affiliationEmails?: string[]
+): CollectedInvitationEmails {
+  const profileSet = new Set<string>()
+  const affiliationSet = new Set<string>()
+
+  addEmailToSet(profileSet, primaryEmail)
+
+  for (const email of affiliationEmails ?? []) {
+    addEmailToSet(affiliationSet, email)
+  }
+
+  const combined = new Set<string>([...profileSet, ...affiliationSet])
+
+  return {
+    profileEmails: Array.from(profileSet),
+    affiliationEmails: Array.from(affiliationSet),
+    allEmails: Array.from(combined),
+  }
+}
+
 export function collectAllEmails(
   primaryEmail?: string,
   affiliationEmails?: string[]
 ): string[] {
-  const unique = new Set<string>()
-  const inputs = [primaryEmail, ...(affiliationEmails ?? [])]
-
-  for (const input of inputs) {
-    const normalized = normalizeEmail(input)
-    if (!normalized) continue
-
-    unique.add(normalized)
-
-    const collapsed = collapsedUzhVariant(normalized)
-    if (collapsed) unique.add(collapsed)
-  }
-
-  return Array.from(unique)
+  return collectInvitationEmails(primaryEmail, affiliationEmails).allEmails
 }
