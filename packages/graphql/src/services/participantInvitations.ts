@@ -1,7 +1,13 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { CourseAuthType, InvitationStatus } from '@klicker-uzh/prisma/client'
+import type { InvitationEmailMode } from '@klicker-uzh/util'
+import {
+  DEFAULT_INVITATION_EMAIL_MODE,
+  InvitationEmailMode as InvitationEmailModeValue,
+  normalizeEmail,
+  resolveInvitationEmailMode,
+} from '@klicker-uzh/util'
 import * as R from 'remeda'
-import * as z from 'zod'
 
 export interface InvitationResult {
   email: string
@@ -24,11 +30,23 @@ export interface CreateInvitationsResponse {
  * Creates participant invitations and automatically accepts them for existing verified users
  * Only uses ParticipantAccount SSO IDs for matching (not participant.email which is unvalidated)
  */
+export interface CreateInvitationsOptions {
+  emailMode?: InvitationEmailMode
+}
+
 export async function createParticipantInvitations(
   courseId: string,
-  emails: string[]
+  emails: string[],
+  options: CreateInvitationsOptions = {}
 ): Promise<CreateInvitationsResponse> {
   const results: InvitationResult[] = []
+
+  const emailMode =
+    options.emailMode ??
+    resolveInvitationEmailMode(
+      process.env.PARTICIPANT_INVITATION_EMAIL_MODE ??
+        DEFAULT_INVITATION_EMAIL_MODE
+    )
 
   // Validate course exists and has SSO enabled
   const course = await prisma.course.findUnique({
@@ -47,10 +65,9 @@ export async function createParticipantInvitations(
 
   // Process all emails
   for (const rawEmail of emails) {
-    const email = rawEmail.toLowerCase().trim()
+    const normalizedEmail = normalizeEmail(rawEmail)
 
-    // Validate email format
-    if (!z.string().email().safeParse(email).success) {
+    if (!normalizedEmail) {
       results.push({
         email: rawEmail,
         status: 'error',
@@ -64,7 +81,7 @@ export async function createParticipantInvitations(
       const existingInvitation = await prisma.participantInvitation.findUnique({
         where: {
           email_courseId: {
-            email,
+            email: normalizedEmail,
             courseId,
           },
         },
@@ -72,7 +89,7 @@ export async function createParticipantInvitations(
 
       if (existingInvitation) {
         results.push({
-          email,
+          email: normalizedEmail,
           status: 'duplicate',
           invitationId: existingInvitation.id,
         })
@@ -82,8 +99,11 @@ export async function createParticipantInvitations(
       // Check for existing verified ParticipantAccount with matching email
       const participantAccount = await prisma.participantAccount.findFirst({
         where: {
-          ssoEmail: email,
+          ssoEmail: normalizedEmail,
           isVerified: true,
+          ...(emailMode === InvitationEmailModeValue.AffiliationsOnly
+            ? { type: 'affiliation' }
+            : {}),
         },
         include: {
           participant: true,
@@ -93,13 +113,13 @@ export async function createParticipantInvitations(
       if (participantAccount?.participant) {
         // Auto-accept invitation for existing verified user
         const result = await autoAcceptInvitation(
-          email,
+          normalizedEmail,
           courseId,
           participantAccount.participant.id
         )
 
         results.push({
-          email,
+          email: normalizedEmail,
           status: 'auto_accepted',
           invitationId: result.invitationId,
           participantId: participantAccount.participant.id,
@@ -108,21 +128,21 @@ export async function createParticipantInvitations(
         // Create pending invitation
         const invitation = await prisma.participantInvitation.create({
           data: {
-            email,
+            email: normalizedEmail,
             courseId,
             status: InvitationStatus.PENDING,
           },
         })
 
         results.push({
-          email,
+          email: normalizedEmail,
           status: 'created',
           invitationId: invitation.id,
         })
       }
     } catch (error: any) {
       results.push({
-        email,
+        email: normalizedEmail ?? rawEmail,
         status: 'error',
         error: error.message,
       })
