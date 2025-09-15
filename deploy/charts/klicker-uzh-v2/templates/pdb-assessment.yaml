@@ -1,0 +1,44 @@
+# Assessment Frontend PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "chart.fullname" . }}-frontend-assessment
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend-assessment
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: frontend-assessment
+---
+# Assessment Backend GraphQL PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "chart.fullname" . }}-backend-assessment
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend-assessment
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend-assessment
+---
+# Assessment Response API PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "chart.fullname" . }}-response-api-assessment
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: response-api-assessment
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: response-api-assessment

@@ -78,7 +78,7 @@ if [ "$PLATFORM" = "mac" ]; then
 fi
 
 # start postgres, redis, proxy, hatchet
-docker compose up --build -d postgres redis_exec redis_cache "$PROXY" hatchet || {
+docker compose up --build -d postgres redis_exec redis_assessment redis_cache "$PROXY" hatchet || {
 	echo "Failed to start docker compose services" >&2
 	exit 1
 }
@@ -100,12 +100,20 @@ else
     echo "Using local hatchet token script"
     ./util/_create_hatchet_token.sh
 
-		# reset prisma database after tokens are created
+		# prepare prisma database after tokens are created
 		echo "Preparing Prisma database (pnpm run prisma:setup)"
-		pnpm run prisma:setup || {
-				echo "Prisma setup failed" >&2
-				exit 1
-		}
+		# prisma:setup may prompt for a destructive reset; if the user declines,
+		# it exits non-zero. Treat that as "keep existing data" and continue.
+		if pnpm run prisma:setup; then
+			:
+		else
+			SETUP_STATUS=$?
+			echo "Prisma setup exited with status $SETUP_STATUS."
+			echo "Assuming reset/seed were declined; preserving existing data and continuing."
+			echo "Applying schema without reset (pnpm run --filter @klicker-uzh/prisma prisma:push)"
+			# Try a non-destructive push to keep the schema in sync; do not fail the script if this also fails.
+			pnpm run --filter @klicker-uzh/prisma prisma:push || echo "Prisma push failed; you may need to run migrations manually."
+		fi
 fi
 
 docker compose logs -f

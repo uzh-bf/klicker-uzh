@@ -4,6 +4,12 @@ CREATE TYPE "public"."CourseAuthType" AS ENUM ('SSO', 'PIN');
 -- AlterTable
 ALTER TABLE "public"."Course" ADD COLUMN     "authType" "public"."CourseAuthType" NOT NULL DEFAULT 'PIN';
 
+-- Update existing courses to have no pinCode if assessment mode is enabled
+UPDATE "public"."Course" SET "pinCode" = NULL WHERE "isAssessmentEnabled" = true;
+
+-- Update existing courses to have SSO authType if assessment mode is enabled
+UPDATE "public"."Course" SET "authType" = 'SSO' WHERE "isAssessmentEnabled" = true;
+
 -- Enforce pinCode based on authType
 ALTER TABLE "public"."Course"
 ADD CONSTRAINT "Course_pin_required_when_pin_auth"
