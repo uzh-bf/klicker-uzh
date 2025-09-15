@@ -61,6 +61,7 @@ function Header({
   const showProfileSetup =
     participant &&
     participant.role === UserRole.Participant &&
+    !process.env.NEXT_PUBLIC_IS_ASSESSMENT &&
     (!participant?.avatar || !participant?.email)
 
   return (
@@ -141,7 +142,11 @@ function Header({
             <>
               <AvatarWithLevel
                 avatar={participant?.avatar}
-                level={participant?.level}
+                level={
+                  !process.env.NEXT_PUBLIC_IS_ASSESSMENT
+                    ? participant?.level
+                    : undefined
+                }
               />
               {showProfileSetup && (
                 <FontAwesomeIcon

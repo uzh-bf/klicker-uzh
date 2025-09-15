@@ -110,8 +110,8 @@ export async function testInitialization(
   })
 
   const pubSub = createPubSub()
-  const redisExec = new Redis()
-  const redisAssessmentExec = new Redis()
+  const redisExec = new Redis({ host: '127.0.0.1', port: 6379 })
+  const redisAssessmentExec = new Redis({ host: '127.0.0.1', port: 6380 })
 
   const hatchetCtx = {
     hatchet,
@@ -276,9 +276,10 @@ export async function testInitialization(
     hatchet,
     tasks,
     emitter,
-    redisExec: vi.fn() as unknown as ContextWithUser['redisExec'],
+    // Provide actual Redis clients so cache operations (e.g., keys/unlink) work
+    redisExec: redisExec as unknown as ContextWithUser['redisExec'],
     redisAssessmentExec:
-      vi.fn() as unknown as ContextWithUser['redisAssessmentExec'],
+      redisAssessmentExec as unknown as ContextWithUser['redisAssessmentExec'],
     pubSub: {
       publish: vi.fn(),
       subscribe: vi.fn().mockReturnValue(new Repeater(() => {})),
