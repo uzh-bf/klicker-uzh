@@ -86,6 +86,13 @@ services:
     networks:
       - klicker
 
+  redis_assessment:
+    image: docker.io/library/redis:7
+    ports:
+      - 6380:6379
+    networks:
+      - klicker
+
 networks:
   klicker:
     driver: bridge
