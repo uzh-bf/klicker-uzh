@@ -671,7 +671,7 @@ decrypt_dump_if_needed() {
     # Attempt decryption with error capture
     local gpg_exit_code=0
     if ! gpg --batch --yes --passphrase "$BACKUP_ENCRYPTION_KEY" \
-            --decrypt "$actual_file" > "$temp_dump" 2>"$gpg_error_file"; then
+            --cipher-algo AES256 --decrypt "$actual_file" > "$temp_dump" 2>"$gpg_error_file"; then
         gpg_exit_code=$?
         
         # Secure cleanup on failure

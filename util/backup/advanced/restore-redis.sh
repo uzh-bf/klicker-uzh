@@ -481,7 +481,10 @@ restore_redis() {
     fi
     
     # Test connectivity
-    if ! $REDIS_CLI_CMD ping > /dev/null 2>&1; then
+   if [[ "${DEBUG_RESTORE:-}" == "true" ]]; then
+        log_info "Testing Redis connection with: ${REDIS_CLI_CMD} ping"
+   fi
+   if ! $REDIS_CLI_CMD ping > /dev/null 2>&1; then
         error_exit "Redis connectivity test failed. Please check your Redis configuration."
     fi
     log_success "Redis connectivity confirmed"

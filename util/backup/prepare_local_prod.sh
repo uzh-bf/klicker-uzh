@@ -228,34 +228,30 @@ load_encryption_key_if_needed() {
         if [[ "$actual_redis_assessment_dump" == *.gpg ]]; then
             log "   📦 Assessment Redis: $(basename "$actual_redis_assessment_dump") (encrypted)"
         fi
-        log "   Attempting to load BACKUP_ENCRYPTION_KEY from Doppler..."
-
-        # Try to get the key from Doppler production config using _run_with_doppler.sh
-        if [[ -f "${REPO_ROOT}/util/_run_with_doppler.sh" ]]; then
-            log "   Fetching encryption key from Doppler production config..."
-
-            # Use _run_with_doppler.sh to handle external drive authentication
-            # Note: CONFIG=prd is scoped to this command only and won't affect subsequent calls
-            if BACKUP_ENCRYPTION_KEY=$(CONFIG=prd "${REPO_ROOT}/util/_run_with_doppler.sh" doppler secrets get BACKUP_ENCRYPTION_KEY --plain 2>/dev/null); then
-                if [[ -n "$BACKUP_ENCRYPTION_KEY" ]]; then
-                    export BACKUP_ENCRYPTION_KEY
-                    log "✅ Successfully loaded BACKUP_ENCRYPTION_KEY from Doppler"
-                    # Ensure CONFIG is not set in the environment for subsequent operations
-                    unset CONFIG 2>/dev/null || true
-                    return 0
-                else
-                    log "⚠️  BACKUP_ENCRYPTION_KEY is empty in Doppler production config"
-                fi
-            else
-                log "⚠️  Failed to fetch BACKUP_ENCRYPTION_KEY from Doppler (check Doppler setup)"
-            fi
-            # Ensure CONFIG is not set in the environment
-            unset CONFIG 2>/dev/null || true
-        else
-            log "⚠️  Doppler helper script not found - cannot auto-load encryption key"
+        log "   ✅ Encrypted dumps detected - will use Doppler for decryption"
+        log "   📋 Restore scripts will be executed with Doppler environment"
+        
+        # Mark that we need Doppler for restore operations
+        USE_DOPPLER_FOR_RESTORE=true
+        export USE_DOPPLER_FOR_RESTORE
+        
+        # Check if Doppler is available
+        if ! command -v doppler &> /dev/null; then
+            log "❌ Doppler command not found but needed for encrypted dumps"
+            log "💡 Install Doppler CLI: https://docs.doppler.com/docs/install-cli"
+            error_exit "Doppler CLI required for encrypted backup restoration"
         fi
+        
+        # Check if _run_with_doppler.sh helper is available
+        if [[ ! -f "${REPO_ROOT}/util/_run_with_doppler.sh" ]]; then
+            log "❌ Doppler helper script not found: ${REPO_ROOT}/util/_run_with_doppler.sh"
+            error_exit "Required Doppler helper script missing"
+        fi
+        
+        log "✅ Doppler setup verified - ready for encrypted restore"
+        return 0
 
-        # If we couldn't get the key, show helpful error message
+        # If we couldn't set up Doppler, show helpful error message
         log ""
         log "❌ Encrypted dumps found but no BACKUP_ENCRYPTION_KEY available"
         log ""
@@ -383,7 +379,14 @@ log "Loading Postgres dump with enhanced logging..."
 export DUMP_FILE="$DB_DUMP"
 
 # Execute database restore with clear feedback about any issues
-if "${SCRIPT_DIR}/advanced/restore-db.sh" dev; then
+if [[ "${USE_DOPPLER_FOR_RESTORE:-}" == "true" ]]; then
+    log "🔐 Running database restore with Doppler environment for encrypted dump"
+    restore_command="CONFIG=prd \"${REPO_ROOT}/util/_run_with_doppler.sh\" \"${SCRIPT_DIR}/advanced/restore-db.sh\" dev"
+else
+    restore_command="\"${SCRIPT_DIR}/advanced/restore-db.sh\" dev"
+fi
+
+if eval "$restore_command"; then
     log_success "Postgres dump restored successfully"
 else
     restore_exit_code=$?
@@ -448,7 +451,13 @@ log_step "Step 5: Restoring Main Redis Dump"
 log "Loading main Redis dump with enhanced logging..."
 export DUMP_FILE="$REDIS_DUMP"
 
-if "${SCRIPT_DIR}/advanced/restore-redis.sh" dev main; then
+if [[ "$USE_DOPPLER_FOR_RESTORE" == "true" ]]; then
+    restore_command="CONFIG=prd \"${REPO_ROOT}/util/_run_with_doppler.sh\" \"${SCRIPT_DIR}/advanced/restore-redis.sh\" dev main"
+else
+    restore_command="\"${SCRIPT_DIR}/advanced/restore-redis.sh\" dev main"
+fi
+
+if eval "$restore_command"; then
     log_success "Main Redis dump restored successfully"
 else
     log "ERROR: Failed to load main Redis dump"
@@ -473,7 +482,13 @@ if [[ -n "$REDIS_ASSESSMENT_DUMP" ]]; then
     log "Loading assessment Redis dump with enhanced logging..."
     export DUMP_FILE="$REDIS_ASSESSMENT_DUMP"
 
-    if "${SCRIPT_DIR}/advanced/restore-redis.sh" dev assessment; then
+    if [[ "$USE_DOPPLER_FOR_RESTORE" == "true" ]]; then
+        restore_command="CONFIG=prd \"${REPO_ROOT}/util/_run_with_doppler.sh\" \"${SCRIPT_DIR}/advanced/restore-redis.sh\" dev assessment"
+    else
+        restore_command="\"${SCRIPT_DIR}/advanced/restore-redis.sh\" dev assessment"
+    fi
+
+    if eval "$restore_command"; then
         log_success "Assessment Redis dump restored successfully"
     else
         log_warning "Failed to load assessment Redis dump (non-fatal)"

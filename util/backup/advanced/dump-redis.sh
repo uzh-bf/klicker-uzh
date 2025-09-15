@@ -370,6 +370,24 @@ else
     echo "  ⚠️  Warning: Checksum generation not available (backup still valid)"
 fi
 
+# Source the backup verification utility
+if [[ -f "$(dirname "$0")/../lib/_backup-verify.sh" ]]; then
+    source "$(dirname "$0")/../lib/_backup-verify.sh"
+    
+    # Immediately verify the backup can be decrypted
+    echo "  🔍 Verifying backup can be decrypted..."
+    if verify_backup_decrypt "$DUMP_FILE" 1048576 "$BACKUP_ENCRYPTION_KEY"; then
+        echo "  ✅ Backup verification successful - can be decrypted"
+    else
+        echo "  ❌ ERROR: Backup verification failed - cannot decrypt!"
+        echo "  🗑️  Removing corrupted backup file..."
+        rm -f "$DUMP_FILE"
+        error_exit "Backup verification failed - backup was corrupted and removed"
+    fi
+else
+    echo "  ⚠️  Warning: Backup verification not available (skipping decrypt test)"
+fi
+
 # Update latest symlink
 if should_update_latest; then
     echo "  🔗 Updating latest symlink..."
