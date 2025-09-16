@@ -73,8 +73,8 @@ function EmbeddingModal({
             value={language}
             onChange={(newValue) => setLanguage(newValue as LocaleType)}
             items={[
-              { label: t('shared.generic.english'), value: 'en' },
-              { label: t('shared.generic.german'), value: 'de' },
+              { label: t('shared.generic.en'), value: 'en' },
+              { label: t('shared.generic.de'), value: 'de' },
             ]}
           />
         </div>

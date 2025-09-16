@@ -63,12 +63,12 @@ function LanguageSetting({ user }: LanguageSettingProps) {
         }}
         items={[
           {
-            label: t('shared.generic.english'),
+            label: t('shared.generic.en'),
             value: 'en',
             data: { cy: 'language-en' },
           },
           {
-            label: t('shared.generic.german'),
+            label: t('shared.generic.de'),
             value: 'de',
             data: { cy: 'language-de' },
           },

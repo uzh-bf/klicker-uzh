@@ -163,8 +163,8 @@ function SuspendedFirstLoginModal({
                   labelType="large"
                   name="locale"
                   items={[
-                    { label: t('shared.generic.english'), value: 'en' },
-                    { label: t('shared.generic.german'), value: 'de' },
+                    { label: t('shared.generic.en'), value: 'en' },
+                    { label: t('shared.generic.de'), value: 'de' },
                   ]}
                   className={{
                     root: 'w-full md:w-max',
