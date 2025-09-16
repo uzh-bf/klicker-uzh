@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.13](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.12...v3.4.0-alpha.13) (2025-09-16)
+
+
+### Bug Fixes
+
+* **deploy:** add http to hatchet prod service url ([a4317e8](https://github.com/uzh-bf/klicker-uzh/commit/a4317e8a8fe1f7335cfd45413521240c8709ba47))
+* **deploy:** make sure general worker gets the DB url ([af0b2fe](https://github.com/uzh-bf/klicker-uzh/commit/af0b2fe29311ab18a79ce595cb6d7eaabbe59e5c))
+
 ## [3.4.0-alpha.12](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.11...v3.4.0-alpha.12) (2025-09-15)
 
 
