@@ -261,6 +261,7 @@ Cypress.Commands.add(
   })
 )
 
+// TODO: before using this function validate its correctness -> not used yet
 Cypress.Commands.add(
   'loginAssessmentStudent',
   loginFactory(
