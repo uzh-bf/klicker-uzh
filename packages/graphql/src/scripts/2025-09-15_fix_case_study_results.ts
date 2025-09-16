@@ -21,8 +21,8 @@ import { createHash } from 'node:crypto'
 // (required due to a constraint introduced on the pin field and the assessment setting of the live quiz)
 // AFTER DB MIGRATION: Re-run this script with the setting set to "ALPHANUMERIC" to set alphanumeric pins for all assessment quizzes
 
-const blockId = 42283
-const liveQuizId = '7f199ead-00ba-4d08-ad9a-c0c7a5c0211c'
+const blockId = 0
+const liveQuizId = ''
 
 function aggregateLiveQuizResponses({
   responses,
@@ -122,7 +122,7 @@ function aggregateLiveQuizResponses({
         if (!('selection' in submission.response)) return acc
 
         submission.response.selection
-          .filter((ix) => ix !== -1)
+          .filter((ix) => ix !== -1 && typeof ix !== 'undefined' && ix !== null)
           .forEach((ix) => {
             if (ix in acc.selections) {
               acc.selections[ix] = (acc.selections[ix] ?? 0) + 1
@@ -154,6 +154,7 @@ function aggregateLiveQuizResponses({
                         criterionId
                       ] === 'undefined'
                     ) {
+                      console.log('INVALID RESPONSE:', submission.response)
                       return acc
                     }
 
@@ -204,12 +205,7 @@ async function run() {
 
   // verify that the live quiz is still running or ended (-> results of aborted live quizzes should not be updated)
   const quiz = await prisma.liveQuiz.findUnique({
-    where: {
-      id: liveQuizId,
-      status: {
-        in: ['PUBLISHED', 'ENDED'],
-      },
-    },
+    where: { id: liveQuizId, status: { in: ['PUBLISHED', 'ENDED'] } },
     include: {
       blocks: {
         include: { elements: { include: { liveQuizResponses: true } } },
