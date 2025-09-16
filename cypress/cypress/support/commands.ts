@@ -121,11 +121,12 @@ const loginFactory = (
   tokenData: {
     email: string
     sub: string
-    role: 'ADMIN' | 'USER'
-    scope: 'ACCOUNT_OWNER'
-    catalystInstitutional: boolean
-    catalystIndividual: boolean
+    role: 'ADMIN' | 'USER' | 'PARTICIPANT'
+    scope: 'ACCOUNT_OWNER' | 'EDUID'
+    catalystInstitutional?: boolean
+    catalystIndividual?: boolean
   },
+  cookieName: string = 'next-auth.session-token',
   redirectUrl?: string
 ) => {
   return () => {
@@ -147,7 +148,7 @@ const loginFactory = (
         .setIssuer(process.env.APP_ORIGIN_AUTH)
         .sign(secret)
 
-      cy.setCookie('next-auth.session-token', token, {
+      cy.setCookie(cookieName, token, {
         domain: '127.0.0.1',
         path: '/',
         httpOnly: true,
@@ -183,6 +184,7 @@ Cypress.Commands.add(
       catalystInstitutional: true,
       catalystIndividual: true,
     },
+    undefined,
     Cypress.env('URL_CONTROL')
   )
 )
@@ -257,6 +259,20 @@ Cypress.Commands.add(
     catalystInstitutional: true,
     catalystIndividual: false,
   })
+)
+
+Cypress.Commands.add(
+  'loginAssessmentStudent',
+  loginFactory(
+    {
+      email: 'testuser1@test.uzh.ch',
+      sub: '6f45065c-667f-4259-818c-c6f6b477eb48',
+      role: 'PARTICIPANT',
+      scope: 'EDUID',
+    },
+    'next-auth.participant-session-token',
+    Cypress.env('URL_ASSESSMENT')
+  )
 )
 
 Cypress.Commands.add('logoutUser', () => {
@@ -870,6 +886,8 @@ interface CreateLiveQuizArgs {
   displayName: string
   courseName?: string
   multiplier?: string
+  gamificationWithoutCourse?: boolean
+  pinProtectionWithoutCourse?: boolean
   blocks: { elements: string[] }[]
 }
 
@@ -880,6 +898,8 @@ Cypress.Commands.add(
     displayName,
     courseName,
     multiplier,
+    gamificationWithoutCourse,
+    pinProtectionWithoutCourse,
     blocks,
   }: CreateLiveQuizArgs) => {
     cy.get('[data-cy="create-live-quiz"]').click()
@@ -905,6 +925,13 @@ Cypress.Commands.add(
         cy.get(`[data-cy="select-multiplier-${multiplier}"]`).realClick()
         cy.get('[data-cy="select-multiplier"]').contains(multiplier)
       }
+    }
+
+    if (gamificationWithoutCourse) {
+      cy.get('[data-cy="set-quiz-gamification"]').click()
+    }
+    if (pinProtectionWithoutCourse) {
+      cy.get('[data-cy="set-quiz-pin-protection"]').click()
     }
 
     cy.get('[data-cy="next-or-submit"]').click()
@@ -1742,6 +1769,7 @@ declare global {
       loginInstitutionalCatalyst4(): Chainable<void>
       logoutUser(): Chainable<void>
       loginStudent(): Chainable<void>
+      loginAssessmentStudent(): Chainable<void>
       loginStudentPassword({ username }: { username: string }): Chainable<void>
       createAnswerCollection({
         name,
@@ -1848,6 +1876,8 @@ declare global {
         displayName,
         courseName,
         multiplier,
+        gamificationWithoutCourse,
+        pinProtectionWithoutCourse,
         blocks,
       }: CreateLiveQuizArgs): Chainable<void>
       convertLiveQuizToTemplate({
