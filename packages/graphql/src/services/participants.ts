@@ -1,3 +1,4 @@
+import { Context as HatchetContext } from '@hatchet-dev/typescript-sdk/index.js'
 import * as DB from '@klicker-uzh/prisma/client'
 import { HatchetHandlers } from '@klicker-uzh/types'
 import { PrismaTransactionClient } from '@klicker-uzh/util'
@@ -7,7 +8,6 @@ import isoWeek from 'dayjs/plugin/isoWeek.js'
 import { prop, sortBy } from 'remeda'
 import isEmail from 'validator/lib/isEmail.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { sendTeamsNotification } from './notifications.js'
 
 dayjs.extend(isoWeek)
 
@@ -922,38 +922,53 @@ export async function upsertDailyTimelineEntry({
 
 // cronjob function to aggregate daily timeline entries into weekly ones once per day (for the ongoing and last week)
 export const handleUpdateWeeklyTimelineEntries: HatchetHandlers['handleUpdateWeeklyTimelineEntries'] =
-  async (_, globalCtx) => {
+  async (_, globalCtx, executionCtx) => {
+    executionCtx.logger.info(
+      `[INFO] [UpdateWeeklyTimelineEntries] Starting update of weekly timeline entries`
+    )
+
     // get all course ids
     const courses = await globalCtx.prisma.course.findMany({
-      select: {
-        id: true,
-      },
+      where: { endDate: { gt: new Date() } },
+      select: { id: true },
     })
 
     // iterate over all courses and update weekly timeline entries
     for (const course of courses) {
       await updateWeeklyTimelineEntriesCourse(
         { courseId: course.id },
-        globalCtx.prisma
+        globalCtx.prisma,
+        executionCtx
+      )
+
+      executionCtx.logger.info(
+        `[INFO] [UpdateWeeklyTimelineEntries] Successfully updated weekly timeline entries for course ${course.id}`
       )
     }
 
     // remove all daily timeline entries older than 2 weeks
-    await globalCtx.prisma.timelineEntry.deleteMany({
-      where: {
-        type: DB.TimelineEntryType.DAILY,
-        timestamp: {
-          lt: dayjs().utc().subtract(30, 'days').toDate(),
+    const deletedDailyEntries = await globalCtx.prisma.timelineEntry.deleteMany(
+      {
+        where: {
+          type: DB.TimelineEntryType.DAILY,
+          timestamp: {
+            lt: dayjs().utc().subtract(30, 'days').toDate(),
+          },
         },
-      },
-    })
+      }
+    )
+
+    executionCtx.logger.info(
+      `[INFO] [UpdateWeeklyTimelineEntries] Successfully removed ${deletedDailyEntries.count} daily timeline entries older than 30 days`
+    )
 
     return true
   }
 
 export async function updateWeeklyTimelineEntriesCourse(
   { courseId }: { courseId: string },
-  prisma: DB.PrismaClient
+  prisma: DB.PrismaClient,
+  executionCtx?: HatchetContext<unknown, {}>
 ) {
   // get start date of current week (monday) in UTC
   const startDateCurrentWeek = dayjs().utc().startOf('isoWeek').toDate()
@@ -984,6 +999,7 @@ export async function updateWeeklyTimelineEntriesCourse(
       },
     },
   })
+
   const courseTimelineCurrentWeek = await prisma.course.findUnique({
     where: { id: courseId },
     include: {
@@ -1007,10 +1023,9 @@ export async function updateWeeklyTimelineEntriesCourse(
 
   // if no course was found, return early
   if (!courseTimelineLastWeek || !courseTimelineCurrentWeek) {
-    await sendTeamsNotification({
-      scope: 'graphql/updateWeeklyTimelineEntriesCourse',
-      text: `COURSE NOT FOUND: The course with id ${courseId} could not be found in the database for the computation of weekly timeline entries.`,
-    })
+    executionCtx?.logger.info(
+      `[ERROR] [UpdateWeeklyTimelineEntries] Course with id ${courseId} not found`
+    )
 
     return false
   }
@@ -1064,10 +1079,9 @@ export async function updateWeeklyTimelineEntriesCourse(
       }
     })
 
-    await sendTeamsNotification({
-      scope: 'graphql/updateWeeklyTimelineEntriesCourse',
-      text: `Successfully updated ${updates.length} weekly timeline entries for course ${courseTimelineLastWeek.name} (${numUpdatesLastWeek} for last week with start date ${startDateLastWeek} and ${lastWeekDailys.length} daily entries, ${numUpdatesCurrentWeek} for the current week with start date ${startDateCurrentWeek} and ${currentWeekDailys.length} daily entries).`,
-    })
+    executionCtx?.logger.info(
+      `[INFO] [UpdateWeeklyTimelineEntries] Successfully updated ${updates.length} weekly timeline entries for course ${courseTimelineLastWeek.name} (${numUpdatesLastWeek} for last week with start date ${startDateLastWeek} and ${lastWeekDailys.length} daily entries, ${numUpdatesCurrentWeek} for the current week with start date ${startDateCurrentWeek} and ${currentWeekDailys.length} daily entries).`
+    )
   }
 
   return true

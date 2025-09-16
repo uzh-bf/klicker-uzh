@@ -190,7 +190,11 @@ async function createRandomGroup(
 }
 
 export const handleRunningRandomGroupAssignments: HatchetHandlers['handleRunningRandomGroupAssignments'] =
-  async (_, globalCtx) => {
+  async (_, globalCtx, executionCtx) => {
+    await executionCtx.logger.info(
+      '[INFO] [RunningRandomGroupAssignments] Starting to handle running random group assignments...'
+    )
+
     // fetch all courses with future group deadlines
     const courses = await globalCtx.prisma.course.findMany({
       where: {
@@ -203,11 +207,19 @@ export const handleRunningRandomGroupAssignments: HatchetHandlers['handleRunning
       },
     })
 
+    await executionCtx.logger.info(
+      `[INFO] [RunningRandomGroupAssignments] Found ${courses.length} courses with upcoming group deadlines`
+    )
+
     // filter the courses down to those, which contain more than 2 * preferredGroupSize participants in the pool
     const coursesToUpdate = courses.filter(
       (course) =>
         course.groupAssignmentPoolEntries.length >=
         2 * course.preferredGroupSize
+    )
+
+    await executionCtx.logger.info(
+      `[INFO] [RunningRandomGroupAssignments] Found ${coursesToUpdate.length} courses with enough participants in the pool`
     )
 
     // update the group assignments for all courses that have enough participants in the pool
@@ -257,20 +269,26 @@ export const handleRunningRandomGroupAssignments: HatchetHandlers['handleRunning
           })
         })
 
-        await sendTeamsNotification({
-          scope: 'hatchet/running-random-group-assignments',
-          text: `Successfully assigned new random groups for ${course.name} (id: ${course.id}; rolling assignment).`,
-        })
+        await executionCtx.logger.info(
+          `[INFO] [RunningRandomGroupAssignments] Successfully assigned ${groups.length} new random groups for ${course.name} (id: ${course.id}; rolling assignment).`
+        )
       } catch (e) {
-        console.error(e)
         await sendTeamsNotification({
           scope: 'hatchet/running-random-group-assignments',
-          text: `Failed to assign groups for course ${course.name} (id: ${course.id}; rolling assignment) with error: ${
+          text: `Failed to assign random groups for course ${course.name} (id: ${course.id}; rolling assignment) with error: ${
             e || 'missing'
           }`,
         })
+
+        await executionCtx.logger.error(
+          `[ERROR] [RunningRandomGroupAssignments] Failed to assign groups for course ${course.name} (id: ${course.id}; rolling assignment) with error: ${e || 'missing'}`
+        )
       }
     }
+
+    await executionCtx.logger.info(
+      `[INFO] [RunningRandomGroupAssignments] Finished handling running random group assignments.`
+    )
 
     return true
   }
@@ -334,7 +352,11 @@ async function resolveSingleParticipantGroups(
 }
 
 export const handleFinalRandomGroupAssignments: HatchetHandlers['handleFinalRandomGroupAssignments'] =
-  async (_, globalCtx) => {
+  async (_, globalCtx, executionCtx) => {
+    await executionCtx.logger.info(
+      '[INFO] [FinalRandomGroupAssignments] Starting final random group assignments...'
+    )
+
     // fetch all courses with past group deadlines
     const courses = await globalCtx.prisma.course.findMany({
       where: {
@@ -364,6 +386,10 @@ export const handleFinalRandomGroupAssignments: HatchetHandlers['handleFinalRand
       },
     })
 
+    await executionCtx.logger.info(
+      `[INFO] [FinalRandomGroupAssignments] Found ${courses.length} courses with past group deadlines`
+    )
+
     for (const course of courses) {
       try {
         // resolve all groups with a single participant and add them to the pool ids
@@ -375,10 +401,9 @@ export const handleFinalRandomGroupAssignments: HatchetHandlers['handleFinalRand
           globalCtx.emitter
         )
 
-        await sendTeamsNotification({
-          scope: 'hatchet/final-random-group-assignments',
-          text: `Resolved all single participant groups for course ${course.name} (id: ${course.id}).`,
-        })
+        await executionCtx.logger.info(
+          `[INFO] [FinalRandomGroupAssignments] Resolved all single participant groups for course ${course.name} (id: ${course.id}).`
+        )
 
         const poolParticipantIds =
           courseExtendedPool.groupAssignmentPoolEntries.map(
@@ -389,10 +414,12 @@ export const handleFinalRandomGroupAssignments: HatchetHandlers['handleFinalRand
         if (poolParticipantIds.length === 0) {
           await globalCtx.prisma.course.update({
             where: { id: courseId },
-            data: {
-              randomAssignmentFinalized: true,
-            },
+            data: { randomAssignmentFinalized: true },
           })
+
+          await executionCtx.logger.info(
+            `[INFO] [FinalRandomGroupAssignments] Finalized random assignment for course ${course.name} (id: ${course.id}) - no participants in pool.`
+          )
 
           continue
         }
@@ -423,10 +450,9 @@ export const handleFinalRandomGroupAssignments: HatchetHandlers['handleFinalRand
             html: emailHtml,
           })
 
-          await sendTeamsNotification({
-            scope: 'hatchet/final-random-group-assignments',
-            text: `Failure of automatic group assignment - single participant in pool for course ${course.name} (id ${course.id}). Sent E-Mail to course owner with id ${course.ownerId}.`,
-          })
+          await executionCtx.logger.info(
+            `[INFO] [FinalRandomGroupAssignments] Failure of automatic group assignment - single participant in pool for course ${course.name} (id ${course.id}). Sent E-Mail to course owner with id ${course.ownerId}.`
+          )
 
           // set random assignment as finalized on course - email should not be re-sent daily and moving the group deadline will set it to false again
           await globalCtx.prisma.course.update({
@@ -460,22 +486,21 @@ export const handleFinalRandomGroupAssignments: HatchetHandlers['handleFinalRand
           },
         })
 
-        await sendTeamsNotification({
-          scope: 'hatchet/final-random-group-assignments',
-          text: `Successfully completed final random group assignment for course ${course.name} (id ${course.id}) with ${groups.length} new groups.`,
-        })
+        await executionCtx.logger.info(
+          `[INFO] [FinalRandomGroupAssignments] Successfully completed final random group assignment for course ${course.name} (id ${course.id}) with ${groups.length} new groups.`
+        )
       } catch (e) {
-        console.error(e)
-        await sendTeamsNotification({
-          scope: 'hatchet/final-random-group-assignments',
-          text: `Failed to finalize random group assignments for course ${course.name} (id: ${course.id}) with error: ${
-            e || 'missing'
-          }`,
-        })
+        await executionCtx.logger.error(
+          `[ERROR] [FinalRandomGroupAssignments] Failed to finalize random group assignments for course ${course.name} (id: ${course.id}) with error: ${e || 'missing'}`
+        )
 
         continue
       }
     }
+
+    await executionCtx.logger.info(
+      `[INFO] [FinalRandomGroupAssignments] Complete final random group assignment for all courses with past group formation deadlines.`
+    )
 
     return true
   }
@@ -1104,9 +1129,14 @@ export async function manipulateGroupActivity(
 }
 
 export const handleUpdateGroupAverageScores: HatchetHandlers['handleUpdateGroupAverageScores'] =
-  async (_, globalCtx) => {
+  async (_, globalCtx, executionCtx) => {
+    await executionCtx.logger.info(
+      '[INFO] [UpdateGroupAverageScores] Updating average group scores for all participant groups in ongoing / future courses...'
+    )
+
     const groupsWithParticipants =
       await globalCtx.prisma.participantGroup.findMany({
+        where: { course: { endDate: { gt: new Date() } } },
         include: {
           participants: {
             include: {
@@ -1117,6 +1147,10 @@ export const handleUpdateGroupAverageScores: HatchetHandlers['handleUpdateGroupA
           },
         },
       })
+
+    await executionCtx.logger.info(
+      `[INFO] [UpdateGroupAverageScores] Found ${groupsWithParticipants.length} participant groups in ongoing or future courses`
+    )
 
     try {
       await Promise.all(
@@ -1167,8 +1201,15 @@ export const handleUpdateGroupAverageScores: HatchetHandlers['handleUpdateGroupA
         await fetch(process.env.HEARTBEAT_DAILY_GROUP_SCORES)
       }
     } catch (e) {
-      console.error(e)
+      await executionCtx.logger.error(
+        `[ERROR] [UpdateGroupAverageScores] Failed to update average group scores with error: ${e || 'missing'}`
+      )
+      return false
     }
+
+    await executionCtx.logger.info(
+      '[INFO] [UpdateGroupAverageScores] Successfully updated average group scores'
+    )
 
     return true
   }
