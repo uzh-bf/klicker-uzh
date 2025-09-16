@@ -173,8 +173,8 @@ function EvaluationFooter({
                 contentPosition="popper"
                 className={{ trigger: '-ml-3 w-20 border-slate-400 text-xl' }}
                 items={Object.values(LocaleType).map((language) => ({
-                  label: t(`shared.generic.${language}Flag`),
-                  shortLabel: t(`shared.generic.${language}FlagShort`),
+                  label: t(`shared.generic.${language}`),
+                  shortLabel: t(`shared.generic.${language}Short`),
                   value: language,
                 }))}
                 onChange={(language) => {
