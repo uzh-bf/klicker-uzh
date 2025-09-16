@@ -26,6 +26,8 @@ import {
 import { handleUpdateWeeklyTimelineEntries } from '../services/participants.js'
 import { handlePublishScheduledPracticeQuiz } from '../services/practiceQuizzes.js'
 
+const DRY_RUN = false
+
 // ! INFORMATION
 // The publication and completion workflows for all activity types has been migrated from cronjobs to a Hatchet-based approach.
 // -> This script adds scheduled hatchet tasks for all scheduled activities with an automatic publication date and all
@@ -94,15 +96,17 @@ async function run() {
     )
 
     try {
-      const scheduledTask = await tasks.publishScheduledLiveQuiz.schedule(
-        lq.availableFrom!,
-        { liveQuizId: lq.id }
-      )
-      const taskId = scheduledTask.metadata.id
-      await prisma.liveQuiz.update({
-        where: { id: lq.id },
-        data: { scheduledPublicationTaskId: taskId },
-      })
+      if (!DRY_RUN) {
+        const scheduledTask = await tasks.publishScheduledLiveQuiz.schedule(
+          lq.availableFrom!,
+          { liveQuizId: lq.id }
+        )
+        const taskId = scheduledTask.metadata.id
+        await prisma.liveQuiz.update({
+          where: { id: lq.id },
+          data: { scheduledPublicationTaskId: taskId },
+        })
+      }
     } catch (error) {
       console.error(
         `Failed to schedule hatchet task for live quiz ${lq.id}:`,
@@ -131,15 +135,17 @@ async function run() {
     )
 
     try {
-      const scheduledTask = await tasks.publishScheduledPracticeQuiz.schedule(
-        pq.availableFrom!,
-        { practiceQuizId: pq.id }
-      )
-      const taskId = scheduledTask.metadata.id
-      await prisma.practiceQuiz.update({
-        where: { id: pq.id },
-        data: { scheduledPublicationTaskId: taskId },
-      })
+      if (!DRY_RUN) {
+        const scheduledTask = await tasks.publishScheduledPracticeQuiz.schedule(
+          pq.availableFrom!,
+          { practiceQuizId: pq.id }
+        )
+        const taskId = scheduledTask.metadata.id
+        await prisma.practiceQuiz.update({
+          where: { id: pq.id },
+          data: { scheduledPublicationTaskId: taskId },
+        })
+      }
     } catch (error) {
       console.error(
         `Failed to schedule hatchet task for practice quiz ${pq.id}:`,
@@ -167,15 +173,18 @@ async function run() {
     )
 
     try {
-      const scheduledTask = await tasks.publishScheduledMicroLearning.schedule(
-        ml.scheduledStartAt,
-        { microLearningId: ml.id }
-      )
-      const taskId = scheduledTask.metadata.id
-      await prisma.microLearning.update({
-        where: { id: ml.id },
-        data: { scheduledPublicationTaskId: taskId },
-      })
+      if (!DRY_RUN) {
+        const scheduledTask =
+          await tasks.publishScheduledMicroLearning.schedule(
+            ml.scheduledStartAt,
+            { microLearningId: ml.id }
+          )
+        const taskId = scheduledTask.metadata.id
+        await prisma.microLearning.update({
+          where: { id: ml.id },
+          data: { scheduledPublicationTaskId: taskId },
+        })
+      }
     } catch (error) {
       console.error(
         `Failed to schedule hatchet task for microlearning ${ml.id}:`,
@@ -202,15 +211,17 @@ async function run() {
     )
 
     try {
-      const scheduledTask = await tasks.endExpiredMicroLearning.schedule(
-        ml.scheduledEndAt,
-        { microLearningId: ml.id }
-      )
-      const taskId = scheduledTask.metadata.id
-      await prisma.microLearning.update({
-        where: { id: ml.id },
-        data: { scheduledCompletionTaskId: taskId },
-      })
+      if (!DRY_RUN) {
+        const scheduledTask = await tasks.endExpiredMicroLearning.schedule(
+          ml.scheduledEndAt,
+          { microLearningId: ml.id }
+        )
+        const taskId = scheduledTask.metadata.id
+        await prisma.microLearning.update({
+          where: { id: ml.id },
+          data: { scheduledCompletionTaskId: taskId },
+        })
+      }
     } catch (error) {
       console.error(
         `Failed to schedule hatchet task for microlearning ${ml.id}:`,
@@ -238,15 +249,18 @@ async function run() {
     )
 
     try {
-      const scheduledTask = await tasks.publishScheduledGroupActivity.schedule(
-        ga.scheduledStartAt,
-        { groupActivityId: ga.id }
-      )
-      const taskId = scheduledTask.metadata.id
-      await prisma.groupActivity.update({
-        where: { id: ga.id },
-        data: { scheduledPublicationTaskId: taskId },
-      })
+      if (!DRY_RUN) {
+        const scheduledTask =
+          await tasks.publishScheduledGroupActivity.schedule(
+            ga.scheduledStartAt,
+            { groupActivityId: ga.id }
+          )
+        const taskId = scheduledTask.metadata.id
+        await prisma.groupActivity.update({
+          where: { id: ga.id },
+          data: { scheduledPublicationTaskId: taskId },
+        })
+      }
     } catch (error) {
       console.error(
         `Failed to schedule hatchet task for group activity ${ga.id}:`,
@@ -273,15 +287,17 @@ async function run() {
     )
 
     try {
-      const scheduledTask = await tasks.endExpiredGroupActivity.schedule(
-        ga.scheduledEndAt,
-        { groupActivityId: ga.id }
-      )
-      const taskId = scheduledTask.metadata.id
-      await prisma.groupActivity.update({
-        where: { id: ga.id },
-        data: { scheduledCompletionTaskId: taskId },
-      })
+      if (!DRY_RUN) {
+        const scheduledTask = await tasks.endExpiredGroupActivity.schedule(
+          ga.scheduledEndAt,
+          { groupActivityId: ga.id }
+        )
+        const taskId = scheduledTask.metadata.id
+        await prisma.groupActivity.update({
+          where: { id: ga.id },
+          data: { scheduledCompletionTaskId: taskId },
+        })
+      }
     } catch (error) {
       console.error(
         `Failed to schedule hatchet task for group activity ${ga.id}:`,
