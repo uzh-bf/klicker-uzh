@@ -2277,6 +2277,8 @@ export async function getLiveQuizEvaluation(
     displayName: liveQuiz.displayName,
     description: liveQuiz.description,
     courseLanguage: liveQuiz.course?.language,
+    isAssessmentEnabled: liveQuiz.isAssessmentEnabled,
+    pinCode: liveQuiz.pinCode,
     results: blockEvaluations,
     feedbacks:
       liveQuiz.status === DB.PublicationStatus.ENDED

@@ -2,7 +2,6 @@ import {
   FreeTextActivityEvaluationData,
   LocaleType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { useLocalStorage } from '@uidotdev/usehooks'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
@@ -13,6 +12,8 @@ import LiveQuizEvaluationQRCode from './LiveQuizEvaluationQRCode'
 interface FTSidebarProps {
   instance: FreeTextActivityEvaluationData
   courseLanguage?: LocaleType | null
+  isAssessmentEnabled: boolean
+  pinCode?: string | null
   textSize: TextSizeType
   showSolution: boolean
   type: ActivityEvaluationType
@@ -21,25 +22,23 @@ interface FTSidebarProps {
 function FTSidebar({
   instance,
   courseLanguage,
+  isAssessmentEnabled,
+  pinCode,
   textSize,
   showSolution,
   type,
 }: FTSidebarProps) {
   const t = useTranslations()
   const router = useRouter()
-  const [hideQR, setHideQR] = useLocalStorage<boolean>(
-    `hide-qr-evaluation`,
-    false
-  )
 
   return (
     <div
       className={twMerge(
-        'order-1 flex h-full w-full flex-col justify-between overflow-hidden px-3 py-2 md:order-2',
+        'order-1 flex h-full w-full flex-col justify-between overflow-hidden pb-1 pt-2 md:order-2',
         textSize.text
       )}
     >
-      <div className="flex h-max max-h-full flex-col gap-2 overflow-y-auto">
+      <div className="flex h-max max-h-full flex-col gap-2 overflow-y-auto px-2">
         <div className="font-bold">
           {t('manage.evaluation.keywordsSolution')}:
         </div>
@@ -49,10 +48,11 @@ function FTSidebar({
           ))}
         </ul>
       </div>
-      {type === 'LiveQuiz' && !hideQR && !router.query.hmac && (
+      {type === 'LiveQuiz' && !router.query.hmac && (
         <LiveQuizEvaluationQRCode
-          setHideQR={setHideQR}
           language={courseLanguage}
+          isAssessmentEnabled={isAssessmentEnabled}
+          pinCode={pinCode}
         />
       )}
     </div>

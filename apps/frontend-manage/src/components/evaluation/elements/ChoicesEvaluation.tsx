@@ -21,6 +21,8 @@ interface ChoicesEvaluationProps {
   chartType: ChartType
   showSolution: boolean
   showExplanation: boolean
+  isAssessmentEnabled: boolean
+  pinCode?: string | null
   type: ActivityEvaluationType
 }
 
@@ -31,6 +33,8 @@ function ChoicesEvaluation({
   chartType,
   showSolution,
   showExplanation,
+  isAssessmentEnabled,
+  pinCode,
   type,
 }: ChoicesEvaluationProps) {
   return (
@@ -59,6 +63,8 @@ function ChoicesEvaluation({
         <ChoicesSidebar
           instance={instanceEvaluation}
           courseLanguage={courseLanguage}
+          isAssessmentEnabled={isAssessmentEnabled}
+          pinCode={pinCode}
           textSize={textSize}
           showSolution={showSolution}
           type={type}

@@ -2548,6 +2548,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       blockActiveInfo:
         'Der aktuell ausgewählte Block wurde noch nicht geschlossen. Die Teilnehmenden Ihres Quizzes können nach wie vor Antworten abgeben. Bitte bestätigen Sie, dass Sie die Resultate anzeigen wollen.',
       showResults: 'Resultate anzeigen',
+      showQRCodes: 'QR-Codes anzeigen',
     },
     lecturer: {
       noDataAvailable: 'Keine Daten verfügbar...',

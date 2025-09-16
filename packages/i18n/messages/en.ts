@@ -2510,6 +2510,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       blockActiveInfo:
         'The currently selected block has not been closed yet. Participants in your quiz can still submit answers. Please confirm that you want to display the results.',
       showResults: 'Show Results',
+      showQRCodes: 'Show QR Codes',
     },
     lecturer: {
       noDataAvailable: 'No data available...',
