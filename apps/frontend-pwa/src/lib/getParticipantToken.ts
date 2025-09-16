@@ -87,6 +87,16 @@ export default async function getParticipantToken({
       })
 
       if (request?.body?.lis_person_sourcedid) {
+        const pwaOrigin =
+          process.env.ASSESSMENT_MODE === 'true'
+            ? process.env.APP_ORIGIN_ASSESSMENT_PWA
+            : process.env.APP_ORIGIN_PWA
+        if (!pwaOrigin) {
+          throw new Error(
+            'APP_ORIGIN_PWA and APP_ORIGIN_ASSESSMENT_PWA are required but not defined'
+          )
+        }
+
         // send along a JWT to ensure only the next server is allowed to register participants from LTI
         const signedLtiData = await signJWT(
           {
@@ -98,6 +108,10 @@ export default async function getParticipantToken({
           {
             algorithm: 'HS256',
             expiresIn: '5m',
+            issuer:
+              process.env.ASSESSMENT_MODE === 'true'
+                ? process.env.APP_ORIGIN_ASSESSMENT_PWA
+                : process.env.APP_ORIGIN_PWA,
           }
         )
 

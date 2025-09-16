@@ -13,6 +13,7 @@ import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import LiveQuizSchedulingModal from '~/components/courses/modals/LiveQuizSchedulingModal'
 import LiveQuizDeletionModal from '../../courses/modals/LiveQuizDeletionModal'
+import LiveQuizResetModal from '../../courses/modals/LiveQuizResetModal'
 import TemplateConversionModal from '../../courses/modals/TemplateConversionModal'
 import TemplateDeletionModal from '../../courses/modals/TemplateDeletionModal'
 import TemplateEditModal from '../../courses/modals/TemplateEditModal'
@@ -69,6 +70,7 @@ const statusActionMap = {
     'activityLog',
     'shareLiveQuiz',
     'removeLiveQuiz',
+    'resetLiveQuiz',
     'deleteLiveQuiz',
   ],
   [PublicationStatus.Template]: [
@@ -100,6 +102,7 @@ function LiveQuizActions({
   const [embeddingModal, setEmbeddingModal] = useState(false)
   const [qrModal, setQRModal] = useState(false)
   const [deletionModal, setDeletionModal] = useState(false)
+  const [resetModal, setResetModal] = useState(false)
   const [removalModal, setRemovalModal] = useState(false)
   const [templateEditingModal, setTemplateEditingModal] = useState(false)
   const [templateDeletionModal, setTemplateDeletionModal] = useState(false)
@@ -166,6 +169,10 @@ function LiveQuizActions({
                 liveQuiz.status === PublicationStatus.Scheduled)
             ? ['deleteLiveQuiz']
             : []),
+        // completed assessment live quizzes can be reset by assessment course admins
+        ...(liveQuiz.isAssessmentEnabled && liveQuiz.isActivityReviewer
+          ? ['resetLiveQuiz']
+          : []),
         'deleteTemplate',
       ],
       isEditor: ['editLiveQuiz', 'editTemplate'],
@@ -206,6 +213,7 @@ function LiveQuizActions({
     setRemovalModal,
     setDeletionModal,
     setActivityLogOpen,
+    setResetModal,
   })
 
   // get all available actions based on permissions and status
@@ -251,6 +259,18 @@ function LiveQuizActions({
               await refetchActivities?.()
             }}
             deleting={deleting}
+          />
+        )}
+
+        {resetModal && (
+          <LiveQuizResetModal
+            quizId={liveQuiz.id}
+            courseId={liveQuiz.courseId}
+            isGamificationEnabled={liveQuiz.isGamificationEnabled}
+            onClose={() => setResetModal(false)}
+            onSuccess={async () => {
+              await refetchActivities?.()
+            }}
           />
         )}
 
@@ -304,6 +324,7 @@ function LiveQuizActions({
           <LiveQuizQRModal
             quizId={liveQuiz.id}
             quizPin={liveQuiz.pinCode}
+            isAssessmentEnabled={liveQuiz.isAssessmentEnabled ?? false}
             language={liveQuiz.courseLanguage}
             onClose={() => setQRModal(false)}
           />

@@ -10,6 +10,8 @@
   "dependencies": {
     "@hatchet-dev/typescript-sdk": "1.9.4",
     "@klicker-uzh/hatchet": "workspace:*",
+    "@klicker-uzh/prisma": "workspace:*",
+    "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
     "ioredis": "5.4.1"
   },
@@ -30,7 +32,7 @@
     "dev:assessment": "pnpm run dev",
     "dev:doppler": "doppler run --config dev -- pnpm run dev",
     "dev:offline": "pnpm run dev",
-    "dev:ts": "cross-env NODE_ENV=development tsx --watch --env-file .env src/index.ts",
+    "dev:ts": "cross-env NODE_ENV=development tsx --watch --env-file=.env src/index.ts",
     "start:test": "node --env-file=.env dist/index.js"
   },
   "engines": {

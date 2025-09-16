@@ -22,6 +22,7 @@ export async function signJWT(
   options: {
     algorithm?: 'HS256'
     expiresIn?: string | number
+    issuer?: string
     issuedAt?: Date
   } = {}
 ): Promise<string> {
@@ -34,6 +35,10 @@ export async function signJWT(
     jwt = jwt.setExpirationTime(options.expiresIn)
   }
 
+  if (options.issuer) {
+    jwt = jwt.setIssuer(options.issuer)
+  }
+
   return jwt.sign(getSecretKey(secret))
 }
 
@@ -43,13 +48,20 @@ export async function verifyJWT(
   opts: {
     algorithms?: 'HS256'[]
     clockTolerance?: string | number
+    issuer?: string
   } = {}
 ): Promise<JWTPayload> {
-  const { payload } = await jose.jwtVerify(token, getSecretKey(secret), {
-    algorithms: opts.algorithms ?? ['HS256'],
-    clockTolerance: opts.clockTolerance ?? '5s',
-  })
-  return payload as JWTPayload
+  try {
+    const { payload } = await jose.jwtVerify(token, getSecretKey(secret), {
+      algorithms: opts.algorithms ?? ['HS256'],
+      clockTolerance: opts.clockTolerance ?? '5s',
+      issuer: opts.issuer,
+    })
+    return payload as JWTPayload
+  } catch (error) {
+    console.error('JWT verification failed:', error)
+    throw new Error('Invalid token')
+  }
 }
 
 export function decodeJWT<T extends Record<string, unknown> = JWTPayload>(

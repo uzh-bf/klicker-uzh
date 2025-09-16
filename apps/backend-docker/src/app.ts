@@ -20,6 +20,7 @@ declare namespace global {
 function prepareApp({
   prisma,
   redisExec,
+  redisAssessmentExec,
   pubSub,
   cache,
   emitter,
@@ -99,6 +100,7 @@ function prepareApp({
       }
     }
 
+    // ! DO NOT TOUCH - assessment live quiz mode relies on it
     token =
       token ?? req.headers['authorization']?.replace('Bearer ', '') ?? null
 
@@ -173,6 +175,7 @@ function prepareApp({
     context: enhanceContext({
       prisma,
       redisExec,
+      redisAssessmentExec,
       pubSub,
       emitter,
       hatchet,

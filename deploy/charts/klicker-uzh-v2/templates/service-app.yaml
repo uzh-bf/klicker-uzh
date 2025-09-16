@@ -47,7 +47,7 @@ spec:
       name: http
   selector:
     {{- include "chart.selectorLabels" . | nindent 4 }}
-    app.kubernetes.io/component: frontend-pwa-assessment
+    app.kubernetes.io/component: frontend-assessment
 ---
 apiVersion: v1
 kind: Service

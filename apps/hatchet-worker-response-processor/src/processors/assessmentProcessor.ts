@@ -19,7 +19,7 @@ import type {
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import { DEFAULT_POINTS } from '../constants.js'
-import getRedis from '../redis.js'
+import { getAssessmentRedis } from '../redis.js'
 import {
   getCaseStudyQuestionPointsDetails,
   getChoicesQuestionPointsDetails,
@@ -30,10 +30,7 @@ import {
   validateStudentResponse,
 } from './helpers.js'
 
-// TODO: Consider the following improvements
-// - ensure that the response meets the restrictions specified in the element options (as for standard processor)
-
-const redisExec = getRedis()
+const redisExec = getAssessmentRedis() // use assessment redis instance for assessment response processor
 
 export async function processAssessmentResponse(
   message: {
@@ -111,6 +108,7 @@ export async function processAssessmentResponse(
     restrictions,
     firstResponseReceivedAt,
     sessionBlockId,
+    courseId,
     choiceCount,
     basePoints,
     defaultPoints,
@@ -119,10 +117,19 @@ export async function processAssessmentResponse(
     blockClosedAt,
   } = instanceInfo
 
-  if (blockClosedAt && Number(responseTimestamp) > Number(blockClosedAt)) {
+  // instances in assessment live quizzes always need to have a type, course linked to the activity and session block id
+  if (!type || !courseId || !sessionBlockId) {
     throw new NonRetryableError(
-      `Response received after block of element instance ${message.instanceId} was closed at ${new Date(blockClosedAt)}.`
+      `Instance ${message.instanceId} does not have a type (${type}) or is not linked to a course (${courseId}) or session block (${sessionBlockId}).`
     )
+  }
+
+  if (blockClosedAt && Number(responseTimestamp) > Number(blockClosedAt)) {
+    ctx.logger.error(
+      `[CANCEL] [AddResponse Assessment] Response received after block of element instance ${message.instanceId} was closed at ${new Date(Number(blockClosedAt))}.`
+    )
+    ctx.cancel()
+    return
   }
 
   // ! Step 1.2 Validation of response format
@@ -349,7 +356,42 @@ export async function processAssessmentResponse(
     info: gradingLog,
   })
 
-  // ! Step 3: Directly store the submitted response in the live quiz responses table and add entry to redis votes list for successful response
+  // ! Step 3: Validate that the submitting user has a valid participation in the assessment course (requirement for assessment responses)
+  const participation = await prisma.participation.findUnique({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: message.participantId,
+      },
+    },
+  })
+
+  if (!participation) {
+    throw new NonRetryableError(
+      `Participant ${message.participantId} does not have a participation in course ${courseId} linked to assessment live quiz ${message.liveQuizId}.`
+    )
+  }
+
+  // ! Step 4: Directly store the submitted response in the live quiz responses table and add entry to redis votes list for successful response
+  // verify that the participant has not votes on the same question before
+  const existingVote = await prisma.liveQuizResponse.findUnique({
+    where: {
+      instanceId_elementBlockExecution_participantId: {
+        instanceId: Number(message.instanceId),
+        elementBlockExecution: parseInt(blockExecution ?? '0', 10),
+        participantId: message.participantId,
+      },
+    },
+  })
+
+  if (existingVote) {
+    ctx.logger.error(
+      `[CANCEL] [AddResponse Assessment] Participant ${message.participantId} has already submitted a response for instance ${message.instanceId} and block execution ${blockExecution}.`
+    )
+    ctx.cancel()
+    return
+  }
+
   try {
     await prisma.liveQuizResponse.create({
       data: {
@@ -383,7 +425,7 @@ export async function processAssessmentResponse(
     'true'
   )
 
-  // ! Step 4: Schedule additional hatchet task with response details to update aggregated results in redis & update leaderboard if gamification is enabled
+  // ! Step 5: Schedule additional hatchet task with response details to update aggregated results in redis & update leaderboard if gamification is enabled
   const quizInfo = await redisExec.hgetall(`${instanceKey}:info`)
   ctx.v1.events.push('response-processed:aggregation', {
     correlationId: message.correlationId,
@@ -489,7 +531,14 @@ export async function aggregateAssessmentResponses(
 
     case ElementType.SELECTION: {
       response.selection!.forEach((answerId: number) => {
-        if (answerId === -1) return // skipped input fields should not be considered
+        if (
+          answerId === -1 ||
+          typeof answerId === 'undefined' ||
+          answerId === null
+        ) {
+          return // skipped input fields should not be considered
+        }
+
         redis.hincrby(`${instanceKey}:results`, String(answerId), 1)
       })
       redis.hincrby(`${instanceKey}:results`, 'participants', 1)

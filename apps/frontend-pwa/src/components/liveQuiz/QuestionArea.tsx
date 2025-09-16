@@ -12,109 +12,14 @@ import dayjs from 'dayjs'
 import localforage from 'localforage'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
-import React, {
-  Dispatch,
-  SetStateAction,
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { isDeepEqual } from 'remeda'
 import useRemainingInstances from '../hooks/useRemainingInstances'
+import { loadStoredResponse, updateStoredResponses } from './storageHelpers'
 
 const ConfettiExplosion = dynamic(() => import('react-confetti-explosion'), {
   ssr: false,
 })
-
-const updateStoredResponses = async (
-  instanceId: number | number[],
-  quizId: string,
-  execution: number
-) => {
-  if (typeof window !== 'undefined') {
-    try {
-      const prevResponses: any = await localforage.getItem(
-        `${quizId}-responses`
-      )
-      let newResponses: string[] = []
-
-      if (Array.isArray(instanceId)) {
-        newResponses = instanceId.map(
-          (instanceId: number) => `${instanceId}-${execution}`
-        )
-      } else {
-        newResponses = [`${instanceId}-${execution}`]
-      }
-      const stringified = JSON.stringify(
-        prevResponses
-          ? {
-              responses: [
-                ...JSON.parse(prevResponses).responses,
-                ...newResponses,
-              ],
-              timestamp: dayjs().unix(),
-            }
-          : {
-              responses: newResponses,
-              timestamp: dayjs().unix(),
-            }
-      )
-      await localforage.setItem(`${quizId}-responses`, stringified)
-    } catch (e) {
-      console.error(e)
-    }
-  }
-}
-
-const loadStoredResponse = async ({
-  quizId,
-  execution,
-  currentInstance,
-  setStudentResponse,
-  setSubmittedAt,
-}: {
-  quizId: string
-  execution: number
-  currentInstance: ElementInstance | undefined
-  setStudentResponse: Dispatch<SetStateAction<InstanceStackStudentResponseType>>
-  setSubmittedAt: Dispatch<SetStateAction<number | null>>
-}) => {
-  if (!currentInstance) return
-  try {
-    const key = `lq-${quizId}-ex-${execution}-i-${currentInstance.id}`
-    const stored = (await localforage.getItem(key)) as any
-    const tempStored = (await localforage.getItem(`${key}-temp`)) as any
-
-    // if neither a submitted response, nor a temporary response exists, return early
-    if (!stored && !tempStored) return
-
-    // if the block was already submitted, load the previously submitted response and remove the temporary one (if it exists)
-    if (stored) {
-      setStudentResponse({
-        type: currentInstance.elementType,
-        response: stored.response as any,
-        valid: true,
-      })
-
-      if (typeof stored.responseTimestamp === 'number') {
-        setSubmittedAt(stored.responseTimestamp)
-      }
-
-      // if still exists, remove the temporary response
-      if (tempStored) {
-        await localforage.removeItem(`${key}-temp`)
-      }
-    } else {
-      setStudentResponse({
-        type: currentInstance.elementType,
-        response: tempStored as any,
-        valid: true,
-      })
-    }
-  } catch (e) {
-    console.error(e)
-  }
-}
 
 interface QuestionAreaProps {
   isBlockActive?: boolean
@@ -153,6 +58,7 @@ function QuestionArea({
   const t = useTranslations()
 
   const [showConfetti, setShowConfetti] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [remainingQuestions, setRemainingQuestions] = useState<number[] | null>(
     null
   )
@@ -251,6 +157,9 @@ function QuestionArea({
   })
 
   const onSubmit = async (): Promise<void> => {
+    // lock the submission button temporarily to avoid double submissions
+    setSubmitting(true)
+
     const {
       id: instanceId,
       elementType,
@@ -264,6 +173,9 @@ function QuestionArea({
       input: studentResponse,
       correlationKey,
     })
+
+    // relese the submission lock on the submission button
+    setSubmitting(false)
 
     // if the submission was not successful, do not block another submission attempt
     if (!success) return
@@ -486,7 +398,9 @@ function QuestionArea({
         liveQuizId: quizId,
         instanceId,
         type,
-        answer: Object.values(input.response),
+        answer: Object.values(input.response).map((entry) =>
+          typeof entry === 'undefined' || entry === null ? -1 : entry
+        ),
         correlationKey,
       })
 
@@ -616,7 +530,7 @@ function QuestionArea({
           isCurrentUnanswered={remainingQuestions.includes(activeInstance)}
           isContent={currentInstance.elementType === ElementType.Content}
           isBlockOver={remainingQuestions.length === 0}
-          canSubmit={!!studentResponse.valid}
+          canSubmit={!!studentResponse.valid && !submitting}
           onPrev={() => setActiveInstance((prev) => Math.max(0, prev - 1))}
           onNext={() =>
             setActiveInstance((prev) =>

@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/docs",
-  "version": "3.4.0-alpha.5",
+  "version": "3.4.0-alpha.13",
   "license": "AGPL-3.0",
   "devDependencies": {
     "@docusaurus/core": "~3.8.1",
@@ -44,7 +44,7 @@
     "typescript": "~5.6.3"
   },
   "scripts": {
-    "build": "docusaurus build",
+    "build:docs": "docusaurus build",
     "deploy": "docusaurus deploy",
     "dev:docs": "docusaurus start --port 5500",
     "docusaurus": "docusaurus",

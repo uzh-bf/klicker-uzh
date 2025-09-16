@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/auth",
-  "version": "3.4.0-alpha.5",
+  "version": "3.4.0-alpha.13",
   "license": "AGPL-3.0",
   "dependencies": {
     "@auth/prisma-adapter": "2.10.0",
@@ -43,7 +43,7 @@
     "eslint": "~9.30.1",
     "eslint-config-next": "~15.0.0",
     "postcss": "~8.4.47",
-    "prisma": "~6.14.0",
+    "prisma": "~6.16.1",
     "tailwindcss": "~4.1.11",
     "tailwindcss-animate": "~1.0.7",
     "tw-animate-css": "~1.3.4",

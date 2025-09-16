@@ -52,6 +52,8 @@ spec:
               value: production
           envFrom:
             - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
+            - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-response-api
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-response-api
@@ -92,8 +94,8 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.responseApi.autoscaling.enabled }}
-  replicas: {{ .Values.responseApi.replicaCount }}
+  {{- if not .Values.assessment.responseApi.autoscaling.enabled }}
+  replicas: {{ .Values.assessment.responseApi.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
@@ -133,6 +135,8 @@ spec:
             - name: NODE_ENV
               value: production
           envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
             - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-response-api-assessment
             - secretRef:

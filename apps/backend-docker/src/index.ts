@@ -37,6 +37,14 @@ const redisExec = new Redis({
   tls: process.env.REDIS_TLS ? {} : undefined,
 })
 
+const redisAssessmentExec = new Redis({
+  family: 4,
+  host: process.env.REDIS_ASSESSMENT_HOST ?? 'localhost',
+  password: process.env.REDIS_ASSESSMENT_PASS ?? '',
+  port: Number(process.env.REDIS_ASSESSMENT_PORT ?? 6381),
+  tls: process.env.REDIS_ASSESSMENT_TLS ? {} : undefined,
+})
+
 const redisCache = new Redis({
   family: 4,
   host: process.env.REDIS_CACHE_HOST ?? 'localhost',
@@ -78,7 +86,7 @@ if (redisCache) {
   cache = createInMemoryCache()
 }
 
-emitter.on('invalidate', (resource) => {
+emitter.on('invalidate', (resource: any) => {
   cache.invalidate([
     {
       typename: resource.typename,
@@ -101,6 +109,7 @@ migrate(prisma).then(() => {
     emitter,
     redisCache,
     redisExec,
+    redisAssessmentExec,
     handlers,
   })
 
@@ -111,12 +120,19 @@ migrate(prisma).then(() => {
     prisma,
     redisCache,
     redisExec,
+    redisAssessmentExec,
     pubSub,
     cache,
     emitter,
     hatchet: hatchetClient,
     tasks,
   })
+
+  // Validate required environment variables at startup
+  if (!process.env.APP_ORIGIN_API) {
+    console.error('APP_ORIGIN_API is required but not defined')
+    process.exit(1)
+  }
 
   const server = app.listen(3000, () => {
     console.log(`GraphQL API located at 0.0.0.0:3000${yogaApp.graphqlEndpoint}`)
@@ -132,6 +148,7 @@ migrate(prisma).then(() => {
         context: enhanceContext({
           prisma,
           redisExec,
+          redisAssessmentExec,
           pubSub,
           emitter,
           tasks,

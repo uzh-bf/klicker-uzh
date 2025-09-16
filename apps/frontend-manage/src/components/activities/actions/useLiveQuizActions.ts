@@ -6,6 +6,7 @@ import {
   faTrashCan,
 } from '@fortawesome/free-regular-svg-icons'
 import {
+  faArrowsRotate,
   faChalkboardUser,
   faChartSimple,
   faCode,
@@ -44,6 +45,7 @@ function useLiveQuizActions({
   setRemovalModal,
   setDeletionModal,
   setActivityLogOpen,
+  setResetModal,
 }: {
   quiz: ActivityInfo
   onStart: any
@@ -64,6 +66,7 @@ function useLiveQuizActions({
   setRemovalModal: Dispatch<SetStateAction<boolean>>
   setDeletionModal: Dispatch<SetStateAction<boolean>>
   setActivityLogOpen: Dispatch<SetStateAction<boolean>>
+  setResetModal: Dispatch<SetStateAction<boolean>>
 }): ActivityAction[] {
   const t = useTranslations()
   const router = useRouter()
@@ -219,6 +222,14 @@ function useLiveQuizActions({
         icon: faX,
         onClick: () => setRemovalModal(true),
         data: { cy: `remove-live-quiz-${quiz.name}` },
+        className: 'border-red-600 text-red-600 hover:text-red-600',
+      },
+      {
+        id: 'resetLiveQuiz',
+        label: t('manage.liveQuizzes.resetLiveQuiz'),
+        icon: faArrowsRotate,
+        onClick: () => setResetModal(true),
+        data: { cy: `reset-assessment-live-quiz-${quiz.name}` },
         className: 'border-red-600 text-red-600 hover:text-red-600',
       },
       {

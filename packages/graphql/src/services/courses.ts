@@ -35,7 +35,7 @@ export async function joinCourseWithPin(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { pinCode: pin },
+    where: { pinCode: pin, isAssessmentEnabled: false },
   })
 
   if (
@@ -78,11 +78,7 @@ export async function joinCourseWithPin(
 }
 
 export async function joinCourseLeaderboard(
-  {
-    courseId,
-  }: {
-    courseId: string
-  },
+  { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
   // upsert or activate participation in the course
@@ -95,20 +91,10 @@ export async function joinCourseLeaderboard(
     },
     create: {
       isActive: true,
-      course: {
-        connect: {
-          id: courseId,
-        },
-      },
-      participant: {
-        connect: {
-          id: ctx.user.sub,
-        },
-      },
+      course: { connect: { id: courseId } },
+      participant: { connect: { id: ctx.user.sub } },
     },
-    update: {
-      isActive: true,
-    },
+    update: { isActive: true },
   })
 
   if (!participation) return null
@@ -124,21 +110,9 @@ export async function joinCourseLeaderboard(
     },
     create: {
       type: DB.LeaderboardType.COURSE,
-      participant: {
-        connect: {
-          id: ctx.user.sub,
-        },
-      },
-      course: {
-        connect: {
-          id: courseId,
-        },
-      },
-      participation: {
-        connect: {
-          id: participation.id,
-        },
-      },
+      participant: { connect: { id: ctx.user.sub } },
+      course: { connect: { id: courseId } },
+      participation: { connect: { id: participation.id } },
       score: 0,
     },
     update: {},
@@ -241,21 +215,12 @@ export async function getCourseOverviewData(
           include: {
             participantGroups: true,
             awards: {
-              include: {
-                participant: true,
-                participantGroup: true,
-              },
-              orderBy: {
-                order: 'asc',
-              },
+              include: { participant: true, participantGroup: true },
+              orderBy: { order: 'asc' },
             },
           },
         },
-        participant: {
-          include: {
-            participantGroups: true,
-          },
-        },
+        participant: { include: { participantGroups: true } },
       },
     })
 
@@ -282,11 +247,7 @@ export async function getCourseOverviewData(
             sum: acc.sum + score,
           }
         },
-        {
-          mapped: [],
-          count: 0,
-          sum: 0,
-        }
+        { mapped: [], count: 0, sum: 0 }
       )
 
       const sortedGroupEntries = sortBy(
@@ -330,12 +291,7 @@ export async function getCourseOverviewData(
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
     include: {
-      awards: {
-        include: {
-          participant: true,
-          participantGroup: true,
-        },
-      },
+      awards: { include: { participant: true, participantGroup: true } },
     },
   })
 
@@ -374,68 +330,38 @@ async function computeRollingLeaderboardEntries(
         include: {
           leaderboard: true,
         },
-        where: {
-          finishedAt: {
-            lte: detailsEarliest,
-            gt: detailsLatest,
-          },
-        },
+        where: { finishedAt: { lte: detailsEarliest, gt: detailsLatest } },
       },
       practiceQuizzes: {
         include: {
           responseDetails: {
-            where: {
-              createdAt: {
-                lte: detailsEarliest,
-                gt: detailsLatest,
-              },
-            },
+            where: { createdAt: { lte: detailsEarliest, gt: detailsLatest } },
           },
         },
       },
       microLearnings: {
         include: {
           responseDetails: {
-            where: {
-              createdAt: {
-                lte: detailsEarliest,
-                gt: detailsLatest,
-              },
-            },
+            where: { createdAt: { lte: detailsEarliest, gt: detailsLatest } },
           },
         },
       },
       participations: {
-        where: {
-          isActive: true,
-        },
-        include: {
-          participant: true,
-        },
+        where: { isActive: true },
+        include: { participant: true },
       },
       timelineEntries: {
         where: {
           type: DB.TimelineEntryType.DAILY,
-          timestamp: {
-            gt: dayjs().subtract(days, 'days').toDate(),
-          },
-          participation: {
-            isActive: true,
-          },
+          timestamp: { gt: dayjs().subtract(days, 'days').toDate() },
+          participation: { isActive: true },
         },
-        include: {
-          participation: true,
-        },
+        include: { participation: true },
       },
     },
   })
 
-  if (!course)
-    return {
-      leaderboardEntries: [],
-      count: 0,
-      sum: 0,
-    }
+  if (!course) return { leaderboardEntries: [], count: 0, sum: 0 }
 
   // initialize the leaderboard entries form the active course participations
   const leaderboardScores = course?.participations.reduce<{
@@ -548,14 +474,9 @@ export async function getStudentCourseLeaderboard(
   ) {
     const participation = await ctx.prisma.participation.findUnique({
       where: {
-        courseId_participantId: {
-          courseId,
-          participantId: ctx.user.sub,
-        },
+        courseId_participantId: { courseId, participantId: ctx.user.sub },
       },
-      include: {
-        participant: true,
-      },
+      include: { participant: true },
     })
 
     const course = ctx.prisma.course.findUnique({
@@ -1190,6 +1111,59 @@ export async function deleteCourse(
     { timeout: 60000 }
   )
 
+  // cancel any remaining scheduled publication or ending hatchet jobs for the asynchronous activities of the course
+  for (const pq of course.practiceQuizzes) {
+    if (pq.scheduledPublicationTaskId) {
+      try {
+        await ctx.hatchet.scheduled.delete(pq.scheduledPublicationTaskId)
+      } catch (e) {
+        console.log(
+          `Failed to delete scheduled publication hatchet job for practice quiz ${pq.id}`
+        )
+      }
+    }
+  }
+  for (const ml of course.microLearnings) {
+    if (ml.scheduledPublicationTaskId) {
+      try {
+        await ctx.hatchet.scheduled.delete(ml.scheduledPublicationTaskId)
+      } catch (e) {
+        console.log(
+          `Failed to delete scheduled publication hatchet job for micro learning ${ml.id}`
+        )
+      }
+    }
+    if (ml.scheduledCompletionTaskId) {
+      try {
+        await ctx.hatchet.scheduled.delete(ml.scheduledCompletionTaskId)
+      } catch (e) {
+        console.log(
+          `Failed to delete scheduled completion hatchet job for micro learning ${ml.id}`
+        )
+      }
+    }
+  }
+  for (const ga of course.groupActivities) {
+    if (ga.scheduledPublicationTaskId) {
+      try {
+        await ctx.hatchet.scheduled.delete(ga.scheduledPublicationTaskId)
+      } catch (e) {
+        console.log(
+          `Failed to delete scheduled publication hatchet job for group activity ${ga.id}`
+        )
+      }
+    }
+    if (ga.scheduledCompletionTaskId) {
+      try {
+        await ctx.hatchet.scheduled.delete(ga.scheduledCompletionTaskId)
+      } catch (e) {
+        console.log(
+          `Failed to delete scheduled completion hatchet job for group activity ${ga.id}`
+        )
+      }
+    }
+  }
+
   ctx.emitter.emit('invalidate', { typename: 'Course', id })
   return deletedCourse
 }
@@ -1246,16 +1220,8 @@ export async function removeCourse(
 
 export async function getParticipantCourses(ctx: ContextWithUser) {
   const participantCourses = await ctx.prisma.participant.findUnique({
-    where: {
-      id: ctx.user.sub,
-    },
-    include: {
-      participations: {
-        include: {
-          course: true,
-        },
-      },
-    },
+    where: { id: ctx.user.sub },
+    include: { participations: { include: { course: true } } },
   })
 
   return participantCourses?.participations.map((p) => p.course) ?? []

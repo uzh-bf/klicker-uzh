@@ -32,13 +32,9 @@ data:
   REDIS_HOST: {{ .Values.backendGraphql.redisExec.host | quote }}
   REDIS_PORT: {{ .Values.backendGraphql.redisExec.port | quote }}
   REDIS_TLS: {{ .Values.backendGraphql.redisExec.tls | quote }}
-  {{- if .Values.backendGraphql.sentryDSN }}
-  SENTRY_DSN: {{ .Values.backendGraphql.sentryDSN | quote }}
-  SENTRY_RELEASE: {{ .Chart.AppVersion | quote }}
-  {{ end }}
-  {{- if .Values.backendGraphql.sentryEnv }}
-  SENTRY_ENVIRONMENT: {{ .Values.backendGraphql.sentryEnv | quote }}
-  {{ end }}
+  REDIS_ASSESSMENT_HOST: {{ .Values.assessment.backendGraphql.redisExec.host | quote }}
+  REDIS_ASSESSMENT_PORT: {{ .Values.assessment.backendGraphql.redisExec.port | quote }}
+  REDIS_ASSESSMENT_TLS: {{ .Values.assessment.backendGraphql.redisExec.tls | quote }}
   {{- if .Values.backendGraphql.debug }}
   DEBUG: {{ .Values.backendGraphql.debug | quote }}
   {{ end }}
@@ -46,6 +42,8 @@ data:
   HEARTBEAT_DAILY_GROUP_SCORES: {{ .Values.heartbeats.dailyGroupScores | quote }}
   {{ end }}
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
+  HATCHET_CLIENT_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
+  # Deprecated - kept for backward compatibility during transition
   HATCHET_TENANT_ID: {{ .Values.hatchet.client.tenantId | quote }}
   HATCHET_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}

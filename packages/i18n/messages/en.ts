@@ -1078,6 +1078,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Your login could not be verified correctly. Please log in again and answer the question again.',
       submissionServerError:
         'A server error occurred while submitting your answer. Please try again.',
+      missingAssessmentCourseParticipation:
+        'You are not part of the assessment course to which this quiz belongs. Please contact your lecturers.',
+      accountDeletionMessage:
+        'Since you are currently using your KlickerUZH account to participate in an assessment course, you cannot delete your account yourself. For more information on how to delete your account and leave the course, please contact your course instructors.',
     },
   },
   manage: {
@@ -1324,6 +1328,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       READ_ONLY: 'Read Only',
       ACCOUNT_OWNER: 'Account Owner',
       OTP: 'One-Time Password',
+      EDUID: 'Edu-ID',
       ACTIVATION: 'Activation',
       lastUsed: 'last used: {date}',
       lastUsedNever: 'last used: never',
@@ -2244,7 +2249,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       blockXQuestions: 'Block {block} ({questions} question(s))',
       shareLiveQuiz: 'Share Live Quiz',
       removeLiveQuiz: 'Remove Live Quiz',
+      resetLiveQuiz: 'Reset Live Quiz',
       deleteLiveQuiz: 'Delete Live Quiz',
+      resetLiveQuizMessage:
+        'Please confirm the reset of this assessment live quiz. All responses from students and collected points will be deleted. This action will be documented in the audit log and cannot be undone.',
       deleteLiveQuizMessage:
         'Please confirm the deletion of all results and feedbacks associated with this live quiz. Points collected by participants will not be affected by the deletion.',
       noResponsesToDelete:
@@ -2259,6 +2267,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'For this live quiz no confusion feedbacks have been submitted yet.',
       deleteConfusionFeedbacks:
         '{number} confusion feedback(s) will be irreversibly deleted.',
+      noLeaderboardEntriesToDelete:
+        'For this live quiz no quiz leaderboard entries have been created yet.',
+      deleteLeaderboardEntries:
+        '{number} quiz leaderboard entries will be deleted and all participants will lose their collected points.',
       evaluationLinksEmbedding: 'Links for Embedding Evaluation Views',
       noLiveQuizzes: 'No live quizzes available',
       creationExplanation:
@@ -2336,7 +2348,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       noLeaderboardEntriesToDelete:
         'For this live quiz no quiz leaderboard entries have been created yet.',
       deleteLeaderboardEntries:
-        '{number} quiz leaderboard entries will be deleted and all participants will loose their collected points.',
+        '{number} quiz leaderboard entries will be deleted and all participants will lose their collected points.',
       printTitle: 'Live Quiz "{name}" - Feedback Channel',
       lecturerView: 'Lecturer View',
       liveQA: 'Live Q&A',
@@ -2605,7 +2617,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Please confirm the deletion of all elements associated with this course and the irreversible deletion of the course. Note that all students will lose access to the course alongside all associated course materials and activities.',
       noParticipationsToDelete: 'This course contains no participations.',
       deleteParticipations:
-        '{number} participant(s) of this course will loose their collected points and access to all course materials and activities.',
+        '{number} participant(s) of this course will lose their collected points and access to all course materials and activities.',
       noLiveQuizzesDisconnected: 'This course contains no live quizzes.',
       disconnectLiveQuizzes:
         '{number} live quizze(s) will be disconnected from the course. They can still be accessed through the activity list.',

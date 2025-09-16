@@ -2,6 +2,140 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.13](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.12...v3.4.0-alpha.13) (2025-09-16)
+
+
+### Bug Fixes
+
+* **deploy:** add http to hatchet prod service url ([a4317e8](https://github.com/uzh-bf/klicker-uzh/commit/a4317e8a8fe1f7335cfd45413521240c8709ba47))
+* **deploy:** make sure general worker gets the DB url ([af0b2fe](https://github.com/uzh-bf/klicker-uzh/commit/af0b2fe29311ab18a79ce595cb6d7eaabbe59e5c))
+
+## [3.4.0-alpha.12](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.11...v3.4.0-alpha.12) (2025-09-15)
+
+
+### Features
+
+* implement initial assessment-readiness ([#4874](https://github.com/uzh-bf/klicker-uzh/issues/4874)) ([0dff544](https://github.com/uzh-bf/klicker-uzh/commit/0dff5442752b1c4ec0adea2d0eaf53bca8c1fc7b))
+
+
+### Bug Fixes
+
+* **packages/graphql:** correctly skip invalid submissions for case study question in assessment live quiz response aggregation ([#4915](https://github.com/uzh-bf/klicker-uzh/issues/4915)) ([548ef32](https://github.com/uzh-bf/klicker-uzh/commit/548ef320af229c75fcafd73d35536050a73e94e0))
+
+
+### Enhancements
+
+* **apps/auth:** improve authentication workflow including participant invitations and SSO ([#4916](https://github.com/uzh-bf/klicker-uzh/issues/4916)) ([41a4359](https://github.com/uzh-bf/klicker-uzh/commit/41a435961ef2a45f38d73e9c060f03f0667f82c6))
+
+## [3.4.0-alpha.11](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.10...v3.4.0-alpha.11) (2025-09-15)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** validate loaded temporarily stored responses before enabling submission ([c56bc56](https://github.com/uzh-bf/klicker-uzh/commit/c56bc5614de819a0fbb57738dc150277b549e664))
+* **packages/graphql:** return uzh affiliation email for eduid accounts if available ([c265545](https://github.com/uzh-bf/klicker-uzh/commit/c26554510b7f9d89a5cb1e729ee753681a04c363))
+
+## [3.4.0-alpha.10](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.9...v3.4.0-alpha.10) (2025-09-15)
+
+
+### Bug Fixes
+
+* **packages/graphql:** last fixes for email_isSSOAccount in LTI login ([56033ca](https://github.com/uzh-bf/klicker-uzh/commit/56033ca68a6e4e06db768b23fbb009f0aecf02c0))
+
+## [3.4.0-alpha.9](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.8...v3.4.0-alpha.9) (2025-09-15)
+
+
+### Bug Fixes
+
+* BOM issue in invitations ([ae22fc7](https://github.com/uzh-bf/klicker-uzh/commit/ae22fc7d1266b7203967691c73eed23c51a8a43b))
+* **deploy:** redis pass from assessment linked to normal ([7718172](https://github.com/uzh-bf/klicker-uzh/commit/771817221827b96c9ab49b6232f6bbfcff63ab35))
+* **deploy:** wrong cache connected to assessment ([a360a24](https://github.com/uzh-bf/klicker-uzh/commit/a360a24797f2142835dc6633ca02ec9f5a81f98c))
+* **packages/graphql:** ensure that cache keys are cleared correctly on assessment live quiz reset ([03c0706](https://github.com/uzh-bf/klicker-uzh/commit/03c0706304df18e5bf51736b5d058b3023eb3303))
+* relax SSO unique constraint ([#4914](https://github.com/uzh-bf/klicker-uzh/issues/4914)) ([bc6b5e6](https://github.com/uzh-bf/klicker-uzh/commit/bc6b5e6133825bfcd4167e55d52ad3295c949698))
+* usage of new combined unique constraint on email_isSSOAccount ([4161bc2](https://github.com/uzh-bf/klicker-uzh/commit/4161bc2d1bb19fcbab54edc31ae3c7ed6956ab9b))
+
+## [3.4.0-alpha.8](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.7...v3.4.0-alpha.8) (2025-09-15)
+
+
+### Bug Fixes
+
+* remove conflicting uniqueness constraint on user account table ([1cb71d1](https://github.com/uzh-bf/klicker-uzh/commit/1cb71d142bb3f227b0c84c8fdfa5d0ef904aa98e))
+
+## [3.4.0-alpha.7](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.6...v3.4.0-alpha.7) (2025-09-15)
+
+
+### Bug Fixes
+
+* change api domain for assessment pwa ([b21c2a4](https://github.com/uzh-bf/klicker-uzh/commit/b21c2a46c7884164759c027b9b02587205eccd14))
+
+
+### Enhancements
+
+* distinguish between redis cache for regular and assessment live quizzes ([#4913](https://github.com/uzh-bf/klicker-uzh/issues/4913)) ([72e0d41](https://github.com/uzh-bf/klicker-uzh/commit/72e0d418a2ce4434be5bcf78820a473d27142896))
+
+## [3.4.0-alpha.6](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.5...v3.4.0-alpha.6) (2025-09-15)
+
+
+### Features
+
+* add Edu-ID authentication for students through auth app ([#4873](https://github.com/uzh-bf/klicker-uzh/issues/4873)) ([a7a6dd4](https://github.com/uzh-bf/klicker-uzh/commit/a7a6dd4f5c4ffafd9b0159cb91d88cad5b21cff5))
+* add new processor for student assessment responses ([#4893](https://github.com/uzh-bf/klicker-uzh/issues/4893)) ([d6b90ab](https://github.com/uzh-bf/klicker-uzh/commit/d6b90abab428e65579a91a26fd1f17d3cee62b56))
+* implement participant invitations and automated resolving on login and with import script ([#4883](https://github.com/uzh-bf/klicker-uzh/issues/4883)) ([1af42b2](https://github.com/uzh-bf/klicker-uzh/commit/1af42b298fcf944e820a5aec91e337eef65df6e5))
+
+
+### Bug Fixes
+
+* add util and prisma copy to dockerfile of lti and response processor ([ada322a](https://github.com/uzh-bf/klicker-uzh/commit/ada322a3fe3fcab8e73318ebcb05f6aef14928ba))
+* **apps/auth:** allow qa domain for student assessment redirect ([0125992](https://github.com/uzh-bf/klicker-uzh/commit/0125992b23506f7bc9ee8659222c981199ed5b15))
+* **apps/auth:** potential issue if not [@uzh](https://github.com/uzh).ch as primary affiliation, issue with cookie prefixes (secure) ([751d21b](https://github.com/uzh-bf/klicker-uzh/commit/751d21b1e0d39897b99323eecd181d9769717488))
+* **apps/auth:** seed invited users as isActive false (not on leaderboard) by default ([5dc10d8](https://github.com/uzh-bf/klicker-uzh/commit/5dc10d82aae6bbb9feac0cdf6937c259aae90d2d))
+* **apps/frontend-manage:** ensure that audience view links to student assessment frontend on assessment live quizzes ([90db0fc](https://github.com/uzh-bf/klicker-uzh/commit/90db0fcde2fc42ae44c3356cb3e8dd2b5308b281))
+* **apps/frontend-pwa:** automatically select last active block if no block is currently active in live quiz ([0ae18a8](https://github.com/uzh-bf/klicker-uzh/commit/0ae18a81be29195ad9aa40f96e7f056ab45565c3))
+* **apps/frontend-pwa:** ensure that UI does not jump back to first block on submission of final block response ([905d238](https://github.com/uzh-bf/klicker-uzh/commit/905d238d5c8ba31c7f7258cd8be570a34c288492))
+* **apps/frontend-pwa:** fix layout issue with notification buttons on student app home ([3d00c3b](https://github.com/uzh-bf/klicker-uzh/commit/3d00c3b4dedbaca1b95719a2a7d749418f300348))
+* **apps/frontend-pwa:** resolve issue that server-side redirect uses window properties ([e60103e](https://github.com/uzh-bf/klicker-uzh/commit/e60103e2b042195b65752bcaa28ca81636d1c5e9))
+* **apps/lti:** copy dependency files from deps stage ([c87d5e0](https://github.com/uzh-bf/klicker-uzh/commit/c87d5e085b06be14350f136dcfb7d70624388111))
+* **apps/response-api:** add grading package to dockerfile ([c7cb66b](https://github.com/uzh-bf/klicker-uzh/commit/c7cb66b74aa3834bc217f8ceb6eb8a569ab1edb9))
+* **apps/response-api:** consistency of prisma dist copy in dockerfile ([2e5bd11](https://github.com/uzh-bf/klicker-uzh/commit/2e5bd115f7b853559c76c264828a3cabfe354cf0))
+* **apps/response-api:** make sure prisma is in deps ([75ad5ac](https://github.com/uzh-bf/klicker-uzh/commit/75ad5ace9b127a6362d75fc073c21cbc69043e4f))
+* **ci:** resolve issues with graphql testing in ci environment ([#4910](https://github.com/uzh-bf/klicker-uzh/issues/4910)) ([f140489](https://github.com/uzh-bf/klicker-uzh/commit/f140489062625c9da3f6d8f71b618f3848021a15))
+* CORS for response-api in .env.example needs port 3001 ([d8d7d26](https://github.com/uzh-bf/klicker-uzh/commit/d8d7d263badbc25de71ecef888fc024272252d3d))
+* cypress token script should check for hatchet lite v0.73.1 ([1e96c45](https://github.com/uzh-bf/klicker-uzh/commit/1e96c45bbeef9cb8374e50d36f337e0a1fe23edf))
+* **cypress:** createCourse without pin in assessment mode ([bd6452c](https://github.com/uzh-bf/klicker-uzh/commit/bd6452c95804e354d1162d04a9e663bf3e454b49))
+* ensure that scheduled publication tasks are cancelled on course deletion and add migration script for transfer from cronjobs to hatchet ([#4908](https://github.com/uzh-bf/klicker-uzh/issues/4908)) ([7659057](https://github.com/uzh-bf/klicker-uzh/commit/7659057de18ae59289a104831fc053090bf0365c))
+* **packages/graphql:** make sure that assessment courses are seeded without pin ([2dd4709](https://github.com/uzh-bf/klicker-uzh/commit/2dd470940e8a52c976c2263518dab6a2564bc6bd))
+* **packages/prisma:** add engineType to prisma settings ([95bc3f9](https://github.com/uzh-bf/klicker-uzh/commit/95bc3f9120db92e962a97083cf68736439dd1fda))
+* response api URL for staging, deployment config updates ([51793e3](https://github.com/uzh-bf/klicker-uzh/commit/51793e3bd07c7fe260bf9dbf577e8ee64361cba3))
+* restart script response processor entry ([f86c884](https://github.com/uzh-bf/klicker-uzh/commit/f86c8846ff979b95b2f28e57da79d1048bf6e93e))
+* **testing:** authType must be SSO for assessment-enabled courses ([17c2762](https://github.com/uzh-bf/klicker-uzh/commit/17c2762326c2b00cbda212ba9260815cf8ad4aa4))
+* update deployment workflows and dockerfiles for assessment staging deployment ([6100c17](https://github.com/uzh-bf/klicker-uzh/commit/6100c17f32515eadab77319438b9661ee879f3d8))
+
+
+### Deployment
+
+* chart preparations for two-instance deployment ([041fcfc](https://github.com/uzh-bf/klicker-uzh/commit/041fcfc97ca10de3bf5c41ac5badebd1096a607b))
+
+
+### Refactors
+
+* migrate from jsonwebtoken to jose ([#4871](https://github.com/uzh-bf/klicker-uzh/issues/4871)) ([81d33b7](https://github.com/uzh-bf/klicker-uzh/commit/81d33b724a00e59f9c1ff25654d6016f872cf94c))
+
+
+### Enhancements
+
+* add the possibility to reset assessment live quizzes ([#4904](https://github.com/uzh-bf/klicker-uzh/issues/4904)) ([e6936dd](https://github.com/uzh-bf/klicker-uzh/commit/e6936ddfa0dd5d5ee3e491e49e87177398c5ee35))
+* add validation of student responses in assessment mode through correlation key ([#4895](https://github.com/uzh-bf/klicker-uzh/issues/4895)) ([a457b17](https://github.com/uzh-bf/klicker-uzh/commit/a457b1773f031dc656020f3d8c800ba374a18ae4))
+* **apps/hatchet-worker-response-processor:** add student response validation to processors ([#4898](https://github.com/uzh-bf/klicker-uzh/issues/4898)) ([b0a11cf](https://github.com/uzh-bf/klicker-uzh/commit/b0a11cf8909614585c221f6575a5c09de2cf819f))
+* correctly display errors from response-api in student frontend and resolve race conditions ([#4899](https://github.com/uzh-bf/klicker-uzh/issues/4899)) ([e7e5725](https://github.com/uzh-bf/klicker-uzh/commit/e7e5725c5770442552e634aea36aa72f27afb7d0))
+* correctly redirect student between regular and assessment PWA depending on live quiz assignment ([#4907](https://github.com/uzh-bf/klicker-uzh/issues/4907)) ([7b05917](https://github.com/uzh-bf/klicker-uzh/commit/7b05917917ff78731e8c2ffd3a944a45ebb28f50))
+* **deploy:** configurations for full staging deployment, fixes in dockerfiles and dependencies ([1c96e87](https://github.com/uzh-bf/klicker-uzh/commit/1c96e87bfc94199394b523fa737bd3c4ea1eb435))
+* ensure that only assessment course participants can access assessment live quizzes ([#4911](https://github.com/uzh-bf/klicker-uzh/issues/4911)) ([baa104a](https://github.com/uzh-bf/klicker-uzh/commit/baa104a12e39cad019192886c3d582a3f901d22d))
+* improve frontend components of assessment application and hide irrelevant parts ([#4896](https://github.com/uzh-bf/klicker-uzh/issues/4896)) ([f1434df](https://github.com/uzh-bf/klicker-uzh/commit/f1434df2ba770f461248fab20df231fcf6cb1d49))
+* improve stability of student eduid login ([#4905](https://github.com/uzh-bf/klicker-uzh/issues/4905)) ([cef8f2a](https://github.com/uzh-bf/klicker-uzh/commit/cef8f2a2a032dae274a738a9d63508ce70ec31ef))
+* migrate cronjobs and scheduled tasks to new hatchet-based setup, improve scripting and cypress setup, migrate to vitest, dependency upgrades ([#4755](https://github.com/uzh-bf/klicker-uzh/issues/4755)) ([05ae21a](https://github.com/uzh-bf/klicker-uzh/commit/05ae21a49fc65df83dc7ef38ee5455ec0e9667e5))
+* re-compute instance results on block closure asynchronously based on cache or database data ([#4902](https://github.com/uzh-bf/klicker-uzh/issues/4902)) ([2105176](https://github.com/uzh-bf/klicker-uzh/commit/2105176b8ecaf5e51d64b9cce2410a335a736f1c))
+* validate participant login and course participation rigorously in response-api and assessment processor ([#4912](https://github.com/uzh-bf/klicker-uzh/issues/4912)) ([0f45697](https://github.com/uzh-bf/klicker-uzh/commit/0f456977b696e6933d637eadd6ee3778eb07cd42))
+
 ## [3.4.0-alpha.5](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.4...v3.4.0-alpha.5) (2025-09-11)
 
 

@@ -15,3 +15,9 @@ export * from './levels.js'
 
 // export everything from the jwt module
 export * from './jwt.js'
+
+// export everything from the email module
+export * from './email.js'
+
+// export everything from the auth helpers module
+export * from './auth.js'
