@@ -1530,7 +1530,7 @@ function aggregateLiveQuizResponses({
         if (!('selection' in submission.response)) return acc
 
         submission.response.selection
-          .filter((ix) => ix !== -1)
+          .filter((ix) => ix !== -1 && typeof ix !== 'undefined' && ix !== null)
           .forEach((ix) => {
             if (ix in acc.selections) {
               acc.selections[ix] = (acc.selections[ix] ?? 0) + 1

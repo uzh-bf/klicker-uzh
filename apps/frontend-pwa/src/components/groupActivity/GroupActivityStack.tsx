@@ -330,7 +330,9 @@ function GroupActivityStack({
                           value.response!
                         ).filter(
                           (entry) =>
-                            typeof entry !== 'undefined' && entry !== -1
+                            entry !== -1 &&
+                            typeof entry !== 'undefined' &&
+                            entry !== null
                         ),
                       }
                     } else if (value.type === ElementType.CaseStudy) {

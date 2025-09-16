@@ -531,7 +531,14 @@ export async function aggregateAssessmentResponses(
 
     case ElementType.SELECTION: {
       response.selection!.forEach((answerId: number) => {
-        if (answerId === -1) return // skipped input fields should not be considered
+        if (
+          answerId === -1 ||
+          typeof answerId === 'undefined' ||
+          answerId === null
+        ) {
+          return // skipped input fields should not be considered
+        }
+
         redis.hincrby(`${instanceKey}:results`, String(answerId), 1)
       })
       redis.hincrby(`${instanceKey}:results`, 'participants', 1)
