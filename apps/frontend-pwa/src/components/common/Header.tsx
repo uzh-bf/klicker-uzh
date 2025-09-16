@@ -204,8 +204,9 @@ function Header({
                   },
                 ]
               : []),
-            ...(!router.pathname.includes('/session') ||
-            participant?.role !== UserRole.TemporaryParticipant
+            ...((!router.pathname.includes('/session') ||
+              participant?.role !== UserRole.TemporaryParticipant) &&
+            process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true'
               ? [
                   {
                     id: 'profileOrLogin',
