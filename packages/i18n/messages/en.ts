@@ -598,7 +598,7 @@ KlickerUZH offers a comprehensive set of functionalities for course participants
 
 ![Live Quiz _on the left_](/img/06_live_quiz.png)
 
-During the lecture, you have the possibility to answer questions asked by the lecturers through live quizzes in the KlickerUZH app, via your LMS (e.g., OLAT under the "Live Quiz" module), or directly at 
+During the lecture, you have the possibility to answer questions asked by the lecturers through live quizzes in the KlickerUZH app, via your LMS (e.g., OLAT under the "Live Quiz" module), or directly at
 \`https://pwa.klicker.uzh.ch/join/&lt;shortname&gt;\`. Results are shown live in the lecturer evaluation view and can be presented and discussed once the answering time has expired.
 
 No login is required to answer questions during a live quiz. However, using a KlickerUZH account, you can participate in the course challenge and collect points. If available, you can also join the KlickerUZH course with your Klicker account, allowing us to directly display a list of all ongoing live quizzes to you.
@@ -665,12 +665,12 @@ If you already have a KlickerUZH account (e.g., from other courses), open the Kl
 
 ![](/img/05_join_course.png)
 
-If you are participating in a course with KlickerUZH for the first time, open the access link you received from the lecturers of your course (e.g., 
+If you are participating in a course with KlickerUZH for the first time, open the access link you received from the lecturers of your course (e.g.,
 \`https://pwa.klicker.uzh.ch/course/XYZ/join?pin=111111111\`). You can use this to create a new KlickerUZH account with an (anonymous) username and password. With this data you can then log in and create your personal avatar, as well as participate in activities.
 
 #### Anonymous participation
 
-In general, it is also possible to participate anonymously in all activities of KlickerUZH except group activities. For live quizzes, you can access the running quizzes of an account via 
+In general, it is also possible to participate anonymously in all activities of KlickerUZH except group activities. For live quizzes, you can access the running quizzes of an account via
 \`https://pwa.klicker.uzh.ch/join/&lt;shortname&gt;\`. Practice quizzes and microlearnings are available via direct links provided by lecturers. When accessing KlickerUZH via the OLAT integration, you can choose to create an account and will thereafter be logged in automatically. Without a KlickerUZH account, your participation in embedded activities will remain anonymous.
 `,
       appSetupTitle: 'App Installation',
@@ -2413,6 +2413,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Please confirm that the active block should be closed. After your confirmation, the system will not accept any further answers from the students and the complete evaluation (including sample solution) can be displayed.',
     },
     evaluation: {
+      courseName: 'Course',
+      activityName: 'Activity',
+      activityStatus: 'Activity Status',
+      elementName: 'Element',
+      elementType: 'Element Type',
+      linkActivityDetails: 'Open activity details',
+      instanceScheduled: 'Element is scheduled for execution',
+      instanceActive:
+        'Element is being executed and results are updated in real-time',
+      instanceExecuted: 'Element has been executed and results are finalized',
+      instanceLastRefetch: 'Last data refresh',
+      instanceExecutionDate: 'Element executed at',
       evaluationNotYetAvailable:
         'The evaluation for this question cannot be displayed yet. If you want to embed this page somewhere, e.g. via the PowerPoint plugin, the evaluation will be displayed automatically after starting the question.',
       noSignedInStudents:

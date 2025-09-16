@@ -2198,16 +2198,12 @@ export async function getLiveQuizEvaluation(
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: {
       id,
-      status: {
-        in: [DB.PublicationStatus.PUBLISHED, DB.PublicationStatus.ENDED],
-      },
       isDeleted: false,
     },
     include: {
       activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
       blocks: {
         orderBy: { order: 'asc' },
-        where: { status: { equals: DB.ElementBlockStatus.EXECUTED } },
         include: { elements: { orderBy: { order: 'asc' } } },
       },
       feedbacks: {
@@ -2215,7 +2211,7 @@ export async function getLiveQuizEvaluation(
         orderBy: { updatedAt: 'desc' },
       },
       confusionFeedbacks: { orderBy: { createdAt: 'asc' } },
-      course: { select: { language: true } },
+      course: { select: { language: true, name: true } },
     },
   })
 
@@ -2273,10 +2269,12 @@ export async function getLiveQuizEvaluation(
 
   return {
     id: liveQuiz.id,
+    status: liveQuiz.status,
     name: liveQuiz.name,
     displayName: liveQuiz.displayName,
     description: liveQuiz.description,
     courseLanguage: liveQuiz.course?.language,
+    courseName: liveQuiz.course?.name,
     results: blockEvaluations,
     feedbacks:
       liveQuiz.status === DB.PublicationStatus.ENDED
@@ -2285,7 +2283,7 @@ export async function getLiveQuizEvaluation(
     confusionFeedbacks:
       liveQuiz.status === DB.PublicationStatus.ENDED
         ? liveQuiz.confusionFeedbacks
-        : null, // only shown on evaluation for completed quizzes
+        : null, // only shown on evaluation for completed quizzes,
   }
 }
 // #endregion
