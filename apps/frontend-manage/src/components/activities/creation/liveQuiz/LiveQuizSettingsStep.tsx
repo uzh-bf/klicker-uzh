@@ -243,6 +243,7 @@ function LiveQuizSettingsStep({
                             indicator: 'text-xs',
                             root: 'w-4.5 h-4.5',
                           }}
+                          data={{ cy: 'set-quiz-gamification' }}
                         />
                       )}
 
@@ -284,6 +285,7 @@ function LiveQuizSettingsStep({
                               indicator: 'text-xs',
                               root: 'w-4.5 h-4.5',
                             }}
+                            data={{ cy: 'set-quiz-pin-protection' }}
                           />
                         )}
                         <Tooltip
