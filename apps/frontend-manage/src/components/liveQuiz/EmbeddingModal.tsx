@@ -72,10 +72,10 @@ function EmbeddingModal({
           <Select
             value={language}
             onChange={(newValue) => setLanguage(newValue as LocaleType)}
-            items={[
-              { label: t('shared.generic.en'), value: 'en' },
-              { label: t('shared.generic.de'), value: 'de' },
-            ]}
+            items={routing.locales.map((loc) => ({
+              label: t(`shared.generic.${loc}`),
+              value: loc,
+            }))}
           />
         </div>
       </div>

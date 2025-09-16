@@ -5,6 +5,7 @@ import {
   User,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
+import { routing } from '@klicker-uzh/i18n'
 import { Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -61,18 +62,11 @@ function LanguageSetting({ user }: LanguageSettingProps) {
           })
           router.push({ pathname, query }, asPath, { locale: newLocale })
         }}
-        items={[
-          {
-            label: t('shared.generic.en'),
-            value: 'en',
-            data: { cy: 'language-en' },
-          },
-          {
-            label: t('shared.generic.de'),
-            value: 'de',
-            data: { cy: 'language-de' },
-          },
-        ]}
+        items={routing.locales.map((loc) => ({
+          label: t(`shared.generic.${loc}`),
+          value: loc,
+          data: { cy: `language-${loc}` },
+        }))}
         className={{
           content: 'font-normal text-black',
           trigger: 'h-8 w-max font-normal text-black',

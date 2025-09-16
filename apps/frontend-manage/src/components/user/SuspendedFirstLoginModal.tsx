@@ -13,6 +13,7 @@ import {
   faListCheck,
   faPeopleGroup,
 } from '@fortawesome/free-solid-svg-icons'
+import { routing } from '@klicker-uzh/i18n'
 import {
   Button,
   FormikSelectField,
@@ -162,10 +163,10 @@ function SuspendedFirstLoginModal({
                   label={t('shared.generic.language')}
                   labelType="large"
                   name="locale"
-                  items={[
-                    { label: t('shared.generic.en'), value: 'en' },
-                    { label: t('shared.generic.de'), value: 'de' },
-                  ]}
+                  items={routing.locales.map((loc) => ({
+                    label: t(`shared.generic.${loc}`),
+                    value: loc,
+                  }))}
                   className={{
                     root: 'w-full md:w-max',
                     select: { trigger: 'w-40' },
