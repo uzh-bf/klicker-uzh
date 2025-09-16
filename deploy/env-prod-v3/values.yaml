@@ -16,7 +16,7 @@ global:
 hatchet:
   client:
     tlsStrategy: 'none'
-    apiUrl: 'hatchet-prod-api:8080'
+    apiUrl: 'http://hatchet-prod-api:8080'
     hostPort: 'hatchet-grpc:7070'
   workers:
     general:
