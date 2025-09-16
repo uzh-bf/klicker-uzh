@@ -468,7 +468,11 @@ export async function processResponseMessage(
         // add the response to the aggregated results
         response.selection.forEach((answerId: number) => {
           // skipped input fields should not be considered
-          if (answerId === -1) {
+          if (
+            answerId === -1 ||
+            typeof answerId === 'undefined' ||
+            answerId === null
+          ) {
             return
           }
 
@@ -484,7 +488,7 @@ export async function processResponseMessage(
             participantData.role === 'TEMPORARY_PARTICIPANT'
               ? `temporary-${participantData.sub}`
               : participantData.sub,
-            `[${String(response.selection.filter((r: number) => r !== -1))}]` // filter out skipped response fields
+            `[${String(response.selection.filter((r: number) => r !== -1 && typeof r !== 'undefined' && r !== null))}]` // filter out skipped response fields
           )
 
           const {

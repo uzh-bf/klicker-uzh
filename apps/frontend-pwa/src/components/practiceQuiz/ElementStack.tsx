@@ -497,9 +497,12 @@ function ElementStack({
                       return {
                         instanceId: parseInt(instanceId),
                         type: ElementType.Selection,
-                        selectionResponse: Object.values(
-                          value.response!
-                        ).filter((entry) => typeof entry !== 'undefined'),
+                        selectionResponse: Object.values(value.response!).map(
+                          (entry) =>
+                            typeof entry === 'undefined' || entry === null
+                              ? -1
+                              : entry
+                        ),
                       }
                     } else if (value.type === ElementType.CaseStudy) {
                       const caseStudyResponse: CaseStudyCaseResponse[] =

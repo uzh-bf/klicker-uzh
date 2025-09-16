@@ -45,7 +45,7 @@ function CSOneDimScatterPlot({
     caseId: string
     itemLabel: string
     x: number
-    caseIndex: number
+    y: number
   } | null>(null)
 
   // get the criterion object for the X axis
@@ -169,14 +169,24 @@ function CSOneDimScatterPlot({
         />
         <Tooltip
           cursor={{ strokeDasharray: '3 3' }}
+          animationDuration={0}
           content={({ payload }) => {
-            if (!payload?.[0]?.payload) return null
-            const data = payload[0].payload
+            if (!hoveredPoint) return null
+
+            // find the correct data point from the payload that matches our hovered point
+            const selectedDataPoint = payload?.find(
+              (item) =>
+                item.payload?.itemLabel === hoveredPoint.itemLabel &&
+                item.payload?.x === hoveredPoint.x &&
+                item.payload?.caseId === hoveredPoint.y
+            )?.payload
+
+            if (!selectedDataPoint) return null
 
             return (
               <div className="rounded-md border-2 border-black bg-white p-2">
-                <p className="font-bold">{data.itemLabel}</p>
-                <p>{`${data.xCriterionName}: ${getLabelForValue(data.x, xCriterionObj, xLower, xUpper)} ${typeof data.sigmaX !== 'undefined' ? `(± ${data.sigmaX.toFixed(2)})` : ''}`}</p>
+                <p className="font-bold">{selectedDataPoint.itemLabel}</p>
+                <p>{`${selectedDataPoint.xCriterionName}: ${getLabelForValue(selectedDataPoint.x, xCriterionObj, xLower, xUpper)} ${typeof selectedDataPoint.sigmaX !== 'undefined' ? `(± ${selectedDataPoint.sigmaX.toFixed(2)})` : ''}`}</p>
               </div>
             )
           }}
@@ -184,101 +194,102 @@ function CSOneDimScatterPlot({
         {selectedCases.map((caseId, index) => {
           const caseIx = cases.findIndex((c) => c.id === caseId)
 
-          // do not show the currently hovered point in the scatter plot
-          const filteredData = hoveredPoint
-            ? scatterData[caseId]
-                .map((data) => ({ ...data, caseId: index }))
-                .filter(
-                  (point) =>
-                    !(
-                      hoveredPoint.caseId === caseId &&
-                      hoveredPoint.itemLabel === point.itemLabel
-                    )
-                )
-            : scatterData[caseId].map((data) => ({ ...data, caseId: index }))
+          const dataWithCaseIndex = scatterData[caseId].map((data) => ({
+            ...data,
+            caseId: index,
+          }))
 
           return (
             <Scatter
               key={caseId}
               name={cases[caseIx]?.name}
-              data={filteredData}
+              data={dataWithCaseIndex}
               fill={CHART_COLORS[caseIx % 12]}
-              shape={(props: any) => (
-                <circle
-                  cx={props.cx}
-                  cy={props.cy}
-                  r={6}
-                  fill={props.fill}
-                  onMouseEnter={() =>
-                    setHoveredPoint({
-                      caseId,
-                      itemLabel: props.payload.itemLabel,
-                      x: props.payload.x,
-                      caseIndex: index,
-                    })
-                  }
-                  onMouseLeave={() => setHoveredPoint(null)}
-                  style={{ cursor: 'pointer' }}
-                />
-              )}
+              shape={(props: any) => {
+                const isHovered =
+                  hoveredPoint?.caseId === caseId &&
+                  hoveredPoint?.itemLabel === props.payload.itemLabel
+
+                return (
+                  <g>
+                    {/* visible circle */}
+                    <circle
+                      cx={props.cx}
+                      cy={props.cy}
+                      r={6}
+                      fill={props.fill}
+                      opacity={isHovered ? 1 : 0.8}
+                      stroke={isHovered ? '#000' : 'none'}
+                      strokeWidth={isHovered ? 2 : 0}
+                      style={{ pointerEvents: 'none' }}
+                    />
+                    {/* invisible hover area */}
+                    <circle
+                      cx={props.cx}
+                      cy={props.cy}
+                      r={12}
+                      fill="transparent"
+                      onMouseEnter={() =>
+                        setHoveredPoint({
+                          caseId,
+                          itemLabel: props.payload.itemLabel,
+                          x: props.payload.x,
+                          y: props.payload.caseId,
+                        })
+                      }
+                      onMouseLeave={() => setHoveredPoint(null)}
+                      style={{ cursor: 'pointer' }}
+                    />
+                  </g>
+                )
+              }}
               isAnimationActive={false}
             >
               <LabelList
                 dataKey="itemLabel"
-                position={index === 0 ? 'top' : 'bottom'}
-                offset={8}
                 className={textSize.textLg}
+                content={(props: any) => {
+                  const isHovered =
+                    hoveredPoint?.caseId === caseId &&
+                    hoveredPoint?.itemLabel === props.payload?.itemLabel
+
+                  if (isHovered) return null
+
+                  return (
+                    <text
+                      x={props.x + 5}
+                      y={props.y + (index === 0 ? -14 : 26)}
+                      textAnchor="middle"
+                      fill="gray"
+                      className={twMerge(
+                        textSize.textLg,
+                        'pointer-events-none'
+                      )}
+                    >
+                      {props.value}
+                    </text>
+                  )
+                }}
               />
+
+              {hoveredPoint?.caseId === caseId && (
+                <ErrorBar
+                  dataKey={(entry) =>
+                    entry.itemLabel === hoveredPoint.itemLabel
+                      ? entry.sigmaX
+                      : 0
+                  }
+                  width={4}
+                  strokeWidth={2}
+                  stroke={CHART_COLORS[caseIx % 12]}
+                  direction="x"
+                  opacity={0.8}
+                  style={{ pointerEvents: 'none' }}
+                />
+              )}
             </Scatter>
           )
         })}
-
-        {/* render the hovered point with error bars */}
-        {hoveredPoint &&
-          selectedCases.map((caseId) => {
-            if (caseId !== hoveredPoint.caseId) return null
-            const caseIx = cases.findIndex((c) => c.id === caseId)
-            const hoveredPointData = scatterData[caseId]
-              .filter((point) => point.itemLabel === hoveredPoint.itemLabel)
-              .map((data) => ({
-                ...data,
-                caseId: hoveredPoint.caseIndex,
-              }))
-
-            if (hoveredPointData.length === 0) return null
-
-            return (
-              <Scatter
-                legendType="none"
-                key={`${caseId}-hovered`}
-                data={hoveredPointData}
-                fill={CHART_COLORS[caseIx % 12]}
-                shape={(props: any) => (
-                  <circle
-                    cx={props.cx}
-                    cy={props.cy}
-                    r={8}
-                    fill={props.fill}
-                    opacity={1}
-                    stroke="#000"
-                    strokeWidth={1}
-                    onMouseLeave={() => setHoveredPoint(null)}
-                    style={{ cursor: 'pointer' }}
-                  />
-                )}
-                isAnimationActive={false}
-              >
-                <ErrorBar
-                  dataKey="sigmaX"
-                  width={4}
-                  strokeWidth={2}
-                  opacity={0.8}
-                  stroke={CHART_COLORS[caseIx % 12]}
-                  direction="x"
-                />
-              </Scatter>
-            )
-          })}
         <Legend
           align="right"
           verticalAlign="top"

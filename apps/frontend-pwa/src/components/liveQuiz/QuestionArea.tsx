@@ -398,7 +398,9 @@ function QuestionArea({
         liveQuizId: quizId,
         instanceId,
         type,
-        answer: Object.values(input.response),
+        answer: Object.values(input.response).map((entry) =>
+          typeof entry === 'undefined' || entry === null ? -1 : entry
+        ),
         correlationKey,
       })
 
