@@ -8,7 +8,11 @@ import type {
   SelectionStudentResponseType,
 } from '../StudentElement'
 
-export function validateScResponse(response?: ChoicesStudentResponseType) {
+export function validateScResponse({
+  response,
+}: {
+  response?: ChoicesStudentResponseType
+}) {
   return (
     typeof response !== 'undefined' &&
     response !== null &&
@@ -16,7 +20,11 @@ export function validateScResponse(response?: ChoicesStudentResponseType) {
   )
 }
 
-export function validateMcResponse(response?: ChoicesStudentResponseType) {
+export function validateMcResponse({
+  response,
+}: {
+  response?: ChoicesStudentResponseType
+}) {
   return (
     typeof response !== 'undefined' &&
     response !== null &&
@@ -24,7 +32,11 @@ export function validateMcResponse(response?: ChoicesStudentResponseType) {
   )
 }
 
-export function validateKprimResponse(response?: ChoicesStudentResponseType) {
+export function validateKprimResponse({
+  response,
+}: {
+  response?: ChoicesStudentResponseType
+}) {
   return (
     typeof response !== 'undefined' &&
     response !== null &&
@@ -98,10 +110,16 @@ export function validateSelectionResponse({
   if (
     !response ||
     Object.values(response).every(
-      (value) => value === -1 || typeof value === 'undefined'
+      (value) => value === -1 || typeof value === 'undefined' || value === null
     ) ||
-    new Set(Object.values(response).filter((r) => r !== -1)).size !==
-      Object.values(response).filter((r) => r !== -1).length
+    new Set(
+      Object.values(response).filter(
+        (r) => r !== -1 && typeof r !== 'undefined' && r !== null
+      )
+    ).size !==
+      Object.values(response).filter(
+        (r) => r !== -1 && typeof r !== 'undefined' && r !== null
+      ).length
   ) {
     return false
   }
