@@ -4598,14 +4598,12 @@ describe('Different live-quiz workflows', function () {
     cy.get('@protectedQuizLink').then(function (link) {
       cy.clearAllCookies()
       cy.clearAllLocalStorage()
-
       studentAccountLinkAccess(String(link), this.data, true, true)
     })
 
     cy.get('@protectedQuizLink2').then(function (link) {
       cy.clearAllCookies()
       cy.clearAllLocalStorage()
-
       studentAccountLinkAccess(String(link), this.data, true, false)
     })
   })
