@@ -1586,7 +1586,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       enterItemsManually:
         'Möchten Sie die Fallstudien-Elemente manuell erfassen?',
       enterItemsManuallyExplanation:
-        'Diese Oberfläche erlaubt es Ihnen, Ihre Fallstudien-Elemente manuell direkt im Kontext der Frage zu erfassen. Beim Speichern der Frage werden die entsprechenden Elemente automatisch in eine <b>neue Antwort-Sammlung kombiniert</b>, die Sie später wiederverwenden oder erweitern können.',
+        'Diese Oberfläche erlaubt es Ihnen, die Elemente für Ihre Fallstudie direkt im Kontext der Frage zu erfassen. Beim Speichern der Frage werden die entsprechenden Elemente automatisch in eine <b>neue Antwort-Sammlung kombiniert</b>, die Sie später wiederverwenden oder erweitern können. <button>Sie können auch zur Auswahl der Fallstudien-Elemente aus einer bestehenden Sammlung zurückkehren.</button>',
       returnItemsCollectionSelection:
         'Möchten Sie zur Auswahl der Optionen aus einer bestehenden Sammlung zurückkehren?',
       enterSelectionItemsManually:
