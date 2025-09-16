@@ -2,14 +2,18 @@ import { faArrowRightArrowLeft } from '@fortawesome/free-solid-svg-icons'
 import {
   CaseStudyElementResultCaseInfo,
   CaseStudyElementResultCriterionInfo,
+  LocaleType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H3, SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { ActivityEvaluationType } from '../ActivityEvaluation'
 import { TextSizeType } from '../textSizes'
 import CSCaseSelection from './CSCaseSelection'
 import { AggregationType } from './CSEvaluationScatter'
+import LiveQuizEvaluationQRCode from './LiveQuizEvaluationQRCode'
 
 function CSEvaluationScatterSidebar({
   cases,
@@ -23,6 +27,10 @@ function CSEvaluationScatterSidebar({
   aggregationType,
   setAggregationType,
   textSize,
+  courseLanguage,
+  isAssessmentEnabled,
+  pinCode,
+  type,
 }: {
   cases: CaseStudyElementResultCaseInfo[]
   criteria: CaseStudyElementResultCriterionInfo[]
@@ -35,97 +43,115 @@ function CSEvaluationScatterSidebar({
   aggregationType: AggregationType
   setAggregationType: Dispatch<SetStateAction<AggregationType>>
   textSize: TextSizeType
+  courseLanguage?: LocaleType | null
+  isAssessmentEnabled: boolean
+  pinCode?: string | null
+  type?: ActivityEvaluationType
 }) {
   const t = useTranslations()
+  const router = useRouter()
+  const isLiveQuizEvaluation =
+    type === 'LiveQuiz' ||
+    (!type && router.pathname && router.pathname.includes('/quizzes/'))
 
   return (
-    <div className="flex h-full flex-col gap-6 overflow-y-auto px-4 py-2">
-      <CSCaseSelection
-        cases={cases}
-        selectedCases={selectedCases}
-        setSelectedCases={setSelectedCases}
-        textSize={textSize}
-      />
-      <div className="flex flex-col">
-        <H3 className={{ root: twMerge('mb-0', textSize.textLg) }}>
-          {t('shared.generic.settings')}
-        </H3>
-        <div className="flex w-full flex-row">
-          <div className="w-full">
-            <SelectField
-              required
-              label={t('manage.evaluation.criterionXAxis')}
-              items={criteria.map((criterion) => ({
-                value: String(criterion.id),
-                label: criterion.name,
-                disabled: criterion.id === yCriterion,
-              }))}
-              value={xCriterion ?? undefined}
-              onChange={(value) => setXCriterion(value)}
-              disabled={criteria.length === 1}
-              className={{
-                label: 'mt-0',
-                root: 'w-full',
-                select: { root: 'w-full', trigger: 'w-full' },
-              }}
-            />
-            {criteria.length > 1 ? (
+    <div className="order-1 flex h-full w-full flex-col justify-between overflow-hidden pb-1 pt-2 md:order-2">
+      <div className="flex h-max max-h-full flex-col gap-6 overflow-y-auto px-4 py-2">
+        <CSCaseSelection
+          cases={cases}
+          selectedCases={selectedCases}
+          setSelectedCases={setSelectedCases}
+          textSize={textSize}
+        />
+        <div className="flex flex-col">
+          <H3 className={{ root: twMerge('mb-0', textSize.textLg) }}>
+            {t('shared.generic.settings')}
+          </H3>
+          <div className="flex w-full flex-row">
+            <div className="w-full">
               <SelectField
                 required
-                label={t('manage.evaluation.criterionYAxis')}
+                label={t('manage.evaluation.criterionXAxis')}
                 items={criteria.map((criterion) => ({
                   value: String(criterion.id),
                   label: criterion.name,
-                  disabled: criterion.id === xCriterion,
+                  disabled: criterion.id === yCriterion,
                 }))}
-                value={yCriterion ?? undefined}
-                onChange={(value) => setYCriterion(value)}
+                value={xCriterion ?? undefined}
+                onChange={(value) => setXCriterion(value)}
+                disabled={criteria.length === 1}
                 className={{
                   label: 'mt-0',
                   root: 'w-full',
                   select: { root: 'w-full', trigger: 'w-full' },
                 }}
               />
+              {criteria.length > 1 ? (
+                <SelectField
+                  required
+                  label={t('manage.evaluation.criterionYAxis')}
+                  items={criteria.map((criterion) => ({
+                    value: String(criterion.id),
+                    label: criterion.name,
+                    disabled: criterion.id === xCriterion,
+                  }))}
+                  value={yCriterion ?? undefined}
+                  onChange={(value) => setYCriterion(value)}
+                  className={{
+                    label: 'mt-0',
+                    root: 'w-full',
+                    select: { root: 'w-full', trigger: 'w-full' },
+                  }}
+                />
+              ) : null}
+            </div>
+            {criteria.length > 1 ? (
+              <Button
+                basic
+                className={{
+                  root: 'ml-1 mt-5 rotate-90 self-center rounded-full p-1',
+                }}
+                onClick={() => {
+                  if (!xCriterion || !yCriterion) return
+                  const temp = xCriterion
+                  setXCriterion(yCriterion)
+                  setYCriterion(temp)
+                }}
+              >
+                <Button.Icon withoutLabel icon={faArrowRightArrowLeft} />
+              </Button>
             ) : null}
           </div>
-          {criteria.length > 1 ? (
-            <Button
-              basic
-              className={{
-                root: 'ml-1 mt-5 rotate-90 self-center rounded-full p-1',
-              }}
-              onClick={() => {
-                if (!xCriterion || !yCriterion) return
-                const temp = xCriterion
-                setXCriterion(yCriterion)
-                setYCriterion(temp)
-              }}
-            >
-              <Button.Icon withoutLabel icon={faArrowRightArrowLeft} />
-            </Button>
-          ) : null}
+          <SelectField
+            required
+            label={t('manage.evaluation.aggregation')}
+            items={[
+              {
+                value: AggregationType.MEAN,
+                label: t('shared.generic.mean'),
+              },
+              {
+                value: AggregationType.MEDIAN,
+                label: t('shared.generic.median'),
+              },
+            ]}
+            value={aggregationType}
+            onChange={(value) => setAggregationType(value as AggregationType)}
+            className={{
+              root: 'mt-3 w-full',
+              select: { root: 'w-full', trigger: 'w-full' },
+            }}
+          />
         </div>
-        <SelectField
-          required
-          label={t('manage.evaluation.aggregation')}
-          items={[
-            {
-              value: AggregationType.MEAN,
-              label: t('shared.generic.mean'),
-            },
-            {
-              value: AggregationType.MEDIAN,
-              label: t('shared.generic.median'),
-            },
-          ]}
-          value={aggregationType}
-          onChange={(value) => setAggregationType(value as AggregationType)}
-          className={{
-            root: 'mt-3 w-full',
-            select: { root: 'w-full', trigger: 'w-full' },
-          }}
-        />
       </div>
+      {isLiveQuizEvaluation && !router.query.hmac && (
+        <LiveQuizEvaluationQRCode
+          language={courseLanguage}
+          isAssessmentEnabled={isAssessmentEnabled}
+          pinCode={pinCode}
+          className="px-3 pb-2"
+        />
+      )}
     </div>
   )
 }

@@ -41,6 +41,8 @@ interface ElementEvaluationProps {
   type: ActivityEvaluationType
   requireShowResultsConfirmation: boolean
   isStackActive?: boolean
+  isAssessmentEnabled: boolean
+  pinCode?: string | null
   className?: string
   lastRefetchTime?: Date
   courseId?: string | null
@@ -63,6 +65,8 @@ function ElementEvaluation({
   type,
   requireShowResultsConfirmation,
   isStackActive,
+  isAssessmentEnabled,
+  pinCode,
   className,
   lastRefetchTime,
   courseName,
@@ -180,6 +184,8 @@ function ElementEvaluation({
                   chartType={chartType}
                   showSolution={!isStackActive && showSolution}
                   showExplanation={!isStackActive && showExplanation}
+                  isAssessmentEnabled={isAssessmentEnabled}
+                  pinCode={pinCode}
                   type={type}
                 />
               )}
@@ -192,6 +198,8 @@ function ElementEvaluation({
                   chartType={chartType}
                   showSolution={!isStackActive && showSolution}
                   showExplanation={!isStackActive && showExplanation}
+                  isAssessmentEnabled={isAssessmentEnabled}
+                  pinCode={pinCode}
                   type={type}
                 />
               )}
@@ -204,6 +212,8 @@ function ElementEvaluation({
                   chartType={chartType}
                   showSolution={!isStackActive && showSolution}
                   showExplanation={!isStackActive && showExplanation}
+                  isAssessmentEnabled={isAssessmentEnabled}
+                  pinCode={pinCode}
                   type={type}
                 />
               )}
@@ -233,6 +243,8 @@ function ElementEvaluation({
             showExplanation={!isStackActive && showExplanation}
             hasSolution={hasSolution}
             hasExplanation={hasExplanation}
+            isAssessmentEnabled={isAssessmentEnabled}
+            pinCode={pinCode}
             type={type}
           />
         )}

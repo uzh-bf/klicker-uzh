@@ -19,6 +19,8 @@ import { twMerge } from 'tailwind-merge'
 interface FTEvaluationProps {
   instanceEvaluation: FreeTextActivityEvaluationData
   courseLanguage?: LocaleType | null
+  isAssessmentEnabled: boolean
+  pinCode?: string | null
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
@@ -29,6 +31,8 @@ interface FTEvaluationProps {
 function FTEvaluation({
   instanceEvaluation,
   courseLanguage,
+  isAssessmentEnabled,
+  pinCode,
   textSize,
   chartType,
   showSolution,
@@ -70,6 +74,8 @@ function FTEvaluation({
                 <FTSidebar
                   instance={instanceEvaluation}
                   courseLanguage={courseLanguage}
+                  isAssessmentEnabled={isAssessmentEnabled}
+                  pinCode={pinCode}
                   textSize={textSize}
                   showSolution={showSolution}
                   type={type}

@@ -46,6 +46,8 @@ interface ActivityEvaluationProps {
   confusionFeedbacks?: ConfusionTimestep[] | null
   leaderboard?: LeaderboardCombinedEntry[] | null
   hideActiveBlockResults?: boolean
+  isAssessmentEnabled?: boolean | null
+  pinCode?: string | null
   type?: ActivityEvaluationType
   lastRefetchTime?: Date
 }
@@ -61,6 +63,8 @@ function ActivityEvaluation({
   feedbacks,
   confusionFeedbacks,
   leaderboard,
+  isAssessmentEnabled = false,
+  pinCode,
   hideActiveBlockResults = false,
   type = 'Asynchronous',
   lastRefetchTime,
@@ -187,6 +191,8 @@ function ActivityEvaluation({
             activityName={activityName}
             activityId={activityId}
             activityStatus={activityStatus}
+            isAssessmentEnabled={isAssessmentEnabled ?? false}
+            pinCode={pinCode}
             textSize={textSize}
             chartType={chartType}
             showSolution={

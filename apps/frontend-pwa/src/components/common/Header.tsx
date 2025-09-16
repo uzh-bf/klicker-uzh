@@ -262,13 +262,13 @@ function Header({
                   id: 'languageDE',
                   value: LocaleType.De,
                   flag: '🇩🇪',
-                  label: t('shared.generic.german'),
+                  label: t('shared.generic.de'),
                 },
                 {
                   id: 'languageEN',
                   value: LocaleType.En,
                   flag: '🇬🇧',
-                  label: t('shared.generic.english'),
+                  label: t('shared.generic.en'),
                 },
               ].map((language) => ({
                 id: language.id,

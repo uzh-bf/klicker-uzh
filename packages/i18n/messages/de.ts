@@ -281,14 +281,10 @@ export default {
       recompute: 'Neu berechnen',
       ok: 'OK',
       language: 'Sprache',
-      english: 'Englisch',
       en: 'Englisch',
-      enFlag: '🇬🇧 Englisch',
-      enFlagShort: '🇬🇧',
-      german: 'Deutsch',
+      enShort: 'EN',
       de: 'Deutsch',
-      deFlag: '🇩🇪 Deutsch',
-      deFlagShort: '🇩🇪',
+      deShort: 'DE',
       practicePool: 'Üben',
       practiceTitle: 'Übungspool',
       practice: 'Übungs-Quiz',
@@ -1590,7 +1586,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       enterItemsManually:
         'Möchten Sie die Fallstudien-Elemente manuell erfassen?',
       enterItemsManuallyExplanation:
-        'Diese Oberfläche erlaubt es Ihnen, Ihre Fallstudien-Elemente manuell direkt im Kontext der Frage zu erfassen. Beim Speichern der Frage werden die entsprechenden Elemente automatisch in eine <b>neue Antwort-Sammlung kombiniert</b>, die Sie später wiederverwenden oder erweitern können.',
+        'Diese Oberfläche erlaubt es Ihnen, die Elemente für Ihre Fallstudie direkt im Kontext der Frage zu erfassen. Beim Speichern der Frage werden die entsprechenden Elemente automatisch in eine <b>neue Antwort-Sammlung kombiniert</b>, die Sie später wiederverwenden oder erweitern können. <button>Sie können auch zur Auswahl der Fallstudien-Elemente aus einer bestehenden Sammlung zurückkehren.</button>',
       returnItemsCollectionSelection:
         'Möchten Sie zur Auswahl der Optionen aus einer bestehenden Sammlung zurückkehren?',
       enterSelectionItemsManually:
@@ -2561,6 +2557,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       blockActiveInfo:
         'Der aktuell ausgewählte Block wurde noch nicht geschlossen. Die Teilnehmenden Ihres Quizzes können nach wie vor Antworten abgeben. Bitte bestätigen Sie, dass Sie die Resultate anzeigen wollen.',
       showResults: 'Resultate anzeigen',
+      showQRCodes: 'QR-Codes anzeigen',
     },
     lecturer: {
       noDataAvailable: 'Keine Daten verfügbar...',
