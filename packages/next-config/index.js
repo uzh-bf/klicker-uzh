@@ -1,15 +1,9 @@
-import type { NextConfig } from 'next'
-import { RemotePattern } from 'next/dist/shared/lib/image-config'
-
+/** @type {import('next').NextConfig} */
 function getNextBaseConfig({
   BLOB_STORAGE_ACCOUNT_URL,
   NODE_ENV,
   NEXT_PUBLIC_ENV,
-}: {
-  BLOB_STORAGE_ACCOUNT_URL?: string
-  NODE_ENV?: string
-  NEXT_PUBLIC_ENV?: string
-}): NextConfig {
+}) {
   const isStaging = process.env.NEXT_PUBLIC_ENV === 'staging'
   const isProduction = process.env.NEXT_PUBLIC_ENV === 'production'
 
@@ -56,7 +50,7 @@ function getNextBaseConfig({
         'klickeruzhdevimages.blob.core.windows.net',
         'klickeruzhprodimages.blob.core.windows.net',
         BLOB_STORAGE_ACCOUNT_URL ?? null,
-      ].filter(Boolean) as string[],
+      ].filter(Boolean),
       remotePatterns: [
         {
           protocol: 'https',
@@ -85,12 +79,12 @@ function getNextBaseConfig({
               pathname: '/**',
             }
           : null,
-      ].filter(Boolean) as RemotePattern[],
+      ].filter(Boolean),
     },
   }
 }
 
-function getNextPWAConfig({ NODE_ENV }: { NODE_ENV?: string }) {
+function getNextPWAConfig({ NODE_ENV }) {
   return {
     dest: 'public',
     skipWaiting: true,

@@ -4,6 +4,7 @@ import createNextIntlPlugin from 'next-intl/plugin'
 
 const withNextIntl = createNextIntlPlugin('./src/types/i18n.ts')
 
+// @ts-expect-error
 const nextConfig: NextConfig = {
   ...getNextBaseConfig({
     BLOB_STORAGE_ACCOUNT_URL: '',

@@ -22,10 +22,10 @@ model ChatThread {
 
   messages ChatMessage[]
 
-  participant   Participant @relation(fields: [participantId], references: [id])
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
 
-  chatbot   Chatbot @relation(fields: [chatbotId], references: [id])
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   chatbotId String  @db.Uuid
 
   createdAt DateTime @default(now())
@@ -39,7 +39,7 @@ model ChatMessage {
   role     String // 'user' | 'assistant'
   content  Json // Array<{ type: string; text: string }>
 
-  thread ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  thread ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
