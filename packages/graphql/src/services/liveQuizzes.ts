@@ -215,24 +215,6 @@ export async function manipulateLiveQuiz(
   if (id) {
     existingActivity = await ctx.prisma.liveQuiz.findUnique({
       where: { id, isDeleted: false },
-      include: {
-        course: {
-          include: {
-            _count: {
-              select: {
-                permissions: {
-                  where: {
-                    userId: ctx.user.sub,
-                    permissionLevel: {
-                      in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
     })
 
     if (!existingActivity) {
@@ -305,9 +287,16 @@ export async function manipulateLiveQuiz(
     )
   }
 
-  // if required, find a new pin code for the live quiz that is still available
+  // check if a new pin code is required
+  const requiresNewPin =
+    pinProtection && // 1) pin protection is required (corresponding setting or assessment course)
+    (!existingActivity || // 2) only assign during creation or on course assignment change
+      ((courseId || existingActivity.courseId) &&
+        courseId !== existingActivity.courseId))
+
+  // find a new pin code that is still available, if required
   let newPinCode: string | undefined | null = existingActivity?.pinCode
-  if (pinProtection && (!courseId || courseId !== existingActivity?.courseId)) {
+  if (requiresNewPin) {
     let pinValid = false
 
     for (let attempt = 0; attempt < 10; attempt++) {
