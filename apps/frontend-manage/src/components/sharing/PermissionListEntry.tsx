@@ -13,6 +13,7 @@ function PermissionListEntry({
   handleRemovePermission,
   changeLoading,
   showPropagationSetting,
+  dataPrefix = '',
 }: {
   disabled?: boolean
   index: number
@@ -32,6 +33,7 @@ function PermissionListEntry({
   ) => Promise<void>
   changeLoading: boolean
   showPropagationSetting: boolean
+  dataPrefix?: string
 }) {
   const t = useTranslations()
 
@@ -44,8 +46,8 @@ function PermissionListEntry({
       )}
       data-cy={
         permission.username
-          ? `permission-${permission.username}`
-          : `permission-${permission.userGroupName}`
+          ? `${dataPrefix}permission-${permission.username}`
+          : `${dataPrefix}permission-${permission.userGroupName}`
       }
     >
       <td className="px-4 py-3 text-sm text-gray-900">

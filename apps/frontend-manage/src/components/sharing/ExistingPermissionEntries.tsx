@@ -131,8 +131,9 @@ function ExistingPermissionEntries({
       {ownerPermission && (
         <PermissionListEntry
           disabled
-          key={`owner-permission-${ownerPermission.userId}`}
           index={-1}
+          key={`owner-permission-${ownerPermission.userId}`}
+          dataPrefix="owner-"
           permission={ownerPermission}
           permissionLevelSelectItems={permissionLevelSelectItems}
           handlePermissionLevelChange={handlePermissionLevelChange}
