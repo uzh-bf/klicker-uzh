@@ -1,4 +1,4 @@
-import { faBook, faDice } from '@fortawesome/free-solid-svg-icons'
+import { faBook } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   LQ_DEFAULT_CORRECT_POINTS,
@@ -6,11 +6,9 @@ import {
   LQ_MAX_BONUS_POINTS,
   LQ_TIME_TO_ZERO_BONUS,
 } from '@klicker-uzh/shared-components/src/constants'
-import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
-import { Button, FormikNumberField, Modal } from '@uzh-bf/design-system'
+import { FormikNumberField, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction } from 'react'
-import { twMerge } from 'tailwind-merge'
 import LiveQuizGradingIllustration from './LiveQuizGradingIllustration'
 
 function AdvancedLiveQuizSettings({
@@ -38,25 +36,6 @@ function AdvancedLiveQuizSettings({
     <Modal
       open={modalOpen}
       onClose={() => setModalOpen(false)}
-      trigger={
-        <ForwardRefButton
-          basic
-          onClick={() => setModalOpen(true)}
-          overrideClassName="h-7 w-7"
-          data={{ cy: 'live-quiz-advanced-settings' }}
-        >
-          <Button.Icon
-            withoutLabel
-            icon={faDice}
-            className={{
-              root: twMerge(
-                'h-5 w-5',
-                showError && 'text-red-600 hover:text-red-700'
-              ),
-            }}
-          />
-        </ForwardRefButton>
-      }
       title={t('manage.activityWizard.liveQuizCustomizedGrading')}
       className={{ content: 'pb-0' }}
       dataCloseButton={{ cy: 'live-quiz-advanced-settings-close' }}
