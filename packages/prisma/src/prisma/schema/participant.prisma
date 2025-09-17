@@ -87,6 +87,8 @@ model Participant {
   coursePerformances              ParticipantPerformance[]
   groupAssignmentPoolEntries      GroupAssignmentPoolEntry[]
   messages                        GroupMessage[]
+  chatThreads                     ChatThread[]
+  chatUsageCredits                ChatUsageCredits[]
   invitations                     ParticipantInvitation[]
 
   createdAt DateTime @default(now())
