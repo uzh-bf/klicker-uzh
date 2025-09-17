@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.15](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.14...v3.4.0-alpha.15) (2025-09-16)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** resolve validation issues for selection questions with partially missing responses ([c32a38d](https://github.com/uzh-bf/klicker-uzh/commit/c32a38d8718537e8cafc99bc6ef86d6c30d12efd))
+* **cypress:** change the existing assessment test case to cover pin-protected quizzes instead ([#4922](https://github.com/uzh-bf/klicker-uzh/issues/4922)) ([447e7e9](https://github.com/uzh-bf/klicker-uzh/commit/447e7e945798ce61356c4f57a9cd9e08cc36dea9))
+
 ## [3.4.0-alpha.14](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.13...v3.4.0-alpha.14) (2025-09-16)
 
 
