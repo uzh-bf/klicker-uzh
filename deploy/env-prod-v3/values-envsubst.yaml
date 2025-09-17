@@ -40,6 +40,17 @@ auth:
   image:
     tag: '${APP_VERSION}'
 
+chat:
+  image:
+    tag: '${APP_VERSION}'
+
+  azure:
+    resourceName: '${AZURE_RESOURCE_NAME}'
+    apiKey: '${AZURE_API_KEY}'
+
+  mcp:
+    key: '${MCP_KEY}'
+
 frontendPWA:
   image:
     tag: '${APP_VERSION}'
