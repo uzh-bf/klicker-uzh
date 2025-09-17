@@ -59,7 +59,7 @@ function LiveQuizEvaluation() {
       hideActiveBlockResults={!router.query.hmac} // hide the results for active blocks when not inside PPT
       activityId={router.query.id as string}
       activityName={evaluation.displayName ?? ''}
-      activityStatus={evaluation.status}
+      activityStatus={evaluation.status ?? undefined}
       courseLanguage={evaluation.courseLanguage}
       courseName={evaluation.courseName}
       stacks={evaluation.results ?? []}

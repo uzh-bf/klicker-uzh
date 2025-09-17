@@ -20,7 +20,7 @@ export interface IActivityEvaluation {
   id: string
   name: string
   displayName: string
-  status: DB.PublicationStatus
+  status?: DB.PublicationStatus | null
   description?: string | null
   courseId?: string | null
   courseName?: string | null
