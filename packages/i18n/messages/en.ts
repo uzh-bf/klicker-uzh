@@ -1846,8 +1846,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       liveQuizCustomizedGrading: 'Customized Grading',
       liveQuizPointsExplanation:
         'These advanced settings allow you to change the point allocation in a live quiz. Please note that all point settings and the illustrations of the point allocation refer to elements with a multiplier of 1x. Larger multipliers are applied to all components except from the standard points. The multiplier set on the activity is already included in the illustration. The answer time starts running as soon as the first participant has answered the question completely correctly. For more information, please consult our <link>documentation</link>.',
-      liveQuizGamificationDeactivated:
-        'Gamification is currently not activated for this live quiz. Please select a gamified course or activate gamification manually.',
+      liveQuizNoCustomizedScoring:
+        'Questions in this live quiz are currently not scored. To enable scoring, assign it to a gamified and/or assessment course or manually activate gamification.',
       liveQuizDefaultPoints: 'Standard points',
       liveQuizDefaultPointsTooltip:
         'Participants in a live quiz receive this number of points for participating in a question. If no sample solution is defined, only standard points are awarded. The default value is {defaultValue}.',
