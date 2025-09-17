@@ -129,7 +129,7 @@ export async function processAssessmentResponse(
       `[CANCEL] [AddResponse Assessment] Response received after block of element instance ${message.instanceId} was closed at ${new Date(Number(blockClosedAt))}.`
     )
     ctx.cancel()
-    return
+    return { status: 200 }
   }
 
   // ! Step 1.2 Validation of response format
@@ -389,7 +389,7 @@ export async function processAssessmentResponse(
       `[CANCEL] [AddResponse Assessment] Participant ${message.participantId} has already submitted a response for instance ${message.instanceId} and block execution ${blockExecution}.`
     )
     ctx.cancel()
-    return
+    return { status: 208 }
   }
 
   try {
@@ -439,6 +439,14 @@ export async function processAssessmentResponse(
     xpAwarded: awardedXp,
     response,
   })
+
+  return {
+    status: 200,
+    pointsAwarded: awardedBasePoints,
+    correctednessPoints: awardedCorrectnessPoints,
+    bonusPoints: awardedBonusPoints,
+    xpAwarded: awardedXp,
+  }
 }
 
 export async function aggregateAssessmentResponses(
