@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.17](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.16...v3.4.0-alpha.17) (2025-09-17)
+
+
+### Features
+
+* **apps/chat:** add new chatbot frontend  ([#4863](https://github.com/uzh-bf/klicker-uzh/issues/4863)) ([0f6ec47](https://github.com/uzh-bf/klicker-uzh/commit/0f6ec472a675d14ffc79ab66c6c179ca454768e2))
+
 ## [3.4.0-alpha.16](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.15...v3.4.0-alpha.16) (2025-09-17)
 
 
