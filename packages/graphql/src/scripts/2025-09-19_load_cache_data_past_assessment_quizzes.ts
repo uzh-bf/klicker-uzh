@@ -88,9 +88,10 @@ async function run() {
     )
 
     for (const block of quiz.blocks) {
-      if (!block.startedAt) {
+      // if the block has no startedAt timestamp, return early
+      if (!block.startedAt || !block.closedAt) {
         throw new Error(
-          `Block ${block.id} of quiz ${quiz.id} does not have a startedAt.`
+          `Block ${block.id} of quiz ${quiz.id} does not have a startedAt or closedAt.`
         )
       }
 
@@ -106,13 +107,6 @@ async function run() {
             instance,
             redisMulti: redisMultiInstances,
           })
-        }
-
-        // if the block has no startedAt timestamp, return early
-        if (!block.startedAt || !block.closedAt) {
-          throw new Error(
-            `Block ${block.id} of quiz ${quiz.id} does not have a startedAt or closedAt.`
-          )
         }
 
         // obtain the correlation key of the instance

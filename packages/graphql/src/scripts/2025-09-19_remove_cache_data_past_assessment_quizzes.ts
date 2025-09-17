@@ -99,14 +99,18 @@ async function run() {
   for (const quiz of endedAssessmentLiveQuizzes) {
     console.log(`Processing quiz ${quiz.id}...`)
 
+    let blockCounter = 0
     for (const block of quiz.blocks) {
       // trigger block closure aggregation for assessment quizzes
       if (!DRY_RUN) {
         await tasks.aggregateLiveQuizBlockResultsAssessment.schedule(
-          dayjs().add(5, 'minute').toDate(),
+          dayjs()
+            .add(30 + blockCounter * 20, 'seconds')
+            .toDate(),
           { liveQuizId: quiz.id, blockId: block.id }
         )
       }
+      blockCounter++
     }
   }
 
