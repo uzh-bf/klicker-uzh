@@ -307,11 +307,11 @@ export async function manipulateLiveQuiz(
 
   // check if a new pin code is required
   const requiresNewPin =
-    (pinProtection && // 1) pin protection is required (corresponding setting or assessment course)
-      (!existingActivity || // 2) only assign during creation, on course assignment change, on pin setting change with no course assigned
-        ((courseId || existingActivity.courseId) &&
-          courseId !== existingActivity.courseId))) ||
-    (existingActivity && !existingActivity.courseId && !courseId)
+    pinProtection && // 1) pin protection is required (corresponding setting or assessment course)
+    (!existingActivity || // 2) only assign during creation, on course assignment change, on pin setting change with no course assigned
+      ((courseId || existingActivity.courseId) &&
+        courseId !== existingActivity.courseId) ||
+      (existingActivity && !existingActivity.courseId && !courseId))
 
   // find a new pin code that is still available, if required
   let newPinCode: string | undefined | null = existingActivity?.pinCode
