@@ -382,23 +382,22 @@ function CourseOverview({
                                   />
                                   <Button
                                     fluid
+                                    primary
                                     onClick={() => joinCourseLeaderboard()}
-                                    className={{ root: 'h-8' }}
+                                    className={{ root: 'mt-3 h-max py-1' }}
                                     data={{
                                       cy: 'student-course-join-leaderboard',
                                     }}
                                   >
-                                    {t.rich(
-                                      'pwa.courses.joinLeaderboardCourse',
-                                      {
-                                        name: course.displayName,
-                                        b: (text) => (
-                                          <span className="px-1 font-bold">
-                                            {text}
-                                          </span>
-                                        ),
-                                      }
-                                    )}
+                                    <Button.Label>
+                                      {t.rich(
+                                        'pwa.courses.joinLeaderboardCourse',
+                                        {
+                                          name: course.displayName,
+                                          b: (text) => <b>{text}</b>,
+                                        }
+                                      )}
+                                    </Button.Label>
                                   </Button>
                                 </div>
                               </div>

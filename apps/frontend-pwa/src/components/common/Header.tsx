@@ -61,6 +61,7 @@ function Header({
   const showProfileSetup =
     participant &&
     participant.role === UserRole.Participant &&
+    process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
     (!participant?.avatar || !participant?.email)
 
   return (
@@ -141,7 +142,11 @@ function Header({
             <>
               <AvatarWithLevel
                 avatar={participant?.avatar}
-                level={participant?.level}
+                level={
+                  process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true'
+                    ? participant?.level
+                    : undefined
+                }
               />
               {showProfileSetup && (
                 <FontAwesomeIcon
@@ -161,7 +166,10 @@ function Header({
                       <div className="font-bold">
                         <div>{t('pwa.profile.loggedInAs')}</div>
                         <div className="font-normal">
-                          {`${participant?.username}${participant.role === UserRole.TemporaryParticipant ? ` (${t('pwa.profile.temporaryPseudonym')})` : ''}`}
+                          {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
+                            ? (participant.institutionalEmail ??
+                              participant.email)
+                            : `${participant?.username}${participant.role === UserRole.TemporaryParticipant ? ` (${t('pwa.profile.temporaryPseudonym')})` : ''}`}
                         </div>
                       </div>
                     ),
@@ -196,8 +204,9 @@ function Header({
                   },
                 ]
               : []),
-            ...(!router.pathname.includes('/session') ||
-            participant?.role !== UserRole.TemporaryParticipant
+            ...((!router.pathname.includes('/session') ||
+              participant?.role !== UserRole.TemporaryParticipant) &&
+            process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true'
               ? [
                   {
                     id: 'profileOrLogin',
@@ -253,13 +262,13 @@ function Header({
                   id: 'languageDE',
                   value: LocaleType.De,
                   flag: '🇩🇪',
-                  label: t('shared.generic.german'),
+                  label: t('shared.generic.de'),
                 },
                 {
                   id: 'languageEN',
                   value: LocaleType.En,
                   flag: '🇬🇧',
-                  label: t('shared.generic.english'),
+                  label: t('shared.generic.en'),
                 },
               ].map((language) => ({
                 id: language.id,

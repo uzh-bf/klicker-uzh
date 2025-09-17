@@ -186,6 +186,7 @@ export interface IPracticeQuiz
     | 'orderType'
     | 'status'
     | 'availableFrom'
+    | 'areInstancesOutdated'
     | 'courseId'
     | 'createdAt'
     | 'updatedAt'

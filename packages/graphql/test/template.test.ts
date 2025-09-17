@@ -1,3 +1,4 @@
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   ElementInstanceType,
   ElementType,
@@ -36,9 +37,10 @@ import {
 import { questionsSLAF } from './testData.js'
 import { userFour, userOne, userThree, userTwo } from './userData.js'
 
-describe('Unit tests for template service', () => {
+describe('Integration tests for template service', () => {
   // shared resources used across tests
   let prisma: PrismaClient
+  let hatchet: Hatchet
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
@@ -47,8 +49,13 @@ describe('Unit tests for template service', () => {
   let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
-    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    const {
+      prisma: newPrisma,
+      hatchet: newHatchet,
+      emitter: newEmitter,
+    } = await initializePrisma()
     prisma = newPrisma
+    hatchet = newHatchet
     emitter = newEmitter
   })
 
@@ -64,7 +71,7 @@ describe('Unit tests for template service', () => {
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
       userFiveCtx: ctx5,
-    } = await testInitialization(prisma, emitter)
+    } = await testInitialization(prisma, hatchet, emitter)
 
     userOneCtx = ctx1
     userTwoCtx = ctx2
@@ -73,9 +80,7 @@ describe('Unit tests for template service', () => {
     userFiveCtx = ctx5
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   it('Verify that matching questions are correctly filtered when loaded from the database', async () => {
     // seed a number of minimal elements into the database

@@ -64,14 +64,14 @@ export function NUMERICALAnswerOptions({
           className={{
             input: twMerge(
               'focus:border-primary-80',
-              !valid && 'border-red-600'
+              !valid && !disabled ? 'border-red-600' : ''
             ),
             unit: 'rounded-r-lg',
           }}
           data={{ cy: `input-numerical-${elementIx}` }}
         />
       </div>
-      {!valid && (
+      {!valid && !disabled ? (
         <div className="text-black">
           <FontAwesomeIcon
             icon={faTriangleExclamation}
@@ -79,7 +79,7 @@ export function NUMERICALAnswerOptions({
           />
           {t('shared.questions.numInvalidValue')}
         </div>
-      )}
+      ) : null}
     </div>
   )
 }

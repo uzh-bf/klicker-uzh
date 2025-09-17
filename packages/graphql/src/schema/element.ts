@@ -923,6 +923,7 @@ export const ElementSummary = ElementSummaryRef.implement({
 export interface IElementInstance
   extends Omit<DB.ElementInstance, 'isVersionOutdated'> {
   feedbacks?: DB.ElementFeedback[] | null
+  correlationKey?: string | null
 }
 export const ElementInstanceRef =
   builder.objectRef<IElementInstance>('ElementInstance')
@@ -932,6 +933,7 @@ export const ElementInstance = ElementInstanceRef.implement({
 
     type: t.expose('type', { type: ElementInstanceType }),
     elementType: t.expose('elementType', { type: ElementType }),
+    correlationKey: t.exposeString('correlationKey', { nullable: true }), // correlation key for assessment response validation
 
     elementData: t.field({
       type: ElementData,

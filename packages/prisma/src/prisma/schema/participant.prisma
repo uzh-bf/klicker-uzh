@@ -1,21 +1,55 @@
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+}
+
+model ParticipantInvitation {
+  id Int @id @default(autoincrement())
+
+  email  String
+  status InvitationStatus @default(PENDING)
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  participantId String?      @db.Uuid
+
+  invitedAt  DateTime  @default(now())
+  acceptedAt DateTime?
+
+  @@unique([email, courseId])
+  @@index([email])
+}
+
 model ParticipantAccount {
   id String @id @default(uuid()) @db.Uuid
 
-  ssoId   String @unique
-  ssoType String @default("LTI1.1")
+  ssoId    String  @unique
+  ssoType  String  @default("LTI1.1")
+  ssoEmail String?
+
+  // Add fields for affiliation support
+  type       String  @default("sso") // "sso", "affiliation"
+  isPrimary  Boolean @default(false) // Only one primary per participant
+  isVerified Boolean @default(false) // Only verified affiliations can login
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@unique([participantId, ssoType])
+  // Performance indexes
+  @@index([ssoId, isVerified])
+  @@index([type, isVerified])
 }
 
 model Participant {
   id String @id @default(uuid()) @db.Uuid
 
-  email        String? @unique
+  email        String?
   isEmailValid Boolean @default(false)
   username     String  @unique
   password     String
@@ -38,6 +72,7 @@ model Participant {
   participations                  Participation[]
   questionResponses               QuestionResponse[]
   detailQuestionResponses         QuestionResponseDetail[]
+  liveQuizResponses               LiveQuizResponse[]
   feedbacks                       Feedback[]
   elementFeedbacks                ElementFeedback[]
   leaderboards                    LeaderboardEntry[]
@@ -54,9 +89,12 @@ model Participant {
   messages                        GroupMessage[]
   chatThreads                     ChatThread[]
   chatUsageCredits                ChatUsageCredits[]
+  invitations                     ParticipantInvitation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([email, isSSOAccount])
 }
 
 model ParticipantGroup {
@@ -176,7 +214,9 @@ model LeaderboardEntry {
 }
 
 model TemporaryLeaderboardEntry {
-  id       String  @id @default(uuid()) @db.Uuid // participant id of temporary participant
+  // participant id of temporary participant / participant id in case of logged-in
+  // participant without participation or in gamified live quiz without course
+  id       String  @default(uuid()) @db.Uuid
   username String
   score    Int
   avatar   String?
@@ -186,6 +226,10 @@ model TemporaryLeaderboardEntry {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@id([id, quizId])
+  @@index(id)
+  @@index(quizId)
 }
 
 model PushSubscription {

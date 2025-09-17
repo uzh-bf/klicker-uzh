@@ -2,7 +2,6 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
-import { checkCronToken } from '../lib/util.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
 import * as CourseService from '../services/courses.js'
@@ -247,6 +246,21 @@ export const Mutation = builder.mutationType({
       //   },
       // }),
 
+      setLiveQuizPin: t.field({
+        nullable: false,
+        type: 'Boolean',
+        args: {
+          liveQuizId: t.arg.string({ required: true }),
+          pin: t.arg.string({
+            required: true,
+            validate: { minLength: 6, maxLength: 6, regex: /^[A-Z0-9]+$/ },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await LiveQuizService.setLiveQuizPinCookie(args, ctx)
+        },
+      }),
+
       respondToElementStack: t.field({
         nullable: true,
         type: StackFeedback,
@@ -259,34 +273,6 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await StacksService.respondToElementStack(args, ctx)
-        },
-      }),
-
-      updateGroupAverageScores: t.boolean({
-        resolve: async (_, __, ctx) => {
-          checkCronToken(ctx)
-          return await GroupService.updateGroupAverageScores(ctx)
-        },
-      }),
-
-      sendPushNotifications: t.boolean({
-        resolve: async (_, __, ctx) => {
-          checkCronToken(ctx)
-          return await NotificationService.sendPushNotifications(ctx)
-        },
-      }),
-
-      publishScheduledActivities: t.boolean({
-        resolve: async (_, __, ctx) => {
-          checkCronToken(ctx)
-          return await CourseService.publishScheduledActivities(ctx)
-        },
-      }),
-
-      endExpiredActivities: t.boolean({
-        resolve: async (_, __, ctx) => {
-          checkCronToken(ctx)
-          return await CourseService.endExpiredActivities(ctx)
         },
       }),
 
@@ -370,20 +356,6 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await CourseService.joinCourseWithPin(args, ctx)
-        },
-      }),
-
-      runningRandomGroupAssignments: t.boolean({
-        resolve: async (_, __, ctx) => {
-          checkCronToken(ctx)
-          return await GroupService.runningRandomGroupAssignments(ctx)
-        },
-      }),
-
-      finalRandomGroupAssignments: t.boolean({
-        resolve: async (_, __, ctx) => {
-          checkCronToken(ctx)
-          return await GroupService.finalRandomGroupAssignments(ctx)
         },
       }),
 
@@ -726,6 +698,35 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
+      scheduleLiveQuiz: t.withAuth(asUserSessionExec).field({
+        nullable: true,
+        type: LiveQuizMeta,
+        args: {
+          id: t.arg.string({ required: true }),
+          availableFrom: t.arg({ type: 'Date', required: false }),
+        },
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await LiveQuizService.scheduleLiveQuiz(args, ctx)
+          }
+        ),
+      }),
+
+      unpublishLiveQuiz: t.withAuth(asUserSessionExec).field({
+        nullable: true,
+        type: LiveQuizMeta,
+        args: { id: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          DB.PermissionLevel.EXECUTE,
+          async (_, args, ctx) => {
+            return await LiveQuizService.unpublishLiveQuiz(args, ctx)
+          }
+        ),
+      }),
+
       deleteFeedback: t.withAuth(asUserSessionExec).field({
         nullable: true,
         type: Feedback,
@@ -898,6 +899,7 @@ export const Mutation = builder.mutationType({
           maxBonusPoints: t.arg.int({ required: false }),
           timeToZeroBonus: t.arg.int({ required: false }),
           isGamificationEnabled: t.arg.boolean({ required: true }),
+          isPinProtected: t.arg.boolean({ required: true }),
           isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
           isLiveQAEnabled: t.arg.boolean({ required: true }),
           isModerationEnabled: t.arg.boolean({ required: true }),
@@ -924,6 +926,7 @@ export const Mutation = builder.mutationType({
           maxBonusPoints: t.arg.int({ required: false }),
           timeToZeroBonus: t.arg.int({ required: false }),
           isGamificationEnabled: t.arg.boolean({ required: true }),
+          isPinProtected: t.arg.boolean({ required: true }),
           isConfusionFeedbackEnabled: t.arg.boolean({ required: true }),
           isLiveQAEnabled: t.arg.boolean({ required: true }),
           isModerationEnabled: t.arg.boolean({ required: true }),
@@ -1368,17 +1371,10 @@ export const Mutation = builder.mutationType({
           async (_, args, ctx) => {
             return await ParticipantService.updateWeeklyTimelineEntriesCourse(
               args,
-              ctx
+              ctx.prisma
             )
           }
         ),
-      }),
-
-      updateWeeklyTimelineEntries: t.boolean({
-        resolve: async (_, __, ctx) => {
-          checkCronToken(ctx)
-          return await ParticipantService.updateWeeklyTimelineEntries(ctx)
-        },
       }),
 
       toggleArchiveCourse: t.withAuth(asUser).field({
@@ -1418,6 +1414,19 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
             return await LiveQuizService.deleteLiveQuiz(args, ctx)
+          }
+        ),
+      }),
+
+      resetAssessmentLiveQuiz: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: ActivityInfo,
+        args: { id: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ liveQuizId: args.id }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await LiveQuizService.resetAssessmentLiveQuiz(args, ctx)
           }
         ),
       }),
@@ -1826,6 +1835,16 @@ export const Mutation = builder.mutationType({
           }
 
           return await SharingService.addActivityMessage(args, ctx)
+        },
+      }),
+
+      deleteActivityMessage: t.withAuth(asUserFullAccess).boolean({
+        args: { id: t.arg.int({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.deleteActivityMessage(
+            { messageId: args.id },
+            ctx
+          )
         },
       }),
 

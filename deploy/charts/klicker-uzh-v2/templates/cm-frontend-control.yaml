@@ -6,10 +6,5 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
-  {{- if .Values.frontendControl.sentryDSN }}
-  SENTRY_DSN: {{ .Values.frontendControl.sentryDSN | quote }}
-  SENTRY_RELEASE: {{ .Chart.AppVersion | quote }}
-  {{ end }}
-  {{- if .Values.frontendControl.sentryEnv }}
-  SENTRY_ENVIRONMENT: {{ .Values.frontendControl.sentryEnv | quote }}
-  {{ end }}
+  # SSR-only GraphQL endpoint for Control frontend (internal service DNS)
+  API_URL_SSR: "http://{{ include "chart.fullname" . }}-backend-graphql:3000/api/graphql"

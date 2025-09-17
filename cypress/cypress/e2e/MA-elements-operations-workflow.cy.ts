@@ -2,20 +2,6 @@ import messages from '../../../packages/i18n/messages/en'
 import { getDatetimeValidationString } from './helpers'
 
 describe('Create different types of elements (with and without sample solution) and edit them', function () {
-  before(() => {
-    cy.seed()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Load data fixture', function () {
     cy.fixture('questions.json').then((sharedData) => {
       this.data = sharedData
@@ -25,11 +11,11 @@ describe('Create different types of elements (with and without sample solution) 
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  afterEach(function () {
-    if (this.currentTest.state === 'failed') {
-      Cypress.stop()
-    }
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
   })
 
   // ! Part 1: Question duplication
@@ -46,11 +32,11 @@ describe('Create different types of elements (with and without sample solution) 
     )
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
-      .type(this.data.duplication.content)
-    cy.get('[data-cy="insert-answer-field-0"]').realClick().type('50%')
+      .realType(this.data.duplication.content)
+    cy.get('[data-cy="insert-answer-field-0"]').realClick().realType('50%')
     cy.get('[data-cy="add-new-answer"]').click()
     cy.wait(500)
-    cy.get('[data-cy="insert-answer-field-1"]').realClick().type('100%')
+    cy.get('[data-cy="insert-answer-field-1"]').realClick().realType('100%')
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(500)
 
@@ -90,17 +76,17 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="insert-question-title"]').type(data.autoSave.title)
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
-      .type(data.autoSave.content)
+      .realType(data.autoSave.content)
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
-      .type(data.autoSave.choices[0].value)
+      .realType(data.autoSave.choices[0].value)
     cy.wrap(data.autoSave.choices.slice(1)).each(
       (choice: { value: string }, ix) => {
         cy.get('[data-cy="add-new-answer"]').click()
         cy.wait(500)
         cy.get(`[data-cy="insert-answer-field-${ix + 1}"]`)
           .realClick()
-          .type(choice.value)
+          .realType(choice.value)
       }
     )
     cy.get('[data-cy="configure-sample-solution"]').click({ force: true })
@@ -223,7 +209,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.autoSave.contentEdited)
+      .realType(this.data.autoSave.contentEdited)
     cy.wait(3000) // wait for auto-save to trigger
     cy.get('[data-cy="close-element-modal"]').click()
 
@@ -257,7 +243,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.autoSave.contentEdited)
+      .realType(this.data.autoSave.contentEdited)
     cy.wait(3000) // wait for auto-save to trigger
     cy.get('[data-cy="close-element-modal"]').click()
 
@@ -298,7 +284,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.autoSave.contentEdited)
+      .realType(this.data.autoSave.contentEdited)
     cy.wait(3000) // wait for auto-save to trigger
     cy.get('[data-cy="save-new-question"]').click()
 
@@ -345,7 +331,7 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.autoSave.contentEdited2)
+      .realType(this.data.autoSave.contentEdited2)
     cy.wait(3000) // wait for auto-save to trigger
     cy.get('[data-cy="close-element-modal"]').click()
 
@@ -486,14 +472,14 @@ describe('Create different types of elements (with and without sample solution) 
         name: ml,
         displayName: ml,
         startDate: {
-          monthDelta: -3,
+          monthDelta: -2,
           day: 16,
           hour: 2,
           minute: 0,
           validation: getDatetimeValidationString(-2, '16') + ', 02:00',
         }, // 2 months in the past at 2:00
         endDate: {
-          monthDelta: 3,
+          monthDelta: 4,
           day: 14,
           hour: 18,
           minute: 0,
@@ -517,14 +503,14 @@ describe('Create different types of elements (with and without sample solution) 
         task: 'Task Description',
         courseName: this.data.update.course,
         scheduledStartDate: {
-          monthDelta: -2,
+          monthDelta: -1,
           day: 10,
           hour: 12,
           minute: 30,
           validation: getDatetimeValidationString(-1, '10') + ', 12:30',
         }, // 1 month in the past at 12:30
         scheduledEndDate: {
-          monthDelta: 1,
+          monthDelta: 2,
           day: 20,
           hour: 14,
           minute: 0,
@@ -575,14 +561,14 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.update.content2)
+      .realType(this.data.update.content2)
 
     // update choices of the question
     cy.wrap(this.data.update.choices2).each((choice: { value: string }, ix) => {
       cy.get(`[data-cy="insert-answer-field-${ix}"]`)
         .realClick()
         .clear()
-        .type(choice.value)
+        .realType(choice.value)
     })
 
     // update feedbacks of the question
@@ -591,7 +577,7 @@ describe('Create different types of elements (with and without sample solution) 
         cy.get(`[data-cy="insert-answer-feedback-${ix}"]`)
           .realClick()
           .clear()
-          .type(choice.feedback)
+          .realType(choice.feedback)
       }
     )
 
@@ -654,14 +640,14 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.update.content3)
+      .realType(this.data.update.content3)
 
     // update choices of the question
     cy.wrap(this.data.update.choices3).each((choice: { value: string }, ix) => {
       cy.get(`[data-cy="insert-answer-field-${ix}"]`)
         .realClick()
         .clear()
-        .type(choice.value)
+        .realType(choice.value)
     })
 
     // disable sample solution

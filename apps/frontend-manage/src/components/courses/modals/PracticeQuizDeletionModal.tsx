@@ -33,13 +33,6 @@ function PracticeQuizDeletionModal({
     DeletePracticeQuizDocument,
     {
       variables: { id: activityId },
-      optimisticResponse: {
-        __typename: 'Mutation',
-        deletePracticeQuiz: {
-          id: activityId,
-          __typename: 'PracticeQuiz',
-        },
-      },
       update: (cache, { data: res }) => {
         // if the practice quiz is not part of a course or the mutation was not successful, return early
         if (!res?.deletePracticeQuiz?.id) return

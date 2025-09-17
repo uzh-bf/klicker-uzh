@@ -34,6 +34,8 @@ interface CSEvaluationHistogramProps {
   textSize: TextSizeType
   showSolution: boolean
   showExplanation: boolean
+  isAssessmentEnabled: boolean
+  pinCode?: string | null
   type: ActivityEvaluationType
 }
 
@@ -47,6 +49,8 @@ function CSEvaluationHistogram({
   textSize,
   showSolution,
   showExplanation,
+  isAssessmentEnabled,
+  pinCode,
   type,
 }: CSEvaluationHistogramProps) {
   const t = useTranslations()
@@ -196,6 +200,9 @@ function CSEvaluationHistogram({
           selectedCriterion={selectedCriterion}
           setSelectedCriterion={setSelectedCriterion}
           textSize={textSize}
+          isAssessmentEnabled={isAssessmentEnabled}
+          pinCode={pinCode}
+          type={type}
         />
       </ResizablePanel>
     </ResizablePanelGroup>

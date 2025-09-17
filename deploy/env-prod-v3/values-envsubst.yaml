@@ -5,6 +5,9 @@ teamsWebhookUrl: '${TEAMS_WEBHOOK_URL}'
 appSecret: '${APP_SECRET}'
 
 hatchet:
+  client:
+    token: '${HATCHET_CLIENT_TOKEN}'
+    tenantId: '${HATCHET_DEFAULT_TENANT_ID}'
   workers:
     general:
       image:
@@ -34,7 +37,6 @@ eduId:
   clientSecret: '${EDUID_CLIENT_SECRET}'
 
 auth:
-  replicaCount: 1
   image:
     tag: '${APP_VERSION}'
 
@@ -86,9 +88,6 @@ backendGraphql:
     tls: '${REDIS_TLS}'
     pass: '${REDIS_PASS}'
 
-  sentryEnv: production
-  sentryDSN: '${SENTRY_DSN}'
-
 olatApi:
   key: '${OLAT_API_KEY}'
 
@@ -100,8 +99,6 @@ responseApi:
     tag: '${APP_VERSION}'
 
 lti:
-  replicaCount: 4
-
   image:
     tag: '${APP_VERSION}'
 
@@ -123,3 +120,48 @@ lti:
     name: '${LTI_DB_NAME}'
     username: '${LTI_DB_USER}'
     password: '${LTI_DB_PASS}'
+
+assessment:
+  frontendPWA:
+    image:
+      tag: '${APP_VERSION}'
+
+  backendGraphql:
+    image:
+      tag: '${APP_VERSION}'
+
+    apiDomain: '${API_DOMAIN}'
+    cookieDomain: '${COOKIE_DOMAIN}'
+    databaseUrl: '${DATABASE_URL}'
+    debug: true
+
+    appManageSubdomain: '${APP_MANAGE_SUBDOMAIN}'
+    appManageDomain: '${APP_MANAGE_SUBDOMAIN}${COOKIE_DOMAIN}'
+    appStudentSubdomain: '${APP_STUDENT_SUBDOMAIN}'
+    appStudentDomain: '${APP_STUDENT_SUBDOMAIN}${COOKIE_DOMAIN}'
+    appControlSubdomain: '${APP_CONTROL_SUBDOMAIN}'
+    appControlDomain: '${APP_CONTROL_SUBDOMAIN}${COOKIE_DOMAIN}'
+
+    notifications:
+      url: '${NOTIFICATION_URL}'
+      secret: '${NOTIFICATION_SECRET}'
+      supportEmail: '${NOTIFICATION_SUPPORT_EMAIL}'
+
+    vapid:
+      publicKey: '${VAPID_PUBLIC_KEY}'
+      privateKey: '${VAPID_PRIVATE_KEY}'
+
+    redisCache:
+      host: klicker-v2-prod-redis-master
+      port: 6379
+      pass: ''
+
+    redisExec:
+      host: '${REDIS_ASSESSMENT_HOST}'
+      port: '${REDIS_ASSESSMENT_PORT}'
+      tls: '${REDIS_ASSESSMENT_TLS}'
+      pass: '${REDIS_ASSESSMENT_PASS}'
+
+  responseApi:
+    image:
+      tag: '${APP_VERSION}'

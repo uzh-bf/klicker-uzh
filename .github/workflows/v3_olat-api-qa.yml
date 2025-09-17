@@ -12,6 +12,10 @@ on:
       - 'apps/olat-api/**'
       - '.github/workflows/v3_olat-api**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/olat-api

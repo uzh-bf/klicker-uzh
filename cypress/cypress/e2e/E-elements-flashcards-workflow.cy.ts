@@ -1,20 +1,6 @@
 import messages from '../../../packages/i18n/messages/en'
 
 describe('Test creation and editing functionalities, validation, etc. for Flashcard elements', function () {
-  before(() => {
-    cy.seed()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Login the lecturer and load data fixture', function () {
     cy.loginLecturer()
     cy.fixture('DM-questions.json').then((data) => {
@@ -22,12 +8,12 @@ describe('Test creation and editing functionalities, validation, etc. for Flashc
     })
   })
 
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
+  })
 
   // ! Flashcards
   // #region
@@ -50,10 +36,10 @@ describe('Test creation and editing functionalities, validation, etc. for Flashc
     ).realClick()
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
-      .type(this.data.FC.content)
+      .realType(this.data.FC.content)
     cy.get('[data-cy="insert-question-explanation"]')
       .realClick()
-      .type(this.data.FC.explanation)
+      .realType(this.data.FC.explanation)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 
@@ -100,11 +86,11 @@ describe('Test creation and editing functionalities, validation, etc. for Flashc
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
       .clear()
-      .type(this.data.FC.contentEdited)
+      .realType(this.data.FC.contentEdited)
     cy.get('[data-cy="insert-question-explanation"]')
       .realClick()
       .clear()
-      .type(this.data.FC.explanationEdited)
+      .realType(this.data.FC.explanationEdited)
     cy.get('[data-cy="save-new-question"]').click({ force: true })
     cy.wait(1000)
 

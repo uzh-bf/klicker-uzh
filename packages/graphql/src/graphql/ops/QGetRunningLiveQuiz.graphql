@@ -6,6 +6,7 @@ query GetRunningLiveQuiz($id: String!) {
     isConfusionFeedbackEnabled
     isModerationEnabled
     isGamificationEnabled
+    isAssessmentEnabled
     isPartOfGamifiedCourse
     beforeFirstBlock
 
@@ -18,19 +19,7 @@ query GetRunningLiveQuiz($id: String!) {
       displayName
       color
     }
-    activeBlock {
-      id
-      status
-      expiresAt
-      timeLimit
-      randomSelection
-      execution
-      elements {
-        id
-        type
-        elementType
-        ...ElementDataWithoutSolutions
-      }
-    }
+
+    ...StudentLiveQuizBlocksData
   }
 }

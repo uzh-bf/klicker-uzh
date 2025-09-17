@@ -2,20 +2,6 @@ import messages from '../../../packages/i18n/messages/en'
 import { getDatetimeValidationString } from './helpers'
 
 describe('Feature test for activity logs', function () {
-  before(() => {
-    cy.seed()
-
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
-  after(() => {
-    cy.cleanup()
-  })
-
   beforeEach('Load data fixture', function () {
     cy.fixture('questions.json').then((sharedData) => {
       this.data = sharedData
@@ -23,6 +9,13 @@ describe('Feature test for activity logs', function () {
     cy.fixture('W-activity-log.json').then((activityLogData) => {
       this.data = { ...this.data, ...activityLogData }
     })
+  })
+
+  // Fail-fast handled globally in support/e2e.ts
+
+  it('CLEANUP', () => {
+    cy.cleanup()
+    cy.seed()
   })
 
   function verifyActivityLogContent(
@@ -228,15 +221,15 @@ describe('Feature test for activity logs', function () {
     cy.get('[data-cy="insert-question-title"]').type(this.data.SC.title)
     cy.get('[data-cy="insert-question-text"]')
       .realClick()
-      .type(this.data.SC.content)
+      .realType(this.data.SC.content)
     cy.get('[data-cy="insert-answer-field-0"]')
       .realClick()
-      .type(this.data.SC.choices[0].value)
+      .realType(this.data.SC.choices[0].value)
     cy.get('[data-cy="add-new-answer"]').click()
     cy.wait(500)
     cy.get('[data-cy="insert-answer-field-1"]')
       .realClick()
-      .type(this.data.SC.choices[1].value)
+      .realType(this.data.SC.choices[1].value)
     cy.get('[data-cy="insert-question-title"]').click() // remove editor focus
     cy.get('[data-cy="save-new-question"]').click()
 
@@ -490,14 +483,14 @@ describe('Feature test for activity logs', function () {
       name: this.data.microLearning.name,
       displayName: this.data.microLearning.displayName,
       startDate: {
-        monthDelta: -3,
+        monthDelta: -2,
         day: 16,
         hour: 2,
         minute: 0,
         validation: getDatetimeValidationString(-2, '16') + ', 02:00',
       }, // 2 months in the past at 2:00
       endDate: {
-        monthDelta: 3,
+        monthDelta: 4,
         day: 14,
         hour: 18,
         minute: 0,
@@ -513,14 +506,14 @@ describe('Feature test for activity logs', function () {
       displayName: this.data.groupActivity.displayName,
       courseName: this.data.seededCourse,
       scheduledStartDate: {
-        monthDelta: -2,
+        monthDelta: -1,
         day: 10,
         hour: 12,
         minute: 30,
         validation: getDatetimeValidationString(-1, '10') + ', 12:30',
       }, // 1 month in the past at 12:30
       scheduledEndDate: {
-        monthDelta: 1,
+        monthDelta: 2,
         day: 20,
         hour: 14,
         minute: 0,

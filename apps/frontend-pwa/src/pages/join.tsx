@@ -18,7 +18,7 @@ function JoinPage() {
   const t = useTranslations()
   const router = useRouter()
   const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument)
-  const [showError, setError] = useState(false)
+  const [showError, setError] = useState<string | false>(false)
 
   const joinCourseWithPinSchema = Yup.object({
     pin: Yup.number()
@@ -38,9 +38,7 @@ function JoinPage() {
         <div className="mb-5">{t('pwa.joinCourse.introLoggedInNoCourse')}</div>
         <Formik
           validateOnMount
-          initialValues={{
-            pin: '',
-          }}
+          initialValues={{ pin: '' }}
           validationSchema={joinCourseWithPinSchema}
           onSubmit={async (values, { setSubmitting }) => {
             setSubmitting(true)
@@ -51,7 +49,7 @@ function JoinPage() {
             if (participant?.data?.joinCourseWithPin) {
               router.push('/')
             } else {
-              setError(true)
+              setError(t('pwa.joinCourse.invalidPin'))
             }
             setSubmitting(false)
           }}
@@ -85,7 +83,11 @@ function JoinPage() {
         </Formik>
         {showError && (
           <UserNotification
-            message="Es gab einen Fehler bei Ihrer Eingabe, bitte überprüfen Sie diese erneut."
+            message={
+              typeof showError === 'string'
+                ? showError
+                : t('pwa.joinCourse.genericError')
+            }
             type="error"
             className={{ root: 'mt-14' }}
           />

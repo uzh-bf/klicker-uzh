@@ -8,19 +8,20 @@
     "dist"
   ],
   "dependencies": {
+    "@klicker-uzh/types": "workspace:*",
+    "@klicker-uzh/util": "workspace:*",
     "cross-env": "7.0.3",
-    "jsonwebtoken": "9.0.2",
     "ltijs": "5.9.7",
     "ltijs-sequelize": "2.4.4"
   },
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "~15.3.0",
-    "@rollup/plugin-typescript": "~12.1.2",
-    "@types/ltijs": "^4.0.11",
-    "@types/node": "^20.16.1",
-    "nodemon": "~3.1.7",
+    "@rollup/plugin-node-resolve": "~15.3.1",
+    "@rollup/plugin-typescript": "~12.1.4",
+    "@types/ltijs": "^4.0.12",
+    "@types/node": "^20.19.11",
+    "nodemon": "~3.1.10",
     "npm-run-all": "~4.1.5",
-    "rollup": "~4.34.2",
+    "rollup": "~4.34.9",
     "rollup-plugin-copy": "~3.5.0",
     "typescript": "~5.6.3"
   },

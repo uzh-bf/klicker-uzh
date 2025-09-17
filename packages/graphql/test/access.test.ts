@@ -1,3 +1,4 @@
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   AuditLogType,
   ElementType,
@@ -42,9 +43,10 @@ import {
   userTwo,
 } from './userData.js'
 
-describe('Unit tests for object access validation', () => {
+describe('Integration tests for object access validation', () => {
   // shared resources used across tests
   let prisma: PrismaClient
+  let hatchet: Hatchet
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
@@ -53,8 +55,13 @@ describe('Unit tests for object access validation', () => {
   let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
-    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    const {
+      prisma: newPrisma,
+      hatchet: newHatchet,
+      emitter: newEmitter,
+    } = await initializePrisma()
     prisma = newPrisma
+    hatchet = newHatchet
     emitter = newEmitter
   })
 
@@ -70,7 +77,7 @@ describe('Unit tests for object access validation', () => {
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
       userFiveCtx: ctx5,
-    } = await testInitialization(prisma, emitter)
+    } = await testInitialization(prisma, hatchet, emitter)
 
     userOneCtx = ctx1
     userTwoCtx = ctx2
@@ -79,9 +86,7 @@ describe('Unit tests for object access validation', () => {
     userFiveCtx = ctx5
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   // ! Access Validation
   // #region

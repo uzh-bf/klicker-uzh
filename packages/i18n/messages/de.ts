@@ -203,6 +203,7 @@ export default {
       microlearnings: 'Microlearnings',
       microlearning: 'Microlearning',
       activeLiveQuizzes: 'Aktive Live Quizzes',
+      assessmentLiveQuizzes: 'Assessment Live Quizzes',
       activePracticeQuizzes: 'Aktive Übungs-Quizzes',
       activeMicroLearnings: 'Aktive Microlearnings',
       groupActivity: 'Gruppenaktivität',
@@ -280,14 +281,10 @@ export default {
       recompute: 'Neu berechnen',
       ok: 'OK',
       language: 'Sprache',
-      english: 'Englisch',
       en: 'Englisch',
-      enFlag: '🇬🇧 Englisch',
-      enFlagShort: '🇬🇧',
-      german: 'Deutsch',
+      enShort: 'EN',
       de: 'Deutsch',
-      deFlag: '🇩🇪 Deutsch',
-      deFlagShort: '🇩🇪',
+      deShort: 'DE',
       practicePool: 'Üben',
       practiceTitle: 'Übungspool',
       practice: 'Übungs-Quiz',
@@ -318,6 +315,8 @@ export default {
       archived: 'Archiviert',
       ended: 'Beendet',
       assessment: 'Assessment',
+      pin: 'PIN',
+      pinProtected: 'PIN geschützt',
       learningAnalytics: 'Learning Analytics',
       monday: 'Montag',
       tuesday: 'Dienstag',
@@ -398,6 +397,7 @@ export default {
         'Der Inhalt dieses Objekts wurde nach dem letzten Review verändert. Bitte markieren Sie dieses erneut als gereviewt, wenn Sie mit dem aktualisierten Inhalt einverstanden sind.',
       availableActions: 'Verfügbare Aktionen',
       configuration: 'Konfiguration',
+      unknownUser: 'Unbekannter Nutzer',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -461,7 +461,11 @@ export default {
       noPointsCollected:
         'Bisher wurden im Rahmen dieses Live Quizzes noch keine Punkte gesammelt. Sobald sich dies ändert, werden hier Podium und Rangliste angezeigt.',
       liveQuizGamifiedNoGamifiedCourse:
-        'Dieses Live Quiz ist gamifiziert, aber nicht Teil eines gamifizierten Kurses. Da Sie angemeldet sind, werden Ihre im Quiz gesammelten Punkte automatisch auf dem Leaderboard angezeigt. Sollten Sie dies nicht wünschen, melden Sie sich bitte ab und treten Sie dem Quiz erneut über den Link bei.',
+        'Dieses Live Quiz ist gamifiziert, aber nicht Teil eines gamifizierten Kurses. Da Sie angemeldet sind, werden Ihre im Quiz gesammelten Punkte automatisch auf dem Leaderboard angezeigt. Sollten Sie dies nicht wünschen, <logout>melden Sie sich bitte ab</logout> und treten Sie dem Quiz erneut über den Link bei.',
+      liveQuizGamifiedCourseNoParticipation:
+        'Dieses Live Quiz ist Teil eines gamifizierten Kurses. Da Sie diesem Kurs nicht beigetreten sind, werden Sie nur im Rahmen dieses Quizzes Punkte sammeln. Ihre Punkte erscheinen auf dem Quiz-Leaderboard. Sollten Sie dies nicht wünschen, <logout>melden Sie sich bitte ab</logout> und treten Sie dem Quiz erneut über den Link bei.',
+      liveQuizCourseParticipationInactive:
+        'Dieses Live Quiz ist Teil eines gamifizierten Kurses, aber Sie nehmen derzeit nicht an der Gamifizierung teil. Um dem Leaderboard beizutreten und Punkte in diesem Quiz zu sammeln, treten Sie dem <link>Leaderboard auf der Kursübersicht</link> bei und kehren Sie zum Quiz zurück.',
       rank: 'Rang',
       username: 'Nutzername',
       email: 'E-Mail',
@@ -510,6 +514,9 @@ export default {
       waitingForActivation:
         'Ihr Account wurde erstellt. Bitte überprüfen Sie Ihren Posteingang auf einen Aktivierungslink.',
       myCourses: 'Meine Kurse',
+      myAssessmentCourses: 'Meine Assessment-Kurse',
+      noAssessmentCourseAssignments:
+        'Sie wurden bisher zu keinen Assessment-Kursen hinzugefügt. Bitte wenden Sie sich an Ihre Dozierenden.',
       insights: 'Einblicke',
       timeline: 'Zeitachse',
       myBookmarks: 'Meine Bookmarks',
@@ -572,6 +579,8 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
         'Ich stimme den KlickerUZH [Datenschutzbestimmungen](https://www.klicker.uzh.ch/privacy_policy) und [Nutzungsbedingungen](https://www.klicker.uzh.ch/terms_of_service) zu und erkläre mich mit der darin beschriebenen Verarbeitung meiner Daten einverstanden. Mir ist bewusst, dass ich anonym und ohne Konto an den Lernaktivitäten teilnehmen kann, wenn ich diesen Bedingungen nicht zustimme.',
     },
     studentDocs: {
+      assessmentInstanceWarning:
+        'Bitte beachten Sie, dass Sie sich aktuell in der <b>Assessment-Instanz</b> von KlickerUZH befinden. Die nachfolgende Dokumentation bezieht sich auf die reguläre Studierenden-Applikation, welche sich von der Assessment-Instanz unterscheiden kann.',
       pageList: `
 In dieser Dokumentation finden Sie die wichtigsten Informationen zu KlickerUZH in Ihrem Kurs:
 
@@ -581,84 +590,90 @@ In dieser Dokumentation finden Sie die wichtigsten Informationen zu KlickerUZH i
       `,
       featuresTitle: 'Features im Überblick',
       features: `
-KlickerUZH bietet Ihnen als Kursteilnehmenden eine ganze Reihe von Funktionalitäten. Diese Übersicht fasst die wichtigsten davon zusammen. Welche Funktionen konkret zur Verfügung stehen, hängt von den Einstellungen Ihrer Dozierenden ab (z.B. ob Gruppenaktivitäten oder eine Challenge verfügbar sind) und wird Ihnen direkt von diesen mitgeteilt.
+KlickerUZH bietet Ihnen als Kursteilnehmende eine umfassende Reihe von Funktionalitäten. Diese Übersicht fasst die wichtigsten davon zusammen. Welche Funktionen konkret zur Verfügung stehen, hängt von den durch Ihre Dozierenden bereitgestellten Inhalten ab (z. B. ob Gruppenaktivitäten oder eine Challenge aktiviert sind) und wird Ihnen direkt von diesen mitgeteilt.
 
 #### Umfragen und Live-Quiz
 
 ![Live-Quiz _auf der linken Seite_](/img/06_live_quiz.png)
 
-Während der Vorlesung haben Sie die Möglichkeit, die von den Dozierenden gestellten Fragen in der KlickerUZH-App (oder, falls vorhanden, in OLAT unter dem Modul "Live Quiz") zu beantworten. Die Resultate werden ohne Verzögerung grafisch dargestellt und können so nach Ablauf der Antwortzeit von den Dozierenden präsentiert und kommentiert werden.
+Während der Vorlesung können Sie die von den Dozierenden in Live Quizzes gestellten Fragen in der KlickerUZH-App, über Ihr LMS (z. B. OLAT unter dem Modul "Live Quiz") oder direkt unter 
+\`https://pwa.klicker.uzh.ch/join/&lt;shortname&gt;\` beantworten. Die Resultate werden live in der Auswertung angezeigt und können nach Ablauf der Antwortzeit präsentiert und kommentiert werden.
 
-Für die Beantwortung der Fragen ist kein Login erforderlich. Mit einem Login können Sie an der Challenge Ihres Kurses teilnehmen und Punkte sammeln.
+Zur Teilnahme an einem Live Quiz benötigen Sie keinen Login. Mit einem KlickerUZH‑Account können Sie jedoch an der Kurs‑Challenge teilnehmen und Punkte sammeln. Falls verfügbar, können Sie auch dem KlickerUZH‑Kurs mit Ihrem Klicker‑Account beitreten, sodass Ihnen direkt eine Liste aller laufenden Live‑Quizzes angezeigt wird.
+Möchten Sie nur in einem spezifischen gamifizierten Quiz Punkte sammeln, bietet Ihnen KlickerUZH auch die Möglichkeit, ein temporäres Pseudonym und Avatar zu definieren.
 
 #### Live Q&A und Echtzeit-Feedback
 
-![Live Q&A und Real-time Feedback _rechts_](/img/06_live_quiz.png)
+![Live Q&A und Feedback _auf der rechten Seite_](/img/06_live_quiz.png)
 
-Haben Sie eine Frage oder möchten Sie direktes Feedback zur Vorlesung geben? Mit dem Live-Q&A können Sie den Dozierenden oder Assistierenden direkt während der Vorlesung eine Frage stellen - auch wenn Sie von zu Hause aus an der Vorlesung teilnehmen. Außerdem haben Sie mit dem KlickerUZH die Möglichkeit, den Dozierenden während der Vorlesung direktes Feedback zu Tempo und Schwierigkeitsgrad der Vorlesung zu geben.
+Haben Sie eine Frage oder möchten Sie direktes Feedback zur Vorlesung geben? Mit dem Live‑Q&A können Sie den Dozierenden oder Assistierenden während der Vorlesung Fragen stellen – auch bei Teilnahme aus der Ferne. Zusätzlich können Sie direktes Feedback zum Tempo und zur Schwierigkeit der Vorlesung geben.
 
-Die Teilnahme ist über das Live Quiz (auch anonym) oder über die KlickerUZH-App möglich.
+Die Teilnahme ist unter \`https://pwa.klicker.uzh.ch/join/&lt;shortname&gt;\` (auch anonym) oder über die KlickerUZH‑App möglich. Die Verfügbarkeit des Live Q&A und Live Feedbacks hängt davon ab, ob die Dozierenden diese Funktionen im Live‑Quiz aktivieren.
 
-#### Practice Quiz, Microlearning und Flashcards
+#### Übungsquizzes, Microlearnings und Flashcards
 
 ![Übungsquiz in OLAT](/img/07_practice_quiz.png)
 
-Practice Quizzes, Microlearning und Flashcards ermöglichen es Ihnen, den Kursinhalt außerhalb der Vorlesungszeit zu wiederholen und direktes Feedback zu Ihrer Lösung zu erhalten. Practice Quizzes und Flashcards sind immer und beliebig oft verfügbar, Microlearning dagegen nur einmal und in einem begrenzten Zeitrahmen (z.B. einmal pro Woche). Alle Elemente sind direkt über die KlickerUZH-App oder über den von Ihren Dozierenden zur Verfügung gestellten Link (auch anonym) zugänglich. Die Lernkarten sind noch in der Umsetzung und werden nach ca. 5 Wochen im Herbstsemester 2023 verfügbar sein.
+Übungsquizzes, Microlearnings und Flashcards helfen Ihnen, Kursinhalte ausserhalb der Vorlesungszeit zu wiederholen und direktes Feedback zu erhalten. Übungsquizzes (optional mit Flashcards) sind jederzeit verfügbar und beliebig oft wiederholbar; Microlearnings sind nur einmal und in einem begrenzten Zeitfenster verfügbar. Alle Elemente sind über die KlickerUZH‑App oder über von den Dozierenden bereitgestellte Links zugänglich (einschliesslich anonymer Teilnahme).
 
-Während der Beantwortung der Fragen können Sie, wenn Sie eingeloggt sind, persönliche Lesezeichen auf wichtige Fragen setzen und so Ihren eigenen Fragenpool erstellen. Über die Reportfunktion können Sie Ihren Dozierenden ein Feedback zu unklaren Fragen geben.
+Während der Beantwortung können eingeloggte Teilnehmende persönliche Lesezeichen setzen und so einen privaten Übungspool aufbauen. Bei inhaltlichen Problemen mit eingebundenen Fragen können Sie über die "Fehler melden"-Funktion eine direkt Rückmeldung an die Dozierenden geben.
 
 #### Gruppen und Gruppenaktivitäten
 
-Während des Semesters werden Ihnen unter Umständen praktische Gruppenaktivitäten gestellt, die nur in der Gruppe gelöst werden können. Diese Aktivitäten sollen unterhaltsam sein, den Austausch mit Kommilitonen fördern und die Anwendung von Theorien unterstützen. Die Bildung einer Gruppe von 2-5 Personen ist in den ersten Wochen einer Lehrveranstaltung möglich (nach Angabe des Dozierenden), in der Regel bis vor Beginn der ersten Gruppenaktivität. Danach bleibt die Gruppe das ganze Semester über aktiv und tritt gegen die anderen Gruppen desselben Kurses an. Die Gruppenbildung und die Aktivitäten sind nur für Teilnehmer mit einem KlickerUZH-Account zugänglich.
+Einige Kurse setzen Gruppenaktivitäten ein, die nur kollaborativ gelöst werden können. Dozierende können eine zufällige Gruppenzuteilung aktivieren und eine bevorzugte Gruppengrösse vorgeben. Sobald die Gruppen gebildet und eine Gruppenaktivität publiziert ist, werden Hinweise auf die Gruppenmitglieder verteilt. Die Gruppe kann die Aktivität innerhalb eines begrenzten Zeitfensters gemeinsam lösen (eine Abgabe pro Gruppe). Gruppenbildung und Gruppenaktivitäten stehen nur Teilnehmenden mit KlickerUZH‑Account zur Verfügung.
 
-Innerhalb einer Gruppe können Sie Ihre Punkte mit denen Ihrer Kommilitonen vergleichen; gemeinsam können Sie auch die Leistung der Gruppe mit anderen Gruppen vergleichen. Die kumulierten Punkte aus den Gruppenaktivitäten ergeben zusammen mit den aggregierten Punkten aller Gruppenmitglieder (im Durchschnitt) die Gesamtpunktzahl der Gruppe.
+Innerhalb einer Gruppe können Sie Ihre Punkte mit Ihren Mitstudierenden vergleichen; als Gruppe können Sie sich zudem mit anderen Gruppen messen. Die Gesamtpunktzahl Ihrer Gruppe setzt sich zusammen aus Punkten aus Gruppenaktivitäten und den aggregierten Punkten aller Gruppenmitglieder.
 
-#### Challenge
+#### Kurse, Leaderboards und Errungenschaften
 
-![Gamification](/img/08_gamification.png)
+Dozierende können Kurs‑Leaderboards aktivieren, Challenges definieren und Errungenschaften vergeben. Durch den Beitritt zum Leaderboard sammeln Sie Punkte auf Kurs-Ebene und sehen Rang, Level, XP und Errungenschaften (wenn kompatibel mit Ihren Datenschutz‑Einstellungen). Durch die Aktivierung der anonymen Teilnahme in den Profileinstellungen können Sie Ihr Profil für andere Teilnehmende ausblenden und dennoch am Leaderboard teilnehmen.
 
-Alle Aktivitäten in KlickerUZH sind, wenn sie von den Dozierenden aktiviert werden, Teil einer gamifizierten Challenge. Im Rahmen der Challenge sammeln Sie Punkte für die Kursrangliste (wenn Sie im eingeloggten Zustand teilnehmen), Erfahrungspunkte und Erfolge.
+#### Challenge und Punktevergabe
 
-Die folgenden Aktivitäten sind Teil der Challenge:
+![Leaderboard (bei gamifizierten Kursen) und Kursinformationen](/img/08_gamification.png)
 
-- Umfragen und Live-Quiz: 10 Punkte pro Teilnahme an einer Abstimmung und bis zu 70 Bonuspunkte für eine schnelle und richtige Antwort auf Inhaltsfragen. Die schnellste richtige Antwort erhält die meisten Punkte.
-- Prctice Quizzes: 10 Punkte, wenn die erste Antwort auf eine Frage richtig ist. 5 Punkte für jede weitere richtige Wiederholung einer Frage (nach Ablauf der vorgegebenen Sperrzeit). Bei KPRIM-Fragen führt ein Fehler zu einer Halbierung der Punktzahl, zwei oder mehr Fehler bringen keine Punkte.
-- Microlearning: 10 Punkte pro richtig beantworteter Frage in einem Microlearning. Bei KPRIM-Fragen führt ein Fehler zur Halbierung der Punktzahl, bei zwei oder mehr Fehlern gibt es keine Punkte.
-- Gruppenaktivitäten: Punkte auf der Gruppenrangliste basierend auf der Korrektheit der Aktivität (z.B. 800 von 1000 Punkten, wenn 80% richtig gelöst wurden). Zusätzlich können Leistungen und Punkte auf der individuellen Bestenliste für jedes Gruppenmitglied verteilt werden, wenn eine Gruppenaktivität bestanden wird (mit einer Bestehensschwelle von 50% der erreichbaren Punkte).
-- Errungenschaften: Gesammelte Erfolge (z. B. das Erreichen des ersten Platzes in einem großen Live-Quiz) können zu Bonuspunkten führen, die auf den entsprechenden Erfolgen vermerkt sind. Achievements werden automatisch oder manuell von den Dozierenden verteilt.
-- Multiplikatoren: Wenn für Fragen und/oder Aktivitäten Multiplikatoren festgelegt sind, werden diese auf die Punktzahl angewandt (z. B. 2x, 3x, 4x). Multiplikatoren werden neben den Fragen in Übungsquizzen und Microlearning angezeigt und sind in Live-Quizzen nicht sichtbar.
-      `,
+Alle Aktivitäten in KlickerUZH können Teil einer gamifizierten Challenge sein. Dabei sammeln Sie – sofern Sie im eingeloggten Zustand teilnehmen – Punkte für die Kursrangliste, Erfahrungspunkte und Errungenschaften.
+
+Folgende Aktivitäten sind Teil der Challenge:
+
+- Umfragen und Live Quizzes: 10 Punkte pro Teilnahme an einer Frage und bis zu 50 Bonuspunkte für schnelle und korrekte Antworten. Die schnellste korrekte Antwort erhält die meisten Punkte. Dozierende können das Punkteschema anpassen oder Multiplikatoren auf einzelne Aktivitäten/Fragen anwenden; für weitere Informationen wenden Sie sich bitte an Ihre Dozierenden.
+- Übungs-Quizzes: 10 Punkte werden vergeben, wenn die erste Antwort auf eine Frage korrekt ist. Bei Wiederholung wird die gleiche Punktzahl nach Ablauf der festgelegten Sperrzeit vergeben.
+- Microlearnings: 10 Punkte werden für eine korrekte Antwort auf eine Frage vergeben. Microlearnings können nicht wiederholt werden.
+- Gruppenaktivitäten: Standardmäßig können pro Frage in der Gruppenaktivität bis zu 25 Punkte vergeben werden. Gruppenaktivitäten werden von den Dozierenden manuell bewertet.
+- Errungenschaften: Bestimmte Errungenschaften (z. B. ein erster Platz in einem Live Quizzes) bringen Bonuspunkte ein. Errungenschaften werden automatisch oder manuell von den Dozierenden vergeben.
+- Multiplikatoren: Fragen- und Aktivitäts-Multiplikatoren (z. B. 2x/3x/4x) erhöhen die vergebenen Punkte. In asynchronen Aktivitäten (Übungs-Quizzes und Microlearnings) werden Aktivitäts-Multiplikatoren zu Beginn der Aktivität angezeigt.
+`,
       firstLoginTitle: 'Erster Login & Accounteinrichtung',
       firstLogin: `
-Wenn Sie zum ersten Mal an KlickerUZH-Aktivitäten teilnehmen, können Sie sich für ein KlickerUZH-Teilnehmendenkonto registrieren. Ein KlickerUZH-Konto ermöglicht Ihnen die einfache Verwaltung und den Zugriff auf die Lerninhalte Ihrer Kurse mit KlickerUZH sowie das Hinzufügen wichtiger Elemente zu Ihrer privaten Wiederholungsbibliothek und die Teilnahme an den gamifizierten Elementen Ihrer Kurse.
+Wenn Sie zum ersten Mal an KlickerUZH‑Aktivitäten teilnehmen, können Sie ein KlickerUZH‑Teilnehmendenkonto erstellen. Damit verwalten und nutzen Sie die Lerninhalte Ihrer Kurse, bauen eine private Wiederholungsbibliothek auf und nehmen an gamifizierten Elementen teil. In Übungsquizzes ermöglichen Accounts die Nutzung der Spaced Repetition Funktionalität (anderenfalls aus Datenschutzgründen nicht nutzbar). Abhängig vom technischen Setup Ihres Kurses gehen Sie wie folgt vor:
 
-Je nachdem, wie Ihr Kurs technisch aufgebaut ist, können Sie wie folgt vorgehen:
+#### Kurse mit LMS‑Integration (z. B. OLAT)
 
-#### Kurse mit LMS-Integration (z.B. OLAT)
-
-Öffnen Sie das KlickerUZH-Modul im OLAT-Kurs Ihrer Lehrveranstaltung.  Um Ihr KlickerUZH-Konto zu verwalten oder ein Neues zu erstellen, klicken Sie auf "Konto verwalten" innerhalb des KlickerUZH-Moduls.
+Öffnen Sie das KlickerUZH‑Modul im OLAT‑Kurs Ihrer Lehrveranstaltung. Um Ihr KlickerUZH‑Konto zu verwalten oder ein neues zu erstellen, klicken Sie auf "Konto verwalten" innerhalb des KlickerUZH‑Moduls. Bitte beachten Sie, dass dieser Block auch anders benannt sein kann; fragen Sie im Zweifelsfall Ihre Dozierenden.
 
 ![](/img/01_create_account.png)
 
-Wenn Sie bereits ein KlickerUZH-Konto besitzen, besuchen Sie einfach eine der KlickerUZH-Aktivitäten im LMS-Kurs und Sie sollten automatisch eingeloggt sein. Falls Sie nicht automatisch eingeloggt sind, können Sie sich über den Button oben rechts einloggen.
+Wenn Sie bereits ein KlickerUZH‑Konto besitzen und dem Kurs beigetreten sind (mit dem PIN oder über die Account Management-Seite), besuchen Sie eine der KlickerUZH‑Aktivitäten im LMS‑Kurs – Sie sollten automatisch eingeloggt sein. Falls nicht, nutzen Sie den Button oben rechts.
 
-Wenn noch kein KlickerUZH-Konto für Sie existiert, werden Sie von einer Willkommensseite begrüßt, auf der Sie ein neues Konto erstellen können. Auf dieser Seite legen Sie einen (anonymen) Benutzernamen und ein Passwort fest, sowie einen persönlichen Avatar.
+Wenn noch kein KlickerUZH‑Konto für Sie existiert, werden Sie von einer Willkommensseite begrüsst, auf der Sie ein neues Konto erstellen können (anonymer Benutzername, Passwort, persönlicher Avatar).
 
-#### Kurse ohne LMS-Integration
+#### Kurse ohne LMS‑Integration
 
-Wenn Sie bereits ein KlickerUZH-Konto haben (z.B. von anderen Kursen), öffnen Sie die KlickerUZH-App und klicken Sie unterhalb der Kursübersicht auf "Kurs beitreten". Geben Sie die 9-stellige PIN ein, die Sie von Ihren Dozierenden erhalten haben. Sie sind nun Teil des Kurses und können an allen Aktivitäten teilnehmen.
+Wenn Sie bereits ein KlickerUZH‑Konto haben (z. B. aus anderen Kursen), öffnen Sie die KlickerUZH‑App und klicken Sie auf der Hauptansicht unterhalb der Kursliste auf "Kurs beitreten". Geben Sie die 9‑stellige PIN ein, die Sie von Ihren Dozierenden erhalten haben. Sie sind nun Teil des Kurses und können an allen Aktivitäten teilnehmen.
 
 ![](/img/05_join_course.png)
 
-Wenn Sie zum ersten Mal an einem Kurs mit KlickerUZH teilnehmen, öffnen Sie den Zugangslink, den Sie von den Dozierenden Ihres Kurses erhalten haben. Damit können Sie ein neues KlickerUZH-Konto mit einem (anonymen) Benutzernamen und einem Passwort erstellen. Mit diesen Daten können Sie sich dann einloggen und Ihren persönlichen Avatar erstellen sowie an Aktivitäten teilnehmen.
+Wenn Sie zum ersten Mal an einem Kurs mit KlickerUZH teilnehmen, öffnen Sie den Zugangslink, den Sie von den Dozierenden erhalten (z. B. 
+\`https://pwa.klicker.uzh.ch/course/XYZ/join?pin=111111111\`). Darüber können Sie ein neues KlickerUZH‑Konto erstellen (anonymer Benutzername und Passwort), sich einloggen, Ihren Avatar festlegen und an Aktivitäten teilnehmen.
 
 #### Anonyme Teilnahme
 
-Generell ist es möglich, an den Aktivitäten in KlickerUZH auch anonym teilzunehmen. Practice Quiz und Microlearning sind über direkte Links verfügbar, die Sie von Ihren Dozierenden erhalten können. Wenn Sie über die OLAT-Integration auf KlickerUZH zugreifen, können Sie ein Konto erstellen und werden dann automatisch eingeloggt. Wenn Sie kein KlickerUZH-Konto haben, bleibt Ihre Teilnahme an den Practice Quizzes anonym.
-      `,
+Grundsätzlich ist eine anonyme Teilnahme an allen Aktiväten in KlickerUZH ausser Gruppenaktivitäten möglich. Für Live‑Quizzes finden Sie die laufenden Quizzes eines Accounts unter 
+\`https://pwa.klicker.uzh.ch/join/&lt;shortname&gt;\`. Practice Quizzes und Microlearnings sind über direkte Links zugänglich, die von den Dozierenden bereitgestellt werden. Beim Zugriff über die OLAT‑Integration können Sie ein Konto erstellen und werden danach automatisch eingeloggt. Ohne KlickerUZH‑Konto bleibt Ihre Teilnahme an eingebetteten Aktivitäten anonym.
+`,
       appSetupTitle: 'App Installation',
       appSetup: `
-Um von überall auf KlickerUZH zugreifen zu können, gibt es eine KlickerUZH-App. Mit der App können Sie die Lerninhalte Ihrer Kurse (mit KlickerUZH) einfach verwalten und darauf zugreifen, sowie wichtige Elemente zu Ihrer privaten Wiederholungsbibliothek hinzufügen und an den gamifizierten Elementen (Challenge) teilnehmen. Außerdem können Sie die Push-Benachrichtigungen für Microlearning in Ihren Kursen aktivieren.
+Um von überall auf KlickerUZH zugreifen zu können, gibt es eine KlickerUZH-App. Mit der App können Sie die Lerninhalte Ihrer Kurse (mit KlickerUZH) einfach verwalten und darauf zugreifen, sowie wichtige Elemente zu Ihrer privaten Wiederholungsbibliothek hinzufügen und an den gamifizierten Elementen (Challenge) teilnehmen. Außerdem können Sie die Push-Benachrichtigungen für Microlearnings in Ihren Kursen aktivieren.
 
 Sie können die KlickerUZH-App wie folgt einrichten:
 
@@ -668,16 +683,16 @@ Sie können die KlickerUZH-App im Google Play Store unter folgendem Link herunte
 
 [https://play.google.com/store/apps/details?id=ch.uzh.bf.klicker.pwa](https://play.google.com/store/apps/details?id=ch.uzh.bf.klicker.pwa)
 
-Nach der Installation sollten Sie die App auf Ihrem Startbildschirm finden und können sich wie gewohnt einloggen. Sie können Push-Benachrichtigungen für Ihre Kurse aktivieren, indem Sie auf das Glockensymbol des jeweiligen Kurses klicken, woraufhin Sie z.B. über neue Microlearning-Einheiten informiert werden.
+Nach der Installation sollten Sie die App auf Ihrem Startbildschirm sehen und können sich wie gewohnt einloggen. Sie können Push-Benachrichtigungen für Ihre Kurse aktivieren, indem Sie auf das Glockensymbol des jeweiligen Kurses klicken, woraufhin Sie z.B. über neue Microlearning-Einheiten informiert werden.
 
 #### iOS
 
-Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie dieser Anleitung, um die App auf Ihrem Startbildschirm hinzuzufügen.
+Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie dieser Anleitung, um die App auf Ihrem Startbildschirm hinzuzufügen. Die installierte App verhält sich daraufhin wie eine gewöhnliche App.
 
 1. Öffnen Sie den folgenden Link auf Ihrem Smartphone: [{pwa_url}/login]({pwa_url}/login)
-2. Nutzen Sie den Teilen-Dialog und klicken Sie auf "Zum Homescreen hinzufügen" / "Zum Startbildschirm zufügen".
+2. Nutzen Sie den Teilen-Dialog und klicken Sie auf "Add to Home Screen" / "Zum Startbildschirm zufügen".
 3. Akzeptieren Sie, dass die App installiert wird. Sobald die App installiert ist, sollten Sie zum Log-in weitergeleitet werden. Sie werden auch ein neues KlickerUZH-Symbol auf Ihrem Startbildschirm finden.
-      `,
+`,
     },
     login: {
       installAndroid:
@@ -692,7 +707,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       signup: 'Registrieren',
       coursePinInvalid: 'Die von Ihnen eingebene Kurs-PIN ist ungültig.',
     },
-
     courses: {
       courseInformation: 'Kursinformationen',
       createJoinGroup: 'Gruppe erstellen/beitreten',
@@ -762,6 +776,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       coursePinFormat: 'Kurs-PIN (Format: ### ### ###)',
       coursePinNumerical: 'Bitte geben Sie einen numerischen PIN ein.',
       coursePinRequired: 'Bitte geben Sie den Kurs-PIN ein.',
+      invalidPin: 'PIN ungültig',
+      genericError:
+        'Beim Versuch, dem Kurs beizutreten, ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an Ihren Dozenten.',
     },
     practiceQuiz: {
       flashcardClick: 'Klicken Sie, um die Antwort zu sehen',
@@ -837,7 +854,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noActiveQuestion:
         'Aktuell ist keine Frage aktiv... Sobald eine neue Frage aktiviert wird, wird sie automatisch angezeigt. Alternativ können Sie auch die Seite <reload>aktualisieren</reload>, um ein Update zu erzwingen.',
       allQuestionsAnswered:
-        'Sie haben bereits alle aktiven Fragen beantwortet.',
+        'Sie haben bereits alle aktiven Fragen beantwortet oder der Block wurde geschlossen.',
       previousCase: 'Vorheriger Fall',
       nextCase: 'Nächster Fall',
       thisLiveQuizGamified: 'Diese Live-Quiz ist gamifiziert!',
@@ -869,6 +886,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noQuizDescription:
         'Unter diesem Link ist derzeit kein laufendes Live-Quiz verfügbar. Bitte überprüfen Sie Ihren Link oder wenden Sie sich an Ihren Dozierenden.',
       refreshPage: 'Seite aktualisieren',
+      pinRequired: 'Für den Zugriff auf dieses Quiz ist eine PIN erforderlich.',
+      enterPinTitle: 'PIN-Code eingeben',
+      invalidPin: 'Die eingegebene PIN ist ungültig.',
+      enterPinLabel: 'PIN-Code',
+      enterPinPlaceholder: 'PIN eingeben',
+      submitPin: 'PIN absenden',
     },
     feedbacks: {
       title: 'Feedback-Kanal',
@@ -1031,6 +1054,32 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       groupActivityEnded:
         'Diese Gruppenaktivität ist bereits beendet. Sie können sie nicht mehr starten oder Antworten einreichen.',
     },
+    assessment: {
+      homepageHint:
+        'Willkommen in der Assessment-Instanz von KlickerUZH! Sollten Sie Aktivitäten ausserhalb eines Assessment-Kurses nutzen wollen, loggen Sie sich bitte stattdessen unter <link>{pwa_url}</link> ein.',
+      title: 'Assessment Login',
+      warning:
+        'Dies ist eine Assessment-Anwendung. Alle Ihre Daten und Aktivitäten sind für Ihre Dozierenden sichtbar.',
+      loginWithEduId: 'Login mit Edu-ID',
+      eduIdRequired:
+        'Edu-ID-Authentifizierung ist für Assessments erforderlich',
+      submissionInputsInvalid:
+        'Beim Abschicken Ihrer Antwort ist ein Fehler aufgetreten. Bitte überprüfen Sie Ihre Eingaben auf Fehlermeldungen.',
+      submissionSuccessful:
+        'Ihre Antwort wurde erfolgreich abgeschickt und gespeichert.',
+      submissionGeneralError:
+        'Beim Abschicken Ihrer Antwort ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+      submissionAlreadyRecorded:
+        'Sie haben diese Frage bereits beantwortet. Ihre vorherige Antwort wurde gespeichert.',
+      submissionUnauthorizedError:
+        'Ihr Login konnte nicht korrekt verifiziert werden. Bitte loggen Sie sich erneut ein und beantworten Sie die Frage nochmals.',
+      submissionServerError:
+        'Beim Abschicken Ihrer Antwort ist ein Serverfehler aufgetreten. Bitte versuchen Sie es erneut.',
+      missingAssessmentCourseParticipation:
+        'Sie sind nicht Teil des Assessment-Kurses, zu welchem dieses Quiz gehört. Bitte kontaktieren Sie Ihre Dozierenden.',
+      accountDeletionMessage:
+        'Da Sie Ihr KlickerUZH-Konto derzeit zur Teilnahme an einem Assessment-Kurs verwenden, können Sie Ihr Konto nicht selbst löschen. Für weitere Informationen zur Löschung Ihres Kontos und zum Verlassen des Kurses wenden Sie sich bitte an Ihre Dozierenden.',
+    },
   },
   manage: {
     general: {
@@ -1191,6 +1240,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Eine Veränderung des Multiplikators ist nur für gamifizierte Aktivitäten oder Aktivitäten mit Assessment-Kurs Zuweisung möglich.',
       batchGroupActivityRequiresGroupsEnabled:
         'Gruppenaktivitäten können nur Kursen zugewiesen werden, in welchen die Gruppenbildung aktiviert ist.',
+      batchAssessmentRemovalAdminOnly:
+        'Aktivitäten, welche sich im Assessment-Modus (mit Zuweisung zu einem Assessment-Kurs) befinden, können nur von Administratoren des entsprechenden Kurses aus diesem entfernt werden.',
       batchActivityDatesOutsideCourse:
         'Das Verfügbarkeitsintervall von Gruppenaktivtäten und Microlearnings muss vollständig innerhalb der Kurslaufzeit liegen.',
       batchGroupActivityRequiresFinalizedGroups:
@@ -1275,6 +1326,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       READ_ONLY: 'Nur Lesen',
       ACCOUNT_OWNER: 'Konto-Besitzer',
       OTP: 'Einmalpasswort',
+      EDUID: 'Edu-ID',
       ACTIVATION: 'Aktivierung',
       lastUsed: 'zuletzt genutzt: {date}',
       lastUsedNever: 'zuletzt genutzt: Nie',
@@ -1534,7 +1586,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       enterItemsManually:
         'Möchten Sie die Fallstudien-Elemente manuell erfassen?',
       enterItemsManuallyExplanation:
-        'Diese Oberfläche erlaubt es Ihnen, Ihre Fallstudien-Elemente manuell direkt im Kontext der Frage zu erfassen. Beim Speichern der Frage werden die entsprechenden Elemente automatisch in eine <b>neue Antwort-Sammlung kombiniert</b>, die Sie später wiederverwenden oder erweitern können.',
+        'Diese Oberfläche erlaubt es Ihnen, die Elemente für Ihre Fallstudie direkt im Kontext der Frage zu erfassen. Beim Speichern der Frage werden die entsprechenden Elemente automatisch in eine <b>neue Antwort-Sammlung kombiniert</b>, die Sie später wiederverwenden oder erweitern können. <button>Sie können auch zur Auswahl der Fallstudien-Elemente aus einer bestehenden Sammlung zurückkehren.</button>',
       returnItemsCollectionSelection:
         'Möchten Sie zur Auswahl der Optionen aus einer bestehenden Sammlung zurückkehren?',
       enterSelectionItemsManually:
@@ -1673,6 +1725,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       pasteSelectionElements: '{count} Elemente hinzufügen',
       pasteSingleElementsBlock: '{count} Blöcke mit 1 Element anfügen',
       pasteSingleElementsStack: '{count} Stacks mit 1 Element hinzufügen',
+      pinProtected: 'PIN-Schutz',
+      pinProtectedTooltip:
+        'Bei aktiviertem Schutz durch einen PIN-Code generiert das System automatisch eine PIN, welche durch die Studierenden beim Beitritt zum Quiz eingegeben werden muss.',
       displayNameTooltip:
         'Der Anzeigename wird den Teilnehmenden bei der Durchführung angezeigt.',
       stackDescriptionTitle: 'Stack {stackIx}: Beschreibung (optional)',
@@ -1776,6 +1831,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie können Ihr Live Quiz einem Kurs zuordnen. Wenn Ihr Kurs gamifiziert ist oder der Assessment-Modus aktiviert ist, werden diese Einstellungen automatisch auf die Aktivität übertragen. Für nicht-gamifizierte Kurse oder Live Quizzes ohne Kurszuordnung kann die Gamifizierung separat aktiviert werden. Weitere Informationen finden Sie in der Dokumentation zu <link>gamifizierten Live Quizzes</link>.',
       liveQuizSelectCourse: 'Kurs auswählen',
       liveQuizNoCourse: 'Kein Kurs',
+      assessmentCourseRemovalRestricted:
+        'Aktivitäten im Assessment-Modus können nur durch einen Administrator des entsprechenden Kurses wieder aus diesem entfernt werden.',
       liveQuizEnableGamification:
         'Wählen Sie einen gamifizierten Kurs aus, um Gamifizierung zu aktivieren.',
       liveQuizMultiplier:
@@ -1800,7 +1857,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizAdvancedSettings: 'Erweiterte Einstellungen',
       liveQuizCustomizedGrading: 'Benutzerdefinierte Bewertung',
       liveQuizPointsExplanation:
-        'Diese erweiterten Einstellungen ermöglichen es, die Punktevergabe bei einem Live-Quiz zu verändern. Bitte bachten Sie, dass alle Punkteinstellungen und die Illustrationen der Punktevergabe sich auf Elemente mit einem Multiplikator von 1x beziehen. Höhere Multiplikatoren werden auf alle Komponenten ausser den Standardpunkten angewendet. Der auf der Aktivität gesetzte Multiplikator wird in der Illustration bereits mit einbezogen. Die Antwortzeit beginnt abzulaufen sobald der erste Teilnehmer eine vollständig korrekte Antwort abgegeben hat. Für mehr Informationen konsultieren Sie bitte unsere <link>Dokumentation</link>.',
+        'Diese erweiterten Einstellungen ermöglichen es, die Punktevergabe bei einem Live-Quiz zu verändern. Bitte beachten Sie, dass alle Punkteinstellungen und die Illustrationen der Punktevergabe sich auf Elemente mit einem Multiplikator von 1x beziehen. Höhere Multiplikatoren werden auf alle Komponenten ausser den Standardpunkten angewendet. Der auf der Aktivität gesetzte Multiplikator wird in der Illustration bereits mit einbezogen. Die Antwortzeit beginnt abzulaufen sobald der erste Teilnehmer eine vollständig korrekte Antwort abgegeben hat. Für mehr Informationen konsultieren Sie bitte unsere <link>Dokumentation</link>.',
       liveQuizGamificationDeactivated:
         'Gamifizierung ist für dieses Live Quiz aktuell nicht aktiviert. Bitte wählen Sie entweder einen gamifizierten Kurs oder aktivieren Sie die Gamifizierung manuell.',
       liveQuizDefaultPoints: 'Standardpunkte',
@@ -2207,6 +2264,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       lecturerCockpit: 'Dozierenden Cockpit',
       liveQuizEvaluation: 'Live Quiz Evaluation',
       startLiveQuiz: 'Start Quiz',
+      scheduleLiveQuiz: 'Live Quiz planen',
+      unpublishLiveQuiz: 'Geplante Veröffentlichung aufheben',
       editLiveQuiz: 'Quiz bearbeiten',
       duplicateLiveQuiz: 'Live Quiz duplizieren',
       viewLiveQuiz: 'Live Quiz einsehen',
@@ -2220,7 +2279,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       blockXQuestions: 'Block {block} ({questions} Frage(n))',
       shareLiveQuiz: 'Live Quiz teilen',
       removeLiveQuiz: 'Live Quiz entfernen',
+      resetLiveQuiz: 'Live Quiz zurücksetzen',
       deleteLiveQuiz: 'Live Quiz löschen',
+      resetLiveQuizMessage:
+        'Bitte bestätigen Sie das Zurücksetzen dieses Assessment-Live Quizzes. Alle Antworten der Studierenden und gesammelten Punkte werden gelöscht. Diese Aktion wird im Audit-Log dokumentiert und kann nicht rückgängig gemacht werden.',
       deleteLiveQuizMessage:
         'Bitte bestätigen Sie die Löschung aller mit diesem Live Quiz verbundenen Resultate und Feedbacks. Durch die Teilnehmenden gesammelte Punkte werden durch die Löschung nicht beeinflusst.',
       noResponsesToDelete:
@@ -2235,12 +2297,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für dieses Live-Quiz wurden noch keine Confusion-Feedbacks abgegeben.',
       deleteConfusionFeedbacks:
         '{number} Confusion-Feedback(s) werden unwiderruflich gelöscht.',
+      noLeaderboardEntriesToDelete:
+        'Für dieses Live-Quiz wurden noch keine Quiz-Leaderboard-Einträge erstellt.',
+      deleteLeaderboardEntries:
+        'Alle Quiz-Leaderboard-Einträge werden gelöscht und alle Teilnehmenden verlieren ihre gesammelten Punkte.',
       evaluationLinksEmbedding: 'Links für die Einbettung der Evaluation',
       noLiveQuizzes: 'Keine Live Quizzes gefunden',
       creationExplanation:
         'Um Ihr erstes Live Quiz zu erstellen, gehen Sie zurück in den <link>Fragepool</link>. Dort können alle verschiedenen Arten von KlickerUZH-Elementen erstellt und Fragen aus dem Fragepool hinzufügen werden.',
       embeddingLinkCopied:
         'Der Einbettungslink wurde erfolgreich in die Zwischenablage kopiert.',
+      liveQuizSchedulingDateRequired:
+        'Bitte geben Sie ein Datum für den automatischen Start des Live-Quiz an.',
+      liveQuizSchedulingFutureAfterCourseStart:
+        'Das Datum zum automatischen Start des Live Quizzes muss in der Zukunft und falls zugehörig zu einem Kurs, nach dessen Startzeitpunkt liegen.',
+      scheduleLiveQuizHint:
+        'Bei der geplanten Veröffentlichung des Live Quizzes "{title}" wird dieses automatisch zum von Ihnen festgelegten Zeitpunkt gestartet. Bevor das geplante Veröffentlichungsdatum erreicht ist, kann das Quiz noch unveröffentlicht und bearbeitet werden.',
     },
     practiceQuizzes: {
       viewPracticeQuiz: 'Übungs-Quiz einsehen',
@@ -2275,11 +2347,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     cockpit: {
       liveQuizQRCodes: 'Live Quiz QR-Codes',
       qrCodeAccountLinkTitle: 'Konto-Link',
+      qrCodeAccountLinkPinWarning: 'PIN nicht enthalten',
+      qrCodeDirectLinkIncluded: 'PIN enthalten',
       qrCodeAccountLinkDescription:
         'Ihr Konto-Link listet alle aktiven Live-Quizzes. Wenn nur ein Quiz aktiv ist, werden Teilnehmende direkt weitergeleitet, andererseits können sie auswählen, an welchem Quiz sie teilnehmen möchten. Dieser Link wird empfohlen, um ihn zu Folien hinzuzufügen, da er konsistent bleibt, solange Sie Ihren Kurznamen nicht ändern. Für Quizzes mit Kurszuweisung wird automatisch die Kurssprache im Link eingebettet.',
       qrCodeDirectLinkTitle: 'Direktlink',
       qrCodeDirectLinkDescription:
-        'Der Direktlink führt Teilnehmende direkt und ausschliesslich zu diesem Quiz. Wenn das Quiz beendet ist, ist der Link nicht mehr gültig. Dieser Link wird empfohlen, wenn Sie viele Quizzes parallel durchführen und die Teilnehmenden nur an einem bestimmten Quiz teilnehmen sollen. Für Quizzes mit Kurszuweisung wird automatisch die Kurssprache im Link eingebettet.',
+        'Der Direktlink führt Teilnehmende direkt und ausschliesslich zu diesem Quiz. Wenn das Quiz beendet ist, ist der Link nicht mehr gültig. Dieser Link wird empfohlen, wenn Sie viele Quizzes parallel durchführen und die Teilnehmenden nur an einem bestimmten Quiz teilnehmen sollen. Für Quizzes mit Kurszuweisung wird automatisch die Kurssprache im Link eingebettet. Wenn ein PIN-Code aktiviert ist, wird dieser direkt im Link eingebettet.',
       firstBlock: 'Ersten Block starten',
       blockActive: 'Block schliessen',
       nextBlock: 'Nächsten Block starten',
@@ -2288,6 +2362,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       evaluationResults: 'Auswertung (Resultate)',
       abortLiveQuiz: 'Quiz abbrechen',
       confirmAbortLiveQuiz: 'Live Quiz {title} abbrechen?',
+      noAbortionAssessmentQuiz:
+        'Assessment-Quizzes können nicht abgebrochen werden, sobald ein Block gestartet wurde. Sollten Sie das Quiz zu Testzwecken gestartet haben, führen Sie bitte alle Blöcke durch und beenden Sie das Quiz. Nutzer mit Administratorenrechten im Assessment-Kurse können das Live Quiz dann zurücksetzen.',
       cancelLiveQuizMessage:
         'Bitte bestätigen Sie die Löschung aller Elemente, die mit dieser Live-Quiz verbunden sind, und bestätigen Sie den Abbruch dieses Live-Quiz.',
       noResponsesToDelete:
@@ -2365,6 +2441,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Ich verstehe, dass die Moderation deaktiviert wird.',
       confirmPublishUnpublished:
         'Ich bestätige, dass alle {count} unveröffentlichten Feedback(s) veröffentlicht werden sollen.',
+      confirmCloseBlockTitle: 'Aktiven Block schliessen',
+      confirmCloseBlock:
+        'Bitte bestätigen Sie, dass der Block geschlossen werden soll. Ab diesem Zeitpunkt akzeptiert das System keine weiteren Antworten der Studierenden und die vollständige Auswertung (inkl. Musterlösung) kann eingesehen werden.',
     },
     evaluation: {
       evaluationNotYetAvailable:
@@ -2465,6 +2544,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       blockActiveInfo:
         'Der aktuell ausgewählte Block wurde noch nicht geschlossen. Die Teilnehmenden Ihres Quizzes können nach wie vor Antworten abgeben. Bitte bestätigen Sie, dass Sie die Resultate anzeigen wollen.',
       showResults: 'Resultate anzeigen',
+      showQRCodes: 'QR-Codes anzeigen',
     },
     lecturer: {
       noDataAvailable: 'Keine Daten verfügbar...',

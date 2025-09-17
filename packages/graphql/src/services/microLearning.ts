@@ -1,5 +1,9 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { ActivityType, type ElementStackInput } from '@klicker-uzh/types'
+import {
+  ActivityType,
+  HatchetHandlers,
+  type ElementStackInput,
+} from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
   propagateActivityToElements,
@@ -11,6 +15,7 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { getPermissionBooleans } from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
+import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
 
 export async function getMicroLearningData(
@@ -461,28 +466,72 @@ export async function publishMicroLearning(
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: { id, status: DB.PublicationStatus.DRAFT },
+    where: { id, isDeleted: false, status: DB.PublicationStatus.DRAFT },
   })
 
   if (!microLearning) {
     return null
   }
 
-  // if the microlearning only starts in the future, set its state to scheduled
   if (microLearning.scheduledStartAt > new Date()) {
+    // schedule the task to publish the microlearning at the scheduled start date (as well as a completion task)
+    try {
+      // schedule hatchet task for automated publication
+      const publicationTask =
+        await ctx.tasks.publishScheduledMicroLearning.schedule(
+          microLearning.scheduledStartAt,
+          { microLearningId: microLearning.id }
+        )
+      const publicationTaskId = publicationTask.metadata.id
+
+      // schedule hatchet task for automated ending
+      const completionTask = await ctx.tasks.endExpiredMicroLearning.schedule(
+        microLearning.scheduledEndAt,
+        { microLearningId: microLearning.id }
+      )
+      const completionTaskId = completionTask.metadata.id
+
+      // set the status of the microlearning to scheduled and store the hatchet task ID
+      const updatedMicroLearning = await ctx.prisma.microLearning.update({
+        where: { id },
+        data: {
+          status: DB.PublicationStatus.SCHEDULED,
+          scheduledPublicationTaskId: publicationTaskId,
+          scheduledCompletionTaskId: completionTaskId,
+        },
+      })
+
+      ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
+      return updatedMicroLearning
+    } catch (error) {
+      console.error(`Failed to schedule task for microlearning ${id}:`, error)
+      return null
+    }
+  } else if (microLearning.scheduledEndAt < new Date()) {
+    // if the scheduled end date is in the past, set the status to ended
     const updatedMicroLearning = await ctx.prisma.microLearning.update({
       where: { id },
-      data: { status: DB.PublicationStatus.SCHEDULED },
+      data: { status: DB.PublicationStatus.ENDED },
     })
 
     ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
     return updatedMicroLearning
   }
 
+  // if the start date is in the past, but the end date is in the future, schedule the completion task
+  const completionTask = await ctx.tasks.endExpiredMicroLearning.schedule(
+    microLearning.scheduledEndAt,
+    { microLearningId: microLearning.id }
+  )
+  const completionTaskId = completionTask.metadata.id
+
   // if the start date is in the past, directly publish the microlearning
   const updatedMicroLearning = await ctx.prisma.microLearning.update({
     where: { id },
-    data: { status: DB.PublicationStatus.PUBLISHED },
+    data: {
+      status: DB.PublicationStatus.PUBLISHED,
+      scheduledCompletionTaskId: completionTaskId,
+    },
   })
 
   ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
@@ -493,14 +542,55 @@ export async function unpublishMicroLearning(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  const microLearning = await ctx.prisma.microLearning.update({
+  const microLearning = await ctx.prisma.microLearning.findUnique({
+    where: { id, isDeleted: false, status: DB.PublicationStatus.SCHEDULED },
+  })
+
+  if (!microLearning) {
+    return null
+  }
+
+  // remove the scheduled hatchet publication task, if it exists
+  if (microLearning.scheduledPublicationTaskId) {
+    try {
+      await ctx.hatchet.scheduled.delete(
+        microLearning.scheduledPublicationTaskId
+      )
+    } catch (error) {
+      console.error(
+        `Failed to delete scheduled publication task for microlearning ${id}:`,
+        error
+      )
+    }
+  }
+
+  // remove the scheduled hatchet completion task, if it exists
+  if (microLearning.scheduledCompletionTaskId) {
+    try {
+      await ctx.hatchet.scheduled.delete(
+        microLearning.scheduledCompletionTaskId
+      )
+    } catch (error) {
+      console.error(
+        `Failed to delete scheduled completion task for microlearning ${id}:`,
+        error
+      )
+    }
+  }
+
+  // reset the status of the microlearning to draft
+  const updatedMicroLearning = await ctx.prisma.microLearning.update({
     where: { id, status: DB.PublicationStatus.SCHEDULED },
-    data: { status: DB.PublicationStatus.DRAFT },
+    data: {
+      status: DB.PublicationStatus.DRAFT,
+      scheduledPublicationTaskId: null,
+      scheduledCompletionTaskId: null,
+    },
     include: { stacks: { include: { elements: true } } },
   })
 
   ctx.emitter.emit('invalidate', { typename: 'MicroLearning', id })
-  return microLearning
+  return updatedMicroLearning
 }
 
 export async function extendMicroLearning(
@@ -512,16 +602,40 @@ export async function extendMicroLearning(
     return null
   }
 
-  return await ctx.prisma.microLearning.update({
-    where: {
-      id,
-      scheduledEndAt: { gt: new Date() },
-      isDeleted: false,
-    },
-    data: {
-      scheduledEndAt: endDate,
-    },
+  const microLearning = await ctx.prisma.microLearning.update({
+    where: { id, scheduledEndAt: { gt: new Date() }, isDeleted: false },
+    data: { scheduledEndAt: endDate },
   })
+
+  if (!microLearning) {
+    return null
+  }
+
+  // remove the previous scheduled completion task, if it exists and create a new one
+  if (microLearning.scheduledCompletionTaskId) {
+    try {
+      await ctx.hatchet.scheduled.delete(
+        microLearning.scheduledCompletionTaskId
+      )
+    } catch (error) {
+      console.error(
+        `Failed to delete scheduled completion task for microlearning ${id}:`,
+        error
+      )
+    }
+  }
+  const completionTask = await ctx.tasks.endExpiredMicroLearning.schedule(
+    endDate,
+    { microLearningId: microLearning.id }
+  )
+
+  // store the task ID of the completion task on the microlearning
+  const updatedMicroLearning = await ctx.prisma.microLearning.update({
+    where: { id },
+    data: { scheduledCompletionTaskId: completionTask.metadata.id },
+  })
+
+  return updatedMicroLearning
 }
 
 export async function endMicroLearning(
@@ -529,16 +643,23 @@ export async function endMicroLearning(
   ctx: ContextWithUser
 ) {
   const updatedMicroLearning = await ctx.prisma.microLearning.update({
-    where: {
-      id,
-      status: DB.PublicationStatus.PUBLISHED,
-      isDeleted: false,
-    },
-    data: {
-      status: DB.PublicationStatus.ENDED,
-      scheduledEndAt: new Date(),
-    },
+    where: { id, status: DB.PublicationStatus.PUBLISHED, isDeleted: false },
+    data: { status: DB.PublicationStatus.ENDED, scheduledEndAt: new Date() },
   })
+
+  // remove the scheduled completion task, if it exists
+  if (updatedMicroLearning.scheduledCompletionTaskId) {
+    try {
+      await ctx.hatchet.scheduled.delete(
+        updatedMicroLearning.scheduledCompletionTaskId
+      )
+    } catch (error) {
+      console.error(
+        `Failed to delete scheduled completion task for microlearning ${id}:`,
+        error
+      )
+    }
+  }
 
   ctx.pubSub.publish('microLearningEnded', updatedMicroLearning)
   return updatedMicroLearning
@@ -642,6 +763,41 @@ export async function deleteMicroLearning(
   ) {
     const deletedItem = await ctx.prisma.microLearning.delete({ where: { id } })
 
+    // remove the scheduled publication task, if it exists (should only exist for scheduled microlearnings)
+    if (
+      deletedItem.scheduledPublicationTaskId &&
+      deletedItem.status === DB.PublicationStatus.SCHEDULED
+    ) {
+      try {
+        await ctx.hatchet.scheduled.delete(
+          deletedItem.scheduledPublicationTaskId
+        )
+      } catch (error) {
+        console.error(
+          `Failed to delete scheduled publication task for microlearning ${id}:`,
+          error
+        )
+      }
+    }
+
+    // remove the scheduled completion task, if it exists (should only exist for scheduled/published microlearnings)
+    if (
+      deletedItem.scheduledCompletionTaskId &&
+      (deletedItem.status === DB.PublicationStatus.SCHEDULED ||
+        deletedItem.status === DB.PublicationStatus.PUBLISHED)
+    ) {
+      try {
+        await ctx.hatchet.scheduled.delete(
+          deletedItem.scheduledCompletionTaskId
+        )
+      } catch (error) {
+        console.error(
+          `Failed to delete scheduled completion task for microlearning ${id}:`,
+          error
+        )
+      }
+    }
+
     // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
     // this case cannot be handled by the permissions module, since the microlearning is already hard deleted
     // access requests need to be updated as well, since the derived permissions on elements might have changed
@@ -657,19 +813,40 @@ export async function deleteMicroLearning(
     // if the microlearning is published and has responses -> soft deletion
     const updatedMicroLearning = await ctx.prisma.$transaction(
       async (prisma) => {
-        const updated = await prisma.microLearning.update({
+        // remove the scheduled completion task, if it exists (should only exist for published microlearnings)
+        if (
+          microLearning.status === DB.PublicationStatus.PUBLISHED &&
+          microLearning.scheduledCompletionTaskId
+        ) {
+          try {
+            await ctx.hatchet.scheduled.delete(
+              microLearning.scheduledCompletionTaskId
+            )
+          } catch (error) {
+            console.error(
+              `Failed to delete scheduled completion task for microlearning ${id}:`,
+              error
+            )
+          }
+        }
+
+        const updatedMicroLearning = await prisma.microLearning.update({
           where: { id },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            scheduledCompletionTaskId: null,
+            directPermissions: { deleteMany: {} }, // delete all direct permissions on the activity
+          },
         })
 
         // update derived permissions for this microlearning (after soft deletion)
         // this function call automatically includes permission updates for all linked elements
         await recomputeDerivedPermissions(
-          { microLearningId: updated.id },
+          { microLearningId: updatedMicroLearning.id },
           prisma
         )
 
-        return updated
+        return updatedMicroLearning
       },
       { timeout: 60000 }
     )
@@ -728,3 +905,105 @@ export async function removeMicroLearning(
 
   return id
 }
+
+export const handleEndExpiredMicroLearning: HatchetHandlers['handleEndExpiredMicroLearning'] =
+  async ({ microLearningId }, globalCtx) => {
+    try {
+      const microLearning = await globalCtx.prisma.microLearning.findUnique({
+        where: {
+          id: microLearningId,
+          isDeleted: false,
+          status: DB.PublicationStatus.PUBLISHED,
+          scheduledEndAt: { lte: new Date() },
+        },
+      })
+
+      if (!microLearning) {
+        await sendTeamsNotification({
+          scope: 'hatchet/microlearning-end',
+          text: `Microlearning with ID ${microLearningId} not found or scheduled end time is not in the past yet.`,
+        })
+        throw new Error(
+          `Microlearning with ID ${microLearningId} not found or scheduled end time is not in the past yet.`
+        )
+      }
+
+      // end the microlearning
+      const updatedMicroLearning = await globalCtx.prisma.microLearning.update({
+        where: { id: microLearningId },
+        data: { status: DB.PublicationStatus.ENDED },
+      })
+
+      await sendTeamsNotification({
+        scope: 'hatchet/microlearning-end',
+        text: `Successfully ended expired microlearning ${updatedMicroLearning.id}`,
+      })
+
+      // publish the event to subscribers
+      globalCtx.pubSub.publish('microLearningEnded', updatedMicroLearning)
+      globalCtx.emitter.emit('invalidate', {
+        typename: 'MicroLearning',
+        id: updatedMicroLearning.id,
+      })
+
+      return true
+    } catch (error) {
+      console.error('Error ending expired microlearning:', error)
+      await sendTeamsNotification({
+        scope: 'hatchet/microlearning-end',
+        text: `Error ending microlearning with ID ${microLearningId}: ${error}`,
+      })
+      throw error // rethrow to allow Hatchet to handle retries
+    }
+  }
+
+export const handlePublishScheduledMicroLearning: HatchetHandlers['handlePublishScheduledMicroLearning'] =
+  async ({ microLearningId }, globalCtx) => {
+    try {
+      // check if the microlearning exists and if its start date is in the past
+      const microLearning = await globalCtx.prisma.microLearning.findUnique({
+        where: {
+          id: microLearningId,
+          scheduledStartAt: { lte: new Date() },
+          status: DB.PublicationStatus.SCHEDULED,
+        },
+      })
+
+      if (!microLearning) {
+        await sendTeamsNotification({
+          scope: 'hatchet/microlearning-start',
+          text: `Microlearning with ID ${microLearningId} not found or scheduled start time is not in the past yet.`,
+        })
+        throw new Error(
+          `Microlearning with ID ${microLearningId} not found or scheduled start time is not in the past yet.`
+        )
+      }
+
+      // publish the microlearning
+      await globalCtx.prisma.microLearning.update({
+        where: { id: microLearningId },
+        data: { status: DB.PublicationStatus.PUBLISHED },
+      })
+
+      // send a teams notification
+      await sendTeamsNotification({
+        scope: 'graphql/publishScheduledMicroLearnings',
+        text: `Successfully published scheduled microlearning ${microLearning.id}`,
+      })
+
+      // invalidate the cache for the microlearning
+      globalCtx.emitter.emit('invalidate', {
+        typename: 'MicroLearning',
+        id: microLearning.id,
+      })
+
+      return true
+    } catch (error) {
+      console.error('Error publishing scheduled microlearning:', error)
+      await sendTeamsNotification({
+        scope: 'hatchet/microlearning-start',
+        text: `Error publishing microlearning with ID ${microLearningId}: ${error}`,
+      })
+      throw error // rethrow to allow Hatchet to handle retries
+    }
+  }

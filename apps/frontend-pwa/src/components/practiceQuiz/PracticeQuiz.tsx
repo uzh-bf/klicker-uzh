@@ -16,6 +16,17 @@ import StepProgressWithScoring from '../common/StepProgressWithScoring'
 import ElementStack from './ElementStack'
 import PracticeQuizOverview from './PracticeQuizOverview'
 
+export const FEEDBACK_STATUS_PROGRESS_MAP: Record<
+  StackFeedbackStatus,
+  'correct' | 'unanswered' | 'incorrect' | 'partial' | undefined
+> = {
+  [StackFeedbackStatus.Correct]: 'correct',
+  [StackFeedbackStatus.Incorrect]: 'incorrect',
+  [StackFeedbackStatus.Partial]: 'partial',
+  [StackFeedbackStatus.Unanswered]: 'unanswered',
+  [StackFeedbackStatus.ManuallyGraded]: 'unanswered',
+}
+
 export function resetPracticeQuizLocalStorage(id: string) {
   const localStorageKeys = Object.keys(localStorage)
   localStorageKeys.forEach((key) => {
@@ -93,7 +104,18 @@ function PracticeQuiz({
         <StepProgressWithScoring
           items={
             quiz.stacks?.map((stack) => {
-              return progressState?.[stack.id] ?? { status: 'unanswered' }
+              return progressState?.[stack.id]
+                ? {
+                    status:
+                      FEEDBACK_STATUS_PROGRESS_MAP[
+                        progressState?.[stack.id].status ??
+                          StackFeedbackStatus.Unanswered
+                      ],
+                    score: progressState?.[stack.id].score ?? null,
+                  }
+                : {
+                    status: 'unanswered',
+                  }
             }) || []
           }
           currentIx={currentIx}

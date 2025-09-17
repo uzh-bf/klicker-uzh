@@ -1,4 +1,4 @@
-FROM docker.io/library/node:20.18.1-alpine AS base
+FROM docker.io/library/node:20.19.4-alpine AS base
 
 
 FROM base AS builder
@@ -7,7 +7,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@9.15.4 turbo@2.1.0
+RUN npm i -g --ignore-scripts pnpm@10.15.0 turbo@2.5.6
 
 COPY . .
 
@@ -20,13 +20,12 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@9.15.4 turbo@2.1.0
+RUN npm i -g --ignore-scripts pnpm@10.15.0 turbo@2.5.6
 
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/pnpm* .
 
-# RUN pnpm i --frozen-lockfile
-RUN pnpm i
+RUN pnpm i --ignore-scripts
 
 ARG NODE_ENV="production"
 ARG NEXT_PUBLIC_ENV="production"
@@ -34,8 +33,6 @@ ARG COOKIE_DOMAIN
 ARG API_DOMAIN
 ARG NEXT_PUBLIC_AVATAR_BASE_PATH
 ARG NEXT_PUBLIC_ADD_RESPONSE_URL
-ARG NEXT_PUBLIC_ADD_RESPONSE_V2_URL
-ARG NEXT_PUBLIC_ENABLE_DUAL_RESPONSE_MODE
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_API_URL_SSR
 ARG NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY

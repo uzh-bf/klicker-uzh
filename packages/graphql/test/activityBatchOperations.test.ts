@@ -1,4 +1,6 @@
+import type { Hatchet } from '@hatchet-dev/typescript-sdk/index.js'
 import {
+  CourseAuthType,
   ElementInstanceType,
   ElementStackType,
   ElementType,
@@ -19,17 +21,25 @@ import type { ContextWithUser } from '../src/lib/context.js'
 import { applyActivityBatchOperations } from '../src/services/activities.js'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
 
-describe('Unit tests for batch operations on activities', () => {
+describe('Integration tests for batch operations on activities', () => {
   // shared resources used across tests
   let prisma: PrismaClient
   let emitter: EventEmitter
+  let hatchet: Hatchet
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
   let userThreeCtx: ContextWithUser
+  let userFourCtx: ContextWithUser
+  let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
-    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    const {
+      prisma: newPrisma,
+      hatchet: newHatchet,
+      emitter: newEmitter,
+    } = await initializePrisma()
     prisma = newPrisma
+    hatchet = newHatchet
     emitter = newEmitter
   })
 
@@ -43,15 +53,18 @@ describe('Unit tests for batch operations on activities', () => {
       userOneCtx: ctx1,
       userTwoCtx: ctx2,
       userThreeCtx: ctx3,
-    } = await testInitialization(prisma, emitter)
+      userFourCtx: ctx4,
+      userFiveCtx: ctx5,
+    } = await testInitialization(prisma, hatchet, emitter)
+
     userOneCtx = ctx1
     userTwoCtx = ctx2
     userThreeCtx = ctx3
+    userFourCtx = ctx4
+    userFiveCtx = ctx5
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   async function seedElement(
     args: { [x: string]: any },
@@ -85,17 +98,21 @@ describe('Unit tests for batch operations on activities', () => {
     args: { [x: string]: any } = {},
     prisma: PrismaClient
   ) {
-    const randomPin = Math.floor(100000 + Math.random() * 900000)
     const course = await prisma.course.create({
       data: {
         name: uuid(),
         displayName: uuid(),
-        pinCode: randomPin,
+        pinCode: !args.isAssessmentEnabled
+          ? Math.floor(100000 + Math.random() * 900000)
+          : null,
         startDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // two weeks ago
         endDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000), // three weeks in the future
         isGroupCreationEnabled: true,
         groupDeadlineDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // one week in the future
         ownerId: userOneCtx.user.sub,
+        authType: !!args.isAssessmentEnabled
+          ? CourseAuthType.SSO
+          : CourseAuthType.PIN,
         ...args,
       },
     })
@@ -113,6 +130,7 @@ describe('Unit tests for batch operations on activities', () => {
       prisma,
       0
     )
+
     const liveQuiz = await prisma.liveQuiz.create({
       data: {
         name: uuid(),
@@ -120,6 +138,10 @@ describe('Unit tests for batch operations on activities', () => {
         pointsMultiplier: 1,
         courseId: args.courseId,
         ownerId: userOneCtx.user.sub,
+        pinCode:
+          args?.isAssessmentEnabled === true
+            ? (args.pinCode ?? 'AB12CD') // valid 6-char uppercase alphanumeric
+            : null,
         blocks: {
           create: [
             {
@@ -421,6 +443,7 @@ describe('Unit tests for batch operations on activities', () => {
 
     expect(updatedLiveQuiz?.isGamificationEnabled).toBe(true)
     expect(updatedLiveQuiz?.isAssessmentEnabled).toBe(false)
+    expect(updatedLiveQuiz?.pinCode).toBeNull()
 
     expect(updatedPracticeQuiz?.isGamificationEnabled).toBe(true)
     expect(updatedPracticeQuiz?.isAssessmentEnabled).toBe(false)
@@ -462,6 +485,8 @@ describe('Unit tests for batch operations on activities', () => {
 
     expect(updatedLiveQuiz2?.isGamificationEnabled).toBe(false)
     expect(updatedLiveQuiz2?.isAssessmentEnabled).toBe(true)
+    expect(updatedLiveQuiz2?.pinCode).not.toBeNull()
+    expect(updatedLiveQuiz2?.pinCode).toMatch(/^[A-Z0-9]{6}$/) // pin should be set automatically for assessment live quizzes
 
     expect(updatedPracticeQuiz2?.isGamificationEnabled).toBe(false)
     expect(updatedPracticeQuiz2?.isAssessmentEnabled).toBe(true)
@@ -503,6 +528,7 @@ describe('Unit tests for batch operations on activities', () => {
 
     expect(updatedLiveQuiz3?.isGamificationEnabled).toBe(false)
     expect(updatedLiveQuiz3?.isAssessmentEnabled).toBe(false)
+    expect(updatedLiveQuiz3?.pinCode).toBeNull()
 
     expect(updatedPracticeQuiz3?.isGamificationEnabled).toBe(false)
     expect(updatedPracticeQuiz3?.isAssessmentEnabled).toBe(false)
@@ -1424,6 +1450,272 @@ describe('Unit tests for batch operations on activities', () => {
     })
     expect(permission16).not.toBeNull()
     expect(permission16!.permissionLevel).toEqual(PermissionLevel.ADMIN)
+  })
+
+  it('Verify that course re-assignments for activities in an assessment course are only accepted from assessment course admins / owner', async () => {
+    // seed an assessment course and a normal gamified course
+    const assessment = await seedCourse({ isAssessmentEnabled: true }, prisma)
+    const gamified = await seedCourse({ isGamificationEnabled: true }, prisma)
+
+    // seed activities that are assigned to the assessment course
+    const lq = await seedLiveQuiz(
+      {
+        courseId: assessment.id,
+        reviewStatus: ReviewStatus.REVIEWED,
+        isGamificationEnabled: true,
+        isAssessmentEnabled: true,
+      },
+      prisma
+    )
+    const pq = await seedPracticeQuiz(
+      {
+        courseId: assessment.id,
+        reviewStatus: ReviewStatus.REVIEWED,
+        isGamificationEnabled: true,
+        isAssessmentEnabled: true,
+      },
+      prisma
+    )
+    const ml = await seedMicroLearning(
+      {
+        courseId: assessment.id,
+        reviewStatus: ReviewStatus.REVIEWED,
+        isGamificationEnabled: true,
+        isAssessmentEnabled: true,
+      },
+      prisma
+    )
+    const ga = await seedGroupActivity(
+      {
+        courseId: assessment.id,
+        reviewStatus: ReviewStatus.REVIEWED,
+        isGamificationEnabled: true,
+        isAssessmentEnabled: true,
+      },
+      prisma
+    )
+
+    // verify that all activities have assessment enabled and are assigned to the assessment course
+    const verification1 = await prisma.liveQuiz.findUnique({
+      where: { id: lq.id },
+    })
+    expect(verification1).not.toBeNull()
+    expect(verification1!.isAssessmentEnabled).toBe(true)
+    expect(verification1!.courseId).toBe(assessment.id)
+
+    const verification2 = await prisma.practiceQuiz.findUnique({
+      where: { id: pq.id },
+    })
+    expect(verification2).not.toBeNull()
+    expect(verification2!.isAssessmentEnabled).toBe(true)
+    expect(verification2!.courseId).toBe(assessment.id)
+
+    const verification3 = await prisma.microLearning.findUnique({
+      where: { id: ml.id },
+    })
+    expect(verification3).not.toBeNull()
+    expect(verification3!.isAssessmentEnabled).toBe(true)
+    expect(verification3!.courseId).toBe(assessment.id)
+
+    const verification4 = await prisma.groupActivity.findUnique({
+      where: { id: ga.id },
+    })
+    expect(verification4).not.toBeNull()
+    expect(verification4!.isAssessmentEnabled).toBe(true)
+    expect(verification4!.courseId).toBe(assessment.id)
+
+    // share both courses with read, write and admin permissions with users two, three and four
+    await prisma.permission.createMany({
+      data: [
+        {
+          courseId: assessment.id,
+          userId: userTwoCtx.user.sub,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          courseId: assessment.id,
+          userId: userThreeCtx.user.sub,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          courseId: assessment.id,
+          userId: userFourCtx.user.sub,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+        {
+          courseId: gamified.id,
+          userId: userTwoCtx.user.sub,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+        {
+          courseId: gamified.id,
+          userId: userThreeCtx.user.sub,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          courseId: gamified.id,
+          userId: userFourCtx.user.sub,
+          permissionLevel: PermissionLevel.READ,
+        },
+        {
+          courseId: gamified.id,
+          userId: userFiveCtx.user.sub,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+      ],
+    })
+    await recomputeDerivedPermissions({ courseId: assessment.id }, prisma)
+    await recomputeDerivedPermissions({ courseId: gamified.id }, prisma)
+
+    // share the activities directly with user five
+    await prisma.permission.createMany({
+      data: [
+        {
+          liveQuizId: lq.id,
+          userId: userFiveCtx.user.sub,
+          permissionLevel: PermissionLevel.ADMIN,
+        },
+        {
+          practiceQuizId: pq.id,
+          userId: userFiveCtx.user.sub,
+          permissionLevel: PermissionLevel.WRITE,
+        },
+        {
+          microLearningId: ml.id,
+          userId: userFiveCtx.user.sub,
+          permissionLevel: PermissionLevel.EXECUTE,
+        },
+        {
+          groupActivityId: ga.id,
+          userId: userFiveCtx.user.sub,
+          permissionLevel: PermissionLevel.READ,
+        },
+      ],
+    })
+    await recomputeDerivedPermissions({ liveQuizId: lq.id }, prisma)
+    await recomputeDerivedPermissions({ practiceQuizId: pq.id }, prisma)
+    await recomputeDerivedPermissions({ microLearningId: ml.id }, prisma)
+    await recomputeDerivedPermissions({ groupActivityId: ga.id }, prisma)
+
+    // verify that triggering a course re-assignment is only successful for users one and four
+    for (const userCtx of [userTwoCtx, userThreeCtx, userFiveCtx]) {
+      const res = await applyActivityBatchOperations(
+        {
+          activityIds: [lq.id, pq.id, ml.id, ga.id],
+          courseId: gamified.id,
+        },
+        userCtx
+      )
+      expect(res).toBe(0)
+
+      const verification1 = await prisma.liveQuiz.findUnique({
+        where: { id: lq.id },
+      })
+      expect(verification1).not.toBeNull()
+      expect(verification1!.isAssessmentEnabled).toBe(true)
+      expect(verification1!.courseId).toBe(assessment.id)
+
+      const verification2 = await prisma.practiceQuiz.findUnique({
+        where: { id: pq.id },
+      })
+      expect(verification2).not.toBeNull()
+      expect(verification2!.isAssessmentEnabled).toBe(true)
+      expect(verification2!.courseId).toBe(assessment.id)
+
+      const verification3 = await prisma.microLearning.findUnique({
+        where: { id: ml.id },
+      })
+      expect(verification3).not.toBeNull()
+      expect(verification3!.isAssessmentEnabled).toBe(true)
+      expect(verification3!.courseId).toBe(assessment.id)
+
+      const verification4 = await prisma.groupActivity.findUnique({
+        where: { id: ga.id },
+      })
+      expect(verification4).not.toBeNull()
+      expect(verification4!.isAssessmentEnabled).toBe(true)
+      expect(verification4!.courseId).toBe(assessment.id)
+    }
+
+    for (const userCtx of [userOneCtx, userFourCtx]) {
+      const res = await applyActivityBatchOperations(
+        {
+          activityIds: [lq.id, pq.id, ml.id, ga.id],
+          courseId: gamified.id,
+        },
+        userCtx
+      )
+      expect(res).toBe(4)
+
+      const verification1 = await prisma.liveQuiz.findUnique({
+        where: { id: lq.id },
+      })
+      expect(verification1).not.toBeNull()
+      expect(verification1!.isAssessmentEnabled).toBe(false)
+      expect(verification1!.courseId).toBe(gamified.id)
+
+      const verification2 = await prisma.practiceQuiz.findUnique({
+        where: { id: pq.id },
+      })
+      expect(verification2).not.toBeNull()
+      expect(verification2!.isAssessmentEnabled).toBe(false)
+      expect(verification2!.courseId).toBe(gamified.id)
+
+      const verification3 = await prisma.microLearning.findUnique({
+        where: { id: ml.id },
+      })
+      expect(verification3).not.toBeNull()
+      expect(verification3!.isAssessmentEnabled).toBe(false)
+      expect(verification3!.courseId).toBe(gamified.id)
+
+      const verification4 = await prisma.groupActivity.findUnique({
+        where: { id: ga.id },
+      })
+      expect(verification4).not.toBeNull()
+      expect(verification4!.isAssessmentEnabled).toBe(false)
+      expect(verification4!.courseId).toBe(gamified.id)
+
+      // assign the activities back to the assessment course to be ready for another transfer
+      if (userCtx.user.sub === userOneCtx.user.sub) {
+        // backwards assignment only works for user one (user four has not sufficient permissions, on purpose)
+        const res2 = await applyActivityBatchOperations(
+          {
+            activityIds: [lq.id, pq.id, ml.id, ga.id],
+            courseId: assessment.id,
+          },
+          userCtx
+        )
+        expect(res2).toBe(4)
+
+        const verification5 = await prisma.liveQuiz.findUnique({
+          where: { id: lq.id },
+        })
+        expect(verification5).not.toBeNull()
+        expect(verification5!.isAssessmentEnabled).toBe(true)
+        expect(verification5!.courseId).toBe(assessment.id)
+
+        const verification6 = await prisma.practiceQuiz.findUnique({
+          where: { id: pq.id },
+        })
+        expect(verification6).not.toBeNull()
+        expect(verification6!.isAssessmentEnabled).toBe(true)
+        expect(verification6!.courseId).toBe(assessment.id)
+
+        const verification7 = await prisma.microLearning.findUnique({
+          where: { id: ml.id },
+        })
+        expect(verification7).not.toBeNull()
+        expect(verification7!.isAssessmentEnabled).toBe(true)
+        expect(verification7!.courseId).toBe(assessment.id)
+
+        const verification8 = await prisma.groupActivity.findUnique({
+          where: { id: ga.id },
+        })
+        expect(verification8).not.toBeNull()
+        expect(verification8!.isAssessmentEnabled).toBe(true)
+        expect(verification8!.courseId).toBe(assessment.id)
+      }
+    }
   })
 
   it('Verify that the course assignment, multiplier and points can be updated simultaneously and that the review status is updated correctly', async () => {

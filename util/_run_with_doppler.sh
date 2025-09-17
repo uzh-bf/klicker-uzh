@@ -15,8 +15,9 @@
 # 3. If that fails, check if we are running from an external drive
 #    (`/Volumes/*` on macOS). Keychain auth often breaks there.
 #    • If on external drive:
-#        a. Look for service-token file named:
-#           ~/.doppler-tokens/<git-root-directory>-$CONFIG
+#        a. Look for service-token file named (new):
+#           ~/.doppler-tokens/<doppler-project>-$CONFIG
+#           Fallback (legacy): ~/.doppler-tokens/<repo-root-basename>-$CONFIG
 #        b. If token exists → export DOPPLER_TOKEN and retry doppler.
 #        c. If token is missing → instruct user how to create a Service Token
 #           in the Doppler dashboard, suggest naming it
@@ -33,8 +34,8 @@
 set -euo pipefail
 
 if [[ -z "${CONFIG:-}" ]]; then
-  echo "CONFIG environment variable not set. Please set CONFIG before calling this script." >&2
-  exit 1
+  CONFIG="dev"
+  echo "ℹ️  CONFIG not set, defaulting to 'dev' environment"
 fi
 
 # Validate parameters – we expect at least one argument (the command to run)
@@ -57,19 +58,7 @@ CURRENT_DIR="$(command -v realpath >/dev/null 2>&1 && realpath "$PWD" || pwd -P)
 if [[ "$CURRENT_DIR" == /Volumes/* ]]; then
   echo "⚠️  Detected external drive (resolved path: $CURRENT_DIR). Attempting alternative authentication..."
 
-  # Check for existing service token specific to this project & config
-  TOKEN_FILE="$HOME/.doppler-tokens/$(basename $(git rev-parse --show-toplevel 2>/dev/null || pwd))-$CONFIG"
-
-  if [ -f "$TOKEN_FILE" ]; then
-    export DOPPLER_TOKEN="$(cat "$TOKEN_FILE")"
-    doppler run --config "$CONFIG" -- "$CMD" "$@"
-    exit 0
-  fi
-
-  echo "❌ No service token found for external drive usage."
-  echo ""
-
-  # Determine closest doppler.yaml to fill in project/config placeholders
+  # Determine closest doppler.yaml to derive the Doppler project/config
   DOPPLER_YAML=""
   SEARCH_DIR="$CURRENT_DIR"
   while [[ "$SEARCH_DIR" != "/" ]]; do
@@ -82,16 +71,51 @@ if [[ "$CURRENT_DIR" == /Volumes/* ]]; then
 
   if [[ -n "$DOPPLER_YAML" ]]; then
     DOPPLER_PROJECT="$(grep -E '^\s*project:' "$DOPPLER_YAML" | head -n1 | awk '{print $2}')"
-    DOPPLER_CONFIG="$(grep -E '^\s*config:' "$DOPPLER_YAML" | head -n1 | awk '{print $2}')"
+    # Prefer explicit CONFIG from env; fall back to doppler.yaml config for messaging
+    DOPPLER_CONFIG_YAML="$(grep -E '^\s*config:' "$DOPPLER_YAML" | head -n1 | awk '{print $2}')"
   fi
 
+  # Use stable token key based on Doppler project (not Git worktree/branch)
+  TOKEN_KEY="${DOPPLER_PROJECT:-}"
+  if [[ -z "$TOKEN_KEY" ]]; then
+    # Fallback: try to derive a stable repo name from remote origin url
+    ORIGIN_URL="$(git config --get remote.origin.url 2>/dev/null || true)"
+    if [[ -n "$ORIGIN_URL" ]]; then
+      # Extract last path segment without .git
+      TOKEN_KEY="$(basename "$ORIGIN_URL" 2>/dev/null | sed 's/\.git$//')"
+    else
+      # Final fallback: basename of repo root (legacy, may include worktree/branch suffix)
+      TOKEN_KEY="$(basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)")"
+    fi
+  fi
+
+  TOKEN_FILE_NEW="$HOME/.doppler-tokens/${TOKEN_KEY}-${CONFIG}"
+  # Legacy pattern (pre-change): repo-root-basename + -CONFIG
+  TOKEN_FILE_LEGACY="$HOME/.doppler-tokens/$(basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)")-$CONFIG"
+
+  # Prefer the new stable location; fall back to legacy if present
+  if [ -f "$TOKEN_FILE_NEW" ]; then
+    export DOPPLER_TOKEN="$(cat "$TOKEN_FILE_NEW")"
+    doppler run --config "$CONFIG" -- "$CMD" "$@"
+    exit 0
+  elif [ -f "$TOKEN_FILE_LEGACY" ]; then
+    echo "ℹ️  Using legacy token file: $TOKEN_FILE_LEGACY"
+    echo "    Consider migrating it to: $TOKEN_FILE_NEW"
+    export DOPPLER_TOKEN="$(cat "$TOKEN_FILE_LEGACY")"
+    doppler run --config "$CONFIG" -- "$CMD" "$@"
+    exit 0
+  fi
+
+  echo "❌ No service token found for external drive usage."
+  echo ""
+
   # Guidance for the user (also echoed to terminal)
-echo "To fix this, create a Service Token for project '${DOPPLER_PROJECT:-<project>}' and config '${DOPPLER_CONFIG:-<config>}' in the Doppler dashboard (https://doppler.com)."
-  echo "Name the token something like '${DOPPLER_PROJECT:-<project>}-${DOPPLER_CONFIG:-<config>}' so it's clear which environment it belongs to."
-  echo "Copy the token and save it into: $TOKEN_FILE"
+  echo "To fix this, create a Service Token for project '${DOPPLER_PROJECT:-<project>}' and config '${CONFIG}' in the Doppler dashboard (https://doppler.com)."
+  echo "Name the token something like '${DOPPLER_PROJECT:-<project>}-$CONFIG' so it's clear which environment it belongs to."
+  echo "Copy the token and save it into: $TOKEN_FILE_NEW"
   echo ""
   echo "Example:"
-  echo "  echo 'dp.st.your_generated_token' > $TOKEN_FILE"
+  echo "  echo 'dp.st.your_generated_token' > $TOKEN_FILE_NEW"
   echo ""
   echo "After saving the token, rerun this script."
   exit 1

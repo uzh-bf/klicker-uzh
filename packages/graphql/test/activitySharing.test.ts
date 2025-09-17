@@ -1,3 +1,4 @@
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   AuditLogType,
   ElementType,
@@ -55,9 +56,10 @@ import {
 } from './helpers.js'
 import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 
-describe('Unit tests for sharing functionalities of activities (e.g. live quiz)', () => {
+describe('Integration tests for sharing functionalities of activities (e.g. live quiz)', () => {
   // shared resources used across tests
   let prisma: PrismaClient
+  let hatchet: Hatchet
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
@@ -66,8 +68,13 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
   let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
-    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    const {
+      prisma: newPrisma,
+      hatchet: newHatchet,
+      emitter: newEmitter,
+    } = await initializePrisma()
     prisma = newPrisma
+    hatchet = newHatchet
     emitter = newEmitter
   })
 
@@ -83,7 +90,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
       userFiveCtx: ctx5,
-    } = await testInitialization(prisma, emitter)
+    } = await testInitialization(prisma, hatchet, emitter)
 
     userOneCtx = ctx1
     userTwoCtx = ctx2
@@ -92,9 +99,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
     userFiveCtx = ctx5
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   // ! Catalog Operations with Live Quizzes (incl. Templates)
   // #region
@@ -3922,6 +3927,8 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userOne.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course1.id }, prisma)
+
     const course2 = await prisma.course.create({
       data: {
         name: 'Course 2',
@@ -3934,6 +3941,8 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userTwo.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course2.id }, prisma)
+
     const course3 = await prisma.course.create({
       data: {
         name: 'Course 3',
@@ -3946,6 +3955,8 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userThree.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course3.id }, prisma)
+
     const course4 = await prisma.course.create({
       data: {
         name: 'Course 4',
@@ -3958,6 +3969,8 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userFour.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course4.id }, prisma)
+
     const course5 = await prisma.course.create({
       data: {
         name: 'Course 5',
@@ -3970,6 +3983,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userFive.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course5.id }, prisma)
 
     // create a live quiz that is linked to course 1
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)
@@ -5884,6 +5898,8 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userOne.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course1.id }, prisma)
+
     const course2 = await prisma.course.create({
       data: {
         name: 'Course 2',
@@ -5896,6 +5912,8 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userTwo.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course2.id }, prisma)
+
     const course3 = await prisma.course.create({
       data: {
         name: 'Course 3',
@@ -5908,6 +5926,8 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userThree.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course3.id }, prisma)
+
     const course4 = await prisma.course.create({
       data: {
         name: 'Course 4',
@@ -5920,6 +5940,8 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userFour.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course4.id }, prisma)
+
     const course5 = await prisma.course.create({
       data: {
         name: 'Course 5',
@@ -5932,6 +5954,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userFive.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course5.id }, prisma)
 
     // create an activity that is linked to course 1
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)
@@ -7778,6 +7801,8 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userOne.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course1.id }, prisma)
+
     const course2 = await prisma.course.create({
       data: {
         name: 'Course 2',
@@ -7790,6 +7815,8 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userTwo.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course2.id }, prisma)
+
     const course3 = await prisma.course.create({
       data: {
         name: 'Course 3',
@@ -7802,6 +7829,8 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userThree.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course3.id }, prisma)
+
     const course4 = await prisma.course.create({
       data: {
         name: 'Course 4',
@@ -7814,6 +7843,8 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userFour.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course4.id }, prisma)
+
     const course5 = await prisma.course.create({
       data: {
         name: 'Course 5',
@@ -7826,6 +7857,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userFive.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course5.id }, prisma)
 
     // create an activity that is linked to course 1
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)
@@ -9687,6 +9719,8 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userOne.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course1.id }, prisma)
+
     const course2 = await prisma.course.create({
       data: {
         name: 'Course 2',
@@ -9699,6 +9733,8 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userTwo.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course2.id }, prisma)
+
     const course3 = await prisma.course.create({
       data: {
         name: 'Course 3',
@@ -9711,6 +9747,8 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userThree.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course3.id }, prisma)
+
     const course4 = await prisma.course.create({
       data: {
         name: 'Course 4',
@@ -9723,6 +9761,8 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userFour.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course4.id }, prisma)
+
     const course5 = await prisma.course.create({
       data: {
         name: 'Course 5',
@@ -9735,6 +9775,7 @@ describe('Unit tests for sharing functionalities of activities (e.g. live quiz)'
         ownerId: userFive.id,
       },
     })
+    await recomputeDerivedPermissions({ courseId: course5.id }, prisma)
 
     // create an activity that is linked to course 1
     const { AC1: AC } = await seedAnswerCollections(userOneCtx)

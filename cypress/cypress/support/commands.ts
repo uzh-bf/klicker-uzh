@@ -1,3 +1,4 @@
+import { configure } from '@testing-library/cypress'
 import '@testing-library/cypress/add-commands'
 import 'cypress-real-events'
 import * as jose from 'jose'
@@ -5,6 +6,18 @@ import localforage from 'localforage'
 import messages from '../../../packages/i18n/messages/en'
 
 /// <reference types="cypress" />
+
+// Only do this in headless/CI runs to keep rich errors locally
+if (!Cypress.config('isInteractive')) {
+  configure({
+    // Return only the message, skip prettyDOM DOM dump
+    getElementError: (message /*, container */) => {
+      const err = new Error(message)
+      err.name = 'TestingLibraryElementError'
+      return err
+    },
+  })
+}
 
 // Custom command for reliable select interactions
 Cypress.Commands.add('selectOption', (selector: string, optionText: string) => {
@@ -108,11 +121,12 @@ const loginFactory = (
   tokenData: {
     email: string
     sub: string
-    role: 'ADMIN' | 'USER'
-    scope: 'ACCOUNT_OWNER'
-    catalystInstitutional: boolean
-    catalystIndividual: boolean
+    role: 'ADMIN' | 'USER' | 'PARTICIPANT'
+    scope: 'ACCOUNT_OWNER' | 'EDUID'
+    catalystInstitutional?: boolean
+    catalystIndividual?: boolean
   },
+  cookieName: string = 'next-auth.session-token',
   redirectUrl?: string
 ) => {
   return () => {
@@ -123,7 +137,7 @@ const loginFactory = (
     cy.viewport('macbook-16')
     localforage.setItem('hideLecturerSurvey', 'true')
 
-    const secret = new TextEncoder().encode('abcd')
+    const secret = new TextEncoder().encode(Cypress.env('APP_SECRET'))
     const alg = 'HS256'
 
     cy.wrap(null).then(async () => {
@@ -131,9 +145,10 @@ const loginFactory = (
         .setProtectedHeader({ alg })
         .setIssuedAt()
         .setExpirationTime('2h')
+        .setIssuer(process.env.APP_ORIGIN_AUTH)
         .sign(secret)
 
-      cy.setCookie('next-auth.session-token', token, {
+      cy.setCookie(cookieName, token, {
         domain: '127.0.0.1',
         path: '/',
         httpOnly: true,
@@ -169,6 +184,7 @@ Cypress.Commands.add(
       catalystInstitutional: true,
       catalystIndividual: true,
     },
+    undefined,
     Cypress.env('URL_CONTROL')
   )
 )
@@ -243,6 +259,21 @@ Cypress.Commands.add(
     catalystInstitutional: true,
     catalystIndividual: false,
   })
+)
+
+// TODO: before using this function validate its correctness -> not used yet
+Cypress.Commands.add(
+  'loginAssessmentStudent',
+  loginFactory(
+    {
+      email: 'testuser1@test.uzh.ch',
+      sub: '6f45065c-667f-4259-818c-c6f6b477eb48',
+      role: 'PARTICIPANT',
+      scope: 'EDUID',
+    },
+    'next-auth.participant-session-token',
+    Cypress.env('URL_ASSESSMENT')
+  )
 )
 
 Cypress.Commands.add('logoutUser', () => {
@@ -856,6 +887,8 @@ interface CreateLiveQuizArgs {
   displayName: string
   courseName?: string
   multiplier?: string
+  gamificationWithoutCourse?: boolean
+  pinProtectionWithoutCourse?: boolean
   blocks: { elements: string[] }[]
 }
 
@@ -866,6 +899,8 @@ Cypress.Commands.add(
     displayName,
     courseName,
     multiplier,
+    gamificationWithoutCourse,
+    pinProtectionWithoutCourse,
     blocks,
   }: CreateLiveQuizArgs) => {
     cy.get('[data-cy="create-live-quiz"]').click()
@@ -891,6 +926,13 @@ Cypress.Commands.add(
         cy.get(`[data-cy="select-multiplier-${multiplier}"]`).realClick()
         cy.get('[data-cy="select-multiplier"]').contains(multiplier)
       }
+    }
+
+    if (gamificationWithoutCourse) {
+      cy.get('[data-cy="set-quiz-gamification"]').click()
+    }
+    if (pinProtectionWithoutCourse) {
+      cy.get('[data-cy="set-quiz-pin-protection"]').click()
     }
 
     cy.get('[data-cy="next-or-submit"]').click()
@@ -1214,12 +1256,12 @@ Cypress.Commands.add(
     cy.setDatetime({
       cyString: 'select-start-date',
       deselectorString: 'availability-section-header',
-      datetime: startDate,
+      datetime: { ...startDate, monthDelta: startDate.monthDelta - 1 }, // pre-selected date is at beginning of next month
     })
     cy.setDatetime({
       cyString: 'select-end-date',
       deselectorString: 'availability-section-header',
-      datetime: endDate,
+      datetime: { ...endDate, monthDelta: endDate.monthDelta - 1 }, // pre-selected date is at beginning of next month
     })
 
     if (multiplier) {
@@ -1298,12 +1340,18 @@ Cypress.Commands.add(
     cy.setDatetime({
       cyString: 'select-start-date',
       deselectorString: 'availability-section-header',
-      datetime: scheduledStartDate,
+      datetime: {
+        ...scheduledStartDate,
+        monthDelta: scheduledStartDate.monthDelta - 1,
+      }, // pre-selected date is at beginning of next month
     })
     cy.setDatetime({
       cyString: 'select-end-date',
       deselectorString: 'availability-section-header',
-      datetime: scheduledEndDate,
+      datetime: {
+        ...scheduledEndDate,
+        monthDelta: scheduledEndDate.monthDelta - 1,
+      }, // pre-selected date is at beginning of next month
     })
     cy.get('[data-cy="next-or-submit"]').click()
 
@@ -1345,14 +1393,16 @@ interface CreateCourseArgs {
   displayName: string
   description?: string
   notificationEmail?: string
-  startDate?: DateType
-  endDate?: DateType
+  startDate?: Date
+  endDate?: Date
   color?: string
+  isAssessmentEnabled?: boolean
   isGamificationEnabled?: boolean
-  isGroupFormationEnabled?: boolean
-  groupFormationDeadline?: DateType
+  isGroupCreationEnabled?: boolean
+  groupDeadlineDate?: Date
   maxGroupSize?: number
   preferredGroupSize?: number
+  participants?: string[]
 }
 
 Cypress.Commands.add(
@@ -1365,112 +1415,40 @@ Cypress.Commands.add(
     startDate,
     endDate,
     color,
+    isAssessmentEnabled = false,
     isGamificationEnabled = true,
-    isGroupFormationEnabled = true,
-    groupFormationDeadline,
+    isGroupCreationEnabled = true,
+    groupDeadlineDate,
     maxGroupSize = 4,
     preferredGroupSize = 2,
+    participants = [],
   }: CreateCourseArgs) => {
-    cy.get('[data-cy="course-list-button-new-course"]').click()
-
-    // set the necessary metadata
-    cy.get('[data-cy="course-name"]').click().type(name)
-    cy.get('[data-cy="course-display-name"]').click().type(displayName)
-
-    // if defined, set the description
-    if (description) {
-      cy.get('[data-cy="course-description"]').realClick().type(description)
-    }
-
-    // if defined, set the notification email
-    if (notificationEmail) {
-      cy.get('[data-cy="course-notification-email"]')
-        .click()
-        .clear()
-        .type(notificationEmail)
-    }
-
-    // if defined, set the start date
-    if (startDate) {
-      cy.setDate({
-        cyString: 'course-start-date',
-        deselectorString: 'course-name',
-        date: startDate,
-      })
-    }
-
-    // if defined, set the end date
-    if (endDate) {
-      cy.setDate({
-        cyString: 'course-end-date',
-        deselectorString: 'course-name',
-        date: endDate,
-      })
-    }
-
-    // if defined, set the color
-    if (color) {
-      cy.get('[data-cy="course-color-trigger"]').click()
-      cy.get('[data-cy="course-color-hex-input"]').clear()
-      cy.get('[data-cy="course-color-hex-input"]').type(color)
-      cy.get('[data-cy="course-color-submit"]').click()
-    }
-
-    // set gamification toggle
-    if (isGamificationEnabled) {
-      cy.get('[data-cy="course-gamification"]').should(
-        'have.attr',
-        'data-state',
-        'checked'
-      )
-    } else {
-      cy.get('[data-cy="course-gamification"]').click()
-      cy.get('[data-cy="course-gamification"]').should(
-        'have.attr',
-        'data-state',
-        'unchecked'
-      )
-    }
-
-    // set group formation toggle
-    if (isGroupFormationEnabled) {
-      cy.get('[data-cy="course-group-creation"]').should(
-        'have.attr',
-        'data-state',
-        'checked'
-      )
-
-      // if defined, modify the group formation deadline
-      if (groupFormationDeadline) {
-        cy.setDate({
-          cyString: 'group-creation-deadline',
-          deselectorString: 'course-name',
-          date: groupFormationDeadline,
-        })
+    // trigger answer collection creation directly through prisma action
+    cy.get('[data-cy="courses"]').click()
+    cy.task('createCourse', {
+      name,
+      displayName,
+      description,
+      notificationEmail,
+      startDate,
+      endDate,
+      color,
+      isAssessmentEnabled,
+      isGamificationEnabled,
+      isGroupCreationEnabled,
+      groupDeadlineDate,
+      maxGroupSize,
+      preferredGroupSize,
+      participants,
+    }).then((result: boolean) => {
+      // check if the query was successful
+      if (result === false) {
+        throw new Error('Course creation failed!')
       }
-
-      // set group size parameters
-      cy.get('[data-cy="max-group-size"]')
-        .click()
-        .clear()
-        .type(String(maxGroupSize))
-      cy.get('[data-cy="preferred-group-size"]')
-        .click()
-        .clear()
-        .type(String(preferredGroupSize))
-    } else if (isGamificationEnabled) {
-      cy.get('[data-cy="course-group-creation"]').click()
-      cy.get('[data-cy="course-group-creation"]').should(
-        'have.attr',
-        'data-state',
-        'unchecked'
-      )
-    }
-
-    // submit the form
-    cy.get('[data-cy="manipulate-course-submit"]').click()
+    })
 
     // check if the course is in the list
+    cy.reload()
     cy.get('[data-cy="courses"]').click()
     cy.findByText(name).should('exist')
   }
@@ -1792,6 +1770,7 @@ declare global {
       loginInstitutionalCatalyst4(): Chainable<void>
       logoutUser(): Chainable<void>
       loginStudent(): Chainable<void>
+      loginAssessmentStudent(): Chainable<void>
       loginStudentPassword({ username }: { username: string }): Chainable<void>
       createAnswerCollection({
         name,
@@ -1898,6 +1877,8 @@ declare global {
         displayName,
         courseName,
         multiplier,
+        gamificationWithoutCourse,
+        pinProtectionWithoutCourse,
         blocks,
       }: CreateLiveQuizArgs): Chainable<void>
       convertLiveQuizToTemplate({
@@ -1970,9 +1951,10 @@ declare global {
         startDate,
         endDate,
         color,
+        isAssessmentEnabled,
         isGamificationEnabled,
-        isGroupFormationEnabled,
-        groupFormationDeadline,
+        isGroupCreationEnabled,
+        groupDeadlineDate,
         maxGroupSize,
         preferredGroupSize,
       }: CreateCourseArgs): Chainable<void>

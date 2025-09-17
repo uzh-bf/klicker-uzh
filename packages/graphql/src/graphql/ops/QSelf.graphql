@@ -3,7 +3,12 @@ query Self($liveQuizId: String) {
     id
     role
     scopeQuizId
+    isCourseParticipant
+    isCourseParticipationActive
+
     email
+    institutionalEmail
+
     username
     locale
     avatar

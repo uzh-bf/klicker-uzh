@@ -11,13 +11,18 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
+
+  // validation and primary email management
+  isPrimary  Boolean @default(false) // only one primary per user
+  isVerified Boolean @default(true) // OAuth accounts are auto-verified
+
+  refresh_token String? @db.Text
+  access_token  String? @db.Text
+  expires_at    Int?
+  token_type    String?
+  scope         String?
+  id_token      String? @db.Text
+  session_state String?
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String @db.Uuid
@@ -26,6 +31,8 @@ model Account {
   updatedAt DateTime @default(now()) @updatedAt
 
   @@unique([provider, providerAccountId])
+  @@index([providerAccountId, isVerified])
+  @@index([type, isVerified])
 }
 
 model Session {
@@ -56,6 +63,7 @@ enum UserLoginScope {
   READ_ONLY
   OTP
   ACTIVATION
+  EDUID
 }
 
 model UserLogin {

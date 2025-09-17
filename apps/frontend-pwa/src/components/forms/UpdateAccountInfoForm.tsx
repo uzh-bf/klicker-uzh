@@ -117,8 +117,8 @@ function UpdateAccountInfoForm({
     >
       {({ values, isSubmitting, isValid, validateField }) => {
         return (
-          <Form>
-            <div className="order-2 flex flex-col justify-between gap-3 rounded-md md:order-1 md:bg-slate-50 md:p-4">
+          <Form className="md:h-full">
+            <div className="order-2 flex flex-col justify-between gap-3 rounded-md md:order-1 md:h-full md:bg-slate-50 md:p-4">
               <div>
                 <H3 className={{ root: 'mb-0 border-b' }}>
                   {t('shared.generic.profile')}
@@ -169,55 +169,61 @@ function UpdateAccountInfoForm({
                     className={{ label: 'mt-0' }}
                     data={{ cy: 'update-account-username' }}
                   />
-                  <FormikTextField
-                    name="password"
-                    label={t('shared.generic.password')}
-                    className={{ label: 'text-black' }}
-                    type="password"
-                    data={{ cy: 'update-account-password' }}
-                  />
-                  <FormikTextField
-                    name="passwordRepetition"
-                    label={t('shared.generic.passwordRepetition')}
-                    className={{ label: 'text-black' }}
-                    type="password"
-                    data={{ cy: 'update-account-password-repetition' }}
-                  />
-                  <div>
-                    <div className="font-bold">
-                      {t('pwa.profile.publicProfile')}
+                  {process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' && (
+                    <>
+                      <FormikTextField
+                        name="password"
+                        label={t('shared.generic.password')}
+                        className={{ label: 'text-black' }}
+                        type="password"
+                        data={{ cy: 'update-account-password' }}
+                      />
+                      <FormikTextField
+                        name="passwordRepetition"
+                        label={t('shared.generic.passwordRepetition')}
+                        className={{ label: 'text-black' }}
+                        type="password"
+                        data={{ cy: 'update-account-password-repetition' }}
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <div>
+                  <div className="mb-1 font-bold">
+                    {t('pwa.profile.publicProfile')}
+                  </div>
+                  <div className="space-between flex flex-row gap-4">
+                    <div className="flex flex-col items-center gap-1">
+                      <FormikSwitchField
+                        name="isProfilePublic"
+                        data={{ cy: 'update-account-toggle-profile-public' }}
+                      />
+                      {values.isProfilePublic
+                        ? t('shared.generic.yes')
+                        : t('shared.generic.no')}
                     </div>
-                    <div className="space-between flex flex-row gap-4">
-                      <div className="flex flex-col items-center gap-1">
-                        <FormikSwitchField
-                          name="isProfilePublic"
-                          data={{ cy: 'update-account-toggle-profile-public' }}
-                        />
-                        {values.isProfilePublic
-                          ? t('shared.generic.yes')
-                          : t('shared.generic.no')}
-                      </div>
-                      <div className="flex-1">
-                        <Prose className={{ root: 'prose-sm' }}>
-                          {t('pwa.profile.isProfilePublic')}
-                        </Prose>
-                      </div>
+                    <div className="flex-1">
+                      <Prose className={{ root: 'prose-sm' }}>
+                        {t('pwa.profile.isProfilePublic')}
+                      </Prose>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <Button
-                fluid
-                type="submit"
-                disabled={!isValid || !isUsernameAvailable}
-                loading={isSubmitting}
-                className={{ root: 'border-primary-100 h-8' }}
-                data={{ cy: 'save-account-update' }}
-              >
-                <Button.Icon icon={faSave} loading={isSubmitting} />
-                <Button.Label>{t('shared.generic.save')}</Button.Label>
-              </Button>
+                <Button
+                  fluid
+                  type="submit"
+                  disabled={!isValid || !isUsernameAvailable}
+                  loading={isSubmitting}
+                  className={{ root: 'border-primary-100 h-8' }}
+                  data={{ cy: 'save-account-update' }}
+                >
+                  <Button.Icon icon={faSave} loading={isSubmitting} />
+                  <Button.Label>{t('shared.generic.save')}</Button.Label>
+                </Button>
+              </div>
             </div>
           </Form>
         )

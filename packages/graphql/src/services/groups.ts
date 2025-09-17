@@ -1,16 +1,17 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import {
-  ActivityType,
+import type {
   ElementInstanceResults,
-  type ElementStackInput,
-  ResponseCorrectness,
+  ElementStackInput,
+  HatchetHandlers,
 } from '@klicker-uzh/types'
+import { ActivityType, ResponseCorrectness } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
   propagateActivityToElements,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
+import EventEmitter from 'events'
 import { GraphQLError } from 'graphql'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import type { ElementInstanceOptions, ResponseInput } from 'src/ops.js'
@@ -26,10 +27,11 @@ import {
   splitGroupsFinal,
   splitGroupsRunning,
 } from '../lib/randomizedGroups.js'
-import { sendTeamsNotifications, shuffle } from '../lib/util.js'
+import { shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
 import { getPermissionBooleans } from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
+import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import {
   type RespondToElementStackInput,
@@ -43,21 +45,14 @@ import {
 export const POINTS_PER_GROUP_ACTIVITY_ELEMENT = 25
 
 export async function createParticipantGroup(
-  {
-    courseId,
-    name,
-  }: {
-    courseId: string
-    name: string
-  },
+  { courseId, name }: { courseId: string; name: string },
   ctx: ContextWithUser
 ) {
   // check if group creation is enabled on course
   const course = await ctx.prisma.course.findUnique({
-    where: {
-      id: courseId,
-    },
+    where: { id: courseId },
   })
+
   if (!course || !course.isGroupCreationEnabled || name.trim() === '') {
     return null
   }
@@ -70,10 +65,7 @@ export async function createParticipantGroup(
       course: { connect: { id: courseId } },
       participants: { connect: { id: ctx.user.sub } },
     },
-    include: {
-      participants: true,
-      course: true,
-    },
+    include: { participants: true, course: true },
   })
 
   // invalidate graphql response cache
@@ -97,6 +89,7 @@ export async function joinRandomCourseGroupPool(
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
   })
+
   if (!course || !course.isGroupCreationEnabled) {
     return false
   }
@@ -131,6 +124,7 @@ export async function leaveRandomCourseGroupPool(
       groupAssignmentPoolEntries: { where: { participantId: ctx.user.sub } },
     },
   })
+
   if (
     !course ||
     !course.isGroupCreationEnabled ||
@@ -157,7 +151,7 @@ async function createRandomGroup(
     courseId,
     groupParticipantIds,
   }: { courseId: string; groupParticipantIds: string[] },
-  ctx: Context
+  prisma: DB.PrismaClient
 ) {
   const code = 100000 + Math.floor(Math.random() * 900000)
   const groupName =
@@ -168,8 +162,8 @@ async function createRandomGroup(
     }) + 's'
 
   // create group and remove participants from the pool
-  await ctx.prisma.$transaction([
-    ctx.prisma.participantGroup.create({
+  await prisma.$transaction([
+    prisma.participantGroup.create({
       data: {
         randomlyAssigned: true,
         name: groupName,
@@ -184,7 +178,7 @@ async function createRandomGroup(
         },
       },
     }),
-    ctx.prisma.groupAssignmentPoolEntry.deleteMany({
+    prisma.groupAssignmentPoolEntry.deleteMany({
       where: {
         courseId,
         participantId: {
@@ -195,95 +189,109 @@ async function createRandomGroup(
   ])
 }
 
-export async function runningRandomGroupAssignments(ctx: Context) {
-  // fetch all courses with future group deadlines
-  const courses = await ctx.prisma.course.findMany({
-    where: {
-      randomAssignmentFinalized: false,
-      isGroupCreationEnabled: true,
-      groupDeadlineDate: {
-        gt: new Date(),
-      },
-    },
-    include: {
-      groupAssignmentPoolEntries: {
-        orderBy: {
-          createdAt: 'asc',
-        },
-      },
-    },
-  })
+export const handleRunningRandomGroupAssignments: HatchetHandlers['handleRunningRandomGroupAssignments'] =
+  async (_, globalCtx, executionCtx) => {
+    await executionCtx.logger.info(
+      '[INFO] [RunningRandomGroupAssignments] Starting to handle running random group assignments...'
+    )
 
-  // filter the courses down to those, which contain more than 2 * preferredGroupSize participants in the pool
-  const coursesToUpdate = courses.filter(
-    (course) =>
-      course.groupAssignmentPoolEntries.length >= 2 * course.preferredGroupSize
-  )
+    // fetch all courses with future group deadlines
+    const courses = await globalCtx.prisma.course.findMany({
+      where: {
+        randomAssignmentFinalized: false,
+        isGroupCreationEnabled: true,
+        groupDeadlineDate: { gt: new Date() },
+      },
+      include: {
+        groupAssignmentPoolEntries: { orderBy: { createdAt: 'asc' } },
+      },
+    })
 
-  // update the group assignments for all courses that have enough participants in the pool
-  for (const course of coursesToUpdate) {
-    try {
-      const { participantIds, poolEntryIds } =
-        course.groupAssignmentPoolEntries.reduce<{
-          participantIds: string[]
-          poolEntryIds: number[]
-        }>(
-          (acc, entry) => {
-            acc.participantIds.push(entry.participantId)
-            acc.poolEntryIds.push(entry.id)
-            return acc
-          },
-          { participantIds: [], poolEntryIds: [] }
+    await executionCtx.logger.info(
+      `[INFO] [RunningRandomGroupAssignments] Found ${courses.length} courses with upcoming group deadlines`
+    )
+
+    // filter the courses down to those, which contain more than 2 * preferredGroupSize participants in the pool
+    const coursesToUpdate = courses.filter(
+      (course) =>
+        course.groupAssignmentPoolEntries.length >=
+        2 * course.preferredGroupSize
+    )
+
+    await executionCtx.logger.info(
+      `[INFO] [RunningRandomGroupAssignments] Found ${coursesToUpdate.length} courses with enough participants in the pool`
+    )
+
+    // update the group assignments for all courses that have enough participants in the pool
+    for (const course of coursesToUpdate) {
+      try {
+        const { participantIds, poolEntryIds } =
+          course.groupAssignmentPoolEntries.reduce<{
+            participantIds: string[]
+            poolEntryIds: number[]
+          }>(
+            (acc, entry) => {
+              acc.participantIds.push(entry.participantId)
+              acc.poolEntryIds.push(entry.id)
+              return acc
+            },
+            { participantIds: [], poolEntryIds: [] }
+          )
+
+        // split the participants into groups
+        const { groups } = splitGroupsRunning({
+          participantIds,
+          preferredGroupSize: course.preferredGroupSize,
+        })
+
+        for (const groupParticipantIds of groups) {
+          await createRandomGroup(
+            { courseId: course.id, groupParticipantIds },
+            globalCtx.prisma
+          )
+        }
+
+        // invalidate the corresponding participants, course and group assignment pool entries in the cache
+        globalCtx.emitter.emit('invalidate', {
+          typename: 'Course',
+          id: course.id,
+        })
+        participantIds.forEach((participantId) => {
+          globalCtx.emitter.emit('invalidate', {
+            typename: 'Participant',
+            id: participantId,
+          })
+        })
+        poolEntryIds.forEach((poolEntryId) => {
+          globalCtx.emitter.emit('invalidate', {
+            typename: 'GroupAssignmentPoolEntry',
+            id: poolEntryId,
+          })
+        })
+
+        await executionCtx.logger.info(
+          `[INFO] [RunningRandomGroupAssignments] Successfully assigned ${groups.length} new random groups for ${course.name} (id: ${course.id}; rolling assignment).`
         )
+      } catch (e) {
+        await sendTeamsNotification({
+          scope: 'hatchet/running-random-group-assignments',
+          text: `Failed to assign random groups for course ${course.name} (id: ${course.id}; rolling assignment) with error: ${
+            e || 'missing'
+          }`,
+        })
 
-      // split the participants into groups
-      const { groups } = splitGroupsRunning({
-        participantIds,
-        preferredGroupSize: course.preferredGroupSize,
-      })
-
-      for (const groupParticipantIds of groups) {
-        await createRandomGroup(
-          { courseId: course.id, groupParticipantIds },
-          ctx
+        await executionCtx.logger.error(
+          `[ERROR] [RunningRandomGroupAssignments] Failed to assign groups for course ${course.name} (id: ${course.id}; rolling assignment) with error: ${e || 'missing'}`
         )
       }
-
-      // invalidate the corresponding participants, course and group assignment pool entries in the cache
-      ctx.emitter.emit('invalidate', {
-        typename: 'Course',
-        id: course.id,
-      })
-      participantIds.forEach((participantId) => {
-        ctx.emitter.emit('invalidate', {
-          typename: 'Participant',
-          id: participantId,
-        })
-      })
-      poolEntryIds.forEach((poolEntryId) => {
-        ctx.emitter.emit('invalidate', {
-          typename: 'GroupAssignmentPoolEntry',
-          id: poolEntryId,
-        })
-      })
-
-      await sendTeamsNotifications(
-        'graphql/runningRandomGroupAssignments',
-        `Successfully assigned new random groups for ${course.name} (id: ${course.id}; rolling assignment).`
-      )
-    } catch (e) {
-      console.error(e)
-      await sendTeamsNotifications(
-        'graphql/runningRandomGroupAssignments',
-        `Failed to assign groups for course ${course.name} (id: ${course.id}; rolling assignment) with error: ${
-          e || 'missing'
-        }`
-      )
     }
-  }
 
-  return true
-}
+    await executionCtx.logger.info(
+      `[INFO] [RunningRandomGroupAssignments] Finished handling running random group assignments.`
+    )
+
+    return true
+  }
 
 async function resolveSingleParticipantGroups(
   {
@@ -295,7 +303,8 @@ async function resolveSingleParticipantGroups(
       })[]
     }
   },
-  ctx: Context
+  prisma: DB.PrismaClient,
+  emitter: EventEmitter
 ) {
   const singleParticipantGroups = course.participantGroups
     .filter((group) => group.participants.length === 1)
@@ -304,7 +313,7 @@ async function resolveSingleParticipantGroups(
       participantId: group.participants[0]!.id,
     }))
 
-  const courseExtendedPool = await ctx.prisma.course.update({
+  const courseExtendedPool = await prisma.course.update({
     where: { id: course.id },
     data: {
       groupAssignmentPoolEntries: {
@@ -333,7 +342,7 @@ async function resolveSingleParticipantGroups(
 
   // invalidate cache for the resolve participant groups
   singleParticipantGroups.forEach(({ groupId }) => {
-    ctx.emitter.emit('invalidate', {
+    emitter.emit('invalidate', {
       typename: 'ParticipantGroup',
       id: groupId,
     })
@@ -342,152 +351,159 @@ async function resolveSingleParticipantGroups(
   return courseExtendedPool
 }
 
-export async function finalRandomGroupAssignments(ctx: Context) {
-  // fetch all courses with past group deadlines
-  const courses = await ctx.prisma.course.findMany({
-    where: {
-      randomAssignmentFinalized: false,
-      isGroupCreationEnabled: true,
-      groupDeadlineDate: {
-        lte: new Date(),
-      },
-    },
-    include: {
-      groupAssignmentPoolEntries: {
-        orderBy: {
-          createdAt: 'asc',
+export const handleFinalRandomGroupAssignments: HatchetHandlers['handleFinalRandomGroupAssignments'] =
+  async (_, globalCtx, executionCtx) => {
+    await executionCtx.logger.info(
+      '[INFO] [FinalRandomGroupAssignments] Starting final random group assignments...'
+    )
+
+    // fetch all courses with past group deadlines
+    const courses = await globalCtx.prisma.course.findMany({
+      where: {
+        randomAssignmentFinalized: false,
+        isGroupCreationEnabled: true,
+        groupDeadlineDate: {
+          lte: new Date(),
         },
       },
-      participantGroups: {
-        select: {
-          id: true,
-          participants: {
-            select: {
-              id: true,
+      include: {
+        groupAssignmentPoolEntries: {
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
+        participantGroups: {
+          select: {
+            id: true,
+            participants: {
+              select: {
+                id: true,
+              },
             },
           },
         },
+        owner: true,
       },
-      owner: true,
-    },
-  })
+    })
 
-  for (const course of courses) {
-    try {
-      // resolve all groups with a single participant and add them to the pool ids
-      // update the course table in case the operation is interrupted to ensure that no ids are lost
-      const courseId = course.id
-      const courseExtendedPool = await resolveSingleParticipantGroups(
-        { course },
-        ctx
-      )
+    await executionCtx.logger.info(
+      `[INFO] [FinalRandomGroupAssignments] Found ${courses.length} courses with past group deadlines`
+    )
 
-      await sendTeamsNotifications(
-        'graphql/finalRandomGroupAssignments',
-        `Resolved all single participant groups for course ${course.name} (id: ${course.id}).`
-      )
-
-      const poolParticipantIds =
-        courseExtendedPool.groupAssignmentPoolEntries.map(
-          (entry) => entry.participantId
+    for (const course of courses) {
+      try {
+        // resolve all groups with a single participant and add them to the pool ids
+        // update the course table in case the operation is interrupted to ensure that no ids are lost
+        const courseId = course.id
+        const courseExtendedPool = await resolveSingleParticipantGroups(
+          { course },
+          globalCtx.prisma,
+          globalCtx.emitter
         )
 
-      // if the assignment pool is empty, set the finalization boolean and return success
-      if (poolParticipantIds.length === 0) {
-        await ctx.prisma.course.update({
-          where: { id: courseId },
-          data: {
-            randomAssignmentFinalized: true,
-          },
-        })
-
-        continue
-      }
-
-      // if only one participant is in the pool, send an email to the lecturer to extend group deadline
-      if (poolParticipantIds.length === 1) {
-        const courseGroupsOverviewLink = `${
-          process.env.NODE_ENV === 'production' ? 'https' : 'http'
-        }://${process.env.APP_MANAGE_DOMAIN}/courses/${course.id}?gamificationTab=groups`
-
-        const emailHtml = await EmailService.hydrateTemplate(
-          {
-            templateName: 'RandomizedGroupCreationFailure',
-            variables: {
-              COURSE_NAME: course.name,
-              LINK: courseGroupsOverviewLink,
-            },
-          },
-          ctx
+        await executionCtx.logger.info(
+          `[INFO] [FinalRandomGroupAssignments] Resolved all single participant groups for course ${course.name} (id: ${course.id}).`
         )
 
-        if (!emailHtml) {
+        const poolParticipantIds =
+          courseExtendedPool.groupAssignmentPoolEntries.map(
+            (entry) => entry.participantId
+          )
+
+        // if the assignment pool is empty, set the finalization boolean and return success
+        if (poolParticipantIds.length === 0) {
+          await globalCtx.prisma.course.update({
+            where: { id: courseId },
+            data: { randomAssignmentFinalized: true },
+          })
+
+          await executionCtx.logger.info(
+            `[INFO] [FinalRandomGroupAssignments] Finalized random assignment for course ${course.name} (id: ${course.id}) - no participants in pool.`
+          )
+
           continue
         }
 
-        await EmailService.sendEmail({
-          to: course.notificationEmail ?? course.owner.email,
-          subject: `KlickerUZH - Group Creation for Course ${course.name}`,
-          text: `The automated random group creation for your course ${course.name} has failed. Please refer to the course overview for more details and to change the group creation deadline: ${courseGroupsOverviewLink}.`,
-          html: emailHtml,
+        // if only one participant is in the pool, send an email to the lecturer to extend group deadline
+        if (poolParticipantIds.length === 1) {
+          const courseGroupsOverviewLink = `${process.env.APP_ORIGIN_MANAGE}/courses/${course.id}?gamificationTab=groups`
+
+          const emailHtml = await EmailService.hydrateTemplate(
+            {
+              templateName: 'RandomizedGroupCreationFailure',
+              variables: {
+                COURSE_NAME: course.name,
+                LINK: courseGroupsOverviewLink,
+              },
+            },
+            globalCtx.prisma
+          )
+
+          if (!emailHtml) {
+            continue
+          }
+
+          await EmailService.sendEmail({
+            to: course.notificationEmail ?? course.owner.email,
+            subject: `KlickerUZH - Group Creation for Course ${course.name}`,
+            text: `The automated random group creation for your course ${course.name} has failed. Please refer to the course overview for more details and to change the group creation deadline: ${courseGroupsOverviewLink}.`,
+            html: emailHtml,
+          })
+
+          await executionCtx.logger.info(
+            `[INFO] [FinalRandomGroupAssignments] Failure of automatic group assignment - single participant in pool for course ${course.name} (id ${course.id}). Sent E-Mail to course owner with id ${course.ownerId}.`
+          )
+
+          // set random assignment as finalized on course - email should not be re-sent daily and moving the group deadline will set it to false again
+          await globalCtx.prisma.course.update({
+            where: { id: courseId },
+            data: {
+              randomAssignmentFinalized: true,
+            },
+          })
+
+          continue
+        }
+
+        // compute finalized group distribution
+        const groups = splitGroupsFinal({
+          participantIds: poolParticipantIds,
+          preferredGroupSize: course.preferredGroupSize,
         })
 
-        await sendTeamsNotifications(
-          'graphql/finalRandomGroupAssignments',
-          `Failure of automatic group assignment - single participant in pool for course ${course.name} (id ${course.id}). Sent E-Mail to course owner with id ${course.ownerId}.`
-        )
+        for (const group of groups) {
+          await createRandomGroup(
+            { courseId: courseId, groupParticipantIds: group },
+            globalCtx.prisma
+          )
+        }
 
-        // set random assignment as finalized on course - email should not be re-sent daily and moving the group deadline will set it to false again
-        await ctx.prisma.course.update({
+        // set random assignment as finalized on course
+        await globalCtx.prisma.course.update({
           where: { id: courseId },
           data: {
             randomAssignmentFinalized: true,
           },
         })
 
+        await executionCtx.logger.info(
+          `[INFO] [FinalRandomGroupAssignments] Successfully completed final random group assignment for course ${course.name} (id ${course.id}) with ${groups.length} new groups.`
+        )
+      } catch (e) {
+        await executionCtx.logger.error(
+          `[ERROR] [FinalRandomGroupAssignments] Failed to finalize random group assignments for course ${course.name} (id: ${course.id}) with error: ${e || 'missing'}`
+        )
+
         continue
       }
-
-      // compute finalized group distribution
-      const groups = splitGroupsFinal({
-        participantIds: poolParticipantIds,
-        preferredGroupSize: course.preferredGroupSize,
-      })
-
-      for (const group of groups) {
-        await createRandomGroup(
-          { courseId: courseId, groupParticipantIds: group },
-          ctx
-        )
-      }
-
-      // set random assignment as finalized on course
-      await ctx.prisma.course.update({
-        where: { id: courseId },
-        data: {
-          randomAssignmentFinalized: true,
-        },
-      })
-
-      await sendTeamsNotifications(
-        'graphql/finalRandomGroupAssignments',
-        `Successfully completed final random group assignment for course ${course.name} (id ${course.id}) with ${groups.length} new groups.`
-      )
-    } catch (e) {
-      console.error(e)
-      await sendTeamsNotifications(
-        'graphql/finalRandomGroupAssignments',
-        `Failed to finalize random group assignments for course ${course.name} (id: ${course.id}) with error: ${
-          e || 'missing'
-        }`
-      )
-
-      continue
     }
-  }
 
-  return true
-}
+    await executionCtx.logger.info(
+      `[INFO] [FinalRandomGroupAssignments] Complete final random group assignment for all courses with past group formation deadlines.`
+    )
+
+    return true
+  }
 
 export async function manualRandomGroupAssignments(
   { courseId }: { courseId: string },
@@ -516,13 +532,14 @@ export async function manualRandomGroupAssignments(
     // update the course table in case the operation is interrupted to ensure that no ids are lost
     const courseExtendedPool = await resolveSingleParticipantGroups(
       { course },
-      ctx
+      ctx.prisma,
+      ctx.emitter
     )
 
-    await sendTeamsNotifications(
-      'graphql/manualRandomGroupAssignments',
-      `Resolved all single participant groups for course ${course.name} (id: ${course.id}).`
-    )
+    await sendTeamsNotification({
+      scope: 'graphql/manualRandomGroupAssignments',
+      text: `Resolved all single participant groups for course ${course.name} (id: ${course.id}).`,
+    })
 
     // if the assignment pool is empty, set the finalization boolean and return course
     if (courseExtendedPool.groupAssignmentPoolEntries.length === 0) {
@@ -579,33 +596,27 @@ export async function manualRandomGroupAssignments(
       })
     })
 
-    await sendTeamsNotifications(
-      'graphql/manualRandomGroupAssignments',
-      `Successfully completed random group assignment for course ${course.name} (id: ${course.id}) with ${newGroups.length} new groups.`
-    )
+    await sendTeamsNotification({
+      scope: 'graphql/manualRandomGroupAssignments',
+      text: `Successfully completed random group assignment for course ${course.name} (id: ${course.id}) with ${newGroups.length} new groups.`,
+    })
 
     return updatedCourse.participantGroups
   } catch (e) {
     console.error(e)
-    await sendTeamsNotifications(
-      'graphql/manualRandomGroupAssignments',
-      `Random group creation failed for course ${course.name} (id: ${course.id}) with error: ${
+    await sendTeamsNotification({
+      scope: 'graphql/manualRandomGroupAssignments',
+      text: `Random group creation failed for course ${course.name} (id: ${course.id}) with error: ${
         e || 'missing'
-      }`
-    )
+      }`,
+    })
 
     return null
   }
 }
 
 export async function joinParticipantGroup(
-  {
-    courseId,
-    code,
-  }: {
-    courseId: string
-    code: number
-  },
+  { courseId, code }: { courseId: string; code: number },
   ctx: ContextWithUser
 ) {
   // find participantgroup with code
@@ -661,13 +672,7 @@ export async function joinParticipantGroup(
 }
 
 export async function leaveParticipantGroup(
-  {
-    groupId,
-    courseId,
-  }: {
-    groupId: string
-    courseId: string
-  },
+  { groupId, courseId }: { groupId: string; courseId: string },
   ctx: ContextWithUser
 ) {
   // find participantgroup with corresponding id
@@ -744,13 +749,7 @@ export async function leaveParticipantGroup(
 }
 
 export async function renameParticipantGroup(
-  {
-    groupId,
-    name,
-  }: {
-    groupId: string
-    name: string
-  },
+  { groupId, name }: { groupId: string; name: string },
   ctx: ContextWithUser
 ) {
   if (name.trim() === '') {
@@ -758,19 +757,11 @@ export async function renameParticipantGroup(
   }
 
   const updatedGroup = await ctx.prisma.participantGroup.update({
-    where: {
-      id: groupId,
-    },
-    data: {
-      name: name.trim(),
-    },
+    where: { id: groupId },
+    data: { name: name.trim() },
   })
 
-  ctx.emitter.emit('invalidate', {
-    typename: 'ParticipantGroup',
-    id: groupId,
-  })
-
+  ctx.emitter.emit('invalidate', { typename: 'ParticipantGroup', id: groupId })
   return updatedGroup
 }
 
@@ -1137,71 +1128,91 @@ export async function manipulateGroupActivity(
   }
 }
 
-export async function updateGroupAverageScores(ctx: Context) {
-  const groupsWithParticipants = await ctx.prisma.participantGroup.findMany({
-    include: {
-      participants: {
-        include: {
-          leaderboards: {
-            where: { type: DB.LeaderboardType.COURSE },
-          },
-        },
-      },
-    },
-  })
-
-  try {
-    await Promise.all(
-      groupsWithParticipants.map((group) => {
-        const aggregate = group.participants.reduce(
-          (acc, participant) => {
-            const matchingLeaderboard = participant.leaderboards.find(
-              (item) => item.courseId === group.courseId
-            )
-            return {
-              sum: acc.sum + (matchingLeaderboard?.score ?? 0),
-              count: acc.count + 1,
-            }
-          },
-          {
-            sum: 0,
-            count: 0,
-          }
-        )
-
-        if (aggregate.count === 0) return Promise.resolve()
-
-        // compute the average score of all participants in the group
-        // if it has not changed, exit early
-        // if the group consists of only one participant, the member score should be zero
-        const averageMemberScore =
-          aggregate.count > 1 ? Math.round(aggregate.sum / aggregate.count) : 0
-
-        if (averageMemberScore === group.averageMemberScore)
-          return Promise.resolve()
-
-        ctx.emitter.emit('invalidate', {
-          typename: 'ParticipantGroup',
-          id: group.id,
-        })
-
-        return ctx.prisma.participantGroup.update({
-          where: { id: group.id },
-          data: { averageMemberScore },
-        })
-      })
+export const handleUpdateGroupAverageScores: HatchetHandlers['handleUpdateGroupAverageScores'] =
+  async (_, globalCtx, executionCtx) => {
+    await executionCtx.logger.info(
+      '[INFO] [UpdateGroupAverageScores] Updating average group scores for all participant groups in ongoing / future courses...'
     )
 
-    // send a heartbeat to the uptime monitor
-    if (typeof process.env.HEARTBEAT_DAILY_GROUP_SCORES === 'string') {
-      await fetch(process.env.HEARTBEAT_DAILY_GROUP_SCORES)
-    }
-  } catch (e) {
-    console.error(e)
-  }
+    const groupsWithParticipants =
+      await globalCtx.prisma.participantGroup.findMany({
+        where: { course: { endDate: { gt: new Date() } } },
+        include: {
+          participants: {
+            include: {
+              leaderboards: {
+                where: { type: DB.LeaderboardType.COURSE },
+              },
+            },
+          },
+        },
+      })
 
-  return true
-}
+    await executionCtx.logger.info(
+      `[INFO] [UpdateGroupAverageScores] Found ${groupsWithParticipants.length} participant groups in ongoing or future courses`
+    )
+
+    try {
+      await Promise.all(
+        groupsWithParticipants.map((group) => {
+          const aggregate = group.participants.reduce(
+            (acc, participant) => {
+              const matchingLeaderboard = participant.leaderboards.find(
+                (item) => item.courseId === group.courseId
+              )
+              return {
+                sum: acc.sum + (matchingLeaderboard?.score ?? 0),
+                count: acc.count + 1,
+              }
+            },
+            {
+              sum: 0,
+              count: 0,
+            }
+          )
+
+          if (aggregate.count === 0) return Promise.resolve()
+
+          // compute the average score of all participants in the group
+          // if it has not changed, exit early
+          // if the group consists of only one participant, the member score should be zero
+          const averageMemberScore =
+            aggregate.count > 1
+              ? Math.round(aggregate.sum / aggregate.count)
+              : 0
+
+          if (averageMemberScore === group.averageMemberScore)
+            return Promise.resolve()
+
+          globalCtx.emitter.emit('invalidate', {
+            typename: 'ParticipantGroup',
+            id: group.id,
+          })
+
+          return globalCtx.prisma.participantGroup.update({
+            where: { id: group.id },
+            data: { averageMemberScore },
+          })
+        })
+      )
+
+      // send a heartbeat to the uptime monitor
+      if (typeof process.env.HEARTBEAT_DAILY_GROUP_SCORES === 'string') {
+        await fetch(process.env.HEARTBEAT_DAILY_GROUP_SCORES)
+      }
+    } catch (e) {
+      await executionCtx.logger.error(
+        `[ERROR] [UpdateGroupAverageScores] Failed to update average group scores with error: ${e || 'missing'}`
+      )
+      return false
+    }
+
+    await executionCtx.logger.info(
+      '[INFO] [UpdateGroupAverageScores] Successfully updated average group scores'
+    )
+
+    return true
+  }
 
 export async function getGroupActivityDetails(
   { activityId, groupId }: { activityId: string; groupId: string },
@@ -1221,20 +1232,8 @@ export async function getGroupActivityDetails(
     },
     include: {
       course: true,
-      clues: {
-        orderBy: {
-          displayName: 'asc',
-        },
-      },
-      stacks: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
+      clues: { orderBy: { displayName: 'asc' } },
+      stacks: { include: { elements: { orderBy: { order: 'asc' } } } },
       parameters: true,
     },
   })
@@ -1323,29 +1322,15 @@ export async function startGroupActivity(
     where: { id: activityId, status: DB.PublicationStatus.PUBLISHED },
     include: {
       course: true,
-      clues: {
-        orderBy: {
-          displayName: 'asc',
-        },
-      },
-      stacks: {
-        include: {
-          elements: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
-        },
-      },
+      clues: { orderBy: { displayName: 'asc' } },
+      stacks: { include: { elements: { orderBy: { order: 'asc' } } } },
       // parameters: true, // TODO: reintroduce as soon as these are used
     },
   })
 
   const group = await ctx.prisma.participantGroup.findUnique({
     where: { id: groupId },
-    include: {
-      participants: true,
-    },
+    include: { participants: true },
   })
 
   if (!groupActivity || !group) return null
@@ -1378,23 +1363,14 @@ export async function startGroupActivity(
     const activityInstance = await ctx.prisma.$transaction(async (prisma) => {
       const activityInstance = await prisma.groupActivityInstance.create({
         data: {
-          group: {
-            connect: { id: groupId },
-          },
-          groupActivity: {
-            connect: { id: activityId },
-          },
-          clues: {
-            create: allClues,
-          },
+          group: { connect: { id: groupId } },
+          groupActivity: { connect: { id: activityId } },
+          clues: { create: allClues },
         },
-        include: {
-          clues: true,
-        },
+        include: { clues: true },
       })
 
       const shuffledClues = shuffle(activityInstance.clues)
-
       const clueAssignments = group.participants.reduce<{
         remainingClues: number
         remainingMembers: number
@@ -1436,17 +1412,10 @@ export async function startGroupActivity(
       const updatedActivityInstance = await prisma.groupActivityInstance.update(
         {
           where: { id: activityInstance.id },
-          data: {
-            clueInstanceAssignment: {
-              create: clueAssignments.clues,
-            },
-          },
+          data: { clueInstanceAssignment: { create: clueAssignments.clues } },
           include: {
             clueInstanceAssignment: {
-              include: {
-                groupActivityClueInstance: true,
-                participant: true,
-              },
+              include: { groupActivityClueInstance: true, participant: true },
             },
           },
         }
@@ -1455,11 +1424,7 @@ export async function startGroupActivity(
       return updatedActivityInstance
     })
 
-    return {
-      ...groupActivity,
-      group,
-      activityInstance,
-    }
+    return { ...groupActivity, group, activityInstance }
   } catch (e) {
     console.error(e)
     return null
@@ -1478,15 +1443,7 @@ export async function submitGroupActivityDecisions(
       where: { id: activityId },
       include: {
         groupActivity: true,
-        group: {
-          include: {
-            participants: {
-              where: {
-                id: ctx.user.sub,
-              },
-            },
-          },
-        },
+        group: { include: { participants: { where: { id: ctx.user.sub } } } },
       },
     })
 
@@ -1633,36 +1590,74 @@ export async function publishGroupActivity(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id },
+    where: { id, isDeleted: false, status: DB.PublicationStatus.DRAFT },
   })
 
-  if (!groupActivity) return null
+  if (!groupActivity) {
+    return null
+  }
 
-  const now = new Date()
+  if (groupActivity.scheduledStartAt > new Date()) {
+    try {
+      // schedule the task to publish the group activity at the scheduled start date
+      const publicationTask =
+        await ctx.tasks.publishScheduledGroupActivity.schedule(
+          groupActivity.scheduledStartAt,
+          { groupActivityId: groupActivity.id }
+        )
+      const publicationTaskId = publicationTask.metadata.id
+
+      // schedule the task to end the group activity at the scheduled end date
+      const completionTask = await ctx.tasks.endExpiredGroupActivity.schedule(
+        groupActivity.scheduledEndAt,
+        { groupActivityId: groupActivity.id }
+      )
+      const completionTaskId = completionTask.metadata.id
+
+      // set the status of the group activity to scheduled and store the hatchet task ID
+      const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+        where: { id },
+        data: {
+          status: DB.PublicationStatus.SCHEDULED,
+          scheduledPublicationTaskId: publicationTaskId,
+          scheduledCompletionTaskId: completionTaskId,
+        },
+      })
+
+      ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
+      return updatedGroupActivity
+    } catch (error) {
+      console.error(`Failed to schedule task for group activity ${id}:`, error)
+      return null
+    }
+  } else if (groupActivity.scheduledEndAt < new Date()) {
+    // if the scheduled end date is in the past, set the status to ended
+    const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+      where: { id },
+      data: { status: DB.PublicationStatus.ENDED },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
+    return updatedGroupActivity
+  }
+
+  // if the start date is in the past, but the end date is in the future, schedule the completion task
+  const completionTask = await ctx.tasks.endExpiredGroupActivity.schedule(
+    groupActivity.scheduledEndAt,
+    { groupActivityId: groupActivity.id }
+  )
+  const completionTaskId = completionTask.metadata.id
+
+  // if the start date is in the past, directly publish the group activity
   const updatedGroupActivity = await ctx.prisma.groupActivity.update({
     where: { id },
     data: {
-      status:
-        now < groupActivity.scheduledStartAt
-          ? DB.PublicationStatus.SCHEDULED
-          : now > groupActivity.scheduledEndAt
-            ? DB.PublicationStatus.ENDED
-            : DB.PublicationStatus.PUBLISHED,
+      status: DB.PublicationStatus.PUBLISHED,
+      scheduledCompletionTaskId: completionTaskId,
     },
   })
 
-  return updatedGroupActivity
-}
-
-export async function unpublishGroupActivity(
-  { id }: { id: string },
-  ctx: ContextWithUser
-) {
-  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
-    where: { id },
-    data: { status: DB.PublicationStatus.DRAFT },
-  })
-
+  ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
   return updatedGroupActivity
 }
 
@@ -1670,17 +1665,104 @@ export async function openGroupActivity(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id, status: DB.PublicationStatus.SCHEDULED },
+  })
+
+  if (!groupActivity) {
+    return null
+  }
+
+  // remove the scheduled hatchet publication task, if it exists
+  if (groupActivity.scheduledPublicationTaskId) {
+    try {
+      await ctx.hatchet.scheduled.delete(
+        groupActivity.scheduledPublicationTaskId
+      )
+    } catch (error) {
+      console.error(
+        `Failed to delete scheduled task for group activity ${id}:`,
+        error
+      )
+    }
+  }
+
+  // check if the scheduled ending task is still in place and if not, create a new one
+  let scheduledCompletionTaskId: string | undefined
+  if (!groupActivity.scheduledCompletionTaskId) {
+    const completionTask = await ctx.tasks.endExpiredGroupActivity.schedule(
+      groupActivity.scheduledEndAt,
+      { groupActivityId: groupActivity.id }
+    )
+    scheduledCompletionTaskId = completionTask.metadata.id
+  }
+
   const updatedGroupActivity = await ctx.prisma.groupActivity.update({
-    where: { id },
+    where: { id, status: DB.PublicationStatus.SCHEDULED },
     data: {
       status: DB.PublicationStatus.PUBLISHED,
       scheduledStartAt: new Date(),
+      scheduledPublicationTaskId: null,
+      scheduledCompletionTaskId,
     },
   })
 
   // trigger subscription to immediately update student frontend
   ctx.pubSub.publish('groupActivityStarted', updatedGroupActivity)
+  return updatedGroupActivity
+}
 
+export async function unpublishGroupActivity(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id, status: DB.PublicationStatus.SCHEDULED },
+  })
+
+  if (!groupActivity) {
+    return null
+  }
+
+  // remove the scheduled hatchet task, if it exists
+  if (groupActivity.scheduledPublicationTaskId) {
+    try {
+      await ctx.hatchet.scheduled.delete(
+        groupActivity.scheduledPublicationTaskId
+      )
+    } catch (error) {
+      console.error(
+        `Failed to delete scheduled publication task for group activity ${id}:`,
+        error
+      )
+    }
+  }
+
+  // remove the completion task, if it exists
+  if (groupActivity.scheduledCompletionTaskId) {
+    try {
+      await ctx.hatchet.scheduled.delete(
+        groupActivity.scheduledCompletionTaskId
+      )
+    } catch (error) {
+      console.error(
+        `Failed to delete scheduled completion task for group activity ${id}:`,
+        error
+      )
+    }
+  }
+
+  // reset the status of the group activity to draft
+  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+    where: { id, status: DB.PublicationStatus.SCHEDULED },
+    data: {
+      status: DB.PublicationStatus.DRAFT,
+      scheduledPublicationTaskId: null,
+      scheduledCompletionTaskId: null,
+    },
+  })
+
+  ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
   return updatedGroupActivity
 }
 
@@ -1688,17 +1770,92 @@ export async function endGroupActivity(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
+  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+    where: { id, status: DB.PublicationStatus.PUBLISHED },
+  })
+
+  if (!groupActivity) {
+    return null
+  }
+
+  // remove the scheduled completion task, if it exists
+  if (groupActivity.scheduledCompletionTaskId) {
+    try {
+      await ctx.hatchet.scheduled.delete(
+        groupActivity.scheduledCompletionTaskId
+      )
+    } catch (error) {
+      console.error(
+        `Failed to delete scheduled completion task for group activity ${id}:`,
+        error
+      )
+    }
+  }
+
+  // end the group activity and unset the completion task it
   const updatedGroupActivity = await ctx.prisma.groupActivity.update({
     where: { id },
     data: {
       status: DB.PublicationStatus.ENDED,
       scheduledEndAt: new Date(),
+      scheduledCompletionTaskId: null,
     },
   })
 
   // trigger subscription to immediately update student frontend
   ctx.pubSub.publish('groupActivityEnded', updatedGroupActivity)
   ctx.pubSub.publish('singleGroupActivityEnded', updatedGroupActivity)
+
+  return updatedGroupActivity
+}
+
+export async function extendGroupActivity(
+  { id, endDate }: { id: string; endDate: Date },
+  ctx: ContextWithUser
+) {
+  // check that the new end date lies in the future
+  if (endDate < new Date()) {
+    return null
+  }
+
+  const groupActivity = await ctx.prisma.groupActivity.update({
+    where: {
+      id,
+      status: {
+        in: [DB.PublicationStatus.SCHEDULED, DB.PublicationStatus.PUBLISHED],
+      },
+      scheduledEndAt: { gt: new Date() },
+    },
+    data: { scheduledEndAt: endDate },
+  })
+
+  if (!groupActivity) {
+    return null
+  }
+
+  // remove the previous scheduled completion task, if it exists and create a new one
+  if (groupActivity.scheduledCompletionTaskId) {
+    try {
+      await ctx.hatchet.scheduled.delete(
+        groupActivity.scheduledCompletionTaskId
+      )
+    } catch (error) {
+      console.error(
+        `Failed to delete scheduled completion task for group activity ${id}:`,
+        error
+      )
+    }
+  }
+  const completionTask = await ctx.tasks.endExpiredGroupActivity.schedule(
+    endDate,
+    { groupActivityId: groupActivity.id }
+  )
+
+  // store the task ID of the completion task on the group activity
+  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
+    where: { id },
+    data: { scheduledCompletionTaskId: completionTask.metadata.id },
+  })
 
   return updatedGroupActivity
 }
@@ -1711,11 +1868,7 @@ export async function deleteGroupActivity(
     where: { id },
     include: {
       activityInstances: true,
-      stacks: {
-        include: {
-          elements: true,
-        },
-      },
+      stacks: { include: { elements: true } },
     },
   })
 
@@ -1732,6 +1885,41 @@ export async function deleteGroupActivity(
   ) {
     const deletedItem = await ctx.prisma.groupActivity.delete({ where: { id } })
 
+    // remove the scheduled publication task, if it exists (should only exist for scheduled group activities)
+    if (
+      deletedItem.scheduledPublicationTaskId &&
+      deletedItem.status === DB.PublicationStatus.SCHEDULED
+    ) {
+      try {
+        await ctx.hatchet.scheduled.delete(
+          deletedItem.scheduledPublicationTaskId
+        )
+      } catch (error) {
+        console.error(
+          `Failed to delete scheduled publication task for group activity ${id}:`,
+          error
+        )
+      }
+    }
+
+    // remove the scheduled completion task, if it exists (should only exist for scheduled/published group activities)
+    if (
+      deletedItem.scheduledCompletionTaskId &&
+      (deletedItem.status === DB.PublicationStatus.SCHEDULED ||
+        deletedItem.status === DB.PublicationStatus.PUBLISHED)
+    ) {
+      try {
+        await ctx.hatchet.scheduled.delete(
+          deletedItem.scheduledCompletionTaskId
+        )
+      } catch (error) {
+        console.error(
+          `Failed to delete scheduled completion task for group activity ${id}:`,
+          error
+        )
+      }
+    }
+
     // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
     // this case cannot be handled by the permissions module, since the group activity is already hard deleted
     // access requests need to be updated as well, since the derived permissions on elements might have changed
@@ -1746,9 +1934,34 @@ export async function deleteGroupActivity(
     // if the group activity already has active instances, only soft delete it
     const updatedGroupActivity = await ctx.prisma.$transaction(
       async (prisma) => {
+        // remove the scheduled completion task, if it exists (should only exist for published group activities)
+        if (
+          groupActivity.status === DB.PublicationStatus.PUBLISHED &&
+          groupActivity.scheduledCompletionTaskId
+        ) {
+          try {
+            await ctx.hatchet.scheduled.delete(
+              groupActivity.scheduledCompletionTaskId
+            )
+          } catch (error) {
+            console.error(
+              `Failed to delete scheduled completion task for microlearning ${id}:`,
+              error
+            )
+          }
+        }
+
+        // soft delete the group activity and remove all direct permissions
         const updatedActivity = await prisma.groupActivity.update({
           where: { id },
-          data: { isDeleted: true },
+          data: {
+            isDeleted: true,
+            directPermissions: { deleteMany: {} }, // delete all direct permissions on the activity
+            scheduledCompletionTaskId:
+              groupActivity.status === DB.PublicationStatus.PUBLISHED
+                ? null
+                : undefined,
+          },
         })
 
         // update derived permissions for this group activity (after soft deletion)
@@ -1958,31 +2171,6 @@ export async function getGradingGroupActivity(
   }))
 
   return { ...groupActivity, activityInstances: mappedInstances }
-}
-
-export async function extendGroupActivity(
-  { id, endDate }: { id: string; endDate: Date },
-  ctx: ContextWithUser
-) {
-  // check that the new end date lies in the future
-  if (endDate < new Date()) {
-    return null
-  }
-
-  const updatedGroupActivity = await ctx.prisma.groupActivity.update({
-    where: {
-      id,
-      status: {
-        in: [DB.PublicationStatus.SCHEDULED, DB.PublicationStatus.PUBLISHED],
-      },
-      scheduledEndAt: { gt: new Date() },
-    },
-    data: {
-      scheduledEndAt: endDate,
-    },
-  })
-
-  return updatedGroupActivity
 }
 
 interface GradeGroupActivitySubmissionArgs {
@@ -2304,3 +2492,106 @@ export async function addMessageToGroup(
 
   return message
 }
+
+export const handleEndExpiredGroupActivity: HatchetHandlers['handleEndExpiredGroupActivity'] =
+  async ({ groupActivityId }, globalCtx) => {
+    try {
+      const groupActivity = await globalCtx.prisma.groupActivity.findUnique({
+        where: {
+          id: groupActivityId,
+          isDeleted: false,
+          status: DB.PublicationStatus.PUBLISHED,
+          scheduledEndAt: { lte: new Date() },
+        },
+      })
+
+      if (!groupActivity) {
+        await sendTeamsNotification({
+          scope: 'hatchet/group-activity-end',
+          text: `Group activity with ID ${groupActivityId} not found or scheduled end time is not in the past yet.`,
+        })
+        throw new Error(
+          `Group activity with ID ${groupActivityId} not found or scheduled end time is not in the past yet.`
+        )
+      }
+
+      // end the group activity
+      const updatedGroupActivity = await globalCtx.prisma.groupActivity.update({
+        where: { id: groupActivityId },
+        data: { status: DB.PublicationStatus.ENDED },
+      })
+
+      await sendTeamsNotification({
+        scope: 'hatchet/group-activity-end',
+        text: `Successfully ended expired group activity ${updatedGroupActivity.id}`,
+      })
+
+      // publish the event to subscribers
+      globalCtx.pubSub.publish('groupActivityEnded', updatedGroupActivity)
+      globalCtx.pubSub.publish('singleGroupActivityEnded', updatedGroupActivity)
+      globalCtx.emitter.emit('invalidate', {
+        typename: 'GroupActivity',
+        id: updatedGroupActivity.id,
+      })
+
+      return true
+    } catch (error) {
+      console.error('Error ending expired group activity:', error)
+      await sendTeamsNotification({
+        scope: 'hatchet/group-activity-end',
+        text: `Error ending group activity with ID ${groupActivityId}: ${error}`,
+      })
+      throw error // rethrow to allow Hatchet to handle retries
+    }
+  }
+
+export const handlePublishScheduledGroupActivity: HatchetHandlers['handlePublishScheduledGroupActivity'] =
+  async ({ groupActivityId }, globalCtx) => {
+    try {
+      // check if the group activity exists and if its start date is in the past
+      const groupActivity = await globalCtx.prisma.groupActivity.findUnique({
+        where: {
+          id: groupActivityId,
+          scheduledStartAt: { lte: new Date() },
+          status: DB.PublicationStatus.SCHEDULED,
+        },
+      })
+
+      if (!groupActivity) {
+        await sendTeamsNotification({
+          scope: 'hatchet/group-activity-start',
+          text: `Group activity with ID ${groupActivityId} not found or scheduled start time is not in the past yet.`,
+        })
+        throw new Error(
+          `Group activity with ID ${groupActivityId} not found or scheduled start time is not in the past yet.`
+        )
+      }
+
+      // publish the group activity
+      await globalCtx.prisma.groupActivity.update({
+        where: { id: groupActivityId },
+        data: { status: DB.PublicationStatus.PUBLISHED },
+      })
+
+      // send a teams notification
+      await sendTeamsNotification({
+        scope: 'graphql/publishScheduledGroupActivitys',
+        text: `Successfully published scheduled group activity ${groupActivity.id}`,
+      })
+
+      // invalidate the cache for the group activity
+      globalCtx.emitter.emit('invalidate', {
+        typename: 'GroupActivity',
+        id: groupActivity.id,
+      })
+
+      return true
+    } catch (error) {
+      console.error('Error publishing scheduled group activity:', error)
+      await sendTeamsNotification({
+        scope: 'hatchet/group-activity-start',
+        text: `Error publishing group activity with ID ${groupActivityId}: ${error}`,
+      })
+      throw error // rethrow to allow Hatchet to handle retries
+    }
+  }

@@ -50,6 +50,8 @@ interface CSEvaluationScatterProps {
   textSize: TextSizeType
   showSolution: boolean
   showExplanation: boolean
+  isAssessmentEnabled: boolean
+  pinCode?: string | null
   type: ActivityEvaluationType
 }
 
@@ -63,6 +65,8 @@ function CSEvaluationScatter({
   textSize,
   showSolution,
   showExplanation,
+  isAssessmentEnabled,
+  pinCode,
   type,
 }: CSEvaluationScatterProps) {
   const t = useTranslations()
@@ -181,6 +185,9 @@ function CSEvaluationScatter({
           aggregationType={aggregationType}
           setAggregationType={setAggregationType}
           textSize={textSize}
+          isAssessmentEnabled={isAssessmentEnabled}
+          pinCode={pinCode}
+          type={type}
         />
       </ResizablePanel>
     </ResizablePanelGroup>

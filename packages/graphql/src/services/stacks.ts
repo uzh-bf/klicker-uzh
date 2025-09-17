@@ -1647,7 +1647,7 @@ export function updateChoicesResults({
     response.choices === null ||
     typeof response.choices === 'undefined'
   ) {
-    return { results: results, modified: false }
+    return { results, modified: false }
   }
 
   updatedResults.choices = (
@@ -1687,7 +1687,7 @@ export function updateNumericalResults({
     response.value === null ||
     response.value === ''
   ) {
-    return { results: results, modified: false }
+    return { results, modified: false }
   }
 
   // make sure that restrictions are fulfilled
@@ -1701,7 +1701,7 @@ export function updateNumericalResults({
     parsedValue > 1e30 || // prevent overflow
     parsedValue < -1e30 // prevent underflow
   ) {
-    return { results: results, modified: false }
+    return { results, modified: false }
   }
 
   const value = String(parsedValue)
@@ -1755,7 +1755,7 @@ export function updateFreeTextResults({
     (typeof elementData.options.restrictions?.maxLength === 'number' &&
       response.value.length > elementData.options.restrictions?.maxLength)
   ) {
-    return { results: results, modified: false }
+    return { results, modified: false }
   }
 
   const value = toLowerCase(response.value.trim())
@@ -3087,7 +3087,9 @@ async function respondToElement({
         id: response.instanceId,
         courseId,
         response: {
-          selection: response.selectionResponse?.filter((r) => r !== -1), // only forward valid responses
+          selection: response.selectionResponse?.filter(
+            (r) => r !== -1 && typeof r !== 'undefined' && r !== null
+          ), // only forward valid responses
         },
         answerTime,
         participation,
@@ -3459,6 +3461,9 @@ function combineCaseStudyResults({
               // extract values from merged results
               const responses = Object.values(mergedResults)
 
+              // if the criterion is a liker criterion, make sure the entire valid bar is included in the solution interval
+              const isLikertCriterion = !!criterion.labels
+
               return {
                 criterionId: criterion.id,
                 name: criterion.name,
@@ -3468,8 +3473,16 @@ function combineCaseStudyResults({
                 unit: criterion.unit,
                 labels: criterion.labels,
 
-                solutionMin: criterionSolution?.min,
-                solutionMax: criterionSolution?.max,
+                solutionMin: criterionSolution?.min
+                  ? isLikertCriterion
+                    ? criterionSolution?.min - 0.5
+                    : criterionSolution?.min
+                  : undefined,
+                solutionMax: criterionSolution?.max
+                  ? isLikertCriterion
+                    ? criterionSolution?.max + 0.5
+                    : criterionSolution?.max
+                  : undefined,
 
                 statistics:
                   responses && responses.length > 0

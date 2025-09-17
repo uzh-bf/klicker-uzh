@@ -7,8 +7,22 @@ http:
         - 'websecure'
       service: 'api'
 
+    assessment-api:
+      rule: 'Host(`assessment-api.klicker.com`)'
+      entrypoints:
+        - 'web'
+        - 'websecure'
+      service: 'api'
+
     pwa:
       rule: 'Host(`pwa.klicker.com`)'
+      entrypoints:
+        - 'web'
+        - 'websecure'
+      service: 'pwa'
+
+    assessment:
+      rule: 'Host(`assessment.klicker.com`)'
       entrypoints:
         - 'web'
         - 'websecure'
@@ -42,22 +56,15 @@ http:
         - 'websecure'
       service: 'auth'
 
-    func-responses:
-      rule: 'Host(`func-responses.klicker.com`)'
-      entrypoints:
-        - 'web'
-        - 'websecure'
-      service: 'func-responses'
-
-    func-response-processor:
-      rule: 'Host(`func-response-processor.klicker.com`)'
-      entrypoints:
-        - 'web'
-        - 'websecure'
-      service: 'func-response-processor'
-
     response-api:
       rule: 'Host(`response-api.klicker.com`)'
+      entrypoints:
+        - 'web'
+        - 'websecure'
+      service: 'response-api'
+
+    response-api-assessment:
+      rule: 'Host(`response-api-assessment.klicker.com`)'
       entrypoints:
         - 'web'
         - 'websecure'
@@ -93,16 +100,6 @@ http:
       loadBalancer:
         servers:
           - url: 'http://host.docker.internal:3010'
-
-    func-responses:
-      loadBalancer:
-        servers:
-          - url: 'http://host.docker.internal:7072'
-
-    func-response-processor:
-      loadBalancer:
-        servers:
-          - url: 'http://host.docker.internal:7073'
 
     response-api:
       loadBalancer:

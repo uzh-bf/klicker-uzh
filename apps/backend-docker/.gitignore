@@ -9,3 +9,4 @@ public/
 src/prisma/ERD.svg
 src/graphql
 src/types
+.env

@@ -1,3 +1,4 @@
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   AuditLogType,
   ObjectAccess,
@@ -44,9 +45,10 @@ import {
 } from './helpers.js'
 import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
 
-describe('Unit tests for sharing functionalities of catalog collections', () => {
+describe('Integration tests for sharing functionalities of catalog collections', () => {
   // shared resources used across tests
   let prisma: PrismaClient
+  let hatchet: Hatchet
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
@@ -55,8 +57,13 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
   let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
-    const { prisma: newPrisma, emitter: newEmitter } = await initializePrisma()
+    const {
+      prisma: newPrisma,
+      hatchet: newHatchet,
+      emitter: newEmitter,
+    } = await initializePrisma()
     prisma = newPrisma
+    hatchet = newHatchet
     emitter = newEmitter
   })
 
@@ -72,7 +79,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
       userFiveCtx: ctx5,
-    } = await testInitialization(prisma, emitter)
+    } = await testInitialization(prisma, hatchet, emitter)
 
     userOneCtx = ctx1
     userTwoCtx = ctx2
@@ -81,9 +88,7 @@ describe('Unit tests for sharing functionalities of catalog collections', () => 
     userFiveCtx = ctx5
   })
 
-  afterEach(async () => {
-    await testCleanup(prisma)
-  })
+  afterEach(async () => await testCleanup(prisma))
 
   // ! Catalog Collection Access Validation
   // #region

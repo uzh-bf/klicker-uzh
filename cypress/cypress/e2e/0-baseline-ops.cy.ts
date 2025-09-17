@@ -4,26 +4,12 @@ describe('Test fundamental UI interactions and baseline operations', function ()
   // This test suite verifies that fundamental UI interactions work correctly
   // It should run before all other tests to ensure basic functionality
 
-  before(() => {
-    cy.seed()
+  // Fail-fast handled globally in support/e2e.ts
 
-    // set browser language to english (independent of local machine setting
-    Cypress.automation('remote:debugger:protocol', {
-      command: 'Emulation.setLocaleOverride',
-      params: { locale: 'en' },
-    })
-  })
-
-  after(() => {
+  it('CLEANUP', () => {
     cy.cleanup()
+    cy.seed()
   })
-
-  // ! DEV: if a test case fails, stop the test run
-  // afterEach(function () {
-  //   if (this.currentTest.state === 'failed') {
-  //     Cypress.stop()
-  //   }
-  // })
 
   // ========================================================================
   // BASIC UI INTERACTION TESTS

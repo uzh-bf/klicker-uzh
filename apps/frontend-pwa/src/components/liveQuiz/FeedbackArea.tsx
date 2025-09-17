@@ -22,6 +22,7 @@ import localForage from 'localforage'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import FeedbackAreaSubscriber from './FeedbackAreaSubscriber'
 import PublicFeedback from './PublicFeedback'
 
@@ -45,9 +46,11 @@ const BORDER_COLOR_MAP: Record<string, string> = {
 function FeedbackArea({
   isConfusionFeedbackEnabled,
   isLiveQAEnabled,
+  className,
 }: {
   isLiveQAEnabled: boolean
   isConfusionFeedbackEnabled: boolean
+  className?: string
 }) {
   const t = useTranslations()
   const router = useRouter()
@@ -228,7 +231,7 @@ function FeedbackArea({
   }
 
   return (
-    <div className="h-full w-full pt-4 md:pt-2">
+    <div className={twMerge('h-full w-full pt-4 md:pt-2', className)}>
       <H2>{t('pwa.feedbacks.title')}</H2>
 
       <FeedbackAreaSubscriber

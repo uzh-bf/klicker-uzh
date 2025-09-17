@@ -1,0 +1,42 @@
+name: Test util package functionalities
+
+on:
+  push:
+    branches: ['v3', 'v3*']
+    paths:
+      - 'packages/util/**'
+      - '.github/workflows/test-util.yml'
+  pull_request:
+    branches: ['v3', 'v3*']
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9.15.4
+          run_install: true
+      - name: Build dependencies
+        shell: bash
+        run: |
+          cd packages/prisma
+          pnpm run build
+          cd ../types
+          pnpm run build
+      - name: Test util package
+        shell: bash
+        run: |
+          cd packages/util
+          pnpm run test
