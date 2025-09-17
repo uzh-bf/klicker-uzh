@@ -1078,6 +1078,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'You are not part of the assessment course to which this quiz belongs. Please contact your lecturers.',
       accountDeletionMessage:
         'Since you are currently using your KlickerUZH account to participate in an assessment course, you cannot delete your account yourself. For more information on how to delete your account and leave the course, please contact your course instructors.',
+      respondedAt: 'Responded at {date}',
     },
   },
   manage: {
