@@ -215,6 +215,24 @@ export async function manipulateLiveQuiz(
   if (id) {
     existingActivity = await ctx.prisma.liveQuiz.findUnique({
       where: { id, isDeleted: false },
+      include: {
+        course: {
+          include: {
+            _count: {
+              select: {
+                permissions: {
+                  where: {
+                    userId: ctx.user.sub,
+                    permissionLevel: {
+                      in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     })
 
     if (!existingActivity) {
