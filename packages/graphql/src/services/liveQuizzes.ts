@@ -293,12 +293,11 @@ export async function manipulateLiveQuiz(
   // pin protection applies when assessment is enabled or explicitly enabled via flag
   const pinProtection = assessmentSetting || isPinProtected
 
-  // if the activity is part of an assessment course, but should be modified and the user is not a course admin, return early
+  // if the activity is part of an assessment course, the course assignment can only be modified by course admins / owners
   if (
-    typeof courseId !== 'undefined' &&
-    courseId !== null &&
     existingActivity?.isAssessmentEnabled &&
-    !existingActivity?.course?._count.permissions
+    !existingActivity?.course?._count.permissions &&
+    (courseId === null || courseId !== existingActivity?.courseId)
   ) {
     throw new GraphQLError(
       'Assessment live quizzes can only be modified by course admins or owners'
