@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.16](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.15...v3.4.0-alpha.16) (2025-09-17)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that scoring can be customized for both gamified and assessment live quizzes ([#4924](https://github.com/uzh-bf/klicker-uzh/issues/4924)) ([71ef2e2](https://github.com/uzh-bf/klicker-uzh/commit/71ef2e298d346c19d7e2ba04e7aa13dad1c79f6c))
+* **apps/frontend-pwa:** make sure that repsonded at date is loaded correctly for submitted responses ([ed0acda](https://github.com/uzh-bf/klicker-uzh/commit/ed0acda4fcd698e1ac99bcda5dbcae1fea7df6d7))
+* **packages/graphql:** ensure that only course re-assignment is blocked for non-admins on course ([933c977](https://github.com/uzh-bf/klicker-uzh/commit/933c97781044ecf7d431112679407ecf211ed267))
+* **packages/graphql:** make sure that live quiz pins are modified only in the required cases ([#4925](https://github.com/uzh-bf/klicker-uzh/issues/4925)) ([0426a40](https://github.com/uzh-bf/klicker-uzh/commit/0426a401611a9c489f85ac61a9f4abec8a7f4189))
+* **packages/shared-components:** correctly validate case study case status on response loading ([07cf502](https://github.com/uzh-bf/klicker-uzh/commit/07cf502852042fd9595696d73199892abfccd1f4))
+
 ## [3.4.0-alpha.15](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.14...v3.4.0-alpha.15) (2025-09-16)
 
 

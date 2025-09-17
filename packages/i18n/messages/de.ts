@@ -1079,6 +1079,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie sind nicht Teil des Assessment-Kurses, zu welchem dieses Quiz gehört. Bitte kontaktieren Sie Ihre Dozierenden.',
       accountDeletionMessage:
         'Da Sie Ihr KlickerUZH-Konto derzeit zur Teilnahme an einem Assessment-Kurs verwenden, können Sie Ihr Konto nicht selbst löschen. Für weitere Informationen zur Löschung Ihres Kontos und zum Verlassen des Kurses wenden Sie sich bitte an Ihre Dozierenden.',
+      respondedAt: 'Beantwortet am {date}',
     },
   },
   manage: {
@@ -1858,8 +1859,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizCustomizedGrading: 'Benutzerdefinierte Bewertung',
       liveQuizPointsExplanation:
         'Diese erweiterten Einstellungen ermöglichen es, die Punktevergabe bei einem Live-Quiz zu verändern. Bitte beachten Sie, dass alle Punkteinstellungen und die Illustrationen der Punktevergabe sich auf Elemente mit einem Multiplikator von 1x beziehen. Höhere Multiplikatoren werden auf alle Komponenten ausser den Standardpunkten angewendet. Der auf der Aktivität gesetzte Multiplikator wird in der Illustration bereits mit einbezogen. Die Antwortzeit beginnt abzulaufen sobald der erste Teilnehmer eine vollständig korrekte Antwort abgegeben hat. Für mehr Informationen konsultieren Sie bitte unsere <link>Dokumentation</link>.',
-      liveQuizGamificationDeactivated:
-        'Gamifizierung ist für dieses Live Quiz aktuell nicht aktiviert. Bitte wählen Sie entweder einen gamifizierten Kurs oder aktivieren Sie die Gamifizierung manuell.',
+      liveQuizNoCustomizedScoring:
+        'Die Fragen in diesem Live Quiz werden aktuell nicht bepunktet. Um die Bepunktung zu aktivieren, weisen Sie es einem gamifizierten und/oder Assessment-Kurs zu oder aktivieren Sie die Gamifizierung manuell.',
       liveQuizDefaultPoints: 'Standardpunkte',
       liveQuizDefaultPointsTooltip:
         'Teilnehmende in einem Live-Quiz erhalten diese Anzahl Punkte für das Teilnehmen an einer Frage. Wenn keine Musterlösung definiert ist, werden nur Standardpunkte vergeben. Der Standardwert beträgt {defaultValue}.',

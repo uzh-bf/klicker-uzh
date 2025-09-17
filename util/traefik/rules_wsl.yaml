@@ -42,6 +42,13 @@ http:
         - 'websecure'
       service: 'control'
 
+    chat:
+      rule: 'Host(`chat.klicker.com`)'
+      entrypoints:
+        - 'web'
+        - 'websecure'
+      service: 'chat'
+
     auth:
       rule: 'Host(`auth.klicker.com`)'
       entrypoints:
@@ -83,6 +90,11 @@ http:
       loadBalancer:
         servers:
           - url: 'http://172.25.8.0:3003'
+
+    chat:
+      loadBalancer:
+        servers:
+          - url: 'http://172.25.8.0:3004'
 
     auth:
       loadBalancer:

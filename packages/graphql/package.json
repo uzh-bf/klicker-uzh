@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/graphql",
-  "version": "3.4.0-alpha.15",
+  "version": "3.4.0-alpha.16",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -37,7 +37,7 @@
     "unique-names-generator": "4.7.1",
     "uuid": "10.0.0",
     "validator": "13.12.0",
-    "zod": "3.23.8"
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "~5.0.3",

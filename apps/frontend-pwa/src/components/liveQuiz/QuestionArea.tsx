@@ -495,7 +495,9 @@ function QuestionArea({
           <div className="mb-0.5 mt-1 flex items-center gap-2 self-end text-sm text-green-700">
             <FontAwesomeIcon icon={faCheck} className="h-4 w-4" />
             <span>
-              {`Responded at ${dayjs(submittedAt).format('DD.MM.YYYY HH:mm')}`}
+              {t('pwa.assessment.respondedAt', {
+                date: dayjs(submittedAt).format('DD.MM.YYYY HH:mm'),
+              })}
             </span>
           </div>
         ) : null}
