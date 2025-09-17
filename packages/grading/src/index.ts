@@ -281,10 +281,12 @@ export function computeAwardedCorrectnessPoints({
 } {
   const slope = maxBonus / (timeToZeroBonus ?? 20)
 
-  // time between the first response and the current response
-  let responseTiming =
+  // time between the first response and the current response (in seconds)
+  const responseTiming = Math.max(
     (responseTimestamp - Number(firstResponseReceivedAt ?? responseTimestamp)) /
-    1000
+      1000,
+    0
+  )
 
   // intialize the correctness points and bonus points to 0
   let correctnessPoints = 0
