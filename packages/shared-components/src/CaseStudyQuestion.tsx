@@ -71,7 +71,7 @@ function CaseStudyQuestion({
         })
       })
     )
-  }, [options.cases])
+  }, [options.cases, response])
 
   return (
     <div className="flex flex-col gap-4 text-base md:flex-row">

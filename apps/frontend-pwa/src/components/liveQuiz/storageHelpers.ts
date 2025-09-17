@@ -93,6 +93,7 @@ export async function loadStoredResponse({
         await localforage.removeItem(`${key}-temp`)
       }
     } else {
+      setSubmittedAt(null)
       setStudentResponse({
         type: currentInstance.elementType,
         response: tempStored as any,
