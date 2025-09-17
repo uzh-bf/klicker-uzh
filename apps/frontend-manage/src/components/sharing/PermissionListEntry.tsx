@@ -70,7 +70,7 @@ function PermissionListEntry({
               ? [
                   {
                     value: PermissionLevel.Owner,
-                    label: t('shared.generic.owner'),
+                    label: t('manage.sharing.permissionsOWNER'),
                   },
                 ]
               : []),
