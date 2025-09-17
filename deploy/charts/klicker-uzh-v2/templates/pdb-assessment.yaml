@@ -17,6 +17,21 @@ spec:
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
+  name: {{ include "chart.fullname" . }}-hatchet-worker-response-processor-assessment
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: hatchet-worker-response-processor-assessment
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: hatchet-worker-response-processor-assessment
+---
+# Assessment Worker
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
   name: {{ include "chart.fullname" . }}-backend-assessment
   labels:
     {{- include "chart.labels" . | nindent 4 }}
