@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.19](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.18...v3.4.0-alpha.19) (2025-09-18)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** getParticipantToken on PWA chatbot redirection page ([83e22e5](https://github.com/uzh-bf/klicker-uzh/commit/83e22e5f8b8f6c26905c316df094663c72d5a96e))
+* **packages/graphql:** make sure that instance cache data is also marked for removal when closing the block without student responses ([482c00c](https://github.com/uzh-bf/klicker-uzh/commit/482c00c2b40af147d096ae3ecb566335ebf099dd))
+
 ## [3.4.0-alpha.18](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.17...v3.4.0-alpha.18) (2025-09-18)
 
 
