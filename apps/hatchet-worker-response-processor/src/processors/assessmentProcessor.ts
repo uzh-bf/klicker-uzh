@@ -126,7 +126,7 @@ export async function processAssessmentResponse(
 
   if (blockClosedAt && Number(responseTimestamp) > Number(blockClosedAt)) {
     ctx.logger.error(
-      `[CANCEL] [AddResponse Assessment] Response received after block of element instance ${message.instanceId} was closed at ${new Date(Number(blockClosedAt))}.`
+      `[CANCEL] [AddResponse Assessment] Response received at ${new Date(Number(responseTimestamp))} after block of element instance ${message.instanceId} was closed at ${new Date(Number(blockClosedAt))}.`
     )
     ctx.cancel()
     return { status: 200 }
@@ -443,7 +443,7 @@ export async function processAssessmentResponse(
   return {
     status: 200,
     pointsAwarded: awardedBasePoints,
-    correctednessPoints: awardedCorrectnessPoints,
+    correctnessPoints: awardedCorrectnessPoints,
     bonusPoints: awardedBonusPoints,
     xpAwarded: awardedXp,
   }
