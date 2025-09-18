@@ -76,6 +76,9 @@ chat:
   autoscaling:
     enabled: false
 
+  image:
+    tag: clean-argocd
+
   ingress:
     hosts:
       - host: chat.klicker-qa.stg.df-app.ch
@@ -317,6 +320,7 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api
+    tag: clean-argocd
     pullPolicy: Always
 
   autoscaling:
@@ -395,6 +399,9 @@ assessment:
     autoscaling:
       enabled: false
 
+    image:
+      tag: clean-argocd
+
     appManageSubdomain: manage
     appStudentSubdomain: assessment
     appControlSubdomain: control
@@ -446,6 +453,9 @@ assessment:
 
     autoscaling:
       enabled: false
+
+    image:
+      tag: clean-argocd
 
     ingress:
       className: haproxy
