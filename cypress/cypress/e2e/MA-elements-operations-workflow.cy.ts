@@ -1107,6 +1107,9 @@ describe('Create different types of elements (with and without sample solution) 
       messages.manage.sharing.permissionsADMIN
     )
     cy.get('[data-cy="new-permission-submit"]').click().wait(500)
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)
@@ -1154,6 +1157,9 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`
     ).should('not.exist')
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
     cy.logoutUser()
 
     // verify that the access requests are not visible anymore to user pro3
@@ -1248,6 +1254,9 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsREAD)
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
   })
 
   it('Verify that restricted question is visible for user pro1', function () {
@@ -1360,6 +1369,9 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
   })
 
   it('Verify that user pro2 should now be able to add this question to the catalog', function () {
@@ -1534,6 +1546,9 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsREAD)
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
   })
 
   it("Verify that the public question is visible for user 'pro1'", function () {
@@ -1655,6 +1670,9 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsREAD)
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
 
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
@@ -1670,6 +1688,9 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsWRITE)
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
 
     cy.get('[data-cy="new-permission-username-or-email"]')
       .click()
@@ -1685,6 +1706,9 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="permission-${Cypress.env('LECTURER_INST2_SHORTNAME')}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsADMIN)
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
   })
 
   it('Verify that the user with granted access are able to access the correct element manipulation functionalities', function () {
@@ -1898,6 +1922,9 @@ describe('Create different types of elements (with and without sample solution) 
     cy.get(`[data-cy="permission-${this.data.group1}"]`)
       .should('exist')
       .contains(messages.manage.sharing.permissionsREAD)
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
 
     // grant direct WRITE permissions to group 2
     cy.get('[data-cy="new-permission-user-group"]').contains(

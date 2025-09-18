@@ -2106,6 +2106,7 @@ enum PermissionLevel {
 
 type PermissionsList {
   isOwner: Boolean!
+  ownerPermission: PermissionInfo
   permissions: [PermissionInfo!]!
 }
 
