@@ -293,21 +293,28 @@ export async function manipulateLiveQuiz(
   // pin protection applies when assessment is enabled or explicitly enabled via flag
   const pinProtection = assessmentSetting || isPinProtected
 
-  // if the activity is part of an assessment course, but should be modified and the user is not a course admin, return early
+  // if the activity is part of an assessment course, the course assignment can only be modified by course admins / owners
   if (
-    typeof courseId !== 'undefined' &&
-    courseId !== null &&
     existingActivity?.isAssessmentEnabled &&
-    !existingActivity?.course?._count.permissions
+    !existingActivity?.course?._count.permissions &&
+    (courseId === null || courseId !== existingActivity?.courseId)
   ) {
     throw new GraphQLError(
       'Assessment live quizzes can only be modified by course admins or owners'
     )
   }
 
-  // if required, find a new pin code for the live quiz that is still available
+  // check if a new pin code is required
+  const requiresNewPin =
+    pinProtection && // 1) pin protection is required (corresponding setting or assessment course)
+    (!existingActivity || // 2.1) assign new pin on activity creation
+      ((courseId || existingActivity.courseId) && // 2.2) assign new pin on course assignment change (course defined at least before or after)
+        courseId !== existingActivity.courseId) ||
+      (existingActivity && !existingActivity.courseId && !courseId)) // 2.3) assign new pin on pin setting change with no course assigned before and after edit
+
+  // find a new pin code that is still available, if required
   let newPinCode: string | undefined | null = existingActivity?.pinCode
-  if (pinProtection && (!courseId || courseId !== existingActivity?.courseId)) {
+  if (requiresNewPin) {
     let pinValid = false
 
     for (let attempt = 0; attempt < 10; attempt++) {
@@ -1406,7 +1413,8 @@ async function removeCacheEntriesBlock({
     if (keys.length > 0) {
       const pipe = redis.pipeline()
       for (const key of keys) {
-        pipe.unlink(key)
+        // set an expiration time of 1 day to all hash sets of the live quiz
+        pipe.expire(key, 60 * 60 * 24)
       }
       await pipe.exec()
     }
@@ -1425,7 +1433,8 @@ async function removeCacheEntriesBlock({
     if (keys.length > 0) {
       const pipe = redis.pipeline()
       for (const key of keys) {
-        pipe.unlink(key)
+        // set an expiration time of 1 day to all hash sets of the live quiz
+        pipe.expire(key, 60 * 60 * 24)
       }
       await pipe.exec()
     }
@@ -2277,6 +2286,8 @@ export async function getLiveQuizEvaluation(
     displayName: liveQuiz.displayName,
     description: liveQuiz.description,
     courseLanguage: liveQuiz.course?.language,
+    isAssessmentEnabled: liveQuiz.isAssessmentEnabled,
+    pinCode: liveQuiz.pinCode,
     results: blockEvaluations,
     feedbacks:
       liveQuiz.status === DB.PublicationStatus.ENDED
@@ -3266,6 +3277,7 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
       )
       return true
     }
+
     if (quiz.blocks.length === 0) {
       executionCtx.logger.error(`Quiz with ID ${liveQuizId} has no blocks`)
       return false
@@ -3280,6 +3292,7 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
       )
       return false
     }
+
     if (block.elements.length === 0) {
       executionCtx.logger.error(
         `Block with ID ${blockId} in quiz with ID ${liveQuizId} has no elements`
@@ -3291,6 +3304,22 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
       executionCtx.logger.info(
         `No responses found for any element in block with ID ${blockId} in quiz with ID ${liveQuizId}`
       )
+
+      try {
+        // remove all cache entries related to this block only (or the entire live quiz, if this was the last block)
+        await removeCacheEntriesBlock({
+          liveQuizId,
+          blockId,
+          block,
+          isLastBlock,
+          redis: globalCtx.redisAssessmentExec,
+        })
+      } catch (error) {
+        executionCtx.logger.error(
+          `Error removing cache entries for block with ID ${blockId} in quiz with ID ${liveQuizId}: ${error}`
+        )
+      }
+
       return true
     }
 

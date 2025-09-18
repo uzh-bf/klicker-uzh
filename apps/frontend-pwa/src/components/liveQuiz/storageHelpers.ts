@@ -93,6 +93,7 @@ export async function loadStoredResponse({
         await localforage.removeItem(`${key}-temp`)
       }
     } else {
+      setSubmittedAt(null)
       setStudentResponse({
         type: currentInstance.elementType,
         response: tempStored as any,
@@ -102,13 +103,13 @@ export async function loadStoredResponse({
       // validate the loaded student response and set validity flag accordingly
       if (tempStored) {
         if (currentInstance.elementType === ElementType.Sc) {
-          const valid = validateScResponse(tempStored)
+          const valid = validateScResponse({ response: tempStored })
           setStudentResponse((prev) => ({ ...prev, valid }))
         } else if (currentInstance.elementType === ElementType.Mc) {
-          const valid = validateMcResponse(tempStored)
+          const valid = validateMcResponse({ response: tempStored })
           setStudentResponse((prev) => ({ ...prev, valid }))
         } else if (currentInstance.elementType === ElementType.Kprim) {
-          const valid = validateKprimResponse(tempStored)
+          const valid = validateKprimResponse({ response: tempStored })
           setStudentResponse((prev) => ({ ...prev, valid }))
         } else if (currentInstance.elementType === ElementType.Numerical) {
           const valid = validateNumericalResponse({
@@ -125,7 +126,7 @@ export async function loadStoredResponse({
           })
           setStudentResponse((prev) => ({ ...prev, valid }))
         } else if (currentInstance.elementType === ElementType.Selection) {
-          const valid = validateSelectionResponse(tempStored)
+          const valid = validateSelectionResponse({ response: tempStored })
           setStudentResponse((prev) => ({ ...prev, valid }))
         } else if (currentInstance.elementType === ElementType.CaseStudy) {
           const valid = validateCaseStudyResponse({ response: tempStored })

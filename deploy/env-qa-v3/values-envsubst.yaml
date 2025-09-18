@@ -34,6 +34,18 @@ auth:
   image:
     tag: '${APP_VERSION}'
 
+chat:
+  replicaCount: '${APP_REPLICAS}'
+  image:
+    tag: '${APP_VERSION}'
+
+  azure:
+    resourceName: '${AZURE_RESOURCE_NAME}'
+    apiKey: '${AZURE_API_KEY}'
+
+  mcp:
+    key: '${MCP_KEY}'
+
 frontendPWA:
   replicaCount: '${APP_REPLICAS}'
   image:

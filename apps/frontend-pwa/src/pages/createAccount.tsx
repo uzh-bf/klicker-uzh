@@ -83,6 +83,16 @@ function CreateAccount({
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+  // in assessment application, redirect to assessment home page
+  if (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true') {
+    return {
+      redirect: {
+        destination: process.env.APP_ORIGIN_ASSESSMENT_PWA,
+        permanent: false,
+      },
+    }
+  }
+
   try {
     const { req, res, query } = ctx
     const apolloClient = initializeApollo()

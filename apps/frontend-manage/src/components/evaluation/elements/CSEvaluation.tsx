@@ -31,6 +31,8 @@ interface CSEvaluationProps {
   showExplanation: boolean
   hasSolution: boolean
   hasExplanation: boolean
+  isAssessmentEnabled: boolean
+  pinCode?: string | null
   type: ActivityEvaluationType
 }
 
@@ -43,6 +45,8 @@ function CSEvaluation({
   showExplanation,
   hasSolution,
   hasExplanation,
+  isAssessmentEnabled,
+  pinCode,
   type,
 }: CSEvaluationProps) {
   const t = useTranslations()
@@ -132,6 +136,8 @@ function CSEvaluation({
           textSize={textSize}
           showSolution={showSolution}
           showExplanation={showExplanation}
+          isAssessmentEnabled={isAssessmentEnabled}
+          pinCode={pinCode}
           type={type}
         />
       )}
@@ -146,6 +152,8 @@ function CSEvaluation({
           textSize={textSize}
           showSolution={showSolution}
           showExplanation={showExplanation}
+          isAssessmentEnabled={isAssessmentEnabled}
+          pinCode={pinCode}
           type={type}
         />
       )}

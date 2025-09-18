@@ -6,7 +6,6 @@ import {
   ChartType,
   STATISTICS_ORDER,
 } from '@klicker-uzh/shared-components/src/constants'
-import { useLocalStorage } from '@uidotdev/usehooks'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -21,6 +20,8 @@ import Statistic from './Statistic'
 interface NRSidebarProps {
   instance: NumericalActivityEvaluationData
   courseLanguage?: LocaleType | null
+  isAssessmentEnabled: boolean
+  pinCode?: string | null
   chartType: ChartType
   textSize: TextSizeType
   showSolution: boolean
@@ -32,6 +33,8 @@ interface NRSidebarProps {
 function NRSidebar({
   instance,
   courseLanguage,
+  isAssessmentEnabled,
+  pinCode,
   chartType,
   textSize,
   showSolution,
@@ -41,21 +44,17 @@ function NRSidebar({
 }: NRSidebarProps) {
   const t = useTranslations()
   const router = useRouter()
-  const [hideQR, setHideQR] = useLocalStorage<boolean>(
-    `hide-qr-evaluation`,
-    false
-  )
 
   return (
     <div
       className={twMerge(
-        'order-1 flex h-full w-full flex-col justify-between overflow-hidden px-3 py-2 md:order-2',
+        'order-1 flex h-full w-full flex-col justify-between overflow-hidden pb-1 pt-2 md:order-2',
         textSize.text
       )}
     >
       <div
         className={twMerge(
-          'flex h-max max-h-full flex-col gap-2 overflow-y-auto',
+          'flex h-max max-h-full flex-col gap-2 overflow-y-auto px-2',
           textSize.textLg
         )}
       >
@@ -135,10 +134,11 @@ function NRSidebar({
           </div>
         )}
       </div>
-      {type === 'LiveQuiz' && !hideQR && !router.query.hmac && (
+      {type === 'LiveQuiz' && !router.query.hmac && (
         <LiveQuizEvaluationQRCode
-          setHideQR={setHideQR}
           language={courseLanguage}
+          isAssessmentEnabled={isAssessmentEnabled}
+          pinCode={pinCode}
         />
       )}
     </div>

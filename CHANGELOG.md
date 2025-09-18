@@ -2,6 +2,59 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.18](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.17...v3.4.0-alpha.18) (2025-09-18)
+
+
+### Bug Fixes
+
+* **ci:** add CI workflow for chat production image ([e905e1b](https://github.com/uzh-bf/klicker-uzh/commit/e905e1b4fc08b8c1d24c6df6ebc4e7913cb28b5b))
+
+
+### Enhancements
+
+* **packages/graphql:** instead of unlinking, set expiration date on instance keys within block closure operation ([#4927](https://github.com/uzh-bf/klicker-uzh/issues/4927)) ([fc7b6a7](https://github.com/uzh-bf/klicker-uzh/commit/fc7b6a769fa15041354891ea3c0d180e13b4896a))
+* show owner permission as disabled entry on sharing dialog ([#4923](https://github.com/uzh-bf/klicker-uzh/issues/4923)) ([675b5f1](https://github.com/uzh-bf/klicker-uzh/commit/675b5f1ccc7931648f781e2fc328a5912cde2801))
+
+## [3.4.0-alpha.17](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.16...v3.4.0-alpha.17) (2025-09-17)
+
+
+### Features
+
+* **apps/chat:** add new chatbot frontend  ([#4863](https://github.com/uzh-bf/klicker-uzh/issues/4863)) ([0f6ec47](https://github.com/uzh-bf/klicker-uzh/commit/0f6ec472a675d14ffc79ab66c6c179ca454768e2))
+
+## [3.4.0-alpha.16](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.15...v3.4.0-alpha.16) (2025-09-17)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that scoring can be customized for both gamified and assessment live quizzes ([#4924](https://github.com/uzh-bf/klicker-uzh/issues/4924)) ([71ef2e2](https://github.com/uzh-bf/klicker-uzh/commit/71ef2e298d346c19d7e2ba04e7aa13dad1c79f6c))
+* **apps/frontend-pwa:** make sure that repsonded at date is loaded correctly for submitted responses ([ed0acda](https://github.com/uzh-bf/klicker-uzh/commit/ed0acda4fcd698e1ac99bcda5dbcae1fea7df6d7))
+* **packages/graphql:** ensure that only course re-assignment is blocked for non-admins on course ([933c977](https://github.com/uzh-bf/klicker-uzh/commit/933c97781044ecf7d431112679407ecf211ed267))
+* **packages/graphql:** make sure that live quiz pins are modified only in the required cases ([#4925](https://github.com/uzh-bf/klicker-uzh/issues/4925)) ([0426a40](https://github.com/uzh-bf/klicker-uzh/commit/0426a401611a9c489f85ac61a9f4abec8a7f4189))
+* **packages/shared-components:** correctly validate case study case status on response loading ([07cf502](https://github.com/uzh-bf/klicker-uzh/commit/07cf502852042fd9595696d73199892abfccd1f4))
+
+## [3.4.0-alpha.15](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.14...v3.4.0-alpha.15) (2025-09-16)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** resolve validation issues for selection questions with partially missing responses ([c32a38d](https://github.com/uzh-bf/klicker-uzh/commit/c32a38d8718537e8cafc99bc6ef86d6c30d12efd))
+* **cypress:** change the existing assessment test case to cover pin-protected quizzes instead ([#4922](https://github.com/uzh-bf/klicker-uzh/issues/4922)) ([447e7e9](https://github.com/uzh-bf/klicker-uzh/commit/447e7e945798ce61356c4f57a9cd9e08cc36dea9))
+
+## [3.4.0-alpha.14](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.13...v3.4.0-alpha.14) (2025-09-16)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** show correct tooltips when hovering over one-dimensional scatter plot items (case study evaluation) ([47b6997](https://github.com/uzh-bf/klicker-uzh/commit/47b69971c893285c7fe3d86bfb4df6df336d6b41))
+* **packages/util:** ensure that cache results are correctly loaded for selection and case study questions ([8950660](https://github.com/uzh-bf/klicker-uzh/commit/8950660bef8f5b6a0b7ab81ecf3e772f96fde5d4))
+* treat cleared answers for selection questions as missing answers ([#4919](https://github.com/uzh-bf/klicker-uzh/issues/4919)) ([cbb661b](https://github.com/uzh-bf/klicker-uzh/commit/cbb661bc258ade030bec385aa25a4d2327194b3c))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add possibility to show complete live quiz qr modal on evaluation ([#4921](https://github.com/uzh-bf/klicker-uzh/issues/4921)) ([22587e4](https://github.com/uzh-bf/klicker-uzh/commit/22587e4b75120b88fdd38b4329716dd8836b6c7d))
+
 ## [3.4.0-alpha.13](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.12...v3.4.0-alpha.13) (2025-09-16)
 
 

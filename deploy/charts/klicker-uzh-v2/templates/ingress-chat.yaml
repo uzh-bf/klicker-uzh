@@ -1,0 +1,46 @@
+{{- if .Values.chat.ingress.enabled -}}
+{{- $fullName := include "chart.fullname" . -}}
+{{- $svcPort := .Values.chat.service.port -}}
+{{- if and .Values.chat.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey .Values.chat.ingress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set .Values.chat.ingress.annotations "kubernetes.io/ingress.class" .Values.chat.ingress.className}}
+  {{- end }}
+{{- end }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullName }}-chat
+  labels:
+    {{- include "chart.ingressLabels" . | nindent 4 }}
+  {{- with .Values.chat.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.chat.ingress.className }}
+  {{- if .Values.chat.ingress.tls }}
+  tls:
+    {{- range .Values.chat.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.chat.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ $fullName }}-chat
+                port:
+                  number: {{ $svcPort }}
+          {{- end }}
+    {{- end }}
+{{- end }}

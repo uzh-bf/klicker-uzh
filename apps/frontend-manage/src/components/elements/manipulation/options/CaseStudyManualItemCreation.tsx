@@ -40,6 +40,33 @@ function CaseStudyManualItemCreation({
       <UserNotification type="info">
         {t.rich('manage.elements.enterItemsManuallyExplanation', {
           b: (text) => <b>{text}</b>,
+          button: (text) => (
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                // reset the selected items tracked outside the form state
+                setAnswerCollectionEntries([])
+                setSelectedItems([])
+
+                // reset the selected items
+                manualItemsHelpers.setValue([])
+
+                // manually reset the sample solutions defined for the created cases
+                const newCases = casesField.value?.map((caseItem) => ({
+                  ...caseItem,
+                  solutions: undefined,
+                }))
+                casesHelpers.setValue(newCases)
+
+                // switch to the selection mode for existing answer collections
+                setItemSelectionMode('existing')
+              }}
+              className="text-primary-100 cursor-pointer underline"
+            >
+              {text}
+            </span>
+          ),
         })}
       </UserNotification>
 

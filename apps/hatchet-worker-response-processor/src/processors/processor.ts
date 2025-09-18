@@ -143,7 +143,7 @@ export async function processResponseMessage(
     const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
     // if the instance metadata is not available, it has been closed and purged already
     if (!instanceInfo || Object.keys(instanceInfo).length === 0) {
-      ctx.logger.info('Question instance metadata not found', {
+      ctx.logger.info('Element instance metadata not found', {
         messageId: message.messageId,
         sessionId: message.sessionId,
         instanceId: message.instanceId,
@@ -164,7 +164,17 @@ export async function processResponseMessage(
       choiceCount,
       basePoints,
       pointsMultiplier,
+      blockClosedAt,
     } = instanceInfo
+
+    if (blockClosedAt && Number(responseTimestamp) > Number(blockClosedAt)) {
+      ctx.logger.error(
+        `[CANCEL] [AddResponse Assessment] Response received at ${new Date(Number(responseTimestamp))} after block of element instance ${message.instanceId} was closed at ${new Date(Number(blockClosedAt))}.`
+      )
+      ctx.cancel()
+      return { status: 200 }
+    }
+
     let parsedSolutions = undefined
     try {
       if (solutions) {
