@@ -18,7 +18,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/frontend-assessment
+  IMAGE_NAME: ${{ github.repository }}/frontend-assessment-arm
 
 jobs:
   build:

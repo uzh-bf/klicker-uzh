@@ -21,7 +21,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/backend-docker
+  IMAGE_NAME: ${{ github.repository }}/backend-docker-arm
 
 jobs:
   build:
