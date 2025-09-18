@@ -150,6 +150,7 @@ export const PermissionInfo = PermissionInfoRef.implement({
 
 interface IPermissionsList {
   isOwner: boolean
+  ownerPermission?: IPermissionInfo | null
   permissions: IPermissionInfo[]
 }
 export const PermissionsListRef =
@@ -157,6 +158,10 @@ export const PermissionsListRef =
 export const PermissionsList = PermissionsListRef.implement({
   fields: (t) => ({
     isOwner: t.exposeBoolean('isOwner'),
+    ownerPermission: t.expose('ownerPermission', {
+      type: PermissionInfo,
+      nullable: true,
+    }),
     permissions: t.expose('permissions', { type: [PermissionInfo] }),
   }),
 })

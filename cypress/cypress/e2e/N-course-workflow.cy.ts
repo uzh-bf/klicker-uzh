@@ -1644,6 +1644,9 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(
       `[data-cy="permission-propagation-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).should('have.attr', 'data-state', 'unchecked')
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
 
     // share the course with EXECUTE permissions with user pro2
     cy.get('[data-cy="new-permission-username-or-email"]')
@@ -1788,6 +1791,9 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_INST4_SHORTNAME')}"]`
     ).contains(messages.manage.sharing.permissionsWRITE)
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
   })
 
   it('Verify that the user with new WRITE permissions (without propagation) can only see course & activities with EXECUTE permissions', function () {
@@ -1810,6 +1816,9 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(
       `[data-cy="permission-propagation-${Cypress.env('LECTURER_INST4_SHORTNAME')}"]`
     ).should('have.attr', 'data-state', 'checked')
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
   })
 
   it('Verify that the user with new WRITE permissions (with propagation) can only see course & activities with WRITE permissions', function () {
@@ -1830,6 +1839,9 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).should('not.exist')
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
 
     cy.get(
       `[data-cy="revoke-permission-${Cypress.env('LECTURER_INST_SHORTNAME')}"]`
@@ -1975,6 +1987,9 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(
       `[data-cy="permission-propagation-${this.data.sharing.group1}"]`
     ).should('have.attr', 'data-state', 'unchecked')
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
 
     // share the course with EXECUTE permissions with user group group2
     cy.get('[data-cy="new-permission-user-group"]').contains(
@@ -2147,6 +2162,9 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(`[data-cy="permission-${this.data.sharing.group5}"]`).contains(
       messages.manage.sharing.permissionsWRITE
     )
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
   })
 
   it('Verify that the user in group 5 can see the objects according to course WRITE permissions (without propagation)', function () {
@@ -2258,6 +2276,9 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(
       `[data-cy="permission-propagation-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).should('have.attr', 'data-state', 'unchecked')
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
 
     // transfer ownership to user pro1
     cy.get('[data-cy="transfer-ownership"]').click()
@@ -2271,6 +2292,11 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).should('not.exist')
+    cy.get(
+      `[data-cy="owner-permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
+    )
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
     ).contains(messages.manage.sharing.permissionsADMIN)
@@ -2302,6 +2328,9 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_SHORTNAME')}"]`
     ).should('not.exist')
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).contains(messages.manage.sharing.permissionsADMIN)
@@ -2330,6 +2359,9 @@ describe('Test course creation and editing functionalities', function () {
     cy.get(
       `[data-cy="permission-${Cypress.env('LECTURER_IND_SHORTNAME')}"]`
     ).should('not.exist')
+    cy.get(`[data-cy="owner-permission-${Cypress.env('LECTURER_SHORTNAME')}"]`)
+      .should('exist')
+      .contains(messages.manage.sharing.permissionsOWNER)
   })
   // #endregion
 })
