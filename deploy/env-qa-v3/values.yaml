@@ -45,9 +45,38 @@ auth:
           - path: /
             pathType: ImplementationSpecific
     tls:
-      - secretName: klicker-prod-frontend-auth-tls
+      - secretName: klicker-qa-frontend-auth-tls
         hosts:
           - auth.klicker-qa.bf-app.ch
+
+  strategy:
+    type: RollingUpdate
+    # type: Recreate
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
+chat:
+  priorityClassName: staging-workload
+
+  autoscaling:
+    enabled: false
+
+  ingress:
+    hosts:
+      - host: chat.klicker-qa.bf-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-qa-frontend-chat-tls
+        hosts:
+          - chat.klicker-qa.bf-app.ch
 
   strategy:
     type: RollingUpdate
@@ -273,7 +302,7 @@ assessment:
 
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment
-      tag: '${APP_VERSION}'
+      pullPolicy: Always
 
     ingress:
       hosts:
