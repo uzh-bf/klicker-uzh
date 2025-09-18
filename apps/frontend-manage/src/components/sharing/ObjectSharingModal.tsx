@@ -69,6 +69,7 @@ function ObjectSharingModal({
   // get all permissions that have already been granted for this object
   const {
     permissions,
+    ownerPermission,
     isOwner,
     loading: permissionsLoading,
   } = useObjectPermissions({
@@ -140,6 +141,7 @@ function ObjectSharingModal({
         <GrantedPermissionsTable
           type={objectType}
           permissions={permissions ?? []}
+          ownerPermission={ownerPermission}
           permissionsLoading={permissionsLoading}
           changeLoading={permissionChanging}
           isOwner={isOwner}

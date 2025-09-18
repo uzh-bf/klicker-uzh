@@ -930,7 +930,7 @@ export const handleUpdateWeeklyTimelineEntries: HatchetHandlers['handleUpdateWee
     // get all course ids
     const courses = await globalCtx.prisma.course.findMany({
       where: { endDate: { gt: new Date() } },
-      select: { id: true },
+      select: { id: true, name: true },
     })
 
     // iterate over all courses and update weekly timeline entries
@@ -942,7 +942,7 @@ export const handleUpdateWeeklyTimelineEntries: HatchetHandlers['handleUpdateWee
       )
 
       executionCtx.logger.info(
-        `[INFO] [UpdateWeeklyTimelineEntries] Successfully updated weekly timeline entries for course ${course.id}`
+        `[INFO] [UpdateWeeklyTimelineEntries] Successfully updated weekly timeline entries for course ${course.name} (ID: ${course.id})`
       )
     }
 

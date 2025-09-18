@@ -13,6 +13,7 @@ import ExistingPermissionEntries from './ExistingPermissionEntries'
 function GrantedPermissionsTable({
   type,
   permissions,
+  ownerPermission,
   permissionsLoading,
   changeLoading,
   isOwner,
@@ -24,6 +25,7 @@ function GrantedPermissionsTable({
 }: {
   type: ObjectType
   permissions: PermissionInfo[]
+  ownerPermission?: PermissionInfo
   permissionsLoading: boolean
   changeLoading: boolean
   isOwner: boolean
@@ -107,6 +109,7 @@ function GrantedPermissionsTable({
               <ExistingPermissionEntries
                 type={type}
                 permissions={permissions ?? []}
+                ownerPermission={ownerPermission}
                 changeLoading={changeLoading}
                 showPropagationSetting={showPropagationSetting}
                 onPermissionLevelChange={onPermissionLevelChange}

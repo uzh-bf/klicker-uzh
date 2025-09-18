@@ -171,7 +171,7 @@ function EvaluationFooter({
               <Select
                 value={router.locale}
                 contentPosition="popper"
-                className={{ trigger: '-ml-3 w-20 border-slate-400 text-xl' }}
+                className={{ trigger: '-ml-3 w-16 border-slate-400' }}
                 items={Object.values(LocaleType).map((language) => ({
                   label: t(`shared.generic.${language}`),
                   shortLabel: t(`shared.generic.${language}Short`),

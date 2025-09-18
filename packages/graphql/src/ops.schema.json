@@ -31313,6 +31313,18 @@
             "deprecationReason": null
           },
           {
+            "name": "ownerPermission",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "PermissionInfo",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "permissions",
             "description": null,
             "args": [],

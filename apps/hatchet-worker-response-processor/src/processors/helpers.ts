@@ -225,7 +225,8 @@ export function validateStudentResponse({
     if (
       !Array.isArray(response.selection) ||
       response.selection.length === 0 ||
-      !response.selection.every((r) => typeof r === 'number') ||
+      // TODO: re-introduce the following check once the incoming responses are guaranteed to be correct through response-api validation
+      // !response.selection.every((r) => typeof r === 'number') ||
       response.selection.filter(
         (r) => r !== -1 && typeof r !== 'undefined' && r !== null
       ).length === 0 // at least one selection must be made (excluding skipped fields with value -1 / undefined / null)

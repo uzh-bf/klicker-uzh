@@ -13,7 +13,12 @@ function useObjectPermissions({
   objectId: string | number
   objectType: ObjectType
   skip: boolean
-}): { permissions: PermissionInfo[]; isOwner: boolean; loading: boolean } {
+}): {
+  permissions: PermissionInfo[]
+  ownerPermission?: PermissionInfo
+  isOwner: boolean
+  loading: boolean
+} {
   const { data, loading } = useQuery(GetObjectPermissionsDocument, {
     variables: { objectId: String(objectId), objectType },
     skip,
@@ -22,6 +27,7 @@ function useObjectPermissions({
 
   return {
     permissions: data?.getObjectPermissions?.permissions ?? [],
+    ownerPermission: data?.getObjectPermissions?.ownerPermission ?? undefined,
     isOwner: data?.getObjectPermissions?.isOwner ?? false,
     loading,
   }
