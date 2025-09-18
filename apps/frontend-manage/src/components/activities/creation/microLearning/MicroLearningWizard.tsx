@@ -76,9 +76,6 @@ function MicroLearningWizard({
 }: MicroLearningWizardProps) {
   const t = useTranslations()
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
-  const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>(
-    undefined
-  )
   const [activeStep, setActiveStep] = useState(0)
   const [stepValidity, setStepValidity] = useState<boolean[]>(
     Array(4).fill(!!initialValues)
@@ -269,10 +266,10 @@ function MicroLearningWizard({
     courseId: initialValues?.course?.id ?? formDefaultValues.courseId,
   })
 
-  const [createMicroLearning, { data: microLearningCreateData }] = useMutation(
+  const [createMicroLearning, { data: creationData }] = useMutation(
     CreateMicroLearningDocument
   )
-  const [editMicroLearning, { data: microLearningEditData }] = useMutation(
+  const [editMicroLearning, { data: editingData }] = useMutation(
     EditMicroLearningDocument
   )
   const handleSubmit = useCallback(
@@ -284,7 +281,6 @@ function MicroLearningWizard({
         editMode,
         createMicroLearning,
         editMicroLearning,
-        setSelectedCourseId,
         setIsWizardCompleted,
         onError: () =>
           toast({
@@ -305,6 +301,15 @@ function MicroLearningWizard({
     },
     [createMicroLearning, editMicroLearning, editMode, initialValues?.id]
   )
+
+  const activityId =
+    creationData?.createMicroLearning?.id ?? editingData?.editMicroLearning?.id
+  const selectedCourseId =
+    creationData?.createMicroLearning?.courseId ??
+    editingData?.editMicroLearning?.courseId
+  const isActivityReviewer =
+    creationData?.createMicroLearning?.isActivityReviewer ??
+    editingData?.editMicroLearning?.isActivityReviewer
 
   return (
     <WizardLayout
@@ -332,8 +337,12 @@ function MicroLearningWizard({
           )}
           name={formData.name}
           editMode={editMode}
-          previewElementHref={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${selectedCourseId}/microLearnings/${microLearningCreateData?.createMicroLearning?.id || microLearningEditData?.editMicroLearning?.id}/`}
-          viewElementHref={`/courses/${selectedCourseId}?tab=microLearnings`}
+          previewElementHref={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${selectedCourseId}/microLearnings/${activityId}/`}
+          viewElementHref={
+            isActivityReviewer
+              ? `/courses/${selectedCourseId}?tab=microLearnings`
+              : '/activities'
+          }
           onRestartForm={() => {
             setIsWizardCompleted(false)
             closeWizard()

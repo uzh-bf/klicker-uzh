@@ -294,9 +294,10 @@ export async function manipulateLiveQuiz(
   const pinProtection = assessmentSetting || isPinProtected
 
   // if the activity is part of an assessment course, the course assignment can only be modified by course admins / owners
+  const isCourseAdminOwner = !!existingActivity?.course?._count.permissions
   if (
     existingActivity?.isAssessmentEnabled &&
-    !existingActivity?.course?._count.permissions &&
+    !isCourseAdminOwner &&
     (courseId === null || courseId !== existingActivity?.courseId)
   ) {
     throw new GraphQLError(
@@ -519,7 +520,7 @@ export async function manipulateLiveQuiz(
     reviewStatus: activity.reviewStatus,
     type: ActivityType.LIVE_QUIZ,
     status: activity.status,
-    courseId: activity.course?.id,
+    courseId: isCourseAdminOwner ? activity.course?.id : null, // only return course id if the user can access corresponding course overview
     courseName: activity.course?.name,
     courseLanguage: activity.course?.language,
     courseStartDate: activity.course?.startDate,
