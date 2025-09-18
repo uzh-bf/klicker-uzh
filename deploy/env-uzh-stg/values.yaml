@@ -88,6 +88,9 @@ chat:
     tag: clean-argocd
 
   ingress:
+    annotations:
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+    className: haproxy
     hosts:
       - host: chat.klicker.stg.df-app.ch
         paths:
