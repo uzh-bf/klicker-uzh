@@ -1413,7 +1413,8 @@ async function removeCacheEntriesBlock({
     if (keys.length > 0) {
       const pipe = redis.pipeline()
       for (const key of keys) {
-        pipe.unlink(key)
+        // set an expiration time of 1 day to all hash sets of the live quiz
+        pipe.expire(key, 60 * 60 * 24)
       }
       await pipe.exec()
     }
@@ -1432,7 +1433,8 @@ async function removeCacheEntriesBlock({
     if (keys.length > 0) {
       const pipe = redis.pipeline()
       for (const key of keys) {
-        pipe.unlink(key)
+        // set an expiration time of 1 day to all hash sets of the live quiz
+        pipe.expire(key, 60 * 60 * 24)
       }
       await pipe.exec()
     }
