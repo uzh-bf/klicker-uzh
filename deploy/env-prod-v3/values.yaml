@@ -136,6 +136,35 @@ auth:
       cpu: 1000m
       memory: 1000Mi
 
+chat:
+  priorityClassName: production-workload
+
+  autoscaling:
+    enabled: false
+
+  ingress:
+    hosts:
+      - host: chat.klicker.uzh.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-prod-frontend-chat-tls-uzh
+        hosts:
+          - chat.klicker.uzh.ch
+
+  strategy:
+    type: RollingUpdate
+    # type: Recreate
+
+  resources:
+    requests:
+      cpu: 150m
+      memory: 150Mi
+    limits:
+      cpu: 1000m
+      memory: 1000Mi
+
 frontendPWA:
   replicaCount: 3
 
@@ -594,18 +623,11 @@ assessment:
       enabled: true
 
       hosts:
-        - host: chat.klicker.uzh.ch
-          paths:
-            - path: /
-              pathType: ImplementationSpecific
         - host: assessment-api.klicker-prod.bf-app.ch
           paths:
             - path: /
               pathType: ImplementationSpecific
       tls:
-        - secretName: klicker-prod-backend-assessment-tls-uzh
-          hosts:
-            - chat.klicker.uzh.ch
         - secretName: klicker-prod-backend-assessment-tls
           hosts:
             - assessment-api.klicker-prod.bf-app.ch
