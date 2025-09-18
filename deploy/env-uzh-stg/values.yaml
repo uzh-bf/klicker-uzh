@@ -351,12 +351,6 @@ responseApi:
       cpu: 200m
       memory: 200Mi
 
-redis:
-  priorityClassName: staging-workload
-  architecture: standalone
-  auth:
-    enabled: false
-
 assessment:
   frontendPWA:
     priorityClassName: staging-workload
