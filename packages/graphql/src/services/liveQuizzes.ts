@@ -3277,6 +3277,7 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
       )
       return true
     }
+
     if (quiz.blocks.length === 0) {
       executionCtx.logger.error(`Quiz with ID ${liveQuizId} has no blocks`)
       return false
@@ -3291,6 +3292,7 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
       )
       return false
     }
+
     if (block.elements.length === 0) {
       executionCtx.logger.error(
         `Block with ID ${blockId} in quiz with ID ${liveQuizId} has no elements`
@@ -3302,6 +3304,22 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
       executionCtx.logger.info(
         `No responses found for any element in block with ID ${blockId} in quiz with ID ${liveQuizId}`
       )
+
+      try {
+        // remove all cache entries related to this block only (or the entire live quiz, if this was the last block)
+        await removeCacheEntriesBlock({
+          liveQuizId,
+          blockId,
+          block,
+          isLastBlock,
+          redis: globalCtx.redisAssessmentExec,
+        })
+      } catch (error) {
+        executionCtx.logger.error(
+          `Error removing cache entries for block with ID ${blockId} in quiz with ID ${liveQuizId}: ${error}`
+        )
+      }
+
       return true
     }
 
