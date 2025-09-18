@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.18](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.17...v3.4.0-alpha.18) (2025-09-18)
+
+
+### Bug Fixes
+
+* **ci:** add CI workflow for chat production image ([e905e1b](https://github.com/uzh-bf/klicker-uzh/commit/e905e1b4fc08b8c1d24c6df6ebc4e7913cb28b5b))
+
+
+### Enhancements
+
+* **packages/graphql:** instead of unlinking, set expiration date on instance keys within block closure operation ([#4927](https://github.com/uzh-bf/klicker-uzh/issues/4927)) ([fc7b6a7](https://github.com/uzh-bf/klicker-uzh/commit/fc7b6a769fa15041354891ea3c0d180e13b4896a))
+* show owner permission as disabled entry on sharing dialog ([#4923](https://github.com/uzh-bf/klicker-uzh/issues/4923)) ([675b5f1](https://github.com/uzh-bf/klicker-uzh/commit/675b5f1ccc7931648f781e2fc328a5912cde2801))
+
 ## [3.4.0-alpha.17](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.16...v3.4.0-alpha.17) (2025-09-17)
 
 
