@@ -49,14 +49,14 @@ auth:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
     className: haproxy
     hosts:
-      - host: auth.klicker.stg.df-app.ch
+      - host: auth.klicker-qa.stg.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-frontend-auth-tls
         hosts:
-          - auth.klicker.stg.df-app.ch
+          - auth.klicker-qa.stg.df-app.ch
 
   strategy:
     type: RollingUpdate
@@ -116,14 +116,14 @@ frontendPWA:
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
     hosts:
-      - host: pwa.klicker.stg.df-app.ch
+      - host: pwa.klicker-qa.stg.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-frontend-pwa-tls
         hosts:
-          - pwa.klicker.stg.df-app.ch
+          - pwa.klicker-qa.stg.df-app.ch
 
   strategy:
     type: Recreate
@@ -150,14 +150,14 @@ frontendManage:
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
     hosts:
-      - host: manage.klicker.stg.df-app.ch
+      - host: manage.klicker-qa.stg.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-frontend-manage-tls
         hosts:
-          - manage.klicker.stg.df-app.ch
+          - manage.klicker-qa.stg.df-app.ch
 
   strategy:
     type: Recreate
@@ -184,14 +184,14 @@ frontendControl:
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
     hosts:
-      - host: control.klicker.stg.df-app.ch
+      - host: control.klicker-qa.stg.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-frontend-control-tls
         hosts:
-          - control.klicker.stg.df-app.ch
+          - control.klicker-qa.stg.df-app.ch
 
   strategy:
     type: Recreate
@@ -229,14 +229,14 @@ backendGraphql:
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
     hosts:
-      - host: api.klicker.stg.df-app.ch
+      - host: api.klicker-qa.stg.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-backend-graphql-tls
         hosts:
-          - api.klicker.stg.df-app.ch
+          - api.klicker-qa.stg.df-app.ch
 
   strategy:
     type: Recreate
@@ -263,14 +263,14 @@ olatApi:
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
     hosts:
-      - host: olat-api.klicker.stg.df-app.ch
+      - host: olat-api.klicker-qa.stg.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-olat-api-tls
         hosts:
-          - olat-api.klicker.stg.df-app.ch
+          - olat-api.klicker-qa.stg.df-app.ch
 
   strategy:
     type: Recreate
@@ -286,13 +286,13 @@ olatApi:
 lti:
   priorityClassName: staging-workload
 
-  redirectURL: https://lti.klicker.stg.df-app.ch
+  redirectURL: https://lti.klicker-qa.stg.df-app.ch
   url: https://exp.olat.uzh.ch
   name: OLAT UZH
   authEndpoint: https://exp.olat.uzh.ch/lti/auth
   tokenEndpoint: https://exp.olat.uzh.ch/lti/token
   keysEndpoint: https://exp.olat.uzh.ch/lti/keys
-  cookieDomain: .klicker.stg.df-app.ch
+  cookieDomain: .klicker-qa.stg.df-app.ch
 
   image:
     tag: clean-argocd
@@ -302,14 +302,14 @@ lti:
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
     hosts:
-      - host: lti.klicker.stg.df-app.ch
+      - host: lti.klicker-qa.stg.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-lti-tls
         hosts:
-          - lti.klicker.stg.df-app.ch
+          - lti.klicker-qa.stg.df-app.ch
 
 responseApi:
   corsAllowedOrigins: 'https://pwa.klicker-qa.stg.df-app.ch'
