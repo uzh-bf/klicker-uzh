@@ -21,7 +21,6 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/cm-response-api.yaml") . | sha256sum }}
-        checksum/secret: {{ include (print $.Template.BasePath "/secret-response-api.yaml") . | sha256sum }}
         release: {{ .Chart.AppVersion }}
       {{- with .Values.responseApi.podAnnotations }}
         {{- toYaml . | nindent 8 }}
@@ -105,7 +104,6 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/cm-response-api-assessment.yaml") . | sha256sum }}
-        checksum/secret: {{ include (print $.Template.BasePath "/secret-response-api-assessment.yaml") . | sha256sum }}
         release: {{ .Chart.AppVersion }}
       {{- with .Values.assessment.responseApi.podAnnotations }}
         {{- toYaml . | nindent 8 }}

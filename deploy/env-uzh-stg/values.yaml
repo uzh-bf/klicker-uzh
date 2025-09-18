@@ -1,46 +1,91 @@
-dfDomain: stg.example.df-app.ch
-
-email:
-  type: SMTP
-  from: '"Team KlickerUZH" <noreply-klicker@df.uzh.ch>'
-  port: '1025'
-  username: username
-  secure: 'false'
-  requireTLS: 'false'
-
-blobStorage:
-  accountName: klickeruzhdevimages
-
-cron:
-  token: abcd
+dfDomain: stg.df-app.ch
 
 heartbeats:
   dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
 
+global:
+  appOrigins:
+    api: 'https://api.klicker-qa.stg.df-app.ch'
+    auth: 'https://auth.klicker-qa.stg.df-app.ch'
+    lti: 'https://lti.klicker-qa.stg.df-app.ch'
+    pwa: 'https://pwa.klicker-qa.stg.df-app.ch'
+    manage: 'https://manage.klicker-qa.stg.df-app.ch'
+    control: 'https://control.klicker-qa.stg.df-app.ch'
+    assessmentApi: 'https://assessment-api.klicker-qa.stg.df-app.ch'
+    assessmentPwa: 'https://assessment.klicker-qa.stg.df-app.ch'
+
+hatchet:
+  client:
+    tlsStrategy: 'none'
+    apiUrl: 'http://hatchet-qa-api:8080'
+  workers:
+    general:
+      replicaCount: 1
+      priorityClassName: staging-workload
+      image:
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general
+        pullPolicy: Always
+        tag: clean-argocd
+
+    responseProcessor:
+      replicaCount: 1
+      priorityClassName: staging-workload
+      image:
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
+        pullPolicy: Always
+        tag: clean-argocd
+
 auth:
   priorityClassName: staging-workload
 
-  replicaCount: 1
-
-  image:
-    tag: v3-assessment
-
   autoscaling:
     enabled: false
+
+  image:
+    tag: clean-argocd
 
   ingress:
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
     className: haproxy
     hosts:
-      - host: auth.klicker.stg.example.df-app.ch
+      - host: auth.klicker.stg.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-frontend-auth-tls
         hosts:
-          - auth.klicker.stg.example.df-app.ch
+          - auth.klicker.stg.df-app.ch
+
+  strategy:
+    type: RollingUpdate
+    # type: Recreate
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
+chat:
+  priorityClassName: staging-workload
+
+  autoscaling:
+    enabled: false
+
+  ingress:
+    hosts:
+      - host: chat.klicker-qa.stg.df-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-qa-frontend-chat-tls
+        hosts:
+          - chat.klicker-qa.stg.df-app.ch
 
   strategy:
     type: RollingUpdate
@@ -57,27 +102,25 @@ auth:
 frontendPWA:
   priorityClassName: staging-workload
 
-  replicaCount: 1
-
-  image:
-    tag: v3-assessment
-
   autoscaling:
     enabled: false
+
+  image:
+    tag: clean-argocd
 
   ingress:
     className: haproxy
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
     hosts:
-      - host: pwa.klicker.stg.example.df-app.ch
+      - host: pwa.klicker.stg.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-frontend-pwa-tls
         hosts:
-          - pwa.klicker.stg.example.df-app.ch
+          - pwa.klicker.stg.df-app.ch
 
   strategy:
     type: Recreate
@@ -93,27 +136,25 @@ frontendPWA:
 frontendManage:
   priorityClassName: staging-workload
 
-  replicaCount: 1
-
-  image:
-    tag: v3-assessment
-
   autoscaling:
     enabled: false
+
+  image:
+    tag: clean-argocd
 
   ingress:
     className: haproxy
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
     hosts:
-      - host: manage.klicker.stg.example.df-app.ch
+      - host: manage.klicker.stg.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-frontend-manage-tls
         hosts:
-          - manage.klicker.stg.example.df-app.ch
+          - manage.klicker.stg.df-app.ch
 
   strategy:
     type: Recreate
@@ -129,10 +170,8 @@ frontendManage:
 frontendControl:
   priorityClassName: staging-workload
 
-  replicaCount: 1
-
   image:
-    tag: v3-assessment
+    tag: clean-argocd
 
   autoscaling:
     enabled: false
@@ -142,14 +181,14 @@ frontendControl:
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
     hosts:
-      - host: control.klicker.stg.example.df-app.ch
+      - host: control.klicker.stg.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-frontend-control-tls
         hosts:
-          - control.klicker.stg.example.df-app.ch
+          - control.klicker.stg.df-app.ch
 
   strategy:
     type: Recreate
@@ -165,48 +204,36 @@ frontendControl:
 backendGraphql:
   priorityClassName: staging-workload
 
-  replicaCount: 1
-
-  image:
-    tag: v3-assessment
-
-  apiDomain: api.klicker.stg.example.df-app.ch
-  cookieDomain: .klicker.stg.example.df-app.ch
-
-  appManageSubdomain: manage
-  appManageDomain: manage.klicker.stg.example.df-app.ch
-  appStudentSubdomain: pwa
-  appStudentDomain: pwa.klicker.stg.example.df-app.ch
-  appControlSubdomain: control
-  appControlDomain: control.klicker.stg.example.df-app.ch
-
-  notifications:
-    supportEmail: klicker.support@uzh.ch
-
-  redisCache:
-    port: 6379
-    tls: false
-
-  redisExec:
-    port: 6379
-    tls: true
-
   autoscaling:
     enabled: false
+
+  image:
+    tag: clean-argocd
+
+  appManageSubdomain: manage
+  appStudentSubdomain: pwa
+  appControlSubdomain: control
+
+  debug: true
+  apiDomain: backend-sls.klicker-qa.stg.df-app.ch
+  appManageDomain: manage.klicker-qa.stg.df-app.ch
+  appStudentDomain: assessment.klicker-qa.stg.df-app.ch
+  appControlDomain: control.klicker-qa.stg.df-app.ch
+  cookieDomain: .klicker-qa.stg.df-app.ch
 
   ingress:
     className: haproxy
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
     hosts:
-      - host: api.klicker.stg.example.df-app.ch
+      - host: api.klicker.stg.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-backend-graphql-tls
         hosts:
-          - api.klicker.stg.example.df-app.ch
+          - api.klicker.stg.df-app.ch
 
   strategy:
     type: Recreate
@@ -222,10 +249,8 @@ backendGraphql:
 olatApi:
   priorityClassName: staging-workload
 
-  replicaCount: 1
-
   image:
-    tag: v3-assessment
+    tag: clean-argocd
 
   autoscaling:
     enabled: false
@@ -235,14 +260,14 @@ olatApi:
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
     hosts:
-      - host: olat-api.klicker.stg.example.df-app.ch
+      - host: olat-api.klicker.stg.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-olat-api-tls
         hosts:
-          - olat-api.klicker.stg.example.df-app.ch
+          - olat-api.klicker.stg.df-app.ch
 
   strategy:
     type: Recreate
@@ -258,41 +283,191 @@ olatApi:
 lti:
   priorityClassName: staging-workload
 
-  replicaCount: 1
+  redirectURL: https://lti.klicker.stg.df-app.ch
+  url: https://exp.olat.uzh.ch
+  name: OLAT UZH
+  authEndpoint: https://exp.olat.uzh.ch/lti/auth
+  tokenEndpoint: https://exp.olat.uzh.ch/lti/token
+  keysEndpoint: https://exp.olat.uzh.ch/lti/keys
+  cookieDomain: .klicker.stg.df-app.ch
 
   image:
-    tag: v3-assessment
-
-  redirectURL: https://lti.klicker.stg.example.df-app.ch
-  cookieDomain: .klicker.stg.example.df-app.ch
-  name: OLAT UZH
-  url: https://lms.uzh.ch
-  authEndpoint: https://lms.uzh.ch/lti/auth
-  tokenEndpoint: https://lms.uzh.ch/lti/token
-  keysEndpoint: https://lms.uzh.ch/lti/keys
+    tag: clean-argocd
 
   ingress:
     className: haproxy
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
     hosts:
-      - host: lti.klicker.stg.example.df-app.ch
+      - host: lti.klicker.stg.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-lti-tls
         hosts:
-          - lti.klicker.stg.example.df-app.ch
+          - lti.klicker.stg.df-app.ch
 
-  db:
-    type: postgres
-    port: 5432
-    name: klicker-lti-stg
-    username: 4f0ec58f635edc1b
+responseApi:
+  corsAllowedOrigins: 'https://pwa.klicker-qa.stg.df-app.ch'
+
+  priorityClassName: staging-workload
+
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/response-api
+    pullPolicy: Always
+
+  autoscaling:
+    enabled: false
+
+  ingress:
+    className: haproxy
+    annotations:
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+    hosts:
+      - host: response-api.klicker-qa.stg.df-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-qa-response-api-tls
+        hosts:
+          - response-api.klicker-qa.stg.df-app.ch
+
+  strategy:
+    type: Recreate
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
 
 redis:
   priorityClassName: staging-workload
   architecture: standalone
   auth:
     enabled: false
+
+assessment:
+  frontendPWA:
+    priorityClassName: staging-workload
+
+    autoscaling:
+      enabled: false
+
+    image:
+      repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment
+      tag: clean-argocd
+
+    ingress:
+      className: haproxy
+      annotations:
+        cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+      hosts:
+        - host: assessment.klicker-qa.stg.df-app.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: klicker-qa-frontend-assessment-tls
+          hosts:
+            - assessment.klicker-qa.stg.df-app.ch
+
+    strategy:
+      type: Recreate
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 50Mi
+      limits:
+        cpu: 200m
+        memory: 200Mi
+
+  backendGraphql:
+    priorityClassName: staging-workload
+
+    autoscaling:
+      enabled: false
+
+    appManageSubdomain: manage
+    appStudentSubdomain: assessment
+    appControlSubdomain: control
+
+    debug: true
+    apiDomain: backend-sls.klicker-qa.stg.df-app.ch
+    appManageDomain: manage.klicker-qa.stg.df-app.ch
+    appStudentDomain: assessment.klicker-qa.stg.df-app.ch
+    appControlDomain: control.klicker-qa.stg.df-app.ch
+    cookieDomain: .klicker-qa.stg.df-app.ch
+
+    # Enable dual Redis mode for parallel testing
+    dualRedisMode: true
+
+    # Preserve Redis data after quiz ends for comparison
+    preserveRedisForComparison: true
+
+    ingress:
+      className: haproxy
+      annotations:
+        cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+      hosts:
+        - host: assessment-api.klicker-qa.stg.df-app.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: klicker-qa-backend-assessment-tls
+          hosts:
+            - assessment-api.klicker-qa.stg.df-app.ch
+
+    strategy:
+      type: Recreate
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 50Mi
+      limits:
+        cpu: 200m
+        memory: 200Mi
+
+  responseApi:
+    corsAllowedOrigins: 'https://assessment.klicker-qa.stg.df-app.ch'
+
+    priorityClassName: staging-workload
+
+    replicaCount: 1
+
+    autoscaling:
+      enabled: false
+
+    ingress:
+      className: haproxy
+      annotations:
+        cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+      hosts:
+        - host: response-api-assessment.klicker-qa.stg.df-app.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: klicker-qa-response-api-assessment-tls
+          hosts:
+            - response-api-assessment.klicker-qa.stg.df-app.ch
+
+    strategy:
+      type: Recreate
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 50Mi
+      limits:
+        cpu: 200m
+        memory: 200Mi

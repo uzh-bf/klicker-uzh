@@ -13,28 +13,7 @@ data:
   APP_MANAGE_SUBDOMAIN: {{ .Values.assessment.backendGraphql.appManageSubdomain | quote }}
   APP_STUDENT_SUBDOMAIN: {{ .Values.assessment.backendGraphql.appStudentSubdomain | quote }}
   APP_CONTROL_SUBDOMAIN: {{ .Values.assessment.backendGraphql.appControlSubdomain | quote }}
-  NOTIFICATION_URL: {{ .Values.assessment.backendGraphql.notifications.url | quote }}
-  NOTIFICATION_SUPPORT_MAIL: {{ .Values.assessment.backendGraphql.notifications.supportEmail | quote }}
   COOKIE_DOMAIN: {{ .Values.assessment.backendGraphql.cookieDomain | quote }}
-  REDIS_CACHE_HOST: {{ .Values.assessment.backendGraphql.redisCache.host | quote }}
-  REDIS_CACHE_PORT: {{ .Values.assessment.backendGraphql.redisCache.port | quote }}
-  BLOB_STORAGE_ACCOUNT_NAME: {{ .Values.blobStorage.accountName | quote }}
-  EMAIL_TYPE: {{ .Values.email.type | quote }}
-  EMAIL_FROM: {{ .Values.email.from | quote }}
-  EMAIL_HOST: {{ .Values.email.host | quote }}
-  EMAIL_PORT: {{ .Values.email.port | quote }}
-  EMAIL_USER: {{ .Values.email.username | quote }}
-  EMAIL_SECURE: {{ .Values.email.secure | quote }}
-  EMAIL_STARTTLS: {{ .Values.email.requireTLS | quote }}
-  {{- if .Values.assessment.backendGraphql.redisCache.tls }}
-  REDIS_CACHE_TLS: {{ .Values.assessment.backendGraphql.redisCache.tls | quote }}
-  {{ end }}
-  REDIS_HOST: {{ .Values.backendGraphql.redisExec.host | quote }}
-  REDIS_PORT: {{ .Values.backendGraphql.redisExec.port | quote }}
-  REDIS_TLS: {{ .Values.backendGraphql.redisExec.tls | quote }}
-  REDIS_ASSESSMENT_HOST: {{ .Values.assessment.backendGraphql.redisExec.host | quote }}
-  REDIS_ASSESSMENT_PORT: {{ .Values.assessment.backendGraphql.redisExec.port | quote }}
-  REDIS_ASSESSMENT_TLS: {{ .Values.assessment.backendGraphql.redisExec.tls | quote }}
   {{- if .Values.assessment.backendGraphql.debug }}
   DEBUG: {{ .Values.assessment.backendGraphql.debug | quote }}
   {{ end }}
@@ -42,9 +21,6 @@ data:
   HEARTBEAT_DAILY_GROUP_SCORES: {{ .Values.heartbeats.dailyGroupScores | quote }}
   {{ end }}
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
-  HATCHET_CLIENT_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
   # Deprecated - kept for backward compatibility during transition
-  HATCHET_TENANT_ID: {{ .Values.hatchet.client.tenantId | quote }}
-  HATCHET_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
   ASSESSMENT_MODE: 'true'
