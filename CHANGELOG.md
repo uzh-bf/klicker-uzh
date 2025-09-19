@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.21](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.20...v3.4.0-alpha.21) (2025-09-19)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that open overview functionality only forwards to course overview if sufficient permissions are available ([#4928](https://github.com/uzh-bf/klicker-uzh/issues/4928)) ([f50e492](https://github.com/uzh-bf/klicker-uzh/commit/f50e4925ece84b3d1e3b1c290a2f4d8d17253daa))
+
 ## [3.4.0-alpha.20](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.19...v3.4.0-alpha.20) (2025-09-18)
 
 ## [3.4.0-alpha.19](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.18...v3.4.0-alpha.19) (2025-09-18)
