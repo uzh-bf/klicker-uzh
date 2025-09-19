@@ -144,14 +144,14 @@ chat:
 
   ingress:
     hosts:
-      - host: chat.klicker.uzh.ch
+      - host: chat-fake.klicker.uzh.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-prod-frontend-chat-tls-uzh
         hosts:
-          - chat.klicker.uzh.ch
+          - chat-fake.klicker.uzh.ch
 
   strategy:
     type: RollingUpdate
@@ -627,10 +627,20 @@ assessment:
           paths:
             - path: /
               pathType: ImplementationSpecific
+        - host: assessment-api.klicker.uzh.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+        - host: chat.klicker.uzh.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
       tls:
         - secretName: klicker-prod-backend-assessment-tls
           hosts:
             - assessment-api.klicker-prod.bf-app.ch
+            - assessment-api.klicker.uzh.ch
+            - chat.klicker.uzh.ch
 
     strategy:
       type: RollingUpdate
