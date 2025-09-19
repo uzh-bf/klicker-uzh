@@ -14,7 +14,7 @@ hatchet:
         tag: '${APP_VERSION}'
     responseProcessor:
       image:
-        tag: '${APP_VERSION}'
+        tag: 'v3.4.0-alpha.22'
 
 email:
   type: '${EMAIL_TYPE}'
