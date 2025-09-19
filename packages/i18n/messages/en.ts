@@ -1211,6 +1211,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       enableLiveQuizPointsModification:
         'Modify base, correctness and bonus points',
       bonusTime: 'Bonus time',
+      bonusTimeNonNegative:
+        'The time period during which bonus points are awarded must be at least 1 second. To not award any bonus points, set the bonus points to 0.',
       noActivitiesWillBeUpdated: 'No activities will be updated',
       nActivitiesWillBeUpdated: '{number} activities will be updated',
       activityContainsNoElements:
