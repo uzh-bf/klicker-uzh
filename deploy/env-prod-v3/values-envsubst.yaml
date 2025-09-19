@@ -42,7 +42,7 @@ auth:
 
 chat:
   image:
-    tag: '${APP_VERSION}'
+    tag: '${APP_VERSION_CHAT}'
 
   azure:
     resourceName: '${AZURE_RESOURCE_NAME}'
