@@ -260,10 +260,15 @@ backendGraphql:
         paths:
           - path: /
             pathType: ImplementationSpecific
+      - host: backend-sls.klicker.stg.df-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
     tls:
       - secretName: klicker-backend-graphql-tls
         hosts:
           - api.klicker.stg.df-app.ch
+          - backend-sls.klicker.stg.df-app.ch
 
   strategy:
     type: Recreate
