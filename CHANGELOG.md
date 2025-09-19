@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.23](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.22...v3.4.0-alpha.23) (2025-09-19)
+
+
+### Bug Fixes
+
+* use assessment-api.klicker.uzh.ch ([b78447a](https://github.com/uzh-bf/klicker-uzh/commit/b78447a7e71fb1479391bd61dc81aa79e1c90c98))
+
 ## [3.4.0-alpha.22](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.21...v3.4.0-alpha.22) (2025-09-19)
 
 
