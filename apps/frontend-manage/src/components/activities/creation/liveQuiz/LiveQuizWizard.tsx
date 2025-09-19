@@ -314,6 +314,13 @@ function LiveQuizWizard({
     [createLiveQuiz, editMode, editLiveQuiz, initialValues?.id]
   )
 
+  const isActivityReviewer =
+    creationData?.createLiveQuiz?.isActivityReviewer ??
+    editingData?.editLiveQuiz?.isActivityReviewer
+  const selectedCourseId =
+    creationData?.createLiveQuiz?.courseId ??
+    editingData?.editLiveQuiz?.courseId
+
   return (
     <WizardLayout
       title={title}
@@ -341,9 +348,8 @@ function LiveQuizWizard({
           name={formData.name}
           editMode={editMode}
           viewElementHref={
-            (creationData?.createLiveQuiz?.courseId ??
-            editingData?.editLiveQuiz?.courseId)
-              ? `/courses/${formData.courseId}?tab=liveQuizzes`
+            isActivityReviewer && selectedCourseId
+              ? `/courses/${selectedCourseId}?tab=liveQuizzes`
               : '/activities'
           }
           onRestartForm={() => {
