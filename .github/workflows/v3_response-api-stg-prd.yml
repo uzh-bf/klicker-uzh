@@ -1,4 +1,4 @@
-name: Build Docker image for lti (stg)
+name: Build Docker image for response-api (stg/prd)
 
 on:
   push:
@@ -9,8 +9,8 @@ on:
     # branches: [ "v3" ]
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
-      - 'apps/lti/**'
-      - '.github/workflows/v3_lti**'
+      - 'apps/response-api/**'
+      - '.github/workflows/v3_response-api**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -18,7 +18,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/lti-arm
+  IMAGE_NAME: ${{ github.repository }}/response-api-arm
 
 jobs:
   build:
@@ -54,7 +54,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: apps/lti/Dockerfile
+          file: apps/response-api/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/arm64

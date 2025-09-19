@@ -36,6 +36,7 @@ yarn-error.log*
 !.env.qa
 !.env.development
 !.env.stg
+!.env.prd
 
 !.env.local.example
 

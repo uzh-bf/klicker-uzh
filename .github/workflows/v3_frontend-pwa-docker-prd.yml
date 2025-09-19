@@ -1,4 +1,4 @@
-name: Build Docker image for analytics (stg)
+name: Build Docker image for frontend-pwa (prd)
 
 on:
   push:
@@ -9,8 +9,8 @@ on:
     # branches: [ "v3" ]
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
-      - 'apps/analytics/**'
-      - '.github/workflows/v3_analytics**'
+      - 'apps/frontend-pwa/**'
+      - '.github/workflows/v3_frontend-pwa**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -18,7 +18,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/analytics-arm
+  IMAGE_NAME: ${{ github.repository }}/frontend-pwa-arm-prd
 
 jobs:
   build:
@@ -31,8 +31,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Run util/sync-schema.sh
-        run: util/sync-schema.sh
+      - name: Prepare filesystem
+        shell: bash
+        run: |
+          rm apps/frontend-pwa/.env.production
+          mv apps/frontend-pwa/.env.prd apps/frontend-pwa/.env.production
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -41,6 +44,7 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: Log into registry ${{ env.REGISTRY }}
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v2
         with:
           registry: ${{ env.REGISTRY }}
@@ -54,11 +58,13 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           context: .
-          file: apps/analytics/Dockerfile
+          file: apps/frontend-pwa/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/arm64
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            NEXT_PUBLIC_ENV=${{ startsWith(github.ref, 'refs/tags/') && 'production' || 'staging' }}

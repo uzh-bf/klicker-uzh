@@ -1,18 +1,18 @@
-dfDomain: stg.df-app.ch
+dfDomain: prd.df-app.ch
 
 heartbeats:
   dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
 
 global:
   appOrigins:
-    api: 'https://backend-sls.klicker.stg.df-app.ch'
-    auth: 'https://auth.klicker.stg.df-app.ch'
-    lti: 'https://lti.klicker.stg.df-app.ch'
-    pwa: 'https://pwa.klicker.stg.df-app.ch'
-    manage: 'https://manage.klicker.stg.df-app.ch'
-    control: 'https://control.klicker.stg.df-app.ch'
-    assessmentApi: 'https://assessment-api.klicker.stg.df-app.ch'
-    assessmentPwa: 'https://assessment.klicker.stg.df-app.ch'
+    api: 'https://backend-sls.klicker.prd.df-app.ch'
+    auth: 'https://auth.klicker.prd.df-app.ch'
+    lti: 'https://lti.klicker.prd.df-app.ch'
+    pwa: 'https://pwa.klicker.prd.df-app.ch'
+    manage: 'https://manage.klicker.prd.df-app.ch'
+    control: 'https://control.klicker.prd.df-app.ch'
+    assessmentApi: 'https://assessment-api.klicker.prd.df-app.ch'
+    assessmentPwa: 'https://assessment.klicker.prd.df-app.ch'
 
 hatchet:
   client:
@@ -20,47 +20,47 @@ hatchet:
     apiUrl: 'http://hatchet-qa-api:8080'
   workers:
     general:
-      replicaCount: 1
-      priorityClassName: staging-workload
+      replicaCount: 2
+      priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: Always
         tag: clean-argocd
 
     responseProcessor:
-      replicaCount: 1
-      priorityClassName: staging-workload
+      replicaCount: 4
+      priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
         tag: clean-argocd
 
 auth:
-  priorityClassName: staging-workload
+  priorityClassName: production-workload
 
-  replicaCount: 1
+  replicaCount: 3
 
   autoscaling:
     enabled: false
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
+    repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm-prd
     pullPolicy: Always
     tag: clean-argocd
 
   ingress:
     annotations:
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
     className: haproxy
     hosts:
-      - host: auth.klicker.stg.df-app.ch
+      - host: auth.klicker.prd.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-frontend-auth-tls
         hosts:
-          - auth.klicker.stg.df-app.ch
+          - auth.klicker.prd.df-app.ch
 
   strategy:
     type: RollingUpdate
@@ -75,7 +75,7 @@ auth:
       memory: 200Mi
 
 chat:
-  priorityClassName: staging-workload
+  priorityClassName: production-workload
 
   replicaCount: 1
 
@@ -83,23 +83,23 @@ chat:
     enabled: false
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
+    repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm-prd
     pullPolicy: Always
     tag: clean-argocd
 
   ingress:
     annotations:
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
     className: haproxy
     hosts:
-      - host: chat.klicker.stg.df-app.ch
+      - host: chat.klicker.prd.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-frontend-chat-tls
         hosts:
-          - chat.klicker.stg.df-app.ch
+          - chat.klicker.prd.df-app.ch
 
   strategy:
     type: RollingUpdate
@@ -114,31 +114,31 @@ chat:
       memory: 200Mi
 
 frontendPWA:
-  priorityClassName: staging-workload
+  priorityClassName: production-workload
 
-  replicaCount: 1
+  replicaCount: 3
 
   autoscaling:
     enabled: false
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
+    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm-prd
     pullPolicy: Always
     tag: clean-argocd
 
   ingress:
     className: haproxy
     annotations:
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
     hosts:
-      - host: pwa.klicker.stg.df-app.ch
+      - host: pwa.klicker.prd.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-frontend-pwa-tls
         hosts:
-          - pwa.klicker.stg.df-app.ch
+          - pwa.klicker.prd.df-app.ch
 
   strategy:
     type: Recreate
@@ -152,31 +152,31 @@ frontendPWA:
       memory: 200Mi
 
 frontendManage:
-  priorityClassName: staging-workload
+  priorityClassName: production-workload
 
-  replicaCount: 1
+  replicaCount: 3
 
   autoscaling:
     enabled: false
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
+    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm-prd
     pullPolicy: Always
     tag: clean-argocd
 
   ingress:
     className: haproxy
     annotations:
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
     hosts:
-      - host: manage.klicker.stg.df-app.ch
+      - host: manage.klicker.prd.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-frontend-manage-tls
         hosts:
-          - manage.klicker.stg.df-app.ch
+          - manage.klicker.prd.df-app.ch
 
   strategy:
     type: Recreate
@@ -190,12 +190,12 @@ frontendManage:
       memory: 200Mi
 
 frontendControl:
-  priorityClassName: staging-workload
+  priorityClassName: production-workload
 
   replicaCount: 1
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
+    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm-prd
     pullPolicy: Always
     tag: clean-argocd
 
@@ -205,16 +205,16 @@ frontendControl:
   ingress:
     className: haproxy
     annotations:
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
     hosts:
-      - host: control.klicker.stg.df-app.ch
+      - host: control.klicker.prd.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-frontend-control-tls
         hosts:
-          - control.klicker.stg.df-app.ch
+          - control.klicker.prd.df-app.ch
 
   strategy:
     type: Recreate
@@ -228,9 +228,9 @@ frontendControl:
       memory: 200Mi
 
 backendGraphql:
-  priorityClassName: staging-workload
+  priorityClassName: production-workload
 
-  replicaCount: 1
+  replicaCount: 3
 
   autoscaling:
     enabled: false
@@ -245,30 +245,30 @@ backendGraphql:
   appControlSubdomain: control
 
   debug: true
-  apiDomain: backend-sls.klicker.stg.df-app.ch
-  appManageDomain: manage.klicker.stg.df-app.ch
-  appStudentDomain: assessment.klicker.stg.df-app.ch
-  appControlDomain: control.klicker.stg.df-app.ch
-  cookieDomain: .klicker.stg.df-app.ch
+  apiDomain: backend-sls.klicker.prd.df-app.ch
+  appManageDomain: manage.klicker.prd.df-app.ch
+  appStudentDomain: assessment.klicker.prd.df-app.ch
+  appControlDomain: control.klicker.prd.df-app.ch
+  cookieDomain: .klicker.prd.df-app.ch
 
   ingress:
     className: haproxy
     annotations:
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
     hosts:
-      - host: api.klicker.stg.df-app.ch
+      - host: api.klicker.prd.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
-      - host: backend-sls.klicker.stg.df-app.ch
+      - host: backend-sls.klicker.prd.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-backend-graphql-tls
         hosts:
-          - api.klicker.stg.df-app.ch
-          - backend-sls.klicker.stg.df-app.ch
+          - api.klicker.prd.df-app.ch
+          - backend-sls.klicker.prd.df-app.ch
 
   strategy:
     type: Recreate
@@ -282,7 +282,7 @@ backendGraphql:
       memory: 200Mi
 
 olatApi:
-  priorityClassName: staging-workload
+  priorityClassName: production-workload
 
   replicaCount: 1
 
@@ -297,16 +297,16 @@ olatApi:
   ingress:
     className: haproxy
     annotations:
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
     hosts:
-      - host: olat-api.klicker.stg.df-app.ch
+      - host: olat-api.klicker.prd.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-olat-api-tls
         hosts:
-          - olat-api.klicker.stg.df-app.ch
+          - olat-api.klicker.prd.df-app.ch
 
   strategy:
     type: Recreate
@@ -320,15 +320,15 @@ olatApi:
       memory: 200Mi
 
 lti:
-  priorityClassName: staging-workload
-  replicaCount: 1
-  redirectURL: https://lti.klicker.stg.df-app.ch
+  priorityClassName: production-workload
+  replicaCount: 2
+  redirectURL: https://lti.klicker.prd.df-app.ch
   url: https://exp.olat.uzh.ch
   name: OLAT UZH
   authEndpoint: https://exp.olat.uzh.ch/lti/auth
   tokenEndpoint: https://exp.olat.uzh.ch/lti/token
   keysEndpoint: https://exp.olat.uzh.ch/lti/keys
-  cookieDomain: .klicker.stg.df-app.ch
+  cookieDomain: .klicker.prd.df-app.ch
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
@@ -338,23 +338,23 @@ lti:
   ingress:
     className: haproxy
     annotations:
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
     hosts:
-      - host: lti.klicker.stg.df-app.ch
+      - host: lti.klicker.prd.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-lti-tls
         hosts:
-          - lti.klicker.stg.df-app.ch
+          - lti.klicker.prd.df-app.ch
 
 responseApi:
-  corsAllowedOrigins: 'https://pwa.klicker.stg.df-app.ch'
+  corsAllowedOrigins: 'https://pwa.klicker.prd.df-app.ch'
 
-  priorityClassName: staging-workload
+  priorityClassName: production-workload
 
-  replicaCount: 1
+  replicaCount: 4
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
@@ -367,16 +367,16 @@ responseApi:
   ingress:
     className: haproxy
     annotations:
-      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
     hosts:
-      - host: response-api.klicker.stg.df-app.ch
+      - host: response-api.klicker.prd.df-app.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-response-api-tls
         hosts:
-          - response-api.klicker.stg.df-app.ch
+          - response-api.klicker.prd.df-app.ch
 
   strategy:
     type: Recreate
@@ -391,29 +391,29 @@ responseApi:
 
 assessment:
   frontendPWA:
-    priorityClassName: staging-workload
-    replicaCount: 1
+    priorityClassName: production-workload
+    replicaCount: 3
     autoscaling:
       enabled: false
 
     image:
-      repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
+      repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm-prd
       pullPolicy: Always
       tag: clean-argocd
 
     ingress:
       className: haproxy
       annotations:
-        cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+        cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
       hosts:
-        - host: assessment.klicker.stg.df-app.ch
+        - host: assessment.klicker.prd.df-app.ch
           paths:
             - path: /
               pathType: ImplementationSpecific
       tls:
         - secretName: klicker-frontend-assessment-tls
           hosts:
-            - assessment.klicker.stg.df-app.ch
+            - assessment.klicker.prd.df-app.ch
 
     strategy:
       type: Recreate
@@ -427,8 +427,8 @@ assessment:
         memory: 200Mi
 
   backendGraphql:
-    priorityClassName: staging-workload
-    replicaCount: 1
+    priorityClassName: production-workload
+    replicaCount: 3
     autoscaling:
       enabled: false
 
@@ -442,11 +442,11 @@ assessment:
     appControlSubdomain: control
 
     debug: true
-    apiDomain: backend-sls.klicker.stg.df-app.ch
-    appManageDomain: manage.klicker.stg.df-app.ch
-    appStudentDomain: assessment.klicker.stg.df-app.ch
-    appControlDomain: control.klicker.stg.df-app.ch
-    cookieDomain: .klicker.stg.df-app.ch
+    apiDomain: backend-sls.klicker.prd.df-app.ch
+    appManageDomain: manage.klicker.prd.df-app.ch
+    appStudentDomain: assessment.klicker.prd.df-app.ch
+    appControlDomain: control.klicker.prd.df-app.ch
+    cookieDomain: .klicker.prd.df-app.ch
 
     # Enable dual Redis mode for parallel testing
     dualRedisMode: true
@@ -457,16 +457,16 @@ assessment:
     ingress:
       className: haproxy
       annotations:
-        cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+        cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
       hosts:
-        - host: assessment-api.klicker.stg.df-app.ch
+        - host: assessment-api.klicker.prd.df-app.ch
           paths:
             - path: /
               pathType: ImplementationSpecific
       tls:
         - secretName: klicker-backend-assessment-tls
           hosts:
-            - assessment-api.klicker.stg.df-app.ch
+            - assessment-api.klicker.prd.df-app.ch
 
     strategy:
       type: Recreate
@@ -480,11 +480,11 @@ assessment:
         memory: 200Mi
 
   responseApi:
-    corsAllowedOrigins: 'https://assessment.klicker.stg.df-app.ch'
+    corsAllowedOrigins: 'https://assessment.klicker.prd.df-app.ch'
 
-    priorityClassName: staging-workload
+    priorityClassName: production-workload
 
-    replicaCount: 1
+    replicaCount: 3
 
     autoscaling:
       enabled: false
@@ -497,16 +497,16 @@ assessment:
     ingress:
       className: haproxy
       annotations:
-        cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+        cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
       hosts:
-        - host: response-api-assessment.klicker.stg.df-app.ch
+        - host: response-api-assessment.klicker.prd.df-app.ch
           paths:
             - path: /
               pathType: ImplementationSpecific
       tls:
         - secretName: klicker-response-api-assessment-tls
           hosts:
-            - response-api-assessment.klicker.stg.df-app.ch
+            - response-api-assessment.klicker.prd.df-app.ch
 
     strategy:
       type: Recreate

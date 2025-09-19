@@ -1,4 +1,4 @@
-name: Build Docker image for hatchet-worker-general (stg)
+name: Build Docker image for hatchet-worker-response-processor (stg/prd)
 
 on:
   push:
@@ -10,10 +10,10 @@ on:
     # branches: [ "v3" ]
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
-      - 'apps/hatchet-worker-general/**'
+      - 'apps/hatchet-worker-response-processor/**'
       # - 'packages/graphql/**'
       # - 'packages/prisma/**'
-      - '.github/workflows/v3_hatchet-worker-general**'
+      - '.github/workflows/v3_hatchet-worker-response-processor**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -21,7 +21,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/hatchet-worker-general-arm
+  IMAGE_NAME: ${{ github.repository }}/hatchet-worker-response-processor-arm
 
 jobs:
   build:
@@ -58,7 +58,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: apps/hatchet-worker-general/Dockerfile
+          file: apps/hatchet-worker-response-processor/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/arm64
