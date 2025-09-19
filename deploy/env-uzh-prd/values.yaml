@@ -397,7 +397,7 @@ assessment:
       enabled: false
 
     image:
-      repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm-prd
+      repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm-prd
       pullPolicy: Always
       tag: clean-argocd
 
