@@ -1329,6 +1329,112 @@ describe('@klicker-uzh/grading', () => {
       roundedResult: true,
     })
     expect(roundedPoints2).toEqual(27)
+
+    // make sure that negative response timestamps with respect to the first response default to same time
+    const edgeCase1 = computeAwardedPoints({
+      firstResponseReceivedAt: '1000',
+      responseTimestamp: 500,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: 5,
+      pointsPercentage: 1,
+      basePoints: true,
+      roundedResult: true,
+    })
+    expect(edgeCase1).toEqual(45)
+
+    // make sure that zero time to zero bonus does not cause division by zero -> defaults to 1
+    const edgeCase2 = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 20,
+      timeToZeroBonus: 0,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: 5,
+      pointsPercentage: 1,
+      basePoints: true,
+      roundedResult: true,
+    })
+    expect(edgeCase2).toEqual(35)
+
+    // make sure that negative base points are not accepted -> default to zero
+    const edgeCase3 = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: -10,
+      defaultCorrectPoints: 5,
+      pointsPercentage: 1,
+      basePoints: true,
+      roundedResult: true,
+    })
+    expect(edgeCase3).toEqual(35)
+
+    // make sure that negative correctness points are not accepted -> default to zero
+    const edgeCase4 = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: -5,
+      pointsPercentage: 1,
+      basePoints: true,
+      roundedResult: true,
+    })
+    expect(edgeCase4).toEqual(40)
+
+    // make sure that negative bonus points are not accepted -> default to zero
+    const edgeCase5 = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: -30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: 15,
+      pointsPercentage: 1,
+      basePoints: true,
+      roundedResult: true,
+    })
+    expect(edgeCase5).toEqual(25)
+
+    // make sure that zero or negative multipliers are not accepted -> default to 1
+    const edgeCase6 = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: 5,
+      pointsPercentage: 1,
+      basePoints: true,
+      pointsMultiplier: 0,
+      roundedResult: true,
+    })
+    expect(edgeCase6).toEqual(45)
+
+    const edgeCase7 = computeAwardedPoints({
+      firstResponseReceivedAt: null,
+      responseTimestamp: 2000,
+      maxBonus: 30,
+      timeToZeroBonus: 20,
+      getsMaxPoints: false,
+      defaultPoints: 10,
+      defaultCorrectPoints: 5,
+      pointsPercentage: 1,
+      basePoints: true,
+      pointsMultiplier: -3,
+      roundedResult: true,
+    })
+    expect(edgeCase7).toEqual(45)
   })
 
   it('should compute the awarded points correctly for practice quizzes and microlearnings', () => {
