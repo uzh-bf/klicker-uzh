@@ -9,8 +9,7 @@ global:
     pwa: 'https://pwa.klicker.uzh.ch'
     manage: 'https://manage.klicker.uzh.ch'
     control: 'https://control.klicker.uzh.ch'
-    # assessmentApi: 'https://assessment-api.klicker.uzh.ch'
-    assessmentApi: 'https://chat.klicker.uzh.ch'
+    assessmentApi: 'https://assessment-api.klicker.uzh.ch'
     assessmentPwa: 'https://assessment.klicker.uzh.ch'
 
 hatchet:
@@ -144,14 +143,14 @@ chat:
 
   ingress:
     hosts:
-      - host: chat-fake.klicker.uzh.ch
+      - host: chat.klicker.uzh.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-prod-frontend-chat-tls-uzh
         hosts:
-          - chat-fake.klicker.uzh.ch
+          - chat.klicker.uzh.ch
 
   strategy:
     type: RollingUpdate
@@ -631,16 +630,11 @@ assessment:
           paths:
             - path: /
               pathType: ImplementationSpecific
-        - host: chat.klicker.uzh.ch
-          paths:
-            - path: /
-              pathType: ImplementationSpecific
       tls:
         - secretName: klicker-prod-backend-assessment-tls
           hosts:
             - assessment-api.klicker-prod.bf-app.ch
             - assessment-api.klicker.uzh.ch
-            - chat.klicker.uzh.ch
 
     strategy:
       type: RollingUpdate

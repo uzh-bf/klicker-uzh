@@ -32,7 +32,8 @@ module.exports = {
         filename: `${path}package.json`,
         type: 'json',
       })
-    }
+    },
+    []
     // [
     //   {
     //     filename: `deploy/charts/klicker-uzh-v2/Chart.yaml`,
