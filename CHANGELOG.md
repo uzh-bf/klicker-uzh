@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.22](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.21...v3.4.0-alpha.22) (2025-09-19)
+
+
+### Bug Fixes
+
+* **apps/hatchet-worker-response-processor:** handle NaN values correctly when creating live quiz responses ([03f96a7](https://github.com/uzh-bf/klicker-uzh/commit/03f96a71965352cd5f45bb17de6c3c4dc9ce9e5a))
+* **deploy:** restore chat as assessment api ([78f90ea](https://github.com/uzh-bf/klicker-uzh/commit/78f90ea32c886144a9a5471d51ed62132af32758))
+
 ## [3.4.0-alpha.21](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.20...v3.4.0-alpha.21) (2025-09-19)
 
 
