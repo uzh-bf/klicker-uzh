@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.24](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.23...v3.4.0-alpha.24) (2025-09-19)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** move chatbot redirection page into course ([01ef1c3](https://github.com/uzh-bf/klicker-uzh/commit/01ef1c372060959b8077f060b919ec7d69a41de4))
+
 ## [3.4.0-alpha.23](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.22...v3.4.0-alpha.23) (2025-09-19)
 
 
