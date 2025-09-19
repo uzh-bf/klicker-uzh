@@ -79,9 +79,6 @@ function GroupActivityWizard({
 }: GroupActivityWizardProps) {
   const t = useTranslations()
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
-  const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>(
-    undefined
-  )
   const [activeStep, setActiveStep] = useState(0)
   const [stepValidity, setStepValidity] = useState<boolean[]>(
     Array(4).fill(!!initialValues)
@@ -303,8 +300,12 @@ function GroupActivityWizard({
     courseId: initialValues?.course?.id || formDefaultValues.courseId,
   })
 
-  const [createGroupActivity] = useMutation(CreateGroupActivityDocument)
-  const [editGroupActivity] = useMutation(EditGroupActivityDocument)
+  const [createGroupActivity, { data: creationData }] = useMutation(
+    CreateGroupActivityDocument
+  )
+  const [editGroupActivity, { data: editingData }] = useMutation(
+    EditGroupActivityDocument
+  )
 
   const handleSubmit = useCallback(
     async (values: GroupActivityFormValues) => {
@@ -315,7 +316,6 @@ function GroupActivityWizard({
         createGroupActivity,
         editGroupActivity,
         setIsWizardCompleted,
-        setSelectedCourseId,
         onError: () =>
           toast({
             type: 'error',
@@ -335,6 +335,13 @@ function GroupActivityWizard({
     },
     [createGroupActivity, editGroupActivity, initialValues?.id]
   )
+
+  const selectedCourseId =
+    creationData?.createGroupActivity?.courseId ??
+    editingData?.editGroupActivity?.courseId
+  const isActivityReviewer =
+    creationData?.createGroupActivity?.isActivityReviewer ??
+    editingData?.editGroupActivity?.isActivityReviewer
 
   return (
     <WizardLayout
@@ -362,7 +369,11 @@ function GroupActivityWizard({
           )}
           name={formData.name}
           editMode={editMode}
-          viewElementHref={`/courses/${selectedCourseId}?tab=groupActivities`}
+          viewElementHref={
+            isActivityReviewer
+              ? `/courses/${selectedCourseId}?tab=groupActivities`
+              : '/activities'
+          }
           onRestartForm={() => {
             setIsWizardCompleted(false)
             closeWizard()
