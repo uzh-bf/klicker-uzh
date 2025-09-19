@@ -422,7 +422,7 @@ export async function manipulateLiveQuiz(
             order: persistentInstanceOrderMap[instance.id],
             options: {
               ...instance.options,
-              pointsMultiplier: multiplier * elementMultiplier,
+              pointsMultiplier: Math.max(multiplier, 1) * elementMultiplier,
             },
           },
         })
