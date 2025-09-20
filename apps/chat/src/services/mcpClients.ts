@@ -194,7 +194,7 @@ export async function getAggregatedMCPTools(
     try {
       const serverTools = await loadServerTools(serverWithConfig, chatbotId)
       Object.assign(aggregatedTools, serverTools)
-    } catch (error) {
+    } catch () {
       console.error(
         `Failed to load tools from ${serverWithConfig.server.name}, continuing with other servers`
       )

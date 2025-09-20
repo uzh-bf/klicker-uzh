@@ -10,6 +10,7 @@ import {
 } from '@/src/services/mcpClients'
 import { createAzure } from '@ai-sdk/azure'
 import { prisma } from '@klicker-uzh/prisma'
+import { Chatbot } from '@klicker-uzh/prisma/client'
 import { safeDecrypt } from '@klicker-uzh/util'
 import {
   convertToModelMessages,
@@ -26,6 +27,28 @@ import { ThreadService } from 'src/services/threads'
 import { z } from 'zod'
 
 export const maxDuration = 30
+
+function getAzureModel(chatbot: Chatbot, modelId: ModelID): LanguageModel {
+  const apiVersion = getModelLink(modelId).split('?api-version=')[1]
+
+  // Use per-chatbot Azure configuration if available, otherwise fallback to environment
+  const apiKey = chatbot?.azureOpenAIKey
+    ? safeDecrypt(chatbot.azureOpenAIKey)
+    : process.env.AZURE_API_KEY
+
+  const resourceName = chatbot?.azureOpenAIEndpoint
+    ? new URL(chatbot.azureOpenAIEndpoint).hostname.split('.')[0]
+    : process.env.AZURE_RESOURCE_NAME || 'klicker-ai'
+
+  const azure = createAzure({
+    resourceName,
+    apiKey,
+    useDeploymentBasedUrls: true,
+    apiVersion: apiVersion || 'preview',
+  })
+
+  return azure(modelId)
+}
 
 /**
  * Main chat endpoint that processes AI conversations with streaming responses.
@@ -141,8 +164,8 @@ export async function POST(
 
   // fetch chatbot with MCP configurations and system prompt
   let systemPrompt = ''
-  let chatbot: any = null
   let mcpServersWithConfigs: MCPServerWithConfig[] = []
+  let chatbot = null
 
   try {
     chatbot = await prisma.chatbot.findUnique({
@@ -179,14 +202,14 @@ export async function POST(
       // Prepare MCP server configurations
       mcpServersWithConfigs =
         chatbot.mcpConfigurations
-          ?.filter((config: any) => config.mcpServer?.isActive === true)
-          ?.map((config: any) => ({
+          ?.filter((config) => config.mcpServer?.isActive === true)
+          ?.map((config) => ({
             server: {
               id: config.mcpServer.id,
               name: config.mcpServer.name,
               url: config.mcpServer.url,
               authType: config.mcpServer.authType,
-              authSecret: config.mcpServer.authSecret,
+              authSecret: config.mcpServer.authSecret ?? '',
               parameters: config.mcpServer.parameters,
             },
             config: {
@@ -248,28 +271,6 @@ export async function POST(
     }
   }
 
-  function getAzureModel(modelId: ModelID): LanguageModel {
-    const apiVersion = getModelLink(modelId).split('?api-version=')[1]
-
-    // Use per-chatbot Azure configuration if available, otherwise fallback to environment
-    const apiKey = chatbot?.azureOpenAIKey
-      ? safeDecrypt(chatbot.azureOpenAIKey)
-      : process.env.AZURE_API_KEY
-
-    const resourceName = chatbot?.azureOpenAIEndpoint
-      ? new URL(chatbot.azureOpenAIEndpoint).hostname.split('.')[0]
-      : process.env.AZURE_RESOURCE_NAME || 'klicker-ai'
-
-    const azure = createAzure({
-      resourceName,
-      apiKey,
-      useDeploymentBasedUrls: true,
-      apiVersion: apiVersion || 'preview',
-    })
-
-    return azure(modelId)
-  }
-
   // track partial content for cancelled streams
   let partialContent = ''
 
@@ -284,8 +285,10 @@ export async function POST(
   // Load MCP tools from database configurations or fallback to legacy
   const mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
 
+  if (!chatbot) return
+
   const result = streamText({
-    model: getAzureModel(selectedModel),
+    model: getAzureModel(chatbot, selectedModel),
     messages: convertToModelMessages(uiMessages),
     tools: mcpTools,
     toolChoice: 'auto',
