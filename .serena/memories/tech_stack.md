@@ -1,156 +1,174 @@
-# Technology Stack
+# Technology Stack Philosophy and Choices
 
-## Frontend Technologies
+## Technology Selection Principles
 
-- **Framework**: Next.js with React
-- **Language**: TypeScript with strict mode
-- **Styling**: TailwindCSS with design system integration
-- **State Management**: Apollo Client for GraphQL state
-- **Forms**: Formik with Yup validation
-- **Data Visualization**: Recharts for analytics
-- **Internationalization**: next-intl for multi-language support
-- **Rich Text**: Slate.js for content editing
-- **Component Library**: @uzh-bf/design-system (custom)
-- **Testing**: Cypress for E2E, Jest for unit tests
+KlickerUZH's technology choices prioritize educational effectiveness, developer productivity, and long-term maintainability over cutting-edge adoption. The stack balances proven stability with strategic innovation in areas that enhance educational outcomes.
 
-## Backend Technologies
+## Frontend Technology Strategy
 
-- **Runtime**: Node.js LTS
-- **API**: GraphQL with Pothos GraphQL schema builder
-- **Database**: PostgreSQL with Prisma ORM
-- **Caching**: Redis (dual instances for execution and general caching)
-- **Workflow Orchestration**: Hatchet for distributed task processing
-- **Message Queue**: Azure Service Bus (transitioning to Hatchet workflows)
-- **Authentication**: JWT with educational identity integration
-- **Real-time**: GraphQL subscriptions with WebSockets
-- **File Storage**: Azure Blob Storage
-- **Email**: Transactional email service integration
+### Framework Choices
 
-## Serverless & Cloud Functions
+**React Ecosystem Selection**:
+- **Rationale**: Large talent pool, extensive educational community, strong TypeScript integration
+- **Educational Benefit**: Component reusability across different learning interfaces
+- **Evolution Path**: Enables gradual adoption of new React features without major rewrites
 
-- **Platform**: Azure Functions for response processing (transitioning to Hatchet workers)
-- **Triggers**: HTTP triggers and Service Bus message triggers
-- **Scaling**: Event-driven autoscaling
-- **Services**:
-  - Real-time response handling
-  - Asynchronous response processing and scoring
+**Next.js Platform Decision**:
+- **Rationale**: Full-stack capabilities reduce complexity, excellent performance characteristics
+- **Educational Benefit**: Server-side rendering improves accessibility and performance on varied devices
+- **Operational Benefit**: Simplified deployment and scaling patterns
 
-## Workflow Orchestration & Task Processing
+### Language and Type Safety
 
-- **Hatchet Workers**: Distributed task processing with worker pattern
-  - **hatchet-worker-general**: General purpose workflow execution
-  - **hatchet-worker-response-processor**: Specialized response processing workflows
-- **Response API**: Dedicated API for response handling and task dispatch
-- **Task Definition**: Shared task definitions in packages/hatchet-tasks
-- **Communication**: gRPC for worker coordination and task distribution
-- **Orchestration**: Event-driven workflow execution with Hatchet platform
+**TypeScript Adoption**:
+- **Rationale**: Prevents runtime errors that could disrupt learning experiences
+- **Developer Productivity**: Enhanced IDE support and refactoring capabilities
+- **Educational Platform Reliability**: Type safety particularly important for assessment and grading logic
 
-## Database & Data Management
+**Strict Type Checking**:
+- **Rationale**: Educational platforms require high reliability and predictability
+- **Quality Assurance**: Catches integration issues early in development process
 
-- **Primary Database**: PostgreSQL (latest stable)
-- **ORM**: Prisma with type-safe database access
-- **Migrations**: Version-controlled schema migrations
-- **Schema Design**: Multi-file organization by business domain
-- **Test Data**: Comprehensive seeding system
-- **Analytics**: Dedicated analytics models and aggregations
+## AI and Machine Learning Integration
 
-## Development Tools & Workflow
+### External AI Service Strategy
 
-### Package Management & Build
+**Azure AI Platform Choice**:
+- **Rationale**: Enterprise-grade reliability needed for educational environments
+- **Cost Management**: Predictable pricing and usage controls
+- **Compliance**: Education-appropriate data handling and privacy controls
+- **Evolution Path**: Access to latest AI capabilities without infrastructure investment
 
-- **Package Manager**: pnpm with workspace support
-- **Monorepo**: Multi-package workspace architecture
-- **Build System**: Turbo for monorepo builds and caching
-- **Bundling**: Next.js built-in bundling and optimization
+**Model Context Protocol (MCP) Adoption**:
+- **Rationale**: Standardized tool integration without vendor lock-in
+- **Educational Benefit**: Enables integration with specialized educational tools
+- **Security**: Controlled access to external capabilities with filtering mechanisms
 
-### Code Quality & Testing
+### Conversational Interface Patterns
 
-- **Linting**: ESLint with framework-specific configurations
-- **Formatting**: Prettier with import organization
-- **Type Checking**: TypeScript strict mode across all packages
-- **Git Hooks**: Husky with lint-staged for pre-commit validation
-- **Testing Stack**:
-  - Cypress: End-to-end testing with real browser automation
-  - Jest: Unit testing for business logic and utilities
-  - Testing Library: React component testing utilities
+**Assistant UI Framework**:
+- **Rationale**: Purpose-built for conversational experiences
+- **Educational Focus**: Optimized for learning-focused interactions
+- **Customization**: Enables educational branding and workflow integration
 
-### Environment & Configuration
+## Backend Architecture Philosophy
 
-- **Secret Management**: Doppler for centralized configuration
-- **Environment Configuration**: Multiple environment support
-- **Local Development**: Custom domain setup with HTTPS
-- **Container Support**: Docker Compose for service orchestration
+### API-First Design
 
-## Local Development Infrastructure
+**GraphQL Adoption**:
+- **Rationale**: Single endpoint simplifies client-server relationships
+- **Educational Benefit**: Enables rich, interconnected educational data models
+- **Developer Experience**: Type-safe end-to-end data flow from database to UI
 
-### Reverse Proxy & Networking
+**Real-time Capabilities**:
+- **Educational Rationale**: Live educational interactions require immediate feedback
+- **Technology Choice**: GraphQL subscriptions provide standardized real-time patterns
 
-- **Reverse Proxy**: Traefik with dynamic service discovery
-- **Local Domains**: Custom domain setup (\*.klicker.com)
-- **SSL/TLS**: mkcert for trusted local certificates
-- **Platform Support**: macOS, WSL, and containerized environments
+### Data Management Strategy
 
-### Development Services
+**PostgreSQL Selection**:
+- **Rationale**: Proven reliability for educational data integrity requirements
+- **Feature Support**: Advanced features support complex educational relationships
+- **Ecosystem**: Strong tooling and operational knowledge base
 
-- **Database**: Containerized PostgreSQL with persistent storage
-- **Cache**: Redis instances for different use cases
-- **Email Testing**: Local SMTP service for development
-- **Monitoring**: Service discovery and health checking
+**Prisma ORM Choice**:
+- **Rationale**: Type-safe database access prevents data integrity issues
+- **Developer Productivity**: Schema-first development with automatic client generation
+- **Migration Safety**: Structured database evolution process
 
-## CI/CD & Deployment
+## Workflow and Processing Architecture
 
-### Continuous Integration
+### Distributed Processing Strategy
 
-- **Platform**: GitHub Actions
-- **Quality Gates**: Automated linting, formatting, and type checking
-- **Testing**: Comprehensive E2E testing with service dependencies
-- **Security**: Static analysis and vulnerability scanning
-- **Code Review**: AI-assisted code review integration
+**Hatchet Platform Adoption**:
+- **Rationale**: Educational workflows often involve complex, multi-step processes
+- **Reliability**: Distributed workflow orchestration with failure recovery
+- **Scalability**: Processing intensive educational tasks without blocking user interactions
 
-### Container & Deployment
+**Worker Pattern Implementation**:
+- **Educational Benefit**: Separates compute-intensive tasks from interactive learning
+- **Resource Management**: Enables appropriate resource allocation for different task types
 
-- **Registry**: GitHub Container Registry
-- **Orchestration**: Kubernetes with Helm charts
-- **Environments**: Separate QA and production deployments
-- **Scaling**: Horizontal Pod Autoscaling based on metrics
-- **Configuration**: Environment-specific value management
+## Development and Quality Tooling
 
-## Integration & External Services
+### Build and Development Strategy
 
-### Authentication Systems
+**Monorepo Architecture**:
+- **Rationale**: Educational platforms benefit from coordinated evolution across applications
+- **Code Reuse**: Shared educational logic and UI patterns across applications
+- **Quality Consistency**: Uniform quality standards across the entire platform
 
-- **Educational Identity**: Swiss Edu-ID federation integration
-- **LTI**: Learning Tools Interoperability for LMS integration
-- **Magic Links**: Email-based passwordless authentication
+**Turbo Build System**:
+- **Rationale**: Efficient builds essential for developer productivity in complex educational platform
+- **Caching Strategy**: Reduces build times for iterative educational feature development
 
-### Third-party Integrations
+### Quality Assurance Philosophy
 
-- **Learning Management Systems**: OLAT, Moodle, Canvas support
-- **Communication**: Microsoft Teams webhook integration
-- **Push Notifications**: Web push with VAPID keys
-- **Email Services**: SMTP integration for notifications
+**Multi-Layer Testing Strategy**:
+- **Educational Rationale**: Learning experiences must be reliable and consistent
+- **Component Testing**: Ensures UI components work correctly in isolation
+- **End-to-End Testing**: Validates complete educational workflows function as intended
 
-## Architecture Patterns
+**Code Quality Automation**:
+- **Rationale**: Consistent quality reduces bugs that could impact learning experiences
+- **Developer Experience**: Automated quality checks prevent quality debt accumulation
 
-### API Design
+## Integration and External Services
 
-- **GraphQL-First**: All client-server communication via GraphQL
-- **Type Safety**: End-to-end type safety from database to frontend
-- **Real-time**: WebSocket subscriptions for live features
-- **Caching**: Multi-layer caching strategy
+### Educational System Integration
 
-### Data Architecture
+**LMS Integration Strategy**:
+- **Rationale**: Educational institutions require integration with existing learning management systems
+- **Standard Compliance**: Support for educational standards like LTI
+- **Data Portability**: Enable smooth data exchange with institutional systems
 
-- **Database-First**: Prisma schema as single source of truth
-- **Event-Driven**: Message queues for async processing
-- **Microservices**: Function-based services for specific concerns
-- **Monorepo**: Shared code via internal packages
+### Authentication and Identity
 
-### Security & Performance
+**Educational Identity Federation**:
+- **Rationale**: Educational institutions require integration with existing identity systems
+- **User Experience**: Single sign-on reduces friction for educational users
+- **Security**: Leverages institutional security policies and procedures
 
-- **Authentication**: Multi-method authentication support
-- **Authorization**: Role-based access control with permissions
-- **Performance**: Build optimization and runtime performance tuning
-- **Scalability**: Horizontal scaling and load distribution
+## Deployment and Operations Strategy
 
-For specific versions and detailed configuration, refer to package.json files and configuration files in the respective packages.
+### Container and Orchestration
+
+**Kubernetes Platform Choice**:
+- **Rationale**: Educational platforms require reliable scaling and resource management
+- **Operational Excellence**: Standardized deployment and scaling patterns
+- **Multi-Environment**: Consistent deployment across development, testing, and production
+
+**Infrastructure as Code**:
+- **Rationale**: Educational platforms require predictable and repeatable deployments
+- **Change Management**: All infrastructure changes tracked and reviewable
+- **Disaster Recovery**: Reproducible infrastructure enables reliable recovery processes
+
+## Performance and Scalability Philosophy
+
+### Educational Performance Requirements
+
+**Response Time Priorities**:
+- **Interactive Learning**: Sub-second response times for learning interactions
+- **Assessment Integrity**: Reliable performance during high-stakes assessment periods
+- **Accessibility**: Consistent performance across varied device and network conditions
+
+**Scaling Strategy**:
+- **Horizontal Scaling**: Educational load patterns often require elastic scaling
+- **Resource Efficiency**: Cost-effective scaling important for educational budgets
+- **Geographic Distribution**: Support for geographically distributed educational institutions
+
+## Security and Privacy Considerations
+
+### Educational Data Protection
+
+**Privacy by Design**:
+- **Regulatory Compliance**: GDPR and educational privacy regulations
+- **Data Minimization**: Collect only data necessary for educational purposes
+- **Transparency**: Clear data usage policies for educational stakeholders
+
+**Security Architecture**:
+- **Defense in Depth**: Multiple security layers appropriate for educational data sensitivity
+- **Access Control**: Role-based access reflecting educational hierarchies and relationships
+- **Audit Capabilities**: Comprehensive logging for educational compliance requirements
+
+This technology strategy ensures that KlickerUZH can deliver reliable, effective educational experiences while maintaining the flexibility to evolve with changing educational needs and technological capabilities.
