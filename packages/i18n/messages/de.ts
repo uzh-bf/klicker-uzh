@@ -1214,6 +1214,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       enableLiveQuizPointsModification:
         'Basis, Korrektheits- und Bonuspunkte anpassen',
       bonusTime: 'Bonuszeit',
+      bonusTimeNonNegative:
+        'Die Zeitspanne während welcher Bonuspunkte vergeben werden muss mindestens 1 Sekunde betragen. Um keine Bonuspunkte zu vergeben, setzen Sie die Bonuspunkte auf 0.',
       noActivitiesWillBeUpdated: 'Keine Aktivitäten werden verändert',
       nActivitiesWillBeUpdated: '{number} Aktivitäten werden angepasst',
       activityContainsNoElements: 'Diese {activity} enthält keine Elemente.',

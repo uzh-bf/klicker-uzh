@@ -349,11 +349,24 @@ export async function manipulateLiveQuiz(
     name: name.trim(),
     displayName: displayName.trim(),
     description,
-    pointsMultiplier: multiplier,
-    defaultPoints: defaultPoints ?? undefined,
-    defaultCorrectPoints: defaultCorrectPoints ?? undefined,
-    maxBonusPoints: maxBonusPoints ?? undefined,
-    timeToZeroBonus: timeToZeroBonus ?? undefined,
+    pointsMultiplier: Math.max(multiplier, 1),
+    defaultPoints:
+      typeof defaultPoints !== 'undefined' && defaultPoints !== null
+        ? Math.max(defaultPoints, 0)
+        : undefined,
+    defaultCorrectPoints:
+      typeof defaultCorrectPoints !== 'undefined' &&
+      defaultCorrectPoints !== null
+        ? Math.max(defaultCorrectPoints, 0)
+        : undefined,
+    maxBonusPoints:
+      typeof maxBonusPoints !== 'undefined' && maxBonusPoints !== null
+        ? Math.max(maxBonusPoints, 0)
+        : undefined,
+    timeToZeroBonus:
+      typeof timeToZeroBonus !== 'undefined' && timeToZeroBonus !== null
+        ? Math.max(timeToZeroBonus, 1)
+        : undefined,
     isGamificationEnabled: gamificationSetting,
     isAssessmentEnabled: assessmentSetting,
     pinCode: pinProtection ? newPinCode : null, // if pin protection applies (and the course changed), assign a pin
@@ -409,7 +422,7 @@ export async function manipulateLiveQuiz(
             order: persistentInstanceOrderMap[instance.id],
             options: {
               ...instance.options,
-              pointsMultiplier: multiplier * elementMultiplier,
+              pointsMultiplier: Math.max(multiplier, 1) * elementMultiplier,
             },
           },
         })

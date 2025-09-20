@@ -279,7 +279,7 @@ export function computeAwardedCorrectnessPoints({
   correctnessPoints: number
   bonusPoints: number
 } {
-  const slope = maxBonus / (timeToZeroBonus ?? 20)
+  const slope = Math.max(maxBonus, 0) / Math.max(timeToZeroBonus ?? 20, 1)
 
   // time between the first response and the current response (in seconds)
   const responseTiming = Math.max(
@@ -295,20 +295,25 @@ export function computeAwardedCorrectnessPoints({
   // if the student gets the question right, they get the full points or partial points depending on the question type
   // the students get at most maxBonus points and the bonus declines linearly until it reaches 0 after 40 seconds
   if (pointsPercentage !== null && typeof pointsPercentage !== 'undefined') {
-    correctnessPoints += pointsPercentage * (defaultCorrectPoints ?? 0)
+    correctnessPoints +=
+      pointsPercentage * Math.max(defaultCorrectPoints ?? 0, 0)
     bonusPoints += Math.max(
       pointsPercentage * (maxBonus - slope * responseTiming),
       0
     )
   } else if (getsMaxPoints) {
-    correctnessPoints += defaultCorrectPoints ?? 0
+    correctnessPoints += Math.max(defaultCorrectPoints ?? 0, 0)
     bonusPoints += Math.max(maxBonus - slope * responseTiming, 0)
   }
 
   // if a multiplier is defined, apply it to both the correctness points and bonus points
-  if (typeof pointsMultiplier !== 'undefined') {
-    correctnessPoints *= Number(pointsMultiplier)
-    bonusPoints *= Number(pointsMultiplier)
+  if (typeof pointsMultiplier !== 'undefined' && pointsMultiplier !== null) {
+    const numericMultiplier =
+      Number.isNaN(Number(pointsMultiplier)) || Number(pointsMultiplier) < 1
+        ? 1
+        : Number(pointsMultiplier)
+    correctnessPoints *= numericMultiplier
+    bonusPoints *= numericMultiplier
   }
 
   return { correctnessPoints, bonusPoints }
@@ -360,7 +365,7 @@ export function computeAwardedPoints({
   awardedPoints += correctnessPoints + bonusPoints
 
   // depending on the base points setting, compute the final awarded points
-  awardedPoints += basePoints ? (defaultPoints ?? 0) : 0
+  awardedPoints += basePoints ? Math.max(defaultPoints ?? 0, 0) : 0
 
   // if desired, round the result to the nearest integer
   return roundedResult ? Math.round(awardedPoints) : awardedPoints

@@ -720,15 +720,21 @@ export async function applyActivityBatchOperations(
           // if the course is changed to an assessment course, assign a pin
           pinCode: isCourseChanged ? newPinCode : undefined,
           // multiplier updates
-          pointsMultiplier: setMultiplier ? { set: multiplier } : undefined,
-          // if defined, set custom grading logic components
-          defaultPoints: setLiveQuizPoints ? { set: basePoints } : undefined,
-          defaultCorrectPoints: setLiveQuizPoints
-            ? { set: correctnessPoints }
+          pointsMultiplier: setMultiplier
+            ? { set: Math.max(multiplier, 1) }
             : undefined,
-          maxBonusPoints: setLiveQuizPoints ? { set: bonusPoints } : undefined,
+          // if defined, set custom grading logic components
+          defaultPoints: setLiveQuizPoints
+            ? { set: Math.max(basePoints, 0) }
+            : undefined,
+          defaultCorrectPoints: setLiveQuizPoints
+            ? { set: Math.max(correctnessPoints, 0) }
+            : undefined,
+          maxBonusPoints: setLiveQuizPoints
+            ? { set: Math.max(bonusPoints, 0) }
+            : undefined,
           timeToZeroBonus: setLiveQuizPoints
-            ? { set: timeToZeroBonus }
+            ? { set: Math.max(timeToZeroBonus, 1) }
             : undefined,
           // if set before, update the review status
           reviewStatus:

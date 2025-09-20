@@ -33,6 +33,11 @@ function LiveQuizCountdown({
       return { endDuration: 0, endTimestamp: new Date(), cooldown: false }
     }
 
+    // if the block is still scheduled, return early
+    if (block.status === ElementBlockStatus.Scheduled) {
+      return { endDuration: 0, endTimestamp: null, cooldown: false }
+    }
+
     // compute the time until the official closure and the time until the actual closure
     const timeUntilExpiration = block.expiresAt
       ? dayjs(block.expiresAt).diff(dayjs(), 'second') + 1
@@ -75,15 +80,21 @@ function LiveQuizCountdown({
     }
   }, [endTimestamp, cooldown])
 
+  const isStatic = !endTimestamp || block.status === ElementBlockStatus.Executed
+  const isActiveCooldown = inCooldown && !isStatic
+
   return (
     <CycleCountdown
       key={`${block.id}-${endTimestamp}-${endDuration}-${String(inCooldown)}`}
       size={size ?? 'sm'}
-      isStatic={
-        !block.expiresAt || block.status === ElementBlockStatus.Executed
+      isStatic={isStatic}
+      color={isActiveCooldown ? '#FF4D01' : undefined}
+      terminalColor={
+        block.status === ElementBlockStatus.Executed ? undefined : '#00A321'
       }
-      color={inCooldown ? '#FF4D01' : undefined}
-      expiresAt={endTimestamp}
+      expiresAt={
+        endTimestamp ?? dayjs().add(block.timeLimit!, 'second').toDate()
+      }
       totalDuration={endDuration}
       terminalPercentage={100}
       onExpire={() => {
