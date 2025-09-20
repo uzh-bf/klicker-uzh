@@ -1,7 +1,6 @@
 import { useQuery } from '@apollo/client'
 import {
   faCheck,
-  faCrown,
   faGears,
   faQuestionCircle,
   faTriangleExclamation,
@@ -303,14 +302,8 @@ function LiveQuizSettingsStep({
                     </div>
                   </div>
                   <div className="w-60">
-                    <div className="mb-1 flex flex-row items-center justify-center gap-2">
-                      <FontAwesomeIcon
-                        icon={faCrown}
-                        className="text-orange-400"
-                      />
-                      <div className="text-lg font-bold">
-                        {t('shared.generic.scoring')}
-                      </div>
+                    <div className="mb-2 flex flex-row items-center justify-center gap-2 text-lg font-bold">
+                      {t('shared.generic.scoring')}
                     </div>
 
                     {values.isGamificationEnabled ||
