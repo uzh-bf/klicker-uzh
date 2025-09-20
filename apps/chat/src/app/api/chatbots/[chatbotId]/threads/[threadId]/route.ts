@@ -1,7 +1,7 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { JWTPayload, jwtVerify } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
-import { ThreadService } from '../../../../../../services/threads'
+import { ThreadService } from 'src/services/threads'
 
 /**
  * Deletes a specific thread and all its associated messages permanently for the authenticated participant.

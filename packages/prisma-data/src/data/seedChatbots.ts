@@ -22,18 +22,18 @@ export async function seedChatbots(prisma: Prisma.PrismaClient) {
     update: {},
     create: {
       id: CHATBOT_ID_TEST,
-      name: 'Bennibot',
+      name: 'Benibot',
       description:
         'A helpful chatbot for answering questions about KlickerUZH and educational content.',
       avatar: CHATBOT_AVATAR_HASH,
       ownerId: USER_ID_TEST,
       courseId: COURSE_ID_TEST,
       systemPrompts: {
-        Tutor: {
+        tutor: {
           prompt: tutorPrompt,
           description: 'Acts as a patient and knowledgeable tutor.',
         },
-        Explainer: {
+        explainer: {
           prompt: explainerPrompt,
           description: 'Act as an expert explainer.',
         },

@@ -57,6 +57,12 @@ model Chatbot {
 
   systemPrompts Json? // { tutor: {prompt: string; description: string}; explainer: {prompt: string; description: string}; ... }
 
+  // Azure OpenAI Configuration
+  azureOpenAIKey      String? @db.Text // Encrypted API key using APP_SECRET
+  azureOpenAIEndpoint String?           // Optional custom endpoint (defaults to model config)
+
+  // Relations
+  mcpConfigurations ChatbotMCPConfig[]
   threads      ChatThread[]
   usageCredits ChatUsageCredits[]
 
@@ -68,4 +74,54 @@ model Chatbot {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ChatbotMCPServer {
+  id String @id @default(uuid()) @db.Uuid
+
+  name        String @unique  // e.g., "RAG_MCP", "Python_Executor", "R_Executor"
+  description String?
+  url         String          // MCP server URL
+  authType    String          // 'bearer' | 'basic' | 'none' | 'custom'
+  authSecret  String?         @db.Text // Encrypted using APP_SECRET
+
+  // NEW: Control chatbot context passing
+  passChatbotId Boolean @default(false) // Whether to include chatbot ID as header
+  chatbotIdHeader String? // Header name for chatbot ID (default: 'Chatbot-ID')
+
+  // Global parameters for this MCP server
+  parameters  Json?           // Additional configuration parameters
+  isActive    Boolean @default(true)
+
+  // Relations
+  configurations ChatbotMCPConfig[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ChatbotMCPConfig {
+  id String @id @default(uuid()) @db.Uuid
+
+  // Relations
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  chatbotId String  @db.Uuid
+
+  mcpServer   ChatbotMCPServer @relation(fields: [mcpServerId], references: [id], onDelete: Cascade)
+  mcpServerId String    @db.Uuid
+
+  // Configuration per chatbot-mode-mcp combination
+  chatMode     String          // 'tutor' | 'explainer' | 'default'
+  allowedTools Json?           // Array of allowed tool names/patterns (supports wildcards)
+  priority     Int @default(0) // Order of MCP servers (lower = higher priority)
+  isEnabled    Boolean @default(true)
+
+  // Chatbot-specific parameters that override server defaults
+  parameters   Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([chatbotId, mcpServerId, chatMode])
+  @@index([chatbotId, chatMode])
 }

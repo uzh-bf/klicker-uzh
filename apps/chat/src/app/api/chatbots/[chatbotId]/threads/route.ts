@@ -1,7 +1,7 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { JWTPayload, jwtVerify } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
-import { ThreadService } from '../../../../../services/threads'
+import { ThreadService } from 'src/services/threads'
 
 /**
  * Retrieves all chat threads for the authenticated participant ordered by most recently updated.
