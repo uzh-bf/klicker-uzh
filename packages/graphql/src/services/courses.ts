@@ -812,7 +812,16 @@ export async function updateCourseSettings(
         ? {
             liveQuizzes: {
               updateMany: {
-                where: { isDeleted: false },
+                where: {
+                  isDeleted: false,
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                      DB.PublicationStatus.PUBLISHED,
+                    ],
+                  },
+                },
                 data: {
                   isGamificationEnabled: newGamificationSetting,
                   isAssessmentEnabled: newAssessmentSetting,
@@ -821,7 +830,16 @@ export async function updateCourseSettings(
             },
             practiceQuizzes: {
               updateMany: {
-                where: { isDeleted: false },
+                where: {
+                  isDeleted: false,
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                      DB.PublicationStatus.PUBLISHED,
+                    ],
+                  },
+                },
                 data: {
                   isGamificationEnabled: newGamificationSetting,
                   isAssessmentEnabled: newAssessmentSetting,
@@ -830,7 +848,16 @@ export async function updateCourseSettings(
             },
             microLearnings: {
               updateMany: {
-                where: { isDeleted: false },
+                where: {
+                  isDeleted: false,
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                      DB.PublicationStatus.PUBLISHED,
+                    ],
+                  },
+                },
                 data: {
                   isGamificationEnabled: newGamificationSetting,
                   isAssessmentEnabled: newAssessmentSetting,
@@ -839,7 +866,16 @@ export async function updateCourseSettings(
             },
             groupActivities: {
               updateMany: {
-                where: { isDeleted: false },
+                where: {
+                  isDeleted: false,
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                      DB.PublicationStatus.PUBLISHED,
+                    ],
+                  },
+                },
                 data: {
                   isGamificationEnabled: newGamificationSetting,
                   isAssessmentEnabled: newAssessmentSetting,
