@@ -311,7 +311,8 @@ export async function manipulateLiveQuiz(
     (!existingActivity || // 2.1) assign new pin on activity creation
       ((courseId || existingActivity.courseId) && // 2.2) assign new pin on course assignment change (course defined at least before or after)
         courseId !== existingActivity.courseId) ||
-      (existingActivity && !existingActivity.courseId && !courseId)) // 2.3) assign new pin on pin setting change with no course assigned before and after edit
+      (existingActivity && !existingActivity.courseId && !courseId) || // 2.3) assign new pin on pin setting change with no course assigned before and after edit
+      (existingActivity && !existingActivity.pinCode)) // 2.4) assign new pin if pin protection is enabled, but no pin was set before
 
   // find a new pin code that is still available, if required
   let newPinCode: string | undefined | null = existingActivity?.pinCode

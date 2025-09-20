@@ -27,6 +27,12 @@ import useActivitySortingAndFiltering, {
   ACTIVITY_SORTING_FILTERING_INITIAL,
 } from '../lib/hooks/useActivitySortingAndFiltering'
 
+type ActivityModeFilterVariables = {
+  isGamificationEnabled?: boolean
+  isAssessmentEnabled?: boolean
+  pinProtected?: boolean
+}
+
 function Activities() {
   const t = useTranslations()
   const router = useRouter()
@@ -89,6 +95,7 @@ function Activities() {
     toggleCourseFilter,
     toggleMultiplierFilter,
     toggleReviewStatusFilter,
+    toggleModeFilter,
   } = useActivitySortingAndFiltering(storedFiltering)
 
   // get available courses
@@ -113,6 +120,9 @@ function Activities() {
       showDependencies: filters.sharingType.includes(SharingType.Dependency),
       multiplier: filters.multiplier ?? undefined,
       reviewStatus: filters.reviewStatus ?? undefined,
+      isGamificationEnabled: filters.mode.gamified ? true : undefined,
+      isAssessmentEnabled: filters.mode.assessment ? true : undefined,
+      isPinProtected: filters.mode.pinProtected ? true : undefined,
       sortByType: sort.by,
       sortByAsc: sort.asc,
       numEntries: pageSize,
@@ -208,7 +218,8 @@ function Activities() {
     typeof filters.type !== 'undefined' ||
     typeof filters.course !== 'undefined' ||
     typeof filters.multiplier !== 'undefined' ||
-    typeof filters.reviewStatus !== 'undefined'
+    typeof filters.reviewStatus !== 'undefined' ||
+    Object.values(filters.mode).some((value) => value)
 
   // compute the number of total pagination pages
   const totalPages = Math.max(1, Math.ceil(numOfActivities / pageSize))
@@ -229,6 +240,7 @@ function Activities() {
             toggleCourseFilter={toggleCourseFilter}
             toggleMultiplierFilter={toggleMultiplierFilter}
             toggleReviewStatusFilter={toggleReviewStatusFilter}
+            toggleModeFilter={toggleModeFilter}
             handleReset={handleReset}
             availableCourses={dataCourses?.getUserActivitiesCourses ?? []}
             filtersActive={filtersActive}

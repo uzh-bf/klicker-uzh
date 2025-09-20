@@ -1153,6 +1153,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     },
     activities: {
       activityType: 'Activity Type',
+      modeFilters: 'Mode',
       noActivitiesAvailable:
         'Currently, no activities are available. You can easily create new activities by combining elements in the <link>library</link>.',
       noActivitiesWarning:

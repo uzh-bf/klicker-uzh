@@ -1155,6 +1155,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     activities: {
       activityType: 'Aktivitätstyp',
+      modeFilters: 'Modus',
       noActivitiesAvailable:
         'Bisher sind keine Aktivitäten verfügbar. Sie können neue Aktivitäten einfach durch die Kombination von Elementen in der <link>Bibliothek</link> erstellen.',
       noActivitiesWarning:
