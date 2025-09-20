@@ -1,5 +1,6 @@
 import { useQuery } from '@apollo/client'
 import { faListCheck } from '@fortawesome/free-solid-svg-icons'
+import type { GetUserActivitiesQueryVariables } from '@klicker-uzh/graphql/dist/ops'
 import {
   ActivityInfo,
   ActivityType,
@@ -26,6 +27,12 @@ import Layout from '../components/Layout'
 import useActivitySortingAndFiltering, {
   ACTIVITY_SORTING_FILTERING_INITIAL,
 } from '../lib/hooks/useActivitySortingAndFiltering'
+
+type ActivityModeFilterVariables = {
+  isGamificationEnabled?: boolean
+  isAssessmentEnabled?: boolean
+  pinProtected?: boolean
+}
 
 function Activities() {
   const t = useTranslations()
@@ -89,6 +96,7 @@ function Activities() {
     toggleCourseFilter,
     toggleMultiplierFilter,
     toggleReviewStatusFilter,
+    toggleModeFilter,
   } = useActivitySortingAndFiltering(storedFiltering)
 
   // get available courses
@@ -96,28 +104,35 @@ function Activities() {
     fetchPolicy: 'cache-and-network',
   })
 
+  const trimmedSearchString = searchString.trim()
+  const activityQueryVariables: GetUserActivitiesQueryVariables &
+    ActivityModeFilterVariables = {
+    statusFilter: filters.status,
+    activityTypeFilter: filters.type,
+    courseId: filters.course !== null ? filters.course : undefined,
+    withoutCourse: filters.course === null ? true : undefined,
+    searchString: trimmedSearchString || undefined,
+    showOwned: filters.sharingType.includes(SharingType.Owned),
+    showShared: filters.sharingType.includes(SharingType.Shared),
+    showDependencies: filters.sharingType.includes(SharingType.Dependency),
+    multiplier: filters.multiplier ?? undefined,
+    reviewStatus: filters.reviewStatus ?? undefined,
+    isGamificationEnabled: filters.mode.gamified ? true : undefined,
+    isAssessmentEnabled: filters.mode.assessment ? true : undefined,
+    isPinProtected: filters.mode.pinProtected ? true : undefined,
+    sortByType: sort.by,
+    sortByAsc: sort.asc,
+    numEntries: pageSize,
+    offset: (currentPage - 1) * pageSize,
+  }
+
   // get user activities while respecting the corresponding filters and pagination
   const {
     loading: loadingActivities,
     data: dataActivities,
     refetch: refetchActivities,
   } = useQuery(GetUserActivitiesDocument, {
-    variables: {
-      statusFilter: filters.status,
-      activityTypeFilter: filters.type,
-      courseId: filters.course !== null ? filters.course : undefined,
-      withoutCourse: filters.course === null ? true : undefined,
-      searchString: searchString.trim() || undefined,
-      showOwned: filters.sharingType.includes(SharingType.Owned),
-      showShared: filters.sharingType.includes(SharingType.Shared),
-      showDependencies: filters.sharingType.includes(SharingType.Dependency),
-      multiplier: filters.multiplier ?? undefined,
-      reviewStatus: filters.reviewStatus ?? undefined,
-      sortByType: sort.by,
-      sortByAsc: sort.asc,
-      numEntries: pageSize,
-      offset: (currentPage - 1) * pageSize,
-    },
+    variables: activityQueryVariables,
     fetchPolicy: 'network-only',
   })
   const numOfActivities = dataActivities?.userActivities?.numOfActivities || 0
@@ -208,7 +223,8 @@ function Activities() {
     typeof filters.type !== 'undefined' ||
     typeof filters.course !== 'undefined' ||
     typeof filters.multiplier !== 'undefined' ||
-    typeof filters.reviewStatus !== 'undefined'
+    typeof filters.reviewStatus !== 'undefined' ||
+    Object.values(filters.mode).some((value) => value)
 
   // compute the number of total pagination pages
   const totalPages = Math.max(1, Math.ceil(numOfActivities / pageSize))
@@ -229,6 +245,7 @@ function Activities() {
             toggleCourseFilter={toggleCourseFilter}
             toggleMultiplierFilter={toggleMultiplierFilter}
             toggleReviewStatusFilter={toggleReviewStatusFilter}
+            toggleModeFilter={toggleModeFilter}
             handleReset={handleReset}
             availableCourses={dataCourses?.getUserActivitiesCourses ?? []}
             filtersActive={filtersActive}

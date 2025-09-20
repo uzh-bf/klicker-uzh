@@ -97,6 +97,9 @@ export async function getUserActivities(
     showDependencies = true,
     multiplier,
     reviewStatus,
+    isGamificationEnabled,
+    isAssessmentEnabled,
+    isPinProtected,
     sortByType,
     sortByAsc,
     numEntries,
@@ -112,6 +115,9 @@ export async function getUserActivities(
     showDependencies?: boolean | null
     multiplier?: number | null
     reviewStatus?: DB.ReviewStatus | null
+    isGamificationEnabled?: boolean | null
+    isAssessmentEnabled?: boolean | null
+    isPinProtected?: boolean | null
     sortByType: SortByType
     sortByAsc: boolean
     numEntries?: number | null
@@ -151,6 +157,14 @@ export async function getUserActivities(
     reviewStatus: reviewStatus ? { equals: reviewStatus } : undefined,
     // filter by activity type, if an activity type filter is set
     type: activityTypeFilter ? { equals: activityTypeFilter } : undefined,
+    // activity mode (gamification, assessment, pin protection) filters
+    isGamificationEnabled: isGamificationEnabled
+      ? { equals: isGamificationEnabled }
+      : undefined,
+    isAssessmentEnabled: isAssessmentEnabled
+      ? { equals: isAssessmentEnabled }
+      : undefined,
+    pinCode: isPinProtected ? { not: null } : undefined,
     // course filter
     courseId: courseId
       ? { equals: courseId }
