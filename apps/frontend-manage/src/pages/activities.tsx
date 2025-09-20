@@ -1,6 +1,5 @@
 import { useQuery } from '@apollo/client'
 import { faListCheck } from '@fortawesome/free-solid-svg-icons'
-import type { GetUserActivitiesQueryVariables } from '@klicker-uzh/graphql/dist/ops'
 import {
   ActivityInfo,
   ActivityType,
@@ -104,35 +103,31 @@ function Activities() {
     fetchPolicy: 'cache-and-network',
   })
 
-  const trimmedSearchString = searchString.trim()
-  const activityQueryVariables: GetUserActivitiesQueryVariables &
-    ActivityModeFilterVariables = {
-    statusFilter: filters.status,
-    activityTypeFilter: filters.type,
-    courseId: filters.course !== null ? filters.course : undefined,
-    withoutCourse: filters.course === null ? true : undefined,
-    searchString: trimmedSearchString || undefined,
-    showOwned: filters.sharingType.includes(SharingType.Owned),
-    showShared: filters.sharingType.includes(SharingType.Shared),
-    showDependencies: filters.sharingType.includes(SharingType.Dependency),
-    multiplier: filters.multiplier ?? undefined,
-    reviewStatus: filters.reviewStatus ?? undefined,
-    isGamificationEnabled: filters.mode.gamified ? true : undefined,
-    isAssessmentEnabled: filters.mode.assessment ? true : undefined,
-    isPinProtected: filters.mode.pinProtected ? true : undefined,
-    sortByType: sort.by,
-    sortByAsc: sort.asc,
-    numEntries: pageSize,
-    offset: (currentPage - 1) * pageSize,
-  }
-
   // get user activities while respecting the corresponding filters and pagination
   const {
     loading: loadingActivities,
     data: dataActivities,
     refetch: refetchActivities,
   } = useQuery(GetUserActivitiesDocument, {
-    variables: activityQueryVariables,
+    variables: {
+      statusFilter: filters.status,
+      activityTypeFilter: filters.type,
+      courseId: filters.course !== null ? filters.course : undefined,
+      withoutCourse: filters.course === null ? true : undefined,
+      searchString: searchString.trim() || undefined,
+      showOwned: filters.sharingType.includes(SharingType.Owned),
+      showShared: filters.sharingType.includes(SharingType.Shared),
+      showDependencies: filters.sharingType.includes(SharingType.Dependency),
+      multiplier: filters.multiplier ?? undefined,
+      reviewStatus: filters.reviewStatus ?? undefined,
+      isGamificationEnabled: filters.mode.gamified ? true : undefined,
+      isAssessmentEnabled: filters.mode.assessment ? true : undefined,
+      isPinProtected: filters.mode.pinProtected ? true : undefined,
+      sortByType: sort.by,
+      sortByAsc: sort.asc,
+      numEntries: pageSize,
+      offset: (currentPage - 1) * pageSize,
+    },
     fetchPolicy: 'network-only',
   })
   const numOfActivities = dataActivities?.userActivities?.numOfActivities || 0
