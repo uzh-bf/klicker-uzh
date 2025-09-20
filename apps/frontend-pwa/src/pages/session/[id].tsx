@@ -616,6 +616,9 @@ function Index({ id }: { id: string }) {
             isBeforeFirstBlock={beforeFirstBlock ?? false}
             showLeaderboardGamifiedQuizHint
             isPartOfGamifiedCourse={isPartOfGamifiedCourse}
+            isAssessmentEnabled={
+              data.studentLiveQuiz.isAssessmentEnabled ?? false
+            }
             className={twMerge(
               // mobile visibility
               activeView === 'leaderboard' &&

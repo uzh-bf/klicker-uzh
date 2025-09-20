@@ -466,6 +466,8 @@ export default {
         'Dieses Live Quiz ist Teil eines gamifizierten Kurses. Da Sie diesem Kurs nicht beigetreten sind, werden Sie nur im Rahmen dieses Quizzes Punkte sammeln. Ihre Punkte erscheinen auf dem Quiz-Leaderboard. Sollten Sie dies nicht wünschen, <logout>melden Sie sich bitte ab</logout> und treten Sie dem Quiz erneut über den Link bei.',
       liveQuizCourseParticipationInactive:
         'Dieses Live Quiz ist Teil eines gamifizierten Kurses, aber Sie nehmen derzeit nicht an der Gamifizierung teil. Um dem Leaderboard beizutreten und Punkte in diesem Quiz zu sammeln, treten Sie dem <link>Leaderboard auf der Kursübersicht</link> bei und kehren Sie zum Quiz zurück.',
+      liveQuizGamifiedAssessment:
+        'Diese Live Quiz ist gamifiziert und gleichzeitig Teil eines Assessment-Kurses. Um nicht mit Ihrem Pseudonym auf dem Leaderboard zu erscheinen, gehen Sie bitte in die Profileinstellungen und stellen Sie die Anzeigeoption Ihres Profils entsprechend um.',
       rank: 'Rang',
       username: 'Nutzername',
       email: 'E-Mail',

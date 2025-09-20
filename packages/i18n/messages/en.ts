@@ -464,6 +464,8 @@ export default {
         'This live quiz is part of a gamified course. Since you have not joined this course, you will only collect points within this quiz. Your points will appear on the quiz leaderboard. If you do not want this, please <logout>log out</logout> and rejoin the quiz via the link.',
       liveQuizCourseParticipationInactive:
         'This live quiz is part of a gamified course, but you are currently not participating in the gamification. To join the leaderboard and collect points in this quiz, join the <link>leaderboard on the course overview</link> and rejoin the quiz.',
+      liveQuizGamifiedAssessment:
+        'Diese Live Quiz ist gamifiziert und gleichzeitig Teil eines Assessment-Kurses. Um nicht mit Ihrem Pseudonym auf dem Leaderboard zu erscheinen, gehen Sie bitte in die Profileinstellungen und stellen Sie die Anzeigeoption Ihres Profils entsprechend um.',
       rank: 'Rank',
       username: 'Username',
       email: 'Email',
