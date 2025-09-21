@@ -386,21 +386,19 @@ export async function getStudentAssessmentResults(
     const defaultMaxBonusPoints = lq.maxBonusPoints
 
     const quizResults = lq.blocks.reduce<ActivityStudentPerformance>(
-      (blockAcc, block) => {
+      (quizAcc, block) => {
         const instanceResults = block.elements.reduce<
           Omit<
             ActivityStudentPerformance,
             'id' | 'displayName' | 'finishedAt' | 'multiplier'
           >
         >(
-          (elementAcc, instance) => {
+          (blockAcc, instance) => {
             const { elementData } = instance
             const hasSampleSolution =
               'options' in elementData &&
               'hasSampleSolution' in elementData.options &&
-              ((elementData.options as { hasSampleSolution?: boolean })
-                .hasSampleSolution ??
-                false)
+              (elementData.options.hasSampleSolution ?? false)
 
             // compute the available points based on the instance information
             const hasBasePoints =
@@ -409,11 +407,11 @@ export async function getStudentAssessmentResults(
               (instance.options.basePoints ?? false)
             const pointsMultiplier = instance.options.pointsMultiplier ?? 1
 
-            elementAcc.availableBasePoints += hasBasePoints ? defaultPoints : 0
-            elementAcc.availableCorrectnessPoints += hasSampleSolution
+            blockAcc.availableBasePoints += hasBasePoints ? defaultPoints : 0
+            blockAcc.availableCorrectnessPoints += hasSampleSolution
               ? pointsMultiplier * defaultCorrectPoints
               : 0
-            elementAcc.availableBonusPoints += hasSampleSolution
+            blockAcc.availableBonusPoints += hasSampleSolution
               ? pointsMultiplier * defaultMaxBonusPoints
               : 0
 
@@ -422,12 +420,12 @@ export async function getStudentAssessmentResults(
               instance.liveQuizResponses[0]
             ) {
               const response = instance.liveQuizResponses[0]
-              elementAcc.basePoints += response.basePoints
-              elementAcc.correctnessPoints += response.correctnessPoints
-              elementAcc.bonusPoints += response.bonusPoints
+              blockAcc.basePoints += response.basePoints
+              blockAcc.correctnessPoints += response.correctnessPoints
+              blockAcc.bonusPoints += response.bonusPoints
             }
 
-            return elementAcc
+            return blockAcc
           },
           {
             basePoints: 0,
@@ -440,15 +438,15 @@ export async function getStudentAssessmentResults(
         )
 
         // increment the results of the block corresponding to the instance results
-        blockAcc.basePoints += instanceResults.basePoints
-        blockAcc.availableBasePoints += instanceResults.availableBasePoints
-        blockAcc.correctnessPoints += instanceResults.correctnessPoints
-        blockAcc.availableCorrectnessPoints +=
+        quizAcc.basePoints += instanceResults.basePoints
+        quizAcc.availableBasePoints += instanceResults.availableBasePoints
+        quizAcc.correctnessPoints += instanceResults.correctnessPoints
+        quizAcc.availableCorrectnessPoints +=
           instanceResults.availableCorrectnessPoints
-        blockAcc.bonusPoints += instanceResults.bonusPoints
-        blockAcc.availableBonusPoints += instanceResults.availableBonusPoints
+        quizAcc.bonusPoints += instanceResults.bonusPoints
+        quizAcc.availableBonusPoints += instanceResults.availableBonusPoints
 
-        return blockAcc
+        return quizAcc
       },
       {
         id: lq.id,
