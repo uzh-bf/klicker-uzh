@@ -1,6 +1,8 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
+  AuditAction,
+  AuditScope,
   ElementData,
   ElementInstanceResults,
   ElementResultsCaseStudy,
@@ -870,6 +872,15 @@ export async function startLiveQuiz(
           },
         })
 
+        if (quiz.isAssessmentEnabled) {
+          await ctx.auditClient.log({
+            scope: AuditScope.INTERNAL,
+            action: AuditAction.USER_START_QUIZ,
+            subject: `user:${ctx.user.sub}`,
+            resource: `live-quiz:${quiz.id}`,
+          })
+        }
+
         await sendTeamsNotification({
           scope: 'graphql/startLiveQuiz',
           text: `START Live quiz ${quiz.name} with id ${quiz.id}.`,
@@ -1302,6 +1313,17 @@ export async function activateLiveQuizBlock(
   })
 
   redisMulti.exec()
+
+  if (quiz.isAssessmentEnabled) {
+    await ctx.auditClient.log({
+      scope: AuditScope.INTERNAL,
+      action: AuditAction.USER_OPEN_BLOCK,
+      subject: `user:${ctx.user.sub}`,
+      resource: `live-quiz:${quiz.id}`,
+      attributes: { blockId: String(blockId) },
+    })
+  }
+
   return updatedQuiz
 }
 
@@ -1373,6 +1395,16 @@ export async function deactivateLiveQuizBlock(
         )
       }
       await redis.exec()
+    }
+
+    if (isAssessmentEnabled) {
+      await ctx.auditClient.log({
+        scope: AuditScope.INTERNAL,
+        action: AuditAction.USER_OPEN_BLOCK,
+        subject: `user:${ctx.user.sub}`,
+        resource: `live-quiz:${quizId}`,
+        attributes: { blockId: String(blockId) },
+      })
     }
   } catch (error: any) {
     await sendTeamsNotification({
@@ -2480,8 +2512,11 @@ export async function resetAssessmentLiveQuiz(
   if (!liveQuiz) return null
 
   try {
-    await ctx.hatchet.events.push('create-audit-log-entry', {
-      info: `[INFO] [Reset Assessment Live Quiz] Assessment course admin with ID ${ctx.user.sub} initiated reset of live quiz with ID ${id}.`,
+    await ctx.auditClient.log({
+      scope: AuditScope.INTERNAL,
+      action: AuditAction.USER_RESET_QUIZ,
+      subject: `user:${ctx.user.sub}`,
+      resource: `live-quiz:${id}`,
     })
 
     // loop through the blocks and element instances and document the number of deducted points
@@ -2492,6 +2527,12 @@ export async function resetAssessmentLiveQuiz(
             await ctx.hatchet.events.push('create-audit-log-entry', {
               info: `[INFO] [Reset Assessment Live Quiz] Deducted ${response.basePoints} base points, ${response.correctnessPoints} correctness points, and ${response.bonusPoints} bonus points from participant with ID ${response.participantId} for element instance with ID ${instance.id} in block with ID ${block.id} in live quiz with ID ${id}.`,
             })
+            // await ctx.auditClient.log({
+            //   scope: AuditScope.INTERNAL,
+            //   action: AuditAction.USER_RESET_QUIZ,
+            //   subject: `user:${ctx.user.sub}`,
+            //   resource: `live-quiz:${id}`,
+            // })
           })
         )
       }

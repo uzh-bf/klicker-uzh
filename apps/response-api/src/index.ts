@@ -188,7 +188,7 @@ async function handleAddAssessmentResponse(
   }
 
   if (!payload || typeof payload !== 'object') {
-    await await hatchetClient.events.push<InternalAuditEvent>(
+    await hatchetClient.events.push<InternalAuditEvent>(
       'create-audit-log-entry',
       {
         subject: `participant:unknown`,
@@ -210,7 +210,7 @@ async function handleAddAssessmentResponse(
     typeof instanceId === 'undefined' ||
     !correlationKey
   ) {
-    await await hatchetClient.events.push<InternalAuditEvent>(
+    await hatchetClient.events.push<InternalAuditEvent>(
       'create-audit-log-entry',
       {
         subject: `participant:unknown`,
@@ -236,7 +236,7 @@ async function handleAddAssessmentResponse(
       { issuer: process.env.APP_ORIGIN_ASSESSMENT_API }
     )
   } catch (err) {
-    await await hatchetClient.events.push<InternalAuditEvent>(
+    await hatchetClient.events.push<InternalAuditEvent>(
       'create-audit-log-entry',
       {
         subject: `participant:unknown`,
@@ -258,7 +258,7 @@ async function handleAddAssessmentResponse(
     correlationData.instanceId !== instanceId ||
     correlationData.liveQuizId !== liveQuizId
   ) {
-    await await hatchetClient.events.push<InternalAuditEvent>(
+    await hatchetClient.events.push<InternalAuditEvent>(
       'create-audit-log-entry',
       {
         subject: `participant:unknown`,
@@ -301,7 +301,7 @@ async function handleAddAssessmentResponse(
         )
       : null
   } catch (err) {
-    await await hatchetClient.events.push<InternalAuditEvent>(
+    await hatchetClient.events.push<InternalAuditEvent>(
       'create-audit-log-entry',
       {
         subject: `participant:unknown`,
@@ -322,7 +322,7 @@ async function handleAddAssessmentResponse(
   const isAssessmentCookieValid =
     !!user && user.role === 'PARTICIPANT' && user.scope === UserLoginScope.EDUID
   if (!user || !user.sub || !isAssessmentCookieValid) {
-    await await hatchetClient.events.push<InternalAuditEvent>(
+    await hatchetClient.events.push<InternalAuditEvent>(
       'create-audit-log-entry',
       {
         subject: `participant:${user?.sub}`,
@@ -349,7 +349,7 @@ async function handleAddAssessmentResponse(
   const correlationId = MD5.digest('hex')
 
   // audit log entry for received response
-  await await hatchetClient.events.push<InternalAuditEvent>(
+  await hatchetClient.events.push<InternalAuditEvent>(
     'create-audit-log-entry',
     {
       scope: AuditScope.INTERNAL,
@@ -373,7 +373,7 @@ async function handleAddAssessmentResponse(
     console.log(
       `Participant with correlationId ${correlationId} already answered instance ${instanceId} in live quiz ${liveQuizId}`
     )
-    await await hatchetClient.events.push<InternalAuditEvent>(
+    await hatchetClient.events.push<InternalAuditEvent>(
       'create-audit-log-entry',
       {
         subject: `participant:${user.sub}`,
@@ -413,7 +413,7 @@ async function handleAddAssessmentResponse(
     await hatchetClient.events.push('response-received:assessment', message)
   } catch (error) {
     try {
-      await await hatchetClient.events.push<InternalAuditEvent>(
+      await hatchetClient.events.push<InternalAuditEvent>(
         'create-audit-log-entry',
         {
           subject: `participant:${user.sub}`,

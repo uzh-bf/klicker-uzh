@@ -70,6 +70,13 @@ http:
         - 'websecure'
       service: 'response-api'
 
+    audit:
+      rule: 'Host(`audit.klicker.com`)'
+      entrypoints:
+        - 'web'
+        - 'websecure'
+      service: 'audit'
+
   services:
     api:
       loadBalancer:
@@ -105,6 +112,11 @@ http:
       loadBalancer:
         servers:
           - url: 'http://host.docker.internal:7078'
+
+    audit:
+      loadBalancer:
+        servers:
+          - url: 'http://host.docker.internal:7080'
 
 tls:
   certificates:

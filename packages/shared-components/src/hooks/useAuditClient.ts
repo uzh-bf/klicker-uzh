@@ -27,9 +27,9 @@ export default function useAuditClient(
   const [error, setError] = useState<Error | null>(null)
 
   const {
-    enabled = true,
+    enabled = process.env.NEXT_PUBLIC_AUDIT_ENABLED === 'true',
     assessmentMode = false,
-    baseUrl = '',
+    baseUrl = process.env.NEXT_PUBLIC_AUDIT_SERVICE_URL || '',
     onError,
   } = options
 

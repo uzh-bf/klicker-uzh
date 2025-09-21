@@ -6,6 +6,7 @@ import { prisma as prismaBase } from '@klicker-uzh/prisma'
 import { createInMemoryCache, type Cache } from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'
 import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
+import { AuditAction, AuditScope } from '@klicker-uzh/types'
 import { AuditClient } from '@klicker-uzh/util'
 import { useServer } from 'graphql-ws/lib/use/ws'
 import { createPubSub } from 'graphql-yoga'
@@ -141,6 +142,12 @@ migrate(prisma).then(() => {
 
   const server = app.listen(3000, () => {
     console.log(`GraphQL API located at 0.0.0.0:3000${yogaApp.graphqlEndpoint}`)
+
+    auditClient.log({
+      action: AuditAction.SYSTEM_STARTUP,
+      scope: AuditScope.INTERNAL,
+      subject: 'system:backend',
+    })
 
     const wsServer = new WebSocket.WebSocketServer({
       server,

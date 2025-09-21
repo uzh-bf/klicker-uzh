@@ -1065,6 +1065,9 @@ export enum AuditAction {
   VALIDATION_ERROR = 'error.validation', // TODO
   EXTERNAL_SERVICE_ERROR = 'error.external_service', // TODO
 
+  // System
+  SYSTEM_STARTUP = 'system.startup', // TODO
+
   // Security Events
   // TODO: good AIdeas, but not sure how to implement them
   MULTIPLE_TABS_DETECTED = 'security.multiple_tabs',

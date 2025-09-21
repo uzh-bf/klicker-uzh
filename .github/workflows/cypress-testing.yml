@@ -200,7 +200,6 @@ jobs:
           REDIS_ASSESSMENT_HOST: localhost
           AUDIT_SERVICE_URL: http://127.0.0.1:7080
           AUDIT_ENABLED: true
-          AUDIT_TOKEN: secret-audit-token
           # Provide all app origins to the services and tests
           APP_ORIGIN_API: http://127.0.0.1:3000
           APP_ORIGIN_AUTH: http://127.0.0.1:3010
@@ -231,7 +230,6 @@ jobs:
           HATCHET_HOST_PORT: 7077
           AUDIT_SERVICE_URL: http://127.0.0.1:7080
           AUDIT_ENABLED: true
-          AUDIT_TOKEN: secret-audit-token
           # Ensure Cypress process has all origins, too
           APP_ORIGIN_API: http://127.0.0.1:3000
           APP_ORIGIN_AUTH: http://127.0.0.1:3010
@@ -419,7 +417,6 @@ jobs:
           CHECK_INTERVAL: '5'
           AUDIT_SERVICE_URL: http://127.0.0.1:7080
           AUDIT_ENABLED: true
-          AUDIT_TOKEN: secret-audit-token
           # Provide all app origins to the services and tests
           APP_ORIGIN_API: http://127.0.0.1:3000
           APP_ORIGIN_AUTH: http://127.0.0.1:3010
@@ -463,7 +460,6 @@ jobs:
           HATCHET_HOST_PORT: 7077
           AUDIT_SERVICE_URL: http://127.0.0.1:7080
           AUDIT_ENABLED: true
-          AUDIT_TOKEN: secret-audit-token
           # Ensure Cypress process has all origins, too
           APP_ORIGIN_API: http://127.0.0.1:3000
           APP_ORIGIN_AUTH: http://127.0.0.1:3010
