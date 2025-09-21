@@ -104,7 +104,7 @@ function AssessmentResultsList({
               value={formatNumber(aggregated.totalPoints)}
               meta={`${t('ofAvailable', {
                 value: formatNumber(aggregated.availableTotalPoints),
-              })} ${t('excludingBonus', { value: formatNumber(aggregated.basePoints + aggregated.correctnessPoints) })}`}
+              })} ${t('excludingBonus', { value: formatNumber(aggregated.availableBasePoints + aggregated.availableCorrectnessPoints) })}`}
             />
           </div>
         </div>
