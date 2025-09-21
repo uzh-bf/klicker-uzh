@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.27](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.26...v3.4.0-alpha.27) (2025-09-21)
+
+
+### Enhancements
+
+* add functionality to display assessment activity results to students ([#4935](https://github.com/uzh-bf/klicker-uzh/issues/4935)) ([e349657](https://github.com/uzh-bf/klicker-uzh/commit/e3496577addc412e4165fadc2a46444b1d470e16))
+
 ## [3.4.0-alpha.26](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.25...v3.4.0-alpha.26) (2025-09-21)
 
 
