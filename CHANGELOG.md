@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.26](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.25...v3.4.0-alpha.26) (2025-09-21)
+
+
+### Bug Fixes
+
+* ensure that base points are always set to false for content elements and flashcards ([#4934](https://github.com/uzh-bf/klicker-uzh/issues/4934)) ([647b832](https://github.com/uzh-bf/klicker-uzh/commit/647b8321eda2e0a63fd588577a586972ebe4a34d))
+
 ## [3.4.0-alpha.25](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.24...v3.4.0-alpha.25) (2025-09-21)
 
 

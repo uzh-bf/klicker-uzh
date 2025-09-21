@@ -716,6 +716,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       joinGroup: 'Gruppe beitreten',
       groupName: 'Gruppenname',
       randomGroup: 'Zufällige Gruppe',
+      assessmentResults: 'Assessment Resultate',
       createJoinRandomGroup:
         'Hier klicken, um einer zufälligen Gruppe mit anderen Studierenden automatisch beitreten.',
       joinGroupError:
@@ -1082,6 +1083,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       accountDeletionMessage:
         'Da Sie Ihr KlickerUZH-Konto derzeit zur Teilnahme an einem Assessment-Kurs verwenden, können Sie Ihr Konto nicht selbst löschen. Für weitere Informationen zur Löschung Ihres Kontos und zum Verlassen des Kurses wenden Sie sich bitte an Ihre Dozierenden.',
       respondedAt: 'Beantwortet am {date}',
+      failedToLoadActivityResults:
+        'Beim Laden der Resultate für die Aktivitäten in diesem Assessment Kurs ist leider ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie Ihre Dozierenden, falls das Problem weiterhin besteht.',
+      activityResultsDescription:
+        'Die folgende Übersicht zeigt alle Aktivitäten, welche Ihnen im Assessment-Kurs zur Verfügung gestellt wurden. Aktivitäten, welche live im Hörsaal durchgeführt werden oder nur während einer bestimmten Zeit zur Verfügung stehen (z.B. Microlearnings), erscheinen auf dieser Übersicht, sobald sie durch den Dozierenden beendet wurden. Für weitere Informationen bezüglich der Korrektheit ihrer spezifischen Antworten innerhalb einer Aktivität, kontaktieren Sie bitte Ihre Dozierenden.',
+      noCompletedLiveQuizzesYet:
+        'Bisher wurden noch keine Live-Quizzes in diesem Assessment-Kurs abgeschlossen.',
+      completedOn: 'Abgeschlossen am {date}',
+      notCompletedYet: 'Noch nicht abgeschlossen',
+      multiplier: 'Multiplikator',
+      basePoints: 'Basispunkte',
+      correctnessPoints: 'Korrektheitspunkte',
+      bonusPoints: 'Bonuspunkte',
+      ofAvailable: 'von {value} verfügbar',
+      totalPoints: 'Totalpunkte',
+      aggregatedTitle: 'Aggregierte Werte',
+      excludingBonus: '(ohne Bonus: {value})',
     },
   },
   manage: {

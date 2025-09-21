@@ -1,6 +1,6 @@
 import { GetServerSidePropsContext } from 'next'
-import { initializeApollo } from '~/lib/apollo'
-import getParticipantToken from '~/lib/getParticipantToken'
+import { initializeApollo } from '../../../../lib/apollo'
+import getParticipantToken from '../../../../lib/getParticipantToken'
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   try {

@@ -1,0 +1,13 @@
+fragment ActivityStudentPerformanceData on ActivityStudentPerformance {
+  id
+  displayName
+  finishedAt
+  multiplier
+
+  basePoints
+  availableBasePoints
+  correctnessPoints
+  availableCorrectnessPoints
+  bonusPoints
+  availableBonusPoints
+}

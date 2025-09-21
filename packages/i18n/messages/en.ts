@@ -714,6 +714,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       joinGroup: 'Join Group',
       groupName: 'Group Name',
       randomGroup: 'Random Group',
+      assessmentResults: 'Assessment Results',
       createJoinRandomGroup:
         'Click here to be automatically assigned to a random group with other students.',
       joinGroupError:
@@ -1081,6 +1082,22 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       accountDeletionMessage:
         'Since you are currently using your KlickerUZH account to participate in an assessment course, you cannot delete your account yourself. For more information on how to delete your account and leave the course, please contact your course instructors.',
       respondedAt: 'Responded at {date}',
+      failedToLoadActivityResults:
+        'An error occurred while loading the results for the activities in this assessment course. Please try again or contact your lecturers if the problem persists.',
+      activityResultsDescription:
+        'The following overview lists all activities that were made available to you in the assessment course. Activities that are conducted live in the lecture hall or are only available for a certain period of time (e.g., microlearnings) will appear in this overview once they have been completed by the lecturer. For more information regarding the correctness of your specific answers within an activity, please contact your lecturers.',
+      noCompletedLiveQuizzesYet:
+        'No live quizzes have been completed in this assessment course yet.',
+      completedOn: 'Completed on {date}',
+      notCompletedYet: 'Not completed yet',
+      multiplier: 'Multiplier',
+      basePoints: 'Base points',
+      correctnessPoints: 'Correctness points',
+      bonusPoints: 'Bonus points',
+      ofAvailable: 'of {value} available',
+      totalPoints: 'Total points',
+      aggregatedTitle: 'Aggregated totals',
+      excludingBonus: '(excluding bonus: {value})',
     },
   },
   manage: {
