@@ -11,10 +11,13 @@ hatchet:
   workers:
     general:
       image:
-        tag: '${APP_VERSION}'
+        tag: '${APP_VERSION_WORKER_GENERAL}'
     responseProcessor:
       image:
-        tag: '${APP_VERSION}'
+        tag: '${APP_VERSION_WORKER_RESPONSE_PROCESSOR}'
+    responseProcessorAssessment:
+      image:
+        tag: '${APP_VERSION_WORKER_RESPONSE_PROCESSOR_ASSESSMENT}'
 
 email:
   type: '${EMAIL_TYPE}'
@@ -32,12 +35,12 @@ eduId:
 auth:
   replicaCount: '${APP_REPLICAS}'
   image:
-    tag: '${APP_VERSION}'
+    tag: '${APP_VERSION_AUTH}'
 
 chat:
   replicaCount: '${APP_REPLICAS}'
   image:
-    tag: '${APP_VERSION}'
+    tag: '${APP_VERSION_CHAT}'
 
   azure:
     resourceName: '${AZURE_RESOURCE_NAME}'
@@ -49,23 +52,23 @@ chat:
 frontendPWA:
   replicaCount: '${APP_REPLICAS}'
   image:
-    tag: '${APP_VERSION}'
+    tag: '${APP_VERSION_FRONTEND_PWA}'
 
 frontendManage:
   replicaCount: '${APP_REPLICAS}'
   image:
-    tag: '${APP_VERSION}'
+    tag: '${APP_VERSION_FRONTEND_MANAGE}'
 
 frontendControl:
   replicaCount: '${APP_REPLICAS}'
   image:
-    tag: '${APP_VERSION}'
+    tag: '${APP_VERSION_FRONTEND_CONTROL}'
 
 backendGraphql:
   replicaCount: '${APP_REPLICAS}'
 
   image:
-    tag: '${APP_VERSION}'
+    tag: '${APP_VERSION_BACKEND}'
 
   apiDomain: '${API_DOMAIN}'
   cookieDomain: '${COOKIE_DOMAIN}'
@@ -106,17 +109,17 @@ olatApi:
   key: '${OLAT_API_KEY}'
 
   image:
-    tag: '${APP_VERSION}'
+    tag: '${APP_VERSION_OLAT_API}'
 
 responseApi:
   image:
-    tag: '${APP_VERSION}'
+    tag: '${APP_VERSION_RESPONSE_API}'
 
 lti:
   replicaCount: '${APP_REPLICAS}'
 
   image:
-    tag: '${APP_VERSION}'
+    tag: '${APP_VERSION_LTI}'
 
   appSecret: '${APP_SECRET}'
   clientId: '${LTI_CLIENT_ID}'
@@ -141,13 +144,13 @@ assessment:
   frontendPWA:
     replicaCount: '${APP_REPLICAS}'
     image:
-      tag: '${APP_VERSION}'
+      tag: '${APP_VERSION_FRONTEND_ASSESSMENT}'
 
   backendGraphql:
     replicaCount: '${APP_REPLICAS}'
 
     image:
-      tag: '${APP_VERSION}'
+      tag: '${APP_VERSION_BACKEND_ASSESSMENT}'
 
     apiDomain: '${API_DOMAIN}'
     cookieDomain: '${COOKIE_DOMAIN}'
@@ -183,4 +186,4 @@ assessment:
 
   responseApi:
     image:
-      tag: '${APP_VERSION}'
+      tag: '${APP_VERSION_RESPONSE_API_ASSESSMENT}'

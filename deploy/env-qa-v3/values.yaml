@@ -32,6 +32,13 @@ hatchet:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
         pullPolicy: Always
 
+    responseProcessorAssessment:
+      replicaCount: 1
+      priorityClassName: staging-workload
+      image:
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
+        pullPolicy: Always
+
 auth:
   priorityClassName: staging-workload
 
