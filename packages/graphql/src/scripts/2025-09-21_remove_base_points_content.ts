@@ -101,9 +101,11 @@ async function run() {
           })
 
           // send audit log message to hatchet
+          const logMessage = `[CORRECTION] [Base Points Content Elements] Removed base points from live quiz response ${response.id} by participant ${response.participantId} for content element instance ${response.instanceId} (was ${response.basePoints})`
           hatchetClient.events.push('create-audit-log-entry', {
-            info: `[CORRECTION] [Base Points Content Elements] Removed base points from live quiz response ${response.id} by participant ${response.participantId} for content element instance ${response.instanceId} (was ${response.basePoints})`,
+            info: logMessage,
           })
+          console.log(logMessage)
         })
       )
 
