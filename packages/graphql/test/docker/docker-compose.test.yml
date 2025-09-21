@@ -33,7 +33,7 @@ services:
 
   # Main database for testing
   postgres:
-    image: docker.io/library/postgres:15
+    image: docker.io/library/postgres:14.8
     environment:
       POSTGRES_USER: klicker
       POSTGRES_PASSWORD: klicker
@@ -90,6 +90,15 @@ services:
     image: docker.io/library/redis:7
     ports:
       - 6380:6379
+    networks:
+      - klicker
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    ports:
+      - 10000:10000 # Blob service
+      - 10001:10001 # Queue service
+      - 10002:10002 # Table service
     networks:
       - klicker
 

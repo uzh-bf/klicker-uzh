@@ -114,6 +114,7 @@ migrate(prisma).then(() => {
     redisExec,
     redisAssessmentExec,
     handlers,
+    auditClient,
   })
 
   console.log('Hatchet tasks initialized.', Object.keys(tasks))

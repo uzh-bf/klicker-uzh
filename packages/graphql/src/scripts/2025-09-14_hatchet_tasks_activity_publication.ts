@@ -1,6 +1,7 @@
 import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
 import { PublicationStatus } from '@klicker-uzh/prisma/client'
+import { AuditClient } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import { Redis } from 'ioredis'
 import {
@@ -58,6 +59,7 @@ async function run() {
     emitter,
     redisExec,
     redisAssessmentExec,
+    auditClient: new AuditClient(),
     handlers: {
       handleFinalRandomGroupAssignments,
       handleRunningRandomGroupAssignments,

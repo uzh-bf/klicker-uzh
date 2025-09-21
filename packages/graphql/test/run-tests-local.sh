@@ -70,6 +70,8 @@ export DATABASE_URL="postgresql://klicker:klicker@localhost:5432/klicker-prod"
 export HATCHET_CLIENT_TOKEN="$TOKEN"
 export HATCHET_CLIENT_TLS_STRATEGY="none"
 export NODE_ENV="test"
+export AUDIT_SERVICE_URL="http://localhost:7080"
+export AUDIT_TOKEN="test-secret-token-123"
 
 echo ""
 echo "=== Environment Setup ==="
@@ -111,6 +113,8 @@ DATABASE_URL="$DATABASE_URL" \
 HATCHET_CLIENT_TOKEN="$HATCHET_CLIENT_TOKEN" \
 HATCHET_CLIENT_TLS_STRATEGY="$HATCHET_CLIENT_TLS_STRATEGY" \
 NODE_ENV="$NODE_ENV" \
+AUDIT_SERVICE_URL="$AUDIT_SERVICE_URL" \
+AUDIT_TOKEN="$AUDIT_TOKEN" \
 
 # pass the first argument to the vitest command, or run all tests if no argument is given
 pnpm test ${1:-}

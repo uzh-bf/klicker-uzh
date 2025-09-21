@@ -33,7 +33,7 @@ export class AuditClient {
 
     const serviceUrl = config.serviceUrl || process.env.AUDIT_SERVICE_URL
     if (typeof serviceUrl !== 'string' || !serviceUrl) {
-      throw new Error('Service URL is not set')
+      throw new Error('Audit Service URL is not set')
     }
 
     const auditToken = config.auditToken || process.env.AUDIT_TOKEN

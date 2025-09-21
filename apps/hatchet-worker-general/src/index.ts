@@ -4,6 +4,7 @@ import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { handlers } from '@klicker-uzh/graphql'
 import type { PreparedHatchetTasks } from '@klicker-uzh/hatchet'
 import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
+import { AuditClient } from '@klicker-uzh/util'
 import EventEmitter from 'events'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
@@ -107,6 +108,8 @@ async function main() {
 
   const pubSub = createPubSub({ eventTarget })
 
+  const auditClient = new AuditClient()
+
   const emitter = new EventEmitter()
 
   logger.info('Connecting to Hatchet...')
@@ -119,6 +122,7 @@ async function main() {
     redisAssessmentExec,
     redisCache,
     handlers,
+    auditClient,
   })
 
   const workflows = selectWorkflows(preparedWorkflows)
