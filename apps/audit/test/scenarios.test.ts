@@ -37,6 +37,7 @@ interface AuditEvent {
 // Helper to submit events with verification
 async function submitAndVerifyEvents(events: AuditEvent[]) {
   const results = []
+  const eventIds = new Set(events.map((event) => event.eventId))
 
   for (const event of events) {
     const response = await makeAuthenticatedRequest('/audit', {
@@ -57,7 +58,9 @@ async function submitAndVerifyEvents(events: AuditEvent[]) {
   await new Promise((resolve) => setTimeout(resolve, 2000))
 
   // Verify all events are persisted
-  const persistedEntities = await tableHelper.getAllEntities()
+  const persistedEntities = (await tableHelper.getAllEntities()).filter(
+    (entity) => (entity.rowKey ? eventIds.has(entity.rowKey) : false)
+  )
   expect(persistedEntities.length).toBe(events.length)
 
   return { results, persistedEntities }
@@ -67,6 +70,10 @@ describe('Real-World Scenario Tests', () => {
   beforeAll(async () => {
     console.log('Setting up scenario tests...')
     await tableHelper.setup()
+    await tableHelper.cleanup()
+  })
+
+  beforeEach(async () => {
     await tableHelper.cleanup()
   })
 
@@ -135,7 +142,7 @@ describe('Real-World Scenario Tests', () => {
 
       // Verify complete audit trail
       const authEvents = persistedEntities.sort(
-        (a, b) => a.timestamp - b.timestamp
+        (a, b) => extractEntityTimestamp(a) - extractEntityTimestamp(b)
       )
 
       // Check sequence
@@ -332,7 +339,7 @@ describe('Real-World Scenario Tests', () => {
 
       // Verify document lifecycle tracking
       const docEvents = persistedEntities.sort(
-        (a, b) => a.timestamp - b.timestamp
+        (a, b) => extractEntityTimestamp(a) - extractEntityTimestamp(b)
       )
 
       // All events should reference the same document
@@ -1053,3 +1060,13 @@ describe('Real-World Scenario Tests', () => {
     })
   })
 })
+function extractEntityTimestamp(entity: any): number {
+  const raw = (entity as any).eventTimestamp ?? (entity as any).timestamp
+  if (typeof raw === 'number') return raw
+  if (typeof raw === 'string') {
+    const parsed = Date.parse(raw)
+    if (Number.isNaN(parsed)) throw new Error(`Invalid timestamp: ${raw}`)
+    return parsed
+  }
+  throw new Error('Timestamp not found on entity')
+}

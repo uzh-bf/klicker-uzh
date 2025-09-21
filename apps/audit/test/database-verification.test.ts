@@ -7,6 +7,24 @@ const AUTH_TOKEN = process.env.INTERNAL_TOKEN || 'test-secret-token-123'
 // Test helper instance
 const tableHelper = new AzureTableTestHelper()
 
+function extractEntityTimestamp(entity: any): number {
+  const raw = entity.eventTimestamp ?? entity.timestamp
+
+  if (typeof raw === 'number') {
+    return raw
+  }
+
+  if (typeof raw === 'string') {
+    const parsed = Date.parse(raw)
+    if (Number.isNaN(parsed)) {
+      throw new Error(`Unable to parse timestamp value: ${raw}`)
+    }
+    return parsed
+  }
+
+  throw new Error('Timestamp not found on entity')
+}
+
 // Helper function to make authenticated requests
 async function makeAuthenticatedRequest(
   path: string,
@@ -28,6 +46,10 @@ describe('Database Verification Tests', () => {
   beforeAll(async () => {
     console.log('Setting up database verification tests...')
     await tableHelper.setup()
+    await tableHelper.cleanup()
+  })
+
+  beforeEach(async () => {
     await tableHelper.cleanup()
   })
 
@@ -66,8 +88,10 @@ describe('Database Verification Tests', () => {
       await tableHelper.waitForEntityCount(2, 10000)
 
       // Verify both events are actually in the database
-      const persistedEntities = await tableHelper.getAllEntities()
-      expect(persistedEntities.length).toBe(2)
+      const persistedEntities = (await tableHelper.getAllEntities()).filter(
+        (e) => events.some((event) => event.eventId === e.rowKey)
+      )
+      expect(persistedEntities.length).toBe(events.length)
 
       // Verify data integrity
       for (const event of events) {
@@ -76,6 +100,7 @@ describe('Database Verification Tests', () => {
         if (!found) continue
         expect(found.subject).toBe(event.subject)
         expect(found.action).toBe(event.action)
+        expect(found.scope).toBe('internal')
 
         if (event.attributes) {
           const persistedAttributes = JSON.parse(found!.attributes!)
@@ -113,11 +138,10 @@ describe('Database Verification Tests', () => {
 
       // Wait and verify only one record exists
       await new Promise((resolve) => setTimeout(resolve, 2000))
-      const entities = await tableHelper.getAllEntities()
-      const duplicateEntities = entities.filter(
+      const entities = (await tableHelper.getAllEntities()).filter(
         (e) => e.rowKey === event.eventId
       )
-      expect(duplicateEntities.length).toBe(1)
+      expect(entities.length).toBe(1)
     })
   })
 
@@ -142,7 +166,9 @@ describe('Database Verification Tests', () => {
 
       // Wait for persistence and get the entity
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      const entities = await tableHelper.getAllEntities()
+      const entities = (await tableHelper.getAllEntities()).filter(
+        (e) => e.rowKey === event.eventId
+      )
       expect(entities.length).toBe(1)
 
       const entity = entities[0]!
@@ -152,16 +178,13 @@ describe('Database Verification Tests', () => {
 
       // Partition key should include tenant hash and timestamp bucket
       const partitionParts = entity.partitionKey!.split('-')
-      expect(partitionParts.length).toBe(3)
+      expect(partitionParts.length).toBe(2)
 
-      // Verify tenant hash (first part - should be hex)
-      expect(/^[0-9a-f]{2}$/.test(partitionParts[0]!)).toBe(true)
+      // Verify time bucket (first part - should be timestamp-based)
+      expect(/^\d{12}$/.test(partitionParts[0]!)).toBe(true)
 
-      // Verify time bucket (second part - should be timestamp-based)
-      expect(/^\d{12}$/.test(partitionParts[1]!)).toBe(true)
-
-      // Verify shard (third part - should be single hex digit)
-      expect(/^[0-9a-f]$/.test(partitionParts[2]!)).toBe(true)
+      // Verify shard identifier (second part - single hex digit)
+      expect(/^[0-9a-f]$/.test(partitionParts[1]!)).toBe(true)
     })
 
     it('should distribute events across different partitions based on time', async () => {
@@ -189,14 +212,15 @@ describe('Database Verification Tests', () => {
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
       // Get all entities and check partition distribution
-      const entities = await tableHelper.getAllEntities()
-      expect(entities.length).toBe(3)
+      const entities = (await tableHelper.getAllEntities()).filter((e) =>
+        events.some((event) => event.eventId === e.rowKey)
+      )
+      expect(entities.length).toBe(events.length)
 
-      // Extract unique partition keys
       const partitionKeys = new Set(entities.map((e) => e.partitionKey))
 
-      // Should have multiple partitions due to different timestamps
-      expect(partitionKeys.size).toBeGreaterThan(1)
+      // Should have unique partitions due to different timestamps (minute buckets)
+      expect(partitionKeys.size).toBe(events.length)
     })
 
     it('should handle events with same tenant but different sharding', async () => {
@@ -207,7 +231,7 @@ describe('Database Verification Tests', () => {
       const events = Array.from({ length: 5 }, (_, i) => ({
         subject: `user:shard${i}`,
         action: 'test.shard',
-        eventId: `shard-${testId}-${i.toString().padStart(10, '0')}`, // Different eventIds for sharding
+        eventId: `${i.toString(16)}-shard-${testId}-${i.toString().padStart(4, '0')}`,
         timestamp: sameTimestamp,
       }))
 
@@ -223,14 +247,13 @@ describe('Database Verification Tests', () => {
       // Wait for persistence
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
-      const entities = await tableHelper.getAllEntities()
-      expect(entities.length).toBe(5)
-
-      // Check that sharding distributes across different partition keys
-      const partitionKeys = new Set(entities.map((e) => e.partitionKey))
-      console.log(
-        `Shard test created ${partitionKeys.size} unique partitions from 5 events`
+      const entities = (await tableHelper.getAllEntities()).filter((e) =>
+        events.some((event) => event.eventId === e.rowKey)
       )
+      expect(entities.length).toBe(events.length)
+
+      const partitionKeys = new Set(entities.map((e) => e.partitionKey))
+      expect(partitionKeys.size).toBeGreaterThan(1)
     })
   })
 
@@ -343,7 +366,9 @@ describe('Database Verification Tests', () => {
       expect(deserializedAttributes).toEqual(complexEvent.attributes)
 
       // Specific checks for edge cases
-      expect(deserializedAttributes.unicode).toBe('🎉 Unicode test 测试')
+      expect(deserializedAttributes.nested_object.level1.level2.unicode).toBe(
+        '🎉 Unicode test 测试'
+      )
       expect(deserializedAttributes.special_chars).toBe(
         'Special chars: !@#$%^&*()[]{}|;:,.<>?'
       )
@@ -414,17 +439,20 @@ describe('Database Verification Tests', () => {
 
       // Verify timestamp storage
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      const entities = await tableHelper.getAllEntities()
-      expect(entities.length).toBe(2)
+      const entities = (await tableHelper.getAllEntities()).filter((e) =>
+        events.some((event) => event.eventId === e.rowKey)
+      )
+      expect(entities.length).toBe(events.length)
 
       for (const entity of entities) {
         // Timestamp should be stored as number
-        expect(typeof entity.timestamp).toBe('number')
-        expect(entity.timestamp).toBeGreaterThan(0)
+        const numericTimestamp = extractEntityTimestamp(entity)
+        expect(Number.isFinite(numericTimestamp)).toBe(true)
+        expect(numericTimestamp).toBeGreaterThan(0)
 
         // Should match original timestamp
         const originalEvent = events.find((e) => e.eventId === entity.rowKey)
-        expect(entity.timestamp).toBe(originalEvent!.timestamp)
+        expect(numericTimestamp).toBe(originalEvent!.timestamp)
       }
     })
 
@@ -448,12 +476,15 @@ describe('Database Verification Tests', () => {
 
       // Verify server-generated timestamp
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      const entities = await tableHelper.getAllEntities()
+      const entities = (await tableHelper.getAllEntities()).filter(
+        (e) => e.rowKey === event.eventId
+      )
       expect(entities.length).toBe(1)
 
       const entity = entities[0]!
-      expect(entity.timestamp).toBeGreaterThanOrEqual(beforeRequest)
-      expect(entity.timestamp).toBeLessThanOrEqual(afterRequest)
+      const numericTimestamp = extractEntityTimestamp(entity)
+      expect(numericTimestamp).toBeGreaterThanOrEqual(beforeRequest)
+      expect(numericTimestamp).toBeLessThanOrEqual(afterRequest)
     })
   })
 

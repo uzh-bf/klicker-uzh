@@ -204,9 +204,9 @@ describe('Public Event Filtering', () => {
         body: JSON.stringify(eventData),
       })
 
-      expect(response.status).toBe(403)
+      expect(response.status).toBe(400)
       const result = (await response.json()) as any
-      expect(result.error).toContain('not allowed from public endpoint')
+      expect(result.error).toBe('Invalid event payload')
     }
   })
 })

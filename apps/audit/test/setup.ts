@@ -1,8 +1,13 @@
 import { config } from 'dotenv'
+import { existsSync } from 'fs'
 import { resolve } from 'path'
 
 // Load test environment variables before any tests run
-config({ path: resolve(process.cwd(), '.env.test') })
+const testEnvPath = resolve(process.cwd(), '.env.test')
+const cypressEnvPath = resolve(process.cwd(), '.env.cypress')
+const envPath = existsSync(testEnvPath) ? testEnvPath : cypressEnvPath
+
+config({ path: envPath })
 
 // Ensure critical environment variables are set
 if (!process.env.INTERNAL_TOKEN) {

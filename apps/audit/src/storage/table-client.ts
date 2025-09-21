@@ -201,30 +201,48 @@ export class AuditTableClient {
    */
   private async performUpsert(entity: AuditTableEntity): Promise<void> {
     try {
-      await this.client.upsertEntity(entity, 'Merge')
+      await this.client.createEntity(entity)
 
       logger.debug(
         {
           partitionKey: entity.partitionKey,
           rowKey: entity.rowKey,
         },
-        'Entity upserted successfully'
+        'Entity created successfully'
       )
     } catch (error) {
       // Handle specific Azure Table errors with consistent error messages
       if (error instanceof Error) {
+        // Treat duplicate entities as success for idempotency
+        const lowerCaseMessage = error.message.toLowerCase()
+        const statusCode = (error as { statusCode?: number }).statusCode
+
+        if (
+          lowerCaseMessage.includes('entityalreadyexists') ||
+          statusCode === 409
+        ) {
+          logger.debug(
+            {
+              partitionKey: entity.partitionKey,
+              rowKey: entity.rowKey,
+            },
+            'Entity already exists, skipping create'
+          )
+          return
+        }
+
         // Entity too large (>1MB total)
         if (
-          error.message.includes('RequestBodyTooLarge') ||
-          error.message.includes('EntityTooLarge')
+          lowerCaseMessage.includes('requestbodytoolarge') ||
+          lowerCaseMessage.includes('entitytoolarge')
         ) {
           throw new Error('Entity exceeds Azure Table Storage size limits')
         }
 
         // Throttling (429) - make retryable
         if (
-          error.message.includes('ServerBusy') ||
-          error.message.includes('TooManyRequests')
+          lowerCaseMessage.includes('serverbusy') ||
+          lowerCaseMessage.includes('toomanyrequests')
         ) {
           logger.debug(
             {
@@ -238,8 +256,8 @@ export class AuditTableClient {
 
         // Network or service errors - make retryable
         if (
-          error.message.includes('ENOTFOUND') ||
-          error.message.includes('timeout')
+          lowerCaseMessage.includes('enotfound') ||
+          lowerCaseMessage.includes('timeout')
         ) {
           logger.debug(
             {

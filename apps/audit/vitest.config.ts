@@ -61,8 +61,8 @@ export default defineConfig({
     pool: 'threads',
     poolOptions: {
       threads: {
-        // Limit concurrency for integration tests that use shared Docker resources
-        maxThreads: 2,
+        // Run test suites sequentially to avoid Azurite table contention
+        maxThreads: 1,
         minThreads: 1,
       },
     },

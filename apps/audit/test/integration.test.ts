@@ -8,6 +8,24 @@ const AUTH_TOKEN = process.env.INTERNAL_TOKEN || 'test-secret-token-123'
 // Test helper instance
 const tableHelper = new AzureTableTestHelper()
 
+function extractEntityTimestamp(entity: any): number {
+  const raw = entity.eventTimestamp ?? entity.timestamp
+
+  if (typeof raw === 'number') {
+    return raw
+  }
+
+  if (typeof raw === 'string') {
+    const parsed = Date.parse(raw)
+    if (Number.isNaN(parsed)) {
+      throw new Error(`Unable to parse timestamp value: ${raw}`)
+    }
+    return parsed
+  }
+
+  throw new Error('Timestamp not found on entity')
+}
+
 // Helper function to make authenticated requests
 async function makeAuthenticatedRequest(
   path: string,
@@ -25,29 +43,34 @@ async function makeAuthenticatedRequest(
   return response
 }
 
-// Generate expected partition key for verification
-function generateExpectedPartitionKey(
-  timestamp: number,
-  eventId?: string
-): string {
-  const date = new Date(timestamp)
-  const year = date.getFullYear()
-  const month = (date.getMonth() + 1).toString().padStart(2, '0')
-  const day = date.getDate().toString().padStart(2, '0')
-  const hour = date.getHours().toString().padStart(2, '0')
-  const minute = date.getMinutes().toString().padStart(2, '0')
-  const bucket = `${year}${month}${day}${hour}${minute}`
+async function waitForEntityByRowKey(
+  rowKey: string,
+  timeoutMs = 5000,
+  pollIntervalMs = 100
+) {
+  const start = Date.now()
 
-  // Simple shard: use first character of eventId if provided, otherwise '0'
-  const shard = eventId ? eventId[0] : '0'
+  while (Date.now() - start < timeoutMs) {
+    const entities = await tableHelper.getAllEntities()
+    const match = entities.find((entity) => entity.rowKey === rowKey)
+    if (match) {
+      return match
+    }
 
-  return `${bucket}-${shard}`
+    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs))
+  }
+
+  throw new Error(`Entity with rowKey ${rowKey} not found after ${timeoutMs}ms`)
 }
 
 describe('Audit Service Integration Tests', () => {
   beforeAll(async () => {
     console.log('Setting up test environment...')
     await tableHelper.setup()
+    await tableHelper.cleanup()
+  })
+
+  beforeEach(async () => {
     await tableHelper.cleanup()
   })
 
@@ -73,15 +96,7 @@ describe('Audit Service Integration Tests', () => {
       expect(responseData.stored).toBe(true)
 
       // Wait for persistence and verify in database
-      const expectedPartitionKey = generateExpectedPartitionKey(
-        Date.now(),
-        event.eventId
-      )
-      const persistedEntity = await tableHelper.waitForEntity(
-        expectedPartitionKey,
-        event.eventId,
-        5000
-      )
+      const persistedEntity = await waitForEntityByRowKey(event.eventId)
 
       // Verify entity fields
       expect(persistedEntity.subject).toBe(event.subject)
@@ -104,15 +119,7 @@ describe('Audit Service Integration Tests', () => {
       expect(response.status).toBe(200)
 
       // Verify in database
-      const expectedPartitionKey = generateExpectedPartitionKey(
-        Date.now(),
-        event.eventId
-      )
-      const persistedEntity = await tableHelper.waitForEntity(
-        expectedPartitionKey,
-        event.eventId,
-        5000
-      )
+      const persistedEntity = await waitForEntityByRowKey(event.eventId)
 
       // Verify all fields including complex attributes
       expect(persistedEntity.resourceId).toBe(event.resourceId)
@@ -139,15 +146,7 @@ describe('Audit Service Integration Tests', () => {
       expect(responseData.eventId).toBeTruthy() // Should have auto-generated eventId
 
       // Verify in database using the returned eventId
-      const expectedPartitionKey = generateExpectedPartitionKey(
-        Date.now(),
-        responseData.eventId
-      )
-      await tableHelper.waitForEntity(
-        expectedPartitionKey,
-        responseData.eventId,
-        5000
-      )
+      await waitForEntityByRowKey(responseData.eventId)
     })
 
     it('should handle custom timestamp correctly', async () => {
@@ -167,17 +166,9 @@ describe('Audit Service Integration Tests', () => {
       expect(response.status).toBe(200)
 
       // Verify timestamp was used for partition key
-      const expectedPartitionKey = generateExpectedPartitionKey(
-        customTimestamp,
-        event.eventId
-      )
-      const persistedEntity = await tableHelper.waitForEntity(
-        expectedPartitionKey,
-        event.eventId,
-        5000
-      )
+      const persistedEntity = await waitForEntityByRowKey(event.eventId)
 
-      expect(persistedEntity.timestamp).toBe(customTimestamp)
+      expect(extractEntityTimestamp(persistedEntity)).toBe(customTimestamp)
     })
   })
 
@@ -203,15 +194,7 @@ describe('Audit Service Integration Tests', () => {
       expect(response2.status).toBe(200)
 
       // Verify only one entity exists in database
-      const expectedPartitionKey = generateExpectedPartitionKey(
-        Date.now(),
-        event.eventId
-      )
-      const persistedEntity = await tableHelper.waitForEntity(
-        expectedPartitionKey,
-        event.eventId,
-        5000
-      )
+      const persistedEntity = await waitForEntityByRowKey(event.eventId)
 
       // Should maintain original data due to idempotency
       expect(persistedEntity.subject).toBe(event.subject)
@@ -294,7 +277,7 @@ describe('Audit Service Integration Tests', () => {
       // Verify all auth events are stored
       const allEntities = await tableHelper.getAllEntities()
       const authEntities = allEntities.filter((e) =>
-        e.subject?.includes(`auth-test-${testId}`)
+        e.rowKey?.startsWith(`auth-${testId}-`)
       )
       expect(authEntities.length).toBe(3)
 
@@ -326,7 +309,7 @@ describe('Audit Service Integration Tests', () => {
       await new Promise((resolve) => setTimeout(resolve, 2000))
       const allEntities = await tableHelper.getAllEntities()
       const systemEntities = allEntities.filter((e) =>
-        e.subject?.includes(`system-test-${testId}`)
+        e.rowKey?.startsWith(`system-${testId}-`)
       )
       expect(systemEntities.length).toBe(2)
 
@@ -360,7 +343,7 @@ describe('Audit Service Integration Tests', () => {
       await new Promise((resolve) => setTimeout(resolve, 2000))
       const allEntities = await tableHelper.getAllEntities()
       const businessEntities = allEntities.filter((e) =>
-        e.subject?.includes(`business-test-${testId}`)
+        e.rowKey?.startsWith(`business-${testId}-`)
       )
       expect(businessEntities.length).toBe(2)
 
@@ -439,15 +422,7 @@ describe('Audit Service Integration Tests', () => {
       expect(response.status).toBe(200)
 
       // Verify persistence
-      const expectedPartitionKey = generateExpectedPartitionKey(
-        Date.now(),
-        event.eventId
-      )
-      const persistedEntity = await tableHelper.waitForEntity(
-        expectedPartitionKey,
-        event.eventId,
-        5000
-      )
+      const persistedEntity = await waitForEntityByRowKey(event.eventId)
 
       // Verify attributes were properly serialized
       const attributes = JSON.parse(persistedEntity.attributes!)
@@ -476,21 +451,12 @@ describe('Audit Service Integration Tests', () => {
       expect(response.status).toBe(200)
 
       // Verify entity has server-generated timestamp
-      const expectedPartitionKey = generateExpectedPartitionKey(
-        afterSubmission,
-        event.eventId
-      )
-      const persistedEntity = await tableHelper.waitForEntity(
-        expectedPartitionKey,
-        event.eventId,
-        5000
-      )
+      const persistedEntity = await waitForEntityByRowKey(event.eventId)
 
       // Timestamp should be within the submission window
-      expect(persistedEntity.timestamp).toBeGreaterThanOrEqual(beforeSubmission)
-      expect(persistedEntity.timestamp).toBeLessThanOrEqual(
-        afterSubmission + 1000
-      ) // Add small buffer
+      const numericTimestamp = extractEntityTimestamp(persistedEntity)
+      expect(numericTimestamp).toBeGreaterThanOrEqual(beforeSubmission)
+      expect(numericTimestamp).toBeLessThanOrEqual(afterSubmission + 1000) // Add small buffer
     })
   })
 })

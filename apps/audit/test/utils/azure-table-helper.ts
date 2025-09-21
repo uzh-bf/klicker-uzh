@@ -8,10 +8,17 @@ const AZURITE_CONNECTION_STRING =
   'DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;'
 
 interface AuditTableEntity extends TableEntity {
+  scope: string
   subject: string
   action: string
-  timestamp: number
+  eventTimestamp?: number
   attributes?: string // JSON serialized
+  correlationId?: string
+  correlationClaims?: string
+  stage?: string
+  outcome?: string
+  reasonCode?: string
+  schemaVersion: number
   resourceId?: string
   sessionId?: string
   userId?: string
@@ -289,18 +296,21 @@ export class AzureTableTestHelper {
       stats.totalEntities++
       actionsSet.add(entity.action)
 
-      if (entity.timestamp) {
+      const timestampValue =
+        (entity as AuditTableEntity).eventTimestamp ?? entity.timestamp
+
+      if (timestampValue) {
         if (
           stats.oldestTimestamp === null ||
-          entity.timestamp < stats.oldestTimestamp
+          timestampValue < stats.oldestTimestamp
         ) {
-          stats.oldestTimestamp = entity.timestamp
+          stats.oldestTimestamp = timestampValue
         }
         if (
           stats.newestTimestamp === null ||
-          entity.timestamp > stats.newestTimestamp
+          timestampValue > stats.newestTimestamp
         ) {
-          stats.newestTimestamp = entity.timestamp
+          stats.newestTimestamp = timestampValue
         }
       }
     }

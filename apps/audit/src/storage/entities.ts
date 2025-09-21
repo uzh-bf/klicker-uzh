@@ -4,10 +4,17 @@ import type { AuditEvent } from '../schemas/audit-event.js'
 export interface AuditTableEntity {
   partitionKey: string
   rowKey: string
+  scope: string
   subject: string
   action: string
-  timestamp: number
+  eventTimestamp: number
   attributes?: string // JSON serialized
+  correlationId?: string
+  correlationClaims?: string // JSON serialized
+  stage?: string
+  outcome?: string
+  reasonCode?: string
+  schemaVersion: number
   resourceId?: string
   sessionId?: string
   userId?: string
@@ -19,6 +26,7 @@ export interface AuditTableEntity {
  */
 function generateDeterministicEventId(event: AuditEvent): string {
   const data = JSON.stringify({
+    scope: event.scope,
     subject: event.subject,
     action: event.action,
     timestamp: event.timestamp,
@@ -41,6 +49,10 @@ function generateDeterministicEventId(event: AuditEvent): string {
  * Create an Azure Table entity from an audit event with idempotency enforcement
  */
 export function createAuditEntity(event: AuditEvent): AuditTableEntity {
+  if (!event.subject) {
+    throw new Error('subject is required to create an audit entity')
+  }
+
   // Enforce idempotency: use provided eventId or generate deterministic one
   const eventId = event.eventId || generateDeterministicEventId(event)
 
@@ -50,10 +62,19 @@ export function createAuditEntity(event: AuditEvent): AuditTableEntity {
   return {
     partitionKey,
     rowKey,
+    scope: event.scope ?? 'internal',
     subject: event.subject,
     action: event.action,
-    timestamp: event.timestamp,
+    eventTimestamp: event.timestamp,
     attributes: event.attributes ? JSON.stringify(event.attributes) : undefined,
+    correlationId: event.correlationId,
+    correlationClaims: event.correlationClaims
+      ? JSON.stringify(event.correlationClaims)
+      : undefined,
+    stage: event.stage,
+    outcome: event.outcome,
+    reasonCode: event.reasonCode,
+    schemaVersion: event.schemaVersion ?? 1,
     resourceId: event.resourceId,
     sessionId: event.sessionId,
     userId: event.userId,
@@ -79,9 +100,10 @@ function generatePartitionKey(timestamp: number, eventId?: string): string {
   const minute = date.getMinutes().toString().padStart(2, '0')
   const bucket = `${year}${month}${day}${hour}${minute}`
 
-  // Simple shard: use first character of eventId if provided, otherwise '0'
-  // This avoids hashing the eventId entirely
-  const shard = eventId ? eventId[0] : '0'
+  // Derive a hexadecimal shard from the eventId to distribute entities evenly
+  const shard = eventId
+    ? createHash('sha256').update(eventId).digest('hex')[0]!
+    : '0'
 
   return `${bucket}-${shard}`
 }
