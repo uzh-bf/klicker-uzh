@@ -1,7 +1,6 @@
-import { hatchetClient } from '@klicker-uzh/hatchet'
+import { HatchetClient } from '@hatchet-dev/typescript-sdk'
 import { PrismaClient } from '@klicker-uzh/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
-
 // ! IMPORTANT INFORMATION
 // This script sets the basePoints setting of all content elements and flashcards to false and updates corresponding instances
 // At the same time, live quiz responses where non-zero amounts of base points were awarded for content elements are updated (alongside the audit log)
@@ -11,6 +10,14 @@ const DRY_RUN = true
 async function run() {
   const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
   const prisma = new PrismaClient({ adapter })
+
+  const hatchetClient = HatchetClient.init({
+    token: process.env.HATCHET_CLIENT_TOKEN,
+    host_port: 'localhost:7070',
+    tls_config: {
+      tls_strategy: 'none',
+    },
+  })
 
   // fetch all elements that are of type content or flashcard and have their base points set to true
   const elements = await prisma.element.findMany({
