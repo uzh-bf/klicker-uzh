@@ -38,6 +38,7 @@ import {
   CourseStudentTimeline,
   CourseSummary,
   LeaderboardEntry,
+  StudentAssessmentResults,
   StudentCourse,
 } from './course.js'
 import {
@@ -892,6 +893,15 @@ export const Query = builder.queryType({
         },
         resolve: async (_, args, ctx) => {
           return await LiveQuizService.getLiveQuizLeaderboard(args, ctx)
+        },
+      }),
+
+      studentAssessmentResults: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: StudentAssessmentResults,
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await CourseService.getStudentAssessmentResults(args, ctx)
         },
       }),
 

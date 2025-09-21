@@ -36,6 +36,7 @@ import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
 import { Suspense, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import SuspendedAssessmentResults from '~/components/insights/assessmentResults/SuspendedAssessmentResults'
 import Layout from '../../../components/Layout'
 import SuspendedGroupView from '../../../components/course/SuspendedGroupView'
 import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
@@ -104,7 +105,15 @@ function CourseOverview({
   })
 
   useEffect(() => {
-    if (
+    const participation = data?.getCourseOverviewData?.participation
+
+    // if assessment is enabled, switch to the assessment results tab automatically
+    if (data?.getCourseOverviewData?.course?.isAssessmentEnabled) {
+      setSelectedTab('assessment-results')
+    }
+    // if a course description is set but gamification is not enabled or the user is not participating in the course,
+    // switch to the info tab automatically
+    else if (
       data?.getCourseOverviewData &&
       (!participation ||
         (!data.getCourseOverviewData?.course?.isGamificationEnabled &&
@@ -184,11 +193,19 @@ function CourseOverview({
       displayName={t('shared.generic.leaderboard')}
       course={course ?? undefined}
     >
-      {course.isGamificationEnabled || course.description ? (
+      {course.isGamificationEnabled ||
+      course.isAssessmentEnabled ||
+      course.description ? (
         <>
           <div className="md:mx-auto md:w-full md:max-w-6xl">
             <Tabs
-              defaultValue={course.isGamificationEnabled ? 'global' : 'info'}
+              defaultValue={
+                course.isAssessmentEnabled
+                  ? 'assessment-results'
+                  : course.isGamificationEnabled
+                    ? 'global'
+                    : 'info'
+              }
               value={selectedTab}
               tabs={[
                 ...(course.isGamificationEnabled
@@ -219,6 +236,16 @@ function CourseOverview({
                         value: 'info',
                         label: t('pwa.courses.courseInformation'),
                         data: { cy: 'student-course-information' },
+                      },
+                    ]
+                  : []),
+                ...(course.isAssessmentEnabled
+                  ? [
+                      {
+                        id: 'assessment-results',
+                        value: 'assessment-results',
+                        label: `${t('pwa.courses.assessmentResults')}`,
+                        data: { cy: `assessment-results` },
                       },
                     ]
                   : []),
@@ -545,6 +572,19 @@ function CourseOverview({
                   )}
                 </TabContent>
               )}
+
+              {course.isAssessmentEnabled &&
+              selectedTab === 'assessment-results' ? (
+                <TabContent
+                  key="assessment-results"
+                  value="assessment-results"
+                  className={{ root: 'md:px-4' }}
+                >
+                  <Suspense fallback={<Loader />}>
+                    <SuspendedAssessmentResults courseId={course.id} />
+                  </Suspense>
+                </TabContent>
+              ) : null}
 
               {participant &&
                 participation &&

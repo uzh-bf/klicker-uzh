@@ -964,3 +964,19 @@ export type ActivityQuizAnalytics = {
   totalCorrectRate: number
 }
 // #endregion
+
+// ----- ASSESSMENT -----
+// #region
+export type ActivityStudentPerformance = {
+  id: string
+  displayName: string
+  finishedAt: Date
+  multiplier: number
+  basePoints: number
+  availableBasePoints: number
+  correctnessPoints: number
+  availableCorrectnessPoints: number
+  bonusPoints: number
+  availableBonusPoints: number
+}
+// #endregion

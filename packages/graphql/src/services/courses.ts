@@ -1,5 +1,9 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { ActivityType, SharingType } from '@klicker-uzh/types'
+import {
+  ActivityStudentPerformance,
+  ActivityType,
+  SharingType,
+} from '@klicker-uzh/types'
 import { levelFromXp, recomputeDerivedPermissions } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
@@ -309,6 +313,161 @@ export async function getCourseOverviewData(
     course,
     participant,
     participation: null,
+  }
+}
+
+export async function getStudentAssessmentResults(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  // verify that the student is logged in as an assessment participant and has a participation in the course
+  if (ctx.user.scope !== DB.UserLoginScope.EDUID) {
+    throw new Error(
+      'Only logged in assessment participants can access assessment results'
+    )
+  }
+
+  const participation = await ctx.prisma.participation.findUnique({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+  })
+
+  if (!participation) {
+    throw new Error('Participation not found')
+  }
+
+  // fetch all activities of the course, including the participants results
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId, isAssessmentEnabled: true },
+    include: {
+      liveQuizzes: {
+        where: { isDeleted: false, finishedAt: { not: null } },
+        orderBy: { finishedAt: 'desc' },
+        include: {
+          blocks: {
+            include: {
+              elements: {
+                include: {
+                  liveQuizResponses: { where: { participantId: ctx.user.sub } },
+                },
+                orderBy: { order: 'asc' },
+              },
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
+      },
+    },
+  })
+
+  if (!course) {
+    return {
+      liveQuizzes: [],
+      practiceQuizzes: [],
+      microLearnings: [],
+      groupActivities: [],
+    }
+  }
+
+  const liveQuizResults = course.liveQuizzes.reduce<
+    ActivityStudentPerformance[]
+  >((acc, lq) => {
+    // extract the scoring-related parameters from the live quiz
+    const defaultPoints = lq.defaultPoints
+    const defaultCorrectPoints = lq.defaultCorrectPoints
+    const defaultMaxBonusPoints = lq.maxBonusPoints
+
+    const quizResults = lq.blocks.reduce<ActivityStudentPerformance>(
+      (blockAcc, block) => {
+        const instanceResults = block.elements.reduce<
+          Omit<
+            ActivityStudentPerformance,
+            'id' | 'displayName' | 'finishedAt' | 'multiplier'
+          >
+        >(
+          (elementAcc, instance) => {
+            const { elementData } = instance
+            const hasSampleSolution =
+              'options' in elementData &&
+              'hasSampleSolution' in elementData.options &&
+              ((elementData.options as { hasSampleSolution?: boolean })
+                .hasSampleSolution ??
+                false)
+
+            // compute the available points based on the instance information
+            const hasBasePoints =
+              instance.elementType !== DB.ElementType.FLASHCARD &&
+              instance.elementType !== DB.ElementType.CONTENT &&
+              (instance.options.basePoints ?? false)
+            const pointsMultiplier = instance.options.pointsMultiplier ?? 1
+
+            elementAcc.availableBasePoints += hasBasePoints ? defaultPoints : 0
+            elementAcc.availableCorrectnessPoints += hasSampleSolution
+              ? pointsMultiplier * defaultCorrectPoints
+              : 0
+            elementAcc.availableBonusPoints += hasSampleSolution
+              ? pointsMultiplier * defaultMaxBonusPoints
+              : 0
+
+            if (
+              instance.liveQuizResponses.length > 0 &&
+              instance.liveQuizResponses[0]
+            ) {
+              const response = instance.liveQuizResponses[0]
+              elementAcc.basePoints += response.basePoints
+              elementAcc.correctnessPoints += response.correctnessPoints
+              elementAcc.bonusPoints += response.bonusPoints
+            }
+
+            return elementAcc
+          },
+          {
+            basePoints: 0,
+            availableBasePoints: 0,
+            correctnessPoints: 0,
+            availableCorrectnessPoints: 0,
+            bonusPoints: 0,
+            availableBonusPoints: 0,
+          }
+        )
+
+        // increment the results of the block corresponding to the instance results
+        blockAcc.basePoints += instanceResults.basePoints
+        blockAcc.availableBasePoints += instanceResults.availableBasePoints
+        blockAcc.correctnessPoints += instanceResults.correctnessPoints
+        blockAcc.availableCorrectnessPoints +=
+          instanceResults.availableCorrectnessPoints
+        blockAcc.bonusPoints += instanceResults.bonusPoints
+        blockAcc.availableBonusPoints += instanceResults.availableBonusPoints
+
+        return blockAcc
+      },
+      {
+        id: lq.id,
+        displayName: lq.displayName,
+        finishedAt: lq.finishedAt!,
+        multiplier: lq.pointsMultiplier,
+        basePoints: 0,
+        availableBasePoints: 0,
+        correctnessPoints: 0,
+        availableCorrectnessPoints: 0,
+        bonusPoints: 0,
+        availableBonusPoints: 0,
+      }
+    )
+
+    return acc.concat(quizResults)
+  }, [])
+
+  return {
+    liveQuizzes: liveQuizResults,
+    practiceQuizzes: [],
+    microLearnings: [],
+    groupActivities: [],
   }
 }
 
