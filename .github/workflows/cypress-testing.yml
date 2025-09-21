@@ -189,7 +189,7 @@ jobs:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
           NODE_ENV: production
-          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010'
+          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010 http://127.0.0.1:7080/ready'
           TIMEOUT_SECONDS: '300'
           CHECK_INTERVAL: '5'
           REDIS_HOST: localhost
@@ -198,6 +198,9 @@ jobs:
           REDIS_ASSESSMENT_PORT: 6381
           REDIS_ASSESSMENT_PASS: ''
           REDIS_ASSESSMENT_HOST: localhost
+          AUDIT_SERVICE_URL: http://127.0.0.1:7080
+          AUDIT_ENABLED: true
+          AUDIT_TOKEN: secret-audit-token
           # Provide all app origins to the services and tests
           APP_ORIGIN_API: http://127.0.0.1:3000
           APP_ORIGIN_AUTH: http://127.0.0.1:3010
@@ -213,7 +216,7 @@ jobs:
         timeout-minutes: 120
         with:
           install: false
-          wait-on: 'http://127.0.0.1:3000/healthz, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010'
+          wait-on: 'http://127.0.0.1:3000/healthz, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010, http://127.0.0.1:7080/ready'
           wait-on-timeout: 300
           browser: electron
           working-directory: cypress
@@ -226,6 +229,9 @@ jobs:
           HATCHET_API_URL: http://127.0.0.1:8888
           HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
           HATCHET_HOST_PORT: 7077
+          AUDIT_SERVICE_URL: http://127.0.0.1:7080
+          AUDIT_ENABLED: true
+          AUDIT_TOKEN: secret-audit-token
           # Ensure Cypress process has all origins, too
           APP_ORIGIN_API: http://127.0.0.1:3000
           APP_ORIGIN_AUTH: http://127.0.0.1:3010
@@ -408,9 +414,12 @@ jobs:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
           NODE_ENV: production
-          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010 http://127.0.0.1:7080/healthz'
+          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010 http://127.0.0.1:7080/ready'
           TIMEOUT_SECONDS: '300'
           CHECK_INTERVAL: '5'
+          AUDIT_SERVICE_URL: http://127.0.0.1:7080
+          AUDIT_ENABLED: true
+          AUDIT_TOKEN: secret-audit-token
           # Provide all app origins to the services and tests
           APP_ORIGIN_API: http://127.0.0.1:3000
           APP_ORIGIN_AUTH: http://127.0.0.1:3010
@@ -436,7 +445,7 @@ jobs:
         timeout-minutes: 120
         with:
           install: false
-          wait-on: 'http://127.0.0.1:3000/healthz, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010, http://127.0.0.1:7080/healthz'
+          wait-on: 'http://127.0.0.1:3000/healthz, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010, http://127.0.0.1:7080/ready'
           wait-on-timeout: 300
           record: true
           browser: electron
@@ -452,6 +461,9 @@ jobs:
           HATCHET_API_URL: http://127.0.0.1:8888
           HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
           HATCHET_HOST_PORT: 7077
+          AUDIT_SERVICE_URL: http://127.0.0.1:7080
+          AUDIT_ENABLED: true
+          AUDIT_TOKEN: secret-audit-token
           # Ensure Cypress process has all origins, too
           APP_ORIGIN_API: http://127.0.0.1:3000
           APP_ORIGIN_AUTH: http://127.0.0.1:3010

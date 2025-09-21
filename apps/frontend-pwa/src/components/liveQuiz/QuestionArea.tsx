@@ -145,6 +145,18 @@ function QuestionArea({
         if (typeof latest?.response !== 'undefined') {
           // save raw response as temporary draft
           await localforage.setItem(key, latest.response as any)
+
+          // const { id: instanceId, correlationKey } = instances[activeInstance]
+
+          // auditLog.logAsync({
+          //   action: AuditAction.PARTICIPANT_UPDATE_ANSWER,
+          //   resource: `instance:${instanceId}`,
+          //   scope: AuditScope.PUBLIC,
+          //   correlationId: correlationKey ?? undefined,
+          //   attributes: {
+          //     response: studentResponse.response,
+          //   },
+          // })
         }
       }, 10000) // 10 seconds
     }
