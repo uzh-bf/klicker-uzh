@@ -16,6 +16,13 @@ export interface ModeOption {
   description: string
 }
 
+// Utility function for automatic model selection
+function getAutomaticModel(credits: { current: number }): ModelID {
+  // Use primary model (GPT-4.1) when credits are available
+  // Use fallback model (GPT-4.1-mini) when no credits
+  return credits.current > 0 ? 'gpt-4.1' : 'gpt-4.1-mini'
+}
+
 interface SettingsState {
   // Current selections
   selectedModel: ModelID
@@ -24,6 +31,7 @@ interface SettingsState {
     current: number
     total: number
   }
+  modelSelectionEnabled: boolean
 
   // Available options
   modelOptions: ModelOption[]
@@ -43,11 +51,12 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       // initial state
       selectedModel: 'gpt-4.1',
-      selectedMode: 'Tutor',
+      selectedMode: 'tutor',
       credits: {
         current: 0.0,
         total: 0.0,
       },
+      modelSelectionEnabled: false,
       modeOptions: {},
 
       // available options
@@ -59,14 +68,25 @@ export const useSettingsStore = create<SettingsState>()(
         try {
           const response = await fetch(`api/chatbots/${chatbotId}`)
           const responseData = await response.json()
-          if (response.ok && responseData.systemPrompts) {
+          if (response.ok) {
+            // Load model selection setting
+            const modelSelectionEnabled = responseData.modelSelection ?? false
+
+            // Load mode options
             const modes: Record<string, string> = {}
-            for (const [key, value] of Object.entries(
-              responseData.systemPrompts
-            )) {
-              modes[key] = (value as { description: string }).description
+            if (responseData.systemPrompts) {
+              for (const [key, value] of Object.entries(
+                responseData.systemPrompts
+              )) {
+                modes[key] = (value as { description: string }).description
+              }
             }
-            set({ modeOptions: modes })
+
+            set({
+              modeOptions: modes,
+              modelSelectionEnabled,
+            })
+
             // Set the first mode as selectedMode
             const firstModeKey = Object.keys(modes)[0]
             if (firstModeKey) set({ selectedMode: firstModeKey })
@@ -106,21 +126,25 @@ export const useSettingsStore = create<SettingsState>()(
                 : allModels.filter((m) => m.fallback)
 
             set((state) => {
-              // select first available model if current selected model not available
-              const isSelectedModelAvailable = availableModels.some(
-                (m) => m.id === state.selectedModel
-              )
-              if (!isSelectedModelAvailable) {
-                return {
-                  credits: creditsData,
-                  modelOptions: availableModels,
-                  selectedModel: availableModels[0]?.id,
+              let selectedModel = state.selectedModel
+
+              // If model selection is disabled, automatically select based on credits
+              if (!state.modelSelectionEnabled) {
+                selectedModel = getAutomaticModel(creditsData)
+              } else {
+                // For manual selection, check if current model is still available
+                const isSelectedModelAvailable = availableModels.some(
+                  (m) => m.id === state.selectedModel
+                )
+                if (!isSelectedModelAvailable) {
+                  selectedModel = availableModels[0]?.id
                 }
               }
 
               return {
                 credits: creditsData,
                 modelOptions: availableModels,
+                selectedModel,
               }
             })
           } else {

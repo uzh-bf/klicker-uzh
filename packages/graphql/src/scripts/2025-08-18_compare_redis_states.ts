@@ -199,10 +199,10 @@ function generateReport(results: ComparisonResult[]): void {
     console.log('-'.repeat(40))
 
     if (summary.discrepancies === 0) {
-      console.log('✅ PERFECT MATCH - No discrepancies found')
+      console.log('PERFECT MATCH - No discrepancies found')
       perfectMatches++
     } else {
-      console.log(`⚠️  DISCREPANCIES FOUND: ${summary.discrepancies}`)
+      console.log(` DISCREPANCIES FOUND: ${summary.discrepancies}`)
       totalDiscrepancies += summary.discrepancies
 
       if (keyComparison.lqOnly.length > 0) {
@@ -260,7 +260,7 @@ function generateReport(results: ComparisonResult[]): void {
     console.log('🎉 SUCCESS: All Redis states match perfectly!')
   } else {
     console.log(
-      '⚠️  WARNING: Discrepancies detected. Review the differences above.'
+      ' WARNING: Discrepancies detected. Review the differences above.'
     )
   }
 }
@@ -290,7 +290,7 @@ async function main() {
       console.log(`\n💾 Detailed report saved to: ${filename}`)
     }
   } catch (error) {
-    console.error('❌ Error during comparison:', error)
+    console.error('Error during comparison:', error)
     process.exit(1)
   } finally {
     await prisma.$disconnect()

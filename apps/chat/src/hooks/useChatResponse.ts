@@ -95,10 +95,8 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
         let buffer = ''
 
         // state management for streaming content assembly
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const orderedContentParts: any[] = []
         let currentTextContent = ''
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const toolCallsMap: Map<string, any> = new Map()
 
         if (reader) {

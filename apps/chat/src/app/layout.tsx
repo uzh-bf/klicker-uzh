@@ -7,7 +7,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'KlickerUZH Tutor Chatbot',
+  title: 'KlickerUZH Chat',
 }
 
 export default function RootLayout({
