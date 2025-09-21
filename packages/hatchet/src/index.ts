@@ -1,6 +1,10 @@
 import { Priority, type HatchetClient } from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
-import { type HatchetHandlers } from '@klicker-uzh/types'
+import {
+  AuditScope,
+  type HatchetHandlers,
+  type InternalAuditEvent,
+} from '@klicker-uzh/types'
 import type { AuditClient } from '@klicker-uzh/util'
 import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
@@ -48,25 +52,12 @@ export function prepareHatchetTasks({
     defaultPriority: Priority.LOW,
     onEvents: ['create-audit-log-entry'],
     fn: async (
-      message: Record<string, string | undefined> & {
-        action: string
-        subject: string
-        resource?: string
-        correlationId?: string
-      },
+      message: Record<string, string | undefined> & InternalAuditEvent,
       ctx
     ) => {
-      const { action, subject, resource, correlationId, ...args } = message
-
       await auditClient.log({
-        // scope: AuditScope.WORKER,
-        action,
-        subject,
-        resource,
-        // correlationId,
-        attributes: {
-          ...args,
-        },
+        ...message,
+        scope: AuditScope.WORKER,
       })
 
       return { success: true }

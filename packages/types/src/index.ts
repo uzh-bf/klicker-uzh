@@ -967,15 +967,23 @@ export type ActivityQuizAnalytics = {
 
 // ----- AUDIT LOG TYPES -----
 // #region
-export interface PublicAuditEvent {
+export interface BaseAuditEvent {
+  scope?: AuditScope
   subject: string
   action: string
   resource?: string
   attributes?: Record<string, any>
+  correlationId?: string
+  correlationClaims?: object
 }
 
-export interface AuditEvent extends PublicAuditEvent {
+export interface PublicAuditEvent extends BaseAuditEvent {
+  scope: AuditScope.PUBLIC
+}
+
+export interface InternalAuditEvent extends BaseAuditEvent {
   timestamp?: number
+  stage?: string
 }
 
 export enum AuditScope {

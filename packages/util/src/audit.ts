@@ -1,7 +1,7 @@
 import type {
   AuditClientConfig,
-  AuditEvent,
   AuditResponse,
+  InternalAuditEvent,
 } from '@klicker-uzh/types'
 import axios, { type AxiosResponse } from 'axios'
 import { createHash } from 'crypto'
@@ -59,7 +59,7 @@ export class AuditClient {
    * Log a single audit event with simple retry logic
    * Returns the audit response or null if logging failed
    */
-  async log(event: AuditEvent): Promise<AuditResponse | null> {
+  async log(event: InternalAuditEvent): Promise<AuditResponse | null> {
     if (!this.config.enabled) {
       console.warn(
         'AuditClient: Audit logging is disabled, ignoring event',

@@ -1,6 +1,10 @@
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
-import { AuditAction, AuditScope } from '@klicker-uzh/types'
+import {
+  AuditAction,
+  AuditScope,
+  type InternalAuditEvent,
+} from '@klicker-uzh/types'
 import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
@@ -168,29 +172,33 @@ async function handleAddAssessmentResponse(
   try {
     payload = await readBody(req)
   } catch (err: any) {
-    await hatchetClient.events.push('create-audit-log-entry', {
-      scope: AuditScope.INTERNAL,
-      subject: `participant:unknown`,
-      action: AuditAction.SYSTEM_RESPONSE_VALIDATION_ERROR,
-      resource: `instance:unknown`,
-      attributes: {
-        error: `Failed to read request body: ${err.message} for request ${JSON.stringify(req)}`,
-      },
-    })
+    await hatchetClient.events.push<InternalAuditEvent>(
+      'create-audit-log-entry',
+      {
+        subject: `participant:unknown`,
+        action: AuditAction.SYSTEM_RESPONSE_VALIDATION_ERROR,
+        resource: `instance:unknown`,
+        attributes: {
+          error: `Failed to read request body: ${err.message} for request ${JSON.stringify(req)}`,
+        },
+      }
+    )
 
     return badRequest(req, res, err.message)
   }
 
   if (!payload || typeof payload !== 'object') {
-    await hatchetClient.events.push('create-audit-log-entry', {
-      scope: AuditScope.INTERNAL,
-      subject: `participant:unknown`,
-      action: AuditAction.SYSTEM_RESPONSE_VALIDATION_ERROR,
-      resource: `instance:unknown`,
-      attributes: {
-        error: `Invalid request body: ${JSON.stringify(payload)}`,
-      },
-    })
+    await await hatchetClient.events.push<InternalAuditEvent>(
+      'create-audit-log-entry',
+      {
+        subject: `participant:unknown`,
+        action: AuditAction.SYSTEM_RESPONSE_VALIDATION_ERROR,
+        resource: `instance:unknown`,
+        attributes: {
+          error: `Invalid request body: ${JSON.stringify(payload)}`,
+        },
+      }
+    )
 
     return badRequest(req, res, 'submission_failure')
   }
@@ -202,17 +210,19 @@ async function handleAddAssessmentResponse(
     typeof instanceId === 'undefined' ||
     !correlationKey
   ) {
-    await hatchetClient.events.push('create-audit-log-entry', {
-      scope: AuditScope.INTERNAL,
-      subject: `participant:unknown`,
-      correlationId: correlationKey,
-      action: AuditAction.SYSTEM_RESPONSE_VALIDATION_ERROR,
-      resource: `instance:${instanceId}`,
-      attributes: {
-        response,
-        error: `Missing required fields in request body: ${JSON.stringify(payload)}`,
-      },
-    })
+    await await hatchetClient.events.push<InternalAuditEvent>(
+      'create-audit-log-entry',
+      {
+        subject: `participant:unknown`,
+        correlationId: correlationKey,
+        action: AuditAction.SYSTEM_RESPONSE_VALIDATION_ERROR,
+        resource: `instance:${instanceId}`,
+        attributes: {
+          response,
+          error: `Missing required fields in request body: ${JSON.stringify(payload)}`,
+        },
+      }
+    )
 
     return badRequest(req, res, 'missing_response')
   }
@@ -226,17 +236,19 @@ async function handleAddAssessmentResponse(
       { issuer: process.env.APP_ORIGIN_ASSESSMENT_API }
     )
   } catch (err) {
-    await hatchetClient.events.push('create-audit-log-entry', {
-      scope: AuditScope.INTERNAL,
-      subject: `participant:unknown`,
-      correlationId: correlationKey,
-      action: AuditAction.SYSTEM_RESPONSE_CORRELATION_ERROR,
-      resource: `instance:${instanceId}`,
-      attributes: {
-        response,
-        error: `Failed to verify correlationKey: ${err} for response ${JSON.stringify(payload)}`,
-      },
-    })
+    await await hatchetClient.events.push<InternalAuditEvent>(
+      'create-audit-log-entry',
+      {
+        subject: `participant:unknown`,
+        correlationId: correlationKey,
+        action: AuditAction.SYSTEM_RESPONSE_CORRELATION_ERROR,
+        resource: `instance:${instanceId}`,
+        attributes: {
+          response,
+          error: `Failed to verify correlationKey: ${err} for response ${JSON.stringify(payload)}`,
+        },
+      }
+    )
 
     return badRequest(req, res, 'invalid_submission')
   }
@@ -246,18 +258,20 @@ async function handleAddAssessmentResponse(
     correlationData.instanceId !== instanceId ||
     correlationData.liveQuizId !== liveQuizId
   ) {
-    await hatchetClient.events.push('create-audit-log-entry', {
-      scope: AuditScope.INTERNAL,
-      subject: `participant:unknown`,
-      correlationId: correlationKey,
-      correlationClaims: correlationData,
-      action: AuditAction.SYSTEM_RESPONSE_CORRELATION_ERROR,
-      resource: `instance:${instanceId}`,
-      attributes: {
-        response,
-        error: `Invalid correlationKey in request body: ${correlationKey} for response ${JSON.stringify(payload)}`,
-      },
-    })
+    await await hatchetClient.events.push<InternalAuditEvent>(
+      'create-audit-log-entry',
+      {
+        subject: `participant:unknown`,
+        correlationId: correlationKey,
+        correlationClaims: correlationData,
+        action: AuditAction.SYSTEM_RESPONSE_CORRELATION_ERROR,
+        resource: `instance:${instanceId}`,
+        attributes: {
+          response,
+          error: `Invalid correlationKey in request body: ${correlationKey} for response ${JSON.stringify(payload)}`,
+        },
+      }
+    )
 
     return badRequest(req, res, 'invalid_submission')
   }
@@ -287,18 +301,20 @@ async function handleAddAssessmentResponse(
         )
       : null
   } catch (err) {
-    await hatchetClient.events.push('create-audit-log-entry', {
-      scope: AuditScope.INTERNAL,
-      subject: `participant:unknown`,
-      correlationId: correlationKey,
-      correlationClaims: correlationData,
-      action: AuditAction.SYSTEM_RESPONSE_AUTH_ERROR,
-      resource: `instance:${instanceId}`,
-      attributes: {
-        response,
-        error: `Failed to verify assessment cookie JWT: ${err} for response ${JSON.stringify(payload)}`,
-      },
-    })
+    await await hatchetClient.events.push<InternalAuditEvent>(
+      'create-audit-log-entry',
+      {
+        subject: `participant:unknown`,
+        correlationId: correlationKey,
+        correlationClaims: correlationData,
+        action: AuditAction.SYSTEM_RESPONSE_AUTH_ERROR,
+        resource: `instance:${instanceId}`,
+        attributes: {
+          response,
+          error: `Failed to verify assessment cookie JWT: ${err} for response ${JSON.stringify(payload)}`,
+        },
+      }
+    )
 
     return sendJson(req, res, 401, { error: 'invalid_assessment_cookie' })
   }
@@ -306,18 +322,20 @@ async function handleAddAssessmentResponse(
   const isAssessmentCookieValid =
     !!user && user.role === 'PARTICIPANT' && user.scope === UserLoginScope.EDUID
   if (!user || !user.sub || !isAssessmentCookieValid) {
-    await hatchetClient.events.push('create-audit-log-entry', {
-      scope: AuditScope.INTERNAL,
-      subject: `participant:${user?.sub}`,
-      correlationId: correlationKey,
-      correlationClaims: correlationData,
-      action: AuditAction.SYSTEM_RESPONSE_AUTH_ERROR,
-      resource: `instance:${instanceId}`,
-      attributes: {
-        response,
-        error: `Missing or invalid assessment cookie: ${cookies} for response ${JSON.stringify(payload)}`,
-      },
-    })
+    await await hatchetClient.events.push<InternalAuditEvent>(
+      'create-audit-log-entry',
+      {
+        subject: `participant:${user?.sub}`,
+        correlationId: correlationKey,
+        correlationClaims: correlationData,
+        action: AuditAction.SYSTEM_RESPONSE_AUTH_ERROR,
+        resource: `instance:${instanceId}`,
+        attributes: {
+          response,
+          error: `Missing or invalid assessment cookie: ${cookies} for response ${JSON.stringify(payload)}`,
+        },
+      }
+    )
 
     return sendJson(req, res, 401, {
       error: 'missing_invalid_assessment_cookie',
@@ -331,17 +349,20 @@ async function handleAddAssessmentResponse(
   const correlationId = MD5.digest('hex')
 
   // audit log entry for received response
-  await hatchetClient.events.push('create-audit-log-entry', {
-    scope: AuditScope.INTERNAL,
-    subject: `participant:${user.sub}`,
-    correlationId: correlationKey,
-    correlationClaims: correlationData,
-    action: AuditAction.SYSTEM_RESPONSE_RECEIVED,
-    resource: `instance:${instanceId}`,
-    attributes: {
-      response,
-    },
-  })
+  await await hatchetClient.events.push<InternalAuditEvent>(
+    'create-audit-log-entry',
+    {
+      scope: AuditScope.INTERNAL,
+      subject: `participant:${user.sub}`,
+      correlationId: correlationKey,
+      correlationClaims: correlationData,
+      action: AuditAction.SYSTEM_RESPONSE_RECEIVED,
+      resource: `instance:${instanceId}`,
+      attributes: {
+        response,
+      },
+    }
+  )
 
   // check if there already exists an entry in the votes table with the given correlationId
   const votes = await assessmentRedis.hget(
@@ -352,17 +373,19 @@ async function handleAddAssessmentResponse(
     console.log(
       `Participant with correlationId ${correlationId} already answered instance ${instanceId} in live quiz ${liveQuizId}`
     )
-    await hatchetClient.events.push('create-audit-log-entry', {
-      scope: AuditScope.INTERNAL,
-      subject: `participant:${user.sub}`,
-      correlationId: correlationKey,
-      correlationClaims: correlationData,
-      action: AuditAction.SYSTEM_RESPONSE_DUPLICATE,
-      resource: `instance:${instanceId}`,
-      attributes: {
-        error: `Participant with correlationId ${correlationId} tried to answer instance ${instanceId} in live quiz ${liveQuizId} again.`,
-      },
-    })
+    await await hatchetClient.events.push<InternalAuditEvent>(
+      'create-audit-log-entry',
+      {
+        subject: `participant:${user.sub}`,
+        correlationId: correlationKey,
+        correlationClaims: correlationData,
+        action: AuditAction.SYSTEM_RESPONSE_DUPLICATE,
+        resource: `instance:${instanceId}`,
+        attributes: {
+          error: `Participant with correlationId ${correlationId} tried to answer instance ${instanceId} in live quiz ${liveQuizId} again.`,
+        },
+      }
+    )
 
     // show success message that response was already recorded before and that first response counts
     return sendJson(req, res, 208, {
@@ -390,17 +413,19 @@ async function handleAddAssessmentResponse(
     await hatchetClient.events.push('response-received:assessment', message)
   } catch (error) {
     try {
-      await hatchetClient.events.push('create-audit-log-entry', {
-        scope: AuditScope.INTERNAL,
-        subject: `participant:${user.sub}`,
-        correlationId: correlationKey,
-        correlationClaims: correlationData,
-        action: AuditAction.SYSTEM_RESPONSE_GENERAL_ERROR,
-        resource: `instance:${instanceId}`,
-        attributes: {
-          error: `Failed to push response-received:assessment event for correlationId ${correlationId}: ${error}`,
-        },
-      })
+      await await hatchetClient.events.push<InternalAuditEvent>(
+        'create-audit-log-entry',
+        {
+          subject: `participant:${user.sub}`,
+          correlationId: correlationKey,
+          correlationClaims: correlationData,
+          action: AuditAction.SYSTEM_RESPONSE_GENERAL_ERROR,
+          resource: `instance:${instanceId}`,
+          attributes: {
+            error: `Failed to push response-received:assessment event for correlationId ${correlationId}: ${error}`,
+          },
+        }
+      )
     } catch (loggingError) {
       // TODO: send error directly to audit-logging service through network request
       console.error('Failed to push create-audit-log-entry event', {

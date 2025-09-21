@@ -1,4 +1,4 @@
-import type { AuditEvent } from '@klicker-uzh/types'
+import type { PublicAuditEvent } from '@klicker-uzh/types'
 import { useCallback, useState } from 'react'
 
 interface UseAuditClientOptions {
@@ -9,8 +9,8 @@ interface UseAuditClientOptions {
 }
 
 interface AuditClientAPI {
-  log: (event: AuditEvent) => Promise<void>
-  logAsync: (event: AuditEvent) => void
+  log: (event: PublicAuditEvent) => Promise<void>
+  logAsync: (event: PublicAuditEvent) => void
   isLoading: boolean
   error: Error | null
 }
@@ -34,7 +34,7 @@ export function useAuditClient(
   } = options
 
   const log = useCallback(
-    async (event: AuditEvent) => {
+    async (event: PublicAuditEvent) => {
       // Only log in assessment mode
       if (!enabled || !assessmentMode) {
         return
@@ -95,7 +95,7 @@ export function useAuditClient(
   )
 
   const logAsync = useCallback(
-    (event: AuditEvent) => {
+    (event: PublicAuditEvent) => {
       // Fire and forget - don't block UI
       log(event).catch(() => {
         // Already handled in log function
