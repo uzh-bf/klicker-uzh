@@ -116,6 +116,17 @@ jobs:
           SERVER_DEFAULT_ENGINE_VERSION: 'V1'
           SERVER_LOGGER_LEVEL: debug
           SERVER_LOGGER_FORMAT: console
+      azurite:
+        image: mcr.microsoft.com/azure-storage/azurite:latest
+        ports:
+          - 10000:10000
+          - 10001:10001
+          - 10002:10002
+        options: >-
+          --blobHost 0.0.0.0
+          --queueHost 0.0.0.0
+          --tableHost 0.0.0.0
+          --loose
 
     steps:
       - run: echo "Running parallel Cypress tests for draft PR (container ${{ matrix.containers }})"
@@ -331,13 +342,12 @@ jobs:
           SERVER_LOGGER_FORMAT: console
 
       azurite:
-        image: mcr.microsoft.com/azure-storage/azurite
+        image: mcr.microsoft.com/azure-storage/azurite:latest
         ports:
           - 10000:10000 # Blob service
           - 10001:10001 # Queue service
           - 10002:10002 # Table service
         options: >-
-          azurite
           --blobHost 0.0.0.0
           --queueHost 0.0.0.0
           --tableHost 0.0.0.0
