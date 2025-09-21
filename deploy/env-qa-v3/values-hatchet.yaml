@@ -15,7 +15,18 @@ sharedConfig:
   # env:
 
 api:
+  image:
+    tag: 'v0.73.1'
   replicaCount: 1
+  migrationJob:
+    image:
+      tag: 'v0.73.1'
+  seedJob:
+    image:
+      tag: 'v0.73.1'
+  setupJob:
+    image:
+      tag: 'v0.73.1'
   resources:
     limits:
       cpu: 500m
@@ -26,6 +37,8 @@ api:
   priorityClassName: staging-workload
 
 frontend:
+  image:
+    tag: 'v0.73.1'
   replicaCount: 1
   resources:
     limits:
@@ -40,6 +53,8 @@ postgres:
   enabled: false
 
 grpc:
+  image:
+    tag: 'v0.73.1'
   replicaCount: 1
   resources:
     limits:
@@ -51,6 +66,8 @@ grpc:
   priorityClassName: staging-workload
 
 controllers:
+  image:
+    tag: 'v0.73.1'
   replicaCount: 1
   resources:
     limits:
@@ -62,6 +79,8 @@ controllers:
   priorityClassName: staging-workload
 
 scheduler:
+  image:
+    tag: 'v0.73.1'
   replicaCount: 1
   resources:
     limits:

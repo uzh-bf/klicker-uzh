@@ -39,7 +39,6 @@ interface GroupActivityFormSubmissionProps {
       | undefined
   ) => Promise<FetchResult<EditGroupActivityMutation>>
   setIsWizardCompleted: (isCompleted: boolean) => void
-  setSelectedCourseId: (courseId: string | undefined) => void
   onError: () => void
 }
 
@@ -50,7 +49,6 @@ async function submitGroupActivityForm({
   createGroupActivity,
   editGroupActivity,
   setIsWizardCompleted,
-  setSelectedCourseId,
   onError,
 }: GroupActivityFormSubmissionProps) {
   try {
@@ -183,7 +181,6 @@ async function submitGroupActivityForm({
     }
 
     if (success) {
-      setSelectedCourseId(values.courseId)
       setIsWizardCompleted(true)
     }
   } catch (error) {

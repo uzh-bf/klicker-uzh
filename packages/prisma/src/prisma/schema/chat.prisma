@@ -1,0 +1,71 @@
+model ChatUsageCredits {
+  id String @id @default(uuid()) @db.Uuid
+
+  total   Decimal @default(0) @db.Decimal(18, 6)
+  current Decimal @default(0) @db.Decimal(18, 6)
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chatbotId String  @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, chatbotId])
+}
+
+model ChatThread {
+  id    String  @id @default(uuid()) @db.Uuid
+  title String?
+
+  messages ChatMessage[]
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chatbotId String  @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ChatMessage {
+  id       String  @id @default(uuid()) @db.Uuid
+  threadId String  @db.Uuid
+  parentId String? @db.Uuid
+  role     String // 'user' | 'assistant'
+  content  Json // Array<{ type: string; text: string }>
+
+  thread ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([threadId])
+  @@index([parentId])
+}
+
+model Chatbot {
+  id String @id @default(uuid()) @db.Uuid
+
+  name        String
+  description String?
+  avatar      String? // URL to avatar image
+
+  systemPrompts Json? // { tutor: {prompt: string; description: string}; explainer: {prompt: string; description: string}; ... }
+
+  threads      ChatThread[]
+  usageCredits ChatUsageCredits[]
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

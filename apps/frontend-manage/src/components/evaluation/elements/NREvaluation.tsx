@@ -19,6 +19,8 @@ import { twMerge } from 'tailwind-merge'
 interface NREvaluationProps {
   instanceEvaluation: NumericalActivityEvaluationData
   courseLanguage?: LocaleType | null
+  isAssessmentEnabled: boolean
+  pinCode?: string | null
   textSize: TextSizeType
   chartType: ChartType
   showSolution: boolean
@@ -37,6 +39,8 @@ export interface ShowStatisticsType {
 function NREvaluation({
   instanceEvaluation,
   courseLanguage,
+  isAssessmentEnabled,
+  pinCode,
   textSize,
   chartType,
   showSolution,
@@ -82,6 +86,8 @@ function NREvaluation({
           <NRSidebar
             instance={instanceEvaluation}
             courseLanguage={courseLanguage}
+            isAssessmentEnabled={isAssessmentEnabled}
+            pinCode={pinCode}
             chartType={chartType}
             textSize={textSize}
             showSolution={showSolution}

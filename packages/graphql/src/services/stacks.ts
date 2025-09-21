@@ -3201,7 +3201,9 @@ async function respondToElement({
         id: response.instanceId,
         courseId,
         response: {
-          selection: response.selectionResponse?.filter((r) => r !== -1), // only forward valid responses
+          selection: response.selectionResponse?.filter(
+            (r) => r !== -1 && typeof r !== 'undefined' && r !== null
+          ), // only forward valid responses
         },
         answerTime,
         participation,

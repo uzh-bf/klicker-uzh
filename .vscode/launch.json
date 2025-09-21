@@ -30,6 +30,13 @@
       "webRoot": "${workspaceFolder}/apps/office-addin"
     },
     {
+      "name": "Launch Chrome (chat)",
+      "request": "launch",
+      "type": "chrome",
+      "url": "https://chat.klicker.com",
+      "webRoot": "${workspaceFolder}/apps/chat"
+    },
+    {
       "name": "Attach to Node Functions",
       "type": "node",
       "request": "attach",

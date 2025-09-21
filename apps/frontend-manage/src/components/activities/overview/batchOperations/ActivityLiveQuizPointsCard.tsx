@@ -97,7 +97,7 @@ function ActivityLiveQuizPointsCardContent({
                     liveQuizPoints: prev.liveQuizPoints
                       ? {
                           ...prev.liveQuizPoints,
-                          basePoints: numValue,
+                          basePoints: numValue >= 0 ? numValue : 0,
                         }
                       : undefined,
                   }))
@@ -120,7 +120,7 @@ function ActivityLiveQuizPointsCardContent({
                     liveQuizPoints: prev.liveQuizPoints
                       ? {
                           ...prev.liveQuizPoints,
-                          correctnessPoints: numValue,
+                          correctnessPoints: numValue >= 0 ? numValue : 0,
                         }
                       : undefined,
                   }))
@@ -143,7 +143,7 @@ function ActivityLiveQuizPointsCardContent({
                     liveQuizPoints: prev.liveQuizPoints
                       ? {
                           ...prev.liveQuizPoints,
-                          bonusPoints: numValue,
+                          bonusPoints: numValue >= 0 ? numValue : 0,
                         }
                       : undefined,
                   }))
@@ -153,12 +153,18 @@ function ActivityLiveQuizPointsCardContent({
               />
               <NumberField
                 required
+                isTouched
                 label={t('manage.activities.bonusTime')}
                 labelType="small"
                 precision={0}
                 min={0}
                 unit={t('shared.generic.seconds')}
                 value={selectedActions.liveQuizPoints.bonusTime.toString()}
+                error={
+                  selectedActions.liveQuizPoints.bonusTime < 1
+                    ? t('manage.activities.bonusTimeNonNegative')
+                    : undefined
+                }
                 onChange={(value) => {
                   const numValue = parseInt(value, 10) || 0
                   setSelectedActions((prev) => ({
@@ -166,7 +172,7 @@ function ActivityLiveQuizPointsCardContent({
                     liveQuizPoints: prev.liveQuizPoints
                       ? {
                           ...prev.liveQuizPoints,
-                          bonusTime: numValue,
+                          bonusTime: numValue >= 0 ? numValue : 0,
                         }
                       : undefined,
                   }))

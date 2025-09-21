@@ -808,10 +808,19 @@ export async function updateCourseSettings(
     course._count.groupActivities > 0
   const containsGroups = course._count.participantGroups > 0
 
+  // check if the gamification and/or assessment settings were changed
+  const newGamificationSetting =
+    course.isGamificationEnabled !== isGamificationEnabled &&
+    (isGamificationEnabled || (!containsActivities && !containsGroups))
+      ? (isGamificationEnabled ?? false)
+      : undefined
+  const newAssessmentSetting =
+    course.isAssessmentEnabled !== isAssessmentEnabled
+      ? (isAssessmentEnabled ?? undefined)
+      : undefined
+
   const updatedCourse = await ctx.prisma.course.update({
-    where: {
-      id,
-    },
+    where: { id },
     data: {
       name: name ?? undefined,
       displayName: displayName ?? undefined,
@@ -828,10 +837,7 @@ export async function updateCourseSettings(
       groupDeadlineDate: groupDeadlineDate ?? undefined,
       notificationEmail: notificationEmail ?? undefined,
       // only enable gamification or disable it if there are no activities or groups
-      isGamificationEnabled:
-        isGamificationEnabled || (!containsActivities && !containsGroups)
-          ? (isGamificationEnabled ?? false)
-          : undefined,
+      isGamificationEnabled: newGamificationSetting,
       // set assessment mode - if enabling, remove PIN
       isAssessmentEnabled: isAssessmentEnabled ?? undefined,
       pinCode: isAssessmentEnabled ? null : undefined,
@@ -842,6 +848,83 @@ export async function updateCourseSettings(
         !isGroupCreationEnabled && !containsGroups
           ? { deleteMany: {} }
           : undefined,
+      // if the gamification or assessment setting was changed, update all activities assigned to the course
+      ...(newGamificationSetting || newAssessmentSetting
+        ? {
+            liveQuizzes: {
+              updateMany: {
+                where: {
+                  isDeleted: false,
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                      DB.PublicationStatus.PUBLISHED,
+                    ],
+                  },
+                },
+                data: {
+                  isGamificationEnabled: newGamificationSetting,
+                  isAssessmentEnabled: newAssessmentSetting,
+                },
+              },
+            },
+            practiceQuizzes: {
+              updateMany: {
+                where: {
+                  isDeleted: false,
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                      DB.PublicationStatus.PUBLISHED,
+                    ],
+                  },
+                },
+                data: {
+                  isGamificationEnabled: newGamificationSetting,
+                  isAssessmentEnabled: newAssessmentSetting,
+                },
+              },
+            },
+            microLearnings: {
+              updateMany: {
+                where: {
+                  isDeleted: false,
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                      DB.PublicationStatus.PUBLISHED,
+                    ],
+                  },
+                },
+                data: {
+                  isGamificationEnabled: newGamificationSetting,
+                  isAssessmentEnabled: newAssessmentSetting,
+                },
+              },
+            },
+            groupActivities: {
+              updateMany: {
+                where: {
+                  isDeleted: false,
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                      DB.PublicationStatus.PUBLISHED,
+                    ],
+                  },
+                },
+                data: {
+                  isGamificationEnabled: newGamificationSetting,
+                  isAssessmentEnabled: newAssessmentSetting,
+                },
+              },
+            },
+          }
+        : {}),
     },
   })
 

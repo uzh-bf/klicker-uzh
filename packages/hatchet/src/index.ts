@@ -14,6 +14,7 @@ export function prepareHatchetTasks({
   pubSub,
   emitter,
   redisExec,
+  redisAssessmentExec,
   redisCache,
   handlers,
 }: {
@@ -21,6 +22,7 @@ export function prepareHatchetTasks({
   pubSub: PubSub<any>
   emitter: EventEmitter
   redisExec: Redis
+  redisAssessmentExec: Redis
   redisCache?: Redis
   handlers: HatchetHandlers
 }) {
@@ -29,6 +31,7 @@ export function prepareHatchetTasks({
     pubSub,
     emitter,
     redisExec,
+    redisAssessmentExec,
     redisCache,
     prisma,
   }
@@ -211,7 +214,7 @@ export function prepareHatchetTasks({
     name: 'update-group-average-scores',
     retries: 3,
     onCrons: [
-      '5 0 * * *', // running daily at 12:05 AM (UTC)
+      '0 0 * * *', // running daily at midnight (UTC)
     ],
     fn: async (_, executionContext) => {
       const success = await handlers.handleUpdateGroupAverageScores(
@@ -227,7 +230,7 @@ export function prepareHatchetTasks({
     name: 'running-random-group-assignments',
     retries: 3,
     onCrons: [
-      '10 0 * * *', // running daily at 12:10 AM (UTC)
+      '0 0 * * *', // running daily at midnight (UTC)
     ],
     fn: async (_, executionContext) => {
       const success = await handlers.handleRunningRandomGroupAssignments(
@@ -243,7 +246,7 @@ export function prepareHatchetTasks({
     name: 'final-random-group-assignments',
     retries: 3,
     onCrons: [
-      '15 0 * * *', // running daily at 12:15 AM (UTC)
+      '0 0 * * *', // running daily at midnight (UTC)
     ],
     fn: async (_, executionContext) => {
       const success = await handlers.handleFinalRandomGroupAssignments(
@@ -259,7 +262,7 @@ export function prepareHatchetTasks({
     name: 'update-weekly-timeline-entries',
     retries: 3,
     onCrons: [
-      '20 0 * * *', // running daily at 12:20 AM (UTC)
+      '0 0 * * *', // running daily at midnight (UTC)
     ],
     fn: async (_, executionContext) => {
       const success = await handlers.handleUpdateWeeklyTimelineEntries(

@@ -88,6 +88,15 @@ jobs:
         image: redis:7
         ports:
           - 6379:6379
+      redis_assessment_exec:
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        image: redis:7
+        ports:
+          - 6381:6379
       hatchet:
         image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:v0.73.1
         ports:
@@ -180,6 +189,9 @@ jobs:
           REDIS_HOST: localhost
           REDIS_PASS: ''
           REDIS_PORT: 6379
+          REDIS_ASSESSMENT_PORT: 6381
+          REDIS_ASSESSMENT_PASS: ''
+          REDIS_ASSESSMENT_HOST: localhost
           # Provide all app origins to the services and tests
           APP_ORIGIN_API: http://127.0.0.1:3000
           APP_ORIGIN_AUTH: http://127.0.0.1:3010
@@ -289,6 +301,15 @@ jobs:
         image: redis:7
         ports:
           - 6379:6379
+      redis_assessment_exec:
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        image: redis:7
+        ports:
+          - 6381:6379
       hatchet:
         image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:v0.73.1
         ports:

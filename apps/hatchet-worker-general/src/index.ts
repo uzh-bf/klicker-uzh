@@ -68,6 +68,14 @@ async function main() {
     tls: process.env.REDIS_TLS ? {} : undefined,
   })
 
+  const redisAssessmentExec = new Redis({
+    family: 4,
+    host: process.env.REDIS_ASSESSMENT_HOST ?? 'localhost',
+    password: process.env.REDIS_ASSESSMENT_PASS ?? '',
+    port: Number(process.env.REDIS_ASSESSMENT_PORT ?? 6381),
+    tls: process.env.REDIS_ASSESSMENT_TLS ? {} : undefined,
+  })
+
   const redisCache = new Redis({
     family: 4,
     host: process.env.REDIS_CACHE_HOST ?? 'localhost',
@@ -108,6 +116,7 @@ async function main() {
     pubSub,
     emitter,
     redisExec,
+    redisAssessmentExec,
     redisCache,
     handlers,
   })

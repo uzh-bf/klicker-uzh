@@ -1,0 +1,9 @@
+{{- $fullName := include "chart.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-chat
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  AZURE_RESOURCE_NAME: {{ .Values.chat.azure.resourceName | quote }}

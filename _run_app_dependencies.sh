@@ -35,6 +35,24 @@ determine_proxy() {
 	esac
 }
 
+confirm() {
+	while true; do
+		printf "%s [Y/n] " "$1"
+		read -r response
+		case "$response" in
+			[yY][eE][sS]|[yY]|"")
+				return 0
+				;;
+			[nN][oO]|[nN])
+				return 1
+				;;
+			*)
+				echo "Please answer y or n."
+				;;
+		esac
+	done
+}
+
 # Ensure docker services are stopped when the script exits or is interrupted
 cleanup_called=0
 cleanup() {
@@ -78,36 +96,50 @@ if [ "$PLATFORM" = "mac" ]; then
 fi
 
 # start postgres, redis, proxy, hatchet
-docker compose up --build -d postgres redis_exec redis_cache "$PROXY" hatchet azurite || {
+docker compose up --build -d postgres redis_exec redis_assessment redis_cache "$PROXY" hatchet azurite || {
 	echo "Failed to start docker compose services" >&2
 	exit 1
 }
 
-pnpm run build
-
-sleep 10
+if confirm "Run pnpm run build?"; then
+	pnpm run build
+else
+	echo "Skipping pnpm run build"
+fi
 
 # create hatchet client token (switch script for cypress/test mode)
 if [ "$MODE" = "cypress" ]; then
     echo "Using cypress hatchet token script"
     ./util/_create_hatchet_token_cypress.sh
 
-		# reset prisma database after tokens are created
-		echo "Resetting Prisma database (pnpm run prisma:reset)"
-		pnpm run prisma:reset -f || {
-				echo "Prisma reset failed" >&2
-				exit 1
-		}
+	# reset prisma database after tokens are created
+	echo "Resetting Prisma database (pnpm run prisma:reset)"
+	pnpm run prisma:reset -f || {
+			echo "Prisma reset failed" >&2
+			exit 1
+	}
 else
     echo "Using local hatchet token script"
     ./util/_create_hatchet_token.sh
 
-		# reset prisma database after tokens are created
+    if confirm "Run Prisma database setup (pnpm run prisma:setup)?"; then
+		# prepare prisma database after tokens are created
 		echo "Preparing Prisma database (pnpm run prisma:setup)"
-		pnpm run prisma:setup || {
-				echo "Prisma setup failed" >&2
-				exit 1
-		}
+		# prisma:setup may prompt for a destructive reset; if the user declines,
+		# it exits non-zero. Treat that as "keep existing data" and continue.
+		if pnpm run prisma:setup; then
+			:
+		else
+			SETUP_STATUS=$?
+			echo "Prisma setup exited with status $SETUP_STATUS."
+			echo "Assuming reset/seed were declined; preserving existing data and continuing."
+			echo "Applying schema without reset (pnpm run --filter @klicker-uzh/prisma prisma:push)"
+			# Try a non-destructive push to keep the schema in sync; do not fail the script if this also fails.
+			pnpm run --filter @klicker-uzh/prisma prisma:push || echo "Prisma push failed; you may need to run migrations manually."
+		fi
+    else
+		echo "Skipping Prisma database setup"
+    fi
 fi
 
 docker compose logs -f

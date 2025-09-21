@@ -11,10 +11,13 @@ hatchet:
   workers:
     general:
       image:
-        tag: '${APP_VERSION}'
+        tag: '${APP_VERSION_WORKER_GENERAL}'
     responseProcessor:
       image:
-        tag: '${APP_VERSION}'
+        tag: '${APP_VERSION_WORKER_RESPONSE_PROCESSOR}'
+    responseProcessorAssessment:
+      image:
+        tag: '${APP_VERSION_WORKER_RESPONSE_PROCESSOR_ASSESSMENT}'
 
 email:
   type: '${EMAIL_TYPE}'
@@ -38,23 +41,34 @@ eduId:
 
 auth:
   image:
-    tag: '${APP_VERSION}'
+    tag: '${APP_VERSION_AUTH}'
+
+chat:
+  image:
+    tag: '${APP_VERSION_CHAT}'
+
+  azure:
+    resourceName: '${AZURE_RESOURCE_NAME}'
+    apiKey: '${AZURE_API_KEY}'
+
+  mcp:
+    key: '${MCP_KEY}'
 
 frontendPWA:
   image:
-    tag: '${APP_VERSION}'
+    tag: '${APP_VERSION_FRONTEND_PWA}'
 
 frontendManage:
   image:
-    tag: '${APP_VERSION}'
+    tag: '${APP_VERSION_FRONTEND_MANAGE}'
 
 frontendControl:
   image:
-    tag: '${APP_VERSION}'
+    tag: '${APP_VERSION_FRONTEND_CONTROL}'
 
 backendGraphql:
   image:
-    tag: '${APP_VERSION}'
+    tag: '${APP_VERSION_BACKEND}'
 
   apiDomain: '${API_DOMAIN}'
   cookieDomain: '${COOKIE_DOMAIN}'
@@ -88,22 +102,19 @@ backendGraphql:
     tls: '${REDIS_TLS}'
     pass: '${REDIS_PASS}'
 
-  sentryEnv: production
-  sentryDSN: '${SENTRY_DSN}'
-
 olatApi:
   key: '${OLAT_API_KEY}'
 
   image:
-    tag: '${APP_VERSION}'
+    tag: '${APP_VERSION_OLAT_API}'
 
 responseApi:
   image:
-    tag: '${APP_VERSION}'
+    tag: '${APP_VERSION_RESPONSE_API}'
 
 lti:
   image:
-    tag: '${APP_VERSION}'
+    tag: '${APP_VERSION_LTI}'
 
   appSecret: '${APP_SECRET}'
   clientId: '${LTI_CLIENT_ID}'
@@ -123,3 +134,48 @@ lti:
     name: '${LTI_DB_NAME}'
     username: '${LTI_DB_USER}'
     password: '${LTI_DB_PASS}'
+
+assessment:
+  frontendPWA:
+    image:
+      tag: '${APP_VERSION_FRONTEND_ASSESSMENT}'
+
+  backendGraphql:
+    image:
+      tag: '${APP_VERSION_BACKEND_ASSESSMENT}'
+
+    apiDomain: '${API_DOMAIN}'
+    cookieDomain: '${COOKIE_DOMAIN}'
+    databaseUrl: '${DATABASE_URL}'
+    debug: true
+
+    appManageSubdomain: '${APP_MANAGE_SUBDOMAIN}'
+    appManageDomain: '${APP_MANAGE_SUBDOMAIN}${COOKIE_DOMAIN}'
+    appStudentSubdomain: '${APP_STUDENT_SUBDOMAIN}'
+    appStudentDomain: '${APP_STUDENT_SUBDOMAIN}${COOKIE_DOMAIN}'
+    appControlSubdomain: '${APP_CONTROL_SUBDOMAIN}'
+    appControlDomain: '${APP_CONTROL_SUBDOMAIN}${COOKIE_DOMAIN}'
+
+    notifications:
+      url: '${NOTIFICATION_URL}'
+      secret: '${NOTIFICATION_SECRET}'
+      supportEmail: '${NOTIFICATION_SUPPORT_EMAIL}'
+
+    vapid:
+      publicKey: '${VAPID_PUBLIC_KEY}'
+      privateKey: '${VAPID_PRIVATE_KEY}'
+
+    redisCache:
+      host: klicker-v2-prod-redis-master
+      port: 6379
+      pass: ''
+
+    redisExec:
+      host: '${REDIS_ASSESSMENT_HOST}'
+      port: '${REDIS_ASSESSMENT_PORT}'
+      tls: '${REDIS_ASSESSMENT_TLS}'
+      pass: '${REDIS_ASSESSMENT_PASS}'
+
+  responseApi:
+    image:
+      tag: '${APP_VERSION_RESPONSE_API_ASSESSMENT}'

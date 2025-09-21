@@ -22,9 +22,6 @@ CREATE INDEX "Account_providerAccountId_isVerified_idx" ON "public"."Account"("p
 CREATE INDEX "Account_type_isVerified_idx" ON "public"."Account"("type", "isVerified");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Account_userId_isPrimary_key" ON "public"."Account"("userId", "isPrimary");
-
--- CreateIndex
 CREATE INDEX "ParticipantAccount_ssoId_isVerified_idx" ON "public"."ParticipantAccount"("ssoId", "isVerified");
 
 -- CreateIndex

@@ -22,6 +22,8 @@ export interface IActivityEvaluation {
   description?: string | null
   courseId?: string | null
   courseLanguage?: DB.Locale | null
+  isAssessmentEnabled?: boolean | null
+  pinCode?: string | null
   results: IStackEvaluation[]
   feedbacks?: IFeedback[] | null
   confusionFeedbacks?: DB.ConfusionTimestep[] | null
@@ -243,6 +245,10 @@ export const ActivityEvaluation = ActivityEvaluationRef.implement({
       type: LocaleType,
       nullable: true,
     }),
+    isAssessmentEnabled: t.exposeBoolean('isAssessmentEnabled', {
+      nullable: true,
+    }),
+    pinCode: t.exposeString('pinCode', { nullable: true }),
     results: t.expose('results', {
       type: [StackEvaluation],
     }),

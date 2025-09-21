@@ -97,6 +97,9 @@ export async function getUserActivities(
     showDependencies = true,
     multiplier,
     reviewStatus,
+    isGamificationEnabled,
+    isAssessmentEnabled,
+    isPinProtected,
     sortByType,
     sortByAsc,
     numEntries,
@@ -112,6 +115,9 @@ export async function getUserActivities(
     showDependencies?: boolean | null
     multiplier?: number | null
     reviewStatus?: DB.ReviewStatus | null
+    isGamificationEnabled?: boolean | null
+    isAssessmentEnabled?: boolean | null
+    isPinProtected?: boolean | null
     sortByType: SortByType
     sortByAsc: boolean
     numEntries?: number | null
@@ -151,6 +157,14 @@ export async function getUserActivities(
     reviewStatus: reviewStatus ? { equals: reviewStatus } : undefined,
     // filter by activity type, if an activity type filter is set
     type: activityTypeFilter ? { equals: activityTypeFilter } : undefined,
+    // activity mode (gamification, assessment, pin protection) filters
+    isGamificationEnabled: isGamificationEnabled
+      ? { equals: isGamificationEnabled }
+      : undefined,
+    isAssessmentEnabled: isAssessmentEnabled
+      ? { equals: isAssessmentEnabled }
+      : undefined,
+    pinCode: isPinProtected ? { not: null } : undefined,
     // course filter
     courseId: courseId
       ? { equals: courseId }
@@ -720,15 +734,21 @@ export async function applyActivityBatchOperations(
           // if the course is changed to an assessment course, assign a pin
           pinCode: isCourseChanged ? newPinCode : undefined,
           // multiplier updates
-          pointsMultiplier: setMultiplier ? { set: multiplier } : undefined,
-          // if defined, set custom grading logic components
-          defaultPoints: setLiveQuizPoints ? { set: basePoints } : undefined,
-          defaultCorrectPoints: setLiveQuizPoints
-            ? { set: correctnessPoints }
+          pointsMultiplier: setMultiplier
+            ? { set: Math.max(multiplier, 1) }
             : undefined,
-          maxBonusPoints: setLiveQuizPoints ? { set: bonusPoints } : undefined,
+          // if defined, set custom grading logic components
+          defaultPoints: setLiveQuizPoints
+            ? { set: Math.max(basePoints, 0) }
+            : undefined,
+          defaultCorrectPoints: setLiveQuizPoints
+            ? { set: Math.max(correctnessPoints, 0) }
+            : undefined,
+          maxBonusPoints: setLiveQuizPoints
+            ? { set: Math.max(bonusPoints, 0) }
+            : undefined,
           timeToZeroBonus: setLiveQuizPoints
-            ? { set: timeToZeroBonus }
+            ? { set: Math.max(timeToZeroBonus, 1) }
             : undefined,
           // if set before, update the review status
           reviewStatus:

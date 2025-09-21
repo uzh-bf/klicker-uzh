@@ -14,6 +14,9 @@ data:
   HATCHET_HOST_PORT: {{ .Values.hatchet.client.hostPort | quote }}
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
   ASSESSMENT_MODE: 'true'
-  REDIS_HOST: {{ .Values.assessment.backendGraphql.redisExec.host | quote }}
-  REDIS_PORT: {{ .Values.assessment.backendGraphql.redisExec.port | quote }}
-  REDIS_TLS: {{ .Values.assessment.backendGraphql.redisExec.tls | quote }}
+  REDIS_HOST: {{ .Values.backendGraphql.redisExec.host | quote }}
+  REDIS_PORT: {{ .Values.backendGraphql.redisExec.port | quote }}
+  REDIS_TLS: {{ .Values.backendGraphql.redisExec.tls | quote }}
+  REDIS_ASSESSMENT_HOST: {{ .Values.assessment.backendGraphql.redisExec.host | quote }}
+  REDIS_ASSESSMENT_PORT: {{ .Values.assessment.backendGraphql.redisExec.port | quote }}
+  REDIS_ASSESSMENT_TLS: {{ .Values.assessment.backendGraphql.redisExec.tls | quote }}

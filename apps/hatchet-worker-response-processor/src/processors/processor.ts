@@ -15,7 +15,7 @@ import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
-import getRedis from '../redis.js'
+import { getRedis } from '../redis.js'
 import {
   getCaseStudyQuestionPoints,
   getChoicesQuestionPoints,
@@ -29,7 +29,7 @@ import {
 // TODO: what if the participant is not part of the course? when starting a session, prepopulate the leaderboard with all participations? what if a participant joins the course during a session? filter out all 0 point participants before rendering the LB
 // TODO: ensure that the response meets the restrictions specified in the element options
 
-const redisExec = getRedis()
+const redisExec = getRedis() // use standard redis instance for regular response processor
 
 export async function processResponseMessage(
   message: {
@@ -143,7 +143,7 @@ export async function processResponseMessage(
     const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
     // if the instance metadata is not available, it has been closed and purged already
     if (!instanceInfo || Object.keys(instanceInfo).length === 0) {
-      ctx.logger.info('Question instance metadata not found', {
+      ctx.logger.info('Element instance metadata not found', {
         messageId: message.messageId,
         sessionId: message.sessionId,
         instanceId: message.instanceId,
@@ -164,7 +164,17 @@ export async function processResponseMessage(
       choiceCount,
       basePoints,
       pointsMultiplier,
+      blockClosedAt,
     } = instanceInfo
+
+    if (blockClosedAt && Number(responseTimestamp) > Number(blockClosedAt)) {
+      ctx.logger.error(
+        `[CANCEL] [AddResponse Assessment] Response received at ${new Date(Number(responseTimestamp))} after block of element instance ${message.instanceId} was closed at ${new Date(Number(blockClosedAt))}.`
+      )
+      ctx.cancel()
+      return { status: 200 }
+    }
+
     let parsedSolutions = undefined
     try {
       if (solutions) {
@@ -468,7 +478,11 @@ export async function processResponseMessage(
         // add the response to the aggregated results
         response.selection.forEach((answerId: number) => {
           // skipped input fields should not be considered
-          if (answerId === -1) {
+          if (
+            answerId === -1 ||
+            typeof answerId === 'undefined' ||
+            answerId === null
+          ) {
             return
           }
 
@@ -484,7 +498,7 @@ export async function processResponseMessage(
             participantData.role === 'TEMPORARY_PARTICIPANT'
               ? `temporary-${participantData.sub}`
               : participantData.sub,
-            `[${String(response.selection.filter((r: number) => r !== -1))}]` // filter out skipped response fields
+            `[${String(response.selection.filter((r: number) => r !== -1 && typeof r !== 'undefined' && r !== null))}]` // filter out skipped response fields
           )
 
           const {

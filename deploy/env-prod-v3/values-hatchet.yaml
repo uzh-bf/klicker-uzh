@@ -15,70 +15,172 @@ sharedConfig:
   # env:
 
 api:
+  # image:
+  #   tag: 'v0.73.1'
   replicaCount: 2
   resources:
     limits:
       cpu: 500m
       memory: 512Mi
     requests:
-      cpu: 50m
+      cpu: 100m
       memory: 128Mi
   priorityClassName: klicker-v2-prod-klicker-uzh-v2-production-workload
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - api
+                - key: app.kubernetes.io/instance
+                  operator: In
+                  values:
+                    - hatchet-prod
+            topologyKey: kubernetes.io/hostname
 
 frontend:
+  # image:
+  #   tag: 'v0.73.1'
   replicaCount: 2
   resources:
     limits:
       cpu: 500m
       memory: 512Mi
     requests:
-      cpu: 50m
+      cpu: 100m
       memory: 128Mi
   priorityClassName: klicker-v2-prod-klicker-uzh-v2-production-workload
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - frontend
+                - key: app.kubernetes.io/instance
+                  operator: In
+                  values:
+                    - hatchet-prod
+            topologyKey: kubernetes.io/hostname
 
 postgres:
   enabled: false
 
 grpc:
+  # image:
+  #   tag: 'v0.73.1'
   replicaCount: 2
   resources:
     limits:
       cpu: 500m
       memory: 512Mi
     requests:
-      cpu: 50m
+      cpu: 100m
       memory: 128Mi
   priorityClassName: klicker-v2-prod-klicker-uzh-v2-production-workload
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - hatchet-grpc
+                - key: app.kubernetes.io/instance
+                  operator: In
+                  values:
+                    - hatchet-prod
+            topologyKey: kubernetes.io/hostname
 
 controllers:
+  # image:
+  #   tag: 'v0.73.1'
   replicaCount: 2
   resources:
     limits:
       cpu: 500m
       memory: 512Mi
     requests:
-      cpu: 50m
+      cpu: 100m
       memory: 128Mi
   priorityClassName: klicker-v2-prod-klicker-uzh-v2-production-workload
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - controllers
+                - key: app.kubernetes.io/instance
+                  operator: In
+                  values:
+                    - hatchet-prod
+            topologyKey: kubernetes.io/hostname
 
 scheduler:
+  # image:
+  #   tag: 'v0.73.1'
   replicaCount: 2
   resources:
     limits:
       cpu: 500m
       memory: 512Mi
     requests:
-      cpu: 50m
+      cpu: 100m
       memory: 128Mi
   priorityClassName: klicker-v2-prod-klicker-uzh-v2-production-workload
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - scheduler
+                - key: app.kubernetes.io/instance
+                  operator: In
+                  values:
+                    - hatchet-prod
+            topologyKey: kubernetes.io/hostname
 
 caddy:
   enabled: true
   resources:
     limits:
-      cpu: 500m
-      memory: 512Mi
+      cpu: 250m
+      memory: 256Mi
     requests:
       cpu: 50m
-      memory: 128Mi
+      memory: 64Mi
   priorityClassName: klicker-v2-prod-klicker-uzh-v2-production-workload
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - caddy
+            topologyKey: kubernetes.io/hostname
