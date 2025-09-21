@@ -194,7 +194,11 @@ export async function getAggregatedMCPTools(
   for (const serverWithConfig of sortedServers) {
     try {
       const serverTools = await loadServerTools(serverWithConfig, chatbotId)
-      Object.assign(aggregatedTools, serverTools)
+      for (const [name, def] of Object.entries(serverTools)) {
+        if (!(name in aggregatedTools)) {
+          aggregatedTools[name] = def
+        }
+      }
     } catch {
       console.error(
         `Failed to load tools from ${serverWithConfig.server.name}, continuing with other servers`
