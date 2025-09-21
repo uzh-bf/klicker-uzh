@@ -32,7 +32,7 @@ import {
 } from './helpers.js'
 import { seedAccounts } from './seedAccounts.js'
 import { seedAchievements } from './seedAchievements.js'
-import { CHATBOT_ID_TEST, seedChatbots } from './seedChatbots.js'
+import { seedChatbots } from './seedChatbots.js'
 import { seedCompetencyTree } from './seedCompetencyTree.js'
 import { seedEmailTemplates } from './seedEmailTemplates.js'
 import { seedLevels } from './seedLevels.js'
@@ -1041,23 +1041,6 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       })
     })
   )
-
-  // initial credits for the test participant and chatbot
-  await prisma.chatUsageCredits.upsert({
-    where: {
-      participantId_chatbotId: {
-        participantId: PARTICIPANT_IDS[0] as string,
-        chatbotId: CHATBOT_ID_TEST,
-      },
-    },
-    update: {},
-    create: {
-      participantId: PARTICIPANT_IDS[0] as string,
-      chatbotId: CHATBOT_ID_TEST,
-      total: 1000,
-      current: 950,
-    },
-  })
 
   // seed practice quiz
   const flashcards = (await prepareFlashcardsFromFile(

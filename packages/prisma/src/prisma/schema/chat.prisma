@@ -1,6 +1,4 @@
 model ChatUsageCredits {
-  id String @id @default(uuid()) @db.Uuid
-
   total   Decimal @default(0) @db.Decimal(18, 6)
   current Decimal @default(0) @db.Decimal(18, 6)
 
@@ -10,10 +8,15 @@ model ChatUsageCredits {
   chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   chatbotId String  @db.Uuid
 
+  // Reset tracking fields
+  periodStartedAt DateTime? // When current credit period began
+  lastResetAt     DateTime? // Last time credits were reset
+  resetCount      Int       @default(0) // Number of resets performed
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([participantId, chatbotId])
+  @@id([participantId, chatbotId])
 }
 
 model ChatThread {
@@ -55,16 +58,22 @@ model Chatbot {
   description String?
   avatar      String? // URL to avatar image
 
+  // System prompts for different chat modes
+  // TODO: add JSON types
   systemPrompts Json? // { tutor: {prompt: string; description: string}; explainer: {prompt: string; description: string}; ... }
+
+  // Credit configuration per chatbot
+  // TODO: add JSON types
+  creditSettings Json? // { initialCredits: 10, resetPeriod: 'weekly', resetAmount: 10, maxCredits: 10 }
 
   // Azure OpenAI Configuration
   azureOpenAIKey      String? @db.Text // Encrypted API key using APP_SECRET
-  azureOpenAIEndpoint String?           // Optional custom endpoint (defaults to model config)
+  azureOpenAIEndpoint String? // Optional custom endpoint (defaults to model config)
 
   // Relations
   mcpConfigurations ChatbotMCPConfig[]
-  threads      ChatThread[]
-  usageCredits ChatUsageCredits[]
+  threads           ChatThread[]
+  usageCredits      ChatUsageCredits[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -79,19 +88,18 @@ model Chatbot {
 model ChatbotMCPServer {
   id String @id @default(uuid()) @db.Uuid
 
-  name        String @unique  // e.g., "RAG_MCP", "Python_Executor", "R_Executor"
+  name        String  @unique // e.g., "RAG_MCP", "Python_Executor", "R_Executor"
   description String?
-  url         String          // MCP server URL
-  authType    String          // 'bearer' | 'basic' | 'none' | 'custom'
-  authSecret  String?         @db.Text // Encrypted using APP_SECRET
+  url         String // MCP server URL
+  authType    String // 'bearer' | 'basic' | 'none' | 'custom'
+  authSecret  String? @db.Text // Encrypted using APP_SECRET
 
-  // NEW: Control chatbot context passing
-  passChatbotId Boolean @default(false) // Whether to include chatbot ID as header
+  passChatbotId   Boolean @default(false) // Whether to include chatbot ID as header
   chatbotIdHeader String? // Header name for chatbot ID (default: 'Chatbot-ID')
 
   // Global parameters for this MCP server
-  parameters  Json?           // Additional configuration parameters
-  isActive    Boolean @default(true)
+  parameters Json? // Additional configuration parameters
+  isActive   Boolean @default(true)
 
   // Relations
   configurations ChatbotMCPConfig[]
@@ -108,16 +116,16 @@ model ChatbotMCPConfig {
   chatbotId String  @db.Uuid
 
   mcpServer   ChatbotMCPServer @relation(fields: [mcpServerId], references: [id], onDelete: Cascade)
-  mcpServerId String    @db.Uuid
+  mcpServerId String           @db.Uuid
 
   // Configuration per chatbot-mode-mcp combination
-  chatMode     String          // 'tutor' | 'explainer' | 'default'
-  allowedTools Json?           // Array of allowed tool names/patterns (supports wildcards)
-  priority     Int @default(0) // Order of MCP servers (lower = higher priority)
+  chatMode     String // 'tutor' | 'explainer' | 'default'
+  allowedTools Json? // Array of allowed tool names/patterns (supports wildcards)
+  priority     Int     @default(0) // Order of MCP servers (lower = higher priority)
   isEnabled    Boolean @default(true)
 
   // Chatbot-specific parameters that override server defaults
-  parameters   Json?
+  parameters Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -38,6 +38,12 @@ export async function seedChatbots(prisma: Prisma.PrismaClient) {
           description: 'Act as an expert explainer.',
         },
       },
+      creditSettings: {
+        initialCredits: 100, // Generous amount for testing
+        resetPeriod: 'weekly', // Weekly reset for testing
+        resetAmount: 50, // Add 50 credits on reset
+        maxCredits: 100, // Max 100 credits
+      },
     },
   })
 

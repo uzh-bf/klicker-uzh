@@ -1,6 +1,25 @@
+/*
+  Warnings:
+
+  - The primary key for the `ChatUsageCredits` table will be changed. If it partially fails, the table could be left without primary key constraint.
+  - You are about to drop the column `id` on the `ChatUsageCredits` table. All the data in the column will be lost.
+
+*/
+-- DropIndex
+DROP INDEX "public"."ChatUsageCredits_participantId_chatbotId_key";
+
+-- AlterTable
+ALTER TABLE "public"."ChatUsageCredits" DROP CONSTRAINT "ChatUsageCredits_pkey",
+DROP COLUMN "id",
+ADD COLUMN     "lastResetAt" TIMESTAMP(3),
+ADD COLUMN     "periodStartedAt" TIMESTAMP(3),
+ADD COLUMN     "resetCount" INTEGER NOT NULL DEFAULT 0,
+ADD CONSTRAINT "ChatUsageCredits_pkey" PRIMARY KEY ("participantId", "chatbotId");
+
 -- AlterTable
 ALTER TABLE "public"."Chatbot" ADD COLUMN     "azureOpenAIEndpoint" TEXT,
-ADD COLUMN     "azureOpenAIKey" TEXT;
+ADD COLUMN     "azureOpenAIKey" TEXT,
+ADD COLUMN     "creditSettings" JSONB;
 
 -- CreateTable
 CREATE TABLE "public"."ChatbotMCPServer" (

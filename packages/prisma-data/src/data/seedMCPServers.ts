@@ -111,19 +111,19 @@ function encryptSecret(
       // Validate structure
       if (!parsedSecret.headers || typeof parsedSecret.headers !== 'object') {
         console.error(
-          `❌ Invalid custom auth format for ${serverName}: missing 'headers' object`
+          `Invalid custom auth format for ${serverName}: missing 'headers' object`
         )
         return undefined
       }
 
       console.log(
-        `✅ Validated custom headers for ${serverName}: ${Object.keys(parsedSecret.headers).join(', ')}`
+        `Validated custom headers for ${serverName}: ${Object.keys(parsedSecret.headers).join(', ')}`
       )
     }
 
     return encrypt(secret)
   } catch (error) {
-    console.error(`❌ Failed to encrypt secret for ${serverName}: ${error}`)
+    console.error(`Failed to encrypt secret for ${serverName}: ${error}`)
     return undefined
   }
 }
@@ -133,14 +133,12 @@ function encryptSecret(
  */
 function validateServerConfig(serverConfig: MCPServerSeed): boolean {
   if (!serverConfig.name || !serverConfig.description) {
-    console.error(`❌ Server missing required fields: name or description`)
+    console.error(`Server missing required fields: name or description`)
     return false
   }
 
   if (!serverConfig.url) {
-    console.log(
-      `⚠️  Server '${serverConfig.name}' has no URL - will be skipped`
-    )
+    console.log(`Server '${serverConfig.name}' has no URL - will be skipped`)
     return false
   }
 
@@ -148,9 +146,7 @@ function validateServerConfig(serverConfig: MCPServerSeed): boolean {
   try {
     new URL(serverConfig.url)
   } catch (error) {
-    console.error(
-      `❌ Invalid URL for ${serverConfig.name}: ${serverConfig.url}`
-    )
+    console.error(`Invalid URL for ${serverConfig.name}: ${serverConfig.url}`)
     return false
   }
 
@@ -158,7 +154,7 @@ function validateServerConfig(serverConfig: MCPServerSeed): boolean {
   const validAuthTypes = ['bearer', 'basic', 'none', 'custom']
   if (!validAuthTypes.includes(serverConfig.authType)) {
     console.error(
-      `❌ Invalid auth type for ${serverConfig.name}: ${serverConfig.authType}`
+      `Invalid auth type for ${serverConfig.name}: ${serverConfig.authType}`
     )
     return false
   }
@@ -169,7 +165,7 @@ function validateServerConfig(serverConfig: MCPServerSeed): boolean {
     !/^[a-zA-Z][a-zA-Z0-9-_]*$/.test(serverConfig.chatbotIdHeader)
   ) {
     console.error(
-      `❌ Invalid chatbot ID header name for ${serverConfig.name}: ${serverConfig.chatbotIdHeader}`
+      `Invalid chatbot ID header name for ${serverConfig.name}: ${serverConfig.chatbotIdHeader}`
     )
     return false
   }
@@ -181,7 +177,7 @@ function validateServerConfig(serverConfig: MCPServerSeed): boolean {
  * Seeds MCP server configurations
  */
 export async function seedMCPServers(prisma: PrismaClient) {
-  console.log('🌱 Seeding MCP servers...')
+  console.log('Seeding MCP servers...')
 
   const createdServers = []
 
@@ -189,9 +185,7 @@ export async function seedMCPServers(prisma: PrismaClient) {
     try {
       // Validate server configuration first
       if (!validateServerConfig(serverConfig)) {
-        console.log(
-          `⚠️  Skipping '${serverConfig.name}' due to validation errors`
-        )
+        console.log(`Skipping '${serverConfig.name}' due to validation errors`)
         continue
       }
 
@@ -202,7 +196,7 @@ export async function seedMCPServers(prisma: PrismaClient) {
 
       if (existingServer) {
         console.log(
-          `⚠️  MCP server '${serverConfig.name}' already exists, skipping`
+          `MCP server '${serverConfig.name}' already exists, skipping`
         )
         createdServers.push(existingServer)
         continue
@@ -217,7 +211,7 @@ export async function seedMCPServers(prisma: PrismaClient) {
 
       if (serverConfig.authSecret && !encryptedSecret) {
         console.log(
-          `⚠️  Skipping '${serverConfig.name}' - secret encryption failed`
+          `Skipping '${serverConfig.name}' - secret encryption failed`
         )
         continue
       }
@@ -236,11 +230,11 @@ export async function seedMCPServers(prisma: PrismaClient) {
         },
       })
 
-      console.log(`✅ Created MCP server: ${server.name}`)
+      console.log(`Created MCP server: ${server.name}`)
       createdServers.push(server)
     } catch (error) {
       console.error(
-        `❌ Failed to create MCP server '${serverConfig.name}':`,
+        `Failed to create MCP server '${serverConfig.name}':`,
         error
       )
     }
@@ -258,7 +252,7 @@ export async function seedChatbotMCPConfigurations(
   prisma: PrismaClient,
   servers: SeededMCPServers
 ) {
-  console.log('🌱 Seeding example chatbot configurations...')
+  console.log('Seeding example chatbot configurations...')
 
   const configurations = EXAMPLE_CONFIGURATIONS.map((config) => ({
     ...config,
@@ -270,7 +264,7 @@ export async function seedChatbotMCPConfigurations(
       const mcpServer = servers.find((s) => s.name === config.mcpServerName)
       if (!mcpServer) {
         console.log(
-          `⚠️  MCP server '${config.mcpServerName}' not found, skipping configuration`
+          `MCP server '${config.mcpServerName}' not found, skipping configuration`
         )
         continue
       }
@@ -287,7 +281,7 @@ export async function seedChatbotMCPConfigurations(
 
       if (existingConfig) {
         console.log(
-          `⚠️  Configuration for ${config.mcpServerName}/${config.chatMode} already exists, skipping`
+          `Configuration for ${config.mcpServerName}/${config.chatMode} already exists, skipping`
         )
         continue
       }
@@ -305,11 +299,11 @@ export async function seedChatbotMCPConfigurations(
       })
 
       console.log(
-        `✅ Created configuration: ${config.mcpServerName}/${config.chatMode}`
+        `Created configuration: ${config.mcpServerName}/${config.chatMode}`
       )
     } catch (error) {
       console.error(
-        `❌ Failed to create configuration for ${config.mcpServerName}/${config.chatMode}:`,
+        `Failed to create configuration for ${config.mcpServerName}/${config.chatMode}:`,
         error
       )
     }

@@ -85,17 +85,17 @@ fi
 
 # First, try Doppler normally
 if doppler settings 2>/dev/null; then
-  echo "✅ Doppler is configured. Running helmfile with config '$CONFIG'..."
+  echo "Doppler is configured. Running helmfile with config '$CONFIG'..."
   generate_secret_values_files
   doppler run --config "$CONFIG" -- helmfile "$@"
-  echo "✅ Deployment successful."
+  echo "Deployment successful."
   exit 0
 fi
 
 # If that failed, resolve current path and check if we're on an external drive
 CURRENT_DIR="$(command -v realpath >/dev/null 2>&1 && realpath "$PWD" || pwd -P)"
 if [[ "$CURRENT_DIR" == /Volumes/* ]]; then
-  echo "⚠️  Detected external drive (resolved path: $CURRENT_DIR). Attempting alternative authentication..."
+  echo " Detected external drive (resolved path: $CURRENT_DIR). Attempting alternative authentication..."
 
   # Determine closest doppler.yaml to derive the Doppler project/config
   DOPPLER_YAML=""
@@ -135,23 +135,23 @@ if [[ "$CURRENT_DIR" == /Volumes/* ]]; then
   # Prefer the new stable location; fall back to legacy if present
   if [ -f "$TOKEN_FILE_NEW" ]; then
     export DOPPLER_TOKEN="$(cat "$TOKEN_FILE_NEW")"
-    echo "✅ Found service token in $TOKEN_FILE_NEW. Running helmfile with config '$CONFIG'..."
+    echo "Found service token in $TOKEN_FILE_NEW. Running helmfile with config '$CONFIG'..."
     generate_secret_values_files
     doppler run --config "$CONFIG" -- helmfile "$@"
-    echo "✅ Deployment successful."
+    echo "Deployment successful."
     exit 0
   elif [ -f "$TOKEN_FILE_LEGACY" ]; then
     echo "ℹ️  Using legacy token file: $TOKEN_FILE_LEGACY"
     echo "    Consider migrating it to: $TOKEN_FILE_NEW"
     export DOPPLER_TOKEN="$(cat "$TOKEN_FILE_LEGACY")"
-    echo "✅ Running helmfile with config '$CONFIG'..."
+    echo "Running helmfile with config '$CONFIG'..."
     generate_secret_values_files
     doppler run --config "$CONFIG" -- helmfile "$@"
-    echo "✅ Deployment successful."
+    echo "Deployment successful."
     exit 0
   fi
 
-  echo "❌ No service token found for external drive usage."
+  echo "No service token found for external drive usage."
   echo ""
 
   # Guidance for the user (also echoed to terminal)
@@ -166,6 +166,6 @@ if [[ "$CURRENT_DIR" == /Volumes/* ]]; then
   exit 1
 else
   # Not on external drive, but doppler still failed earlier
-  echo "❌ Doppler command failed. Please run 'doppler login' and 'doppler setup'"
+  echo "Doppler command failed. Please run 'doppler login' and 'doppler setup'"
   exit 1
 fi

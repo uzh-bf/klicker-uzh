@@ -105,10 +105,10 @@ export async function createMCPClient(
       transport: httpTransport,
     })
 
-    console.log(`✅ MCP Client for ${server.name} initialized successfully`)
+    console.log(`MCP Client for ${server.name} initialized successfully`)
     return client
   } catch (error) {
-    console.error(`❌ Failed to create MCP client for ${server.name}:`, error)
+    console.error(`Failed to create MCP client for ${server.name}:`, error)
     throw error
   }
 }
@@ -158,11 +158,11 @@ async function loadServerTools(
     })
 
     console.log(
-      `✅ Loaded ${Object.keys(filteredTools).length} tools from ${server.name}`
+      `Loaded ${Object.keys(filteredTools).length} tools from ${server.name}`
     )
     return filteredTools
   } catch (error) {
-    console.error(`❌ Failed to load tools from ${server.name}:`, error)
+    console.error(`Failed to load tools from ${server.name}:`, error)
     // Return empty object to allow other servers to continue loading
     return {}
   }
@@ -201,9 +201,7 @@ export async function getAggregatedMCPTools(
     }
   }
 
-  console.log(
-    `✅ Total aggregated tools: ${Object.keys(aggregatedTools).length}`
-  )
+  console.log(`Total aggregated tools: ${Object.keys(aggregatedTools).length}`)
   console.log('Available tools:', Object.keys(aggregatedTools))
 
   return aggregatedTools
@@ -214,7 +212,7 @@ export async function getAggregatedMCPTools(
  * @deprecated Use getAggregatedMCPTools with database configuration instead
  */
 export async function getMCPTools(chatbotId: string) {
-  console.log('⚠️  Using legacy MCP configuration from environment variables')
+  console.log(' Using legacy MCP configuration from environment variables')
 
   const mcpKey = process.env.MCP_KEY
   const mcpUrl = process.env.MCP_URL
