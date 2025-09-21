@@ -5,6 +5,7 @@ import type {
 } from '@klicker-uzh/types'
 import axios, { type AxiosResponse } from 'axios'
 import { createHash } from 'crypto'
+import https from 'https'
 
 /**
  * Helper function to generate a secure hash for sensitive data like PINs
@@ -121,6 +122,10 @@ export class AuditClient {
 
     try {
       const response = await axios.request({
+        httpsAgent:
+          process.env.NODE_ENV === 'production'
+            ? undefined
+            : new https.Agent({ rejectUnauthorized: false }),
         url,
         method,
         headers: {
