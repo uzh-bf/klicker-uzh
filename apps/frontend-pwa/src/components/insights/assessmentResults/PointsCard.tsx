@@ -11,14 +11,8 @@ function PointsCard({
   value: string
   meta: string
   variant?: 'default' | 'summary'
-  extraContent?: string | string[]
+  extraContent?: string[]
 }) {
-  const extraContents = Array.isArray(extraContent)
-    ? extraContent
-    : extraContent
-      ? [extraContent]
-      : []
-
   return (
     <div
       className={twMerge(
@@ -46,7 +40,7 @@ function PointsCard({
       >
         {meta}
       </div>
-      {extraContents.map((content, index) => (
+      {extraContent?.map((content, index) => (
         <div
           key={`${label}-${index}`}
           className={twMerge(

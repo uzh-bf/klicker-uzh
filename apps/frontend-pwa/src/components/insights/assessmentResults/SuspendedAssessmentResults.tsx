@@ -1,7 +1,7 @@
 import { useSuspenseQuery } from '@apollo/client'
 import { GetStudentAssessmentResultsDocument } from '@klicker-uzh/graphql/dist/ops'
 import { ActivityType } from '@klicker-uzh/types'
-import { H3 } from '@uzh-bf/design-system'
+import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import AssessmentResultsList from './AssessmentResultsList'
 
@@ -12,7 +12,12 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
   })
 
   if (!data.studentAssessmentResults) {
-    return <div>{t('pwa.assessment.failedToLoadActivityResults')}</div>
+    return (
+      <UserNotification
+        type="error"
+        message={t('pwa.assessment.failedToLoadActivityResults')}
+      />
+    )
   }
 
   const liveQuizzes = data.studentAssessmentResults.liveQuizzes

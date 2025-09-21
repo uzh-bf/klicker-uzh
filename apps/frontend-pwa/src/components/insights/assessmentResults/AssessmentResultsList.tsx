@@ -37,21 +37,18 @@ function AssessmentResultsList({
 
   const aggregated = results.reduce(
     (acc, result) => {
-      const totalPoints =
-        result.basePoints + result.correctnessPoints + result.bonusPoints
-      const availableTotalPoints =
-        result.availableBasePoints +
-        result.availableCorrectnessPoints +
-        result.availableBonusPoints
-
       acc.basePoints += result.basePoints
       acc.availableBasePoints += result.availableBasePoints
       acc.correctnessPoints += result.correctnessPoints
       acc.availableCorrectnessPoints += result.availableCorrectnessPoints
       acc.bonusPoints += result.bonusPoints
       acc.availableBonusPoints += result.availableBonusPoints
-      acc.totalPoints += totalPoints
-      acc.availableTotalPoints += availableTotalPoints
+      acc.totalPoints +=
+        result.basePoints + result.correctnessPoints + result.bonusPoints
+      acc.availableTotalPoints +=
+        result.availableBasePoints +
+        result.availableCorrectnessPoints +
+        result.availableBonusPoints
       return acc
     },
     {

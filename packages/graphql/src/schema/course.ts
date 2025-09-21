@@ -451,7 +451,7 @@ export const AwardEntry = AwardEntryRef.implement({
 
 // ! ASSESSMENT
 // #region
-interface IStudentAssessmentResults {
+export interface IStudentAssessmentResults {
   liveQuizzes: ActivityStudentPerformanceType[]
   practiceQuizzes: ActivityStudentPerformanceType[]
   microLearnings: ActivityStudentPerformanceType[]

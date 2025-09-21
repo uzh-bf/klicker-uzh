@@ -352,7 +352,11 @@ export async function getStudentAssessmentResults(
             include: {
               elements: {
                 include: {
-                  liveQuizResponses: { where: { participantId: ctx.user.sub } },
+                  liveQuizResponses: {
+                    where: { participantId: ctx.user.sub },
+                    orderBy: { createdAt: 'desc' },
+                    take: 1,
+                  },
                 },
                 orderBy: { order: 'asc' },
               },
