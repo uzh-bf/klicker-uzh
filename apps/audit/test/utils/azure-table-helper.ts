@@ -296,21 +296,22 @@ export class AzureTableTestHelper {
       stats.totalEntities++
       actionsSet.add(entity.action)
 
-      const timestampValue =
+      const timestamp = toNumericTimestamp(
         (entity as AuditTableEntity).eventTimestamp ?? entity.timestamp
+      )
 
-      if (timestampValue) {
+      if (timestamp !== null) {
         if (
           stats.oldestTimestamp === null ||
-          timestampValue < stats.oldestTimestamp
+          timestamp < stats.oldestTimestamp
         ) {
-          stats.oldestTimestamp = timestampValue
+          stats.oldestTimestamp = timestamp
         }
         if (
           stats.newestTimestamp === null ||
-          timestampValue > stats.newestTimestamp
+          timestamp > stats.newestTimestamp
         ) {
-          stats.newestTimestamp = timestampValue
+          stats.newestTimestamp = timestamp
         }
       }
     }
@@ -320,4 +321,14 @@ export class AzureTableTestHelper {
 
     return stats
   }
+}
+
+function toNumericTimestamp(value: unknown): number | null {
+  if (typeof value === 'number') return value
+  if (value instanceof Date) return value.getTime()
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value)
+    return Number.isNaN(parsed) ? null : parsed
+  }
+  return null
 }

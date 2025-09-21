@@ -466,7 +466,7 @@ describe('Real-World Scenario Tests', () => {
 
       // Verify compliance audit trail
       const compEvents = persistedEntities.sort(
-        (a, b) => a.timestamp - b.timestamp
+        (a, b) => extractEntityTimestamp(a) - extractEntityTimestamp(b)
       )
 
       // Check PII detection and handling
@@ -583,7 +583,7 @@ describe('Real-World Scenario Tests', () => {
 
       // Verify security incident workflow
       const secEvents = persistedEntities.sort(
-        (a, b) => a.timestamp - b.timestamp
+        (a, b) => extractEntityTimestamp(a) - extractEntityTimestamp(b)
       )
 
       // All events should reference the same incident
@@ -710,7 +710,7 @@ describe('Real-World Scenario Tests', () => {
 
       // Verify privileged access tracking
       const adminEvents = persistedEntities.sort(
-        (a, b) => a.timestamp - b.timestamp
+        (a, b) => extractEntityTimestamp(a) - extractEntityTimestamp(b)
       )
 
       // All events should be in same session
@@ -849,7 +849,7 @@ describe('Real-World Scenario Tests', () => {
 
       // Verify financial workflow tracking
       const finEvents = persistedEntities.sort(
-        (a, b) => a.timestamp - b.timestamp
+        (a, b) => extractEntityTimestamp(a) - extractEntityTimestamp(b)
       )
 
       // All events should reference the same transaction
@@ -1010,7 +1010,7 @@ describe('Real-World Scenario Tests', () => {
 
       // Verify GDPR compliance workflow
       const gdprEvents = persistedEntities.sort(
-        (a, b) => a.timestamp - b.timestamp
+        (a, b) => extractEntityTimestamp(a) - extractEntityTimestamp(b)
       )
 
       // All events should reference the same request
