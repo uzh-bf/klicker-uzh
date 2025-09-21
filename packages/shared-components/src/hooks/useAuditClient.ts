@@ -20,7 +20,7 @@ interface AuditClientAPI {
  * Only logs events when in assessment mode
  * Includes simple retry mechanism with exponential backoff
  */
-export function useAuditClient(
+export default function useAuditClient(
   options: UseAuditClientOptions = {}
 ): AuditClientAPI {
   const [isLoading, setIsLoading] = useState(false)

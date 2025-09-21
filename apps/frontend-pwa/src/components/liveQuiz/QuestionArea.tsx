@@ -4,8 +4,10 @@ import { ElementInstance, ElementType } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
   InstanceStackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
+import useAuditClient from '@klicker-uzh/shared-components/src/hooks/useAuditClient'
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
 import LiveQuizProgress from '@klicker-uzh/shared-components/src/questions/LiveQuizProgress'
+import { AuditAction, AuditScope } from '@klicker-uzh/types'
 import { push } from '@socialgouv/matomo-next'
 import { H2, toast, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -56,6 +58,14 @@ function QuestionArea({
   execution,
 }: QuestionAreaProps): React.ReactElement {
   const t = useTranslations()
+
+  const auditLog = useAuditClient({
+    assessmentMode: process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
+    enabled: process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
+    onError: (error) => {
+      console.error('Audit log error:', error)
+    },
+  })
 
   const [showConfetti, setShowConfetti] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -172,6 +182,16 @@ function QuestionArea({
       type: elementType,
       input: studentResponse,
       correlationKey,
+    })
+
+    await auditLog.log({
+      action: AuditAction.PARTICIPANT_SUBMIT_RESPONSE,
+      resource: `instance:${instanceId}`,
+      scope: AuditScope.PUBLIC,
+      correlationId: correlationKey ?? undefined,
+      attributes: {
+        response: studentResponse.response,
+      },
     })
 
     // relese the submission lock on the submission button

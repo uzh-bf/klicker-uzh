@@ -969,7 +969,7 @@ export type ActivityQuizAnalytics = {
 // #region
 export interface BaseAuditEvent {
   scope?: AuditScope
-  subject: string
+  subject?: string
   action: string
   resource?: string
   attributes?: Record<string, any>
@@ -984,6 +984,7 @@ export interface PublicAuditEvent extends BaseAuditEvent {
 export interface InternalAuditEvent extends BaseAuditEvent {
   timestamp?: number
   stage?: string
+  subject: string
 }
 
 export enum AuditScope {
