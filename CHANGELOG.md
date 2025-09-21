@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.29](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.28...v3.4.0-alpha.29) (2025-09-21)
+
+
+### Bug Fixes
+
+* **packages/shared-components:** make sure the no points hint is not shown when sample solution is enabled ([f8624f8](https://github.com/uzh-bf/klicker-uzh/commit/f8624f8045c9b4a3690cdd443c419573f63447b9))
+
 ## [3.4.0-alpha.28](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.27...v3.4.0-alpha.28) (2025-09-21)
 
 
