@@ -20,20 +20,20 @@ fi
 # Check Redis
 check_redis() {
   if ! nc -z localhost 6379 2>/dev/null; then
-    echo "❌ Redis is not running on port 6379"
+    echo "Redis is not running on port 6379"
     return 1
   fi
-  echo "✅ Redis is running on port 6379"
+  echo "Redis is running on port 6379"
   return 0
 }
 
 # Check PostgreSQL
 check_postgres() {
   if ! nc -z localhost 5432 2>/dev/null; then
-    echo "❌ PostgreSQL is not running on port 5432"
+    echo "PostgreSQL is not running on port 5432"
     return 1
   fi
-  echo "✅ PostgreSQL is running on port 5432"
+  echo "PostgreSQL is running on port 5432"
   return 0
 }
 
@@ -41,17 +41,17 @@ check_postgres() {
 check_hatchet() {
   # Check HTTP endpoint
   if ! curl -s -f http://localhost:8888/healthz >/dev/null 2>&1; then
-    echo "❌ Hatchet HTTP is not ready on port 8888"
+    echo "Hatchet HTTP is not ready on port 8888"
     return 1
   fi
-  
+
   # Check gRPC port
   if ! nc -z localhost 7077 2>/dev/null; then
-    echo "❌ Hatchet gRPC is not ready on port 7077"
+    echo "Hatchet gRPC is not ready on port 7077"
     return 1
   fi
-  
-  echo "✅ Hatchet is ready (HTTP: 8888, gRPC: 7077)"
+
+  echo "Hatchet is ready (HTTP: 8888, gRPC: 7077)"
   return 0
 }
 
@@ -73,7 +73,7 @@ cleanup() {
 
   # If we received SIGTERM, exit with special code
   if [ "${1:-}" = "TERM" ]; then
-    echo "⚠️ Received termination signal"
+    echo "Received termination signal"
     exit 143  # 128 + 15 (SIGTERM)
   fi
 
@@ -85,7 +85,7 @@ trap 'cleanup TERM' TERM
 trap cleanup EXIT
 
 # Wait for Azurite (Azure Table emulator) to become reachable.
-wait_for_azurite() {
+check_azurite() {
   local host=${AZURITE_HOST:-127.0.0.1}
   local port=${AZURITE_TABLE_PORT:-10002}
   local timeout=${AZURITE_WAIT_TIMEOUT:-30}
@@ -111,7 +111,7 @@ wait_for_azurite() {
 
 # Check dependencies before starting
 echo "🔍 Checking dependencies..."
-wait_for_azurite || { echo "❌ Azurite check failed"; exit 1; }
+check_azurite || { echo "❌ Azurite check failed"; exit 1; }
 check_redis || { echo "❌ Redis check failed"; exit 1; }
 check_postgres || { echo "❌ PostgreSQL check failed"; exit 1; }
 check_hatchet || { echo "❌ Hatchet check failed"; exit 1; }
@@ -136,7 +136,7 @@ sleep 2
 
 # Check if process is still running after initial start
 if ! kill -0 "$SERVICE_PID" 2>/dev/null; then
-  echo "❌ Service failed to start. Last few lines of output:"
+  echo "Service failed to start. Last few lines of output:"
   tail -n 20 service.log
   exit 1
 fi
@@ -146,7 +146,7 @@ echo "📋 Initial service start successful (PID: $SERVICE_PID)"
 # Function to check if process is still running
 check_process() {
   if ! kill -0 "$SERVICE_PID" 2>/dev/null; then
-    echo "❌ Service process died. Last few lines of output:"
+    echo "Service process died. Last few lines of output:"
     tail -n 20 service.log
     return 1
   fi
@@ -163,10 +163,10 @@ check_endpoint() {
 
   # Check if curl command itself succeeded
   if [ $? -eq 0 ] && [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
-    echo "✅ $endpoint is up (HTTP $http_code)"
+    echo "$endpoint is up (HTTP $http_code)"
     return 0
   else
-    echo "❌ $endpoint is not ready (HTTP $http_code)"
+    echo "$endpoint is not ready (HTTP $http_code)"
     return 1
   fi
 }
@@ -204,13 +204,13 @@ while [ $elapsed -lt $TIMEOUT_SECONDS ]; do
   # Try to access all endpoints
   if check_endpoints; then
     echo "✨ All services are ready!"
-    
+
     # Stop log streaming but keep service running
     if [ ! -z "${TAIL_PID:-}" ]; then
       kill $TAIL_PID 2>/dev/null || true
       echo "📋 Service logs are available in service.log"
     fi
-    
+
     # Keep the background process running but exit the script successfully
     trap - TERM  # Remove SIGTERM trap as we want to keep the service running
     trap - EXIT  # Remove exit trap as we want to keep the service running
@@ -229,6 +229,6 @@ while [ $elapsed -lt $TIMEOUT_SECONDS ]; do
   fi
 done
 
-echo "⚠️ Timeout waiting for services to be ready. Full service log:"
+echo "Timeout waiting for services to be ready. Full service log:"
 cat service.log
 exit 1

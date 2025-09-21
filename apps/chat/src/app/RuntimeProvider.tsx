@@ -6,10 +6,10 @@ import {
   type ThreadMessageLike,
 } from '@assistant-ui/react'
 import { useCallback, useEffect } from 'react'
-import { useChatResponse } from '../hooks/useChatResponse'
-import { useThreadManagement } from '../hooks/useThreadManagement'
-import { useChatStore } from '../stores/chatStore'
-import { useSettingsStore } from '../stores/settingsStore'
+import { useChatResponse } from 'src/hooks/useChatResponse'
+import { useThreadManagement } from 'src/hooks/useThreadManagement'
+import { useChatStore } from 'src/stores/chatStore'
+import { useSettingsStore } from 'src/stores/settingsStore'
 
 export function RuntimeProvider({
   chatbotId,
@@ -65,6 +65,7 @@ export function RuntimeProvider({
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
+      {/* <RAGToolUI /> */}
       {children}
     </AssistantRuntimeProvider>
   )
