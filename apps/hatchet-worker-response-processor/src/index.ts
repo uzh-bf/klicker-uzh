@@ -3,7 +3,11 @@ import {
   Priority,
 } from '@hatchet-dev/typescript-sdk/index.js'
 import { hatchetClient } from '@klicker-uzh/hatchet'
-import type { LiveQuizResponseInput } from '@klicker-uzh/types'
+import {
+  AuditAction,
+  AuditScope,
+  type LiveQuizResponseInput,
+} from '@klicker-uzh/types'
 import {
   aggregateAssessmentResponses,
   processAssessmentResponse,
@@ -55,15 +59,20 @@ processAssessmentResponseWorkflow.onFailure({
   name: 'log-assessment-response-failure',
   fn: async (input, ctx) => {
     const error = JSON.stringify(ctx.errors)
-    const message = `[ERROR] [AddResponse Assessment] ${error}.`
 
     // log the error
-    ctx.logger.error(message)
+    ctx.logger.error(`[ERROR] [AddResponse Assessment] ${error}.`)
 
     // push the error to the audit log
     ctx.v1.events.push('create-audit-log-entry', {
+      scope: AuditScope.WORKER,
       correlationId: input.correlationId,
-      info: message,
+      subject: `participant:${input.participantId}`,
+      resource: `instance:${input.instanceId}`,
+      action: AuditAction.SYSTEM_RESPONSE_GENERAL_ERROR,
+      attributes: {
+        error,
+      },
     })
   },
 })
