@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.25](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.24...v3.4.0-alpha.25) (2025-09-21)
+
+
+### Features
+
+* **apps/chat:** dynamic MCP tools and chatbot parametrization, credit management improvements ([#4932](https://github.com/uzh-bf/klicker-uzh/issues/4932)) ([b3c8497](https://github.com/uzh-bf/klicker-uzh/commit/b3c84978d88144d9946d3c225d9226bb2af44c75))
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that countdown on live quiz blocks starts automatically ([ac535f1](https://github.com/uzh-bf/klicker-uzh/commit/ac535f1193807de9c488786f2aa5e324380289a8))
+* ensure that only valid live quiz grading parameters can be defined ([#4929](https://github.com/uzh-bf/klicker-uzh/issues/4929)) ([80546b4](https://github.com/uzh-bf/klicker-uzh/commit/80546b442b52e3d863b0414b63f12878843b9862))
+* **packages/graphql:** ensure that gamification and assessment settings are correctly applied to course activities ([#4931](https://github.com/uzh-bf/klicker-uzh/issues/4931)) ([42af351](https://github.com/uzh-bf/klicker-uzh/commit/42af3515aae338182e539a34b582b6b328f572bb))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add the possibility to filter for gamified, assessment and pin-protected activities ([#4933](https://github.com/uzh-bf/klicker-uzh/issues/4933)) ([2e3bee7](https://github.com/uzh-bf/klicker-uzh/commit/2e3bee77d87a7edb5cd036ebd0c7b520cc31b422))
+
 ## [3.4.0-alpha.24](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.23...v3.4.0-alpha.24) (2025-09-19)
 
 
