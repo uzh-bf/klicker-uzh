@@ -81,7 +81,7 @@ export function SettingsPanel() {
                   Object.keys(modeOptions).length > 0
                     ? Object.entries(modeOptions).map(([key]) => ({
                         value: key,
-                        label: key,
+                        label: key.charAt(0).toUpperCase() + key.slice(1),
                       }))
                     : []
                 }
