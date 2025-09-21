@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { AzureTableTestHelper } from './utils/azure-table-helper.js'
 
 const BASE_URL = 'http://localhost:7080'
-const AUTH_TOKEN = process.env.INTERNAL_TOKEN || 'test-secret-token-123'
+const AUTH_TOKEN = process.env.AUDIT_TOKEN || 'test-secret-token-123'
 
 // Test helper instance
 const tableHelper = new AzureTableTestHelper()

@@ -8,17 +8,17 @@ const configSchema = z.object({
     .default('development'),
 
   // Azure Table Storage configuration
-  AZURE_TABLES_CONNECTION_STRING: z.string().min(1),
-  AZURE_TABLES_TABLE_NAME: z.string().min(1).default('audit_events'),
+  AUDIT_TABLE_CONNECTION_STRING: z.string().min(1),
+  AUDIT_TABLE_NAME: z.string().min(1).default('audit_events'),
 
   // Authentication configuration (MVP - internal token)
-  INTERNAL_TOKEN: z.string().min(1),
+  AUDIT_TOKEN: z.string().min(1),
 
   // JWT authentication for public endpoints
   APP_SECRET: z.string().min(1),
 
   // CORS configuration (comma-separated origins)
-  CORS_ORIGINS: z.string().default('https://assessment.klicker.com'),
+  AUDIT_CORS_ORIGINS: z.string().default('https://assessment.klicker.com'),
 
   // Logging configuration
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),

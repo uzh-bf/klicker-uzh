@@ -1,7 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { DisplayMode } from '@klicker-uzh/types'
+import { AuditAction, DisplayMode } from '@klicker-uzh/types'
 import {
-  AuditClient,
   getInitialInstanceResults,
   getInitialInstanceStatistics,
   processElementData,
@@ -15,9 +14,6 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import * as EmailService from '../services/email.js'
 import { sendTeamsNotification } from './notifications.js'
-
-// Initialize audit client for authentication event logging
-const auditClient = new AuditClient()
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -37,16 +33,9 @@ export async function logoutUser(_: any, ctx: ContextWithUser) {
   })
 
   // Log user logout event
-  await auditClient.log({
+  await ctx.auditClient.log({
     subject: `user:${ctx.user.sub}`,
-    action: 'auth.user.logout',
-    userId: ctx.user.sub,
-    attributes: {
-      method: 'session_cookie_clear',
-      ip: ctx.req?.ip,
-      userAgent: ctx.req?.headers?.['user-agent'],
-      userRole: ctx.user.role,
-    },
+    action: AuditAction.USER_LOGOUT,
   })
 
   return ctx.user.sub
@@ -128,9 +117,9 @@ export async function loginParticipant(
 
   // Log failed login attempt - participant not found
   if (!participant) {
-    await auditClient.log({
+    await ctx.auditClient.log({
       subject: `participant:${usernameOrEmail}`,
-      action: 'auth.participant.login.failed',
+      action: AuditAction.PARTICIPANT_LOGIN_FAILED,
       attributes: {
         method: 'password',
         reason: 'user_not_found',
@@ -145,10 +134,9 @@ export async function loginParticipant(
 
   // Log failed login attempt - invalid password
   if (!isLoginValid) {
-    await auditClient.log({
-      subject: `participant:${participant.username || participant.email}`,
-      action: 'auth.participant.login.failed',
-      userId: participant.id,
+    await ctx.auditClient.log({
+      subject: `participant:${participant.id}`,
+      action: AuditAction.PARTICIPANT_LOGIN_FAILED,
       attributes: {
         method: 'password',
         reason: 'invalid_password',
@@ -166,21 +154,6 @@ export async function loginParticipant(
     },
     ctx
   )
-
-  // Log successful login attempt
-  await auditClient.log({
-    subject: `participant:${participant.username || participant.email}`,
-    action: 'auth.participant.login.success',
-    userId: participant.id,
-    attributes: {
-      method: 'password',
-      participantId: participant.id,
-      locale: participant.locale,
-      ip: ctx.req?.ip,
-      userAgent: ctx.req?.headers?.['user-agent'],
-      lastLoginAt: participant.lastLoginAt?.toISOString(),
-    },
-  })
 
   // TODO: return more data (e.g. Avatar etc.)
   return participant.id
@@ -200,17 +173,13 @@ export async function loginTemporaryParticipant(
   })
 
   if (!liveQuiz) {
-    await auditClient.log({
-      subject: `temp-participant:${pseudonym}`,
-      action: 'auth.temporary.login.failed',
-      sessionId: liveQuizId,
+    await ctx.auditClient.log({
+      subject: `temp-participant:${pseudonym.trim()}`,
+      action: AuditAction.PARTICIPANT_TEMP_LOGIN_FAILED,
+      resource: `live-quiz:${liveQuizId}`,
       attributes: {
         method: 'temporary',
         reason: 'quiz_not_found_or_not_published',
-        liveQuizId,
-        pseudonym: pseudonym.trim(),
-        ip: ctx.req?.ip,
-        userAgent: ctx.req?.headers?.['user-agent'],
       },
     })
     return null
@@ -222,17 +191,13 @@ export async function loginTemporaryParticipant(
   })
 
   if (existingParticipant) {
-    await auditClient.log({
-      subject: `temp-participant:${pseudonym}`,
-      action: 'auth.temporary.login.failed',
-      sessionId: liveQuizId,
+    await ctx.auditClient.log({
+      subject: `temp-participant:${pseudonym.trim()}`,
+      action: AuditAction.PARTICIPANT_TEMP_LOGIN_FAILED,
+      resource: `live-quiz:${liveQuizId}`,
       attributes: {
         method: 'temporary',
         reason: 'pseudonym_taken_by_participant',
-        liveQuizId,
-        pseudonym: pseudonym.trim(),
-        ip: ctx.req?.ip,
-        userAgent: ctx.req?.headers?.['user-agent'],
       },
     })
     return null // error: 'pseudonym already taken'
@@ -247,17 +212,13 @@ export async function loginTemporaryParticipant(
     })
 
   if (existingTemporaryParticipant) {
-    await auditClient.log({
-      subject: `temp-participant:${pseudonym}`,
-      action: 'auth.temporary.login.failed',
-      sessionId: liveQuizId,
+    await ctx.auditClient.log({
+      subject: `temp-participant:${pseudonym.trim()}`,
+      action: AuditAction.PARTICIPANT_TEMP_LOGIN_FAILED,
+      resource: `live-quiz:${liveQuizId}`,
       attributes: {
         method: 'temporary',
         reason: 'pseudonym_taken_by_temporary_participant',
-        liveQuizId,
-        pseudonym: pseudonym.trim(),
-        ip: ctx.req?.ip,
-        userAgent: ctx.req?.headers?.['user-agent'],
       },
     })
     return null // error: 'pseudonym already taken'
@@ -282,19 +243,12 @@ export async function loginTemporaryParticipant(
   ctx.res.cookie('temporary_participant_token', jwt, COOKIE_SETTINGS)
 
   // Log successful temporary participant login
-  await auditClient.log({
-    subject: `temp-participant:${pseudonym}`,
-    action: 'auth.temporary.login.success',
-    sessionId: liveQuizId,
-    userId: temporaryParticipant.id,
+  await ctx.auditClient.log({
+    subject: `temp-participant:${temporaryParticipant.id}`,
+    action: AuditAction.PARTICIPANT_TEMP_LOGIN_SUCCESS,
     attributes: {
       method: 'temporary',
-      liveQuizId,
       pseudonym: pseudonym.trim(),
-      avatar: avatar || null,
-      temporaryParticipantId: temporaryParticipant.id,
-      ip: ctx.req?.ip,
-      userAgent: ctx.req?.headers?.['user-agent'],
     },
   })
 
@@ -410,11 +364,10 @@ export async function loginParticipantMagicLink(
   }
 
   if (!tokenData.sub || tokenData.scope !== DB.UserLoginScope.OTP) {
-    await auditClient.log({
+    await ctx.auditClient.log({
       subject: `participant:unknown`,
-      action: 'auth.magiclink.login.failed',
+      action: AuditAction.PARTICIPANT_MAGIC_LINK_FAILED,
       attributes: {
-        method: 'magic_link',
         reason: 'invalid_token_or_scope',
         tokenValid: !!tokenData.sub,
         scopeValid: tokenData.scope === DB.UserLoginScope.OTP,
@@ -441,33 +394,21 @@ export async function loginParticipantMagicLink(
     )
 
     // Log successful magic link login
-    await auditClient.log({
+    await ctx.auditClient.log({
       subject: `participant:${participant.username || participant.email}`,
-      action: 'auth.magiclink.login.success',
-      userId: participant.id,
-      attributes: {
-        method: 'magic_link',
-        participantId: participant.id,
-        locale: participant.locale,
-        tokenUsed: true,
-        ip: ctx.req?.ip,
-        userAgent: ctx.req?.headers?.['user-agent'],
-        lastLoginAt: participant.lastLoginAt?.toISOString(),
-      },
+      action: AuditAction.PARTICIPANT_MAGIC_LINK_SUCCESS,
     })
 
     return participant.id
   }
 
   // Log failed login - participant not found
-  await auditClient.log({
+  await ctx.auditClient.log({
     subject: `participant:${tokenData.sub}`,
-    action: 'auth.magiclink.login.failed',
-    userId: tokenData.sub,
+    action: AuditAction.PARTICIPANT_MAGIC_LINK_FAILED,
     attributes: {
       method: 'magic_link',
       reason: 'participant_not_found',
-      tokenSubject: tokenData.sub,
       ip: ctx.req?.ip,
       userAgent: ctx.req?.headers?.['user-agent'],
     },
@@ -525,15 +466,11 @@ export async function logoutParticipant(ctx: ContextWithUser) {
   })
 
   // Log participant logout event
-  await auditClient.log({
+  await ctx.auditClient.log({
     subject: `participant:${ctx.user.sub}`,
-    action: 'auth.participant.logout',
-    userId: ctx.user.sub,
+    action: AuditAction.PARTICIPANT_LOGOUT,
     attributes: {
       method: 'session_cookie_clear',
-      ip: ctx.req?.ip,
-      userAgent: ctx.req?.headers?.['user-agent'],
-      userRole: ctx.user.role,
     },
   })
 
@@ -552,19 +489,6 @@ export async function logoutTemporaryParticipant(
 ) {
   // verify that the requesting user is a temporary participant
   if (ctx.user.role !== DB.UserRole.TEMPORARY_PARTICIPANT) {
-    await auditClient.log({
-      subject: `participant:${ctx.user.sub}`,
-      action: 'auth.temporary.logout.failed',
-      userId: ctx.user.sub,
-      attributes: {
-        method: 'temporary',
-        reason: 'not_temporary_participant',
-        userRole: ctx.user.role,
-        liveQuizId,
-        ip: ctx.req?.ip,
-        userAgent: ctx.req?.headers?.['user-agent'],
-      },
-    })
     return false // not a temporary participant
   }
 
@@ -574,18 +498,6 @@ export async function logoutTemporaryParticipant(
   })
 
   if (!lbEntry) {
-    await auditClient.log({
-      subject: `temp-participant:${ctx.user.sub}`,
-      action: 'auth.temporary.logout.failed',
-      userId: ctx.user.sub,
-      attributes: {
-        method: 'temporary',
-        reason: 'leaderboard_entry_not_found',
-        liveQuizId,
-        ip: ctx.req?.ip,
-        userAgent: ctx.req?.headers?.['user-agent'],
-      },
-    })
     return false // no temporary participant found
   }
 
@@ -598,23 +510,6 @@ export async function logoutTemporaryParticipant(
   ctx.res.cookie('temporary_participant_token', 'logoutString', {
     ...COOKIE_SETTINGS,
     maxAge: 0,
-  })
-
-  // Log successful temporary participant logout
-  await auditClient.log({
-    subject: `temp-participant:${lbEntry.username}`,
-    action: 'auth.temporary.logout.success',
-    userId: ctx.user.sub,
-    sessionId: liveQuizId,
-    attributes: {
-      method: 'temporary',
-      liveQuizId,
-      temporaryParticipantId: ctx.user.sub,
-      username: lbEntry.username,
-      score: lbEntry.score,
-      ip: ctx.req?.ip,
-      userAgent: ctx.req?.headers?.['user-agent'],
-    },
   })
 
   return true
@@ -988,14 +883,10 @@ export async function loginParticipantWithLti(
     scope: string
   }
 
-  console.log('ltiData', ltiData)
-
   let account = await ctx.prisma.participantAccount.findUnique({
     where: { ssoId: ltiData.sub as string },
     include: { participant: true },
   })
-
-  console.log('account', account)
 
   // check if there is a participant account already given the email address
   // if so, create a new participant account with the LTI data and new sub
@@ -1006,21 +897,16 @@ export async function loginParticipantWithLti(
       },
     })
 
-    console.log('existingParticipant', existingParticipant)
-
     if (!existingParticipant) {
-      await auditClient.log({
-        subject: `participant:${ltiData.email}`,
-        action: 'auth.lti.login.failed',
+      await ctx.auditClient.log({
+        subject: `lti:${ltiData.sub}`,
+        action: AuditAction.PARTICIPANT_LTI_LOGIN_FAILED,
+        resource: `course:${courseId}`,
         attributes: {
-          method: 'lti',
           reason: 'participant_not_found_by_email',
-          ltiSubject: ltiData.sub,
           email: ltiData.email,
           ltiScope: ltiData.scope,
           courseId,
-          ip: ctx.req?.ip,
-          userAgent: ctx.req?.headers?.['user-agent'],
         },
       })
       return null
@@ -1041,18 +927,14 @@ export async function loginParticipantWithLti(
   }
 
   if (!account?.participant) {
-    await auditClient.log({
-      subject: `participant:${ltiData.email || ltiData.sub}`,
-      action: 'auth.lti.login.failed',
+    await ctx.auditClient.log({
+      subject: `participant:${ltiData.sub}`,
+      action: AuditAction.PARTICIPANT_LTI_LOGIN_FAILED,
+      resource: `course:${courseId}`,
       attributes: {
-        method: 'lti',
         reason: 'no_participant_account_found',
-        ltiSubject: ltiData.sub,
         email: ltiData.email,
         ltiScope: ltiData.scope,
-        courseId,
-        ip: ctx.req?.ip,
-        userAgent: ctx.req?.headers?.['user-agent'],
       },
     })
     return null
@@ -1073,7 +955,13 @@ export async function loginParticipantWithLti(
       update: {},
     })
 
-    console.log('participation', participation)
+    if (participation.updatedAt === participation.createdAt) {
+      await ctx.auditClient.log({
+        subject: `participant:${account.participant.id}`,
+        action: AuditAction.PARTICIPANT_LTI_PARTICIPATION_CREATED,
+        resource: `course:${courseId}`,
+      })
+    }
   }
 
   const jwt = await doParticipantLogin(
@@ -1085,23 +973,10 @@ export async function loginParticipantWithLti(
   )
 
   // Log successful LTI login
-  await auditClient.log({
-    subject: `participant:${account.participant.username || account.participant.email}`,
-    action: 'auth.lti.login.success',
-    userId: account.participant.id,
-    attributes: {
-      method: 'lti',
-      participantId: account.participant.id,
-      ltiSubject: ltiData.sub,
-      ltiScope: ltiData.scope,
-      email: ltiData.email,
-      courseId,
-      participationCreated: !!courseId,
-      locale: account.participant.locale,
-      ip: ctx.req?.ip,
-      userAgent: ctx.req?.headers?.['user-agent'],
-      lastLoginAt: account.participant.lastLoginAt?.toISOString(),
-    },
+  await ctx.auditClient.log({
+    subject: `participant:${account.participant.id}`,
+    action: AuditAction.PARTICIPANT_LTI_LOGIN_SUCCESS,
+    resource: `course:${courseId}`,
   })
 
   return {

@@ -12,14 +12,9 @@ import {
   type ElementStackInput,
 } from '@klicker-uzh/types'
 import {
-  auditClient,
-  createPinValidationFailedEvent,
-  createPinValidationSuccessEvent,
-  generateSessionId,
   getActivityInstanceConnectOrCreate,
   getCachedBlockResults,
   getInitialInstanceResults,
-  hashSensitiveData,
   levelFromXp,
   propagateActivityToElements,
   recomputeDerivedPermissions,
@@ -2711,9 +2706,6 @@ export async function setLiveQuizPinCookie(
   { liveQuizId, pin }: { liveQuizId: string; pin: string },
   ctx: Context
 ) {
-  const sessionId = generateSessionId()
-  const pinHash = hashSensitiveData(pin)
-
   // verify that the corresponding live quiz is available
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id: liveQuizId },
@@ -2722,20 +2714,30 @@ export async function setLiveQuizPinCookie(
 
   if (!liveQuiz || liveQuiz.status !== DB.PublicationStatus.PUBLISHED) {
     // Log failed PIN validation - quiz not found or not published
-    await auditClient.log(
-      createPinValidationFailedEvent(
-        `anonymous:session-${sessionId}`,
-        sessionId,
-        liveQuizId,
-        pinHash,
-        'quiz_not_found_or_not_published',
-        {
-          ip: ctx.req?.ip,
-          userAgent: ctx.req?.headers?.['user-agent'],
-          quizStatus: liveQuiz?.status || 'not_found',
-        }
-      )
-    )
+    // await auditClient.log({
+    //   subject: `anonymous:session-${ctx.sessionId}`,
+    //   action: AuditAction.MULTIPLE_TABS_DETECTED,
+    //   resourceId: `live-quiz:${liveQuizId}`,
+    //   userId: null,
+    //   eventId: ctx.sessionId,
+    //   sessionId: ctx.sessionId,
+    //   attributes: {}
+    //   info: `Failed PIN validation - quiz not found or not published. PIN hash: ${pinHash}, IP: ${ctx.req?.ip}, User-Agent: ${ctx.req?.headers?.['user-agent']}, Quiz Status: ${
+    //     liveQuiz?.status || 'not_found'
+    //   }`,
+    // })
+    // createPinValidationFailedEvent(
+    //   `anonymous:session-${sessionId}`,
+    //   sessionId,
+    //   liveQuizId,
+    //   pinHash,
+    //   'quiz_not_found_or_not_published',
+    //   {
+    //     ip: ctx.req?.ip,
+    //     userAgent: ctx.req?.headers?.['user-agent'],
+    //     quizStatus: liveQuiz?.status || 'not_found',
+    //   }
+    // )
 
     throw new GraphQLError('LIVE_QUIZ_PIN_INVALID', {
       extensions: { code: 'FORBIDDEN' },
@@ -2753,20 +2755,19 @@ export async function setLiveQuizPinCookie(
     } catch (_) {}
 
     // Log failed PIN validation - incorrect PIN
-    await auditClient.log(
-      createPinValidationFailedEvent(
-        `anonymous:session-${sessionId}`,
-        sessionId,
-        liveQuizId,
-        pinHash,
-        'incorrect_pin',
-        {
-          ip: ctx.req?.ip,
-          userAgent: ctx.req?.headers?.['user-agent'],
-          hasQuizPin: !!liveQuiz.pinCode,
-        }
-      )
-    )
+    // await auditClient.log()
+    // createPinValidationFailedEvent(
+    //   `anonymous:session-${sessionId}`,
+    //   sessionId,
+    //   liveQuizId,
+    //   pinHash,
+    //   'incorrect_pin',
+    //   {
+    //     ip: ctx.req?.ip,
+    //     userAgent: ctx.req?.headers?.['user-agent'],
+    //     hasQuizPin: !!liveQuiz.pinCode,
+    //   }
+    // )
 
     throw new GraphQLError('LIVE_QUIZ_PIN_INVALID', {
       extensions: { code: 'FORBIDDEN' },
@@ -2774,19 +2775,18 @@ export async function setLiveQuizPinCookie(
   }
 
   // Log successful PIN validation
-  await auditClient.log(
-    createPinValidationSuccessEvent(
-      `anonymous:session-${sessionId}`,
-      sessionId,
-      liveQuizId,
-      pinHash,
-      {
-        ip: ctx.req?.ip,
-        userAgent: ctx.req?.headers?.['user-agent'],
-        cookieName,
-      }
-    )
-  )
+  // await auditClient.log()
+  // createPinValidationSuccessEvent(
+  //   `anonymous:session-${sessionId}`,
+  //   sessionId,
+  //   liveQuizId,
+  //   pinHash,
+  //   {
+  //     ip: ctx.req?.ip,
+  //     userAgent: ctx.req?.headers?.['user-agent'],
+  //     cookieName,
+  //   }
+  // )
 
   // set the pin as a cookie to be readable by the student live quiz query
   ctx.res.cookie(cookieName, pin, {

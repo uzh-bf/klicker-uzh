@@ -12,7 +12,7 @@ post {
 
 headers {
   Content-Type: application/json
-  X-Internal-Token: {{INTERNAL_TOKEN}}
+  X-Internal-Token: {{AUDIT_TOKEN}}
 }
 
 body:json {
@@ -53,13 +53,13 @@ tests {
   test("Full event is accepted", function() {
     expect(res.getStatus()).to.equal(202);
   });
-  
+
   test("Response preserves all provided data", function() {
     const body = res.getBody();
     expect(body.eventId).to.be.a('string');
     expect(body.status).to.equal('accepted');
   });
-  
+
   test("Complex attributes are handled correctly", function() {
     // Since we can't inspect storage directly, we verify the request was accepted
     // Integration tests would verify the data was stored correctly
@@ -78,14 +78,14 @@ script:post-response {
 
 docs {
   Test comprehensive audit event with all available fields.
-  
+
   All fields provided:
   - tenantId, subject, action (required)
   - resourceId: The specific resource affected
   - sessionId: Current user/system session
   - userId: Authenticated user identifier
   - attributes: Rich metadata object with nested data
-  
+
   Expected behavior:
   - HTTP 202 Accepted status
   - All data preserved in storage

@@ -6,6 +6,7 @@ import { prisma as prismaBase } from '@klicker-uzh/prisma'
 import { createInMemoryCache, type Cache } from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'
 import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
+import { AuditClient } from '@klicker-uzh/util'
 import { useServer } from 'graphql-ws/lib/use/ws'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
@@ -69,6 +70,8 @@ const subscribeClient = new Redis({
   tls: process.env.REDIS_CACHE_TLS ? {} : undefined,
 })
 
+const auditClient = new AuditClient()
+
 const eventTarget = createRedisEventTarget({
   publishClient,
   subscribeClient,
@@ -126,6 +129,7 @@ migrate(prisma).then(() => {
     emitter,
     hatchet: hatchetClient,
     tasks,
+    auditClient,
   })
 
   // Validate required environment variables at startup
@@ -152,6 +156,8 @@ migrate(prisma).then(() => {
           pubSub,
           emitter,
           tasks,
+          hatchet: hatchetClient,
+          auditClient,
         }),
         execute: (args: any) => args.rootValue.execute(args),
         subscribe: (args: any) => args.rootValue.subscribe(args),

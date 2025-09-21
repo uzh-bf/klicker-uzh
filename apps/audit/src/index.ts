@@ -12,7 +12,7 @@ async function startServer(): Promise<void> {
     // Initialize Azure Table (ensure table exists)
     await tableClient.ensureTable()
     logger.info(
-      `Azure Table Storage table '${config.AZURE_TABLES_TABLE_NAME}' ensured`
+      `Azure Table Storage table '${config.AUDIT_TABLE_NAME}' ensured`
     )
 
     // Start HTTP server
@@ -26,7 +26,7 @@ async function startServer(): Promise<void> {
           {
             port: info.port,
             env: config.NODE_ENV,
-            tableName: config.AZURE_TABLES_TABLE_NAME,
+            tableName: config.AUDIT_TABLE_NAME,
           },
           'Audit service started successfully'
         )

@@ -17,6 +17,65 @@ declare namespace global {
   let __coverage__: any
 }
 
+// Custom JWT middleware to replace passport-jwt
+async function jwtMiddleware(req: any, res: any, next: any) {
+  let token = null
+
+  // Assessment mode: only check for student NextAuth cookie
+  if (process.env.ASSESSMENT_MODE === 'true') {
+    if (
+      req.headers.origin?.includes(
+        process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
+      ) ||
+      req.headers.origin?.includes(
+        process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
+      )
+    ) {
+      token = req.cookies?.['next-auth.session-token']
+    } else if (
+      req.headers.origin?.includes(
+        process.env.APP_ASSESSMENT_SUBDOMAIN ?? 'assessment'
+      )
+    ) {
+      token = req.cookies?.['next-auth.participant-session-token']
+    }
+  } else {
+    if (
+      req.headers.origin?.includes(
+        process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
+      ) ||
+      req.headers.origin?.includes(
+        process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
+      )
+    ) {
+      token = req.cookies?.['next-auth.session-token']
+    } else if (
+      req.headers.origin?.includes(process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa')
+    ) {
+      token =
+        req.cookies?.['participant_token'] ??
+        req.cookies?.['temporary_participant_token'] ??
+        req.cookies?.['next-auth.session-token']
+    }
+  }
+
+  // ! DO NOT TOUCH - assessment live quiz mode relies on it
+  token = token ?? req.headers['authorization']?.replace('Bearer ', '') ?? null
+
+  let user = null
+  if (token) {
+    try {
+      user = await verifyJWT(token, process.env.APP_SECRET as string)
+    } catch (error) {
+      // JWT verification failed, continue with user = null
+      console.log('JWT verification failed:', error)
+    }
+  }
+
+  req.locals = { user }
+  next()
+}
+
 function prepareApp({
   prisma,
   redisExec,
@@ -26,6 +85,7 @@ function prepareApp({
   emitter,
   hatchet,
   tasks,
+  auditClient,
 }: any) {
   const armor = new EnvelopArmor({
     maxDepth: {
@@ -57,66 +117,6 @@ function prepareApp({
       optionsSuccessStatus: 200,
     })
   )
-
-  // Custom JWT middleware to replace passport-jwt
-  async function jwtMiddleware(req: any, res: any, next: any) {
-    let token = null
-
-    // Assessment mode: only check for student NextAuth cookie
-    if (process.env.ASSESSMENT_MODE === 'true') {
-      if (
-        req.headers.origin?.includes(
-          process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
-        ) ||
-        req.headers.origin?.includes(
-          process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
-        )
-      ) {
-        token = req.cookies?.['next-auth.session-token']
-      } else if (
-        req.headers.origin?.includes(
-          process.env.APP_ASSESSMENT_SUBDOMAIN ?? 'assessment'
-        )
-      ) {
-        token = req.cookies?.['next-auth.participant-session-token']
-      }
-    } else {
-      if (
-        req.headers.origin?.includes(
-          process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
-        ) ||
-        req.headers.origin?.includes(
-          process.env.APP_CONTROL_SUBDOMAIN ?? 'control'
-        )
-      ) {
-        token = req.cookies?.['next-auth.session-token']
-      } else if (
-        req.headers.origin?.includes(process.env.APP_STUDENT_SUBDOMAIN ?? 'pwa')
-      ) {
-        token =
-          req.cookies?.['participant_token'] ??
-          req.cookies?.['temporary_participant_token'] ??
-          req.cookies?.['next-auth.session-token']
-      }
-    }
-
-    // ! DO NOT TOUCH - assessment live quiz mode relies on it
-    token =
-      token ?? req.headers['authorization']?.replace('Bearer ', '') ?? null
-
-    let user = null
-    if (token) {
-      try {
-        user = await verifyJWT(token, process.env.APP_SECRET as string)
-      } catch (error) {
-        // JWT verification failed, continue with user = null
-        console.log('JWT verification failed:', error)
-      }
-    }
-
-    req.locals = { user }
-    next()
-  }
 
   app.use(cookieParser())
   app.use(jwtMiddleware)
@@ -180,6 +180,7 @@ function prepareApp({
       emitter,
       hatchet,
       tasks,
+      auditClient,
     }),
     logging: true,
     cors: false,

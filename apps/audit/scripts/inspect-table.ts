@@ -24,12 +24,12 @@ class TableInspector {
   private tableClient: TableClient
 
   constructor() {
-    const connectionString = process.env.AZURE_TABLES_CONNECTION_STRING
-    const tableName = process.env.AZURE_TABLES_TABLE_NAME || 'auditevents'
+    const connectionString = process.env.AUDIT_TABLE_CONNECTION_STRING
+    const tableName = process.env.AUDIT_TABLE_NAME || 'auditevents'
 
     if (!connectionString) {
       throw new Error(
-        'AZURE_TABLES_CONNECTION_STRING environment variable is required'
+        'AUDIT_TABLE_CONNECTION_STRING environment variable is required'
       )
     }
 

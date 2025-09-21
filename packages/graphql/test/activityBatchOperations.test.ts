@@ -14,7 +14,7 @@ import {
   ElementInstanceResults,
   ElementOptions,
 } from '@klicker-uzh/types'
-import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import { AuditClient, recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import { v4 as uuid } from 'uuid'
 import type { ContextWithUser } from '../src/lib/context.js'
@@ -31,16 +31,19 @@ describe('Integration tests for batch operations on activities', () => {
   let userThreeCtx: ContextWithUser
   let userFourCtx: ContextWithUser
   let userFiveCtx: ContextWithUser
+  let auditClient: AuditClient
 
   beforeAll(async () => {
     const {
       prisma: newPrisma,
       hatchet: newHatchet,
       emitter: newEmitter,
+      auditClient: newAuditClient,
     } = await initializePrisma()
     prisma = newPrisma
     hatchet = newHatchet
     emitter = newEmitter
+    auditClient = newAuditClient
   })
 
   afterAll(async () => {
@@ -55,7 +58,7 @@ describe('Integration tests for batch operations on activities', () => {
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
       userFiveCtx: ctx5,
-    } = await testInitialization(prisma, hatchet, emitter)
+    } = await testInitialization(prisma, hatchet, emitter, auditClient)
 
     userOneCtx = ctx1
     userTwoCtx = ctx2

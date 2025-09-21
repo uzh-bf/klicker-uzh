@@ -1,13 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType, SharingType } from '@klicker-uzh/types'
-import {
-  auditClient,
-  createCourseEnrollmentFailedEvent,
-  createCourseEnrollmentSuccessEvent,
-  hashSensitiveData,
-  levelFromXp,
-  recomputeDerivedPermissions,
-} from '@klicker-uzh/util'
+import { levelFromXp, recomputeDerivedPermissions } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
 import { random } from 'mathjs'
@@ -41,8 +34,6 @@ export async function joinCourseWithPin(
   { pin }: { pin: number },
   ctx: ContextWithUser
 ) {
-  const pinHash = hashSensitiveData(pin)
-
   const course = await ctx.prisma.course.findUnique({
     where: { pinCode: pin, isAssessmentEnabled: false },
   })
@@ -52,27 +43,6 @@ export async function joinCourseWithPin(
     course.pinCode !== pin ||
     ctx.user.role !== DB.UserRole.PARTICIPANT
   ) {
-    // Log failed course enrollment attempt
-    await auditClient.log(
-      createCourseEnrollmentFailedEvent(
-        `participant:${ctx.user.sub}`,
-        pinHash,
-        !course
-          ? 'course_not_found'
-          : course.pinCode !== pin
-            ? 'incorrect_pin'
-            : 'invalid_user_role',
-        {
-          userId: ctx.user.sub,
-          userRole: ctx.user.role,
-          ip: ctx.req?.ip,
-          userAgent: ctx.req?.headers?.['user-agent'],
-          courseId: course?.id || null,
-          courseName: course?.name || null,
-        }
-      )
-    )
-
     return null
   }
 
@@ -98,17 +68,6 @@ export async function joinCourseWithPin(
       },
     },
   })
-
-  // Log successful course enrollment
-  await auditClient.log(
-    createCourseEnrollmentSuccessEvent(ctx.user.sub, course.id, pinHash, {
-      userId: ctx.user.sub,
-      participantId: ctx.user.sub,
-      courseName: course.name,
-      ip: ctx.req?.ip,
-      userAgent: ctx.req?.headers?.['user-agent'],
-    })
-  )
 
   ctx.emitter.emit('invalidate', {
     typename: 'Participant',
@@ -2050,43 +2009,13 @@ export async function checkValidCoursePin(
   { pin }: { pin: number },
   ctx: Context
 ) {
-  const pinHash = hashSensitiveData(pin)
-
   const course = await ctx.prisma.course.findUnique({
     where: { pinCode: pin },
   })
 
   if (!course || course.pinCode !== pin) {
-    // Log failed PIN validation attempt
-    await auditClient.log({
-      subject: `anonymous:${ctx.req?.ip || 'unknown'}`,
-      action: 'course.pin.validation.failed',
-      attributes: {
-        attemptedPinHash: pinHash,
-        reason: !course ? 'course_not_found' : 'incorrect_pin',
-        ip: ctx.req?.ip,
-        userAgent: ctx.req?.headers?.['user-agent'],
-        method: 'pin_validation_check',
-      },
-    })
-
     return null
   }
-
-  // Log successful PIN validation
-  await auditClient.log({
-    subject: `anonymous:${ctx.req?.ip || 'unknown'}`,
-    action: 'course.pin.validation.success',
-    resourceId: course.id,
-    attributes: {
-      pinHash,
-      courseId: course.id,
-      courseName: course.name,
-      ip: ctx.req?.ip,
-      userAgent: ctx.req?.headers?.['user-agent'],
-      method: 'pin_validation_check',
-    },
-  })
 
   return course.id
 }

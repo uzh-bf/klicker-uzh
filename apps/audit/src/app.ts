@@ -41,7 +41,7 @@ app.use('*', honoLogger(customLoggerPrintFunc))
 app.use(
   '/audit/public',
   cors({
-    origin: config.CORS_ORIGINS.split(',').map((origin) => origin.trim()),
+    origin: config.AUDIT_CORS_ORIGINS.split(',').map((origin) => origin.trim()),
     credentials: true,
     allowMethods: ['POST', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Cookie'],
@@ -52,8 +52,8 @@ app.use('*', compress())
 app.use('*', timeout(30000))
 
 const tableClient = new AuditTableClient(
-  config.AZURE_TABLES_CONNECTION_STRING,
-  config.AZURE_TABLES_TABLE_NAME
+  config.AUDIT_TABLE_CONNECTION_STRING,
+  config.AUDIT_TABLE_NAME
 )
 
 app.get('/ready', authMiddleware, async (c) => {

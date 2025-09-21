@@ -181,7 +181,7 @@ services:
 
   # main database
   postgres:
-    image: docker.io/library/postgres:15
+    image: docker.io/library/postgres:14.18
     environment:
       POSTGRES_USER: klicker-prod
       POSTGRES_PASSWORD: klicker

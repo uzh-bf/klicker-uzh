@@ -1,3 +1,4 @@
+import { AuditScope } from '@klicker-uzh/types'
 import { createHash } from 'crypto'
 import type { AuditEvent } from '../schemas/audit-event.js'
 
@@ -12,12 +13,8 @@ export interface AuditTableEntity {
   correlationId?: string
   correlationClaims?: string // JSON serialized
   stage?: string
-  outcome?: string
-  reasonCode?: string
   schemaVersion: number
-  resourceId?: string
-  sessionId?: string
-  userId?: string
+  resource?: string
 }
 
 /**
@@ -30,9 +27,7 @@ function generateDeterministicEventId(event: AuditEvent): string {
     subject: event.subject,
     action: event.action,
     timestamp: event.timestamp,
-    userId: event.userId || null,
-    resourceId: event.resourceId || null,
-    sessionId: event.sessionId || null,
+    resource: event.resource || null,
     // Include subset of attributes for uniqueness (avoid full object for size)
     attributesHash: event.attributes
       ? createHash('sha256')
@@ -62,7 +57,7 @@ export function createAuditEntity(event: AuditEvent): AuditTableEntity {
   return {
     partitionKey,
     rowKey,
-    scope: event.scope ?? 'internal',
+    scope: event.scope ?? AuditScope.INTERNAL,
     subject: event.subject,
     action: event.action,
     eventTimestamp: event.timestamp,
@@ -72,12 +67,8 @@ export function createAuditEntity(event: AuditEvent): AuditTableEntity {
       ? JSON.stringify(event.correlationClaims)
       : undefined,
     stage: event.stage,
-    outcome: event.outcome,
-    reasonCode: event.reasonCode,
     schemaVersion: event.schemaVersion ?? 1,
-    resourceId: event.resourceId,
-    sessionId: event.sessionId,
-    userId: event.userId,
+    resource: event.resource,
   }
 }
 

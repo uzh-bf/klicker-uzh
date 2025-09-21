@@ -19,9 +19,6 @@ export * from './jwt.js'
 // export everything from the audit module
 export * from './audit.js'
 
-// export everything from the audit events module
-export * from './auditEvents.js'
-
 // export everything from the email module
 export * from './email.js'
 

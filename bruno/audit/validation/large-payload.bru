@@ -12,7 +12,7 @@ post {
 
 headers {
   Content-Type: application/json
-  X-Internal-Token: {{INTERNAL_TOKEN}}
+  X-Internal-Token: {{AUDIT_TOKEN}}
 }
 
 body:json {
@@ -68,17 +68,17 @@ tests {
   test("Large payload is accepted", function() {
     expect(res.getStatus()).to.equal(202);
   });
-  
+
   test("Performance remains acceptable with larger payloads", function() {
     expect(res.getResponseTime()).to.be.below(10000); // 10 seconds max
   });
-  
+
   test("Complex nested attributes are handled", function() {
     const body = res.getBody();
     expect(body.eventId).to.be.a('string');
     expect(body.status).to.equal('accepted');
   });
-  
+
   test("Response time scales reasonably with payload size", function() {
     // This test establishes baseline for payload size vs. response time
     const responseTime = res.getResponseTime();
@@ -92,10 +92,10 @@ script:post-response {
     bru.setVar("largePayloadEventId", res.body.eventId);
     const responseTime = res.getResponseTime();
     bru.setVar("largePayloadResponseTime", responseTime);
-    
+
     console.log("Large payload event created with ID:", res.body.eventId);
     console.log("Response time:", responseTime + "ms");
-    
+
     // Calculate approximate payload size
     const payloadSize = JSON.stringify(req.body).length;
     console.log("Approximate payload size:", payloadSize + " bytes");
@@ -104,20 +104,20 @@ script:post-response {
 
 docs {
   Test audit service performance with larger attribute payloads.
-  
+
   This test validates:
   - Service can handle complex, nested attribute objects
   - Performance remains acceptable with realistic large payloads
   - Storage system can efficiently handle varied payload sizes
   - No memory leaks or performance degradation
-  
+
   Payload characteristics:
   - Multiple levels of nesting
   - Arrays and objects mixed
   - String data of reasonable size
   - Numeric metrics and metadata
   - Typical production-scale attributes
-  
+
   Performance expectations:
   - Response time < 10 seconds
   - Memory usage stable

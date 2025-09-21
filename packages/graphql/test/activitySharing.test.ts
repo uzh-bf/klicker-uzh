@@ -10,6 +10,7 @@ import {
 } from '@klicker-uzh/prisma/client'
 import { ActivityType } from '@klicker-uzh/types'
 import {
+  AuditClient,
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
@@ -66,16 +67,19 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
   let userThreeCtx: ContextWithUser
   let userFourCtx: ContextWithUser
   let userFiveCtx: ContextWithUser
+  let auditClient: AuditClient
 
   beforeAll(async () => {
     const {
       prisma: newPrisma,
       hatchet: newHatchet,
       emitter: newEmitter,
+      auditClient: newAuditClient,
     } = await initializePrisma()
     prisma = newPrisma
     hatchet = newHatchet
     emitter = newEmitter
+    auditClient = newAuditClient
   })
 
   afterAll(async () => {
@@ -90,7 +94,7 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
       userFiveCtx: ctx5,
-    } = await testInitialization(prisma, hatchet, emitter)
+    } = await testInitialization(prisma, hatchet, emitter, auditClient)
 
     userOneCtx = ctx1
     userTwoCtx = ctx2

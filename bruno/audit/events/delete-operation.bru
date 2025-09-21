@@ -12,7 +12,7 @@ post {
 
 headers {
   Content-Type: application/json
-  X-Internal-Token: {{INTERNAL_TOKEN}}
+  X-Internal-Token: {{AUDIT_TOKEN}}
 }
 
 body:json {
@@ -46,13 +46,13 @@ tests {
   test("Delete operation is logged successfully", function() {
     expect(res.getStatus()).to.equal(202);
   });
-  
+
   test("Critical delete operation has detailed audit trail", function() {
     const body = res.getBody();
     expect(body.eventId).to.be.a('string');
     expect(body.status).to.equal('accepted');
   });
-  
+
   test("Compliance data is captured", function() {
     // Verify the operation includes compliance-relevant metadata
     expect(res.getStatus()).to.equal(202);
@@ -69,20 +69,20 @@ script:post-response {
 
 docs {
   Test audit logging for high-risk delete operations.
-  
+
   Delete operations require comprehensive audit trails for:
   - Compliance and regulatory requirements
   - Data governance and retention policies
   - Security incident investigation
   - Accidental deletion recovery
   - Administrative oversight
-  
+
   Key attributes for delete events:
   - Who performed the deletion (subject, userId)
   - What was deleted (resourceId, courseName)
   - Why it was deleted (reason)
   - Safeguards taken (backupCreated)
   - Compliance measures (retentionPeriod, archiveLocation)
-  
+
   This supports audit requirements for educational data management.
 }

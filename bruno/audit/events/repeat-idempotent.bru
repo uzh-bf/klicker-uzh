@@ -12,7 +12,7 @@ post {
 
 headers {
   Content-Type: application/json
-  X-Internal-Token: {{INTERNAL_TOKEN}}
+  X-Internal-Token: {{AUDIT_TOKEN}}
 }
 
 body:json {
@@ -44,18 +44,18 @@ tests {
   test("Repeat submission returns same status", function() {
     expect(res.getStatus()).to.equal(202);
   });
-  
+
   test("Same eventId is returned", function() {
     const body = res.getBody();
     expect(body.eventId).to.equal("answer-submission-unique-001");
   });
-  
+
   test("Idempotent behavior confirmed", function() {
     const body = res.getBody();
     expect(body.status).to.equal('accepted');
     // In a complete implementation, we'd verify timestamp and other details match
   });
-  
+
   test("No duplicate event created", function() {
     // This test verifies the service handles duplicate eventIds correctly
     // The exact same response should be returned
@@ -66,7 +66,7 @@ tests {
 script:post-response {
   if (res.body && res.body.eventId) {
     console.log("Repeat idempotent event processed with same ID:", res.body.eventId);
-    
+
     // Compare with original response (in real implementation)
     const originalEventId = bru.getVar("idempotentEventId");
     if (originalEventId === res.body.eventId) {
@@ -79,18 +79,18 @@ script:post-response {
 
 docs {
   Test idempotent behavior by repeating exact same request.
-  
+
   This test should be run AFTER the idempotent.bru test to verify:
   - Same eventId produces identical response
   - No duplicate events are created in storage
   - Response time is consistent (cached vs. new)
   - All response fields match the original
-  
+
   Idempotency is critical for:
   - Client retry safety
   - Network failure recovery
   - Batch job reliability
   - Exactly-once processing semantics
-  
+
   Expected: Identical response to first submission with same eventId.
 }

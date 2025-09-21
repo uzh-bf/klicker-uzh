@@ -5,6 +5,7 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import type { PreparedHatchetTasks } from '@klicker-uzh/types'
+import type { AuditClient } from '@klicker-uzh/util'
 import type { Request, Response } from 'express'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
@@ -33,6 +34,7 @@ export interface Context extends BaseContext {
   hatchet: Hatchet
   // available hatchet tasks
   tasks: PreparedHatchetTasks
+  auditClient: AuditClient
 }
 
 export interface ContextWithUser extends Context {

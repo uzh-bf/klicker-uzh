@@ -327,27 +327,27 @@ Before running tests, ensure:
 
 ### Environment Variables
 
-| Variable                         | Description              | Default       | Required |
-| -------------------------------- | ------------------------ | ------------- | -------- |
-| `PORT`                           | HTTP server port         | `7080`        | -        |
-| `NODE_ENV`                       | Environment mode         | `development` | -        |
-| `AZURE_TABLES_CONNECTION_STRING` | Azure/Azurite connection | -             | ✅       |
-| `AZURE_TABLES_TABLE_NAME`        | Table name for events    | `auditevents` | -        |
-| `INTERNAL_TOKEN`                 | Authentication token     | -             | ✅       |
-| `LOG_LEVEL`                      | Logging level            | `info`        | -        |
+| Variable                        | Description              | Default       | Required |
+| ------------------------------- | ------------------------ | ------------- | -------- |
+| `PORT`                          | HTTP server port         | `7080`        | -        |
+| `NODE_ENV`                      | Environment mode         | `development` | -        |
+| `AUDIT_TABLE_CONNECTION_STRING` | Azure/Azurite connection | -             | ✅       |
+| `AUDIT_TABLE_NAME`              | Table name for events    | `auditevents` | -        |
+| `AUDIT_TOKEN`                   | Authentication token     | -             | ✅       |
+| `LOG_LEVEL`                     | Logging level            | `info`        | -        |
 
 ### Local Development (Azurite)
 
 ```bash
-AZURE_TABLES_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;
-INTERNAL_TOKEN=test-secret-token-123
+AUDIT_TABLE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;
+AUDIT_TOKEN=test-secret-token-123
 ```
 
 ### Production (Azure Storage)
 
 ```bash
-AZURE_TABLES_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=your-account;AccountKey=your-key;EndpointSuffix=core.windows.net
-INTERNAL_TOKEN=your-production-secret-token
+AUDIT_TABLE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=your-account;AccountKey=your-key;EndpointSuffix=core.windows.net
+AUDIT_TOKEN=your-production-secret-token
 LOG_LEVEL=warn
 ```
 
@@ -558,8 +558,8 @@ docker build -t audit-service .
 
 # Run container
 docker run -p 7080:7080 \
-  -e AZURE_TABLES_CONNECTION_STRING="your-connection-string" \
-  -e INTERNAL_TOKEN="your-production-token" \
+  -e AUDIT_TABLE_CONNECTION_STRING="your-connection-string" \
+  -e AUDIT_TOKEN="your-production-token" \
   audit-service
 ```
 

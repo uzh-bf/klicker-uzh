@@ -12,7 +12,7 @@ post {
 
 headers {
   Content-Type: application/json
-  X-Internal-Token: {{INTERNAL_TOKEN}}
+  X-Internal-Token: {{AUDIT_TOKEN}}
 }
 
 body:json {
@@ -34,18 +34,18 @@ tests {
   test("Minimal event is accepted", function() {
     expect(res.getStatus()).to.equal(202);
   });
-  
+
   test("Response contains generated event ID", function() {
     const body = res.getBody();
     expect(body.eventId).to.be.a('string');
     expect(body.eventId).to.have.length.greaterThan(10); // UUIDs are longer
   });
-  
+
   test("Response indicates accepted status", function() {
     const body = res.getBody();
     expect(body.status).to.equal('accepted');
   });
-  
+
   test("Auto-generated timestamp should be recent", function() {
     const body = res.getBody();
     if (body.timestamp) {
@@ -66,12 +66,12 @@ script:post-response {
 
 docs {
   Test minimal audit event with only required fields.
-  
+
   Required fields only:
   - tenantId: Identifies the tenant/organization
   - subject: Who/what performed the action
   - action: What action was performed
-  
+
   Expected behavior:
   - HTTP 202 Accepted status
   - Auto-generated eventId (UUID format)

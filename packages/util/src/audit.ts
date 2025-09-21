@@ -3,6 +3,15 @@ import type {
   AuditEvent,
   AuditResponse,
 } from '@klicker-uzh/types'
+import axios, { type AxiosResponse } from 'axios'
+import { createHash } from 'crypto'
+
+/**
+ * Helper function to generate a secure hash for sensitive data like PINs
+ */
+export function hashSensitiveData(data: string | number): string {
+  return createHash('sha256').update(String(data)).digest('hex')
+}
 
 /**
  * Backend Audit Client for internal service communication
@@ -11,25 +20,37 @@ import type {
 export class AuditClient {
   private config: {
     serviceUrl: string
-    internalToken: string
+    auditToken: string
     timeout: number
     enabled: boolean
   }
 
   constructor(config: AuditClientConfig = {}) {
-    this.config = {
-      serviceUrl:
-        config.serviceUrl ||
-        process.env.AUDIT_SERVICE_URL ||
-        'http://audit-service:3000',
-      internalToken: config.internalToken || process.env.INTERNAL_TOKEN || '',
-      timeout: config.timeout ?? 5000,
-      enabled: config.enabled ?? process.env.AUDIT_ENABLED !== 'false',
+    const enabled = config.enabled ?? process.env.AUDIT_ENABLED !== 'false'
+    if (!enabled) {
+      console.warn('AuditClient: Audit logging is disabled')
     }
 
-    if (!this.config.internalToken) {
+    const serviceUrl = config.serviceUrl || process.env.AUDIT_SERVICE_URL
+    if (typeof serviceUrl !== 'string' || !serviceUrl) {
+      throw new Error('Service URL is not set')
+    }
+
+    const auditToken = config.auditToken || process.env.AUDIT_TOKEN
+    if (typeof auditToken !== 'string' || !auditToken) {
+      throw new Error('Audit token is not set')
+    }
+
+    this.config = {
+      serviceUrl,
+      auditToken,
+      timeout: config.timeout ?? 5000,
+      enabled,
+    }
+
+    if (!this.config.auditToken) {
       console.warn(
-        'AuditClient: No INTERNAL_TOKEN configured, audit logging will fail'
+        'AuditClient: No AUDIT_TOKEN configured, audit logging will fail'
       )
     }
   }
@@ -40,6 +61,10 @@ export class AuditClient {
    */
   async log(event: AuditEvent): Promise<AuditResponse | null> {
     if (!this.config.enabled) {
+      console.warn(
+        'AuditClient: Audit logging is disabled, ignoring event',
+        event
+      )
       return null
     }
 
@@ -50,12 +75,18 @@ export class AuditClient {
       try {
         const response = await this.makeRequest('/audit', 'POST', event)
 
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${await response.text()}`)
+        if (response.status < 200 || response.status >= 300) {
+          const payload =
+            typeof response.data === 'string'
+              ? response.data
+              : response.data !== undefined
+                ? JSON.stringify(response.data)
+                : ''
+
+          throw new Error(`HTTP ${response.status}: ${payload}`)
         }
 
-        const result = (await response.json()) as AuditResponse
-        return result
+        return response.data as AuditResponse
       } catch (error) {
         lastError = error instanceof Error ? error : new Error('Unknown error')
 
@@ -76,101 +107,29 @@ export class AuditClient {
   }
 
   /**
-   * Convenience method to log login events
-   */
-  async logLogin(
-    userId: string,
-    success: boolean,
-    metadata?: any
-  ): Promise<AuditResponse | null> {
-    return this.log({
-      subject: `user:${userId}`,
-      action: success ? 'login.success' : 'login.failed',
-      userId,
-      attributes: metadata,
-    })
-  }
-
-  /**
-   * Convenience method to log data access events
-   */
-  async logDataAccess(
-    userId: string,
-    resource: string,
-    action: string,
-    resourceId?: string
-  ): Promise<AuditResponse | null> {
-    return this.log({
-      subject: `user:${userId}`,
-      action: `data.${action}`,
-      resourceId,
-      userId,
-      attributes: {
-        resourceType: resource,
-        operation: action,
-      },
-    })
-  }
-
-  /**
-   * Convenience method to log system errors
-   */
-  async logError(
-    subject: string,
-    error: Error,
-    context?: any
-  ): Promise<AuditResponse | null> {
-    return this.log({
-      subject,
-      action: 'error.system',
-      attributes: {
-        error: error.message,
-        stack: error.stack,
-        context,
-      },
-    })
-  }
-
-  /**
-   * Convenience method to log user actions
-   */
-  async logUserAction(
-    userId: string,
-    action: string,
-    resourceId?: string,
-    metadata?: any
-  ): Promise<AuditResponse | null> {
-    return this.log({
-      subject: `user:${userId}`,
-      action,
-      resourceId,
-      userId,
-      attributes: metadata,
-    })
-  }
-
-  /**
    * Make HTTP request to audit service with authentication
    */
   private async makeRequest(
     path: string,
     method: string,
     body?: any
-  ): Promise<Response> {
+  ): Promise<AxiosResponse> {
     const url = `${this.config.serviceUrl}${path}`
 
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout)
 
     try {
-      const response = await fetch(url, {
+      const response = await axios.request({
+        url,
         method,
         headers: {
           'Content-Type': 'application/json',
-          'X-Internal-Token': this.config.internalToken,
+          'X-Internal-Token': this.config.auditToken,
         },
-        body: body ? JSON.stringify(body) : undefined,
+        data: body,
         signal: controller.signal,
+        validateStatus: () => true,
       })
 
       return response
@@ -179,9 +138,3 @@ export class AuditClient {
     }
   }
 }
-
-/**
- * Default audit client instance
- * Can be used directly or create your own instance with custom config
- */
-export const auditClient = new AuditClient()

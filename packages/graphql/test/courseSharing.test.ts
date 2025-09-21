@@ -6,7 +6,7 @@ import {
   PermissionLevel,
   PrismaClient,
 } from '@klicker-uzh/prisma/client'
-import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import { AuditClient, recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { removeCourse } from '../src/services/courses.js'
@@ -53,16 +53,19 @@ describe('Integration tests for sharing functionalities of courses', () => {
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
   let userThreeCtx: ContextWithUser
+  let auditClient: AuditClient
 
   beforeAll(async () => {
     const {
       prisma: newPrisma,
       hatchet: newHatchet,
       emitter: newEmitter,
+      auditClient: newAuditClient,
     } = await initializePrisma()
     prisma = newPrisma
     hatchet = newHatchet
     emitter = newEmitter
+    auditClient = newAuditClient
   })
 
   afterAll(async () => {
@@ -75,7 +78,7 @@ describe('Integration tests for sharing functionalities of courses', () => {
       userOneCtx: ctx1,
       userTwoCtx: ctx2,
       userThreeCtx: ctx3,
-    } = await testInitialization(prisma, hatchet, emitter)
+    } = await testInitialization(prisma, hatchet, emitter, auditClient)
 
     userOneCtx = ctx1
     userTwoCtx = ctx2

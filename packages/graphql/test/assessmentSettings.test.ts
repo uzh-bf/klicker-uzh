@@ -1,5 +1,6 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk/index.js'
 import { ElementOrderType, PrismaClient } from '@klicker-uzh/prisma/client'
+import { AuditClient } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import { v4 as uuid } from 'uuid'
 import type { ContextWithUser } from '../src/lib/context.js'
@@ -24,16 +25,19 @@ describe('Integration tests for assessment configuration functionalities', () =>
   let emitter: EventEmitter
   let hatchet: Hatchet
   let userOneCtx: ContextWithUser
+  let auditClient: AuditClient
 
   beforeAll(async () => {
     const {
       prisma: newPrisma,
       emitter: newEmitter,
       hatchet: newHatchet,
+      auditClient: newAuditClient,
     } = await initializePrisma()
     prisma = newPrisma
     emitter = newEmitter
     hatchet = newHatchet
+    auditClient = newAuditClient
   })
 
   afterAll(async () => {
@@ -45,7 +49,8 @@ describe('Integration tests for assessment configuration functionalities', () =>
     const { userOneCtx: ctx1 } = await testInitialization(
       prisma,
       hatchet,
-      emitter
+      emitter,
+      auditClient
     )
     userOneCtx = ctx1
   })

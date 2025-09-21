@@ -44,7 +44,7 @@ jobs:
         containers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     services:
       postgres:
-        image: postgres:15
+        image: postgres:14.18
         env:
           POSTGRES_USER: klicker-prod
           POSTGRES_PASSWORD: klicker
@@ -57,7 +57,7 @@ jobs:
         ports:
           - 5432:5432
       postgres_hatchet:
-        image: postgres:15
+        image: postgres:14.18
         env:
           POSTGRES_USER: hatchet
           POSTGRES_PASSWORD: hatchet
@@ -263,7 +263,7 @@ jobs:
     #     containers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     services:
       postgres:
-        image: postgres:15
+        image: postgres:14.18
         env:
           POSTGRES_USER: klicker-prod
           POSTGRES_PASSWORD: klicker
@@ -276,7 +276,7 @@ jobs:
         ports:
           - 5432:5432
       postgres_hatchet:
-        image: postgres:15
+        image: postgres:14.18
         env:
           POSTGRES_USER: hatchet
           POSTGRES_PASSWORD: hatchet
@@ -335,7 +335,6 @@ jobs:
           SERVER_DEFAULT_ENGINE_VERSION: 'V1'
           SERVER_LOGGER_LEVEL: debug
           SERVER_LOGGER_FORMAT: console
-
       azurite:
         image: mcr.microsoft.com/azure-storage/azurite:latest
         ports:

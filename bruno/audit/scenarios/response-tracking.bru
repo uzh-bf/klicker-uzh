@@ -12,7 +12,7 @@ post {
 
 headers {
   Content-Type: application/json
-  X-Internal-Token: {{INTERNAL_TOKEN}}
+  X-Internal-Token: {{AUDIT_TOKEN}}
 }
 
 body:json {
@@ -54,11 +54,11 @@ tests {
     expect(res.getStatus()).to.equal(202);
     expect(res.getBody().eventId).to.be.a('string');
   });
-  
+
   test("Response metadata is complete", function() {
     const responseTime = req.body.attributes.responseTime;
     const confidence = req.body.attributes.confidence;
-    
+
     expect(responseTime).to.be.a('number');
     expect(confidence).to.be.within(0, 1);
   });
@@ -71,71 +71,71 @@ script:post-response {
     const sessionId = req.body.sessionId;
     const responseTime = req.body.attributes.responseTime;
     const isCorrect = req.body.attributes.isCorrect;
-    
+
     // Store response tracking data
     bru.setVar("responseEventId", res.body.eventId);
     bru.setVar("trackingStudentId", studentId);
     bru.setVar("trackingQuestionId", questionId);
     bru.setVar("trackingSessionId", sessionId);
     bru.setVar("studentResponseTime", responseTime);
-    
+
     console.log("📊 Response tracking captured");
     console.log("Response Event ID:", res.body.eventId);
     console.log("Student ID:", studentId);
     console.log("Question ID:", questionId);
     console.log("Response Time:", responseTime + "s");
     console.log("Correct:", isCorrect ? "✅" : "❌");
-    
+
     // Learning analytics insights
     if (responseTime < 5) {
       console.log("📈 Fast response - likely confident or guessing");
     } else if (responseTime > 30) {
       console.log("📉 Slow response - may indicate difficulty");
     }
-    
+
     // Set up for additional tracking scenarios
     console.log("Follow-up tracking scenarios:");
     console.log("- Multiple responses per student");
-    console.log("- Response patterns analysis"); 
+    console.log("- Response patterns analysis");
     console.log("- Session completion tracking");
   }
 }
 
 docs {
   Response tracking scenario for learning analytics.
-  
+
   This test captures detailed student response data including:
-  
+
   Response Metadata:
   - Response content and correctness
   - Time spent on question
   - Confidence level and attempt number
   - Hints used and partial credit earned
-  
+
   Educational Context:
   - Question difficulty and point value
   - Quiz and section identification
   - Learning objective alignment
-  
+
   Analytics Use Cases:
   - Student performance patterns
   - Question difficulty analysis
   - Time-on-task measurements
   - Confidence vs. performance correlation
   - Hint effectiveness evaluation
-  
+
   Compliance and Assessment:
   - Academic integrity monitoring
   - Fair assessment verification
   - Accommodation tracking
   - Grade calculation audit trail
-  
+
   Variables for pattern analysis:
   - responseEventId: This response event
   - trackingStudentId: Student for pattern analysis
   - trackingQuestionId: Question performance data
   - trackingSessionId: Session context
   - studentResponseTime: Performance metric
-  
+
   This supports educational research and learning optimization.
 }

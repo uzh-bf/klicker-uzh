@@ -967,45 +967,105 @@ export type ActivityQuizAnalytics = {
 
 // ----- AUDIT LOG TYPES -----
 // #region
-export interface AuditEvent {
+export interface PublicAuditEvent {
   subject: string
   action: string
-  resourceId?: string
-  sessionId?: string
-  userId?: string
-  timestamp?: number
-  eventId?: string
+  resource?: string
   attributes?: Record<string, any>
 }
 
-export type AuditAction =
-  | 'login.success'
-  | 'login.failed'
-  | 'logout'
-  | 'data.create'
-  | 'data.read'
-  | 'data.update'
-  | 'data.delete'
-  | 'permission.granted'
-  | 'permission.denied'
-  | 'error.system'
-  | 'error.user'
-  | 'quiz.created'
-  | 'quiz.updated'
-  | 'quiz.deleted'
-  | 'quiz.started'
-  | 'quiz.ended'
-  | 'element.created'
-  | 'element.updated'
-  | 'element.deleted'
-  | 'response.submitted'
-  | 'feedback.created'
-  | 'feedback.updated'
-  | string
+export interface AuditEvent extends PublicAuditEvent {
+  timestamp?: number
+}
+
+export enum AuditScope {
+  PUBLIC = 'public',
+  INTERNAL = 'internal',
+  WORKER = 'worker',
+}
+
+export enum AuditAction {
+  // User - Authentication
+  USER_LOGIN_SUCCESS = 'user.auth.success', // TODO
+  USER_LOGIN_FAILED = 'user.auth.failed', // TODO
+  USER_LOGOUT = 'user.auth.logout', // TODO
+  USER_SESSION_EXPIRED = 'user.auth.session_expired', // TODO
+
+  // User - Quiz Control
+  USER_START_QUIZ = 'user.control.start_quiz', // TODO
+  USER_END_QUIZ = 'user.control.end_quiz', // TODO
+  USER_OPEN_BLOCK = 'user.control.open_block', // TODO
+  USER_CLOSE_BLOCK = 'user.control.close_block', // TODO
+  USER_RESET_QUIZ = 'user.control.reset_quiz', // TODO
+
+  // Participant - Authentication
+  PARTICIPANT_REGISTERED = 'participant.auth.registered', // TODO
+  PARTICIPANT_INVITATION_ACCEPTED = 'participant.auth.invitation.accepted', // TODO
+  PARTICIPANT_INVITATION_FAILED = 'participant.auth.invitation.failed', // TODO
+  PARTICIPANT_LOGIN_SUCCESS = 'participant.auth.success', // TODO
+  PARTICIPANT_LOGIN_FAILED = 'participant.auth.failed', // TODO
+  PARTICIPANT_LOGOUT = 'participant.auth.logout', // TODO
+  PARTICIPANT_SESSION_EXPIRED = 'participant.auth.session_expired', // TODO
+  PARTICIPANT_TEMP_LOGIN_SUCCESS = 'participant.auth.temp_login.success', // TODO
+  PARTICIPANT_TEMP_LOGIN_FAILED = 'participant.auth.temp_login.failed', // TODO
+  PARTICIPANT_MAGIC_LINK_SENT = 'participant.auth.magic_link.sent', // TODO
+  PARTICIPANT_MAGIC_LINK_SUCCESS = 'participant.auth.magic_link.success', // TODO
+  PARTICIPANT_MAGIC_LINK_FAILED = 'participant.auth.magic_link.failed', // TODO
+  PARTICIPANT_LTI_LOGIN_FAILED = 'participant.auth.lti.login.failed', // TODO
+  PARTICIPANT_LTI_LOGIN_SUCCESS = 'participant.auth.lti.login.success', // TODO
+  PARTICIPANT_LTI_PARTICIPATION_CREATED = 'participant.auth.lti.participation.created', // TODO
+
+  // Participant - Course Events
+  PARTICIPANT_COURSE_JOIN_SUCCESS = 'participant.course.join.success', // TODO
+  PARTICIPANT_COURSE_JOIN_FAILED = 'participant.course.join.failed', // TODO
+
+  // Participant - Quiz Events
+  PARTICIPANT_QUIZ_PIN_SUCCESS = 'participant.quiz.pin.success', // TODO
+  PARTICIPANT_QUIZ_PIN_FAILED = 'participant.quiz.pin.failed', // TODO
+  PARTICIPANT_JOIN_QUIZ = 'participant.quiz.join.success', // TODO
+  PARTICIPANT_VIEW_INSTANCE = 'participant.quiz.view_instance', // TODO
+
+  // Participant - Response Events
+  PARTICIPANT_UPDATE_ANSWER = 'participant.quiz.update_answer', // TODO
+  PARTICIPANT_SUBMIT_RESPONSE = 'participant.quiz.submit_response', // TODO
+  PARTICIPANT_RESPONSE_SAVED = 'participant.quiz.response.saved', // TODO
+  PARTICIPANT_RESPONSE_FAILED = 'participant.quiz.response.failed', // TODO
+  PARTICIPANT_RESPONSE_VALIDATION_ERROR = 'participant.quiz.response.validation_error', // TODO
+
+  // System - Response Processing
+  SYSTEM_RESPONSE_RECEIVED = 'system.response.received', // TODO
+  SYSTEM_RESPONSE_PROCESSED = 'system.response.processed', // TODO
+  SYSTEM_RESPONSE_DUPLICATE = 'system.response.duplicate', // TODO
+  SYSTEM_RESPONSE_VALIDATION_ERROR = 'system.response.validation_error', // TODO
+  SYSTEM_RESPONSE_CORRELATION_ERROR = 'system.response.correlation_error', // TODO
+  SYSTEM_RESPONSE_AUTH_ERROR = 'system.response.auth_error', // TODO
+  SYSTEM_RESPONSE_GENERAL_ERROR = 'system.response.general_error', // TODO
+  SYSTEM_RESPONSE_IGNORED = 'system.response.ignored', // TODO
+
+  // System - Response Modification
+  SYSTEM_RESPONSE_MODIFIED = 'system.response.modified', // TODO
+  SYSTEM_RESPONSE_DELETED = 'system.response.deleted', // TODO
+
+  // System - Errors
+  CLIENT_ERROR = 'error.client', // TODO
+  NETWORK_ERROR = 'error.network', // TODO
+  API_ERROR = 'error.api', // TODO
+  DATABASE_ERROR = 'error.database', // TODO
+  AUTHENTICATION_ERROR = 'error.authentication', // TODO
+  AUTHORIZATION_ERROR = 'error.authorization', // TODO
+  VALIDATION_ERROR = 'error.validation', // TODO
+  EXTERNAL_SERVICE_ERROR = 'error.external_service', // TODO
+
+  // Security Events
+  // TODO: good AIdeas, but not sure how to implement them
+  MULTIPLE_TABS_DETECTED = 'security.multiple_tabs',
+  BROWSER_FOCUS_LOST = 'security.focus_lost',
+  IP_LOCATION_CHANGE = 'security.ip_change',
+}
 
 export interface AuditClientConfig {
   serviceUrl?: string
-  internalToken?: string
+  auditToken?: string
   retryAttempts?: number
   timeout?: number
   batchSize?: number

@@ -18,6 +18,7 @@ import {
 } from '@klicker-uzh/prisma/client'
 import { ElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import {
+  AuditClient,
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
@@ -64,7 +65,8 @@ import {
 export async function testInitialization(
   prisma: PrismaClient,
   hatchet: Hatchet,
-  emitter: EventEmitter
+  emitter: EventEmitter,
+  auditClient: AuditClient
 ) {
   // upsert all users in the database
   await Promise.all(
@@ -278,6 +280,7 @@ export async function testInitialization(
     emitter,
     redisExec,
     redisAssessmentExec,
+    auditClient,
     pubSub: {
       publish: vi.fn(),
       subscribe: vi.fn().mockReturnValue(new Repeater(() => {})),
@@ -366,7 +369,9 @@ export async function initializePrisma() {
     // create EventEmitter for test context
     const emitter = new EventEmitter()
 
-    return { prisma, hatchet: hatchetClient, emitter }
+    const auditClient = new AuditClient()
+
+    return { prisma, hatchet: hatchetClient, emitter, auditClient }
   } catch (error) {
     console.error('Failed to initialize test environment:', error)
     throw new Error(`Database connection failed: ${error}`)

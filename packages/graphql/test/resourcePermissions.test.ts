@@ -4,7 +4,7 @@ import {
   PermissionLevel,
   PrismaClient,
 } from '@klicker-uzh/prisma/client'
-import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import { AuditClient, recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
 import { userFive, userFour, userOne, userThree, userTwo } from './userData.js'
@@ -14,16 +14,19 @@ describe('Unit tests covering the creation of derived permissions for resources 
   let prisma: PrismaClient
   let hatchet: Hatchet
   let emitter: EventEmitter
+  let auditClient: AuditClient
 
   beforeAll(async () => {
     const {
       prisma: newPrisma,
       hatchet: newHatchet,
       emitter: newEmitter,
+      auditClient: newAuditClient,
     } = await initializePrisma()
     prisma = newPrisma
     hatchet = newHatchet
     emitter = newEmitter
+    auditClient = newAuditClient
   })
 
   afterAll(async () => {
@@ -31,7 +34,9 @@ describe('Unit tests covering the creation of derived permissions for resources 
     await prisma.$disconnect()
   })
 
-  beforeEach(async () => testInitialization(prisma, hatchet, emitter))
+  beforeEach(async () =>
+    testInitialization(prisma, hatchet, emitter, auditClient)
+  )
 
   afterEach(async () => await testCleanup(prisma))
 

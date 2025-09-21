@@ -9,8 +9,8 @@ interface UseAuditClientOptions {
 }
 
 interface AuditClientAPI {
-  log: (event: Omit<AuditEvent, 'tenantId'>) => Promise<void>
-  logAsync: (event: Omit<AuditEvent, 'tenantId'>) => void
+  log: (event: AuditEvent) => Promise<void>
+  logAsync: (event: AuditEvent) => void
   isLoading: boolean
   error: Error | null
 }
@@ -34,7 +34,7 @@ export function useAuditClient(
   } = options
 
   const log = useCallback(
-    async (event: Omit<AuditEvent, 'tenantId'>) => {
+    async (event: AuditEvent) => {
       // Only log in assessment mode
       if (!enabled || !assessmentMode) {
         return
@@ -95,7 +95,7 @@ export function useAuditClient(
   )
 
   const logAsync = useCallback(
-    (event: Omit<AuditEvent, 'tenantId'>) => {
+    (event: AuditEvent) => {
       // Fire and forget - don't block UI
       log(event).catch(() => {
         // Already handled in log function
@@ -109,77 +109,5 @@ export function useAuditClient(
     logAsync,
     isLoading,
     error,
-  }
-}
-
-/**
- * Convenience hook for common audit actions in assessment mode
- */
-export function useAssessmentAudit(
-  assessmentMode: boolean = false,
-  baseUrl?: string
-) {
-  const audit = useAuditClient({ assessmentMode, baseUrl })
-
-  const logQuizAction = useCallback(
-    (action: string, quizId: string, metadata?: any) => {
-      audit.logAsync({
-        subject: 'participant',
-        action: `quiz.${action}`,
-        resourceId: quizId,
-        attributes: metadata,
-      })
-    },
-    [audit]
-  )
-
-  const logElementInteraction = useCallback(
-    (action: string, elementId: string, metadata?: any) => {
-      audit.logAsync({
-        subject: 'participant',
-        action: `element.${action}`,
-        resourceId: elementId,
-        attributes: metadata,
-      })
-    },
-    [audit]
-  )
-
-  const logResponseSubmission = useCallback(
-    (elementId: string, responseData?: any) => {
-      audit.logAsync({
-        subject: 'participant',
-        action: 'response.submitted',
-        resourceId: elementId,
-        attributes: {
-          hasResponse: !!responseData,
-          responseType: typeof responseData,
-        },
-      })
-    },
-    [audit]
-  )
-
-  const logNavigation = useCallback(
-    (from: string, to: string, metadata?: any) => {
-      audit.logAsync({
-        subject: 'participant',
-        action: 'navigation.change',
-        attributes: {
-          from,
-          to,
-          ...metadata,
-        },
-      })
-    },
-    [audit]
-  )
-
-  return {
-    logQuizAction,
-    logElementInteraction,
-    logResponseSubmission,
-    logNavigation,
-    ...audit,
   }
 }

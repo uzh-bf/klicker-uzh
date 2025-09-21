@@ -12,7 +12,7 @@ post {
 
 headers {
   Content-Type: application/json
-  X-Internal-Token: {{INTERNAL_TOKEN}}
+  X-Internal-Token: {{AUDIT_TOKEN}}
 }
 
 body:json {
@@ -32,14 +32,14 @@ tests {
   test("Field length validation is enforced", function() {
     expect(res.getStatus()).to.equal(400);
   });
-  
+
   test("Error message indicates length validation", function() {
     const body = res.getBody();
     const errorMessage = body.error || body.message || JSON.stringify(body);
     const lowerMessage = errorMessage.toLowerCase();
     expect(lowerMessage).to.match(/length|long|exceed|limit|maximum/);
   });
-  
+
   test("Specific field causing error is identified", function() {
     const body = res.getBody();
     const errorMessage = body.error || body.message || JSON.stringify(body);
@@ -50,9 +50,9 @@ tests {
 
 docs {
   Test field length validation limits.
-  
+
   This request has a tenantId that exceeds the maximum allowed length.
-  
+
   Field length limits (example):
   - tenantId: 100 characters max
   - subject: 200 characters max
@@ -60,7 +60,7 @@ docs {
   - resourceId: 200 characters max
   - sessionId: 100 characters max
   - userId: 100 characters max
-  
+
   Expected behavior:
   - HTTP 400 Bad Request status
   - Error message indicating field length violation

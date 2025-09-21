@@ -12,7 +12,7 @@ post {
 
 headers {
   Content-Type: application/json
-  X-Internal-Token: {{INTERNAL_TOKEN}}
+  X-Internal-Token: {{AUDIT_TOKEN}}
 }
 
 body:json {
@@ -42,14 +42,14 @@ tests {
   test("Event with custom timestamp is accepted", function() {
     expect(res.getStatus()).to.equal(202);
   });
-  
+
   test("Custom timestamp is preserved", function() {
     const body = res.getBody();
     // The service should accept the custom timestamp
     // In a real test, we'd verify the stored timestamp matches
     expect(body.status).to.equal('accepted');
   });
-  
+
   test("System events are processed correctly", function() {
     const body = res.getBody();
     expect(body.eventId).to.be.a('string');
@@ -66,17 +66,17 @@ script:post-response {
 
 docs {
   Test audit event with custom timestamp for historical events.
-  
+
   Use cases:
   - Batch processing of historical data
   - System events that occurred at specific times
   - Data migration scenarios
   - Replay of events from other systems
-  
+
   Expected behavior:
   - Custom timestamp is respected and stored
   - Event is processed normally despite past timestamp
   - Useful for creating accurate audit trails during migrations
-  
+
   Note: timestamp is Unix milliseconds (1704067200000 = 2024-01-01T00:00:00Z)
 }

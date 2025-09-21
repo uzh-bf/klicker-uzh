@@ -10,6 +10,7 @@ import {
 } from '@klicker-uzh/prisma/client'
 import { SingleQuestionResponseChoices } from '@klicker-uzh/types'
 import {
+  AuditClient,
   getInitialInstanceResults,
   processElementData,
   recomputeDerivedPermissions,
@@ -43,16 +44,19 @@ describe('Integration tests for assessment configuration functionalities', () =>
   let userThreeCtx: ContextWithUser
   let userFourCtx: ContextWithUser
   let userFiveCtx: ContextWithUser
+  let auditClient: AuditClient
 
   beforeAll(async () => {
     const {
       prisma: newPrisma,
       emitter: newEmitter,
       hatchet: newHatchet,
+      auditClient: newAuditClient,
     } = await initializePrisma()
     prisma = newPrisma
     emitter = newEmitter
     hatchet = newHatchet
+    auditClient = newAuditClient
   })
 
   afterAll(async () => {
@@ -67,7 +71,7 @@ describe('Integration tests for assessment configuration functionalities', () =>
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
       userFiveCtx: ctx5,
-    } = await testInitialization(prisma, hatchet, emitter)
+    } = await testInitialization(prisma, hatchet, emitter, auditClient)
     userOneCtx = ctx1
     userTwoCtx = ctx2
     userThreeCtx = ctx3

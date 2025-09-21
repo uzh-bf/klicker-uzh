@@ -58,12 +58,12 @@ function getHostFromHeaderUrl(h?: string | null): string | null {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
-  console.log('MIDDLEWARE RUNNING:', {
-    pathname,
-    fullUrl: request.url,
-    referer: request.headers.get('referer'),
-    searchParams: Object.fromEntries(request.nextUrl.searchParams.entries()),
-  })
+  // console.debug('MIDDLEWARE RUNNING:', {
+  //   pathname,
+  //   fullUrl: request.url,
+  //   referer: request.headers.get('referer'),
+  //   searchParams: Object.fromEntries(request.nextUrl.searchParams.entries()),
+  // })
 
   // If the request is initiated from the PWA, redirect to the PWA login
   const referer = request.headers.get('referer')
@@ -125,7 +125,7 @@ export async function middleware(request: NextRequest) {
     (refererHost && PWA_HOSTS.includes(refererHost)) ||
     (redirectToHost && PWA_HOSTS.includes(redirectToHost))
   ) {
-    console.log('PWA origin detected. Redirecting to PWA login.', {
+    console.debug('PWA origin detected. Redirecting to PWA login.', {
       referer,
       refererHost,
       redirectToParam,
@@ -145,23 +145,23 @@ export async function middleware(request: NextRequest) {
         ...commonCookieOpts,
         maxAge: REDIRECT_COOKIE_TTL_MS,
       })
-      console.log('Root route: lecturer redirect cookie set')
+      console.debug('Root route: lecturer redirect cookie set')
       return response
     }
   }
 
   // Handle /lecturer route - redirect to lecturer UI and set cookie early
   if (pathname === '/lecturer') {
-    console.log('LECTURER ROUTE MATCHED!')
+    console.debug('LECTURER ROUTE MATCHED!')
     const redirectTo =
       request.nextUrl.searchParams.get('redirectTo') ||
       process.env.NEXT_PUBLIC_MANAGE_URL ||
       'https://manage.klicker.uzh.ch'
 
-    console.log('RedirectTo parameter (with default):', redirectTo)
+    console.debug('RedirectTo parameter (with default):', redirectTo)
 
     if (!isValidLecturerRedirectUrl(redirectTo)) {
-      console.log('Invalid lecturer redirect URL:', redirectTo)
+      console.debug('Invalid lecturer redirect URL:', redirectTo)
       return new NextResponse('Invalid redirect URL', { status: 400 })
     }
 
@@ -174,7 +174,7 @@ export async function middleware(request: NextRequest) {
       ...commonCookieOpts,
       maxAge: REDIRECT_COOKIE_TTL_MS,
     })
-    console.log(
+    console.debug(
       'Lecturer route: set cookie and redirect to index UI:',
       dest.toString()
     )
@@ -183,16 +183,16 @@ export async function middleware(request: NextRequest) {
 
   // Handle /student route - render login page and set cookie early (belt-and-suspenders)
   if (pathname === '/student') {
-    console.log('STUDENT ROUTE MATCHED!')
+    console.debug('STUDENT ROUTE MATCHED!')
     const redirectTo =
       request.nextUrl.searchParams.get('redirectTo') ||
       process.env.NEXT_PUBLIC_ASSESSMENT_URL ||
       'https://assessment.klicker.uzh.ch'
 
-    console.log('RedirectTo parameter (with default):', redirectTo)
+    console.debug('RedirectTo parameter (with default):', redirectTo)
 
     if (!isValidStudentRedirectUrl(redirectTo)) {
-      console.log('Invalid redirect URL:', redirectTo)
+      console.debug('Invalid redirect URL:', redirectTo)
       return new NextResponse('Invalid redirect URL', { status: 400 })
     }
 
@@ -204,7 +204,7 @@ export async function middleware(request: NextRequest) {
       ...commonCookieOpts,
       maxAge: REDIRECT_COOKIE_TTL_MS,
     })
-    console.log('Student route: cookie set, rendering student login page')
+    console.debug('Student route: cookie set, rendering student login page')
     return response
   }
 
@@ -219,7 +219,7 @@ export async function middleware(request: NextRequest) {
       referer.includes('assessment.') ||
       referer.includes('/student')
 
-    console.log('Stateless context detection result:', {
+    console.debug('Stateless context detection result:', {
       isParticipantContext,
       participantParam,
       referer,
@@ -269,18 +269,21 @@ export async function middleware(request: NextRequest) {
           const resp = NextResponse.redirect(url)
           // Clear all redirect cookies on callback (scoped + legacy)
           clearAllRedirectCookies(resp)
-          console.log('Callback: injected params from cookie and cleared it', {
-            url: url.toString(),
-            cookieSaysParticipant,
-            cookieSaysLecturer,
-          })
+          console.debug(
+            'Callback: injected params from cookie and cleared it',
+            {
+              url: url.toString(),
+              cookieSaysParticipant,
+              cookieSaysLecturer,
+            }
+          )
           return resp
         }
 
         // Clear the cookies in any case on callback to avoid lingering state
         const passthrough = NextResponse.next()
         clearAllRedirectCookies(passthrough)
-        console.log('Callback: cleared unused redirect cookies')
+        console.debug('Callback: cleared unused redirect cookies')
         return passthrough
       }
       // If generic cookie is not present, still clear any specific cookies
@@ -294,7 +297,8 @@ export async function middleware(request: NextRequest) {
         clearAllRedirectCookies(passthrough)
         clearedAny = true
       }
-      if (clearedAny) console.log('Callback: cleared specific redirect cookies')
+      if (clearedAny)
+        console.debug('Callback: cleared specific redirect cookies')
       return passthrough
     }
 
@@ -317,7 +321,7 @@ export async function middleware(request: NextRequest) {
           ...commonCookieOpts,
           maxAge: REDIRECT_COOKIE_TTL_MS,
         })
-        console.log('Set redirect cookie on signin:', {
+        console.debug('Set redirect cookie on signin:', {
           cb,
           isParticipantContext,
         })

@@ -12,7 +12,7 @@ post {
 
 headers {
   Content-Type: application/json
-  X-Internal-Token: {{INTERNAL_TOKEN}}
+  X-Internal-Token: {{AUDIT_TOKEN}}
 }
 
 body:json {
@@ -50,13 +50,13 @@ tests {
   test("Security event is logged with high priority", function() {
     expect(res.getStatus()).to.equal(202);
   });
-  
+
   test("Critical security data is captured", function() {
     const body = res.getBody();
     expect(body.eventId).to.be.a('string');
     expect(body.status).to.equal('accepted');
   });
-  
+
   test("Security events are processed immediately", function() {
     // Security events should have fast processing for incident response
     expect(res.getResponseTime()).to.be.below(3000);
@@ -69,7 +69,7 @@ script:post-response {
     console.log("Security event logged with ID:", res.body.eventId);
     console.log("Threat type:", req.body.attributes.threatType);
     console.log("Severity:", req.body.attributes.severity);
-    
+
     // In a real implementation, this might trigger alerts
     if (req.body.attributes.severity === "high") {
       console.log("🚨 HIGH SEVERITY SECURITY EVENT - Consider alerting");
@@ -79,27 +79,27 @@ script:post-response {
 
 docs {
   Test audit logging for security-related events.
-  
+
   Security events require special handling:
   - Immediate processing and alerting
   - Detailed forensic information
   - Integration with SIEM systems
   - Compliance with security frameworks
   - Rapid incident response capabilities
-  
+
   Key security event attributes:
   - Threat classification and severity
   - Source identification (IP, geolocation)
   - Attack vectors and methods
   - Mitigation actions taken
   - Risk assessment metrics
-  
+
   Use cases:
   - Intrusion detection alerts
   - Failed authentication tracking
   - Privilege escalation attempts
   - Data access violations
   - System compromise indicators
-  
+
   Critical for SOC (Security Operations Center) integration.
 }

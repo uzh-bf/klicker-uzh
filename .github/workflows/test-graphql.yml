@@ -25,7 +25,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:15
+        image: postgres:14.18
         env:
           POSTGRES_USER: klicker
           POSTGRES_PASSWORD: klicker
@@ -39,7 +39,7 @@ jobs:
           - 5432:5432
 
       postgres_hatchet:
-        image: postgres:15
+        image: postgres:14.18
         env:
           POSTGRES_USER: hatchet
           POSTGRES_PASSWORD: hatchet

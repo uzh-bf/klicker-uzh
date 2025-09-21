@@ -10,22 +10,19 @@ const envPath = existsSync(testEnvPath) ? testEnvPath : cypressEnvPath
 config({ path: envPath })
 
 // Ensure critical environment variables are set
-if (!process.env.INTERNAL_TOKEN) {
-  throw new Error('INTERNAL_TOKEN environment variable is required for tests')
+if (!process.env.AUDIT_TOKEN) {
+  throw new Error('AUDIT_TOKEN environment variable is required for tests')
 }
 
-if (!process.env.AZURE_TABLES_CONNECTION_STRING) {
+if (!process.env.AUDIT_TABLE_CONNECTION_STRING) {
   throw new Error(
-    'AZURE_TABLES_CONNECTION_STRING environment variable is required for tests'
+    'AUDIT_TABLE_CONNECTION_STRING environment variable is required for tests'
   )
 }
 
 // Log test environment setup (for debugging)
 console.log('🔧 Test environment loaded:')
 console.log('   NODE_ENV:', process.env.NODE_ENV)
-console.log(
-  '   INTERNAL_TOKEN:',
-  process.env.INTERNAL_TOKEN ? '***' : 'NOT SET'
-)
-console.log('   AZURE_TABLES_TABLE_NAME:', process.env.AZURE_TABLES_TABLE_NAME)
+console.log('   AUDIT_TOKEN:', process.env.AUDIT_TOKEN ? '***' : 'NOT SET')
+console.log('   AUDIT_TABLE_NAME:', process.env.AUDIT_TABLE_NAME)
 console.log('   APP_SECRET:', process.env.APP_SECRET ? '***' : 'NOT SET')

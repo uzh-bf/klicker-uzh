@@ -111,7 +111,7 @@ export function getAuthContext(
     callback: hostFrom(callbackUrl),
   }
 
-  console.log(`[AUTH ${reqId}] Context detection input:`, {
+  console.debug(`[AUTH ${reqId}] Context detection input:`, {
     url: req.url,
     method: req.method,
     participant,
@@ -122,34 +122,34 @@ export function getAuthContext(
 
   // 1) Explicit participant flag wins
   if (participant === 'true') {
-    console.log(`[AUTH ${reqId}] Context: participant (explicit param)`)
+    console.debug(`[AUTH ${reqId}] Context: participant (explicit param)`)
     return 'participant'
   }
 
   // 2) callbackUrl host is authoritative when present
   if (hosts.callback) {
     if (isAssessmentHost(hosts.callback)) {
-      console.log(`[AUTH ${reqId}] Context: participant (callbackUrl host)`)
+      console.debug(`[AUTH ${reqId}] Context: participant (callbackUrl host)`)
       return 'participant'
     }
     if (isManageHost(hosts.callback)) {
-      console.log(`[AUTH ${reqId}] Context: lecturer (callbackUrl host)`)
+      console.debug(`[AUTH ${reqId}] Context: lecturer (callbackUrl host)`)
       return 'lecturer'
     }
   }
 
   // 3) Specific cookies (student first)
   if (hosts.student && isAssessmentHost(hosts.student)) {
-    console.log(`[AUTH ${reqId}] Context: participant (student cookie host)`)
+    console.debug(`[AUTH ${reqId}] Context: participant (student cookie host)`)
     return 'participant'
   }
   if (hosts.lecturer && isManageHost(hosts.lecturer)) {
-    console.log(`[AUTH ${reqId}] Context: lecturer (lecturer cookie host)`)
+    console.debug(`[AUTH ${reqId}] Context: lecturer (lecturer cookie host)`)
     return 'lecturer'
   }
 
   // 4) Default to lecturer
-  console.log(`[AUTH ${reqId}] Context: lecturer (default)`)
+  console.debug(`[AUTH ${reqId}] Context: lecturer (default)`)
   return 'lecturer'
 }
 
@@ -179,7 +179,7 @@ export async function autoAcceptInvitations(
   try {
     if (!participantId) {
       if (normalizedLookupEmails.length === 0) {
-        console.log('No emails provided for participant lookup')
+        console.debug('No emails provided for participant lookup')
         return 0
       }
 
@@ -192,7 +192,10 @@ export async function autoAcceptInvitations(
       })
 
       if (!participant) {
-        console.log('No participant found for emails:', normalizedLookupEmails)
+        console.debug(
+          'No participant found for emails:',
+          normalizedLookupEmails
+        )
         return 0
       }
 
@@ -200,7 +203,7 @@ export async function autoAcceptInvitations(
     }
 
     if (normalizedInvitationEmails.length === 0) {
-      console.log(
+      console.debug(
         `Invitation mode ${invitationEmailMode} provided no eligible emails.`,
         {
           profileEmails: emailCollection.profileEmails,
@@ -218,7 +221,7 @@ export async function autoAcceptInvitations(
       },
     })
 
-    console.log(
+    console.debug(
       `Found ${pendingInvitations.length} pending invitations for mode ${invitationEmailMode}:`,
       normalizedInvitationEmails
     )
@@ -400,7 +403,7 @@ export async function createOrLinkParticipant(profile: ExtendedProfile) {
           emailCollection,
           existing.participantId
         )
-        console.log(
+        console.debug(
           `Auto-accepted ${acceptedCount} invitations for existing user with emails:`,
           emailCollection.allEmails
         )
@@ -502,7 +505,7 @@ export async function createOrLinkParticipant(profile: ExtendedProfile) {
         emailCollection,
         participant.id
       )
-      console.log(
+      console.debug(
         `Auto-accepted ${acceptedCount} invitations for new participant with emails:`,
         emailCollection.allEmails
       )

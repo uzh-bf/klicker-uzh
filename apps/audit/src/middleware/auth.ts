@@ -25,7 +25,7 @@ export async function authMiddleware(
     )
   }
 
-  if (token !== config.INTERNAL_TOKEN) {
+  if (token !== config.AUDIT_TOKEN) {
     logger.warn(
       { requestId: c.get('requestId'), path: c.req.path },
       'Authentication failed: invalid token'

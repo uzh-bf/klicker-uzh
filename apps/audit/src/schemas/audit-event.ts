@@ -1,15 +1,17 @@
+import { AuditAction, AuditScope } from '@klicker-uzh/types'
 import { z } from 'zod'
 
 export const ALLOWED_PUBLIC_ACTIONS = [
-  'response.submitted',
-  'session.joined',
-  'session.left',
-  'quiz.started',
-  'quiz.completed',
-  'feedback.submitted',
-  'question.answered',
-  'activity.accessed',
-] as const
+  AuditAction.PARTICIPANT_VIEW_INSTANCE,
+  // 'response.submitted',
+  // 'session.joined',
+  // 'session.left',
+  // 'quiz.started',
+  // 'quiz.completed',
+  // 'feedback.submitted',
+  // 'question.answered',
+  // 'activity.accessed',
+]
 
 const ALLOWED_PUBLIC_ACTIONS_SET = new Set<string>(ALLOWED_PUBLIC_ACTIONS)
 
@@ -17,31 +19,35 @@ const CORRELATION_ID_REGEX = /^[a-f0-9]{32}$/i
 const ATTRIBUTES_MAX_BYTES = 32 * 1024
 const DEFAULT_SCHEMA_VERSION = 1
 
-const CorrelationClaimsSchema = z
-  .object({
-    liveQuizId: z.string().min(1).max(100).optional(),
-    instanceId: z.union([z.string(), z.number()]).optional(),
-    execution: z.union([z.string(), z.number()]).optional(),
-  })
-  .refine((claims) => Object.keys(claims).length > 0, {
-    message: 'correlationClaims must include at least one value',
-  })
+const CorrelationClaimsSchema = z.object({
+  liveQuizId: z.string().min(1).max(100),
+  instanceId: z.union([z.string(), z.number()]),
+  execution: z.union([z.string(), z.number()]),
+})
 
 export const AuditEventSchema = z
   .object({
-    scope: z.enum(['public', 'internal', 'worker']).default('internal'),
-    subject: z.string().min(1).max(500).optional(),
-    action: z.string().min(1).max(200),
+    schemaVersion: z.number().int().positive().default(DEFAULT_SCHEMA_VERSION),
+
+    eventId: z.string().min(1).max(100).optional(),
     timestamp: z
       .number()
       .int()
       .positive()
       .optional()
       .default(() => Date.now()),
-    eventId: z.string().min(1).max(100).optional(),
-    resourceId: z.string().max(500).optional(),
-    sessionId: z.string().max(100).optional(),
-    userId: z.string().max(100).optional(),
+    scope: z
+      .enum([AuditScope.PUBLIC, AuditScope.INTERNAL, AuditScope.WORKER])
+      .default(AuditScope.INTERNAL),
+
+    // outcome: z.string().min(1).max(100).optional(),
+    // reasonCode: z.string().min(1).max(200).optional(),
+
+    subject: z.string().min(1).max(500),
+    action: z.string().min(1).max(200),
+    resource: z.string().max(500).optional(),
+    stage: z.string().min(1).max(100).optional(),
+
     correlationId: z
       .string()
       .regex(
@@ -50,16 +56,16 @@ export const AuditEventSchema = z
       )
       .optional(),
     correlationClaims: CorrelationClaimsSchema.optional(),
-    stage: z.string().min(1).max(100).optional(),
-    outcome: z.string().min(1).max(100).optional(),
-    reasonCode: z.string().min(1).max(200).optional(),
-    schemaVersion: z.number().int().positive().default(DEFAULT_SCHEMA_VERSION),
+
     attributes: z.record(z.unknown()).optional(),
   })
   .superRefine((val, ctx) => {
-    const scope = val.scope ?? 'internal'
+    const scope = val.scope ?? AuditScope.INTERNAL
 
-    if (scope === 'public' && !ALLOWED_PUBLIC_ACTIONS_SET.has(val.action)) {
+    if (
+      scope === AuditScope.PUBLIC &&
+      !ALLOWED_PUBLIC_ACTIONS_SET.has(val.action)
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: `Event action '${val.action}' is not allowed for public scope`,
@@ -67,7 +73,10 @@ export const AuditEventSchema = z
       })
     }
 
-    if (scope !== 'public' && (!val.subject || val.subject.length === 0)) {
+    if (
+      scope !== AuditScope.PUBLIC &&
+      (!val.subject || val.subject.length === 0)
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'subject is required for non-public events',

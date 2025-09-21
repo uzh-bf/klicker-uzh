@@ -8,6 +8,7 @@ import {
 } from '@klicker-uzh/prisma/client'
 import { ElementInstanceOptions, ElementOptions } from '@klicker-uzh/types'
 import {
+  AuditClient,
   getInitialInstanceResults,
   processElementData,
   recomputeDerivedPermissions,
@@ -25,16 +26,19 @@ describe('Unit tests batch operations on elements', () => {
   let hatchet: Hatchet
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
+  let auditClient: AuditClient
 
   beforeAll(async () => {
     const {
       prisma: newPrisma,
       emitter: newEmitter,
       hatchet: newHatchet,
+      auditClient: newAuditClient,
     } = await initializePrisma()
     prisma = newPrisma
     emitter = newEmitter
     hatchet = newHatchet
+    auditClient = newAuditClient
   })
 
   afterAll(async () => {
@@ -46,7 +50,8 @@ describe('Unit tests batch operations on elements', () => {
     const { userOneCtx: ctx1, userTwoCtx: ctx2 } = await testInitialization(
       prisma,
       hatchet,
-      emitter
+      emitter,
+      auditClient
     )
     userOneCtx = ctx1
     userTwoCtx = ctx2

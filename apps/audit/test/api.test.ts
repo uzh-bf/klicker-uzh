@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 const BASE_URL = 'http://localhost:7080'
-const AUTH_TOKEN = process.env.INTERNAL_TOKEN || 'test-secret-token-123'
+const AUTH_TOKEN = process.env.AUDIT_TOKEN || 'test-secret-token-123'
 
 // Helper function to make HTTP requests
 async function makeRequest(
