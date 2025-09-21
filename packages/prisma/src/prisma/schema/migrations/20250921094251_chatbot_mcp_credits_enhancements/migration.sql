@@ -5,6 +5,9 @@
   - You are about to drop the column `id` on the `ChatUsageCredits` table. All the data in the column will be lost.
 
 */
+-- CreateEnum
+CREATE TYPE "public"."CreditResetPeriod" AS ENUM ('DAILY', 'WEEKLY', 'BIWEEKLY', 'MONTHLY', 'NONE');
+
 -- DropIndex
 DROP INDEX "public"."ChatUsageCredits_participantId_chatbotId_key";
 
@@ -19,7 +22,10 @@ ADD CONSTRAINT "ChatUsageCredits_pkey" PRIMARY KEY ("participantId", "chatbotId"
 -- AlterTable
 ALTER TABLE "public"."Chatbot" ADD COLUMN     "azureOpenAIEndpoint" TEXT,
 ADD COLUMN     "azureOpenAIKey" TEXT,
-ADD COLUMN     "creditSettings" JSONB,
+ADD COLUMN     "creditInitialCredits" INTEGER NOT NULL DEFAULT 1,
+ADD COLUMN     "creditMaxCredits" INTEGER NOT NULL DEFAULT 1,
+ADD COLUMN     "creditResetAmount" INTEGER NOT NULL DEFAULT 1,
+ADD COLUMN     "creditResetPeriod" "public"."CreditResetPeriod" NOT NULL DEFAULT 'WEEKLY',
 ADD COLUMN     "modelSelection" BOOLEAN NOT NULL DEFAULT false;
 
 -- CreateTable

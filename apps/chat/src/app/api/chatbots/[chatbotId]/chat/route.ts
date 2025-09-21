@@ -282,10 +282,7 @@ export async function POST(
   const mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
 
   if (!chatbot) {
-    return NextResponse.json(
-      { error: 'Chatbot not found' },
-      { status: 404 }
-    )
+    return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
   }
   // Override model selection if modelSelection is disabled
   if (!chatbot.modelSelection) {

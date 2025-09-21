@@ -1,4 +1,5 @@
 import { prisma } from '@klicker-uzh/prisma'
+import { CreditResetPeriod } from '@klicker-uzh/prisma/client'
 import { getCurrentPeriodStart, isPeriodExpired } from '../utils/creditPeriods'
 import {
   atomicDecrementCredits,
@@ -9,21 +10,6 @@ import {
 export interface UserCredits {
   current: number
   total: number
-}
-
-export interface CreditSettings {
-  initialCredits: number // Credits given to new users
-  resetPeriod: 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'none'
-  resetAmount: number // Credits restored on reset
-  maxCredits: number // Maximum credits (for partial resets)
-}
-
-export enum ResetPeriod {
-  DAILY = 'daily',
-  WEEKLY = 'weekly',
-  BIWEEKLY = 'biweekly',
-  MONTHLY = 'monthly',
-  NONE = 'none',
 }
 
 /**
@@ -40,19 +26,17 @@ export class CreditsService {
   ): Promise<UserCredits> {
     const chatbot = await prisma.chatbot.findUnique({
       where: { id: chatbotId },
-      select: { creditSettings: true },
+      select: {
+        creditInitialCredits: true,
+        creditResetPeriod: true,
+        creditResetAmount: true,
+        creditMaxCredits: true,
+      },
     })
 
-    const settings = chatbot?.creditSettings as CreditSettings | null
-    const defaultSettings: CreditSettings = {
-      initialCredits: 10,
-      resetPeriod: 'weekly',
-      resetAmount: 10,
-      maxCredits: 10,
-    }
-
-    const finalSettings = settings || defaultSettings
-    const resetPeriod = finalSettings.resetPeriod as ResetPeriod
+    const initialCredits = chatbot?.creditInitialCredits ?? 1
+    const maxCredits = chatbot?.creditMaxCredits ?? 1
+    const resetPeriod = chatbot?.creditResetPeriod ?? CreditResetPeriod.WEEKLY
 
     // Get current period start for proper alignment
     const currentPeriodStart = getCurrentPeriodStart(resetPeriod)
@@ -60,8 +44,8 @@ export class CreditsService {
     return await atomicInitializeCredits(
       participantId,
       chatbotId,
-      finalSettings.initialCredits,
-      finalSettings.maxCredits,
+      initialCredits,
+      maxCredits,
       currentPeriodStart
     )
   }
@@ -91,18 +75,21 @@ export class CreditsService {
     // Get chatbot settings for reset configuration
     const chatbot = await prisma.chatbot.findUnique({
       where: { id: chatbotId },
-      select: { creditSettings: true },
+      select: {
+        creditResetPeriod: true,
+        creditResetAmount: true,
+        creditMaxCredits: true,
+      },
     })
 
-    const settings = chatbot?.creditSettings as CreditSettings | null
-    if (!settings || settings.resetPeriod === 'none') {
+    if (!chatbot || chatbot.creditResetPeriod === CreditResetPeriod.NONE) {
       return {
         current: credits.current.toNumber(),
         total: credits.total.toNumber(),
       }
     }
 
-    const resetPeriod = settings.resetPeriod as ResetPeriod
+    const resetPeriod = chatbot.creditResetPeriod
     const currentPeriodStart = getCurrentPeriodStart(resetPeriod)
     const periodStartedAt = credits.periodStartedAt || credits.createdAt
 
@@ -112,8 +99,8 @@ export class CreditsService {
         participantId,
         chatbotId,
         currentPeriodStart,
-        settings.resetAmount,
-        settings.maxCredits
+        chatbot.creditResetAmount,
+        chatbot.creditMaxCredits
       )
 
       return {

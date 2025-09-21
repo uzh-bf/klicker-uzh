@@ -6,23 +6,23 @@
  * rather than individual rolling periods.
  */
 
-import { ResetPeriod } from '../services/credits'
+import { CreditResetPeriod } from '@klicker-uzh/prisma/client'
 
 /**
  * Get the start of the current credit period for a given reset type
  * All times are in UTC to ensure consistency across timezones
  */
-export function getCurrentPeriodStart(resetPeriod: ResetPeriod): Date {
+export function getCurrentPeriodStart(resetPeriod: CreditResetPeriod): Date {
   const now = new Date()
 
   switch (resetPeriod) {
-    case ResetPeriod.DAILY:
+    case CreditResetPeriod.DAILY:
       // Start of current day in UTC
       return new Date(
         Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
       )
 
-    case ResetPeriod.WEEKLY:
+    case CreditResetPeriod.WEEKLY:
       // Start of current week (Monday 00:00 UTC)
       const startOfWeek = new Date(now)
       const dayOfWeek = startOfWeek.getUTCDay()
@@ -36,11 +36,11 @@ export function getCurrentPeriodStart(resetPeriod: ResetPeriod): Date {
         )
       )
 
-    case ResetPeriod.BIWEEKLY:
+    case CreditResetPeriod.BIWEEKLY:
       // Start of current biweekly period (every other Monday)
       // Use a reference date to ensure consistent biweekly periods
       const referenceDate = new Date('2025-09-15T00:00:00.000Z') // Semester Start 2025
-      const weekStart = getCurrentPeriodStart(ResetPeriod.WEEKLY)
+      const weekStart = getCurrentPeriodStart(CreditResetPeriod.WEEKLY)
       const weeksSinceReference = Math.floor(
         (weekStart.getTime() - referenceDate.getTime()) /
           (7 * 24 * 60 * 60 * 1000)
@@ -51,11 +51,11 @@ export function getCurrentPeriodStart(resetPeriod: ResetPeriod): Date {
       )
       return biweeklyStart
 
-    case ResetPeriod.MONTHLY:
+    case CreditResetPeriod.MONTHLY:
       // Start of current month (1st day 00:00 UTC)
       return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
 
-    case ResetPeriod.NONE:
+    case CreditResetPeriod.NONE:
     default:
       // No reset period - return epoch
       return new Date(0)
@@ -65,20 +65,20 @@ export function getCurrentPeriodStart(resetPeriod: ResetPeriod): Date {
 /**
  * Get the next reset time for a given period
  */
-export function getNextResetTime(resetPeriod: ResetPeriod): Date {
+export function getNextResetTime(resetPeriod: CreditResetPeriod): Date {
   const currentPeriodStart = getCurrentPeriodStart(resetPeriod)
 
   switch (resetPeriod) {
-    case ResetPeriod.DAILY:
+    case CreditResetPeriod.DAILY:
       return new Date(currentPeriodStart.getTime() + 24 * 60 * 60 * 1000)
 
-    case ResetPeriod.WEEKLY:
+    case CreditResetPeriod.WEEKLY:
       return new Date(currentPeriodStart.getTime() + 7 * 24 * 60 * 60 * 1000)
 
-    case ResetPeriod.BIWEEKLY:
+    case CreditResetPeriod.BIWEEKLY:
       return new Date(currentPeriodStart.getTime() + 14 * 24 * 60 * 60 * 1000)
 
-    case ResetPeriod.MONTHLY:
+    case CreditResetPeriod.MONTHLY:
       // Handle month-end dates properly (e.g., Jan 31 + 1 month = Feb 28/29, not Mar 3)
       const year = currentPeriodStart.getUTCFullYear()
       const month = currentPeriodStart.getUTCMonth() + 1
@@ -86,7 +86,7 @@ export function getNextResetTime(resetPeriod: ResetPeriod): Date {
       const nextMonth = month > 11 ? 0 : month
       return new Date(Date.UTC(nextYear, nextMonth, 1))
 
-    case ResetPeriod.NONE:
+    case CreditResetPeriod.NONE:
     default:
       // No reset - return far future date
       return new Date('2099-12-31T23:59:59.999Z')
@@ -98,9 +98,9 @@ export function getNextResetTime(resetPeriod: ResetPeriod): Date {
  */
 export function isPeriodExpired(
   periodStartedAt: Date,
-  resetPeriod: ResetPeriod
+  resetPeriod: CreditResetPeriod
 ): boolean {
-  if (resetPeriod === ResetPeriod.NONE) {
+  if (resetPeriod === CreditResetPeriod.NONE) {
     return false
   }
 
@@ -113,17 +113,19 @@ export function isPeriodExpired(
 /**
  * Get human-readable description of when the next reset will occur
  */
-export function getNextResetDescription(resetPeriod: ResetPeriod): string {
+export function getNextResetDescription(
+  resetPeriod: CreditResetPeriod
+): string {
   switch (resetPeriod) {
-    case ResetPeriod.DAILY:
+    case CreditResetPeriod.DAILY:
       return 'Daily at 00:00 UTC'
-    case ResetPeriod.WEEKLY:
+    case CreditResetPeriod.WEEKLY:
       return 'Weekly on Mondays at 00:00 UTC'
-    case ResetPeriod.BIWEEKLY:
+    case CreditResetPeriod.BIWEEKLY:
       return 'Biweekly on Mondays at 00:00 UTC'
-    case ResetPeriod.MONTHLY:
+    case CreditResetPeriod.MONTHLY:
       return 'Monthly on the 1st at 00:00 UTC'
-    case ResetPeriod.NONE:
+    case CreditResetPeriod.NONE:
     default:
       return 'No automatic reset'
   }
@@ -135,9 +137,9 @@ export function getNextResetDescription(resetPeriod: ResetPeriod): string {
  */
 export function getPeriodsElapsed(
   since: Date,
-  resetPeriod: ResetPeriod
+  resetPeriod: CreditResetPeriod
 ): number {
-  if (resetPeriod === ResetPeriod.NONE) {
+  if (resetPeriod === CreditResetPeriod.NONE) {
     return 0
   }
 
@@ -149,13 +151,13 @@ export function getPeriodsElapsed(
   }
 
   switch (resetPeriod) {
-    case ResetPeriod.DAILY:
+    case CreditResetPeriod.DAILY:
       return Math.floor(timeDiff / (24 * 60 * 60 * 1000))
-    case ResetPeriod.WEEKLY:
+    case CreditResetPeriod.WEEKLY:
       return Math.floor(timeDiff / (7 * 24 * 60 * 60 * 1000))
-    case ResetPeriod.BIWEEKLY:
+    case CreditResetPeriod.BIWEEKLY:
       return Math.floor(timeDiff / (14 * 24 * 60 * 60 * 1000))
-    case ResetPeriod.MONTHLY:
+    case CreditResetPeriod.MONTHLY:
       // Calculate full months between dates
       const sinceDate = new Date(since)
       const currentDate = new Date(currentPeriodStart)
