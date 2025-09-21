@@ -536,7 +536,10 @@ export async function manipulateElement(
       name: name!,
       content: content!,
       explanation: explanation ?? undefined,
-      basePoints: basePoints!,
+      basePoints:
+        type === DB.ElementType.CONTENT || type === DB.ElementType.FLASHCARD
+          ? false
+          : basePoints!,
       pointsMultiplier: pointsMultiplier!,
       options: processedOptions,
       owner: { connect: { id: ctx.user.sub } },
@@ -567,7 +570,10 @@ export async function manipulateElement(
       name: name ?? undefined,
       content: content ?? undefined,
       explanation: typeof explanation === 'undefined' ? undefined : explanation,
-      basePoints: basePoints!,
+      basePoints:
+        type === DB.ElementType.CONTENT || type === DB.ElementType.FLASHCARD
+          ? false
+          : basePoints!,
       pointsMultiplier: pointsMultiplier ?? 1,
       version: { increment: 1 },
       options: options ? processedOptions : undefined,
@@ -815,7 +821,10 @@ export async function applyElementBatchOperations(
                 : undefined,
             basePoints:
               typeof basePoints !== 'undefined' && basePoints !== null
-                ? basePoints
+                ? element.type !== DB.ElementType.CONTENT &&
+                  element.type !== DB.ElementType.FLASHCARD
+                  ? basePoints
+                  : false
                 : undefined,
           },
         })
