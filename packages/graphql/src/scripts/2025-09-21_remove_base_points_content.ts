@@ -86,31 +86,25 @@ async function run() {
   })
   console.log('Found live quiz responses to update:', responses.length)
 
-  // update the corresponding live quiz responses in batches of 100
+  // update the corresponding live quiz responses individually with a transaction
   if (!DRY_RUN) {
-    const batchSize = 100
-    for (let i = 0; i < responses.length; i += batchSize) {
-      const batch = responses.slice(i, i + batchSize)
-
-      await Promise.all(
-        batch.map(async (response) => {
-          // update the response
-          await prisma.liveQuizResponse.update({
-            where: { id: response.id },
-            data: { basePoints: 0 },
-          })
-
-          // send audit log message to hatchet
-          const logMessage = `[CORRECTION] [Base Points Content Elements] Removed base points from live quiz response ${response.id} by participant ${response.participantId} for content element instance ${response.instanceId} (was ${response.basePoints})`
-          hatchetClient.events.push('create-audit-log-entry', {
-            info: logMessage,
-          })
-          console.log(logMessage)
+    for (const response of responses) {
+      await prisma.$transaction(async (tx) => {
+        // update the response
+        await tx.liveQuizResponse.update({
+          where: { id: response.id },
+          data: { basePoints: 0 },
         })
-      )
 
-      console.log(`Updated batch ${i / batchSize + 1} of live quiz responses`)
+        // send audit log message to hatchet
+        const logMessage = `[CORRECTION] [Base Points Content Elements] Removed base points from live quiz response ${response.id} by participant ${response.participantId} for content element instance ${response.instanceId} (was ${response.basePoints})`
+        await hatchetClient.events.push('create-audit-log-entry', {
+          info: logMessage,
+        })
+        console.log(logMessage)
+      })
     }
+    console.log(`Updated ${responses.length} live quiz responses`)
   }
 
   // return / exit the process
