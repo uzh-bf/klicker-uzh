@@ -122,11 +122,6 @@ jobs:
           - 10000:10000
           - 10001:10001
           - 10002:10002
-        options: >-
-          --blobHost 0.0.0.0
-          --queueHost 0.0.0.0
-          --tableHost 0.0.0.0
-          --loose
 
     steps:
       - run: echo "Running parallel Cypress tests for draft PR (container ${{ matrix.containers }})"
@@ -347,11 +342,6 @@ jobs:
           - 10000:10000 # Blob service
           - 10001:10001 # Queue service
           - 10002:10002 # Table service
-        options: >-
-          --blobHost 0.0.0.0
-          --queueHost 0.0.0.0
-          --tableHost 0.0.0.0
-          --loose
 
     steps:
       - run: echo "Running Cypress tests with Cloud recording for non-draft PR or push to v3"
