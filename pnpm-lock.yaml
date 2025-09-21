@@ -1335,6 +1335,9 @@ importers:
       '@klicker-uzh/types':
         specifier: workspace:*
         version: link:../../packages/types
+      '@klicker-uzh/util':
+        specifier: workspace:*
+        version: link:../../packages/util
       graphql-yoga:
         specifier: 3.9.1
         version: 3.9.1(graphql@16.11.0)
