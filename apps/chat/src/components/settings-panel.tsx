@@ -14,6 +14,7 @@ export function SettingsPanel() {
     credits,
     modelOptions,
     modeOptions,
+    modelSelectionEnabled,
     setSelectedModel,
     setSelectedMode,
   } = useSettingsStore()
@@ -53,23 +54,40 @@ export function SettingsPanel() {
             {/* model selection */}
             <div className="space-y-2">
               <label className="text-sm font-bold">AI Model</label>
-              <Select
-                placeholder="Select AI Model"
-                items={modelOptions.map((option) => ({
-                  value: option.id,
-                  label: option.name,
-                }))}
-                onChange={(newValue) => {
-                  handleModelChange(newValue)
-                }}
-                value={selectedModel}
-              />
-              <p className="text-muted-foreground text-sm">
-                {
-                  modelOptions.find((option) => option.id === selectedModel)
-                    ?.description
-                }
-              </p>
+              {modelSelectionEnabled ? (
+                <>
+                  <Select
+                    placeholder="Select AI Model"
+                    items={modelOptions.map((option) => ({
+                      value: option.id,
+                      label: option.name,
+                    }))}
+                    onChange={(newValue) => {
+                      handleModelChange(newValue)
+                    }}
+                    value={selectedModel}
+                  />
+                  <p className="text-muted-foreground text-sm">
+                    {
+                      modelOptions.find((option) => option.id === selectedModel)
+                        ?.description
+                    }
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="rounded-md border px-3 py-2 text-sm">
+                    {modelOptions.find((option) => option.id === selectedModel)
+                      ?.name || selectedModel}
+                  </div>
+                  <p className="text-muted-foreground text-sm">
+                    Automatic selection based on credit availability.
+                    {credits.current > 0
+                      ? ' Using primary model with available credits.'
+                      : ' Using fallback model (no credits remaining).'}
+                  </p>
+                </>
+              )}
             </div>
 
             {/* mode selection */}

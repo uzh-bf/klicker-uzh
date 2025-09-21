@@ -66,6 +66,9 @@ model Chatbot {
   // TODO: add JSON types
   creditSettings Json? // { initialCredits: 10, resetPeriod: 'weekly', resetAmount: 10, maxCredits: 10 }
 
+  // Model selection control
+  modelSelection Boolean @default(false) // Whether users can select models (false = automatic selection)
+
   // Azure OpenAI Configuration
   azureOpenAIKey      String? @db.Text // Encrypted API key using APP_SECRET
   azureOpenAIEndpoint String? // Optional custom endpoint (defaults to model config)

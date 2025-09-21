@@ -44,6 +44,7 @@ export async function seedChatbots(prisma: Prisma.PrismaClient) {
         resetAmount: 50, // Add 50 credits on reset
         maxCredits: 100, // Max 100 credits
       },
+      modelSelection: false, // Automatic model selection for testing
     },
   })
 

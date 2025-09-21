@@ -1,4 +1,10 @@
 import { prisma } from '@klicker-uzh/prisma'
+import { getCurrentPeriodStart, isPeriodExpired } from '../utils/creditPeriods'
+import {
+  atomicDecrementCredits,
+  atomicInitializeCredits,
+  atomicResetCreditsIfNeeded,
+} from '../utils/transactions'
 
 export interface UserCredits {
   current: number
@@ -26,6 +32,7 @@ export enum ResetPeriod {
 export class CreditsService {
   /**
    * Initializes credits for a new user based on chatbot configuration
+   * Uses fixed period alignment and atomic operations
    */
   static async initializeCredits(
     participantId: string,
@@ -45,121 +52,29 @@ export class CreditsService {
     }
 
     const finalSettings = settings || defaultSettings
-    const initialAmount = finalSettings.initialCredits
+    const resetPeriod = finalSettings.resetPeriod as ResetPeriod
 
-    const credits = await prisma.chatUsageCredits.create({
-      data: {
-        participantId,
-        chatbotId,
-        total: initialAmount,
-        current: initialAmount,
-        periodStartedAt: new Date(),
-        lastResetAt: new Date(),
-        resetCount: 0,
-      },
-    })
+    // Get current period start for proper alignment
+    const currentPeriodStart = getCurrentPeriodStart(resetPeriod)
 
-    return {
-      current: credits.current.toNumber(),
-      total: credits.total.toNumber(),
-    }
-  }
-
-  /**
-   * Checks if credits should be reset based on the last reset time and reset period
-   */
-  static shouldResetCredits(
-    lastResetAt: Date,
-    resetPeriod: ResetPeriod
-  ): boolean {
-    const now = new Date()
-    const timeDiff = now.getTime() - lastResetAt.getTime()
-
-    switch (resetPeriod) {
-      case ResetPeriod.DAILY:
-        return timeDiff >= 24 * 60 * 60 * 1000 // 24 hours
-      case ResetPeriod.WEEKLY:
-        return timeDiff >= 7 * 24 * 60 * 60 * 1000 // 7 days
-      case ResetPeriod.BIWEEKLY:
-        return timeDiff >= 14 * 24 * 60 * 60 * 1000 // 14 days
-      case ResetPeriod.MONTHLY:
-        // Reset on same day of month (e.g., every 1st of month)
-        const lastResetMonth = lastResetAt.getMonth()
-        const currentMonth = now.getMonth()
-        return (
-          lastResetMonth !== currentMonth ||
-          now.getFullYear() > lastResetAt.getFullYear()
-        )
-      case ResetPeriod.NONE:
-      default:
-        return false
-    }
-  }
-
-  /**
-   * Checks and applies credit reset if needed
-   */
-  static async checkAndResetCredits(
-    existingCredits: any, // ChatUsageCredits type
-    chatbotId: string
-  ): Promise<UserCredits> {
-    const chatbot = await prisma.chatbot.findUnique({
-      where: { id: chatbotId },
-      select: { creditSettings: true },
-    })
-
-    const settings = chatbot?.creditSettings as CreditSettings | null
-    if (!settings || settings.resetPeriod === 'none') {
-      return {
-        current: existingCredits.current.toNumber(),
-        total: existingCredits.total.toNumber(),
-      }
-    }
-
-    const shouldReset = this.shouldResetCredits(
-      existingCredits.lastResetAt || existingCredits.createdAt,
-      settings.resetPeriod as ResetPeriod
+    return await atomicInitializeCredits(
+      participantId,
+      chatbotId,
+      finalSettings.initialCredits,
+      finalSettings.maxCredits,
+      currentPeriodStart
     )
-
-    if (shouldReset) {
-      const updatedCredits = await prisma.chatUsageCredits.update({
-        where: {
-          participantId_chatbotId: {
-            participantId: existingCredits.participantId,
-            chatbotId: existingCredits.chatbotId,
-          },
-        },
-        data: {
-          current: Math.min(
-            existingCredits.current.toNumber() + settings.resetAmount,
-            settings.maxCredits
-          ),
-          total: settings.maxCredits,
-          lastResetAt: new Date(),
-          resetCount: existingCredits.resetCount + 1,
-        },
-      })
-
-      return {
-        current: updatedCredits.current.toNumber(),
-        total: updatedCredits.total.toNumber(),
-      }
-    }
-
-    return {
-      current: existingCredits.current.toNumber(),
-      total: existingCredits.total.toNumber(),
-    }
   }
 
   /**
-   * Gets user credits for a specific chatbot, creating default credits if none exist
+   * Gets user credits for a specific chatbot with automatic reset checking
+   * Uses fixed period calculations and atomic operations
    */
   static async getUserCredits(
     participantId: string,
     chatbotId: string
   ): Promise<UserCredits> {
-    let credits = await prisma.chatUsageCredits.findUnique({
+    const credits = await prisma.chatUsageCredits.findUnique({
       where: {
         participantId_chatbotId: {
           participantId,
@@ -173,29 +88,39 @@ export class CreditsService {
       return await this.initializeCredits(participantId, chatbotId)
     }
 
-    // Check if reset is needed and apply it
-    return await this.checkAndResetCredits(credits, chatbotId)
-  }
-
-  /**
-   * Updates user credits
-   */
-  static async updateCredits(
-    participantId: string,
-    chatbotId: string,
-    newCurrent: number
-  ): Promise<UserCredits> {
-    const credits = await prisma.chatUsageCredits.update({
-      where: {
-        participantId_chatbotId: {
-          participantId,
-          chatbotId,
-        },
-      },
-      data: {
-        current: Math.max(0.0, newCurrent).toFixed(6),
-      },
+    // Get chatbot settings for reset configuration
+    const chatbot = await prisma.chatbot.findUnique({
+      where: { id: chatbotId },
+      select: { creditSettings: true },
     })
+
+    const settings = chatbot?.creditSettings as CreditSettings | null
+    if (!settings || settings.resetPeriod === 'none') {
+      return {
+        current: credits.current.toNumber(),
+        total: credits.total.toNumber(),
+      }
+    }
+
+    const resetPeriod = settings.resetPeriod as ResetPeriod
+    const currentPeriodStart = getCurrentPeriodStart(resetPeriod)
+    const periodStartedAt = credits.periodStartedAt || credits.createdAt
+
+    // Check if reset is needed using fixed period calculation
+    if (isPeriodExpired(periodStartedAt, resetPeriod)) {
+      const result = await atomicResetCreditsIfNeeded(
+        participantId,
+        chatbotId,
+        currentPeriodStart,
+        settings.resetAmount,
+        settings.maxCredits
+      )
+
+      return {
+        current: result.current,
+        total: result.total,
+      }
+    }
 
     return {
       current: credits.current.toNumber(),
@@ -204,16 +129,28 @@ export class CreditsService {
   }
 
   /**
-   * Decrements user credits by a specific amount
+   * Decrements user credits by a specific amount atomically
+   * Prevents race conditions and ensures credits cannot go below zero
    */
   static async decrementCredits(
     participantId: string,
     chatbotId: string,
     amount: number
   ): Promise<UserCredits> {
-    const currentCredits = await this.getUserCredits(participantId, chatbotId)
-    const newCurrent = Math.max(0.0, currentCredits.current - amount)
+    // First ensure credits exist and are up to date
+    await this.getUserCredits(participantId, chatbotId)
 
-    return await this.updateCredits(participantId, chatbotId, newCurrent)
+    // Then atomically decrement
+    return await atomicDecrementCredits(participantId, chatbotId, amount)
+  }
+
+  /**
+   * Determines which model to use based on credit availability
+   * Returns the primary model if credits are available, otherwise fallback model
+   */
+  static getAutomaticModel(credits: UserCredits): string {
+    // Use primary model (GPT-4.1) when credits are available
+    // Use fallback model (GPT-4.1-mini) when no credits
+    return credits.current > 0 ? 'gpt-4.1' : 'gpt-4.1-mini'
   }
 }

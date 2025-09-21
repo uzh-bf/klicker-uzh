@@ -150,14 +150,10 @@ export async function POST(
     console.error('Invalid request body:', e)
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
-  const {
-    messages,
-    threadId,
-    selectedModel,
-    selectedMode,
-    parentId,
-    assistantMessageId,
-  } = parsed
+  const { messages, threadId, selectedMode, parentId, assistantMessageId } =
+    parsed
+
+  let selectedModel = parsed.selectedModel
 
   let currentThreadId = threadId
   let userMessageId: string | null = null
@@ -286,6 +282,16 @@ export async function POST(
   const mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
 
   if (!chatbot) return
+
+  // Override model selection if modelSelection is disabled
+  if (!chatbot.modelSelection) {
+    // Get current user credits to determine automatic model selection
+    const userCredits = await CreditsService.getUserCredits(
+      participantId,
+      chatbotId
+    )
+    selectedModel = CreditsService.getAutomaticModel(userCredits) as any
+  }
 
   const result = streamText({
     model: getAzureModel(chatbot, selectedModel),

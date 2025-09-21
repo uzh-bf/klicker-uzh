@@ -19,7 +19,8 @@ ADD CONSTRAINT "ChatUsageCredits_pkey" PRIMARY KEY ("participantId", "chatbotId"
 -- AlterTable
 ALTER TABLE "public"."Chatbot" ADD COLUMN     "azureOpenAIEndpoint" TEXT,
 ADD COLUMN     "azureOpenAIKey" TEXT,
-ADD COLUMN     "creditSettings" JSONB;
+ADD COLUMN     "creditSettings" JSONB,
+ADD COLUMN     "modelSelection" BOOLEAN NOT NULL DEFAULT false;
 
 -- CreateTable
 CREATE TABLE "public"."ChatbotMCPServer" (
