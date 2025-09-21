@@ -40,7 +40,8 @@ function createAuthHeaders(
 
   // Add chatbot ID if configured (new behavior - defaults to false for backward compatibility)
   if (server.passChatbotId) {
-    const headerName = server.chatbotIdHeader || 'Chatbot-ID'
+    const raw = server.chatbotIdHeader || 'Chatbot-ID'
+    const headerName = raw.replace(/[^A-Za-z0-9-]/g, '') || 'Chatbot-ID'
     baseHeaders[headerName] = chatbotId
   }
 
