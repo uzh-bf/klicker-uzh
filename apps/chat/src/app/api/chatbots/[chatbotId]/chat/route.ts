@@ -281,8 +281,12 @@ export async function POST(
   // Load MCP tools from database configurations or fallback to legacy
   const mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
 
-  if (!chatbot) return
-
+  if (!chatbot) {
+    return NextResponse.json(
+      { error: 'Chatbot not found' },
+      { status: 404 }
+    )
+  }
   // Override model selection if modelSelection is disabled
   if (!chatbot.modelSelection) {
     // Get current user credits to determine automatic model selection
