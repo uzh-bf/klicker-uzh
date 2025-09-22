@@ -33,6 +33,17 @@
 
 set -euo pipefail
 
+# Function for logging with timestamps
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >&2
+}
+
+# Function for error handling
+error_exit() {
+    log "ERROR: $1"
+    exit 1
+}
+
 if [[ -z "${CONFIG:-}" ]]; then
   CONFIG="dev"
   echo "ℹ️  CONFIG not set, defaulting to 'dev' environment"
@@ -40,23 +51,28 @@ fi
 
 # Validate parameters – we expect at least one argument (the command to run)
 if [[ $# -lt 1 ]]; then
-  echo "Usage: $0 <command> [args ...]" >&2
-  exit 1
+  error_exit "Usage: $0 <command> [args ...]"
 fi
 
 CMD="$1"
 shift  # Remove the command from positional parameters, leaving only its args
 
+log "Attempting to run command '$CMD' with Doppler config '$CONFIG'"
+
 # First, try Doppler normally
 if doppler settings 2>/dev/null; then
-  doppler run --config "$CONFIG" -- "$CMD" "$@"
+  log "Doppler is properly configured, running command..."
+  if ! doppler run --config "$CONFIG" -- "$CMD" "$@"; then
+    error_exit "Command failed when executed via Doppler"
+  fi
+  log "Command completed successfully"
   exit 0
 fi
-
 # If that failed, resolve current path and check if we're on an external drive
-CURRENT_DIR="$(command -v realpath >/dev/null 2>&1 && realpath "$PWD" || pwd -P)"
+log "Doppler authentication failed, checking for external drive..."
+CURRENT_DIR="$(command -v realpath > /dev/null 2>&1 && realpath "$PWD" || pwd -P)"
 if [[ "$CURRENT_DIR" == /Volumes/* ]]; then
-  echo " Detected external drive (resolved path: $CURRENT_DIR). Attempting alternative authentication..."
+  log "Detected external drive (resolved path: $CURRENT_DIR). Attempting alternative authentication..."
 
   # Determine closest doppler.yaml to derive the Doppler project/config
   DOPPLER_YAML=""
@@ -118,9 +134,8 @@ if [[ "$CURRENT_DIR" == /Volumes/* ]]; then
   echo "  echo 'dp.st.your_generated_token' > $TOKEN_FILE_NEW"
   echo ""
   echo "After saving the token, rerun this script."
-  exit 1
+  error_exit "Service token required for external drive usage"
 else
   # Not on external drive, but doppler still failed earlier
-  echo "Doppler command failed. Please run 'doppler login' and 'doppler setup'"
-  exit 1
+  error_exit "Doppler command failed. Please run 'doppler login' and 'doppler setup'"
 fi
