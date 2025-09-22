@@ -1006,6 +1006,8 @@ export enum AuditAction {
   USER_OPEN_BLOCK = 'user.control.open_block', // TODO
   USER_CLOSE_BLOCK = 'user.control.close_block', // TODO
   USER_RESET_QUIZ = 'user.control.reset_quiz', // TODO
+  USER_UPDATE_QUIZ_SETTINGS = 'user.control.update_quiz_settings', // TODO
+  USER_UPDATE_QUIZ_METADATA = 'user.control.update_quiz_metadata', // TODO
 
   // Participant - Authentication
   PARTICIPANT_REGISTERED = 'participant.auth.registered', // TODO
