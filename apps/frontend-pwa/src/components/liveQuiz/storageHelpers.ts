@@ -60,12 +60,20 @@ export async function loadStoredResponse({
   currentInstance,
   setStudentResponse,
   setSubmittedAt,
+  onLoaded,
 }: {
   quizId: string
   execution: number
   currentInstance: ElementInstance | undefined
   setStudentResponse: Dispatch<SetStateAction<InstanceStackStudentResponseType>>
   setSubmittedAt: Dispatch<SetStateAction<number | null>>
+  onLoaded?: (
+    details: {
+      response: any
+      submitted: boolean
+      responseTimestamp?: number
+    } | null
+  ) => void
 }) {
   if (!currentInstance) return
   try {
@@ -74,7 +82,10 @@ export async function loadStoredResponse({
     const tempStored = (await localforage.getItem(`${key}-temp`)) as any
 
     // if neither a submitted response, nor a temporary response exists, return early
-    if (!stored && !tempStored) return
+    if (!stored && !tempStored) {
+      onLoaded?.(null)
+      return
+    }
 
     // if the block was already submitted, load the previously submitted response and remove the temporary one (if it exists)
     if (stored) {
@@ -88,6 +99,12 @@ export async function loadStoredResponse({
         setSubmittedAt(stored.responseTimestamp)
       }
 
+      onLoaded?.({
+        response: stored.response,
+        submitted: true,
+        responseTimestamp: stored.responseTimestamp,
+      })
+
       // if still exists, remove the temporary response
       if (tempStored) {
         await localforage.removeItem(`${key}-temp`)
@@ -98,6 +115,11 @@ export async function loadStoredResponse({
         type: currentInstance.elementType,
         response: tempStored as any,
         valid: false, // initialize loaded response with invalid -> subsequent validation
+      })
+
+      onLoaded?.({
+        response: tempStored,
+        submitted: false,
       })
 
       // validate the loaded student response and set validity flag accordingly

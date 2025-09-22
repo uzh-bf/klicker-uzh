@@ -23,6 +23,35 @@ const ConfettiExplosion = dynamic(() => import('react-confetti-explosion'), {
   ssr: false,
 })
 
+const MAX_AUDIT_PREVIEW_LENGTH = 200
+
+const serializeResponse = (value: unknown): string | null => {
+  if (value === null || typeof value === 'undefined') return null
+  try {
+    return JSON.stringify(value)
+  } catch (error) {
+    try {
+      return String(value)
+    } catch (stringifyError) {
+      console.warn('Failed to serialize response for audit log')
+      return null
+    }
+  }
+}
+
+const buildResponsePreview = (value: unknown): string | undefined => {
+  const serialized = serializeResponse(value)
+  if (!serialized) return undefined
+  if (serialized.length <= MAX_AUDIT_PREVIEW_LENGTH) {
+    return serialized
+  }
+  return `${serialized.slice(0, MAX_AUDIT_PREVIEW_LENGTH)}…`
+}
+
+const calculateDiffSize = (previous: string | null, next: string | null) => {
+  return Math.abs((next?.length ?? 0) - (previous?.length ?? 0))
+}
+
 interface QuestionAreaProps {
   isBlockActive?: boolean
   gamificationEnabled: boolean
@@ -56,12 +85,15 @@ function QuestionArea({
   quizId,
   timeLimit,
   execution,
+  isStaticPreview = false,
 }: QuestionAreaProps): React.ReactElement {
   const t = useTranslations()
 
+  const isAssessmentMode = process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
+
   const auditLog = useAuditClient({
-    assessmentMode: process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
-    enabled: process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
+    assessmentMode: isAssessmentMode,
+    enabled: isAssessmentMode,
     onError: (error) => {
       console.error('Audit log error:', error)
     },
@@ -77,6 +109,10 @@ function QuestionArea({
   const [activeInstance, setActiveInstance] = useState<number>(0)
   const currentInstance = instances[activeInstance]
 
+  const joinEventLoggedRef = useRef(false)
+  const viewedInstancesRef = useRef<Set<number>>(new Set())
+  const lastLoggedResponseRef = useRef<Record<number, string | null>>({})
+
   // initialize student response with default state (FT question) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
     useState<InstanceStackStudentResponseType>({
@@ -84,6 +120,15 @@ function QuestionArea({
       response: undefined,
       valid: false,
     })
+
+  useEffect(() => {
+    viewedInstancesRef.current.clear()
+    lastLoggedResponseRef.current = {}
+  }, [quizId, execution])
+
+  useEffect(() => {
+    joinEventLoggedRef.current = false
+  }, [quizId])
 
   // hook running on every instance change to initialize the student response correctly
   useSingleStudentResponse({
@@ -110,12 +155,35 @@ function QuestionArea({
     // reset submittedAt when switching instances; will be set again if stored exists
     setSubmittedAt(null)
 
+    if (!currentInstance) {
+      return () => {
+        cancelled = true
+      }
+    }
+
+    delete lastLoggedResponseRef.current[currentInstance.id]
+
     loadStoredResponse({
       quizId,
       execution,
       currentInstance,
       setStudentResponse: safeSetStudentResponse,
       setSubmittedAt,
+      onLoaded: (details) => {
+        if (cancelled || !currentInstance) return
+
+        if (!details) {
+          delete lastLoggedResponseRef.current[currentInstance.id]
+          return
+        }
+
+        const serialized = serializeResponse(details.response)
+        if (serialized !== null) {
+          lastLoggedResponseRef.current[currentInstance.id] = serialized
+        } else {
+          lastLoggedResponseRef.current[currentInstance.id] = null
+        }
+      },
     })
 
     return () => {
@@ -123,42 +191,65 @@ function QuestionArea({
     }
 
     // re-run when quizId/execution/instance changes
-  }, [quizId, execution, currentInstance?.id])
+  }, [quizId, execution, currentInstance])
 
-  // periodically store the in-progress response in a temporary key
+  // periodically store the in-progress response in a temporary key and log assessment updates
   useEffect(() => {
-    let interval: NodeJS.Timeout | undefined
+    if (typeof window === 'undefined') return
+
+    let interval: ReturnType<typeof setInterval> | undefined
 
     const setupInterval = async () => {
-      // if no instance exists, return early
       if (!currentInstance) return
 
+      const { id: instanceId, correlationKey, elementType } = currentInstance
+
       // if the answer to this instance has already been submitted, do not store a temporary response
-      const storageKey = `lq-${quizId}-ex-${execution}-i-${currentInstance.id}`
+      const storageKey = `lq-${quizId}-ex-${execution}-i-${instanceId}`
       const stored = await localforage.getItem(storageKey)
       if (stored) return
 
-      const key = `lq-${quizId}-ex-${execution}-i-${currentInstance.id}-temp`
+      const key = `lq-${quizId}-ex-${execution}-i-${instanceId}-temp`
       interval = setInterval(async () => {
         const latest = latestStudentResponseRef.current
-        // only persist if there is something to store
-        if (typeof latest?.response !== 'undefined') {
-          // save raw response as temporary draft
-          await localforage.setItem(key, latest.response as any)
 
-          // const { id: instanceId, correlationKey } = instances[activeInstance]
-
-          // auditLog.logAsync({
-          //   action: AuditAction.PARTICIPANT_UPDATE_ANSWER,
-          //   resource: `instance:${instanceId}`,
-          //   scope: AuditScope.PUBLIC,
-          //   correlationId: correlationKey ?? undefined,
-          //   attributes: {
-          //     response: studentResponse.response,
-          //   },
-          // })
+        if (typeof latest?.response === 'undefined') {
+          return
         }
-      }, 10000) // 10 seconds
+
+        await localforage.setItem(key, latest.response as any)
+
+        if (!isAssessmentMode || isStaticPreview) {
+          return
+        }
+
+        const serialized = serializeResponse(latest.response)
+        if (!serialized) return
+
+        const previous = lastLoggedResponseRef.current[instanceId] ?? null
+
+        if (serialized !== previous) {
+          const changeType = previous ? 'update' : 'initial'
+          const diffChars = calculateDiffSize(previous, serialized)
+
+          auditLog.logAsync({
+            action: AuditAction.PARTICIPANT_UPDATE_ANSWER,
+            scope: AuditScope.PUBLIC,
+            resource: `instance:${instanceId}`,
+            correlationId: correlationKey ?? undefined,
+            attributes: {
+              changeType,
+              diffChars,
+              responseLength: serialized.length,
+              responsePreview: buildResponsePreview(latest.response),
+              elementType,
+              execution,
+            },
+          })
+
+          lastLoggedResponseRef.current[instanceId] = serialized
+        }
+      }, 10000)
     }
 
     setupInterval()
@@ -166,7 +257,64 @@ function QuestionArea({
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [quizId, execution, currentInstance?.id])
+  }, [
+    auditLog,
+    currentInstance,
+    execution,
+    isAssessmentMode,
+    isStaticPreview,
+    quizId,
+  ])
+
+  useEffect(() => {
+    if (!isAssessmentMode || isStaticPreview) return
+    if (!quizId || joinEventLoggedRef.current) return
+
+    auditLog.logAsync({
+      action: AuditAction.PARTICIPANT_JOIN_QUIZ,
+      scope: AuditScope.PUBLIC,
+      resource: `live-quiz:${quizId}`,
+      attributes: {
+        execution,
+        timestamp: Date.now(),
+      },
+    })
+
+    joinEventLoggedRef.current = true
+  }, [auditLog, execution, isAssessmentMode, isStaticPreview, quizId])
+
+  useEffect(() => {
+    if (!isAssessmentMode || isStaticPreview) return
+    if (!currentInstance) return
+
+    const instanceId = currentInstance.id
+    if (viewedInstancesRef.current.has(instanceId)) return
+
+    auditLog.logAsync({
+      action: AuditAction.PARTICIPANT_VIEW_INSTANCE,
+      scope: AuditScope.PUBLIC,
+      resource: `instance:${instanceId}`,
+      correlationId: currentInstance.correlationKey ?? undefined,
+      attributes: {
+        elementType: currentInstance.elementType,
+        execution,
+        questionIndex: activeInstance,
+        totalInstances: instances.length,
+        blockActive: isBlockActive,
+      },
+    })
+
+    viewedInstancesRef.current.add(instanceId)
+  }, [
+    activeInstance,
+    auditLog,
+    currentInstance,
+    execution,
+    instances,
+    isAssessmentMode,
+    isBlockActive,
+    isStaticPreview,
+  ])
 
   // compute remaining instances based on stored responses
   useRemainingInstances({
@@ -194,16 +342,6 @@ function QuestionArea({
       type: elementType,
       input: studentResponse,
       correlationKey,
-    })
-
-    await auditLog.log({
-      action: AuditAction.PARTICIPANT_SUBMIT_RESPONSE,
-      resource: `instance:${instanceId}`,
-      scope: AuditScope.PUBLIC,
-      correlationId: correlationKey ?? undefined,
-      attributes: {
-        response: studentResponse.response,
-      },
     })
 
     // relese the submission lock on the submission button
@@ -309,6 +447,44 @@ function QuestionArea({
     }
   }
 
+  const logResponseSubmission = ({
+    instanceId,
+    correlationKey,
+    elementType,
+    response,
+    statusCode,
+    responseTimestamp,
+  }: {
+    instanceId: number
+    correlationKey?: string | null
+    elementType: ElementType
+    response: unknown
+    statusCode: number
+    responseTimestamp?: number
+  }) => {
+    if (!isAssessmentMode || isStaticPreview) {
+      return
+    }
+
+    const serialized = serializeResponse(response)
+
+    auditLog.logAsync({
+      action: AuditAction.PARTICIPANT_SUBMIT_RESPONSE,
+      scope: AuditScope.PUBLIC,
+      resource: `instance:${instanceId}`,
+      correlationId: correlationKey ?? undefined,
+      attributes: {
+        statusCode,
+        success: statusCode >= 200 && statusCode < 300,
+        responseTimestamp: responseTimestamp ?? Date.now(),
+        elementType,
+        execution,
+        responseLength: serialized?.length ?? 0,
+        responsePreview: buildResponsePreview(response),
+      },
+    })
+  }
+
   // use the handleNewResponse function to add a response to the question instance
   // return value is status code: 0 = success, 1 = invalid input, 2 = submission failed, 3 = unsupported type
   async function answerQuestion({
@@ -330,178 +506,48 @@ function QuestionArea({
         type: 'error',
       })
       return false
-    } else if (
+    }
+
+    let requestAnswer: any
+
+    if (
       ((type === ElementType.Sc && input.type === ElementType.Sc) ||
         (type === ElementType.Mc && input.type === ElementType.Mc) ||
         (type === ElementType.Kprim && input.type === ElementType.Kprim)) &&
       typeof input.response !== 'undefined'
     ) {
-      // submit responses as an array of objects with answer ix and selected boolean
-      const result = await handleNewResponse({
-        liveQuizId: quizId,
-        instanceId,
-        type,
-        answer: Object.entries(input.response).map(([key, value]) => ({
-          ix: parseInt(key),
-          selected: typeof value === 'boolean' ? value : false,
-        })),
-        correlationKey,
-      })
-
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
-
-      // if request was successful, store the submitted answer locally to be shown and remove any temporary saved response
-      if (result.statusCode >= 200 && result.statusCode < 300) {
-        // store the submitted answer locally to be shown and remove any temporary saved response
-        await localforage.setItem(storageKey, {
-          response: input.response,
-          responseTimestamp: result.responseTimestamp ?? Date.now(),
-        } as any)
-        setSubmittedAt(result.responseTimestamp ?? Date.now())
-        await localforage.removeItem(`${storageKey}-temp`)
-        return true
-      } else {
-        return false
-      }
+      requestAnswer = Object.entries(input.response).map(([key, value]) => ({
+        ix: parseInt(key),
+        selected: typeof value === 'boolean' ? value : false,
+      }))
     } else if (
       ElementType.FreeText === type &&
       input.type === ElementType.FreeText &&
       typeof input.response !== 'undefined'
     ) {
-      // submit responses as a string
-      const result = await handleNewResponse({
-        liveQuizId: quizId,
-        instanceId,
-        type,
-        answer: input.response,
-        correlationKey,
-      })
-
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
-
-      if (result.statusCode >= 200 && result.statusCode < 300) {
-        await localforage.setItem(storageKey, {
-          response: input.response,
-          responseTimestamp: result.responseTimestamp ?? Date.now(),
-        } as any)
-        setSubmittedAt(result.responseTimestamp ?? Date.now())
-        await localforage.removeItem(`${storageKey}-temp`)
-        return true
-      } else {
-        return false
-      }
+      requestAnswer = input.response
     } else if (
       ElementType.Numerical === type &&
       input.type === ElementType.Numerical &&
       typeof input.response !== 'undefined'
     ) {
-      // submit responses as a number (float)
-      const result = await handleNewResponse({
-        liveQuizId: quizId,
-        instanceId,
-        type,
-        answer: String(parseFloat(input.response)),
-        correlationKey,
-      })
-
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
-
-      if (result.statusCode >= 200 && result.statusCode < 300) {
-        await localforage.setItem(storageKey, {
-          response: input.response,
-          responseTimestamp: result.responseTimestamp ?? Date.now(),
-        } as any)
-        setSubmittedAt(result.responseTimestamp ?? Date.now())
-        await localforage.removeItem(`${storageKey}-temp`)
-        return true
-      } else {
-        return false
-      }
+      requestAnswer = String(parseFloat(input.response))
     } else if (
       ElementType.Selection === type &&
       input.type === ElementType.Selection &&
       typeof input.response !== 'undefined'
     ) {
-      // submit responses as an array of answer ids that were selected
-      const result = await handleNewResponse({
-        liveQuizId: quizId,
-        instanceId,
-        type,
-        answer: Object.values(input.response).map((entry) =>
-          typeof entry === 'undefined' || entry === null ? -1 : entry
-        ),
-        correlationKey,
-      })
-
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
-
-      if (result.statusCode >= 200 && result.statusCode < 300) {
-        await localforage.setItem(storageKey, {
-          response: input.response,
-          responseTimestamp: result.responseTimestamp ?? Date.now(),
-        } as any)
-        setSubmittedAt(result.responseTimestamp ?? Date.now())
-        await localforage.removeItem(`${storageKey}-temp`)
-        return true
-      } else {
-        return false
-      }
+      requestAnswer = Object.values(input.response).map((entry) =>
+        typeof entry === 'undefined' || entry === null ? -1 : entry
+      )
     } else if (
       ElementType.CaseStudy === type &&
       input.type === ElementType.CaseStudy &&
       typeof input.response !== 'undefined'
     ) {
-      // submit responses as an object with case, item and criterion ids as nested keys
-      const result = await handleNewResponse({
-        liveQuizId: quizId,
-        instanceId,
-        type,
-        answer: input.response,
-        correlationKey,
-      })
-
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
-
-      if (result.statusCode >= 200 && result.statusCode < 300) {
-        await localforage.setItem(storageKey, {
-          response: input.response,
-          responseTimestamp: result.responseTimestamp ?? Date.now(),
-        } as any)
-        setSubmittedAt(result.responseTimestamp ?? Date.now())
-        await localforage.removeItem(`${storageKey}-temp`)
-        return true
-      } else {
-        return false
-      }
+      requestAnswer = input.response
     } else if (type === ElementType.Content) {
-      // for content elements, only the number of reads / next clicks are counted
-      const result = await handleNewResponse({
-        liveQuizId: quizId,
-        instanceId,
-        type,
-        answer: true,
-        correlationKey,
-      })
-
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
-
-      if (result.statusCode >= 200 && result.statusCode < 300) {
-        await localforage.setItem(storageKey, {
-          response: input.response,
-          responseTimestamp: result.responseTimestamp ?? Date.now(),
-        } as any)
-        setSubmittedAt(result.responseTimestamp ?? Date.now())
-        await localforage.removeItem(`${storageKey}-temp`)
-        return true
-      } else {
-        return false
-      }
+      requestAnswer = true
     } else {
       console.log('Submission for unsupported element type', type)
       toast({
@@ -510,6 +556,46 @@ function QuestionArea({
       })
       return false
     }
+
+    const result = await handleNewResponse({
+      liveQuizId: quizId,
+      instanceId,
+      type,
+      answer: requestAnswer,
+      correlationKey,
+    })
+
+    showStatusCodeToast(result.statusCode)
+
+    const responseForAudit =
+      typeof input.response !== 'undefined' ? input.response : requestAnswer
+
+    logResponseSubmission({
+      instanceId,
+      correlationKey,
+      elementType: type,
+      response: responseForAudit,
+      statusCode: result.statusCode,
+      responseTimestamp: result.responseTimestamp,
+    })
+
+    if (result.statusCode >= 200 && result.statusCode < 300) {
+      await localforage.setItem(storageKey, {
+        response: input.response,
+        responseTimestamp: result.responseTimestamp ?? Date.now(),
+      } as any)
+      setSubmittedAt(result.responseTimestamp ?? Date.now())
+      await localforage.removeItem(`${storageKey}-temp`)
+
+      const serialized = serializeResponse(responseForAudit)
+      if (serialized !== null) {
+        lastLoggedResponseRef.current[instanceId] = serialized
+      }
+
+      return true
+    }
+
+    return false
   }
 
   // while the remaining questions are still initializing, do not return anything
