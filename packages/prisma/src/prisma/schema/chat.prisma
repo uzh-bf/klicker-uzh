@@ -22,9 +22,9 @@ model ChatUsageCredits {
   resetCount      Int       @default(0) // Number of resets performed
 
   // Disclaimer tracking fields
-  acceptedDisclaimerId  String?   @db.Uuid // ID of accepted disclaimer version
-  disclaimerAcceptedAt  DateTime? // When disclaimer was accepted
-  disclaimerDeclined    Boolean   @default(false) // Whether disclaimer was declined
+  acceptedDisclaimerId String?   @db.Uuid // ID of accepted disclaimer version
+  disclaimerAcceptedAt DateTime? // When disclaimer was accepted
+  disclaimerDeclined   Boolean   @default(false) // Whether disclaimer was declined
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -161,20 +161,16 @@ model ChatbotDisclaimer {
 
   name        String // Descriptive name for the disclaimer
   description String? // Optional description for management purposes
-  
-  // Content structure
-  title     String  // Title shown in modal
+
+  title     String // Title shown in modal
   introText String? @db.Text // Customizable introduction text (course-specific)
   mediaUrl  String? // Optional video/image URL
   mediaType String? // 'video' | 'image'
-  
-  // Core content is handled by the component (fixed content about AI limitations, data protection)
-  
-  // Relations
+
   chatbots Chatbot[] // Chatbots using this disclaimer
 
-  createdBy User   @relation(fields: [createdById], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  createdById String @db.Uuid
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
