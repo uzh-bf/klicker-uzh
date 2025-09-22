@@ -1,11 +1,13 @@
 import type {
   Element,
+  ElementInstance,
   ElementStatus,
   ElementType,
   ObjectAccess,
   ObjectType,
   ParameterType,
   PerformanceLevel,
+  ResponseCorrectness as PrismaResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
 
 // ----- HATCHET (WORKER/TASK) TYPES -----
@@ -978,5 +980,36 @@ export type ActivityStudentPerformance = {
   availableCorrectnessPoints: number
   bonusPoints: number
   availableBonusPoints: number
+}
+
+export type StudentAssessmentQuizResults = {
+  participantId: string
+  participantEmail: string
+  basePoints: number
+  correctnessPoints: number
+  bonusPoints: number
+}
+export type AssessmentResultsLiveQuiz = {
+  name: string
+  quizBasePoints: number
+  quizCorrectnessPoints: number
+  quizBonusPoints: number
+  availableBasePoints: number
+  availableCorrectnessPoints: number
+  availableBonusPoints: number
+  studentResults: StudentAssessmentQuizResults[]
+}
+
+export type StudentAssessmentBlockResponse = {
+  blockId: number
+  instances: StudentAssessmentInstanceResponse[]
+}
+export type StudentAssessmentInstanceResponse = {
+  instance: ElementInstance
+  basePoints: number
+  correctnessPoints: number
+  bonusPoints: number
+  correctness?: PrismaResponseCorrectness | null
+  submission?: SingleQuestionResponseLiveQuiz | null
 }
 // #endregion
