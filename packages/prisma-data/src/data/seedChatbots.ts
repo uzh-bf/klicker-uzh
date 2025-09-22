@@ -17,6 +17,22 @@ const explainerPrompt = readFileSync(
 ).trim()
 
 export async function seedChatbots(prisma: Prisma.PrismaClient) {
+  const testDisclaimer = await prisma.chatbotDisclaimer.upsert({
+    where: { id: CHATBOT_ID_TEST },
+    create: {
+      id: CHATBOT_ID_TEST,
+      name: 'Default Disclaimer',
+      title: 'Disclaimer',
+      description: 'Please read this disclaimer carefully.',
+      introText:
+        'Benibot is a helpful assistant for answering questions about KlickerUZH and educational content. However, please note that Benibot may not always provide accurate or complete information. Always verify critical information from reliable sources. Use Benibot at your own risk.',
+      createdBy: {
+        connect: { id: USER_ID_TEST },
+      },
+    },
+    update: {},
+  })
+
   const testChatbot = await prisma.chatbot.upsert({
     where: { id: CHATBOT_ID_TEST },
     update: {},
@@ -43,10 +59,12 @@ export async function seedChatbots(prisma: Prisma.PrismaClient) {
       creditResetAmount: 50, // Add 50 credits on reset
       creditMaxCredits: 100, // Max 100 credits
       modelSelection: false, // Automatic model selection for testing
+      disclaimerId: testDisclaimer.id,
     },
   })
 
   return {
     testChatbot,
+    testDisclaimer,
   }
 }
