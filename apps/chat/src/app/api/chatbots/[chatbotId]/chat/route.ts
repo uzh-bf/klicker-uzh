@@ -23,6 +23,7 @@ import { JWTPayload, jwtVerify } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
 import { DEFAULT_PROMPT } from 'src/lib/config/prompts'
 import { CreditsService } from 'src/services/credits'
+import { DisclaimersService } from 'src/services/disclaimers'
 import { ThreadService } from 'src/services/threads'
 import { z } from 'zod'
 
@@ -121,6 +122,30 @@ export async function POST(
     console.error('Error checking participation:', error)
     return NextResponse.json(
       { error: 'Error checking participation' },
+      { status: 500 }
+    )
+  }
+
+  // check disclaimer acceptance
+  try {
+    const disclaimerStatus = await DisclaimersService.checkDisclaimerStatus(
+      chatbotId,
+      participantId
+    )
+
+    if (disclaimerStatus.required && !disclaimerStatus.accepted) {
+      return NextResponse.json(
+        {
+          error: 'Disclaimer must be accepted before using the chatbot',
+          code: 'DISCLAIMER_NOT_ACCEPTED',
+        },
+        { status: 403 }
+      )
+    }
+  } catch (error) {
+    console.error('Error checking disclaimer status:', error)
+    return NextResponse.json(
+      { error: 'Error checking disclaimer status' },
       { status: 500 }
     )
   }

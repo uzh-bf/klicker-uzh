@@ -18,7 +18,7 @@ export function SettingsPanel() {
     setSelectedModel,
     setSelectedMode,
   } = useSettingsStore()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
 
   const creditsPercentage =
     credits.total > 0 ? (credits.current / credits.total) * 100 : 0
@@ -49,8 +49,33 @@ export function SettingsPanel() {
         </span>
       </div>
       {open && (
-        <div className="border-muted space-y-4 border-t p-4">
+        <div className="border-muted space-y-4 border-t px-4 pb-4">
           <div>
+            {/* mode selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-bold">Chat Mode</label>
+              <Select
+                placeholder="Select Chat Mode"
+                items={
+                  Object.keys(modeOptions).length > 0
+                    ? Object.entries(modeOptions).map(([key]) => ({
+                        value: key,
+                        label: key.charAt(0).toUpperCase() + key.slice(1),
+                      }))
+                    : []
+                }
+                onChange={(newValue) => {
+                  handleModeChange(newValue)
+                }}
+                value={selectedMode}
+              />
+              <p className="text-muted-foreground text-sm">
+                {selectedMode
+                  ? modeOptions[selectedMode] || 'No description available.'
+                  : 'No mode selected.'}
+              </p>
+            </div>
+
             {/* model selection */}
             <div className="space-y-2">
               <label className="text-sm font-bold">AI Model</label>
@@ -88,31 +113,6 @@ export function SettingsPanel() {
                   </p>
                 </>
               )}
-            </div>
-
-            {/* mode selection */}
-            <div className="space-y-2">
-              <label className="text-sm font-bold">Chat Mode</label>
-              <Select
-                placeholder="Select Chat Mode"
-                items={
-                  Object.keys(modeOptions).length > 0
-                    ? Object.entries(modeOptions).map(([key]) => ({
-                        value: key,
-                        label: key.charAt(0).toUpperCase() + key.slice(1),
-                      }))
-                    : []
-                }
-                onChange={(newValue) => {
-                  handleModeChange(newValue)
-                }}
-                value={selectedMode}
-              />
-              <p className="text-muted-foreground text-sm">
-                {selectedMode
-                  ? modeOptions[selectedMode] || 'No description available.'
-                  : 'No mode selected.'}
-              </p>
             </div>
           </div>
         </div>

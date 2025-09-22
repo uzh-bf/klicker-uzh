@@ -21,12 +21,25 @@ export async function seedChatbots(prisma: Prisma.PrismaClient) {
     where: { id: CHATBOT_ID_TEST },
     create: {
       id: CHATBOT_ID_TEST,
-      name: 'Default Disclaimer',
+      name: 'BF Disclaimer',
       title: 'Disclaimer',
-      description: 'Please read this disclaimer carefully.',
-      introText:
-        'Benibot is a helpful assistant for answering questions about KlickerUZH and educational content. However, please note that Benibot may not always provide accurate or complete information. Always verify critical information from reliable sources. Use Benibot at your own risk.',
-      createdBy: {
+      mediaUrl:
+        'https://api.cast.switch.ch/p/106/embedPlaykitJs/uiconf_id/23449004/partner_id/106?iframeembed=true&playerId=kaltura_player&entry_id=0_vfk2yyvo',
+      mediaType: 'video',
+      introText: `
+Wir möchten Dich herzlich zu unserem Chatbot (Spitzname "Benibot") begrüssen. Der Chatbot soll Dein **persönlicher Tutor** im Fachbereich Banking und Finance sein.
+
+
+Das Wissen des Chatbots enthält Kursmaterialien wie **Vorlesungsskripte, FAQs, Vorlesungsaufzeichnungen** und das **Financewiki**. Tausche Dich mit dem Chatbot einfach darüber aus, stelle konkrete Fragen, oder sei kreativ und lass Dir z.B. Übungsfragen generieren.
+
+
+Der Chatbot bietet mehrere Modi, z.B. "Tutor" oder "Explainer". Wähle den Modus, der am besten zu Deinen Bedürfnissen passt. Die **Nutzung ist begrenzt** auf eine Anzahl von **Credits**, um einen fairen Zugang für alle Nutzenden zu gewährleisten. Sobald der Saldo null erreicht, kannst Du immer noch mit den günstigsten Modellen chatten.
+
+
+Der Chatbot soll **kursbezogene Fragen** im Kurs "Banking and Finance I/II" beantworten. Bitte vermeide Fragen ausserhalb dieses Rahmens, um die Relevanz zu wahren. Gib keinerlei persönliche Informationen in den Chatbot ein.
+`,
+
+      owner: {
         connect: { id: USER_ID_TEST },
       },
     },
