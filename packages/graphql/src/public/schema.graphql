@@ -277,6 +277,9 @@ type AssessmentResultsLiveQuiz {
   availableBonusPoints: Float!
   availableCorrectnessPoints: Float!
   name: String!
+  quizBasePoints: Float!
+  quizBonusPoints: Float!
+  quizCorrectnessPoints: Float!
   studentResults: [StudentAssessmentQuizResults!]!
 }
 
@@ -2251,6 +2254,7 @@ type Query {
   liveQuiz(id: String!): LiveQuiz
   liveQuizEvaluation(hmac: String, id: String!): ActivityEvaluation
   liveQuizLeaderboard(hmac: String, quizId: String!): [LeaderboardEntry!]
+  liveQuizStudentAssessmentResponses(liveQuizId: String!, participantId: String!): [StudentAssessmentBlockResponse!]
   microLearning(id: String!): MicroLearning
   participantCourses: [Course!]
   participantGroups(courseId: String!): [ParticipantGroup!]
@@ -2299,6 +2303,12 @@ type ReducedActivityInfo {
   scheduledEndAt: Date
   scheduledStartAt: Date
   status: PublicationStatus!
+}
+
+enum ResponseCorrectness {
+  CORRECT
+  PARTIAL
+  WRONG
 }
 
 enum ResponseCorrectnessType {
@@ -2551,6 +2561,20 @@ type Statistics {
   q1: Float!
   q3: Float!
   sd: Float!
+}
+
+type StudentAssessmentBlockResponse {
+  blockId: Int!
+  instances: [StudentAssessmentInstanceResponse!]!
+}
+
+type StudentAssessmentInstanceResponse {
+  basePoints: Float!
+  bonusPoints: Float!
+  correctness: ResponseCorrectness
+  correctnessPoints: Float!
+  instance: ElementInstance!
+  submission: Json
 }
 
 type StudentAssessmentQuizResults {

@@ -1,6 +1,9 @@
 query GetAssessmentResultsLiveQuiz($liveQuizId: String!) {
   assessmentResultsLiveQuiz(liveQuizId: $liveQuizId) {
     name
+    quizBasePoints
+    quizCorrectnessPoints
+    quizBonusPoints
     availableBasePoints
     availableCorrectnessPoints
     availableBonusPoints

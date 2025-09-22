@@ -29,6 +29,7 @@ interface DataTableProps<TData, TValue> {
     accessorKey: string
     className?: string
     csvOnly?: boolean
+    csvHidden?: boolean
     displayName?: string
   })[]
   data: TData[]
@@ -43,6 +44,7 @@ interface DataTableProps<TData, TValue> {
   }
   footerContent?: React.ReactNode
   isPaginated?: boolean
+  initialPageSize?: number
   isResetSortingEnabled?: boolean
   initialSorting?: SortingState
   onRowClick?: (row: TData) => void
@@ -58,6 +60,7 @@ function DataTable<TData, TValue>({
   isPaginated,
   isResetSortingEnabled,
   initialSorting,
+  initialPageSize,
   onRowClick,
   getRowClassName,
 }: DataTableProps<TData, TValue>) {
@@ -71,6 +74,9 @@ function DataTable<TData, TValue>({
     getPaginationRowModel: isPaginated ? getPaginationRowModel() : undefined,
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
+    initialState: {
+      pagination: { pageIndex: 0, pageSize: initialPageSize ?? 10 },
+    },
     state: {
       columnVisibility: columns.reduce<Record<string, boolean>>(
         (acc, column) => ({
@@ -85,11 +91,13 @@ function DataTable<TData, TValue>({
 
   const csvColumns = useMemo(
     () =>
-      columns.map((column) => ({
-        id: column.accessorKey,
-        label: column.header,
-        displayName: column.displayName,
-      })),
+      columns
+        .filter((column) => !column.csvHidden)
+        .map((column) => ({
+          id: column.accessorKey,
+          label: column.header,
+          displayName: column.displayName,
+        })),
     [columns]
   )
 
@@ -172,7 +180,7 @@ function DataTable<TData, TValue>({
             datas={data as Record<string, string | undefined | null>[]}
             separator=";"
           >
-            <Button className={{ root: 'h-8' }}>
+            <Button className={{ root: twMerge('h-8', className?.buttons) }}>
               <Button.Icon icon={faDownload} />
               <Button.Label>{t('shared.table.download')}</Button.Label>
             </Button>

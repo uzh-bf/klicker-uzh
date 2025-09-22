@@ -230,6 +230,10 @@ export const FlashcardCorrectness = builder.enumType('FlashcardCorrectness', {
   values: Object.values(FlashcardCorrectnessType),
 })
 
+export const ResponseCorrectness = builder.enumType('ResponseCorrectness', {
+  values: Object.values(DB.ResponseCorrectness),
+})
+
 // ----- ACTIVITY EVALUATION INTERFACE -----
 // #region
 export const ActivityEvaluationRef =

@@ -3,31 +3,37 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetAssessmentResultsLiveQuizQuery } from '@klicker-uzh/graphql/dist/ops'
 import DataTable from '@klicker-uzh/shared-components/src/DataTable'
 import TableSortingButton from '@klicker-uzh/shared-components/src/TableSortingButton'
+import { Select } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
-import { useMemo } from 'react'
+import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 type LiveQuizStudentResult = NonNullable<
   GetAssessmentResultsLiveQuizQuery['assessmentResultsLiveQuiz']
 >['studentResults'][number]
-
-type StudentRow = LiveQuizStudentResult & { totalPoints: number }
-
-interface LiveQuizStudentResultsTableProps {
-  studentResults: LiveQuizStudentResult[]
-  selectedParticipantId: string | null
-  onSelect: (participantId: string | null) => void
-}
+type PageSizeOption = '10' | '15' | '30' | 'all'
 
 function LiveQuizStudentResultsTable({
+  quizName,
   studentResults,
   selectedParticipantId,
   onSelect,
-}: LiveQuizStudentResultsTableProps) {
+  availableBasePoints,
+  availableCorrectnessPoints,
+  availableBonusPoints,
+}: {
+  quizName: string
+  studentResults: LiveQuizStudentResult[]
+  selectedParticipantId: string | null
+  onSelect: Dispatch<SetStateAction<{ id: string; email: string } | null>>
+  availableBasePoints: number
+  availableCorrectnessPoints: number
+  availableBonusPoints: number
+}) {
   const t = useTranslations()
   const formatter = useFormatter()
 
-  const rows = useMemo<StudentRow[]>(
+  const rows = useMemo<(LiveQuizStudentResult & { totalPoints: number })[]>(
     () =>
       studentResults.map((result) => ({
         ...result,
@@ -37,23 +43,74 @@ function LiveQuizStudentResultsTable({
     [studentResults]
   )
 
+  const [pageSizeOption, setPageSizeOption] = useState<PageSizeOption>('15')
+  const pageSizeItems = useMemo(() => {
+    const baseOptions: { value: PageSizeOption; label: string }[] = [
+      10, 15, 30,
+    ].map((size) => ({
+      value: String(size) as PageSizeOption,
+      label: t('manage.general.NEntriesPerPage', { N: size }),
+    }))
+    return [...baseOptions, { value: 'all', label: t('manage.catalog.all') }]
+  }, [t])
+
   const formatNumber = (value: number) =>
     formatter.number(value, {
       maximumFractionDigits: Number.isInteger(value) ? 0 : 2,
     })
 
   return (
-    <div className="border-muted-foreground/20 rounded-lg border bg-white">
-      <div className="border-muted-foreground/10 border-b px-4 py-3">
-        <h3 className="font-semibold">
-          {t('manage.assessment.liveQuizStudentResultsTitle')}
-        </h3>
+    <>
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-2 text-xs sm:text-sm">
+          <div className="bg-muted rounded-md px-2 py-1">
+            <span className="font-semibold">
+              {t('manage.general.basePointsDescription')}
+            </span>
+            <span>{`: ${formatNumber(availableBasePoints)}`}</span>
+          </div>
+          <div className="bg-muted rounded-md px-2 py-1">
+            <span className="font-semibold">
+              {t('manage.general.correctnessPointsDescription')}
+            </span>
+            <span>{`: ${formatNumber(availableCorrectnessPoints)}`}</span>
+          </div>
+          <div className="bg-muted rounded-md px-2 py-1">
+            <span className="font-semibold">
+              {t('manage.general.bonusPointsDescription')}
+            </span>
+            <span>{`: ${formatNumber(availableBonusPoints)}`}</span>
+          </div>
+          <div className="bg-muted rounded-md px-2 py-1">
+            <span className="font-semibold">{t('shared.generic.total')}</span>
+            <span>{`: ${formatNumber(
+              availableBasePoints +
+                availableCorrectnessPoints +
+                availableBonusPoints
+            )}`}</span>
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Select
+            value={pageSizeOption}
+            items={pageSizeItems}
+            onChange={(value) => setPageSizeOption(value as PageSizeOption)}
+            className={{ trigger: 'h-8 w-40 text-sm', item: 'text-sm' }}
+            data={{ cy: 'live-quiz-results-page-size-select' }}
+          />
+        </div>
       </div>
-
       <DataTable
+        key={pageSizeOption}
+        initialPageSize={
+          pageSizeOption === 'all' ? undefined : Number(pageSizeOption)
+        }
+        isPaginated={pageSizeOption !== 'all'}
+        csvFilename={`live-quiz-results-${quizName}.csv`}
         columns={[
           {
             accessorKey: 'participantEmail',
+            displayName: t('manage.assessment.liveQuizStudentEmailColumn'),
             header: ({ column }) => (
               <div>
                 <TableSortingButton
@@ -73,6 +130,7 @@ function LiveQuizStudentResultsTable({
           },
           {
             accessorKey: 'basePoints',
+            displayName: t('manage.general.basePointsDescription'),
             header: ({ column }) => (
               <TableSortingButton
                 column={column}
@@ -85,6 +143,7 @@ function LiveQuizStudentResultsTable({
           },
           {
             accessorKey: 'correctnessPoints',
+            displayName: t('manage.general.correctnessPointsDescription'),
             header: ({ column }) => (
               <TableSortingButton
                 column={column}
@@ -97,6 +156,7 @@ function LiveQuizStudentResultsTable({
           },
           {
             accessorKey: 'bonusPoints',
+            displayName: t('manage.general.bonusPointsDescription'),
             header: ({ column }) => (
               <TableSortingButton
                 column={column}
@@ -109,6 +169,7 @@ function LiveQuizStudentResultsTable({
           },
           {
             accessorKey: 'totalPoints',
+            displayName: t('shared.generic.total'),
             header: ({ column }) => (
               <TableSortingButton
                 column={column}
@@ -124,6 +185,7 @@ function LiveQuizStudentResultsTable({
             className: 'w-max whitespace-normal break-words px-2 text-center',
           },
           {
+            csvHidden: true,
             accessorKey: 'selectIndicator',
             id: 'selectIndicator',
             header: () => null,
@@ -149,10 +211,13 @@ function LiveQuizStudentResultsTable({
           tableHeader: 'bg-muted/40',
           tableCell: 'px-2 py-2 align-middle',
           tableRow: 'align-middle',
+          buttons: 'text-sm',
+          buttonsContainer: 'items-center',
         }}
-        isPaginated={false}
         isResetSortingEnabled={false}
-        onRowClick={(row) => onSelect(row.participantId)}
+        onRowClick={(row) =>
+          onSelect({ id: row.participantId, email: row.participantEmail })
+        }
         getRowClassName={(row) =>
           twMerge(
             'cursor-pointer transition-colors',
@@ -162,7 +227,7 @@ function LiveQuizStudentResultsTable({
           )
         }
       />
-    </div>
+    </>
   )
 }
 

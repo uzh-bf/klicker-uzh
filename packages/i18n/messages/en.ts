@@ -1282,6 +1282,26 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       liveQuizStudentResultsTitle: 'Student Results',
       liveQuizStudentEmailColumn: 'Student (email)',
       liveQuizStudentResultsEmpty: 'No student results available yet.',
+      errorLoadingLiveQuizResults:
+        'An error occurred while loading the results. Please try again.',
+      liveQuizSelectStudentInfo:
+        'To view the answers submitted by a specific student, please select them from the list on the left side. You will then receive an overview of all the questions included in the quiz, along with the respective submitted answers and their scoring.',
+      liveQuizElement: 'Element',
+      liveQuizStudentHasNoResponses:
+        'This student has not submitted any responses yet.',
+      liveQuizResponse: 'Response',
+      liveQuizOpenResponse: 'View response',
+      liveQuizNoResponseSubmitted: 'No response submitted',
+      liveQuizQuestionAnswered: 'Answered',
+      liveQuizQuestionNotAnswered: 'Not answered',
+      liveQuizResponseFromBlock: 'Response from {block}',
+      liveQuizCorrect: 'Correct',
+      liveQuizPartiallyCorrect: 'Partially correct',
+      liveQuizIncorrect: 'Incorrect',
+      liveQuizNotAnswered: 'Not answered',
+      errorLoadingStudentLiveQuizResponses:
+        'An error occurred while loading the student responses. Please try again.',
+      responseBy: 'Response by {email}',
     },
     support: {
       modalTitle: 'Support KlickerUZH',

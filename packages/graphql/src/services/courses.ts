@@ -4,6 +4,8 @@ import {
   ActivityType,
   AssessmentResultsLiveQuiz,
   SharingType,
+  StudentAssessmentBlockResponse,
+  StudentAssessmentInstanceResponse,
   StudentAssessmentQuizResults,
 } from '@klicker-uzh/types'
 import { levelFromXp, recomputeDerivedPermissions } from '@klicker-uzh/util'
@@ -606,12 +608,12 @@ export async function getAssessmentResultsLiveQuiz(
     }
   )
 
-  // TODO: remove
-  console.log('LIVE QUIZ RESULTS', liveQuizResults)
-
   // return the aggregated data in the correct format
   return {
     name: liveQuiz.name,
+    quizBasePoints: liveQuiz.defaultPoints,
+    quizCorrectnessPoints: liveQuiz.defaultCorrectPoints,
+    quizBonusPoints: liveQuiz.maxBonusPoints,
     availableBasePoints: liveQuizResults.basePoints,
     availableCorrectnessPoints: liveQuizResults.correctnessPoints,
     availableBonusPoints: liveQuizResults.bonusPoints,
@@ -619,13 +621,87 @@ export async function getAssessmentResultsLiveQuiz(
   }
 }
 
-// TODO: return a list of points awarded to a student for each element instance in the quiz alongside the actual instance and the response -> to open in modal? -> or use suspense?
-// export async function getAssessmentResultsLiveQuizStudent(
-//   { liveQuizId, participantId }: { liveQuizId: string; participantId: string },
-//   ctx: ContextWithUser
-// ) {
-//   // TODO: implement
-// }
+export async function getLiveQuizStudentAssessmentResponses(
+  { liveQuizId, participantId }: { liveQuizId: string; participantId: string },
+  ctx: ContextWithUser
+) {
+  // fetch the live quiz and verify that the requesting user is an assessment course admin
+  // include the participant's responses to the live quiz and the relevant instance information
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id: liveQuizId,
+      isAssessmentEnabled: true,
+      course: {
+        isAssessmentEnabled: true,
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [DB.PermissionLevel.OWNER, DB.PermissionLevel.ADMIN],
+            },
+          },
+        },
+      },
+    },
+    include: {
+      blocks: {
+        include: {
+          elements: {
+            include: {
+              liveQuizResponses: {
+                where: { participantId },
+                orderBy: { createdAt: 'desc' },
+                take: 1,
+              },
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
+        orderBy: { order: 'asc' },
+      },
+    },
+  })
+
+  if (!liveQuiz) return null
+
+  // extract the relevant information from the fetched data
+  const studentResponses = liveQuiz.blocks.reduce<
+    StudentAssessmentBlockResponse[]
+  >((quizAcc, block) => {
+    const instances = block.elements.map<StudentAssessmentInstanceResponse>(
+      (instance) => {
+        const response = instance.liveQuizResponses[0]
+
+        if (response) {
+          return {
+            instance,
+            basePoints: response.basePoints,
+            correctnessPoints: response.correctnessPoints,
+            bonusPoints: response.bonusPoints,
+            correctness: response.correctness,
+            submission: response.response,
+          }
+        }
+
+        // if the student submitted no response, simply return the instance with zero points
+        return {
+          instance,
+          basePoints: 0,
+          correctnessPoints: 0,
+          bonusPoints: 0,
+          correctness: null,
+          submission: null,
+        }
+      }
+    )
+
+    // push the instances together with the block information into the results array
+    quizAcc.push({ blockId: block.id, instances })
+    return quizAcc
+  }, [])
+
+  return studentResponses
+}
 
 async function computeRollingLeaderboardEntries(
   { courseId, days }: { courseId: string; days: number },

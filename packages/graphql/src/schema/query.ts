@@ -39,6 +39,7 @@ import {
   CourseStudentTimeline,
   CourseSummary,
   LeaderboardEntry,
+  StudentAssessmentBlockResponse,
   StudentAssessmentResults,
   StudentCourse,
 } from './course.js'
@@ -912,6 +913,21 @@ export const Query = builder.queryType({
         args: { liveQuizId: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await CourseService.getAssessmentResultsLiveQuiz(args, ctx)
+        },
+      }),
+
+      liveQuizStudentAssessmentResponses: t.withAuth(asUser).field({
+        nullable: true,
+        type: [StudentAssessmentBlockResponse],
+        args: {
+          liveQuizId: t.arg.string({ required: true }),
+          participantId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await CourseService.getLiveQuizStudentAssessmentResponses(
+            args,
+            ctx
+          )
         },
       }),
 
