@@ -3,14 +3,12 @@ import { z } from 'zod'
 
 export const ALLOWED_PUBLIC_ACTIONS = [
   AuditAction.PARTICIPANT_VIEW_INSTANCE,
-  // 'response.submitted',
-  // 'session.joined',
-  // 'session.left',
-  // 'quiz.started',
-  // 'quiz.completed',
-  // 'feedback.submitted',
-  // 'question.answered',
-  // 'activity.accessed',
+  AuditAction.PARTICIPANT_SUBMIT_RESPONSE,
+  AuditAction.PARTICIPANT_UPDATE_ANSWER,
+  AuditAction.PARTICIPANT_JOIN_QUIZ,
+  AuditAction.PARTICIPANT_QUIZ_PIN_SUCCESS,
+  AuditAction.PARTICIPANT_QUIZ_PIN_FAILED,
+  AuditAction.CLIENT_ERROR,
 ]
 
 const ALLOWED_PUBLIC_ACTIONS_SET = new Set<string>(ALLOWED_PUBLIC_ACTIONS)

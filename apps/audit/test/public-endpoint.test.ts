@@ -1,3 +1,4 @@
+import { AuditAction } from '@klicker-uzh/types'
 import * as jose from 'jose'
 import { beforeAll, describe, expect, it } from 'vitest'
 
@@ -39,7 +40,7 @@ describe('Public Endpoint Authentication', () => {
   it('should accept valid participant_token cookie', async () => {
     const validToken = await createParticipantToken()
     const eventData = {
-      action: 'response.submitted',
+      action: AuditAction.PARTICIPANT_SUBMIT_RESPONSE,
       timestamp: Date.now(),
       sessionId: 'test-session-123',
       attributes: {
@@ -65,7 +66,7 @@ describe('Public Endpoint Authentication', () => {
 
   it('should reject requests without cookies', async () => {
     const eventData = {
-      action: 'response.submitted',
+      action: AuditAction.PARTICIPANT_SUBMIT_RESPONSE,
     }
 
     const response = await fetch(`${BASE_URL}/audit/public`, {
@@ -83,7 +84,7 @@ describe('Public Endpoint Authentication', () => {
 
   it('should reject requests without participant_token cookie', async () => {
     const eventData = {
-      action: 'response.submitted',
+      action: AuditAction.PARTICIPANT_SUBMIT_RESPONSE,
     }
 
     const response = await fetch(`${BASE_URL}/audit/public`, {
@@ -103,7 +104,7 @@ describe('Public Endpoint Authentication', () => {
   it('should reject invalid/expired tokens', async () => {
     const invalidToken = await createInvalidToken()
     const eventData = {
-      action: 'response.submitted',
+      action: AuditAction.PARTICIPANT_SUBMIT_RESPONSE,
     }
 
     const response = await fetch(`${BASE_URL}/audit/public`, {
@@ -122,7 +123,7 @@ describe('Public Endpoint Authentication', () => {
 
   it('should reject malformed JWT tokens', async () => {
     const eventData = {
-      action: 'response.submitted',
+      action: AuditAction.PARTICIPANT_SUBMIT_RESPONSE,
     }
 
     const response = await fetch(`${BASE_URL}/audit/public`, {
@@ -149,14 +150,13 @@ describe('Public Event Filtering', () => {
 
   it('should accept whitelisted event types', async () => {
     const allowedEvents = [
-      'response.submitted',
-      'session.joined',
-      'session.left',
-      'quiz.started',
-      'quiz.completed',
-      'feedback.submitted',
-      'question.answered',
-      'activity.accessed',
+      AuditAction.PARTICIPANT_VIEW_INSTANCE,
+      AuditAction.PARTICIPANT_SUBMIT_RESPONSE,
+      AuditAction.PARTICIPANT_UPDATE_ANSWER,
+      AuditAction.PARTICIPANT_JOIN_QUIZ,
+      AuditAction.PARTICIPANT_QUIZ_PIN_SUCCESS,
+      AuditAction.PARTICIPANT_QUIZ_PIN_FAILED,
+      AuditAction.CLIENT_ERROR,
     ]
 
     for (const eventType of allowedEvents) {
@@ -182,11 +182,11 @@ describe('Public Event Filtering', () => {
 
   it('should reject non-whitelisted event types', async () => {
     const forbiddenEvents = [
-      'admin.user.created',
-      'admin.user.deleted',
-      'system.maintenance.start',
-      'security.breach.detected',
-      'payment.processed',
+      AuditAction.USER_START_QUIZ,
+      AuditAction.USER_END_QUIZ,
+      AuditAction.SYSTEM_RESPONSE_RECEIVED,
+      AuditAction.API_ERROR,
+      'custom.event.sneaky',
     ]
 
     for (const eventType of forbiddenEvents) {
@@ -224,7 +224,7 @@ describe('Public Event Context Injection', () => {
     // The actual context injection is tested in integration tests
     // that can verify the stored data in Azure Table Storage
     const eventData = {
-      action: 'response.submitted',
+      action: AuditAction.PARTICIPANT_SUBMIT_RESPONSE,
       timestamp: Date.now(),
       // Note: Even if these are provided, they should be overridden
       userId: 'spoofed-user-id',
@@ -260,7 +260,7 @@ describe('Public Event Context Injection', () => {
       'TEMPORARY_PARTICIPANT'
     )
     const eventData = {
-      action: 'session.joined',
+      action: AuditAction.PARTICIPANT_JOIN_QUIZ,
       timestamp: Date.now(),
     }
 
@@ -316,12 +316,11 @@ describe('Public Event Data Validation', () => {
 
   it('should handle optional fields correctly', async () => {
     const eventData = {
-      action: 'quiz.started',
+      action: AuditAction.PARTICIPANT_VIEW_INSTANCE,
       eventId: 'custom-event-id-123',
-      resourceId: 'quiz-456',
-      sessionId: 'session-789',
+      resource: 'live-quiz:quiz-456',
       attributes: {
-        quizType: 'practice',
+        quizType: 'assessment',
         difficulty: 'medium',
       },
     }
@@ -344,7 +343,7 @@ describe('Public Event Data Validation', () => {
 
   it('should default timestamp if not provided', async () => {
     const eventData = {
-      action: 'activity.accessed',
+      action: AuditAction.CLIENT_ERROR,
       // No timestamp provided
     }
 
