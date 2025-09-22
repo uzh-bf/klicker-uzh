@@ -17,6 +17,7 @@ import {
   getActivityInstanceConnectOrCreate,
   getCachedBlockResults,
   getInitialInstanceResults,
+  hashSensitiveData,
   levelFromXp,
   propagateActivityToElements,
   recomputeDerivedPermissions,
@@ -1398,12 +1399,22 @@ export async function deactivateLiveQuizBlock(
     }
 
     if (isAssessmentEnabled) {
+      const attributes: Record<string, unknown> = {
+        blockId: String(blockId),
+        scheduled: Boolean(isScheduled),
+        instancesClosed: activeInstanceIds.length,
+      }
+
+      if (updatedBlock?.closedAt) {
+        attributes.closedAt = updatedBlock.closedAt.toISOString()
+      }
+
       await ctx.auditClient.log({
         scope: AuditScope.INTERNAL,
-        action: AuditAction.USER_OPEN_BLOCK,
+        action: AuditAction.USER_CLOSE_BLOCK,
         subject: `user:${ctx.user.sub}`,
         resource: `live-quiz:${quizId}`,
-        attributes: { blockId: String(blockId) },
+        attributes,
       })
     }
   } catch (error: any) {
@@ -1715,9 +1726,11 @@ export async function endLiveQuiz(
       }
     })
 
+    const participantCount = Object.keys(participants).length
+
     // quizXP should always be around as soon as there are logged-in participants (check first)
     // quizLB only for live quizzes that are compatible with points collection (check second)
-    if (Object.keys(participants).length > 0) {
+    if (participantCount > 0) {
       let existingParticipants: {
         id: string
         score?: number
@@ -1948,13 +1961,44 @@ export async function endLiveQuiz(
       })
     }
 
+    const finishedAt = new Date()
+
     const endedLiveQuiz = await ctx.prisma.liveQuiz.update({
       where: { id },
       data: {
         status: DB.PublicationStatus.ENDED,
-        finishedAt: new Date(),
+        finishedAt,
       },
     })
+
+    if (quiz.isAssessmentEnabled) {
+      const blocksCompleted = await ctx.prisma.elementBlock.count({
+        where: {
+          liveQuizId: id,
+          status: DB.ElementBlockStatus.EXECUTED,
+        },
+      })
+
+      const attributes: Record<string, unknown> = {
+        blocksCompleted,
+        participantsProcessed: participantCount,
+        finishedAt: finishedAt.toISOString(),
+        ...(quiz.startedAt
+          ? {
+              startedAt: quiz.startedAt.toISOString(),
+              durationMs: finishedAt.getTime() - quiz.startedAt.getTime(),
+            }
+          : {}),
+      }
+
+      await ctx.auditClient.log({
+        scope: AuditScope.INTERNAL,
+        action: AuditAction.USER_END_QUIZ,
+        subject: `user:${ctx.user.sub}`,
+        resource: `live-quiz:${quiz.id}`,
+        attributes,
+      })
+    }
 
     await sendTeamsNotification({
       scope: 'graphql/endLiveQuiz',
@@ -1985,6 +2029,20 @@ export async function changeLiveQuizSettings(
   },
   ctx: ContextWithUser
 ) {
+  const existingQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: { id },
+    select: {
+      isAssessmentEnabled: true,
+      isLiveQAEnabled: true,
+      isConfusionFeedbackEnabled: true,
+      isModerationEnabled: true,
+    },
+  })
+
+  if (!existingQuiz) {
+    return null
+  }
+
   // check if moderation is being diabled
   if (isModerationEnabled === false) {
     // fetch all unpublished feedbacks for the quiz
@@ -2020,6 +2078,52 @@ export async function changeLiveQuizSettings(
     },
   })
 
+  if (existingQuiz.isAssessmentEnabled) {
+    const changes: Record<
+      string,
+      {
+        previous: boolean | null | undefined
+        current: boolean | null | undefined
+      }
+    > = {}
+
+    if (existingQuiz.isLiveQAEnabled !== quiz.isLiveQAEnabled) {
+      changes.isLiveQAEnabled = {
+        previous: existingQuiz.isLiveQAEnabled,
+        current: quiz.isLiveQAEnabled,
+      }
+    }
+
+    if (
+      existingQuiz.isConfusionFeedbackEnabled !==
+      quiz.isConfusionFeedbackEnabled
+    ) {
+      changes.isConfusionFeedbackEnabled = {
+        previous: existingQuiz.isConfusionFeedbackEnabled,
+        current: quiz.isConfusionFeedbackEnabled,
+      }
+    }
+
+    if (existingQuiz.isModerationEnabled !== quiz.isModerationEnabled) {
+      changes.isModerationEnabled = {
+        previous: existingQuiz.isModerationEnabled,
+        current: quiz.isModerationEnabled,
+      }
+    }
+
+    if (Object.keys(changes).length > 0) {
+      await ctx.auditClient.log({
+        scope: AuditScope.INTERNAL,
+        action: AuditAction.USER_UPDATE_QUIZ_SETTINGS,
+        subject: `user:${ctx.user.sub}`,
+        resource: `live-quiz:${id}`,
+        attributes: {
+          changes,
+        },
+      })
+    }
+  }
+
   ctx.pubSub.publish('liveQuizSettingsChanged', {
     liveQuizId: quiz.id,
     isLiveQAEnabled: quiz.isLiveQAEnabled,
@@ -2037,6 +2141,12 @@ export async function changeLiveQuizName(
 ) {
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id },
+    select: {
+      name: true,
+      displayName: true,
+      reviewStatus: true,
+      isAssessmentEnabled: true,
+    },
   })
 
   if (!liveQuiz) return false
@@ -2047,7 +2157,7 @@ export async function changeLiveQuizName(
   }
 
   try {
-    await ctx.prisma.liveQuiz.update({
+    const updatedQuiz = await ctx.prisma.liveQuiz.update({
       where: { id },
       data: {
         name,
@@ -2060,6 +2170,40 @@ export async function changeLiveQuizName(
     })
 
     ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
+
+    if (liveQuiz.isAssessmentEnabled) {
+      const changes: Record<string, { previous: string; current: string }> = {}
+
+      if (liveQuiz.name !== name) {
+        changes.name = { previous: liveQuiz.name, current: name }
+      }
+
+      if (liveQuiz.displayName !== displayName) {
+        changes.displayName = {
+          previous: liveQuiz.displayName ?? '',
+          current: displayName,
+        }
+      }
+
+      if (Object.keys(changes).length > 0) {
+        const attributes: Record<string, unknown> = {
+          changes,
+        }
+
+        if (liveQuiz.reviewStatus !== updatedQuiz.reviewStatus) {
+          attributes.reviewStatus = updatedQuiz.reviewStatus
+        }
+
+        await ctx.auditClient.log({
+          scope: AuditScope.INTERNAL,
+          action: AuditAction.USER_UPDATE_QUIZ_METADATA,
+          subject: `user:${ctx.user.sub}`,
+          resource: `live-quiz:${id}`,
+          attributes,
+        })
+      }
+    }
+
     return true
   } catch (error) {
     console.error('Error changing live quiz name:', error)
@@ -2750,36 +2894,45 @@ export async function setLiveQuizPinCookie(
   // verify that the corresponding live quiz is available
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
     where: { id: liveQuizId },
-    select: { id: true, status: true, pinCode: true },
+    select: {
+      id: true,
+      status: true,
+      pinCode: true,
+      isAssessmentEnabled: true,
+    },
   })
 
-  if (!liveQuiz || liveQuiz.status !== DB.PublicationStatus.PUBLISHED) {
-    // Log failed PIN validation - quiz not found or not published
-    // await auditClient.log({
-    //   subject: `anonymous:session-${ctx.sessionId}`,
-    //   action: AuditAction.MULTIPLE_TABS_DETECTED,
-    //   resourceId: `live-quiz:${liveQuizId}`,
-    //   userId: null,
-    //   eventId: ctx.sessionId,
-    //   sessionId: ctx.sessionId,
-    //   attributes: {}
-    //   info: `Failed PIN validation - quiz not found or not published. PIN hash: ${pinHash}, IP: ${ctx.req?.ip}, User-Agent: ${ctx.req?.headers?.['user-agent']}, Quiz Status: ${
-    //     liveQuiz?.status || 'not_found'
-    //   }`,
-    // })
-    // createPinValidationFailedEvent(
-    //   `anonymous:session-${sessionId}`,
-    //   sessionId,
-    //   liveQuizId,
-    //   pinHash,
-    //   'quiz_not_found_or_not_published',
-    //   {
-    //     ip: ctx.req?.ip,
-    //     userAgent: ctx.req?.headers?.['user-agent'],
-    //     quizStatus: liveQuiz?.status || 'not_found',
-    //   }
-    // )
+  const isAssessmentQuiz = Boolean(liveQuiz?.isAssessmentEnabled)
 
+  const logPinEvent = async (
+    action: AuditAction,
+    attributes: Record<string, unknown>
+  ) => {
+    if (!isAssessmentQuiz) return
+
+    const anonymousSubjectId = ctx.req?.ip
+      ? hashSensitiveData(ctx.req?.ip)
+      : 'unknown'
+
+    await ctx.auditClient.log({
+      scope: AuditScope.INTERNAL,
+      action,
+      subject:
+        ctx.user?.role === DB.UserRole.PARTICIPANT
+          ? `participant:${ctx.user.sub}`
+          : `anonymous:${anonymousSubjectId}`,
+      resource: `live-quiz:${liveQuizId}`,
+      attributes: { pin, ...attributes },
+    })
+  }
+
+  if (!liveQuiz || liveQuiz.status !== DB.PublicationStatus.PUBLISHED) {
+    if (liveQuiz?.isAssessmentEnabled) {
+      await logPinEvent(AuditAction.PARTICIPANT_QUIZ_PIN_FAILED, {
+        reason: 'quiz_not_found_or_not_published',
+        quizStatus: liveQuiz?.status || 'not_found',
+      })
+    }
     throw new GraphQLError('LIVE_QUIZ_PIN_INVALID', {
       extensions: { code: 'FORBIDDEN' },
     })
@@ -2795,39 +2948,19 @@ export async function setLiveQuizPinCookie(
       })
     } catch (_) {}
 
-    // Log failed PIN validation - incorrect PIN
-    // await auditClient.log()
-    // createPinValidationFailedEvent(
-    //   `anonymous:session-${sessionId}`,
-    //   sessionId,
-    //   liveQuizId,
-    //   pinHash,
-    //   'incorrect_pin',
-    //   {
-    //     ip: ctx.req?.ip,
-    //     userAgent: ctx.req?.headers?.['user-agent'],
-    //     hasQuizPin: !!liveQuiz.pinCode,
-    //   }
-    // )
+    await logPinEvent(AuditAction.PARTICIPANT_QUIZ_PIN_FAILED, {
+      reason: 'incorrect_pin',
+      hasQuizPin: Boolean(liveQuiz.pinCode),
+    })
 
     throw new GraphQLError('LIVE_QUIZ_PIN_INVALID', {
       extensions: { code: 'FORBIDDEN' },
     })
   }
 
-  // Log successful PIN validation
-  // await auditClient.log()
-  // createPinValidationSuccessEvent(
-  //   `anonymous:session-${sessionId}`,
-  //   sessionId,
-  //   liveQuizId,
-  //   pinHash,
-  //   {
-  //     ip: ctx.req?.ip,
-  //     userAgent: ctx.req?.headers?.['user-agent'],
-  //     cookieName,
-  //   }
-  // )
+  await logPinEvent(AuditAction.PARTICIPANT_QUIZ_PIN_SUCCESS, {
+    cookieName,
+  })
 
   // set the pin as a cookie to be readable by the student live quiz query
   ctx.res.cookie(cookieName, pin, {
