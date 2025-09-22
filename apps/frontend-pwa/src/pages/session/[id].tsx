@@ -379,6 +379,8 @@ function Index({ id }: { id: string }) {
 
   const feedbackAvailable = isLiveQAEnabled || isConfusionFeedbackEnabled
   const leaderboardAvailable = !!selfData?.self && !!isGamificationEnabled
+  const hasQuestionPanel = !!(blocks && blocks.length > 0)
+  const hasSidebarPanel = feedbackAvailable || leaderboardAvailable
 
   const mobileMenuItems: {
     value: string
@@ -421,11 +423,6 @@ function Index({ id }: { id: string }) {
       : []),
   ]
 
-  const hasQuestionPanel = !!(blocks && blocks.length > 0)
-  const hasSidebarPanel = feedbackAvailable || leaderboardAvailable
-  const desktopPanelGroupId = `live-quiz-${id}-panels`
-  const reloadQuiz = () => router.reload()
-
   const renderQuestionColumn = (extraClassName?: string) => {
     if (!hasQuestionPanel) {
       return null
@@ -443,7 +440,6 @@ function Index({ id }: { id: string }) {
         onSelectBlock={setSelectedBlock}
         isGamificationEnabled={isGamificationEnabled}
         handleNewResponse={handleNewResponse}
-        onReload={reloadQuiz}
         className={extraClassName}
       />
     )
@@ -499,7 +495,7 @@ function Index({ id }: { id: string }) {
           hasQuestionPanel && hasSidebarPanel ? (
             <ResizablePanelGroup
               direction="horizontal"
-              autoSaveId={desktopPanelGroupId}
+              autoSaveId={`live-quiz-${id}-panels`}
               className="flex h-full w-full"
             >
               <ResizablePanel

@@ -8,6 +8,7 @@ import {
 import { Markdown } from '@klicker-uzh/markdown'
 import { H2, StepProgress, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
 import QuestionArea from './QuestionArea'
 
@@ -30,7 +31,6 @@ interface LiveQuizQuestionColumnProps {
     answer: any
     correlationKey?: string | null
   }) => Promise<{ statusCode: number; responseTimestamp?: number }>
-  onReload: () => void
   className?: string
 }
 
@@ -45,10 +45,10 @@ function LiveQuizQuestionColumn({
   onSelectBlock,
   isGamificationEnabled,
   handleNewResponse,
-  onReload,
   className,
 }: LiveQuizQuestionColumnProps) {
   const t = useTranslations()
+  const router = useRouter()
 
   return (
     <div
@@ -116,7 +116,7 @@ function LiveQuizQuestionColumn({
                 reload: (text) => (
                   <span
                     className="cursor-pointer underline"
-                    onClick={onReload}
+                    onClick={() => router.reload()}
                     data-cy="reload-live-quiz"
                   >
                     {text}
