@@ -9,6 +9,7 @@ import {
 } from '@klicker-uzh/prisma/client'
 import {
   getInitialInstanceResults,
+  getInitialInstanceStatistics,
   processElementData,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
@@ -58,6 +59,11 @@ async function seedFlashcardSet(
                     anonymousResults: initialResults,
                     ownerId: el.ownerId,
                     elementId: el.id,
+                    instanceStatistics: {
+                      create: getInitialInstanceStatistics(
+                        ElementInstanceType.PRACTICE_QUIZ
+                      ),
+                    },
                   },
                 ],
               },

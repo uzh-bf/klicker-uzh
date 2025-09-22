@@ -46,7 +46,9 @@ type ActivityEvaluation {
   displayName: String
   feedbacks: [Feedback!]
   id: ID!
+  isAssessmentEnabled: Boolean
   name: String!
+  pinCode: String
   results: [StackEvaluation!]!
 }
 
@@ -185,6 +187,19 @@ type ActivityQuizAnalytics {
   totalCorrectRate: Float!
   totalErrorRate: Float!
   totalPartialRate: Float!
+}
+
+type ActivityStudentPerformance {
+  availableBasePoints: Float!
+  availableBonusPoints: Float!
+  availableCorrectnessPoints: Float!
+  basePoints: Float!
+  bonusPoints: Float!
+  correctnessPoints: Float!
+  displayName: String!
+  finishedAt: Date!
+  id: String!
+  multiplier: Int!
 }
 
 type ActivitySummary {
@@ -2104,6 +2119,7 @@ enum PermissionLevel {
 
 type PermissionsList {
   isOwner: Boolean!
+  ownerPermission: PermissionInfo
   permissions: [PermissionInfo!]!
 }
 
@@ -2235,9 +2251,10 @@ type Query {
   self(liveQuizId: String): Participant
   selfWithAchievements: ParticipantWithAchievements
   shortnameQuizzes(shortname: String!): [LiveQuiz!]
+  studentAssessmentResults(courseId: String!): StudentAssessmentResults
   studentLiveQuiz(id: String!): LiveQuiz
   unassignedLiveQuizzes: [LiveQuiz!]
-  userActivities(activityTypeFilter: ActivityType, courseId: String, multiplier: Int, numEntries: Int, offset: Int, reviewStatus: ReviewStatus, searchString: String, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, sortByAsc: Boolean!, sortByType: SortByType!, statusFilter: [PublicationStatus!], withoutCourse: Boolean): UserActivityList
+  userActivities(activityTypeFilter: ActivityType, courseId: String, isAssessmentEnabled: Boolean, isGamificationEnabled: Boolean, isPinProtected: Boolean, multiplier: Int, numEntries: Int, offset: Int, reviewStatus: ReviewStatus, searchString: String, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, sortByAsc: Boolean!, sortByType: SortByType!, statusFilter: [PublicationStatus!], withoutCourse: Boolean): UserActivityList
   userCourses: [Course!]
   userElements(activityId: String, hasAnswerFeedbacks: Boolean!, hasSampleSolution: Boolean!, multiplier: Int, numEntries: Int!, offset: Int!, searchString: String, showArchived: Boolean!, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, showUntagged: Boolean!, sortByAsc: Boolean!, sortByType: SortByType!, status: ElementStatus, tagIds: [Int!]!, type: ElementType): UserElementList
   userLogins: [UserLogin!]
@@ -2525,6 +2542,13 @@ type Statistics {
   q1: Float!
   q3: Float!
   sd: Float!
+}
+
+type StudentAssessmentResults {
+  groupActivities: [ActivityStudentPerformance!]!
+  liveQuizzes: [ActivityStudentPerformance!]!
+  microLearnings: [ActivityStudentPerformance!]!
+  practiceQuizzes: [ActivityStudentPerformance!]!
 }
 
 type StudentCourse {

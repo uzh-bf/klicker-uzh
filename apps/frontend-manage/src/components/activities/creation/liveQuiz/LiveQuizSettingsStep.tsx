@@ -1,7 +1,6 @@
 import { useQuery } from '@apollo/client'
 import {
   faCheck,
-  faCrown,
   faGears,
   faQuestionCircle,
   faTriangleExclamation,
@@ -243,6 +242,7 @@ function LiveQuizSettingsStep({
                             indicator: 'text-xs',
                             root: 'w-4.5 h-4.5',
                           }}
+                          data={{ cy: 'set-quiz-gamification' }}
                         />
                       )}
 
@@ -284,6 +284,7 @@ function LiveQuizSettingsStep({
                               indicator: 'text-xs',
                               root: 'w-4.5 h-4.5',
                             }}
+                            data={{ cy: 'set-quiz-pin-protection' }}
                           />
                         )}
                         <Tooltip
@@ -300,45 +301,20 @@ function LiveQuizSettingsStep({
                       </div>
                     </div>
                   </div>
-                  <div>
-                    <div className="mb-1 grid grid-cols-9">
-                      <div className="col-span-7 col-start-2 flex flex-row items-center justify-center gap-2">
-                        <FontAwesomeIcon
-                          icon={faCrown}
-                          className="text-orange-400"
-                        />
-                        <div className="text-lg font-bold">
-                          {t('shared.generic.gamification')}
-                        </div>
-                      </div>
-                      <div className="h-7 w-7">
-                        {values.isGamificationEnabled && (
-                          <AdvancedLiveQuizSettings
-                            modalOpen={customizedGradingModal}
-                            setModalOpen={setCustomizedGradingModal}
-                            multiplier={values.multiplier}
-                            defaultPointsValue={String(values.defaultPoints)}
-                            correctPointsValue={String(
-                              values.defaultCorrectPoints
-                            )}
-                            maxBonusValue={String(values.maxBonusPoints)}
-                            timeToZeroValue={String(values.timeToZeroBonus)}
-                            showError={
-                              !!errors.defaultPoints ||
-                              !!errors.defaultCorrectPoints ||
-                              !!errors.maxBonusPoints ||
-                              !!errors.timeToZeroBonus
-                            }
-                          />
-                        )}
-                      </div>
+                  <div className="w-60">
+                    <div className="mb-2 flex flex-row items-center justify-center gap-2 text-lg font-bold">
+                      {t('shared.generic.scoring')}
                     </div>
 
-                    {values.isGamificationEnabled ? (
+                    {values.isGamificationEnabled ||
+                    values.isAssessmentEnabled ? (
                       <>
                         <MultiplierSelector
-                          disabled={!values.isGamificationEnabled}
-                          className={{ trigger: 'w-59 h-8' }}
+                          disabled={
+                            !values.isGamificationEnabled &&
+                            !values.isAssessmentEnabled
+                          }
+                          className={{ trigger: 'w-58 h-8' }}
                         />
                         <div className="mt-2 flex flex-row items-start gap-2.5">
                           <FontAwesomeIcon
@@ -353,6 +329,7 @@ function LiveQuizSettingsStep({
                           <span
                             className="text-primary-100 cursor-pointer hover:underline"
                             onClick={() => setCustomizedGradingModal(true)}
+                            data-cy="live-quiz-advanced-settings"
                           >
                             {t(
                               'manage.activityWizard.liveQuizCustomizedGrading'
@@ -363,7 +340,7 @@ function LiveQuizSettingsStep({
                     ) : (
                       <UserNotification
                         message={t(
-                          'manage.activityWizard.liveQuizGamificationDeactivated'
+                          'manage.activityWizard.liveQuizNoCustomizedScoring'
                         )}
                       />
                     )}
@@ -413,6 +390,21 @@ function LiveQuizSettingsStep({
                 continueDisabled={continueDisabled}
                 onPrevStep={() => onPrevStep!(values)}
                 onCloseWizard={closeWizard}
+              />
+              <AdvancedLiveQuizSettings
+                modalOpen={customizedGradingModal}
+                setModalOpen={setCustomizedGradingModal}
+                multiplier={values.multiplier}
+                defaultPointsValue={String(values.defaultPoints)}
+                correctPointsValue={String(values.defaultCorrectPoints)}
+                maxBonusValue={String(values.maxBonusPoints)}
+                timeToZeroValue={String(values.timeToZeroBonus)}
+                showError={
+                  !!errors.defaultPoints ||
+                  !!errors.defaultCorrectPoints ||
+                  !!errors.maxBonusPoints ||
+                  !!errors.timeToZeroBonus
+                }
               />
             </div>
           </Form>

@@ -14,6 +14,7 @@ The project follows a monorepo structure using pnpm workspaces and Turbo for bui
 - **Frontend Manage** (`apps/frontend-manage`): Lecturer administration interface
 - **Frontend Control** (`apps/frontend-control`): Mobile controller for live quizzes
 - **Frontend Authentication** (`apps/auth`): Authentication frontend
+- **Chat Application** (`apps/chat`): AI-powered chatbot frontend with MCP integration
 - **Backend Docker** (`apps/backend-docker`): Main backend service
 - **OLAT API** (`apps/olat-api`): REST API for LMS integration
 
@@ -45,6 +46,7 @@ The project uses a sophisticated local development setup that closely mirrors pr
 - Mobile Controller: https://control.klicker.com
 - GraphQL API: https://api.klicker.com
 - Authentication: https://auth.klicker.com
+- Chat Application: https://chat.klicker.com (runs on port 3004)
 
 ## Database Structure
 
@@ -53,6 +55,7 @@ PostgreSQL database managed with Prisma ORM, organized around:
 - User management (lecturers and participants)
 - Content elements (questions, flashcards, case studies)
 - Activities (LiveQuiz, PracticeQuiz, MicroLearning, GroupActivity)
+- Chat threads and messages (for AI chatbot conversations)
 - Permissions and sharing
 - Analytics and feedback
 - Activity logging for tracking changes
@@ -63,5 +66,6 @@ PostgreSQL database managed with Prisma ORM, organized around:
 - **Package Manager**: pnpm with workspace support
 - **Main Branch**: v3 (production branch)
 - **Development Platform**: Cross-platform support (macOS, Linux, WSL)
+- **AI Integration**: Azure AI models with Model Context Protocol (MCP) for tool access
 
 For current versions and specific environment details, refer to package.json files and development documentation in the repository.

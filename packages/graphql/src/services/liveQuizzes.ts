@@ -293,21 +293,30 @@ export async function manipulateLiveQuiz(
   // pin protection applies when assessment is enabled or explicitly enabled via flag
   const pinProtection = assessmentSetting || isPinProtected
 
-  // if the activity is part of an assessment course, but should be modified and the user is not a course admin, return early
+  // if the activity is part of an assessment course, the course assignment can only be modified by course admins / owners
+  const isCourseAdminOwner = !!existingActivity?.course?._count.permissions
   if (
-    typeof courseId !== 'undefined' &&
-    courseId !== null &&
     existingActivity?.isAssessmentEnabled &&
-    !existingActivity?.course?._count.permissions
+    !isCourseAdminOwner &&
+    (courseId === null || courseId !== existingActivity?.courseId)
   ) {
     throw new GraphQLError(
       'Assessment live quizzes can only be modified by course admins or owners'
     )
   }
 
-  // if required, find a new pin code for the live quiz that is still available
+  // check if a new pin code is required
+  const requiresNewPin =
+    pinProtection && // 1) pin protection is required (corresponding setting or assessment course)
+    (!existingActivity || // 2.1) assign new pin on activity creation
+      ((courseId || existingActivity.courseId) && // 2.2) assign new pin on course assignment change (course defined at least before or after)
+        courseId !== existingActivity.courseId) ||
+      (existingActivity && !existingActivity.courseId && !courseId) || // 2.3) assign new pin on pin setting change with no course assigned before and after edit
+      (existingActivity && !existingActivity.pinCode)) // 2.4) assign new pin if pin protection is enabled, but no pin was set before
+
+  // find a new pin code that is still available, if required
   let newPinCode: string | undefined | null = existingActivity?.pinCode
-  if (pinProtection && (!courseId || courseId !== existingActivity?.courseId)) {
+  if (requiresNewPin) {
     let pinValid = false
 
     for (let attempt = 0; attempt < 10; attempt++) {
@@ -341,11 +350,24 @@ export async function manipulateLiveQuiz(
     name: name.trim(),
     displayName: displayName.trim(),
     description,
-    pointsMultiplier: multiplier,
-    defaultPoints: defaultPoints ?? undefined,
-    defaultCorrectPoints: defaultCorrectPoints ?? undefined,
-    maxBonusPoints: maxBonusPoints ?? undefined,
-    timeToZeroBonus: timeToZeroBonus ?? undefined,
+    pointsMultiplier: Math.max(multiplier, 1),
+    defaultPoints:
+      typeof defaultPoints !== 'undefined' && defaultPoints !== null
+        ? Math.max(defaultPoints, 0)
+        : undefined,
+    defaultCorrectPoints:
+      typeof defaultCorrectPoints !== 'undefined' &&
+      defaultCorrectPoints !== null
+        ? Math.max(defaultCorrectPoints, 0)
+        : undefined,
+    maxBonusPoints:
+      typeof maxBonusPoints !== 'undefined' && maxBonusPoints !== null
+        ? Math.max(maxBonusPoints, 0)
+        : undefined,
+    timeToZeroBonus:
+      typeof timeToZeroBonus !== 'undefined' && timeToZeroBonus !== null
+        ? Math.max(timeToZeroBonus, 1)
+        : undefined,
     isGamificationEnabled: gamificationSetting,
     isAssessmentEnabled: assessmentSetting,
     pinCode: pinProtection ? newPinCode : null, // if pin protection applies (and the course changed), assign a pin
@@ -401,7 +423,7 @@ export async function manipulateLiveQuiz(
             order: persistentInstanceOrderMap[instance.id],
             options: {
               ...instance.options,
-              pointsMultiplier: multiplier * elementMultiplier,
+              pointsMultiplier: Math.max(multiplier, 1) * elementMultiplier,
             },
           },
         })
@@ -512,7 +534,7 @@ export async function manipulateLiveQuiz(
     reviewStatus: activity.reviewStatus,
     type: ActivityType.LIVE_QUIZ,
     status: activity.status,
-    courseId: activity.course?.id,
+    courseId: isCourseAdminOwner ? activity.course?.id : null, // only return course id if the user can access corresponding course overview
     courseName: activity.course?.name,
     courseLanguage: activity.course?.language,
     courseStartDate: activity.course?.startDate,
@@ -1363,17 +1385,24 @@ export async function deactivateLiveQuizBlock(
     throw error
   }
 
-  // schedule another aggregation event through hatchet that runs 5 minutes after block closure
-  // -> heuristic: by then, all submissions should have been processed and the aggregated results on the instance should be final
-  if (isAssessmentEnabled) {
-    await ctx.tasks.aggregateLiveQuizBlockResultsAssessment.schedule(
-      dayjs().add(5, 'minute').toDate(),
-      { liveQuizId: quizId, blockId }
-    )
-  } else {
-    await ctx.tasks.aggregateLiveQuizBlockResultsStandard.schedule(
-      dayjs().add(5, 'minute').toDate(),
-      { liveQuizId: quizId, blockId }
+  try {
+    // schedule another aggregation event through hatchet that runs 5 minutes after block closure
+    // -> heuristic: by then, all submissions should have been processed and the aggregated results on the instance should be final
+    if (isAssessmentEnabled) {
+      await ctx.tasks.aggregateLiveQuizBlockResultsAssessment.schedule(
+        dayjs().add(5, 'minute').toDate(),
+        { liveQuizId: quizId, blockId }
+      )
+    } else {
+      await ctx.tasks.aggregateLiveQuizBlockResultsStandard.schedule(
+        dayjs().add(5, 'minute').toDate(),
+        { liveQuizId: quizId, blockId }
+      )
+    }
+  } catch (error) {
+    console.error(
+      `Failed to schedule aggregation task for closed block ${blockId} in live quiz ${quizId}:`,
+      error
     )
   }
 
@@ -1399,7 +1428,8 @@ async function removeCacheEntriesBlock({
     if (keys.length > 0) {
       const pipe = redis.pipeline()
       for (const key of keys) {
-        pipe.unlink(key)
+        // set an expiration time of 1 day to all hash sets of the live quiz
+        pipe.expire(key, 60 * 60 * 24)
       }
       await pipe.exec()
     }
@@ -1407,7 +1437,9 @@ async function removeCacheEntriesBlock({
     // only remove information from the cache that is specific to the closed block and the instances therein
     const instanceIds = block.elements.map((instance) => instance.id)
     const instanceKeysNested = await Promise.all(
-      instanceIds.map((id) => redis.keys(`lq:${liveQuizId}:i:${id}:*`))
+      instanceIds.map(
+        async (id) => await redis.keys(`lq:${liveQuizId}:i:${id}:*`)
+      )
     )
     const instanceKeys = instanceKeysNested.flat()
     const blockKeys = await redis.keys(`lq:${liveQuizId}:b:${blockId}:*`)
@@ -1416,7 +1448,8 @@ async function removeCacheEntriesBlock({
     if (keys.length > 0) {
       const pipe = redis.pipeline()
       for (const key of keys) {
-        pipe.unlink(key)
+        // set an expiration time of 1 day to all hash sets of the live quiz
+        pipe.expire(key, 60 * 60 * 24)
       }
       await pipe.exec()
     }
@@ -1521,7 +1554,7 @@ function aggregateLiveQuizResponses({
         if (!('selection' in submission.response)) return acc
 
         submission.response.selection
-          .filter((ix) => ix !== -1)
+          .filter((ix) => ix !== -1 && typeof ix !== 'undefined' && ix !== null)
           .forEach((ix) => {
             if (ix in acc.selections) {
               acc.selections[ix] = (acc.selections[ix] ?? 0) + 1
@@ -1553,7 +1586,7 @@ function aggregateLiveQuizResponses({
                         criterionId
                       ] === 'undefined'
                     ) {
-                      return
+                      return acc
                     }
 
                     // compute the hash of the response
@@ -2268,6 +2301,8 @@ export async function getLiveQuizEvaluation(
     displayName: liveQuiz.displayName,
     description: liveQuiz.description,
     courseLanguage: liveQuiz.course?.language,
+    isAssessmentEnabled: liveQuiz.isAssessmentEnabled,
+    pinCode: liveQuiz.pinCode,
     results: blockEvaluations,
     feedbacks:
       liveQuiz.status === DB.PublicationStatus.ENDED
@@ -3257,6 +3292,7 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
       )
       return true
     }
+
     if (quiz.blocks.length === 0) {
       executionCtx.logger.error(`Quiz with ID ${liveQuizId} has no blocks`)
       return false
@@ -3271,6 +3307,7 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
       )
       return false
     }
+
     if (block.elements.length === 0) {
       executionCtx.logger.error(
         `Block with ID ${blockId} in quiz with ID ${liveQuizId} has no elements`
@@ -3282,6 +3319,22 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
       executionCtx.logger.info(
         `No responses found for any element in block with ID ${blockId} in quiz with ID ${liveQuizId}`
       )
+
+      try {
+        // remove all cache entries related to this block only (or the entire live quiz, if this was the last block)
+        await removeCacheEntriesBlock({
+          liveQuizId,
+          blockId,
+          block,
+          isLastBlock,
+          redis: globalCtx.redisAssessmentExec,
+        })
+      } catch (error) {
+        executionCtx.logger.error(
+          `Error removing cache entries for block with ID ${blockId} in quiz with ID ${liveQuizId}: ${error}`
+        )
+      }
+
       return true
     }
 

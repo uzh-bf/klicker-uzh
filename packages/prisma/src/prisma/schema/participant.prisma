@@ -49,7 +49,7 @@ model ParticipantAccount {
 model Participant {
   id String @id @default(uuid()) @db.Uuid
 
-  email        String? @unique
+  email        String?
   isEmailValid Boolean @default(false)
   username     String  @unique
   password     String
@@ -87,10 +87,14 @@ model Participant {
   coursePerformances              ParticipantPerformance[]
   groupAssignmentPoolEntries      GroupAssignmentPoolEntry[]
   messages                        GroupMessage[]
+  chatThreads                     ChatThread[]
+  chatUsageCredits                ChatUsageCredits[]
   invitations                     ParticipantInvitation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([email, isSSOAccount])
 }
 
 model ParticipantGroup {

@@ -28,9 +28,12 @@ function useChartTypeUpdate({
         (type) => type.value
       )
 
-      if (!possibleChartTypes.includes(chartType)) {
-        setChartType(ACTIVE_CHART_TYPES[activeElementType][0].value)
-      }
+      // always set the chart type to the standard chart type for this question type
+      // (do not keep previous selection when switching between questions - as logic below does)
+      setChartType(ACTIVE_CHART_TYPES[activeElementType][0].value)
+      // if (!possibleChartTypes.includes(chartType)) {
+      //   setChartType(ACTIVE_CHART_TYPES[activeElementType][0].value)
+      // }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeInstance, activeElementType])

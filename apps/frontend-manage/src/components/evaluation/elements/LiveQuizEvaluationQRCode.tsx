@@ -1,41 +1,50 @@
-import { faX } from '@fortawesome/free-solid-svg-icons'
+import { faQrcode } from '@fortawesome/free-solid-svg-icons'
 import { LocaleType } from '@klicker-uzh/graphql/dist/ops'
-import QR from '@pages/qr/[...args]'
 import { Button } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Dispatch, SetStateAction } from 'react'
+import { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
+import LiveQuizQRModal from '../../liveQuiz/cockpit/LiveQuizQRModal'
 
 function LiveQuizEvaluationQRCode({
-  setHideQR,
   language,
+  isAssessmentEnabled,
+  pinCode,
+  className,
 }: {
-  setHideQR: Dispatch<SetStateAction<boolean>>
   language?: LocaleType | null
+  isAssessmentEnabled: boolean
+  pinCode?: string | null
+  className?: string
 }) {
   const router = useRouter()
-  const liveQuizRelativeLink = `${language ? `/${language}` : ''}/session/${router.query.id}`
+  const t = useTranslations()
+  const [showQrCodes, setShowQrCodes] = useState(false)
 
   return (
-    <div className="group relative float-end hidden h-max w-full items-center justify-center lg:flex">
-      <QR
-        className={{
-          root: 'mx-auto self-center bg-blue-400',
-          title: 'text-base',
-          canvas: 'h-40 w-40',
-        }}
-        path={liveQuizRelativeLink}
-        showLink={false}
-        showButton={false}
-        showLogo={false}
-      />
+    <div
+      className={twMerge(
+        'group relative float-end hidden h-max w-full items-center justify-center lg:flex',
+        className
+      )}
+    >
       <Button
-        className={{
-          root: 'absolute right-0 top-0 hidden h-9 group-hover:block',
-        }}
-        onClick={() => setHideQR(true)}
+        onClick={() => setShowQrCodes(true)}
+        className={{ root: 'w-full' }}
       >
-        <Button.Icon withoutLabel icon={faX} />
+        <Button.Icon icon={faQrcode} />
+        <Button.Label>{t('manage.evaluation.showQRCodes')}</Button.Label>
       </Button>
+      {showQrCodes && (
+        <LiveQuizQRModal
+          quizId={router.query.id as string}
+          quizPin={pinCode}
+          isAssessmentEnabled={isAssessmentEnabled}
+          language={language}
+          onClose={() => setShowQrCodes(false)}
+        />
+      )}
     </div>
   )
 }

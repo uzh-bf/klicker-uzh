@@ -30,6 +30,7 @@ function LiveQuizLeaderboard({
   showLeaderboardGamifiedQuizHint = false,
   isPartOfGamifiedCourse = false,
   isBeforeFirstBlock = false,
+  isAssessmentEnabled = false,
 }: {
   quizId: string
   courseId?: string | null
@@ -37,6 +38,7 @@ function LiveQuizLeaderboard({
   showLeaderboardGamifiedQuizHint?: boolean
   isPartOfGamifiedCourse?: boolean | null
   isBeforeFirstBlock?: boolean
+  isAssessmentEnabled?: boolean
 }): React.ReactElement {
   const t = useTranslations()
   const router = useRouter()
@@ -142,19 +144,21 @@ function LiveQuizLeaderboard({
           className={{ root: 'w-200 -mt-1 max-w-full md:text-base' }}
           data={{ cy: 'notification-live-quiz-no-gamified-course' }}
         >
-          {t.rich('shared.leaderboard.liveQuizGamifiedNoGamifiedCourse', {
-            logout: (text) => (
-              <span
-                onClick={async () => {
-                  await logoutParticipant()
-                  router.reload()
-                }}
-                className="cursor-pointer underline"
-              >
-                {text}
-              </span>
-            ),
-          })}
+          {isAssessmentEnabled
+            ? t('shared.leaderboard.liveQuizGamifiedAssessment')
+            : t.rich('shared.leaderboard.liveQuizGamifiedNoGamifiedCourse', {
+                logout: (text) => (
+                  <span
+                    onClick={async () => {
+                      await logoutParticipant()
+                      router.reload()
+                    }}
+                    className="cursor-pointer underline"
+                  >
+                    {text}
+                  </span>
+                ),
+              })}
         </UserNotification>
       ) : null}
 
@@ -172,19 +176,24 @@ function LiveQuizLeaderboard({
             cy: 'notification-live-quiz-gamified-course-no-participation',
           }}
         >
-          {t.rich('shared.leaderboard.liveQuizGamifiedCourseNoParticipation', {
-            logout: (text) => (
-              <span
-                onClick={async () => {
-                  await logoutParticipant()
-                  router.reload()
-                }}
-                className="cursor-pointer underline"
-              >
-                {text}
-              </span>
-            ),
-          })}
+          {isAssessmentEnabled
+            ? t('shared.leaderboard.liveQuizGamifiedAssessment')
+            : t.rich(
+                'shared.leaderboard.liveQuizGamifiedCourseNoParticipation',
+                {
+                  logout: (text) => (
+                    <span
+                      onClick={async () => {
+                        await logoutParticipant()
+                        router.reload()
+                      }}
+                      className="cursor-pointer underline"
+                    >
+                      {text}
+                    </span>
+                  ),
+                }
+              )}
         </UserNotification>
       ) : null}
 

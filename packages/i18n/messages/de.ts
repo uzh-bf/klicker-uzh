@@ -281,14 +281,10 @@ export default {
       recompute: 'Neu berechnen',
       ok: 'OK',
       language: 'Sprache',
-      english: 'Englisch',
       en: 'Englisch',
-      enFlag: '🇬🇧 Englisch',
-      enFlagShort: '🇬🇧',
-      german: 'Deutsch',
+      enShort: 'en',
       de: 'Deutsch',
-      deFlag: '🇩🇪 Deutsch',
-      deFlagShort: '🇩🇪',
+      deShort: 'de',
       practicePool: 'Üben',
       practiceTitle: 'Übungspool',
       practice: 'Übungs-Quiz',
@@ -470,6 +466,8 @@ export default {
         'Dieses Live Quiz ist Teil eines gamifizierten Kurses. Da Sie diesem Kurs nicht beigetreten sind, werden Sie nur im Rahmen dieses Quizzes Punkte sammeln. Ihre Punkte erscheinen auf dem Quiz-Leaderboard. Sollten Sie dies nicht wünschen, <logout>melden Sie sich bitte ab</logout> und treten Sie dem Quiz erneut über den Link bei.',
       liveQuizCourseParticipationInactive:
         'Dieses Live Quiz ist Teil eines gamifizierten Kurses, aber Sie nehmen derzeit nicht an der Gamifizierung teil. Um dem Leaderboard beizutreten und Punkte in diesem Quiz zu sammeln, treten Sie dem <link>Leaderboard auf der Kursübersicht</link> bei und kehren Sie zum Quiz zurück.',
+      liveQuizGamifiedAssessment:
+        'Diese Live Quiz ist gamifiziert und gleichzeitig Teil eines Assessment-Kurses. Um nicht mit Ihrem Pseudonym auf dem Leaderboard zu erscheinen, gehen Sie bitte in die Profileinstellungen und stellen Sie die Anzeigeoption Ihres Profils entsprechend um.',
       rank: 'Rang',
       username: 'Nutzername',
       email: 'E-Mail',
@@ -718,6 +716,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       joinGroup: 'Gruppe beitreten',
       groupName: 'Gruppenname',
       randomGroup: 'Zufällige Gruppe',
+      assessmentResults: 'Assessment Resultate',
       createJoinRandomGroup:
         'Hier klicken, um einer zufälligen Gruppe mit anderen Studierenden automatisch beitreten.',
       joinGroupError:
@@ -1081,6 +1080,25 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Abschicken Ihrer Antwort ist ein Serverfehler aufgetreten. Bitte versuchen Sie es erneut.',
       missingAssessmentCourseParticipation:
         'Sie sind nicht Teil des Assessment-Kurses, zu welchem dieses Quiz gehört. Bitte kontaktieren Sie Ihre Dozierenden.',
+      accountDeletionMessage:
+        'Da Sie Ihr KlickerUZH-Konto derzeit zur Teilnahme an einem Assessment-Kurs verwenden, können Sie Ihr Konto nicht selbst löschen. Für weitere Informationen zur Löschung Ihres Kontos und zum Verlassen des Kurses wenden Sie sich bitte an Ihre Dozierenden.',
+      respondedAt: 'Beantwortet am {date}',
+      failedToLoadActivityResults:
+        'Beim Laden der Resultate für die Aktivitäten in diesem Assessment Kurs ist leider ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie Ihre Dozierenden, falls das Problem weiterhin besteht.',
+      activityResultsDescription:
+        'Die folgende Übersicht zeigt alle Aktivitäten, welche Ihnen im Assessment-Kurs zur Verfügung gestellt wurden. Aktivitäten, welche live im Hörsaal durchgeführt werden oder nur während einer bestimmten Zeit zur Verfügung stehen (z.B. Microlearnings), erscheinen auf dieser Übersicht, sobald sie durch den Dozierenden beendet wurden. Für weitere Informationen bezüglich der Korrektheit ihrer spezifischen Antworten innerhalb einer Aktivität, kontaktieren Sie bitte Ihre Dozierenden.',
+      noCompletedLiveQuizzesYet:
+        'Bisher wurden noch keine Live-Quizzes in diesem Assessment-Kurs abgeschlossen.',
+      completedOn: 'Abgeschlossen am {date}',
+      notCompletedYet: 'Noch nicht abgeschlossen',
+      multiplier: 'Multiplikator',
+      basePoints: 'Basispunkte',
+      correctnessPoints: 'Korrektheitspunkte',
+      bonusPoints: 'Bonuspunkte',
+      ofAvailable: 'von {value} verfügbar',
+      totalPoints: 'Totalpunkte',
+      aggregatedTitle: 'Aggregierte Werte',
+      excludingBonus: '(ohne Bonus: {value})',
     },
   },
   manage: {
@@ -1154,6 +1172,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     activities: {
       activityType: 'Aktivitätstyp',
+      modeFilters: 'Modus',
       noActivitiesAvailable:
         'Bisher sind keine Aktivitäten verfügbar. Sie können neue Aktivitäten einfach durch die Kombination von Elementen in der <link>Bibliothek</link> erstellen.',
       noActivitiesWarning:
@@ -1215,6 +1234,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       enableLiveQuizPointsModification:
         'Basis, Korrektheits- und Bonuspunkte anpassen',
       bonusTime: 'Bonuszeit',
+      bonusTimeNonNegative:
+        'Die Zeitspanne während welcher Bonuspunkte vergeben werden muss mindestens 1 Sekunde betragen. Um keine Bonuspunkte zu vergeben, setzen Sie die Bonuspunkte auf 0.',
       noActivitiesWillBeUpdated: 'Keine Aktivitäten werden verändert',
       nActivitiesWillBeUpdated: '{number} Aktivitäten werden angepasst',
       activityContainsNoElements: 'Diese {activity} enthält keine Elemente.',
@@ -1588,7 +1609,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       enterItemsManually:
         'Möchten Sie die Fallstudien-Elemente manuell erfassen?',
       enterItemsManuallyExplanation:
-        'Diese Oberfläche erlaubt es Ihnen, Ihre Fallstudien-Elemente manuell direkt im Kontext der Frage zu erfassen. Beim Speichern der Frage werden die entsprechenden Elemente automatisch in eine <b>neue Antwort-Sammlung kombiniert</b>, die Sie später wiederverwenden oder erweitern können.',
+        'Diese Oberfläche erlaubt es Ihnen, die Elemente für Ihre Fallstudie direkt im Kontext der Frage zu erfassen. Beim Speichern der Frage werden die entsprechenden Elemente automatisch in eine <b>neue Antwort-Sammlung kombiniert</b>, die Sie später wiederverwenden oder erweitern können. <button>Sie können auch zur Auswahl der Fallstudien-Elemente aus einer bestehenden Sammlung zurückkehren.</button>',
       returnItemsCollectionSelection:
         'Möchten Sie zur Auswahl der Optionen aus einer bestehenden Sammlung zurückkehren?',
       enterSelectionItemsManually:
@@ -1860,8 +1881,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizCustomizedGrading: 'Benutzerdefinierte Bewertung',
       liveQuizPointsExplanation:
         'Diese erweiterten Einstellungen ermöglichen es, die Punktevergabe bei einem Live-Quiz zu verändern. Bitte beachten Sie, dass alle Punkteinstellungen und die Illustrationen der Punktevergabe sich auf Elemente mit einem Multiplikator von 1x beziehen. Höhere Multiplikatoren werden auf alle Komponenten ausser den Standardpunkten angewendet. Der auf der Aktivität gesetzte Multiplikator wird in der Illustration bereits mit einbezogen. Die Antwortzeit beginnt abzulaufen sobald der erste Teilnehmer eine vollständig korrekte Antwort abgegeben hat. Für mehr Informationen konsultieren Sie bitte unsere <link>Dokumentation</link>.',
-      liveQuizGamificationDeactivated:
-        'Gamifizierung ist für dieses Live Quiz aktuell nicht aktiviert. Bitte wählen Sie entweder einen gamifizierten Kurs oder aktivieren Sie die Gamifizierung manuell.',
+      liveQuizNoCustomizedScoring:
+        'Die Fragen in diesem Live Quiz werden aktuell nicht bepunktet. Um die Bepunktung zu aktivieren, weisen Sie es einem gamifizierten und/oder Assessment-Kurs zu oder aktivieren Sie die Gamifizierung manuell.',
       liveQuizDefaultPoints: 'Standardpunkte',
       liveQuizDefaultPointsTooltip:
         'Teilnehmende in einem Live-Quiz erhalten diese Anzahl Punkte für das Teilnehmen an einer Frage. Wenn keine Musterlösung definiert ist, werden nur Standardpunkte vergeben. Der Standardwert beträgt {defaultValue}.',
@@ -2546,6 +2567,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       blockActiveInfo:
         'Der aktuell ausgewählte Block wurde noch nicht geschlossen. Die Teilnehmenden Ihres Quizzes können nach wie vor Antworten abgeben. Bitte bestätigen Sie, dass Sie die Resultate anzeigen wollen.',
       showResults: 'Resultate anzeigen',
+      showQRCodes: 'QR-Codes anzeigen',
     },
     lecturer: {
       noDataAvailable: 'Keine Daten verfügbar...',

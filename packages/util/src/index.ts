@@ -21,3 +21,6 @@ export * from './email.js'
 
 // export everything from the auth helpers module
 export * from './auth.js'
+
+// export everything from the crypto module
+export * from './crypto.js'

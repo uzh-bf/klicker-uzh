@@ -9,6 +9,9 @@ query GetUserActivities(
   $showDependencies: Boolean
   $multiplier: Int
   $reviewStatus: ReviewStatus
+  $isGamificationEnabled: Boolean
+  $isAssessmentEnabled: Boolean
+  $isPinProtected: Boolean
   $sortByType: SortByType!
   $sortByAsc: Boolean!
   $numEntries: Int
@@ -25,6 +28,9 @@ query GetUserActivities(
     showDependencies: $showDependencies
     multiplier: $multiplier
     reviewStatus: $reviewStatus
+    isGamificationEnabled: $isGamificationEnabled
+    isAssessmentEnabled: $isAssessmentEnabled
+    isPinProtected: $isPinProtected
     sortByType: $sortByType
     sortByAsc: $sortByAsc
     numEntries: $numEntries

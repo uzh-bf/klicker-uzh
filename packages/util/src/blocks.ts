@@ -14,6 +14,7 @@ import {
 } from '@klicker-uzh/types'
 import { Redis } from 'ioredis'
 import { omitBy } from 'remeda'
+import { getInitialInstanceResults } from './elements.js'
 
 export async function getCachedBlockResults({
   redisExec,
@@ -79,6 +80,7 @@ export async function getCachedBlockResults({
       | ElementResultsFlashcard
       | ElementResultsContent
       | ElementResultsSelection
+      | ElementResultsCaseStudy
       | undefined
 
     if (
@@ -170,18 +172,24 @@ export async function getCachedBlockResults({
         total: parseInt(results.participants),
       } as ElementResultsOpen
     } else if (instance.elementType === DB.ElementType.SELECTION) {
+      const initialResults = getInitialInstanceResults(
+        instance.elementData
+      ) as ElementResultsSelection
       const selections = Object.entries(
         omitBy(results, (_, key) => key === 'participants')
       ).reduce<Record<string, number>>((acc, [answerId, count]) => {
         acc[answerId] = (acc[answerId] ?? 0) + parseInt(count)
         return acc
-      }, {})
+      }, initialResults.selections)
 
       anonymousResults = {
         selections,
         total: parseInt(results.participants),
       } as ElementResultsSelection
     } else if (instance.elementType === DB.ElementType.CASE_STUDY) {
+      const initialResults = getInitialInstanceResults(
+        instance.elementData
+      ) as ElementResultsCaseStudy
       const assessments = Object.entries(
         omitBy(results, (_, key) => key === 'participants')
       ).reduce<ElementResultsCaseStudy['assessments']>(
@@ -285,7 +293,7 @@ export async function getCachedBlockResults({
 
           return assessmentsAcc
         },
-        {}
+        initialResults.assessments
       )
 
       anonymousResults = {

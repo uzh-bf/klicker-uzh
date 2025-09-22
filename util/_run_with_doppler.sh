@@ -122,7 +122,7 @@ if [[ "$CURRENT_DIR" == /Volumes/* ]]; then
     exit 0
   fi
 
-  echo "❌ No service token found for external drive usage."
+  echo "No service token found for external drive usage."
   echo ""
 
   # Guidance for the user (also echoed to terminal)

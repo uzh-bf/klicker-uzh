@@ -277,8 +277,11 @@ function LiveQuizWizard({
       formDefaultValues.isModerationEnabled,
   })
 
-  const [editLiveQuiz] = useMutation(EditLiveQuizDocument)
-  const [createLiveQuiz, { data }] = useMutation(CreateLiveQuizDocument)
+  const [editLiveQuiz, { data: editingData }] =
+    useMutation(EditLiveQuizDocument)
+  const [createLiveQuiz, { data: creationData }] = useMutation(
+    CreateLiveQuizDocument
+  )
   const [startLiveQuiz] = useMutation(StartLiveQuizDocument)
 
   const handleSubmit = useCallback(
@@ -311,6 +314,13 @@ function LiveQuizWizard({
     [createLiveQuiz, editMode, editLiveQuiz, initialValues?.id]
   )
 
+  const isActivityReviewer =
+    creationData?.createLiveQuiz?.isActivityReviewer ??
+    editingData?.editLiveQuiz?.isActivityReviewer
+  const selectedCourseId =
+    creationData?.createLiveQuiz?.courseId ??
+    editingData?.editLiveQuiz?.courseId
+
   return (
     <WizardLayout
       title={title}
@@ -338,8 +348,8 @@ function LiveQuizWizard({
           name={formData.name}
           editMode={editMode}
           viewElementHref={
-            formData.courseId && formData.courseId !== 'no-course-selected'
-              ? `/courses/${formData.courseId}?tab=liveQuizzes`
+            isActivityReviewer && selectedCourseId
+              ? `/courses/${selectedCourseId}?tab=liveQuizzes`
               : '/activities'
           }
           onRestartForm={() => {
@@ -350,12 +360,16 @@ function LiveQuizWizard({
           setStepNumber={setActiveStep}
           onCloseWizard={closeWizard}
         >
-          {!editMode && data?.createLiveQuiz?.id ? (
+          {creationData?.createLiveQuiz?.id || editingData?.editLiveQuiz?.id ? (
             <Button
               data={{ cy: 'quick-start' }}
               onClick={async () => {
                 await startLiveQuiz({
-                  variables: { id: data.createLiveQuiz!.id },
+                  variables: {
+                    id:
+                      creationData?.createLiveQuiz?.id ??
+                      editingData!.editLiveQuiz!.id,
+                  },
                   update(cache, { data: res }) {
                     // return early if the mutation failed
                     if (!res?.startLiveQuiz) return
@@ -382,13 +396,19 @@ function LiveQuizWizard({
                   optimisticResponse: {
                     startLiveQuiz: {
                       __typename: 'LiveQuizMeta',
-                      id: data.createLiveQuiz!.id,
-                      name: data.createLiveQuiz!.name,
+                      id:
+                        creationData?.createLiveQuiz?.id ??
+                        editingData!.editLiveQuiz!.id,
+                      name:
+                        creationData?.createLiveQuiz?.name ??
+                        editingData!.editLiveQuiz!.name,
                       status: PublicationStatus.Published,
                     },
                   },
                 })
-                router.push(`/quizzes/${data.createLiveQuiz!.id}/cockpit`)
+                router.push(
+                  `/quizzes/${creationData?.createLiveQuiz?.id ?? editingData?.editLiveQuiz?.id}/cockpit`
+                )
               }}
             >
               <Button.Icon icon={faPlay} />

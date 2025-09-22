@@ -70,6 +70,7 @@ function getNextBaseConfig({
           port: '443',
           pathname: '/**',
         },
+        ,
         BLOB_STORAGE_ACCOUNT_URL
           ? {
               protocol: 'https',
@@ -92,7 +93,4 @@ function getNextPWAConfig({ NODE_ENV }) {
   }
 }
 
-module.exports = {
-  getNextBaseConfig,
-  getNextPWAConfig,
-}
+export { getNextBaseConfig, getNextPWAConfig }

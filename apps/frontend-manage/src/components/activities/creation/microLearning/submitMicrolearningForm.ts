@@ -42,7 +42,6 @@ interface MicroLearningFormSubmissionProps {
         >
       | undefined
   ) => Promise<FetchResult<EditMicroLearningMutation>>
-  setSelectedCourseId: (courseId?: string) => void
   setIsWizardCompleted: (isCompleted: boolean) => void
   onError: () => void
 }
@@ -54,7 +53,6 @@ async function submitMicrolearningForm({
   editMode,
   createMicroLearning,
   editMicroLearning,
-  setSelectedCourseId,
   setIsWizardCompleted,
   onError,
 }: MicroLearningFormSubmissionProps) {
@@ -175,7 +173,6 @@ async function submitMicrolearningForm({
     }
 
     if (success) {
-      setSelectedCourseId(values.courseId)
       setIsWizardCompleted(true)
     } else {
       onError()

@@ -125,9 +125,11 @@ export async function processAssessmentResponse(
   }
 
   if (blockClosedAt && Number(responseTimestamp) > Number(blockClosedAt)) {
-    throw new NonRetryableError(
-      `Response received after block of element instance ${message.instanceId} was closed at ${new Date(blockClosedAt)}.`
+    ctx.logger.error(
+      `[CANCEL] [AddResponse Assessment] Response received at ${new Date(Number(responseTimestamp))} after block of element instance ${message.instanceId} was closed at ${new Date(Number(blockClosedAt))}.`
     )
+    ctx.cancel()
+    return { status: 200 }
   }
 
   // ! Step 1.2 Validation of response format
@@ -371,6 +373,25 @@ export async function processAssessmentResponse(
   }
 
   // ! Step 4: Directly store the submitted response in the live quiz responses table and add entry to redis votes list for successful response
+  // verify that the participant has not votes on the same question before
+  const existingVote = await prisma.liveQuizResponse.findUnique({
+    where: {
+      instanceId_elementBlockExecution_participantId: {
+        instanceId: Number(message.instanceId),
+        elementBlockExecution: parseInt(blockExecution ?? '0', 10),
+        participantId: message.participantId,
+      },
+    },
+  })
+
+  if (existingVote) {
+    ctx.logger.error(
+      `[CANCEL] [AddResponse Assessment] Participant ${message.participantId} has already submitted a response for instance ${message.instanceId} and block execution ${blockExecution}.`
+    )
+    ctx.cancel()
+    return { status: 208 }
+  }
+
   try {
     await prisma.liveQuizResponse.create({
       data: {
@@ -383,9 +404,11 @@ export async function processAssessmentResponse(
             : computedCorrectness === 0
               ? ResponseCorrectness.WRONG
               : ResponseCorrectness.PARTIAL,
-        basePoints: awardedBasePoints,
-        correctnessPoints: awardedCorrectnessPoints,
-        bonusPoints: awardedBonusPoints,
+        basePoints: Number.isNaN(awardedBasePoints) ? 0 : awardedBasePoints,
+        correctnessPoints: Number.isNaN(awardedCorrectnessPoints)
+          ? 0
+          : awardedCorrectnessPoints,
+        bonusPoints: Number.isNaN(awardedBonusPoints) ? 0 : awardedBonusPoints,
         elementBlockExecution: parseInt(blockExecution ?? '0', 10),
         instance: { connect: { id: Number(message.instanceId) } },
         participant: { connect: { id: message.participantId } },
@@ -418,6 +441,14 @@ export async function processAssessmentResponse(
     xpAwarded: awardedXp,
     response,
   })
+
+  return {
+    status: 200,
+    pointsAwarded: awardedBasePoints,
+    correctnessPoints: awardedCorrectnessPoints,
+    bonusPoints: awardedBonusPoints,
+    xpAwarded: awardedXp,
+  }
 }
 
 export async function aggregateAssessmentResponses(
@@ -510,7 +541,14 @@ export async function aggregateAssessmentResponses(
 
     case ElementType.SELECTION: {
       response.selection!.forEach((answerId: number) => {
-        if (answerId === -1) return // skipped input fields should not be considered
+        if (
+          answerId === -1 ||
+          typeof answerId === 'undefined' ||
+          answerId === null
+        ) {
+          return // skipped input fields should not be considered
+        }
+
         redis.hincrby(`${instanceKey}:results`, String(answerId), 1)
       })
       redis.hincrby(`${instanceKey}:results`, 'participants', 1)

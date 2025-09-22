@@ -1,5 +1,9 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { ActivityType, SharingType } from '@klicker-uzh/types'
+import {
+  ActivityStudentPerformance,
+  ActivityType,
+  SharingType,
+} from '@klicker-uzh/types'
 import { levelFromXp, recomputeDerivedPermissions } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
@@ -309,6 +313,163 @@ export async function getCourseOverviewData(
     course,
     participant,
     participation: null,
+  }
+}
+
+export async function getStudentAssessmentResults(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  // verify that the student is logged in as an assessment participant and has a participation in the course
+  if (ctx.user.scope !== DB.UserLoginScope.EDUID) {
+    throw new Error(
+      'Only logged in assessment participants can access assessment results'
+    )
+  }
+
+  const participation = await ctx.prisma.participation.findUnique({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+  })
+
+  if (!participation) {
+    throw new Error('Participation not found')
+  }
+
+  // fetch all activities of the course, including the participants results
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId, isAssessmentEnabled: true },
+    include: {
+      liveQuizzes: {
+        where: { isDeleted: false, finishedAt: { not: null } },
+        orderBy: { finishedAt: 'desc' },
+        include: {
+          blocks: {
+            include: {
+              elements: {
+                include: {
+                  liveQuizResponses: {
+                    where: { participantId: ctx.user.sub },
+                    orderBy: { createdAt: 'desc' },
+                    take: 1,
+                  },
+                },
+                orderBy: { order: 'asc' },
+              },
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
+      },
+    },
+  })
+
+  if (!course) {
+    return {
+      liveQuizzes: [],
+      practiceQuizzes: [],
+      microLearnings: [],
+      groupActivities: [],
+    }
+  }
+
+  const liveQuizResults = course.liveQuizzes.reduce<
+    ActivityStudentPerformance[]
+  >((acc, lq) => {
+    // extract the scoring-related parameters from the live quiz
+    const defaultPoints = lq.defaultPoints
+    const defaultCorrectPoints = lq.defaultCorrectPoints
+    const defaultMaxBonusPoints = lq.maxBonusPoints
+
+    const quizResults = lq.blocks.reduce<ActivityStudentPerformance>(
+      (quizAcc, block) => {
+        const instanceResults = block.elements.reduce<
+          Omit<
+            ActivityStudentPerformance,
+            'id' | 'displayName' | 'finishedAt' | 'multiplier'
+          >
+        >(
+          (blockAcc, instance) => {
+            const { elementData } = instance
+            const hasSampleSolution =
+              'options' in elementData &&
+              'hasSampleSolution' in elementData.options &&
+              (elementData.options.hasSampleSolution ?? false)
+
+            // compute the available points based on the instance information
+            const hasBasePoints =
+              instance.elementType !== DB.ElementType.FLASHCARD &&
+              instance.elementType !== DB.ElementType.CONTENT &&
+              (instance.options.basePoints ?? false)
+            const pointsMultiplier = instance.options.pointsMultiplier ?? 1
+
+            blockAcc.availableBasePoints += hasBasePoints ? defaultPoints : 0
+            blockAcc.availableCorrectnessPoints += hasSampleSolution
+              ? pointsMultiplier * defaultCorrectPoints
+              : 0
+            blockAcc.availableBonusPoints += hasSampleSolution
+              ? pointsMultiplier * defaultMaxBonusPoints
+              : 0
+
+            if (
+              instance.liveQuizResponses.length > 0 &&
+              instance.liveQuizResponses[0]
+            ) {
+              const response = instance.liveQuizResponses[0]
+              blockAcc.basePoints += response.basePoints
+              blockAcc.correctnessPoints += response.correctnessPoints
+              blockAcc.bonusPoints += response.bonusPoints
+            }
+
+            return blockAcc
+          },
+          {
+            basePoints: 0,
+            availableBasePoints: 0,
+            correctnessPoints: 0,
+            availableCorrectnessPoints: 0,
+            bonusPoints: 0,
+            availableBonusPoints: 0,
+          }
+        )
+
+        // increment the results of the block corresponding to the instance results
+        quizAcc.basePoints += instanceResults.basePoints
+        quizAcc.availableBasePoints += instanceResults.availableBasePoints
+        quizAcc.correctnessPoints += instanceResults.correctnessPoints
+        quizAcc.availableCorrectnessPoints +=
+          instanceResults.availableCorrectnessPoints
+        quizAcc.bonusPoints += instanceResults.bonusPoints
+        quizAcc.availableBonusPoints += instanceResults.availableBonusPoints
+
+        return quizAcc
+      },
+      {
+        id: lq.id,
+        displayName: lq.displayName,
+        finishedAt: lq.finishedAt!,
+        multiplier: lq.pointsMultiplier,
+        basePoints: 0,
+        availableBasePoints: 0,
+        correctnessPoints: 0,
+        availableCorrectnessPoints: 0,
+        bonusPoints: 0,
+        availableBonusPoints: 0,
+      }
+    )
+
+    return acc.concat(quizResults)
+  }, [])
+
+  return {
+    liveQuizzes: liveQuizResults,
+    practiceQuizzes: [],
+    microLearnings: [],
+    groupActivities: [],
   }
 }
 
@@ -767,10 +928,19 @@ export async function updateCourseSettings(
     course._count.groupActivities > 0
   const containsGroups = course._count.participantGroups > 0
 
+  // check if the gamification and/or assessment settings were changed
+  const newGamificationSetting =
+    course.isGamificationEnabled !== isGamificationEnabled &&
+    (isGamificationEnabled || (!containsActivities && !containsGroups))
+      ? (isGamificationEnabled ?? false)
+      : undefined
+  const newAssessmentSetting =
+    course.isAssessmentEnabled !== isAssessmentEnabled
+      ? (isAssessmentEnabled ?? undefined)
+      : undefined
+
   const updatedCourse = await ctx.prisma.course.update({
-    where: {
-      id,
-    },
+    where: { id },
     data: {
       name: name ?? undefined,
       displayName: displayName ?? undefined,
@@ -787,10 +957,7 @@ export async function updateCourseSettings(
       groupDeadlineDate: groupDeadlineDate ?? undefined,
       notificationEmail: notificationEmail ?? undefined,
       // only enable gamification or disable it if there are no activities or groups
-      isGamificationEnabled:
-        isGamificationEnabled || (!containsActivities && !containsGroups)
-          ? (isGamificationEnabled ?? false)
-          : undefined,
+      isGamificationEnabled: newGamificationSetting,
       // set assessment mode - if enabling, remove PIN
       isAssessmentEnabled: isAssessmentEnabled ?? undefined,
       pinCode: isAssessmentEnabled ? null : undefined,
@@ -801,6 +968,83 @@ export async function updateCourseSettings(
         !isGroupCreationEnabled && !containsGroups
           ? { deleteMany: {} }
           : undefined,
+      // if the gamification or assessment setting was changed, update all activities assigned to the course
+      ...(newGamificationSetting || newAssessmentSetting
+        ? {
+            liveQuizzes: {
+              updateMany: {
+                where: {
+                  isDeleted: false,
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                      DB.PublicationStatus.PUBLISHED,
+                    ],
+                  },
+                },
+                data: {
+                  isGamificationEnabled: newGamificationSetting,
+                  isAssessmentEnabled: newAssessmentSetting,
+                },
+              },
+            },
+            practiceQuizzes: {
+              updateMany: {
+                where: {
+                  isDeleted: false,
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                      DB.PublicationStatus.PUBLISHED,
+                    ],
+                  },
+                },
+                data: {
+                  isGamificationEnabled: newGamificationSetting,
+                  isAssessmentEnabled: newAssessmentSetting,
+                },
+              },
+            },
+            microLearnings: {
+              updateMany: {
+                where: {
+                  isDeleted: false,
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                      DB.PublicationStatus.PUBLISHED,
+                    ],
+                  },
+                },
+                data: {
+                  isGamificationEnabled: newGamificationSetting,
+                  isAssessmentEnabled: newAssessmentSetting,
+                },
+              },
+            },
+            groupActivities: {
+              updateMany: {
+                where: {
+                  isDeleted: false,
+                  status: {
+                    in: [
+                      DB.PublicationStatus.DRAFT,
+                      DB.PublicationStatus.SCHEDULED,
+                      DB.PublicationStatus.PUBLISHED,
+                    ],
+                  },
+                },
+                data: {
+                  isGamificationEnabled: newGamificationSetting,
+                  isAssessmentEnabled: newAssessmentSetting,
+                },
+              },
+            },
+          }
+        : {}),
     },
   })
 

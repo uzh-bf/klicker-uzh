@@ -28,11 +28,11 @@ function CourseSelectionMonitorMicrolearning({
       )
 
       if (!course) {
-        console.log('Invalid course selection detected')
+        setCourseGamified(false)
         return
       }
 
-      setCourseGamified(course.isGamified)
+      setCourseGamified(true)
       setTouched({
         startDate: true,
         endDate: true,

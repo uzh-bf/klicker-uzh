@@ -5,7 +5,7 @@ import { useRouter } from 'next/router'
 import ActivityEvaluation from '../../../components/evaluation/ActivityEvaluation'
 import EvaluationUnavailableNotification from '../../../components/evaluation/EvaluationUnavailableNotification'
 
-function Evaluation() {
+function LiveQuizEvaluation() {
   const router = useRouter()
 
   // fetch evaluation data
@@ -48,6 +48,8 @@ function Evaluation() {
       stacks={evaluation?.results ?? []}
       feedbacks={evaluation?.feedbacks}
       confusionFeedbacks={evaluation?.confusionFeedbacks}
+      isAssessmentEnabled={evaluation?.isAssessmentEnabled ?? false}
+      pinCode={evaluation?.pinCode ?? null}
       leaderboard={leaderboard}
     />
   )
@@ -69,4 +71,4 @@ export function getStaticPaths() {
   }
 }
 
-export default Evaluation
+export default LiveQuizEvaluation

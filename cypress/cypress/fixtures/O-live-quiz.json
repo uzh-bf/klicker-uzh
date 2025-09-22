@@ -71,16 +71,16 @@
     "nameNoCourse": "Live Quiz Details without Course",
     "displayNameNoCourse": "Live Quiz Details without Course (Display)"
   },
-  "assessment": {
+  "protected": {
     "gamifiedCourse": {
-      "name": "Assessment Course 1",
-      "displayName": "Assessment Course 1 (Display)",
-      "liveQuiz": "Assessment Live Quiz Gamified"
+      "name": "PIN-Protected Course 1",
+      "displayName": "PIN-Protected Course 1 (Display)",
+      "liveQuiz": "PIN-Protected Live Quiz Gamified"
     },
     "nonGamifiedCourse": {
-      "name": "Assessment Course 2",
-      "displayName": "Assessment Course 2 (Display)",
-      "liveQuiz": "Assessment Live Quiz Non-Gamified"
+      "name": "PIN-Protected Course 2",
+      "displayName": "PIN-Protected Course 2 (Display)",
+      "liveQuiz": "PIN-Protected Live Quiz Non-Gamified"
     }
   }
 }

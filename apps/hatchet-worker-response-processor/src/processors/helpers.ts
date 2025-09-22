@@ -225,8 +225,11 @@ export function validateStudentResponse({
     if (
       !Array.isArray(response.selection) ||
       response.selection.length === 0 ||
-      !response.selection.every((r) => typeof r === 'number') ||
-      response.selection.filter((r) => r !== -1).length === 0 // at least one selection must be made (excluding skipped fields with value -1)
+      // TODO: re-introduce the following check once the incoming responses are guaranteed to be correct through response-api validation
+      // !response.selection.every((r) => typeof r === 'number') ||
+      response.selection.filter(
+        (r) => r !== -1 && typeof r !== 'undefined' && r !== null
+      ).length === 0 // at least one selection must be made (excluding skipped fields with value -1 / undefined / null)
     ) {
       return {
         valid: false,
@@ -332,7 +335,7 @@ export function getChoicesQuestionPoints({
     firstResponseReceivedAt,
     responseTimestamp,
     pointsPercentage,
-    basePoints: basePoints === 'false' ? false : true,
+    basePoints: basePoints === 'true' ? true : false,
     pointsMultiplier,
     roundedResult: true,
   })
@@ -415,7 +418,7 @@ export function getNumericalQuestionPoints({
     firstResponseReceivedAt,
     responseTimestamp,
     getsMaxPoints: parsedSolutions && pointsPercentage === 1,
-    basePoints: basePoints === 'false' ? false : true,
+    basePoints: basePoints === 'true' ? true : false,
     pointsMultiplier,
     roundedResult: true,
   })
@@ -481,7 +484,7 @@ export function getFreeTextQuestionPoints({
     firstResponseReceivedAt,
     responseTimestamp,
     getsMaxPoints: Boolean(pointsPercentage),
-    basePoints: basePoints === 'false' ? false : true,
+    basePoints: basePoints === 'true' ? true : false,
     pointsMultiplier,
     roundedResult: true,
   })
@@ -531,7 +534,9 @@ export function getSelectionQuestionPoints({
 }: SharedQuestionPointsParams) {
   const pointsPercentage = gradeQuestionSelection({
     numberOfInputs: parseInt(instanceInfo.numberOfInputs!, 10),
-    response: response.selection!.filter((r: number) => r !== -1), // filter out skipped response fields
+    response: response.selection!.filter(
+      (r: number) => r !== -1 && typeof r !== 'undefined' && r !== null
+    ), // filter out skipped response fields
     correctAnswers: parsedSolutions,
   })
 
@@ -541,7 +546,7 @@ export function getSelectionQuestionPoints({
     firstResponseReceivedAt,
     responseTimestamp,
     pointsPercentage,
-    basePoints: basePoints === 'false' ? false : true,
+    basePoints: basePoints === 'true' ? true : false,
     pointsMultiplier,
     roundedResult: true,
   })
@@ -562,7 +567,9 @@ export function getSelectionQuestionPointsDetails({
 }: SharedQuestionPointsParams) {
   const pointsPercentage = gradeQuestionSelection({
     numberOfInputs: parseInt(instanceInfo.numberOfInputs!, 10),
-    response: response.selection!.filter((r: number) => r !== -1), // filter out skipped response fields
+    response: response.selection!.filter(
+      (r: number) => r !== -1 && typeof r !== 'undefined' && r !== null
+    ), // filter out skipped response fields
     correctAnswers: parsedSolutions,
   })
 
@@ -601,7 +608,7 @@ export function getCaseStudyQuestionPoints({
     firstResponseReceivedAt,
     responseTimestamp,
     pointsPercentage,
-    basePoints: basePoints === 'false' ? false : true,
+    basePoints: basePoints === 'true' ? true : false,
     pointsMultiplier,
     roundedResult: true,
   })

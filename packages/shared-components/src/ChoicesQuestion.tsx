@@ -63,7 +63,7 @@ function ChoicesQuestion({
             feedbacks={evaluation?.feedbacks}
             value={existingResponse ?? response}
             onChange={(newValue: ChoicesStudentResponseType) => {
-              const valid = validateKprimResponse(newValue)
+              const valid = validateKprimResponse({ response: newValue })
               setResponse(newValue, valid)
             }}
             elementIx={elementIx}
@@ -78,7 +78,7 @@ function ChoicesQuestion({
             feedbacks={evaluation?.feedbacks}
             value={existingResponse ?? response}
             onChange={(newValue: ChoicesStudentResponseType) => {
-              const valid = validateMcResponse(newValue)
+              const valid = validateMcResponse({ response: newValue })
               setResponse(newValue, valid)
             }}
             elementIx={elementIx}
@@ -93,7 +93,7 @@ function ChoicesQuestion({
             feedbacks={evaluation?.feedbacks}
             value={existingResponse ?? response}
             onChange={(newValue: ChoicesStudentResponseType) => {
-              const valid = validateScResponse(newValue)
+              const valid = validateScResponse({ response: newValue })
               setResponse(newValue, valid)
             }}
             elementIx={elementIx}

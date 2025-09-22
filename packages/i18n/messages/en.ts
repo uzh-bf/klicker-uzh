@@ -280,14 +280,10 @@ export default {
       recompute: 'Recompute',
       ok: 'OK',
       language: 'Language',
-      english: 'English',
       en: 'English',
-      enFlag: '🇬🇧 English',
-      enFlagShort: '🇬🇧',
-      german: 'German',
+      enShort: 'en',
       de: 'German',
-      deFlag: '🇩🇪 German',
-      deFlagShort: '🇩🇪',
+      deShort: 'de',
       practicePool: 'Practice',
       practiceTitle: 'Practice Pool',
       practice: 'Practice Activities',
@@ -468,6 +464,8 @@ export default {
         'This live quiz is part of a gamified course. Since you have not joined this course, you will only collect points within this quiz. Your points will appear on the quiz leaderboard. If you do not want this, please <logout>log out</logout> and rejoin the quiz via the link.',
       liveQuizCourseParticipationInactive:
         'This live quiz is part of a gamified course, but you are currently not participating in the gamification. To join the leaderboard and collect points in this quiz, join the <link>leaderboard on the course overview</link> and rejoin the quiz.',
+      liveQuizGamifiedAssessment:
+        'Diese Live Quiz ist gamifiziert und gleichzeitig Teil eines Assessment-Kurses. Um nicht mit Ihrem Pseudonym auf dem Leaderboard zu erscheinen, gehen Sie bitte in die Profileinstellungen und stellen Sie die Anzeigeoption Ihres Profils entsprechend um.',
       rank: 'Rank',
       username: 'Username',
       email: 'Email',
@@ -716,6 +714,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       joinGroup: 'Join Group',
       groupName: 'Group Name',
       randomGroup: 'Random Group',
+      assessmentResults: 'Assessment Results',
       createJoinRandomGroup:
         'Click here to be automatically assigned to a random group with other students.',
       joinGroupError:
@@ -1080,6 +1079,25 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'A server error occurred while submitting your answer. Please try again.',
       missingAssessmentCourseParticipation:
         'You are not part of the assessment course to which this quiz belongs. Please contact your lecturers.',
+      accountDeletionMessage:
+        'Since you are currently using your KlickerUZH account to participate in an assessment course, you cannot delete your account yourself. For more information on how to delete your account and leave the course, please contact your course instructors.',
+      respondedAt: 'Responded at {date}',
+      failedToLoadActivityResults:
+        'An error occurred while loading the results for the activities in this assessment course. Please try again or contact your lecturers if the problem persists.',
+      activityResultsDescription:
+        'The following overview lists all activities that were made available to you in the assessment course. Activities that are conducted live in the lecture hall or are only available for a certain period of time (e.g., microlearnings) will appear in this overview once they have been completed by the lecturer. For more information regarding the correctness of your specific answers within an activity, please contact your lecturers.',
+      noCompletedLiveQuizzesYet:
+        'No live quizzes have been completed in this assessment course yet.',
+      completedOn: 'Completed on {date}',
+      notCompletedYet: 'Not completed yet',
+      multiplier: 'Multiplier',
+      basePoints: 'Base points',
+      correctnessPoints: 'Correctness points',
+      bonusPoints: 'Bonus points',
+      ofAvailable: 'of {value} available',
+      totalPoints: 'Total points',
+      aggregatedTitle: 'Aggregated totals',
+      excludingBonus: '(excluding bonus: {value})',
     },
   },
   manage: {
@@ -1152,6 +1170,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     },
     activities: {
       activityType: 'Activity Type',
+      modeFilters: 'Mode',
       noActivitiesAvailable:
         'Currently, no activities are available. You can easily create new activities by combining elements in the <link>library</link>.',
       noActivitiesWarning:
@@ -1212,6 +1231,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       enableLiveQuizPointsModification:
         'Modify base, correctness and bonus points',
       bonusTime: 'Bonus time',
+      bonusTimeNonNegative:
+        'The time period during which bonus points are awarded must be at least 1 second. To not award any bonus points, set the bonus points to 0.',
       noActivitiesWillBeUpdated: 'No activities will be updated',
       nActivitiesWillBeUpdated: '{number} activities will be updated',
       activityContainsNoElements:
@@ -1847,8 +1868,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       liveQuizCustomizedGrading: 'Customized Grading',
       liveQuizPointsExplanation:
         'These advanced settings allow you to change the point allocation in a live quiz. Please note that all point settings and the illustrations of the point allocation refer to elements with a multiplier of 1x. Larger multipliers are applied to all components except from the standard points. The multiplier set on the activity is already included in the illustration. The answer time starts running as soon as the first participant has answered the question completely correctly. For more information, please consult our <link>documentation</link>.',
-      liveQuizGamificationDeactivated:
-        'Gamification is currently not activated for this live quiz. Please select a gamified course or activate gamification manually.',
+      liveQuizNoCustomizedScoring:
+        'Questions in this live quiz are currently not scored. To enable scoring, assign it to a gamified and/or assessment course or manually activate gamification.',
       liveQuizDefaultPoints: 'Standard points',
       liveQuizDefaultPointsTooltip:
         'Participants in a live quiz receive this number of points for participating in a question. If no sample solution is defined, only standard points are awarded. The default value is {defaultValue}.',
@@ -2508,6 +2529,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       blockActiveInfo:
         'The currently selected block has not been closed yet. Participants in your quiz can still submit answers. Please confirm that you want to display the results.',
       showResults: 'Show Results',
+      showQRCodes: 'Show QR Codes',
     },
     lecturer: {
       noDataAvailable: 'No data available...',

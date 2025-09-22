@@ -9,14 +9,13 @@ global:
     pwa: 'https://pwa.klicker.uzh.ch'
     manage: 'https://manage.klicker.uzh.ch'
     control: 'https://control.klicker.uzh.ch'
-    # assessmentApi: 'https://assessment-api.klicker.uzh.ch'
-    assessmentApi: 'https://chat.klicker.uzh.ch'
+    assessmentApi: 'https://assessment-api.klicker.uzh.ch'
     assessmentPwa: 'https://assessment.klicker.uzh.ch'
 
 hatchet:
   client:
     tlsStrategy: 'none'
-    apiUrl: 'hatchet-prod-api:8080'
+    apiUrl: 'http://hatchet-prod-api:8080'
     hostPort: 'hatchet-grpc:7070'
   workers:
     general:
@@ -70,7 +69,6 @@ hatchet:
                       values:
                         - hatchet-worker-response-processor
                 topologyKey: kubernetes.io/hostname
-
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: topology.kubernetes.io/zone
@@ -84,6 +82,44 @@ hatchet:
           labelSelector:
             matchLabels:
               app.kubernetes.io/component: hatchet-worker-response-processor
+    responseProcessorAssessment:
+      replicaCount: 4
+      priorityClassName: production-workload
+      image:
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
+        pullPolicy: Always
+      resources:
+        requests:
+          cpu: 200m
+          memory: 200Mi
+        limits:
+          cpu: 500m
+          memory: 500Mi
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/component
+                      operator: In
+                      values:
+                        - hatchet-worker-response-processor-assessment
+                topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: hatchet-worker-response-processor-assessment
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: hatchet-worker-response-processor-assessment
 
 auth:
   replicaCount: 3
@@ -123,6 +159,35 @@ auth:
       - secretName: klicker-prod-frontend-auth-tls
         hosts:
           - auth.klicker-prod.bf-app.ch
+
+  strategy:
+    type: RollingUpdate
+    # type: Recreate
+
+  resources:
+    requests:
+      cpu: 150m
+      memory: 150Mi
+    limits:
+      cpu: 1000m
+      memory: 1000Mi
+
+chat:
+  priorityClassName: production-workload
+
+  autoscaling:
+    enabled: false
+
+  ingress:
+    hosts:
+      - host: chat.klicker.uzh.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-prod-frontend-chat-tls-uzh
+        hosts:
+          - chat.klicker.uzh.ch
 
   strategy:
     type: RollingUpdate
@@ -594,21 +659,19 @@ assessment:
       enabled: true
 
       hosts:
-        - host: chat.klicker.uzh.ch
-          paths:
-            - path: /
-              pathType: ImplementationSpecific
         - host: assessment-api.klicker-prod.bf-app.ch
           paths:
             - path: /
               pathType: ImplementationSpecific
+        - host: assessment-api.klicker.uzh.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
       tls:
-        - secretName: klicker-prod-backend-assessment-tls-uzh
-          hosts:
-            - chat.klicker.uzh.ch
         - secretName: klicker-prod-backend-assessment-tls
           hosts:
             - assessment-api.klicker-prod.bf-app.ch
+            - assessment-api.klicker.uzh.ch
 
     strategy:
       type: RollingUpdate

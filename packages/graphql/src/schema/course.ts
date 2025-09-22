@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import { ActivityStudentPerformance as ActivityStudentPerformanceType } from '@klicker-uzh/types'
 import dayjs from 'dayjs'
 import builder from '../builder.js'
 import {
@@ -334,6 +335,8 @@ export const CourseStudentTimeline = CourseStudentTimelineRef.implement({
   }),
 })
 
+// ! GAMIFICATION
+// #region
 export interface ILeaderboardEntry
   extends Omit<
     DB.LeaderboardEntry,
@@ -444,3 +447,52 @@ export const AwardEntry = AwardEntryRef.implement({
     }),
   }),
 })
+// #endregion
+
+// ! ASSESSMENT
+// #region
+export interface IStudentAssessmentResults {
+  liveQuizzes: ActivityStudentPerformanceType[]
+  practiceQuizzes: ActivityStudentPerformanceType[]
+  microLearnings: ActivityStudentPerformanceType[]
+  groupActivities: ActivityStudentPerformanceType[]
+}
+export const StudentAssessmentResultsRef =
+  builder.objectRef<IStudentAssessmentResults>('StudentAssessmentResults')
+export const StudentAssessmentResults = StudentAssessmentResultsRef.implement({
+  fields: (t) => ({
+    liveQuizzes: t.expose('liveQuizzes', {
+      type: [ActivityStudentPerformanceRef],
+    }),
+    practiceQuizzes: t.expose('practiceQuizzes', {
+      type: [ActivityStudentPerformanceRef],
+    }),
+    microLearnings: t.expose('microLearnings', {
+      type: [ActivityStudentPerformanceRef],
+    }),
+    groupActivities: t.expose('groupActivities', {
+      type: [ActivityStudentPerformanceRef],
+    }),
+  }),
+})
+
+export const ActivityStudentPerformanceRef =
+  builder.objectRef<ActivityStudentPerformanceType>(
+    'ActivityStudentPerformance'
+  )
+export const ActivityStudentPerformance =
+  ActivityStudentPerformanceRef.implement({
+    fields: (t) => ({
+      id: t.exposeString('id'),
+      displayName: t.exposeString('displayName'),
+      finishedAt: t.expose('finishedAt', { type: 'Date' }),
+      multiplier: t.exposeInt('multiplier'),
+      basePoints: t.exposeFloat('basePoints'),
+      availableBasePoints: t.exposeFloat('availableBasePoints'),
+      correctnessPoints: t.exposeFloat('correctnessPoints'),
+      availableCorrectnessPoints: t.exposeFloat('availableCorrectnessPoints'),
+      bonusPoints: t.exposeFloat('bonusPoints'),
+      availableBonusPoints: t.exposeFloat('availableBonusPoints'),
+    }),
+  })
+// #endregion

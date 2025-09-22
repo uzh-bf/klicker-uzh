@@ -32,9 +32,14 @@ import {
 } from './helpers.js'
 import { seedAccounts } from './seedAccounts.js'
 import { seedAchievements } from './seedAchievements.js'
+import { seedChatbots } from './seedChatbots.js'
 import { seedCompetencyTree } from './seedCompetencyTree.js'
 import { seedEmailTemplates } from './seedEmailTemplates.js'
 import { seedLevels } from './seedLevels.js'
+import {
+  seedChatbotMCPConfigurations,
+  seedMCPServers,
+} from './seedMCPServers.js'
 import { seedUsers } from './seedUsers.js'
 
 // uuids for 50 participants
@@ -370,6 +375,10 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       notificationEmail: 'notifications@df.uzh.ch',
     })
   )
+
+  await seedChatbots(prisma)
+  const mcpServers = await seedMCPServers(prisma)
+  await seedChatbotMCPConfigurations(prisma, mcpServers)
 
   const questionsTest: (Prisma.Element & {
     answerCollection?:
