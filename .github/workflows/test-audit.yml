@@ -123,6 +123,13 @@ jobs:
           cd ../util
           pnpm run build
 
+      - name: Start audit service
+        run: |
+          cd apps/audit
+          pnpm run build
+          nohup pnpm start &
+          sleep 10
+
       - name: Test audit package
         shell: bash
         run: |
