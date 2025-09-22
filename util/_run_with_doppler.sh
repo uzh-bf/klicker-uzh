@@ -56,7 +56,7 @@ fi
 # If that failed, resolve current path and check if we're on an external drive
 CURRENT_DIR="$(command -v realpath >/dev/null 2>&1 && realpath "$PWD" || pwd -P)"
 if [[ "$CURRENT_DIR" == /Volumes/* ]]; then
-  echo "⚠️  Detected external drive (resolved path: $CURRENT_DIR). Attempting alternative authentication..."
+  echo " Detected external drive (resolved path: $CURRENT_DIR). Attempting alternative authentication..."
 
   # Determine closest doppler.yaml to derive the Doppler project/config
   DOPPLER_YAML=""
@@ -106,7 +106,7 @@ if [[ "$CURRENT_DIR" == /Volumes/* ]]; then
     exit 0
   fi
 
-  echo "❌ No service token found for external drive usage."
+  echo "No service token found for external drive usage."
   echo ""
 
   # Guidance for the user (also echoed to terminal)
@@ -121,6 +121,6 @@ if [[ "$CURRENT_DIR" == /Volumes/* ]]; then
   exit 1
 else
   # Not on external drive, but doppler still failed earlier
-  echo "❌ Doppler command failed. Please run 'doppler login' and 'doppler setup'"
+  echo "Doppler command failed. Please run 'doppler login' and 'doppler setup'"
   exit 1
 fi

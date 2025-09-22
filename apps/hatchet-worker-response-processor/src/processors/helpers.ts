@@ -335,7 +335,7 @@ export function getChoicesQuestionPoints({
     firstResponseReceivedAt,
     responseTimestamp,
     pointsPercentage,
-    basePoints: basePoints === 'false' ? false : true,
+    basePoints: basePoints === 'true' ? true : false,
     pointsMultiplier,
     roundedResult: true,
   })
@@ -418,7 +418,7 @@ export function getNumericalQuestionPoints({
     firstResponseReceivedAt,
     responseTimestamp,
     getsMaxPoints: parsedSolutions && pointsPercentage === 1,
-    basePoints: basePoints === 'false' ? false : true,
+    basePoints: basePoints === 'true' ? true : false,
     pointsMultiplier,
     roundedResult: true,
   })
@@ -484,7 +484,7 @@ export function getFreeTextQuestionPoints({
     firstResponseReceivedAt,
     responseTimestamp,
     getsMaxPoints: Boolean(pointsPercentage),
-    basePoints: basePoints === 'false' ? false : true,
+    basePoints: basePoints === 'true' ? true : false,
     pointsMultiplier,
     roundedResult: true,
   })
@@ -546,7 +546,7 @@ export function getSelectionQuestionPoints({
     firstResponseReceivedAt,
     responseTimestamp,
     pointsPercentage,
-    basePoints: basePoints === 'false' ? false : true,
+    basePoints: basePoints === 'true' ? true : false,
     pointsMultiplier,
     roundedResult: true,
   })
@@ -608,7 +608,7 @@ export function getCaseStudyQuestionPoints({
     firstResponseReceivedAt,
     responseTimestamp,
     pointsPercentage,
-    basePoints: basePoints === 'false' ? false : true,
+    basePoints: basePoints === 'true' ? true : false,
     pointsMultiplier,
     roundedResult: true,
   })

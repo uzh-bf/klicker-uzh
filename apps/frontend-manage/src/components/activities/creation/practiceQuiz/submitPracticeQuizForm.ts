@@ -38,7 +38,6 @@ interface PracticeQuizFormSubmissionProps {
         >
       | undefined
   ) => Promise<FetchResult<EditPracticeQuizMutation>>
-  setSelectedCourseId: (courseId?: string) => void
   setIsWizardCompleted: (isCompleted: boolean) => void
   onError: () => void
 }
@@ -50,7 +49,6 @@ async function submitPracticeQuizForm({
   editMode,
   createPracticeQuiz,
   editPracticeQuiz,
-  setSelectedCourseId,
   setIsWizardCompleted,
   onError,
 }: PracticeQuizFormSubmissionProps) {
@@ -178,7 +176,6 @@ async function submitPracticeQuizForm({
 
     if (success) {
       setIsWizardCompleted(true)
-      setSelectedCourseId(values.courseId)
     } else {
       onError()
     }

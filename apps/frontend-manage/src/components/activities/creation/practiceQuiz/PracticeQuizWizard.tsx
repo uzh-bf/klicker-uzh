@@ -86,11 +86,8 @@ function PracticeQuizWizard({
   duplicationMode,
 }: PracticeQuizWizardProps) {
   const t = useTranslations()
-  const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>(
-    undefined
-  )
-  const [isWizardCompleted, setIsWizardCompleted] = useState(false)
 
+  const [isWizardCompleted, setIsWizardCompleted] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
   const [stepValidity, setStepValidity] = useState<boolean[]>(
     Array(4).fill(!!initialValues)
@@ -251,10 +248,10 @@ function PracticeQuizWizard({
         : formDefaultValues.resetTimeDays,
   })
 
-  const [createPracticeQuiz, { data: practiceQuizCreateData }] = useMutation(
+  const [createPracticeQuiz, { data: creationData }] = useMutation(
     CreatePracticeQuizDocument
   )
-  const [editPracticeQuiz, { data: practiceQuizEditData }] = useMutation(
+  const [editPracticeQuiz, { data: editingData }] = useMutation(
     EditPracticeQuizDocument
   )
   const handleSubmit = useCallback(
@@ -266,7 +263,6 @@ function PracticeQuizWizard({
         editMode,
         createPracticeQuiz,
         editPracticeQuiz,
-        setSelectedCourseId,
         setIsWizardCompleted,
         onError: () =>
           toast({
@@ -287,6 +283,15 @@ function PracticeQuizWizard({
     },
     [createPracticeQuiz, editMode, editPracticeQuiz, initialValues?.id]
   )
+
+  const activityId =
+    creationData?.createPracticeQuiz?.id ?? editingData?.editPracticeQuiz?.id
+  const selectedCourseId =
+    creationData?.createPracticeQuiz?.courseId ??
+    editingData?.editPracticeQuiz?.courseId
+  const isActivityReviewer =
+    creationData?.createPracticeQuiz?.isActivityReviewer ??
+    editingData?.editPracticeQuiz?.isActivityReviewer
 
   return (
     <WizardLayout
@@ -314,8 +319,12 @@ function PracticeQuizWizard({
           )}
           name={formData.name}
           editMode={editMode}
-          previewElementHref={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${selectedCourseId}/practiceQuizzes/${practiceQuizEditData?.editPracticeQuiz?.id || practiceQuizCreateData?.createPracticeQuiz?.id}`}
-          viewElementHref={`/courses/${selectedCourseId}?tab=practiceQuizzes`}
+          previewElementHref={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${selectedCourseId}/practiceQuizzes/${activityId}`}
+          viewElementHref={
+            isActivityReviewer
+              ? `/courses/${selectedCourseId}?tab=practiceQuizzes`
+              : '/activities'
+          }
           onRestartForm={() => {
             setIsWizardCompleted(false)
             closeWizard()

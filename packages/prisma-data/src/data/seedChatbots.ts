@@ -22,22 +22,27 @@ export async function seedChatbots(prisma: Prisma.PrismaClient) {
     update: {},
     create: {
       id: CHATBOT_ID_TEST,
-      name: 'Bennibot',
+      name: 'Benibot',
       description:
         'A helpful chatbot for answering questions about KlickerUZH and educational content.',
       avatar: CHATBOT_AVATAR_HASH,
       ownerId: USER_ID_TEST,
       courseId: COURSE_ID_TEST,
       systemPrompts: {
-        Tutor: {
+        tutor: {
           prompt: tutorPrompt,
           description: 'Acts as a patient and knowledgeable tutor.',
         },
-        Explainer: {
+        explainer: {
           prompt: explainerPrompt,
           description: 'Act as an expert explainer.',
         },
       },
+      creditInitialCredits: 100, // Generous amount for testing
+      creditResetPeriod: 'WEEKLY', // Weekly reset for testing
+      creditResetAmount: 50, // Add 50 credits on reset
+      creditMaxCredits: 100, // Max 100 credits
+      modelSelection: false, // Automatic model selection for testing
     },
   })
 

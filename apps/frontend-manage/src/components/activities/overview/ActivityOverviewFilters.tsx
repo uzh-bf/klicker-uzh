@@ -15,12 +15,15 @@ import {
   faFilePen,
   faGraduationCap,
   faListCheck,
+  faLock,
   faPenToSquare as faPenToSquareSolid,
   faPlay,
   faQuestion,
   faQuestionCircle,
+  faShieldHalved,
   faStamp,
   faTriangleExclamation,
+  faTrophy,
   faUserGroup,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
@@ -33,6 +36,7 @@ import {
 import { Accordion, Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
+import type { ActivityModeFilters } from '../../../lib/hooks/useActivitySortingAndFiltering'
 import FilterItem from '../../elements/tags/FilterItem'
 import { SHARING_TYPE_FILTERS } from '../../elements/tags/FilterList'
 import FilterListEntry from '../../elements/tags/FilterListEntry'
@@ -76,6 +80,7 @@ export type ActivityOverviewFilterType = {
   multiplier?: number | null
   reviewStatus?: ReviewStatus | null
   course?: string | null // null means "unassigned", undefined means "all courses"
+  mode: ActivityModeFilters
 }
 
 function ActivityOverviewFilters({
@@ -86,6 +91,7 @@ function ActivityOverviewFilters({
   toggleCourseFilter,
   toggleMultiplierFilter,
   toggleReviewStatusFilter,
+  toggleModeFilter,
   handleReset,
   availableCourses = [],
   filtersActive = false,
@@ -97,6 +103,7 @@ function ActivityOverviewFilters({
   toggleCourseFilter: (course: string | null) => void
   toggleMultiplierFilter: (multiplier: number | null) => void
   toggleReviewStatusFilter: (reviewStatus: ReviewStatus | null) => void
+  toggleModeFilter: (mode: keyof ActivityModeFilters) => void
   handleReset: () => void
   availableCourses?: { id: string; name: string }[]
   filtersActive: boolean
@@ -174,6 +181,43 @@ function ActivityOverviewFilters({
               active={filters.type === type}
               onClick={() => toggleActivityTypeFilter(type)}
               data={{ cy: `type-filter-${type.toLowerCase()}` }}
+            />
+          ))}
+        </FilterListEntry>
+
+        <FilterListEntry
+          trigger={t('manage.activities.modeFilters')}
+          value="mode-filters"
+          active={Object.values(filters.mode).some((value) => value)}
+          data={{ cy: `collapse-tag-header-mode` }}
+        >
+          {[
+            {
+              key: 'gamified' as const,
+              label: t('shared.generic.gamified'),
+              icon: [faTrophy, faTrophy],
+              dataCy: 'mode-filter-gamified',
+            },
+            {
+              key: 'assessment' as const,
+              label: t('shared.generic.assessment'),
+              icon: [faShieldHalved, faShieldHalved],
+              dataCy: 'mode-filter-assessment',
+            },
+            {
+              key: 'pinProtected' as const,
+              label: t('shared.generic.pinProtected'),
+              icon: [faLock, faLock],
+              dataCy: 'mode-filter-pin-protected',
+            },
+          ].map((mode) => (
+            <FilterItem
+              key={mode.key}
+              text={mode.label}
+              icon={mode.icon}
+              active={filters.mode[mode.key]}
+              onClick={() => toggleModeFilter(mode.key)}
+              data={{ cy: mode.dataCy }}
             />
           ))}
         </FilterListEntry>

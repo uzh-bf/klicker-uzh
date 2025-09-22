@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/graphql",
-  "version": "3.4.0-alpha.18",
+  "version": "3.4.0-alpha.29",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -97,8 +97,8 @@
     "script:invitations:dev": "CONFIG=dev_assessment ../../util/_run_with_doppler.sh tsx src/scripts/importParticipantInvitations.ts",
     "script:invitations:prd": "CONFIG=prd ../../util/_run_with_doppler.sh tsx src/scripts/importParticipantInvitations.ts",
     "script:invitations:stg": "CONFIG=stg ../../util/_run_with_doppler.sh tsx src/scripts/importParticipantInvitations.ts",
-    "script:prod": "CONFIG=prd ../../util/_run_with_doppler.sh  tsx",
-    "script:stg": "CONFIG=stg ../../util/_run_with_doppler.sh  tsx",
+    "script:prod": "NODE_ENV=production CONFIG=prd ../../util/_run_with_doppler.sh  tsx",
+    "script:stg": "NODE_ENV=stg CONFIG=stg ../../util/_run_with_doppler.sh  tsx",
     "test": "vitest run",
     "test:local": "bash ./test/run-tests-local.sh",
     "test:watch": "vitest"

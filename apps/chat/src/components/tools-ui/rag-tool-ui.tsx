@@ -15,7 +15,7 @@ type RAGSearchResult =
   | string
 
 export const RAGToolUI = makeAssistantToolUI<RAGSearchArgs, RAGSearchResult>({
-  toolName: 'RAGSearch',
+  toolName: 'KB.doc_query',
   render: ({ args, status, result }) => {
     if (status.type === 'running') {
       return (

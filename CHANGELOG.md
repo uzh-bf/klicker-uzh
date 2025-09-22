@@ -2,6 +2,92 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.29](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.28...v3.4.0-alpha.29) (2025-09-21)
+
+
+### Bug Fixes
+
+* **packages/shared-components:** make sure the no points hint is not shown when sample solution is enabled ([f8624f8](https://github.com/uzh-bf/klicker-uzh/commit/f8624f8045c9b4a3690cdd443c419573f63447b9))
+
+## [3.4.0-alpha.28](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.27...v3.4.0-alpha.28) (2025-09-21)
+
+
+### Bug Fixes
+
+* **packages/graphql:** ensure that demo content elements and flashcards are seeded with correct base points setting ([baa924a](https://github.com/uzh-bf/klicker-uzh/commit/baa924a8d4fe33fe75d66d1eb52013d29feaa5f6))
+
+## [3.4.0-alpha.27](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.26...v3.4.0-alpha.27) (2025-09-21)
+
+
+### Enhancements
+
+* add functionality to display assessment activity results to students ([#4935](https://github.com/uzh-bf/klicker-uzh/issues/4935)) ([e349657](https://github.com/uzh-bf/klicker-uzh/commit/e3496577addc412e4165fadc2a46444b1d470e16))
+
+## [3.4.0-alpha.26](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.25...v3.4.0-alpha.26) (2025-09-21)
+
+
+### Bug Fixes
+
+* ensure that base points are always set to false for content elements and flashcards ([#4934](https://github.com/uzh-bf/klicker-uzh/issues/4934)) ([647b832](https://github.com/uzh-bf/klicker-uzh/commit/647b8321eda2e0a63fd588577a586972ebe4a34d))
+
+## [3.4.0-alpha.25](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.24...v3.4.0-alpha.25) (2025-09-21)
+
+
+### Features
+
+* **apps/chat:** dynamic MCP tools and chatbot parametrization, credit management improvements ([#4932](https://github.com/uzh-bf/klicker-uzh/issues/4932)) ([b3c8497](https://github.com/uzh-bf/klicker-uzh/commit/b3c84978d88144d9946d3c225d9226bb2af44c75))
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that countdown on live quiz blocks starts automatically ([ac535f1](https://github.com/uzh-bf/klicker-uzh/commit/ac535f1193807de9c488786f2aa5e324380289a8))
+* ensure that only valid live quiz grading parameters can be defined ([#4929](https://github.com/uzh-bf/klicker-uzh/issues/4929)) ([80546b4](https://github.com/uzh-bf/klicker-uzh/commit/80546b442b52e3d863b0414b63f12878843b9862))
+* **packages/graphql:** ensure that gamification and assessment settings are correctly applied to course activities ([#4931](https://github.com/uzh-bf/klicker-uzh/issues/4931)) ([42af351](https://github.com/uzh-bf/klicker-uzh/commit/42af3515aae338182e539a34b582b6b328f572bb))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add the possibility to filter for gamified, assessment and pin-protected activities ([#4933](https://github.com/uzh-bf/klicker-uzh/issues/4933)) ([2e3bee7](https://github.com/uzh-bf/klicker-uzh/commit/2e3bee77d87a7edb5cd036ebd0c7b520cc31b422))
+
+## [3.4.0-alpha.24](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.23...v3.4.0-alpha.24) (2025-09-19)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** move chatbot redirection page into course ([01ef1c3](https://github.com/uzh-bf/klicker-uzh/commit/01ef1c372060959b8077f060b919ec7d69a41de4))
+
+## [3.4.0-alpha.23](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.22...v3.4.0-alpha.23) (2025-09-19)
+
+
+### Bug Fixes
+
+* use assessment-api.klicker.uzh.ch ([b78447a](https://github.com/uzh-bf/klicker-uzh/commit/b78447a7e71fb1479391bd61dc81aa79e1c90c98))
+
+## [3.4.0-alpha.22](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.21...v3.4.0-alpha.22) (2025-09-19)
+
+
+### Bug Fixes
+
+* **apps/hatchet-worker-response-processor:** handle NaN values correctly when creating live quiz responses ([03f96a7](https://github.com/uzh-bf/klicker-uzh/commit/03f96a71965352cd5f45bb17de6c3c4dc9ce9e5a))
+* **deploy:** restore chat as assessment api ([78f90ea](https://github.com/uzh-bf/klicker-uzh/commit/78f90ea32c886144a9a5471d51ed62132af32758))
+
+## [3.4.0-alpha.21](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.20...v3.4.0-alpha.21) (2025-09-19)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that open overview functionality only forwards to course overview if sufficient permissions are available ([#4928](https://github.com/uzh-bf/klicker-uzh/issues/4928)) ([f50e492](https://github.com/uzh-bf/klicker-uzh/commit/f50e4925ece84b3d1e3b1c290a2f4d8d17253daa))
+
+## [3.4.0-alpha.20](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.19...v3.4.0-alpha.20) (2025-09-18)
+
+## [3.4.0-alpha.19](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.18...v3.4.0-alpha.19) (2025-09-18)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** getParticipantToken on PWA chatbot redirection page ([83e22e5](https://github.com/uzh-bf/klicker-uzh/commit/83e22e5f8b8f6c26905c316df094663c72d5a96e))
+* **packages/graphql:** make sure that instance cache data is also marked for removal when closing the block without student responses ([482c00c](https://github.com/uzh-bf/klicker-uzh/commit/482c00c2b40af147d096ae3ecb566335ebf099dd))
+
 ## [3.4.0-alpha.18](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.17...v3.4.0-alpha.18) (2025-09-18)
 
 

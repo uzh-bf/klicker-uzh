@@ -1,0 +1,16 @@
+query GetStudentAssessmentResults($courseId: String!) {
+  studentAssessmentResults(courseId: $courseId) {
+    liveQuizzes {
+      ...ActivityStudentPerformanceData
+    }
+    practiceQuizzes {
+      ...ActivityStudentPerformanceData
+    }
+    microLearnings {
+      ...ActivityStudentPerformanceData
+    }
+    groupActivities {
+      ...ActivityStudentPerformanceData
+    }
+  }
+}

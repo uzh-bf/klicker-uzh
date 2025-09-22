@@ -35,6 +35,14 @@ hatchet:
         pullPolicy: Always
         tag: clean-argocd
 
+    responseProcessorAssessment:
+      replicaCount: 1
+      priorityClassName: staging-workload
+      image:
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
+        pullPolicy: Always
+        tag: clean-argocd
+
 auth:
   priorityClassName: staging-workload
 

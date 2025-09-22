@@ -294,9 +294,10 @@ export async function manipulateLiveQuiz(
   const pinProtection = assessmentSetting || isPinProtected
 
   // if the activity is part of an assessment course, the course assignment can only be modified by course admins / owners
+  const isCourseAdminOwner = !!existingActivity?.course?._count.permissions
   if (
     existingActivity?.isAssessmentEnabled &&
-    !existingActivity?.course?._count.permissions &&
+    !isCourseAdminOwner &&
     (courseId === null || courseId !== existingActivity?.courseId)
   ) {
     throw new GraphQLError(
@@ -310,7 +311,8 @@ export async function manipulateLiveQuiz(
     (!existingActivity || // 2.1) assign new pin on activity creation
       ((courseId || existingActivity.courseId) && // 2.2) assign new pin on course assignment change (course defined at least before or after)
         courseId !== existingActivity.courseId) ||
-      (existingActivity && !existingActivity.courseId && !courseId)) // 2.3) assign new pin on pin setting change with no course assigned before and after edit
+      (existingActivity && !existingActivity.courseId && !courseId) || // 2.3) assign new pin on pin setting change with no course assigned before and after edit
+      (existingActivity && !existingActivity.pinCode)) // 2.4) assign new pin if pin protection is enabled, but no pin was set before
 
   // find a new pin code that is still available, if required
   let newPinCode: string | undefined | null = existingActivity?.pinCode
@@ -348,11 +350,24 @@ export async function manipulateLiveQuiz(
     name: name.trim(),
     displayName: displayName.trim(),
     description,
-    pointsMultiplier: multiplier,
-    defaultPoints: defaultPoints ?? undefined,
-    defaultCorrectPoints: defaultCorrectPoints ?? undefined,
-    maxBonusPoints: maxBonusPoints ?? undefined,
-    timeToZeroBonus: timeToZeroBonus ?? undefined,
+    pointsMultiplier: Math.max(multiplier, 1),
+    defaultPoints:
+      typeof defaultPoints !== 'undefined' && defaultPoints !== null
+        ? Math.max(defaultPoints, 0)
+        : undefined,
+    defaultCorrectPoints:
+      typeof defaultCorrectPoints !== 'undefined' &&
+      defaultCorrectPoints !== null
+        ? Math.max(defaultCorrectPoints, 0)
+        : undefined,
+    maxBonusPoints:
+      typeof maxBonusPoints !== 'undefined' && maxBonusPoints !== null
+        ? Math.max(maxBonusPoints, 0)
+        : undefined,
+    timeToZeroBonus:
+      typeof timeToZeroBonus !== 'undefined' && timeToZeroBonus !== null
+        ? Math.max(timeToZeroBonus, 1)
+        : undefined,
     isGamificationEnabled: gamificationSetting,
     isAssessmentEnabled: assessmentSetting,
     pinCode: pinProtection ? newPinCode : null, // if pin protection applies (and the course changed), assign a pin
@@ -408,7 +423,7 @@ export async function manipulateLiveQuiz(
             order: persistentInstanceOrderMap[instance.id],
             options: {
               ...instance.options,
-              pointsMultiplier: multiplier * elementMultiplier,
+              pointsMultiplier: Math.max(multiplier, 1) * elementMultiplier,
             },
           },
         })
@@ -519,7 +534,7 @@ export async function manipulateLiveQuiz(
     reviewStatus: activity.reviewStatus,
     type: ActivityType.LIVE_QUIZ,
     status: activity.status,
-    courseId: activity.course?.id,
+    courseId: isCourseAdminOwner ? activity.course?.id : null, // only return course id if the user can access corresponding course overview
     courseName: activity.course?.name,
     courseLanguage: activity.course?.language,
     courseStartDate: activity.course?.startDate,

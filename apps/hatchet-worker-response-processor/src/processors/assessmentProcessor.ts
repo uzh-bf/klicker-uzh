@@ -404,9 +404,11 @@ export async function processAssessmentResponse(
             : computedCorrectness === 0
               ? ResponseCorrectness.WRONG
               : ResponseCorrectness.PARTIAL,
-        basePoints: awardedBasePoints,
-        correctnessPoints: awardedCorrectnessPoints,
-        bonusPoints: awardedBonusPoints,
+        basePoints: Number.isNaN(awardedBasePoints) ? 0 : awardedBasePoints,
+        correctnessPoints: Number.isNaN(awardedCorrectnessPoints)
+          ? 0
+          : awardedCorrectnessPoints,
+        bonusPoints: Number.isNaN(awardedBonusPoints) ? 0 : awardedBonusPoints,
         elementBlockExecution: parseInt(blockExecution ?? '0', 10),
         instance: { connect: { id: Number(message.instanceId) } },
         participant: { connect: { id: message.participantId } },
