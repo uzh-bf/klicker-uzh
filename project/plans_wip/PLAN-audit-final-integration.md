@@ -19,7 +19,7 @@ After thorough analysis, the audit logging should focus EXCLUSIVELY on:
 - ❌ `USER_CLOSE_BLOCK` - NOT logged when deactivating blocks
 
 **2. Student Authentication (Assessment Relevant Only)**
-- ✅ `loginParticipant` - Regular student login
+- ✅ `loginParticipant` - Regular student login (⚠️ success audit missing)
 - ✅ `loginParticipantMagicLink` - Magic link authentication
 - ✅ `loginParticipantWithLti` - LTI integration for assessments
 - ✅ `logoutParticipant` - Student logout
@@ -27,7 +27,7 @@ After thorough analysis, the audit logging should focus EXCLUSIVELY on:
 - ❌ `loginTemporaryParticipant` - NOT NEEDED (not assessment)
 
 **3. Student Response Tracking**
-- ✅ `PARTICIPANT_SUBMIT_RESPONSE` - Final answer submission
+- ⚠️ `PARTICIPANT_SUBMIT_RESPONSE` - Emitted by PWA but blocked by audit gateway allow-list
 - ❌ `PARTICIPANT_UPDATE_ANSWER` - Commented out, needs smart implementation
 - ❌ `PARTICIPANT_VIEW_INSTANCE` - Not implemented
 - ❌ `PARTICIPANT_JOIN_QUIZ` - Not implemented
@@ -55,7 +55,20 @@ After thorough analysis, the audit logging should focus EXCLUSIVELY on:
 - Content creation/editing not tracked
 - Assessment settings changes not logged
 
+**5. Audit Gateway Allow-List Misalignment**
+- Public endpoint currently only allows `PARTICIPANT_VIEW_INSTANCE`
+- PWA events like `PARTICIPANT_SUBMIT_RESPONSE`, `PARTICIPANT_UPDATE_ANSWER`, `PARTICIPANT_JOIN_QUIZ`, `PARTICIPANT_QUIZ_PIN_*` get rejected
+
 ## Detailed Implementation Plan
+
+### Phase 0: Audit Gateway Alignment (0.5 day)
+
+**0.1 Expand Public Allow-List**
+- Add `PARTICIPANT_SUBMIT_RESPONSE`, `PARTICIPANT_UPDATE_ANSWER`, `PARTICIPANT_JOIN_QUIZ`, `PARTICIPANT_QUIZ_PIN_SUCCESS`, `PARTICIPANT_QUIZ_PIN_FAILED`, and `CLIENT_ERROR`
+- Update tests in audit service to cover new actions
+
+**0.2 Environment Wiring**
+- Ensure `NEXT_PUBLIC_AUDIT_SERVICE_URL` is set in assessment PWA envs
 
 ### Phase 1: Complete Lecturer Control Events (1 day)
 
@@ -102,7 +115,7 @@ if (liveQuiz.isAssessmentEnabled) {
   
   if (!liveQuiz.pinCode || pin !== liveQuiz.pinCode) {
     await ctx.auditClient.log({
-      scope: AuditScope.PUBLIC,
+      scope: AuditScope.INTERNAL,
       action: AuditAction.PARTICIPANT_QUIZ_PIN_FAILED,
       subject: `session:${sessionId}`,
       resource: `live-quiz:${liveQuizId}`,
@@ -115,7 +128,7 @@ if (liveQuiz.isAssessmentEnabled) {
     })
   } else {
     await ctx.auditClient.log({
-      scope: AuditScope.PUBLIC,
+      scope: AuditScope.INTERNAL,
       action: AuditAction.PARTICIPANT_QUIZ_PIN_SUCCESS,
       subject: `session:${sessionId}`,
       resource: `live-quiz:${liveQuizId}`,
@@ -343,6 +356,10 @@ if (quiz.isAssessmentEnabled && settingsChanged) {
 
 ## Priority Implementation Order
 
+### Pre-Week 0 - Gateway Alignment
+1. Expand public allow-list and tests in audit service
+2. Wire `NEXT_PUBLIC_AUDIT_SERVICE_URL` in assessment PWA envs
+
 ### Week 1 - Critical Assessment Gaps
 1. **Complete lecturer control events** (USER_END_QUIZ, USER_CLOSE_BLOCK)
 2. **Fix Live Quiz PIN validation** for assessment quizzes
@@ -366,6 +383,7 @@ if (quiz.isAssessmentEnabled && settingsChanged) {
 - ✅ Answer updates logged only on actual changes
 - ✅ Zero impact on non-assessment functionality
 - ✅ < 50ms performance overhead maintained
+- ✅ Public audit endpoint accepts intended assessment actions (no rejections)
 
 ## Technical Considerations
 
@@ -373,6 +391,7 @@ if (quiz.isAssessmentEnabled && settingsChanged) {
 - Use fire-and-forget async logging
 - Implement change detection to reduce event volume
 - Consider batching for high-frequency events
+- Enforce 32KB attributes size cap; trim/obfuscate large fields before logging
 
 ### Security
 - Hash PINs before logging
@@ -395,6 +414,7 @@ if (quiz.isAssessmentEnabled && settingsChanged) {
 - Full assessment quiz flow
 - Error scenarios
 - Performance under load
+- Audit public endpoint allow-list accepts assessment actions
 
 ### End-to-End Tests
 - Lecturer creates and runs assessment
