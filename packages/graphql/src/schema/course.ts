@@ -1,5 +1,9 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { ActivityStudentPerformance as ActivityStudentPerformanceType } from '@klicker-uzh/types'
+import {
+  ActivityStudentPerformance as ActivityStudentPerformanceType,
+  AssessmentResultsLiveQuiz as AssessmentResultsLiveQuizType,
+  StudentAssessmentQuizResults as StudentAssessmentQuizResultsType,
+} from '@klicker-uzh/types'
 import dayjs from 'dayjs'
 import builder from '../builder.js'
 import {
@@ -495,4 +499,35 @@ export const ActivityStudentPerformance =
       availableBonusPoints: t.exposeFloat('availableBonusPoints'),
     }),
   })
+
+export const StudentAssessmentQuizResultsRef =
+  builder.objectRef<StudentAssessmentQuizResultsType>(
+    'StudentAssessmentQuizResults'
+  )
+export const StudentAssessmentQuizResults =
+  StudentAssessmentQuizResultsRef.implement({
+    fields: (t) => ({
+      participantId: t.exposeString('participantId'),
+      participantEmail: t.exposeString('participantEmail'),
+      basePoints: t.exposeFloat('basePoints'),
+      correctnessPoints: t.exposeFloat('correctnessPoints'),
+      bonusPoints: t.exposeFloat('bonusPoints'),
+    }),
+  })
+
+export const AssessmentResultsLiveQuizRef =
+  builder.objectRef<AssessmentResultsLiveQuizType>('AssessmentResultsLiveQuiz')
+export const AssessmentResultsLiveQuiz = AssessmentResultsLiveQuizRef.implement(
+  {
+    fields: (t) => ({
+      name: t.exposeString('name'),
+      availableBasePoints: t.exposeFloat('availableBasePoints'),
+      availableCorrectnessPoints: t.exposeFloat('availableCorrectnessPoints'),
+      availableBonusPoints: t.exposeFloat('availableBonusPoints'),
+      studentResults: t.expose('studentResults', {
+        type: [StudentAssessmentQuizResultsRef],
+      }),
+    }),
+  }
+)
 // #endregion

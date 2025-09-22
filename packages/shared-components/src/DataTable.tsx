@@ -36,6 +36,7 @@ interface DataTableProps<TData, TValue> {
   className?: {
     table?: string
     tableHeader?: string
+    tableRow?: string
     tableCell?: string
     buttons?: string
     buttonsContainer?: string
@@ -44,6 +45,8 @@ interface DataTableProps<TData, TValue> {
   isPaginated?: boolean
   isResetSortingEnabled?: boolean
   initialSorting?: SortingState
+  onRowClick?: (row: TData) => void
+  getRowClassName?: (row: TData) => string | undefined
 }
 
 function DataTable<TData, TValue>({
@@ -55,6 +58,8 @@ function DataTable<TData, TValue>({
   isPaginated,
   isResetSortingEnabled,
   initialSorting,
+  onRowClick,
+  getRowClassName,
 }: DataTableProps<TData, TValue>) {
   const t = useTranslations()
   const [sorting, setSorting] = useState<SortingState>(initialSorting ?? [])
@@ -78,15 +83,15 @@ function DataTable<TData, TValue>({
     },
   })
 
-  const csvColumns = useMemo(() => {
-    return columns.map((column) => {
-      return {
+  const csvColumns = useMemo(
+    () =>
+      columns.map((column) => ({
         id: column.accessorKey,
         label: column.header,
         displayName: column.displayName,
-      }
-    })
-  }, [columns])
+      })),
+    [columns]
+  )
 
   return (
     <>
@@ -121,6 +126,11 @@ function DataTable<TData, TValue>({
               <ShadcnTableRow
                 key={row.id}
                 data-state={row.getIsSelected() && 'selected'}
+                onClick={() => onRowClick?.(row.original)}
+                className={twMerge(
+                  className?.tableRow,
+                  getRowClassName?.(row.original)
+                )}
               >
                 {row.getVisibleCells().map((cell) => (
                   <ShadcnTableCell

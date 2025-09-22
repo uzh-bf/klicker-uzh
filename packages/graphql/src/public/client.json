@@ -166,6 +166,7 @@
    "GetAnswerCollectionsElements": "c0fb446d39dcf0abfa86bc00dbecb29dffa8716cbd5dca352c3d87140eb2f374",
    "GetAnswerCollectionsInfo": "8b6886e068cfa83bb4fb7cc1f00ce7b04dd92ae9f55faf6d5b77653c3da24623",
    "GetArtificialInstance": "89d6ac92566a3e58b1ded67069879270c412a70254acf111cb1458fa88bd832f",
+   "GetAssessmentResultsLiveQuiz": "47f6231e16355a468c211d312de7dd5b20ecb7497e34f644ac8e614da197cc81",
    "GetBasicCourseInformation": "14169116abd9278adb08977b9c153403e6065ab0c3d02a6beb38017e1c8b19d6",
    "GetBookmarkedElementStacks": "e3d2839358d95be60ce3506b37a84964af8e43d1b29342034c3e625873c5b8ca",
    "GetBookmarksPracticeQuiz": "162b4bf626d9ea2356883d0a5d85f564dc4e9428c0cc2030fcd68130f3b82184",

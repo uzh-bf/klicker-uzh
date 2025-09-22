@@ -30,7 +30,7 @@ function useEvaluationTableColumns({
           return (
             <TableSortingButton
               column={column}
-              buttonTextSize={textSize}
+              className={textSize}
               title={t('manage.evaluation.count')}
             />
           )
@@ -44,7 +44,7 @@ function useEvaluationTableColumns({
               return (
                 <TableSortingButton
                   column={column}
-                  buttonTextSize={textSize}
+                  className={textSize}
                   title={t('manage.evaluation.value')}
                 />
               )
@@ -69,7 +69,7 @@ function useEvaluationTableColumns({
           return (
             <TableSortingButton
               column={column}
-              buttonTextSize={textSize}
+              className={textSize}
               title="%"
             />
           )
@@ -89,7 +89,7 @@ function useEvaluationTableColumns({
                 return (
                   <TableSortingButton
                     column={column}
-                    buttonTextSize={textSize}
+                    className={textSize}
                     title={t('manage.evaluation.selection')}
                   />
                 )
@@ -132,7 +132,7 @@ function useEvaluationTableColumns({
                 return (
                   <TableSortingButton
                     column={column}
-                    buttonTextSize={textSize}
+                    className={textSize}
                     title="T/F"
                   />
                 )

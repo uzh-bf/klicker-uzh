@@ -1280,6 +1280,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       batchOperationFailed:
         'Beim Anwenden der Batch-Operation ist ein Fehler aufgetreten. Bitte überprüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
     },
+    assessment: {
+      assessmentResults: 'Assessment Resultate',
+      liveQuizStudentResultsTitle: 'Studierendenresultate',
+      liveQuizStudentEmailColumn: 'Studierende (E-Mail)',
+      liveQuizStudentResultsEmpty:
+        'Es sind noch keine Studierendenresultate vorhanden.',
+    },
     support: {
       modalTitle: 'Support KlickerUZH',
       yourFeedback: 'Ihr Feedback',

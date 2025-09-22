@@ -272,6 +272,14 @@ type AnswerCollectionPreviewEntry {
   value: String!
 }
 
+type AssessmentResultsLiveQuiz {
+  availableBasePoints: Float!
+  availableBonusPoints: Float!
+  availableCorrectnessPoints: Float!
+  name: String!
+  studentResults: [StudentAssessmentQuizResults!]!
+}
+
 type AvatarSettings {
   accessory: String!
   clothing: String!
@@ -2160,6 +2168,7 @@ type PushSubscription {
 type Query {
   activityDetails(activityId: String!, activityType: ActivityType!): ActivityDetails
   artificialInstance(elementId: Int!): ElementInstance
+  assessmentResultsLiveQuiz(liveQuizId: String!): AssessmentResultsLiveQuiz
   basicCourseInformation(courseId: String!): StudentCourse
   checkParticipantNameAvailable(username: String!): Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
@@ -2542,6 +2551,14 @@ type Statistics {
   q1: Float!
   q3: Float!
   sd: Float!
+}
+
+type StudentAssessmentQuizResults {
+  basePoints: Float!
+  bonusPoints: Float!
+  correctnessPoints: Float!
+  participantEmail: String!
+  participantId: String!
 }
 
 type StudentAssessmentResults {

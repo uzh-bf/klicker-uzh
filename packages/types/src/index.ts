@@ -979,4 +979,19 @@ export type ActivityStudentPerformance = {
   bonusPoints: number
   availableBonusPoints: number
 }
+
+export type StudentAssessmentQuizResults = {
+  participantId: string
+  participantEmail: string
+  basePoints: number
+  correctnessPoints: number
+  bonusPoints: number
+}
+export type AssessmentResultsLiveQuiz = {
+  name: string
+  availableBasePoints: number
+  availableCorrectnessPoints: number
+  availableBonusPoints: number
+  studentResults: StudentAssessmentQuizResults[]
+}
 // #endregion

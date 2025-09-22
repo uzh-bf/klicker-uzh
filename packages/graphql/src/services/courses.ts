@@ -2,7 +2,9 @@ import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityStudentPerformance,
   ActivityType,
+  AssessmentResultsLiveQuiz,
   SharingType,
+  StudentAssessmentQuizResults,
 } from '@klicker-uzh/types'
 import { levelFromXp, recomputeDerivedPermissions } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
@@ -316,6 +318,113 @@ export async function getCourseOverviewData(
   }
 }
 
+function getInstanceScoringInfo({
+  instance,
+}: {
+  instance: DB.ElementInstance
+}) {
+  const { elementData } = instance
+  const hasSampleSolution =
+    'options' in elementData &&
+    'hasSampleSolution' in elementData.options &&
+    (elementData.options.hasSampleSolution ?? false)
+
+  // compute the available points based on the instance information
+  const hasBasePoints =
+    instance.elementType !== DB.ElementType.FLASHCARD &&
+    instance.elementType !== DB.ElementType.CONTENT &&
+    (instance.options.basePoints ?? false)
+  const pointsMultiplier = instance.options.pointsMultiplier ?? 1
+
+  return { hasSampleSolution, hasBasePoints, pointsMultiplier }
+}
+
+function getStudentAssessmentQuizPerformance({
+  quiz,
+}: {
+  quiz: DB.LiveQuiz & {
+    blocks: (DB.ElementBlock & {
+      elements: (DB.ElementInstance & {
+        liveQuizResponses: DB.LiveQuizResponse[]
+      })[]
+    })[]
+  }
+}) {
+  // extract the scoring-related parameters from the live quiz
+  const defaultPoints = quiz.defaultPoints
+  const defaultCorrectPoints = quiz.defaultCorrectPoints
+  const defaultMaxBonusPoints = quiz.maxBonusPoints
+
+  const quizResults = quiz.blocks.reduce<ActivityStudentPerformance>(
+    (quizAcc, block) => {
+      const instanceResults = block.elements.reduce<
+        Omit<
+          ActivityStudentPerformance,
+          'id' | 'displayName' | 'finishedAt' | 'multiplier'
+        >
+      >(
+        (blockAcc, instance) => {
+          const { hasSampleSolution, hasBasePoints, pointsMultiplier } =
+            getInstanceScoringInfo({ instance })
+
+          blockAcc.availableBasePoints += hasBasePoints ? defaultPoints : 0
+          blockAcc.availableCorrectnessPoints += hasSampleSolution
+            ? pointsMultiplier * defaultCorrectPoints
+            : 0
+          blockAcc.availableBonusPoints += hasSampleSolution
+            ? pointsMultiplier * defaultMaxBonusPoints
+            : 0
+
+          if (
+            instance.liveQuizResponses.length > 0 &&
+            instance.liveQuizResponses[0]
+          ) {
+            const response = instance.liveQuizResponses[0]
+            blockAcc.basePoints += response.basePoints
+            blockAcc.correctnessPoints += response.correctnessPoints
+            blockAcc.bonusPoints += response.bonusPoints
+          }
+
+          return blockAcc
+        },
+        {
+          basePoints: 0,
+          availableBasePoints: 0,
+          correctnessPoints: 0,
+          availableCorrectnessPoints: 0,
+          bonusPoints: 0,
+          availableBonusPoints: 0,
+        }
+      )
+
+      // increment the results of the block corresponding to the instance results
+      quizAcc.basePoints += instanceResults.basePoints
+      quizAcc.availableBasePoints += instanceResults.availableBasePoints
+      quizAcc.correctnessPoints += instanceResults.correctnessPoints
+      quizAcc.availableCorrectnessPoints +=
+        instanceResults.availableCorrectnessPoints
+      quizAcc.bonusPoints += instanceResults.bonusPoints
+      quizAcc.availableBonusPoints += instanceResults.availableBonusPoints
+
+      return quizAcc
+    },
+    {
+      id: quiz.id,
+      displayName: quiz.displayName,
+      finishedAt: quiz.finishedAt!,
+      multiplier: quiz.pointsMultiplier,
+      basePoints: 0,
+      availableBasePoints: 0,
+      correctnessPoints: 0,
+      availableCorrectnessPoints: 0,
+      bonusPoints: 0,
+      availableBonusPoints: 0,
+    }
+  )
+
+  return quizResults
+}
+
 export async function getStudentAssessmentResults(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
@@ -381,87 +490,7 @@ export async function getStudentAssessmentResults(
     ActivityStudentPerformance[]
   >((acc, lq) => {
     // extract the scoring-related parameters from the live quiz
-    const defaultPoints = lq.defaultPoints
-    const defaultCorrectPoints = lq.defaultCorrectPoints
-    const defaultMaxBonusPoints = lq.maxBonusPoints
-
-    const quizResults = lq.blocks.reduce<ActivityStudentPerformance>(
-      (quizAcc, block) => {
-        const instanceResults = block.elements.reduce<
-          Omit<
-            ActivityStudentPerformance,
-            'id' | 'displayName' | 'finishedAt' | 'multiplier'
-          >
-        >(
-          (blockAcc, instance) => {
-            const { elementData } = instance
-            const hasSampleSolution =
-              'options' in elementData &&
-              'hasSampleSolution' in elementData.options &&
-              (elementData.options.hasSampleSolution ?? false)
-
-            // compute the available points based on the instance information
-            const hasBasePoints =
-              instance.elementType !== DB.ElementType.FLASHCARD &&
-              instance.elementType !== DB.ElementType.CONTENT &&
-              (instance.options.basePoints ?? false)
-            const pointsMultiplier = instance.options.pointsMultiplier ?? 1
-
-            blockAcc.availableBasePoints += hasBasePoints ? defaultPoints : 0
-            blockAcc.availableCorrectnessPoints += hasSampleSolution
-              ? pointsMultiplier * defaultCorrectPoints
-              : 0
-            blockAcc.availableBonusPoints += hasSampleSolution
-              ? pointsMultiplier * defaultMaxBonusPoints
-              : 0
-
-            if (
-              instance.liveQuizResponses.length > 0 &&
-              instance.liveQuizResponses[0]
-            ) {
-              const response = instance.liveQuizResponses[0]
-              blockAcc.basePoints += response.basePoints
-              blockAcc.correctnessPoints += response.correctnessPoints
-              blockAcc.bonusPoints += response.bonusPoints
-            }
-
-            return blockAcc
-          },
-          {
-            basePoints: 0,
-            availableBasePoints: 0,
-            correctnessPoints: 0,
-            availableCorrectnessPoints: 0,
-            bonusPoints: 0,
-            availableBonusPoints: 0,
-          }
-        )
-
-        // increment the results of the block corresponding to the instance results
-        quizAcc.basePoints += instanceResults.basePoints
-        quizAcc.availableBasePoints += instanceResults.availableBasePoints
-        quizAcc.correctnessPoints += instanceResults.correctnessPoints
-        quizAcc.availableCorrectnessPoints +=
-          instanceResults.availableCorrectnessPoints
-        quizAcc.bonusPoints += instanceResults.bonusPoints
-        quizAcc.availableBonusPoints += instanceResults.availableBonusPoints
-
-        return quizAcc
-      },
-      {
-        id: lq.id,
-        displayName: lq.displayName,
-        finishedAt: lq.finishedAt!,
-        multiplier: lq.pointsMultiplier,
-        basePoints: 0,
-        availableBasePoints: 0,
-        correctnessPoints: 0,
-        availableCorrectnessPoints: 0,
-        bonusPoints: 0,
-        availableBonusPoints: 0,
-      }
-    )
-
+    const quizResults = getStudentAssessmentQuizPerformance({ quiz: lq })
     return acc.concat(quizResults)
   }, [])
 
@@ -472,6 +501,131 @@ export async function getStudentAssessmentResults(
     groupActivities: [],
   }
 }
+
+export async function getAssessmentResultsLiveQuiz(
+  { liveQuizId }: { liveQuizId: string },
+  ctx: ContextWithUser
+): Promise<AssessmentResultsLiveQuiz | null> {
+  // fetch the live quiz and verify that the requesting user is an admin of the associated assessment course
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id: liveQuizId,
+      isAssessmentEnabled: true,
+      course: {
+        isAssessmentEnabled: true,
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [DB.PermissionLevel.OWNER, DB.PermissionLevel.ADMIN],
+            },
+          },
+        },
+      },
+    },
+    include: {
+      blocks: {
+        include: {
+          elements: {
+            include: {
+              liveQuizResponses: {
+                include: {
+                  participant: {
+                    // TODO: think about replacing this hard-coded affiliation filter to be user selectable
+                    include: { accounts: { where: { ssoType: 'uzh' } } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!liveQuiz) return null
+
+  // aggreagte the collected points by students (and overall available points) for the quiz
+  const liveQuizResults = liveQuiz.blocks.reduce<{
+    basePoints: number
+    correctnessPoints: number
+    bonusPoints: number
+    students: { [participantId: string]: StudentAssessmentQuizResults }
+  }>(
+    (quizAcc, block) => {
+      block.elements.forEach((instance) => {
+        const { hasSampleSolution, hasBasePoints, pointsMultiplier } =
+          getInstanceScoringInfo({ instance })
+
+        // increment the available points that can be collected within the live quiz
+        quizAcc.basePoints += hasBasePoints ? liveQuiz.defaultPoints : 0
+        quizAcc.correctnessPoints += hasSampleSolution
+          ? pointsMultiplier * liveQuiz.defaultCorrectPoints
+          : 0
+        quizAcc.bonusPoints += hasSampleSolution
+          ? pointsMultiplier * liveQuiz.maxBonusPoints
+          : 0
+
+        // iterate over the student responses and aggregate them into the quiz results object
+        instance.liveQuizResponses.forEach((response) => {
+          // get the student's affiliation email, if available
+          const email =
+            response.participant.accounts[0]?.ssoEmail ??
+            response.participant.email ??
+            'Missing E-Mail'
+
+          // check if the student already has an entry in the results object and set it otherwise
+          if (quizAcc.students[response.participantId]) {
+            // increment the results object with the student response content
+            quizAcc.students[response.participantId]!.basePoints +=
+              response.basePoints
+            quizAcc.students[response.participantId]!.correctnessPoints +=
+              response.correctnessPoints
+            quizAcc.students[response.participantId]!.bonusPoints +=
+              response.bonusPoints
+          } else {
+            // set up a new student entry in the results object with the response content
+            quizAcc.students[response.participantId] = {
+              participantId: response.participantId,
+              participantEmail: email,
+              basePoints: response.basePoints,
+              correctnessPoints: response.correctnessPoints,
+              bonusPoints: response.bonusPoints,
+            }
+          }
+        })
+      })
+
+      return quizAcc
+    },
+    {
+      basePoints: 0,
+      correctnessPoints: 0,
+      bonusPoints: 0,
+      students: {},
+    }
+  )
+
+  // TODO: remove
+  console.log('LIVE QUIZ RESULTS', liveQuizResults)
+
+  // return the aggregated data in the correct format
+  return {
+    name: liveQuiz.name,
+    availableBasePoints: liveQuizResults.basePoints,
+    availableCorrectnessPoints: liveQuizResults.correctnessPoints,
+    availableBonusPoints: liveQuizResults.bonusPoints,
+    studentResults: Object.values(liveQuizResults.students),
+  }
+}
+
+// TODO: return a list of points awarded to a student for each element instance in the quiz alongside the actual instance and the response -> to open in modal? -> or use suspense?
+// export async function getAssessmentResultsLiveQuizStudent(
+//   { liveQuizId, participantId }: { liveQuizId: string; participantId: string },
+//   ctx: ContextWithUser
+// ) {
+//   // TODO: implement
+// }
 
 async function computeRollingLeaderboardEntries(
   { courseId, days }: { courseId: string; days: number },

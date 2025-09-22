@@ -31,6 +31,7 @@ import {
   WeeklyCourseActivities,
 } from './analytics.js'
 import {
+  AssessmentResultsLiveQuiz,
   Course,
   CourseLeaderboard,
   CourseListEntry,
@@ -902,6 +903,15 @@ export const Query = builder.queryType({
         args: { courseId: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await CourseService.getStudentAssessmentResults(args, ctx)
+        },
+      }),
+
+      assessmentResultsLiveQuiz: t.withAuth(asUser).field({
+        nullable: true,
+        type: AssessmentResultsLiveQuiz,
+        args: { liveQuizId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await CourseService.getAssessmentResultsLiveQuiz(args, ctx)
         },
       }),
 

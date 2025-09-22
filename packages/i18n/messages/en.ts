@@ -1277,6 +1277,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       batchOperationFailed:
         'An error occurred while applying the batch operation. Please check your permissions and try again.',
     },
+    assessment: {
+      assessmentResults: 'Assessment Results',
+      liveQuizStudentResultsTitle: 'Student Results',
+      liveQuizStudentEmailColumn: 'Student (email)',
+      liveQuizStudentResultsEmpty: 'No student results available yet.',
+    },
     support: {
       modalTitle: 'Support KlickerUZH',
       yourFeedback: 'Your Feedback',
