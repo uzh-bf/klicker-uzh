@@ -1306,6 +1306,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       errorLoadingStudentLiveQuizResponses:
         'Beim Laden der Studierendenantworten ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
       responseBy: 'Antwort von {email}',
+      noSampleSolution: 'Keine Musterlösung',
     },
     support: {
       modalTitle: 'Support KlickerUZH',

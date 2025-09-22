@@ -1302,6 +1302,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       errorLoadingStudentLiveQuizResponses:
         'An error occurred while loading the student responses. Please try again.',
       responseBy: 'Response by {email}',
+      noSampleSolution: 'No sample solution',
     },
     support: {
       modalTitle: 'Support KlickerUZH',

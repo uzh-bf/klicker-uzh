@@ -112,6 +112,7 @@ function LiveQuizSingleStudentResults({
 
         return {
           ...instance,
+          hasSampleSolution,
           basePoints: instanceObj.basePoints,
           correctnessPoints: instanceObj.correctnessPoints,
           bonusPoints: instanceObj.bonusPoints,

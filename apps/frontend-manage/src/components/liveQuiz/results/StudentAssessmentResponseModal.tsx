@@ -1,6 +1,7 @@
 import {
   faCheckCircle,
   faCircleHalfStroke,
+  faInfoCircle,
   faXmarkCircle,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -17,6 +18,7 @@ import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export type AssessmentResultInstance = ElementInstance & {
+  hasSampleSolution: boolean
   basePoints: number
   correctnessPoints: number
   bonusPoints: number
@@ -91,13 +93,18 @@ function StudentAssessmentResponseModal({
                     email: participantEmail,
                   })}
                 </span>
-                {
+                {instance.hasSampleSolution ? (
                   correctnessLabelMap[
                     (!!response
                       ? (instance.correctness ?? 'UNSET')
                       : 'UNSET') as ResponseCorrectness | 'UNSET'
                   ]
-                }
+                ) : (
+                  <div className="text-primary-100 flex flex-row items-center gap-1.5">
+                    <FontAwesomeIcon icon={faInfoCircle} />
+                    <span>{t('manage.assessment.noSampleSolution')}</span>
+                  </div>
+                )}
               </div>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
