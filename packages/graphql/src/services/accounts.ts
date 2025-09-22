@@ -1481,19 +1481,11 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       explanation:
         'Flashcards are a great way to learn educational content by heart. Both sides of the flashcard fully support LaTeX and Markdown syntax, as well as images.',
       pointsMultiplier: 1,
-      owner: {
-        connect: {
-          id: ctx.user.sub,
-        },
-      },
+      owner: { connect: { id: ctx.user.sub } },
       tags: {
-        connect: {
-          ownerId_name: {
-            ownerId: ctx.user.sub,
-            name: 'Demo Tag',
-          },
-        },
+        connect: { ownerId_name: { ownerId: ctx.user.sub, name: 'Demo Tag' } },
       },
+      basePoints: false,
     },
   })
   await recomputeDerivedPermissions(
@@ -1509,19 +1501,11 @@ async function seedDemoQuestions(ctx: ContextWithUser) {
       content:
         'Content elements are a great way to provide additional information to your students. They fully support LaTeX and Markdown syntax and allow to include images. You can also use them to recap relevant course content in asynchronous KlickerUZH elements before asking a series of questions.',
       options: {},
-      owner: {
-        connect: {
-          id: ctx.user.sub,
-        },
-      },
+      owner: { connect: { id: ctx.user.sub } },
       tags: {
-        connect: {
-          ownerId_name: {
-            ownerId: ctx.user.sub,
-            name: 'Demo Tag',
-          },
-        },
+        connect: { ownerId_name: { ownerId: ctx.user.sub, name: 'Demo Tag' } },
       },
+      basePoints: false,
     },
   })
   await recomputeDerivedPermissions(

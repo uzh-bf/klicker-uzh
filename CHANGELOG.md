@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.29](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.28...v3.4.0-alpha.29) (2025-09-21)
+
+
+### Bug Fixes
+
+* **packages/shared-components:** make sure the no points hint is not shown when sample solution is enabled ([f8624f8](https://github.com/uzh-bf/klicker-uzh/commit/f8624f8045c9b4a3690cdd443c419573f63447b9))
+
+## [3.4.0-alpha.28](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.27...v3.4.0-alpha.28) (2025-09-21)
+
+
+### Bug Fixes
+
+* **packages/graphql:** ensure that demo content elements and flashcards are seeded with correct base points setting ([baa924a](https://github.com/uzh-bf/klicker-uzh/commit/baa924a8d4fe33fe75d66d1eb52013d29feaa5f6))
+
+## [3.4.0-alpha.27](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.26...v3.4.0-alpha.27) (2025-09-21)
+
+
+### Enhancements
+
+* add functionality to display assessment activity results to students ([#4935](https://github.com/uzh-bf/klicker-uzh/issues/4935)) ([e349657](https://github.com/uzh-bf/klicker-uzh/commit/e3496577addc412e4165fadc2a46444b1d470e16))
+
 ## [3.4.0-alpha.26](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.25...v3.4.0-alpha.26) (2025-09-21)
 
 
