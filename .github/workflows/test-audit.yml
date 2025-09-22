@@ -129,6 +129,13 @@ jobs:
           pnpm run build
           nohup pnpm start &
           sleep 10
+        env:
+          NODE_ENV: test
+          AUDIT_TABLE_CONNECTION_STRING: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;
+          AUDIT_TABLE_NAME: auditevents
+          AUDIT_TOKEN: test-secret-token-123
+          APP_SECRET: abcd
+          AUDIT_CORS_ORIGINS: http://localhost:3002
 
       - name: Test audit package
         shell: bash
