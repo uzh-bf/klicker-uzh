@@ -21,13 +21,89 @@ jobs:
     permissions:
       contents: read
       packages: write
+
     services:
+      postgres:
+        image: postgres:14.18
+        env:
+          POSTGRES_USER: klicker
+          POSTGRES_PASSWORD: klicker
+          POSTGRES_DB: klicker-prod
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      postgres_hatchet:
+        image: postgres:14.18
+        env:
+          POSTGRES_USER: hatchet
+          POSTGRES_PASSWORD: hatchet
+          POSTGRES_DB: hatchet
+        options: >-
+          --health-cmd "pg_isready -U hatchet -d hatchet"
+          --health-interval 5s
+          --health-timeout 10s
+          --health-retries 10
+          --health-start-period 30s
+        ports:
+          - 5433:5432
+
+      hatchet:
+        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:v0.73.1
+        env:
+          DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
+          SERVER_AUTH_COOKIE_DOMAIN: localhost
+          SERVER_AUTH_COOKIE_INSECURE: 't'
+          SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
+          SERVER_GRPC_INSECURE: 't'
+          SERVER_GRPC_BROADCAST_ADDRESS: localhost:7077
+          SERVER_INTERNAL_CLIENT_INTERNAL_GRPC_BROADCAST_ADDRESS: localhost:7077
+          SERVER_GRPC_PORT: '7077'
+          SERVER_URL: http://localhost:8888
+          SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
+          SERVER_DEFAULT_ENGINE_VERSION: 'V1'
+          SERVER_LOGGER_LEVEL: debug
+          SERVER_LOGGER_FORMAT: console
+        options: >-
+          --health-cmd "curl -f http://localhost:8888/healthz"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 10
+        ports:
+          - 8888:8888
+          - 7077:7077
+
+      redis_exec:
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        image: redis:7
+        ports:
+          - 6379:6379
+
+      redis_assessment:
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        image: redis:7
+        ports:
+          - 6380:6379
+
       azurite:
         image: mcr.microsoft.com/azure-storage/azurite:latest
         ports:
-          - 10000:10000 # Blob service
-          - 10001:10001 # Queue service
-          - 10002:10002 # Table service
+          - 10000:10000
+          - 10001:10001
+          - 10002:10002
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -35,11 +111,18 @@ jobs:
         with:
           version: 9.15.4
           run_install: true
-      - name: Build dependencies
-        shell: bash
+
+      - name: Build dependency packages
         run: |
-          cd packages/util
+          cd packages/prisma
           pnpm run build
+          cd ../types
+          pnpm run build
+          cd ../grading
+          pnpm run build
+          cd ../util
+          pnpm run build
+
       - name: Test audit package
         shell: bash
         run: |

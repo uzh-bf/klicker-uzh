@@ -98,6 +98,13 @@ jobs:
         ports:
           - 6380:6379
 
+      azurite:
+        image: mcr.microsoft.com/azure-storage/azurite:latest
+        ports:
+          - 10000:10000
+          - 10001:10001
+          - 10002:10002
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -116,8 +123,6 @@ jobs:
           cd ../grading
           pnpm run build
           cd ../util
-          pnpm run build
-          cd ../grading
           pnpm run build
           cd ../hatchet
           pnpm run build
