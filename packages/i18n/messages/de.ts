@@ -1280,6 +1280,34 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       batchOperationFailed:
         'Beim Anwenden der Batch-Operation ist ein Fehler aufgetreten. Bitte überprüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
     },
+    assessment: {
+      assessmentResults: 'Assessment Resultate',
+      liveQuizStudentResultsTitle: 'Studierendenresultate',
+      liveQuizStudentEmailColumn: 'Studierende (E-Mail)',
+      liveQuizStudentResultsEmpty:
+        'Es sind noch keine Studierendenresultate vorhanden.',
+      errorLoadingLiveQuizResults:
+        'Beim Laden der Resultate ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+      liveQuizSelectStudentInfo:
+        'Um die von einem bestimmten Studierenden abgegebenen Antworten einsehen zu können, wählen Sie diesen bitte aus der Liste auf der linken Seite aus. Sie erhalten dann eine Übersicht über alle im Quiz enthaltenen Fragen, die jeweils abgegebene Antwort und die Bepunktung.',
+      liveQuizElement: 'Element',
+      liveQuizStudentHasNoResponses:
+        'Dieser Studierende hat noch keine Antworten eingereicht.',
+      liveQuizResponse: 'Antwort',
+      liveQuizOpenResponse: 'Antwort ansehen',
+      liveQuizNoResponseSubmitted: 'Keine Antwort abgegeben',
+      liveQuizQuestionAnswered: 'Beantwortet',
+      liveQuizQuestionNotAnswered: 'Nicht beantwortet',
+      liveQuizResponseFromBlock: 'Antwort aus {block}',
+      liveQuizCorrect: 'Korrekt',
+      liveQuizPartiallyCorrect: 'Teilweise korrekt',
+      liveQuizIncorrect: 'Falsch',
+      liveQuizNotAnswered: 'Nicht beantwortet',
+      errorLoadingStudentLiveQuizResponses:
+        'Beim Laden der Studierendenantworten ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+      responseBy: 'Antwort von {email}',
+      noSampleSolution: 'Keine Musterlösung',
+    },
     support: {
       modalTitle: 'Support KlickerUZH',
       yourFeedback: 'Ihr Feedback',

@@ -13,7 +13,6 @@ import {
 import { Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
 import { useMemo, useState } from 'react'
 import StudentElementPreviewActivityDetails from '../../../elements/manipulation/StudentElementPreviewActivityDetails'
 import ActivityLog from '../../../sharing/ActivityLog'
@@ -33,7 +32,6 @@ function ActivityDetailsModal({
   refetchActivities?: () => Promise<void>
 }) {
   const t = useTranslations()
-  const router = useRouter()
 
   // fetch activity details
   const { data: detailsData, loading } = useQuery(GetActivityDetailsDocument, {

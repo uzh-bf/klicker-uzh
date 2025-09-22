@@ -1,0 +1,30 @@
+query GetLiveQuizStudentAssessmentResponses(
+  $liveQuizId: String!
+  $participantId: String!
+) {
+  liveQuizStudentAssessmentResponses(
+    liveQuizId: $liveQuizId
+    participantId: $participantId
+  ) {
+    blockId
+    instances {
+      basePoints
+      correctnessPoints
+      bonusPoints
+      correctness
+      submission
+
+      instance {
+        id
+        type
+        elementType
+        options {
+          basePoints
+          pointsMultiplier
+        }
+
+        ...ElementDataWithoutSolutions
+      }
+    }
+  }
+}
