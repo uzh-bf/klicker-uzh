@@ -195,22 +195,22 @@ function LiveQuizSingleStudentResults({
       <ShadcnTable className="text-xs sm:text-sm">
         <ShadcnTableHeader>
           <ShadcnTableRow>
-            <ShadcnTableHead className="text-muted-foreground w-[35%] px-3 text-left text-[0.7rem] leading-tight">
+            <ShadcnTableHead className="w-40 whitespace-normal px-3 text-left text-[0.7rem] leading-tight">
               {t('manage.assessment.liveQuizElement')}
             </ShadcnTableHead>
-            <ShadcnTableHead className="text-muted-foreground w-[16%] px-2 text-center text-[0.7rem] leading-tight">
+            <ShadcnTableHead className="w-10 whitespace-normal px-2 text-center text-[0.7rem] leading-tight">
               {t('manage.general.basePointsDescription')}
             </ShadcnTableHead>
-            <ShadcnTableHead className="text-muted-foreground w-[16%] px-2 text-center text-[0.7rem] leading-tight">
+            <ShadcnTableHead className="w-10 whitespace-normal px-2 text-center text-[0.7rem] leading-tight">
               {t('manage.general.correctnessPointsDescription')}
             </ShadcnTableHead>
-            <ShadcnTableHead className="text-muted-foreground w-[16%] px-2 text-center text-[0.7rem] leading-tight">
+            <ShadcnTableHead className="w-10 whitespace-normal px-2 text-center text-[0.7rem] leading-tight">
               {t('manage.general.bonusPointsDescription')}
             </ShadcnTableHead>
-            <ShadcnTableHead className="text-muted-foreground w-[16%] px-2 text-center text-[0.7rem] leading-tight">
+            <ShadcnTableHead className="w-10 whitespace-normal px-2 text-center text-[0.7rem] leading-tight">
               {t('shared.generic.total')}
             </ShadcnTableHead>
-            <ShadcnTableHead className="text-muted-foreground w-10 px-1 text-center text-[0.7rem] leading-tight">
+            <ShadcnTableHead className="w-10 whitespace-normal px-1 text-center text-[0.7rem] leading-tight">
               <span className="sr-only">
                 {t('manage.assessment.liveQuizResponse')}
               </span>
@@ -283,7 +283,7 @@ function LiveQuizSingleStudentResults({
                                 correctnessIcon.className
                               )}
                             />
-                            <span className="line-clamp-2 text-sm leading-tight">
+                            <span className="line-clamp-1 text-sm leading-tight">
                               {elementData.name}
                             </span>
                           </div>
