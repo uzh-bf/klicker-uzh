@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.30](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.29...v3.4.0-alpha.30) (2025-09-22)
+
+
+### Features
+
+* introduce overview of student performance in assessment activities in lecturer view ([#4936](https://github.com/uzh-bf/klicker-uzh/issues/4936)) ([eeb0fe2](https://github.com/uzh-bf/klicker-uzh/commit/eeb0fe20499a56058b274143699789866d939e58))
+
 ## [3.4.0-alpha.29](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.28...v3.4.0-alpha.29) (2025-09-21)
 
 
