@@ -22,6 +22,8 @@ import {
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { AuditAction, AuditScope } from '@klicker-uzh/types'
+import { AuditClient } from '@klicker-uzh/util'
 import type { NextAuthOptions } from 'next-auth'
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
@@ -153,6 +155,25 @@ function getParticipantConfig({
           console.log(
             `Participant ${participant.id} authenticated successfully`
           )
+
+          // Audit: assessment login success (EduID only)
+          try {
+            const audit = new AuditClient()
+            await audit.log({
+              scope: AuditScope.INTERNAL,
+              action: AuditAction.PARTICIPANT_LOGIN_SUCCESS,
+              subject: `participant:${participant.id}`,
+              attributes: {
+                method: 'eduid',
+                context: 'assessment',
+              },
+            })
+          } catch (error) {
+            console.warn(
+              `[AUTH ${requestId}] Failed to log PARTICIPANT_LOGIN_SUCCESS:`,
+              error instanceof Error ? error.message : error
+            )
+          }
           return true
         } catch (error) {
           console.error('Failed to create/link participant:', error)
