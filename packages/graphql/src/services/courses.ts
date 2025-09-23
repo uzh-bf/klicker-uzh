@@ -749,9 +749,9 @@ async function upsertResponseAppliedCorrection(
     instance: DB.ElementInstance & { elementBlock: DB.ElementBlock }
     response?: DB.LiveQuizResponse | null
     participantId: string
-    awardBasePoints: boolean
-    awardCorrectnessPoints: boolean
-    awardBonusPoints: boolean
+    awardBasePoints?: boolean | null // true = award, false = deduct, null = no change
+    awardCorrectnessPoints?: boolean | null // true = award, false = deduct, null = no change
+    awardBonusPoints?: boolean | null // true = award, false = deduct, null = no change
     availableBasePoints: number
     availableCorrectnessPoints: number
     availableBonusPoints: number
@@ -768,21 +768,33 @@ async function upsertResponseAppliedCorrection(
       submittedAt: new Date(),
       timeSpent: -1,
       correctness: DB.ResponseCorrectness.CORRECT,
-      basePoints: awardBasePoints ? availableBasePoints : 0,
-      correctnessPoints: awardCorrectnessPoints
-        ? availableCorrectnessPoints
-        : 0,
-      bonusPoints: awardBonusPoints ? availableBonusPoints : 0,
+      basePoints: awardBasePoints === true ? availableBasePoints : 0,
+      correctnessPoints:
+        awardCorrectnessPoints === true ? availableCorrectnessPoints : 0,
+      bonusPoints: awardBonusPoints === true ? availableBonusPoints : 0,
       elementBlockExecution: instance.elementBlock.execution,
       instance: { connect: { id: instance.id } },
       participant: { connect: { id: participantId } },
     },
     update: {
-      basePoints: awardBasePoints ? availableBasePoints : 0,
-      correctnessPoints: awardCorrectnessPoints
-        ? availableCorrectnessPoints
-        : 0,
-      bonusPoints: awardBonusPoints ? availableBonusPoints : 0,
+      basePoints:
+        awardBasePoints === true
+          ? availableBasePoints
+          : awardBasePoints === false
+            ? 0
+            : undefined,
+      correctnessPoints:
+        awardCorrectnessPoints === true
+          ? availableCorrectnessPoints
+          : awardCorrectnessPoints === false
+            ? 0
+            : undefined,
+      bonusPoints:
+        awardBonusPoints === true
+          ? availableBonusPoints
+          : awardBonusPoints === false
+            ? 0
+            : undefined,
     },
   })
 
@@ -802,15 +814,14 @@ async function upsertResponseAppliedCorrection(
         awardBonusPoints === true
           ? availableBonusPoints - (response?.bonusPoints ?? 0)
           : 0,
-      deducedBasePoints: awardBasePoints
-        ? (response?.basePoints ?? 0) - availableBasePoints
-        : 0,
-      deducedCorrectnessPoints: awardCorrectnessPoints
-        ? (response?.correctnessPoints ?? 0) - availableCorrectnessPoints
-        : 0,
-      deducedBonusPoints: awardBonusPoints
-        ? (response?.bonusPoints ?? 0) - availableBonusPoints
-        : 0,
+      deducedBasePoints:
+        awardBasePoints === false ? (response?.basePoints ?? 0) : 0,
+      deducedCorrectnessPoints:
+        awardCorrectnessPoints === false
+          ? (response?.correctnessPoints ?? 0)
+          : 0,
+      deducedBonusPoints:
+        awardBonusPoints === false ? (response?.bonusPoints ?? 0) : 0,
       // link to point correction
       pointCorrection: { connect: { id: correctionId } },
       // upsert live quiz response with corresponding points
@@ -836,9 +847,9 @@ export async function correctAssessmentPointsInstance(
     participantId,
   }: {
     instanceId: number
-    awardBasePoints: boolean
-    awardCorrectnessPoints: boolean
-    awardBonusPoints: boolean
+    awardBasePoints?: boolean | null // true = award, false = deduct, null = no change
+    awardCorrectnessPoints?: boolean | null // true = award, false = deduct, null = no change
+    awardBonusPoints?: boolean | null // true = award, false = deduct, null = no change
     reason: string
     studentReason: string
     scope: PointCorrectionType
@@ -1090,9 +1101,9 @@ export async function correctAssessmentPointsLiveQuiz(
     participantId,
   }: {
     liveQuizId: string
-    awardBasePoints: boolean
-    awardCorrectnessPoints: boolean
-    awardBonusPoints: boolean
+    awardBasePoints?: boolean | null // true = award, false = deduct, null = no change
+    awardCorrectnessPoints?: boolean | null // true = award, false = deduct, null = no change
+    awardBonusPoints?: boolean | null // true = award, false = deduct, null = no change
     reason: string
     studentReason: string
     scope: PointCorrectionType
