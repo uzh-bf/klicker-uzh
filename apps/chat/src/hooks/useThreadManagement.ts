@@ -43,7 +43,12 @@ export function useThreadManagement(
 
       // create new thread if none exists
       if (!threadId) {
-        threadId = await createThread(chatbotId)
+        try {
+          threadId = await createThread(chatbotId)
+        } catch (error) {
+          console.error('Failed to create thread', error)
+          return
+        }
         if (!threadId) {
           console.error('Failed to create thread')
           return
@@ -59,7 +64,12 @@ export function useThreadManagement(
         parentId: message.parentId || null,
       }
 
-      await addMessage(chatbotId, userMessage)
+      try {
+        await addMessage(chatbotId, userMessage)
+      } catch (error) {
+        console.error('Failed to add message', error)
+        return
+      }
 
       const currentMessages =
         useChatStore.getState().threads.find((t) => t.id === threadId)
