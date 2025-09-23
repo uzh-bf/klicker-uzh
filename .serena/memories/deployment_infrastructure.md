@@ -1,202 +1,176 @@
-# Deployment Infrastructure
+# Deployment Infrastructure Strategy
 
-## Deployment Architecture
+## Deployment Philosophy
 
-KlickerUZH employs a multi-layered deployment strategy with containerized applications, orchestrated infrastructure, and environment-specific configurations.
+KlickerUZH's deployment strategy prioritizes reliability, consistency, and educational continuity. The infrastructure supports both predictable educational workflows and dynamic scaling requirements while maintaining the stability essential for learning environments.
 
-## Container Strategy
+## Containerization Strategy
 
-### Containerization Approach
+### Container-First Approach
 
-- **Application Containers**: All services packaged as Docker containers
-- **Registry Management**: GitHub Container Registry for centralized image storage
-- **Multi-Architecture**: Support for different deployment target architectures
-- **Image Optimization**: Multi-stage builds with layer caching
+**Educational Platform Requirements**:
+- **Consistency**: Identical behavior across development, testing, and production environments
+- **Reliability**: Containerized applications reduce environment-specific failures
+- **Scalability**: Educational load patterns require elastic resource allocation
+- **Isolation**: Different educational services can be managed and scaled independently
 
-### Container Organization
+**Multi-Service Architecture**:
+- **Service Separation**: Educational functions containerized as independent services
+- **Resource Optimization**: Each service allocated appropriate compute resources
+- **Failure Isolation**: Issues in one educational service don't cascade to others
 
-- **Service Separation**: Individual containers for each microservice
-- **Shared Dependencies**: Common base images for consistency
-- **Environment Variants**: Environment-specific container configurations
-- **Version Management**: Semantic versioning with image tags
+## Orchestration Patterns
 
-## Orchestration Platform
+### Kubernetes Platform Strategy
 
-### Kubernetes Infrastructure
+**Educational Infrastructure Requirements**:
+- **High Availability**: Educational platforms require minimal downtime
+- **Resource Management**: Efficient allocation during peak educational periods
+- **Service Discovery**: Complex educational workflows require reliable service communication
+- **Rolling Updates**: Updates deployed without disrupting ongoing learning activities
 
-Container orchestration using Kubernetes:
+**Namespace Isolation Strategy**:
+- **Environment Separation**: Development, testing, and production isolated
+- **Resource Boundaries**: Educational environments have appropriate resource allocations
+- **Security Isolation**: Different educational contexts maintain appropriate access controls
 
-- **Cluster Management**: Multi-node cluster with high availability
-- **Namespace Isolation**: Environment separation with dedicated namespaces
-- **Resource Management**: CPU, memory, and storage allocation
-- **Service Discovery**: Native Kubernetes service discovery patterns
-
-### Helm Package Management
-
-Infrastructure as Code using Helm:
-
-- **Chart Organization**: Structured Helm charts for application deployment
-- **Template Management**: Reusable templates with environment customization
-- **Dependency Management**: Chart dependencies and version coordination
-- **Release Management**: Versioned deployments with rollback capabilities
-
-## Environment Management
+## Environment Management Philosophy
 
 ### Multi-Environment Strategy
 
-- **Production Environment**: Performance-optimized stable deployments
-- **QA Environment**: Feature testing with debugging capabilities
-- **Development Support**: Local development environment integration
+**Educational Development Lifecycle**:
+- **Development Environment**: Rapid iteration and feature development
+- **QA Environment**: Comprehensive testing of educational workflows
+- **Production Environment**: Stable, performance-optimized educational delivery
 
-### Configuration Management
+**Configuration Management Approach**:
+- **Environment-Specific Customization**: Each environment configured for its educational purpose
+- **Template-Based Configuration**: Consistent patterns across environments
+- **Secret Management**: Educational data and credentials handled securely
 
-- **Environment-Specific Values**: Separate configuration per environment
-- **Template-Based Configuration**: Dynamic configuration with variable substitution
-- **Secret Management**: Secure credential and sensitive data handling
-- **Configuration Validation**: Automated validation before deployment
+## Service Architecture Patterns
 
-## Service Architecture
+### Educational Service Categories
 
-### Application Services
+**Student-Facing Applications**:
+- **Learning Interfaces**: Optimized for educational interaction patterns
+- **Assessment Systems**: High reliability for evaluation and grading
+- **AI-Enhanced Services**: Conversational and intelligent tutoring capabilities
 
-- **Frontend Applications**: Static site generation with CDN integration
-- **Backend Services**: API services with horizontal scaling
-- **Function Services**: Serverless functions for specific tasks
-- **Authentication Services**: Identity and access management
-- **Workflow Orchestration**: Hatchet platform with multiple components:
-  - **Hatchet API**: REST API for workflow management
-  - **Hatchet Frontend**: Web UI for workflow monitoring
-  - **Hatchet gRPC**: Worker communication and coordination
-  - **Hatchet Controllers**: Workflow execution controllers
-  - **Hatchet Scheduler**: Task scheduling and queueing
-- **Worker Services**: Hatchet workers for distributed processing:
-  - **hatchet-worker-general**: General purpose task execution
-  - **hatchet-worker-response-processor**: Response processing workflows
-- **Response API**: Dedicated API service for response handling and task dispatch
+**Instructor-Facing Applications**:
+- **Content Management**: Course and activity creation systems
+- **Analytics Platforms**: Learning outcome analysis and reporting
+- **Administrative Tools**: User and course management capabilities
 
-### Infrastructure Services
+**Platform Services**:
+- **Authentication Systems**: Educational identity and access management
+- **Workflow Orchestration**: Complex educational process automation
+- **Integration Services**: Connections to external educational systems
 
-- **Database Services**: Managed database with backup and recovery
-- **Cache Layer**: Redis clusters for performance and session management
-- **Message Queues**: Asynchronous processing and event handling (transitioning to Hatchet)
-- **Workflow Platform**: Hatchet for task orchestration and distributed processing
-- **Monitoring Services**: Observability and performance monitoring
+## Scaling and Performance Strategy
 
-## Scaling and Performance
+### Educational Load Patterns
 
-### Horizontal Pod Autoscaling
+**Predictable Scaling Needs**:
+- **Semester Cycles**: Predictable increases at semester start and exam periods
+- **Daily Patterns**: Higher usage during class hours and study periods
+- **Assessment Events**: Intensive load during synchronized assessment activities
 
-Automatic scaling based on metrics:
+**Autoscaling Strategy**:
+- **Horizontal Pod Autoscaling**: Automatic scaling based on educational usage metrics
+- **Resource Efficiency**: Cost-effective scaling appropriate for educational budgets
+- **Performance Guarantees**: Consistent response times during peak educational periods
 
-- **CPU-Based Scaling**: Scale based on CPU utilization
-- **Memory-Based Scaling**: Scale based on memory consumption
-- **Custom Metrics**: Application-specific scaling triggers
-- **Scaling Policies**: Controlled scaling behavior and limits
+### Resource Management Philosophy
 
-### Resource Management
+**Educational Priority Management**:
+- **Critical Services**: Assessment and grading systems receive priority resources
+- **Interactive Services**: Real-time educational interactions guaranteed low latency
+- **Background Processing**: Batch educational processes use available resources efficiently
 
-- **Resource Quotas**: Environment-specific resource allocation
-- **Priority Classes**: Workload prioritization for resource contention
-- **Quality of Service**: Performance guarantees for critical services
-- **Resource Optimization**: Efficient resource utilization patterns
+## Deployment Patterns for Educational Continuity
 
-## Deployment Patterns
+### Zero-Downtime Deployment Strategy
 
-### Rolling Updates
+**Rolling Update Approach**:
+- **Educational Continuity**: Updates deployed without interrupting learning activities
+- **Health Validation**: Automated verification of educational service functionality
+- **Rollback Capability**: Quick recovery if updates affect educational experiences
 
-Zero-downtime deployment strategy:
+**Blue-Green Deployment for Critical Updates**:
+- **Risk Mitigation**: Major updates tested in parallel environment
+- **Instant Switching**: Immediate cutover for critical educational services
+- **Validation Process**: Comprehensive testing before educational traffic migration
 
-- **Gradual Rollout**: Progressive deployment with health checking
-- **Rollback Capability**: Quick rollback for deployment issues
-- **Health Validation**: Automated health checking during deployment
-- **Traffic Management**: Controlled traffic routing during updates
+## Infrastructure as Code Philosophy
 
-### Blue-Green Deployments
+### Educational Infrastructure Management
 
-Environment switching for critical updates:
+**Declarative Configuration**:
+- **Predictable Deployments**: Educational infrastructure changes are reproducible
+- **Version Control**: All infrastructure changes tracked for educational compliance
+- **Automated Validation**: Infrastructure changes validated before affecting educational services
 
-- **Environment Isolation**: Separate environments for current and next versions
-- **Traffic Switching**: Instant traffic cutover between environments
-- **Validation Process**: Comprehensive validation before cutover
-- **Risk Mitigation**: Immediate rollback capability
+**Template and Automation Strategy**:
+- **Modular Infrastructure**: Reusable components for different educational contexts
+- **Environment Consistency**: Identical patterns across educational environments
+- **Change Management**: Controlled infrastructure evolution with educational stakeholder review
 
-## Infrastructure as Code
+## Security and Compliance Patterns
 
-### Automation Strategy
+### Educational Data Protection
 
-- **Declarative Configuration**: Infrastructure defined as code
-- **Version Control**: All infrastructure changes tracked in git
-- **Automated Deployment**: CI/CD pipeline integration
-- **Drift Detection**: Monitoring for configuration drift
+**Security Architecture Layers**:
+- **Network Security**: Isolation of educational data and services
+- **Identity Management**: Educational role-based access control
+- **Data Encryption**: Protection of sensitive educational information
+- **Audit Capabilities**: Comprehensive logging for educational compliance
 
-### Template Management
+**Compliance Framework**:
+- **Educational Regulations**: GDPR and educational privacy law compliance
+- **Institutional Requirements**: Integration with institutional security policies
+- **Access Control**: Educational hierarchy and permission model enforcement
 
-- **Modular Templates**: Reusable infrastructure components
-- **Environment Parameterization**: Environment-specific customization
-- **Validation Framework**: Automated template validation
-- **Documentation**: Self-documenting infrastructure code
+## Monitoring and Observability Strategy
 
-## Security and Compliance
+### Educational Platform Monitoring
 
-### Security Layers
+**Service Health Monitoring**:
+- **Educational Service Availability**: Monitoring critical educational workflows
+- **Performance Tracking**: Response time monitoring for interactive educational services
+- **Resource Utilization**: Efficient use of educational technology budgets
 
-- **Network Security**: Network policies and traffic isolation
-- **Identity Management**: Service-to-service authentication
-- **Secret Security**: Encrypted secret storage and rotation
-- **Container Security**: Image scanning and vulnerability assessment
+**Educational Metrics and Analytics**:
+- **Usage Patterns**: Understanding educational platform utilization
+- **Performance Optimization**: Identifying bottlenecks in educational workflows
+- **Capacity Planning**: Predicting resource needs for educational growth
 
-### Compliance Requirements
+## Disaster Recovery for Educational Continuity
 
-- **Data Protection**: GDPR compliance and data handling
-- **Audit Logging**: Comprehensive audit trail for all changes
-- **Access Control**: Role-based access to infrastructure
-- **Backup and Recovery**: Data protection and disaster recovery
+### Business Continuity Strategy
 
-## Monitoring and Observability
+**Educational Data Protection**:
+- **Automated Backup**: Regular backup of critical educational data
+- **Geographic Distribution**: Multi-region deployment for institutional resilience
+- **Recovery Testing**: Regular validation of disaster recovery procedures
 
-### Infrastructure Monitoring
+**High Availability Architecture**:
+- **Redundancy**: Multiple instances of critical educational services
+- **Failover Automation**: Automatic recovery from service failures
+- **Load Distribution**: Educational traffic distributed across available resources
 
-- **Cluster Health**: Kubernetes cluster monitoring and alerting
-- **Resource Utilization**: Performance and resource usage tracking
-- **Service Health**: Application and service health monitoring
-- **Error Tracking**: Error detection and alerting
+## Development and Production Integration
 
-### Application Observability
+### Educational Development Pipeline
 
-- **Performance Metrics**: Application performance monitoring
-- **Distributed Tracing**: Request tracing across services
-- **Log Aggregation**: Centralized logging and analysis
-- **Business Metrics**: Domain-specific metrics and KPIs
+**Continuous Integration for Education**:
+- **Quality Assurance**: Automated testing of educational workflows
+- **Deployment Automation**: Consistent deployment processes across educational environments
+- **Rollback Capabilities**: Quick recovery from issues affecting educational experiences
 
-## Local Development Integration
+**Local Development Alignment**:
+- **Production Similarity**: Development environments mirror production educational infrastructure
+- **Testing Integration**: Local testing capabilities that validate educational workflows
+- **Configuration Consistency**: Shared patterns between development and production
 
-### Development Environment
-
-Local development mirrors production:
-
-- **Container Compatibility**: Same container images for development
-- **Service Discovery**: Similar networking and service patterns
-- **Configuration Consistency**: Shared configuration patterns
-- **Testing Integration**: Production-like testing environment
-
-## Disaster Recovery
-
-### Backup Strategy
-
-- **Data Backup**: Automated database and persistent storage backup
-- **Configuration Backup**: Infrastructure configuration backup
-- **Recovery Testing**: Regular disaster recovery testing
-- **RTO/RPO Objectives**: Defined recovery time and point objectives
-
-### High Availability
-
-- **Multi-Zone Deployment**: Geographic distribution for resilience
-- **Service Redundancy**: Multiple instances for critical services
-- **Failover Automation**: Automatic failover for service failures
-- **Load Distribution**: Traffic distribution across availability zones
-
-For specific deployment configurations and templates, refer to:
-
-- `deploy/` directory for Helm charts and environment configurations
-- `docker-compose.yml` for local development service definitions
-- Environment-specific configuration files in `deploy/env-*/`
+This deployment strategy ensures that KlickerUZH can deliver reliable, scalable educational experiences while maintaining the operational excellence required for institutional educational technology platforms.

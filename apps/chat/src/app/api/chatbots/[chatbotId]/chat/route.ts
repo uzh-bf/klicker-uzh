@@ -1,13 +1,17 @@
-import { allowedTools } from '@/src/lib/config/allowedTools'
 import {
   getModelCost,
   getModelLink,
   MODEL_IDS,
   type ModelID,
 } from '@/src/lib/config/models'
-import { getMCPTools } from '@/src/services/mcpClients'
+import {
+  getAggregatedMCPTools,
+  type MCPServerWithConfig,
+} from '@/src/services/mcpClients'
 import { createAzure } from '@ai-sdk/azure'
 import { prisma } from '@klicker-uzh/prisma'
+import { Chatbot } from '@klicker-uzh/prisma/client'
+import { safeDecrypt } from '@klicker-uzh/util'
 import {
   convertToModelMessages,
   LanguageModel,
@@ -17,12 +21,35 @@ import {
 } from 'ai'
 import { JWTPayload, jwtVerify } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
+import { DEFAULT_PROMPT } from 'src/lib/config/prompts'
+import { CreditsService } from 'src/services/credits'
+import { DisclaimersService } from 'src/services/disclaimers'
+import { ThreadService } from 'src/services/threads'
 import { z } from 'zod'
-import { DEFAULT_PROMPT } from '../../../../../lib/config/prompts'
-import { CreditsService } from '../../../../../services/credits'
-import { ThreadService } from '../../../../../services/threads'
 
 export const maxDuration = 30
+
+function getAzureModel(chatbot: Chatbot, modelId: ModelID): LanguageModel {
+  const apiVersion = getModelLink(modelId).split('?api-version=')[1]
+
+  // Use per-chatbot Azure configuration if available, otherwise fallback to environment
+  const apiKey = chatbot?.azureOpenAIKey
+    ? safeDecrypt(chatbot.azureOpenAIKey)
+    : process.env.AZURE_API_KEY
+
+  const resourceName = chatbot?.azureOpenAIEndpoint
+    ? new URL(chatbot.azureOpenAIEndpoint).hostname.split('.')[0]
+    : process.env.AZURE_RESOURCE_NAME || 'klicker-ai'
+
+  const azure = createAzure({
+    resourceName,
+    apiKey,
+    useDeploymentBasedUrls: true,
+    apiVersion: apiVersion || 'preview',
+  })
+
+  return azure(modelId)
+}
 
 /**
  * Main chat endpoint that processes AI conversations with streaming responses.
@@ -99,6 +126,30 @@ export async function POST(
     )
   }
 
+  // check disclaimer acceptance
+  try {
+    const disclaimerStatus = await DisclaimersService.checkDisclaimerStatus(
+      chatbotId,
+      participantId
+    )
+
+    if (disclaimerStatus.required && !disclaimerStatus.accepted) {
+      return NextResponse.json(
+        {
+          error: 'Disclaimer must be accepted before using the chatbot',
+          code: 'DISCLAIMER_NOT_ACCEPTED',
+        },
+        { status: 403 }
+      )
+    }
+  } catch (error) {
+    console.error('Error checking disclaimer status:', error)
+    return NextResponse.json(
+      { error: 'Error checking disclaimer status' },
+      { status: 500 }
+    )
+  }
+
   const bodySchema = z.object({
     messages: z.array(
       z.object({
@@ -109,7 +160,11 @@ export async function POST(
     ),
     threadId: z.string().min(1).nullable().optional(),
     selectedModel: z.enum(MODEL_IDS),
-    selectedMode: z.string().optional().default('Tutor'),
+    selectedMode: z
+      .string()
+      .optional()
+      .transform((val) => val?.toLowerCase())
+      .default('tutor'),
     parentId: z.string().min(1).nullable().optional(),
     assistantMessageId: z.string().min(1),
   })
@@ -120,42 +175,73 @@ export async function POST(
     console.error('Invalid request body:', e)
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
-  const {
-    messages,
-    threadId,
-    selectedModel,
-    selectedMode,
-    parentId,
-    assistantMessageId,
-  } = parsed
+  const { messages, threadId, selectedMode, parentId, assistantMessageId } =
+    parsed
+
+  let selectedModel = parsed.selectedModel
 
   let currentThreadId = threadId
   let userMessageId: string | null = null
 
-  // fetch system prompt for the selected chat mode from the database
+  // fetch chatbot with MCP configurations and system prompt
   let systemPrompt = ''
-  if (selectedMode) {
-    try {
-      const chatbot = await prisma.chatbot.findUnique({
-        where: { id: chatbotId },
-      })
-      if (chatbot) {
-        const systemPrompts = chatbot.systemPrompts as Record<
-          string,
-          Record<string, string>
-        >
-        if (systemPrompts && systemPrompts[selectedMode]) {
-          systemPrompt =
-            systemPrompts[selectedMode].prompt ||
-            DEFAULT_PROMPT[selectedMode]?.prompt ||
-            ''
-        } else {
-          systemPrompt = DEFAULT_PROMPT[selectedMode]?.prompt || ''
-        }
+  let mcpServersWithConfigs: MCPServerWithConfig[] = []
+  let chatbot = null
+
+  try {
+    chatbot = await prisma.chatbot.findUnique({
+      where: { id: chatbotId },
+      include: {
+        mcpConfigurations: {
+          where: {
+            chatMode: selectedMode,
+            isEnabled: true,
+          },
+          include: {
+            mcpServer: true,
+          },
+          orderBy: { priority: 'asc' },
+        },
+      },
+    })
+
+    if (chatbot) {
+      // Extract system prompt
+      const systemPrompts = chatbot.systemPrompts as Record<
+        string,
+        Record<string, string>
+      >
+      if (systemPrompts && systemPrompts[selectedMode]) {
+        systemPrompt =
+          systemPrompts[selectedMode].prompt ||
+          DEFAULT_PROMPT[selectedMode]?.prompt ||
+          ''
+      } else {
+        systemPrompt = DEFAULT_PROMPT[selectedMode]?.prompt || ''
       }
-    } catch (error) {
-      console.error('Failed to fetch system prompt:', error)
+
+      // Prepare MCP server configurations
+      mcpServersWithConfigs =
+        chatbot.mcpConfigurations
+          ?.filter((config) => config.mcpServer?.isActive === true)
+          ?.map((config) => ({
+            server: {
+              id: config.mcpServer.id,
+              name: config.mcpServer.name,
+              url: config.mcpServer.url,
+              authType: config.mcpServer.authType,
+              authSecret: config.mcpServer.authSecret ?? '',
+              parameters: config.mcpServer.parameters,
+            },
+            config: {
+              allowedTools: config.allowedTools as string[] | undefined,
+              parameters: config.parameters,
+              priority: config.priority,
+            },
+          })) || []
     }
+  } catch (error) {
+    console.error('Failed to fetch chatbot configuration:', error)
   }
 
   // create a new thread if none exists
@@ -206,16 +292,6 @@ export async function POST(
     }
   }
 
-  function getAzureModel(modelId: ModelID): LanguageModel {
-    const apiVersion = getModelLink(modelId).split('?api-version=')[1]
-
-    const azure = createAzure({
-      useDeploymentBasedUrls: true,
-      apiVersion: apiVersion || 'preview',
-    })
-    return azure(modelId)
-  }
-
   // track partial content for cancelled streams
   let partialContent = ''
 
@@ -227,20 +303,26 @@ export async function POST(
     parts: [{ type: 'text' as const, text: msg.content }],
   }))
 
-  const mcpTools = await getMCPTools(chatbotId)
-  // filter tools based on allowed tools
-  Object.keys(mcpTools).forEach((toolName) => {
-    if (!allowedTools.includes(toolName as (typeof allowedTools)[number])) {
-      delete mcpTools[toolName as keyof typeof mcpTools]
-    }
-  })
+  // Load MCP tools from database configurations or fallback to legacy
+  const mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
+
+  if (!chatbot) {
+    return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
+  }
+  // Override model selection if modelSelection is disabled
+  if (!chatbot.modelSelection) {
+    // Get current user credits to determine automatic model selection
+    const userCredits = await CreditsService.getUserCredits(
+      participantId,
+      chatbotId
+    )
+    selectedModel = CreditsService.getAutomaticModel(userCredits) as any
+  }
 
   const result = streamText({
-    model: getAzureModel(selectedModel),
+    model: getAzureModel(chatbot, selectedModel),
     messages: convertToModelMessages(uiMessages),
-    tools: {
-      ...mcpTools,
-    },
+    tools: mcpTools,
     toolChoice: 'auto',
     stopWhen: stepCountIs(5),
     system: systemPrompt,

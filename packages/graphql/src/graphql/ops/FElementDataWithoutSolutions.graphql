@@ -11,6 +11,7 @@ fragment ElementDataWithoutSolutions on ElementInstance {
       basePoints
       pointsMultiplier
       options {
+        hasSampleSolution
         displayMode
         choices {
           ix
@@ -30,6 +31,7 @@ fragment ElementDataWithoutSolutions on ElementInstance {
       basePoints
       pointsMultiplier
       options {
+        hasSampleSolution
         accuracy
         placeholder
         unit
@@ -51,6 +53,7 @@ fragment ElementDataWithoutSolutions on ElementInstance {
       basePoints
       pointsMultiplier
       options {
+        hasSampleSolution
         restrictions {
           maxLength
         }
@@ -68,6 +71,7 @@ fragment ElementDataWithoutSolutions on ElementInstance {
       basePoints
       pointsMultiplier
       options {
+        hasSampleSolution
         numberOfInputs
         answerCollection {
           id
@@ -90,6 +94,7 @@ fragment ElementDataWithoutSolutions on ElementInstance {
       basePoints
       pointsMultiplier
       options {
+        hasSampleSolution
         hasSampleSolution
         items {
           id

@@ -1,7 +1,6 @@
 import { useQuery } from '@apollo/client'
 import {
   faCheck,
-  faCrown,
   faGears,
   faQuestionCircle,
   faTriangleExclamation,
@@ -250,10 +249,14 @@ function LiveQuizSettingsStep({
                       {user?.privatePreview && (
                         <div className="flex flex-row items-center gap-2.5 pl-0.5">
                           <FontAwesomeIcon
-                            icon={values.isAssessmentEnabled ? faCheck : faX}
+                            icon={
+                              selectedCourse?.isAssessmentEnabled
+                                ? faCheck
+                                : faX
+                            }
                             className={twMerge(
                               'w-4',
-                              values.isAssessmentEnabled
+                              selectedCourse?.isAssessmentEnabled
                                 ? 'text-green-700'
                                 : 'text-red-600'
                             )}
@@ -262,7 +265,7 @@ function LiveQuizSettingsStep({
                         </div>
                       )}
                       <div className="flex flex-row items-center gap-2.5">
-                        {values.isAssessmentEnabled ? (
+                        {selectedCourse?.isAssessmentEnabled ? (
                           <div className="flex flex-row items-center gap-2.5 pl-0.5">
                             <FontAwesomeIcon
                               icon={faCheck}
@@ -303,14 +306,8 @@ function LiveQuizSettingsStep({
                     </div>
                   </div>
                   <div className="w-60">
-                    <div className="mb-1 flex flex-row items-center justify-center gap-2">
-                      <FontAwesomeIcon
-                        icon={faCrown}
-                        className="text-orange-400"
-                      />
-                      <div className="text-lg font-bold">
-                        {t('shared.generic.scoring')}
-                      </div>
+                    <div className="mb-1 flex flex-row items-center justify-center gap-2 text-lg font-bold">
+                      {t('shared.generic.scoring')}
                     </div>
 
                     {values.isGamificationEnabled ||

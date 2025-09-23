@@ -125,6 +125,7 @@ model User {
   competencyTrees   CompetencyTree[]
   answerCollections AnswerCollection[]
   chatbots          Chatbot[]
+  chatbotDisclaimers ChatbotDisclaimer[]
 
   userGroups                UserGroup[]         @relation("UserGroupMembers")
   adminUserGroups           UserGroup[]         @relation("UserGroupAdmins")

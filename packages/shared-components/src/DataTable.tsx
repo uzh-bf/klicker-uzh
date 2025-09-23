@@ -29,6 +29,7 @@ interface DataTableProps<TData, TValue> {
     accessorKey: string
     className?: string
     csvOnly?: boolean
+    csvHidden?: boolean
     displayName?: string
   })[]
   data: TData[]
@@ -36,14 +37,18 @@ interface DataTableProps<TData, TValue> {
   className?: {
     table?: string
     tableHeader?: string
+    tableRow?: string
     tableCell?: string
     buttons?: string
     buttonsContainer?: string
   }
   footerContent?: React.ReactNode
   isPaginated?: boolean
+  initialPageSize?: number
   isResetSortingEnabled?: boolean
   initialSorting?: SortingState
+  onRowClick?: (row: TData) => void
+  getRowClassName?: (row: TData) => string | undefined
 }
 
 function DataTable<TData, TValue>({
@@ -55,6 +60,9 @@ function DataTable<TData, TValue>({
   isPaginated,
   isResetSortingEnabled,
   initialSorting,
+  initialPageSize,
+  onRowClick,
+  getRowClassName,
 }: DataTableProps<TData, TValue>) {
   const t = useTranslations()
   const [sorting, setSorting] = useState<SortingState>(initialSorting ?? [])
@@ -66,6 +74,9 @@ function DataTable<TData, TValue>({
     getPaginationRowModel: isPaginated ? getPaginationRowModel() : undefined,
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
+    initialState: {
+      pagination: { pageIndex: 0, pageSize: initialPageSize ?? 10 },
+    },
     state: {
       columnVisibility: columns.reduce<Record<string, boolean>>(
         (acc, column) => ({
@@ -78,15 +89,17 @@ function DataTable<TData, TValue>({
     },
   })
 
-  const csvColumns = useMemo(() => {
-    return columns.map((column) => {
-      return {
-        id: column.accessorKey,
-        label: column.header,
-        displayName: column.displayName,
-      }
-    })
-  }, [columns])
+  const csvColumns = useMemo(
+    () =>
+      columns
+        .filter((column) => !column.csvHidden)
+        .map((column) => ({
+          id: column.accessorKey,
+          label: column.header,
+          displayName: column.displayName,
+        })),
+    [columns]
+  )
 
   return (
     <>
@@ -121,6 +134,11 @@ function DataTable<TData, TValue>({
               <ShadcnTableRow
                 key={row.id}
                 data-state={row.getIsSelected() && 'selected'}
+                onClick={() => onRowClick?.(row.original)}
+                className={twMerge(
+                  className?.tableRow,
+                  getRowClassName?.(row.original)
+                )}
               >
                 {row.getVisibleCells().map((cell) => (
                   <ShadcnTableCell
@@ -162,7 +180,7 @@ function DataTable<TData, TValue>({
             datas={data as Record<string, string | undefined | null>[]}
             separator=";"
           >
-            <Button className={{ root: 'h-8' }}>
+            <Button className={{ root: twMerge('h-8', className?.buttons) }}>
               <Button.Icon icon={faDownload} />
               <Button.Label>{t('shared.table.download')}</Button.Label>
             </Button>

@@ -466,6 +466,8 @@ export default {
         'Dieses Live Quiz ist Teil eines gamifizierten Kurses. Da Sie diesem Kurs nicht beigetreten sind, werden Sie nur im Rahmen dieses Quizzes Punkte sammeln. Ihre Punkte erscheinen auf dem Quiz-Leaderboard. Sollten Sie dies nicht wünschen, <logout>melden Sie sich bitte ab</logout> und treten Sie dem Quiz erneut über den Link bei.',
       liveQuizCourseParticipationInactive:
         'Dieses Live Quiz ist Teil eines gamifizierten Kurses, aber Sie nehmen derzeit nicht an der Gamifizierung teil. Um dem Leaderboard beizutreten und Punkte in diesem Quiz zu sammeln, treten Sie dem <link>Leaderboard auf der Kursübersicht</link> bei und kehren Sie zum Quiz zurück.',
+      liveQuizGamifiedAssessment:
+        'Diese Live Quiz ist gamifiziert und gleichzeitig Teil eines Assessment-Kurses. Um nicht mit Ihrem Pseudonym auf dem Leaderboard zu erscheinen, gehen Sie bitte in die Profileinstellungen und stellen Sie die Anzeigeoption Ihres Profils entsprechend um.',
       rank: 'Rang',
       username: 'Nutzername',
       email: 'E-Mail',
@@ -548,6 +550,14 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
       activityPreview:
         'Sie sehen eine Vorschau der Aktivität {activity} "{name}" (Anzeigename "{displayName}"). Bitte beachten Sie, dass diese Vorschau als Test-Ansicht für Dozierende konzipiert wurde. Während die meisten Interaktionsfunktionalitäten unterstützt werden, werden keine eingereichten Antworten gespeichert oder in der Auswertungsansicht angezeigt.',
     },
+    chatbot: {
+      loginRequiredMessage:
+        'Für diesen Chatbot benötigen Sie ein KlickerUZH-Konto. Bitte melden Sie sich an oder erstellen Sie zuerst ein Konto.',
+      goToLogin: 'Zum Login',
+      participationRequiredMessage:
+        'Ihre Kursteilnahme für diesen Chatbot konnte nicht eingerichtet werden. Öffnen Sie den Kurs in OLAT/KlickerUZH und treten Sie ihm bei, bevor Sie es erneut versuchen.',
+      goToCourse: 'Kurs öffnen',
+    },
     insights: {
       noCourseDataAvailable:
         'Es sind noch keine Kurse mit Zeitachsen-Daten verfügbar. Bitte treten Sie hierfür zuerst einem Kurs bei und nehmen Sie an Aktivitäten teil.',
@@ -596,7 +606,7 @@ KlickerUZH bietet Ihnen als Kursteilnehmende eine umfassende Reihe von Funktiona
 
 ![Live-Quiz _auf der linken Seite_](/img/06_live_quiz.png)
 
-Während der Vorlesung können Sie die von den Dozierenden in Live Quizzes gestellten Fragen in der KlickerUZH-App, über Ihr LMS (z. B. OLAT unter dem Modul "Live Quiz") oder direkt unter 
+Während der Vorlesung können Sie die von den Dozierenden in Live Quizzes gestellten Fragen in der KlickerUZH-App, über Ihr LMS (z. B. OLAT unter dem Modul "Live Quiz") oder direkt unter
 \`https://pwa.klicker.uzh.ch/join/&lt;shortname&gt;\` beantworten. Die Resultate werden live in der Auswertung angezeigt und können nach Ablauf der Antwortzeit präsentiert und kommentiert werden.
 
 Zur Teilnahme an einem Live Quiz benötigen Sie keinen Login. Mit einem KlickerUZH‑Account können Sie jedoch an der Kurs‑Challenge teilnehmen und Punkte sammeln. Falls verfügbar, können Sie auch dem KlickerUZH‑Kurs mit Ihrem Klicker‑Account beitreten, sodass Ihnen direkt eine Liste aller laufenden Live‑Quizzes angezeigt wird.
@@ -663,12 +673,12 @@ Wenn Sie bereits ein KlickerUZH‑Konto haben (z. B. aus anderen Kursen), öff
 
 ![](/img/05_join_course.png)
 
-Wenn Sie zum ersten Mal an einem Kurs mit KlickerUZH teilnehmen, öffnen Sie den Zugangslink, den Sie von den Dozierenden erhalten (z. B. 
+Wenn Sie zum ersten Mal an einem Kurs mit KlickerUZH teilnehmen, öffnen Sie den Zugangslink, den Sie von den Dozierenden erhalten (z. B.
 \`https://pwa.klicker.uzh.ch/course/XYZ/join?pin=111111111\`). Darüber können Sie ein neues KlickerUZH‑Konto erstellen (anonymer Benutzername und Passwort), sich einloggen, Ihren Avatar festlegen und an Aktivitäten teilnehmen.
 
 #### Anonyme Teilnahme
 
-Grundsätzlich ist eine anonyme Teilnahme an allen Aktiväten in KlickerUZH ausser Gruppenaktivitäten möglich. Für Live‑Quizzes finden Sie die laufenden Quizzes eines Accounts unter 
+Grundsätzlich ist eine anonyme Teilnahme an allen Aktiväten in KlickerUZH ausser Gruppenaktivitäten möglich. Für Live‑Quizzes finden Sie die laufenden Quizzes eines Accounts unter
 \`https://pwa.klicker.uzh.ch/join/&lt;shortname&gt;\`. Practice Quizzes und Microlearnings sind über direkte Links zugänglich, die von den Dozierenden bereitgestellt werden. Beim Zugriff über die OLAT‑Integration können Sie ein Konto erstellen und werden danach automatisch eingeloggt. Ohne KlickerUZH‑Konto bleibt Ihre Teilnahme an eingebetteten Aktivitäten anonym.
 `,
       appSetupTitle: 'App Installation',
@@ -714,6 +724,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       joinGroup: 'Gruppe beitreten',
       groupName: 'Gruppenname',
       randomGroup: 'Zufällige Gruppe',
+      assessmentResults: 'Assessment Resultate',
       createJoinRandomGroup:
         'Hier klicken, um einer zufälligen Gruppe mit anderen Studierenden automatisch beitreten.',
       joinGroupError:
@@ -1080,6 +1091,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       accountDeletionMessage:
         'Da Sie Ihr KlickerUZH-Konto derzeit zur Teilnahme an einem Assessment-Kurs verwenden, können Sie Ihr Konto nicht selbst löschen. Für weitere Informationen zur Löschung Ihres Kontos und zum Verlassen des Kurses wenden Sie sich bitte an Ihre Dozierenden.',
       respondedAt: 'Beantwortet am {date}',
+      failedToLoadActivityResults:
+        'Beim Laden der Resultate für die Aktivitäten in diesem Assessment Kurs ist leider ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie Ihre Dozierenden, falls das Problem weiterhin besteht.',
+      activityResultsDescription:
+        'Die folgende Übersicht zeigt alle Aktivitäten, welche Ihnen im Assessment-Kurs zur Verfügung gestellt wurden. Aktivitäten, welche live im Hörsaal durchgeführt werden oder nur während einer bestimmten Zeit zur Verfügung stehen (z.B. Microlearnings), erscheinen auf dieser Übersicht, sobald sie durch den Dozierenden beendet wurden. Für weitere Informationen bezüglich der Korrektheit ihrer spezifischen Antworten innerhalb einer Aktivität, kontaktieren Sie bitte Ihre Dozierenden.',
+      noCompletedLiveQuizzesYet:
+        'Bisher wurden noch keine Live-Quizzes in diesem Assessment-Kurs abgeschlossen.',
+      completedOn: 'Abgeschlossen am {date}',
+      notCompletedYet: 'Noch nicht abgeschlossen',
+      multiplier: 'Multiplikator',
+      basePoints: 'Basispunkte',
+      correctnessPoints: 'Korrektheitspunkte',
+      bonusPoints: 'Bonuspunkte',
+      ofAvailable: 'von {value} verfügbar',
+      totalPoints: 'Totalpunkte',
+      aggregatedTitle: 'Aggregierte Werte',
+      excludingBonus: '(ohne Bonus: {value})',
     },
   },
   manage: {
@@ -1153,6 +1180,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     activities: {
       activityType: 'Aktivitätstyp',
+      modeFilters: 'Modus',
       noActivitiesAvailable:
         'Bisher sind keine Aktivitäten verfügbar. Sie können neue Aktivitäten einfach durch die Kombination von Elementen in der <link>Bibliothek</link> erstellen.',
       noActivitiesWarning:
@@ -1214,6 +1242,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       enableLiveQuizPointsModification:
         'Basis, Korrektheits- und Bonuspunkte anpassen',
       bonusTime: 'Bonuszeit',
+      bonusTimeNonNegative:
+        'Die Zeitspanne während welcher Bonuspunkte vergeben werden muss mindestens 1 Sekunde betragen. Um keine Bonuspunkte zu vergeben, setzen Sie die Bonuspunkte auf 0.',
       noActivitiesWillBeUpdated: 'Keine Aktivitäten werden verändert',
       nActivitiesWillBeUpdated: '{number} Aktivitäten werden angepasst',
       activityContainsNoElements: 'Diese {activity} enthält keine Elemente.',
@@ -1257,6 +1287,34 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Nur ein Teil Ihrer Batch-Operation konnte erfolgreich angewendet werden. Bitte überprüfen Sie die betroffenen Aktivitäten und Ihre Berechtigungen.',
       batchOperationFailed:
         'Beim Anwenden der Batch-Operation ist ein Fehler aufgetreten. Bitte überprüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
+    },
+    assessment: {
+      assessmentResults: 'Assessment Resultate',
+      liveQuizStudentResultsTitle: 'Studierendenresultate',
+      liveQuizStudentEmailColumn: 'Studierende (E-Mail)',
+      liveQuizStudentResultsEmpty:
+        'Es sind noch keine Studierendenresultate vorhanden.',
+      errorLoadingLiveQuizResults:
+        'Beim Laden der Resultate ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+      liveQuizSelectStudentInfo:
+        'Um die von einem bestimmten Studierenden abgegebenen Antworten einsehen zu können, wählen Sie diesen bitte aus der Liste auf der linken Seite aus. Sie erhalten dann eine Übersicht über alle im Quiz enthaltenen Fragen, die jeweils abgegebene Antwort und die Bepunktung.',
+      liveQuizElement: 'Element',
+      liveQuizStudentHasNoResponses:
+        'Dieser Studierende hat noch keine Antworten eingereicht.',
+      liveQuizResponse: 'Antwort',
+      liveQuizOpenResponse: 'Antwort ansehen',
+      liveQuizNoResponseSubmitted: 'Keine Antwort abgegeben',
+      liveQuizQuestionAnswered: 'Beantwortet',
+      liveQuizQuestionNotAnswered: 'Nicht beantwortet',
+      liveQuizResponseFromBlock: 'Antwort aus {block}',
+      liveQuizCorrect: 'Korrekt',
+      liveQuizPartiallyCorrect: 'Teilweise korrekt',
+      liveQuizIncorrect: 'Falsch',
+      liveQuizNotAnswered: 'Nicht beantwortet',
+      errorLoadingStudentLiveQuizResponses:
+        'Beim Laden der Studierendenantworten ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+      responseBy: 'Antwort von {email}',
+      noSampleSolution: 'Keine Musterlösung',
     },
     support: {
       modalTitle: 'Support KlickerUZH',

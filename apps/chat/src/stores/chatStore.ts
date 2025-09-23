@@ -5,6 +5,7 @@ import {
   apiCall,
   convertApiMessageToMessage,
   convertApiThreadToThread,
+  isApiError,
   type ApiMessage,
   type ApiThread,
 } from '../lib/api/types'
@@ -36,6 +37,8 @@ interface ChatState {
   threads: Thread[]
   activeThreadId: string | null
   isLoading: boolean
+  participationRequired: boolean
+  participationMessage: string | null
 
   // thread management actions
   createThread: (chatbotId: string) => Promise<string>
@@ -72,10 +75,47 @@ interface ChatState {
  * - API integration for persistence
  */
 export const useChatStore = create<ChatState>((set, get) => {
+  const DEFAULT_PARTICIPATION_MESSAGE =
+    'You need to join the corresponding KlickerUZH course before you can use this chatbot. Please enrol in the course or contact your instructor for access.'
+
+  const markParticipationRequired = (message?: string) => {
+    set({
+      participationRequired: true,
+      participationMessage: message?.trim()
+        ? message
+        : DEFAULT_PARTICIPATION_MESSAGE,
+    })
+  }
+
+  const clearParticipationNotice = () => {
+    set({ participationRequired: false, participationMessage: null })
+  }
+
+  const handleApiError = (error: unknown) => {
+    if (isApiError(error) && error.status === 403) {
+      const apiMessage =
+        typeof error.body === 'object' &&
+        error.body !== null &&
+        'error' in error.body &&
+        typeof (error.body as { error?: unknown }).error === 'string'
+          ? ((error.body as { error?: string }).error ?? undefined)
+          : undefined
+
+      const friendlyMessage =
+        apiMessage === 'No valid participation found for this chatbot'
+          ? DEFAULT_PARTICIPATION_MESSAGE
+          : apiMessage
+
+      markParticipationRequired(friendlyMessage)
+    }
+  }
+
   return {
     threads: [],
     activeThreadId: null,
     isLoading: false,
+    participationRequired: false,
+    participationMessage: null,
 
     /**
      * Creates a new conversation thread
@@ -105,9 +145,12 @@ export const useChatStore = create<ChatState>((set, get) => {
           }
         })
 
+        clearParticipationNotice()
+
         return newThread.id
       } catch (error) {
         console.error('Failed to create thread:', error)
+        handleApiError(error)
         set({ isLoading: false })
         throw error
       }
@@ -130,9 +173,12 @@ export const useChatStore = create<ChatState>((set, get) => {
           threads,
           activeThreadId: null,
           isLoading: false,
+          participationRequired: false,
+          participationMessage: null,
         })
       } catch (error) {
         console.error('Failed to load threads:', error)
+        handleApiError(error)
         set({ isLoading: false })
       }
     },
@@ -193,6 +239,7 @@ export const useChatStore = create<ChatState>((set, get) => {
         }))
       } catch (error) {
         console.error('Failed to switch to thread:', error)
+        handleApiError(error)
         set({ isLoading: false })
       }
     },
@@ -224,6 +271,7 @@ export const useChatStore = create<ChatState>((set, get) => {
         })
       } catch (error) {
         console.error('Failed to delete thread:', error)
+        handleApiError(error)
       }
     },
 
@@ -254,6 +302,7 @@ export const useChatStore = create<ChatState>((set, get) => {
         }))
       } catch (error) {
         console.error('Failed to update thread title:', error)
+        handleApiError(error)
       }
     },
 
@@ -332,6 +381,7 @@ export const useChatStore = create<ChatState>((set, get) => {
             )
           } catch (error) {
             console.error('Failed to update thread title:', error)
+            handleApiError(error)
           }
         }
       }

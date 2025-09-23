@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import LiveQuizQRModal from '~/components/liveQuiz/cockpit/LiveQuizQRModal'
+import LiveQuizQRModal from '../../liveQuiz/cockpit/LiveQuizQRModal'
 
 function LiveQuizEvaluationQRCode({
   language,

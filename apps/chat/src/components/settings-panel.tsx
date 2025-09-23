@@ -14,10 +14,11 @@ export function SettingsPanel() {
     credits,
     modelOptions,
     modeOptions,
+    modelSelectionEnabled,
     setSelectedModel,
     setSelectedMode,
   } = useSettingsStore()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
 
   const creditsPercentage =
     credits.total > 0 ? (credits.current / credits.total) * 100 : 0
@@ -48,30 +49,8 @@ export function SettingsPanel() {
         </span>
       </div>
       {open && (
-        <div className="border-muted space-y-4 border-t p-4">
+        <div className="border-muted space-y-4 border-t px-4 pb-4">
           <div>
-            {/* model selection */}
-            <div className="space-y-2">
-              <label className="text-sm font-bold">AI Model</label>
-              <Select
-                placeholder="Select AI Model"
-                items={modelOptions.map((option) => ({
-                  value: option.id,
-                  label: option.name,
-                }))}
-                onChange={(newValue) => {
-                  handleModelChange(newValue)
-                }}
-                value={selectedModel}
-              />
-              <p className="text-muted-foreground text-sm">
-                {
-                  modelOptions.find((option) => option.id === selectedModel)
-                    ?.description
-                }
-              </p>
-            </div>
-
             {/* mode selection */}
             <div className="space-y-2">
               <label className="text-sm font-bold">Chat Mode</label>
@@ -81,7 +60,7 @@ export function SettingsPanel() {
                   Object.keys(modeOptions).length > 0
                     ? Object.entries(modeOptions).map(([key]) => ({
                         value: key,
-                        label: key,
+                        label: key.charAt(0).toUpperCase() + key.slice(1),
                       }))
                     : []
                 }
@@ -95,6 +74,45 @@ export function SettingsPanel() {
                   ? modeOptions[selectedMode] || 'No description available.'
                   : 'No mode selected.'}
               </p>
+            </div>
+
+            {/* model selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-bold">AI Model</label>
+              {modelSelectionEnabled ? (
+                <>
+                  <Select
+                    placeholder="Select AI Model"
+                    items={modelOptions.map((option) => ({
+                      value: option.id,
+                      label: option.name,
+                    }))}
+                    onChange={(newValue) => {
+                      handleModelChange(newValue)
+                    }}
+                    value={selectedModel}
+                  />
+                  <p className="text-muted-foreground text-sm">
+                    {
+                      modelOptions.find((option) => option.id === selectedModel)
+                        ?.description
+                    }
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="rounded-md border px-3 py-2 text-sm">
+                    {modelOptions.find((option) => option.id === selectedModel)
+                      ?.name || selectedModel}
+                  </div>
+                  <p className="text-muted-foreground text-sm">
+                    Automatic selection based on credit availability.
+                    {credits.current > 0
+                      ? ' Using primary model with available credits.'
+                      : ' Using fallback model (no credits remaining).'}
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </div>

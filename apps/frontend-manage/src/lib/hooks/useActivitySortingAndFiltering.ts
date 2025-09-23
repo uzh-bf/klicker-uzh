@@ -7,6 +7,12 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { useReducer } from 'react'
 
+export type ActivityModeFilters = {
+  gamified: boolean
+  assessment: boolean
+  pinProtected: boolean
+}
+
 export type ActivityFilters = {
   status: PublicationStatus[]
   sharingType: SharingType[]
@@ -14,6 +20,7 @@ export type ActivityFilters = {
   course?: string | null // null means "unassigned", undefined means "all courses"
   multiplier?: number | null
   reviewStatus?: ReviewStatus | null
+  mode: ActivityModeFilters
 }
 
 export type ActivitySortType = {
@@ -28,6 +35,7 @@ enum ActivityReducerActionType {
   SET_COURSE = 'SET_COURSE',
   SET_MULTIPLIER = 'SET_MULTIPLIER',
   SET_REVIEW_STATUS = 'SET_REVIEW_STATUS',
+  TOGGLE_MODE = 'TOGGLE_MODE',
   SORT_ORDER = 'SORT_ORDER',
   SORT_BY = 'SORT_BY',
   RESET = 'RESET',
@@ -46,6 +54,7 @@ type ReducerAction = {
   course?: string | null
   multiplier?: number | null
   reviewStatus?: ReviewStatus | null
+  modeFlag?: keyof ActivityModeFilters
   by?: SortByType
 }
 
@@ -61,6 +70,11 @@ export const ACTIVITY_SORTING_FILTERING_INITIAL: ActivityFilterSortType = {
     course: undefined,
     multiplier: undefined,
     reviewStatus: undefined,
+    mode: {
+      gamified: false,
+      assessment: false,
+      pinProtected: false,
+    },
   },
   sort: {
     asc: false,
@@ -145,6 +159,20 @@ function activityReducer(
         },
       }
 
+    case ActivityReducerActionType.TOGGLE_MODE:
+      if (!action.modeFlag) return state
+
+      return {
+        ...state,
+        filters: {
+          ...state.filters,
+          mode: {
+            ...state.filters.mode,
+            [action.modeFlag]: !state.filters.mode[action.modeFlag],
+          },
+        },
+      }
+
     case ActivityReducerActionType.SORT_ORDER:
       return {
         ...state,
@@ -172,7 +200,22 @@ function activityReducer(
 }
 
 function useActivitySortingAndFiltering(initialValue: ActivityFilterSortType) {
-  const [state, dispatch] = useReducer(activityReducer, initialValue)
+  const sanitizedInitial: ActivityFilterSortType = {
+    filters: {
+      ...ACTIVITY_SORTING_FILTERING_INITIAL.filters,
+      ...initialValue.filters,
+      mode: {
+        ...ACTIVITY_SORTING_FILTERING_INITIAL.filters.mode,
+        ...(initialValue.filters.mode ?? {}),
+      },
+    },
+    sort: {
+      ...ACTIVITY_SORTING_FILTERING_INITIAL.sort,
+      ...initialValue.sort,
+    },
+  }
+
+  const [state, dispatch] = useReducer(activityReducer, sanitizedInitial)
 
   return {
     ...state,
@@ -211,6 +254,11 @@ function useActivitySortingAndFiltering(initialValue: ActivityFilterSortType) {
       dispatch({
         type: ActivityReducerActionType.SET_REVIEW_STATUS,
         reviewStatus,
+      }),
+    toggleModeFilter: (modeFlag: keyof ActivityModeFilters): void =>
+      dispatch({
+        type: ActivityReducerActionType.TOGGLE_MODE,
+        modeFlag,
       }),
   }
 }

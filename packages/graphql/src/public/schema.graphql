@@ -189,6 +189,19 @@ type ActivityQuizAnalytics {
   totalPartialRate: Float!
 }
 
+type ActivityStudentPerformance {
+  availableBasePoints: Float!
+  availableBonusPoints: Float!
+  availableCorrectnessPoints: Float!
+  basePoints: Float!
+  bonusPoints: Float!
+  correctnessPoints: Float!
+  displayName: String!
+  finishedAt: Date!
+  id: String!
+  multiplier: Int!
+}
+
 type ActivitySummary {
   numOfAnonymousResponses: Int!
   numOfResponses: Int!
@@ -257,6 +270,17 @@ type AnswerCollectionEntry {
 type AnswerCollectionPreviewEntry {
   id: Int!
   value: String!
+}
+
+type AssessmentResultsLiveQuiz {
+  availableBasePoints: Float!
+  availableBonusPoints: Float!
+  availableCorrectnessPoints: Float!
+  name: String!
+  quizBasePoints: Float!
+  quizBonusPoints: Float!
+  quizCorrectnessPoints: Float!
+  studentResults: [StudentAssessmentQuizResults!]!
 }
 
 type AvatarSettings {
@@ -1683,6 +1707,7 @@ type Mutation {
   endGroupActivity(id: String!): GroupActivity
   endLiveQuiz(id: String!): LiveQuiz
   endMicroLearning(id: String!): MicroLearning
+  ensureParticipation(courseId: String!): Boolean!
   extendGroupActivity(endDate: Date!, id: String!): GroupActivity
   extendMicroLearning(endDate: Date!, id: String!): MicroLearning
   finalizeGroupActivityGrading(id: String!): GroupActivity
@@ -2147,6 +2172,7 @@ type PushSubscription {
 type Query {
   activityDetails(activityId: String!, activityType: ActivityType!): ActivityDetails
   artificialInstance(elementId: Int!): ElementInstance
+  assessmentResultsLiveQuiz(liveQuizId: String!): AssessmentResultsLiveQuiz
   basicCourseInformation(courseId: String!): StudentCourse
   checkParticipantNameAvailable(username: String!): Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
@@ -2229,6 +2255,7 @@ type Query {
   liveQuiz(id: String!): LiveQuiz
   liveQuizEvaluation(hmac: String, id: String!): ActivityEvaluation
   liveQuizLeaderboard(hmac: String, quizId: String!): [LeaderboardEntry!]
+  liveQuizStudentAssessmentResponses(liveQuizId: String!, participantId: String!): [StudentAssessmentBlockResponse!]
   microLearning(id: String!): MicroLearning
   participantCourses: [Course!]
   participantGroups(courseId: String!): [ParticipantGroup!]
@@ -2238,9 +2265,10 @@ type Query {
   self(liveQuizId: String): Participant
   selfWithAchievements: ParticipantWithAchievements
   shortnameQuizzes(shortname: String!): [LiveQuiz!]
+  studentAssessmentResults(courseId: String!): StudentAssessmentResults
   studentLiveQuiz(id: String!): LiveQuiz
   unassignedLiveQuizzes: [LiveQuiz!]
-  userActivities(activityTypeFilter: ActivityType, courseId: String, multiplier: Int, numEntries: Int, offset: Int, reviewStatus: ReviewStatus, searchString: String, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, sortByAsc: Boolean!, sortByType: SortByType!, statusFilter: [PublicationStatus!], withoutCourse: Boolean): UserActivityList
+  userActivities(activityTypeFilter: ActivityType, courseId: String, isAssessmentEnabled: Boolean, isGamificationEnabled: Boolean, isPinProtected: Boolean, multiplier: Int, numEntries: Int, offset: Int, reviewStatus: ReviewStatus, searchString: String, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, sortByAsc: Boolean!, sortByType: SortByType!, statusFilter: [PublicationStatus!], withoutCourse: Boolean): UserActivityList
   userCourses: [Course!]
   userElements(activityId: String, hasAnswerFeedbacks: Boolean!, hasSampleSolution: Boolean!, multiplier: Int, numEntries: Int!, offset: Int!, searchString: String, showArchived: Boolean!, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, showUntagged: Boolean!, sortByAsc: Boolean!, sortByType: SortByType!, status: ElementStatus, tagIds: [Int!]!, type: ElementType): UserElementList
   userLogins: [UserLogin!]
@@ -2276,6 +2304,12 @@ type ReducedActivityInfo {
   scheduledEndAt: Date
   scheduledStartAt: Date
   status: PublicationStatus!
+}
+
+enum ResponseCorrectness {
+  CORRECT
+  PARTIAL
+  WRONG
 }
 
 enum ResponseCorrectnessType {
@@ -2528,6 +2562,35 @@ type Statistics {
   q1: Float!
   q3: Float!
   sd: Float!
+}
+
+type StudentAssessmentBlockResponse {
+  blockId: Int!
+  instances: [StudentAssessmentInstanceResponse!]!
+}
+
+type StudentAssessmentInstanceResponse {
+  basePoints: Float!
+  bonusPoints: Float!
+  correctness: ResponseCorrectness
+  correctnessPoints: Float!
+  instance: ElementInstance!
+  submission: Json
+}
+
+type StudentAssessmentQuizResults {
+  basePoints: Float!
+  bonusPoints: Float!
+  correctnessPoints: Float!
+  participantEmail: String!
+  participantId: String!
+}
+
+type StudentAssessmentResults {
+  groupActivities: [ActivityStudentPerformance!]!
+  liveQuizzes: [ActivityStudentPerformance!]!
+  microLearnings: [ActivityStudentPerformance!]!
+  practiceQuizzes: [ActivityStudentPerformance!]!
 }
 
 type StudentCourse {

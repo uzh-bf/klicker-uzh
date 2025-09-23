@@ -31,6 +31,7 @@ import {
   WeeklyCourseActivities,
 } from './analytics.js'
 import {
+  AssessmentResultsLiveQuiz,
   Course,
   CourseLeaderboard,
   CourseListEntry,
@@ -38,6 +39,8 @@ import {
   CourseStudentTimeline,
   CourseSummary,
   LeaderboardEntry,
+  StudentAssessmentBlockResponse,
+  StudentAssessmentResults,
   StudentCourse,
 } from './course.js'
 import {
@@ -287,6 +290,9 @@ export const Query = builder.queryType({
           showDependencies: t.arg.boolean({ required: false }),
           multiplier: t.arg.int({ required: false }),
           reviewStatus: t.arg({ type: ReviewStatus, required: false }),
+          isGamificationEnabled: t.arg.boolean({ required: false }),
+          isAssessmentEnabled: t.arg.boolean({ required: false }),
+          isPinProtected: t.arg.boolean({ required: false }),
           sortByType: t.arg({ type: SortByType, required: true }),
           sortByAsc: t.arg.boolean({ required: true }),
           numEntries: t.arg.int({ required: false }),
@@ -889,6 +895,39 @@ export const Query = builder.queryType({
         },
         resolve: async (_, args, ctx) => {
           return await LiveQuizService.getLiveQuizLeaderboard(args, ctx)
+        },
+      }),
+
+      studentAssessmentResults: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: StudentAssessmentResults,
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await CourseService.getStudentAssessmentResults(args, ctx)
+        },
+      }),
+
+      assessmentResultsLiveQuiz: t.withAuth(asUser).field({
+        nullable: true,
+        type: AssessmentResultsLiveQuiz,
+        args: { liveQuizId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await CourseService.getAssessmentResultsLiveQuiz(args, ctx)
+        },
+      }),
+
+      liveQuizStudentAssessmentResponses: t.withAuth(asUser).field({
+        nullable: true,
+        type: [StudentAssessmentBlockResponse],
+        args: {
+          liveQuizId: t.arg.string({ required: true }),
+          participantId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await CourseService.getLiveQuizStudentAssessmentResponses(
+            args,
+            ctx
+          )
         },
       }),
 

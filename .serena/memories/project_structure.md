@@ -1,177 +1,141 @@
-# Project Structure
+# Project Structure and Architectural Principles
 
-## Monorepo Architecture
+## Architectural Philosophy
 
-KlickerUZH is organized as a monorepo using pnpm workspaces with Turbo for build orchestration. The structure follows domain-driven design principles with clear separation between applications, shared packages, and infrastructure.
+KlickerUZH follows domain-driven design principles with clear separation between applications, shared capabilities, and infrastructure concerns. The structure emphasizes modularity, reusability, and maintainability across a complex educational platform.
 
-## Top-Level Organization
+## Domain-Driven Organization
 
-### Application Layer (`apps/`)
+### Application Layer Domains
 
-User-facing applications organized by function:
+**Educational Applications**:
+- Student-facing learning interfaces
+- Instructor management and control systems
+- Assessment and feedback applications
 
-- **Frontend Applications**: Student, lecturer, and controller interfaces
-- **Backend Services**: API and processing services
-- **Function Applications**: Serverless processing functions
-- **Integration Services**: LMS and external service integration
-- **Authentication Services**: Identity and access management
-- **Workflow Services**: Hatchet-based distributed processing
-  - **hatchet-worker-general**: General purpose workflow worker
-  - **hatchet-worker-response-processor**: Response processing worker
-  - **response-api**: Dedicated response handling API service
+**AI-Enhanced Applications**:
+- Conversational educational assistance
+- Intelligent tutoring and support systems
 
-### Shared Package Layer (`packages/`)
+**Platform Services**:
+- Authentication and identity management
+- Content processing and workflow orchestration
+- External system integration services
 
-Reusable packages shared across applications:
+**Infrastructure Applications**:
+- Distributed task processing workers
+- Specialized API services for specific domains
 
-- **Data Layer**: Database schema, migrations, and ORM
-- **API Layer**: GraphQL schema, resolvers, and business logic
-- **Business Logic**: Domain-specific logic and calculations
-- **Type Definitions**: Shared TypeScript types
-- **Utilities**: Common functions and helpers
-- **UI Components**: Shared React components
-- **Internationalization**: Multi-language support
-- **Workflow Tasks**: Hatchet task definitions and workflow orchestration (`packages/hatchet-tasks`)
+### Shared Capability Layer
 
-### Infrastructure Layer
+**Data and Business Logic**:
+- Centralized data models and database access
+- Core business rules and domain logic
+- Shared algorithms and calculations
 
-Supporting infrastructure and tooling:
+**User Interface Components**:
+- Reusable UI elements and patterns
+- Design system implementation
+- Cross-application interaction patterns
 
-- **Testing Infrastructure**: E2E tests and test utilities
-- **Deployment Configuration**: Kubernetes and containerization
-- **Development Tools**: Local development utilities
-- **CI/CD Workflows**: Automation and quality assurance
+**Platform Utilities**:
+- Common functionality across applications
+- Integration patterns and connectors
+- Development and operational tools
 
 ## Architectural Boundaries
 
-### Domain Separation
+### Domain Separation Principles
 
-Clear boundaries between business domains:
+**Educational Domain Boundaries**:
+- **User Management**: Identity, authentication, and access control
+- **Content Management**: Questions, activities, and educational materials
+- **Learning Delivery**: Live sessions, practice, and assessment experiences
+- **AI Assistance**: Conversational support and intelligent tutoring
+- **Analytics and Insights**: Performance tracking and educational outcomes
+- **Collaboration**: Group work and communication features
 
-- **User Management**: Authentication, profiles, and access control
-- **Content Management**: Questions, activities, and curriculum
-- **Learning Delivery**: Live sessions, practice, and assessment
-- **Analytics**: Performance tracking and reporting
-- **Collaboration**: Group work and communication
+### Technology Layer Separation
 
-### Technology Layers
+**Presentation Layer**: User interfaces and interaction patterns
+**AI Integration Layer**: Language models, tool access, and conversational interfaces
+**API Layer**: Data access, business operations, and service coordination
+**Business Logic Layer**: Domain rules, calculations, and educational algorithms
+**Data Layer**: Persistence, caching, and data modeling
+**Integration Layer**: External service communication and protocol handling
 
-Separation by technical concerns:
+## Modularity Patterns
 
-- **Presentation Layer**: User interfaces and interaction
-- **API Layer**: GraphQL operations and data access
-- **Business Logic Layer**: Domain rules and calculations
-- **Data Layer**: Persistence and data modeling
-- **Integration Layer**: External service communication
+### Service Architecture
 
-## Package Organization Patterns
+**Application Independence**: Each application can be developed, deployed, and scaled independently while sharing common capabilities through well-defined interfaces.
 
-### Frontend Applications
+**Shared Capability Reuse**: Common functionality is extracted into shared packages, preventing duplication and ensuring consistency across the platform.
 
-Standard Next.js application structure:
+**Domain Boundary Respect**: Clear boundaries between educational domains prevent feature creep and maintain focused, maintainable applications.
 
-- **Pages**: Route definitions and page components
-- **Components**: Feature-organized React components
-- **Utilities**: Application-specific utilities and hooks
-- **Types**: TypeScript definitions
-- **Styles**: Styling and theme configuration
+### Integration Strategies
 
-### Backend Services
+**Internal Package Dependencies**: Applications depend on shared packages for common functionality, ensuring consistency while maintaining development velocity.
 
-Node.js service structure:
+**External Service Integration**: Platform integrates with external educational systems and AI services through standardized protocols and patterns.
 
-- **Source**: Main application logic
-- **Configuration**: Environment and service configuration
-- **Types**: Service-specific type definitions
-- **Testing**: Unit and integration tests
+**Workflow Orchestration**: Complex educational processes are managed through dedicated workflow systems, separating orchestration logic from individual application concerns.
 
-### Shared Packages
+## Development Organization Principles
 
-Consistent internal package structure:
+### Feature-Based Organization
 
-- **Source**: Package implementation
-- **Types**: Exported type definitions
-- **Testing**: Package-specific tests
-- **Documentation**: Package usage documentation
+Applications organize functionality around educational features rather than technical concerns, making the codebase more intuitive for educational domain experts.
 
-## Configuration Management
+### Layer-Based Separation
 
-### Build Configuration
+Technical concerns are clearly separated across layers, enabling different teams to work on different aspects of the system without interference.
 
-- **Monorepo Config**: Workspace and dependency management
-- **Build Orchestration**: Turbo configuration for builds and tasks
-- **Code Quality**: Linting, formatting, and type checking
-- **Environment**: Development and production configurations
+### Reusability Focus
 
-### Development Tools
+Common patterns and functionality are identified and extracted to shared packages, reducing development time and ensuring consistency across the platform.
 
-- **Local Development**: Docker Compose and reverse proxy setup
-- **Database Tools**: Migration and seeding utilities
-- **Testing Tools**: E2E and unit testing configuration
-- **Deployment Tools**: Container and Kubernetes configurations
+## Quality and Consistency Patterns
 
-## File Organization Principles
+### Code Quality Standards
 
-### Modular Structure
+Consistent quality measures across all packages ensure maintainability and reliability regardless of which team or individual contributed the code.
 
-- **Feature-Based**: Components organized by business feature
-- **Layer-Based**: Clear separation of technical concerns
-- **Domain-Based**: Business domain boundaries respected
-- **Reusability**: Shared code extracted to packages
+### Testing Strategy
 
-### Naming Conventions
+Coordinated testing approaches across package boundaries ensure that changes in shared packages don't break dependent applications.
 
-- **Descriptive Names**: Clear indication of purpose and scope
-- **Consistent Patterns**: Similar naming across similar components
-- **TypeScript Conventions**: PascalCase for components, camelCase for functions
-- **File Extensions**: Appropriate extensions for file types
+### Documentation Integration
 
-## Dependency Management
+Self-documenting code patterns and integrated documentation generation ensure that knowledge is captured and accessible across the development team.
 
-### Package Dependencies
-
-- **Internal Dependencies**: References between internal packages
-- **External Dependencies**: Third-party package management
-- **Version Coordination**: Consistent versions across packages
-- **Dependency Isolation**: Minimal cross-package coupling
-
-### Build Dependencies
-
-- **Development Dependencies**: Tools and utilities for development
-- **Runtime Dependencies**: Required for application execution
-- **Build Dependencies**: Compilation and build process requirements
-- **Test Dependencies**: Testing framework and utilities
-
-## Code Organization Patterns
-
-### Business Logic Separation
-
-- **Services**: Business logic implementation
-- **Utilities**: Pure functions and helpers
-- **Types**: Data structure definitions
-- **Constants**: Shared constants and configurations
-
-### Component Organization
-
-- **Feature Components**: Domain-specific UI components
-- **Shared Components**: Reusable UI elements
-- **Layout Components**: Page structure and navigation
-- **Utility Components**: Low-level UI utilities
-
-## Development Workflow Integration
+## Scalability and Evolution
 
 ### Build System Integration
 
-- **Workspace Awareness**: Build system understands package relationships
-- **Incremental Builds**: Only rebuild changed packages
-- **Parallel Execution**: Concurrent package operations
-- **Cache Management**: Shared build cache across packages
+The structure supports efficient builds that understand package relationships and can perform incremental builds, reducing development cycle time.
 
-### Quality Assurance Integration
+### Package Evolution
 
-- **Code Quality**: Consistent quality checks across packages
-- **Testing Strategy**: Coordinated testing across package boundaries
-- **Documentation**: Integrated documentation generation
-- **Release Management**: Coordinated versioning and releases
+Clear dependency management enables packages to evolve independently while maintaining compatibility across the platform.
 
-For specific directory structures and current organization, explore the repository structure directly or refer to individual package README files for detailed organization within each package.
+### Technology Migration
+
+Layer-based separation enables technology migrations to be performed incrementally, reducing risk and maintaining system stability during transitions.
+
+## Educational Platform Considerations
+
+### Pedagogical Alignment
+
+The structure aligns with educational workflows and domain concepts, making it easier for educators and learning technologists to understand and contribute to the platform.
+
+### Compliance and Security
+
+Clear boundaries enable different security and compliance requirements to be applied to different parts of the system based on their role in the educational process.
+
+### Extensibility for Education
+
+The modular structure enables new educational features and integrations to be added without disrupting existing learning experiences.
+
+This architectural approach ensures that KlickerUZH can evolve and scale while maintaining its focus on delivering effective educational experiences.

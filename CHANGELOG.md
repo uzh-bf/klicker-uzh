@@ -2,6 +2,87 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.32...v3.4.0-alpha.33) (2025-09-23)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** pass participantToken as auth header in SSR ([e178c68](https://github.com/uzh-bf/klicker-uzh/commit/e178c68babc18e6d778f49434ec05b2596c83e4a))
+
+## [3.4.0-alpha.32](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.31...v3.4.0-alpha.32) (2025-09-23)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that live quiz settings are initialized correctly on duplication ([#4940](https://github.com/uzh-bf/klicker-uzh/issues/4940)) ([102cf87](https://github.com/uzh-bf/klicker-uzh/commit/102cf87fd089a78d8c480331b1e92a0238d23033))
+
+
+### Enhancements
+
+* **apps/chat:** ensure participation before redirect to chat, clear error messages ([#4939](https://github.com/uzh-bf/klicker-uzh/issues/4939)) ([73fe3ee](https://github.com/uzh-bf/klicker-uzh/commit/73fe3ee2582fdc5c00efd97d929ffb11f83126a5))
+* **apps/pwa:** add possibility to resize question and feedback areas on live quiz student view ([#4937](https://github.com/uzh-bf/klicker-uzh/issues/4937)) ([9a366cb](https://github.com/uzh-bf/klicker-uzh/commit/9a366cbb7b13950ec66f1f667dd4e44361c04ae3))
+
+## [3.4.0-alpha.31](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.30...v3.4.0-alpha.31) (2025-09-22)
+
+
+### Enhancements
+
+* **apps/chat:** add dynamic disclaimer system ([#4938](https://github.com/uzh-bf/klicker-uzh/issues/4938)) ([87f1f41](https://github.com/uzh-bf/klicker-uzh/commit/87f1f413e1d05d79dfe6c10ff0e806b6609bb8a4))
+
+## [3.4.0-alpha.30](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.29...v3.4.0-alpha.30) (2025-09-22)
+
+
+### Features
+
+* introduce overview of student performance in assessment activities in lecturer view ([#4936](https://github.com/uzh-bf/klicker-uzh/issues/4936)) ([eeb0fe2](https://github.com/uzh-bf/klicker-uzh/commit/eeb0fe20499a56058b274143699789866d939e58))
+
+## [3.4.0-alpha.29](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.28...v3.4.0-alpha.29) (2025-09-21)
+
+
+### Bug Fixes
+
+* **packages/shared-components:** make sure the no points hint is not shown when sample solution is enabled ([f8624f8](https://github.com/uzh-bf/klicker-uzh/commit/f8624f8045c9b4a3690cdd443c419573f63447b9))
+
+## [3.4.0-alpha.28](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.27...v3.4.0-alpha.28) (2025-09-21)
+
+
+### Bug Fixes
+
+* **packages/graphql:** ensure that demo content elements and flashcards are seeded with correct base points setting ([baa924a](https://github.com/uzh-bf/klicker-uzh/commit/baa924a8d4fe33fe75d66d1eb52013d29feaa5f6))
+
+## [3.4.0-alpha.27](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.26...v3.4.0-alpha.27) (2025-09-21)
+
+
+### Enhancements
+
+* add functionality to display assessment activity results to students ([#4935](https://github.com/uzh-bf/klicker-uzh/issues/4935)) ([e349657](https://github.com/uzh-bf/klicker-uzh/commit/e3496577addc412e4165fadc2a46444b1d470e16))
+
+## [3.4.0-alpha.26](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.25...v3.4.0-alpha.26) (2025-09-21)
+
+
+### Bug Fixes
+
+* ensure that base points are always set to false for content elements and flashcards ([#4934](https://github.com/uzh-bf/klicker-uzh/issues/4934)) ([647b832](https://github.com/uzh-bf/klicker-uzh/commit/647b8321eda2e0a63fd588577a586972ebe4a34d))
+
+## [3.4.0-alpha.25](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.24...v3.4.0-alpha.25) (2025-09-21)
+
+
+### Features
+
+* **apps/chat:** dynamic MCP tools and chatbot parametrization, credit management improvements ([#4932](https://github.com/uzh-bf/klicker-uzh/issues/4932)) ([b3c8497](https://github.com/uzh-bf/klicker-uzh/commit/b3c84978d88144d9946d3c225d9226bb2af44c75))
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that countdown on live quiz blocks starts automatically ([ac535f1](https://github.com/uzh-bf/klicker-uzh/commit/ac535f1193807de9c488786f2aa5e324380289a8))
+* ensure that only valid live quiz grading parameters can be defined ([#4929](https://github.com/uzh-bf/klicker-uzh/issues/4929)) ([80546b4](https://github.com/uzh-bf/klicker-uzh/commit/80546b442b52e3d863b0414b63f12878843b9862))
+* **packages/graphql:** ensure that gamification and assessment settings are correctly applied to course activities ([#4931](https://github.com/uzh-bf/klicker-uzh/issues/4931)) ([42af351](https://github.com/uzh-bf/klicker-uzh/commit/42af3515aae338182e539a34b582b6b328f572bb))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add the possibility to filter for gamified, assessment and pin-protected activities ([#4933](https://github.com/uzh-bf/klicker-uzh/issues/4933)) ([2e3bee7](https://github.com/uzh-bf/klicker-uzh/commit/2e3bee77d87a7edb5cd036ebd0c7b520cc31b422))
+
 ## [3.4.0-alpha.24](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.23...v3.4.0-alpha.24) (2025-09-19)
 
 

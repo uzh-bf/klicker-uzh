@@ -11,9 +11,9 @@ import {
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
-import LiveQuizSchedulingModal from '~/components/courses/modals/LiveQuizSchedulingModal'
 import LiveQuizDeletionModal from '../../courses/modals/LiveQuizDeletionModal'
 import LiveQuizResetModal from '../../courses/modals/LiveQuizResetModal'
+import LiveQuizSchedulingModal from '../../courses/modals/LiveQuizSchedulingModal'
 import TemplateConversionModal from '../../courses/modals/TemplateConversionModal'
 import TemplateDeletionModal from '../../courses/modals/TemplateDeletionModal'
 import TemplateEditModal from '../../courses/modals/TemplateEditModal'
@@ -61,6 +61,7 @@ const statusActionMap = {
     'duplicateLiveQuiz',
     'activityLog',
     'shareLiveQuiz',
+    'liveQuizAssessmentResults',
     'removeLiveQuiz',
   ],
   [PublicationStatus.Ended]: [
@@ -69,6 +70,7 @@ const statusActionMap = {
     'embeddingEvaluation',
     'activityLog',
     'shareLiveQuiz',
+    'liveQuizAssessmentResults',
     'removeLiveQuiz',
     'resetLiveQuiz',
     'deleteLiveQuiz',
@@ -160,6 +162,10 @@ function LiveQuizActions({
         'duplicateLiveQuiz',
         ...(user?.privatePreview
           ? ['templateFromLiveQuiz', 'shareLiveQuiz']
+          : []),
+        // the results of assessment live quizzes can be inspected in more detail
+        ...(liveQuiz.isActivityReviewer && liveQuiz.isAssessmentEnabled
+          ? ['liveQuizAssessmentResults']
           : []),
         // assessment live quizzes can only be deleted when not completed and only by course admins
         ...(!liveQuiz.isAssessmentEnabled

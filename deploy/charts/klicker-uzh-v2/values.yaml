@@ -102,6 +102,29 @@ hatchet:
       tolerations: []
       affinity: {}
 
+    responseProcessorAssessment:
+      replicaCount: 1
+      priorityClassName: production-workload
+      image:
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
+        pullPolicy: Always
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+      autoscaling:
+        enabled: false
+        minReplicas: 1
+        maxReplicas: 3
+        targetCPUUtilizationPercentage: 80
+        targetMemoryUtilizationPercentage: 80
+      nodeSelector: {}
+      tolerations: []
+      affinity: {}
+
 auth:
   priorityClassName: production-workload
 

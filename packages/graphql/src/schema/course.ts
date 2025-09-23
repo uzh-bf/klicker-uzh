@@ -1,4 +1,11 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import {
+  ActivityStudentPerformance as ActivityStudentPerformanceType,
+  AssessmentResultsLiveQuiz as AssessmentResultsLiveQuizType,
+  StudentAssessmentBlockResponse as StudentAssessmentBlockResponseType,
+  StudentAssessmentInstanceResponse as StudentAssessmentInstanceResponseType,
+  StudentAssessmentQuizResults as StudentAssessmentQuizResultsType,
+} from '@klicker-uzh/types'
 import dayjs from 'dayjs'
 import builder from '../builder.js'
 import {
@@ -7,6 +14,8 @@ import {
   IReducedActivityInfo,
   ReducedActivityInfo,
 } from './activities.js'
+import { ElementInstance } from './element.js'
+import { ResponseCorrectness } from './evaluation.js'
 import { GroupActivity, IGroupActivity } from './groupActivity.js'
 import { ILiveQuiz, LiveQuiz } from './liveQuiz.js'
 import { IMicroLearning, MicroLearning } from './microLearning.js'
@@ -334,6 +343,8 @@ export const CourseStudentTimeline = CourseStudentTimelineRef.implement({
   }),
 })
 
+// ! GAMIFICATION
+// #region
 export interface ILeaderboardEntry
   extends Omit<
     DB.LeaderboardEntry,
@@ -444,3 +455,119 @@ export const AwardEntry = AwardEntryRef.implement({
     }),
   }),
 })
+// #endregion
+
+// ! ASSESSMENT
+// #region
+export interface IStudentAssessmentResults {
+  liveQuizzes: ActivityStudentPerformanceType[]
+  practiceQuizzes: ActivityStudentPerformanceType[]
+  microLearnings: ActivityStudentPerformanceType[]
+  groupActivities: ActivityStudentPerformanceType[]
+}
+export const StudentAssessmentResultsRef =
+  builder.objectRef<IStudentAssessmentResults>('StudentAssessmentResults')
+export const StudentAssessmentResults = StudentAssessmentResultsRef.implement({
+  fields: (t) => ({
+    liveQuizzes: t.expose('liveQuizzes', {
+      type: [ActivityStudentPerformanceRef],
+    }),
+    practiceQuizzes: t.expose('practiceQuizzes', {
+      type: [ActivityStudentPerformanceRef],
+    }),
+    microLearnings: t.expose('microLearnings', {
+      type: [ActivityStudentPerformanceRef],
+    }),
+    groupActivities: t.expose('groupActivities', {
+      type: [ActivityStudentPerformanceRef],
+    }),
+  }),
+})
+
+export const ActivityStudentPerformanceRef =
+  builder.objectRef<ActivityStudentPerformanceType>(
+    'ActivityStudentPerformance'
+  )
+export const ActivityStudentPerformance =
+  ActivityStudentPerformanceRef.implement({
+    fields: (t) => ({
+      id: t.exposeString('id'),
+      displayName: t.exposeString('displayName'),
+      finishedAt: t.expose('finishedAt', { type: 'Date' }),
+      multiplier: t.exposeInt('multiplier'),
+      basePoints: t.exposeFloat('basePoints'),
+      availableBasePoints: t.exposeFloat('availableBasePoints'),
+      correctnessPoints: t.exposeFloat('correctnessPoints'),
+      availableCorrectnessPoints: t.exposeFloat('availableCorrectnessPoints'),
+      bonusPoints: t.exposeFloat('bonusPoints'),
+      availableBonusPoints: t.exposeFloat('availableBonusPoints'),
+    }),
+  })
+
+export const StudentAssessmentQuizResultsRef =
+  builder.objectRef<StudentAssessmentQuizResultsType>(
+    'StudentAssessmentQuizResults'
+  )
+export const StudentAssessmentQuizResults =
+  StudentAssessmentQuizResultsRef.implement({
+    fields: (t) => ({
+      participantId: t.exposeString('participantId'),
+      participantEmail: t.exposeString('participantEmail'),
+      basePoints: t.exposeFloat('basePoints'),
+      correctnessPoints: t.exposeFloat('correctnessPoints'),
+      bonusPoints: t.exposeFloat('bonusPoints'),
+    }),
+  })
+
+export const AssessmentResultsLiveQuizRef =
+  builder.objectRef<AssessmentResultsLiveQuizType>('AssessmentResultsLiveQuiz')
+export const AssessmentResultsLiveQuiz = AssessmentResultsLiveQuizRef.implement(
+  {
+    fields: (t) => ({
+      name: t.exposeString('name'),
+      quizBasePoints: t.exposeFloat('quizBasePoints'),
+      quizCorrectnessPoints: t.exposeFloat('quizCorrectnessPoints'),
+      quizBonusPoints: t.exposeFloat('quizBonusPoints'),
+      availableBasePoints: t.exposeFloat('availableBasePoints'),
+      availableCorrectnessPoints: t.exposeFloat('availableCorrectnessPoints'),
+      availableBonusPoints: t.exposeFloat('availableBonusPoints'),
+      studentResults: t.expose('studentResults', {
+        type: [StudentAssessmentQuizResultsRef],
+      }),
+    }),
+  }
+)
+
+export const StudentAssessmentInstanceResponseRef =
+  builder.objectRef<StudentAssessmentInstanceResponseType>(
+    'StudentAssessmentInstanceResponse'
+  )
+export const StudentAssessmentInstanceResponse =
+  StudentAssessmentInstanceResponseRef.implement({
+    fields: (t) => ({
+      instance: t.expose('instance', { type: ElementInstance }),
+      basePoints: t.exposeFloat('basePoints'),
+      correctnessPoints: t.exposeFloat('correctnessPoints'),
+      bonusPoints: t.exposeFloat('bonusPoints'),
+      correctness: t.expose('correctness', {
+        type: ResponseCorrectness,
+        nullable: true,
+      }),
+      submission: t.expose('submission', { type: 'Json', nullable: true }),
+    }),
+  })
+
+export const StudentAssessmentBlockResponseRef =
+  builder.objectRef<StudentAssessmentBlockResponseType>(
+    'StudentAssessmentBlockResponse'
+  )
+export const StudentAssessmentBlockResponse =
+  StudentAssessmentBlockResponseRef.implement({
+    fields: (t) => ({
+      blockId: t.exposeInt('blockId'),
+      instances: t.expose('instances', {
+        type: [StudentAssessmentInstanceResponseRef],
+      }),
+    }),
+  })
+// #endregion

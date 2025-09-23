@@ -21,16 +21,20 @@ export const ThreadList: FC = () => {
 
 const ThreadListNew: FC = () => {
   const { chatbotId } = useParams<{ chatbotId: string }>()
-  const { createThread } = useChatStore()
+  const { createThread, participationRequired } = useChatStore()
 
   const handleNewThread = () => {
-    createThread(chatbotId)
+    if (participationRequired) return
+    void createThread(chatbotId).catch(() => {
+      /* handled centrally */
+    })
   }
 
   return (
     <Button
       onClick={handleNewThread}
       basic
+      disabled={participationRequired}
       className={{
         root: 'hover:bg-muted border-1 mx-6 my-2 flex items-center rounded-lg px-2.5 py-1 shadow-sm',
       }}

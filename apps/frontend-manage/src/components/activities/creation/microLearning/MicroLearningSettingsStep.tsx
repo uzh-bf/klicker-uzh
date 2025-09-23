@@ -36,7 +36,6 @@ function MicroLearningSettingsStep({
 }: MicroLearningWizardStepProps) {
   const t = useTranslations()
   const [courseGamified, setCourseGamified] = useState(false)
-
   const groupedCourses = useGamifiedCourseGrouping({
     gamifiedCourses: gamifiedCourses ?? [],
     nonGamifiedCourses: nonGamifiedCourses ?? [],
