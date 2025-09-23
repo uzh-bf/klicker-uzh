@@ -62,6 +62,9 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       const result = await apolloClient.mutate({
         mutation: EnsureParticipationDocument,
         variables: { courseId },
+        context: {
+          headers: { authorization: `Bearer ${participantToken}` },
+        },
       })
 
       ensureSuccess = Boolean(result.data?.ensureParticipation)
