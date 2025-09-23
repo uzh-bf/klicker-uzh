@@ -10,6 +10,7 @@ import {
   faChalkboardUser,
   faChartSimple,
   faCode,
+  faFileCircleCheck,
   faFilePen,
   faLock,
   faMessage,
@@ -192,6 +193,17 @@ function useLiveQuizActions({
         icon: faShare,
         onClick: () => setSharingModal(true),
         data: { cy: `share-live-quiz-${quiz.name}` },
+      },
+      {
+        id: 'liveQuizAssessmentResults',
+        label: t('manage.assessment.assessmentResults'),
+        icon: faFileCircleCheck,
+        onClick: () =>
+          window.open(
+            `/courses/${quiz.courseId}/assessment/liveQuiz/${quiz.id}`,
+            '_blank'
+          ),
+        data: { cy: `live-quiz-assessment-results-${quiz.name}` },
       },
       {
         id: 'unpublishLiveQuiz',
