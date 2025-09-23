@@ -32,7 +32,8 @@ declare global {
 declare global {
   namespace PrismaJson {
     type PrismaSingleQuestionResponse = SingleQuestionResponse
-    type PrismaSingleQuestionResponseLiveQuiz = SingleQuestionResponseLiveQuiz
+    type PrismaSingleQuestionResponseLiveQuiz =
+      SingleQuestionResponseLiveQuiz | null
     type PrismaElementOptions = ElementOptions
     type PrismaElementResults = ElementInstanceResults
     type PrismaElementData = ElementData

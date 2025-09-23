@@ -1012,4 +1012,10 @@ export type StudentAssessmentInstanceResponse = {
   correctness?: PrismaResponseCorrectness | null
   submission?: SingleQuestionResponseLiveQuiz | null
 }
+
+export enum PointCorrectionType {
+  ALL_COURSE = 'ALL_COURSE',
+  PARTICIPATING = 'PARTICIPATING',
+  SINGLE = 'SINGLE',
+}
 // #endregion
