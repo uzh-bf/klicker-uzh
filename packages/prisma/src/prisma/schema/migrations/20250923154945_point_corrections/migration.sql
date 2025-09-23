@@ -23,7 +23,8 @@ CREATE TABLE "public"."PointCorrection" (
 
     CONSTRAINT "PointCorrection_target_required_check" CHECK (("liveQuizId" IS NOT NULL) OR ("instanceId" IS NOT NULL)),
     CONSTRAINT "PointCorrection_participant_single_check" CHECK ((("type" = 'SINGLE') AND ("participantId" IS NOT NULL)) OR (("type" <> 'SINGLE') AND ("participantId" IS NULL))),
-    CONSTRAINT "PointCorrection_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "PointCorrection_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "PointCorrection_participantId_fkey" FOREIGN KEY ("participantId") REFERENCES "public"."Participant"("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 -- CreateTable

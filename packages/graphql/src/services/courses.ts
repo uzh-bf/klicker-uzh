@@ -930,10 +930,11 @@ export async function correctAssessmentPointsInstance(
           reason,
           studentReason,
           type: PointCorrectionType.SINGLE,
-          participantId,
           correctedBy: { connect: { id: ctx.user.sub } },
+          participant: { connect: { id: participantId } },
           instance: { connect: { id: instanceId } },
         },
+        include: { correctedBy: true, participant: true, instance: true },
       })
 
       await upsertResponseAppliedCorrection(
@@ -982,10 +983,10 @@ export async function correctAssessmentPointsInstance(
           reason,
           studentReason,
           type: PointCorrectionType.PARTICIPATING,
-          participantId,
           correctedBy: { connect: { id: ctx.user.sub } },
           instance: { connect: { id: instanceId } },
         },
+        include: { correctedBy: true, instance: true },
       })
 
       // loop over all responses and update them with the corrected points
@@ -1048,10 +1049,10 @@ export async function correctAssessmentPointsInstance(
           reason,
           studentReason,
           type: PointCorrectionType.ALL_COURSE,
-          participantId,
           correctedBy: { connect: { id: ctx.user.sub } },
           instance: { connect: { id: instanceId } },
         },
+        include: { correctedBy: true, instance: true },
       })
 
       // loop over all responses and update them with the corrected points
@@ -1184,10 +1185,11 @@ export async function correctAssessmentPointsLiveQuiz(
           reason,
           studentReason,
           type: PointCorrectionType.SINGLE,
-          participantId,
           correctedBy: { connect: { id: ctx.user.sub } },
+          participant: { connect: { id: participantId } },
           liveQuiz: { connect: { id: liveQuiz.id } },
         },
+        include: { correctedBy: true, participant: true, liveQuiz: true },
       })
 
       await Promise.all(
@@ -1254,7 +1256,7 @@ export async function correctAssessmentPointsLiveQuiz(
 
     // create a map between the participant ids and the instances they have answered with their responses
     const participantResponseMap = quizWithResponses.blocks.reduce<{
-      [participantId: string]: { [instanceId: number]: DB.LiveQuizResponse }
+      [pId: string]: { [instanceId: number]: DB.LiveQuizResponse }
     }>((blockAcc, block) => {
       block.elements.forEach((instance) => {
         instance.liveQuizResponses.forEach((response) => {
@@ -1278,11 +1280,11 @@ export async function correctAssessmentPointsLiveQuiz(
           bonusPoints: awardBonusPoints,
           reason,
           studentReason,
-          type: PointCorrectionType.SINGLE,
-          participantId,
+          type: PointCorrectionType.PARTICIPATING,
           correctedBy: { connect: { id: ctx.user.sub } },
           liveQuiz: { connect: { id: liveQuiz.id } },
         },
+        include: { correctedBy: true, liveQuiz: true },
       })
 
       await Promise.all(
@@ -1297,7 +1299,7 @@ export async function correctAssessmentPointsLiveQuiz(
 
               await Promise.all(
                 Object.entries(participantResponseMap).map(
-                  async ([participantId, instanceResponseMap]) => {
+                  async ([pId, instanceResponseMap]) => {
                     const response = instanceResponseMap[instance.id]
 
                     await upsertResponseAppliedCorrection(
@@ -1305,7 +1307,7 @@ export async function correctAssessmentPointsLiveQuiz(
                         correctionId: correction.id,
                         instance: { ...instance, elementBlock: block },
                         response,
-                        participantId,
+                        participantId: pId,
                         awardBasePoints,
                         awardCorrectnessPoints,
                         awardBonusPoints,
@@ -1348,11 +1350,11 @@ export async function correctAssessmentPointsLiveQuiz(
           bonusPoints: awardBonusPoints,
           reason,
           studentReason,
-          type: PointCorrectionType.SINGLE,
-          participantId,
+          type: PointCorrectionType.ALL_COURSE,
           correctedBy: { connect: { id: ctx.user.sub } },
           liveQuiz: { connect: { id: liveQuiz.id } },
         },
+        include: { correctedBy: true, liveQuiz: true },
       })
 
       // loop over all instances and participants to upsert all relevant responses
@@ -1368,14 +1370,14 @@ export async function correctAssessmentPointsLiveQuiz(
 
               await Promise.all(
                 participations.map(async (participation) => {
-                  const participantId = participation.participantId
+                  const pId = participation.participantId
                   const response = await ctx.prisma.liveQuizResponse.findUnique(
                     {
                       where: {
                         instanceId_elementBlockExecution_participantId: {
                           instanceId: instance.id,
                           elementBlockExecution: block.execution,
-                          participantId,
+                          participantId: pId,
                         },
                       },
                     }
@@ -1386,7 +1388,7 @@ export async function correctAssessmentPointsLiveQuiz(
                       correctionId: correction.id,
                       instance: { ...instance, elementBlock: block },
                       response,
-                      participantId,
+                      participantId: pId,
                       awardBasePoints,
                       awardCorrectnessPoints,
                       awardBonusPoints,

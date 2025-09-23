@@ -10,6 +10,7 @@ import builder from '../builder.js'
 import { ElementInstance, ElementInstanceRef } from './element.js'
 import { ResponseCorrectness } from './evaluation.js'
 import { LiveQuizRef } from './liveQuiz.js'
+import { ParticipantRef } from './participant.js'
 import { UserRef } from './user.js'
 
 export const PointCorrectionType = builder.enumType('PointCorrectionType', {
@@ -131,6 +132,7 @@ export const StudentAssessmentBlockResponse =
 export const PointCorrectionRef = builder.objectRef<
   DB.PointCorrection & {
     correctedBy?: DB.User | null
+    participant?: DB.Participant | null
     liveQuiz?: DB.LiveQuiz | null
     instance?: DB.ElementInstance | null
   }
@@ -146,6 +148,10 @@ export const PointCorrection = PointCorrectionRef.implement({
     type: t.expose('type', { type: PointCorrectionType }),
     participantId: t.exposeString('participantId', { nullable: true }),
     correctedBy: t.expose('correctedBy', { type: UserRef, nullable: true }),
+    participant: t.expose('participant', {
+      type: ParticipantRef,
+      nullable: true,
+    }),
     liveQuiz: t.expose('liveQuiz', { type: LiveQuizRef, nullable: true }),
     instance: t.expose('instance', {
       type: ElementInstanceRef,

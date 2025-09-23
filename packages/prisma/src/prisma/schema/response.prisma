@@ -165,8 +165,11 @@ model PointCorrection {
 
   // enum to determine if points are awarded to all users in assessment course, only participating users in activity or a single participant
   // -> database constraint enforces that participantId is (only) set if type is SINGLE
-  type          PointCorrectionType
-  participantId String?             @db.Uuid
+  type PointCorrectionType
+
+  // link to the participant that is affected by the correction (only set if type is SINGLE)
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  participantId String?      @db.Uuid
 
   // link to the user that created the correction
   correctedBy   User?   @relation(fields: [correctedById], references: [id], onDelete: SetNull, onUpdate: Cascade)

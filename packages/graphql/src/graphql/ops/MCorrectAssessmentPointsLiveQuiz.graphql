@@ -1,0 +1,23 @@
+mutation CorrectAssessmentPointsLiveQuiz(
+  $liveQuizId: String!
+  $awardBasePoints: Boolean
+  $awardCorrectnessPoints: Boolean
+  $awardBonusPoints: Boolean
+  $reason: String!
+  $studentReason: String!
+  $scope: PointCorrectionType!
+  $participantId: String
+) {
+  correctAssessmentPointsLiveQuiz(
+    liveQuizId: $liveQuizId
+    awardBasePoints: $awardBasePoints
+    awardCorrectnessPoints: $awardCorrectnessPoints
+    awardBonusPoints: $awardBonusPoints
+    reason: $reason
+    studentReason: $studentReason
+    scope: $scope
+    participantId: $participantId
+  ) {
+    ...PointCorrectionData
+  }
+}

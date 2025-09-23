@@ -2145,6 +2145,7 @@ type PointCorrection {
   id: Int!
   instance: ElementInstance
   liveQuiz: LiveQuiz
+  participant: Participant
   participantId: String
   reason: String!
   studentReason: String!

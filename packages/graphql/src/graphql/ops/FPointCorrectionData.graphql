@@ -1,0 +1,57 @@
+fragment PointCorrectionData on PointCorrection {
+  id
+  type
+  basePoints
+  correctnessPoints
+  bonusPoints
+
+  reason
+  studentReason
+
+  correctedBy {
+    id
+    shortname
+  }
+  participant {
+    id
+    username
+    email
+  }
+  liveQuiz {
+    id
+    name
+  }
+  instance {
+    id
+    elementData {
+      ... on ChoicesElementData {
+        id
+        name
+      }
+      ... on NumericalElementData {
+        id
+        name
+      }
+      ... on FreeTextElementData {
+        id
+        name
+      }
+      ... on SelectionElementData {
+        id
+        name
+      }
+      ... on CaseStudyElementData {
+        id
+        name
+      }
+      ... on FlashcardElementData {
+        id
+        name
+      }
+      ... on ContentElementData {
+        id
+        name
+      }
+    }
+  }
+}
