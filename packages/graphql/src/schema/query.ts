@@ -32,6 +32,10 @@ import {
 } from './analytics.js'
 import {
   AssessmentResultsLiveQuiz,
+  StudentAssessmentBlockResponse,
+  StudentAssessmentResults,
+} from './assessment.js'
+import {
   Course,
   CourseLeaderboard,
   CourseListEntry,
@@ -39,8 +43,6 @@ import {
   CourseStudentTimeline,
   CourseSummary,
   LeaderboardEntry,
-  StudentAssessmentBlockResponse,
-  StudentAssessmentResults,
   StudentCourse,
 } from './course.js'
 import {

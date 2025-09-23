@@ -852,8 +852,8 @@ export async function correctAssessmentPointsInstance(
     awardBonusPoints?: boolean | null // true = award, false = deduct, null = no change
     reason: string
     studentReason: string
-    scope: PointCorrectionType
-    participantId?: string
+    scope: DB.PointCorrectionType
+    participantId?: string | null
   },
   ctx: ContextWithUser
 ) {
@@ -1106,8 +1106,8 @@ export async function correctAssessmentPointsLiveQuiz(
     awardBonusPoints?: boolean | null // true = award, false = deduct, null = no change
     reason: string
     studentReason: string
-    scope: PointCorrectionType
-    participantId?: string
+    scope: DB.PointCorrectionType
+    participantId?: string | null
   },
   ctx: ContextWithUser
 ) {

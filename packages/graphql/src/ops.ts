@@ -1804,6 +1804,8 @@ export type Mutation = {
   changeUserGroupName: Scalars['Boolean']['output'];
   changeUserLocale?: Maybe<User>;
   copyCatalogObjectToAccount: Scalars['Boolean']['output'];
+  correctAssessmentPointsInstance?: Maybe<PointCorrection>;
+  correctAssessmentPointsLiveQuiz?: Maybe<PointCorrection>;
   createActivityTemplate?: Maybe<Scalars['Boolean']['output']>;
   createAnswerCollection?: Maybe<AnswerCollection>;
   createCatalogCollection?: Maybe<CatalogCollection>;
@@ -2121,6 +2123,30 @@ export type MutationCopyCatalogObjectToAccountArgs = {
   catalogCollectionId?: InputMaybe<Scalars['String']['input']>;
   objectId: Scalars['String']['input'];
   objectType: ObjectType;
+};
+
+
+export type MutationCorrectAssessmentPointsInstanceArgs = {
+  awardBasePoints?: InputMaybe<Scalars['Boolean']['input']>;
+  awardBonusPoints?: InputMaybe<Scalars['Boolean']['input']>;
+  awardCorrectnessPoints?: InputMaybe<Scalars['Boolean']['input']>;
+  instanceId: Scalars['Int']['input'];
+  participantId?: InputMaybe<Scalars['String']['input']>;
+  reason: Scalars['String']['input'];
+  scope: PointCorrectionType;
+  studentReason: Scalars['String']['input'];
+};
+
+
+export type MutationCorrectAssessmentPointsLiveQuizArgs = {
+  awardBasePoints?: InputMaybe<Scalars['Boolean']['input']>;
+  awardBonusPoints?: InputMaybe<Scalars['Boolean']['input']>;
+  awardCorrectnessPoints?: InputMaybe<Scalars['Boolean']['input']>;
+  liveQuizId: Scalars['String']['input'];
+  participantId?: InputMaybe<Scalars['String']['input']>;
+  reason: Scalars['String']['input'];
+  scope: PointCorrectionType;
+  studentReason: Scalars['String']['input'];
 };
 
 
@@ -3370,6 +3396,29 @@ export type PermissionsList = {
   ownerPermission?: Maybe<PermissionInfo>;
   permissions: Array<PermissionInfo>;
 };
+
+export type PointCorrection = {
+  __typename?: 'PointCorrection';
+  basePoints?: Maybe<Scalars['Boolean']['output']>;
+  bonusPoints?: Maybe<Scalars['Boolean']['output']>;
+  correctedBy?: Maybe<User>;
+  correctnessPoints?: Maybe<Scalars['Boolean']['output']>;
+  createdAt: Scalars['Date']['output'];
+  id: Scalars['Int']['output'];
+  instance?: Maybe<ElementInstance>;
+  liveQuiz?: Maybe<LiveQuiz>;
+  participantId?: Maybe<Scalars['String']['output']>;
+  reason: Scalars['String']['output'];
+  studentReason: Scalars['String']['output'];
+  type: PointCorrectionType;
+  updatedAt: Scalars['Date']['output'];
+};
+
+export enum PointCorrectionType {
+  AllCourse = 'ALL_COURSE',
+  Participating = 'PARTICIPATING',
+  Single = 'SINGLE'
+}
 
 export type PracticeQuiz = {
   __typename?: 'PracticeQuiz';

@@ -19,6 +19,7 @@ import * as StacksService from '../services/stacks.js'
 import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
+import { PointCorrection, PointCorrectionType } from './assessment.js'
 import { Course } from './course.js'
 import {
   Element,
@@ -1429,6 +1430,42 @@ export const Mutation = builder.mutationType({
             return await LiveQuizService.resetAssessmentLiveQuiz(args, ctx)
           }
         ),
+      }),
+
+      correctAssessmentPointsInstance: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: PointCorrection,
+        args: {
+          instanceId: t.arg.int({ required: true }),
+          awardBasePoints: t.arg.boolean({ required: false }),
+          awardCorrectnessPoints: t.arg.boolean({ required: false }),
+          awardBonusPoints: t.arg.boolean({ required: false }),
+          reason: t.arg.string({ required: true }),
+          studentReason: t.arg.string({ required: true }),
+          scope: t.arg({ type: PointCorrectionType, required: true }),
+          participantId: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await CourseService.correctAssessmentPointsInstance(args, ctx)
+        },
+      }),
+
+      correctAssessmentPointsLiveQuiz: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: PointCorrection,
+        args: {
+          liveQuizId: t.arg.string({ required: true }),
+          awardBasePoints: t.arg.boolean({ required: false }),
+          awardCorrectnessPoints: t.arg.boolean({ required: false }),
+          awardBonusPoints: t.arg.boolean({ required: false }),
+          reason: t.arg.string({ required: true }),
+          studentReason: t.arg.string({ required: true }),
+          scope: t.arg({ type: PointCorrectionType, required: true }),
+          participantId: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await CourseService.correctAssessmentPointsLiveQuiz(args, ctx)
+        },
       }),
 
       changeActivityName: t.withAuth(asUserFullAccess).boolean({
