@@ -1,5 +1,16 @@
 import { ExtendedThreadMessageLike, Thread } from '../../stores/chatStore'
 
+export interface ApiError extends Error {
+  status: number
+  body?: unknown
+}
+
+export const isApiError = (error: unknown): error is ApiError =>
+  typeof error === 'object' &&
+  error !== null &&
+  'status' in error &&
+  typeof (error as { status?: unknown }).status === 'number'
+
 export interface ApiThread {
   id: string
   title?: string
@@ -56,12 +67,29 @@ export const apiCall = async <T = unknown>(
 
   if (!response.ok) {
     const errorText = await response.text()
+    let errorBody: unknown = undefined
+
+    try {
+      errorBody = errorText ? JSON.parse(errorText) : undefined
+    } catch {
+      errorBody = errorText || undefined
+    }
+
     console.error(
       `API call failed for ${url}: ${response.statusText} (${response.status}) - ${errorText}`
     )
-    throw new Error(
-      `API call failed for ${url}: ${response.statusText} (${response.status})`
+
+    const error: ApiError = Object.assign(
+      new Error(
+        `API call failed for ${url}: ${response.statusText} (${response.status})`
+      ),
+      {
+        status: response.status,
+        body: errorBody,
+      }
     )
+
+    throw error
   }
 
   return await response.json()

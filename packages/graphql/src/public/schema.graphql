@@ -1709,6 +1709,7 @@ type Mutation {
   endGroupActivity(id: String!): GroupActivity
   endLiveQuiz(id: String!): LiveQuiz
   endMicroLearning(id: String!): MicroLearning
+  ensureParticipation(courseId: String!): Boolean!
   extendGroupActivity(endDate: Date!, id: String!): GroupActivity
   extendMicroLearning(endDate: Date!, id: String!): MicroLearning
   finalizeGroupActivityGrading(id: String!): GroupActivity

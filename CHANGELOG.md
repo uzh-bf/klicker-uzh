@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.32...v3.4.0-alpha.33) (2025-09-23)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** pass participantToken as auth header in SSR ([e178c68](https://github.com/uzh-bf/klicker-uzh/commit/e178c68babc18e6d778f49434ec05b2596c83e4a))
+
+## [3.4.0-alpha.32](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.31...v3.4.0-alpha.32) (2025-09-23)
+
+
+### Bug Fixes
+
+* **apps/frontend-manage:** ensure that live quiz settings are initialized correctly on duplication ([#4940](https://github.com/uzh-bf/klicker-uzh/issues/4940)) ([102cf87](https://github.com/uzh-bf/klicker-uzh/commit/102cf87fd089a78d8c480331b1e92a0238d23033))
+
+
+### Enhancements
+
+* **apps/chat:** ensure participation before redirect to chat, clear error messages ([#4939](https://github.com/uzh-bf/klicker-uzh/issues/4939)) ([73fe3ee](https://github.com/uzh-bf/klicker-uzh/commit/73fe3ee2582fdc5c00efd97d929ffb11f83126a5))
+* **apps/pwa:** add possibility to resize question and feedback areas on live quiz student view ([#4937](https://github.com/uzh-bf/klicker-uzh/issues/4937)) ([9a366cb](https://github.com/uzh-bf/klicker-uzh/commit/9a366cbb7b13950ec66f1f667dd4e44361c04ae3))
+
 ## [3.4.0-alpha.31](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.30...v3.4.0-alpha.31) (2025-09-22)
 
 
