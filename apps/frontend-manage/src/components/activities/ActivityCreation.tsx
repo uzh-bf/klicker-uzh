@@ -230,7 +230,7 @@ function ActivityCreation({
                       ...dataLiveQuiz.liveQuiz,
                       name: `${dataLiveQuiz.liveQuiz.name} (Copy)`,
                       // do not link previous course during duplication -> might not be available to user / not running anymore
-                      course: { id: '' },
+                      course: { id: 'no-course-selected' },
                     }
                   : dataLiveQuiz.liveQuiz
                 : undefined

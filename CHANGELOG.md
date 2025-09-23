@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.31](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.30...v3.4.0-alpha.31) (2025-09-22)
+
+
+### Enhancements
+
+* **apps/chat:** add dynamic disclaimer system ([#4938](https://github.com/uzh-bf/klicker-uzh/issues/4938)) ([87f1f41](https://github.com/uzh-bf/klicker-uzh/commit/87f1f413e1d05d79dfe6c10ff0e806b6609bb8a4))
+
 ## [3.4.0-alpha.30](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.29...v3.4.0-alpha.30) (2025-09-22)
 
 
