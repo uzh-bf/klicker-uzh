@@ -21,6 +21,11 @@ model ChatUsageCredits {
   lastResetAt     DateTime? // Last time credits were reset
   resetCount      Int       @default(0) // Number of resets performed
 
+  // Disclaimer tracking fields
+  acceptedDisclaimerId String?   @db.Uuid // ID of accepted disclaimer version
+  disclaimerAcceptedAt DateTime? // When disclaimer was accepted
+  disclaimerDeclined   Boolean   @default(false) // Whether disclaimer was declined
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -82,6 +87,10 @@ model Chatbot {
   // Azure OpenAI Configuration
   azureOpenAIKey      String? @db.Text // Encrypted API key using APP_SECRET
   azureOpenAIEndpoint String? // Optional custom endpoint (defaults to model config)
+
+  // Disclaimer configuration
+  disclaimer   ChatbotDisclaimer? @relation(fields: [disclaimerId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  disclaimerId String?            @db.Uuid
 
   // Relations
   mcpConfigurations ChatbotMCPConfig[]
@@ -145,4 +154,24 @@ model ChatbotMCPConfig {
 
   @@unique([chatbotId, mcpServerId, chatMode])
   @@index([chatbotId, chatMode])
+}
+
+model ChatbotDisclaimer {
+  id String @id @default(uuid()) @db.Uuid
+
+  name        String // Descriptive name for the disclaimer
+  description String? // Optional description for management purposes
+
+  title     String // Title shown in modal
+  introText String? @db.Text // Customizable introduction text (course-specific)
+  mediaUrl  String? // Optional video/image URL
+  mediaType String? // 'video' | 'image'
+
+  chatbots Chatbot[] // Chatbots using this disclaimer
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

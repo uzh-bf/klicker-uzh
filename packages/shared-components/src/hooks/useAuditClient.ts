@@ -58,7 +58,9 @@ export default function useAuditClient(
             credentials: 'include', // Automatically sends domain cookies
             body: JSON.stringify(
               Object.fromEntries(
-                Object.entries(event).filter(([_, value]) => value !== undefined)
+                Object.entries(event).filter(
+                  ([_, value]) => value !== undefined
+                )
               )
             ),
           })
