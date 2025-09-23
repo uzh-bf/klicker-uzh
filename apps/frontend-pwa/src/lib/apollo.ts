@@ -32,7 +32,7 @@ export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
 let apolloClient: ApolloClient<NormalizedCacheObject>
 
-function createIsomorphLink() {
+function createIsomorphLink(ctx?: GetServerSidePropsContext) {
   const isBrowser = typeof window !== 'undefined'
 
   const persistedLink =
@@ -58,7 +58,12 @@ function createIsomorphLink() {
       }
     }
     return {
-      headers,
+      headers: {
+        ...headers,
+        ...(ctx?.req?.headers?.cookie
+          ? { cookie: ctx.req.headers.cookie }
+          : {}),
+      },
     }
   })
 
@@ -163,7 +168,7 @@ function createApolloClient(ctx?: GetServerSidePropsContext) {
 
   return new ApolloClient({
     ssrMode: typeof window === 'undefined',
-    link: createIsomorphLink(),
+    link: createIsomorphLink(ctx),
     cache: new InMemoryCache(),
     connectToDevTools: process.env.NODE_ENV === 'development',
   })
