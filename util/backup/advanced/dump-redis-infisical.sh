@@ -5,7 +5,7 @@
 # =============================================================================
 #
 # This script creates a Redis data dump for a specified environment.
-# It supports all environments (dev/stg/prd) via Doppler configuration.
+# It supports all environments (dev/stg/prd) via Infisical configuration.
 #
 # Usage: ./dump-redis.sh [environment] [instance]
 #
@@ -14,7 +14,7 @@
 #   instance       Redis instance type (main|assessment). Defaults to 'main'
 #
 # Features:
-# - Environment-specific configuration via Doppler
+# - Environment-specific configuration via Infisical
 # - Automatic dump file management and organization
 # - Optional encryption support
 # - Automated cleanup and latest symlink management
@@ -63,7 +63,7 @@ EXAMPLES:
 
 DESCRIPTION:
     Creates a Redis data dump for the specified environment using
-    Doppler for configuration management. Supports encryption, automated
+    Infisical for configuration management. Supports encryption, automated
     cleanup, and symlink management based on environment variables.
 
 ENVIRONMENT VARIABLES:
@@ -80,7 +80,7 @@ ENVIRONMENT VARIABLES:
 
 REQUIREMENTS:
     - upstash-redis-dump executable at ../../util/upstash-redis-dump
-    - Redis connection configuration via Doppler
+    - Redis connection configuration via Infisical
 
 EOF
 }
@@ -200,7 +200,7 @@ trap cleanup_dump EXIT
 
 echo "\n🔐 Step 1: Environment Configuration Loaded"
 echo "---------------------------------------------"
-log "Doppler environment loaded successfully for config: ${CONFIG:-unknown}"
+log "Infisical environment loaded successfully for config: ${CONFIG:-unknown}"
 
 echo "\n🔍 Step 2: Validating Redis Connection Variables"
 echo "---------------------------------------------------"
@@ -300,7 +300,7 @@ echo "  🔐 Encrypting dump file (security policy requirement)..."
 if [[ -z "${BACKUP_ENCRYPTION_KEY:-}" ]]; then
     echo "  ❌ ERROR: Missing required encryption key"
     echo "  🔑 BACKUP_ENCRYPTION_KEY is mandatory for all dump operations"
-    echo "  💡 Set BACKUP_ENCRYPTION_KEY environment variable or use Doppler"
+    echo "  💡 Set BACKUP_ENCRYPTION_KEY environment variable or use Infisical"
     error_exit "Cannot create unencrypted dumps - security policy violation"
 fi
 
