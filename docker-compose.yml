@@ -192,7 +192,7 @@ services:
       - klicker
     volumes:
       - klicker_data:/var/lib/postgresql/data
-      - ./util/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./util/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
 
   # redis instance to support live quiz execution (normal)
   redis_exec:

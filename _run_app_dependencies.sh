@@ -105,6 +105,19 @@ if confirm "Run pnpm run build?"; then
 	pnpm run build
 else
 	echo "Skipping pnpm run build"
+	for i in $(seq 30 -1 1); do
+		if [ $i -gt 20 ]; then
+			echo "T-$i"
+		elif [ $i -gt 10 ]; then
+			echo "T-$i... getting closer!"
+		elif [ $i -gt 5 ]; then
+			echo "T-$i!! Tension building..."
+		else
+			echo "T-$i!!! DRAMA INTENSIFIES!!!"
+		fi
+		sleep 1
+	done
+	echo "🚀 LIFTOFF!!!"
 fi
 
 # create hatchet client token (switch script for cypress/test mode)
