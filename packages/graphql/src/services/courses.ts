@@ -800,10 +800,13 @@ async function upsertResponseAppliedCorrection(
 ) {
   // upsert live quiz response with the corrected points
   const lqr = await tx.liveQuizResponse.upsert({
-    where: response ? { id: response.id } : { id: -1 },
+    where:
+      response !== null && typeof response !== 'undefined'
+        ? { id: response.id }
+        : { id: -1 },
+    // response is not set -> defaults to null (setting it to null explicitly does not work, since this would be interpreted as the JSON value being null -> violates DB constraint)
     create: {
       correctionOnly: true,
-      response: null,
       submittedAt: new Date(),
       timeSpent: -1,
       correctness: DB.ResponseCorrectness.CORRECT,
@@ -840,7 +843,7 @@ async function upsertResponseAppliedCorrection(
   // update applied correction entry
   const appliedCorrection = await tx.appliedPointCorrection.create({
     data: {
-      // awarded and deduced points (true as award, false as deduction, null as no change)
+      // awarded and deducted points (true as award, false as deduction, null as no change)
       awardedBasePoints:
         awardBasePoints === true
           ? availableBasePoints - (response?.basePoints ?? 0)
@@ -853,13 +856,13 @@ async function upsertResponseAppliedCorrection(
         awardBonusPoints === true
           ? availableBonusPoints - (response?.bonusPoints ?? 0)
           : 0,
-      deducedBasePoints:
+      deductedBasePoints:
         awardBasePoints === false ? (response?.basePoints ?? 0) : 0,
-      deducedCorrectnessPoints:
+      deductedCorrectnessPoints:
         awardCorrectnessPoints === false
           ? (response?.correctnessPoints ?? 0)
           : 0,
-      deducedBonusPoints:
+      deductedBonusPoints:
         awardBonusPoints === false ? (response?.bonusPoints ?? 0) : 0,
       // link to point correction
       pointCorrection: { connect: { id: correctionId } },
@@ -870,7 +873,7 @@ async function upsertResponseAppliedCorrection(
 
   // add audit logging entry for change
   await ctx.hatchet.events.push('create-audit-log-entry', {
-    info: `[INFO] [Correct Assessment Points Instance] User ${ctx.user.sub} corrected points for participant ${lqr.participantId} on instance ${instance.id}. Deducted points: base ${appliedCorrection.deducedBasePoints}, correctness ${appliedCorrection.deducedCorrectnessPoints}, bonus ${appliedCorrection.deducedBonusPoints}. Awarded points: base ${appliedCorrection.awardedBasePoints}, correctness ${appliedCorrection.awardedCorrectnessPoints}, bonus ${appliedCorrection.awardedBonusPoints}.`,
+    info: `[INFO] [Correct Assessment Points Instance] User ${ctx.user.sub} corrected points for participant ${lqr.participantId} on instance ${instance.id}. Deducted points: base ${appliedCorrection.deductedBasePoints}, correctness ${appliedCorrection.deductedCorrectnessPoints}, bonus ${appliedCorrection.deductedBonusPoints}. Awarded points: base ${appliedCorrection.awardedBasePoints}, correctness ${appliedCorrection.awardedCorrectnessPoints}, bonus ${appliedCorrection.awardedBonusPoints}.`,
   })
 }
 
@@ -898,6 +901,16 @@ export async function correctAssessmentPointsInstance(
 ) {
   // if the scope is set to a single participant, but no participant is provided, return early
   if (scope === PointCorrectionType.SINGLE && !participantId) {
+    return null
+  }
+
+  // if no updates should be applied, return early
+  if (
+    (awardBasePoints === null || typeof awardBasePoints === 'undefined') &&
+    (awardCorrectnessPoints === null ||
+      typeof awardCorrectnessPoints === 'undefined') &&
+    (awardBonusPoints === null || typeof awardBonusPoints === 'undefined')
+  ) {
     return null
   }
 
@@ -1153,6 +1166,16 @@ export async function correctAssessmentPointsLiveQuiz(
 ) {
   // if the scope is set to a single participant, but no participant is provided, return early
   if (scope === PointCorrectionType.SINGLE && !participantId) {
+    return null
+  }
+
+  // if no updates should be applied, return early
+  if (
+    (awardBasePoints === null || typeof awardBasePoints === 'undefined') &&
+    (awardCorrectnessPoints === null ||
+      typeof awardCorrectnessPoints === 'undefined') &&
+    (awardBonusPoints === null || typeof awardBonusPoints === 'undefined')
+  ) {
     return null
   }
 

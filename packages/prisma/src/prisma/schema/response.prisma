@@ -113,7 +113,7 @@ model LiveQuizResponse {
   submittedAt DateTime
 
   /// [PrismaSingleQuestionResponseLiveQuiz]
-  response Json
+  response Json?
 
   // statistics
   timeSpent Float @db.Real
@@ -154,7 +154,7 @@ model PointCorrection {
   id Int @id @default(autoincrement())
 
   // decide if the maximum base, correctness and bonus points are adjusted
-  // -> true = award points, false = deduce points, null = no change
+  // -> true = award points, false = deduct points, null = no change
   basePoints        Boolean?
   correctnessPoints Boolean?
   bonusPoints       Boolean?
@@ -200,11 +200,11 @@ model AppliedPointCorrection {
   awardedCorrectnessPoints Float @db.Real
   awardedBonusPoints       Float @db.Real
 
-  // base, correctness, and bonus points that were deduced from the participants (e.g. due to a changed sample solution)
+  // base, correctness, and bonus points that were deducted from the participants (e.g. due to a changed sample solution)
   // -> live quiz responses are updated with this information
-  deducedBasePoints        Float @db.Real
-  deducedCorrectnessPoints Float @db.Real
-  deducedBonusPoints       Float @db.Real
+  deductedBasePoints        Float @db.Real
+  deductedCorrectnessPoints Float @db.Real
+  deductedBonusPoints       Float @db.Real
 
   // link to the correction action - multiple applied corrections might link to the same point correction (e.g. when applied to live quiz)
   // -> point corrections linked to applied corrections are deduplicated when being fetched for display

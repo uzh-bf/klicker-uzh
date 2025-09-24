@@ -2,7 +2,8 @@
 CREATE TYPE "public"."PointCorrectionType" AS ENUM ('ALL_COURSE', 'PARTICIPATING', 'SINGLE');
 
 -- AlterTable
-ALTER TABLE "public"."LiveQuizResponse" ADD COLUMN     "correctionOnly" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "public"."LiveQuizResponse" ADD COLUMN "correctionOnly" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "public"."LiveQuizResponse" ALTER COLUMN "response" DROP NOT NULL;
 ALTER TABLE "public"."LiveQuizResponse" ADD CONSTRAINT "LiveQuizResponse_correction_response_check" CHECK ((("correctionOnly" = true) AND ("response" IS NULL)) OR (("correctionOnly" = false) AND ("response" IS NOT NULL)));
 
 -- CreateTable
@@ -33,9 +34,9 @@ CREATE TABLE "public"."AppliedPointCorrection" (
     "awardedBasePoints" REAL NOT NULL,
     "awardedCorrectnessPoints" REAL NOT NULL,
     "awardedBonusPoints" REAL NOT NULL,
-    "deducedBasePoints" REAL NOT NULL,
-    "deducedCorrectnessPoints" REAL NOT NULL,
-    "deducedBonusPoints" REAL NOT NULL,
+    "deductedBasePoints" REAL NOT NULL,
+    "deductedCorrectnessPoints" REAL NOT NULL,
+    "deductedBonusPoints" REAL NOT NULL,
     "pointCorrectionId" INTEGER NOT NULL,
     "responseId" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
