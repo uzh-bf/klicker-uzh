@@ -7087,5 +7087,26 @@ describe('Unit tests covering point corrections for instances', () => {
     expect(appliedCorrection6!.deductedCorrectnessPoints).toBe(0) // correctness points remain unchanged (not awarded before)
     expect(appliedCorrection6!.deductedBonusPoints).toBe(0) // bonus points remain unchanged (not awarded before)
   })
+
+  it('[Instance Point Updates] Verify that point corrections cannot be triggered for non-existing instances', async () => {
+    const { participant1 } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
+
+    const res = await correctAssessmentPointsInstance(
+      {
+        instanceId: -1,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant1.id,
+      },
+      userOneCtx
+    )
+    expect(res).toBeNull()
+  })
   // #endregion
 })

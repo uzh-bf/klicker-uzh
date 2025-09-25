@@ -906,7 +906,7 @@ export async function correctAssessmentPointsInstance(
     deductBonusPoints?: boolean | null // true = deduct, null / undefined = no change
     reason: string
     studentReason: string
-    scope: DB.PointCorrectionType
+    scope: DB.PointCorrectionType // SINGLE = single participant, PARTICIPATING = all participants with a response to this instance, ALL_COURSE = all participants of the assessment course
     participantId?: string | null
   },
   ctx: ContextWithUser
@@ -936,6 +936,15 @@ export async function correctAssessmentPointsInstance(
     (deductBonusPoints === null ||
       typeof deductBonusPoints === 'undefined' ||
       deductBonusPoints === false)
+  ) {
+    return null
+  }
+
+  // if for one of the point categories both award and deduct is set, return early
+  if (
+    (awardBasePoints === true && deductBasePoints === true) ||
+    (awardCorrectnessPoints === true && deductCorrectnessPoints === true) ||
+    (awardBonusPoints === true && deductBonusPoints === true)
   ) {
     return null
   }
@@ -1224,7 +1233,7 @@ export async function correctAssessmentPointsLiveQuiz(
     deductBonusPoints?: boolean | null // true = deduct, null / undefined = no change
     reason: string
     studentReason: string
-    scope: DB.PointCorrectionType
+    scope: DB.PointCorrectionType // SINGLE -> single participant, PARTICIPATING -> all participants with a response to some question, ALL_COURSE -> all participants in the assessment course
     participantId?: string | null
   },
   ctx: ContextWithUser
@@ -1254,6 +1263,15 @@ export async function correctAssessmentPointsLiveQuiz(
     (deductBonusPoints === null ||
       typeof deductBonusPoints === 'undefined' ||
       deductBonusPoints === false)
+  ) {
+    return null
+  }
+
+  // if for one of the point categories both award and deduct is set, return early
+  if (
+    (awardBasePoints === true && deductBasePoints === true) ||
+    (awardCorrectnessPoints === true && deductCorrectnessPoints === true) ||
+    (awardBonusPoints === true && deductBonusPoints === true)
   ) {
     return null
   }
