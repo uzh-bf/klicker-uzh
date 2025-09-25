@@ -11,6 +11,7 @@ import {
   SidebarInset,
   SidebarProvider,
 } from '@uzh-bf/design-system'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { RuntimeProvider } from '../app/RuntimeProvider'
 import { useChatStore } from '../stores/chatStore'
@@ -40,7 +41,12 @@ export const Assistant = ({
 }: {
   chatbot: { id: string; name: string; avatar?: string }
 }) => {
-  const { activeThreadId, threads } = useChatStore()
+  const {
+    activeThreadId,
+    threads,
+    participationRequired,
+    participationMessage,
+  } = useChatStore()
   const [disclaimer, setDisclaimer] = useState<ChatbotDisclaimer | null>(null)
   const [disclaimerStatus, setDisclaimerStatus] =
     useState<DisclaimerStatus | null>(null)
@@ -80,8 +86,14 @@ export const Assistant = ({
       }
     }
 
+    if (participationRequired) {
+      setIsLoading(false)
+      return
+    }
+
+    setIsLoading(true)
     fetchDisclaimerInfo()
-  }, [chatbot.id])
+  }, [chatbot.id, participationRequired])
 
   const handleAcceptDisclaimer = async () => {
     if (!disclaimer) return
@@ -143,6 +155,33 @@ export const Assistant = ({
     } catch (error) {
       console.error('Error declining disclaimer:', error)
     }
+  }
+
+  const pwaBaseUrl = process.env.NEXT_PUBLIC_PWA_URL
+    ? process.env.NEXT_PUBLIC_PWA_URL.replace(/\/$/, '')
+    : 'https://pwa.klicker.uzh.ch'
+
+  if (participationRequired) {
+    return (
+      <div className="bg-muted flex min-h-screen w-full items-center justify-center px-4">
+        <div className="bg-card w-full max-w-lg rounded-lg border p-8 text-center shadow-sm">
+          <h1 className="text-foreground text-2xl font-semibold">
+            Course Access Required
+          </h1>
+          <p className="text-muted-foreground mt-4 text-base">
+            {participationMessage ??
+              'You need to join the corresponding KlickerUZH course before you can use this chatbot. Please enrol in the course or contact your instructor for access.'}
+          </p>
+          <Link
+            href={pwaBaseUrl}
+            className="bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 mt-8 inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-base font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            prefetch={false}
+          >
+            Open KlickerUZH
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   // Show loading state while fetching disclaimer information

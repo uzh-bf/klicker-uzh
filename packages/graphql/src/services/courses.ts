@@ -143,6 +143,45 @@ export async function joinCourseLeaderboard(
   }
 }
 
+export async function ensureParticipation(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  try {
+    const course = await ctx.prisma.course.findUnique({
+      where: { id: courseId },
+      select: { id: true, isAssessmentEnabled: true },
+    })
+
+    if (!course || course.isAssessmentEnabled) {
+      return false
+    }
+
+    await ctx.prisma.participation.upsert({
+      where: {
+        courseId_participantId: {
+          courseId,
+          participantId: ctx.user.sub,
+        },
+      },
+      create: {
+        course: { connect: { id: courseId } },
+        participant: { connect: { id: ctx.user.sub } },
+      },
+      update: {},
+    })
+
+    return true
+  } catch (error) {
+    console.error('ensureParticipation failed', {
+      courseId,
+      participantId: ctx.user.sub,
+      error,
+    })
+    return false
+  }
+}
+
 // leave a course leaderboard as a participant
 // deletes the leaderboard entries related to the course and sets the participation to inactive
 // meaning that no further points will be collected

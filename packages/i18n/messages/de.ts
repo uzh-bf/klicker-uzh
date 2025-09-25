@@ -550,6 +550,14 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
       activityPreview:
         'Sie sehen eine Vorschau der Aktivität {activity} "{name}" (Anzeigename "{displayName}"). Bitte beachten Sie, dass diese Vorschau als Test-Ansicht für Dozierende konzipiert wurde. Während die meisten Interaktionsfunktionalitäten unterstützt werden, werden keine eingereichten Antworten gespeichert oder in der Auswertungsansicht angezeigt.',
     },
+    chatbot: {
+      loginRequiredMessage:
+        'Für diesen Chatbot benötigen Sie ein KlickerUZH-Konto. Bitte melden Sie sich an oder erstellen Sie zuerst ein Konto.',
+      goToLogin: 'Zum Login',
+      participationRequiredMessage:
+        'Ihre Kursteilnahme für diesen Chatbot konnte nicht eingerichtet werden. Öffnen Sie den Kurs in OLAT/KlickerUZH und treten Sie ihm bei, bevor Sie es erneut versuchen.',
+      goToCourse: 'Kurs öffnen',
+    },
     insights: {
       noCourseDataAvailable:
         'Es sind noch keine Kurse mit Zeitachsen-Daten verfügbar. Bitte treten Sie hierfür zuerst einem Kurs bei und nehmen Sie an Aktivitäten teil.',
@@ -598,7 +606,7 @@ KlickerUZH bietet Ihnen als Kursteilnehmende eine umfassende Reihe von Funktiona
 
 ![Live-Quiz _auf der linken Seite_](/img/06_live_quiz.png)
 
-Während der Vorlesung können Sie die von den Dozierenden in Live Quizzes gestellten Fragen in der KlickerUZH-App, über Ihr LMS (z. B. OLAT unter dem Modul "Live Quiz") oder direkt unter 
+Während der Vorlesung können Sie die von den Dozierenden in Live Quizzes gestellten Fragen in der KlickerUZH-App, über Ihr LMS (z. B. OLAT unter dem Modul "Live Quiz") oder direkt unter
 \`https://pwa.klicker.uzh.ch/join/&lt;shortname&gt;\` beantworten. Die Resultate werden live in der Auswertung angezeigt und können nach Ablauf der Antwortzeit präsentiert und kommentiert werden.
 
 Zur Teilnahme an einem Live Quiz benötigen Sie keinen Login. Mit einem KlickerUZH‑Account können Sie jedoch an der Kurs‑Challenge teilnehmen und Punkte sammeln. Falls verfügbar, können Sie auch dem KlickerUZH‑Kurs mit Ihrem Klicker‑Account beitreten, sodass Ihnen direkt eine Liste aller laufenden Live‑Quizzes angezeigt wird.
@@ -665,12 +673,12 @@ Wenn Sie bereits ein KlickerUZH‑Konto haben (z. B. aus anderen Kursen), öff
 
 ![](/img/05_join_course.png)
 
-Wenn Sie zum ersten Mal an einem Kurs mit KlickerUZH teilnehmen, öffnen Sie den Zugangslink, den Sie von den Dozierenden erhalten (z. B. 
+Wenn Sie zum ersten Mal an einem Kurs mit KlickerUZH teilnehmen, öffnen Sie den Zugangslink, den Sie von den Dozierenden erhalten (z. B.
 \`https://pwa.klicker.uzh.ch/course/XYZ/join?pin=111111111\`). Darüber können Sie ein neues KlickerUZH‑Konto erstellen (anonymer Benutzername und Passwort), sich einloggen, Ihren Avatar festlegen und an Aktivitäten teilnehmen.
 
 #### Anonyme Teilnahme
 
-Grundsätzlich ist eine anonyme Teilnahme an allen Aktiväten in KlickerUZH ausser Gruppenaktivitäten möglich. Für Live‑Quizzes finden Sie die laufenden Quizzes eines Accounts unter 
+Grundsätzlich ist eine anonyme Teilnahme an allen Aktiväten in KlickerUZH ausser Gruppenaktivitäten möglich. Für Live‑Quizzes finden Sie die laufenden Quizzes eines Accounts unter
 \`https://pwa.klicker.uzh.ch/join/&lt;shortname&gt;\`. Practice Quizzes und Microlearnings sind über direkte Links zugänglich, die von den Dozierenden bereitgestellt werden. Beim Zugriff über die OLAT‑Integration können Sie ein Konto erstellen und werden danach automatisch eingeloggt. Ohne KlickerUZH‑Konto bleibt Ihre Teilnahme an eingebetteten Aktivitäten anonym.
 `,
       appSetupTitle: 'App Installation',
