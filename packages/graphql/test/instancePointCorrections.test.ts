@@ -1,23 +1,15 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
-import {
-  ElementInstanceType,
-  ElementType,
-  PermissionLevel,
-  PointCorrectionType,
-  PrismaClient,
-  ResponseCorrectness,
-} from '@klicker-uzh/prisma/client'
-import { DisplayMode, ElementInstanceOptions } from '@klicker-uzh/types'
-import {
-  getInitialInstanceResults,
-  processElementData,
-  recomputeDerivedPermissions,
-} from '@klicker-uzh/util'
+import { PointCorrectionType, PrismaClient } from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
 import {} from 'src/ops.js'
 import { ContextWithUser } from '../src/lib/context.js'
 import { correctAssessmentPointsInstance } from '../src/services/courses.js'
-import { initializePrisma, testCleanup, testInitialization } from './helpers.js'
+import {
+  initializePrisma,
+  seedLiveQuizWithResponses,
+  testCleanup,
+  testInitialization,
+} from './helpers.js'
 
 describe('Unit tests covering the creation of derived permissions for elements', () => {
   // shared resources used across tests
@@ -61,290 +53,15 @@ describe('Unit tests covering the creation of derived permissions for elements',
 
   afterEach(async () => await testCleanup(prisma))
 
-  async function seedLiveQuizWithResponses() {
-    const SCQuestion = await prisma.element.create({
-      data: {
-        status: 'READY',
-        type: 'SC',
-        name: 'Single Choice Question',
-        content: 'What is the capital of Switzerland?',
-        explanation: 'The capital of Switzerland is Bern.',
-        options: {
-          choices: [
-            { ix: 0, value: 'Zurich', correct: false },
-            { ix: 1, value: 'Bern', correct: true },
-            { ix: 2, value: 'Geneva', correct: false },
-            { ix: 3, value: 'Lucerne', correct: true },
-          ],
-          displayMode: DisplayMode.LIST,
-          hasSampleSolution: true,
-          hasAnswerFeedbacks: true,
-        },
-        basePoints: false,
-        pointsMultiplier: 1,
-        ownerId: userOneCtx.user.sub,
-      },
-    })
-    await recomputeDerivedPermissions(
-      { elementId: SCQuestion.id, userId: userOneCtx.user.sub },
-      prisma
-    )
-
-    const MCQuestion = await prisma.element.create({
-      data: {
-        status: 'READY',
-        type: 'MC',
-        name: 'Multiple Choice Question',
-        content: 'What are the capitals of Switzerland?',
-        explanation: 'The capital of Switzerland is Bern.',
-        options: {
-          choices: [
-            { ix: 0, value: 'Zurich', correct: false },
-            { ix: 1, value: 'Bern', correct: true },
-            { ix: 2, value: 'Geneva', correct: false },
-            { ix: 3, value: 'Lucerne', correct: true },
-          ],
-          displayMode: DisplayMode.LIST,
-          hasSampleSolution: true,
-          hasAnswerFeedbacks: true,
-        },
-        basePoints: true,
-        pointsMultiplier: 2,
-        ownerId: userOneCtx.user.sub,
-      },
-    })
-    await recomputeDerivedPermissions(
-      { elementId: MCQuestion.id, userId: userOneCtx.user.sub },
-      prisma
-    )
-
-    // create an assessment course
-    const assessmentCourse = await prisma.course.create({
-      data: {
-        name: 'Assessment Course',
-        displayName: 'Assessment Course',
-        isGamificationEnabled: false,
-        isAssessmentEnabled: true,
-        authType: 'SSO',
-        startDate: new Date(),
-        endDate: new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 30), // 30 days from now
-        groupDeadlineDate: new Date(),
-        owner: { connect: { id: userOneCtx.user.sub } },
-      },
-    })
-    await recomputeDerivedPermissions(
-      { courseId: assessmentCourse.id, userId: userOneCtx.user.sub },
-      prisma
-    )
-
-    // create a live quiz with both questions
-    const liveQuiz = await prisma.liveQuiz.create({
-      data: {
-        name: 'Live Quiz',
-        displayName: 'Live Quiz',
-        ownerId: userOneCtx.user.sub,
-        pointsMultiplier: 1,
-        isGamificationEnabled: false,
-        isAssessmentEnabled: true,
-        pinCode: 'D5G4HU',
-        courseId: assessmentCourse.id,
-        defaultPoints: 20,
-        defaultCorrectPoints: 50,
-        maxBonusPoints: 30,
-        blocks: {
-          create: [
-            {
-              order: 0,
-              elements: {
-                create: [
-                  {
-                    type: ElementInstanceType.LIVE_QUIZ,
-                    elementId: SCQuestion.id,
-                    elementType: ElementType.SC,
-                    order: 0,
-                    options: {
-                      pointsMultiplier: 1,
-                      basePoints: false,
-                    } as ElementInstanceOptions,
-                    elementData: processElementData(SCQuestion),
-                    results: getInitialInstanceResults(
-                      processElementData(SCQuestion)
-                    ),
-                    anonymousResults: getInitialInstanceResults(
-                      processElementData(SCQuestion)
-                    ),
-                    ownerId: userOneCtx.user.sub,
-                  },
-                  {
-                    type: ElementInstanceType.LIVE_QUIZ,
-                    elementId: MCQuestion.id,
-                    elementType: ElementType.MC,
-                    order: 1,
-                    options: {
-                      pointsMultiplier: 2,
-                      basePoints: true,
-                    } as ElementInstanceOptions,
-                    elementData: processElementData(MCQuestion),
-                    results: getInitialInstanceResults(
-                      processElementData(MCQuestion)
-                    ),
-                    anonymousResults: getInitialInstanceResults(
-                      processElementData(MCQuestion)
-                    ),
-                    ownerId: userOneCtx.user.sub,
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      },
-      include: {
-        blocks: { include: { elements: { orderBy: { order: 'asc' } } } },
-      },
-    })
-    await recomputeDerivedPermissions(
-      { liveQuizId: liveQuiz.id, userId: userOneCtx.user.sub },
-      prisma
-    )
-    const instanceId1 = liveQuiz.blocks[0]!.elements[0]!.id
-    const instanceId2 = liveQuiz.blocks[0]!.elements[1]!.id
-
-    // share the course with users two, three, and four
-    await prisma.permission.createMany({
-      data: [
-        {
-          userId: userTwoCtx.user.sub,
-          courseId: assessmentCourse.id,
-          permissionLevel: PermissionLevel.READ,
-        },
-        {
-          userId: userThreeCtx.user.sub,
-          courseId: assessmentCourse.id,
-          permissionLevel: PermissionLevel.WRITE,
-        },
-        {
-          userId: userFourCtx.user.sub,
-          courseId: assessmentCourse.id,
-          permissionLevel: PermissionLevel.ADMIN,
-        },
-      ],
-    })
-    await recomputeDerivedPermissions({ courseId: assessmentCourse.id }, prisma)
-
-    // create participant 1 with a correct answer to both questions
-    const participant1 = await prisma.participant.create({
-      data: {
-        id: '36a3b9cf-00eb-46f3-a701-b222b68d0386',
-        username: 'participant1',
-        password: 'participant1',
-        participations: { create: [{ courseId: assessmentCourse.id }] },
-      },
-    })
-    const p1Response1 = await prisma.liveQuizResponse.create({
-      data: {
-        submittedAt: new Date(),
-        response: {
-          choices: [
-            { ix: 0, selected: false },
-            { ix: 1, selected: true },
-            { ix: 2, selected: false },
-            { ix: 3, selected: false },
-          ],
-        },
-        correctness: ResponseCorrectness.CORRECT,
-        basePoints: 0, // no base points for this question
-        correctnessPoints: 50,
-        bonusPoints: 30,
-        timeSpent: -1,
-        elementBlockExecution: 0,
-        instance: { connect: { id: instanceId1 } },
-        participant: { connect: { id: participant1.id } },
-      },
-    })
-    const p1Response2 = await prisma.liveQuizResponse.create({
-      data: {
-        submittedAt: new Date(),
-        response: {
-          choices: [
-            { ix: 0, selected: false },
-            { ix: 1, selected: true },
-            { ix: 2, selected: false },
-            { ix: 3, selected: false },
-          ],
-        },
-        correctness: ResponseCorrectness.CORRECT,
-        basePoints: 20,
-        correctnessPoints: 100,
-        bonusPoints: 60,
-        timeSpent: -1,
-        elementBlockExecution: 0,
-        instance: { connect: { id: instanceId2 } },
-        participant: { connect: { id: participant1.id } },
-      },
-    })
-
-    // create participant 2 with a partially correct answer to the first question and no answer to the second one
-    const participant2 = await prisma.participant.create({
-      data: {
-        id: 'fbdc8107-0f7e-4b9b-9dc5-9268c99dc784',
-        username: 'participant2',
-        password: 'participant2',
-        participations: { create: [{ courseId: assessmentCourse.id }] },
-      },
-    })
-    const p2Response1 = await prisma.liveQuizResponse.create({
-      data: {
-        submittedAt: new Date(),
-        response: {
-          choices: [
-            { ix: 0, selected: false },
-            { ix: 1, selected: true },
-            { ix: 2, selected: true },
-            { ix: 3, selected: false },
-          ],
-        },
-        correctness: ResponseCorrectness.PARTIAL, // correctness assumed to be 50%
-        basePoints: 0, // no base points for this question
-        correctnessPoints: 25,
-        bonusPoints: 15,
-        timeSpent: -1,
-        elementBlockExecution: 0,
-        instance: { connect: { id: instanceId1 } },
-        participant: { connect: { id: participant2.id } },
-      },
-    })
-
-    // create participant 3 with a course participation but no answers
-    const participant3 = await prisma.participant.create({
-      data: {
-        id: '56409db9-4bba-425d-81f6-98864ca3daed',
-        username: 'participant3',
-        password: 'participant3',
-        participations: { create: [{ courseId: assessmentCourse.id }] },
-      },
-    })
-
-    return {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    }
-  }
-
   // ! Instance Point Updates
   // #region
   it("[Instance Point Updates] Verify that the option of updating a single participant's points can only be chosen in combination with a participant ID", async () => {
-    const { instanceId1 } = await seedLiveQuizWithResponses()
+    const { instanceId1 } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     const res = await correctAssessmentPointsInstance(
       {
@@ -362,7 +79,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
   })
 
   it('[Instance Point Updates] Verify that not selecting any modification results in an early return', async () => {
-    const { instanceId1, participant1 } = await seedLiveQuizWithResponses()
+    const { instanceId1, participant1 } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     const res1 = await correctAssessmentPointsInstance(
       {
@@ -454,7 +176,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // award base points to participant 1 for instance 1 (-> no change expected)
     const res1 = await correctAssessmentPointsInstance(
@@ -823,7 +550,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // award correctness points for participant 1 for instance 1 (-> no change expected)
     const res1 = await correctAssessmentPointsInstance(
@@ -1195,7 +927,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // award bonus points for participant 1 for instance 1 (-> no change expected)
     const res1 = await correctAssessmentPointsInstance(
@@ -1561,7 +1298,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // award all point types for participant 1 for instance 1 (-> increase to max expected with delta being credited)
     const res1 = await correctAssessmentPointsInstance(
@@ -1939,7 +1681,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // deduct base points for participant 1 for instance 1 (-> decrease to 0 expected with delta being deducted)
     const res1 = await correctAssessmentPointsInstance(
@@ -2280,7 +2027,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // deduct correctness points for participant 1 for instance 1 (-> decrease to 0 expected with delta being deducted)
     const res1 = await correctAssessmentPointsInstance(
@@ -2637,7 +2389,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // deduct bonus points for participant 1 for instance 1 (-> decrease to 0 expected with delta being deducted)
     const res1 = await correctAssessmentPointsInstance(
@@ -2994,7 +2751,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // deduct all point types for participant 1 for instance 1 (-> decrease to 0 expected with delta being deducted)
     const res1 = await correctAssessmentPointsInstance(
@@ -3353,7 +3115,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
 
   it('[Instance Point Updates] Verify that awarding and deducting points at the same time for a single participant works correctly', async () => {
     const { instanceId1, SCQuestion, participant2, p2Response1 } =
-      await seedLiveQuizWithResponses()
+      await seedLiveQuizWithResponses({
+        userOneCtx,
+        userTwoCtx,
+        userThreeCtx,
+        userFourCtx,
+      })
 
     // award and deduct points for participant 1 for instance 1 (-> increase and decrease expected with delta being awarded/deducted)
     const res1 = await correctAssessmentPointsInstance(
@@ -3426,7 +3193,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // award base points for all participating participants for instance 1 (participants 1 and 2)
     const res1 = await correctAssessmentPointsInstance(
@@ -3774,7 +3546,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     const res1 = await correctAssessmentPointsInstance(
       {
@@ -3956,7 +3733,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // award bonus points for all participating participants for instance 1 (affects participants 1 and 2)
     const res1 = await correctAssessmentPointsInstance(
@@ -4138,7 +3920,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // award all point types for all participating participants for instance 1 (affects participants 1 and 2)
     const res1 = await correctAssessmentPointsInstance(
@@ -4324,7 +4111,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // deduct base points for all participating participants for instance 1 (affects participants 1 and 2)
     const res1 = await correctAssessmentPointsInstance(
@@ -4506,7 +4298,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // deduct correctness points for all participating participants for instance 1 (affects participants 1 and 2)
     const res1 = await correctAssessmentPointsInstance(
@@ -4688,7 +4485,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // deduct bonus points for all participating participants for instance 1 (affects participants 1 and 2)
     const res1 = await correctAssessmentPointsInstance(
@@ -4870,7 +4672,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // deduct all point types for all participating participants for instance 1 (affects participants 1 and 2)
     const res1 = await correctAssessmentPointsInstance(
@@ -5047,7 +4854,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
 
   it('[Instance Point Updates] Verify that awarding and deducting points at the same time works correctly', async () => {
     const { instanceId1, SCQuestion, participant3, p1Response1, p2Response1 } =
-      await seedLiveQuizWithResponses()
+      await seedLiveQuizWithResponses({
+        userOneCtx,
+        userTwoCtx,
+        userThreeCtx,
+        userFourCtx,
+      })
 
     // deduct correctness points and award bonus points for all participating participants for instance 1 (affects participants 1 and 2)
     const res1 = await correctAssessmentPointsInstance(
@@ -5152,7 +4964,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // award base points to all participants in the assessment course for instance 1 (affects participants 1, 2 and 3)
     const res1 = await correctAssessmentPointsInstance(
@@ -5375,7 +5192,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // award correctness points to all participants in the assessment course for instance 1 (affects participants 1, 2, and 3)
     const res1 = await correctAssessmentPointsInstance(
@@ -5598,7 +5420,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // award bonus points to all participants in the assessment course for instance 1 (affects participants 1, 2 and 3)
     const res1 = await correctAssessmentPointsInstance(
@@ -5821,7 +5648,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // award all point types to all participants in the assessment course for instance 1 (affects participants 1, 2 and 3)
     const res1 = await correctAssessmentPointsInstance(
@@ -6048,7 +5880,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // deduct base points from all participants in the assessment course for instance 1 (affects participants 1, 2 and 3)
     const res1 = await correctAssessmentPointsInstance(
@@ -6271,7 +6108,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // deduct correctness points from all participants in the assessment course for instance 1 (affects participants 1, 2 and 3)
     const res1 = await correctAssessmentPointsInstance(
@@ -6494,7 +6336,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // deduct bonus points from all participants in the assessment course for instance 1 (affects participants 1, 2 and 3)
     const res1 = await correctAssessmentPointsInstance(
@@ -6717,7 +6564,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // deduct all point types from all participants in the assessment course for instance 1 (affects participants 1, 2 and 3)
     const res1 = await correctAssessmentPointsInstance(
@@ -6944,7 +6796,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p1Response1,
       p1Response2,
       p2Response1,
-    } = await seedLiveQuizWithResponses()
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
 
     // award and deduct points at the same time from all participants in the assessment course for instance 1 (affects participants 1, 2 and 3)
     const res1 = await correctAssessmentPointsInstance(
@@ -7157,549 +7014,5 @@ describe('Unit tests covering the creation of derived permissions for elements',
     expect(appliedCorrection6!.deductedCorrectnessPoints).toBe(0) // correctness points remain unchanged (not awarded before)
     expect(appliedCorrection6!.deductedBonusPoints).toBe(0) // bonus points remain unchanged (not awarded before)
   })
-  // #endregion
-
-  // ! Live Quiz Point Updates
-  // #region
-  it("[Live Quiz Point Updates] Verify that the option of updating a single participant's points can only be chosen in combination with a participant ID", async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that not selecting any modification results in an early return', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that awarding base points to a single participant works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO: test all three participants
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that awarding correctness points to a single participant works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO: test all three participants
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that awarding bonus points to a single participant works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO: test all three participants
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that awarding all point types to a single participant works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO: test all three participants
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that deducting base points from a single participant works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO: test all three participants
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that deducting correctness points from a single participant works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO: test all three participants
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that deducting bonus points from a single participant works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO: test all three participants
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that deducting all point types from a single participant works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO: test all three participants
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that awarding base points to all participating participants works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that awarding correctness points to all participating participants works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that awarding bonus points to all participating participants works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that awarding all point types to all participating participants works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that deducting base points from all participating participants works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that deducting correctness points from all participating participants works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that deducting bonus points from all participating participants works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that deducting all point types from all participating participants works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that awarding base points to all course participants works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that awarding correctness points to all course participants works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that awarding bonus points to all course participants works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that awarding all point types to all course participants works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that deducting base points from all course participants works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that deducting correctness points from all course participants works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that deducting bonus points from all course participants works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that deducting all point types from all course participants works correctly', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO
-  })
-
-  // TODO: verify
-  it('[Live Quiz Point Updates] Verify that only assessment course admins can trigger point corrections', async () => {
-    const {
-      assessmentCourse,
-      liveQuiz,
-      instanceId1,
-      instanceId2,
-      SCQuestion,
-      MCQuestion,
-      participant1,
-      participant2,
-      participant3,
-      p1Response1,
-      p1Response2,
-      p2Response1,
-    } = await seedLiveQuizWithResponses()
-
-    // TODO
-  })
-
-  // TODO: make sure that all test cases also cover the combination of awarding and deducting points
   // #endregion
 })
