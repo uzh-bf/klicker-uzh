@@ -918,14 +918,24 @@ export async function correctAssessmentPointsInstance(
 
   // if no updates should be applied, return early
   if (
-    (awardBasePoints === null || typeof awardBasePoints === 'undefined') &&
+    (awardBasePoints === null ||
+      typeof awardBasePoints === 'undefined' ||
+      awardBasePoints === false) &&
     (awardCorrectnessPoints === null ||
-      typeof awardCorrectnessPoints === 'undefined') &&
-    (awardBonusPoints === null || typeof awardBonusPoints === 'undefined') &&
-    (deductBasePoints === null || typeof deductBasePoints === 'undefined') &&
+      typeof awardCorrectnessPoints === 'undefined' ||
+      awardCorrectnessPoints === false) &&
+    (awardBonusPoints === null ||
+      typeof awardBonusPoints === 'undefined' ||
+      awardBonusPoints === false) &&
+    (deductBasePoints === null ||
+      typeof deductBasePoints === 'undefined' ||
+      deductBasePoints === false) &&
     (deductCorrectnessPoints === null ||
-      typeof deductCorrectnessPoints === 'undefined') &&
-    (deductBonusPoints === null || typeof deductBonusPoints === 'undefined')
+      typeof deductCorrectnessPoints === 'undefined' ||
+      deductCorrectnessPoints === false) &&
+    (deductBonusPoints === null ||
+      typeof deductBonusPoints === 'undefined' ||
+      deductBonusPoints === false)
   ) {
     return null
   }
@@ -1226,14 +1236,24 @@ export async function correctAssessmentPointsLiveQuiz(
 
   // if no updates should be applied, return early
   if (
-    (awardBasePoints === null || typeof awardBasePoints === 'undefined') &&
+    (awardBasePoints === null ||
+      typeof awardBasePoints === 'undefined' ||
+      awardBasePoints === false) &&
     (awardCorrectnessPoints === null ||
-      typeof awardCorrectnessPoints === 'undefined') &&
-    (awardBonusPoints === null || typeof awardBonusPoints === 'undefined') &&
-    (deductBasePoints === null || typeof deductBasePoints === 'undefined') &&
+      typeof awardCorrectnessPoints === 'undefined' ||
+      awardCorrectnessPoints === false) &&
+    (awardBonusPoints === null ||
+      typeof awardBonusPoints === 'undefined' ||
+      awardBonusPoints === false) &&
+    (deductBasePoints === null ||
+      typeof deductBasePoints === 'undefined' ||
+      deductBasePoints === false) &&
     (deductCorrectnessPoints === null ||
-      typeof deductCorrectnessPoints === 'undefined') &&
-    (deductBonusPoints === null || typeof deductBonusPoints === 'undefined')
+      typeof deductCorrectnessPoints === 'undefined' ||
+      deductCorrectnessPoints === false) &&
+    (deductBonusPoints === null ||
+      typeof deductBonusPoints === 'undefined' ||
+      deductBonusPoints === false)
   ) {
     return null
   }

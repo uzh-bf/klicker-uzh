@@ -11,7 +11,7 @@ import {
   testInitialization,
 } from './helpers.js'
 
-describe('Unit tests covering the creation of derived permissions for elements', () => {
+describe('Unit tests covering point corrections for instances', () => {
   // shared resources used across tests
   let prisma: PrismaClient
   let hatchet: Hatchet
@@ -162,6 +162,79 @@ describe('Unit tests covering the creation of derived permissions for elements',
       userOneCtx
     )
     expect(res6).toBeNull()
+  })
+
+  it('[Instance Point Updates] Verify that only course admins can modify points', async () => {
+    const { instanceId1, participant2 } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
+
+    const res1 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId1,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        scope: PointCorrectionType.SINGLE,
+        awardBasePoints: true,
+        awardCorrectnessPoints: true,
+        awardBonusPoints: true,
+        participantId: participant2.id,
+      },
+      userTwoCtx
+    )
+    expect(res1).toBeNull()
+
+    const res2 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId1,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        scope: PointCorrectionType.SINGLE,
+        awardBasePoints: true,
+        awardCorrectnessPoints: true,
+        awardBonusPoints: true,
+        participantId: participant2.id,
+      },
+      userThreeCtx
+    )
+    expect(res2).toBeNull()
+
+    const res3 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId1,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        scope: PointCorrectionType.SINGLE,
+        awardBasePoints: true,
+        awardCorrectnessPoints: true,
+        awardBonusPoints: true,
+        participantId: participant2.id,
+      },
+      userFourCtx
+    )
+    expect(res3).not.toBeNull()
+    expect(res3!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res3!.basePoints).toBe(true)
+    expect(res3!.correctnessPoints).toBe(true)
+    expect(res3!.bonusPoints).toBe(true)
+    expect(res3!.reason).toBe('Test Reason')
+    expect(res3!.studentReason).toBe('Student Test Reason')
+    expect(res3!.correctedBy).not.toBeNull()
+    expect(res3!.correctedBy!.id).toBe(userFourCtx.user.sub)
+    expect(res3).toHaveProperty('participant')
+    expect((res3 as any)!.participant).not.toBeNull()
+    expect((res3 as any)!.participant!.id).toBe(participant2.id)
+    expect((res3 as any)!.participant!.username).toBe(participant2.username)
+    expect(res3).toHaveProperty('instance')
+    expect((res3 as any)!.instance).not.toBeNull()
+    expect((res3 as any)!.instance!.id).toBe(instanceId1)
+    expect((res3 as any)!.instance!.elementData).not.toBeNull()
+    expect((res3 as any)!.instance!.elementData.name).toBe(
+      'Single Choice Question'
+    )
   })
 
   it('[Instance Point Updates] Verify that awarding base points to a single participant works correctly', async () => {
