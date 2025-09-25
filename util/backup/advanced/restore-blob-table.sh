@@ -9,12 +9,13 @@ print_help() {
 Usage: $(basename "$0") [OPTIONS]
 
 Description:
-  Restore Azure Blob Storage containers with encryption and checksum validation.
+  Restoure Azure Blob Storage tables with encryption and checksum validation.
 
 Options:
-  --account NAME        Azure Storage account name (required)
-  --container NAME      Azure Storage container name (required)
-  -h, --help            Show this help message and exit
+  --account-name NAME        Azure Storage account name (required)
+  --account-key KEY          Azure Storage account key (required)
+  --table NAME               Azure Storage table name (required)
+  -h, --help                 Show this help message and exit
 EOF
 }
 
@@ -22,16 +23,21 @@ EOF
 # PARSE ARGS
 # -------------------------------------------------------------------
 ACCOUNT_NAME=""
-CONTAINER_NAME=""
+ACCOUNT_KEY=""
+TABLE_NAME=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --account)
+        --account-name)
             ACCOUNT_NAME="$2"
             shift 2
             ;;
-        --container)
-            CONTAINER_NAME="$2"
+        --account-key)
+            ACCOUNT_KEY="$2"
+            shift 2
+            ;;
+        --table-name)
+            TABLE_NAME="$2"
             shift 2
             ;;
         -h|--help)
@@ -47,7 +53,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validate required args
-if [[ -z "$ACCOUNT_NAME" || -z "$CONTAINER_NAME" ]]; then
+if [[ -z "$ACCOUNT_NAME" || -z "$ACCOUNT_KEY" || -z "$TABLE_NAME" ]]; then
     echo "[ERROR] Missing required options."
     print_help
     exit 1
@@ -63,17 +69,19 @@ PROJECT_ID="6ae965bb-3cf8-4d44-9658-9cd4d58f754c"
 BACKUP_ENCRYPTION_KEY="$(infisical secrets get BACKUP_ENCRYPTION_KEY \
     --projectId="$PROJECT_ID" --env=prd --plain)"
 
-DUMP_DIR="$REPO_ROOT/util/backup/dumps/blob/$ACCOUNT_NAME/container/$CONTAINER_NAME"
+TIMESTAMP="$(date +"%Y%m%d_%H%M%S")"
+
+DUMP_DIR="$REPO_ROOT/util/backup/dumps/blob/$ACCOUNT_NAME/table/$TABLE_NAME"
 ENCRYPTED_FILE="$DUMP_DIR/latest"
 CHECKSUM_FILE="$DUMP_DIR/latest.sha256"
-DECRYPTED_FILE="$DUMP_DIR/dump-latest.tar.gz"
+DECRYPTED_FILE="$DUMP_DIR/dump-latest.json"
 
 # -------------------------------------------------------------------
 # CLEANUP HANDLER
 # -------------------------------------------------------------------
 cleanup() {
     rm -f "$DECRYPTED_FILE"
-    
+
     if [[ -n "${EXTRACTED_DIR:-}" && -d "$EXTRACTED_DIR" ]]; then
         case "$EXTRACTED_DIR" in
             /|/bin|/boot|/dev|/etc|/lib*|/proc|/root|/sbin|/sys|/usr|/var)
@@ -110,26 +118,19 @@ gpg --batch --yes \
     --decrypt "$ENCRYPTED_FILE" > "$DECRYPTED_FILE"
 
 # -------------------------------------------------------------------
-# EXTRACT
-# -------------------------------------------------------------------
-echo "[INFO] Extracting tarball..."
-FOLDER_NAME="$(tar -tzf "$DECRYPTED_FILE" | head -1 | cut -f1 -d"/")"
-EXTRACTED_DIR="$DUMP_DIR/$FOLDER_NAME"
-
-tar -xzf "$DECRYPTED_FILE" -C "$DUMP_DIR"
-
-# -------------------------------------------------------------------
 # UPLOAD BLOBS
 # -------------------------------------------------------------------
-echo "[INFO] Uploading blobs to container: $CONTAINER_NAME"
-az storage blob upload-batch \
-    --account-name "$ACCOUNT_NAME" \
-    --destination "$CONTAINER_NAME" \
-    --source "$EXTRACTED_DIR" \
-    --overwrite \
-    --auth-mode login
+RESTORE_SCRIPT="$REPO_ROOT/util/backup/lib/restore_blob_table.py"
+
+python3 "$RESTORE_SCRIPT" \
+  --account-name $ACCOUNT_NAME \
+  --account-key $ACCOUNT_KEY \
+  --table-name $TABLE_NAME \
+  --input $DECRYPTED_FILE
 
 # -------------------------------------------------------------------
 # DONE
 # -------------------------------------------------------------------
-echo "✅ Restore complete and uploaded to container: $CONTAINER_NAME"
+echo "✅ Backup complete:"
+echo "   Encrypted: $(basename $ENCRYPTED_FILE)"
+echo "   Checksum : $(basename $CHECKSUM_FILE)"
