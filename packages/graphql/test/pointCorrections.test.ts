@@ -28,7 +28,6 @@ describe('Unit tests covering the creation of derived permissions for elements',
   let userTwoCtx: ContextWithUser
   let userThreeCtx: ContextWithUser
   let userFourCtx: ContextWithUser
-  let userFiveCtx: ContextWithUser
 
   beforeAll(async () => {
     const {
@@ -52,14 +51,12 @@ describe('Unit tests covering the creation of derived permissions for elements',
       userTwoCtx: ctx2,
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
-      userFiveCtx: ctx5,
     } = await testInitialization(prisma, hatchet, emitter)
 
     userOneCtx = ctx1
     userTwoCtx = ctx2
     userThreeCtx = ctx3
     userFourCtx = ctx4
-    userFiveCtx = ctx5
   })
 
   afterEach(async () => await testCleanup(prisma))
@@ -307,7 +304,7 @@ describe('Unit tests covering the creation of derived permissions for elements',
             { ix: 3, selected: false },
           ],
         },
-        correctness: ResponseCorrectness.PARTIAL,
+        correctness: ResponseCorrectness.PARTIAL, // correctness assumed to be 25%
         basePoints: 0, // no base points for this question
         correctnessPoints: 25,
         bonusPoints: 15,
@@ -1930,11 +1927,8 @@ describe('Unit tests covering the creation of derived permissions for elements',
     expect(appliedCorrection6!.deductedBonusPoints).toBe(0)
   })
 
-  // TODO: verify
   it('[Instance Point Updates] Verify that deducting base points from a single participant works correctly', async () => {
     const {
-      assessmentCourse,
-      liveQuiz,
       instanceId1,
       instanceId2,
       SCQuestion,
@@ -1947,14 +1941,335 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p2Response1,
     } = await seedLiveQuizWithResponses()
 
-    // TODO: test all three participants with both instances
+    // deduct base points for participant 1 for instance 1 (-> decrease to 0 expected with delta being deducted)
+    const res1 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId1,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardBasePoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant1.id,
+      },
+      userOneCtx
+    )
+    expect(res1).not.toBeNull()
+
+    // verify response and applied correction
+    const updatedResponse1 = await prisma.liveQuizResponse.findUnique({
+      where: { id: p1Response1.id },
+    })
+    expect(updatedResponse1).not.toBeNull()
+    expect(updatedResponse1!.basePoints).toBe(0) // question with base points deactivated
+    expect(updatedResponse1!.correctnessPoints).toBe(50)
+    expect(updatedResponse1!.bonusPoints).toBe(30)
+
+    const appliedCorrection1 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res1!.id,
+        responseId: p1Response1.id,
+      },
+    })
+    expect(appliedCorrection1).not.toBeNull()
+    expect(appliedCorrection1!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection1!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection1!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection1!.deductedBasePoints).toBe(0)
+    expect(appliedCorrection1!.deductedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection1!.deductedBonusPoints).toBe(0)
+
+    // deduct base points for participant 1 for instance 2 (-> decrease to 0 expected with delta being deducted)
+    const res2 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId2,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardBasePoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant1.id,
+      },
+      userOneCtx
+    )
+    expect(res2).not.toBeNull()
+    expect(res2!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res2!.basePoints).toBe(false)
+    expect(res2!.correctnessPoints).toBeNull()
+    expect(res2!.bonusPoints).toBeNull()
+    expect(res2!.reason).toBe('Test Reason')
+    expect(res2!.studentReason).toBe('Student Test Reason')
+    expect(res2!.correctedBy).not.toBeNull()
+    expect(res2!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res2).toHaveProperty('participant')
+    expect((res2 as any)!.participant).not.toBeNull()
+    expect((res2 as any)!.participant!.id).toBe(participant1.id)
+    expect((res2 as any)!.participant!.username).toBe(participant1.username)
+    expect(res2).toHaveProperty('instance')
+    expect(res2!.instance).not.toBeNull()
+    expect(res2!.instance!.id).toBe(instanceId2)
+    expect(res2!.instance!.elementData).not.toBeNull()
+    expect(res2!.instance!.elementData.name).toBe(MCQuestion.name)
+
+    const updatedResponse2 = await prisma.liveQuizResponse.findUnique({
+      where: { id: p1Response2.id },
+    })
+    expect(updatedResponse2).not.toBeNull()
+    expect(updatedResponse2!.basePoints).toBe(0) // decreased to 0
+    expect(updatedResponse2!.correctnessPoints).toBe(100)
+    expect(updatedResponse2!.bonusPoints).toBe(60)
+
+    const appliedCorrection2 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res2!.id,
+        responseId: p1Response2.id,
+      },
+    })
+    expect(appliedCorrection2).not.toBeNull()
+    expect(appliedCorrection2!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection2!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection2!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection2!.deductedBasePoints).toBe(20) // delta of -20 deducted
+    expect(appliedCorrection2!.deductedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection2!.deductedBonusPoints).toBe(0)
+
+    // deduct base points for participant 2 for instance 1 (-> decrease to 0 expected with delta being deducted)
+    const res3 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId1,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardBasePoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant2.id,
+      },
+      userOneCtx
+    )
+    expect(res3).not.toBeNull()
+    expect(res3!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res3!.basePoints).toBe(false)
+    expect(res3!.correctnessPoints).toBeNull()
+    expect(res3!.bonusPoints).toBeNull()
+    expect(res3!.reason).toBe('Test Reason')
+    expect(res3!.studentReason).toBe('Student Test Reason')
+    expect(res3!.correctedBy).not.toBeNull()
+    expect(res3!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res3).toHaveProperty('participant')
+    expect((res3 as any)!.participant).not.toBeNull()
+    expect((res3 as any)!.participant!.id).toBe(participant2.id)
+    expect((res3 as any)!.participant!.username).toBe(participant2.username)
+    expect(res3).toHaveProperty('instance')
+    expect((res3 as any)!.instance).not.toBeNull()
+    expect((res3 as any)!.instance!.id).toBe(instanceId1)
+    expect((res3 as any)!.instance!.elementData).not.toBeNull()
+    expect((res3 as any)!.instance!.elementData.name).toBe(SCQuestion.name)
+
+    const updatedResponse3 = await prisma.liveQuizResponse.findUnique({
+      where: { id: p2Response1.id },
+    })
+    expect(updatedResponse3).not.toBeNull()
+    expect(updatedResponse3!.basePoints).toBe(0) // remains at zero (no base points for this question)
+    expect(updatedResponse3!.correctnessPoints).toBe(25)
+    expect(updatedResponse3!.bonusPoints).toBe(15)
+
+    const appliedCorrection3 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res3!.id,
+        responseId: p2Response1.id,
+      },
+    })
+    expect(appliedCorrection3).not.toBeNull()
+    expect(appliedCorrection3!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection3!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection3!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection3!.deductedBasePoints).toBe(0)
+    expect(appliedCorrection3!.deductedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection3!.deductedBonusPoints).toBe(0)
+
+    // deduct base points for participant 2 for instance 2 (-> creation of new response with 0 points expected)
+    const res4 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId2,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardBasePoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant2.id,
+      },
+      userOneCtx
+    )
+    expect(res4).not.toBeNull()
+    expect(res4!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res4!.basePoints).toBe(false)
+    expect(res4!.correctnessPoints).toBeNull()
+    expect(res4!.bonusPoints).toBeNull()
+    expect(res4!.reason).toBe('Test Reason')
+    expect(res4!.studentReason).toBe('Student Test Reason')
+    expect(res4!.correctedBy).not.toBeNull()
+    expect(res4!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res4).toHaveProperty('participant')
+    expect((res4 as any)!.participant).not.toBeNull()
+    expect((res4 as any)!.participant!.id).toBe(participant2.id)
+    expect((res4 as any)!.participant!.username).toBe(participant2.username)
+    expect(res4).toHaveProperty('instance')
+    expect((res4 as any)!.instance).not.toBeNull()
+    expect((res4 as any)!.instance!.id).toBe(instanceId2)
+    expect((res4 as any)!.instance!.elementData).not.toBeNull()
+    expect((res4 as any)!.instance!.elementData.name).toBe(MCQuestion.name)
+
+    const newResponse4 = await prisma.liveQuizResponse.findUnique({
+      where: {
+        instanceId_elementBlockExecution_participantId: {
+          instanceId: instanceId2,
+          elementBlockExecution: 0,
+          participantId: participant2.id,
+        },
+      },
+    })
+    expect(newResponse4).not.toBeNull()
+    expect(newResponse4!.response).toBeNull()
+    expect(newResponse4!.correctionOnly).toBe(true)
+    expect(newResponse4!.basePoints).toBe(0) // decreased to 0
+    expect(newResponse4!.correctnessPoints).toBe(0) // not set
+    expect(newResponse4!.bonusPoints).toBe(0) // not set
+
+    const appliedCorrection4 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res4!.id,
+        responseId: newResponse4!.id,
+      },
+    })
+    expect(appliedCorrection4).not.toBeNull()
+    expect(appliedCorrection4!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection4!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection4!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection4!.deductedBasePoints).toBe(0) // nothing can be deducted if no base points were awarded before
+    expect(appliedCorrection4!.deductedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection4!.deductedBonusPoints).toBe(0)
+
+    // deduct base points for participant 3 for instance 1 (-> creation of new response with 0 points expected)
+    const res5 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId1,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardBasePoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant3.id,
+      },
+      userOneCtx
+    )
+    expect(res5).not.toBeNull()
+    expect(res5!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res5!.basePoints).toBe(false)
+    expect(res5!.correctnessPoints).toBeNull()
+    expect(res5!.bonusPoints).toBeNull()
+    expect(res5!.reason).toBe('Test Reason')
+    expect(res5!.studentReason).toBe('Student Test Reason')
+    expect(res5!.correctedBy).not.toBeNull()
+    expect(res5!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res5).toHaveProperty('participant')
+    expect((res5 as any)!.participant).not.toBeNull()
+    expect((res5 as any)!.participant!.id).toBe(participant3.id)
+    expect((res5 as any)!.participant!.username).toBe(participant3.username)
+    expect(res5).toHaveProperty('instance')
+    expect(res5!.instance).not.toBeNull()
+    expect(res5!.instance!.id).toBe(instanceId1)
+    expect(res5!.instance!.elementData).not.toBeNull()
+    expect(res5!.instance!.elementData.name).toBe(SCQuestion.name)
+
+    const newResponse5 = await prisma.liveQuizResponse.findUnique({
+      where: {
+        instanceId_elementBlockExecution_participantId: {
+          instanceId: instanceId1,
+          elementBlockExecution: 0,
+          participantId: participant3.id,
+        },
+      },
+    })
+    expect(newResponse5).not.toBeNull()
+    expect(newResponse5!.response).toBeNull()
+    expect(newResponse5!.correctionOnly).toBe(true)
+    expect(newResponse5!.basePoints).toBe(0) // question with base points deactivated
+    expect(newResponse5!.correctnessPoints).toBe(0) // not set
+    expect(newResponse5!.bonusPoints).toBe(0) // not set
+
+    const appliedCorrection5 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res5!.id,
+        responseId: newResponse5!.id,
+      },
+    })
+    expect(appliedCorrection5).not.toBeNull()
+    expect(appliedCorrection5!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection5!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection5!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection5!.deductedBasePoints).toBe(0)
+    expect(appliedCorrection5!.deductedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection5!.deductedBonusPoints).toBe(0)
+
+    // deduct base points for participant 3 for instance 2 (-> creation of new response with 0 points expected)
+    const res6 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId2,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardBasePoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant3.id,
+      },
+      userOneCtx
+    )
+    expect(res6).not.toBeNull()
+    expect(res6!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res6!.basePoints).toBe(false)
+    expect(res6!.correctnessPoints).toBeNull()
+    expect(res6!.bonusPoints).toBeNull()
+    expect(res6!.reason).toBe('Test Reason')
+    expect(res6!.studentReason).toBe('Student Test Reason')
+    expect(res6!.correctedBy).not.toBeNull()
+    expect(res6!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res6).toHaveProperty('participant')
+    expect((res6 as any)!.participant).not.toBeNull()
+    expect((res6 as any)!.participant!.id).toBe(participant3.id)
+    expect((res6 as any)!.participant!.username).toBe(participant3.username)
+    expect(res6).toHaveProperty('instance')
+    expect(res6!.instance).not.toBeNull()
+    expect(res6!.instance!.id).toBe(instanceId2)
+    expect(res6!.instance!.elementData).not.toBeNull()
+    expect(res6!.instance!.elementData.name).toBe(MCQuestion.name)
+
+    const newResponse6 = await prisma.liveQuizResponse.findUnique({
+      where: {
+        instanceId_elementBlockExecution_participantId: {
+          instanceId: instanceId2,
+          elementBlockExecution: 0,
+          participantId: participant3.id,
+        },
+      },
+    })
+    expect(newResponse6).not.toBeNull()
+    expect(newResponse6!.response).toBeNull()
+    expect(newResponse6!.correctionOnly).toBe(true)
+    expect(newResponse6!.basePoints).toBe(0) // decreased to 0
+    expect(newResponse6!.correctnessPoints).toBe(0) // not set
+    expect(newResponse6!.bonusPoints).toBe(0) // not set
+
+    const appliedCorrection6 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res6!.id,
+        responseId: newResponse6!.id,
+      },
+    })
+    expect(appliedCorrection6).not.toBeNull()
+    expect(appliedCorrection6!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection6!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection6!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection6!.deductedBasePoints).toBe(0) // nothing can be deducted if no base points were awarded before
+    expect(appliedCorrection6!.deductedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection6!.deductedBonusPoints).toBe(0)
   })
 
-  // TODO: verify
   it('[Instance Point Updates] Verify that deducting correctness points from a single participant works correctly', async () => {
     const {
-      assessmentCourse,
-      liveQuiz,
       instanceId1,
       instanceId2,
       SCQuestion,
@@ -1967,14 +2282,351 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p2Response1,
     } = await seedLiveQuizWithResponses()
 
-    // TODO: test all three participants with both instances
+    // deduct correctness points for participant 1 for instance 1 (-> decrease to 0 expected with delta being deducted)
+    const res1 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId1,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardCorrectnessPoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant1.id,
+      },
+      userOneCtx
+    )
+    expect(res1).not.toBeNull()
+    expect(res1!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res1!.basePoints).toBeNull()
+    expect(res1!.correctnessPoints).toBe(false)
+    expect(res1!.bonusPoints).toBeNull()
+    expect(res1!.reason).toBe('Test Reason')
+    expect(res1!.studentReason).toBe('Student Test Reason')
+    expect(res1!.correctedBy).not.toBeNull()
+    expect(res1!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res1).toHaveProperty('participant')
+    expect((res1 as any)!.participant).not.toBeNull()
+    expect((res1 as any)!.participant!.id).toBe(participant1.id)
+    expect((res1 as any)!.participant!.username).toBe(participant1.username)
+    expect(res1).toHaveProperty('instance')
+    expect(res1!.instance).not.toBeNull()
+    expect(res1!.instance!.id).toBe(instanceId1)
+    expect(res1!.instance!.elementData).not.toBeNull()
+    expect(res1!.instance!.elementData.name).toBe(SCQuestion.name)
+
+    const updatedResponse1 = await prisma.liveQuizResponse.findUnique({
+      where: { id: p1Response1.id },
+    })
+    expect(updatedResponse1).not.toBeNull()
+    expect(updatedResponse1!.basePoints).toBe(0) // question with base points deactivated
+    expect(updatedResponse1!.correctnessPoints).toBe(0) // decreased to 0
+    expect(updatedResponse1!.bonusPoints).toBe(30)
+
+    const appliedCorrection1 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res1!.id,
+        responseId: p1Response1.id,
+      },
+    })
+    expect(appliedCorrection1).not.toBeNull()
+    expect(appliedCorrection1!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection1!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection1!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection1!.deductedBasePoints).toBe(0)
+    expect(appliedCorrection1!.deductedCorrectnessPoints).toBe(50) // delta of -50 deducted
+    expect(appliedCorrection1!.deductedBonusPoints).toBe(0)
+
+    // deduct correctness points for participant 1 for instance 2 (-> decrease to 0 expected with delta being deducted)
+    const res2 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId2,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardCorrectnessPoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant1.id,
+      },
+      userOneCtx
+    )
+    expect(res2).not.toBeNull()
+    expect(res2!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res2!.basePoints).toBeNull()
+    expect(res2!.correctnessPoints).toBe(false)
+    expect(res2!.bonusPoints).toBeNull()
+    expect(res2!.reason).toBe('Test Reason')
+    expect(res2!.studentReason).toBe('Student Test Reason')
+    expect(res2!.correctedBy).not.toBeNull()
+    expect(res2!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res2).toHaveProperty('participant')
+    expect((res2 as any)!.participant).not.toBeNull()
+    expect((res2 as any)!.participant!.id).toBe(participant1.id)
+    expect((res2 as any)!.participant!.username).toBe(participant1.username)
+    expect(res2).toHaveProperty('instance')
+    expect(res2!.instance).not.toBeNull()
+    expect(res2!.instance!.id).toBe(instanceId2)
+    expect(res2!.instance!.elementData).not.toBeNull()
+    expect(res2!.instance!.elementData.name).toBe(MCQuestion.name)
+
+    const updatedResponse2 = await prisma.liveQuizResponse.findUnique({
+      where: { id: p1Response2.id },
+    })
+    expect(updatedResponse2).not.toBeNull()
+    expect(updatedResponse2!.basePoints).toBe(20)
+    expect(updatedResponse2!.correctnessPoints).toBe(0) // decreased to 0
+    expect(updatedResponse2!.bonusPoints).toBe(60)
+
+    const appliedCorrection2 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res2!.id,
+        responseId: p1Response2.id,
+      },
+    })
+    expect(appliedCorrection2).not.toBeNull()
+    expect(appliedCorrection2!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection2!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection2!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection2!.deductedBasePoints).toBe(0)
+    expect(appliedCorrection2!.deductedCorrectnessPoints).toBe(100) // delta of -100 deducted
+    expect(appliedCorrection2!.deductedBonusPoints).toBe(0)
+
+    // deduct correctness points for participant 2 for instance 1 (-> decrease to 0 expected with delta being deducted)
+    const res3 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId1,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardCorrectnessPoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant2.id,
+      },
+      userOneCtx
+    )
+    expect(res3).not.toBeNull()
+    expect(res3!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res3!.basePoints).toBeNull()
+    expect(res3!.correctnessPoints).toBe(false)
+    expect(res3!.bonusPoints).toBeNull()
+    expect(res3!.reason).toBe('Test Reason')
+    expect(res3!.studentReason).toBe('Student Test Reason')
+    expect(res3!.correctedBy).not.toBeNull()
+    expect(res3!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res3).toHaveProperty('participant')
+    expect((res3 as any)!.participant).not.toBeNull()
+    expect((res3 as any)!.participant!.id).toBe(participant2.id)
+    expect((res3 as any)!.participant!.username).toBe(participant2.username)
+    expect(res3).toHaveProperty('instance')
+    expect((res3 as any)!.instance).not.toBeNull()
+    expect((res3 as any)!.instance!.id).toBe(instanceId1)
+    expect((res3 as any)!.instance!.elementData).not.toBeNull()
+    expect((res3 as any)!.instance!.elementData.name).toBe(SCQuestion.name)
+
+    const updatedResponse3 = await prisma.liveQuizResponse.findUnique({
+      where: { id: p2Response1.id },
+    })
+    expect(updatedResponse3).not.toBeNull()
+    expect(updatedResponse3!.basePoints).toBe(0) // remains at zero (no base points for this question)
+    expect(updatedResponse3!.correctnessPoints).toBe(0) // decreased to 0
+    expect(updatedResponse3!.bonusPoints).toBe(15)
+
+    const appliedCorrection3 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res3!.id,
+        responseId: p2Response1.id,
+      },
+    })
+    expect(appliedCorrection3).not.toBeNull()
+    expect(appliedCorrection3!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection3!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection3!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection3!.deductedBasePoints).toBe(0)
+    expect(appliedCorrection3!.deductedCorrectnessPoints).toBe(25) // delta of -25 deducted
+    expect(appliedCorrection3!.deductedBonusPoints).toBe(0)
+
+    // deduct correctness points for participant 2 for instance 2 (-> creation of new response with 0 points expected)
+    const res4 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId2,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardCorrectnessPoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant2.id,
+      },
+      userOneCtx
+    )
+    expect(res4).not.toBeNull()
+    expect(res4!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res4!.basePoints).toBeNull()
+    expect(res4!.correctnessPoints).toBe(false)
+    expect(res4!.bonusPoints).toBeNull()
+    expect(res4!.reason).toBe('Test Reason')
+    expect(res4!.studentReason).toBe('Student Test Reason')
+    expect(res4!.correctedBy).not.toBeNull()
+    expect(res4!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res4).toHaveProperty('participant')
+    expect((res4 as any)!.participant).not.toBeNull()
+    expect((res4 as any)!.participant!.id).toBe(participant2.id)
+    expect((res4 as any)!.participant!.username).toBe(participant2.username)
+    expect(res4).toHaveProperty('instance')
+    expect((res4 as any)!.instance).not.toBeNull()
+    expect((res4 as any)!.instance!.id).toBe(instanceId2)
+    expect((res4 as any)!.instance!.elementData).not.toBeNull()
+    expect((res4 as any)!.instance!.elementData.name).toBe(MCQuestion.name)
+
+    const newResponse4 = await prisma.liveQuizResponse.findUnique({
+      where: {
+        instanceId_elementBlockExecution_participantId: {
+          instanceId: instanceId2,
+          elementBlockExecution: 0,
+          participantId: participant2.id,
+        },
+      },
+    })
+    expect(newResponse4).not.toBeNull()
+    expect(newResponse4!.response).toBeNull()
+    expect(newResponse4!.correctionOnly).toBe(true)
+    expect(newResponse4!.basePoints).toBe(0) // decreased to 0
+    expect(newResponse4!.correctnessPoints).toBe(0) // decreased to 0
+    expect(newResponse4!.bonusPoints).toBe(0) // not set
+
+    const appliedCorrection4 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res4!.id,
+        responseId: newResponse4!.id,
+      },
+    })
+    expect(appliedCorrection4).not.toBeNull()
+    expect(appliedCorrection4!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection4!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection4!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection4!.deductedBasePoints).toBe(0)
+    expect(appliedCorrection4!.deductedCorrectnessPoints).toBe(0) // nothing can be deducted if no correctness points were awarded before
+    expect(appliedCorrection4!.deductedBonusPoints).toBe(0)
+
+    // deduct correctness points for participant 3 for instance 1 (-> creation of new response with 0 points expected)
+    const res5 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId1,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardCorrectnessPoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant3.id,
+      },
+      userOneCtx
+    )
+    expect(res5).not.toBeNull()
+    expect(res5!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res5!.basePoints).toBeNull()
+    expect(res5!.correctnessPoints).toBe(false)
+    expect(res5!.bonusPoints).toBeNull()
+    expect(res5!.reason).toBe('Test Reason')
+    expect(res5!.studentReason).toBe('Student Test Reason')
+    expect(res5!.correctedBy).not.toBeNull()
+    expect(res5!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res5).toHaveProperty('participant')
+    expect((res5 as any)!.participant).not.toBeNull()
+    expect((res5 as any)!.participant!.id).toBe(participant3.id)
+    expect((res5 as any)!.participant!.username).toBe(participant3.username)
+    expect(res5).toHaveProperty('instance')
+    expect(res5!.instance).not.toBeNull()
+    expect(res5!.instance!.id).toBe(instanceId1)
+    expect(res5!.instance!.elementData).not.toBeNull()
+    expect(res5!.instance!.elementData.name).toBe(SCQuestion.name)
+
+    const newResponse5 = await prisma.liveQuizResponse.findUnique({
+      where: {
+        instanceId_elementBlockExecution_participantId: {
+          instanceId: instanceId1,
+          elementBlockExecution: 0,
+          participantId: participant3.id,
+        },
+      },
+    })
+    expect(newResponse5).not.toBeNull()
+    expect(newResponse5!.response).toBeNull()
+    expect(newResponse5!.correctionOnly).toBe(true)
+    expect(newResponse5!.basePoints).toBe(0)
+    expect(newResponse5!.correctnessPoints).toBe(0) // decreased to 0
+    expect(newResponse5!.bonusPoints).toBe(0)
+
+    const appliedCorrection5 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res5!.id,
+        responseId: newResponse5!.id,
+      },
+    })
+    expect(appliedCorrection5).not.toBeNull()
+    expect(appliedCorrection5!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection5!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection5!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection5!.deductedBasePoints).toBe(0)
+    expect(appliedCorrection5!.deductedCorrectnessPoints).toBe(0) // nothing can be deducted if no correctness points were awarded before
+    expect(appliedCorrection5!.deductedBonusPoints).toBe(0)
+
+    // deduct correctness points for participant 3 for instance 2 (-> creation of new response with 0 points expected)
+    const res6 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId2,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardCorrectnessPoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant3.id,
+      },
+      userOneCtx
+    )
+    expect(res6).not.toBeNull()
+    expect(res6!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res6!.basePoints).toBeNull()
+    expect(res6!.correctnessPoints).toBe(false)
+    expect(res6!.bonusPoints).toBeNull()
+    expect(res6!.reason).toBe('Test Reason')
+    expect(res6!.studentReason).toBe('Student Test Reason')
+    expect(res6!.correctedBy).not.toBeNull()
+    expect(res6!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res6).toHaveProperty('participant')
+    expect((res6 as any)!.participant).not.toBeNull()
+    expect((res6 as any)!.participant!.id).toBe(participant3.id)
+    expect((res6 as any)!.participant!.username).toBe(participant3.username)
+    expect(res6).toHaveProperty('instance')
+    expect(res6!.instance).not.toBeNull()
+    expect(res6!.instance!.id).toBe(instanceId2)
+    expect(res6!.instance!.elementData).not.toBeNull()
+    expect(res6!.instance!.elementData.name).toBe(MCQuestion.name)
+
+    const newResponse6 = await prisma.liveQuizResponse.findUnique({
+      where: {
+        instanceId_elementBlockExecution_participantId: {
+          instanceId: instanceId2,
+          elementBlockExecution: 0,
+          participantId: participant3.id,
+        },
+      },
+    })
+    expect(newResponse6).not.toBeNull()
+    expect(newResponse6!.response).toBeNull()
+    expect(newResponse6!.correctionOnly).toBe(true)
+    expect(newResponse6!.basePoints).toBe(0)
+    expect(newResponse6!.correctnessPoints).toBe(0) // set to 0
+    expect(newResponse6!.bonusPoints).toBe(0)
+
+    const appliedCorrection6 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res6!.id,
+        responseId: newResponse6!.id,
+      },
+    })
+    expect(appliedCorrection6).not.toBeNull()
+    expect(appliedCorrection6!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection6!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection6!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection6!.deductedBasePoints).toBe(0)
+    expect(appliedCorrection6!.deductedCorrectnessPoints).toBe(0) // nothing can be deducted if no correctness points were awarded before
+    expect(appliedCorrection6!.deductedBonusPoints).toBe(0)
   })
 
-  // TODO: verify
   it('[Instance Point Updates] Verify that deducting bonus points from a single participant works correctly', async () => {
     const {
-      assessmentCourse,
-      liveQuiz,
       instanceId1,
       instanceId2,
       SCQuestion,
@@ -1987,14 +2639,351 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p2Response1,
     } = await seedLiveQuizWithResponses()
 
-    // TODO: test all three participants with both instances
+    // deduct bonus points for participant 1 for instance 1 (-> decrease to 0 expected with delta being deducted)
+    const res1 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId1,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardBonusPoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant1.id,
+      },
+      userOneCtx
+    )
+    expect(res1).not.toBeNull()
+    expect(res1!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res1!.basePoints).toBeNull()
+    expect(res1!.correctnessPoints).toBeNull()
+    expect(res1!.bonusPoints).toBe(false)
+    expect(res1!.reason).toBe('Test Reason')
+    expect(res1!.studentReason).toBe('Student Test Reason')
+    expect(res1!.correctedBy).not.toBeNull()
+    expect(res1!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res1).toHaveProperty('participant')
+    expect((res1 as any)!.participant).not.toBeNull()
+    expect((res1 as any)!.participant!.id).toBe(participant1.id)
+    expect((res1 as any)!.participant!.username).toBe(participant1.username)
+    expect(res1).toHaveProperty('instance')
+    expect(res1!.instance).not.toBeNull()
+    expect(res1!.instance!.id).toBe(instanceId1)
+    expect(res1!.instance!.elementData).not.toBeNull()
+    expect(res1!.instance!.elementData.name).toBe(SCQuestion.name)
+
+    const updatedResponse1 = await prisma.liveQuizResponse.findUnique({
+      where: { id: p1Response1.id },
+    })
+    expect(updatedResponse1).not.toBeNull()
+    expect(updatedResponse1!.basePoints).toBe(0) // question with base points deactivated
+    expect(updatedResponse1!.correctnessPoints).toBe(50)
+    expect(updatedResponse1!.bonusPoints).toBe(0) // decreased to 0
+
+    const appliedCorrection1 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res1!.id,
+        responseId: p1Response1.id,
+      },
+    })
+    expect(appliedCorrection1).not.toBeNull()
+    expect(appliedCorrection1!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection1!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection1!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection1!.deductedBasePoints).toBe(0)
+    expect(appliedCorrection1!.deductedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection1!.deductedBonusPoints).toBe(30) // delta of -30 deducted
+
+    // deduct bonus points for participant 1 for instance 2 (-> decrease to 0 expected with delta being deducted)
+    const res2 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId2,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardBonusPoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant1.id,
+      },
+      userOneCtx
+    )
+    expect(res2).not.toBeNull()
+    expect(res2!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res2!.basePoints).toBeNull()
+    expect(res2!.correctnessPoints).toBeNull()
+    expect(res2!.bonusPoints).toBe(false)
+    expect(res2!.reason).toBe('Test Reason')
+    expect(res2!.studentReason).toBe('Student Test Reason')
+    expect(res2!.correctedBy).not.toBeNull()
+    expect(res2!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res2).toHaveProperty('participant')
+    expect((res2 as any)!.participant).not.toBeNull()
+    expect((res2 as any)!.participant!.id).toBe(participant1.id)
+    expect((res2 as any)!.participant!.username).toBe(participant1.username)
+    expect(res2).toHaveProperty('instance')
+    expect(res2!.instance).not.toBeNull()
+    expect(res2!.instance!.id).toBe(instanceId2)
+    expect(res2!.instance!.elementData).not.toBeNull()
+    expect(res2!.instance!.elementData.name).toBe(MCQuestion.name)
+
+    const updatedResponse2 = await prisma.liveQuizResponse.findUnique({
+      where: { id: p1Response2.id },
+    })
+    expect(updatedResponse2).not.toBeNull()
+    expect(updatedResponse2!.basePoints).toBe(20)
+    expect(updatedResponse2!.correctnessPoints).toBe(100)
+    expect(updatedResponse2!.bonusPoints).toBe(0) // decreased to 0
+
+    const appliedCorrection2 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res2!.id,
+        responseId: p1Response2.id,
+      },
+    })
+    expect(appliedCorrection2).not.toBeNull()
+    expect(appliedCorrection2!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection2!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection2!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection2!.deductedBasePoints).toBe(0)
+    expect(appliedCorrection2!.deductedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection2!.deductedBonusPoints).toBe(60) // delta of -60 deducted
+
+    // deduct bonus points for participant 2 for instance 1 (-> decrease to 0 expected with delta being deducted)
+    const res3 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId1,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardBonusPoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant2.id,
+      },
+      userOneCtx
+    )
+    expect(res3).not.toBeNull()
+    expect(res3!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res3!.basePoints).toBeNull()
+    expect(res3!.correctnessPoints).toBeNull()
+    expect(res3!.bonusPoints).toBe(false)
+    expect(res3!.reason).toBe('Test Reason')
+    expect(res3!.studentReason).toBe('Student Test Reason')
+    expect(res3!.correctedBy).not.toBeNull()
+    expect(res3!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res3).toHaveProperty('participant')
+    expect((res3 as any)!.participant).not.toBeNull()
+    expect((res3 as any)!.participant!.id).toBe(participant2.id)
+    expect((res3 as any)!.participant!.username).toBe(participant2.username)
+    expect(res3).toHaveProperty('instance')
+    expect(res3!.instance).not.toBeNull()
+    expect(res3!.instance!.id).toBe(instanceId1)
+    expect(res3!.instance!.elementData).not.toBeNull()
+    expect(res3!.instance!.elementData.name).toBe(SCQuestion.name)
+
+    const updatedResponse3 = await prisma.liveQuizResponse.findUnique({
+      where: { id: p2Response1.id },
+    })
+    expect(updatedResponse3).not.toBeNull()
+    expect(updatedResponse3!.basePoints).toBe(0) // remains at zero (no base points for this question)
+    expect(updatedResponse3!.correctnessPoints).toBe(25)
+    expect(updatedResponse3!.bonusPoints).toBe(0) // decreased to 0
+
+    const appliedCorrection3 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res3!.id,
+        responseId: p2Response1.id,
+      },
+    })
+    expect(appliedCorrection3).not.toBeNull()
+    expect(appliedCorrection3!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection3!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection3!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection3!.deductedBasePoints).toBe(0)
+    expect(appliedCorrection3!.deductedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection3!.deductedBonusPoints).toBe(15) // delta of -15 deducted
+
+    // deduct bonus points for participant 2 for instance 2 (-> creation of new response with 0 points expected)
+    const res4 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId2,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardBonusPoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant2.id,
+      },
+      userOneCtx
+    )
+    expect(res4).not.toBeNull()
+    expect(res4!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res4!.basePoints).toBeNull()
+    expect(res4!.correctnessPoints).toBeNull()
+    expect(res4!.bonusPoints).toBe(false)
+    expect(res4!.reason).toBe('Test Reason')
+    expect(res4!.studentReason).toBe('Student Test Reason')
+    expect(res4!.correctedBy).not.toBeNull()
+    expect(res4!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res4).toHaveProperty('participant')
+    expect((res4 as any)!.participant).not.toBeNull()
+    expect((res4 as any)!.participant!.id).toBe(participant2.id)
+    expect((res4 as any)!.participant!.username).toBe(participant2.username)
+    expect(res4).toHaveProperty('instance')
+    expect((res4 as any)!.instance).not.toBeNull()
+    expect((res4 as any)!.instance!.id).toBe(instanceId2)
+    expect((res4 as any)!.instance!.elementData).not.toBeNull()
+    expect((res4 as any)!.instance!.elementData.name).toBe(MCQuestion.name)
+
+    const newResponse4 = await prisma.liveQuizResponse.findUnique({
+      where: {
+        instanceId_elementBlockExecution_participantId: {
+          instanceId: instanceId2,
+          elementBlockExecution: 0,
+          participantId: participant2.id,
+        },
+      },
+    })
+    expect(newResponse4).not.toBeNull()
+    expect(newResponse4!.response).toBeNull()
+    expect(newResponse4!.correctionOnly).toBe(true)
+    expect(newResponse4!.basePoints).toBe(0)
+    expect(newResponse4!.correctnessPoints).toBe(0)
+    expect(newResponse4!.bonusPoints).toBe(0) // set to 0
+
+    const appliedCorrection4 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res4!.id,
+        responseId: newResponse4!.id,
+      },
+    })
+    expect(appliedCorrection4).not.toBeNull()
+    expect(appliedCorrection4!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection4!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection4!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection4!.deductedBasePoints).toBe(0)
+    expect(appliedCorrection4!.deductedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection4!.deductedBonusPoints).toBe(0) // nothing can be deducted if no bonus points were awarded before
+
+    // deduct bonus points for participant 3 for instance 1 (-> creation of new response with 0 points expected)
+    const res5 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId1,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardBonusPoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant3.id,
+      },
+      userOneCtx
+    )
+    expect(res5).not.toBeNull()
+    expect(res5!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res5!.basePoints).toBeNull()
+    expect(res5!.correctnessPoints).toBeNull()
+    expect(res5!.bonusPoints).toBe(false)
+    expect(res5!.reason).toBe('Test Reason')
+    expect(res5!.studentReason).toBe('Student Test Reason')
+    expect(res5!.correctedBy).not.toBeNull()
+    expect(res5!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res5).toHaveProperty('participant')
+    expect((res5 as any)!.participant).not.toBeNull()
+    expect((res5 as any)!.participant!.id).toBe(participant3.id)
+    expect((res5 as any)!.participant!.username).toBe(participant3.username)
+    expect(res5).toHaveProperty('instance')
+    expect(res5!.instance).not.toBeNull()
+    expect(res5!.instance!.id).toBe(instanceId1)
+    expect(res5!.instance!.elementData).not.toBeNull()
+    expect(res5!.instance!.elementData.name).toBe(SCQuestion.name)
+
+    const newResponse5 = await prisma.liveQuizResponse.findUnique({
+      where: {
+        instanceId_elementBlockExecution_participantId: {
+          instanceId: instanceId1,
+          elementBlockExecution: 0,
+          participantId: participant3.id,
+        },
+      },
+    })
+    expect(newResponse5).not.toBeNull()
+    expect(newResponse5!.response).toBeNull()
+    expect(newResponse5!.correctionOnly).toBe(true)
+    expect(newResponse5!.basePoints).toBe(0)
+    expect(newResponse5!.correctnessPoints).toBe(0)
+    expect(newResponse5!.bonusPoints).toBe(0) // set to 0
+
+    const appliedCorrection5 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res5!.id,
+        responseId: newResponse5!.id,
+      },
+    })
+    expect(appliedCorrection5).not.toBeNull()
+    expect(appliedCorrection5!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection5!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection5!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection5!.deductedBasePoints).toBe(0)
+    expect(appliedCorrection5!.deductedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection5!.deductedBonusPoints).toBe(0) // nothing can be deducted if no bonus points were awarded before
+
+    // deduct bonus points for participant 3 for instance 2 (-> creation of new response with 0 points expected)
+    const res6 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId2,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardBonusPoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant3.id,
+      },
+      userOneCtx
+    )
+    expect(res6).not.toBeNull()
+    expect(res6!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res6!.basePoints).toBeNull()
+    expect(res6!.correctnessPoints).toBeNull()
+    expect(res6!.bonusPoints).toBe(false)
+    expect(res6!.reason).toBe('Test Reason')
+    expect(res6!.studentReason).toBe('Student Test Reason')
+    expect(res6!.correctedBy).not.toBeNull()
+    expect(res6!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res6).toHaveProperty('participant')
+    expect((res6 as any)!.participant).not.toBeNull()
+    expect((res6 as any)!.participant!.id).toBe(participant3.id)
+    expect((res6 as any)!.participant!.username).toBe(participant3.username)
+    expect(res6).toHaveProperty('instance')
+    expect(res6!.instance).not.toBeNull()
+    expect(res6!.instance!.id).toBe(instanceId2)
+    expect(res6!.instance!.elementData).not.toBeNull()
+    expect(res6!.instance!.elementData.name).toBe(MCQuestion.name)
+
+    const newResponse6 = await prisma.liveQuizResponse.findUnique({
+      where: {
+        instanceId_elementBlockExecution_participantId: {
+          instanceId: instanceId2,
+          elementBlockExecution: 0,
+          participantId: participant3.id,
+        },
+      },
+    })
+    expect(newResponse6).not.toBeNull()
+    expect(newResponse6!.response).toBeNull()
+    expect(newResponse6!.correctionOnly).toBe(true)
+    expect(newResponse6!.basePoints).toBe(0)
+    expect(newResponse6!.correctnessPoints).toBe(0)
+    expect(newResponse6!.bonusPoints).toBe(0) // set to 0
+
+    const appliedCorrection6 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res6!.id,
+        responseId: newResponse6!.id,
+      },
+    })
+    expect(appliedCorrection6).not.toBeNull()
+    expect(appliedCorrection6!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection6!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection6!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection6!.deductedBasePoints).toBe(0)
+    expect(appliedCorrection6!.deductedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection6!.deductedBonusPoints).toBe(0) // nothing can be deducted if no bonus points were awarded before
   })
 
-  // TODO: verify
   it('[Instance Point Updates] Verify that deducting all point types from a single participant works correctly', async () => {
     const {
-      assessmentCourse,
-      liveQuiz,
       instanceId1,
       instanceId2,
       SCQuestion,
@@ -2007,7 +2996,359 @@ describe('Unit tests covering the creation of derived permissions for elements',
       p2Response1,
     } = await seedLiveQuizWithResponses()
 
-    // TODO: test all three participants with both instances
+    // deduct all point types for participant 1 for instance 1 (-> decrease to 0 expected with delta being deducted)
+    const res1 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId1,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardBasePoints: false,
+        awardCorrectnessPoints: false,
+        awardBonusPoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant1.id,
+      },
+      userOneCtx
+    )
+    expect(res1).not.toBeNull()
+    expect(res1!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res1!.basePoints).toBe(false)
+    expect(res1!.correctnessPoints).toBe(false)
+    expect(res1!.bonusPoints).toBe(false)
+    expect(res1!.reason).toBe('Test Reason')
+    expect(res1!.studentReason).toBe('Student Test Reason')
+    expect(res1!.correctedBy).not.toBeNull()
+    expect(res1!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res1).toHaveProperty('participant')
+    expect((res1 as any)!.participant).not.toBeNull()
+    expect((res1 as any)!.participant!.id).toBe(participant1.id)
+    expect((res1 as any)!.participant!.username).toBe(participant1.username)
+    expect(res1).toHaveProperty('instance')
+    expect(res1!.instance).not.toBeNull()
+    expect(res1!.instance!.id).toBe(instanceId1)
+    expect(res1!.instance!.elementData).not.toBeNull()
+    expect(res1!.instance!.elementData.name).toBe(SCQuestion.name)
+
+    const updatedResponse1 = await prisma.liveQuizResponse.findUnique({
+      where: { id: p1Response1.id },
+    })
+    expect(updatedResponse1).not.toBeNull()
+    expect(updatedResponse1!.basePoints).toBe(0) // decreased to 0
+    expect(updatedResponse1!.correctnessPoints).toBe(0) // decreased to 0
+    expect(updatedResponse1!.bonusPoints).toBe(0) // decreased to 0
+
+    const appliedCorrection1 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res1!.id,
+        responseId: p1Response1.id,
+      },
+    })
+    expect(appliedCorrection1).not.toBeNull()
+    expect(appliedCorrection1!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection1!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection1!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection1!.deductedBasePoints).toBe(0) // no base points were awarded for this question
+    expect(appliedCorrection1!.deductedCorrectnessPoints).toBe(50) // delta of -50 deducted
+    expect(appliedCorrection1!.deductedBonusPoints).toBe(30) // delta of -30 deducted
+
+    // deduct all point types for participant 1 for instance 2 (-> decrease to 0 expected with delta being deducted)
+    const res2 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId2,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardBasePoints: false,
+        awardCorrectnessPoints: false,
+        awardBonusPoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant1.id,
+      },
+      userOneCtx
+    )
+    expect(res2).not.toBeNull()
+    expect(res2!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res2!.basePoints).toBe(false)
+    expect(res2!.correctnessPoints).toBe(false)
+    expect(res2!.bonusPoints).toBe(false)
+    expect(res2!.reason).toBe('Test Reason')
+    expect(res2!.studentReason).toBe('Student Test Reason')
+    expect(res2!.correctedBy).not.toBeNull()
+    expect(res2!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res2).toHaveProperty('participant')
+    expect((res2 as any)!.participant).not.toBeNull()
+    expect((res2 as any)!.participant!.id).toBe(participant1.id)
+    expect((res2 as any)!.participant!.username).toBe(participant1.username)
+    expect(res2).toHaveProperty('instance')
+    expect(res2!.instance).not.toBeNull()
+    expect(res2!.instance!.id).toBe(instanceId2)
+    expect(res2!.instance!.elementData).not.toBeNull()
+    expect(res2!.instance!.elementData.name).toBe(MCQuestion.name)
+
+    const updatedResponse2 = await prisma.liveQuizResponse.findUnique({
+      where: { id: p1Response2.id },
+    })
+    expect(updatedResponse2).not.toBeNull()
+    expect(updatedResponse2!.basePoints).toBe(0) // decreased to 0
+    expect(updatedResponse2!.correctnessPoints).toBe(0) // decreased to 0
+    expect(updatedResponse2!.bonusPoints).toBe(0) // decreased to 0
+
+    const appliedCorrection2 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res2!.id,
+        responseId: p1Response2.id,
+      },
+    })
+    expect(appliedCorrection2).not.toBeNull()
+    expect(appliedCorrection2!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection2!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection2!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection2!.deductedBasePoints).toBe(20) // delta of -20 deducted
+    expect(appliedCorrection2!.deductedCorrectnessPoints).toBe(100) // delta of -100 deducted
+    expect(appliedCorrection2!.deductedBonusPoints).toBe(60) // delta of -60 deducted
+
+    // deduct all point types for participant 2 for instance 1 (-> decrease to 0 expected with delta being deducted)
+    const res3 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId1,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardBasePoints: false,
+        awardCorrectnessPoints: false,
+        awardBonusPoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant2.id,
+      },
+      userOneCtx
+    )
+    expect(res3).not.toBeNull()
+    expect(res3!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res3!.basePoints).toBe(false)
+    expect(res3!.correctnessPoints).toBe(false)
+    expect(res3!.bonusPoints).toBe(false)
+    expect(res3!.reason).toBe('Test Reason')
+    expect(res3!.studentReason).toBe('Student Test Reason')
+    expect(res3!.correctedBy).not.toBeNull()
+    expect(res3!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res3).toHaveProperty('participant')
+    expect((res3 as any)!.participant).not.toBeNull()
+    expect((res3 as any)!.participant!.id).toBe(participant2.id)
+    expect((res3 as any)!.participant!.username).toBe(participant2.username)
+    expect(res3).toHaveProperty('instance')
+    expect(res3!.instance).not.toBeNull()
+    expect(res3!.instance!.id).toBe(instanceId1)
+    expect(res3!.instance!.elementData).not.toBeNull()
+    expect(res3!.instance!.elementData.name).toBe(SCQuestion.name)
+
+    const updatedResponse3 = await prisma.liveQuizResponse.findUnique({
+      where: { id: p2Response1.id },
+    })
+    expect(updatedResponse3).not.toBeNull()
+    expect(updatedResponse3!.basePoints).toBe(0) // remains at zero (no base points for this question)
+    expect(updatedResponse3!.correctnessPoints).toBe(0) // decreased to 0
+    expect(updatedResponse3!.bonusPoints).toBe(0) // decreased to 0
+
+    const appliedCorrection3 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res3!.id,
+        responseId: p2Response1.id,
+      },
+    })
+    expect(appliedCorrection3).not.toBeNull()
+    expect(appliedCorrection3!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection3!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection3!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection3!.deductedBasePoints).toBe(0) // no base points were awarded for this question
+    expect(appliedCorrection3!.deductedCorrectnessPoints).toBe(25) // delta of -25 deducted
+    expect(appliedCorrection3!.deductedBonusPoints).toBe(15) // delta of -15 deducted
+
+    // deduct all point types for participant 2 for instance 2 (-> creation of new response with 0 points expected)
+    const res4 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId2,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardBasePoints: false,
+        awardCorrectnessPoints: false,
+        awardBonusPoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant2.id,
+      },
+      userOneCtx
+    )
+    expect(res4).not.toBeNull()
+    expect(res4!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res4!.basePoints).toBe(false)
+    expect(res4!.correctnessPoints).toBe(false)
+    expect(res4!.bonusPoints).toBe(false)
+    expect(res4!.reason).toBe('Test Reason')
+    expect(res4!.studentReason).toBe('Student Test Reason')
+    expect(res4!.correctedBy).not.toBeNull()
+    expect(res4!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res4).toHaveProperty('participant')
+    expect((res4 as any)!.participant).not.toBeNull()
+    expect((res4 as any)!.participant!.id).toBe(participant2.id)
+    expect((res4 as any)!.participant!.username).toBe(participant2.username)
+    expect(res4).toHaveProperty('instance')
+    expect((res4 as any)!.instance).not.toBeNull()
+    expect((res4 as any)!.instance!.id).toBe(instanceId2)
+    expect((res4 as any)!.instance!.elementData).not.toBeNull()
+    expect((res4 as any)!.instance!.elementData.name).toBe(MCQuestion.name)
+
+    const newResponse4 = await prisma.liveQuizResponse.findUnique({
+      where: {
+        instanceId_elementBlockExecution_participantId: {
+          instanceId: instanceId2,
+          elementBlockExecution: 0,
+          participantId: participant2.id,
+        },
+      },
+    })
+    expect(newResponse4).not.toBeNull()
+    expect(newResponse4!.response).toBeNull()
+    expect(newResponse4!.correctionOnly).toBe(true)
+    expect(newResponse4!.basePoints).toBe(0)
+    expect(newResponse4!.correctnessPoints).toBe(0)
+    expect(newResponse4!.bonusPoints).toBe(0)
+
+    const appliedCorrection4 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res4!.id,
+        responseId: newResponse4!.id,
+      },
+    })
+    expect(appliedCorrection4).not.toBeNull()
+    expect(appliedCorrection4!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection4!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection4!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection4!.deductedBasePoints).toBe(0) // nothing can be deducted if no base points were awarded before
+    expect(appliedCorrection4!.deductedCorrectnessPoints).toBe(0) // nothing can be deducted if no correctness points were awarded before
+    expect(appliedCorrection4!.deductedBonusPoints).toBe(0) // nothing can be deducted if no bonus points were awarded before
+
+    // deduct all point types for participant 3 for instance 1 (-> creation of new response with 0 points expected)
+    const res5 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId1,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardBasePoints: false,
+        awardCorrectnessPoints: false,
+        awardBonusPoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant3.id,
+      },
+      userOneCtx
+    )
+    expect(res5).not.toBeNull()
+    expect(res5!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res5!.basePoints).toBe(false)
+    expect(res5!.correctnessPoints).toBe(false)
+    expect(res5!.bonusPoints).toBe(false)
+    expect(res5!.reason).toBe('Test Reason')
+    expect(res5!.studentReason).toBe('Student Test Reason')
+    expect(res5!.correctedBy).not.toBeNull()
+    expect(res5!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res5).toHaveProperty('participant')
+    expect((res5 as any)!.participant).not.toBeNull()
+    expect((res5 as any)!.participant!.id).toBe(participant3.id)
+    expect((res5 as any)!.participant!.username).toBe(participant3.username)
+    expect(res5).toHaveProperty('instance')
+    expect(res5!.instance).not.toBeNull()
+    expect(res5!.instance!.id).toBe(instanceId1)
+    expect(res5!.instance!.elementData).not.toBeNull()
+    expect(res5!.instance!.elementData.name).toBe(SCQuestion.name)
+
+    const newResponse5 = await prisma.liveQuizResponse.findUnique({
+      where: {
+        instanceId_elementBlockExecution_participantId: {
+          instanceId: instanceId1,
+          elementBlockExecution: 0,
+          participantId: participant3.id,
+        },
+      },
+    })
+    expect(newResponse5).not.toBeNull()
+    expect(newResponse5!.response).toBeNull()
+    expect(newResponse5!.correctionOnly).toBe(true)
+    expect(newResponse5!.basePoints).toBe(0)
+    expect(newResponse5!.correctnessPoints).toBe(0)
+    expect(newResponse5!.bonusPoints).toBe(0)
+
+    const appliedCorrection5 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res5!.id,
+        responseId: newResponse5!.id,
+      },
+    })
+    expect(appliedCorrection5).not.toBeNull()
+    expect(appliedCorrection5!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection5!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection5!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection5!.deductedBasePoints).toBe(0) // nothing can be deducted if no base points were awarded before
+    expect(appliedCorrection5!.deductedCorrectnessPoints).toBe(0) // nothing can be deducted if no correctness points were awarded before
+    expect(appliedCorrection5!.deductedBonusPoints).toBe(0) // nothing can be deducted if no bonus points were awarded
+
+    // deduct all point types for participant 3 for instance 2 (-> creation of new response with 0 points expected)
+    const res6 = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId2,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardBasePoints: false,
+        awardCorrectnessPoints: false,
+        awardBonusPoints: false,
+        scope: PointCorrectionType.SINGLE,
+        participantId: participant3.id,
+      },
+      userOneCtx
+    )
+    expect(res6).not.toBeNull()
+    expect(res6!.type).toBe(PointCorrectionType.SINGLE)
+    expect(res6!.basePoints).toBe(false)
+    expect(res6!.correctnessPoints).toBe(false)
+    expect(res6!.bonusPoints).toBe(false)
+    expect(res6!.reason).toBe('Test Reason')
+    expect(res6!.studentReason).toBe('Student Test Reason')
+    expect(res6!.correctedBy).not.toBeNull()
+    expect(res6!.correctedBy!.id).toBe(userOneCtx.user.sub)
+    expect(res6).toHaveProperty('participant')
+    expect((res6 as any)!.participant).not.toBeNull()
+    expect((res6 as any)!.participant!.id).toBe(participant3.id)
+    expect((res6 as any)!.participant!.username).toBe(participant3.username)
+    expect(res6).toHaveProperty('instance')
+    expect(res6!.instance).not.toBeNull()
+    expect(res6!.instance!.id).toBe(instanceId2)
+    expect(res6!.instance!.elementData).not.toBeNull()
+    expect(res6!.instance!.elementData.name).toBe(MCQuestion.name)
+
+    const newResponse6 = await prisma.liveQuizResponse.findUnique({
+      where: {
+        instanceId_elementBlockExecution_participantId: {
+          instanceId: instanceId2,
+          elementBlockExecution: 0,
+          participantId: participant3.id,
+        },
+      },
+    })
+    expect(newResponse6).not.toBeNull()
+    expect(newResponse6!.response).toBeNull()
+    expect(newResponse6!.correctionOnly).toBe(true)
+    expect(newResponse6!.basePoints).toBe(0)
+    expect(newResponse6!.correctnessPoints).toBe(0)
+    expect(newResponse6!.bonusPoints).toBe(0)
+
+    const appliedCorrection6 = await prisma.appliedPointCorrection.findFirst({
+      where: {
+        pointCorrectionId: res6!.id,
+        responseId: newResponse6!.id,
+      },
+    })
+    expect(appliedCorrection6).not.toBeNull()
+    expect(appliedCorrection6!.awardedBasePoints).toBe(0)
+    expect(appliedCorrection6!.awardedCorrectnessPoints).toBe(0)
+    expect(appliedCorrection6!.awardedBonusPoints).toBe(0)
+    expect(appliedCorrection6!.deductedBasePoints).toBe(0) // nothing can be deducted if no base points were awarded before
+    expect(appliedCorrection6!.deductedCorrectnessPoints).toBe(0) // nothing can be deducted if no correctness points were awarded before
+    expect(appliedCorrection6!.deductedBonusPoints).toBe(0) // nothing can be deducted if no bonus points were awarded
   })
 
   // TODO: verify
