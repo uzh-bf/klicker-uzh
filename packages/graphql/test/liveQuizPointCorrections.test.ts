@@ -54,6 +54,7 @@ describe('Unit tests covering the creation of derived permissions for elements',
 
   // ! Live Quiz Point Updates
   // #region
+  // TODO: verify
   it("[Live Quiz Point Updates] Verify that the option of updating a single participant's points can only be chosen in combination with a participant ID", async () => {
     const {
       assessmentCourse,

@@ -3,6 +3,9 @@ mutation CorrectAssessmentPointsInstance(
   $awardBasePoints: Boolean
   $awardCorrectnessPoints: Boolean
   $awardBonusPoints: Boolean
+  $deductBasePoints: Boolean
+  $deductCorrectnessPoints: Boolean
+  $deductBonusPoints: Boolean
   $reason: String!
   $studentReason: String!
   $scope: PointCorrectionType!
@@ -13,6 +16,9 @@ mutation CorrectAssessmentPointsInstance(
     awardBasePoints: $awardBasePoints
     awardCorrectnessPoints: $awardCorrectnessPoints
     awardBonusPoints: $awardBonusPoints
+    deductBasePoints: $deductBasePoints
+    deductCorrectnessPoints: $deductCorrectnessPoints
+    deductBonusPoints: $deductBonusPoints
     reason: $reason
     studentReason: $studentReason
     scope: $scope
