@@ -187,17 +187,13 @@ export async function ensureParticipation(
   }
 }
 
-// leave a course leaderboard as a participant
-// deletes the leaderboard entries related to the course and sets the participation to inactive
-// meaning that no further points will be collected
 export async function leaveCourseLeaderboard(
-  {
-    courseId,
-  }: {
-    courseId: string
-  },
+  { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
+  // leave a course leaderboard as a participant
+  // deletes the leaderboard entries related to the course and sets the participation to inactive
+  // meaning that no further points will be collected
   const participation = await ctx.prisma.participation.update({
     where: {
       courseId_participantId: {

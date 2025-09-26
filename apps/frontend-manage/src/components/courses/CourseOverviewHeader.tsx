@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
+import { faPenToSquare } from '@fortawesome/free-regular-svg-icons'
 import {
   faChartPie,
   faLink,
@@ -23,6 +24,7 @@ import getLTIAccessLink from './getLTIAccessLink'
 import CourseManipulationModal, {
   CourseManipulationFormData,
 } from './modals/CourseManipulationModal'
+import PointCorrectionsModal from './PointCorrectionsModal'
 import QRCodePopover from './QRCodePopover'
 
 interface CourseOverviewHeaderProps {
@@ -49,6 +51,7 @@ function CourseOverviewHeader({
 
   const [courseSettingsModal, setCourseSettingsModal] = useState(false)
   const [sharingModal, setSharingModal] = useState(false)
+  const [correctionsModal, setCorrectionsModal] = useState(false)
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false)
 
   const [updateCourseSettings] = useMutation(UpdateCourseSettingsDocument)
@@ -165,6 +168,16 @@ function CourseOverviewHeader({
             <Button.Label>{t('manage.course.learningAnalytics')}</Button.Label>
           </Button>
         ) : null}
+        {course.isAssessmentEnabled && course.isManager ? (
+          <Button
+            onClick={() => setCorrectionsModal(true)}
+            className={{ root: 'h-8' }}
+            data={{ cy: 'assessment-course-point-corrections' }}
+          >
+            <Button.Icon icon={faPenToSquare} />
+            <Button.Label>{t('manage.course.pointCorrections')}</Button.Label>
+          </Button>
+        ) : null}
         <Dropdown
           data={{ cy: `course-lti-links` }}
           className={{
@@ -262,6 +275,14 @@ function CourseOverviewHeader({
           }}
         />
       )}
+
+      {course.isAssessmentEnabled && course.isManager && correctionsModal ? (
+        <PointCorrectionsModal
+          courseId={course.id}
+          courseName={course.name}
+          onClose={() => setCorrectionsModal(false)}
+        />
+      ) : null}
 
       {sharingModal && course.isManager ? (
         <ObjectSharingModalWrapper
