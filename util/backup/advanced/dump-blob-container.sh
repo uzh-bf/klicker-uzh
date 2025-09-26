@@ -13,7 +13,6 @@ Description:
 
 Options:
   --account NAME        Azure Storage account name (required)
-  --container NAME      Azure Storage container name (required)
   -h, --help            Show this help message and exit
 EOF
 }
@@ -22,16 +21,11 @@ EOF
 # PARSE ARGS
 # -------------------------------------------------------------------
 ACCOUNT_NAME=""
-CONTAINER_NAME=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --account)
             ACCOUNT_NAME="$2"
-            shift 2
-            ;;
-        --container)
-            CONTAINER_NAME="$2"
             shift 2
             ;;
         -h|--help)
@@ -47,7 +41,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validate required args
-if [[ -z "$ACCOUNT_NAME" || -z "$CONTAINER_NAME" ]]; then
+if [[ -z "$ACCOUNT_NAME" ]]; then
     echo "[ERROR] Missing required options."
     print_help
     exit 1
@@ -65,61 +59,73 @@ BACKUP_ENCRYPTION_KEY="$(infisical secrets get BACKUP_ENCRYPTION_KEY \
 
 TIMESTAMP="$(date +"%Y%m%d_%H%M%S")"
 
-DUMP_DIR="$REPO_ROOT/util/backup/dumps/blob/$ACCOUNT_NAME/container/$CONTAINER_NAME"
-WORK_DIR="$DUMP_DIR/$TIMESTAMP"
+CONTAINER_NAMES=$(az storage container list \
+  --account-name stgklickermediaz7tg1 \
+  --auth-mode login  --query "[].name" \
+  -o tsv)
 
-ARCHIVE_FILE="$DUMP_DIR/dump-$TIMESTAMP.tar.gz"
-ENCRYPTED_FILE="$ARCHIVE_FILE.gpg"
-CHECKSUM_FILE="$ENCRYPTED_FILE.sha256"
+for CONTAINER_NAME in $CONTAINER_NAMES; do
+    DUMP_DIR="$REPO_ROOT/util/backup/dumps/blob/$ACCOUNT_NAME/container/$CONTAINER_NAME"
+    WORK_DIR="$DUMP_DIR/$TIMESTAMP"
 
-# -------------------------------------------------------------------
-# PREP
-# -------------------------------------------------------------------
-mkdir -p "$DUMP_DIR" "$WORK_DIR"
+    ARCHIVE_FILE="$DUMP_DIR/dump-$TIMESTAMP.tar.gz"
+    ENCRYPTED_FILE="$ARCHIVE_FILE.gpg"
+    CHECKSUM_FILE="$ENCRYPTED_FILE.sha256"
 
-# Ensure cleanup of temp files if script exits unexpectedly
-cleanup() {
-    rm -rf "$WORK_DIR"
-    rm -f "$ARCHIVE_FILE"
-}
-trap cleanup EXIT
+    # -------------------------------------------------------------------
+    # PREP
+    # -------------------------------------------------------------------
+    # Ensure cleanup of temp files if script exits unexpectedly
+    cleanup() {
+        echo "Cleaning up temporary files..."
+        rm -rf "$WORK_DIR"
+        rm -f "$ARCHIVE_FILE"
+    }
+    trap cleanup EXIT
 
-# -------------------------------------------------------------------
-# DOWNLOAD BLOBS
-# -------------------------------------------------------------------
-az storage blob download-batch \
-    --account-name "$ACCOUNT_NAME" \
-    --source "$CONTAINER_NAME" \
-    --destination "$WORK_DIR" \
-    --auth-mode login
+    mkdir -p "$DUMP_DIR" "$WORK_DIR"
 
-# -------------------------------------------------------------------
-# CREATE TAR ARCHIVE (relative paths, avoids absolute path issue)
-# -------------------------------------------------------------------
-tar -czf "$ARCHIVE_FILE" -C "$DUMP_DIR" "$TIMESTAMP"
 
-# -------------------------------------------------------------------
-# ENCRYPT
-# -------------------------------------------------------------------
-gpg --batch --yes \
-    --passphrase "$BACKUP_ENCRYPTION_KEY" \
-    --cipher-algo AES256 \
-    --symmetric \
-    --output "$ENCRYPTED_FILE" \
-    "$ARCHIVE_FILE"
+    # -------------------------------------------------------------------
+    # DOWNLOAD BLOBS
+    # -------------------------------------------------------------------
+    az storage blob download-batch \
+        --account-name "$ACCOUNT_NAME" \
+        --source "$CONTAINER_NAME" \
+        --destination "$WORK_DIR" \
+        --auth-mode login
 
-ln -sf "$(basename "$ENCRYPTED_FILE")" "$DUMP_DIR/latest"
+    # -------------------------------------------------------------------
+    # CREATE TAR ARCHIVE (relative paths, avoids absolute path issue)
+    # -------------------------------------------------------------------
+    tar -czf "$ARCHIVE_FILE" -C "$DUMP_DIR" "$TIMESTAMP"
 
-# -------------------------------------------------------------------
-# GENERATE CHECKSUM
-# -------------------------------------------------------------------
-checksum=$(shasum -a 256 $ENCRYPTED_FILE | awk '{print $1}') 
-echo "$checksum $(basename $ENCRYPTED_FILE)" > "$CHECKSUM_FILE"
-ln -sf "$(basename "$CHECKSUM_FILE")" "$DUMP_DIR/latest.sha256"
+    # -------------------------------------------------------------------
+    # ENCRYPT
+    # -------------------------------------------------------------------
+    gpg --batch --yes \
+        --passphrase "$BACKUP_ENCRYPTION_KEY" \
+        --cipher-algo AES256 \
+        --symmetric \
+        --output "$ENCRYPTED_FILE" \
+        "$ARCHIVE_FILE"
 
-# -------------------------------------------------------------------
-# DONE
-# -------------------------------------------------------------------
-echo "✅ Backup complete:"
-echo "   Encrypted: $(basename $ENCRYPTED_FILE)"
-echo "   Checksum : $(basename $CHECKSUM_FILE)"
+    ln -sf "$(basename "$ENCRYPTED_FILE")" "$DUMP_DIR/latest"
+
+    # -------------------------------------------------------------------
+    # GENERATE CHECKSUM
+    # -------------------------------------------------------------------
+    checksum=$(shasum -a 256 $ENCRYPTED_FILE | awk '{print $1}') 
+    echo "$checksum $(basename $ENCRYPTED_FILE)" > "$CHECKSUM_FILE"
+    ln -sf "$(basename "$CHECKSUM_FILE")" "$DUMP_DIR/latest.sha256"
+
+    # -------------------------------------------------------------------
+    # DONE
+    # -------------------------------------------------------------------
+    echo "✅ Backup complete:"
+    echo "   Encrypted: $(basename $ENCRYPTED_FILE)"
+    echo "   Checksum : $(basename $CHECKSUM_FILE)"
+
+    cleanup
+    trap - EXIT
+done
