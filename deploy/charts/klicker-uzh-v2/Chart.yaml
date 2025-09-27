@@ -4,3 +4,7 @@ description: A Helm chart for the KlickerUZH
 type: application
 version: 3.4.0-alpha.21
 appVersion: v3.4.0-alpha.21
+dependencies:
+  - name: redis
+    version: 17.6.0
+    repository: https://charts.bitnami.com/bitnami

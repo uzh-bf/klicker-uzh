@@ -21,6 +21,7 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/cm-hatchet-workers.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret-hatchet-workers.yaml") . | sha256sum }}
         release: {{ .Chart.AppVersion }}
       {{- with .Values.hatchet.workers.general.podAnnotations }}
         {{- toYaml . | nindent 8 }}
@@ -97,6 +98,7 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/cm-hatchet-workers.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret-hatchet-workers.yaml") . | sha256sum }}
         release: {{ .Chart.AppVersion }}
       {{- with .Values.hatchet.workers.responseProcessor.podAnnotations }}
         {{- toYaml . | nindent 8 }}
@@ -174,6 +176,7 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/cm-hatchet-workers.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret-hatchet-workers.yaml") . | sha256sum }}
         release: {{ .Chart.AppVersion }}
       {{- with .Values.hatchet.workers.responseProcessorAssessment.podAnnotations }}
         {{- toYaml . | nindent 8 }}

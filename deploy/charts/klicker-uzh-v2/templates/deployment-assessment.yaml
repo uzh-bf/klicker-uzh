@@ -21,6 +21,7 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/cm-frontend-assessment.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret-frontend-assessment.yaml") . | sha256sum }}
         release: {{ .Chart.AppVersion }}
       {{- with .Values.assessment.frontendPWA.podAnnotations }}
         {{- toYaml . | nindent 8 }}
@@ -99,6 +100,7 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/cm-backend-assessment.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret-backend-assessment.yaml") . | sha256sum }}
         release: {{ .Chart.AppVersion }}
       {{- with .Values.assessment.backendGraphql.podAnnotations }}
         {{- toYaml . | nindent 8 }}
