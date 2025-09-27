@@ -280,9 +280,6 @@ function PointCorrectionsModal({
           console.error('Error applying point correction:', error)
           setSubmitting(false)
         }
-
-        // TODO: make sure to display all relevant point corrections on the corresponding live quizzes in the student view
-        // -> based on applied corrections and join back into live quiz results query
       }}
     >
       {({

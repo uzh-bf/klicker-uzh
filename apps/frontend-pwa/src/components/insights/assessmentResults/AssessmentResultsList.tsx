@@ -199,8 +199,6 @@ function AssessmentResultsList({
                   }
                 })}
               </ul>
-
-              {/* // TODO: add list of point corrections */}
             </div>
           )}
         </div>

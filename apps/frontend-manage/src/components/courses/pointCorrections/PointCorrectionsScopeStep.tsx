@@ -39,9 +39,6 @@ function PointCorrectionsScopeStep({
     value: instance.id,
   }))
 
-  // TODO: load all previous point corrections applied to this quiz / instance -> distinguish based on UI selection
-  const previousCorrections: any[] = []
-
   useEffect(() => {
     // if scope is not 'instance', clear instance selection
     if (scopeField.value !== 'instance' && instanceField.value) {
