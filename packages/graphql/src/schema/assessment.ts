@@ -5,6 +5,7 @@ import {
   StudentAssessmentBlockResponse as StudentAssessmentBlockResponseType,
   StudentAssessmentInstanceResponse as StudentAssessmentInstanceResponseType,
   StudentAssessmentQuizResults as StudentAssessmentQuizResultsType,
+  StudentPointCorrection as StudentPointCorrectionType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { ElementInstance, ElementInstanceRef } from './element.js'
@@ -59,8 +60,26 @@ export const ActivityStudentPerformance =
       availableCorrectnessPoints: t.exposeFloat('availableCorrectnessPoints'),
       bonusPoints: t.exposeFloat('bonusPoints'),
       availableBonusPoints: t.exposeFloat('availableBonusPoints'),
+      corrections: t.expose('corrections', {
+        type: [StudentPointCorrectionRef],
+      }),
     }),
   })
+
+export const StudentPointCorrectionRef =
+  builder.objectRef<StudentPointCorrectionType>('StudentPointCorrection')
+export const StudentPointCorrection = StudentPointCorrectionRef.implement({
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+    reason: t.exposeString('reason'),
+    awardedBasePoints: t.exposeFloat('awardedBasePoints'),
+    awardedCorrectnessPoints: t.exposeFloat('awardedCorrectnessPoints'),
+    awardedBonusPoints: t.exposeFloat('awardedBonusPoints'),
+    deductedBasePoints: t.exposeFloat('deductedBasePoints'),
+    deductedCorrectnessPoints: t.exposeFloat('deductedCorrectnessPoints'),
+    deductedBonusPoints: t.exposeFloat('deductedBonusPoints'),
+  }),
+})
 
 export const StudentAssessmentQuizResultsRef =
   builder.objectRef<StudentAssessmentQuizResultsType>(

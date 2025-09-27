@@ -158,6 +158,51 @@ function AssessmentResultsList({
               })}
             />
           </div>
+
+          {result.corrections.length > 0 && (
+            <div className="mt-3 text-sm">
+              <div className="font-bold">{t('corrections')}</div>
+              <ul className="ml-4 list-disc">
+                {result.corrections.map((correction, index) => {
+                  const totalCorrection =
+                    (correction.awardedBasePoints ?? 0) +
+                    (correction.awardedCorrectnessPoints ?? 0) +
+                    (correction.awardedBonusPoints ?? 0) -
+                    (correction.deductedBasePoints ?? 0) -
+                    (correction.deductedCorrectnessPoints ?? 0) -
+                    (correction.deductedBonusPoints ?? 0)
+
+                  if (totalCorrection === 0) {
+                    return (
+                      <li key={`point-correction-${correction.id}`}>
+                        {t('noPointsCorrection', { reason: correction.reason })}
+                      </li>
+                    )
+                  } else if (totalCorrection > 0) {
+                    return (
+                      <li key={`point-correction-${correction.id}`}>
+                        {t('positivePointsCorrection', {
+                          points: formatNumber(totalCorrection),
+                          reason: correction.reason,
+                        })}
+                      </li>
+                    )
+                  } else {
+                    return (
+                      <li key={`point-correction-${correction.id}`}>
+                        {t('negativePointsCorrection', {
+                          points: formatNumber(-totalCorrection),
+                          reason: correction.reason,
+                        })}
+                      </li>
+                    )
+                  }
+                })}
+              </ul>
+
+              {/* // TODO: add list of point corrections */}
+            </div>
+          )}
         </div>
       ))}
     </div>

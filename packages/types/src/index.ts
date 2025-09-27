@@ -980,6 +980,18 @@ export type ActivityStudentPerformance = {
   availableCorrectnessPoints: number
   bonusPoints: number
   availableBonusPoints: number
+  corrections: StudentPointCorrection[]
+}
+
+export type StudentPointCorrection = {
+  id: number
+  reason: string
+  awardedBasePoints: number
+  awardedCorrectnessPoints: number
+  awardedBonusPoints: number
+  deductedBasePoints: number
+  deductedCorrectnessPoints: number
+  deductedBonusPoints: number
 }
 
 export type StudentAssessmentQuizResults = {

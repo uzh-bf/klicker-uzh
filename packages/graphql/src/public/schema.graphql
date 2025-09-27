@@ -195,6 +195,7 @@ type ActivityStudentPerformance {
   availableCorrectnessPoints: Float!
   basePoints: Float!
   bonusPoints: Float!
+  corrections: [StudentPointCorrection!]!
   correctnessPoints: Float!
   displayName: String!
   finishedAt: Date!
@@ -2650,6 +2651,17 @@ type StudentCourse {
 type StudentCourseLeaderboard {
   leaderboard: [LeaderboardEntry!]!
   leaderboardStatistics: LeaderboardStatistics!
+}
+
+type StudentPointCorrection {
+  awardedBasePoints: Float!
+  awardedBonusPoints: Float!
+  awardedCorrectnessPoints: Float!
+  deductedBasePoints: Float!
+  deductedBonusPoints: Float!
+  deductedCorrectnessPoints: Float!
+  id: Int!
+  reason: String!
 }
 
 type Subscription {

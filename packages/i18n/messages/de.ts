@@ -1108,6 +1108,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       totalPoints: 'Totalpunkte',
       aggregatedTitle: 'Aggregierte Werte',
       excludingBonus: '(ohne Bonus: {value})',
+      corrections: 'Korrekturen',
+      noPointsCorrection: '+ 0 Punkte (keine Änderung): {reason}',
+      positivePointsCorrection: '+ {points} Punkte: {reason}',
+      negativePointsCorrection: '- {points} Punkte: {reason}',
     },
   },
   manage: {

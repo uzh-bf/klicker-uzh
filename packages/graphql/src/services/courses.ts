@@ -8,6 +8,7 @@ import {
   StudentAssessmentBlockResponse,
   StudentAssessmentInstanceResponse,
   StudentAssessmentQuizResults,
+  StudentPointCorrection,
 } from '@klicker-uzh/types'
 import {
   levelFromXp,
@@ -410,7 +411,11 @@ function getStudentAssessmentQuizPerformance({
   quiz: DB.LiveQuiz & {
     blocks: (DB.ElementBlock & {
       elements: (DB.ElementInstance & {
-        liveQuizResponses: DB.LiveQuizResponse[]
+        liveQuizResponses: (DB.LiveQuizResponse & {
+          appliedCorrections: (DB.AppliedPointCorrection & {
+            pointCorrection: DB.PointCorrection
+          })[]
+        })[]
       })[]
     })[]
   }
@@ -449,6 +454,22 @@ function getStudentAssessmentQuizPerformance({
             blockAcc.basePoints += response.basePoints
             blockAcc.correctnessPoints += response.correctnessPoints
             blockAcc.bonusPoints += response.bonusPoints
+
+            if (response.appliedCorrections.length > 0) {
+              blockAcc.corrections.push(
+                ...response.appliedCorrections.map((correction) => ({
+                  id: correction.pointCorrectionId,
+                  reason: correction.pointCorrection.reason,
+                  awardedBasePoints: correction.awardedBasePoints,
+                  awardedCorrectnessPoints: correction.awardedCorrectnessPoints,
+                  awardedBonusPoints: correction.awardedBonusPoints,
+                  deductedBasePoints: correction.deductedBasePoints,
+                  deductedCorrectnessPoints:
+                    correction.deductedCorrectnessPoints,
+                  deductedBonusPoints: correction.deductedBonusPoints,
+                }))
+              )
+            }
           }
 
           return blockAcc
@@ -460,6 +481,7 @@ function getStudentAssessmentQuizPerformance({
           availableCorrectnessPoints: 0,
           bonusPoints: 0,
           availableBonusPoints: 0,
+          corrections: [],
         }
       )
 
@@ -471,6 +493,52 @@ function getStudentAssessmentQuizPerformance({
         instanceResults.availableCorrectnessPoints
       quizAcc.bonusPoints += instanceResults.bonusPoints
       quizAcc.availableBonusPoints += instanceResults.availableBonusPoints
+
+      if (instanceResults.corrections.length > 0) {
+        // group the corrections by correctionId and aggregate the contained corrections
+        // -> per applied correction by the lecturer, only one entry should be shown on the quiz performance entry
+        const groupedCorrections = instanceResults.corrections.reduce<
+          Record<string, StudentPointCorrection[]>
+        >((acc, correction) => {
+          if (!acc[correction.id]) {
+            acc[correction.id] = []
+          }
+          acc[correction.id]!.push(correction)
+          return acc
+        }, {})
+
+        // for each group, create a new aggregated correction object
+        for (const [correctionId, corrections] of Object.entries(
+          groupedCorrections
+        )) {
+          const aggregatedCorrection =
+            corrections.reduce<StudentPointCorrection>(
+              (acc, appliedCorrection) => {
+                acc.awardedBasePoints += appliedCorrection.awardedBasePoints
+                acc.awardedCorrectnessPoints +=
+                  appliedCorrection.awardedCorrectnessPoints
+                acc.awardedBonusPoints += appliedCorrection.awardedBonusPoints
+                acc.deductedBasePoints += appliedCorrection.deductedBasePoints
+                acc.deductedCorrectnessPoints +=
+                  appliedCorrection.deductedCorrectnessPoints
+                acc.deductedBonusPoints += appliedCorrection.deductedBonusPoints
+                return acc
+              },
+              {
+                id: parseInt(correctionId),
+                reason: corrections[0]!.reason,
+                awardedBasePoints: 0,
+                awardedCorrectnessPoints: 0,
+                awardedBonusPoints: 0,
+                deductedBasePoints: 0,
+                deductedCorrectnessPoints: 0,
+                deductedBonusPoints: 0,
+              }
+            )
+
+          quizAcc.corrections.push(aggregatedCorrection)
+        }
+      }
 
       return quizAcc
     },
@@ -485,6 +553,7 @@ function getStudentAssessmentQuizPerformance({
       availableCorrectnessPoints: 0,
       bonusPoints: 0,
       availableBonusPoints: 0,
+      corrections: [],
     }
   )
 
@@ -529,6 +598,11 @@ export async function getStudentAssessmentResults(
                 include: {
                   liveQuizResponses: {
                     where: { participantId: ctx.user.sub },
+                    include: {
+                      appliedCorrections: {
+                        include: { pointCorrection: true },
+                      },
+                    },
                     orderBy: { createdAt: 'desc' },
                     take: 1,
                   },
