@@ -3005,6 +3005,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Please provide a note for this correction that allows you to reference it at a later time.',
       errorStudentReasonRequired:
         'Please provide a message for the students that will be displayed in connection with the correction.',
+      missingInputsSubmission:
+        'Your inputs for the point correction are incomplete. Please review your entries and try again.',
+      successSubmission: 'The point correction was successfully applied.',
+      errorSubmission:
+        'An error occurred while applying the point correction. Please try again.',
     },
     resources: {
       mediaLibrary: 'Media Library',

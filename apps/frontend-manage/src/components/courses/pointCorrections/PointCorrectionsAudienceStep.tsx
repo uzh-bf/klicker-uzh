@@ -1,33 +1,31 @@
+import { PointCorrectionType } from '@klicker-uzh/graphql/dist/ops'
 import { FormikSelectField } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useEffect } from 'react'
-import type {
-  ParticipantScope,
-  PointCorrectionsFormValues,
-  PointCorrectionsParticipant,
-} from './types'
-
-interface PointCorrectionsAudienceStepProps {
-  participants: PointCorrectionsParticipant[]
-}
+import type { PointCorrectionsFormValues } from './types'
 
 function PointCorrectionsAudienceStep({
   participants,
-}: PointCorrectionsAudienceStepProps) {
+}: {
+  participants: { id: string; email: string }[]
+}) {
   const t = useTranslations()
   const [participantScopeField] =
     useField<PointCorrectionsFormValues['participantScope']>('participantScope')
   const [participantField, _, participantHelpers] = useField('participantId')
 
   useEffect(() => {
-    if (participantScopeField.value !== 'single' && participantField.value) {
+    if (
+      participantScopeField.value !== PointCorrectionType.Single &&
+      participantField.value
+    ) {
       participantHelpers.setValue('')
     }
   }, [participantScopeField.value, participantField.value, participantHelpers])
 
   const participantOptions = participants.map((participant) => ({
-    label: participant.name,
+    label: participant.email,
     value: participant.id,
   }))
 
@@ -46,15 +44,15 @@ function PointCorrectionsAudienceStep({
             placeholder={t('manage.pointCorrections.audiencePlaceholder')}
             items={[
               {
-                value: 'single' as ParticipantScope,
+                value: PointCorrectionType.Single,
                 label: t('manage.pointCorrections.audienceOptionSingle'),
               },
               {
-                value: 'participating' as ParticipantScope,
+                value: PointCorrectionType.Participating,
                 label: t('manage.pointCorrections.audienceOptionParticipating'),
               },
               {
-                value: 'course' as ParticipantScope,
+                value: PointCorrectionType.AllCourse,
                 label: t('manage.pointCorrections.audienceOptionCourse'),
               },
             ]}
@@ -63,7 +61,7 @@ function PointCorrectionsAudienceStep({
           />
         </div>
 
-        {participantScopeField.value === 'single' ? (
+        {participantScopeField.value === PointCorrectionType.Single ? (
           <div className="flex-1">
             <FormikSelectField
               required

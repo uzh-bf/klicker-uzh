@@ -1,12 +1,12 @@
-export type CorrectionScope = 'instance' | 'quiz'
+import { PointCorrectionType } from '@klicker-uzh/graphql/dist/ops'
 
-export type ParticipantScope = 'single' | 'participating' | 'course'
+export type CorrectionScope = 'instance' | 'quiz'
 
 export interface PointCorrectionsFormValues {
   scopeType: CorrectionScope | ''
   quizId: string
   instanceId: string
-  participantScope: ParticipantScope | ''
+  participantScope: PointCorrectionType | ''
   participantId: string
   lecturerReason: string
   studentReason: string
@@ -19,27 +19,4 @@ export interface PointCorrectionsFormValues {
     bonusAward: boolean
     bonusDeduct: boolean
   }
-}
-
-export interface PointCorrectionsQuizInstance {
-  id: string
-  name: string
-}
-
-export interface PointCorrectionsCorrectionHistoryItem {
-  id: string
-  description: string
-  appliedAt: string
-}
-
-export interface PointCorrectionsQuiz {
-  id: string
-  name: string
-  instances: PointCorrectionsQuizInstance[]
-  previousCorrections: PointCorrectionsCorrectionHistoryItem[]
-}
-
-export interface PointCorrectionsParticipant {
-  id: string
-  name: string
 }

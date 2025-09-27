@@ -1,0 +1,6 @@
+query GetAssessmentCourseParticipants($courseId: String!) {
+  assessmentCourseParticipants(courseId: $courseId) {
+    id
+    email
+  }
+}

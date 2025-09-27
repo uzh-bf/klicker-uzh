@@ -3057,6 +3057,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie eine Notiz für diese Korrektur aus, welche Ihnen eine Zuordnung zu einem späteren Zeitpunkt erlaubt.',
       errorStudentReasonRequired:
         'Bitte geben Sie eine Mitteilung für die Studierenden ein, welche ihnen im Zusammenhang mit der Korrektur angezeigt wird.',
+      missingInputsSubmission:
+        'Ihre Eingaben für die Punktkorrektur sind unvollständig. Bitte überprüfen Sie Ihre Angaben und versuchen Sie es erneut.',
+      successSubmission: 'Die Punktkorrektur wurde erfolgreich angewendet.',
+      errorSubmission:
+        'Beim Anwenden der Punktkorrektur ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
     },
     resources: {
       mediaLibrary: 'Mediathek',

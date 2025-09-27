@@ -272,6 +272,11 @@ type AnswerCollectionPreviewEntry {
   value: String!
 }
 
+type AssessmentParticipant {
+  email: String!
+  id: String!
+}
+
 type AssessmentResultsLiveQuiz {
   availableBasePoints: Float!
   availableBonusPoints: Float!
@@ -1000,6 +1005,11 @@ type ElementInstanceOptions {
   resetTimeDays: Int
 }
 
+type ElementInstanceSelectionItem {
+  id: String!
+  name: String!
+}
+
 enum ElementInstanceType {
   GROUP_ACTIVITY
   LIVE_QUIZ
@@ -1588,6 +1598,13 @@ type LiveQuizMeta {
   id: ID!
   name: String!
   status: PublicationStatus!
+}
+
+type LiveQuizSelectionItem {
+  displayName: String!
+  id: String!
+  instances: [ElementInstanceSelectionItem!]!
+  name: String!
 }
 
 type LiveQuizStudentSettings {
@@ -2197,6 +2214,7 @@ type PushSubscription {
 type Query {
   activityDetails(activityId: String!, activityType: ActivityType!): ActivityDetails
   artificialInstance(elementId: Int!): ElementInstance
+  assessmentCourseParticipants(courseId: String!): [AssessmentParticipant!]
   assessmentResultsLiveQuiz(liveQuizId: String!): AssessmentResultsLiveQuiz
   basicCourseInformation(courseId: String!): StudentCourse
   checkParticipantNameAvailable(username: String!): Boolean!
@@ -2212,6 +2230,7 @@ type Query {
   course(id: String!): Course
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   element(id: Int!): Element
+  endedLiveQuizzesCourse(courseId: String!): [LiveQuizSelectionItem!]
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses(activityId: String, activityType: ActivityType): [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics

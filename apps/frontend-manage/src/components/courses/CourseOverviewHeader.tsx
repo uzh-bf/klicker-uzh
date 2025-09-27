@@ -279,7 +279,6 @@ function CourseOverviewHeader({
       {course.isAssessmentEnabled && course.isManager && correctionsModal ? (
         <PointCorrectionsModal
           courseId={course.id}
-          courseName={course.name}
           onClose={() => setCorrectionsModal(false)}
         />
       ) : null}

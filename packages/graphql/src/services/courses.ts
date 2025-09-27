@@ -1003,56 +1003,63 @@ export async function correctAssessmentPointsInstance(
 
     // compute the points that should be incremented / decremented and make the
     // corresponding change in a transaction (including audit logging)
-    const createdCorrection = await ctx.prisma.$transaction(async (tx) => {
-      // create point correction entry
-      const correction = await tx.pointCorrection.create({
-        data: {
-          basePoints: awardBasePoints ? true : deductBasePoints ? false : null,
-          correctnessPoints: awardCorrectnessPoints
-            ? true
-            : deductCorrectnessPoints
-              ? false
-              : null,
-          bonusPoints: awardBonusPoints
-            ? true
-            : deductBonusPoints
-              ? false
-              : null,
-          reason,
-          studentReason,
-          type: PointCorrectionType.SINGLE,
-          correctedBy: { connect: { id: ctx.user.sub } },
-          participant: { connect: { id: participantId } },
-          instance: { connect: { id: instanceId } },
-        },
-        include: { correctedBy: true, participant: true, instance: true },
-      })
-
-      await upsertResponseAppliedCorrection(
-        {
-          correctionId: correction.id,
-          instance: instance as DB.ElementInstance & {
-            elementBlock: DB.ElementBlock
+    const createdCorrection = await ctx.prisma.$transaction(
+      async (tx) => {
+        // create point correction entry
+        const correction = await tx.pointCorrection.create({
+          data: {
+            basePoints: awardBasePoints
+              ? true
+              : deductBasePoints
+                ? false
+                : null,
+            correctnessPoints: awardCorrectnessPoints
+              ? true
+              : deductCorrectnessPoints
+                ? false
+                : null,
+            bonusPoints: awardBonusPoints
+              ? true
+              : deductBonusPoints
+                ? false
+                : null,
+            reason,
+            studentReason,
+            type: PointCorrectionType.SINGLE,
+            correctedBy: { connect: { id: ctx.user.sub } },
+            participant: { connect: { id: participantId } },
+            instance: { connect: { id: instanceId } },
           },
-          response,
-          participantId,
-          awardBasePoints,
-          awardCorrectnessPoints,
-          awardBonusPoints,
-          deductBasePoints,
-          deductCorrectnessPoints,
-          deductBonusPoints,
-          availableBasePoints,
-          availableCorrectnessPoints,
-          availableBonusPoints,
-        },
-        tx,
-        ctx
-      )
+          include: { correctedBy: true, participant: true, instance: true },
+        })
 
-      // return the correction to display it to the lecturer
-      return correction
-    })
+        await upsertResponseAppliedCorrection(
+          {
+            correctionId: correction.id,
+            instance: instance as DB.ElementInstance & {
+              elementBlock: DB.ElementBlock
+            },
+            response,
+            participantId,
+            awardBasePoints,
+            awardCorrectnessPoints,
+            awardBonusPoints,
+            deductBasePoints,
+            deductCorrectnessPoints,
+            deductBonusPoints,
+            availableBasePoints,
+            availableCorrectnessPoints,
+            availableBonusPoints,
+          },
+          tx,
+          ctx
+        )
+
+        // return the correction to display it to the lecturer
+        return correction
+      },
+      { timeout: 60000 }
+    )
 
     return createdCorrection
   }
@@ -1067,60 +1074,67 @@ export async function correctAssessmentPointsInstance(
       },
     })
 
-    const createdCorrection = await ctx.prisma.$transaction(async (tx) => {
-      // create point correction entry
-      const correction = await tx.pointCorrection.create({
-        data: {
-          basePoints: awardBasePoints ? true : deductBasePoints ? false : null,
-          correctnessPoints: awardCorrectnessPoints
-            ? true
-            : deductCorrectnessPoints
-              ? false
-              : null,
-          bonusPoints: awardBonusPoints
-            ? true
-            : deductBonusPoints
-              ? false
-              : null,
-          reason,
-          studentReason,
-          type: PointCorrectionType.PARTICIPATING,
-          correctedBy: { connect: { id: ctx.user.sub } },
-          instance: { connect: { id: instanceId } },
-        },
-        include: { correctedBy: true, instance: true },
-      })
-
-      // loop over all responses and update them with the corrected points
-      await Promise.all(
-        responses.map(async (response) => {
-          await upsertResponseAppliedCorrection(
-            {
-              correctionId: correction.id,
-              instance: instance as DB.ElementInstance & {
-                elementBlock: DB.ElementBlock
-              },
-              response,
-              participantId: response.participantId,
-              awardBasePoints,
-              awardCorrectnessPoints,
-              awardBonusPoints,
-              deductBasePoints,
-              deductCorrectnessPoints,
-              deductBonusPoints,
-              availableBasePoints,
-              availableCorrectnessPoints,
-              availableBonusPoints,
-            },
-            tx,
-            ctx
-          )
+    const createdCorrection = await ctx.prisma.$transaction(
+      async (tx) => {
+        // create point correction entry
+        const correction = await tx.pointCorrection.create({
+          data: {
+            basePoints: awardBasePoints
+              ? true
+              : deductBasePoints
+                ? false
+                : null,
+            correctnessPoints: awardCorrectnessPoints
+              ? true
+              : deductCorrectnessPoints
+                ? false
+                : null,
+            bonusPoints: awardBonusPoints
+              ? true
+              : deductBonusPoints
+                ? false
+                : null,
+            reason,
+            studentReason,
+            type: PointCorrectionType.PARTICIPATING,
+            correctedBy: { connect: { id: ctx.user.sub } },
+            instance: { connect: { id: instanceId } },
+          },
+          include: { correctedBy: true, instance: true },
         })
-      )
 
-      // return the correction to display it to the lecturer
-      return correction
-    })
+        // loop over all responses and update them with the corrected points
+        await Promise.all(
+          responses.map(async (response) => {
+            await upsertResponseAppliedCorrection(
+              {
+                correctionId: correction.id,
+                instance: instance as DB.ElementInstance & {
+                  elementBlock: DB.ElementBlock
+                },
+                response,
+                participantId: response.participantId,
+                awardBasePoints,
+                awardCorrectnessPoints,
+                awardBonusPoints,
+                deductBasePoints,
+                deductCorrectnessPoints,
+                deductBonusPoints,
+                availableBasePoints,
+                availableCorrectnessPoints,
+                availableBonusPoints,
+              },
+              tx,
+              ctx
+            )
+          })
+        )
+
+        // return the correction to display it to the lecturer
+        return correction
+      },
+      { timeout: 60000 }
+    )
 
     return createdCorrection
   }
@@ -1144,60 +1158,67 @@ export async function correctAssessmentPointsInstance(
       },
     })
 
-    const createdCorrection = await ctx.prisma.$transaction(async (tx) => {
-      // create point correction entry
-      const correction = await tx.pointCorrection.create({
-        data: {
-          basePoints: awardBasePoints ? true : deductBasePoints ? false : null,
-          correctnessPoints: awardCorrectnessPoints
-            ? true
-            : deductCorrectnessPoints
-              ? false
-              : null,
-          bonusPoints: awardBonusPoints
-            ? true
-            : deductBonusPoints
-              ? false
-              : null,
-          reason,
-          studentReason,
-          type: PointCorrectionType.ALL_COURSE,
-          correctedBy: { connect: { id: ctx.user.sub } },
-          instance: { connect: { id: instanceId } },
-        },
-        include: { correctedBy: true, instance: true },
-      })
-
-      // loop over all responses and update them with the corrected points
-      await Promise.all(
-        participations.map(async (participation) => {
-          await upsertResponseAppliedCorrection(
-            {
-              correctionId: correction.id,
-              instance: instance as DB.ElementInstance & {
-                elementBlock: DB.ElementBlock
-              },
-              response: participation.participant.liveQuizResponses[0],
-              participantId: participation.participantId,
-              awardBasePoints,
-              awardCorrectnessPoints,
-              awardBonusPoints,
-              deductBasePoints,
-              deductCorrectnessPoints,
-              deductBonusPoints,
-              availableBasePoints,
-              availableCorrectnessPoints,
-              availableBonusPoints,
-            },
-            tx,
-            ctx
-          )
+    const createdCorrection = await ctx.prisma.$transaction(
+      async (tx) => {
+        // create point correction entry
+        const correction = await tx.pointCorrection.create({
+          data: {
+            basePoints: awardBasePoints
+              ? true
+              : deductBasePoints
+                ? false
+                : null,
+            correctnessPoints: awardCorrectnessPoints
+              ? true
+              : deductCorrectnessPoints
+                ? false
+                : null,
+            bonusPoints: awardBonusPoints
+              ? true
+              : deductBonusPoints
+                ? false
+                : null,
+            reason,
+            studentReason,
+            type: PointCorrectionType.ALL_COURSE,
+            correctedBy: { connect: { id: ctx.user.sub } },
+            instance: { connect: { id: instanceId } },
+          },
+          include: { correctedBy: true, instance: true },
         })
-      )
 
-      // return the correction to display it to the lecturer
-      return correction
-    })
+        // loop over all responses and update them with the corrected points
+        await Promise.all(
+          participations.map(async (participation) => {
+            await upsertResponseAppliedCorrection(
+              {
+                correctionId: correction.id,
+                instance: instance as DB.ElementInstance & {
+                  elementBlock: DB.ElementBlock
+                },
+                response: participation.participant.liveQuizResponses[0],
+                participantId: participation.participantId,
+                awardBasePoints,
+                awardCorrectnessPoints,
+                awardBonusPoints,
+                deductBasePoints,
+                deductCorrectnessPoints,
+                deductBonusPoints,
+                availableBasePoints,
+                availableCorrectnessPoints,
+                availableBonusPoints,
+              },
+              tx,
+              ctx
+            )
+          })
+        )
+
+        // return the correction to display it to the lecturer
+        return correction
+      },
+      { timeout: 60000 }
+    )
 
     return createdCorrection
   }
@@ -1330,78 +1351,85 @@ export async function correctAssessmentPointsLiveQuiz(
   if (scope === PointCorrectionType.SINGLE && participantId) {
     // compute the points that should be incremented / decremented and make the
     // corresponding change in a transaction (including audit logging)
-    const createdCorrection = await ctx.prisma.$transaction(async (tx) => {
-      // create point correction entry
-      const correction = await tx.pointCorrection.create({
-        data: {
-          basePoints: awardBasePoints ? true : deductBasePoints ? false : null,
-          correctnessPoints: awardCorrectnessPoints
-            ? true
-            : deductCorrectnessPoints
-              ? false
-              : null,
-          bonusPoints: awardBonusPoints
-            ? true
-            : deductBonusPoints
-              ? false
-              : null,
-          reason,
-          studentReason,
-          type: PointCorrectionType.SINGLE,
-          correctedBy: { connect: { id: ctx.user.sub } },
-          participant: { connect: { id: participantId } },
-          liveQuiz: { connect: { id: liveQuiz.id } },
-        },
-        include: { correctedBy: true, participant: true, liveQuiz: true },
-      })
+    const createdCorrection = await ctx.prisma.$transaction(
+      async (tx) => {
+        // create point correction entry
+        const correction = await tx.pointCorrection.create({
+          data: {
+            basePoints: awardBasePoints
+              ? true
+              : deductBasePoints
+                ? false
+                : null,
+            correctnessPoints: awardCorrectnessPoints
+              ? true
+              : deductCorrectnessPoints
+                ? false
+                : null,
+            bonusPoints: awardBonusPoints
+              ? true
+              : deductBonusPoints
+                ? false
+                : null,
+            reason,
+            studentReason,
+            type: PointCorrectionType.SINGLE,
+            correctedBy: { connect: { id: ctx.user.sub } },
+            participant: { connect: { id: participantId } },
+            liveQuiz: { connect: { id: liveQuiz.id } },
+          },
+          include: { correctedBy: true, participant: true, liveQuiz: true },
+        })
 
-      await Promise.all(
-        liveQuiz.blocks.map(async (block) => {
-          await Promise.all(
-            block.elements.map(async (instance) => {
-              const {
-                availableBasePoints,
-                availableCorrectnessPoints,
-                availableBonusPoints,
-              } = availablePoints[instance.id]!
-
-              // try to find an existing response of the participant for the instance
-              const response = await tx.liveQuizResponse.findUnique({
-                where: {
-                  instanceId_elementBlockExecution_participantId: {
-                    instanceId: instance.id,
-                    elementBlockExecution: block.execution,
-                    participantId,
-                  },
-                },
-              })
-
-              await upsertResponseAppliedCorrection(
-                {
-                  correctionId: correction.id,
-                  instance: { ...instance, elementBlock: block },
-                  response,
-                  participantId,
-                  awardBasePoints,
-                  awardCorrectnessPoints,
-                  awardBonusPoints,
-                  deductBasePoints,
-                  deductCorrectnessPoints,
-                  deductBonusPoints,
+        await Promise.all(
+          liveQuiz.blocks.map(async (block) => {
+            await Promise.all(
+              block.elements.map(async (instance) => {
+                const {
                   availableBasePoints,
                   availableCorrectnessPoints,
                   availableBonusPoints,
-                },
-                tx,
-                ctx
-              )
-            })
-          )
-        })
-      )
+                } = availablePoints[instance.id]!
 
-      return correction
-    })
+                // try to find an existing response of the participant for the instance
+                const response = await tx.liveQuizResponse.findUnique({
+                  where: {
+                    instanceId_elementBlockExecution_participantId: {
+                      instanceId: instance.id,
+                      elementBlockExecution: block.execution,
+                      participantId,
+                    },
+                  },
+                })
+
+                await upsertResponseAppliedCorrection(
+                  {
+                    correctionId: correction.id,
+                    instance: { ...instance, elementBlock: block },
+                    response,
+                    participantId,
+                    awardBasePoints,
+                    awardCorrectnessPoints,
+                    awardBonusPoints,
+                    deductBasePoints,
+                    deductCorrectnessPoints,
+                    deductBonusPoints,
+                    availableBasePoints,
+                    availableCorrectnessPoints,
+                    availableBonusPoints,
+                  },
+                  tx,
+                  ctx
+                )
+              })
+            )
+          })
+        )
+
+        return correction
+      },
+      { timeout: 60000 }
+    )
 
     return createdCorrection
   }
@@ -1437,44 +1465,147 @@ export async function correctAssessmentPointsLiveQuiz(
     }, {})
 
     // update the responses of all participants that have submitted at least one response to the live quiz
-    const createdCorrection = await ctx.prisma.$transaction(async (tx) => {
-      // create point correction entry
-      const correction = await tx.pointCorrection.create({
-        data: {
-          basePoints: awardBasePoints ? true : deductBasePoints ? false : null,
-          correctnessPoints: awardCorrectnessPoints
-            ? true
-            : deductCorrectnessPoints
-              ? false
-              : null,
-          bonusPoints: awardBonusPoints
-            ? true
-            : deductBonusPoints
-              ? false
-              : null,
-          reason,
-          studentReason,
-          type: PointCorrectionType.PARTICIPATING,
-          correctedBy: { connect: { id: ctx.user.sub } },
-          liveQuiz: { connect: { id: liveQuiz.id } },
-        },
-        include: { correctedBy: true, liveQuiz: true },
-      })
+    const createdCorrection = await ctx.prisma.$transaction(
+      async (tx) => {
+        // create point correction entry
+        const correction = await tx.pointCorrection.create({
+          data: {
+            basePoints: awardBasePoints
+              ? true
+              : deductBasePoints
+                ? false
+                : null,
+            correctnessPoints: awardCorrectnessPoints
+              ? true
+              : deductCorrectnessPoints
+                ? false
+                : null,
+            bonusPoints: awardBonusPoints
+              ? true
+              : deductBonusPoints
+                ? false
+                : null,
+            reason,
+            studentReason,
+            type: PointCorrectionType.PARTICIPATING,
+            correctedBy: { connect: { id: ctx.user.sub } },
+            liveQuiz: { connect: { id: liveQuiz.id } },
+          },
+          include: { correctedBy: true, liveQuiz: true },
+        })
 
-      await Promise.all(
-        liveQuiz.blocks.map(async (block) => {
-          await Promise.all(
-            block.elements.map(async (instance) => {
-              const {
-                availableBasePoints,
-                availableCorrectnessPoints,
-                availableBonusPoints,
-              } = availablePoints[instance.id]!
+        await Promise.all(
+          liveQuiz.blocks.map(async (block) => {
+            await Promise.all(
+              block.elements.map(async (instance) => {
+                const {
+                  availableBasePoints,
+                  availableCorrectnessPoints,
+                  availableBonusPoints,
+                } = availablePoints[instance.id]!
 
-              await Promise.all(
-                Object.entries(participantResponseMap).map(
-                  async ([pId, instanceResponseMap]) => {
-                    const response = instanceResponseMap[instance.id]
+                await Promise.all(
+                  Object.entries(participantResponseMap).map(
+                    async ([pId, instanceResponseMap]) => {
+                      const response = instanceResponseMap[instance.id]
+
+                      await upsertResponseAppliedCorrection(
+                        {
+                          correctionId: correction.id,
+                          instance: { ...instance, elementBlock: block },
+                          response,
+                          participantId: pId,
+                          awardBasePoints,
+                          awardCorrectnessPoints,
+                          awardBonusPoints,
+                          deductBasePoints,
+                          deductCorrectnessPoints,
+                          deductBonusPoints,
+                          availableBasePoints,
+                          availableCorrectnessPoints,
+                          availableBonusPoints,
+                        },
+                        tx,
+                        ctx
+                      )
+                    }
+                  )
+                )
+              })
+            )
+          })
+        )
+
+        return correction
+      },
+      { timeout: 60000 }
+    )
+
+    return createdCorrection
+  }
+
+  // if the points of all students in the course should be modified, fetch all responses and update them
+  if (scope === PointCorrectionType.ALL_COURSE) {
+    // get all participations of the course, including the linked participants
+    const participations = await ctx.prisma.participation.findMany({
+      where: { courseId: liveQuiz.courseId },
+      include: { participant: true },
+    })
+
+    // update the responses of all participants in the course
+    const createdCorrection = await ctx.prisma.$transaction(
+      async (tx) => {
+        // create point correction entry
+        const correction = await tx.pointCorrection.create({
+          data: {
+            basePoints: awardBasePoints
+              ? true
+              : deductBasePoints
+                ? false
+                : null,
+            correctnessPoints: awardCorrectnessPoints
+              ? true
+              : deductCorrectnessPoints
+                ? false
+                : null,
+            bonusPoints: awardBonusPoints
+              ? true
+              : deductBonusPoints
+                ? false
+                : null,
+            reason,
+            studentReason,
+            type: PointCorrectionType.ALL_COURSE,
+            correctedBy: { connect: { id: ctx.user.sub } },
+            liveQuiz: { connect: { id: liveQuiz.id } },
+          },
+          include: { correctedBy: true, liveQuiz: true },
+        })
+
+        // loop over all instances and participants to upsert all relevant responses
+        await Promise.all(
+          liveQuiz.blocks.map(async (block) => {
+            await Promise.all(
+              block.elements.map(async (instance) => {
+                const {
+                  availableBasePoints,
+                  availableCorrectnessPoints,
+                  availableBonusPoints,
+                } = availablePoints[instance.id]!
+
+                await Promise.all(
+                  participations.map(async (participation) => {
+                    const pId = participation.participantId
+                    const response =
+                      await ctx.prisma.liveQuizResponse.findUnique({
+                        where: {
+                          instanceId_elementBlockExecution_participantId: {
+                            instanceId: instance.id,
+                            elementBlockExecution: block.execution,
+                            participantId: pId,
+                          },
+                        },
+                      })
 
                     await upsertResponseAppliedCorrection(
                       {
@@ -1495,107 +1626,17 @@ export async function correctAssessmentPointsLiveQuiz(
                       tx,
                       ctx
                     )
-                  }
+                  })
                 )
-              )
-            })
-          )
-        })
-      )
+              })
+            )
+          })
+        )
 
-      return correction
-    })
-
-    return createdCorrection
-  }
-
-  // if the points of all students in the course should be modified, fetch all responses and update them
-  if (scope === PointCorrectionType.ALL_COURSE) {
-    // get all participations of the course, including the linked participants
-    const participations = await ctx.prisma.participation.findMany({
-      where: { courseId: liveQuiz.courseId },
-      include: { participant: true },
-    })
-
-    // update the responses of all participants in the course
-    const createdCorrection = await ctx.prisma.$transaction(async (tx) => {
-      // create point correction entry
-      const correction = await tx.pointCorrection.create({
-        data: {
-          basePoints: awardBasePoints ? true : deductBasePoints ? false : null,
-          correctnessPoints: awardCorrectnessPoints
-            ? true
-            : deductCorrectnessPoints
-              ? false
-              : null,
-          bonusPoints: awardBonusPoints
-            ? true
-            : deductBonusPoints
-              ? false
-              : null,
-          reason,
-          studentReason,
-          type: PointCorrectionType.ALL_COURSE,
-          correctedBy: { connect: { id: ctx.user.sub } },
-          liveQuiz: { connect: { id: liveQuiz.id } },
-        },
-        include: { correctedBy: true, liveQuiz: true },
-      })
-
-      // loop over all instances and participants to upsert all relevant responses
-      await Promise.all(
-        liveQuiz.blocks.map(async (block) => {
-          await Promise.all(
-            block.elements.map(async (instance) => {
-              const {
-                availableBasePoints,
-                availableCorrectnessPoints,
-                availableBonusPoints,
-              } = availablePoints[instance.id]!
-
-              await Promise.all(
-                participations.map(async (participation) => {
-                  const pId = participation.participantId
-                  const response = await ctx.prisma.liveQuizResponse.findUnique(
-                    {
-                      where: {
-                        instanceId_elementBlockExecution_participantId: {
-                          instanceId: instance.id,
-                          elementBlockExecution: block.execution,
-                          participantId: pId,
-                        },
-                      },
-                    }
-                  )
-
-                  await upsertResponseAppliedCorrection(
-                    {
-                      correctionId: correction.id,
-                      instance: { ...instance, elementBlock: block },
-                      response,
-                      participantId: pId,
-                      awardBasePoints,
-                      awardCorrectnessPoints,
-                      awardBonusPoints,
-                      deductBasePoints,
-                      deductCorrectnessPoints,
-                      deductBonusPoints,
-                      availableBasePoints,
-                      availableCorrectnessPoints,
-                      availableBonusPoints,
-                    },
-                    tx,
-                    ctx
-                  )
-                })
-              )
-            })
-          )
-        })
-      )
-
-      return correction
-    })
+        return correction
+      },
+      { timeout: 60000 }
+    )
 
     return createdCorrection
   }
@@ -3409,4 +3450,62 @@ export async function getCourseActivities(
   })
 
   return course
+}
+
+export async function getEndedLiveQuizzesCourse(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    include: {
+      liveQuizzes: {
+        where: { isDeleted: false, status: DB.PublicationStatus.ENDED },
+        include: {
+          blocks: {
+            include: { elements: { orderBy: { order: 'asc' } } },
+            orderBy: { order: 'asc' },
+          },
+        },
+        orderBy: { finishedAt: 'desc' },
+      },
+    },
+  })
+
+  if (!course) return []
+
+  return (
+    course.liveQuizzes.map((quiz) => ({
+      id: quiz.id,
+      name: quiz.name,
+      displayName: quiz.displayName,
+      instances: quiz.blocks.flatMap((b) =>
+        b.elements.map((e) => ({
+          id: e.id.toString(),
+          name: e.elementData.name,
+        }))
+      ),
+    })) ?? []
+  )
+}
+
+export async function getAssessmentCourseParticipants(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId, isAssessmentEnabled: true },
+    include: { participations: { include: { participant: true } } },
+  })
+
+  if (!course) return []
+
+  return sortBy(
+    course.participations.map((p) => ({
+      id: p.participant.id,
+      email: p.participant.email ?? 'E-Mail Missing',
+      username: p.participant.username,
+    })),
+    [prop('email'), 'asc']
+  )
 }

@@ -8,19 +8,18 @@ import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
-import type {
-  CorrectionScope,
-  PointCorrectionsFormValues,
-  PointCorrectionsQuiz,
-} from './types'
-
-interface PointCorrectionsScopeStepProps {
-  quizzes: PointCorrectionsQuiz[]
-}
+import type { CorrectionScope, PointCorrectionsFormValues } from './types'
 
 function PointCorrectionsScopeStep({
   quizzes,
-}: PointCorrectionsScopeStepProps) {
+}: {
+  quizzes: {
+    id: string
+    name: string
+    displayName: string
+    instances: { id: string; name: string }[]
+  }[]
+}) {
   const t = useTranslations()
   const [scopeField, , scopeHelpers] =
     useField<PointCorrectionsFormValues['scopeType']>('scopeType')
@@ -29,7 +28,8 @@ function PointCorrectionsScopeStep({
 
   const selectedQuiz = quizzes.find((quiz) => quiz.id === quizField.value)
   const quizOptions = quizzes.map((quiz) => ({
-    label: quiz.name,
+    label: `${quiz.name} (${quiz.displayName})`,
+    shortLabel: quiz.name,
     value: quiz.id,
   }))
   const instanceOptions = (selectedQuiz?.instances ?? []).map((instance) => ({
@@ -38,7 +38,7 @@ function PointCorrectionsScopeStep({
   }))
 
   // TODO: load all previous point corrections applied to this quiz / instance -> distinguish based on UI selection
-  const previousCorrections = selectedQuiz?.previousCorrections ?? []
+  const previousCorrections: any[] = []
 
   useEffect(() => {
     // if scope is not 'instance', clear instance selection

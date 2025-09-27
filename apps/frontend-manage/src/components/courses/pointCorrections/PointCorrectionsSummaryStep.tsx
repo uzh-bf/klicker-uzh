@@ -1,32 +1,36 @@
+import { PointCorrectionType } from '@klicker-uzh/graphql/dist/ops'
 import { useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
-import type {
-  PointCorrectionsFormValues,
-  PointCorrectionsParticipant,
-  PointCorrectionsQuiz,
-} from './types'
+import type { PointCorrectionsFormValues } from './types'
 
 function PointCorrectionsSummaryStep({
-  courseName,
   quizzes,
   participants,
 }: {
-  courseName: string
-  quizzes: PointCorrectionsQuiz[]
-  participants: PointCorrectionsParticipant[]
+  quizzes: {
+    id: string
+    name: string
+    instances: { id: string; name: string }[]
+  }[]
+  participants: { id: string; email: string }[]
 }) {
-  const { values } = useFormikContext<PointCorrectionsFormValues>()
   const t = useTranslations()
-
+  const { values } = useFormikContext<PointCorrectionsFormValues>()
   const selectedQuiz = quizzes.find((quiz) => quiz.id === values.quizId)
   const selectedInstance = selectedQuiz?.instances.find(
     (instance) => instance.id === values.instanceId
   )
 
   const participantLabels = {
-    single: t('manage.pointCorrections.participantScopeSingle'),
-    participating: t('manage.pointCorrections.participantScopeParticipating'),
-    course: t('manage.pointCorrections.participantScopeCourse'),
+    [PointCorrectionType.Single]: t(
+      'manage.pointCorrections.participantScopeSingle'
+    ),
+    [PointCorrectionType.Participating]: t(
+      'manage.pointCorrections.participantScopeParticipating'
+    ),
+    [PointCorrectionType.AllCourse]: t(
+      'manage.pointCorrections.participantScopeCourse'
+    ),
   }
 
   let participantSummary: string
@@ -34,12 +38,12 @@ function PointCorrectionsSummaryStep({
     participantSummary = t(
       'manage.pointCorrections.summaryParticipantScopeNotSelected'
     )
-  } else if (values.participantScope === 'single') {
+  } else if (values.participantScope === PointCorrectionType.Single) {
     const participant = participants.find(
       (item) => item.id === values.participantId
     )
     participantSummary =
-      participant?.name ??
+      participant?.email ??
       t('manage.pointCorrections.summaryParticipantNotSelected')
   } else {
     participantSummary = participantLabels[values.participantScope]

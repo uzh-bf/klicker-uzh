@@ -36,6 +36,7 @@ import {
   StudentAssessmentResults,
 } from './assessment.js'
 import {
+  AssessmentParticipant,
   Course,
   CourseLeaderboard,
   CourseListEntry,
@@ -43,6 +44,7 @@ import {
   CourseStudentTimeline,
   CourseSummary,
   LeaderboardEntry,
+  LiveQuizSelectionItem,
   StudentCourse,
 } from './course.js'
 import {
@@ -1276,6 +1278,35 @@ export const Query = builder.queryType({
           DB.PermissionLevel.READ,
           async (_, args, ctx) => {
             return await CourseService.getCourseActivities(args, ctx)
+          }
+        ),
+      }),
+
+      endedLiveQuizzesCourse: t.withAuth(asUser).field({
+        nullable: true,
+        type: [LiveQuizSelectionItem],
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            return await CourseService.getEndedLiveQuizzesCourse(args, ctx)
+          }
+        ),
+      }),
+
+      assessmentCourseParticipants: t.withAuth(asUser).field({
+        nullable: true,
+        type: [AssessmentParticipant],
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await CourseService.getAssessmentCourseParticipants(
+              args,
+              ctx
+            )
           }
         ),
       }),

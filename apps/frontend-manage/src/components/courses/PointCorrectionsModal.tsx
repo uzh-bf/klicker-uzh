@@ -1,4 +1,12 @@
-import { Modal } from '@uzh-bf/design-system'
+import { useMutation, useQuery } from '@apollo/client'
+import {
+  CorrectAssessmentPointsInstanceDocument,
+  CorrectAssessmentPointsLiveQuizDocument,
+  GetAssessmentCourseParticipantsDocument,
+  GetEndedLiveQuizzesCourseDocument,
+  PointCorrectionType,
+} from '@klicker-uzh/graphql/dist/ops'
+import { Modal, toast } from '@uzh-bf/design-system'
 import { Form, Formik, getIn } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
@@ -10,10 +18,7 @@ import PointCorrectionsScopeStep from './pointCorrections/PointCorrectionsScopeS
 import PointCorrectionsSummaryStep from './pointCorrections/PointCorrectionsSummaryStep'
 import {
   CorrectionScope,
-  ParticipantScope,
   PointCorrectionsFormValues,
-  PointCorrectionsParticipant,
-  PointCorrectionsQuiz,
 } from './pointCorrections/types'
 
 const initialValues: PointCorrectionsFormValues = {
@@ -64,15 +69,28 @@ const stepFieldPaths: (
 
 function PointCorrectionsModal({
   courseId,
-  courseName,
   onClose,
 }: {
   courseId: string
-  courseName: string
   onClose: () => void
 }) {
   const t = useTranslations()
   const [activeStep, setActiveStep] = useState(0)
+
+  const { data: endedQuizzesData, loading: endedQuizzesLoading } = useQuery(
+    GetEndedLiveQuizzesCourseDocument,
+    { variables: { courseId } }
+  )
+  const { data: courseParticipantsData, loading: courseParticipantsLoading } =
+    useQuery(GetAssessmentCourseParticipantsDocument, {
+      variables: { courseId },
+    })
+  const [correctAssessmentPointsInstance] = useMutation(
+    CorrectAssessmentPointsInstanceDocument
+  )
+  const [correctAssessmentPointsLiveQuiz] = useMutation(
+    CorrectAssessmentPointsLiveQuizDocument
+  )
 
   const validationSchemas = useMemo(() => {
     const adjustmentSchema = Yup.object({
@@ -121,8 +139,12 @@ function PointCorrectionsModal({
     })
 
     const participantSchema = Yup.object({
-      participantScope: Yup.mixed<ParticipantScope>()
-        .oneOf(['single', 'participating', 'course'])
+      participantScope: Yup.mixed<PointCorrectionType>()
+        .oneOf([
+          PointCorrectionType.Single,
+          PointCorrectionType.Participating,
+          PointCorrectionType.AllCourse,
+        ])
         .required(),
       participantId: Yup.string()
         .trim()
@@ -165,51 +187,104 @@ function PointCorrectionsModal({
     t('manage.pointCorrections.summaryTitle'),
   ]
 
-  const demoQuizzes: PointCorrectionsQuiz[] = [
-    {
-      id: 'quiz-1',
-      name: 'Sample Midterm Quiz',
-      instances: [
-        { id: 'instance-1', name: 'Instance A - 12 Jan 2024' },
-        { id: 'instance-2', name: 'Instance B - 19 Jan 2024' },
-      ],
-      previousCorrections: [
-        {
-          id: 'correction-1',
-          description: 'Adjusted bonus points for late submission handling.',
-          appliedAt: '2024-04-12 10:45',
-        },
-        {
-          id: 'correction-2',
-          description:
-            'Awarded base points for technical issue during quiz session.',
-          appliedAt: '2024-02-05 09:10',
-        },
-      ],
-    },
-    {
-      id: 'quiz-2',
-      name: 'Weekly Knowledge Check',
-      instances: [
-        { id: 'instance-3', name: 'Week 3 - 05 Mar 2024' },
-        { id: 'instance-4', name: 'Week 4 - 12 Mar 2024' },
-      ],
-      previousCorrections: [],
-    },
-  ]
-
-  const demoParticipants: PointCorrectionsParticipant[] = [
-    { id: 'participant-1', name: 'Alex Mueller' },
-    { id: 'participant-2', name: 'Jamie Lee' },
-    { id: 'participant-3', name: 'Morgan Chen' },
-  ]
-
   return (
     <Formik
       initialValues={initialValues}
       validationSchema={validationSchemas[activeStep]}
-      onSubmit={async (values) => {
-        // TODO: replace with point correction mutation
+      onSubmit={async (values, { resetForm, setSubmitting }) => {
+        let success = false
+        let error = null
+        setSubmitting(true)
+
+        if (values.scopeType === 'instance') {
+          if (
+            !values.instanceId ||
+            Number.isNaN(parseInt(values.instanceId, 10)) ||
+            values.participantScope === ''
+          ) {
+            toast({
+              type: 'error',
+              message: t('manage.pointCorrections.missingInputsSubmission'),
+            })
+            setSubmitting(false)
+            return
+          }
+
+          // trigger instance point correction
+          const { data: result, errors } =
+            await correctAssessmentPointsInstance({
+              variables: {
+                instanceId: parseInt(values.instanceId, 10),
+                awardBasePoints: values.adjustments.baseAward,
+                awardCorrectnessPoints: values.adjustments.correctnessAward,
+                awardBonusPoints: values.adjustments.bonusAward,
+                deductBasePoints: values.adjustments.baseDeduct,
+                deductCorrectnessPoints: values.adjustments.correctnessDeduct,
+                deductBonusPoints: values.adjustments.bonusDeduct,
+                reason: values.lecturerReason,
+                studentReason: values.useSameReasonForStudents
+                  ? values.lecturerReason
+                  : values.studentReason,
+                scope: values.participantScope,
+                participantId: values.participantId,
+              },
+              // TODO: add cache update of query for point corrections
+            })
+          success = result?.correctAssessmentPointsInstance !== null
+          error = JSON.stringify(errors)
+        } else {
+          if (!values.quizId || values.participantScope === '') {
+            toast({
+              type: 'error',
+              message: t('manage.pointCorrections.missingInputsSubmission'),
+            })
+            setSubmitting(false)
+            return
+          }
+
+          // trigger live quiz point correction
+          const { data: result, errors } =
+            await correctAssessmentPointsLiveQuiz({
+              variables: {
+                liveQuizId: values.quizId,
+                awardBasePoints: values.adjustments.baseAward,
+                awardCorrectnessPoints: values.adjustments.correctnessAward,
+                awardBonusPoints: values.adjustments.bonusAward,
+                deductBasePoints: values.adjustments.baseDeduct,
+                deductCorrectnessPoints: values.adjustments.correctnessDeduct,
+                deductBonusPoints: values.adjustments.bonusDeduct,
+                reason: values.lecturerReason,
+                studentReason: values.useSameReasonForStudents
+                  ? values.lecturerReason
+                  : values.studentReason,
+                scope: values.participantScope,
+                participantId: values.participantId,
+              },
+              // TODO: add cache update of query for point corrections
+            })
+          success = result?.correctAssessmentPointsLiveQuiz !== null
+          error = JSON.stringify(errors)
+        }
+
+        if (success) {
+          toast({
+            type: 'success',
+            message: t('manage.pointCorrections.successSubmission'),
+          })
+          resetForm()
+          setSubmitting(false)
+          onClose()
+        } else {
+          toast({
+            type: 'error',
+            message: t('manage.pointCorrections.errorSubmission'),
+          })
+          console.error('Error applying point correction:', error)
+          setSubmitting(false)
+        }
+
+        // TODO: make sure to display all relevant point corrections on the corresponding live quizzes in the student view
+        // -> based on applied corrections and join back into live quiz results query
       }}
     >
       {({
@@ -245,18 +320,24 @@ function PointCorrectionsModal({
         }
 
         const stepComponents = [
-          <PointCorrectionsScopeStep key="scope" quizzes={demoQuizzes} />,
+          <PointCorrectionsScopeStep
+            key="scope"
+            quizzes={endedQuizzesData?.endedLiveQuizzesCourse ?? []}
+          />,
           <PointCorrectionsAudienceStep
             key="audience"
-            participants={demoParticipants}
+            participants={
+              courseParticipantsData?.assessmentCourseParticipants ?? []
+            }
           />,
           <PointCorrectionsAdjustmentsStep key="adjustments" />,
           <PointCorrectionsReasonStep key="reason" />,
           <PointCorrectionsSummaryStep
             key="summary"
-            courseName={courseName}
-            quizzes={demoQuizzes}
-            participants={demoParticipants}
+            quizzes={endedQuizzesData?.endedLiveQuizzesCourse ?? []}
+            participants={
+              courseParticipantsData?.assessmentCourseParticipants ?? []
+            }
           />,
         ]
 
@@ -267,7 +348,8 @@ function PointCorrectionsModal({
         )
         const audienceValid = Boolean(
           values.participantScope &&
-            (values.participantScope !== 'single' || values.participantId)
+            (values.participantScope !== PointCorrectionType.Single ||
+              values.participantId)
         )
         const adjustmentsValid = Object.values(values.adjustments).some(Boolean)
         const reasonValid = Boolean(
@@ -291,6 +373,7 @@ function PointCorrectionsModal({
             <Modal
               open
               escapeDisabled
+              loading={endedQuizzesLoading || courseParticipantsLoading}
               title={t('manage.course.pointCorrections')}
               onClose={handleClose}
               secondaryLabel={

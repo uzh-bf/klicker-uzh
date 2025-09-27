@@ -334,6 +334,54 @@ export const CourseStudentTimeline = CourseStudentTimelineRef.implement({
   }),
 })
 
+export const LiveQuizSelectionItemRef = builder.objectRef<{
+  id: string
+  name: string
+  displayName: string
+  instances: { id: string; name: string }[]
+}>('LiveQuizSelectionItem')
+export const LiveQuizSelectionItem = builder.objectType(
+  LiveQuizSelectionItemRef,
+  {
+    fields: (t) => ({
+      id: t.exposeString('id'),
+      name: t.exposeString('name'),
+      displayName: t.exposeString('displayName'),
+      instances: t.expose('instances', {
+        type: [ElementInstanceSelectionItemRef],
+      }),
+    }),
+  }
+)
+
+export const ElementInstanceSelectionItemRef = builder.objectRef<{
+  id: string // stringified version of instance id for compatibility with select fields
+  name: string
+}>('ElementInstanceSelectionItem')
+export const ElementInstanceSelectionItem = builder.objectType(
+  ElementInstanceSelectionItemRef,
+  {
+    fields: (t) => ({
+      id: t.exposeString('id'),
+      name: t.exposeString('name'),
+    }),
+  }
+)
+
+export const AssessmentParticipantRef = builder.objectRef<{
+  id: string
+  email: string
+}>('AssessmentParticipant')
+export const AssessmentParticipant = builder.objectType(
+  AssessmentParticipantRef,
+  {
+    fields: (t) => ({
+      id: t.exposeString('id'),
+      email: t.exposeString('email'),
+    }),
+  }
+)
+
 // ! GAMIFICATION
 // #region
 export interface ILeaderboardEntry
