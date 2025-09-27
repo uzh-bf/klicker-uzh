@@ -32,6 +32,7 @@ import {
 } from './analytics.js'
 import {
   AssessmentResultsLiveQuiz,
+  PointCorrection,
   StudentAssessmentBlockResponse,
   StudentAssessmentResults,
 } from './assessment.js'
@@ -1293,6 +1294,18 @@ export const Query = builder.queryType({
             return await CourseService.getEndedLiveQuizzesCourse(args, ctx)
           }
         ),
+      }),
+
+      previousPointCorrections: t.withAuth(asUser).field({
+        nullable: true,
+        type: [PointCorrection],
+        args: {
+          liveQuizId: t.arg.string({ required: false }),
+          instanceId: t.arg.int({ required: false }),
+        },
+        resolve: (_, args, ctx) => {
+          return CourseService.getPreviousPointCorrections(args, ctx)
+        },
       }),
 
       assessmentCourseParticipants: t.withAuth(asUser).field({

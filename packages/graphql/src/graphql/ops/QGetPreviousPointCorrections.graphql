@@ -1,0 +1,5 @@
+query GetPreviousPointCorrections($liveQuizId: String, $instanceId: Int) {
+  previousPointCorrections(liveQuizId: $liveQuizId, instanceId: $instanceId) {
+    ...PointCorrectionData
+  }
+}

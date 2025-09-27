@@ -398,6 +398,7 @@ export default {
       availableActions: 'Verfügbare Aktionen',
       configuration: 'Konfiguration',
       unknownUser: 'Unbekannter Nutzer',
+      deletedUser: 'Gelöschter Nutzer',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -2991,7 +2992,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sobald Korrekturen für das ausgewählte Quiz vorgenommen wurden, erscheinen diese hier.',
       historyPlaceholderInstance:
         'Sobald Korrekturen für die ausgewählte Quizfrage vorgenommen wurden, erscheinen diese hier.',
-      historyApplied: 'Angewendet am {appliedAt}',
+      historyApplied: 'Angewendet am {appliedAt} durch {user}',
       audienceTitle: 'Zielgruppe wählen',
       audienceDescription:
         'Bestimmen Sie, auf die Antworten welcher Nutzer die Punktkorrektur angewendet werden soll. Sie können eine einzelne Person, alle teilnehmenden Nutzer oder alle Nutzer im Assessment-Kurs auswählen. Teilnehmende Nutzer bei einer Frage sind jene, die eine Antwort für die entsprechende Frage im Quiz abgegeben haben, während teilnehmende Nutzer eines Quizzes mindestens für eine Frage im entsprechenden Quiz eine Antwort abgegeben haben müssen. Nutzer welche ausgewählt wurden, aber keine entsprechende Antwort besitzen erhalten dennoch die ausgewählten Punkte.',

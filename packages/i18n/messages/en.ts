@@ -396,6 +396,7 @@ export default {
       availableActions: 'Available Actions',
       configuration: 'Configuration',
       unknownUser: 'Unknown User',
+      deletedUser: 'Deleted User',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -2942,7 +2943,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Once corrections have been made for the selected quiz, they will appear here.',
       historyPlaceholderInstance:
         'Once corrections have been made for the selected quiz question, they will appear here.',
-      historyApplied: 'Applied on {appliedAt}',
+      historyApplied: 'Applied on {appliedAt} by {user}',
       audienceTitle: 'Choose the Audience',
       audienceDescription:
         'Select to whose responses the point correction should be applied to. You can choose a single participant, all participating users in scope, or all assessment course participants. Participating users for a question are those who have submitted an answer for the corresponding question in the quiz, while participating users of a quiz must have submitted an answer for at least one question in the respective quiz. Users that are selected but have not submitted a corresponding response will still receive the specified points.',

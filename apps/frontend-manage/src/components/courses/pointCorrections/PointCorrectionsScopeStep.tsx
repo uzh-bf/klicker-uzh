@@ -3,11 +3,13 @@ import {
   faListCheck,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, FormikSelectField } from '@uzh-bf/design-system'
 import { useField } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
+import SuspendedPreviousCorrections from './SuspendedPreviousCorrections'
 import type { CorrectionScope, PointCorrectionsFormValues } from './types'
 
 function PointCorrectionsScopeStep({
@@ -172,26 +174,13 @@ function PointCorrectionsScopeStep({
         <div className="mb-2 text-sm font-semibold text-gray-900">
           {t('manage.pointCorrections.historyTitle')}
         </div>
-        {previousCorrections.length === 0 ? (
-          <div className="text-sm text-gray-600">
-            {scopeField.value === 'instance'
-              ? t('manage.pointCorrections.historyPlaceholderInstance')
-              : t('manage.pointCorrections.historyPlaceholder')}
-          </div>
-        ) : (
-          <ul className="flex flex-col gap-1 text-sm text-gray-700">
-            {previousCorrections.map((correction) => (
-              <li key={correction.id} className="flex flex-col">
-                <span className="font-medium">{correction.description}</span>
-                <span className="text-xs text-gray-500">
-                  {t('manage.pointCorrections.historyApplied', {
-                    appliedAt: correction.appliedAt,
-                  })}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <Suspense fallback={<Loader />}>
+          <SuspendedPreviousCorrections
+            instanceScope={scopeField.value === 'instance'}
+            liveQuizId={quizField.value}
+            instanceId={instanceField.value}
+          />
+        </Suspense>
       </div>
     </div>
   )

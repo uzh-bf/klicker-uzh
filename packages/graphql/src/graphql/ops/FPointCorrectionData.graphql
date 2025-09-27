@@ -7,6 +7,7 @@ fragment PointCorrectionData on PointCorrection {
 
   reason
   studentReason
+  createdAt
 
   correctedBy {
     id

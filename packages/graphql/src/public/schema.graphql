@@ -2305,6 +2305,7 @@ type Query {
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(assessmentOnly: Boolean, endpoint: String): [Participation!]
   practiceQuiz(id: String!): PracticeQuiz
+  previousPointCorrections(instanceId: Int, liveQuizId: String): [PointCorrection!]
   publicParticipantProfile(participantId: String!): Participant
   self(liveQuizId: String): Participant
   selfWithAchievements: ParticipantWithAchievements

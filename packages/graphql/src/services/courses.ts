@@ -1645,6 +1645,96 @@ export async function correctAssessmentPointsLiveQuiz(
   return null
 }
 
+export async function getPreviousPointCorrections(
+  {
+    liveQuizId,
+    instanceId,
+  }: { liveQuizId?: string | null; instanceId?: number | null },
+  ctx: ContextWithUser
+) {
+  // if neither a live quiz id nor an instance id is provided, return early
+  if (
+    (liveQuizId === null ||
+      typeof liveQuizId === 'undefined' ||
+      liveQuizId === '') &&
+    (instanceId === null || typeof instanceId === 'undefined')
+  ) {
+    return []
+  }
+
+  // get the previous corrections applied to the selected live quiz or a specific instance only
+  if (instanceId !== null && typeof instanceId !== 'undefined') {
+    const instance = await ctx.prisma.elementInstance.findUnique({
+      where: {
+        id: instanceId,
+        elementBlock: {
+          liveQuiz: {
+            isAssessmentEnabled: true,
+            course: {
+              isAssessmentEnabled: true,
+              permissions: {
+                some: {
+                  userId: ctx.user.sub,
+                  permissionLevel: {
+                    in: [DB.PermissionLevel.OWNER, DB.PermissionLevel.ADMIN],
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      include: {
+        corrections: { include: { correctedBy: true, participant: true } },
+      },
+    })
+
+    return instance?.corrections ?? []
+  }
+
+  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+    where: {
+      id: liveQuizId!,
+      isAssessmentEnabled: true,
+      course: {
+        isAssessmentEnabled: true,
+        permissions: {
+          some: {
+            userId: ctx.user.sub,
+            permissionLevel: {
+              in: [DB.PermissionLevel.OWNER, DB.PermissionLevel.ADMIN],
+            },
+          },
+        },
+      },
+    },
+    include: {
+      corrections: { include: { correctedBy: true, participant: true } },
+      // include the corrections of all instances as well
+      blocks: {
+        include: {
+          elements: {
+            include: {
+              corrections: {
+                include: { correctedBy: true, participant: true },
+              },
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
+        orderBy: { order: 'asc' },
+      },
+    },
+  })
+
+  const instanceCorrections = liveQuiz?.blocks.flatMap((block) =>
+    block.elements.flatMap((element) => element.corrections)
+  )
+
+  // return both the quiz- and instance-level corrections
+  return [...(liveQuiz?.corrections ?? []), ...(instanceCorrections ?? [])]
+}
+
 async function computeRollingLeaderboardEntries(
   { courseId, days }: { courseId: string; days: number },
   ctx: ContextWithUser
