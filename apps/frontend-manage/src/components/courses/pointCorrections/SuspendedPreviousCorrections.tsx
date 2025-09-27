@@ -18,11 +18,15 @@ function SuspendedPreviousCorrections({
   const { data } = useSuspenseQuery(GetPreviousPointCorrectionsDocument, {
     variables: {
       liveQuizId,
-      instanceId: instanceId ? parseInt(instanceId, 10) : undefined,
+      instanceId:
+        instanceScope && instanceId && instanceId !== ''
+          ? parseInt(instanceId, 10)
+          : undefined,
     },
     fetchPolicy: 'network-only',
+    skip: !liveQuizId || liveQuizId === '',
   })
-  const corrections = data.previousPointCorrections ?? []
+  const corrections = data?.previousPointCorrections ?? []
 
   if (corrections.length === 0) {
     return (

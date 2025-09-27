@@ -22,11 +22,20 @@ CREATE TABLE "public"."PointCorrection" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "PointCorrection_target_required_check" CHECK (("liveQuizId" IS NOT NULL) OR ("instanceId" IS NOT NULL)),
+    CONSTRAINT "PointCorrection_target_required_check" CHECK (("liveQuizId" IS NOT NULL AND "instanceId" IS NULL) OR ("instanceId" IS NOT NULL AND "liveQuizId" IS NULL)),
     CONSTRAINT "PointCorrection_participant_single_check" CHECK ((("type" = 'SINGLE') AND ("participantId" IS NOT NULL)) OR (("type" <> 'SINGLE') AND ("participantId" IS NULL))),
     CONSTRAINT "PointCorrection_pkey" PRIMARY KEY ("id"),
     CONSTRAINT "PointCorrection_participantId_fkey" FOREIGN KEY ("participantId") REFERENCES "public"."Participant"("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
+
+-- CreateIndex
+CREATE INDEX "PointCorrection_liveQuizId_idx" ON "public"."PointCorrection"("liveQuizId");
+
+-- CreateIndex
+CREATE INDEX "PointCorrection_instanceId_idx" ON "public"."PointCorrection"("instanceId");
+
+-- CreateIndex
+CREATE INDEX "PointCorrection_participantId_idx" ON "public"."PointCorrection"("participantId");
 
 -- CreateTable
 CREATE TABLE "public"."AppliedPointCorrection" (

@@ -149,7 +149,7 @@ function PointCorrectionsModal({
       participantId: Yup.string()
         .trim()
         .when('participantScope', {
-          is: 'single',
+          is: PointCorrectionType.Single,
           then: (schema) =>
             schema.required(
               t('manage.pointCorrections.errorParticipantRequired')
@@ -228,7 +228,6 @@ function PointCorrectionsModal({
                 scope: values.participantScope,
                 participantId: values.participantId,
               },
-              // TODO: add cache update of query for point corrections
             })
           success = result?.correctAssessmentPointsInstance !== null
           error = JSON.stringify(errors)
@@ -260,7 +259,6 @@ function PointCorrectionsModal({
                 scope: values.participantScope,
                 participantId: values.participantId,
               },
-              // TODO: add cache update of query for point corrections
             })
           success = result?.correctAssessmentPointsLiveQuiz !== null
           error = JSON.stringify(errors)

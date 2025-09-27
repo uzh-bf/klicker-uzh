@@ -189,6 +189,10 @@ model PointCorrection {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([liveQuizId])
+  @@index([instanceId])
+  @@index([participantId])
 }
 
 model AppliedPointCorrection {

@@ -2749,7 +2749,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modifyCourse: 'Kurs bearbeiten',
       shareCourse: 'Kurs teilen',
       learningAnalytics: 'Learning Analytics',
-      pointCorrections: 'Punkt-Korrekturen',
+      pointCorrections: 'Punktekorrekturen',
       nameWithPin: 'Kurs: {name} (PIN: {pin})',
       joinCourse: 'Kurs beitreten',
       viewCourse: 'Kurs einsehen',

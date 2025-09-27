@@ -633,33 +633,37 @@ export async function getAssessmentResultsLiveQuiz(
         quizAcc.bonusPoints += bonusPoints
 
         // iterate over the student responses and aggregate them into the quiz results object
-        instance.liveQuizResponses.forEach((response) => {
-          // get the student's affiliation email, if available
-          const email =
-            response.participant.accounts[0]?.ssoEmail ??
-            response.participant.email ??
-            'Missing E-Mail'
+        instance.liveQuizResponses
+          .filter(
+            (response) => response.elementBlockExecution === block.execution
+          )
+          .forEach((response) => {
+            // get the student's affiliation email, if available
+            const email =
+              response.participant.accounts[0]?.ssoEmail ??
+              response.participant.email ??
+              'Missing E-Mail'
 
-          // check if the student already has an entry in the results object and set it otherwise
-          if (quizAcc.students[response.participantId]) {
-            // increment the results object with the student response content
-            quizAcc.students[response.participantId]!.basePoints +=
-              response.basePoints
-            quizAcc.students[response.participantId]!.correctnessPoints +=
-              response.correctnessPoints
-            quizAcc.students[response.participantId]!.bonusPoints +=
-              response.bonusPoints
-          } else {
-            // set up a new student entry in the results object with the response content
-            quizAcc.students[response.participantId] = {
-              participantId: response.participantId,
-              participantEmail: email,
-              basePoints: response.basePoints,
-              correctnessPoints: response.correctnessPoints,
-              bonusPoints: response.bonusPoints,
+            // check if the student already has an entry in the results object and set it otherwise
+            if (quizAcc.students[response.participantId]) {
+              // increment the results object with the student response content
+              quizAcc.students[response.participantId]!.basePoints +=
+                response.basePoints
+              quizAcc.students[response.participantId]!.correctnessPoints +=
+                response.correctnessPoints
+              quizAcc.students[response.participantId]!.bonusPoints +=
+                response.bonusPoints
+            } else {
+              // set up a new student entry in the results object with the response content
+              quizAcc.students[response.participantId] = {
+                participantId: response.participantId,
+                participantEmail: email,
+                basePoints: response.basePoints,
+                correctnessPoints: response.correctnessPoints,
+                bonusPoints: response.bonusPoints,
+              }
             }
-          }
-        })
+          })
       })
 
       return quizAcc
@@ -1453,13 +1457,17 @@ export async function correctAssessmentPointsLiveQuiz(
       [pId: string]: { [instanceId: number]: DB.LiveQuizResponse }
     }>((blockAcc, block) => {
       block.elements.forEach((instance) => {
-        instance.liveQuizResponses.forEach((response) => {
-          if (!blockAcc[response.participantId]) {
-            blockAcc[response.participantId] = {}
-          }
+        instance.liveQuizResponses
+          .filter(
+            (response) => response.elementBlockExecution === block.execution
+          )
+          .forEach((response) => {
+            if (!blockAcc[response.participantId]) {
+              blockAcc[response.participantId] = {}
+            }
 
-          blockAcc[response.participantId]![instance.id] = response
-        })
+            blockAcc[response.participantId]![instance.id] = response
+          })
       })
       return blockAcc
     }, {})
@@ -1596,16 +1604,15 @@ export async function correctAssessmentPointsLiveQuiz(
                 await Promise.all(
                   participations.map(async (participation) => {
                     const pId = participation.participantId
-                    const response =
-                      await ctx.prisma.liveQuizResponse.findUnique({
-                        where: {
-                          instanceId_elementBlockExecution_participantId: {
-                            instanceId: instance.id,
-                            elementBlockExecution: block.execution,
-                            participantId: pId,
-                          },
+                    const response = await tx.liveQuizResponse.findUnique({
+                      where: {
+                        instanceId_elementBlockExecution_participantId: {
+                          instanceId: instance.id,
+                          elementBlockExecution: block.execution,
+                          participantId: pId,
                         },
-                      })
+                      },
+                    })
 
                     await upsertResponseAppliedCorrection(
                       {
