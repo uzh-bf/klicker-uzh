@@ -2969,8 +2969,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     pointCorrections: {
       stepIndicator: 'Schritt {current} von {total}',
-      documentationPlaceholder:
-        'Platzhalter für Dokumentationsverweis: Link zu den Richtlinien für Punktekorrekturen einfügen.',
       actionApply: 'Korrekturen anwenden',
       errorNoAdjustment:
         'Bitte wählen Sie mindestens eine Punkteanpassung aus.',

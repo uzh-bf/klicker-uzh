@@ -2921,8 +2921,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     },
     pointCorrections: {
       stepIndicator: 'Step {current} of {total}',
-      documentationPlaceholder:
-        'Documentation placeholder: include reference to point correction guidelines.',
       actionApply: 'Apply Corrections',
       errorNoAdjustment: 'Please select at least one point adjustment.',
       scopeTitle: 'Select scope',
