@@ -83,7 +83,7 @@ function LiveQuizSingleStudentResults({
 
   const { data, error } = useSuspenseQuery(
     GetLiveQuizStudentAssessmentResponsesDocument,
-    { variables: { liveQuizId, participantId } }
+    { variables: { liveQuizId, participantId }, fetchPolicy: 'network-only' }
   )
   const [selectedInstance, setSelectedInstance] = useState<{
     instance: AssessmentResultInstance

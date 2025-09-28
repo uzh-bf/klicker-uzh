@@ -32,6 +32,7 @@ function AssessmentLiveQuiz() {
     {
       variables: { liveQuizId: router.query.quizId as string },
       skip: !router.query.quizId,
+      fetchPolicy: 'network-only',
     }
   )
 

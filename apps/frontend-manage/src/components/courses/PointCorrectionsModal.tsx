@@ -3,7 +3,9 @@ import {
   CorrectAssessmentPointsInstanceDocument,
   CorrectAssessmentPointsLiveQuizDocument,
   GetAssessmentCourseParticipantsDocument,
+  GetAssessmentResultsLiveQuizDocument,
   GetEndedLiveQuizzesCourseDocument,
+  GetLiveQuizStudentAssessmentResponsesDocument,
   PointCorrectionType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Modal, toast } from '@uzh-bf/design-system'
@@ -236,6 +238,19 @@ function PointCorrectionsModal({
                 scope: values.participantScope,
                 participantId: values.participantId,
               },
+              refetchQueries: [
+                {
+                  query: GetLiveQuizStudentAssessmentResponsesDocument,
+                  variables: {
+                    liveQuizId: values.quizId,
+                    participantId: preselectedParticipantId,
+                  },
+                },
+                {
+                  query: GetAssessmentResultsLiveQuizDocument,
+                  variables: { liveQuizId: values.quizId },
+                },
+              ],
             })
           success = result?.correctAssessmentPointsInstance !== null
           error = JSON.stringify(errors)
@@ -267,6 +282,19 @@ function PointCorrectionsModal({
                 scope: values.participantScope,
                 participantId: values.participantId,
               },
+              refetchQueries: [
+                {
+                  query: GetLiveQuizStudentAssessmentResponsesDocument,
+                  variables: {
+                    liveQuizId: values.quizId,
+                    participantId: preselectedParticipantId,
+                  },
+                },
+                {
+                  query: GetAssessmentResultsLiveQuizDocument,
+                  variables: { liveQuizId: values.quizId },
+                },
+              ],
             })
           success = result?.correctAssessmentPointsLiveQuiz !== null
           error = JSON.stringify(errors)
