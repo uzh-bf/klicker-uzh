@@ -32,6 +32,12 @@ import {
 } from './analytics.js'
 import {
   AssessmentResultsLiveQuiz,
+  PointCorrection,
+  StudentAssessmentBlockResponse,
+  StudentAssessmentResults,
+} from './assessment.js'
+import {
+  AssessmentParticipant,
   Course,
   CourseLeaderboard,
   CourseListEntry,
@@ -39,8 +45,7 @@ import {
   CourseStudentTimeline,
   CourseSummary,
   LeaderboardEntry,
-  StudentAssessmentBlockResponse,
-  StudentAssessmentResults,
+  LiveQuizSelectionItem,
   StudentCourse,
 } from './course.js'
 import {
@@ -1274,6 +1279,47 @@ export const Query = builder.queryType({
           DB.PermissionLevel.READ,
           async (_, args, ctx) => {
             return await CourseService.getCourseActivities(args, ctx)
+          }
+        ),
+      }),
+
+      endedLiveQuizzesCourse: t.withAuth(asUser).field({
+        nullable: true,
+        type: [LiveQuizSelectionItem],
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            return await CourseService.getEndedLiveQuizzesCourse(args, ctx)
+          }
+        ),
+      }),
+
+      previousPointCorrections: t.withAuth(asUser).field({
+        nullable: true,
+        type: [PointCorrection],
+        args: {
+          liveQuizId: t.arg.string({ required: false }),
+          instanceId: t.arg.int({ required: false }),
+        },
+        resolve: (_, args, ctx) => {
+          return CourseService.getPreviousPointCorrections(args, ctx)
+        },
+      }),
+
+      assessmentCourseParticipants: t.withAuth(asUser).field({
+        nullable: true,
+        type: [AssessmentParticipant],
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await CourseService.getAssessmentCourseParticipants(
+              args,
+              ctx
+            )
           }
         ),
       }),

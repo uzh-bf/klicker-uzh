@@ -311,8 +311,7 @@ export async function manipulateLiveQuiz(
     (!existingActivity || // 2.1) assign new pin on activity creation
       ((courseId || existingActivity.courseId) && // 2.2) assign new pin on course assignment change (course defined at least before or after)
         courseId !== existingActivity.courseId) ||
-      (existingActivity && !existingActivity.courseId && !courseId) || // 2.3) assign new pin on pin setting change with no course assigned before and after edit
-      (existingActivity && !existingActivity.pinCode)) // 2.4) assign new pin if pin protection is enabled, but no pin was set before
+      (existingActivity && !existingActivity.courseId && !courseId)) // 2.3) assign new pin on pin setting change with no course assigned before and after edit
 
   // find a new pin code that is still available, if required
   let newPinCode: string | undefined | null = existingActivity?.pinCode
@@ -1471,7 +1470,8 @@ function aggregateLiveQuizResponses({
         elementData
       ) as ElementResultsChoices
       return responses.reduce<ElementResultsChoices>((acc, submission) => {
-        if (!('choices' in submission.response)) return acc
+        if (!submission.response || !('choices' in submission.response))
+          return acc
 
         acc.total += 1
         submission.response.choices.forEach((choice) => {
@@ -1489,7 +1489,8 @@ function aggregateLiveQuizResponses({
       ) as ElementResultsOpen
 
       return responses.reduce<ElementResultsOpen>((acc, submission) => {
-        if (!('value' in submission.response)) return acc
+        if (!submission.response || !('value' in submission.response))
+          return acc
 
         const cleanResponseValue = parseFloat(String(submission.response.value))
         if (!isNaN(cleanResponseValue)) {
@@ -1520,7 +1521,8 @@ function aggregateLiveQuizResponses({
       ) as ElementResultsOpen
 
       return responses.reduce<ElementResultsOpen>((acc, submission) => {
-        if (!('value' in submission.response)) return acc
+        if (!submission.response || !('value' in submission.response))
+          return acc
 
         const cleanResponseValue = submission.response.value.trim()
         if (cleanResponseValue.length > 0) {
@@ -1551,7 +1553,8 @@ function aggregateLiveQuizResponses({
       ) as ElementResultsSelection
 
       return responses.reduce<ElementResultsSelection>((acc, submission) => {
-        if (!('selection' in submission.response)) return acc
+        if (!submission.response || !('selection' in submission.response))
+          return acc
 
         submission.response.selection
           .filter((ix) => ix !== -1 && typeof ix !== 'undefined' && ix !== null)
@@ -1571,7 +1574,8 @@ function aggregateLiveQuizResponses({
       ) as ElementResultsCaseStudy
 
       return responses.reduce<ElementResultsCaseStudy>((acc, submission) => {
-        if (!('assessment' in submission.response)) return acc
+        if (!submission.response || !('assessment' in submission.response))
+          return acc
 
         Object.entries(submission.response.assessment).forEach(
           ([caseId, itemResponses]) => {

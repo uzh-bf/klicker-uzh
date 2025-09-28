@@ -113,7 +113,7 @@ model LiveQuizResponse {
   submittedAt DateTime
 
   /// [PrismaSingleQuestionResponseLiveQuiz]
-  response Json
+  response Json?
 
   // statistics
   timeSpent Float @db.Real
@@ -133,11 +133,97 @@ model LiveQuizResponse {
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
 
+  // link to corrections -> database constraint: correctionOnly can only be set, if the response is set to null
+  appliedCorrections AppliedPointCorrection[]
+  correctionOnly     Boolean                  @default(false) // if true, response was created as part of point correction and not by participant
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([instanceId, elementBlockExecution, participantId])
   @@index([instanceId, elementBlockExecution])
+}
+
+enum PointCorrectionType {
+  ALL_COURSE
+  PARTICIPATING
+  SINGLE
+}
+
+model PointCorrection {
+  id Int @id @default(autoincrement())
+
+  // decide if the maximum base, correctness and bonus points are adjusted
+  // -> true = award points, false = deduct points, null = no change
+  basePoints        Boolean?
+  correctnessPoints Boolean?
+  bonusPoints       Boolean?
+
+  // reasons for the correction (student reason will be displayed to students)
+  reason        String
+  studentReason String
+
+  // enum to determine if points are awarded to all users in assessment course, only participating users in activity or a single participant
+  // -> database constraint enforces that participantId is (only) set if type is SINGLE
+  type PointCorrectionType
+
+  // link to the participant that is affected by the correction (only set if type is SINGLE)
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  participantId String?      @db.Uuid
+
+  // link to the user that created the correction
+  correctedBy   User?   @relation(fields: [correctedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  correctedById String? @db.Uuid
+
+  // depending on the correction type, the course, live quiz or element instance are linked
+  // -> database constraint ensures that at exactly one of these relations is set
+  liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId String?   @db.Uuid
+
+  instance   ElementInstance? @relation(fields: [instanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  instanceId Int?
+
+  // actual point corrections that were applied for the individual participants
+  // if points on live quiz are awarded, corrections and responses will be upserted for all instances in quiz
+  appliedCorrections AppliedPointCorrection[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([liveQuizId])
+  @@index([instanceId])
+  @@index([participantId])
+}
+
+model AppliedPointCorrection {
+  id Int @id @default(autoincrement())
+
+  // base, correctness, and bonus points that are awarded to the participants (respecting existing points on live quiz responses)
+  // -> live quiz responses are updated with this information
+  awardedBasePoints        Float @db.Real
+  awardedCorrectnessPoints Float @db.Real
+  awardedBonusPoints       Float @db.Real
+
+  // base, correctness, and bonus points that were deducted from the participants (e.g. due to a changed sample solution)
+  // -> live quiz responses are updated with this information
+  deductedBasePoints        Float @db.Real
+  deductedCorrectnessPoints Float @db.Real
+  deductedBonusPoints       Float @db.Real
+
+  // link to the correction action - multiple applied corrections might link to the same point correction (e.g. when applied to live quiz)
+  // -> point corrections linked to applied corrections are deduplicated when being fetched for display
+  pointCorrection   PointCorrection @relation(fields: [pointCorrectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  pointCorrectionId Int
+
+  // depending on the correction type, the live quiz response is updated / upserted
+  // if response is upserted as part of correction, the live quiz response is marked accordingly
+  response   LiveQuizResponse @relation(fields: [responseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  responseId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([responseId]) // to quickly find all corrections for a participant in a live quiz response
 }
 
 model ElementFeedback {

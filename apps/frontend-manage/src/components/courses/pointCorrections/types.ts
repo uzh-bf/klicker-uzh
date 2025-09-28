@@ -1,0 +1,22 @@
+import { PointCorrectionType } from '@klicker-uzh/graphql/dist/ops'
+
+export type CorrectionScope = 'instance' | 'quiz'
+
+export interface PointCorrectionsFormValues {
+  scopeType: CorrectionScope | ''
+  quizId: string
+  instanceId: string
+  participantScope: PointCorrectionType | ''
+  participantId: string
+  lecturerReason: string
+  studentReason: string
+  useSameReasonForStudents: boolean
+  adjustments: {
+    baseAward: boolean
+    baseDeduct: boolean
+    correctnessAward: boolean
+    correctnessDeduct: boolean
+    bonusAward: boolean
+    bonusDeduct: boolean
+  }
+}
