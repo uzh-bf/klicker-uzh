@@ -1,7 +1,15 @@
 import { useSuspenseQuery } from '@apollo/client'
+import { faChevronDown } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetPreviousPointCorrectionsDocument } from '@klicker-uzh/graphql/dist/ops'
-import dayjs from 'dayjs'
+import {
+  ShadcnCollapsible,
+  ShadcnCollapsibleContent,
+  ShadcnCollapsibleTrigger,
+} from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
+import PreviousPointCorrectionList from './PreviousPointCorrectionList'
 
 function SuspendedPreviousCorrections({
   instanceScope,
@@ -27,6 +35,7 @@ function SuspendedPreviousCorrections({
     skip: !liveQuizId || liveQuizId === '',
   })
   const corrections = data?.previousPointCorrections ?? []
+  const [collapsibleOpen, setCollapsibleOpen] = useState(false)
 
   if (corrections.length === 0) {
     return (
@@ -39,23 +48,22 @@ function SuspendedPreviousCorrections({
   }
 
   return (
-    <ul className="flex flex-col gap-1 text-sm text-gray-700">
-      {corrections.map((correction) => (
-        <li key={correction.id} className="flex flex-col">
-          <span className="font-medium">{correction.reason}</span>
-          <span className="text-xs text-gray-500">
-            {t('manage.pointCorrections.historyApplied', {
-              appliedAt: dayjs(correction.createdAt).format(
-                'DD.MM.YYYY, HH:mm'
-              ),
-              user:
-                correction.correctedBy?.shortname ??
-                t('shared.generic.deletedUser'),
-            })}
-          </span>
-        </li>
-      ))}
-    </ul>
+    <ShadcnCollapsible open={collapsibleOpen} onOpenChange={setCollapsibleOpen}>
+      <ShadcnCollapsibleTrigger className="text-primary-100 flex w-fit items-center gap-2 text-sm font-medium transition-colors hover:underline focus:outline-none focus-visible:underline">
+        <span>
+          {collapsibleOpen
+            ? t('manage.pointCorrections.historyToggleHide')
+            : t('manage.pointCorrections.historyToggleShow')}
+        </span>
+        <FontAwesomeIcon
+          icon={faChevronDown}
+          className={`h-3.5 w-3.5 transition-transform duration-200 ${collapsibleOpen ? 'rotate-180' : ''}`}
+        />
+      </ShadcnCollapsibleTrigger>
+      <ShadcnCollapsibleContent className="mt-3">
+        <PreviousPointCorrectionList corrections={corrections} />
+      </ShadcnCollapsibleContent>
+    </ShadcnCollapsible>
   )
 }
 

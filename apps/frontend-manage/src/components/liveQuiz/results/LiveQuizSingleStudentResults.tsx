@@ -6,6 +6,7 @@ import {
   faCircleXmark,
   faFileCircleCheck,
   faPenToSquare,
+  faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -82,7 +83,7 @@ function LiveQuizSingleStudentResults({
 
   const { data, error } = useSuspenseQuery(
     GetLiveQuizStudentAssessmentResponsesDocument,
-    { variables: { liveQuizId, participantId } }
+    { variables: { liveQuizId, participantId }, fetchPolicy: 'network-only' }
   )
   const [selectedInstance, setSelectedInstance] = useState<{
     instance: AssessmentResultInstance
@@ -131,6 +132,7 @@ function LiveQuizSingleStudentResults({
           totalPoints,
           totalAvailablePoints,
           submission: instanceObj.submission,
+          corrections: instanceObj.corrections,
         }
       })
 
@@ -295,6 +297,158 @@ function LiveQuizSingleStudentResults({
                             <span className="line-clamp-1 text-sm leading-tight">
                               {elementData.name}
                             </span>
+                            {instance.corrections &&
+                            instance.corrections.length > 0 ? (
+                              <Tooltip
+                                className={{ tooltip: 'md:w-105 w-60' }}
+                                tooltip={
+                                  <div className="flex w-full flex-col gap-3 text-left text-sm">
+                                    <div className="text-foreground border-b pb-2 text-sm font-semibold">
+                                      {t(
+                                        'manage.pointCorrections.responseCorrectionsApplied'
+                                      )}
+                                    </div>
+
+                                    {instance.corrections.map(
+                                      (appliedCorrection, index) => {
+                                        const adjustments = [
+                                          {
+                                            key: `awarded-base-${appliedCorrection.id}`,
+                                            amount:
+                                              appliedCorrection.awardedBasePoints,
+                                            label: t(
+                                              'manage.general.basePointsDescription'
+                                            ),
+                                            variant: 'positive' as const,
+                                          },
+                                          {
+                                            key: `awarded-correctness-${appliedCorrection.id}`,
+                                            amount:
+                                              appliedCorrection.awardedCorrectnessPoints,
+                                            label: t(
+                                              'manage.general.correctnessPointsDescription'
+                                            ),
+                                            variant: 'positive' as const,
+                                          },
+                                          {
+                                            key: `awarded-bonus-${appliedCorrection.id}`,
+                                            amount:
+                                              appliedCorrection.awardedBonusPoints,
+                                            label: t(
+                                              'manage.general.bonusPointsDescription'
+                                            ),
+                                            variant: 'positive' as const,
+                                          },
+                                          {
+                                            key: `deducted-base-${appliedCorrection.id}`,
+                                            amount:
+                                              appliedCorrection.deductedBasePoints,
+                                            label: t(
+                                              'manage.general.basePointsDescription'
+                                            ),
+                                            variant: 'negative' as const,
+                                          },
+                                          {
+                                            key: `deducted-correctness-${appliedCorrection.id}`,
+                                            amount:
+                                              appliedCorrection.deductedCorrectnessPoints,
+                                            label: t(
+                                              'manage.general.correctnessPointsDescription'
+                                            ),
+                                            variant: 'negative' as const,
+                                          },
+                                          {
+                                            key: `deducted-bonus-${appliedCorrection.id}`,
+                                            amount:
+                                              appliedCorrection.deductedBonusPoints,
+                                            label: t(
+                                              'manage.general.bonusPointsDescription'
+                                            ),
+                                            variant: 'negative' as const,
+                                          },
+                                        ].filter(({ amount }) => amount > 0)
+
+                                        return (
+                                          <div
+                                            key={appliedCorrection.id}
+                                            className={twMerge(
+                                              'flex flex-col gap-2',
+                                              index > 0 &&
+                                                'border-border border-t pt-2'
+                                            )}
+                                          >
+                                            <div className="flex flex-col gap-0.5">
+                                              <div className="text-muted-foreground text-[0.65rem] uppercase tracking-wide">
+                                                {t(
+                                                  'manage.pointCorrections.summaryLecturerReasonLabel'
+                                                )}
+                                              </div>
+                                              <div className="text-foreground text-sm">
+                                                {appliedCorrection.pointCorrection.reason.trim()}
+                                              </div>
+                                            </div>
+
+                                            <div className="flex flex-col gap-0.5">
+                                              <div className="text-muted-foreground text-[0.65rem] uppercase tracking-wide">
+                                                {t(
+                                                  'manage.pointCorrections.summaryAdjustmentsLabel'
+                                                )}
+                                              </div>
+                                              {adjustments.length > 0 ? (
+                                                <ul className="flex flex-col gap-1">
+                                                  {adjustments.map(
+                                                    ({
+                                                      key,
+                                                      amount,
+                                                      label,
+                                                      variant,
+                                                    }) => (
+                                                      <li
+                                                        key={key}
+                                                        className="flex items-center gap-2"
+                                                      >
+                                                        <span
+                                                          className={twMerge(
+                                                            'rounded-sm px-1.5 py-0.5 text-xs font-semibold',
+                                                            variant ===
+                                                              'positive'
+                                                              ? 'bg-emerald-100 text-emerald-700'
+                                                              : 'bg-rose-100 text-rose-700'
+                                                          )}
+                                                        >
+                                                          {`${
+                                                            variant ===
+                                                            'positive'
+                                                              ? '+ '
+                                                              : '- '
+                                                          }${formatPoints(amount)}`}
+                                                        </span>
+                                                        <span>{label}</span>
+                                                      </li>
+                                                    )
+                                                  )}
+                                                </ul>
+                                              ) : (
+                                                <div>
+                                                  {t(
+                                                    'manage.pointCorrections.noAdjustmentsApplied'
+                                                  )}
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        )
+                                      }
+                                    )}
+                                  </div>
+                                }
+                              >
+                                <FontAwesomeIcon
+                                  icon={faTriangleExclamation}
+                                  className="ml-1.5 text-orange-500"
+                                />
+                              </Tooltip>
+                            ) : null}
                           </div>
                           <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-[0.7rem] leading-tight">
                             <span>{elementTypeLabel}</span>

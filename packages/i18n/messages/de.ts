@@ -399,6 +399,7 @@ export default {
       configuration: 'Konfiguration',
       unknownUser: 'Unbekannter Nutzer',
       deletedUser: 'Gelöschter Nutzer',
+      correction: 'Korrektur',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -2755,6 +2756,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       shareCourse: 'Kurs teilen',
       learningAnalytics: 'Learning Analytics',
       pointCorrections: 'Punktekorrekturen',
+      appliedCorrections: 'Angewendete Punktkorrekturen',
       nameWithPin: 'Kurs: {name} (PIN: {pin})',
       joinCourse: 'Kurs beitreten',
       viewCourse: 'Kurs einsehen',
@@ -2991,11 +2993,21 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       instanceLabel: 'Instanz',
       instancePlaceholder: 'Instanz auswählen',
       historyTitle: 'Bisherige Korrekturen',
+      historyToggleShow: 'Alle bisherigen Korrekturen anzeigen',
+      historyToggleHide: 'Bisherige Korrekturen ausblenden',
       historyPlaceholder:
-        'Sobald Korrekturen für das ausgewählte Quiz vorgenommen wurden, erscheinen diese hier.',
+        'Sobald Punktkorrekturen für das ausgewählte Quiz vorgenommen wurden, erscheinen diese hier.',
       historyPlaceholderInstance:
-        'Sobald Korrekturen für die ausgewählte Quizfrage vorgenommen wurden, erscheinen diese hier.',
+        'Sobald Punktkorrekturen speziell für die ausgewählte Quizfrage vorgenommen wurden, erscheinen diese hier. Für das gesamte Quiz vorgenommene Punktkorrekturen werden nicht angezeigt, wenn eine einzelne Frage für die Korrektur ausgewählt ist.',
       historyApplied: 'Angewendet am {appliedAt} durch {user}',
+      historyScopeParticipantUnknown: 'Unbekannte Person',
+      historyScopeSingle: 'Einzelne Person ({participant})',
+      historyScopeParticipatingQuiz:
+        'Alle Studierenden mit mindestens einer Antwort in diesem Quiz',
+      historyScopeParticipatingInstance:
+        'Alle Studierenden mit einer abgegebenen Antwort für die folgende Frage: {name}',
+      historyScopeCourse: 'Alle Teilnehmenden des Assessment-Kurses',
+      historyScopeUnknown: 'Bereich nicht verfügbar',
       audienceTitle: 'Zielgruppe wählen',
       audienceDescription:
         'Bestimmen Sie, auf die Antworten welcher Nutzer die Punktkorrektur angewendet werden soll. Sie können eine einzelne Person, alle teilnehmenden Nutzer oder alle Nutzer im Assessment-Kurs auswählen. Teilnehmende Nutzer bei einer Frage sind jene, die eine Antwort für die entsprechende Frage im Quiz abgegeben haben, während teilnehmende Nutzer eines Quizzes mindestens für eine Frage im entsprechenden Quiz eine Antwort abgegeben haben müssen. Nutzer welche ausgewählt wurden, aber keine entsprechende Antwort besitzen erhalten dennoch die ausgewählten Punkte.',
@@ -3037,8 +3049,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       summaryInstanceLabel: 'Instanz',
       summaryParticipantLabel: 'Zielgruppe',
       summaryAdjustmentsLabel: 'Punkteänderungen',
-      summaryLecturerReasonLabel: 'Notiz für Lehrpersonen',
-      summaryStudentReasonLabel: 'Notiz für Studierende',
+      summaryLecturerReasonLabel: 'Begründung für Dozierende',
+      summaryStudentReasonLabel: 'Begründung für Studierende',
       summaryQuizNotSelected: 'Noch kein Quiz ausgewählt',
       summaryInstanceNotSelected: 'Noch keine Instanz ausgewählt',
       summaryAllInstances: 'Alle Instanzen des Quiz',
@@ -3066,6 +3078,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       successSubmission: 'Die Punktkorrektur wurde erfolgreich angewendet.',
       errorSubmission:
         'Beim Anwenden der Punktkorrektur ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+      responseCorrectionsApplied:
+        'Punktkorrekturen, welche auf diese Antwort angewendet wurden und deren Auswirkungen auf die vergebenen Punkte:',
+      noAdjustmentsApplied:
+        'Es wurden keine Punktkorrekturen auf diese Antwort angewendet.',
     },
     resources: {
       mediaLibrary: 'Mediathek',

@@ -1,4 +1,5 @@
 import type {
+  AppliedPointCorrection,
   Element,
   ElementInstance,
   ElementStatus,
@@ -7,6 +8,7 @@ import type {
   ObjectType,
   ParameterType,
   PerformanceLevel,
+  PointCorrection,
   ResponseCorrectness as PrismaResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
 
@@ -1009,6 +1011,7 @@ export type AssessmentResultsLiveQuiz = {
   availableBasePoints: number
   availableCorrectnessPoints: number
   availableBonusPoints: number
+  numberOfCorrections: number
   studentResults: StudentAssessmentQuizResults[]
 }
 
@@ -1018,6 +1021,9 @@ export type StudentAssessmentBlockResponse = {
 }
 export type StudentAssessmentInstanceResponse = {
   instance: ElementInstance
+  corrections: (AppliedPointCorrection & {
+    pointCorrection: PointCorrection
+  })[]
   basePoints: number
   correctnessPoints: number
   bonusPoints: number

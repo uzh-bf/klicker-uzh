@@ -273,6 +273,17 @@ type AnswerCollectionPreviewEntry {
   value: String!
 }
 
+type AppliedPointCorrection {
+  awardedBasePoints: Float!
+  awardedBonusPoints: Float!
+  awardedCorrectnessPoints: Float!
+  deductedBasePoints: Float!
+  deductedBonusPoints: Float!
+  deductedCorrectnessPoints: Float!
+  id: Int!
+  pointCorrection: PointCorrection!
+}
+
 type AssessmentParticipant {
   email: String!
   id: String!
@@ -283,6 +294,7 @@ type AssessmentResultsLiveQuiz {
   availableBonusPoints: Float!
   availableCorrectnessPoints: Float!
   name: String!
+  numberOfCorrections: Int!
   quizBasePoints: Float!
   quizBonusPoints: Float!
   quizCorrectnessPoints: Float!
@@ -2169,7 +2181,6 @@ type PointCorrection {
   reason: String!
   studentReason: String!
   type: PointCorrectionType!
-  updatedAt: Date!
 }
 
 enum PointCorrectionType {
@@ -2618,6 +2629,7 @@ type StudentAssessmentBlockResponse {
 type StudentAssessmentInstanceResponse {
   basePoints: Float!
   bonusPoints: Float!
+  corrections: [AppliedPointCorrection!]!
   correctness: ResponseCorrectness
   correctnessPoints: Float!
   instance: ElementInstance!

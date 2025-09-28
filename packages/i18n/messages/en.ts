@@ -397,6 +397,7 @@ export default {
       configuration: 'Configuration',
       unknownUser: 'Unknown User',
       deletedUser: 'Deleted User',
+      correction: 'Correction',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -2706,6 +2707,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       shareCourse: 'Share course',
       learningAnalytics: 'Learning Analytics',
       pointCorrections: 'Point Corrections',
+      appliedCorrections: 'Applied Point Corrections',
       nameWithPin: 'Course: {name} (PIN: {pin})',
       joinCourse: 'Join course',
       viewCourse: 'View Course',
@@ -2942,11 +2944,21 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       instanceLabel: 'Instance',
       instancePlaceholder: 'Select an instance',
       historyTitle: 'Previously Applied Corrections',
+      historyToggleShow: 'Show all previous corrections',
+      historyToggleHide: 'Hide previous corrections',
       historyPlaceholder:
-        'Once corrections have been made for the selected quiz, they will appear here.',
+        'Once points corrections have been made for the selected quiz, they will appear here.',
       historyPlaceholderInstance:
-        'Once corrections have been made for the selected quiz question, they will appear here.',
+        'Once points corrections have been made specifically for the selected quiz question, they will appear here. Point corrections applied to the entire live quiz are not shown when one single question is selected for corrections.',
       historyApplied: 'Applied on {appliedAt} by {user}',
+      historyScopeParticipantUnknown: 'Unknown participant',
+      historyScopeSingle: 'Single participant ({participant})',
+      historyScopeParticipatingQuiz:
+        'All students with at least one answer in this quiz',
+      historyScopeParticipatingInstance:
+        'All students who submitted an answer for the following question: {name}',
+      historyScopeCourse: 'All assessment course participants',
+      historyScopeUnknown: 'Scope unavailable',
       audienceTitle: 'Choose the Audience',
       audienceDescription:
         'Select to whose responses the point correction should be applied to. You can choose a single participant, all participating users in scope, or all assessment course participants. Participating users for a question are those who have submitted an answer for the corresponding question in the quiz, while participating users of a quiz must have submitted an answer for at least one question in the respective quiz. Users that are selected but have not submitted a corresponding response will still receive the specified points.',
@@ -3014,6 +3026,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       successSubmission: 'The point correction was successfully applied.',
       errorSubmission:
         'An error occurred while applying the point correction. Please try again.',
+      responseCorrectionsApplied:
+        'Point corrections that have been applied to this response and their effects on the awarded points:',
+      noAdjustmentsApplied:
+        'No point corrections have been applied to this response.',
     },
     resources: {
       mediaLibrary: 'Media Library',

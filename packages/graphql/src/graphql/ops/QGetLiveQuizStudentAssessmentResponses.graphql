@@ -25,6 +25,20 @@ query GetLiveQuizStudentAssessmentResponses(
 
         ...ElementDataWithoutSolutions
       }
+
+      corrections {
+        id
+        awardedBasePoints
+        awardedCorrectnessPoints
+        awardedBonusPoints
+        deductedBasePoints
+        deductedCorrectnessPoints
+        deductedBonusPoints
+
+        pointCorrection {
+          ...PointCorrectionData
+        }
+      }
     }
   }
 }
