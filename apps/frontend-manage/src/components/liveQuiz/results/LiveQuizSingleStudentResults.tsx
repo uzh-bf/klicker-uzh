@@ -5,6 +5,7 @@ import {
   faCircleMinus,
   faCircleXmark,
   faFileCircleCheck,
+  faPenToSquare,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -24,8 +25,10 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { Fragment, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import PointCorrectionsModal from '../../courses/PointCorrectionsModal'
 import StudentAssessmentResponseModal, {
   AssessmentResultInstance,
 } from './StudentAssessmentResponseModal'
@@ -69,8 +72,13 @@ function LiveQuizSingleStudentResults({
   quizBonusPoints: number
 }) {
   const t = useTranslations()
+  const router = useRouter()
   const formatter = useFormatter()
   const toStudentElementResponse = useStudentInstanceResponseMapper()
+
+  const [instancePointCorrection, setInstancePointCorrection] = useState<
+    { instanceId: string; participantId: string } | undefined
+  >(undefined)
 
   const { data, error } = useSuspenseQuery(
     GetLiveQuizStudentAssessmentResponsesDocument,
@@ -211,7 +219,7 @@ function LiveQuizSingleStudentResults({
             <ShadcnTableHead className="w-10 whitespace-normal px-2 text-center text-[0.7rem] leading-tight">
               {t('shared.generic.total')}
             </ShadcnTableHead>
-            <ShadcnTableHead className="w-10 whitespace-normal px-1 text-center text-[0.7rem] leading-tight">
+            <ShadcnTableHead className="whitespace-normal px-0 text-center text-[0.7rem] leading-tight">
               <span className="sr-only">
                 {t('manage.assessment.liveQuizResponse')}
               </span>
@@ -250,7 +258,7 @@ function LiveQuizSingleStudentResults({
                       totals.totalAvailablePoints
                     )}
                   </ShadcnTableCell>
-                  <ShadcnTableCell />
+                  <ShadcnTableCell className="w-0 max-w-0 px-0" />
                 </ShadcnTableRow>
 
                 {instances.map((instance, instanceIx) => {
@@ -327,41 +335,71 @@ function LiveQuizSingleStudentResults({
                           instance.totalAvailablePoints
                         )}
                       </ShadcnTableCell>
-                      <ShadcnTableCell className="px-1 py-3 text-center">
-                        <Tooltip
-                          tooltip={
-                            !!instance.submission
-                              ? t('manage.assessment.liveQuizOpenResponse')
-                              : t(
-                                  'manage.assessment.liveQuizNoResponseSubmitted'
-                                )
-                          }
-                        >
-                          <Button
-                            className={{ root: 'h-7 w-7 justify-center p-0' }}
-                            disabled={!instance.submission}
-                            onClick={() => {
-                              if (!instance.submission) return
-
-                              const response = toStudentElementResponse({
-                                instance,
-                                submission: instance.submission,
-                              })
-
-                              if (!response) return
-                              setSelectedInstance({ instance, response })
-                            }}
-                            data={{
-                              cy: `live-quiz-student-instance-${blockIx}-${instanceIx}-modal`,
-                            }}
-                            variant="ghost"
+                      <ShadcnTableCell className="px-0 py-3">
+                        <div className="flex justify-center gap-0">
+                          <Tooltip
+                            tooltip={
+                              !!instance.submission
+                                ? t('manage.assessment.liveQuizOpenResponse')
+                                : t(
+                                    'manage.assessment.liveQuizNoResponseSubmitted'
+                                  )
+                            }
                           >
-                            <Button.Icon
-                              icon={faFileCircleCheck}
-                              className={{ root: 'h-3.5 w-3.5' }}
-                            />
-                          </Button>
-                        </Tooltip>
+                            <Button
+                              className={{
+                                root: 'h-7 w-7 items-center justify-center',
+                              }}
+                              disabled={!instance.submission}
+                              onClick={() => {
+                                if (!instance.submission) return
+
+                                const response = toStudentElementResponse({
+                                  instance,
+                                  submission: instance.submission,
+                                })
+
+                                if (!response) return
+                                setSelectedInstance({ instance, response })
+                              }}
+                              data={{
+                                cy: `live-quiz-student-instance-${blockIx}-${instanceIx}-modal`,
+                              }}
+                              variant="ghost"
+                            >
+                              <Button.Icon
+                                withoutLabel
+                                icon={faFileCircleCheck}
+                                className={{ root: 'h-3.5 w-3.5' }}
+                              />
+                            </Button>
+                          </Tooltip>
+                          <Tooltip
+                            tooltip={t(
+                              'manage.assessment.liveQuizOpenCorrection'
+                            )}
+                          >
+                            <Button
+                              className={{ root: 'h-7 w-7 justify-center p-0' }}
+                              onClick={() => {
+                                setInstancePointCorrection({
+                                  instanceId: String(instance.id),
+                                  participantId,
+                                })
+                              }}
+                              data={{
+                                cy: `live-quiz-student-instance-${blockIx}-${instanceIx}-correction`,
+                              }}
+                              variant="ghost"
+                            >
+                              <Button.Icon
+                                withoutLabel
+                                icon={faPenToSquare}
+                                className={{ root: 'h-3.5 w-3.5' }}
+                              />
+                            </Button>
+                          </Tooltip>
+                        </div>
                       </ShadcnTableCell>
                     </ShadcnTableRow>
                   )
@@ -380,6 +418,16 @@ function LiveQuizSingleStudentResults({
           onClose={() => setSelectedInstance(null)}
         />
       )}
+
+      {typeof instancePointCorrection !== 'undefined' && router.query.id ? (
+        <PointCorrectionsModal
+          courseId={router.query.id as string}
+          onClose={() => setInstancePointCorrection(undefined)}
+          preselectedLiveQuizId={router.query.quizId as string}
+          preselectedInstanceId={instancePointCorrection?.instanceId}
+          preselectedParticipantId={instancePointCorrection?.participantId}
+        />
+      ) : null}
     </>
   )
 }

@@ -14,6 +14,8 @@ import type { CorrectionScope, PointCorrectionsFormValues } from './types'
 
 function PointCorrectionsScopeStep({
   quizzes,
+  disabledLiveQuizSelection,
+  disabledInstanceSelection,
 }: {
   quizzes: {
     id: string
@@ -21,6 +23,8 @@ function PointCorrectionsScopeStep({
     displayName: string
     instances: { id: string; name: string }[]
   }[]
+  disabledLiveQuizSelection: boolean
+  disabledInstanceSelection: boolean
 }) {
   const t = useTranslations()
   const [scopeField, , scopeHelpers] =
@@ -93,6 +97,7 @@ function PointCorrectionsScopeStep({
               description: t(
                 'manage.pointCorrections.scopeOptionInstanceDescription'
               ),
+              className: 'disabled:opacity-100',
               data: { cy: 'point-corrections-scope-instance' },
             },
             {
@@ -108,6 +113,7 @@ function PointCorrectionsScopeStep({
             <Button
               key={option.value}
               type="button"
+              disabled={disabledInstanceSelection}
               onClick={() =>
                 scopeHelpers.setValue(option.value as CorrectionScope)
               }
@@ -115,7 +121,8 @@ function PointCorrectionsScopeStep({
                 root: twMerge(
                   'flex h-full flex-col gap-2 rounded-lg border-2 p-4 text-left focus:outline-none',
                   scopeField.value === option.value &&
-                    'border-primary-100 bg-primary-50'
+                    'border-primary-100 bg-primary-50',
+                  option.className
                 ),
               }}
               aria-pressed={scopeField.value === option.value}
@@ -144,6 +151,7 @@ function PointCorrectionsScopeStep({
           <FormikSelectField
             required
             name="quizId"
+            disabled={disabledLiveQuizSelection}
             label={t('manage.pointCorrections.quizLabel')}
             placeholder={t('manage.pointCorrections.quizPlaceholder')}
             items={quizOptions}
@@ -156,6 +164,9 @@ function PointCorrectionsScopeStep({
           <div className="flex-1">
             <FormikSelectField
               required
+              disabled={
+                disabledInstanceSelection || instanceOptions.length === 0
+              }
               label={t('manage.pointCorrections.instanceLabel')}
               name="instanceId"
               placeholder={t('manage.pointCorrections.instancePlaceholder')}

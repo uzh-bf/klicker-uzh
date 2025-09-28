@@ -1304,6 +1304,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'This student has not submitted any responses yet.',
       liveQuizResponse: 'Response',
       liveQuizOpenResponse: 'View response',
+      liveQuizOpenCorrection: 'Open point correction modal',
       liveQuizNoResponseSubmitted: 'No response submitted',
       liveQuizQuestionAnswered: 'Answered',
       liveQuizQuestionNotAnswered: 'Not answered',
