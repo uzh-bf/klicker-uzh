@@ -807,6 +807,19 @@ export async function getLiveQuizStudentAssessmentResponses(
             include: {
               liveQuizResponses: {
                 where: { participantId },
+                include: {
+                  appliedCorrections: {
+                    include: {
+                      pointCorrection: {
+                        include: {
+                          correctedBy: true,
+                          participant: true,
+                          liveQuiz: true,
+                        },
+                      },
+                    },
+                  },
+                },
                 orderBy: { createdAt: 'desc' },
                 take: 1,
               },
@@ -832,6 +845,15 @@ export async function getLiveQuizStudentAssessmentResponses(
         if (response) {
           return {
             instance,
+            corrections: response.appliedCorrections.map(
+              (appliedCorrection) => ({
+                ...appliedCorrection,
+                pointCorrection: {
+                  ...appliedCorrection.pointCorrection,
+                  instance,
+                },
+              })
+            ),
             basePoints: response.basePoints,
             correctnessPoints: response.correctnessPoints,
             bonusPoints: response.bonusPoints,
@@ -843,6 +865,7 @@ export async function getLiveQuizStudentAssessmentResponses(
         // if the student submitted no response, simply return the instance with zero points
         return {
           instance,
+          corrections: [],
           basePoints: 0,
           correctnessPoints: 0,
           bonusPoints: 0,
@@ -1781,11 +1804,30 @@ export async function getPreviousPointCorrections(
         },
       },
       include: {
-        corrections: { include: { correctedBy: true, participant: true } },
+        corrections: {
+          include: {
+            correctedBy: true,
+            participant: {
+              include: { accounts: { where: { ssoType: 'uzh' } } },
+            },
+          },
+        },
       },
     })
 
-    return instance?.corrections ?? []
+    return instance?.corrections
+      ? instance.corrections.map((correction) => {
+          let participant = correction.participant
+          if (!participant) return correction
+
+          participant['email'] =
+            correction.participant?.accounts[0]?.ssoEmail ??
+            correction.participant?.email ??
+            null
+
+          return { ...correction, participant }
+        })
+      : []
   }
 
   const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
@@ -1805,14 +1847,26 @@ export async function getPreviousPointCorrections(
       },
     },
     include: {
-      corrections: { include: { correctedBy: true, participant: true } },
+      corrections: {
+        include: {
+          correctedBy: true,
+          participant: {
+            include: { accounts: { where: { ssoType: 'uzh' } } },
+          },
+        },
+      },
       // include the corrections of all instances as well
       blocks: {
         include: {
           elements: {
             include: {
               corrections: {
-                include: { correctedBy: true, participant: true },
+                include: {
+                  correctedBy: true,
+                  participant: {
+                    include: { accounts: { where: { ssoType: 'uzh' } } },
+                  },
+                },
               },
             },
             orderBy: { order: 'asc' },
@@ -1825,10 +1879,21 @@ export async function getPreviousPointCorrections(
 
   const instanceCorrections = liveQuiz?.blocks.flatMap((block) =>
     block.elements.flatMap((element) =>
-      element.corrections.map((correction) => ({
-        ...correction,
-        instance: element,
-      }))
+      element.corrections.map((correction) => {
+        let participant = correction.participant
+        if (!participant) return { ...correction, instance: element }
+
+        participant['email'] =
+          correction.participant?.accounts[0]?.ssoEmail ??
+          correction.participant?.email ??
+          null
+
+        return {
+          ...correction,
+          instance: element,
+          participant,
+        }
+      })
     )
   )
 

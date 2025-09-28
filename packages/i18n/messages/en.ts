@@ -397,6 +397,7 @@ export default {
       configuration: 'Configuration',
       unknownUser: 'Unknown User',
       deletedUser: 'Deleted User',
+      correction: 'Correction',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -3025,6 +3026,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       successSubmission: 'The point correction was successfully applied.',
       errorSubmission:
         'An error occurred while applying the point correction. Please try again.',
+      responseCorrectionsApplied:
+        'Point corrections that have been applied to this response and their effects on the awarded points:',
+      noAdjustmentsApplied:
+        'No point corrections have been applied to this response.',
     },
     resources: {
       mediaLibrary: 'Media Library',

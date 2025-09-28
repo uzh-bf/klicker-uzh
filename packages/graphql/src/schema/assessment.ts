@@ -124,6 +124,7 @@ export const StudentAssessmentInstanceResponse =
   StudentAssessmentInstanceResponseRef.implement({
     fields: (t) => ({
       instance: t.expose('instance', { type: ElementInstance }),
+      corrections: t.expose('corrections', { type: [AppliedPointCorrection] }),
       basePoints: t.exposeFloat('basePoints'),
       correctnessPoints: t.exposeFloat('correctnessPoints'),
       bonusPoints: t.exposeFloat('bonusPoints'),
@@ -178,5 +179,21 @@ export const PointCorrection = PointCorrectionRef.implement({
       nullable: true,
     }),
     createdAt: t.expose('createdAt', { type: 'Date' }),
+  }),
+})
+
+export const AppliedPointCorrection = builder.objectRef<
+  DB.AppliedPointCorrection & { pointCorrection: DB.PointCorrection }
+>('AppliedPointCorrection')
+export const AppliedPointCorrectionType = AppliedPointCorrection.implement({
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+    awardedBasePoints: t.exposeFloat('awardedBasePoints'),
+    awardedCorrectnessPoints: t.exposeFloat('awardedCorrectnessPoints'),
+    awardedBonusPoints: t.exposeFloat('awardedBonusPoints'),
+    deductedBasePoints: t.exposeFloat('deductedBasePoints'),
+    deductedCorrectnessPoints: t.exposeFloat('deductedCorrectnessPoints'),
+    deductedBonusPoints: t.exposeFloat('deductedBonusPoints'),
+    pointCorrection: t.expose('pointCorrection', { type: PointCorrectionRef }),
   }),
 })

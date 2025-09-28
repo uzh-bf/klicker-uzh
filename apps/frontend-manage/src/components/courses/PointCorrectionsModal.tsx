@@ -229,10 +229,10 @@ function PointCorrectionsModal({
                 deductBasePoints: values.adjustments.baseDeduct,
                 deductCorrectnessPoints: values.adjustments.correctnessDeduct,
                 deductBonusPoints: values.adjustments.bonusDeduct,
-                reason: values.lecturerReason,
+                reason: values.lecturerReason.trim(),
                 studentReason: values.useSameReasonForStudents
-                  ? values.lecturerReason
-                  : values.studentReason,
+                  ? values.lecturerReason.trim()
+                  : values.studentReason.trim(),
                 scope: values.participantScope,
                 participantId: values.participantId,
               },

@@ -273,6 +273,17 @@ type AnswerCollectionPreviewEntry {
   value: String!
 }
 
+type AppliedPointCorrection {
+  awardedBasePoints: Float!
+  awardedBonusPoints: Float!
+  awardedCorrectnessPoints: Float!
+  deductedBasePoints: Float!
+  deductedBonusPoints: Float!
+  deductedCorrectnessPoints: Float!
+  id: Int!
+  pointCorrection: PointCorrection!
+}
+
 type AssessmentParticipant {
   email: String!
   id: String!
@@ -2618,6 +2629,7 @@ type StudentAssessmentBlockResponse {
 type StudentAssessmentInstanceResponse {
   basePoints: Float!
   bonusPoints: Float!
+  corrections: [AppliedPointCorrection!]!
   correctness: ResponseCorrectness
   correctnessPoints: Float!
   instance: ElementInstance!

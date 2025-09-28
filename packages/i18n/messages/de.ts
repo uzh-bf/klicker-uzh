@@ -399,6 +399,7 @@ export default {
       configuration: 'Konfiguration',
       unknownUser: 'Unbekannter Nutzer',
       deletedUser: 'Gelöschter Nutzer',
+      correction: 'Korrektur',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -3048,8 +3049,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       summaryInstanceLabel: 'Instanz',
       summaryParticipantLabel: 'Zielgruppe',
       summaryAdjustmentsLabel: 'Punkteänderungen',
-      summaryLecturerReasonLabel: 'Notiz für Lehrpersonen',
-      summaryStudentReasonLabel: 'Notiz für Studierende',
+      summaryLecturerReasonLabel: 'Begründung für Dozierende',
+      summaryStudentReasonLabel: 'Begründung für Studierende',
       summaryQuizNotSelected: 'Noch kein Quiz ausgewählt',
       summaryInstanceNotSelected: 'Noch keine Instanz ausgewählt',
       summaryAllInstances: 'Alle Instanzen des Quiz',
@@ -3077,6 +3078,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       successSubmission: 'Die Punktkorrektur wurde erfolgreich angewendet.',
       errorSubmission:
         'Beim Anwenden der Punktkorrektur ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+      responseCorrectionsApplied:
+        'Punktkorrekturen, welche auf diese Antwort angewendet wurden und deren Auswirkungen auf die vergebenen Punkte:',
+      noAdjustmentsApplied:
+        'Es wurden keine Punktkorrekturen auf diese Antwort angewendet.',
     },
     resources: {
       mediaLibrary: 'Mediathek',
