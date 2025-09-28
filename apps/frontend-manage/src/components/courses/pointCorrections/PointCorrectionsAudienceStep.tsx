@@ -7,8 +7,10 @@ import type { PointCorrectionsFormValues } from './types'
 
 function PointCorrectionsAudienceStep({
   participants,
+  fixedParticipant = false,
 }: {
   participants: { id: string; email: string }[]
+  fixedParticipant?: boolean
 }) {
   const t = useTranslations()
   const [participantScopeField] =
@@ -40,6 +42,7 @@ function PointCorrectionsAudienceStep({
           <FormikSelectField
             required
             name="participantScope"
+            disabled={fixedParticipant}
             label={t('manage.pointCorrections.audienceLabel')}
             placeholder={t('manage.pointCorrections.audiencePlaceholder')}
             items={[
@@ -66,6 +69,7 @@ function PointCorrectionsAudienceStep({
             <FormikSelectField
               required
               name="participantId"
+              disabled={fixedParticipant}
               label={t('manage.pointCorrections.participantLabel')}
               placeholder={t('manage.pointCorrections.participantPlaceholder')}
               items={participantOptions}

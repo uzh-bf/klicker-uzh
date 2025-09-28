@@ -21,25 +21,6 @@ import {
   PointCorrectionsFormValues,
 } from './pointCorrections/types'
 
-const initialValues: PointCorrectionsFormValues = {
-  scopeType: '',
-  quizId: '',
-  instanceId: '',
-  participantScope: '',
-  participantId: '',
-  lecturerReason: '',
-  studentReason: '',
-  useSameReasonForStudents: false,
-  adjustments: {
-    baseAward: false,
-    baseDeduct: false,
-    correctnessAward: false,
-    correctnessDeduct: false,
-    bonusAward: false,
-    bonusDeduct: false,
-  },
-}
-
 const stepFieldPaths: (
   | keyof PointCorrectionsFormValues
   | `adjustments.${keyof PointCorrectionsFormValues['adjustments']}`
@@ -70,9 +51,15 @@ const stepFieldPaths: (
 function PointCorrectionsModal({
   courseId,
   onClose,
+  preselectedLiveQuizId,
+  preselectedInstanceId,
+  preselectedParticipantId,
 }: {
   courseId: string
   onClose: () => void
+  preselectedLiveQuizId?: string
+  preselectedInstanceId?: string
+  preselectedParticipantId?: string
 }) {
   const t = useTranslations()
   const [activeStep, setActiveStep] = useState(0)
@@ -178,6 +165,27 @@ function PointCorrectionsModal({
         .concat(reasonSchema),
     ]
   }, [t])
+
+  const initialValues: PointCorrectionsFormValues = {
+    scopeType: preselectedInstanceId ? 'instance' : '',
+    quizId: preselectedLiveQuizId ?? '',
+    instanceId: preselectedInstanceId ?? '',
+    participantScope: preselectedParticipantId
+      ? PointCorrectionType.Single
+      : '',
+    participantId: preselectedParticipantId ?? '',
+    lecturerReason: '',
+    studentReason: '',
+    useSameReasonForStudents: false,
+    adjustments: {
+      baseAward: false,
+      baseDeduct: false,
+      correctnessAward: false,
+      correctnessDeduct: false,
+      bonusAward: false,
+      bonusDeduct: false,
+    },
+  }
 
   const stepTitles = [
     t('manage.pointCorrections.scopeTitle'),
@@ -318,12 +326,15 @@ function PointCorrectionsModal({
           <PointCorrectionsScopeStep
             key="scope"
             quizzes={endedQuizzesData?.endedLiveQuizzesCourse ?? []}
+            disabledLiveQuizSelection={Boolean(preselectedLiveQuizId)}
+            disabledInstanceSelection={Boolean(preselectedInstanceId)}
           />,
           <PointCorrectionsAudienceStep
             key="audience"
             participants={
               courseParticipantsData?.assessmentCourseParticipants ?? []
             }
+            fixedParticipant={Boolean(preselectedParticipantId)}
           />,
           <PointCorrectionsAdjustmentsStep key="adjustments" />,
           <PointCorrectionsReasonStep key="reason" />,

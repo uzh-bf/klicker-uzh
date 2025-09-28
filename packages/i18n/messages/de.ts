@@ -1308,6 +1308,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Dieser Studierende hat noch keine Antworten eingereicht.',
       liveQuizResponse: 'Antwort',
       liveQuizOpenResponse: 'Antwort ansehen',
+      liveQuizOpenCorrection: 'Punktkorrektur öffnen',
       liveQuizNoResponseSubmitted: 'Keine Antwort abgegeben',
       liveQuizQuestionAnswered: 'Beantwortet',
       liveQuizQuestionNotAnswered: 'Nicht beantwortet',

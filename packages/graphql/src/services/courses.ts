@@ -3663,12 +3663,23 @@ export async function getEndedLiveQuizzesCourse(
 }
 
 export async function getAssessmentCourseParticipants(
-  { courseId }: { courseId: string },
+  {
+    courseId,
+    preferredAffiliation = 'uzh',
+  }: { courseId: string; preferredAffiliation?: string },
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId, isAssessmentEnabled: true },
-    include: { participations: { include: { participant: true } } },
+    include: {
+      participations: {
+        include: {
+          participant: {
+            include: { accounts: { where: { ssoType: preferredAffiliation } } },
+          },
+        },
+      },
+    },
   })
 
   if (!course) return []
@@ -3676,7 +3687,10 @@ export async function getAssessmentCourseParticipants(
   return sortBy(
     course.participations.map((p) => ({
       id: p.participant.id,
-      email: p.participant.email ?? 'E-Mail Missing',
+      email:
+        p.participant.accounts[0]?.ssoEmail ??
+        p.participant.email ??
+        'E-Mail Missing',
       username: p.participant.username,
     })),
     [prop('email'), 'asc']
