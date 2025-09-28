@@ -1811,7 +1811,12 @@ export async function getPreviousPointCorrections(
   })
 
   const instanceCorrections = liveQuiz?.blocks.flatMap((block) =>
-    block.elements.flatMap((element) => element.corrections)
+    block.elements.flatMap((element) =>
+      element.corrections.map((correction) => ({
+        ...correction,
+        instance: element,
+      }))
+    )
   )
 
   // return both the quiz- and instance-level corrections
