@@ -1109,8 +1109,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       excludingBonus: '(excluding bonus: {value})',
       corrections: 'Corrections',
       noPointsCorrection: '+ 0 Points (no change): {reason}',
-      positivePointsCorrection: '+ {points} Points: {reason}',
-      negativePointsCorrection: '- {points} Points: {reason}',
+      nonZeroPointCorrection:
+        '{points} Points ({basePoints} base points, {correctnessPoints} correctness points, {bonusPoints} bonus points): {reason}',
     },
   },
   manage: {

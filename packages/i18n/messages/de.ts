@@ -1110,8 +1110,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       excludingBonus: '(ohne Bonus: {value})',
       corrections: 'Korrekturen',
       noPointsCorrection: '+ 0 Punkte (keine Änderung): {reason}',
-      positivePointsCorrection: '+ {points} Punkte: {reason}',
-      negativePointsCorrection: '- {points} Punkte: {reason}',
+      nonZeroPointCorrection:
+        '{points} Punkte ({basePoints} Basispunkte, {correctnessPoints} Korrektheitspunkte, {bonusPoints} Bonuspunkte): {reason}',
     },
   },
   manage: {
@@ -1146,10 +1146,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       elementPreviewRedirect: 'Vorschau in einem neuen Tab öffnen',
       elementTypeDescription: 'Typ',
       elementPreviewDescription: 'Vorschau',
-      basePointsDescription: 'Basis-Punkte',
-      correctnessPointsDescription: 'Korrektheits-Punkte',
-      bonusPointsDescription: 'Bonus-Punkte',
-      totalPointsSynchronousDescription: 'Maximal Erreichbare Punkte',
+      basePointsDescription: 'Basispunkte',
+      correctnessPointsDescription: 'Korrektheitspunkte',
+      bonusPointsDescription: 'Bonuspunkte',
+      totalPointsSynchronousDescription: 'Maximal erreichbare Punkte',
       totalPointsAsynchronousDescription: 'Erreichbare Punkte',
       pointTypeDescription: 'Punkttyp',
       pointAmountDescription: 'Menge',
@@ -1283,7 +1283,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       batchGroupActivityRequiresFinalizedGroups:
         'Gruppenaktivitäten können nur Kursen zugewiesen werden, bei welchen die Gruppenbildung zum Startdatum der Aktivität abgeschlossen ist.',
       batchPointsOnlyLiveQuiz:
-        'Basis-, Korrektheits- und Bonus-Punkte können nur für Live Quizzes definiert und angepasst werden.',
+        'Basis-, Korrektheits- und Bonuspunkte können nur für Live Quizzes definiert und angepasst werden.',
       batchPracticeQuizScheduledWithinCourse:
         'Bei geplanten Übungsquizzes (mit definiertem Zeitpunkt zur automatischen Publikation) muss der Publikationszeitpunkt innerhalb der Kursdauer liegen.',
       batchOperationSuccess:
@@ -2979,10 +2979,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       scopePlaceholder: 'Bereich auswählen',
       scopeOptionInstanceTitle: 'Einzelne Quizfrage',
       scopeOptionInstanceDescription:
-        'Anpassung der Basis-, Korrektheits- oder Bonus-Punkte für eine einzelne Frage des Quiz.',
+        'Anpassung der Basis-, Korrektheits- oder Bonuspunkte für eine einzelne Frage des Quiz.',
       scopeOptionQuizTitle: 'Gesamtes Quiz',
       scopeOptionQuizDescription:
-        'Anpassung der Basis-, Korrektheits- oder Bonus-Punkte für alle Fragen des Quiz.',
+        'Anpassung der Basis-, Korrektheits- oder Bonuspunkte für alle Fragen des Quiz.',
       selectQuizAndInstanceDescription:
         'Bitte wählen Sie das Quiz und, falls zutreffend, die spezifische Frage aus, auf welche die Punktekorrektur angewendet werden soll.',
       quizLabel: 'Quiz',
@@ -3011,9 +3011,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       adjustmentsTitle: 'Punkte anpassen',
       adjustmentsDescription:
         'Wählen Sie aus, welche Punktekategorien gutgeschrieben oder abgezogen werden sollen. Das Gutschreiben und Abziehen derselben Kategorie ist gegenseitig ausgeschlossen. Das Gutschreiben einer Punktekategorie bedeutet, dass alle betroffenen Studierenden die <b>maximal verfügbare Punktzahl</b> für diese Kategorie erhalten, während das Abziehen der Punkte <b>den Wert auf null setzt</b> für alle betroffenen Abgaben.',
-      adjustmentsBaseLabel: 'Basis-Punkte',
-      adjustmentsCorrectnessLabel: 'Richtigkeits-Punkte',
-      adjustmentsBonusLabel: 'Bonus-Punkte',
+      adjustmentsBaseLabel: 'Basispunkte',
+      adjustmentsCorrectnessLabel: 'Korrektheitspunkte',
+      adjustmentsBonusLabel: 'Bonuspunkte',
       adjustmentsAwardLabel: 'Punkte gutschreiben',
       adjustmentsDeductLabel: 'Punkte abziehen',
       reasonTitle: 'Korrektur begründen',
@@ -3043,12 +3043,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       summaryAllInstances: 'Alle Instanzen des Quiz',
       summaryParticipantScopeNotSelected: 'Noch keine Zielgruppe ausgewählt',
       summaryParticipantNotSelected: 'Noch keine Person ausgewählt',
-      summaryAdjustmentBaseAward: 'Basis-Punkte gutschreiben',
-      summaryAdjustmentBaseDeduct: 'Basis-Punkte abziehen',
-      summaryAdjustmentCorrectnessAward: 'Richtigkeits-Punkte gutschreiben',
-      summaryAdjustmentCorrectnessDeduct: 'Richtigkeits-Punkte abziehen',
-      summaryAdjustmentBonusAward: 'Bonus-Punkte gutschreiben',
-      summaryAdjustmentBonusDeduct: 'Bonus-Punkte abziehen',
+      summaryAdjustmentBaseAward: 'Basispunkte gutschreiben',
+      summaryAdjustmentBaseDeduct: 'Basispunkte abziehen',
+      summaryAdjustmentCorrectnessAward: 'Korrektheitspunkte gutschreiben',
+      summaryAdjustmentCorrectnessDeduct: 'Korrektheitspunkte abziehen',
+      summaryAdjustmentBonusAward: 'Bonuspunkte gutschreiben',
+      summaryAdjustmentBonusDeduct: 'Bonuspunkte abziehen',
       summaryNoAdjustments:
         'Es wurden noch keine Punkteanpassungen ausgewählt.',
       errorQuizRequired: 'Bitte wählen Sie ein Quiz aus.',

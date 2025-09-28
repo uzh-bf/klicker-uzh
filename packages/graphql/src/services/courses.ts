@@ -493,52 +493,7 @@ function getStudentAssessmentQuizPerformance({
         instanceResults.availableCorrectnessPoints
       quizAcc.bonusPoints += instanceResults.bonusPoints
       quizAcc.availableBonusPoints += instanceResults.availableBonusPoints
-
-      if (instanceResults.corrections.length > 0) {
-        // group the corrections by correctionId and aggregate the contained corrections
-        // -> per applied correction by the lecturer, only one entry should be shown on the quiz performance entry
-        const groupedCorrections = instanceResults.corrections.reduce<
-          Record<string, StudentPointCorrection[]>
-        >((acc, correction) => {
-          if (!acc[correction.id]) {
-            acc[correction.id] = []
-          }
-          acc[correction.id]!.push(correction)
-          return acc
-        }, {})
-
-        // for each group, create a new aggregated correction object
-        for (const [correctionId, corrections] of Object.entries(
-          groupedCorrections
-        )) {
-          const aggregatedCorrection =
-            corrections.reduce<StudentPointCorrection>(
-              (acc, appliedCorrection) => {
-                acc.awardedBasePoints += appliedCorrection.awardedBasePoints
-                acc.awardedCorrectnessPoints +=
-                  appliedCorrection.awardedCorrectnessPoints
-                acc.awardedBonusPoints += appliedCorrection.awardedBonusPoints
-                acc.deductedBasePoints += appliedCorrection.deductedBasePoints
-                acc.deductedCorrectnessPoints +=
-                  appliedCorrection.deductedCorrectnessPoints
-                acc.deductedBonusPoints += appliedCorrection.deductedBonusPoints
-                return acc
-              },
-              {
-                id: parseInt(correctionId),
-                reason: corrections[0]!.reason,
-                awardedBasePoints: 0,
-                awardedCorrectnessPoints: 0,
-                awardedBonusPoints: 0,
-                deductedBasePoints: 0,
-                deductedCorrectnessPoints: 0,
-                deductedBonusPoints: 0,
-              }
-            )
-
-          quizAcc.corrections.push(aggregatedCorrection)
-        }
-      }
+      quizAcc.corrections.push(...instanceResults.corrections)
 
       return quizAcc
     },
@@ -557,7 +512,54 @@ function getStudentAssessmentQuizPerformance({
     }
   )
 
-  return quizResults
+  // deduplicate the corrections on quiz level -> only one entry per correction on student view
+  let deduplicatedCorrections: StudentPointCorrection[] = []
+  if (quizResults.corrections.length > 0) {
+    // group the corrections by correctionId and aggregate the contained corrections
+    // -> per applied correction by the lecturer, only one entry should be shown on the quiz performance entry
+    const groupedCorrections = quizResults.corrections.reduce<
+      Record<string, StudentPointCorrection[]>
+    >((acc, correction) => {
+      if (!acc[correction.id]) {
+        acc[correction.id] = []
+      }
+      acc[correction.id]!.push(correction)
+      return acc
+    }, {})
+
+    // for each group, create a new aggregated correction object
+    for (const [correctionId, corrections] of Object.entries(
+      groupedCorrections
+    )) {
+      const aggregatedCorrection = corrections.reduce<StudentPointCorrection>(
+        (acc, appliedCorrection) => {
+          acc.awardedBasePoints += appliedCorrection.awardedBasePoints
+          acc.awardedCorrectnessPoints +=
+            appliedCorrection.awardedCorrectnessPoints
+          acc.awardedBonusPoints += appliedCorrection.awardedBonusPoints
+          acc.deductedBasePoints += appliedCorrection.deductedBasePoints
+          acc.deductedCorrectnessPoints +=
+            appliedCorrection.deductedCorrectnessPoints
+          acc.deductedBonusPoints += appliedCorrection.deductedBonusPoints
+          return acc
+        },
+        {
+          id: parseInt(correctionId),
+          reason: corrections[0]!.reason,
+          awardedBasePoints: 0,
+          awardedCorrectnessPoints: 0,
+          awardedBonusPoints: 0,
+          deductedBasePoints: 0,
+          deductedCorrectnessPoints: 0,
+          deductedBonusPoints: 0,
+        }
+      )
+
+      deduplicatedCorrections.push(aggregatedCorrection)
+    }
+  }
+
+  return { ...quizResults, corrections: deduplicatedCorrections }
 }
 
 export async function getStudentAssessmentResults(

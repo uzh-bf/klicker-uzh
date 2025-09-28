@@ -14,10 +14,19 @@ function AssessmentResultsList({
   const t = useTranslations('pwa.assessment')
   const formatter = useFormatter()
 
-  const formatNumber = (value: number) =>
-    formatter.number(value, {
+  const formatNumber = (value: number, includeSign?: boolean) => {
+    const formattedValue = formatter.number(value, {
       maximumFractionDigits: Number.isInteger(value) ? 0 : 2,
     })
+
+    if (includeSign) {
+      return value >= 0
+        ? `+ ${formattedValue}`
+        : `- ${formattedValue.replace('-', '')}`
+    }
+
+    return formattedValue
+  }
 
   const formatFinishedAt = (
     finishedAt: ActivityStudentPerformance['finishedAt']
@@ -163,7 +172,16 @@ function AssessmentResultsList({
             <div className="mt-3 text-sm">
               <div className="font-bold">{t('corrections')}</div>
               <ul className="ml-4 list-disc">
-                {result.corrections.map((correction, index) => {
+                {result.corrections.map((correction) => {
+                  const baseCorrection =
+                    (correction.awardedBasePoints ?? 0) -
+                    (correction.deductedBasePoints ?? 0)
+                  const correctnessCorrection =
+                    (correction.awardedCorrectnessPoints ?? 0) -
+                    (correction.deductedCorrectnessPoints ?? 0)
+                  const bonusCorrection =
+                    (correction.awardedBonusPoints ?? 0) -
+                    (correction.deductedBonusPoints ?? 0)
                   const totalCorrection =
                     (correction.awardedBasePoints ?? 0) +
                     (correction.awardedCorrectnessPoints ?? 0) +
@@ -172,26 +190,27 @@ function AssessmentResultsList({
                     (correction.deductedCorrectnessPoints ?? 0) -
                     (correction.deductedBonusPoints ?? 0)
 
-                  if (totalCorrection === 0) {
+                  if (
+                    baseCorrection === 0 &&
+                    correctnessCorrection === 0 &&
+                    bonusCorrection === 0
+                  ) {
                     return (
                       <li key={`point-correction-${correction.id}`}>
                         {t('noPointsCorrection', { reason: correction.reason })}
                       </li>
                     )
-                  } else if (totalCorrection > 0) {
-                    return (
-                      <li key={`point-correction-${correction.id}`}>
-                        {t('positivePointsCorrection', {
-                          points: formatNumber(totalCorrection),
-                          reason: correction.reason,
-                        })}
-                      </li>
-                    )
                   } else {
                     return (
                       <li key={`point-correction-${correction.id}`}>
-                        {t('negativePointsCorrection', {
-                          points: formatNumber(-totalCorrection),
+                        {t('nonZeroPointCorrection', {
+                          points: formatNumber(totalCorrection, true),
+                          basePoints: formatNumber(baseCorrection, true),
+                          correctnessPoints: formatNumber(
+                            correctnessCorrection,
+                            true
+                          ),
+                          bonusPoints: formatNumber(bonusCorrection, true),
                           reason: correction.reason,
                         })}
                       </li>
