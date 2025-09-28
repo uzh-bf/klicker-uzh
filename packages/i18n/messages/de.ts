@@ -2998,7 +2998,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       historyPlaceholder:
         'Sobald Punktkorrekturen für das ausgewählte Quiz vorgenommen wurden, erscheinen diese hier.',
       historyPlaceholderInstance:
-        'Sobald Punktkorrekturen für die ausgewählte Quizfrage vorgenommen wurden, erscheinen diese hier.',
+        'Sobald Punktkorrekturen speziell für die ausgewählte Quizfrage vorgenommen wurden, erscheinen diese hier. Für das gesamte Quiz vorgenommene Punktkorrekturen werden nicht angezeigt, wenn eine einzelne Frage für die Korrektur ausgewählt ist.',
       historyApplied: 'Angewendet am {appliedAt} durch {user}',
       historyScopeParticipantUnknown: 'Unbekannte Person',
       historyScopeSingle: 'Einzelne Person ({participant})',

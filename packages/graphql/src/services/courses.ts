@@ -1825,7 +1825,7 @@ export async function getPreviousPointCorrections(
             correction.participant?.email ??
             null
 
-          return { ...correction, participant }
+          return { ...correction, participant, instance }
         })
       : []
   }

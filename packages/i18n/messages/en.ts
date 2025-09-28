@@ -2949,7 +2949,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       historyPlaceholder:
         'Once points corrections have been made for the selected quiz, they will appear here.',
       historyPlaceholderInstance:
-        'Once points corrections have been made for the selected quiz question, they will appear here.',
+        'Once points corrections have been made specifically for the selected quiz question, they will appear here. Point corrections applied to the entire live quiz are not shown when one single question is selected for corrections.',
       historyApplied: 'Applied on {appliedAt} by {user}',
       historyScopeParticipantUnknown: 'Unknown participant',
       historyScopeSingle: 'Single participant ({participant})',

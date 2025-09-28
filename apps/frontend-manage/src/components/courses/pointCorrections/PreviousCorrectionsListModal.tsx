@@ -17,13 +17,17 @@ function PreviousCorrectionsListModal({
   const t = useTranslations()
 
   // load all previous corrections
+  const parsedInstanceId =
+    instanceId && instanceId.trim() !== ''
+      ? parseInt(instanceId, 10)
+      : undefined
   const { data: previousCorrectionsData } = useSuspenseQuery(
     GetPreviousPointCorrectionsDocument,
     {
       variables: {
         liveQuizId,
-        instanceId: !Number.isNaN(Number(instanceId))
-          ? Number(instanceId)
+        instanceId: !Number.isNaN(parsedInstanceId)
+          ? parsedInstanceId
           : undefined,
       },
       fetchPolicy: 'network-only',
