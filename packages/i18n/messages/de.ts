@@ -2755,6 +2755,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       shareCourse: 'Kurs teilen',
       learningAnalytics: 'Learning Analytics',
       pointCorrections: 'Punktekorrekturen',
+      appliedCorrections: 'Angewendete Punktkorrekturen',
       nameWithPin: 'Kurs: {name} (PIN: {pin})',
       joinCourse: 'Kurs beitreten',
       viewCourse: 'Kurs einsehen',
@@ -2994,9 +2995,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       historyToggleShow: 'Alle bisherigen Korrekturen anzeigen',
       historyToggleHide: 'Bisherige Korrekturen ausblenden',
       historyPlaceholder:
-        'Sobald Korrekturen für das ausgewählte Quiz vorgenommen wurden, erscheinen diese hier.',
+        'Sobald Punktkorrekturen für das ausgewählte Quiz vorgenommen wurden, erscheinen diese hier.',
       historyPlaceholderInstance:
-        'Sobald Korrekturen für die ausgewählte Quizfrage vorgenommen wurden, erscheinen diese hier.',
+        'Sobald Punktkorrekturen für die ausgewählte Quizfrage vorgenommen wurden, erscheinen diese hier.',
       historyApplied: 'Angewendet am {appliedAt} durch {user}',
       historyScopeParticipantUnknown: 'Unbekannte Person',
       historyScopeSingle: 'Einzelne Person ({participant})',

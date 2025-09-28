@@ -678,10 +678,12 @@ export async function getAssessmentResultsLiveQuiz(
                   },
                 },
               },
+              _count: { select: { corrections: true } },
             },
           },
         },
       },
+      _count: { select: { corrections: true } },
     },
   })
 
@@ -761,6 +763,17 @@ export async function getAssessmentResultsLiveQuiz(
     availableBasePoints: liveQuizResults.basePoints,
     availableCorrectnessPoints: liveQuizResults.correctnessPoints,
     availableBonusPoints: liveQuizResults.bonusPoints,
+    numberOfCorrections:
+      liveQuiz._count.corrections +
+      liveQuiz.blocks.reduce(
+        (acc, block) =>
+          acc +
+          block.elements.reduce(
+            (eAcc, element) => eAcc + element._count.corrections,
+            0
+          ),
+        0
+      ),
     studentResults: Object.values(liveQuizResults.students),
   }
 }

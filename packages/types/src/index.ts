@@ -1009,6 +1009,7 @@ export type AssessmentResultsLiveQuiz = {
   availableBasePoints: number
   availableCorrectnessPoints: number
   availableBonusPoints: number
+  numberOfCorrections: number
   studentResults: StudentAssessmentQuizResults[]
 }
 

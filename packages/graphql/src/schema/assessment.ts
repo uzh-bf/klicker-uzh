@@ -108,6 +108,7 @@ export const AssessmentResultsLiveQuiz = AssessmentResultsLiveQuizRef.implement(
       availableBasePoints: t.exposeFloat('availableBasePoints'),
       availableCorrectnessPoints: t.exposeFloat('availableCorrectnessPoints'),
       availableBonusPoints: t.exposeFloat('availableBonusPoints'),
+      numberOfCorrections: t.exposeInt('numberOfCorrections'),
       studentResults: t.expose('studentResults', {
         type: [StudentAssessmentQuizResultsRef],
       }),
@@ -177,6 +178,5 @@ export const PointCorrection = PointCorrectionRef.implement({
       nullable: true,
     }),
     createdAt: t.expose('createdAt', { type: 'Date' }),
-    updatedAt: t.expose('updatedAt', { type: 'Date' }),
   }),
 })

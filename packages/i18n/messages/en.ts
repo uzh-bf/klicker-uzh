@@ -2706,6 +2706,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       shareCourse: 'Share course',
       learningAnalytics: 'Learning Analytics',
       pointCorrections: 'Point Corrections',
+      appliedCorrections: 'Applied Point Corrections',
       nameWithPin: 'Course: {name} (PIN: {pin})',
       joinCourse: 'Join course',
       viewCourse: 'View Course',
@@ -2945,9 +2946,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       historyToggleShow: 'Show all previous corrections',
       historyToggleHide: 'Hide previous corrections',
       historyPlaceholder:
-        'Once corrections have been made for the selected quiz, they will appear here.',
+        'Once points corrections have been made for the selected quiz, they will appear here.',
       historyPlaceholderInstance:
-        'Once corrections have been made for the selected quiz question, they will appear here.',
+        'Once points corrections have been made for the selected quiz question, they will appear here.',
       historyApplied: 'Applied on {appliedAt} by {user}',
       historyScopeParticipantUnknown: 'Unknown participant',
       historyScopeSingle: 'Single participant ({participant})',

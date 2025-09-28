@@ -283,6 +283,7 @@ type AssessmentResultsLiveQuiz {
   availableBonusPoints: Float!
   availableCorrectnessPoints: Float!
   name: String!
+  numberOfCorrections: Int!
   quizBasePoints: Float!
   quizBonusPoints: Float!
   quizCorrectnessPoints: Float!
@@ -2169,7 +2170,6 @@ type PointCorrection {
   reason: String!
   studentReason: String!
   type: PointCorrectionType!
-  updatedAt: Date!
 }
 
 enum PointCorrectionType {
