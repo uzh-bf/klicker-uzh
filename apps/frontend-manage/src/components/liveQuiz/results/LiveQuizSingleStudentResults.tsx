@@ -336,7 +336,7 @@ function LiveQuizSingleStudentResults({
                         )}
                       </ShadcnTableCell>
                       <ShadcnTableCell className="px-0 py-3">
-                        <div className="-mx-2 flex justify-center gap-0 md:-mx-3">
+                        <div className="flex justify-center gap-0">
                           <Tooltip
                             tooltip={
                               !!instance.submission
