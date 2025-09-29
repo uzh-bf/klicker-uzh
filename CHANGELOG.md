@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.32...v3.4.0-alpha.33) (2025-09-23)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** pass participantToken as auth header in SSR ([e178c68](https://github.com/uzh-bf/klicker-uzh/commit/e178c68babc18e6d778f49434ec05b2596c83e4a))
+
 ## [3.4.0-alpha.32](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.31...v3.4.0-alpha.32) (2025-09-23)
 
 
