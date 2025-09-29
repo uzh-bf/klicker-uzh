@@ -14,7 +14,9 @@ import { sendTeamsNotifications } from '@/lib/util'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@klicker-uzh/prisma'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
+import { AuditAction, AuditScope } from '@klicker-uzh/types'
 import {
+  AuditClient,
   deriveCookieDomainFromURL,
   generateRandomString,
   reduceCatalyst,
@@ -22,8 +24,6 @@ import {
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { AuditAction, AuditScope } from '@klicker-uzh/types'
-import { AuditClient } from '@klicker-uzh/util'
 import type { NextAuthOptions } from 'next-auth'
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
