@@ -138,7 +138,7 @@ export async function testInitialization(
         message,
       }: {
         message: Record<string, string | undefined> & {
-          correlationId: string
+          correlationId?: string
           info: string
         }
       }) => {
