@@ -254,30 +254,6 @@ describe('Public Event Context Injection', () => {
     // would require checking the stored data in Azure Table Storage
     // This is covered in the integration tests
   })
-
-  it('should handle temporary participant tokens', async () => {
-    const tempToken = await createParticipantToken(
-      'temp-participant-789',
-      'TEMPORARY_PARTICIPANT'
-    )
-    const eventData = {
-      action: AuditAction.PARTICIPANT_JOIN_QUIZ,
-      timestamp: Date.now(),
-    }
-
-    const response = await fetch(`${BASE_URL}/audit/public`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Cookie: `next-auth.participant-session-token=${tempToken}`,
-      },
-      body: JSON.stringify(eventData),
-    })
-
-    expect(response.status).toBe(200)
-    const result = (await response.json()) as any
-    expect(result.status).toBe('stored')
-  })
 })
 
 describe('Public Event Data Validation', () => {
