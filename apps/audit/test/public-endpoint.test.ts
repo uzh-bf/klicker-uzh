@@ -18,6 +18,7 @@ async function createParticipantToken(
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
+    .setIssuer(process.env.APP_ORIGIN_AUTH || 'https://auth.klicker.com')
     .setExpirationTime('1h')
     .sign(secret)
 }
@@ -32,12 +33,13 @@ async function createInvalidToken(): Promise<string> {
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
+    .setIssuer(process.env.APP_ORIGIN_AUTH || 'https://auth.klicker.com')
     .setExpirationTime('1h')
     .sign(secret)
 }
 
 describe('Public Endpoint Authentication', () => {
-  it('should accept valid participant_token cookie', async () => {
+  it('should accept valid next-auth.participant-session-token cookie', async () => {
     const validToken = await createParticipantToken()
     const eventData = {
       action: AuditAction.PARTICIPANT_SUBMIT_RESPONSE,
@@ -52,7 +54,7 @@ describe('Public Endpoint Authentication', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Cookie: `participant_token=${validToken}`,
+        Cookie: `next-auth.participant-session-token=${validToken}`,
       },
       body: JSON.stringify(eventData),
     })
@@ -81,7 +83,7 @@ describe('Public Endpoint Authentication', () => {
     expect(result.error).toBe('No cookies provided')
   })
 
-  it('should reject requests without participant_token cookie', async () => {
+  it('should reject requests without next-auth.participant-session-token cookie', async () => {
     const eventData = {
       action: AuditAction.PARTICIPANT_SUBMIT_RESPONSE,
     }
@@ -97,7 +99,9 @@ describe('Public Endpoint Authentication', () => {
 
     expect(response.status).toBe(401)
     const result = (await response.json()) as any
-    expect(result.error).toBe('participant_token cookie required')
+    expect(result.error).toBe(
+      'next-auth.participant-session-token cookie required'
+    )
   })
 
   it('should reject invalid/expired tokens', async () => {
@@ -110,7 +114,7 @@ describe('Public Endpoint Authentication', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Cookie: `participant_token=${invalidToken}`,
+        Cookie: `next-auth.participant-session-token=${invalidToken}`,
       },
       body: JSON.stringify(eventData),
     })
@@ -129,7 +133,7 @@ describe('Public Endpoint Authentication', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Cookie: 'participant_token=invalid-jwt-token',
+        Cookie: 'next-auth.participant-session-token=invalid-jwt-token',
       },
       body: JSON.stringify(eventData),
     })
@@ -168,7 +172,7 @@ describe('Public Event Filtering', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Cookie: `participant_token=${validToken}`,
+          Cookie: `next-auth.participant-session-token=${validToken}`,
         },
         body: JSON.stringify(eventData),
       })
@@ -198,7 +202,7 @@ describe('Public Event Filtering', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Cookie: `participant_token=${validToken}`,
+          Cookie: `next-auth.participant-session-token=${validToken}`,
         },
         body: JSON.stringify(eventData),
       })
@@ -236,7 +240,7 @@ describe('Public Event Context Injection', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Cookie: `participant_token=${validToken}`,
+        Cookie: `next-auth.participant-session-token=${validToken}`,
       },
       body: JSON.stringify(eventData),
     })
@@ -265,7 +269,7 @@ describe('Public Event Context Injection', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Cookie: `participant_token=${tempToken}`,
+        Cookie: `next-auth.participant-session-token=${tempToken}`,
       },
       body: JSON.stringify(eventData),
     })
@@ -289,7 +293,7 @@ describe('Public Event Data Validation', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Cookie: `participant_token=${validToken}`,
+        Cookie: `next-auth.participant-session-token=${validToken}`,
       },
       body: JSON.stringify({
         // Missing action field
@@ -303,7 +307,7 @@ describe('Public Event Data Validation', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Cookie: `participant_token=${validToken}`,
+        Cookie: `next-auth.participant-session-token=${validToken}`,
       },
       body: JSON.stringify({}),
     })
@@ -326,7 +330,7 @@ describe('Public Event Data Validation', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Cookie: `participant_token=${validToken}`,
+        Cookie: `next-auth.participant-session-token=${validToken}`,
       },
       body: JSON.stringify(eventData),
     })
@@ -348,7 +352,7 @@ describe('Public Event Data Validation', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Cookie: `participant_token=${validToken}`,
+        Cookie: `next-auth.participant-session-token=${validToken}`,
       },
       body: JSON.stringify(eventData),
     })
