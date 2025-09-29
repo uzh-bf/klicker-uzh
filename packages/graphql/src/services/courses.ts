@@ -603,6 +603,7 @@ export async function getStudentAssessmentResults(
                     include: {
                       appliedCorrections: {
                         include: { pointCorrection: true },
+                        orderBy: { createdAt: 'desc' },
                       },
                     },
                     orderBy: { createdAt: 'desc' },
@@ -818,6 +819,7 @@ export async function getLiveQuizStudentAssessmentResponses(
                         },
                       },
                     },
+                    orderBy: { createdAt: 'desc' },
                   },
                 },
                 orderBy: { createdAt: 'desc' },
@@ -1182,11 +1184,12 @@ export async function correctAssessmentPointsInstance(
 
   // if the points of all participating students should be modified, fetch all responses with a participantId and update them
   if (scope === PointCorrectionType.PARTICIPATING) {
-    // find all live quiz responses for the given instance
+    // find all live quiz responses for the given instance (excluding the ones generated through corrections with null as a response)
     const responses = await ctx.prisma.liveQuizResponse.findMany({
       where: {
         instanceId,
         elementBlockExecution: instance.elementBlock.execution,
+        correctionOnly: false,
       },
     })
 
@@ -1584,6 +1587,15 @@ export async function correctAssessmentPointsLiveQuiz(
       return blockAcc
     }, {})
 
+    // exclude all participants that only have null responses (only corrections, but no actual submission)
+    const filteredParticipantResponseMap = Object.fromEntries(
+      Object.entries(participantResponseMap).filter(([, instanceResponseMap]) =>
+        Object.values(instanceResponseMap).some(
+          (lqr) => lqr.correctionOnly === false
+        )
+      )
+    )
+
     // update the responses of all participants that have submitted at least one response to the live quiz
     const createdCorrection = await ctx.prisma.$transaction(
       async (tx) => {
@@ -1625,7 +1637,7 @@ export async function correctAssessmentPointsLiveQuiz(
                 } = availablePoints[instance.id]!
 
                 await Promise.all(
-                  Object.entries(participantResponseMap).map(
+                  Object.entries(filteredParticipantResponseMap).map(
                     async ([pId, instanceResponseMap]) => {
                       const response = instanceResponseMap[instance.id]
 
@@ -1811,6 +1823,7 @@ export async function getPreviousPointCorrections(
               include: { accounts: { where: { ssoType: 'uzh' } } },
             },
           },
+          orderBy: { createdAt: 'desc' },
         },
       },
     })
@@ -1854,6 +1867,7 @@ export async function getPreviousPointCorrections(
             include: { accounts: { where: { ssoType: 'uzh' } } },
           },
         },
+        orderBy: { createdAt: 'desc' },
       },
       // include the corrections of all instances as well
       blocks: {
@@ -1867,6 +1881,7 @@ export async function getPreviousPointCorrections(
                     include: { accounts: { where: { ssoType: 'uzh' } } },
                   },
                 },
+                orderBy: { createdAt: 'desc' },
               },
             },
             orderBy: { order: 'asc' },
