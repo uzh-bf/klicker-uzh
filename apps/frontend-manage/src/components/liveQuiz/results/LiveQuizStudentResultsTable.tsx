@@ -95,7 +95,7 @@ function LiveQuizStudentResultsTable({
             value={pageSizeOption}
             items={pageSizeItems}
             onChange={(value) => setPageSizeOption(value as PageSizeOption)}
-            className={{ trigger: 'h-8 w-40 text-sm', item: 'text-sm' }}
+            className={{ trigger: 'h-8 w-48 text-sm', item: 'text-sm' }}
             data={{ cy: 'live-quiz-results-page-size-select' }}
           />
         </div>
