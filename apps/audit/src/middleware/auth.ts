@@ -47,6 +47,7 @@ export async function verifyParticipantToken(
   try {
     const payload = await verifyJWT(token, appSecret, {
       clockTolerance: 30,
+      issuer: process.env.APP_ORIGIN_AUTH,
     })
 
     const participantId = payload.sub as string
@@ -56,7 +57,7 @@ export async function verifyParticipantToken(
       return null
     }
 
-    if (!['PARTICIPANT', 'TEMPORARY_PARTICIPANT'].includes(role)) {
+    if (role !== 'PARTICIPANT') {
       return null
     }
 

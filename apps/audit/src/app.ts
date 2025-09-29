@@ -12,6 +12,11 @@ import { registerAuditPublicRoutes } from './routes/audit-public.js'
 import { AuditTableClient } from './storage/table-client.js'
 import { logger } from './utils/logger.js'
 
+const tableClient = new AuditTableClient(
+  config.AUDIT_TABLE_CONNECTION_STRING,
+  config.AUDIT_TABLE_NAME
+)
+
 const app = new Hono()
 
 const customLoggerPrintFunc = (str: string, ...rest: string[]) => {
@@ -50,11 +55,6 @@ app.use(
 app.use('*', secureHeaders())
 app.use('*', compress())
 app.use('*', timeout(30000))
-
-const tableClient = new AuditTableClient(
-  config.AUDIT_TABLE_CONNECTION_STRING,
-  config.AUDIT_TABLE_NAME
-)
 
 app.get('/ready', authMiddleware, async (c) => {
   try {

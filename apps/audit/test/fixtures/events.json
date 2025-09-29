@@ -7,9 +7,7 @@
   "complete": {
     "subject": "user:alice@example.com",
     "action": "document.created",
-    "resourceId": "doc-12345",
-    "sessionId": "session-abc-123",
-    "userId": "user-alice-456",
+    "resource": "doc-12345",
     "attributes": {
       "documentType": "pdf",
       "size": 2048000,
@@ -88,7 +86,7 @@
     {
       "subject": "admin:security-system",
       "action": "account.locked",
-      "resourceId": "user-suspicious-789",
+      "resource": "user-suspicious-789",
       "attributes": {
         "reason": "too_many_failed_attempts",
         "lockDuration": 1800,
@@ -101,7 +99,7 @@
     {
       "subject": "user:customer@example.com",
       "action": "order.created",
-      "resourceId": "order-98765",
+      "resource": "order-98765",
       "attributes": {
         "orderTotal": 299.99,
         "currency": "USD",
@@ -112,7 +110,7 @@
     {
       "subject": "system:payment-processor",
       "action": "payment.processed",
-      "resourceId": "order-98765",
+      "resource": "order-98765",
       "attributes": {
         "amount": 299.99,
         "currency": "USD",
@@ -126,17 +124,17 @@
     {
       "subject": "user:a1@tenant-a.com",
       "action": "document.viewed",
-      "resourceId": "doc-a-001"
+      "resource": "doc-a-001"
     },
     {
       "subject": "user:b1@tenant-b.com",
       "action": "document.viewed",
-      "resourceId": "doc-b-001"
+      "resource": "doc-b-001"
     },
     {
       "subject": "user:c1@tenant-c.com",
       "action": "document.viewed",
-      "resourceId": "doc-c-001"
+      "resource": "doc-c-001"
     }
   ],
 

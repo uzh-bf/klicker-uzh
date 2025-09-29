@@ -136,6 +136,7 @@ jobs:
           AUDIT_TOKEN: test-secret-token-123
           APP_SECRET: abcd
           AUDIT_CORS_ORIGINS: http://localhost:3002
+          APP_ORIGIN_AUTH: http://localhost:3010
 
       - name: Test audit package
         shell: bash

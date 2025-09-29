@@ -20,6 +20,9 @@ const configSchema = z.object({
   // CORS configuration (comma-separated origins)
   AUDIT_CORS_ORIGINS: z.string().default('https://assessment.klicker.com'),
 
+  // Auth Origin
+  APP_ORIGIN_AUTH: z.string().min(1),
+
   // Logging configuration
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 })

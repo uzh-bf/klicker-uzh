@@ -117,9 +117,7 @@ describe('Audit Service API Tests', () => {
       const event = {
         subject: 'user:alice@example.com',
         action: 'document.created',
-        resourceId: 'doc-789',
-        sessionId: 'session-abc',
-        userId: 'user-xyz',
+        resource: 'doc-789',
         attributes: {
           documentType: 'pdf',
           size: 1024,

@@ -28,9 +28,7 @@ interface AuditEvent {
   subject: string
   action: string
   eventId: string
-  sessionId?: string
-  userId?: string
-  resourceId?: string
+  resource?: string
   attributes?: Record<string, any>
 }
 
@@ -87,7 +85,6 @@ describe('Real-World Scenario Tests', () => {
       const testId = Date.now()
 
       const userId = 'user-auth-test'
-      const sessionId = `session-${testId}`
 
       // Complete authentication flow
       const authFlow: AuditEvent[] = [
@@ -95,7 +92,6 @@ describe('Real-World Scenario Tests', () => {
           subject: `user:${userId}@company.com`,
           action: 'auth.login.attempt',
           eventId: `auth-${testId}-01`,
-          sessionId,
           attributes: {
             ipAddress: '192.168.1.100',
             userAgent:
@@ -108,7 +104,6 @@ describe('Real-World Scenario Tests', () => {
           subject: `user:${userId}@company.com`,
           action: 'auth.mfa.challenge',
           eventId: `auth-${testId}-02`,
-          sessionId,
           attributes: {
             mfaMethod: 'totp',
             challengeId: 'challenge-xyz789',
@@ -118,7 +113,6 @@ describe('Real-World Scenario Tests', () => {
           subject: `user:${userId}@company.com`,
           action: 'auth.mfa.success',
           eventId: `auth-${testId}-03`,
-          sessionId,
           attributes: {
             mfaMethod: 'totp',
             challengeId: 'challenge-xyz789',
@@ -128,8 +122,6 @@ describe('Real-World Scenario Tests', () => {
           subject: `user:${userId}@company.com`,
           action: 'auth.login.success',
           eventId: `auth-${testId}-04`,
-          sessionId,
-          userId,
           attributes: {
             sessionDuration: 3600,
             permissions: ['read', 'write', 'admin'],
@@ -153,7 +145,6 @@ describe('Real-World Scenario Tests', () => {
 
       // Verify session consistency
       authEvents.forEach((event) => {
-        expect(event.sessionId).toBe(sessionId)
         expect(event.subject).toContain(userId)
       })
 
@@ -177,42 +168,37 @@ describe('Real-World Scenario Tests', () => {
       const testId = Date.now()
 
       const userId = 'user-failure-test'
-      const sessionId = `session-fail-${testId}`
 
       const failureFlow: AuditEvent[] = [
         {
           subject: `user:${userId}@company.com`,
           action: 'auth.login.attempt',
           eventId: `fail-${testId}-01`,
-          sessionId: `${sessionId}-1`,
           attributes: { ipAddress: '203.0.113.42', attemptNumber: 1 },
         },
         {
           subject: `user:${userId}@company.com`,
           action: 'auth.login.failed',
           eventId: `fail-${testId}-02`,
-          sessionId: `${sessionId}-1`,
           attributes: { reason: 'invalid_password', attemptNumber: 1 },
         },
         {
           subject: `user:${userId}@company.com`,
           action: 'auth.login.attempt',
           eventId: `fail-${testId}-03`,
-          sessionId: `${sessionId}-2`,
           attributes: { ipAddress: '203.0.113.42', attemptNumber: 2 },
         },
         {
           subject: `user:${userId}@company.com`,
           action: 'auth.login.failed',
           eventId: `fail-${testId}-04`,
-          sessionId: `${sessionId}-2`,
           attributes: { reason: 'invalid_password', attemptNumber: 2 },
         },
         {
           subject: 'system:auth-service',
           action: 'auth.account.locked',
           eventId: `fail-${testId}-05`,
-          resourceId: userId,
+          resource: userId,
           attributes: {
             reason: 'too_many_failed_attempts',
             lockDuration: 1800,
@@ -234,7 +220,7 @@ describe('Real-World Scenario Tests', () => {
         (e) => e.action === 'auth.account.locked'
       )!
       expect(lockEvent).toBeTruthy()
-      expect(lockEvent.resourceId).toBe(userId)
+      expect(lockEvent.resource).toBe(userId)
 
       const lockAttrs = JSON.parse(lockEvent.attributes!)
       expect(lockAttrs.failedAttempts).toBe(2)
@@ -255,8 +241,7 @@ describe('Real-World Scenario Tests', () => {
           subject: `user:${userId}@company.com`,
           action: 'document.created',
           eventId: `doc-${testId}-01`,
-          resourceId: documentId,
-          userId,
+          resource: documentId,
           attributes: {
             documentType: 'contract',
             classification: 'confidential',
@@ -274,8 +259,7 @@ describe('Real-World Scenario Tests', () => {
           subject: `user:${userId}@company.com`,
           action: 'document.viewed',
           eventId: `doc-${testId}-02`,
-          resourceId: documentId,
-          userId,
+          resource: documentId,
           attributes: {
             viewDuration: 300,
             pageCount: 12,
@@ -286,8 +270,7 @@ describe('Real-World Scenario Tests', () => {
           subject: `user:reviewer@company.com`,
           action: 'document.viewed',
           eventId: `doc-${testId}-03`,
-          resourceId: documentId,
-          userId: 'reviewer',
+          resource: documentId,
           attributes: {
             viewDuration: 850,
             pageCount: 12,
@@ -298,8 +281,7 @@ describe('Real-World Scenario Tests', () => {
           subject: `user:${userId}@company.com`,
           action: 'document.edited',
           eventId: `doc-${testId}-04`,
-          resourceId: documentId,
-          userId,
+          resource: documentId,
           attributes: {
             changeType: 'content_modification',
             sectionModified: 'terms_and_conditions',
@@ -312,8 +294,7 @@ describe('Real-World Scenario Tests', () => {
           subject: `user:${userId}@company.com`,
           action: 'document.shared',
           eventId: `doc-${testId}-05`,
-          resourceId: documentId,
-          userId,
+          resource: documentId,
           attributes: {
             sharedWith: ['legal-team@company.com', 'finance@company.com'],
             permissions: ['read', 'comment'],
@@ -325,8 +306,7 @@ describe('Real-World Scenario Tests', () => {
           subject: `user:approver@company.com`,
           action: 'document.approved',
           eventId: `doc-${testId}-06`,
-          resourceId: documentId,
-          userId: 'approver',
+          resource: documentId,
           attributes: {
             approvalLevel: 'manager',
             approvalDate: new Date().toISOString(),
@@ -344,7 +324,7 @@ describe('Real-World Scenario Tests', () => {
 
       // All events should reference the same document
       docEvents.forEach((event) => {
-        expect(event.resourceId).toBe(documentId)
+        expect(event.resource).toBe(documentId)
       })
 
       // Verify lifecycle stages
@@ -394,8 +374,7 @@ describe('Real-World Scenario Tests', () => {
           subject: `user:${userId}@company.com`,
           action: 'file.uploaded',
           eventId: `comp-${testId}-01`,
-          resourceId: fileId,
-          userId,
+          resource: fileId,
           attributes: {
             fileName: 'customer_data_export.csv',
             fileSize: 5242880,
@@ -414,7 +393,7 @@ describe('Real-World Scenario Tests', () => {
           subject: 'system:dlp-scanner',
           action: 'file.scanned',
           eventId: `comp-${testId}-02`,
-          resourceId: fileId,
+          resource: fileId,
           attributes: {
             scanType: 'data_loss_prevention',
             piiDetected: ['email_addresses', 'phone_numbers', 'ssn'],
@@ -427,8 +406,7 @@ describe('Real-World Scenario Tests', () => {
           subject: `user:compliance-officer@company.com`,
           action: 'file.reviewed',
           eventId: `comp-${testId}-03`,
-          resourceId: fileId,
-          userId: 'compliance-officer',
+          resource: fileId,
           attributes: {
             reviewType: 'manual_compliance_check',
             findings: ['contains_customer_pii', 'requires_encryption'],
@@ -440,7 +418,7 @@ describe('Real-World Scenario Tests', () => {
           subject: 'system:encryption-service',
           action: 'file.encrypted',
           eventId: `comp-${testId}-04`,
-          resourceId: fileId,
+          resource: fileId,
           attributes: {
             encryptionMethod: 'AES-256-GCM',
             keyId: 'key-compliance-2024-001',
@@ -451,8 +429,7 @@ describe('Real-World Scenario Tests', () => {
           subject: `user:${userId}@company.com`,
           action: 'file.accessed',
           eventId: `comp-${testId}-05`,
-          resourceId: fileId,
-          userId,
+          resource: fileId,
           attributes: {
             accessType: 'download',
             decryptionRequired: true,
@@ -512,7 +489,7 @@ describe('Real-World Scenario Tests', () => {
           subject: 'system:intrusion-detection',
           action: 'security.threat.detected',
           eventId: `sec-${testId}-01`,
-          resourceId: incidentId,
+          resource: incidentId,
           attributes: {
             threatType: 'brute_force_attack',
             severity: 'high',
@@ -526,7 +503,7 @@ describe('Real-World Scenario Tests', () => {
           subject: 'system:incident-response',
           action: 'security.incident.created',
           eventId: `sec-${testId}-02`,
-          resourceId: incidentId,
+          resource: incidentId,
           attributes: {
             incidentType: 'security_breach_attempt',
             priority: 'high',
@@ -539,7 +516,7 @@ describe('Real-World Scenario Tests', () => {
           subject: 'system:firewall',
           action: 'security.ip.blocked',
           eventId: `sec-${testId}-03`,
-          resourceId: incidentId,
+          resource: incidentId,
           attributes: {
             blockedIP: '203.0.113.100',
             blockDuration: 3600,
@@ -551,8 +528,7 @@ describe('Real-World Scenario Tests', () => {
           subject: 'user:security-analyst@company.com',
           action: 'security.incident.investigated',
           eventId: `sec-${testId}-04`,
-          resourceId: incidentId,
-          userId: 'security-analyst',
+          resource: incidentId,
           attributes: {
             investigationFindings: [
               'confirmed_brute_force_attack',
@@ -568,8 +544,7 @@ describe('Real-World Scenario Tests', () => {
           subject: 'user:security-manager@company.com',
           action: 'security.incident.resolved',
           eventId: `sec-${testId}-05`,
-          resourceId: incidentId,
-          userId: 'security-manager',
+          resource: incidentId,
           attributes: {
             resolutionType: 'threat_mitigated',
             resolution: 'IP blocked, no data compromise, monitoring enhanced',
@@ -588,7 +563,7 @@ describe('Real-World Scenario Tests', () => {
 
       // All events should reference the same incident
       secEvents.forEach((event) => {
-        expect(event.resourceId).toBe(incidentId)
+        expect(event.resource).toBe(incidentId)
       })
 
       // Verify incident progression
@@ -628,15 +603,12 @@ describe('Real-World Scenario Tests', () => {
       const testId = Date.now()
 
       const userId = 'admin-user'
-      const sessionId = `admin-session-${testId}`
 
       const adminFlow: AuditEvent[] = [
         {
           subject: `user:${userId}@company.com`,
           action: 'admin.privilege.escalated',
           eventId: `admin-${testId}-01`,
-          sessionId,
-          userId,
           attributes: {
             fromRole: 'user',
             toRole: 'system_administrator',
@@ -649,9 +621,7 @@ describe('Real-World Scenario Tests', () => {
           subject: `user:${userId}@company.com`,
           action: 'system.database.accessed',
           eventId: `admin-${testId}-02`,
-          sessionId,
-          userId,
-          resourceId: 'production-database',
+          resource: 'production-database',
           attributes: {
             databaseName: 'customer_data',
             accessType: 'read_write',
@@ -663,8 +633,6 @@ describe('Real-World Scenario Tests', () => {
           subject: `user:${userId}@company.com`,
           action: 'system.configuration.changed',
           eventId: `admin-${testId}-03`,
-          sessionId,
-          userId,
           attributes: {
             configType: 'database_settings',
             parameter: 'max_connections',
@@ -677,8 +645,6 @@ describe('Real-World Scenario Tests', () => {
           subject: `user:${userId}@company.com`,
           action: 'system.backup.initiated',
           eventId: `admin-${testId}-04`,
-          sessionId,
-          userId,
           attributes: {
             backupType: 'full_database_backup',
             backupLocation: 'secure_offsite_storage',
@@ -690,8 +656,6 @@ describe('Real-World Scenario Tests', () => {
           subject: `user:${userId}@company.com`,
           action: 'admin.privilege.revoked',
           eventId: `admin-${testId}-05`,
-          sessionId,
-          userId,
           attributes: {
             fromRole: 'system_administrator',
             toRole: 'user',
@@ -712,12 +676,6 @@ describe('Real-World Scenario Tests', () => {
       const adminEvents = persistedEntities.sort(
         (a, b) => extractEntityTimestamp(a) - extractEntityTimestamp(b)
       )
-
-      // All events should be in same session
-      adminEvents.forEach((event) => {
-        expect(event.sessionId).toBe(sessionId)
-        expect(event.userId).toBe(userId)
-      })
 
       // Verify privilege escalation/revocation
       const escalationEvent = adminEvents.find(
@@ -774,8 +732,7 @@ describe('Real-World Scenario Tests', () => {
           subject: 'user:employee@company.com',
           action: 'finance.expense.submitted',
           eventId: `fin-${testId}-01`,
-          resourceId: transactionId,
-          userId: 'employee',
+          resource: transactionId,
           attributes: {
             expenseType: 'equipment_purchase',
             amount,
@@ -790,8 +747,7 @@ describe('Real-World Scenario Tests', () => {
           subject: 'user:manager@company.com',
           action: 'finance.expense.reviewed',
           eventId: `fin-${testId}-02`,
-          resourceId: transactionId,
-          userId: 'manager',
+          resource: transactionId,
           attributes: {
             reviewLevel: 'department_manager',
             reviewResult: 'approved',
@@ -803,7 +759,7 @@ describe('Real-World Scenario Tests', () => {
           subject: 'system:finance-system',
           action: 'finance.expense.budget_checked',
           eventId: `fin-${testId}-03`,
-          resourceId: transactionId,
+          resource: transactionId,
           attributes: {
             budgetCategory: 'it_equipment',
             availableBudget: 75000.0,
@@ -817,8 +773,7 @@ describe('Real-World Scenario Tests', () => {
           subject: 'user:finance-director@company.com',
           action: 'finance.expense.approved',
           eventId: `fin-${testId}-04`,
-          resourceId: transactionId,
-          userId: 'finance-director',
+          resource: transactionId,
           attributes: {
             approvalLevel: 'executive',
             approvalAuthority: 'up_to_50000',
@@ -833,7 +788,7 @@ describe('Real-World Scenario Tests', () => {
           subject: 'system:payment-processor',
           action: 'finance.payment.processed',
           eventId: `fin-${testId}-05`,
-          resourceId: transactionId,
+          resource: transactionId,
           attributes: {
             paymentId: `pay-${testId}`,
             amount,
@@ -854,7 +809,7 @@ describe('Real-World Scenario Tests', () => {
 
       // All events should reference the same transaction
       finEvents.forEach((event) => {
-        expect(event.resourceId).toBe(transactionId)
+        expect(event.resource).toBe(transactionId)
       })
 
       // Verify approval workflow
@@ -912,8 +867,7 @@ describe('Real-World Scenario Tests', () => {
           subject: `customer:${customerId}@example.com`,
           action: 'privacy.data_request.submitted',
           eventId: `gdpr-${testId}-01`,
-          resourceId: requestId,
-          userId: customerId,
+          resource: requestId,
           attributes: {
             requestType: 'data_export',
             requestSource: 'customer_portal',
@@ -930,7 +884,7 @@ describe('Real-World Scenario Tests', () => {
           subject: 'system:privacy-system',
           action: 'privacy.request.validated',
           eventId: `gdpr-${testId}-02`,
-          resourceId: requestId,
+          resource: requestId,
           attributes: {
             validationType: 'identity_verification',
             validationResult: 'verified',
@@ -944,7 +898,7 @@ describe('Real-World Scenario Tests', () => {
           subject: 'system:data-discovery',
           action: 'privacy.data.located',
           eventId: `gdpr-${testId}-03`,
-          resourceId: requestId,
+          resource: requestId,
           attributes: {
             dataSources: [
               'user_profiles',
@@ -962,8 +916,7 @@ describe('Real-World Scenario Tests', () => {
           subject: 'user:privacy-officer@company.com',
           action: 'privacy.data.reviewed',
           eventId: `gdpr-${testId}-04`,
-          resourceId: requestId,
-          userId: 'privacy-officer',
+          resource: requestId,
           attributes: {
             reviewType: 'manual_data_review',
             sensitiveDataHandling: 'anonymized_references',
@@ -976,7 +929,7 @@ describe('Real-World Scenario Tests', () => {
           subject: 'system:data-export',
           action: 'privacy.data.exported',
           eventId: `gdpr-${testId}-05`,
-          resourceId: requestId,
+          resource: requestId,
           attributes: {
             exportFormat: 'json',
             exportSize: '2.3MB',
@@ -996,8 +949,7 @@ describe('Real-World Scenario Tests', () => {
           subject: `customer:${customerId}@example.com`,
           action: 'privacy.data.downloaded',
           eventId: `gdpr-${testId}-06`,
-          resourceId: requestId,
-          userId: customerId,
+          resource: requestId,
           attributes: {
             downloadDate: new Date().toISOString(),
             downloadIP: '192.168.1.100',
@@ -1015,7 +967,7 @@ describe('Real-World Scenario Tests', () => {
 
       // All events should reference the same request
       gdprEvents.forEach((event) => {
-        expect(event.resourceId).toBe(requestId)
+        expect(event.resource).toBe(requestId)
       })
 
       // Verify request progression
