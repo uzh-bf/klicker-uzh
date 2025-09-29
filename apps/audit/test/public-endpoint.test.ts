@@ -42,7 +42,6 @@ describe('Public Endpoint Authentication', () => {
     const eventData = {
       action: AuditAction.PARTICIPANT_SUBMIT_RESPONSE,
       timestamp: Date.now(),
-      sessionId: 'test-session-123',
       attributes: {
         questionId: 'q123',
         response: 'A',
@@ -226,8 +225,6 @@ describe('Public Event Context Injection', () => {
     const eventData = {
       action: AuditAction.PARTICIPANT_SUBMIT_RESPONSE,
       timestamp: Date.now(),
-      // Note: Even if these are provided, they should be overridden
-      userId: 'spoofed-user-id',
       attributes: {
         questionId: 'q123',
         response: 'B',

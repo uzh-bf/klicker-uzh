@@ -52,7 +52,7 @@ export default defineConfig({
     // Note: Docker setup is handled in individual test files for now
 
     // Reporter configuration
-    reporter: ['verbose', 'json'],
+    reporters: ['verbose', 'json'],
 
     // Retry failed tests (useful for flaky integration tests)
     retry: 1,

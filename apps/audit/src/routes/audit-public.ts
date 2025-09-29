@@ -32,14 +32,17 @@ export function registerAuditPublicRoutes(
       }
 
       const cookies = parseCookies(cookieHeader)
-      const participantToken = cookies['participant_token']
+      const participantToken = cookies['next-auth.participant-session-token']
 
       if (!participantToken) {
         logger.warn(
           { requestId: c.get('requestId'), path: c.req.path },
-          'Public endpoint authentication failed: participant_token cookie required'
+          'Public endpoint authentication failed: next-auth.participant-session-token cookie required'
         )
-        return c.json({ error: 'participant_token cookie required' }, 401)
+        return c.json(
+          { error: 'next-auth.participant-session-token cookie required' },
+          401
+        )
       }
 
       const participant = await verifyParticipantToken(
@@ -95,7 +98,6 @@ export function registerAuditPublicRoutes(
       const {
         attributes,
         subject: _subjectIgnored,
-        userId: _userIdIgnored,
         scope: _scopeIgnored,
         schemaVersion: _schemaVersionIgnored,
         ...rest
@@ -112,7 +114,6 @@ export function registerAuditPublicRoutes(
         ...rest,
         scope: 'public' as const,
         subject: `participant:${participant.participantId}`,
-        userId: participant.participantId,
         attributes: {
           ...(attributeRecord ?? {}),
           source: 'frontend_direct',

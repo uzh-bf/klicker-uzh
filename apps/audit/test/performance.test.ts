@@ -30,8 +30,7 @@ function generateTestEvent(index: number) {
     subject: `user:perf-user-${index}`,
     action: `test.performance.action${index % 5}`, // 5 different actions
     eventId: `perf-${Date.now()}-${index}`,
-    resourceId: `resource-${index}`,
-    sessionId: `session-${Math.floor(index / 10)}`, // Group every 10 events
+    resource: `resource-${index}`,
     attributes: {
       index,
       timestamp: Date.now(),
@@ -120,9 +119,7 @@ describe('Performance and Load Tests', () => {
         subject: 'user:complex-perf',
         action: 'test.complex-performance',
         eventId: `complex-perf-${Date.now()}`,
-        resourceId: 'resource-complex',
-        sessionId: 'session-complex',
-        userId: 'user-complex',
+        resource: 'resource-complex',
         attributes: {
           // Large but reasonable attributes
           records: Array.from({ length: 100 }, (_, i) => ({

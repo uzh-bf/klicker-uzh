@@ -19,9 +19,7 @@ interface AuditTableEntity extends TableEntity {
   outcome?: string
   reasonCode?: string
   schemaVersion: number
-  resourceId?: string
-  sessionId?: string
-  userId?: string
+  resource?: string
 }
 
 interface TableStats {

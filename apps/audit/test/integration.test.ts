@@ -122,9 +122,7 @@ describe('Audit Service Integration Tests', () => {
       const persistedEntity = await waitForEntityByRowKey(event.eventId)
 
       // Verify all fields including complex attributes
-      expect(persistedEntity.resourceId).toBe(event.resourceId)
-      expect(persistedEntity.sessionId).toBe(event.sessionId)
-      expect(persistedEntity.userId).toBe(event.userId)
+      expect(persistedEntity.resource).toBe(event.resource)
 
       // Verify attributes were serialized and can be parsed
       const attributes = JSON.parse(persistedEntity.attributes!)
