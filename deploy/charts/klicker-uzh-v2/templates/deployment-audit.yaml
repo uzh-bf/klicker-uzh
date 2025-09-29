@@ -54,6 +54,8 @@ spec:
               value: "7080"
           envFrom:
             - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
+            - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-audit
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-audit
