@@ -322,6 +322,15 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      ensureParticipation: t.withAuth(asParticipant).boolean({
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await CourseService.ensureParticipation(args, ctx)
+        },
+      }),
+
       joinCourseLeaderboard: t.withAuth(asParticipant).field({
         nullable: true,
         type: ParticipantLearningData,

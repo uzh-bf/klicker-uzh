@@ -61,6 +61,7 @@ const statusActionMap = {
     'duplicateLiveQuiz',
     'activityLog',
     'shareLiveQuiz',
+    'liveQuizAssessmentResults',
     'removeLiveQuiz',
   ],
   [PublicationStatus.Ended]: [
@@ -69,6 +70,7 @@ const statusActionMap = {
     'embeddingEvaluation',
     'activityLog',
     'shareLiveQuiz',
+    'liveQuizAssessmentResults',
     'removeLiveQuiz',
     'resetLiveQuiz',
     'deleteLiveQuiz',
@@ -160,6 +162,10 @@ function LiveQuizActions({
         'duplicateLiveQuiz',
         ...(user?.privatePreview
           ? ['templateFromLiveQuiz', 'shareLiveQuiz']
+          : []),
+        // the results of assessment live quizzes can be inspected in more detail
+        ...(liveQuiz.isActivityReviewer && liveQuiz.isAssessmentEnabled
+          ? ['liveQuizAssessmentResults']
           : []),
         // assessment live quizzes can only be deleted when not completed and only by course admins
         ...(!liveQuiz.isAssessmentEnabled

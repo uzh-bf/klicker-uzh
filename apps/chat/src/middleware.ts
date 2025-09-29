@@ -4,12 +4,33 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  if (
+    pathname === '/noLogin' ||
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/favicon')
+  ) {
+    return NextResponse.next()
+  }
+
+  const pathSegments = pathname.split('/').filter(Boolean)
+  if (pathSegments.length === 0) {
+    return NextResponse.next()
+  }
+
   const participantToken = request.cookies.get('participant_token')?.value
 
-  const loginUrl = `${process.env.NEXT_PUBLIC_PWA_URL}/login?redirectTo=${process.env.NEXT_PUBLIC_CHAT_URL}`
-
   if (!participantToken) {
-    return NextResponse.redirect(loginUrl, 302)
+    const noLoginUrl = request.nextUrl.clone()
+    noLoginUrl.pathname = '/noLogin'
+    noLoginUrl.search = ''
+    noLoginUrl.searchParams.set(
+      'redirectTo',
+      `${request.nextUrl.pathname}${request.nextUrl.search}`
+    )
+    return NextResponse.redirect(noLoginUrl)
   }
 
   // verify with jose that the token is valid
@@ -21,7 +42,14 @@ export async function middleware(request: NextRequest) {
     )
   } catch (error) {
     console.error('Invalid participant token:', error)
-    return NextResponse.redirect(loginUrl, 302)
+    const noLoginUrl = request.nextUrl.clone()
+    noLoginUrl.pathname = '/noLogin'
+    noLoginUrl.search = ''
+    noLoginUrl.searchParams.set(
+      'redirectTo',
+      `${request.nextUrl.pathname}${request.nextUrl.search}`
+    )
+    return NextResponse.redirect(noLoginUrl)
   }
 
   // TODO: relay participant data to api routes or similar

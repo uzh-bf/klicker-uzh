@@ -29,8 +29,6 @@ scratchpad.md
 
 ssl/
 
-util/backup/dumps
-
 dist/
 trees/
 
@@ -40,3 +38,16 @@ tsconfig.tsbuildinfo
 *.log
 
 AzuriteConfig
+# Backup dumps and archives
+dumps/**/latest
+dumps/**/*.tar
+dumps/**/*.tar.gpg
+dumps/**/*.dump
+dumps/**/*.dump.gpg
+
+# Temporary files
+*.tmp
+*.log
+
+# Environment-specific files
+.env.*
