@@ -34,12 +34,12 @@
     "@klicker-uzh/markdown": "workspace:*",
     "@tailwindcss/postcss": "^4.1.11",
     "@uzh-bf/design-system": "4.1.4",
+    "compromise": "^14.14.4",
     "d3-cloud": "^1.2.7",
     "dayjs": "^1.11.13",
     "formik": "^2.4.6",
     "js-cookie": "^3.0.5",
     "localforage": "^1.10.0",
-    "natural": "^8.1.0",
     "next": "^15.3.4",
     "next-intl": "^4.3.4",
     "react": "^19.1.0",
@@ -49,8 +49,6 @@
     "remeda": "^2.15.0",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.11",
-    "wink-eng-lite-web-model": "^1.8.1",
-    "wink-nlp": "^2.4.0",
     "yup": "^1.6.1"
   },
   "scripts": {

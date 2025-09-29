@@ -2,15 +2,13 @@ import {
   type ElementInstanceEvaluation,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
-import { UserNotification } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
-import React from 'react'
-// import { TagCloud } from 'react-tagcloud'
 import { CHART_COLORS } from '@klicker-uzh/shared-components/src/constants'
+import { UserNotification } from '@uzh-bf/design-system'
+import nlp from 'compromise'
+import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
-import model from 'wink-eng-lite-web-model'
-import winkNLP, { type ItemToken } from 'wink-nlp'
 import EvaluationExplanation from '../evaluation/EvaluationExplanation'
 
 const ReactWordcloud = dynamic(() => import('react-wordcloud'), {
@@ -58,21 +56,31 @@ function ElementWordcloud({
     )
   }
 
+  // determine frequencies of responses
   const frequencies: Record<string, number> = {}
-
-  const nlp = winkNLP(model)
-  const its = nlp.its
+  const ignoreTags: string[] = [
+    'Pronoun',
+    'Determiner',
+    'Conjunction',
+    'Preposition',
+    'Auxiliary',
+    // TODO: adjust tags
+  ]
   data.forEach((response) => {
-    const doc = nlp.readDoc(response.value)
-    doc
-      .tokens()
-      .filter(
-        (t: ItemToken) => t.out(its.type) === 'word' && !t.out(its.stopWordFlag)
-      )
-      .each((itemToken: ItemToken) => {
-        const token = itemToken.out().toLowerCase()
-        frequencies[token] = (frequencies[token] || 0) + 1
-      })
+    const doc = nlp(response.value)
+
+    // filter out words of responses based on list of tags
+    const tagged: Record<string, string[]>[] = doc.out('tags')
+
+    tagged.forEach((entry) => {
+      const entities = Object.entries(entry)
+        .filter(([_, tags]) => !tags.some((tag) => ignoreTags.includes(tag)))
+        .map(([entity]) => entity.toLowerCase())
+      const phrase = entities.join(' ')
+      if (phrase.length > 0) {
+        frequencies[phrase] = (frequencies[phrase] || 0) + response.count
+      }
+    })
   })
 
   const processedData = Object.entries(frequencies).map(([value, count]) => ({
@@ -80,6 +88,7 @@ function ElementWordcloud({
     value: count,
   }))
 
+  // when displaying only one word, do not rotate
   const rotationAngles: [number, number] = [
     0,
     processedData.length > 1 ? -90 : 0,
@@ -110,7 +119,6 @@ function ElementWordcloud({
             spiral: 'archimedean',
           }}
         />
-        )
       </div>
     </div>
   )
