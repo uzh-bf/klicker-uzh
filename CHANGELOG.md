@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.34](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.33...v3.4.0-alpha.34) (2025-09-29)
+
+
+### Features
+
+* add point correction mechanisms on instance and quiz level ([#4941](https://github.com/uzh-bf/klicker-uzh/issues/4941)) ([5abd6df](https://github.com/uzh-bf/klicker-uzh/commit/5abd6dfca6101a6bc1f1cdc557697823628433d0))
+* display point corrections and applied point corrections on overviews and detailed student response listings ([#4945](https://github.com/uzh-bf/klicker-uzh/issues/4945)) ([6c1a03b](https://github.com/uzh-bf/klicker-uzh/commit/6c1a03bc74f0a0f17161f663d7407414af64ebd6))
+
+
+### Bug Fixes
+
+* **packages/graphql:** avoid hatchet rate limits by using batch task calls for point correction audit logs ([#4949](https://github.com/uzh-bf/klicker-uzh/issues/4949)) ([3e02b4b](https://github.com/uzh-bf/klicker-uzh/commit/3e02b4b3b3a330a5c60b3d1b57f2d24581b8423c))
+* **packages/graphql:** ensure that only students with a submitted response are counted as participating ([#4948](https://github.com/uzh-bf/klicker-uzh/issues/4948)) ([0a8c545](https://github.com/uzh-bf/klicker-uzh/commit/0a8c545c4f3f2c5c60c952365d6cf405fe53c9c1))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add quick access options to point corrections dialog from assessment results view ([#4944](https://github.com/uzh-bf/klicker-uzh/issues/4944)) ([787dab8](https://github.com/uzh-bf/klicker-uzh/commit/787dab8ff2b590599da55cacee360bc8b6035cde))
+
 ## [3.4.0-alpha.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.32...v3.4.0-alpha.33) (2025-09-23)
 
 
