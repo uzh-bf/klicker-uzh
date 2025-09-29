@@ -425,13 +425,19 @@ function getStudentAssessmentQuizPerformance({
   const defaultCorrectPoints = quiz.defaultCorrectPoints
   const defaultMaxBonusPoints = quiz.maxBonusPoints
 
-  const quizResults = quiz.blocks.reduce<ActivityStudentPerformance>(
+  const quizResults = quiz.blocks.reduce<
+    Omit<ActivityStudentPerformance, 'corrections'> & {
+      corrections: (StudentPointCorrection & { createdAt: Date })[]
+    }
+  >(
     (quizAcc, block) => {
       const instanceResults = block.elements.reduce<
         Omit<
           ActivityStudentPerformance,
-          'id' | 'displayName' | 'finishedAt' | 'multiplier'
-        >
+          'id' | 'displayName' | 'finishedAt' | 'multiplier' | 'corrections'
+        > & {
+          corrections: (StudentPointCorrection & { createdAt: Date })[]
+        }
       >(
         (blockAcc, instance) => {
           const { basePoints, correctnessPoints, bonusPoints } =
@@ -459,6 +465,7 @@ function getStudentAssessmentQuizPerformance({
               blockAcc.corrections.push(
                 ...response.appliedCorrections.map((correction) => ({
                   id: correction.pointCorrectionId,
+                  createdAt: correction.pointCorrection.createdAt,
                   reason: correction.pointCorrection.reason,
                   awardedBasePoints: correction.awardedBasePoints,
                   awardedCorrectnessPoints: correction.awardedCorrectnessPoints,
@@ -513,12 +520,14 @@ function getStudentAssessmentQuizPerformance({
   )
 
   // deduplicate the corrections on quiz level -> only one entry per correction on student view
-  let deduplicatedCorrections: StudentPointCorrection[] = []
+  let deduplicatedCorrections: (StudentPointCorrection & {
+    createdAt: Date
+  })[] = []
   if (quizResults.corrections.length > 0) {
     // group the corrections by correctionId and aggregate the contained corrections
     // -> per applied correction by the lecturer, only one entry should be shown on the quiz performance entry
     const groupedCorrections = quizResults.corrections.reduce<
-      Record<string, StudentPointCorrection[]>
+      Record<string, (StudentPointCorrection & { createdAt: Date })[]>
     >((acc, correction) => {
       if (!acc[correction.id]) {
         acc[correction.id] = []
@@ -531,7 +540,9 @@ function getStudentAssessmentQuizPerformance({
     for (const [correctionId, corrections] of Object.entries(
       groupedCorrections
     )) {
-      const aggregatedCorrection = corrections.reduce<StudentPointCorrection>(
+      const aggregatedCorrection = corrections.reduce<
+        StudentPointCorrection & { createdAt: Date }
+      >(
         (acc, appliedCorrection) => {
           acc.awardedBasePoints += appliedCorrection.awardedBasePoints
           acc.awardedCorrectnessPoints +=
@@ -545,6 +556,7 @@ function getStudentAssessmentQuizPerformance({
         },
         {
           id: parseInt(correctionId),
+          createdAt: corrections[0]!.createdAt,
           reason: corrections[0]!.reason,
           awardedBasePoints: 0,
           awardedCorrectnessPoints: 0,
@@ -559,7 +571,10 @@ function getStudentAssessmentQuizPerformance({
     }
   }
 
-  return { ...quizResults, corrections: deduplicatedCorrections }
+  return {
+    ...quizResults,
+    corrections: sortBy(deduplicatedCorrections, [prop('createdAt'), 'desc']),
+  }
 }
 
 export async function getStudentAssessmentResults(
@@ -1867,7 +1882,6 @@ export async function getPreviousPointCorrections(
             include: { accounts: { where: { ssoType: 'uzh' } } },
           },
         },
-        orderBy: { createdAt: 'desc' },
       },
       // include the corrections of all instances as well
       blocks: {
@@ -1881,7 +1895,6 @@ export async function getPreviousPointCorrections(
                     include: { accounts: { where: { ssoType: 'uzh' } } },
                   },
                 },
-                orderBy: { createdAt: 'desc' },
               },
             },
             orderBy: { order: 'asc' },
@@ -1913,7 +1926,11 @@ export async function getPreviousPointCorrections(
   )
 
   // return both the quiz- and instance-level corrections
-  return [...(liveQuiz?.corrections ?? []), ...(instanceCorrections ?? [])]
+  const corrections = [
+    ...(liveQuiz?.corrections ?? []),
+    ...(instanceCorrections ?? []),
+  ]
+  return sortBy(corrections, [prop('createdAt'), 'desc'])
 }
 
 async function computeRollingLeaderboardEntries(
