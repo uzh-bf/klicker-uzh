@@ -98,6 +98,16 @@ jobs:
         ports:
           - 6380:6379
 
+      redis_cache:
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        image: redis:7
+        ports:
+          - 6381:6379
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -131,7 +141,50 @@ jobs:
 
       - name: Run tests
         run: |
+          set -euo pipefail
+
           . ./util/_create_hatchet_token_graphql.sh
+          export HATCHET_CLIENT_TOKEN="$TOKEN"
+
+          pnpm --filter @klicker-uzh/hatchet-worker-general run build
+
+          cleanup() {
+            if [[ -n "${HATCHET_WORKER_PID:-}" ]]; then
+              kill "$HATCHET_WORKER_PID" >/dev/null 2>&1 || true
+              wait "$HATCHET_WORKER_PID" >/dev/null 2>&1 || true
+            fi
+          }
+          trap cleanup EXIT
+
+          HATCHET_CLIENT_HOST_PORT=localhost:7077 \
+          HATCHET_CLIENT_TLS_STRATEGY=none \
+          HATCHET_API_URL=http://localhost:8888 \
+          HATCHET_HOST_PORT=localhost:7077 \
+          HATCHET_LOG_LEVEL=DEBUG \
+          HATCHET_TENANT_ID=707d0855-80ab-4e1f-a156-f1c4546cbf52 \
+          HATCHET_WORKER_NAME=hatchet-worker-general \
+          LOG_LEVEL=info \
+          NODE_ENV=test \
+          DATABASE_URL=postgresql://klicker:klicker@localhost:5432/klicker-prod \
+          REDIS_HOST=localhost \
+          REDIS_PORT=6379 \
+          REDIS_ASSESSMENT_HOST=localhost \
+          REDIS_ASSESSMENT_PORT=6380 \
+          REDIS_CACHE_HOST=localhost \
+          REDIS_CACHE_PORT=6381 \
+          APP_ORIGIN_API=http://api.klicker.com \
+          APP_ORIGIN_AUTH=http://auth.klicker.com \
+          APP_ORIGIN_LTI=http://lti.klicker.com \
+          APP_ORIGIN_PWA=http://pwa.klicker.com \
+          APP_ORIGIN_MANAGE=http://manage.klicker.com \
+          APP_ORIGIN_CONTROL=http://control.klicker.com \
+          APP_ORIGIN_ASSESSMENT_API=http://assessment-api.klicker.com \
+          APP_ORIGIN_ASSESSMENT_PWA=http://assessment.klicker.com \
+          pnpm exec env HATCHET_CLIENT_TOKEN="$HATCHET_CLIENT_TOKEN" node apps/hatchet-worker-general/dist/index.js > hatchet-worker.log 2>&1 &
+
+          HATCHET_WORKER_PID=$!
+          sleep 5
+
           cd packages/graphql
           pnpm vitest run
         env:
