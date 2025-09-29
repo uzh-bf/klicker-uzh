@@ -107,6 +107,12 @@ else
 	echo "Skipping pnpm run build"
 fi
 
+SERVICE_ENDPOINTS="" ./util/wait-for-services.sh || {
+	echo "Service dependency check failed" >&2
+	cleanup
+	exit 1
+}
+
 # create hatchet client token (switch script for cypress/test mode)
 if [ "$MODE" = "cypress" ]; then
     echo "Using cypress hatchet token script"
