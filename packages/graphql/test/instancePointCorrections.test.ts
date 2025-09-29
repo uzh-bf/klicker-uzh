@@ -1,7 +1,6 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import { PointCorrectionType, PrismaClient } from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
-import {} from 'src/ops.js'
 import { ContextWithUser } from '../src/lib/context.js'
 import { correctAssessmentPointsInstance } from '../src/services/courses.js'
 import {
@@ -24,12 +23,12 @@ describe('Unit tests covering point corrections for instances', () => {
   beforeAll(async () => {
     const {
       prisma: newPrisma,
-      hatchet: newHatchet,
       emitter: newEmitter,
+      hatchet: newHatchet,
     } = await initializePrisma()
     prisma = newPrisma
-    hatchet = newHatchet
     emitter = newEmitter
+    hatchet = newHatchet
   })
 
   afterAll(async () => {

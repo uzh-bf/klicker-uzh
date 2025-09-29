@@ -1006,10 +1006,11 @@ async function upsertResponseAppliedCorrection(
     },
   })
 
-  // add audit logging entry for change
-  await ctx.hatchet.events.push('create-audit-log-entry', {
-    info: `[INFO] [Correct Assessment Points Instance] User ${ctx.user.sub} corrected points for participant ${lqr.participantId} on instance ${instance.id}. Deducted points: base ${appliedCorrection.deductedBasePoints}, correctness ${appliedCorrection.deductedCorrectnessPoints}, bonus ${appliedCorrection.deductedBonusPoints}. Awarded points: base ${appliedCorrection.awardedBasePoints}, correctness ${appliedCorrection.awardedCorrectnessPoints}, bonus ${appliedCorrection.awardedBonusPoints}.`,
-  })
+  return {
+    message: {
+      info: `[INFO] [Correct Assessment Points Instance] User ${ctx.user.sub} corrected points for participant ${lqr.participantId} on instance ${instance.id}. Deducted points: base ${appliedCorrection.deductedBasePoints}, correctness ${appliedCorrection.deductedCorrectnessPoints}, bonus ${appliedCorrection.deductedBonusPoints}. Awarded points: base ${appliedCorrection.awardedBasePoints}, correctness ${appliedCorrection.awardedCorrectnessPoints}, bonus ${appliedCorrection.awardedBonusPoints}.`,
+    },
+  }
 }
 
 export async function correctAssessmentPointsInstance(
@@ -1166,7 +1167,7 @@ export async function correctAssessmentPointsInstance(
           include: { correctedBy: true, participant: true, instance: true },
         })
 
-        await upsertResponseAppliedCorrection(
+        const logObject = await upsertResponseAppliedCorrection(
           {
             correctionId: correction.id,
             instance: instance as DB.ElementInstance & {
@@ -1188,10 +1189,13 @@ export async function correctAssessmentPointsInstance(
           ctx
         )
 
+        // add an audit log entry for the correction
+        await ctx.tasks.createAuditLogEntry.runNoWait([logObject])
+
         // return the correction to display it to the lecturer
         return correction
       },
-      { timeout: 60000 }
+      { timeout: 300000 } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
     )
 
     return createdCorrection
@@ -1237,10 +1241,13 @@ export async function correctAssessmentPointsInstance(
           include: { correctedBy: true, instance: true },
         })
 
+        // initialize the audit log entries that should be executed
+        const logEntries: { message: { info: string } }[] = []
+
         // loop over all responses and update them with the corrected points
         await Promise.all(
           responses.map(async (response) => {
-            await upsertResponseAppliedCorrection(
+            const logObject = await upsertResponseAppliedCorrection(
               {
                 correctionId: correction.id,
                 instance: instance as DB.ElementInstance & {
@@ -1261,13 +1268,19 @@ export async function correctAssessmentPointsInstance(
               tx,
               ctx
             )
+
+            // add the log object to the list of log entries
+            logEntries.push(logObject)
           })
         )
+
+        // create the collected audit log entries
+        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
 
         // return the correction to display it to the lecturer
         return correction
       },
-      { timeout: 60000 }
+      { timeout: 300000 } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
     )
 
     return createdCorrection
@@ -1321,10 +1334,13 @@ export async function correctAssessmentPointsInstance(
           include: { correctedBy: true, instance: true },
         })
 
+        // initialize the audit log entries that should be executed
+        const logEntries: { message: { info: string } }[] = []
+
         // loop over all responses and update them with the corrected points
         await Promise.all(
           participations.map(async (participation) => {
-            await upsertResponseAppliedCorrection(
+            const logEntry = await upsertResponseAppliedCorrection(
               {
                 correctionId: correction.id,
                 instance: instance as DB.ElementInstance & {
@@ -1345,13 +1361,19 @@ export async function correctAssessmentPointsInstance(
               tx,
               ctx
             )
+
+            // push the log object to the list of log entries
+            logEntries.push(logEntry)
           })
         )
+
+        // create the collected audit log entries
+        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
 
         // return the correction to display it to the lecturer
         return correction
       },
-      { timeout: 60000 }
+      { timeout: 300000 } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
     )
 
     return createdCorrection
@@ -1515,6 +1537,10 @@ export async function correctAssessmentPointsLiveQuiz(
           include: { correctedBy: true, participant: true, liveQuiz: true },
         })
 
+        // initialize the audit log entries that should be executed
+        const logEntries: { message: { info: string } }[] = []
+
+        // loop over all instances and update the corresponding responses with the corrected points
         await Promise.all(
           liveQuiz.blocks.map(async (block) => {
             await Promise.all(
@@ -1536,7 +1562,7 @@ export async function correctAssessmentPointsLiveQuiz(
                   },
                 })
 
-                await upsertResponseAppliedCorrection(
+                const logEntry = await upsertResponseAppliedCorrection(
                   {
                     correctionId: correction.id,
                     instance: { ...instance, elementBlock: block },
@@ -1555,14 +1581,20 @@ export async function correctAssessmentPointsLiveQuiz(
                   tx,
                   ctx
                 )
+
+                // push the log object to the list of log entries
+                logEntries.push(logEntry)
               })
             )
           })
         )
 
+        // create the collected audit log entries
+        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
+
         return correction
       },
-      { timeout: 60000 }
+      { timeout: 300000 } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
     )
 
     return createdCorrection
@@ -1641,6 +1673,10 @@ export async function correctAssessmentPointsLiveQuiz(
           include: { correctedBy: true, liveQuiz: true },
         })
 
+        // initialize the audit log entries that should be executed
+        const logEntries: { message: { info: string } }[] = []
+
+        // loop over all instances and participants to upsert all relevant responses
         await Promise.all(
           liveQuiz.blocks.map(async (block) => {
             await Promise.all(
@@ -1656,7 +1692,7 @@ export async function correctAssessmentPointsLiveQuiz(
                     async ([pId, instanceResponseMap]) => {
                       const response = instanceResponseMap[instance.id]
 
-                      await upsertResponseAppliedCorrection(
+                      const logEntry = await upsertResponseAppliedCorrection(
                         {
                           correctionId: correction.id,
                           instance: { ...instance, elementBlock: block },
@@ -1675,6 +1711,9 @@ export async function correctAssessmentPointsLiveQuiz(
                         tx,
                         ctx
                       )
+
+                      // push the log object to the list of log entries
+                      logEntries.push(logEntry)
                     }
                   )
                 )
@@ -1683,9 +1722,12 @@ export async function correctAssessmentPointsLiveQuiz(
           })
         )
 
+        // create the collected audit log entries
+        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
+
         return correction
       },
-      { timeout: 60000 }
+      { timeout: 300000 } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
     )
 
     return createdCorrection
@@ -1729,6 +1771,9 @@ export async function correctAssessmentPointsLiveQuiz(
           include: { correctedBy: true, liveQuiz: true },
         })
 
+        // initialize the audit log entries that should be executed
+        const logEntries: { message: { info: string } }[] = []
+
         // loop over all instances and participants to upsert all relevant responses
         await Promise.all(
           liveQuiz.blocks.map(async (block) => {
@@ -1753,7 +1798,7 @@ export async function correctAssessmentPointsLiveQuiz(
                       },
                     })
 
-                    await upsertResponseAppliedCorrection(
+                    const logEntry = await upsertResponseAppliedCorrection(
                       {
                         correctionId: correction.id,
                         instance: { ...instance, elementBlock: block },
@@ -1772,6 +1817,9 @@ export async function correctAssessmentPointsLiveQuiz(
                       tx,
                       ctx
                     )
+
+                    // push the log object to the list of log entries
+                    logEntries.push(logEntry)
                   })
                 )
               })
@@ -1779,9 +1827,12 @@ export async function correctAssessmentPointsLiveQuiz(
           })
         )
 
+        // create the collected audit log entries
+        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
+
         return correction
       },
-      { timeout: 60000 }
+      { timeout: 300000 } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
     )
 
     return createdCorrection
