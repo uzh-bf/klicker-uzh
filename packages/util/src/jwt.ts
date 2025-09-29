@@ -9,6 +9,9 @@ export interface JWTPayload extends Record<string, unknown> {
   catalystIndividual?: boolean
   iat?: number
   exp?: number
+  liveQuizId?: string
+  instanceId?: string | number
+  execution?: string | number
 }
 
 function getSecretKey(secret: string): Uint8Array {

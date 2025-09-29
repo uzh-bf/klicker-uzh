@@ -3,6 +3,7 @@ import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import {
   AuditAction,
   AuditScope,
+  type CorrelationClaims,
   type InternalAuditEvent,
 } from '@klicker-uzh/types'
 import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
@@ -263,7 +264,8 @@ async function handleAddAssessmentResponse(
       {
         subject: `participant:unknown`,
         correlationId: correlationKey,
-        correlationClaims: correlationData,
+        correlationClaims:
+          (correlationData as unknown as CorrelationClaims) || undefined,
         action: AuditAction.SYSTEM_RESPONSE_CORRELATION_ERROR,
         resource: `instance:${instanceId}`,
         attributes: {
@@ -274,6 +276,13 @@ async function handleAddAssessmentResponse(
     )
 
     return badRequest(req, res, 'invalid_submission')
+  }
+
+  // After validation, we know correlationData has the required fields
+  const validatedCorrelationClaims: CorrelationClaims = {
+    liveQuizId: correlationData.liveQuizId as string,
+    instanceId: correlationData.instanceId as string | number,
+    execution: (correlationData.execution as string | number | undefined) ?? 0,
   }
 
   const cookies =
@@ -306,7 +315,7 @@ async function handleAddAssessmentResponse(
       {
         subject: `participant:unknown`,
         correlationId: correlationKey,
-        correlationClaims: correlationData,
+        correlationClaims: validatedCorrelationClaims,
         action: AuditAction.SYSTEM_RESPONSE_AUTH_ERROR,
         resource: `instance:${instanceId}`,
         attributes: {
@@ -327,7 +336,7 @@ async function handleAddAssessmentResponse(
       {
         subject: `participant:${user?.sub}`,
         correlationId: correlationKey,
-        correlationClaims: correlationData,
+        correlationClaims: validatedCorrelationClaims,
         action: AuditAction.SYSTEM_RESPONSE_AUTH_ERROR,
         resource: `instance:${instanceId}`,
         attributes: {
@@ -355,7 +364,7 @@ async function handleAddAssessmentResponse(
       scope: AuditScope.INTERNAL,
       subject: `participant:${user.sub}`,
       correlationId: correlationKey,
-      correlationClaims: correlationData,
+      correlationClaims: validatedCorrelationClaims,
       action: AuditAction.SYSTEM_RESPONSE_RECEIVED,
       resource: `instance:${instanceId}`,
       attributes: {
@@ -378,7 +387,7 @@ async function handleAddAssessmentResponse(
       {
         subject: `participant:${user.sub}`,
         correlationId: correlationKey,
-        correlationClaims: correlationData,
+        correlationClaims: validatedCorrelationClaims,
         action: AuditAction.SYSTEM_RESPONSE_DUPLICATE,
         resource: `instance:${instanceId}`,
         attributes: {
@@ -418,7 +427,7 @@ async function handleAddAssessmentResponse(
         {
           subject: `participant:${user.sub}`,
           correlationId: correlationKey,
-          correlationClaims: correlationData,
+          correlationClaims: validatedCorrelationClaims,
           action: AuditAction.SYSTEM_RESPONSE_GENERAL_ERROR,
           resource: `instance:${instanceId}`,
           attributes: {

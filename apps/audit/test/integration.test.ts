@@ -1,5 +1,6 @@
+import { AuditAction } from '@klicker-uzh/types'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import events from './fixtures/events.json'
+import events from './fixtures/klicker-events.json'
 import { AzureTableTestHelper } from './utils/azure-table-helper.js'
 
 const BASE_URL = 'http://localhost:7080'
@@ -80,8 +81,11 @@ describe('Audit Service Integration Tests', () => {
   })
 
   describe('Basic Event Persistence', () => {
-    it('should persist minimal event to Azure Table Storage', async () => {
-      const event = { ...events.minimal, eventId: `test-minimal-${Date.now()}` }
+    it('should persist minimal participant event to Azure Table Storage', async () => {
+      const event = {
+        ...events.participantViewInstance,
+        eventId: `test-minimal-${Date.now()}`,
+      }
 
       // Submit event
       const response = await makeAuthenticatedRequest('/audit', {
@@ -100,13 +104,13 @@ describe('Audit Service Integration Tests', () => {
 
       // Verify entity fields
       expect(persistedEntity.subject).toBe(event.subject)
-      expect(persistedEntity.action).toBe(event.action)
+      expect(persistedEntity.action).toBe(AuditAction.PARTICIPANT_VIEW_INSTANCE)
       expect(persistedEntity.rowKey).toBe(event.eventId)
     })
 
-    it('should persist complete event with complex attributes', async () => {
+    it('should persist complete event with complex attributes and correlationClaims', async () => {
       const event = {
-        ...events.complete,
+        ...events.participantSubmitResponse,
         eventId: `test-complete-${Date.now()}`,
       }
 
@@ -122,15 +126,21 @@ describe('Audit Service Integration Tests', () => {
       const persistedEntity = await waitForEntityByRowKey(event.eventId)
 
       // Verify all fields including complex attributes
-      expect(persistedEntity.resource).toBe(event.resource)
+      expect(persistedEntity.action).toBe(
+        AuditAction.PARTICIPANT_SUBMIT_RESPONSE
+      )
 
       // Verify attributes were serialized and can be parsed
       const attributes = JSON.parse(persistedEntity.attributes!)
       expect(attributes).toEqual(event.attributes)
+
+      // Verify correlationClaims
+      const correlationClaims = JSON.parse(persistedEntity.correlationClaims!)
+      expect(correlationClaims).toEqual(event.correlationClaims)
     })
 
     it('should handle event without explicit eventId (auto-generated)', async () => {
-      const event = { ...events.minimal }
+      const event = { ...events.participantViewInstance }
       delete (event as any).eventId // No explicit eventId
 
       // Submit event
@@ -150,7 +160,7 @@ describe('Audit Service Integration Tests', () => {
     it('should handle custom timestamp correctly', async () => {
       const customTimestamp = Date.now() - 300000 // 5 minutes ago
       const event = {
-        ...events.minimal,
+        ...events.participantViewInstance,
         eventId: `test-timestamp-${Date.now()}`,
         timestamp: customTimestamp,
       }
@@ -173,7 +183,7 @@ describe('Audit Service Integration Tests', () => {
   describe('Idempotency Verification', () => {
     it('should maintain idempotency for duplicate eventIds', async () => {
       const event = {
-        ...events.minimal,
+        ...events.participantViewInstance,
         eventId: `test-idempotent-${Date.now()}`,
       }
 
@@ -210,20 +220,30 @@ describe('Audit Service Integration Tests', () => {
     it('should properly store and retrieve events', async () => {
       // Submit a few events
       const testId = Date.now()
-      const events = [
+      const testEvents = [
         {
-          subject: `user:isolation-test-${testId}`,
-          action: 'test.isolation',
+          subject: `participant:isolation-test-${testId}-1`,
+          action: AuditAction.PARTICIPANT_VIEW_INSTANCE,
           eventId: `isolation-${testId}-1`,
+          correlationClaims: {
+            liveQuizId: `quiz-${testId}`,
+            instanceId: 1,
+            execution: 0,
+          },
         },
         {
-          subject: `user:isolation-test-${testId}`,
-          action: 'test.isolation',
+          subject: `participant:isolation-test-${testId}-2`,
+          action: AuditAction.PARTICIPANT_SUBMIT_RESPONSE,
           eventId: `isolation-${testId}-2`,
+          correlationClaims: {
+            liveQuizId: `quiz-${testId}`,
+            instanceId: 1,
+            execution: 0,
+          },
         },
       ]
 
-      for (const event of events) {
+      for (const event of testEvents) {
         const response = await makeAuthenticatedRequest('/audit', {
           method: 'POST',
           body: JSON.stringify(event),
@@ -244,22 +264,29 @@ describe('Audit Service Integration Tests', () => {
       // Verify event data integrity
       for (const entity of testEntities) {
         expect(entity.subject).toContain(`isolation-test-${testId}`)
-        expect(entity.action).toBe('test.isolation')
       }
     })
   })
 
   describe('Different Event Types', () => {
-    it('should handle authentication events', async () => {
+    it('should handle participant authentication events', async () => {
       const testId = Date.now()
 
       // Submit authentication flow events
-      const authEvents = events.authentication.map(
-        (event: any, index: number) => ({
-          ...event,
-          eventId: `auth-${testId}-${index}`,
-        })
-      )
+      const authEvents = [
+        {
+          ...events.participantMagicLinkAuth,
+          eventId: `auth-${testId}-1`,
+        },
+        {
+          ...events.participantQuizPinSuccess,
+          eventId: `auth-${testId}-2`,
+        },
+        {
+          ...events.participantJoinQuiz,
+          eventId: `auth-${testId}-3`,
+        },
+      ]
 
       for (const event of authEvents) {
         const response = await makeAuthenticatedRequest('/audit', {
@@ -281,19 +308,27 @@ describe('Audit Service Integration Tests', () => {
 
       // Verify event sequence
       const actions = authEntities.map((e) => e.action).sort()
-      expect(actions).toEqual(['login.attempt', 'login.success', 'logout'])
+      expect(actions).toEqual([
+        AuditAction.PARTICIPANT_JOIN_QUIZ,
+        AuditAction.PARTICIPANT_MAGIC_LINK_SUCCESS,
+        AuditAction.PARTICIPANT_QUIZ_PIN_SUCCESS,
+      ])
     })
 
-    it('should handle system events', async () => {
+    it('should handle system response processing events', async () => {
       const testId = Date.now()
 
       // Submit system events
-      const systemEvents = events.systemEvents.map(
-        (event: any, index: number) => ({
-          ...event,
-          eventId: `system-${testId}-${index}`,
-        })
-      )
+      const systemEvents = [
+        {
+          ...events.systemResponseReceived,
+          eventId: `system-${testId}-1`,
+        },
+        {
+          ...events.systemResponseProcessed,
+          eventId: `system-${testId}-2`,
+        },
+      ]
 
       for (const event of systemEvents) {
         const response = await makeAuthenticatedRequest('/audit', {
@@ -311,25 +346,31 @@ describe('Audit Service Integration Tests', () => {
       )
       expect(systemEntities.length).toBe(2)
 
-      // Verify backup flow
-      const backupEvents = systemEntities.filter((e) =>
-        e.action.startsWith('backup.')
+      // Verify response processing flow
+      const responseEvents = systemEntities.filter(
+        (e) =>
+          e.action === AuditAction.SYSTEM_RESPONSE_RECEIVED ||
+          e.action === AuditAction.SYSTEM_RESPONSE_PROCESSED
       )
-      expect(backupEvents.length).toBe(2)
+      expect(responseEvents.length).toBe(2)
     })
 
-    it('should handle business events with complex data', async () => {
+    it('should handle instructor quiz control events with complex correlationClaims', async () => {
       const testId = Date.now()
 
-      // Submit business events
-      const businessEvents = events.businessEvents.map(
-        (event: any, index: number) => ({
-          ...event,
-          eventId: `business-${testId}-${index}`,
-        })
-      )
+      // Submit instructor quiz control events
+      const instructorEvents = [
+        {
+          ...events.instructorStartQuiz,
+          eventId: `instructor-${testId}-1`,
+        },
+        {
+          ...events.instructorOpenBlock,
+          eventId: `instructor-${testId}-2`,
+        },
+      ]
 
-      for (const event of businessEvents) {
+      for (const event of instructorEvents) {
         const response = await makeAuthenticatedRequest('/audit', {
           method: 'POST',
           body: JSON.stringify(event),
@@ -337,24 +378,28 @@ describe('Audit Service Integration Tests', () => {
         expect(response.status).toBe(200)
       }
 
-      // Verify business events with complex attributes
+      // Verify instructor events with complex attributes
       await new Promise((resolve) => setTimeout(resolve, 2000))
       const allEntities = await tableHelper.getAllEntities()
-      const businessEntities = allEntities.filter((e) =>
-        e.rowKey?.startsWith(`business-${testId}-`)
+      const instructorEntities = allEntities.filter((e) =>
+        e.rowKey?.startsWith(`instructor-${testId}-`)
       )
-      expect(businessEntities.length).toBe(2)
+      expect(instructorEntities.length).toBe(2)
 
-      // Verify order event has complex attributes
-      const orderEvent = businessEntities.find(
-        (e) => e.action === 'order.created'
+      // Verify quiz start event has attributes
+      const startEvent = instructorEntities.find(
+        (e) => e.action === AuditAction.USER_START_QUIZ
       )
-      expect(orderEvent).toBeTruthy()
+      expect(startEvent).toBeTruthy()
 
-      const orderAttributes = JSON.parse(orderEvent!.attributes!)
-      expect(orderAttributes.orderTotal).toBe(299.99)
-      expect(Array.isArray(orderAttributes.items)).toBe(true)
-      expect(orderAttributes.items[0].id).toBe('product-123')
+      const startAttributes = JSON.parse(startEvent!.attributes!)
+      expect(startAttributes.quizName).toBe('Midterm Exam')
+      expect(startAttributes.courseId).toBe('course-456')
+
+      // Verify correlationClaims
+      const correlationClaims = JSON.parse(startEvent!.correlationClaims!)
+      expect(correlationClaims.liveQuizId).toBe('quiz-123')
+      expect(correlationClaims.instanceId).toBe(1)
     })
   })
 
@@ -365,8 +410,8 @@ describe('Audit Service Integration Tests', () => {
 
       // Create events with different timestamps to ensure different partitions
       const testEvents = Array.from({ length: 5 }, (_, i) => ({
-        subject: `user:test${i}`,
-        action: 'test.action',
+        subject: `participant:test${i}`,
+        action: AuditAction.PARTICIPANT_VIEW_INSTANCE,
         eventId: `partition-test-${testId}-${i}`,
         timestamp: baseTimestamp + i * 120000, // 2 minutes apart to get different minute buckets
       }))
@@ -396,7 +441,7 @@ describe('Audit Service Integration Tests', () => {
       // Create event with substantial but acceptable attributes
       const event = {
         subject: 'system:data-processor',
-        action: 'data.processed',
+        action: AuditAction.SYSTEM_RESPONSE_PROCESSED,
         eventId: `large-${Date.now()}`,
         attributes: {
           records: Array.from({ length: 100 }, (_, i) => ({
@@ -404,7 +449,7 @@ describe('Audit Service Integration Tests', () => {
             timestamp: new Date(Date.now() - i * 1000).toISOString(),
             value: Math.random() * 1000,
             metadata: {
-              source: 'sensor',
+              source: 'quiz',
               quality: 'high',
               tags: [`tag-${i % 10}`, `category-${i % 5}`],
             },
@@ -432,8 +477,8 @@ describe('Audit Service Integration Tests', () => {
   describe('Timestamp Edge Cases', () => {
     it('should handle events submitted without timestamp (server-generated)', async () => {
       const event = {
-        subject: 'user:timestamp-test',
-        action: 'timestamp.test',
+        subject: 'participant:timestamp-test',
+        action: AuditAction.PARTICIPANT_VIEW_INSTANCE,
         eventId: `timestamp-${Date.now()}`,
       }
       // Explicitly not setting timestamp

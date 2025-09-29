@@ -1,3 +1,4 @@
+import { AuditAction } from '@klicker-uzh/types'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { AzureTableTestHelper } from './utils/azure-table-helper.js'
 
@@ -24,17 +25,31 @@ async function makeAuthenticatedRequest(
   return response
 }
 
-// Helper to generate test events
+// Helper to generate test events with realistic KlickerUZH actions
 function generateTestEvent(index: number) {
+  // Cycle through realistic KlickerUZH audit actions
+  const actions = [
+    AuditAction.PARTICIPANT_VIEW_INSTANCE,
+    AuditAction.PARTICIPANT_UPDATE_ANSWER,
+    AuditAction.PARTICIPANT_SUBMIT_RESPONSE,
+    AuditAction.SYSTEM_RESPONSE_RECEIVED,
+    AuditAction.SYSTEM_RESPONSE_PROCESSED,
+  ]
+
   return {
-    subject: `user:perf-user-${index}`,
-    action: `test.performance.action${index % 5}`, // 5 different actions
+    subject: `participant:perf-user-${index}`,
+    action: actions[index % actions.length]!,
     eventId: `perf-${Date.now()}-${index}`,
-    resource: `resource-${index}`,
+    correlationClaims: {
+      liveQuizId: `perf-quiz-${Math.floor(index / 50)}`,
+      instanceId: 1,
+      execution: 0,
+    },
     attributes: {
       index,
       timestamp: Date.now(),
       batch: Math.floor(index / 50), // Group every 50 events
+      questionId: `q-${index % 10}`,
       metadata: {
         source: 'performance-test',
         priority: index % 3 === 0 ? 'high' : 'normal',

@@ -2,7 +2,7 @@ name: Claude Code Review
 
 on:
   pull_request:
-    branches: ["v3", "v3*"]
+    branches: ['v3', 'v3*']
     types: [opened, synchronize]
 
 concurrency:

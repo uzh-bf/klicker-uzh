@@ -1,4 +1,8 @@
-import { AuditAction, AuditScope, type CorrelationClaims } from '@klicker-uzh/types'
+import {
+  AuditAction,
+  AuditScope,
+  type CorrelationClaims,
+} from '@klicker-uzh/types'
 import { z } from 'zod'
 
 export const ALLOWED_PUBLIC_ACTIONS = [
