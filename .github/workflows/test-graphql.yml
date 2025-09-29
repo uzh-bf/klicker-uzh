@@ -127,7 +127,7 @@ jobs:
           pnpm run build
           cd ../util
           pnpm run build
-          cd ../grading
+          cd ../graphql
           pnpm run build
           cd ../hatchet
           pnpm run build
