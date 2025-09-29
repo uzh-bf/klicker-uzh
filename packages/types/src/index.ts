@@ -969,14 +969,20 @@ export type ActivityQuizAnalytics = {
 
 // ----- AUDIT LOG TYPES -----
 // #region
+export interface CorrelationClaims {
+  liveQuizId: string
+  instanceId: string | number
+  execution: string | number
+}
+
 export interface BaseAuditEvent {
   scope?: AuditScope
   subject?: string
-  action: string
+  action: AuditAction
   resource?: string
-  attributes?: Record<string, any>
+  attributes?: Record<string, unknown>
   correlationId?: string
-  correlationClaims?: object
+  correlationClaims?: CorrelationClaims
 }
 
 export interface PublicAuditEvent extends BaseAuditEvent {

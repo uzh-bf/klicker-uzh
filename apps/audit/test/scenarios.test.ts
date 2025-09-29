@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { AuditAction } from '@klicker-uzh/types'
 import { AzureTableTestHelper } from './utils/azure-table-helper.js'
 
 const BASE_URL = 'http://localhost:7080'
@@ -26,7 +27,7 @@ async function makeAuthenticatedRequest(
 
 interface AuditEvent {
   subject: string
-  action: string
+  action: AuditAction
   eventId: string
   resource?: string
   attributes?: Record<string, any>

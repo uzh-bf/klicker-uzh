@@ -1,13 +1,13 @@
-import { AuditScope } from '@klicker-uzh/types'
+import { AuditAction, AuditScope } from '@klicker-uzh/types'
 import { createHash } from 'crypto'
 import type { AuditEvent } from '../schemas/audit-event.js'
 
 export interface AuditTableEntity {
   partitionKey: string
   rowKey: string
-  scope: string
+  scope: AuditScope
   subject: string
-  action: string
+  action: AuditAction
   eventTimestamp: number
   attributes?: string // JSON serialized
   correlationId?: string

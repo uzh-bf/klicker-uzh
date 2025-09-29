@@ -1,3 +1,4 @@
+import { AuditScope } from '@klicker-uzh/types'
 import type { Hono } from 'hono'
 import { config } from '../config.js'
 import { verifyParticipantToken } from '../middleware/auth.js'
@@ -112,7 +113,7 @@ export function registerAuditPublicRoutes(
 
       const enrichedEventInput = {
         ...rest,
-        scope: 'public' as const,
+        scope: AuditScope.PUBLIC,
         subject: `participant:${participant.participantId}`,
         attributes: {
           ...(attributeRecord ?? {}),

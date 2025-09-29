@@ -1,4 +1,4 @@
-import { AuditAction, AuditScope } from '@klicker-uzh/types'
+import { AuditAction, AuditScope, type CorrelationClaims } from '@klicker-uzh/types'
 import { z } from 'zod'
 
 export const ALLOWED_PUBLIC_ACTIONS = [
@@ -17,7 +17,7 @@ const CORRELATION_ID_REGEX = /^[a-f0-9]{32}$/i
 const ATTRIBUTES_MAX_BYTES = 32 * 1024
 const DEFAULT_SCHEMA_VERSION = 1
 
-const CorrelationClaimsSchema = z.object({
+const CorrelationClaimsSchema: z.ZodType<CorrelationClaims> = z.object({
   liveQuizId: z.string().min(1).max(100),
   instanceId: z.union([z.string(), z.number()]),
   execution: z.union([z.string(), z.number()]),
@@ -34,15 +34,13 @@ export const AuditEventSchema = z
       .positive()
       .optional()
       .default(() => Date.now()),
-    scope: z
-      .enum([AuditScope.PUBLIC, AuditScope.INTERNAL, AuditScope.WORKER])
-      .default(AuditScope.INTERNAL),
+    scope: z.nativeEnum(AuditScope).default(AuditScope.INTERNAL),
 
     // outcome: z.string().min(1).max(100).optional(),
     // reasonCode: z.string().min(1).max(200).optional(),
 
     subject: z.string().min(1).max(500),
-    action: z.string().min(1).max(200),
+    action: z.nativeEnum(AuditAction),
     resource: z.string().max(500).optional(),
     stage: z.string().min(1).max(100).optional(),
 
