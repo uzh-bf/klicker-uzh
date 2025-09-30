@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.34...v3.4.0-alpha.35) (2025-09-29)
+
+
+### Bug Fixes
+
+* **packages/shared-components:** temporarily open selection question inputs to the top to avoid interference with resizable ([e499344](https://github.com/uzh-bf/klicker-uzh/commit/e499344e1e949fc4748a1f75dad455045f9990cf))
+
 ## [3.4.0-alpha.34](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.33...v3.4.0-alpha.34) (2025-09-29)
 
 
