@@ -1,27 +1,27 @@
 import { useQuery } from '@apollo/client'
 import { faPenToSquare } from '@fortawesome/free-regular-svg-icons'
 import { faListCheck } from '@fortawesome/free-solid-svg-icons'
-import { GetAssessmentResultsLiveQuizDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetAssessmentResultsCourseDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Suspense, useEffect, useState } from 'react'
-import PreviousCorrectionsListModal from '~/components/courses/pointCorrections/PreviousCorrectionsListModal'
-import PointCorrectionsModal from '~/components/courses/PointCorrectionsModal'
-import Layout from '../../../../../components/Layout'
+import { Suspense, useState } from 'react'
+import CourseSingleStudentResults from '~/components/liveQuiz/results/CourseSingleStudentResults'
+import Layout from '../../../../components/Layout'
+import PointCorrectionsModal from '../../../../components/courses/PointCorrectionsModal'
+import PreviousCorrectionsListModal from '../../../../components/courses/pointCorrections/PreviousCorrectionsListModal'
 import AssessmentStudentResultsTable, {
   PageSizeOption,
-} from '../../../../../components/liveQuiz/results/AssessmentStudentResultsTable'
-import LiveQuizSingleStudentResults from '../../../../../components/liveQuiz/results/LiveQuizSingleStudentResults'
+} from '../../../../components/liveQuiz/results/AssessmentStudentResultsTable'
 
-function AssessmentLiveQuiz() {
+function CourseAssessmentResults() {
   const t = useTranslations()
   const router = useRouter()
 
-  const [pageSizeOption, setPageSizeOption] = useState<PageSizeOption>('15')
   const [correctionsModal, setCorrectionsModal] = useState(false)
+  const [pageSizeOption, setPageSizeOption] = useState<PageSizeOption>('15')
   const [previousCorrectionsModal, setPreviousCorrectionsModal] =
     useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState<{
@@ -29,34 +29,14 @@ function AssessmentLiveQuiz() {
     email: string
   } | null>(null)
 
-  // load the quiz results
   const { data, loading, error } = useQuery(
-    GetAssessmentResultsLiveQuizDocument,
+    GetAssessmentResultsCourseDocument,
     {
-      variables: { liveQuizId: router.query.quizId as string },
-      skip: !router.query.quizId,
+      variables: { courseId: router.query.id as string },
+      skip: !router.query.id,
       fetchPolicy: 'network-only',
     }
   )
-
-  // if a specific participant is selected through a query parameter, display all students and select them in the table
-  useEffect(() => {
-    if (!router.isReady) return
-
-    const participantId = router.query.participantId as string | undefined
-    if (participantId && data?.assessmentResultsLiveQuiz) {
-      const participant = data.assessmentResultsLiveQuiz.studentResults.find(
-        (result) => result.participantId === participantId
-      )
-      if (participant) {
-        setPageSizeOption('all') // show all students if a specific one is selected
-        setSelectedParticipant({
-          id: participant.participantId,
-          email: participant.participantEmail,
-        })
-      }
-    }
-  }, [router.isReady, router.query.participantId, data])
 
   if (loading) {
     return (
@@ -66,25 +46,25 @@ function AssessmentLiveQuiz() {
     )
   }
 
-  const quiz = data?.assessmentResultsLiveQuiz
-  if (error || !quiz) {
+  const course = data?.assessmentResultsCourse
+  if (error || !course) {
     return (
       <UserNotification
         type="error"
-        message={t('manage.assessment.errorLoadingLiveQuizResults')}
+        message={t('manage.assessment.errorLoadingCourseResults')}
       />
     )
   }
 
-  const studentResults = quiz.studentResults ?? []
+  const studentResults = course.studentResults ?? []
 
   return (
     <Layout>
       <div className="mb-2 flex flex-row justify-between">
-        <H2>{`${t('manage.assessment.assessmentResults')} - ${t('shared.generic.liveQuiz')}: ${quiz.name}`}</H2>
+        <H2>{`${t('manage.assessment.assessmentResults')} - ${t('shared.generic.course')}: ${course.name}`}</H2>
 
         <div className="flex flex-row gap-2">
-          {quiz.numberOfCorrections > 0 && (
+          {course.numberOfCorrections > 0 && (
             <Button
               onClick={() => setPreviousCorrectionsModal(true)}
               className={{ root: 'h-8' }}
@@ -109,13 +89,13 @@ function AssessmentLiveQuiz() {
       <div className="flex w-full flex-row gap-2">
         <div className="w-1/2">
           <AssessmentStudentResultsTable
-            quizName={quiz.name}
+            quizName={course.name}
             studentResults={studentResults}
             selectedParticipantId={selectedParticipant?.id ?? null}
             onSelect={setSelectedParticipant}
-            availableBasePoints={quiz.availableBasePoints}
-            availableCorrectnessPoints={quiz.availableCorrectnessPoints}
-            availableBonusPoints={quiz.availableBonusPoints}
+            availableBasePoints={course.availableBasePoints}
+            availableCorrectnessPoints={course.availableCorrectnessPoints}
+            availableBonusPoints={course.availableBonusPoints}
             pageSizeOption={pageSizeOption}
             setPageSizeOption={setPageSizeOption}
           />
@@ -123,19 +103,15 @@ function AssessmentLiveQuiz() {
         <div className="mt-11 w-1/2 pl-4">
           {!!selectedParticipant ? (
             <Suspense>
-              <LiveQuizSingleStudentResults
-                liveQuizId={router.query.quizId as string}
+              <CourseSingleStudentResults
+                courseId={router.query.id as string}
                 participantId={selectedParticipant.id}
-                participantEmail={selectedParticipant.email}
-                quizBasePoints={quiz.quizBasePoints}
-                quizCorrectnessPoints={quiz.quizCorrectnessPoints}
-                quizBonusPoints={quiz.quizBonusPoints}
               />
             </Suspense>
           ) : (
             <UserNotification
               type="info"
-              message={t('manage.assessment.liveQuizSelectStudentInfo')}
+              message={t('manage.assessment.courseSelectStudentInfo')}
             />
           )}
         </div>
@@ -145,16 +121,14 @@ function AssessmentLiveQuiz() {
         <PointCorrectionsModal
           courseId={router.query.id as string}
           onClose={() => setCorrectionsModal(false)}
-          preselectedLiveQuizId={router.query.quizId as string}
         />
       ) : null}
 
-      {quiz.numberOfCorrections > 0 &&
+      {course.numberOfCorrections > 0 &&
       previousCorrectionsModal &&
       router.query.id ? (
         <PreviousCorrectionsListModal
-          liveQuizId={router.query.quizId as string}
-          instanceId={undefined}
+          courseId={router.query.id as string}
           onClose={() => setPreviousCorrectionsModal(false)}
         />
       ) : null}
@@ -178,4 +152,4 @@ export function getStaticPaths() {
   }
 }
 
-export default AssessmentLiveQuiz
+export default CourseAssessmentResults

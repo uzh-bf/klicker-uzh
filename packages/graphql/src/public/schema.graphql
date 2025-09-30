@@ -190,6 +190,7 @@ type ActivityQuizAnalytics {
 }
 
 type ActivityStudentPerformance {
+  activityId: String!
   availableBasePoints: Float!
   availableBonusPoints: Float!
   availableCorrectnessPoints: Float!
@@ -289,6 +290,15 @@ type AssessmentParticipant {
   id: String!
 }
 
+type AssessmentResultsCourse {
+  availableBasePoints: Float!
+  availableBonusPoints: Float!
+  availableCorrectnessPoints: Float!
+  name: String!
+  numberOfCorrections: Int!
+  studentResults: [StudentAssessmentResultsItem!]!
+}
+
 type AssessmentResultsLiveQuiz {
   availableBasePoints: Float!
   availableBonusPoints: Float!
@@ -298,7 +308,7 @@ type AssessmentResultsLiveQuiz {
   quizBasePoints: Float!
   quizBonusPoints: Float!
   quizCorrectnessPoints: Float!
-  studentResults: [StudentAssessmentQuizResults!]!
+  studentResults: [StudentAssessmentResultsItem!]!
 }
 
 type AvatarSettings {
@@ -2227,6 +2237,7 @@ type Query {
   activityDetails(activityId: String!, activityType: ActivityType!): ActivityDetails
   artificialInstance(elementId: Int!): ElementInstance
   assessmentCourseParticipants(courseId: String!): [AssessmentParticipant!]
+  assessmentResultsCourse(courseId: String!): AssessmentResultsCourse
   assessmentResultsLiveQuiz(liveQuizId: String!): AssessmentResultsLiveQuiz
   basicCourseInformation(courseId: String!): StudentCourse
   checkParticipantNameAvailable(username: String!): Boolean!
@@ -2317,12 +2328,13 @@ type Query {
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(assessmentOnly: Boolean, endpoint: String): [Participation!]
   practiceQuiz(id: String!): PracticeQuiz
-  previousPointCorrections(instanceId: Int, liveQuizId: String): [PointCorrection!]
+  previousPointCorrections(courseId: String, instanceId: Int, liveQuizId: String): [PointCorrection!]
   publicParticipantProfile(participantId: String!): Participant
   self(liveQuizId: String): Participant
   selfWithAchievements: ParticipantWithAchievements
   shortnameQuizzes(shortname: String!): [LiveQuiz!]
   studentAssessmentResults(courseId: String!): StudentAssessmentResults
+  studentCourseResults(courseId: String!, participantId: String!): [ActivityStudentPerformance!]
   studentLiveQuiz(id: String!): LiveQuiz
   unassignedLiveQuizzes: [LiveQuiz!]
   userActivities(activityTypeFilter: ActivityType, courseId: String, isAssessmentEnabled: Boolean, isGamificationEnabled: Boolean, isPinProtected: Boolean, multiplier: Int, numEntries: Int, offset: Int, reviewStatus: ReviewStatus, searchString: String, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, sortByAsc: Boolean!, sortByType: SortByType!, statusFilter: [PublicationStatus!], withoutCourse: Boolean): UserActivityList
@@ -2636,19 +2648,19 @@ type StudentAssessmentInstanceResponse {
   submission: Json
 }
 
-type StudentAssessmentQuizResults {
-  basePoints: Float!
-  bonusPoints: Float!
-  correctnessPoints: Float!
-  participantEmail: String!
-  participantId: String!
-}
-
 type StudentAssessmentResults {
   groupActivities: [ActivityStudentPerformance!]!
   liveQuizzes: [ActivityStudentPerformance!]!
   microLearnings: [ActivityStudentPerformance!]!
   practiceQuizzes: [ActivityStudentPerformance!]!
+}
+
+type StudentAssessmentResultsItem {
+  basePoints: Float!
+  bonusPoints: Float!
+  correctnessPoints: Float!
+  participantEmail: String!
+  participantId: String!
 }
 
 type StudentCourse {
@@ -2673,7 +2685,8 @@ type StudentPointCorrection {
   deductedBonusPoints: Float!
   deductedCorrectnessPoints: Float!
   id: Int!
-  reason: String!
+  lecturerReason: String
+  studentReason: String!
 }
 
 type Subscription {

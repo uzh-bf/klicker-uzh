@@ -973,6 +973,7 @@ export type ActivityQuizAnalytics = {
 // #region
 export type ActivityStudentPerformance = {
   id: string
+  activityId: string
   displayName: string
   finishedAt: Date
   multiplier: number
@@ -987,7 +988,8 @@ export type ActivityStudentPerformance = {
 
 export type StudentPointCorrection = {
   id: number
-  reason: string
+  lecturerReason?: string | null
+  studentReason: string
   awardedBasePoints: number
   awardedCorrectnessPoints: number
   awardedBonusPoints: number
@@ -996,7 +998,7 @@ export type StudentPointCorrection = {
   deductedBonusPoints: number
 }
 
-export type StudentAssessmentQuizResults = {
+export type StudentAssessmentResultsItem = {
   participantId: string
   participantEmail: string
   basePoints: number
@@ -1012,7 +1014,15 @@ export type AssessmentResultsLiveQuiz = {
   availableCorrectnessPoints: number
   availableBonusPoints: number
   numberOfCorrections: number
-  studentResults: StudentAssessmentQuizResults[]
+  studentResults: StudentAssessmentResultsItem[]
+}
+export type AssessmentResultsCourse = {
+  name: string
+  availableBasePoints: number
+  availableCorrectnessPoints: number
+  availableBonusPoints: number
+  numberOfCorrections: number
+  studentResults: StudentAssessmentResultsItem[]
 }
 
 export type StudentAssessmentBlockResponse = {
