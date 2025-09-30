@@ -49,10 +49,12 @@ function CourseAssessmentResults() {
   const course = data?.assessmentResultsCourse
   if (error || !course) {
     return (
-      <UserNotification
-        type="error"
-        message={t('manage.assessment.errorLoadingCourseResults')}
-      />
+      <Layout>
+        <UserNotification
+          type="error"
+          message={t('manage.assessment.errorLoadingCourseResults')}
+        />
+      </Layout>
     )
   }
 
