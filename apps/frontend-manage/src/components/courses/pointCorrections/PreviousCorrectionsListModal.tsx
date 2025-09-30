@@ -6,10 +6,12 @@ import { Suspense } from 'react'
 import PreviousPointCorrectionList from './PreviousPointCorrectionList'
 
 function PreviousCorrectionsListModal({
+  courseId,
   liveQuizId,
   instanceId,
   onClose,
 }: {
+  courseId?: string
   liveQuizId?: string
   instanceId?: string
   onClose: () => void
@@ -25,13 +27,15 @@ function PreviousCorrectionsListModal({
     GetPreviousPointCorrectionsDocument,
     {
       variables: {
+        courseId,
         liveQuizId,
         instanceId: !Number.isNaN(parsedInstanceId)
           ? parsedInstanceId
           : undefined,
       },
       fetchPolicy: 'network-only',
-      skip: !liveQuizId || liveQuizId === '',
+      skip:
+        (!liveQuizId || liveQuizId === '') && (!courseId || courseId === ''),
     }
   )
 

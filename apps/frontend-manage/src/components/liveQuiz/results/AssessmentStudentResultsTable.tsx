@@ -5,15 +5,15 @@ import DataTable from '@klicker-uzh/shared-components/src/DataTable'
 import TableSortingButton from '@klicker-uzh/shared-components/src/TableSortingButton'
 import { Select } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useMemo, useState } from 'react'
+import { Dispatch, SetStateAction, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-type LiveQuizStudentResult = NonNullable<
+type AssessmentStudentResult = NonNullable<
   GetAssessmentResultsLiveQuizQuery['assessmentResultsLiveQuiz']
 >['studentResults'][number]
-type PageSizeOption = '10' | '15' | '30' | 'all'
+export type PageSizeOption = '10' | '15' | '30' | 'all'
 
-function LiveQuizStudentResultsTable({
+function AssessmentStudentResultsTable({
   quizName,
   studentResults,
   selectedParticipantId,
@@ -21,19 +21,23 @@ function LiveQuizStudentResultsTable({
   availableBasePoints,
   availableCorrectnessPoints,
   availableBonusPoints,
+  pageSizeOption,
+  setPageSizeOption,
 }: {
   quizName: string
-  studentResults: LiveQuizStudentResult[]
+  studentResults: AssessmentStudentResult[]
   selectedParticipantId: string | null
   onSelect: Dispatch<SetStateAction<{ id: string; email: string } | null>>
   availableBasePoints: number
   availableCorrectnessPoints: number
   availableBonusPoints: number
+  pageSizeOption: PageSizeOption
+  setPageSizeOption: Dispatch<SetStateAction<PageSizeOption>>
 }) {
   const t = useTranslations()
   const formatter = useFormatter()
 
-  const rows = useMemo<(LiveQuizStudentResult & { totalPoints: number })[]>(
+  const rows = useMemo<(AssessmentStudentResult & { totalPoints: number })[]>(
     () =>
       studentResults.map((result) => ({
         ...result,
@@ -43,7 +47,6 @@ function LiveQuizStudentResultsTable({
     [studentResults]
   )
 
-  const [pageSizeOption, setPageSizeOption] = useState<PageSizeOption>('15')
   const pageSizeItems = useMemo(() => {
     const baseOptions: { value: PageSizeOption; label: string }[] = [
       10, 15, 30,
@@ -231,4 +234,4 @@ function LiveQuizStudentResultsTable({
   )
 }
 
-export default LiveQuizStudentResultsTable
+export default AssessmentStudentResultsTable

@@ -1302,8 +1302,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Es sind noch keine Studierendenresultate vorhanden.',
       errorLoadingLiveQuizResults:
         'Beim Laden der Resultate ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+      errorLoadingCourseResults:
+        'Beim Laden der Kursresultate ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
       liveQuizSelectStudentInfo:
         'Um die von einem bestimmten Studierenden abgegebenen Antworten einsehen zu können, wählen Sie diesen bitte aus der Liste auf der linken Seite aus. Sie erhalten dann eine Übersicht über alle im Quiz enthaltenen Fragen, die jeweils abgegebene Antwort und die Bepunktung.',
+      courseSelectStudentInfo:
+        'Um die erreichten Punkte eines bestimmten Studierenden auf der Quizebene einsehen zu können, wählen Sie diesen bitte aus der Liste auf der linken Seite aus. Sie erhalten dann eine Übersicht über alle im Kurs enthaltenen Quizzes, die jeweils erreichten Punkte und die maximal erreichbaren Punkte.',
       liveQuizElement: 'Element',
       liveQuizStudentHasNoResponses:
         'Dieser Studierende hat noch keine Antworten eingereicht.',
@@ -1322,6 +1326,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Laden der Studierendenantworten ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
       responseBy: 'Antwort von {email}',
       noSampleSolution: 'Keine Musterlösung',
+      detailedResultsLiveQuiz: 'Detailierte Resultate für dieses Live Quiz',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -2756,6 +2761,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       shareCourse: 'Kurs teilen',
       learningAnalytics: 'Learning Analytics',
       pointCorrections: 'Punktekorrekturen',
+      assessmentResults: 'Assessment Resultate',
       appliedCorrections: 'Angewendete Punktkorrekturen',
       nameWithPin: 'Kurs: {name} (PIN: {pin})',
       joinCourse: 'Kurs beitreten',

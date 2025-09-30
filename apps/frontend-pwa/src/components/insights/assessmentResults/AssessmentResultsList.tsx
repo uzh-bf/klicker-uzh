@@ -197,7 +197,9 @@ function AssessmentResultsList({
                   ) {
                     return (
                       <li key={`point-correction-${correction.id}`}>
-                        {t('noPointsCorrection', { reason: correction.reason })}
+                        {t('noPointsCorrection', {
+                          reason: correction.studentReason,
+                        })}
                       </li>
                     )
                   } else {
@@ -211,7 +213,7 @@ function AssessmentResultsList({
                             true
                           ),
                           bonusPoints: formatNumber(bonusCorrection, true),
-                          reason: correction.reason,
+                          reason: correction.studentReason,
                         })}
                       </li>
                     )
