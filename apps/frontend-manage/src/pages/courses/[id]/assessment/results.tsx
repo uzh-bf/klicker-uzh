@@ -8,13 +8,13 @@ import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Suspense, useState } from 'react'
-import CourseSingleStudentResults from '~/components/liveQuiz/results/CourseSingleStudentResults'
 import Layout from '../../../../components/Layout'
 import PointCorrectionsModal from '../../../../components/courses/PointCorrectionsModal'
 import PreviousCorrectionsListModal from '../../../../components/courses/pointCorrections/PreviousCorrectionsListModal'
 import AssessmentStudentResultsTable, {
   PageSizeOption,
 } from '../../../../components/liveQuiz/results/AssessmentStudentResultsTable'
+import CourseSingleStudentResults from '../../../../components/liveQuiz/results/CourseSingleStudentResults'
 
 function CourseAssessmentResults() {
   const t = useTranslations()

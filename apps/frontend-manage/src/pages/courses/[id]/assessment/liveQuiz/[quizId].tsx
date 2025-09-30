@@ -8,8 +8,8 @@ import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { Suspense, useEffect, useState } from 'react'
-import PreviousCorrectionsListModal from '~/components/courses/pointCorrections/PreviousCorrectionsListModal'
-import PointCorrectionsModal from '~/components/courses/PointCorrectionsModal'
+import PreviousCorrectionsListModal from '../../../../../components/courses/pointCorrections/PreviousCorrectionsListModal'
+import PointCorrectionsModal from '../../../../../components/courses/PointCorrectionsModal'
 import Layout from '../../../../../components/Layout'
 import AssessmentStudentResultsTable, {
   PageSizeOption,
