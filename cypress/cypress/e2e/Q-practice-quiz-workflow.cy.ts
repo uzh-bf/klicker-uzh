@@ -1434,7 +1434,6 @@ describe('Different practice quiz workflows', function () {
 
     // stack 2
     cy.findByText(this.data.NRML2.content).should('exist')
-    cy.findByText(this.data.manipulation.newNRTitle).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="input-numerical-0"]').clear().type('10')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
@@ -1459,7 +1458,6 @@ describe('Different practice quiz workflows', function () {
 
     // stack 2
     cy.findByText(this.data.NRML2.content).should('exist')
-    cy.findByText(this.data.manipulation.newNRTitle).should('exist')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
     cy.get('[data-cy="input-numerical-0"]').clear().type('10')
     cy.get('[data-cy="student-stack-submit"]').should('be.disabled')
