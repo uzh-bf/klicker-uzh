@@ -1,3 +1,4 @@
+import { AuditAction } from '@klicker-uzh/types'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { AzureTableTestHelper } from './utils/azure-table-helper.js'
 
@@ -64,12 +65,12 @@ describe('Database Verification Tests', () => {
       const events = [
         {
           subject: 'user:test1',
-          action: 'test.action1',
+          action: AuditAction.USER_OPEN_BLOCK,
           eventId: `persist-${testId}-1`,
         },
         {
           subject: 'user:test2',
-          action: 'test.action2',
+          action: AuditAction.USER_CLOSE_BLOCK,
           eventId: `persist-${testId}-2`,
           attributes: { complexData: { nested: true, value: 123 } },
         },
@@ -113,7 +114,7 @@ describe('Database Verification Tests', () => {
       const testId = Date.now()
       const event = {
         subject: 'user:duplicate',
-        action: 'test.duplicate',
+        action: AuditAction.USER_START_QUIZ,
         eventId: `duplicate-${testId}`,
       }
 
@@ -152,7 +153,7 @@ describe('Database Verification Tests', () => {
 
       const event = {
         subject: 'user:partition',
-        action: 'test.partition',
+        action: AuditAction.USER_END_QUIZ,
         eventId: `partition-${testId}`,
         timestamp: baseTimestamp,
       }
@@ -194,7 +195,7 @@ describe('Database Verification Tests', () => {
       // Create events with timestamps 5 minutes apart to ensure different partitions
       const events = Array.from({ length: 3 }, (_, i) => ({
         subject: `user:time${i}`,
-        action: 'test.time-partition',
+        action: AuditAction.USER_RESET_QUIZ,
         eventId: `time-partition-${testId}-${i}`,
         timestamp: baseTimestamp + i * 300000, // 5 minutes apart
       }))
@@ -230,7 +231,7 @@ describe('Database Verification Tests', () => {
       // Create multiple events with same timestamp but different eventIds for sharding
       const events = Array.from({ length: 5 }, (_, i) => ({
         subject: `user:shard${i}`,
-        action: 'test.shard',
+        action: AuditAction.USER_UPDATE_QUIZ_SETTINGS,
         eventId: `${i.toString(16)}-shard-${testId}-${i.toString().padStart(4, '0')}`,
         timestamp: sameTimestamp,
       }))
@@ -263,12 +264,12 @@ describe('Database Verification Tests', () => {
       const events = [
         {
           subject: 'user:row1',
-          action: 'test.rowkey',
+          action: AuditAction.USER_LOGOUT,
           eventId: `rowkey-${testId}-1`,
         },
         {
           subject: 'user:row2',
-          action: 'test.rowkey',
+          action: AuditAction.USER_LOGOUT,
           eventId: `rowkey-${testId}-2`,
         },
       ]
@@ -301,7 +302,7 @@ describe('Database Verification Tests', () => {
     it('should handle auto-generated eventIds correctly', async () => {
       const event = {
         subject: 'user:auto',
-        action: 'test.auto-eventid',
+        action: AuditAction.USER_LOGIN_SUCCESS,
         // No eventId provided - should be auto-generated
       }
 
@@ -327,7 +328,7 @@ describe('Database Verification Tests', () => {
       const testId = Date.now()
       const complexEvent = {
         subject: 'user:complex',
-        action: 'test.complex-data',
+        action: AuditAction.USER_SESSION_EXPIRED,
         eventId: `complex-${testId}`,
         attributes: {
           string: 'test string',
@@ -380,7 +381,7 @@ describe('Database Verification Tests', () => {
       const testId = Date.now()
       const event = {
         subject: 'user:simple',
-        action: 'test.no-attributes',
+        action: AuditAction.USER_LOGIN_FAILED,
         eventId: `no-attrs-${testId}`,
         // No attributes field
       }
@@ -416,13 +417,13 @@ describe('Database Verification Tests', () => {
       const events = [
         {
           subject: 'user:time1',
-          action: 'test.timestamp',
+          action: AuditAction.USER_UPDATE_QUIZ_METADATA,
           eventId: `timestamp-${testId}-1`,
           timestamp: baseTimestamp,
         },
         {
           subject: 'user:time2',
-          action: 'test.timestamp',
+          action: AuditAction.USER_UPDATE_QUIZ_METADATA,
           eventId: `timestamp-${testId}-2`,
           timestamp: baseTimestamp + 1000, // 1 second later
         },
@@ -460,7 +461,7 @@ describe('Database Verification Tests', () => {
       const testId = Date.now()
       const event = {
         subject: 'user:server-time',
-        action: 'test.server-timestamp',
+        action: AuditAction.PARTICIPANT_REGISTERED,
         eventId: `server-time-${testId}`,
         // No timestamp - should be server-generated
       }
@@ -494,7 +495,7 @@ describe('Database Verification Tests', () => {
       // Create multiple events for the same tenant
       const events = Array.from({ length: 10 }, (_, i) => ({
         subject: `user:perf${i}`,
-        action: 'test.performance',
+        action: AuditAction.PARTICIPANT_LOGIN_SUCCESS,
         eventId: `perf-${testId}-${i}`,
       }))
 
@@ -536,7 +537,7 @@ describe('Database Verification Tests', () => {
 
       const event = {
         subject: 'user:connectivity',
-        action: 'test.connectivity',
+        action: AuditAction.PARTICIPANT_LOGOUT,
         eventId: `connectivity-${Date.now()}`,
       }
 

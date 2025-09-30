@@ -309,8 +309,8 @@ describe('Audit Service Integration Tests', () => {
       // Verify event sequence
       const actions = authEntities.map((e) => e.action).sort()
       expect(actions).toEqual([
-        AuditAction.PARTICIPANT_JOIN_QUIZ,
         AuditAction.PARTICIPANT_MAGIC_LINK_SUCCESS,
+        AuditAction.PARTICIPANT_JOIN_QUIZ,
         AuditAction.PARTICIPANT_QUIZ_PIN_SUCCESS,
       ])
     })

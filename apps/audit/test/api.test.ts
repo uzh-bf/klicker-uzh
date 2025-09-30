@@ -1,3 +1,4 @@
+import { AuditAction } from '@klicker-uzh/types'
 import { describe, expect, it } from 'vitest'
 
 const BASE_URL = 'http://localhost:7080'
@@ -98,7 +99,7 @@ describe('Audit Service API Tests', () => {
     it('POST /audit with minimal valid event should return 200', async () => {
       const event = {
         subject: 'user:john@example.com',
-        action: 'login.success',
+        action: AuditAction.USER_LOGIN_SUCCESS,
       }
 
       const res = await makeAuthenticatedRequest('/audit', {
@@ -116,7 +117,7 @@ describe('Audit Service API Tests', () => {
     it('POST /audit with full event should return 200', async () => {
       const event = {
         subject: 'user:alice@example.com',
-        action: 'document.created',
+        action: AuditAction.USER_START_QUIZ,
         resource: 'doc-789',
         attributes: {
           documentType: 'pdf',
@@ -145,7 +146,7 @@ describe('Audit Service API Tests', () => {
       const customTimestamp = Date.now() - 60000 // 1 minute ago
       const event = {
         subject: 'system:backup',
-        action: 'backup.completed',
+        action: AuditAction.USER_END_QUIZ,
         timestamp: customTimestamp,
       }
 
@@ -165,7 +166,7 @@ describe('Audit Service API Tests', () => {
     it('POST /audit with same eventId should be idempotent', async () => {
       const event = {
         subject: 'user:test',
-        action: 'test.idempotency',
+        action: AuditAction.USER_OPEN_BLOCK,
         eventId: `test-event-${Date.now()}`,
       }
 

@@ -132,7 +132,7 @@ describe('Performance and Load Tests', () => {
     it('should process complex events efficiently (under 200ms)', async () => {
       const complexEvent = {
         subject: 'user:complex-perf',
-        action: 'test.complex-performance',
+        action: AuditAction.PARTICIPANT_SUBMIT_RESPONSE,
         eventId: `complex-perf-${Date.now()}`,
         resource: 'resource-complex',
         attributes: {
