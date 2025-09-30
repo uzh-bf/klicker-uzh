@@ -730,11 +730,42 @@ export async function getAssessmentResultsLiveQuiz(
           },
         },
       },
+      course: {
+        include: {
+          participations: {
+            include: {
+              participant: {
+                include: {
+                  accounts: { where: { ssoType: preferredAffiliation } },
+                },
+              },
+            },
+          },
+        },
+      },
       _count: { select: { corrections: true } },
     },
   })
 
-  if (!liveQuiz) return null
+  if (!liveQuiz || !liveQuiz.course) return null
+
+  // initial student results object with all participants in the course
+  const initialStudentResults = liveQuiz.course.participations.reduce<{
+    [participantId: string]: StudentAssessmentResultsItem
+  }>((acc, participation) => {
+    const email =
+      participation.participant.accounts[0]?.ssoEmail ??
+      participation.participant.email ??
+      'Missing E-Mail'
+    acc[participation.participantId] = {
+      participantId: participation.participantId,
+      participantEmail: email,
+      basePoints: 0,
+      correctnessPoints: 0,
+      bonusPoints: 0,
+    }
+    return acc
+  }, {})
 
   // aggreagte the collected points by students (and overall available points) for the quiz
   const liveQuizResults = liveQuiz.blocks.reduce<{
@@ -797,7 +828,7 @@ export async function getAssessmentResultsLiveQuiz(
       basePoints: 0,
       correctnessPoints: 0,
       bonusPoints: 0,
-      students: {},
+      students: initialStudentResults,
     }
   )
 
@@ -865,10 +896,39 @@ export async function getAssessmentResultsCourse(
           _count: { select: { corrections: true } },
         },
       },
+      participations: {
+        include: {
+          participant: {
+            include: {
+              accounts: {
+                where: { ssoType: preferredAffiliation },
+              },
+            },
+          },
+        },
+      },
     },
   })
 
   if (!course) return null
+
+  // initial student results object with all participants in the course
+  const initialStudentResults = course.participations.reduce<{
+    [participantId: string]: StudentAssessmentResultsItem
+  }>((acc, participation) => {
+    const email =
+      participation.participant.accounts[0]?.ssoEmail ??
+      participation.participant.email ??
+      'Missing E-Mail'
+    acc[participation.participantId] = {
+      participantId: participation.participantId,
+      participantEmail: email,
+      basePoints: 0,
+      correctnessPoints: 0,
+      bonusPoints: 0,
+    }
+    return acc
+  }, {})
 
   // aggregate the points over all activities contained in the course
   const courseResults = course.liveQuizzes.reduce<
@@ -943,7 +1003,7 @@ export async function getAssessmentResultsCourse(
       availableCorrectnessPoints: 0,
       availableBonusPoints: 0,
       numberOfCorrections: 0,
-      studentResults: {},
+      studentResults: initialStudentResults,
     }
   )
 
