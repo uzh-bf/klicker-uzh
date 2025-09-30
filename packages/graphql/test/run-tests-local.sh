@@ -36,6 +36,22 @@ cleanup() {
     echo "Stopping Hatchet worker (PID $HATCHET_WORKER_PID)..."
     if kill -0 "$HATCHET_WORKER_PID" >/dev/null 2>&1; then
       kill "$HATCHET_WORKER_PID" >/dev/null 2>&1 || true
+      for _ in {1..5}; do
+        if ! kill -0 "$HATCHET_WORKER_PID" >/dev/null 2>&1; then
+          break
+        fi
+        sleep 1
+      done
+      if kill -0 "$HATCHET_WORKER_PID" >/dev/null 2>&1; then
+        echo "Hatchet worker did not terminate gracefully, forcing shutdown..."
+        if command -v pgrep >/dev/null 2>&1; then
+          while read -r child_pid; do
+            [[ -n "$child_pid" ]] || continue
+            kill -9 "$child_pid" >/dev/null 2>&1 || true
+          done < <(pgrep -P "$HATCHET_WORKER_PID" || true)
+        fi
+        kill -9 "$HATCHET_WORKER_PID" >/dev/null 2>&1 || true
+      fi
       wait "$HATCHET_WORKER_PID" 2>/dev/null || true
     fi
   fi
@@ -46,8 +62,8 @@ cleanup() {
   docker compose -f test/docker/docker-compose.test.yml down --volumes --remove-orphans 2>/dev/null || true
 }
 
-# Set trap to cleanup on script exit
-trap cleanup EXIT
+# Ensure cleanup runs both on normal exit and termination signals
+trap cleanup EXIT INT TERM
 
 echo "Stopping any existing containers..."
 docker compose -f test/docker/docker-compose.test.yml down --volumes 2>/dev/null || true
@@ -144,7 +160,7 @@ APP_ORIGIN_ASSESSMENT_API=http://assessment-api.klicker.com
 APP_ORIGIN_ASSESSMENT_PWA=http://assessment.klicker.com
 EOF
 
-pnpm exec node --env-file "$HATCHET_WORKER_ENV_FILE" dist/index.js &
+node --env-file "$HATCHET_WORKER_ENV_FILE" dist/index.js &
 HATCHET_WORKER_PID=$!
 
 popd >/dev/null
