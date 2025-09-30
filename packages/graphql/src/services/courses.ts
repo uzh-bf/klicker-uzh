@@ -466,7 +466,7 @@ function getStudentAssessmentQuizPerformance({
                 ...response.appliedCorrections.map((correction) => ({
                   id: correction.pointCorrectionId,
                   createdAt: correction.pointCorrection.createdAt,
-                  reason: correction.pointCorrection.reason,
+                  reason: correction.pointCorrection.studentReason,
                   awardedBasePoints: correction.awardedBasePoints,
                   awardedCorrectnessPoints: correction.awardedCorrectnessPoints,
                   awardedBonusPoints: correction.awardedBonusPoints,
