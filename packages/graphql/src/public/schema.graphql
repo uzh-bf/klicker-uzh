@@ -195,6 +195,7 @@ type ActivityStudentPerformance {
   availableCorrectnessPoints: Float!
   basePoints: Float!
   bonusPoints: Float!
+  corrections: [StudentPointCorrection!]!
   correctnessPoints: Float!
   displayName: String!
   finishedAt: Date!
@@ -272,11 +273,28 @@ type AnswerCollectionPreviewEntry {
   value: String!
 }
 
+type AppliedPointCorrection {
+  awardedBasePoints: Float!
+  awardedBonusPoints: Float!
+  awardedCorrectnessPoints: Float!
+  deductedBasePoints: Float!
+  deductedBonusPoints: Float!
+  deductedCorrectnessPoints: Float!
+  id: Int!
+  pointCorrection: PointCorrection!
+}
+
+type AssessmentParticipant {
+  email: String!
+  id: String!
+}
+
 type AssessmentResultsLiveQuiz {
   availableBasePoints: Float!
   availableBonusPoints: Float!
   availableCorrectnessPoints: Float!
   name: String!
+  numberOfCorrections: Int!
   quizBasePoints: Float!
   quizBonusPoints: Float!
   quizCorrectnessPoints: Float!
@@ -1000,6 +1018,11 @@ type ElementInstanceOptions {
   resetTimeDays: Int
 }
 
+type ElementInstanceSelectionItem {
+  id: String!
+  name: String!
+}
+
 enum ElementInstanceType {
   GROUP_ACTIVITY
   LIVE_QUIZ
@@ -1590,6 +1613,13 @@ type LiveQuizMeta {
   status: PublicationStatus!
 }
 
+type LiveQuizSelectionItem {
+  displayName: String!
+  id: String!
+  instances: [ElementInstanceSelectionItem!]!
+  name: String!
+}
+
 type LiveQuizStudentSettings {
   isConfusionFeedbackEnabled: Boolean!
   isLiveQAEnabled: Boolean!
@@ -1661,6 +1691,8 @@ type Mutation {
   changeUserGroupName(id: Int!, name: String!): Boolean!
   changeUserLocale(locale: LocaleType!): User
   copyCatalogObjectToAccount(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
+  correctAssessmentPointsInstance(awardBasePoints: Boolean, awardBonusPoints: Boolean, awardCorrectnessPoints: Boolean, deductBasePoints: Boolean, deductBonusPoints: Boolean, deductCorrectnessPoints: Boolean, instanceId: Int!, participantId: String, reason: String!, scope: PointCorrectionType!, studentReason: String!): PointCorrection
+  correctAssessmentPointsLiveQuiz(awardBasePoints: Boolean, awardBonusPoints: Boolean, awardCorrectnessPoints: Boolean, deductBasePoints: Boolean, deductBonusPoints: Boolean, deductCorrectnessPoints: Boolean, liveQuizId: String!, participantId: String, reason: String!, scope: PointCorrectionType!, studentReason: String!): PointCorrection
   createActivityTemplate(activityId: String!, activityType: ActivityType!, copyBeforeConversion: Boolean!, templateDescription: String!, templateInstructions: String!, templateName: String!): Boolean
   createAnswerCollection(answers: [String!]!, description: String!, name: String!): AnswerCollection
   createCatalogCollection(access: ObjectAccess!, name: String!): CatalogCollection
@@ -2135,6 +2167,28 @@ type PermissionsList {
   permissions: [PermissionInfo!]!
 }
 
+type PointCorrection {
+  basePoints: Boolean
+  bonusPoints: Boolean
+  correctedBy: User
+  correctnessPoints: Boolean
+  createdAt: Date!
+  id: Int!
+  instance: ElementInstance
+  liveQuiz: LiveQuiz
+  participant: Participant
+  participantId: String
+  reason: String!
+  studentReason: String!
+  type: PointCorrectionType!
+}
+
+enum PointCorrectionType {
+  ALL_COURSE
+  PARTICIPATING
+  SINGLE
+}
+
 type PracticeQuiz {
   availableFrom: Date
   course: Course
@@ -2172,6 +2226,7 @@ type PushSubscription {
 type Query {
   activityDetails(activityId: String!, activityType: ActivityType!): ActivityDetails
   artificialInstance(elementId: Int!): ElementInstance
+  assessmentCourseParticipants(courseId: String!): [AssessmentParticipant!]
   assessmentResultsLiveQuiz(liveQuizId: String!): AssessmentResultsLiveQuiz
   basicCourseInformation(courseId: String!): StudentCourse
   checkParticipantNameAvailable(username: String!): Boolean!
@@ -2187,6 +2242,7 @@ type Query {
   course(id: String!): Course
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   element(id: Int!): Element
+  endedLiveQuizzesCourse(courseId: String!): [LiveQuizSelectionItem!]
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses(activityId: String, activityType: ActivityType): [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics
@@ -2261,6 +2317,7 @@ type Query {
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(assessmentOnly: Boolean, endpoint: String): [Participation!]
   practiceQuiz(id: String!): PracticeQuiz
+  previousPointCorrections(instanceId: Int, liveQuizId: String): [PointCorrection!]
   publicParticipantProfile(participantId: String!): Participant
   self(liveQuizId: String): Participant
   selfWithAchievements: ParticipantWithAchievements
@@ -2572,6 +2629,7 @@ type StudentAssessmentBlockResponse {
 type StudentAssessmentInstanceResponse {
   basePoints: Float!
   bonusPoints: Float!
+  corrections: [AppliedPointCorrection!]!
   correctness: ResponseCorrectness
   correctnessPoints: Float!
   instance: ElementInstance!
@@ -2605,6 +2663,17 @@ type StudentCourse {
 type StudentCourseLeaderboard {
   leaderboard: [LeaderboardEntry!]!
   leaderboardStatistics: LeaderboardStatistics!
+}
+
+type StudentPointCorrection {
+  awardedBasePoints: Float!
+  awardedBonusPoints: Float!
+  awardedCorrectnessPoints: Float!
+  deductedBasePoints: Float!
+  deductedBonusPoints: Float!
+  deductedCorrectnessPoints: Float!
+  id: Int!
+  reason: String!
 }
 
 type Subscription {

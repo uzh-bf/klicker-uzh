@@ -9,6 +9,7 @@ function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
   const t = useTranslations()
   const { data } = useSuspenseQuery(GetStudentAssessmentResultsDocument, {
     variables: { courseId },
+    fetchPolicy: 'network-only',
   })
 
   if (!data.studentAssessmentResults) {

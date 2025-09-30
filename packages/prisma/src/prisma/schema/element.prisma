@@ -96,6 +96,7 @@ model ElementInstance {
   feedbacks           ElementFeedback[]
   instanceStatistics  InstanceStatistics?
   instancePerformance InstancePerformance?
+  corrections         PointCorrection[]
 
   element        Element       @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   elementId      Int

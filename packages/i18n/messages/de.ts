@@ -398,6 +398,8 @@ export default {
       availableActions: 'Verfügbare Aktionen',
       configuration: 'Konfiguration',
       unknownUser: 'Unbekannter Nutzer',
+      deletedUser: 'Gelöschter Nutzer',
+      correction: 'Korrektur',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -1107,6 +1109,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       totalPoints: 'Totalpunkte',
       aggregatedTitle: 'Aggregierte Werte',
       excludingBonus: '(ohne Bonus: {value})',
+      corrections: 'Korrekturen',
+      noPointsCorrection: '+ 0 Punkte (keine Änderung): {reason}',
+      nonZeroPointCorrection:
+        '{points} Punkte ({basePoints} Basispunkte, {correctnessPoints} Korrektheitspunkte, {bonusPoints} Bonuspunkte): {reason}',
     },
   },
   manage: {
@@ -1141,10 +1147,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       elementPreviewRedirect: 'Vorschau in einem neuen Tab öffnen',
       elementTypeDescription: 'Typ',
       elementPreviewDescription: 'Vorschau',
-      basePointsDescription: 'Basis-Punkte',
-      correctnessPointsDescription: 'Korrektheits-Punkte',
-      bonusPointsDescription: 'Bonus-Punkte',
-      totalPointsSynchronousDescription: 'Maximal Erreichbare Punkte',
+      basePointsDescription: 'Basispunkte',
+      correctnessPointsDescription: 'Korrektheitspunkte',
+      bonusPointsDescription: 'Bonuspunkte',
+      totalPointsSynchronousDescription: 'Maximal erreichbare Punkte',
       totalPointsAsynchronousDescription: 'Erreichbare Punkte',
       pointTypeDescription: 'Punkttyp',
       pointAmountDescription: 'Menge',
@@ -1278,7 +1284,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       batchGroupActivityRequiresFinalizedGroups:
         'Gruppenaktivitäten können nur Kursen zugewiesen werden, bei welchen die Gruppenbildung zum Startdatum der Aktivität abgeschlossen ist.',
       batchPointsOnlyLiveQuiz:
-        'Basis-, Korrektheits- und Bonus-Punkte können nur für Live Quizzes definiert und angepasst werden.',
+        'Basis-, Korrektheits- und Bonuspunkte können nur für Live Quizzes definiert und angepasst werden.',
       batchPracticeQuizScheduledWithinCourse:
         'Bei geplanten Übungsquizzes (mit definiertem Zeitpunkt zur automatischen Publikation) muss der Publikationszeitpunkt innerhalb der Kursdauer liegen.',
       batchOperationSuccess:
@@ -1303,6 +1309,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Dieser Studierende hat noch keine Antworten eingereicht.',
       liveQuizResponse: 'Antwort',
       liveQuizOpenResponse: 'Antwort ansehen',
+      liveQuizOpenCorrection: 'Punktkorrektur öffnen',
       liveQuizNoResponseSubmitted: 'Keine Antwort abgegeben',
       liveQuizQuestionAnswered: 'Beantwortet',
       liveQuizQuestionNotAnswered: 'Nicht beantwortet',
@@ -2748,6 +2755,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modifyCourse: 'Kurs bearbeiten',
       shareCourse: 'Kurs teilen',
       learningAnalytics: 'Learning Analytics',
+      pointCorrections: 'Punktekorrekturen',
+      appliedCorrections: 'Angewendete Punktkorrekturen',
       nameWithPin: 'Kurs: {name} (PIN: {pin})',
       joinCourse: 'Kurs beitreten',
       viewCourse: 'Kurs einsehen',
@@ -2960,6 +2969,119 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizSchedulingHint:
         'Bei der geplanten Veröffentlichung des Übungs-Quizzes "{title}" wird dieses automatisch zum von Ihnen festgelegten Zeitpunkt für alle Studierenden im Kurs sichtbar. Bevor das geplante Veröffentlichungsdatum erreicht ist, kann die Aktivität noch unveröffentlicht und bearbeitet werden. Bei der Eingabe eines Startdatums in der Vergangenheit wird das Übungs-Quiz sofort veröffentlicht.',
       confirmScheduling: 'Geplante Veröffentlichung bestätigen',
+    },
+    pointCorrections: {
+      stepIndicator: 'Schritt {current} von {total}',
+      actionApply: 'Korrekturen anwenden',
+      errorNoAdjustment:
+        'Bitte wählen Sie mindestens eine Punkteanpassung aus.',
+      scopeTitle: 'Anwendungsbereich auswählen',
+      scopeDescription:
+        'Bitte wählen Sie aus, ob die Korrektur für eine einzelne Frage des Quiz oder für alle Fragen des Quiz angewendet werden soll.',
+      scopeLabel: 'Bereich',
+      scopePlaceholder: 'Bereich auswählen',
+      scopeOptionInstanceTitle: 'Einzelne Quizfrage',
+      scopeOptionInstanceDescription:
+        'Anpassung der Basis-, Korrektheits- oder Bonuspunkte für eine einzelne Frage des Quiz.',
+      scopeOptionQuizTitle: 'Gesamtes Quiz',
+      scopeOptionQuizDescription:
+        'Anpassung der Basis-, Korrektheits- oder Bonuspunkte für alle Fragen des Quiz.',
+      selectQuizAndInstanceDescription:
+        'Bitte wählen Sie das Quiz und, falls zutreffend, die spezifische Frage aus, auf welche die Punktekorrektur angewendet werden soll.',
+      quizLabel: 'Quiz',
+      quizPlaceholder: 'Quiz auswählen',
+      instanceLabel: 'Instanz',
+      instancePlaceholder: 'Instanz auswählen',
+      historyTitle: 'Bisherige Korrekturen',
+      historyToggleShow: 'Alle bisherigen Korrekturen anzeigen',
+      historyToggleHide: 'Bisherige Korrekturen ausblenden',
+      historyPlaceholder:
+        'Sobald Punktkorrekturen für das ausgewählte Quiz vorgenommen wurden, erscheinen diese hier.',
+      historyPlaceholderInstance:
+        'Sobald Punktkorrekturen speziell für die ausgewählte Quizfrage vorgenommen wurden, erscheinen diese hier. Für das gesamte Quiz vorgenommene Punktkorrekturen werden nicht angezeigt, wenn eine einzelne Frage für die Korrektur ausgewählt ist.',
+      historyApplied: 'Angewendet am {appliedAt} durch {user}',
+      historyScopeParticipantUnknown: 'Unbekannte Person',
+      historyScopeSingle: 'Einzelne Person ({participant})',
+      historyScopeParticipatingQuiz:
+        'Alle Studierenden mit mindestens einer Antwort in diesem Quiz',
+      historyScopeParticipatingInstance:
+        'Alle Studierenden mit einer abgegebenen Antwort für die folgende Frage: {name}',
+      historyScopeCourse: 'Alle Teilnehmenden des Assessment-Kurses',
+      historyScopeUnknown: 'Bereich nicht verfügbar',
+      audienceTitle: 'Zielgruppe wählen',
+      audienceDescription:
+        'Bestimmen Sie, auf die Antworten welcher Nutzer die Punktkorrektur angewendet werden soll. Sie können eine einzelne Person, alle teilnehmenden Nutzer oder alle Nutzer im Assessment-Kurs auswählen. Teilnehmende Nutzer bei einer Frage sind jene, die eine Antwort für die entsprechende Frage im Quiz abgegeben haben, während teilnehmende Nutzer eines Quizzes mindestens für eine Frage im entsprechenden Quiz eine Antwort abgegeben haben müssen. Nutzer welche ausgewählt wurden, aber keine entsprechende Antwort besitzen erhalten dennoch die ausgewählten Punkte.',
+      audienceLabel: 'Zielgruppe',
+      audiencePlaceholder: 'Zielgruppe auswählen',
+      audienceOptionSingle: 'Einzelne Person',
+      audienceOptionParticipating: 'Alle teilnehmenden Nutzer',
+      audienceOptionCourse: 'Alle Teilnehmer des Assessment-Kurses',
+      participantLabel: 'Teilnehmende Person',
+      participantPlaceholder: 'Teilnehmende Person auswählen',
+      participantScopeSingle: 'Ausgewählte Person',
+      participantScopeParticipating: 'Alle teilnehmenden Nutzer',
+      participantScopeCourse: 'Alle Teilnehmer des Assessment-Kurses',
+      adjustmentsTitle: 'Punkte anpassen',
+      adjustmentsDescription:
+        'Wählen Sie aus, welche Punktekategorien gutgeschrieben oder abgezogen werden sollen. Das Gutschreiben und Abziehen derselben Kategorie ist gegenseitig ausgeschlossen. Das Gutschreiben einer Punktekategorie bedeutet, dass alle betroffenen Studierenden die <b>maximal verfügbare Punktzahl</b> für diese Kategorie erhalten, während das Abziehen der Punkte <b>den Wert auf null setzt</b> für alle betroffenen Abgaben.',
+      adjustmentsBaseLabel: 'Basispunkte',
+      adjustmentsCorrectnessLabel: 'Korrektheitspunkte',
+      adjustmentsBonusLabel: 'Bonuspunkte',
+      adjustmentsAwardLabel: 'Punkte gutschreiben',
+      adjustmentsDeductLabel: 'Punkte abziehen',
+      reasonTitle: 'Korrektur begründen',
+      reasonDescription:
+        'Dokumentieren Sie, weshalb diese Korrektur notwendig ist. Halten Sie eine interne Notiz zur eigenen Referenz beziehungsweise für andere Administratoren des Assessment-Kurses fest und formulieren Sie die Nachricht, welche den Studierenden im Zusammenhang mit der Korrektur angezeigt wird.',
+      reasonLecturerLabel: 'Interne Notiz zur Referenz',
+      reasonLecturerPlaceholder:
+        'Grund für die Punktekorrektur (nicht für Studierende sichtbar).',
+      reasonUseSameMessageLabel:
+        'Interne Notiz als Studierenden-Nachricht verwenden',
+      reasonStudentLabel:
+        'Nachricht für Studierende (sichtbar für Studierende)',
+      reasonStudentPlaceholder:
+        'Grund für die Punktekorrektur (sichtbar für Studierende).',
+      summaryTitle: 'Prüfen und bestätigen',
+      summaryDescription:
+        'Bitte überprüfen Sie ihre gemachten Eingaben nochmals und bestätigen Sie die Anwendung der eingegebenen Punktkorrektur. Vorgenommene Korrekturen können nicht rückgängig gemacht werden. Im Fall eines Fehlers nehmen Sie bitte eine neue Korrektur vor.',
+      summaryScopeLabel: 'Bereich',
+      summaryQuizLabel: 'Quiz',
+      summaryInstanceLabel: 'Instanz',
+      summaryParticipantLabel: 'Zielgruppe',
+      summaryAdjustmentsLabel: 'Punkteänderungen',
+      summaryLecturerReasonLabel: 'Begründung für Dozierende',
+      summaryStudentReasonLabel: 'Begründung für Studierende',
+      summaryQuizNotSelected: 'Noch kein Quiz ausgewählt',
+      summaryInstanceNotSelected: 'Noch keine Instanz ausgewählt',
+      summaryAllInstances: 'Alle Instanzen des Quiz',
+      summaryParticipantScopeNotSelected: 'Noch keine Zielgruppe ausgewählt',
+      summaryParticipantNotSelected: 'Noch keine Person ausgewählt',
+      summaryAdjustmentBaseAward: 'Basispunkte gutschreiben',
+      summaryAdjustmentBaseDeduct: 'Basispunkte abziehen',
+      summaryAdjustmentCorrectnessAward: 'Korrektheitspunkte gutschreiben',
+      summaryAdjustmentCorrectnessDeduct: 'Korrektheitspunkte abziehen',
+      summaryAdjustmentBonusAward: 'Bonuspunkte gutschreiben',
+      summaryAdjustmentBonusDeduct: 'Bonuspunkte abziehen',
+      summaryNoAdjustments:
+        'Es wurden noch keine Punkteanpassungen ausgewählt.',
+      errorQuizRequired: 'Bitte wählen Sie ein Quiz aus.',
+      errorInstanceRequired:
+        'Bitte wählen Sie eine Instanz aus, wenn Sie eine Punktekorrektur für eine einzelne Quizfrage vornehmen möchten.',
+      errorParticipantRequired:
+        'Bitte wählen Sie eine Person aus, wenn Sie eine Punktekorrektur für eine einzelne Person vornehmen möchten.',
+      errorLecturerReasonRequired:
+        'Bitte geben Sie eine Notiz für diese Korrektur aus, welche Ihnen eine Zuordnung zu einem späteren Zeitpunkt erlaubt.',
+      errorStudentReasonRequired:
+        'Bitte geben Sie eine Mitteilung für die Studierenden ein, welche ihnen im Zusammenhang mit der Korrektur angezeigt wird.',
+      missingInputsSubmission:
+        'Ihre Eingaben für die Punktkorrektur sind unvollständig. Bitte überprüfen Sie Ihre Angaben und versuchen Sie es erneut.',
+      successSubmission: 'Die Punktkorrektur wurde erfolgreich angewendet.',
+      errorSubmission:
+        'Beim Anwenden der Punktkorrektur ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+      responseCorrectionsApplied:
+        'Punktkorrekturen, welche auf diese Antwort angewendet wurden und deren Auswirkungen auf die vergebenen Punkte:',
+      noAdjustmentsApplied:
+        'Es wurden keine Punktkorrekturen auf diese Antwort angewendet.',
     },
     resources: {
       mediaLibrary: 'Mediathek',
