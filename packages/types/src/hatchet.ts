@@ -97,7 +97,7 @@ export interface PreparedHatchetTasks {
   createAuditLogEntry: TaskWorkflowDeclaration<
     {
       message: Record<string, string | undefined> & {
-        correlationId: string
+        correlationId?: string
         info: string
       }
     },

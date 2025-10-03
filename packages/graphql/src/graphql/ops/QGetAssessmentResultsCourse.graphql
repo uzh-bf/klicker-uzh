@@ -1,0 +1,17 @@
+query GetAssessmentResultsCourse($courseId: String!) {
+  assessmentResultsCourse(courseId: $courseId) {
+    name
+    availableBasePoints
+    availableCorrectnessPoints
+    availableBonusPoints
+    numberOfCorrections
+
+    studentResults {
+      participantId
+      participantEmail
+      basePoints
+      correctnessPoints
+      bonusPoints
+    }
+  }
+}

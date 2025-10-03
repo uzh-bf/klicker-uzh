@@ -31,7 +31,15 @@ import {
   WeeklyCourseActivities,
 } from './analytics.js'
 import {
+  ActivityStudentPerformance,
+  AssessmentResultsCourse,
   AssessmentResultsLiveQuiz,
+  PointCorrection,
+  StudentAssessmentBlockResponse,
+  StudentAssessmentResults,
+} from './assessment.js'
+import {
+  AssessmentParticipant,
   Course,
   CourseLeaderboard,
   CourseListEntry,
@@ -39,8 +47,7 @@ import {
   CourseStudentTimeline,
   CourseSummary,
   LeaderboardEntry,
-  StudentAssessmentBlockResponse,
-  StudentAssessmentResults,
+  LiveQuizSelectionItem,
   StudentCourse,
 } from './course.js'
 import {
@@ -903,7 +910,24 @@ export const Query = builder.queryType({
         type: StudentAssessmentResults,
         args: { courseId: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
-          return await CourseService.getStudentAssessmentResults(args, ctx)
+          return await CourseService.getStudentAssessmentResults(
+            { courseId: args.courseId, participantId: ctx.user.sub },
+            ctx
+          )
+        },
+      }),
+
+      studentCourseResults: t.withAuth(asUser).field({
+        nullable: true,
+        type: [ActivityStudentPerformance],
+        args: {
+          courseId: t.arg.string({ required: true }),
+          participantId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          const studentResults =
+            await CourseService.getStudentAssessmentResults(args, ctx)
+          return studentResults?.liveQuizzes ?? []
         },
       }),
 
@@ -914,6 +938,19 @@ export const Query = builder.queryType({
         resolve: async (_, args, ctx) => {
           return await CourseService.getAssessmentResultsLiveQuiz(args, ctx)
         },
+      }),
+
+      assessmentResultsCourse: t.withAuth(asUser).field({
+        nullable: true,
+        type: AssessmentResultsCourse,
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await CourseService.getAssessmentResultsCourse(args, ctx)
+          }
+        ),
       }),
 
       liveQuizStudentAssessmentResponses: t.withAuth(asUser).field({
@@ -1274,6 +1311,48 @@ export const Query = builder.queryType({
           DB.PermissionLevel.READ,
           async (_, args, ctx) => {
             return await CourseService.getCourseActivities(args, ctx)
+          }
+        ),
+      }),
+
+      endedLiveQuizzesCourse: t.withAuth(asUser).field({
+        nullable: true,
+        type: [LiveQuizSelectionItem],
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            return await CourseService.getEndedLiveQuizzesCourse(args, ctx)
+          }
+        ),
+      }),
+
+      previousPointCorrections: t.withAuth(asUser).field({
+        nullable: true,
+        type: [PointCorrection],
+        args: {
+          courseId: t.arg.string({ required: false }),
+          liveQuizId: t.arg.string({ required: false }),
+          instanceId: t.arg.int({ required: false }),
+        },
+        resolve: (_, args, ctx) => {
+          return CourseService.getPreviousPointCorrections(args, ctx)
+        },
+      }),
+
+      assessmentCourseParticipants: t.withAuth(asUser).field({
+        nullable: true,
+        type: [AssessmentParticipant],
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await CourseService.getAssessmentCourseParticipants(
+              args,
+              ctx
+            )
           }
         ),
       }),

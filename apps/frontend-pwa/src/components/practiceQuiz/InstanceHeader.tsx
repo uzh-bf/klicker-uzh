@@ -136,23 +136,30 @@ function InstanceHeader({
   return (
     <div className={className}>
       <div className="flex flex-row justify-between">
-        <div className="flex flex-row items-center gap-2">
-          {correctness === ResponseCorrectnessType.Correct && (
-            <FontAwesomeIcon icon={faCheckDouble} className="text-green-700" />
-          )}
-          {correctness === ResponseCorrectnessType.Partial && (
-            <FontAwesomeIcon icon={faCheck} className="text-yellow-600" />
-          )}
-          {correctness === ResponseCorrectnessType.Incorrect && (
-            <FontAwesomeIcon icon={faXmark} className="text-red-600" />
-          )}
-          <div
-            className="text-lg font-bold"
-            data-cy={`element-instance-header-${name}`}
-          >
-            {name}
+        {typeof correctness !== 'undefined' ? (
+          <div className="flex flex-row items-center gap-2">
+            {correctness === ResponseCorrectnessType.Correct && (
+              <FontAwesomeIcon
+                icon={faCheckDouble}
+                className="text-green-700"
+              />
+            )}
+            {correctness === ResponseCorrectnessType.Partial && (
+              <FontAwesomeIcon icon={faCheck} className="text-yellow-600" />
+            )}
+            {correctness === ResponseCorrectnessType.Incorrect && (
+              <FontAwesomeIcon icon={faXmark} className="text-red-600" />
+            )}
+            <div
+              className="text-lg font-bold"
+              data-cy={`element-instance-header-${name}`}
+            >
+              {name}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div />
+        )}
         {withParticipant && (
           <div className="flex flex-row items-center gap-1">
             <Button

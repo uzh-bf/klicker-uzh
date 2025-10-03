@@ -396,6 +396,8 @@ export default {
       availableActions: 'Available Actions',
       configuration: 'Configuration',
       unknownUser: 'Unknown User',
+      deletedUser: 'Deleted User',
+      correction: 'Correction',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -1106,6 +1108,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       totalPoints: 'Total points',
       aggregatedTitle: 'Aggregated totals',
       excludingBonus: '(excluding bonus: {value})',
+      corrections: 'Corrections',
+      noPointsCorrection: '+ 0 Points (no change): {reason}',
+      nonZeroPointCorrection:
+        '{points} Points ({basePoints} base points, {correctnessPoints} correctness points, {bonusPoints} bonus points): {reason}',
     },
   },
   manage: {
@@ -1292,13 +1298,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       liveQuizStudentResultsEmpty: 'No student results available yet.',
       errorLoadingLiveQuizResults:
         'An error occurred while loading the results. Please try again.',
+      errorLoadingCourseResults:
+        'An error occurred while loading the course results. Please try again.',
       liveQuizSelectStudentInfo:
         'To view the answers submitted by a specific student, please select them from the list on the left side. You will then receive an overview of all the questions included in the quiz, along with the respective submitted answers and their scoring.',
+      courseSelectStudentInfo:
+        'To view the points achieved by a specific student at the quiz level, please select them from the list on the left side. You will then receive an overview of all quizzes included in the course, the points achieved for each, and the maximum achievable points.',
       liveQuizElement: 'Element',
       liveQuizStudentHasNoResponses:
         'This student has not submitted any responses yet.',
       liveQuizResponse: 'Response',
       liveQuizOpenResponse: 'View response',
+      liveQuizOpenCorrection: 'Open point correction modal',
       liveQuizNoResponseSubmitted: 'No response submitted',
       liveQuizQuestionAnswered: 'Answered',
       liveQuizQuestionNotAnswered: 'Not answered',
@@ -1311,6 +1322,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'An error occurred while loading the student responses. Please try again.',
       responseBy: 'Response by {email}',
       noSampleSolution: 'No sample solution',
+      detailedResultsLiveQuiz: 'Detailed results for this live quiz',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -2699,6 +2711,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       modifyCourse: 'Modify course',
       shareCourse: 'Share course',
       learningAnalytics: 'Learning Analytics',
+      pointCorrections: 'Point Corrections',
+      assessmentResults: 'Assessment Results',
+      appliedCorrections: 'Applied Point Corrections',
       nameWithPin: 'Course: {name} (PIN: {pin})',
       joinCourse: 'Join course',
       viewCourse: 'View Course',
@@ -2912,6 +2927,115 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       practiceQuizSchedulingHint:
         'Scheduling the practice quiz "{title}" for publication at a certain point in time, it will automatically become available to all students in the course at that time. Before the scheduled publication date is reached, the activity can still be unpublished and edited again. When entering a date in the past, the practice quiz will be published immediately.',
       confirmScheduling: 'Confirm Scheduling',
+    },
+    pointCorrections: {
+      stepIndicator: 'Step {current} of {total}',
+      actionApply: 'Apply Corrections',
+      errorNoAdjustment: 'Please select at least one point adjustment.',
+      scopeTitle: 'Select scope',
+      scopeDescription:
+        'Please decide whether you want to update the points for a single element in a live quiz or for all elements in a quiz at the same time.',
+      scopeLabel: 'Scope',
+      scopePlaceholder: 'Choose a scope',
+      scopeOptionInstanceTitle: 'Single quiz element',
+      scopeOptionInstanceDescription:
+        'Modification of the base, correctness, or bonus points for a single question within a quiz.',
+      scopeOptionQuizTitle: 'Entire quiz',
+      scopeOptionQuizDescription:
+        'Modification of the base, correctness, or bonus points for all questions within a quiz.',
+      selectQuizAndInstanceDescription:
+        'Please select the quiz and, if applicable, the specific question to which the point correction should be applied.',
+      quizLabel: 'Quiz',
+      quizPlaceholder: 'Select a quiz',
+      instanceLabel: 'Instance',
+      instancePlaceholder: 'Select an instance',
+      historyTitle: 'Previously Applied Corrections',
+      historyToggleShow: 'Show all previous corrections',
+      historyToggleHide: 'Hide previous corrections',
+      historyPlaceholder:
+        'Once points corrections have been made for the selected quiz, they will appear here.',
+      historyPlaceholderInstance:
+        'Once points corrections have been made specifically for the selected quiz question, they will appear here. Point corrections applied to the entire live quiz are not shown when one single question is selected for corrections.',
+      historyApplied: 'Applied on {appliedAt} by {user}',
+      historyScopeParticipantUnknown: 'Unknown participant',
+      historyScopeSingle: 'Single participant ({participant})',
+      historyScopeParticipatingQuiz:
+        'All students with at least one answer in this quiz',
+      historyScopeParticipatingInstance:
+        'All students who submitted an answer for the following question: {name}',
+      historyScopeCourse: 'All assessment course participants',
+      historyScopeUnknown: 'Scope unavailable',
+      audienceTitle: 'Choose the Audience',
+      audienceDescription:
+        'Select to whose responses the point correction should be applied to. You can choose a single participant, all participating users in scope, or all assessment course participants. Participating users for a question are those who have submitted an answer for the corresponding question in the quiz, while participating users of a quiz must have submitted an answer for at least one question in the respective quiz. Users that are selected but have not submitted a corresponding response will still receive the specified points.',
+      audienceLabel: 'Audience',
+      audiencePlaceholder: 'Select an audience',
+      audienceOptionSingle: 'Single participant',
+      audienceOptionParticipating: 'All participating users',
+      audienceOptionCourse: 'All assessment course participants',
+      participantLabel: 'Participant',
+      participantPlaceholder: 'Select a participant',
+      participantScopeSingle: 'Selected participant',
+      participantScopeParticipating: 'All participating users',
+      participantScopeCourse: 'All assessment course participants',
+      adjustmentsTitle: 'Adjust Points',
+      adjustmentsDescription:
+        'Select which point categories should be awarded or deducted. Awarding and deducting the same category is mutually exclusive. Awarding one type of points means that all affected students will receive the <b>maximum amount of available points</b> for this category, while deducting them <b>sets the value to zero</b> on all affected submissions.',
+      adjustmentsBaseLabel: 'Base points',
+      adjustmentsCorrectnessLabel: 'Correctness points',
+      adjustmentsBonusLabel: 'Bonus points',
+      adjustmentsAwardLabel: 'Award points',
+      adjustmentsDeductLabel: 'Deduct points',
+      reasonTitle: 'Explain the Correction',
+      reasonDescription:
+        'Please document why this correction is necessary. Provide an internal note for your own reference or for other administrators of the assessment course and formulate the message that will be displayed to students in connection with the correction.',
+      reasonLecturerLabel: 'Internal note for reference',
+      reasonLecturerPlaceholder:
+        'Reason for the point correction (not visible to students).',
+      reasonUseSameMessageLabel: 'Use the internal note as the student message',
+      reasonStudentLabel: 'Message for students (visible to students)',
+      reasonStudentPlaceholder:
+        'Reason for the point correction (visible to students).',
+      summaryTitle: 'Review and Confirm',
+      summaryDescription:
+        'Please review your entries and confirm the application of the specified point correction. Applied corrections cannot be undone. In case of an error, please create another correction.',
+      summaryScopeLabel: 'Scope',
+      summaryQuizLabel: 'Quiz',
+      summaryInstanceLabel: 'Instance',
+      summaryParticipantLabel: 'Audience',
+      summaryAdjustmentsLabel: 'Point changes',
+      summaryLecturerReasonLabel: 'Lecturer note',
+      summaryStudentReasonLabel: 'Student note',
+      summaryQuizNotSelected: 'No quiz selected yet',
+      summaryInstanceNotSelected: 'No instance selected yet',
+      summaryAllInstances: 'All instances within the quiz',
+      summaryParticipantScopeNotSelected: 'No audience selected yet',
+      summaryParticipantNotSelected: 'No participant selected yet',
+      summaryAdjustmentBaseAward: 'Award base points',
+      summaryAdjustmentBaseDeduct: 'Deduct base points',
+      summaryAdjustmentCorrectnessAward: 'Award correctness points',
+      summaryAdjustmentCorrectnessDeduct: 'Deduct correctness points',
+      summaryAdjustmentBonusAward: 'Award bonus points',
+      summaryAdjustmentBonusDeduct: 'Deduct bonus points',
+      summaryNoAdjustments: 'No point adjustments selected yet.',
+      errorQuizRequired: 'Please select a quiz.',
+      errorInstanceRequired:
+        'Please select an instance if you want to make a point correction for a single quiz question.',
+      errorParticipantRequired:
+        'Please select a participant if you want to make a point correction for a single person.',
+      errorLecturerReasonRequired:
+        'Please provide a note for this correction that allows you to reference it at a later time.',
+      errorStudentReasonRequired:
+        'Please provide a message for the students that will be displayed in connection with the correction.',
+      missingInputsSubmission:
+        'Your inputs for the point correction are incomplete. Please review your entries and try again.',
+      successSubmission: 'The point correction was successfully applied.',
+      errorSubmission:
+        'An error occurred while applying the point correction. Please try again.',
+      responseCorrectionsApplied:
+        'Point corrections that have been applied to this response and their effects on the awarded points:',
+      noAdjustmentsApplied:
+        'No point corrections have been applied to this response.',
     },
     resources: {
       mediaLibrary: 'Media Library',

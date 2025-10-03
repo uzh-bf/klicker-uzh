@@ -1,0 +1,11 @@
+query GetEndedLiveQuizzesCourse($courseId: String!) {
+  endedLiveQuizzesCourse(courseId: $courseId) {
+    id
+    name
+    displayName
+    instances {
+      id
+      name
+    }
+  }
+}

@@ -89,7 +89,7 @@ function SELECTIONAnswerOptions({
                 isClearable
                 id={`selection-${elementIx}-field-${Number(inputIndex)}`}
                 instanceId={`selection-${elementIx}-field-${Number(inputIndex)}`}
-                menuPlacement="auto"
+                menuPlacement="top"
                 isDisabled={disabled}
                 value={
                   selectedValue !== -1 &&
