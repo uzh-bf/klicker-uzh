@@ -28,6 +28,10 @@ import {
   calculateAssessmentCourseScores,
   getInstanceAvailablePoints,
 } from './assessmentScores.js'
+import { manipulateGroupActivity } from './groups.js'
+import { manipulateLiveQuiz } from './liveQuizzes.js'
+import { manipulateMicroLearning } from './microLearning.js'
+import { manipulatePracticeQuiz } from './practiceQuizzes.js'
 import { checkAccess } from './sharing.js'
 
 // custom date parser
@@ -2560,6 +2564,11 @@ interface CreateCourseArgs {
   notificationEmail?: string | null
   isGamificationEnabled: boolean
   isAssessmentEnabled?: boolean | null
+  id?: string | null // if set, duplicate the course with the provided id
+  duplicateLiveQuizzes?: boolean | null
+  duplicatePracticeQuizzes?: boolean | null
+  duplicateMicrolearnings?: boolean | null
+  duplicateGroupActivities?: boolean | null
 }
 
 export async function createCourse(
@@ -2644,6 +2653,259 @@ export async function createCourse(
   )
 
   return course
+}
+
+export async function duplicateCourse(
+  {
+    name,
+    displayName,
+    description,
+    color,
+    startDate,
+    endDate,
+    isGroupCreationEnabled,
+    groupDeadlineDate,
+    maxGroupSize,
+    preferredGroupSize,
+    language,
+    notificationEmail,
+    isGamificationEnabled,
+    isAssessmentEnabled,
+    id,
+    duplicateLiveQuizzes,
+    duplicatePracticeQuizzes,
+    duplicateMicrolearnings,
+    duplicateGroupActivities,
+  }: CreateCourseArgs,
+  ctx: ContextWithUser
+) {
+  if (!id) {
+    throw new Error('Course ID to duplicate not provided')
+  }
+
+  const oldCourse = await ctx.prisma.course.findUnique({
+    where: { id },
+    include: {
+      practiceQuizzes: {
+        include: {
+          stacks: {
+            include: {
+              elements: true,
+            },
+          },
+        },
+      },
+      liveQuizzes: {
+        include: {
+          blocks: {
+            include: {
+              elements: true,
+            },
+          },
+        },
+      },
+      microLearnings: {
+        include: {
+          stacks: {
+            include: {
+              elements: true,
+            },
+          },
+        },
+      },
+      groupActivities: {
+        include: {
+          stacks: {
+            include: {
+              elements: true,
+            },
+          },
+          clues: true,
+        },
+      },
+    },
+  })
+
+  if (!oldCourse) return null
+
+  // Assessment courses don't get PINs - they use invitations instead
+  const newCourse = await createCourse(
+    {
+      name,
+      displayName,
+      description,
+      color,
+      startDate,
+      endDate,
+      isGroupCreationEnabled,
+      groupDeadlineDate,
+      maxGroupSize,
+      preferredGroupSize,
+      language,
+      notificationEmail,
+      isGamificationEnabled,
+      isAssessmentEnabled,
+    },
+    ctx
+  )
+
+  // date computation for micro learnings and group activities
+  const startDateOldCourse = oldCourse.startDate
+  const startDateNewCourse = startDate
+  const deltaCourseStart = dayjs(startDateNewCourse).diff(
+    dayjs(startDateOldCourse),
+    'day'
+  )
+
+  if (duplicateLiveQuizzes) {
+    for (const oldLiveQuiz of oldCourse.liveQuizzes) {
+      await manipulateLiveQuiz(
+        {
+          name: oldLiveQuiz.name,
+          displayName: oldLiveQuiz.displayName,
+          description: oldLiveQuiz.description,
+          blocks: oldLiveQuiz.blocks.map((block) => {
+            return {
+              order: block.order,
+              timeLimit: block.timeLimit,
+              elements: block.elements.map((element) => {
+                return {
+                  elementId: element.elementId,
+                  order: element.order,
+                  existingInstanceId: element.id,
+                  duplicateInstance: true,
+                }
+              }),
+            }
+          }),
+          courseId: newCourse.id,
+          multiplier: oldLiveQuiz.pointsMultiplier,
+          defaultPoints: oldLiveQuiz.defaultPoints,
+          defaultCorrectPoints: oldLiveQuiz.defaultCorrectPoints,
+          maxBonusPoints: oldLiveQuiz.maxBonusPoints,
+          timeToZeroBonus: oldLiveQuiz.timeToZeroBonus,
+          isGamificationEnabled: oldLiveQuiz.isGamificationEnabled,
+          isPinProtected: !!oldLiveQuiz.pinCode,
+          isConfusionFeedbackEnabled: oldLiveQuiz.isConfusionFeedbackEnabled,
+          isLiveQAEnabled: oldLiveQuiz.isLiveQAEnabled,
+          isModerationEnabled: oldLiveQuiz.isModerationEnabled,
+        },
+        ctx
+      )
+    }
+  }
+  if (duplicatePracticeQuizzes) {
+    for (const oldPracticeQuiz of oldCourse.practiceQuizzes) {
+      await manipulatePracticeQuiz(
+        {
+          name: oldPracticeQuiz.name,
+          displayName: oldPracticeQuiz.displayName,
+          description: oldPracticeQuiz.description,
+          stacks: oldPracticeQuiz.stacks.map((stack) => {
+            return {
+              order: stack.order,
+              elements: stack.elements.map((element) => {
+                return {
+                  elementId: element.elementId,
+                  order: element.order,
+                  existingInstanceId: element.id,
+                  duplicateInstance: true,
+                }
+              }),
+            }
+          }),
+          courseId: newCourse.id,
+          multiplier: oldPracticeQuiz.pointsMultiplier,
+          order: oldPracticeQuiz.orderType,
+          resetTimeDays: oldPracticeQuiz.resetTimeDays,
+        },
+        ctx
+      )
+    }
+  }
+  if (duplicateMicrolearnings) {
+    for (const oldMicroLearning of oldCourse.microLearnings) {
+      // compute delta
+      const startDateNewMicroLearning = dayjs(oldMicroLearning.scheduledStartAt)
+        .add(deltaCourseStart, 'day')
+        .toDate()
+      const endDateNewMicroLearning = dayjs(oldMicroLearning.scheduledEndAt)
+        .add(deltaCourseStart, 'day')
+        .toDate()
+
+      await manipulateMicroLearning(
+        {
+          name: oldMicroLearning.name,
+          displayName: oldMicroLearning.displayName,
+          description: oldMicroLearning.description,
+          stacks: oldMicroLearning.stacks.map((stack) => {
+            return {
+              order: stack.order,
+              elements: stack.elements.map((element) => {
+                return {
+                  elementId: element.elementId,
+                  order: element.order,
+                  existingInstanceId: element.id,
+                  duplicateInstance: true,
+                }
+              }),
+            }
+          }),
+          courseId: newCourse.id,
+          multiplier: oldMicroLearning.pointsMultiplier,
+          startDate: startDateNewMicroLearning,
+          endDate: endDateNewMicroLearning,
+        },
+        ctx
+      )
+    }
+  }
+  if (duplicateGroupActivities) {
+    for (const oldGroupActivity of oldCourse.groupActivities) {
+      const stack = oldGroupActivity.stacks[0]
+      if (!stack) {
+        console.log(
+          `Failed fetch stack for group activity ${oldGroupActivity.id}`
+        )
+        return newCourse
+      }
+
+      // compute delta
+      const startDateNewGroupActivity = dayjs(oldGroupActivity.scheduledStartAt)
+        .add(deltaCourseStart, 'day')
+        .toDate()
+      const endDateNewGroupActivity = dayjs(oldGroupActivity.scheduledEndAt)
+        .add(deltaCourseStart, 'day')
+        .toDate()
+
+      await manipulateGroupActivity(
+        {
+          name: oldGroupActivity.name,
+          displayName: oldGroupActivity.displayName,
+          description: oldGroupActivity.description,
+          stack: {
+            order: stack.order,
+            elements: stack.elements.map((element) => {
+              return {
+                elementId: element.elementId,
+                order: element.order,
+                existingInstanceId: element.id,
+                duplicateInstance: true,
+              }
+            }),
+          },
+          courseId: newCourse.id,
+          multiplier: oldGroupActivity.pointsMultiplier,
+          clues: oldGroupActivity.clues,
+          startDate: startDateNewGroupActivity,
+          endDate: endDateNewGroupActivity,
+        },
+        ctx
+      )
+    }
+  }
+
+  return newCourse
 }
 
 export async function toggleArchiveCourse(
