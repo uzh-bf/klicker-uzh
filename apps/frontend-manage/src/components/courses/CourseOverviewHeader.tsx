@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faPenToSquare } from '@fortawesome/free-regular-svg-icons'
+import { faCopy, faPenToSquare } from '@fortawesome/free-regular-svg-icons'
 import {
   faChartPie,
   faLink,
@@ -9,7 +9,9 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import {
   Course,
+  CreateCourseDocument,
   GetSingleCourseDocument,
+  GetUserCoursesDocument,
   ObjectType,
   UpdateCourseSettingsDocument,
   UserProfileDocument,
@@ -21,6 +23,9 @@ import { useState } from 'react'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
 import getLTIAccessLink from './getLTIAccessLink'
+import CourseDuplicationModal, {
+  CourseDuplicationFormData,
+} from './modals/CourseDuplicationModal'
 import CourseManipulationModal, {
   CourseManipulationFormData,
 } from './modals/CourseManipulationModal'
@@ -48,11 +53,13 @@ function CourseOverviewHeader({
   containsGroups,
 }: CourseOverviewHeaderProps) {
   const t = useTranslations()
+  const [createCourse] = useMutation(CreateCourseDocument)
 
   const [courseSettingsModal, setCourseSettingsModal] = useState(false)
   const [sharingModal, setSharingModal] = useState(false)
   const [correctionsModal, setCorrectionsModal] = useState(false)
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false)
+  const [duplicationModal, setDuplicationModal] = useState(false)
 
   const [updateCourseSettings] = useMutation(UpdateCourseSettingsDocument)
   const { data: dataUser } = useQuery(UserProfileDocument, {
@@ -141,6 +148,14 @@ function CourseOverviewHeader({
           <Button.Icon icon={faMessage} />
           <Button.Label>{t('shared.comments.tooltip')}</Button.Label>
         </Button>
+        <Button
+          onClick={() => setDuplicationModal(true)}
+          className={{ root: 'h-8' }}
+          data={{ cy: 'course-duplicate-button' }}
+        >
+          <Button.Icon icon={faCopy} />
+          <Button.Label>{t('manage.course.duplicateCourse')}</Button.Label>
+        </Button>
         {!course.isAssessmentEnabled && course.pinCode && (
           <QRCodePopover
             triggerStyle="button"
@@ -195,7 +210,85 @@ function CourseOverviewHeader({
           items={ltiDropdownItems}
         />
       </div>
+      {duplicationModal && (
+        <CourseDuplicationModal
+          initialValues={course}
+          containsActivities={containsActivities}
+          containsGroups={containsGroups}
+          onModalClose={() => setDuplicationModal(false)}
+          onSubmit={async (
+            values: CourseDuplicationFormData,
+            setSubmitting,
+            onError
+          ) => {
+            // TODO: take over functionality of createCourse
+            try {
+              // convert dates to UTC
+              const startDateUTC = dayjs(values.startDate).utc().toISOString()
+              const endDateUTC = dayjs(values.endDate).utc().toISOString()
+              const groupDeadlineDateUTC = dayjs(values.groupCreationDeadline)
+                .utc()
+                .toISOString()
 
+              const result = await createCourse({
+                variables: {
+                  name: values.name,
+                  displayName: values.displayName,
+                  description:
+                    !values.description?.match(/^(<br>(\n)*)$/g) &&
+                    values.description !== ''
+                      ? values.description
+                      : null,
+                  language: values.language,
+                  color: values.color,
+                  startDate: startDateUTC,
+                  endDate: endDateUTC,
+                  notificationEmail: values.notificationEmail,
+                  isGamificationEnabled: values.isGamificationEnabled,
+                  isGroupCreationEnabled: values.isGroupCreationEnabled,
+                  groupDeadlineDate: groupDeadlineDateUTC,
+                  maxGroupSize: parseInt(String(values.maxGroupSize)),
+                  preferredGroupSize: parseInt(
+                    String(values.preferredGroupSize)
+                  ),
+                  id: course.id,
+                  duplicateLiveQuizzes: values.copyLiveQuizzes,
+                  duplicatePracticeQuizzes: values.copyPracticeQuizzes,
+                  duplicateMicrolearnings: values.copyMicroLearnings,
+                  duplicateGroupActivities: values.copyGroupActivities,
+                },
+                update: (cache, { data }) => {
+                  // verify that the course creation was successful
+                  if (!data?.createCourse) return
+
+                  // add the new course to the course list
+                  cache.updateQuery(
+                    { query: GetUserCoursesDocument },
+                    (qData) => {
+                      if (!qData?.userCourses) return qData
+
+                      return {
+                        userCourses: [...qData.userCourses, data.createCourse!],
+                      }
+                    }
+                  )
+                },
+              })
+
+              if (result.data?.createCourse) {
+                setDuplicationModal(false)
+              } else {
+                onError()
+                setSubmitting(false)
+              }
+            } catch (error) {
+              onError()
+              setSubmitting(false)
+              console.log(error)
+            }
+          }}
+        />
+      )}
       {courseSettingsModal && (
         <CourseManipulationModal
           initialValues={course}

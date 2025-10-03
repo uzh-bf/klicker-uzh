@@ -12,6 +12,11 @@ mutation CreateCourse(
   $language: LocaleType!
   $notificationEmail: String
   $isGamificationEnabled: Boolean!
+  $id: String
+  $duplicateLiveQuizzes: Boolean
+  $duplicatePracticeQuizzes: Boolean
+  $duplicateMicrolearnings: Boolean
+  $duplicateGroupActivities: Boolean
 ) {
   createCourse(
     name: $name
@@ -27,6 +32,11 @@ mutation CreateCourse(
     language: $language
     notificationEmail: $notificationEmail
     isGamificationEnabled: $isGamificationEnabled
+    id: $id
+    duplicateLiveQuizzes: $duplicateLiveQuizzes
+    duplicatePracticeQuizzes: $duplicatePracticeQuizzes
+    duplicateMicrolearnings: $duplicateMicrolearnings
+    duplicateGroupActivities: $duplicateGroupActivities
   ) {
     id
     name
