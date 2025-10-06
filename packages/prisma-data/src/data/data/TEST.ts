@@ -755,7 +755,45 @@ $$GourmetValue = Tastiness^2 \\times \\sqrt{Presentation} \\times (1+Uniqueness)
     collectionName: ANSWER_COLLECTIONS[0]!.name,
     answerCollectionItems: ['Apple', 'Date'],
   },
+  {
+    originalId: '11',
+    name: 'Testfrage FREE_TEXT (Atopische Dermatitis)',
+    content: 'Describe atopic dermatitis in your own words.',
+    explanation: 'FT generische Erklärung, warum diese Frage richtig ist.',
+    type: ElementType.FREE_TEXT,
+    options: {
+      hasSampleSolution: true,
+      restrictions: {
+        maxLength: 500,
+      },
+      solutions: [
+        'inflammation',
+        'pruritus',
+        'xerosis',
+        'filaggrin',
+        'barrier dysfunction',
+        'Th2 cytokines',
+        'IgE',
+        'emollients',
+        'eczema',
+        'Staphylococcus aureus',
+      ],
+    },
+  },
 ]
+
+export type QUESTION_ID_TYPE =
+  // | '1'
+  // | '2'
+  // | '3'
+  // | '4'
+  | '5'
+  // | '6'
+  // | '7'
+  // | '8'
+  // | '9'
+  // | '10'
+  | '11'
 
 export const LIVE_QUIZZES = [
   {
@@ -903,6 +941,257 @@ export const LIVE_QUIZZES = [
         timeLimit: 30,
       },
     ],
+  },
+  {
+    id: 'a9e6f3c1-2d1e-4f0b-8f4b-5c6e7d8f9a0b',
+    name: 'Test Live Quiz (Wordcloud)',
+    displayName: 'Test Live Quiz (Wordcloud)',
+    isModerationEnabled: true,
+    isLiveQAEnabled: true,
+    isConfusionFeedbackEnabled: true,
+    isGamificationEnabled: true,
+    isAssessmentEnabled: false,
+    status: PublicationStatus.ENDED,
+    blocks: [
+      {
+        questions: [5, 11],
+        timeLimit: undefined,
+      },
+    ],
+    anonymousResults: {
+      '11': {
+        total: 10,
+        responses: {
+          // topic related texts (mostly correct)
+          '8b4fc0755c2c002245255d951e6ff742': {
+            count: 1,
+            value:
+              'Atopic dermatitis is a chronic, relapsing inflammatory skin disease characterized by intense pruritus and xerosis. It commonly affects flexural areas such as the elbows and knees, especially in children. Impaired epidermal barrier function and immune dysregulation play central roles in its pathogenesis.',
+            correct: true,
+          },
+          c4ca4238a0b923820dcc509a6f75849b: {
+            count: 1,
+            value:
+              'The condition is associated with elevated serum IgE levels and a personal or family history of atopy, including asthma and allergic rhinitis. Acute flares often show erythema, vesiculation, and oozing, whereas chronic lesions exhibit lichenification. Environmental triggers such as detergents, allergens, and stress can exacerbate symptoms.',
+            correct: true,
+          },
+          c81e728d9d4c2f636f067f89cc14862c: {
+            count: 1,
+            value:
+              'Atopic dermatitis is a contagious bacterial infection that spreads through direct skin contact. It primarily results from viral contamination rather than immune dysfunction. Antibiotics are the mainstay of treatment for complete cure.',
+            correct: false,
+          },
+          eccbc87e4b5ce2fe28308fd9f2a7baf3: {
+            count: 1,
+            value:
+              'Genetic mutations in the filaggrin (FLG) gene have been linked to increased susceptibility to atopic dermatitis. Filaggrin deficiency leads to transepidermal water loss and enhanced allergen penetration. This contributes to chronic inflammation mediated by Th2 cytokines such as IL-4 and IL-13.',
+            correct: true,
+          },
+          a87ff679a2f3e71d9181a67b7542122c: {
+            count: 1,
+            value:
+              'Topical corticosteroids remain the first-line therapy for controlling inflammation and pruritus. Emollients are essential for restoring the skin barrier and reducing flare frequency. In severe cases, systemic immunomodulators like cyclosporine or biologics targeting IL-4Rα may be considered.',
+            correct: true,
+          },
+          e4da3b7fbbce3765c8a6f2cfa1b3f3: {
+            count: 1,
+            value:
+              'Atopic dermatitis affects only adults and is rarely seen in children or infants. It primarily develops from excessive sun exposure rather than genetic or immune factors. Phototherapy usually worsens the condition instead of helping it.',
+            correct: false,
+          },
+          '1679091c5a880faf6fb5e6087eb1b2dc': {
+            count: 1,
+            value:
+              'The skin microbiome, particularly Staphylococcus aureus colonization, is thought to aggravate disease severity. Antimicrobial peptides and immune regulation are altered in affected skin. Managing bacterial overgrowth can reduce flare-ups and inflammation.',
+            correct: true,
+          },
+          '8f14e45fceea167a5a36dedd4bea2543': {
+            count: 1,
+            value:
+              'Itch-scratch cycles contribute significantly to lesion chronicity and secondary infections. Breaking this cycle through antihistamines, topical therapies, and behavioral strategies is crucial. Sleep disturbance and psychological stress can amplify pruritus perception.',
+            correct: true,
+          },
+          c9f0f895fb98ab9159f51fd0297e236d: {
+            count: 1,
+            value:
+              'Atopic dermatitis is caused by an overproduction of melanin leading to dark patches on the skin. The condition is curable through simple vitamin D supplementation. It does not involve the immune system or inflammation.',
+            correct: false,
+          },
+          d3d9446802a44259755d38e6d163e820: {
+            count: 1,
+            value:
+              'Atopic dermatitis often improves with age, though some individuals continue to experience relapses into adulthood. Preventive care includes maintaining skin hydration and avoiding known irritants. Patient education on trigger management and proper skincare greatly improves outcomes.',
+            correct: true,
+          },
+          // random texts (all incorrect)
+          b1d9446802a44259755d38e6d163e820: {
+            count: 1,
+            value:
+              'The curious fox jumped quickly over silent hills before dawn.',
+            correct: false,
+          },
+          a87ff679a2f3e7b1d9446802a4425975: {
+            count: 1,
+            value:
+              'Bright stars shimmered softly above the calm sea at midnight.',
+            correct: false,
+          },
+          e4da3b7fbbce3765c8a6f2cfa1b3f3a3: {
+            count: 1,
+            value:
+              'A gentle breeze carried laughter through the quiet summer evening.',
+            correct: false,
+          },
+          '7c6a180b36896a0a8c02787eeafb0e4c': {
+            count: 1,
+            value:
+              'Children built sandcastles while waves danced along the golden shore.',
+            correct: false,
+          },
+          '45c48cce2e2d7fbdea1afc51c7c6ad26': {
+            count: 1,
+            value:
+              'An old clock ticked steadily inside the dimly lit wooden cabin.',
+            correct: false,
+          },
+          '6512bd43d9caa6e02c990b0a82652dca': {
+            count: 1,
+            value:
+              'Raindrops tapped gently against the windowpane as thunder rolled faintly.',
+            correct: false,
+          },
+          '98f13708210194c475687be6106a3b84': {
+            count: 1,
+            value:
+              'A paper airplane drifted across the room and landed perfectly upright.',
+            correct: false,
+          },
+          '8277e0910d750195b448797616e091ad': {
+            count: 1,
+            value:
+              'Snowflakes settled quietly on the railing outside the old mountain house.',
+            correct: false,
+          },
+          e1671797c52e15f763380b45e841ec32: {
+            count: 1,
+            value:
+              'Lanterns illuminated the narrow street as music echoed from afar.',
+            correct: false,
+          },
+          aab3238922bcc25a6f606eb525ffdc56: {
+            count: 1,
+            value:
+              'The cat watched carefully while the candle flame flickered in silence.',
+            correct: false,
+          },
+          '9bf31c7ff062936a96d3c8bd1f8f2ff3': {
+            count: 1,
+            value:
+              'Fog wrapped the forest trees in silver mist and muted sound.',
+            correct: false,
+          },
+          c20ad4d76fe97759aa27a0c99bff6710: {
+            count: 1,
+            value:
+              'Morning sunlight spilled softly through the curtains onto the wooden floor.',
+            correct: false,
+          },
+          c51ce410c124a10e0db5e4b97fc2af39: {
+            count: 1,
+            value:
+              'An artist painted dreams with colors borrowed from twilight and dawn.',
+            correct: false,
+          },
+          aab3b5de3de36c9e1b1a0afcbbcbf0a1: {
+            count: 1,
+            value:
+              'Travelers rested beside the campfire as stars shimmered high above.',
+            correct: false,
+          },
+          '7b61d2313db5cbe1c59ab9c29d8b6aaf': {
+            count: 1,
+            value:
+              'The library smelled of old paper, ink, and whispered forgotten stories.',
+            correct: false,
+          },
+          c0cb5f0fcf2c30b28e08c706f52f8d85: {
+            count: 1,
+            value:
+              'A silver key glinted under the moonlight near the quiet garden gate.',
+            correct: false,
+          },
+          '70efdf2ec9b086079795c442636b55fb': {
+            count: 1,
+            value:
+              'Birds gathered on telephone wires waiting for the morning sun to rise.',
+            correct: false,
+          },
+          '6f4922f45568161a8cdf4ad2299f6d23': {
+            count: 1,
+            value:
+              'The violinist played softly while raindrops pattered gently on cobblestones.',
+            correct: false,
+          },
+          '1f0e3dad99908345f7439f8ffabdffc4': {
+            count: 1,
+            value:
+              'Candles flickered beside photographs that told stories of distant travels.',
+            correct: false,
+          },
+          '92debb6b5e70c378336763e26db8590c': {
+            count: 1,
+            value:
+              'Leaves rustled quietly as twilight descended upon the sleeping village.',
+            correct: false,
+          },
+        },
+      },
+      '5': {
+        total: 8,
+        responses: {
+          '8b4fc0755c2c002245255d951e6ff742': {
+            count: 1,
+            value: 20,
+            correct: true,
+          },
+          c4ca4238a0b923820dcc509a6f75849b: {
+            count: 1,
+            value: 1,
+            correct: false,
+          },
+          c81e728d9d4c2f636f067f89cc14862c: {
+            count: 1,
+            value: 10,
+            correct: false,
+          },
+          eccbc87e4b5ce2fe28308fd9f2a7baf3: {
+            count: 1,
+            value: 25,
+            correct: false,
+          },
+          a87ff679a2f3e71d9181a67b7542122c: {
+            count: 1,
+            value: 37,
+            correct: false,
+          },
+          e4da3b7fbbce3765c8a6f2cfa1b3f3: {
+            count: 1,
+            value: 20,
+            correct: true,
+          },
+          '1679091c5a880faf6fb5e6087eb1b2dc': {
+            count: 1,
+            value: 20,
+            correct: true,
+          },
+          '8f14e45fceea167a5a36dedd4bea2543': {
+            count: 1,
+            value: 100,
+            correct: true,
+          },
+        },
+      },
+    },
   },
 ]
 

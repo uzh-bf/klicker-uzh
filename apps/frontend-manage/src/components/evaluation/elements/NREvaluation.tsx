@@ -26,6 +26,7 @@ interface NREvaluationProps {
   showSolution: boolean
   showExplanation: boolean
   type: ActivityEvaluationType
+  wordCloudTags?: string[]
 }
 
 export interface ShowStatisticsType {
@@ -46,6 +47,7 @@ function NREvaluation({
   showSolution,
   showExplanation,
   type,
+  wordCloudTags,
 }: NREvaluationProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [showStatistics, setShowStatistics] = useState<ShowStatisticsType>({
@@ -70,6 +72,7 @@ function NREvaluation({
           showExplanation={showExplanation}
           showStatistics={showStatistics}
           textSize={textSize}
+          wordCloudTags={wordCloudTags}
         />
       </ResizablePanel>
       <ResizableHandle withHandle />

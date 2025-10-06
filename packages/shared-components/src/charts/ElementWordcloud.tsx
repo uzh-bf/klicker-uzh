@@ -26,6 +26,7 @@ interface ElementWordcloudProps {
     max: number
   }
   className?: string
+  wordCloudTags?: string[]
 }
 
 function ElementWordcloud({
@@ -34,6 +35,7 @@ function ElementWordcloud({
   showExplanation,
   textSize,
   className,
+  wordCloudTags,
 }: ElementWordcloudProps) {
   const t = useTranslations()
   const supportedElementTypes = [ElementType.Numerical, ElementType.FreeText]
@@ -58,41 +60,49 @@ function ElementWordcloud({
 
   // determine frequencies of responses
   const frequencies: Record<string, number> = {}
-  const ignoreTags: string[] = [
-    'Pronoun',
-    'Determiner',
-    'Conjunction',
-    'Preposition',
-    'Auxiliary',
-    // TODO: adjust tags
-  ]
+  const applyFilter = wordCloudTags && wordCloudTags.length > 0
   data.forEach((response) => {
-    const doc = nlp(response.value)
+    if (!applyFilter) {
+      const regex = /[^.;:!?]+[.;:!?]+(?=\s|$)/g
+      const sentences = response.value.match(regex)?.map((s) => s.trim())
 
-    // filter out words of responses based on list of tags
-    const tagged: Record<string, string[]>[] = doc.out('tags')
-
-    tagged.forEach((entry) => {
-      const entities = Object.entries(entry)
-        .filter(([_, tags]) => !tags.some((tag) => ignoreTags.includes(tag)))
-        .map(([entity]) => entity.toLowerCase())
-      const phrase = entities.join(' ')
-      if (phrase.length > 0) {
-        frequencies[phrase] = (frequencies[phrase] || 0) + response.count
+      if (!sentences) {
+        frequencies[response.value] =
+          (frequencies[response.value] || 0) + response.count
+        return
       }
-    })
+
+      for (const sentence of sentences) {
+        frequencies[sentence] = (frequencies[sentence] || 0) + response.count
+      }
+    } else {
+      for (const tag of wordCloudTags) {
+        const doc = nlp(response.value)
+        doc
+          .match(tag)
+          .out('array')
+          .forEach((word: string) => {
+            const sanitizedWord = word.replace(/[.,;:!?]/g, '')
+            frequencies[sanitizedWord] =
+              (frequencies[sanitizedWord] || 0) + response.count
+          })
+      }
+    }
   })
 
   const processedData = Object.entries(frequencies).map(([value, count]) => ({
     text: value,
     value: count,
   }))
+  const hasDataToDisplay = processedData.length > 1
 
-  // when displaying only one word, do not rotate
+  // when displaying only one answer, do not rotate
   const rotationAngles: [number, number] = [
     0,
-    processedData.length > 1 ? -90 : 0,
+    applyFilter && hasDataToDisplay ? -90 : 0,
   ]
+  const minTextSize = textSize.min
+  const maxTextSize = textSize.max
   return (
     <div className={twMerge('flex h-full w-full flex-col', className)}>
       <EvaluationExplanation
@@ -112,9 +122,9 @@ function ElementWordcloud({
             padding: 5,
             rotations: 2,
             rotationAngles: rotationAngles,
-            fontSizes: [textSize.min, textSize.max],
+            fontSizes: [minTextSize, maxTextSize],
             colors: CHART_COLORS,
-            transitionDuration: 1000,
+            transitionDuration: 500,
             scale: 'log',
             spiral: 'archimedean',
           }}

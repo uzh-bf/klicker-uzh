@@ -41,6 +41,7 @@ interface ElementEvaluationProps {
   isAssessmentEnabled: boolean
   pinCode?: string | null
   className?: string
+  wordCloudTags?: string[]
 }
 
 function ElementEvaluation({
@@ -59,6 +60,7 @@ function ElementEvaluation({
   isAssessmentEnabled,
   pinCode,
   className,
+  wordCloudTags,
 }: ElementEvaluationProps) {
   const t = useTranslations()
   const [inCooldown, setInCooldown] = useState(false)
@@ -154,6 +156,7 @@ function ElementEvaluation({
                   isAssessmentEnabled={isAssessmentEnabled}
                   pinCode={pinCode}
                   type={type}
+                  wordCloudTags={wordCloudTags}
                 />
               )}
               {currentInstance.__typename ===
@@ -168,6 +171,7 @@ function ElementEvaluation({
                   isAssessmentEnabled={isAssessmentEnabled}
                   pinCode={pinCode}
                   type={type}
+                  wordCloudTags={wordCloudTags}
                 />
               )}
               {currentInstance.__typename ===
@@ -182,6 +186,7 @@ function ElementEvaluation({
                   isAssessmentEnabled={isAssessmentEnabled}
                   pinCode={pinCode}
                   type={type}
+                  wordCloudTags={wordCloudTags}
                 />
               )}
               {currentInstance.__typename ===
@@ -192,6 +197,7 @@ function ElementEvaluation({
                   chartType={chartType}
                   showSolution={!isStackActive && showSolution}
                   showExplanation={!isStackActive && showExplanation}
+                  wordCloudTags={wordCloudTags}
                 />
               )}
             </div>
@@ -213,6 +219,7 @@ function ElementEvaluation({
             isAssessmentEnabled={isAssessmentEnabled}
             pinCode={pinCode}
             type={type}
+            // TODO: word cloud for case study?
           />
         )}
 
@@ -223,6 +230,7 @@ function ElementEvaluation({
             evaluation={currentInstance}
             textSize={textSize}
             chartType={chartType}
+            wordCloudTags={wordCloudTags}
           />
         )}
 
@@ -232,6 +240,7 @@ function ElementEvaluation({
             key={currentInstance.id}
             evaluation={currentInstance}
             textSize={textSize}
+            // TODO: word cloud for content?
           />
         )}
       </div>

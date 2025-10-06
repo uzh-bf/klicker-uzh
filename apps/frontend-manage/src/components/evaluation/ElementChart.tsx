@@ -19,6 +19,7 @@ interface ElementChartProps {
   showStatistics?: ShowStatisticsType
   textSize: TextSizeType
   className?: string
+  wordCloudTags?: string[]
 }
 
 function ElementChart({
@@ -29,6 +30,7 @@ function ElementChart({
   showStatistics,
   textSize,
   className,
+  wordCloudTags,
 }: ElementChartProps): React.ReactElement {
   const t = useTranslations()
 
@@ -56,6 +58,7 @@ function ElementChart({
           max: textSize.max,
         }}
         className={className}
+        wordCloudTags={wordCloudTags}
       />
     )
   } else if (chartType === ChartType.BAR_CHART) {

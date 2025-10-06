@@ -21,6 +21,8 @@ import { useRouter } from 'next/router'
 import { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ActiveStackType } from './ActivityEvaluation'
+// import { WordCloudFilter } from './filter/WordCloudFilter'
+import { WordCloudFilter } from './filter/WordCloudFilter'
 import { TextSizeType } from './textSizes'
 
 interface EvaluationFooterProps {
@@ -36,6 +38,7 @@ interface EvaluationFooterProps {
   setShowExplanation: Dispatch<SetStateAction<boolean>>
   chartType: ChartType
   setChartType: (newValue: ChartType) => void
+  setWordCloudTags: (newTags: string[]) => void
 }
 
 function EvaluationFooter({
@@ -51,6 +54,7 @@ function EvaluationFooter({
   setShowExplanation,
   chartType,
   setChartType,
+  setWordCloudTags,
 }: EvaluationFooterProps) {
   const t = useTranslations()
   const router = useRouter()
@@ -165,6 +169,12 @@ function EvaluationFooter({
                 value={chartType}
                 onChange={(newValue) => setChartType(newValue as ChartType)}
                 data={{ cy: 'change-chart-type' }}
+              />
+            ) : null}
+            {chartType === ChartType.WORD_CLOUD ? (
+              <WordCloudFilter
+                setWordCloudTags={setWordCloudTags}
+                instanceType={currentInstance?.type}
               />
             ) : null}
             {!router.query.hmac ? (

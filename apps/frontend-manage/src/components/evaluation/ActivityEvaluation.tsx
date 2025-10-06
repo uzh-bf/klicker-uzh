@@ -67,6 +67,7 @@ function ActivityEvaluation({
   const [activeStack, setActiveStack] = useState<ActiveStackType>(0)
   const [activeInstance, setActiveInstance] = useState<number>(0)
   const [chartType, setChartType] = useState<ChartType>(ChartType.UNSET)
+  const [wordCloudTags, setWordCloudTags] = useState<string[]>([])
   const [textSize, setTextSize] = useReducer(sizeReducer, TextSizes['md'])
 
   // show solution and explanation settings based on session storage
@@ -191,6 +192,7 @@ function ActivityEvaluation({
                 : false
             }
             type={type}
+            wordCloudTags={wordCloudTags}
           />
         )}
 
@@ -290,6 +292,7 @@ function ActivityEvaluation({
           setShowExplanation={setShowExplanation}
           chartType={chartType}
           setChartType={setChartType}
+          setWordCloudTags={setWordCloudTags}
           currentInstance={instanceResults[activeInstance]}
         />
       </div>

@@ -26,6 +26,7 @@ interface FTEvaluationProps {
   showSolution: boolean
   showExplanation: boolean
   type: ActivityEvaluationType
+  wordCloudTags?: string[]
 }
 
 function FTEvaluation({
@@ -38,6 +39,7 @@ function FTEvaluation({
   showSolution,
   showExplanation,
   type,
+  wordCloudTags,
 }: FTEvaluationProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -56,6 +58,7 @@ function FTEvaluation({
               showSolution={showSolution}
               showExplanation={showExplanation}
               textSize={textSize}
+              wordCloudTags={wordCloudTags}
             />
           </ResizablePanel>
           <ResizableHandle withHandle />
@@ -91,6 +94,7 @@ function FTEvaluation({
           showExplanation={showExplanation}
           textSize={textSize}
           className="px-4"
+          wordCloudTags={wordCloudTags}
         />
       )}
     </>
