@@ -31,6 +31,8 @@ import {
   WeeklyCourseActivities,
 } from './analytics.js'
 import {
+  ActivityStudentPerformance,
+  AssessmentResultsCourse,
   AssessmentResultsLiveQuiz,
   PointCorrection,
   StudentAssessmentBlockResponse,
@@ -908,7 +910,24 @@ export const Query = builder.queryType({
         type: StudentAssessmentResults,
         args: { courseId: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
-          return await CourseService.getStudentAssessmentResults(args, ctx)
+          return await CourseService.getStudentAssessmentResults(
+            { courseId: args.courseId, participantId: ctx.user.sub },
+            ctx
+          )
+        },
+      }),
+
+      studentCourseResults: t.withAuth(asUser).field({
+        nullable: true,
+        type: [ActivityStudentPerformance],
+        args: {
+          courseId: t.arg.string({ required: true }),
+          participantId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          const studentResults =
+            await CourseService.getStudentAssessmentResults(args, ctx)
+          return studentResults?.liveQuizzes ?? []
         },
       }),
 
@@ -919,6 +938,19 @@ export const Query = builder.queryType({
         resolve: async (_, args, ctx) => {
           return await CourseService.getAssessmentResultsLiveQuiz(args, ctx)
         },
+      }),
+
+      assessmentResultsCourse: t.withAuth(asUser).field({
+        nullable: true,
+        type: AssessmentResultsCourse,
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await CourseService.getAssessmentResultsCourse(args, ctx)
+          }
+        ),
       }),
 
       liveQuizStudentAssessmentResponses: t.withAuth(asUser).field({
@@ -1300,6 +1332,7 @@ export const Query = builder.queryType({
         nullable: true,
         type: [PointCorrection],
         args: {
+          courseId: t.arg.string({ required: false }),
           liveQuizId: t.arg.string({ required: false }),
           instanceId: t.arg.int({ required: false }),
         },

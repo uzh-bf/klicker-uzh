@@ -1,0 +1,5 @@
+query GetStudentCourseResults($courseId: String!, $participantId: String!) {
+  studentCourseResults(courseId: $courseId, participantId: $participantId) {
+    ...ActivityStudentPerformanceData
+  }
+}

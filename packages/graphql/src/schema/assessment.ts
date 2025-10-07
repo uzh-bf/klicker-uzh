@@ -1,10 +1,11 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityStudentPerformance as ActivityStudentPerformanceType,
+  AssessmentResultsCourse as AssessmentResultsCourseType,
   AssessmentResultsLiveQuiz as AssessmentResultsLiveQuizType,
   StudentAssessmentBlockResponse as StudentAssessmentBlockResponseType,
   StudentAssessmentInstanceResponse as StudentAssessmentInstanceResponseType,
-  StudentAssessmentQuizResults as StudentAssessmentQuizResultsType,
+  StudentAssessmentResultsItem as StudentAssessmentResultsItemType,
   StudentPointCorrection as StudentPointCorrectionType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
@@ -51,6 +52,7 @@ export const ActivityStudentPerformance =
   ActivityStudentPerformanceRef.implement({
     fields: (t) => ({
       id: t.exposeString('id'),
+      activityId: t.exposeString('activityId'),
       displayName: t.exposeString('displayName'),
       finishedAt: t.expose('finishedAt', { type: 'Date' }),
       multiplier: t.exposeInt('multiplier'),
@@ -71,7 +73,8 @@ export const StudentPointCorrectionRef =
 export const StudentPointCorrection = StudentPointCorrectionRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
-    reason: t.exposeString('reason'),
+    lecturerReason: t.exposeString('lecturerReason', { nullable: true }),
+    studentReason: t.exposeString('studentReason'),
     awardedBasePoints: t.exposeFloat('awardedBasePoints'),
     awardedCorrectnessPoints: t.exposeFloat('awardedCorrectnessPoints'),
     awardedBonusPoints: t.exposeFloat('awardedBonusPoints'),
@@ -81,12 +84,12 @@ export const StudentPointCorrection = StudentPointCorrectionRef.implement({
   }),
 })
 
-export const StudentAssessmentQuizResultsRef =
-  builder.objectRef<StudentAssessmentQuizResultsType>(
-    'StudentAssessmentQuizResults'
+export const StudentAssessmentResultsItemRef =
+  builder.objectRef<StudentAssessmentResultsItemType>(
+    'StudentAssessmentResultsItem'
   )
-export const StudentAssessmentQuizResults =
-  StudentAssessmentQuizResultsRef.implement({
+export const StudentAssessmentResultsItem =
+  StudentAssessmentResultsItemRef.implement({
     fields: (t) => ({
       participantId: t.exposeString('participantId'),
       participantEmail: t.exposeString('participantEmail'),
@@ -110,11 +113,26 @@ export const AssessmentResultsLiveQuiz = AssessmentResultsLiveQuizRef.implement(
       availableBonusPoints: t.exposeFloat('availableBonusPoints'),
       numberOfCorrections: t.exposeInt('numberOfCorrections'),
       studentResults: t.expose('studentResults', {
-        type: [StudentAssessmentQuizResultsRef],
+        type: [StudentAssessmentResultsItemRef],
       }),
     }),
   }
 )
+
+export const AssessmentResultsCourseRef =
+  builder.objectRef<AssessmentResultsCourseType>('AssessmentResultsCourse')
+export const AssessmentResultsCourse = AssessmentResultsCourseRef.implement({
+  fields: (t) => ({
+    name: t.exposeString('name'),
+    availableBasePoints: t.exposeFloat('availableBasePoints'),
+    availableCorrectnessPoints: t.exposeFloat('availableCorrectnessPoints'),
+    availableBonusPoints: t.exposeFloat('availableBonusPoints'),
+    numberOfCorrections: t.exposeInt('numberOfCorrections'),
+    studentResults: t.expose('studentResults', {
+      type: [StudentAssessmentResultsItemRef],
+    }),
+  }),
+})
 
 export const StudentAssessmentInstanceResponseRef =
   builder.objectRef<StudentAssessmentInstanceResponseType>(

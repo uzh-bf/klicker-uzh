@@ -1298,8 +1298,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       liveQuizStudentResultsEmpty: 'No student results available yet.',
       errorLoadingLiveQuizResults:
         'An error occurred while loading the results. Please try again.',
+      errorLoadingCourseResults:
+        'An error occurred while loading the course results. Please try again.',
       liveQuizSelectStudentInfo:
         'To view the answers submitted by a specific student, please select them from the list on the left side. You will then receive an overview of all the questions included in the quiz, along with the respective submitted answers and their scoring.',
+      courseSelectStudentInfo:
+        'To view the points achieved by a specific student at the quiz level, please select them from the list on the left side. You will then receive an overview of all quizzes included in the course, the points achieved for each, and the maximum achievable points.',
       liveQuizElement: 'Element',
       liveQuizStudentHasNoResponses:
         'This student has not submitted any responses yet.',
@@ -1318,6 +1322,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'An error occurred while loading the student responses. Please try again.',
       responseBy: 'Response by {email}',
       noSampleSolution: 'No sample solution',
+      detailedResultsLiveQuiz: 'Detailed results for this live quiz',
     },
     support: {
       modalTitle: 'Support KlickerUZH',
@@ -2724,6 +2729,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       duplicateCourse: 'Duplicate course',
       learningAnalytics: 'Learning Analytics',
       pointCorrections: 'Point Corrections',
+      assessmentResults: 'Assessment Results',
       appliedCorrections: 'Applied Point Corrections',
       nameWithPin: 'Course: {name} (PIN: {pin})',
       joinCourse: 'Join course',

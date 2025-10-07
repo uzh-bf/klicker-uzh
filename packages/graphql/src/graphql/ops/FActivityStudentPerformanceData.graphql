@@ -1,5 +1,6 @@
 fragment ActivityStudentPerformanceData on ActivityStudentPerformance {
   id
+  activityId
   displayName
   finishedAt
   multiplier
@@ -13,7 +14,8 @@ fragment ActivityStudentPerformanceData on ActivityStudentPerformance {
 
   corrections {
     id
-    reason
+    lecturerReason
+    studentReason
 
     awardedBasePoints
     awardedCorrectnessPoints

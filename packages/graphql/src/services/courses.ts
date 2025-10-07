@@ -2,12 +2,13 @@ import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityStudentPerformance,
   ActivityType,
+  AssessmentResultsCourse,
   AssessmentResultsLiveQuiz,
   PointCorrectionType,
   SharingType,
   StudentAssessmentBlockResponse,
   StudentAssessmentInstanceResponse,
-  StudentAssessmentQuizResults,
+  StudentAssessmentResultsItem,
   StudentPointCorrection,
 } from '@klicker-uzh/types'
 import {
@@ -438,7 +439,12 @@ function getStudentAssessmentQuizPerformance({
       const instanceResults = block.elements.reduce<
         Omit<
           ActivityStudentPerformance,
-          'id' | 'displayName' | 'finishedAt' | 'multiplier' | 'corrections'
+          | 'id'
+          | 'activityId'
+          | 'displayName'
+          | 'finishedAt'
+          | 'multiplier'
+          | 'corrections'
         > & {
           corrections: (StudentPointCorrection & { createdAt: Date })[]
         }
@@ -470,7 +476,8 @@ function getStudentAssessmentQuizPerformance({
                 ...response.appliedCorrections.map((correction) => ({
                   id: correction.pointCorrectionId,
                   createdAt: correction.pointCorrection.createdAt,
-                  reason: correction.pointCorrection.reason,
+                  lecturerReason: correction.pointCorrection.reason,
+                  studentReason: correction.pointCorrection.studentReason,
                   awardedBasePoints: correction.awardedBasePoints,
                   awardedCorrectnessPoints: correction.awardedCorrectnessPoints,
                   awardedBonusPoints: correction.awardedBonusPoints,
@@ -510,6 +517,7 @@ function getStudentAssessmentQuizPerformance({
     },
     {
       id: quiz.id,
+      activityId: quiz.id,
       displayName: quiz.displayName,
       finishedAt: quiz.finishedAt!,
       multiplier: quiz.pointsMultiplier,
@@ -561,7 +569,8 @@ function getStudentAssessmentQuizPerformance({
         {
           id: parseInt(correctionId),
           createdAt: corrections[0]!.createdAt,
-          reason: corrections[0]!.reason,
+          lecturerReason: corrections[0]!.lecturerReason,
+          studentReason: corrections[0]!.studentReason,
           awardedBasePoints: 0,
           awardedCorrectnessPoints: 0,
           awardedBonusPoints: 0,
@@ -582,27 +591,45 @@ function getStudentAssessmentQuizPerformance({
 }
 
 export async function getStudentAssessmentResults(
-  { courseId }: { courseId: string },
+  { courseId, participantId }: { courseId: string; participantId: string },
   ctx: ContextWithUser
 ) {
-  // verify that the student is logged in as an assessment participant and has a participation in the course
-  if (ctx.user.scope !== DB.UserLoginScope.EDUID) {
-    throw new Error(
-      'Only logged in assessment participants can access assessment results'
-    )
-  }
-
-  const participation = await ctx.prisma.participation.findUnique({
-    where: {
-      courseId_participantId: {
-        courseId,
-        participantId: ctx.user.sub,
+  // check if the user is logged in as an assessment course admin -> skip validation of participant
+  const isAssessmentCourseAdmin = await ctx.prisma.derivedPermission.findUnique(
+    {
+      where: {
+        courseId_userId: {
+          courseId,
+          userId: ctx.user.sub,
+        },
+        permissionLevel: {
+          in: [DB.PermissionLevel.OWNER, DB.PermissionLevel.ADMIN],
+        },
+        course: { isAssessmentEnabled: true },
       },
-    },
-  })
+    }
+  )
 
-  if (!participation) {
-    throw new Error('Participation not found')
+  // verify that the student is logged in as an assessment participant and has a participation in the course
+  if (!isAssessmentCourseAdmin) {
+    if (ctx.user.scope !== DB.UserLoginScope.EDUID) {
+      throw new Error(
+        'Only logged in assessment participants can access assessment results'
+      )
+    }
+
+    const participation = await ctx.prisma.participation.findUnique({
+      where: {
+        courseId_participantId: {
+          courseId,
+          participantId: ctx.user.sub,
+        },
+      },
+    })
+
+    if (!participation) {
+      throw new Error('Participation not found')
+    }
   }
 
   // fetch all activities of the course, including the participants results
@@ -618,7 +645,7 @@ export async function getStudentAssessmentResults(
               elements: {
                 include: {
                   liveQuizResponses: {
-                    where: { participantId: ctx.user.sub },
+                    where: { participantId },
                     include: {
                       appliedCorrections: {
                         include: { pointCorrection: true },
@@ -665,7 +692,10 @@ export async function getStudentAssessmentResults(
 }
 
 export async function getAssessmentResultsLiveQuiz(
-  { liveQuizId }: { liveQuizId: string },
+  {
+    liveQuizId,
+    preferredAffiliation = 'uzh',
+  }: { liveQuizId: string; preferredAffiliation?: string },
   ctx: ContextWithUser
 ): Promise<AssessmentResultsLiveQuiz | null> {
   // fetch the live quiz and verify that the requesting user is an admin of the associated assessment course
@@ -693,8 +723,9 @@ export async function getAssessmentResultsLiveQuiz(
               liveQuizResponses: {
                 include: {
                   participant: {
-                    // TODO: think about replacing this hard-coded affiliation filter to be user selectable
-                    include: { accounts: { where: { ssoType: 'uzh' } } },
+                    include: {
+                      accounts: { where: { ssoType: preferredAffiliation } },
+                    },
                   },
                 },
               },
@@ -703,18 +734,49 @@ export async function getAssessmentResultsLiveQuiz(
           },
         },
       },
+      course: {
+        include: {
+          participations: {
+            include: {
+              participant: {
+                include: {
+                  accounts: { where: { ssoType: preferredAffiliation } },
+                },
+              },
+            },
+          },
+        },
+      },
       _count: { select: { corrections: true } },
     },
   })
 
-  if (!liveQuiz) return null
+  if (!liveQuiz || !liveQuiz.course) return null
+
+  // initial student results object with all participants in the course
+  const initialStudentResults = liveQuiz.course.participations.reduce<{
+    [participantId: string]: StudentAssessmentResultsItem
+  }>((acc, participation) => {
+    const email =
+      participation.participant.accounts[0]?.ssoEmail ??
+      participation.participant.email ??
+      'Missing E-Mail'
+    acc[participation.participantId] = {
+      participantId: participation.participantId,
+      participantEmail: email,
+      basePoints: 0,
+      correctnessPoints: 0,
+      bonusPoints: 0,
+    }
+    return acc
+  }, {})
 
   // aggreagte the collected points by students (and overall available points) for the quiz
   const liveQuizResults = liveQuiz.blocks.reduce<{
     basePoints: number
     correctnessPoints: number
     bonusPoints: number
-    students: { [participantId: string]: StudentAssessmentQuizResults }
+    students: { [participantId: string]: StudentAssessmentResultsItem }
   }>(
     (quizAcc, block) => {
       block.elements.forEach((instance) => {
@@ -770,7 +832,7 @@ export async function getAssessmentResultsLiveQuiz(
       basePoints: 0,
       correctnessPoints: 0,
       bonusPoints: 0,
-      students: {},
+      students: initialStudentResults,
     }
   )
 
@@ -795,6 +857,163 @@ export async function getAssessmentResultsLiveQuiz(
         0
       ),
     studentResults: Object.values(liveQuizResults.students),
+  }
+}
+
+export async function getAssessmentResultsCourse(
+  {
+    courseId,
+    preferredAffiliation = 'uzh',
+  }: { courseId: string; preferredAffiliation?: string },
+  ctx: ContextWithUser
+): Promise<AssessmentResultsCourse | null> {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId, isAssessmentEnabled: true },
+    include: {
+      liveQuizzes: {
+        where: {
+          status: DB.PublicationStatus.ENDED,
+          isDeleted: false,
+          isAssessmentEnabled: true,
+        },
+        include: {
+          blocks: {
+            include: {
+              elements: {
+                include: {
+                  liveQuizResponses: {
+                    include: {
+                      participant: {
+                        include: {
+                          accounts: {
+                            where: { ssoType: preferredAffiliation },
+                          },
+                        },
+                      },
+                    },
+                  },
+                  _count: { select: { corrections: true } },
+                },
+              },
+            },
+          },
+          _count: { select: { corrections: true } },
+        },
+      },
+      participations: {
+        include: {
+          participant: {
+            include: {
+              accounts: {
+                where: { ssoType: preferredAffiliation },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!course) return null
+
+  // initial student results object with all participants in the course
+  const initialStudentResults = course.participations.reduce<{
+    [participantId: string]: StudentAssessmentResultsItem
+  }>((acc, participation) => {
+    const email =
+      participation.participant.accounts[0]?.ssoEmail ??
+      participation.participant.email ??
+      'Missing E-Mail'
+    acc[participation.participantId] = {
+      participantId: participation.participantId,
+      participantEmail: email,
+      basePoints: 0,
+      correctnessPoints: 0,
+      bonusPoints: 0,
+    }
+    return acc
+  }, {})
+
+  // aggregate the points over all activities contained in the course
+  const courseResults = course.liveQuizzes.reduce<
+    Omit<AssessmentResultsCourse, 'studentResults'> & {
+      studentResults: { [participantId: string]: StudentAssessmentResultsItem }
+    }
+  >(
+    (courseAcc, lq) => {
+      lq.blocks.forEach((block) => {
+        block.elements.forEach((instance) => {
+          // get the available points for the instance
+          const { basePoints, correctnessPoints, bonusPoints } =
+            getInstanceAvailablePoints({
+              instance,
+              activityBasePoints: lq.defaultPoints,
+              activityCorrectnessPoints: lq.defaultCorrectPoints,
+              activityBonusPoints: lq.maxBonusPoints,
+            })
+
+          // increment the overall available points in the course
+          courseAcc.availableBasePoints += basePoints
+          courseAcc.availableCorrectnessPoints += correctnessPoints
+          courseAcc.availableBonusPoints += bonusPoints
+
+          // increment the number of point corrections in the course
+          courseAcc.numberOfCorrections += instance._count.corrections
+
+          // iterate over the student responses and aggregate them into the course results object
+          instance.liveQuizResponses
+            .filter(
+              (response) => response.elementBlockExecution === block.execution
+            )
+            .forEach((response) => {
+              // get the student's affiliation email, if available
+              const email =
+                response.participant.accounts[0]?.ssoEmail ??
+                response.participant.email ??
+                'Missing E-Mail'
+
+              // check if the student already has an entry in the results object and set it otherwise
+              if (courseAcc.studentResults[response.participantId]) {
+                // increment the results object with the student response content
+                courseAcc.studentResults[response.participantId]!.basePoints +=
+                  response.basePoints
+                courseAcc.studentResults[
+                  response.participantId
+                ]!.correctnessPoints += response.correctnessPoints
+                courseAcc.studentResults[response.participantId]!.bonusPoints +=
+                  response.bonusPoints
+              } else {
+                // set up a new student entry in the results object with the response content
+                courseAcc.studentResults[response.participantId] = {
+                  participantId: response.participantId,
+                  participantEmail: email,
+                  basePoints: response.basePoints,
+                  correctnessPoints: response.correctnessPoints,
+                  bonusPoints: response.bonusPoints,
+                }
+              }
+            })
+        })
+      })
+
+      // increment the number of point corrections in the course
+      courseAcc.numberOfCorrections += lq._count.corrections
+
+      return courseAcc
+    },
+    {
+      name: course.name,
+      availableBasePoints: 0,
+      availableCorrectnessPoints: 0,
+      availableBonusPoints: 0,
+      numberOfCorrections: 0,
+      studentResults: initialStudentResults,
+    }
+  )
+
+  return {
+    ...courseResults,
+    studentResults: Object.values(courseResults.studentResults),
   }
 }
 
@@ -1848,13 +2067,21 @@ export async function correctAssessmentPointsLiveQuiz(
 
 export async function getPreviousPointCorrections(
   {
+    courseId,
     liveQuizId,
     instanceId,
-  }: { liveQuizId?: string | null; instanceId?: number | null },
+    preferredAffiliation = 'uzh',
+  }: {
+    courseId?: string | null
+    liveQuizId?: string | null
+    instanceId?: number | null
+    preferredAffiliation?: string
+  },
   ctx: ContextWithUser
 ) {
   // if neither a live quiz id nor an instance id is provided, return early
   if (
+    (courseId === null || typeof courseId === 'undefined' || courseId === '') &&
     (liveQuizId === null ||
       typeof liveQuizId === 'undefined' ||
       liveQuizId === '') &&
@@ -1890,7 +2117,9 @@ export async function getPreviousPointCorrections(
           include: {
             correctedBy: true,
             participant: {
-              include: { accounts: { where: { ssoType: 'uzh' } } },
+              include: {
+                accounts: { where: { ssoType: preferredAffiliation } },
+              },
             },
           },
           orderBy: { createdAt: 'desc' },
@@ -1911,78 +2140,180 @@ export async function getPreviousPointCorrections(
           return { ...correction, participant, instance }
         })
       : []
-  }
-
-  const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
-    where: {
-      id: liveQuizId!,
-      isAssessmentEnabled: true,
-      course: {
+  } else if (liveQuizId !== null && typeof liveQuizId !== 'undefined') {
+    const liveQuiz = await ctx.prisma.liveQuiz.findUnique({
+      where: {
+        id: liveQuizId!,
         isAssessmentEnabled: true,
-        permissions: {
-          some: {
-            userId: ctx.user.sub,
-            permissionLevel: {
-              in: [DB.PermissionLevel.OWNER, DB.PermissionLevel.ADMIN],
+        course: {
+          isAssessmentEnabled: true,
+          permissions: {
+            some: {
+              userId: ctx.user.sub,
+              permissionLevel: {
+                in: [DB.PermissionLevel.OWNER, DB.PermissionLevel.ADMIN],
+              },
             },
           },
         },
       },
-    },
-    include: {
-      corrections: {
-        include: {
-          correctedBy: true,
-          participant: {
-            include: { accounts: { where: { ssoType: 'uzh' } } },
+      include: {
+        corrections: {
+          include: {
+            correctedBy: true,
+            participant: {
+              include: {
+                accounts: { where: { ssoType: preferredAffiliation } },
+              },
+            },
           },
         },
-      },
-      // include the corrections of all instances as well
-      blocks: {
-        include: {
-          elements: {
-            include: {
-              corrections: {
-                include: {
-                  correctedBy: true,
-                  participant: {
-                    include: { accounts: { where: { ssoType: 'uzh' } } },
+        // include the corrections of all instances as well
+        blocks: {
+          include: {
+            elements: {
+              include: {
+                corrections: {
+                  include: {
+                    correctedBy: true,
+                    participant: {
+                      include: {
+                        accounts: { where: { ssoType: preferredAffiliation } },
+                      },
+                    },
                   },
                 },
+              },
+              orderBy: { order: 'asc' },
+            },
+          },
+          orderBy: { order: 'asc' },
+        },
+      },
+    })
+
+    const instanceCorrections = liveQuiz?.blocks.flatMap((block) =>
+      block.elements.flatMap((element) =>
+        element.corrections.map((correction) => {
+          let participant = correction.participant
+          if (!participant) return { ...correction, instance: element }
+
+          participant['email'] =
+            correction.participant?.accounts[0]?.ssoEmail ??
+            correction.participant?.email ??
+            null
+
+          return {
+            ...correction,
+            instance: element,
+            participant,
+          }
+        })
+      )
+    )
+
+    const quizCorrections = liveQuiz?.corrections.map((correction) => {
+      let participant = correction.participant
+      if (!participant) return correction
+
+      participant['email'] =
+        correction.participant?.accounts[0]?.ssoEmail ??
+        correction.participant?.email ??
+        null
+
+      return { ...correction, participant }
+    })
+
+    // return both the quiz- and instance-level corrections
+    const corrections = [
+      ...(quizCorrections ?? []),
+      ...(instanceCorrections ?? []),
+    ]
+    return sortBy(corrections, [prop('createdAt'), 'desc'])
+  }
+
+  // fetch the course and include all live quiz and instance corrections
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId! },
+    include: {
+      liveQuizzes: {
+        include: {
+          corrections: {
+            include: {
+              correctedBy: true,
+              participant: {
+                include: {
+                  accounts: { where: { ssoType: preferredAffiliation } },
+                },
+              },
+            },
+          },
+          blocks: {
+            include: {
+              elements: {
+                include: {
+                  corrections: {
+                    include: {
+                      correctedBy: true,
+                      participant: {
+                        include: {
+                          accounts: {
+                            where: { ssoType: preferredAffiliation },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                orderBy: { order: 'asc' },
               },
             },
             orderBy: { order: 'asc' },
           },
         },
-        orderBy: { order: 'asc' },
       },
     },
   })
 
-  const instanceCorrections = liveQuiz?.blocks.flatMap((block) =>
-    block.elements.flatMap((element) =>
-      element.corrections.map((correction) => {
-        let participant = correction.participant
-        if (!participant) return { ...correction, instance: element }
+  const instanceCorrections = course?.liveQuizzes.flatMap((lq) =>
+    lq.blocks.flatMap((block) =>
+      block.elements.flatMap((element) =>
+        element.corrections.map((correction) => {
+          let participant = correction.participant
+          if (!participant) return { ...correction, instance: element }
 
-        participant['email'] =
-          correction.participant?.accounts[0]?.ssoEmail ??
-          correction.participant?.email ??
-          null
+          participant['email'] =
+            correction.participant?.accounts[0]?.ssoEmail ??
+            correction.participant?.email ??
+            null
 
-        return {
-          ...correction,
-          instance: element,
-          participant,
-        }
-      })
+          return {
+            ...correction,
+            instance: element,
+            participant,
+          }
+        })
+      )
     )
+  )
+
+  const quizCorrections = course?.liveQuizzes.flatMap((lq) =>
+    lq.corrections.map((correction) => {
+      let participant = correction.participant
+      if (!participant) return correction
+
+      participant['email'] =
+        correction.participant?.accounts[0]?.ssoEmail ??
+        correction.participant?.email ??
+        null
+
+      return { ...correction, participant }
+    })
   )
 
   // return both the quiz- and instance-level corrections
   const corrections = [
-    ...(liveQuiz?.corrections ?? []),
+    ...(quizCorrections ?? []),
     ...(instanceCorrections ?? []),
   ]
   return sortBy(corrections, [prop('createdAt'), 'desc'])

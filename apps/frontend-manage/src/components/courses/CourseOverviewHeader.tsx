@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import { faCopy, faPenToSquare } from '@fortawesome/free-regular-svg-icons'
 import {
   faChartPie,
+  faFilePen,
   faLink,
   faMessage,
   faPencil,
@@ -19,6 +20,7 @@ import {
 import { Button, Dropdown, H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { useState } from 'react'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
@@ -53,6 +55,7 @@ function CourseOverviewHeader({
   containsGroups,
 }: CourseOverviewHeaderProps) {
   const t = useTranslations()
+  const router = useRouter()
   const [createCourse] = useMutation(CreateCourseDocument)
 
   const [courseSettingsModal, setCourseSettingsModal] = useState(false)
@@ -181,6 +184,17 @@ function CourseOverviewHeader({
           >
             <Button.Icon icon={faChartPie} />
             <Button.Label>{t('manage.course.learningAnalytics')}</Button.Label>
+          </Button>
+        ) : null}
+        {course.isAssessmentEnabled && course.isManager ? (
+          <Button
+            className={{ root: 'h-8' }}
+            onClick={() => {
+              router.push(`/courses/${course.id}/assessment/results`)
+            }}
+          >
+            <Button.Icon icon={faFilePen} />
+            <Button.Label>{t('manage.course.assessmentResults')}</Button.Label>
           </Button>
         ) : null}
         {course.isAssessmentEnabled && course.isManager ? (

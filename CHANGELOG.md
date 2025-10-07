@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.35...v3.4.0-alpha.36) (2025-09-30)
+
+
+### Features
+
+* add overview of student assessment performance on course level ([#4951](https://github.com/uzh-bf/klicker-uzh/issues/4951)) ([ff61d9b](https://github.com/uzh-bf/klicker-uzh/commit/ff61d9bc720eef7770dcb56d2ec6676a05f4bfe7))
+
+
+### Bug Fixes
+
+* **ci:** resolve issues with hatchet usage in graphql integration tests ([#4950](https://github.com/uzh-bf/klicker-uzh/issues/4950)) ([98c5e91](https://github.com/uzh-bf/klicker-uzh/commit/98c5e919e70ee3ee4148b2ebb66f725804fa47da))
+* **packages/graphql:** ensure that student reason is shown on student corrections list ([f097b73](https://github.com/uzh-bf/klicker-uzh/commit/f097b73ccfe4ca638282c2fa7609df7f25e42e11))
+
 ## [3.4.0-alpha.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.34...v3.4.0-alpha.35) (2025-09-29)
 
 
