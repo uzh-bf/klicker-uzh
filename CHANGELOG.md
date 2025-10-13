@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.37](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.36...v3.4.0-alpha.37) (2025-10-13)
+
+
+### Bug Fixes
+
+* **cypress:** resolve issues with cypress tests caused by missing element tile in asynchronous activities ([#4952](https://github.com/uzh-bf/klicker-uzh/issues/4952)) ([e5ee90c](https://github.com/uzh-bf/klicker-uzh/commit/e5ee90c430b579018ab4e1d91ed9da4c7e040a98))
+* **packages/shared-components:** handle undefined text for slate conversion ([#4956](https://github.com/uzh-bf/klicker-uzh/issues/4956)) ([80897ce](https://github.com/uzh-bf/klicker-uzh/commit/80897ce1ed510670cd0007939f32ccfcb7d06789))
+
 ## [3.4.0-alpha.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.35...v3.4.0-alpha.36) (2025-09-30)
 
 
