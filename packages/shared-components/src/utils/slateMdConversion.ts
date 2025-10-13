@@ -187,12 +187,12 @@ export const convertToSlate = (mdObj?: string | null) => {
 }
 
 const formatText = (input: any) => {
-  if (!input || input.text === '') {
+  if (!input || !input.text || input.text === '') {
     return ''
   }
   return serialize({
     type: 'paragraph',
-    text: input.text || '',
+    text: input.text,
     bold: input.bold || false,
     italic: input.italic || false,
     code: input.code || false,
