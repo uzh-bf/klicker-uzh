@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.38](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.37...v3.4.0-alpha.38) (2025-10-15)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add display name to lecturer cockpit ([#4953](https://github.com/uzh-bf/klicker-uzh/issues/4953)) ([41eefef](https://github.com/uzh-bf/klicker-uzh/commit/41eefefa8d0d53e83254479e1e3cc93b950713c8))
+
 ## [3.4.0-alpha.37](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.36...v3.4.0-alpha.37) (2025-10-13)
 
 
