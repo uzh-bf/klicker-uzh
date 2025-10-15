@@ -6,6 +6,7 @@ import ElementWordcloud from '@klicker-uzh/shared-components/src/charts/ElementW
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import EvaluationExplanation from '@klicker-uzh/shared-components/src/evaluation/EvaluationExplanation'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ShowStatisticsType } from './elements/NREvaluation'
@@ -19,7 +20,6 @@ interface ElementChartProps {
   showStatistics?: ShowStatisticsType
   textSize: TextSizeType
   className?: string
-  wordCloudTags?: string[]
 }
 
 function ElementChart({
@@ -30,9 +30,9 @@ function ElementChart({
   showStatistics,
   textSize,
   className,
-  wordCloudTags,
 }: ElementChartProps): React.ReactElement {
   const t = useTranslations()
+  const router = useRouter()
 
   if (chartType === ChartType.TABLE) {
     return (
@@ -58,7 +58,7 @@ function ElementChart({
           max: textSize.max,
         }}
         className={className}
-        wordCloudTags={wordCloudTags}
+        locale={router.locale}
       />
     )
   } else if (chartType === ChartType.BAR_CHART) {

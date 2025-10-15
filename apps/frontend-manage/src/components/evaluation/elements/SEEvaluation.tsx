@@ -7,7 +7,6 @@ interface SEEvaluationProps {
   instanceEvaluation: SelectionActivityEvaluationData
   textSize: TextSizeType
   chartType: ChartType
-  wordCloudTags?: string[]
   showSolution: boolean
   showExplanation: boolean
 }
@@ -18,7 +17,6 @@ function SEEvaluation({
   chartType,
   showSolution,
   showExplanation,
-  wordCloudTags,
 }: SEEvaluationProps) {
   return (
     <ElementChart
@@ -28,7 +26,6 @@ function SEEvaluation({
       showExplanation={showExplanation}
       textSize={textSize}
       className="px-4"
-      wordCloudTags={wordCloudTags}
     />
   )
 }

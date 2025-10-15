@@ -398,6 +398,8 @@ export default {
       unknownUser: 'Unknown User',
       deletedUser: 'Deleted User',
       correction: 'Correction',
+      filter: 'Filter',
+      listExamples: 'e.g.',
     },
     types: {
       ACTIVITIES: 'Activities',
@@ -2546,6 +2548,16 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       displayedWindow: 'Displayed running window: {window} times interval',
       table: 'Table',
       wordCloud: 'Word Cloud',
+      wordCloudFilterMode: 'Filter Mode',
+      wordCloudLanguageFilter: 'Language Filter',
+      wordCloudModeStandardTooltip:
+        'Standard: Regular filters, e.g. words, numbers, ...',
+      wordCloudModePremiumTooltip:
+        'Premium (only in English): Extended set of filters, e.g. nouns, verbs, ...',
+      wordCloudNoResponses:
+        'No participants have submitted responses for this question.',
+      wordCloudNoResponsesFiltered:
+        'No responses match the current filter settings.',
       histogram: 'Histogram',
       barChart: 'Bar Chart',
       scatterPlot: 'Scatter Plot',

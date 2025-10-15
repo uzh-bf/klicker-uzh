@@ -24,7 +24,6 @@ interface ChoicesEvaluationProps {
   isAssessmentEnabled: boolean
   pinCode?: string | null
   type: ActivityEvaluationType
-  wordCloudTags?: string[]
 }
 
 function ChoicesEvaluation({
@@ -37,7 +36,6 @@ function ChoicesEvaluation({
   isAssessmentEnabled,
   pinCode,
   type,
-  wordCloudTags,
 }: ChoicesEvaluationProps) {
   return (
     <ResizablePanelGroup
@@ -52,7 +50,6 @@ function ChoicesEvaluation({
           showSolution={showSolution}
           showExplanation={showExplanation}
           textSize={textSize}
-          wordCloudTags={wordCloudTags}
         />
       </ResizablePanel>
       <ResizableHandle withHandle />

@@ -400,6 +400,8 @@ export default {
       unknownUser: 'Unbekannter Nutzer',
       deletedUser: 'Gelöschter Nutzer',
       correction: 'Korrektur',
+      filter: 'Filter',
+      listExamples: 'z.B.',
     },
     types: {
       ACTIVITIES: 'Aktivitäten',
@@ -2585,6 +2587,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       displayedWindow: 'Displayed running window: {window} times interval',
       table: 'Tabelle',
       wordCloud: 'Word Cloud',
+      wordCloudFilterMode: 'Filtermodus',
+      wordCloudLanguageFilter: 'Sprachfilter',
+      wordCloudModeStandardTooltip:
+        'Standard: Reguläre Filter, z. B. Wörter, Zahlen, ...',
+      wordCloudModePremiumTooltip:
+        'Premium (nur auf Englisch): Erweitertes Set an Filter, z. B. Nomen, Verben, ...',
+      wordCloudNoResponses:
+        'Für diese Frage wurden noch keine Antworten von Teilnehmenden gespeichert.',
+      wordCloudNoResponsesFiltered:
+        'Keine Antworten entsprechen den aktuellen Filtereinstellungen.',
       histogram: 'Histogramm',
       barChart: 'Balkendiagramm',
       scatterPlot: 'Streudiagramm',

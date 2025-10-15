@@ -8,15 +8,9 @@ interface FCEvaluationProps {
   evaluation: FlashcardActivityEvaluationData
   textSize: TextSizeType
   chartType: ChartType
-  wordCloudTags?: string[]
 }
 
-function FCEvaluation({
-  evaluation,
-  textSize,
-  chartType,
-  wordCloudTags,
-}: FCEvaluationProps) {
+function FCEvaluation({ evaluation, textSize, chartType }: FCEvaluationProps) {
   return (
     <div className="flex h-full w-full flex-col">
       <div className="flex-none">
@@ -33,7 +27,6 @@ function FCEvaluation({
           showSolution={false}
           showExplanation={false}
           textSize={textSize}
-          wordCloudTags={wordCloudTags}
         />
       </div>
     </div>
