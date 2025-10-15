@@ -11,7 +11,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { LocaleType } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H1, Tooltip } from '@uzh-bf/design-system'
+import { Button, H1, H4, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -28,6 +28,7 @@ interface LiveQuizTimelineProps {
   assessmentMode: boolean
   quizId: string
   quizName: string
+  quizDisplayName: string
   quizPin?: string | null
   blocks?: QuizTimelineBlock[]
   language?: LocaleType | null
@@ -43,6 +44,7 @@ function LiveQuizTimeline({
   assessmentMode,
   quizId,
   quizName,
+  quizDisplayName,
   quizPin,
   blocks = [],
   language,
@@ -114,13 +116,18 @@ function LiveQuizTimeline({
 
   return (
     <div className="flex flex-col md:flex-row md:flex-wrap">
-      <div className="flex flex-1 flex-row flex-wrap items-end justify-between gap-y-2 md:flex-auto md:pb-2">
-        <div className="flex flex-row flex-wrap items-end gap-8">
-          <H1 className={{ root: 'm-0 text-xl' }}>Quiz: {quizName}</H1>
-          <RuntimeCounter startedAt={startedAt} />
+      <div className="flex flex-1 flex-col items-center gap-y-2 pb-3 md:flex-wrap lg:flex-row lg:items-end">
+        <div className="flex flex-1 flex-col flex-wrap items-center text-center lg:items-start lg:text-left">
+          <H1>Quiz: {quizName}</H1>
+          <H4>
+            {t('manage.activityWizard.displayName')}: {quizDisplayName}
+          </H4>
+        </div>
+
+        <div className="flex flex-1 flex-col flex-wrap items-center justify-center gap-y-2 text-xl">
           {quizPin && (
             <span
-              className="text-uzh-red-100 -mb-0.5 h-max text-xl font-bold"
+              className="text-uzh-red-100 -mb-0.5 h-max flex-1 font-bold"
               data-cy="live-quiz-pin"
             >
               <span>{t('shared.generic.pin')}: </span>
@@ -130,10 +137,20 @@ function LiveQuizTimeline({
               </span>
             </span>
           )}
+          <div className="flex flex-1 gap-8">
+            <RuntimeCounter startedAt={startedAt} />
+          </div>
         </div>
 
-        <div className="mt-1.5 flex flex-row flex-wrap items-end gap-2 sm:mt-0">
-          <div className="flex w-full flex-row flex-wrap gap-2 sm:w-max">
+        <div className="flex flex-1 flex-row flex-wrap justify-end gap-2">
+          <div
+            className={twMerge(
+              'justify-center gap-2 sm:w-max sm:justify-end',
+              assessmentMode
+                ? 'flex flex-1 flex-row flex-wrap'
+                : 'grid grid-cols-2'
+            )}
+          >
             <Button
               onClick={() => setEmbedModalOpen(true)}
               disabled={isFeedbackQuiz}
@@ -146,7 +163,7 @@ function LiveQuizTimeline({
               </Button.Label>
             </Button>
             <Button
-              className={{ root: 'h-8 sm:w-max' }}
+              className={{ root: 'h-8' }}
               onClick={() => setQRModal(true)}
               data={{ cy: 'open-qr-modal' }}
             >
