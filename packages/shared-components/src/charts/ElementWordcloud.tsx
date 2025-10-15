@@ -56,15 +56,6 @@ function ElementWordcloud({
 }: ElementWordcloudProps) {
   const t = useTranslations()
 
-  const supportedElementTypes = [ElementType.Numerical, ElementType.FreeText]
-  if (!supportedElementTypes.includes(instance.type)) {
-    return (
-      <UserNotification type="warning">
-        {t('manage.evaluation.chartTypeNotSupported')}
-      </UserNotification>
-    )
-  }
-
   const [tags, setTags] = useState<string[]>([])
   const [language, setLanguage] = useState<WordCloudLanguage>(
     WordCloudLanguage.EN
@@ -77,6 +68,15 @@ function ElementWordcloud({
       setLanguage(WordCloudLanguage.EN)
     }
   }, [mode])
+
+  const supportedElementTypes = [ElementType.Numerical, ElementType.FreeText]
+  if (!supportedElementTypes.includes(instance.type)) {
+    return (
+      <UserNotification type="warning">
+        {t('manage.evaluation.chartTypeNotSupported')}
+      </UserNotification>
+    )
+  }
 
   const data =
     instance.__typename === 'NumericalActivityEvaluationData'

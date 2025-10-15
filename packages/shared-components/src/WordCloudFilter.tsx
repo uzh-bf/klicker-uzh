@@ -893,10 +893,6 @@ export function WordCloudFilter({
   language,
   noResponsesReceived,
 }: WordCloudFilterProps) {
-  if (instanceType === ElementType.Numerical) {
-    return null
-  }
-
   const t = useTranslations()
   const [checked, setChecked] = useState<Record<string, boolean>>({})
 
@@ -916,6 +912,10 @@ export function WordCloudFilter({
     })
     setWordCloudTags(selectedTags)
   }, [checked])
+
+  if (instanceType === ElementType.Numerical) {
+    return null // nothing to filter for numerical elements
+  }
 
   const tagCategorites =
     mode === WordCloudMode.STANDARD ? tagsBasic : tagsAdvanced

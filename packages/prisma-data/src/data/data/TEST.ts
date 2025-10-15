@@ -782,6 +782,7 @@ $$GourmetValue = Tastiness^2 \\times \\sqrt{Presentation} \\times (1+Uniqueness)
   },
 ]
 
+// uncomment question ids with anonymous responses
 export type QUESTION_ID_TYPE =
   // | '1'
   // | '2'
@@ -960,7 +961,7 @@ export const LIVE_QUIZZES = [
     ],
     anonymousResults: {
       '11': {
-        total: 10,
+        total: 30,
         responses: {
           // topic related texts (mostly correct)
           '8b4fc0755c2c002245255d951e6ff742': {
