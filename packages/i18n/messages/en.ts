@@ -2555,9 +2555,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       wordCloudModePremiumTooltip:
         'Premium (only in English): Extended set of filters, e.g. nouns, verbs, ...',
       wordCloudNoResponses:
-        'No participants have submitted responses for this question.',
+        'No participants have submitted responses for this question 😔.',
       wordCloudNoResponsesFiltered:
-        'No responses match the current filter settings.',
+        'No responses match the current filter settings 🧐.',
+      wordCloudNoResponsesDisplayed:
+        'No responses are displayed due to the current filter settings or the provided font sizes 😰.',
+      numberOfVotes: 'Frequency: {number}',
       histogram: 'Histogram',
       barChart: 'Bar Chart',
       scatterPlot: 'Scatter Plot',

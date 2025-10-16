@@ -2,7 +2,7 @@ import { ElementInstanceEvaluation } from '@klicker-uzh/graphql/dist/ops'
 import ElementBarChart from '@klicker-uzh/shared-components/src/charts/ElementBarChart'
 import ElementHistogram from '@klicker-uzh/shared-components/src/charts/ElementHistogram'
 import ElementTableChart from '@klicker-uzh/shared-components/src/charts/ElementTableChart'
-import ElementWordcloud from '@klicker-uzh/shared-components/src/charts/ElementWordcloud'
+import ElementWordCloud from '@klicker-uzh/shared-components/src/charts/ElementWordcloud'
 import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import EvaluationExplanation from '@klicker-uzh/shared-components/src/evaluation/EvaluationExplanation'
 import { useTranslations } from 'next-intl'
@@ -47,7 +47,7 @@ function ElementChart({
     )
   } else if (chartType === ChartType.WORD_CLOUD) {
     return (
-      <ElementWordcloud
+      <ElementWordCloud
         instance={instanceEvaluation}
         showSolution={showSolution}
         showExplanation={showExplanation}

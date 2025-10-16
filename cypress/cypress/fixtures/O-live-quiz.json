@@ -36,6 +36,11 @@
     "newSCTitle": "New SC Title",
     "newSCContent": "New SC Content"
   },
+  "liveQuizWordCloud": {
+    "course": "Testkurs",
+    "name": "Live Quiz 4",
+    "displayName": "Live Quiz 4 (Display)"
+  },
   "sharing": {
     "quiz1": "Sharing Live Quiz 1",
     "quiz1Display": "Sharing Live Quiz 1 (Display)",

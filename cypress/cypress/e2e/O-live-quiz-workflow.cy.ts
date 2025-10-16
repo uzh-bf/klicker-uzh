@@ -4645,6 +4645,227 @@ describe('Different live-quiz workflows', function () {
   })
   // #endregion
 
+  // ! Part 8: Word Cloud
+  // #region
+  it('Test word cloud display', function () {
+    cy.loginLecturer()
+
+    // create questions
+    cy.createQuestionNR({
+      name: this.data.NR4.title,
+      content: this.data.NR4.content,
+      explanation: this.data.NR4.explanation,
+      ...this.data.NR4.options,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionFT({
+      name: this.data.FT4.title,
+      content: this.data.FT4.content,
+      explanation: this.data.FT4.explanation,
+      ...this.data.FT4.options,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+    cy.createQuestionFT({
+      name: this.data.FT5.title,
+      content: this.data.FT5.content,
+      explanation: this.data.FT5.explanation,
+      ...this.data.FT5.options,
+      userId: Cypress.env('LECTURER_ID'),
+    })
+
+    // create live quiz
+    cy.createLiveQuiz({
+      name: this.data.liveQuizWordCloud.name,
+      displayName: this.data.liveQuizWordCloud.displayName,
+      courseName: this.data.liveQuizWordCloud.course,
+      blocks: [
+        {
+          elements: [
+            this.data.NR4.title,
+            this.data.FT4.title,
+            this.data.FT5.title,
+          ],
+        },
+      ],
+    })
+    cy.wait(500)
+
+    // start live quiz
+    cy.get('[data-cy="activities"]').click()
+    cy.get(`[data-cy="start-live-quiz-${this.data.modes.name}"]`).click()
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
+
+    cy.get('[data-cy="evaluation-results-cockpit"]')
+      .closest('a')
+      .invoke('attr', 'href')
+      .then((href) => {
+        cy.visit({ url: `http://127.0.0.1:3002${href}` })
+      })
+    cy.get('[data-cy="change-chart-type"]').click()
+    cy.get('[data-cy="change-chart-type-manage.evaluation.wordCloud"]').click()
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.wait(1000)
+
+    const noResponsesReceivedMessage =
+      'No participants have submitted responses for this question 😔.'
+    cy.get('[data-cy="word-cloud"]').should(
+      'contain',
+      noResponsesReceivedMessage
+    )
+
+    cy.get('[data-cy="evaluate-question-select"]').click()
+    cy.get(
+      `[data-cy="evaluation-select-instance-${this.data.FT4.title}"]`
+    ).click()
+    cy.get('[data-cy="change-chart-type"]').click()
+    cy.get('[data-cy="change-chart-type-manage.evaluation.wordCloud"]').click()
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.get('[data-cy="word-cloud"]').should(
+      'contain',
+      noResponsesReceivedMessage
+    )
+
+    cy.get('[data-cy="evaluate-question-select"]').click()
+    cy.get(
+      `[data-cy="evaluation-select-instance-${this.data.FT5.title}"]`
+    ).click()
+    cy.get('[data-cy="change-chart-type"]').click()
+    cy.get('[data-cy="change-chart-type-manage.evaluation.wordCloud"]').click()
+    cy.get('[data-cy="show-results-evaluation"]').click()
+    cy.get('[data-cy="word-cloud"]').should(
+      'contain',
+      noResponsesReceivedMessage
+    )
+  })
+
+  it('Test answering live quiz questions', function () {
+    cy.loginStudent()
+    cy.findByText(this.data.liveQuizWordCloud.displayName).click()
+    cy.get('[data-cy="input-numerical-0"]').clear().type(this.data.NR4.answer)
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="free-text-input-1"]').type(this.data.FT4.answer)
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="free-text-input-2"]').type(this.data.FT5.answer)
+    cy.get('[data-cy="student-submit-answer"]').click()
+    cy.wait(500)
+  })
+
+  it('Test word cloud display after receiving answers', function () {
+    // TODO test german as well and standard and premium
+    cy.loginLecturer()
+    cy.get('[data-cy="activities"]').click()
+    cy.get(`[data-cy="live-quiz-cockpit-${this.data.modes.name}"]`).click()
+    cy.get('[data-cy="next-block-timeline"]').click()
+    cy.wait(500)
+    cy.get('[data-cy="evaluation-results-cockpit"]')
+      .closest('a')
+      .invoke('attr', 'href')
+      .then((href) => {
+        cy.visit({ url: `http://127.0.0.1:3002${href}` })
+      })
+    cy.get('[data-cy="change-chart-type"]').click()
+    cy.get('[data-cy="change-chart-type-manage.evaluation.wordCloud"]').click()
+    cy.wait(1000)
+
+    cy.get('[data-cy="word-cloud"]').should('contain', '50')
+
+    const noResponsesMatchingMessage =
+      'No responses match the current filter settings 🧐.'
+    const titles = [this.data.FT4.title, this.data.FT5.title]
+    const tags = [
+      'word',
+      'ordinal',
+      'number',
+      'stopword',
+      'url',
+      'mention',
+      'hashtag',
+      'email',
+      'emoticon',
+      'emoji',
+      'punctuation',
+      'currency',
+      'symbol',
+    ]
+    const expectedFilteredResponses: Record<
+      string,
+      Record<string, string[]>
+    > = {
+      [`${this.data.FT4.title}`]: this.data.FT4.filteredResponses,
+      [`${this.data.FT5.title}`]: this.data.FT5.filteredResponses,
+    }
+    const languages: Record<string, string> = {
+      [`${this.data.FT4.title}`]: this.data.FT4.language,
+      [`${this.data.FT5.title}`]: this.data.FT5.language,
+    }
+    for (const title of titles) {
+      // open evaluation for question
+      cy.get('[data-cy="evaluate-question-select"]').click()
+      cy.get(`[data-cy="evaluation-select-instance-${title}"]`).click()
+      cy.get('[data-cy="change-chart-type"]').click()
+      cy.get(
+        '[data-cy="change-chart-type-manage.evaluation.wordCloud"]'
+      ).click()
+      cy.wait(1000)
+
+      // select language
+      const language = languages[title]
+      cy.get('[data-cy="change-word-cloud-language"]').click()
+      cy.get(`[data-cy="change-word-cloud-language-${language}"]`).click()
+
+      // open filter
+      cy.get('[data-cy="word-cloud-filter-button"]').click()
+
+      for (const tag of tags) {
+        // select tag
+        cy.get(`[data-cy="word-cloud-filter-tag-${tag}"]`).click()
+        cy.wait(650)
+
+        if (expectedFilteredResponses[title][tag].length === 0) {
+          // check for correct response
+          cy.get('[data-cy="word-cloud"]').should(
+            'contain',
+            noResponsesMatchingMessage
+          )
+          // deselect tag
+          cy.get(`[data-cy="word-cloud-filter-tag-${tag}"]`).click()
+          continue
+        }
+
+        // check that only expected responses are shown
+        cy.get('[data-cy="word-cloud"] div svg g > text').then(($texts) => {
+          const texts = [...$texts].map((el) => el.textContent.trim())
+          for (const t of texts) {
+            expect(expectedFilteredResponses[title][tag]).to.include(t)
+          }
+        })
+        // deselect tag
+        cy.get(`[data-cy="word-cloud-filter-tag-${tag}"]`).click()
+      }
+      // select all tags
+      cy.get('[data-cy="word-cloud-filter-select-all"]').click()
+      cy.wait(650)
+
+      // check that all responses are shown
+      cy.get('[data-cy="word-cloud"] div svg g > text').then(($texts) => {
+        const texts = [...$texts].map((el) => el.textContent.trim())
+        const flattened = Object.values(
+          expectedFilteredResponses[title]
+        ).flatMap((x) => x)
+        for (const t of texts) {
+          expect(flattened).to.include(t)
+        }
+      })
+      // deseleet all
+      cy.get('[data-cy="word-cloud-filter-select-all"]').click()
+      cy.wait(650)
+    }
+  })
+  // #endregion
+
   // ! Part 8: Assessment Live Quizzes
   // #region
   // TODO

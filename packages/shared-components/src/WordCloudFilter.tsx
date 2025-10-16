@@ -1,11 +1,15 @@
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
-import { WordCloudMode } from '@klicker-uzh/shared-components/src/charts/ElementWordcloud'
+import {
+  WordCloudLanguage,
+  WordCloudMode,
+} from '@klicker-uzh/shared-components/src/charts/ElementWordcloud'
 import {
   Button,
   Checkbox,
   Popover,
   PopoverContent,
   PopoverTrigger,
+  Select,
   Separator,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -683,18 +687,6 @@ const tagsBasic: WordCloudFilterCategory[] = [
         },
       },
       {
-        id: 'time',
-        label: {
-          en: 'Time',
-          de: 'Zeit',
-        },
-        tag: 'time',
-        example: {
-          en: ['12:00 PM', '5:30 AM'],
-          de: ['12:00 Uhr', '5:30 Uhr'],
-        },
-      },
-      {
         id: 'ordinal',
         label: {
           en: 'Ordinal',
@@ -827,18 +819,6 @@ const tagsBasic: WordCloudFilterCategory[] = [
     },
     tags: [
       {
-        id: 'quoted_phrase',
-        label: {
-          en: 'Quotes',
-          de: 'Zitate',
-        },
-        tag: 'quoted_phrase',
-        example: {
-          en: ['"Hello world"', '"Nice to meet you"'],
-          de: ['"Hallo Welt"', '"Freut mich, dich kennenzulernen"'],
-        },
-      },
-      {
         id: 'punctuation',
         label: {
           en: 'Punctuation',
@@ -880,29 +860,45 @@ const tagsBasic: WordCloudFilterCategory[] = [
 
 interface WordCloudFilterProps {
   instanceType: ElementType
-  setWordCloudTags: (newTags: string[]) => void
   mode: WordCloudMode
-  language?: string | null
+  language: WordCloudLanguage
+  descriptionLanguage?: string | null
   noResponsesReceived: boolean
+  setWordCloudTags: (newTags: string[]) => void
+  setMode: (newMode: WordCloudMode) => void
+  setLanguage: (newLanguage: WordCloudLanguage) => void
 }
 
 export function WordCloudFilter({
-  setWordCloudTags,
   instanceType,
   mode,
   language,
   noResponsesReceived,
+  setWordCloudTags,
+  setMode,
+  setLanguage,
 }: WordCloudFilterProps) {
   const t = useTranslations()
-  const [checked, setChecked] = useState<Record<string, boolean>>({})
 
-  const toggleCheckbox = (tag: string) => {
-    setChecked((prev) => ({ ...prev, [tag]: !prev[tag] }))
-  }
+  const [checked, setChecked] = useState<Record<string, boolean>>({})
+  const [selectAll, setSelectAll] = useState(false)
+
+  const tagCategorites =
+    mode === WordCloudMode.STANDARD ? tagsBasic : tagsAdvanced
+  const numSeparators = tagCategorites.length - 1
+  const isEnglish = !language || language === 'en' // default to English
+  const allTags = tagCategorites.flatMap((cat) =>
+    cat.tags.map((tag) => tag.tag)
+  )
+
+  // initialize checked state
   useEffect(() => {
-    setChecked(() => ({}))
+    setChecked(() => ({
+      ...allTags.reduce((acc, tag) => ({ ...acc, [tag]: false }), {}),
+    }))
   }, [mode])
 
+  // update selected tags when checked state changes
   useEffect(() => {
     const selectedTags: string[] = []
     Object.entries(checked).forEach(([tagName, isChecked]) => {
@@ -913,59 +909,119 @@ export function WordCloudFilter({
     setWordCloudTags(selectedTags)
   }, [checked])
 
+  // update all checkboxes when selectAll changes
+  useEffect(() => {
+    setChecked(() => ({
+      ...allTags.reduce((acc, tag) => ({ ...acc, [tag]: selectAll }), {}),
+    }))
+  }, [selectAll, setChecked])
+
+  const toggleCheckbox = (tag: string) => {
+    setChecked((prev) => ({ ...prev, [tag]: !prev[tag] }))
+  }
+
   if (instanceType === ElementType.Numerical) {
     return null // nothing to filter for numerical elements
   }
 
-  const tagCategorites =
-    mode === WordCloudMode.STANDARD ? tagsBasic : tagsAdvanced
-  const isEnglish = !language || language === 'en' // default to English
-  const numSeparators = tagCategorites.length - 1
-
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          className={{ root: 'w-16 border-slate-400' }}
-          variant="outline"
+    <>
+      <div className="flex flex-col gap-1">
+        <div className="flex-1 text-sm font-bold">
+          {t('manage.evaluation.wordCloudFilterMode')}
+        </div>
+        <Select
+          contentPosition="popper"
+          className={{ trigger: 'w-30 flex-1' }}
+          items={Object.values(WordCloudMode).map((value) => ({
+            label: value,
+            value: value,
+            data: { cy: `change-word-cloud-mode-${value}` },
+            tooltip: t(`manage.evaluation.wordCloudMode${value}Tooltip`),
+          }))}
+          value={String(mode)}
+          onChange={(newValue) => setMode(newValue as WordCloudMode)}
+          data={{ cy: 'change-word-cloud-mode' }}
           disabled={noResponsesReceived}
-        >
-          {t('shared.generic.filter')}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="h-[50vh] w-full overflow-y-auto">
-        {tagCategorites.map((filterCategory, categoryIndex) => {
-          const categoryName = isEnglish
-            ? filterCategory.category.en
-            : filterCategory.category.de
-          return (
-            <div key={categoryName}>
-              <h3 className="mb-2 text-base font-semibold">{categoryName}</h3>
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <div className="flex-1 text-sm font-bold">
+          {t('manage.evaluation.wordCloudLanguageFilter')}
+        </div>
+        <Select
+          contentPosition="popper"
+          className={{ trigger: 'w-full flex-1' }}
+          items={Object.values(WordCloudLanguage).map((value) => ({
+            label: value,
+            value: value,
+            data: { cy: `change-word-cloud-language-${value}` },
+            disabled:
+              mode === WordCloudMode.PREMIUM && value !== WordCloudLanguage.EN,
+          }))}
+          value={String(language)}
+          onChange={(newValue) => setLanguage(newValue as WordCloudLanguage)}
+          data={{ cy: 'change-word-cloud-language' }}
+          disabled={noResponsesReceived}
+        />
+      </div>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            className={{ root: 'w-16 border-slate-400' }}
+            variant="outline"
+            disabled={noResponsesReceived}
+            data={{ cy: 'word-cloud-filter-button' }}
+          >
+            {t('shared.generic.filter')}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="h-[50vh] w-full overflow-y-auto">
+          <Checkbox
+            label={'Select All'}
+            checked={selectAll}
+            onCheck={() => setSelectAll(!selectAll)}
+            data={{ cy: 'word-cloud-filter-select-all' }}
+          />
+          <Separator className="my-4" />
+          {tagCategorites.map((filterCategory, categoryIndex) => {
+            const categoryName = isEnglish
+              ? filterCategory.category.en
+              : filterCategory.category.de
+            return (
+              <div key={categoryName}>
+                <h3 className="mb-2 text-base font-semibold">{categoryName}</h3>
 
-              <div className="">
-                {filterCategory.tags.map((tag) => {
-                  const tagExample = isEnglish ? tag.example.en : tag.example.de
-                  const tagLabel = isEnglish ? tag.label.en : tag.label.de
-                  const label = `${tagLabel} (${`${t('shared.generic.listExamples')} ${tagExample.join(', ')}`})`
-                  return (
-                    <div key={tag.id} className="pt-1">
-                      <Checkbox
-                        id={tag.id}
-                        label={label}
-                        checked={!!checked[tag.tag]}
-                        onCheck={() => toggleCheckbox(tag.tag)}
-                      />
-                    </div>
-                  )
-                })}
+                <div className="">
+                  {filterCategory.tags.map((tag) => {
+                    const tagExample = isEnglish
+                      ? tag.example.en
+                      : tag.example.de
+                    const tagLabel = isEnglish ? tag.label.en : tag.label.de
+                    const label = `${tagLabel} (${`${t('shared.generic.listExamples')} ${tagExample.join(', ')}`})`
+                    return (
+                      <div key={tag.id} className="pt-1">
+                        <Checkbox
+                          id={tag.id}
+                          label={label}
+                          checked={!!checked[tag.tag]}
+                          onCheck={() => toggleCheckbox(tag.tag)}
+                          data={{ cy: `word-cloud-filter-tag-${tag.id}` }}
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Separator between categories */}
+                {categoryIndex < numSeparators && (
+                  <Separator className="my-4" />
+                )}
               </div>
-
-              {/* Separator between categories */}
-              {categoryIndex < numSeparators && <Separator className="my-4" />}
-            </div>
-          )
-        })}
-      </PopoverContent>
-    </Popover>
+            )
+          })}
+        </PopoverContent>
+      </Popover>
+    </>
   )
 }

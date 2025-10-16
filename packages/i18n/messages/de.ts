@@ -2594,9 +2594,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       wordCloudModePremiumTooltip:
         'Premium (nur auf Englisch): Erweitertes Set an Filter, z. B. Nomen, Verben, ...',
       wordCloudNoResponses:
-        'Für diese Frage wurden noch keine Antworten von Teilnehmenden gespeichert.',
+        'Für diese Frage wurden noch keine Antworten von Teilnehmenden gespeichert 😔.',
       wordCloudNoResponsesFiltered:
-        'Keine Antworten entsprechen den aktuellen Filtereinstellungen.',
+        'Keine Antworten entsprechen den aktuellen Filtereinstellungen 🧐.',
+      wordCloudNoResponsesDisplayed:
+        'Keine Antworten werden aufgrund der aktuellen Filtereinstellungen oder der angegebenen Schriftgrößen angezeigt 😰.',
+      numberOfVotes: 'Häufigkeit: {number}',
       histogram: 'Histogramm',
       barChart: 'Balkendiagramm',
       scatterPlot: 'Streudiagramm',
