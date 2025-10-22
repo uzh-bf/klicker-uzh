@@ -7,5 +7,5 @@ dist/
 instrumented/
 hive.json
 
-!invitations_dev.csv
 invitations_*.csv
+!invitations_dev_assessment.csv

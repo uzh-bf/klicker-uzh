@@ -1,5 +1,6 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import { PointCorrectionType, PrismaClient } from '@klicker-uzh/prisma/client'
+import { AuditClient } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import { correctAssessmentPointsLiveQuiz } from 'src/services/courses.js'
 import { ContextWithUser } from '../src/lib/context.js'
@@ -19,16 +20,19 @@ describe('Unit tests covering point corrections for live quizzes', () => {
   let userTwoCtx: ContextWithUser
   let userThreeCtx: ContextWithUser
   let userFourCtx: ContextWithUser
+  let auditClient: AuditClient
 
   beforeAll(async () => {
     const {
       prisma: newPrisma,
       emitter: newEmitter,
       hatchet: newHatchet,
+      auditClient: newAuditClient,
     } = await initializePrisma()
     prisma = newPrisma
     emitter = newEmitter
     hatchet = newHatchet
+    auditClient = newAuditClient
   })
 
   afterAll(async () => {
@@ -42,7 +46,7 @@ describe('Unit tests covering point corrections for live quizzes', () => {
       userTwoCtx: ctx2,
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
-    } = await testInitialization(prisma, hatchet, emitter)
+    } = await testInitialization(prisma, hatchet, emitter, auditClient)
 
     userOneCtx = ctx1
     userTwoCtx = ctx2

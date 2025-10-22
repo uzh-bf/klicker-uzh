@@ -44,7 +44,7 @@ jobs:
         containers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     services:
       postgres:
-        image: postgres:15
+        image: postgres:14.18
         env:
           POSTGRES_USER: klicker-prod
           POSTGRES_PASSWORD: klicker
@@ -57,7 +57,7 @@ jobs:
         ports:
           - 5432:5432
       postgres_hatchet:
-        image: postgres:15
+        image: postgres:14.18
         env:
           POSTGRES_USER: hatchet
           POSTGRES_PASSWORD: hatchet
@@ -116,6 +116,12 @@ jobs:
           SERVER_DEFAULT_ENGINE_VERSION: 'V1'
           SERVER_LOGGER_LEVEL: debug
           SERVER_LOGGER_FORMAT: console
+      azurite:
+        image: mcr.microsoft.com/azure-storage/azurite:latest
+        ports:
+          - 10000:10000
+          - 10001:10001
+          - 10002:10002
 
     steps:
       - run: echo "Running parallel Cypress tests for draft PR (container ${{ matrix.containers }})"
@@ -183,7 +189,7 @@ jobs:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
           NODE_ENV: production
-          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010'
+          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010 http://127.0.0.1:7080/ready'
           TIMEOUT_SECONDS: '300'
           CHECK_INTERVAL: '5'
           REDIS_HOST: localhost
@@ -207,7 +213,7 @@ jobs:
         timeout-minutes: 120
         with:
           install: false
-          wait-on: 'http://127.0.0.1:3000/healthz, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010'
+          wait-on: 'http://127.0.0.1:3000/healthz, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010, http://127.0.0.1:7080/ready'
           wait-on-timeout: 300
           browser: electron
           working-directory: cypress
@@ -257,7 +263,7 @@ jobs:
     #     containers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     services:
       postgres:
-        image: postgres:15
+        image: postgres:14.18
         env:
           POSTGRES_USER: klicker-prod
           POSTGRES_PASSWORD: klicker
@@ -270,7 +276,7 @@ jobs:
         ports:
           - 5432:5432
       postgres_hatchet:
-        image: postgres:15
+        image: postgres:14.18
         env:
           POSTGRES_USER: hatchet
           POSTGRES_PASSWORD: hatchet
@@ -329,6 +335,12 @@ jobs:
           SERVER_DEFAULT_ENGINE_VERSION: 'V1'
           SERVER_LOGGER_LEVEL: debug
           SERVER_LOGGER_FORMAT: console
+      azurite:
+        image: mcr.microsoft.com/azure-storage/azurite:latest
+        ports:
+          - 10000:10000 # Blob service
+          - 10001:10001 # Queue service
+          - 10002:10002 # Table service
 
     steps:
       - run: echo "Running Cypress tests with Cloud recording for non-draft PR or push to v3"
@@ -396,7 +408,7 @@ jobs:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
           NODE_ENV: production
-          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010'
+          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010 http://127.0.0.1:7080/ready'
           TIMEOUT_SECONDS: '300'
           CHECK_INTERVAL: '5'
           # Provide all app origins to the services and tests
@@ -424,7 +436,7 @@ jobs:
         timeout-minutes: 120
         with:
           install: false
-          wait-on: 'http://127.0.0.1:3000/healthz, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010'
+          wait-on: 'http://127.0.0.1:3000/healthz, http://127.0.0.1:3001, http://127.0.0.1:3002, http://127.0.0.1:3003, http://127.0.0.1:3010, http://127.0.0.1:7080/ready'
           wait-on-timeout: 300
           record: true
           browser: electron

@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart.fullname" . }}-audit
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: audit
+spec:
+  {{- with .Values.audit.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if not .Values.audit.autoscaling.enabled }}
+  replicas: {{ .Values.audit.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: audit
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/cm-audit.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret-audit.yaml") . | sha256sum }}
+        release: {{ .Chart.AppVersion }}
+      {{- with .Values.audit.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: audit
+    spec:
+      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.audit.priorityClassName }}
+      {{- with .Values.audit.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.audit.podSecurityContext | nindent 8 }}
+      containers:
+        - name: audit
+          securityContext:
+            {{- toYaml .Values.audit.securityContext | nindent 12 }}
+          image: "{{ .Values.audit.image.repository }}:{{ .Values.audit.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.audit.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 7080
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "7080"
+          envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-audit
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-audit
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.audit.resources | nindent 12 }}
+      {{- with .Values.audit.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.audit.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.audit.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

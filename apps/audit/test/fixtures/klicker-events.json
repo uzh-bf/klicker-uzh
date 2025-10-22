@@ -1,0 +1,312 @@
+{
+  "instructorStartQuiz": {
+    "subject": "user:instructor@uzh.ch",
+    "action": "user.control.start_quiz",
+    "correlationClaims": {
+      "liveQuizId": "quiz-123",
+      "instanceId": 1,
+      "execution": 0
+    },
+    "attributes": {
+      "quizName": "Midterm Exam",
+      "courseId": "course-456"
+    }
+  },
+
+  "instructorEndQuiz": {
+    "subject": "user:instructor@uzh.ch",
+    "action": "user.control.end_quiz",
+    "correlationClaims": {
+      "liveQuizId": "quiz-123",
+      "instanceId": 1,
+      "execution": 0
+    },
+    "attributes": {
+      "quizName": "Midterm Exam",
+      "duration": 3600
+    }
+  },
+
+  "instructorOpenBlock": {
+    "subject": "user:instructor@uzh.ch",
+    "action": "user.control.open_block",
+    "correlationClaims": {
+      "liveQuizId": "quiz-123",
+      "instanceId": 1,
+      "execution": 0,
+      "blockId": 1
+    },
+    "attributes": {
+      "blockNumber": 1,
+      "timeLimit": 600
+    }
+  },
+
+  "instructorCloseBlock": {
+    "subject": "user:instructor@uzh.ch",
+    "action": "user.control.close_block",
+    "correlationClaims": {
+      "liveQuizId": "quiz-123",
+      "instanceId": 1,
+      "execution": 0,
+      "blockId": 1
+    },
+    "attributes": {
+      "blockNumber": 1,
+      "responsesReceived": 45
+    }
+  },
+
+  "participantMagicLinkAuth": {
+    "subject": "participant:student-789",
+    "action": "participant.auth.magic_link.success",
+    "attributes": {
+      "email": "student@uzh.ch"
+    }
+  },
+
+  "participantLtiAuth": {
+    "subject": "participant:lti-student-456",
+    "action": "participant.auth.lti.login.success",
+    "attributes": {
+      "ltiProvider": "moodle",
+      "courseId": "course-456"
+    }
+  },
+
+  "participantTempAuth": {
+    "subject": "participant:temp-student-123",
+    "action": "participant.auth.temp_login.success",
+    "attributes": {
+      "quizId": "quiz-123"
+    }
+  },
+
+  "participantQuizPinSuccess": {
+    "subject": "participant:student-789",
+    "action": "participant.quiz.pin.success",
+    "correlationClaims": {
+      "liveQuizId": "quiz-123",
+      "instanceId": 1,
+      "execution": 0
+    },
+    "attributes": {
+      "pin": "1234"
+    }
+  },
+
+  "participantJoinQuiz": {
+    "subject": "participant:student-789",
+    "action": "participant.quiz.join.success",
+    "correlationClaims": {
+      "liveQuizId": "quiz-123",
+      "instanceId": 1,
+      "execution": 0
+    },
+    "attributes": {
+      "pin": "1234",
+      "participantName": "Student Name"
+    }
+  },
+
+  "participantViewInstance": {
+    "subject": "participant:student-789",
+    "action": "participant.quiz.view_instance",
+    "correlationClaims": {
+      "liveQuizId": "quiz-123",
+      "instanceId": 1,
+      "execution": 0
+    },
+    "attributes": {
+      "questionId": "q-001",
+      "questionType": "SC"
+    }
+  },
+
+  "participantUpdateAnswer": {
+    "subject": "participant:student-789",
+    "action": "participant.quiz.update_answer",
+    "correlationClaims": {
+      "liveQuizId": "quiz-123",
+      "instanceId": 1,
+      "execution": 0
+    },
+    "attributes": {
+      "questionId": "q-001",
+      "responseValue": "A"
+    }
+  },
+
+  "participantSubmitResponse": {
+    "subject": "participant:student-789",
+    "action": "participant.quiz.submit_response",
+    "correlationClaims": {
+      "liveQuizId": "quiz-123",
+      "instanceId": 1,
+      "execution": 0
+    },
+    "attributes": {
+      "questionId": "q-001",
+      "responseValue": "A",
+      "responseTime": 45
+    }
+  },
+
+  "systemResponseReceived": {
+    "subject": "system:response-processor",
+    "action": "system.response.received",
+    "correlationClaims": {
+      "liveQuizId": "quiz-123",
+      "instanceId": 1,
+      "execution": 0
+    },
+    "attributes": {
+      "participantId": "student-789",
+      "questionId": "q-001"
+    }
+  },
+
+  "systemResponseProcessed": {
+    "subject": "system:response-processor",
+    "action": "system.response.processed",
+    "correlationClaims": {
+      "liveQuizId": "quiz-123",
+      "instanceId": 1,
+      "execution": 0
+    },
+    "attributes": {
+      "participantId": "student-789",
+      "questionId": "q-001",
+      "correctness": "correct"
+    }
+  },
+
+  "participantResponseSaved": {
+    "subject": "participant:student-789",
+    "action": "participant.quiz.response.saved",
+    "correlationClaims": {
+      "liveQuizId": "quiz-123",
+      "instanceId": 1,
+      "execution": 0
+    },
+    "attributes": {
+      "questionId": "q-001",
+      "responseValue": "A",
+      "score": 1.0
+    }
+  },
+
+  "systemResponseModified": {
+    "subject": "system:response-processor",
+    "action": "system.response.modified",
+    "correlationClaims": {
+      "liveQuizId": "quiz-123",
+      "instanceId": 1,
+      "execution": 0
+    },
+    "attributes": {
+      "participantId": "student-789",
+      "questionId": "q-001",
+      "modifiedBy": "user:instructor@uzh.ch",
+      "reason": "manual_grading_adjustment",
+      "oldScore": 0.5,
+      "newScore": 1.0
+    }
+  },
+
+  "multipleTabsDetected": {
+    "subject": "participant:student-789",
+    "action": "security.multiple_tabs",
+    "correlationClaims": {
+      "liveQuizId": "quiz-123",
+      "instanceId": 1,
+      "execution": 0
+    },
+    "attributes": {
+      "tabCount": 2,
+      "detectedAt": "2024-01-15T10:30:00Z"
+    }
+  },
+
+  "browserFocusLost": {
+    "subject": "participant:student-789",
+    "action": "security.focus_lost",
+    "correlationClaims": {
+      "liveQuizId": "quiz-123",
+      "instanceId": 1,
+      "execution": 0
+    },
+    "attributes": {
+      "duration": 5,
+      "questionId": "q-001"
+    }
+  },
+
+  "ipLocationChange": {
+    "subject": "participant:student-789",
+    "action": "security.ip_change",
+    "correlationClaims": {
+      "liveQuizId": "quiz-123",
+      "instanceId": 1,
+      "execution": 0
+    },
+    "attributes": {
+      "oldIp": "192.168.1.100",
+      "newIp": "10.0.0.50"
+    }
+  },
+
+  "clientError": {
+    "subject": "participant:student-789",
+    "action": "error.client",
+    "correlationClaims": {
+      "liveQuizId": "quiz-123",
+      "instanceId": 1,
+      "execution": 0
+    },
+    "attributes": {
+      "errorMessage": "Failed to submit response",
+      "errorCode": "NETWORK_TIMEOUT"
+    }
+  },
+
+  "systemResponseValidationError": {
+    "subject": "system:response-processor",
+    "action": "system.response.validation_error",
+    "correlationClaims": {
+      "liveQuizId": "quiz-123",
+      "instanceId": 1,
+      "execution": 0
+    },
+    "attributes": {
+      "participantId": "student-789",
+      "questionId": "q-001",
+      "errorReason": "invalid_response_format"
+    }
+  },
+
+  "systemResponseDuplicate": {
+    "subject": "system:response-processor",
+    "action": "system.response.duplicate",
+    "correlationClaims": {
+      "liveQuizId": "quiz-123",
+      "instanceId": 1,
+      "execution": 0
+    },
+    "attributes": {
+      "participantId": "student-789",
+      "questionId": "q-001",
+      "originalSubmissionTime": "2024-01-15T10:25:00Z"
+    }
+  },
+
+  "systemResponseCorrelationError": {
+    "subject": "system:response-processor",
+    "action": "system.response.correlation_error",
+    "attributes": {
+      "participantId": "student-789",
+      "questionId": "q-001",
+      "errorReason": "missing_correlation_id"
+    }
+  }
+}

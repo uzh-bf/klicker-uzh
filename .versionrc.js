@@ -1,46 +1,46 @@
+const fs = require('fs')
+const path = require('path')
+
+function subdirsWithPackageJson(baseDir) {
+  try {
+    return fs
+      .readdirSync(baseDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => `${baseDir}/${d.name}`)
+      .filter((dir) => fs.existsSync(path.join(dir, 'package.json')))
+  } catch {
+    return []
+  }
+}
+
+const rootPackage = 'package.json'
+const appDirs = subdirsWithPackageJson('apps')
+const packageDirs = subdirsWithPackageJson('packages')
+const cypressDir = fs.existsSync(path.join('cypress', 'package.json'))
+  ? ['cypress']
+  : []
+
+const packageJsonFiles = [
+  rootPackage,
+  ...appDirs.map((d) => `${d}/package.json`),
+  ...packageDirs.map((d) => `${d}/package.json`),
+  ...cypressDir.map((d) => `${d}/package.json`),
+]
+
 module.exports = {
   packageFiles: [
     {
-      filename: `package.json`,
+      filename: rootPackage,
       type: 'json',
     },
   ],
   bumpFiles: [
-    '',
-    'apps/auth/',
-    'apps/docs/',
-    'apps/backend-docker/',
-    'apps/frontend-manage/',
-    'apps/frontend-pwa/',
-    'apps/frontend-control/',
-    'apps/office-addin/',
-    'apps/hatchet-worker-general',
-    'apps/hatchet-worker-response-processor',
-    'packages/grading/',
-    'packages/graphql/',
-    'packages/lti/',
-    'packages/prisma/',
-    'packages/markdown/',
-    'packages/shared-components',
-    'packages/next-config',
-    'packages/i18n',
-    'packages/util',
-    'packages/hatchet-tasks',
-  ].reduce(
-    (acc, path) => {
-      return acc.concat({
-        filename: `${path}package.json`,
-        type: 'json',
-      })
-    },
-    []
-    // [
-    //   {
-    //     filename: `deploy/charts/klicker-uzh-v2/Chart.yaml`,
-    //     updater: 'util/yaml-updater.js',
-    //   },
-    // ]
-  ),
+    // {
+    //   filename: `deploy/charts/klicker-uzh-v2/Chart.yaml`,
+    //   updater: 'util/yaml-updater.js',
+    // },
+    ...packageJsonFiles.map((filename) => ({ filename, type: 'json' })),
+  ],
   types: [
     {
       type: 'feat',

@@ -1,0 +1,11 @@
+{{- $fullName := include "chart.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-audit
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  LOG_LEVEL: {{ .Values.audit.logLevel | quote }}
+  AZURE_STORAGE_TABLE_NAME: {{ .Values.audit.azureStorage.tableName | quote }}
+  AUDIT_CORS_ORIGINS: {{ .Values.audit.corsOrigins | quote }}

@@ -11,6 +11,7 @@
     "@klicker-uzh/grading": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
+    "axios": "1.12.2",
     "ioredis": "5.4.1",
     "jose": "5.9.4",
     "remeda": "2.15.0",

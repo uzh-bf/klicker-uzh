@@ -9,6 +9,7 @@ import {
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
 import {
+  type AuditClient,
   MISSING_CATALOG_COLLECTION_ID,
   recomputeDerivedPermissions,
   updateAccessRequestInstances,
@@ -48,6 +49,7 @@ describe('Integration tests for object access validation', () => {
   let prisma: PrismaClient
   let hatchet: Hatchet
   let emitter: EventEmitter
+  let auditClient: AuditClient
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
   let userThreeCtx: ContextWithUser
@@ -59,10 +61,12 @@ describe('Integration tests for object access validation', () => {
       prisma: newPrisma,
       hatchet: newHatchet,
       emitter: newEmitter,
+      auditClient: newAuditClient,
     } = await initializePrisma()
     prisma = newPrisma
     hatchet = newHatchet
     emitter = newEmitter
+    auditClient = newAuditClient
   })
 
   afterAll(async () => {
@@ -77,7 +81,7 @@ describe('Integration tests for object access validation', () => {
       userThreeCtx: ctx3,
       userFourCtx: ctx4,
       userFiveCtx: ctx5,
-    } = await testInitialization(prisma, hatchet, emitter)
+    } = await testInitialization(prisma, hatchet, emitter, auditClient)
 
     userOneCtx = ctx1
     userTwoCtx = ctx2

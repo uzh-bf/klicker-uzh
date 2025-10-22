@@ -1,5 +1,6 @@
 import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
 import { PrismaClient, PublicationStatus } from '@klicker-uzh/prisma/client'
+import { AuditClient } from '@klicker-uzh/util'
 import { PrismaPg } from '@prisma/adapter-pg'
 import dayjs from 'dayjs'
 import { EventEmitter } from 'events'
@@ -54,6 +55,7 @@ async function run() {
     emitter,
     redisExec: redis, // we only need to modify the assessment cache
     redisAssessmentExec: redis,
+    auditClient: new AuditClient(),
     handlers: {
       handleFinalRandomGroupAssignments,
       handleRunningRandomGroupAssignments,

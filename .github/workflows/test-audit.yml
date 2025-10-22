@@ -1,0 +1,145 @@
+name: Test audit package functionalities
+
+on:
+  push:
+    branches: ['v3', 'v3*']
+    paths:
+      - 'apps/audit/**'
+      - '.github/workflows/test-audit.yml'
+  pull_request:
+    branches: ['v3', 'v3*']
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    services:
+      postgres:
+        image: postgres:14.18
+        env:
+          POSTGRES_USER: klicker
+          POSTGRES_PASSWORD: klicker
+          POSTGRES_DB: klicker-prod
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      postgres_hatchet:
+        image: postgres:14.18
+        env:
+          POSTGRES_USER: hatchet
+          POSTGRES_PASSWORD: hatchet
+          POSTGRES_DB: hatchet
+        options: >-
+          --health-cmd "pg_isready -U hatchet -d hatchet"
+          --health-interval 5s
+          --health-timeout 10s
+          --health-retries 10
+          --health-start-period 30s
+        ports:
+          - 5433:5432
+
+      hatchet:
+        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:v0.73.1
+        env:
+          DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
+          SERVER_AUTH_COOKIE_DOMAIN: localhost
+          SERVER_AUTH_COOKIE_INSECURE: 't'
+          SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
+          SERVER_GRPC_INSECURE: 't'
+          SERVER_GRPC_BROADCAST_ADDRESS: localhost:7077
+          SERVER_INTERNAL_CLIENT_INTERNAL_GRPC_BROADCAST_ADDRESS: localhost:7077
+          SERVER_GRPC_PORT: '7077'
+          SERVER_URL: http://localhost:8888
+          SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
+          SERVER_DEFAULT_ENGINE_VERSION: 'V1'
+          SERVER_LOGGER_LEVEL: debug
+          SERVER_LOGGER_FORMAT: console
+        options: >-
+          --health-cmd "curl -f http://localhost:8888/healthz"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 10
+        ports:
+          - 8888:8888
+          - 7077:7077
+
+      redis_exec:
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        image: redis:7
+        ports:
+          - 6379:6379
+
+      redis_assessment:
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        image: redis:7
+        ports:
+          - 6380:6379
+
+      azurite:
+        image: mcr.microsoft.com/azure-storage/azurite:latest
+        ports:
+          - 10000:10000
+          - 10001:10001
+          - 10002:10002
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9.15.4
+          run_install: true
+
+      - name: Build dependency packages
+        run: |
+          cd packages/prisma
+          pnpm run build
+          cd ../types
+          pnpm run build
+          cd ../grading
+          pnpm run build
+          cd ../util
+          pnpm run build
+
+      - name: Start audit service
+        run: |
+          cd apps/audit
+          pnpm run build
+          nohup pnpm start &
+          sleep 10
+        env:
+          NODE_ENV: test
+          AUDIT_TABLE_CONNECTION_STRING: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;
+          AUDIT_TABLE_NAME: auditevents
+          AUDIT_TOKEN: test-secret-token-123
+          APP_SECRET: abcd
+          AUDIT_CORS_ORIGINS: http://localhost:3002
+          APP_ORIGIN_AUTH: http://localhost:3010
+
+      - name: Test audit package
+        shell: bash
+        run: |
+          cd apps/audit
+          pnpm run test

@@ -25,7 +25,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:15
+        image: postgres:14.18
         env:
           POSTGRES_USER: klicker
           POSTGRES_PASSWORD: klicker
@@ -39,7 +39,7 @@ jobs:
           - 5432:5432
 
       postgres_hatchet:
-        image: postgres:15
+        image: postgres:14.18
         env:
           POSTGRES_USER: hatchet
           POSTGRES_PASSWORD: hatchet
@@ -107,6 +107,13 @@ jobs:
         image: redis:7
         ports:
           - 6381:6379
+
+      azurite:
+        image: mcr.microsoft.com/azure-storage/azurite:latest
+        ports:
+          - 10000:10000
+          - 10001:10001
+          - 10002:10002
 
     steps:
       - name: Checkout repository

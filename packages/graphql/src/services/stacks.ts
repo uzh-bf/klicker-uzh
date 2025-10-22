@@ -2617,256 +2617,362 @@ export async function respondToQuestion(
   },
   ctx: Context
 ) {
-  const result = await ctx.prisma.$transaction(async (prisma) => {
-    const existingInstance = await getValidateElementInstance({
-      prisma,
-      id,
-      participantId:
-        ctx.user?.role === DB.UserRole.PARTICIPANT ? ctx.user?.sub : undefined,
-    })
+  // // Log response submission attempt
+  // if (participantId && ctx.user?.role === DB.UserRole.PARTICIPANT) {
+  //   await auditClient.log({
+  //     subject: `participant:${participantId}`,
+  //     action: 'response.submitted',
+  //     resourceId: id.toString(),
+  //     sessionId,
+  //     userId: participantId,
+  //     attributes: {
+  //       questionId: id.toString(),
+  //       courseId,
+  //       submissionType: 'manual',
+  //       answerTime,
+  //       timestamp: new Date().toISOString(),
+  //       // Include response hash for verification (not the actual response for privacy)
+  //       responseHash: createHash('sha256')
+  //         .update(JSON.stringify(response))
+  //         .digest('hex'),
+  //     },
+  //   })
+  // }
 
-    // if the instance does not exist or the elementData is not defined, return early
-    if (!existingInstance || !existingInstance?.elementData) {
-      return null
-    }
+  let result
+  try {
+    result = await ctx.prisma.$transaction(async (prisma) => {
+      const existingInstance = await getValidateElementInstance({
+        prisma,
+        id,
+        participantId:
+          ctx.user?.role === DB.UserRole.PARTICIPANT
+            ? ctx.user?.sub
+            : undefined,
+      })
 
-    const existingResponse =
-      existingInstance.responses &&
-      existingInstance.responses.length > 0 &&
-      existingInstance.responses[0]
-        ? existingInstance.responses[0]
-        : null
-
-    // conver the case study solutions to object form for more efficient access
-    const caseStudySolutions =
-      existingInstance.elementType === DB.ElementType.CASE_STUDY
-        ? convertCaseStudySolutionsObject({
-            instance: existingInstance,
-          })
-        : undefined
-
-    // evaluate response correctness and compute updated instance results
-    const { correctness, results, modified } = updateQuestionResults({
-      existingInstance,
-      participation,
-      response,
-      caseStudySolutions,
-    })
-
-    if (!modified || results === null) {
-      return null
-    }
-
-    // average answer time computations if participant is logged in
-    const { newAverageResponseTime, newAverageInstanceTime } = participation
-      ? computeNewAverageTimes({
-          existingInstance,
-          existingResponse,
-          answerTime,
-        })
-      : {
-          newAverageInstanceTime: undefined,
-          newAverageResponseTime: answerTime,
-        }
-
-    // compute updated instance statistics
-    const instanceInPracticeQuiz =
-      !!existingInstance.elementStack?.practiceQuizId
-    const statisticsUpdate = computeUpdatedInstanceStatistics({
-      participation,
-      existingResponse: existingResponse, // this is safe because we only use it inside the function if the participation is defined
-      newAverageInstanceTime,
-      answerCorrect: correctness === 1,
-      answerPartial: (correctness ?? 0) < 1 && (correctness ?? 0) > 0,
-      answerIncorrect: correctness === 0,
-      instanceInPracticeQuiz,
-    })
-
-    // update the element instance
-    const updatedInstance = !skipTracking
-      ? await prisma.elementInstance.update({
-          where: { id },
-          data: {
-            results: participation ? results : undefined,
-            anonymousResults: participation ? undefined : results,
-            instanceStatistics: statisticsUpdate,
-          },
-          include: {
-            elementStack: true,
-          },
-        })
-      : existingInstance
-
-    // compute question evaluation
-    const questionEval = computeQuestionEvaluation({
-      elementData: existingInstance.elementData,
-      results: updatedInstance.results,
-      anonymousResults: updatedInstance.anonymousResults,
-      correctness,
-      multiplier: updatedInstance.options.pointsMultiplier,
-    })
-
-    // processing of percentile into status of instance
-    const percentile = questionEval?.percentile ?? 0
-    const status =
-      percentile === 0
-        ? StackFeedbackStatus.INCORRECT
-        : percentile === 1
-          ? StackFeedbackStatus.CORRECT
-          : StackFeedbackStatus.PARTIAL
-
-    // if participant is not logged in, return early and return the evaluation
-    if (
-      !questionEval ||
-      !participation ||
-      !ctx.user?.sub ||
-      ctx.user.role !== DB.UserRole.PARTICIPANT
-    ) {
-      return {
-        ...updatedInstance,
-        evaluation: questionEval
-          ? {
-              ...questionEval,
-              pointsAwarded: undefined,
-              newPointsFrom: undefined,
-              xpAwarded: undefined,
-              newXpFrom: undefined,
-            }
-          : undefined,
-        status,
+      // if the instance does not exist or the elementData is not defined, return early
+      if (!existingInstance || !existingInstance?.elementData) {
+        // Log validation failure
+        // if (participantId && ctx.user?.role === DB.UserRole.PARTICIPANT) {
+        //   await auditClient.log({
+        //     subject: `participant:${participantId}`,
+        //     action: 'response.validation.failed',
+        //     resourceId: id.toString(),
+        //     sessionId,
+        //     userId: participantId,
+        //     attributes: {
+        //       questionId: id.toString(),
+        //       courseId,
+        //       validationError: !existingInstance
+        //         ? 'instance_not_found'
+        //         : 'element_data_missing',
+        //       timestamp: new Date().toISOString(),
+        //     },
+        //   })
+        // }
+        return null
       }
-    }
 
-    // compute the awarded points & XP and all associated dates
-    const {
-      pointsAwarded,
-      newPointsFrom,
-      lastAwardedAt,
-      lastXpAwardedAt,
-      xpAwarded,
-      newXpFrom,
-    } = computeAwardedPointsAndXP({
-      score: questionEval.score ?? 0,
-      xp: questionEval.xp ?? 0,
-      existingResponse,
-      participation,
-      instance: updatedInstance,
-    })
+      const existingResponse =
+        existingInstance.responses &&
+        existingInstance.responses.length > 0 &&
+        existingInstance.responses[0]
+          ? existingInstance.responses[0]
+          : null
 
-    // create a question response detail
-    if (!skipTracking) {
-      // compute updated aggregated responses
-      const newAggResponses = computeAggregatedResponsesQuestion({
-        instance: updatedInstance,
-        existingResponse,
+      // conver the case study solutions to object form for more efficient access
+      const caseStudySolutions =
+        existingInstance.elementType === DB.ElementType.CASE_STUDY
+          ? convertCaseStudySolutionsObject({
+              instance: existingInstance,
+            })
+          : undefined
+
+      // evaluate response correctness and compute updated instance results
+      const { correctness, results, modified } = updateQuestionResults({
+        existingInstance,
+        participation,
         response,
-        correctness,
         caseStudySolutions,
       })
 
-      if (!newAggResponses) {
-        throw new Error(
-          `Failed to compute aggregated responses for question type ${updatedInstance.elementType}`
-        )
+      if (!modified || results === null) {
+        return null
       }
 
-      // update aggregated results for choices and open questions
-      const streakIncrement = percentile === 1 ? 1 : 0
-      const resultSpacedRepetition = updateSpacedRepetition({
-        eFactor: existingResponse?.eFactor ?? 2.5,
-        interval: existingResponse?.interval ?? 1,
-        streak: (existingResponse?.correctCountStreak ?? 0) + streakIncrement,
-        grade: percentile,
+      // average answer time computations if participant is logged in
+      const { newAverageResponseTime, newAverageInstanceTime } = participation
+        ? computeNewAverageTimes({
+            existingInstance,
+            existingResponse,
+            answerTime,
+          })
+        : {
+            newAverageInstanceTime: undefined,
+            newAverageResponseTime: answerTime,
+          }
+
+      // compute updated instance statistics
+      const instanceInPracticeQuiz =
+        !!existingInstance.elementStack?.practiceQuizId
+      const statisticsUpdate = computeUpdatedInstanceStatistics({
+        participation,
+        existingResponse: existingResponse, // this is safe because we only use it inside the function if the participation is defined
+        newAverageInstanceTime,
+        answerCorrect: correctness === 1,
+        answerPartial: (correctness ?? 0) < 1 && (correctness ?? 0) > 0,
+        answerIncorrect: correctness === 0,
+        instanceInPracticeQuiz,
       })
 
-      await createQuestionResponseDetail({
-        prisma,
-        id,
-        participantId: ctx.user.sub,
-        courseId,
-        response,
-        score: questionEval.score ?? 0,
-        pointsAwarded,
-        xpAwarded,
-        answerTime,
-        practiceQuizId:
-          updatedInstance.elementStack?.practiceQuizId ?? undefined,
-        microLearningId:
-          updatedInstance.elementStack?.microLearningId ?? undefined,
+      // update the element instance
+      const updatedInstance = !skipTracking
+        ? await prisma.elementInstance.update({
+            where: { id },
+            data: {
+              results: participation ? results : undefined,
+              anonymousResults: participation ? undefined : results,
+              instanceStatistics: statisticsUpdate,
+            },
+            include: {
+              elementStack: true,
+            },
+          })
+        : existingInstance
+
+      // compute question evaluation
+      const questionEval = computeQuestionEvaluation({
+        elementData: existingInstance.elementData,
+        results: updatedInstance.results,
+        anonymousResults: updatedInstance.anonymousResults,
+        correctness,
+        multiplier: updatedInstance.options.pointsMultiplier,
       })
 
-      // upsert the question response
-      await upsertQuestionResponse({
-        prisma,
-        id,
-        participantId: ctx.user.sub,
-        courseId,
-        response,
-        correctness: percentile,
-        score: questionEval.score ?? 0,
-        pointsAwarded,
-        lastAwardedAt: lastAwardedAt ?? new Date(),
-        xpAwarded,
-        lastXpAwardedAt: lastXpAwardedAt ?? new Date(),
-        newAverageResponseTime,
-        existingResponse,
-        newAggResponses,
-        practiceQuizId:
-          updatedInstance.elementStack?.practiceQuizId ?? undefined,
-        microLearningId:
-          updatedInstance.elementStack?.microLearningId ?? undefined,
-        resultSpacedRepetition,
-      })
+      // processing of percentile into status of instance
+      const percentile = questionEval?.percentile ?? 0
+      const status =
+        percentile === 0
+          ? StackFeedbackStatus.INCORRECT
+          : percentile === 1
+            ? StackFeedbackStatus.CORRECT
+            : StackFeedbackStatus.PARTIAL
 
-      // increment participant xp
-      if (xpAwarded > 0) {
-        await incrementParticipantXp({
-          prisma,
-          participantId: ctx.user.sub,
-          xpAwarded,
-        })
-      }
-
-      // create or increment the leaderboard entry, if the participant has an active participation in the course
-      // active participation has already been checked during computation of pointsAwarded
-      if (typeof pointsAwarded === 'number' && pointsAwarded !== null) {
-        await updateLeaderboardOnQuestionResponse({
-          prisma,
-          participantId: ctx.user.sub,
-          courseId,
-          pointsAwarded,
-        })
-      }
-
-      // if either XP or points are awarded, update the daily student timeline entry
+      // if participant is not logged in, return early and return the evaluation
       if (
-        xpAwarded > 0 ||
-        (typeof pointsAwarded === 'number' && pointsAwarded !== null)
+        !questionEval ||
+        !participation ||
+        !ctx.user?.sub ||
+        ctx.user.role !== DB.UserRole.PARTICIPANT
       ) {
-        await upsertDailyTimelineEntry({
-          prisma,
-          participantId: ctx.user.sub,
-          courseId,
-          xpAwarded,
-          pointsAwarded: pointsAwarded ?? undefined,
-        })
+        return {
+          ...updatedInstance,
+          evaluation: questionEval
+            ? {
+                ...questionEval,
+                pointsAwarded: undefined,
+                newPointsFrom: undefined,
+                xpAwarded: undefined,
+                newXpFrom: undefined,
+              }
+            : undefined,
+          status,
+        }
       }
-    }
 
-    return {
-      ...updatedInstance,
-      evaluation: {
-        ...questionEval,
+      // compute the awarded points & XP and all associated dates
+      const {
         pointsAwarded,
         newPointsFrom,
+        lastAwardedAt,
+        lastXpAwardedAt,
         xpAwarded,
         newXpFrom,
-      },
-      status,
-    }
-  })
+      } = computeAwardedPointsAndXP({
+        score: questionEval.score ?? 0,
+        xp: questionEval.xp ?? 0,
+        existingResponse,
+        participation,
+        instance: updatedInstance,
+      })
 
-  return result
+      // create a question response detail
+      if (!skipTracking) {
+        // compute updated aggregated responses
+        const newAggResponses = computeAggregatedResponsesQuestion({
+          instance: updatedInstance,
+          existingResponse,
+          response,
+          correctness,
+          caseStudySolutions,
+        })
+
+        if (!newAggResponses) {
+          // Log validation failure for aggregated responses computation
+          // if (participantId && ctx.user?.role === DB.UserRole.PARTICIPANT) {
+          //   await auditClient.log({
+          //     subject: `participant:${participantId}`,
+          //     action: 'response.validation.failed',
+          //     resourceId: id.toString(),
+          //     sessionId,
+          //     userId: participantId,
+          //     attributes: {
+          //       questionId: id.toString(),
+          //       courseId,
+          //       validationError: 'aggregated_responses_computation_failed',
+          //       elementType: updatedInstance.elementType,
+          //       timestamp: new Date().toISOString(),
+          //     },
+          //   })
+          // }
+
+          throw new Error(
+            `Failed to compute aggregated responses for question type ${updatedInstance.elementType}`
+          )
+        }
+
+        // update aggregated results for choices and open questions
+        const streakIncrement = percentile === 1 ? 1 : 0
+        const resultSpacedRepetition = updateSpacedRepetition({
+          eFactor: existingResponse?.eFactor ?? 2.5,
+          interval: existingResponse?.interval ?? 1,
+          streak: (existingResponse?.correctCountStreak ?? 0) + streakIncrement,
+          grade: percentile,
+        })
+
+        await createQuestionResponseDetail({
+          prisma,
+          id,
+          participantId: ctx.user.sub,
+          courseId,
+          response,
+          score: questionEval.score ?? 0,
+          pointsAwarded,
+          xpAwarded,
+          answerTime,
+          practiceQuizId:
+            updatedInstance.elementStack?.practiceQuizId ?? undefined,
+          microLearningId:
+            updatedInstance.elementStack?.microLearningId ?? undefined,
+        })
+
+        // upsert the question response
+        await upsertQuestionResponse({
+          prisma,
+          id,
+          participantId: ctx.user.sub,
+          courseId,
+          response,
+          correctness: percentile,
+          score: questionEval.score ?? 0,
+          pointsAwarded,
+          lastAwardedAt: lastAwardedAt ?? new Date(),
+          xpAwarded,
+          lastXpAwardedAt: lastXpAwardedAt ?? new Date(),
+          newAverageResponseTime,
+          existingResponse,
+          newAggResponses,
+          practiceQuizId:
+            updatedInstance.elementStack?.practiceQuizId ?? undefined,
+          microLearningId:
+            updatedInstance.elementStack?.microLearningId ?? undefined,
+          resultSpacedRepetition,
+        })
+
+        // increment participant xp
+        if (xpAwarded > 0) {
+          await incrementParticipantXp({
+            prisma,
+            participantId: ctx.user.sub,
+            xpAwarded,
+          })
+        }
+
+        // create or increment the leaderboard entry, if the participant has an active participation in the course
+        // active participation has already been checked during computation of pointsAwarded
+        if (typeof pointsAwarded === 'number' && pointsAwarded !== null) {
+          await updateLeaderboardOnQuestionResponse({
+            prisma,
+            participantId: ctx.user.sub,
+            courseId,
+            pointsAwarded,
+          })
+        }
+
+        // if either XP or points are awarded, update the daily student timeline entry
+        if (
+          xpAwarded > 0 ||
+          (typeof pointsAwarded === 'number' && pointsAwarded !== null)
+        ) {
+          await upsertDailyTimelineEntry({
+            prisma,
+            participantId: ctx.user.sub,
+            courseId,
+            xpAwarded,
+            pointsAwarded: pointsAwarded ?? undefined,
+          })
+        }
+      }
+
+      return {
+        ...updatedInstance,
+        evaluation: {
+          ...questionEval,
+          pointsAwarded,
+          newPointsFrom,
+          xpAwarded,
+          newXpFrom,
+        },
+        status,
+      }
+    })
+
+    // Log successful response save
+    // if (result && participantId && ctx.user?.role === DB.UserRole.PARTICIPANT) {
+    //   await auditClient.log({
+    //     subject: `participant:${participantId}`,
+    //     action: 'response.saved',
+    //     resourceId: id.toString(),
+    //     sessionId,
+    //     userId: participantId,
+    //     attributes: {
+    //       questionId: id.toString(),
+    //       courseId,
+    //       saveLatency: Date.now() - startTime,
+    //       timestamp: new Date().toISOString(),
+    //       hasEvaluation: !!result.evaluation,
+    //       score: result.evaluation?.score,
+    //     },
+    //   })
+    // }
+
+    return result
+  } catch (error) {
+    // Log failed response save
+    // if (participantId && ctx.user?.role === DB.UserRole.PARTICIPANT) {
+    //   await auditClient.log({
+    //     subject: `participant:${participantId}`,
+    //     action: 'response.failed',
+    //     resourceId: id.toString(),
+    //     sessionId,
+    //     userId: participantId,
+    //     attributes: {
+    //       questionId: id.toString(),
+    //       courseId,
+    //       errorCode: (error as any).code || 'UNKNOWN_ERROR',
+    //       errorMessage: (error as Error).message,
+    //       errorCategory: 'database',
+    //       timestamp: new Date().toISOString(),
+    //       attemptNumber: 1,
+    //       willRetry: false,
+    //     },
+    //   })
+    // }
+
+    // Re-throw the error for GraphQL error handling
+    throw error
+  }
 }
 // #endregion
 

@@ -6,7 +6,7 @@ set -e
 # Validate required environment variables
 if [ -z "${SERVICE_ENDPOINTS:-}" ]; then
   # Default endpoints if not specified
-  SERVICE_ENDPOINTS="http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010"
+  SERVICE_ENDPOINTS="http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010 http://127.0.0.1:7080/healthz"
 fi
 
 if [ -z "${TIMEOUT_SECONDS:-}" ]; then
@@ -84,11 +84,37 @@ cleanup() {
 trap 'cleanup TERM' TERM
 trap cleanup EXIT
 
+# Wait for Azurite (Azure Table emulator) to become reachable.
+check_azurite() {
+  local host=${AZURITE_HOST:-127.0.0.1}
+  local port=${AZURITE_TABLE_PORT:-10002}
+  local timeout=${AZURITE_WAIT_TIMEOUT:-30}
+  local interval=${AZURITE_WAIT_INTERVAL:-1}
+  local elapsed=0
+
+  echo "⏳ Waiting for Azurite table endpoint at ${host}:${port}"
+
+  while [ "$elapsed" -lt "$timeout" ]; do
+    if nc -z "$host" "$port" 2>/dev/null; then
+      echo "✅ Azurite Table endpoint detected on ${host}:${port}"
+      return 0
+    fi
+
+    sleep "$interval"
+    elapsed=$((elapsed + interval))
+  done
+
+  echo "❌ Azurite did not become ready on ${host}:${port} within ${timeout}s"
+  echo "   Ensure the GitHub workflow defines Azurite as a service before calling this script."
+  return 1
+}
+
 # Check dependencies before starting
 echo "🔍 Checking dependencies..."
-check_redis || { echo "Redis check failed"; exit 1; }
-check_postgres || { echo "PostgreSQL check failed"; exit 1; }
-check_hatchet || { echo "Hatchet check failed"; exit 1; }
+check_azurite || { echo "❌ Azurite check failed"; exit 1; }
+check_redis || { echo "❌ Redis check failed"; exit 1; }
+check_postgres || { echo "❌ PostgreSQL check failed"; exit 1; }
+check_hatchet || { echo "❌ Hatchet check failed"; exit 1; }
 
 # Start the service in the background and capture all output
 echo "🚀 Starting service..."

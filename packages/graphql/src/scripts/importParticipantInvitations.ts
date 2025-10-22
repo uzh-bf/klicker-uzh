@@ -2,7 +2,12 @@
 
 import { prisma } from '@klicker-uzh/prisma'
 import { InvitationStatus } from '@klicker-uzh/prisma/client'
-import { InvitationEmailMode } from '@klicker-uzh/util'
+import { AuditAction, AuditScope } from '@klicker-uzh/types'
+import {
+  AuditClient,
+  hashSensitiveData,
+  InvitationEmailMode,
+} from '@klicker-uzh/util'
 import { parse } from 'csv-parse/sync'
 import { readFileSync } from 'fs'
 import * as R from 'remeda'
@@ -17,6 +22,36 @@ import { createParticipantInvitations } from '../services/participantInvitations
 const CSV_FILE = `src/scripts/invitations_${process.env.CONFIG}.csv`
 
 const DRY_RUN = process.argv.includes('--dry-run')
+
+let auditClient: AuditClient | null = null
+try {
+  auditClient = new AuditClient()
+} catch (error) {
+  console.warn('[Invitation Import] Audit logging disabled:', error)
+}
+
+const logImportEvent = async (
+  action: AuditAction,
+  attributes: Record<string, unknown>,
+  resource?: string
+) => {
+  if (!auditClient) return
+
+  try {
+    await auditClient.log({
+      scope: AuditScope.INTERNAL,
+      action,
+      resource,
+      subject: 'system:invitation-import',
+      attributes,
+    })
+  } catch (error) {
+    console.error('[Invitation Import] Failed to log audit event', {
+      action,
+      error: error instanceof Error ? error.message : error,
+    })
+  }
+}
 
 const csvRowSchema = z
   .object({
@@ -495,6 +530,18 @@ async function resolveParticipantWithoutInvitation(
     `  Linked participant ${participantId} to new ACCEPTED invitation for ${normalizedEmail} (${hadParticipation ? 'reactivated participation' : 'created participation'}).`
   )
 
+  await logImportEvent(
+    AuditAction.PARTICIPANT_INVITATION_ACCEPTED,
+    {
+      method: 'import_auto_accept',
+      invitationId: result,
+      courseId,
+      emailHash: hashSensitiveData(normalizedEmail),
+      hadParticipation,
+    },
+    `participant:${participantId}`
+  )
+
   return {
     email,
     status: 'auto_accepted',
@@ -535,6 +582,13 @@ async function resolveBrokenAcceptedInvitation(
     console.warn(
       `  Warning: No verified participant account found for ${normalizedEmail}. Manual review required.`
     )
+    await logImportEvent(AuditAction.PARTICIPANT_INVITATION_FAILED, {
+      method: 'import_fix',
+      reason: 'participant_not_found',
+      invitationId: invitation.id,
+      courseId: invitation.courseId,
+      emailHash: hashSensitiveData(normalizedEmail),
+    })
     return
   }
 
@@ -592,6 +646,18 @@ async function resolveBrokenAcceptedInvitation(
 
   console.log(
     `  Fixed: linked invitation ${invitation.id} to participant ${participantId} and ensured course participation.`
+  )
+
+  await logImportEvent(
+    AuditAction.PARTICIPANT_INVITATION_ACCEPTED,
+    {
+      method: 'import_fix',
+      invitationId: invitation.id,
+      courseId: invitation.courseId,
+      emailHash: hashSensitiveData(normalizedEmail),
+      existingParticipation: Boolean(existingParticipation),
+    },
+    `participant:${participantId}`
   )
 }
 

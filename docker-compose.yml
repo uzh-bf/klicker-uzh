@@ -181,7 +181,7 @@ services:
 
   # main database
   postgres:
-    image: docker.io/library/postgres:15
+    image: docker.io/library/postgres:14.18
     environment:
       POSTGRES_USER: klicker-prod
       POSTGRES_PASSWORD: klicker
@@ -252,6 +252,24 @@ services:
     networks:
       - klicker
 
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    ports:
+      - '10000:10000' # Blob service
+      - '10001:10001' # Queue service
+      - '10002:10002' # Table service
+    command: >
+      azurite
+      --tableHost 0.0.0.0
+      --blobHost 0.0.0.0
+      --queueHost 0.0.0.0
+      --location /data
+      --debug /data/debug.log
+    volumes:
+      - azurite_data:/data
+    environment:
+      - AZURITE_ACCOUNTS=devstoreaccount1
+
 networks:
   klicker:
     driver: bridge
@@ -263,3 +281,4 @@ volumes:
   redis_data:
   redis_data_assessment:
   hatchet_lite_config:
+  azurite_data:

@@ -1,6 +1,11 @@
 import { Priority, type HatchetClient } from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
-import type { HatchetHandlers } from '@klicker-uzh/types'
+import {
+  AuditScope,
+  type HatchetHandlers,
+  type InternalAuditEvent,
+} from '@klicker-uzh/types'
+import type { AuditClient } from '@klicker-uzh/util'
 import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
@@ -17,6 +22,7 @@ export function prepareHatchetTasks({
   redisAssessmentExec,
   redisCache,
   handlers,
+  auditClient,
 }: {
   hatchet: HatchetClient
   pubSub: PubSub<any>
@@ -25,6 +31,7 @@ export function prepareHatchetTasks({
   redisAssessmentExec: Redis
   redisCache?: Redis
   handlers: HatchetHandlers
+  auditClient: AuditClient
 }) {
   const globalContext = {
     hatchet,
@@ -34,6 +41,7 @@ export function prepareHatchetTasks({
     redisAssessmentExec,
     redisCache,
     prisma,
+    auditClient,
   }
 
   // ! AUDIT LOGGING
@@ -43,17 +51,16 @@ export function prepareHatchetTasks({
     retries: 3,
     defaultPriority: Priority.LOW,
     onEvents: ['create-audit-log-entry'],
-    fn: (
-      message: Record<string, string | undefined> & {
-        correlationId?: string
-        info: string
-      },
+    fn: async (
+      message: Record<string, string | undefined> & InternalAuditEvent,
       ctx
     ) => {
-      const { info, ...args } = message
+      await auditClient.log({
+        ...message,
+        scope: AuditScope.WORKER,
+      })
 
-      // TODO: send the message to the actual audit log service with the correlation ID as a key?
-      ctx.logger.info(`Audit log entry: ${info}`, args)
+      return { success: true }
     },
   })
   // #endregion

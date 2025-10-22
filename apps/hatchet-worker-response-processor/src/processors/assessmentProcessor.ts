@@ -11,10 +11,12 @@ import {
   ResponseCorrectness,
   UserRole,
 } from '@klicker-uzh/prisma/client'
-import type {
-  FreeTextRestrictions,
-  LiveQuizResponseInput,
-  NumericalRestrictions,
+import {
+  AuditAction,
+  AuditScope,
+  type FreeTextRestrictions,
+  type LiveQuizResponseInput,
+  type NumericalRestrictions,
 } from '@klicker-uzh/types'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
@@ -44,11 +46,19 @@ export async function processAssessmentResponse(
   },
   ctx: DurableContext<UnknownInputType, {}>
 ) {
-  const receivedMessage = `[INFO] [AddResponse Assessment] Processing response for instance ${message.instanceId} by participant ${message.participantId}.`
-  ctx.logger.info(receivedMessage)
+  ctx.logger.info(
+    `[INFO] [AddResponse Assessment] Processing response for instance ${message.instanceId} by participant ${message.participantId}.`
+  )
   ctx.v1.events.push('create-audit-log-entry', {
+    scope: AuditScope.WORKER,
     correlationId: message.correlationId,
-    info: receivedMessage,
+    subject: `participant:${message.participantId}`,
+    action: AuditAction.SYSTEM_RESPONSE_RECEIVED,
+    resource: `instance:${message.instanceId}`,
+    timestamp: message.responseTimestamp,
+    attributes: {
+      response: message.response,
+    },
   })
 
   try {
@@ -349,11 +359,22 @@ export async function processAssessmentResponse(
   }
 
   // send audit-log event for computed points and XP
-  const gradingLog = `[INFO] [AddResponse Assessment] Computed points for instance ${message.instanceId}. Base Points: ${awardedBasePoints}, Correctness Points: ${awardedCorrectnessPoints}, Bonus Points: ${awardedBonusPoints}, XP: ${awardedXp}.`
-  ctx.logger.info(gradingLog)
+  ctx.logger.info(
+    `[INFO] [AddResponse Assessment] Computed points for instance ${message.instanceId}. Base Points: ${awardedBasePoints}, Correctness Points: ${awardedCorrectnessPoints}, Bonus Points: ${awardedBonusPoints}, XP: ${awardedXp}.`
+  )
   ctx.v1.events.push('create-audit-log-entry', {
+    scope: AuditScope.WORKER,
+    subject: `participant:${message.participantId}`,
     correlationId: message.correlationId,
-    info: gradingLog,
+    resource: `instance:${message.instanceId}`,
+    timestamp: message.responseTimestamp,
+    attributes: {
+      awardedBasePoints,
+      awardedCorrectnessPoints,
+      awardedBonusPoints,
+      awardedXp,
+      computedCorrectness,
+    },
   })
 
   // ! Step 3: Validate that the submitting user has a valid participation in the assessment course (requirement for assessment responses)
@@ -388,6 +409,19 @@ export async function processAssessmentResponse(
     ctx.logger.error(
       `[CANCEL] [AddResponse Assessment] Participant ${message.participantId} has already submitted a response for instance ${message.instanceId} and block execution ${blockExecution}.`
     )
+
+    ctx.v1.events.push('create-audit-log-entry', {
+      scope: AuditScope.WORKER,
+      subject: `participant:${message.participantId}`,
+      correlationId: message.correlationId,
+      resource: `instance:${message.instanceId}`,
+      action: AuditAction.SYSTEM_RESPONSE_DUPLICATE,
+      timestamp: message.responseTimestamp,
+      attributes: {
+        blockExecution: blockExecution ? parseInt(blockExecution, 10) : 0,
+      },
+    })
+
     ctx.cancel()
     return { status: 208 }
   }

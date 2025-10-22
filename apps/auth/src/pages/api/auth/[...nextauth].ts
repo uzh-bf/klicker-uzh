@@ -14,7 +14,9 @@ import { sendTeamsNotifications } from '@/lib/util'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@klicker-uzh/prisma'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
+import { AuditAction, AuditScope } from '@klicker-uzh/types'
 import {
+  AuditClient,
   deriveCookieDomainFromURL,
   generateRandomString,
   reduceCatalyst,
@@ -153,6 +155,25 @@ function getParticipantConfig({
           console.log(
             `Participant ${participant.id} authenticated successfully`
           )
+
+          // Audit: assessment login success (EduID only)
+          try {
+            const audit = new AuditClient()
+            await audit.log({
+              scope: AuditScope.INTERNAL,
+              action: AuditAction.PARTICIPANT_LOGIN_SUCCESS,
+              subject: `participant:${participant.id}`,
+              attributes: {
+                method: 'eduid',
+                context: 'assessment',
+              },
+            })
+          } catch (error) {
+            console.warn(
+              `[AUTH ${requestId}] Failed to log PARTICIPANT_LOGIN_SUCCESS:`,
+              error instanceof Error ? error.message : error
+            )
+          }
           return true
         } catch (error) {
           console.error('Failed to create/link participant:', error)

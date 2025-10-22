@@ -96,7 +96,7 @@ if [ "$PLATFORM" = "mac" ]; then
 fi
 
 # start postgres, redis, proxy, hatchet
-docker compose up --build -d postgres redis_exec redis_assessment redis_cache "$PROXY" hatchet || {
+docker compose up --build -d postgres redis_exec redis_assessment redis_cache "$PROXY" hatchet azurite || {
 	echo "Failed to start docker compose services" >&2
 	exit 1
 }
@@ -106,6 +106,12 @@ if confirm "Run pnpm run build?"; then
 else
 	echo "Skipping pnpm run build"
 fi
+
+SERVICE_ENDPOINTS="" ./util/wait-for-services.sh || {
+	echo "Service dependency check failed" >&2
+	cleanup
+	exit 1
+}
 
 # create hatchet client token (switch script for cypress/test mode)
 if [ "$MODE" = "cypress" ]; then

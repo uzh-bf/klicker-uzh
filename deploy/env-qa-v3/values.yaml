@@ -294,6 +294,29 @@ responseApi:
       cpu: 200m
       memory: 200Mi
 
+audit:
+  priorityClassName: staging-workload
+
+  replicaCount: 1
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  azureStorage:
+    tableName: 'auditlogs-qa'
+
+  corsOrigins: 'https://assessment.klicker-qa.bf-app.ch'
+
 redis:
   priorityClassName: staging-workload
   architecture: standalone
