@@ -8,7 +8,7 @@
     "@react-email/components": "~0.0.25",
     "@types/node": "^20.19.11",
     "@types/react": "^19.1.8",
-    "@uzh-bf/design-system": "4.1.5",
+    "@uzh-bf/design-system": "4.1.6",
     "lucide-react": "~0.522.0",
     "react": "~19.1.0",
     "react-email": "~3.0.1",
