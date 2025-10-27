@@ -26,6 +26,44 @@ hatchet:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: Always
         tag: clean-argocd
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/component
+                      operator: In
+                      values:
+                        - hatchet-worker-general
+                topologyKey: kubernetes.io/hostname
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: klickeruzh
+                    operator: In
+                    values:
+                      - reserved
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: hatchet-worker-general
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: hatchet-worker-general
+      tolerations:
+        - key: klickeruzh
+          operator: Equal
+          value: reserved
+          effect: NoSchedule
 
     responseProcessor:
       replicaCount: 4
@@ -34,6 +72,44 @@ hatchet:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
         tag: clean-argocd
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/component
+                      operator: In
+                      values:
+                        - hatchet-worker-response-processor
+                topologyKey: kubernetes.io/hostname
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: klickeruzh
+                    operator: In
+                    values:
+                      - reserved
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: hatchet-worker-response-processor
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: hatchet-worker-response-processor
+      tolerations:
+        - key: klickeruzh
+          operator: Equal
+          value: reserved
+          effect: NoSchedule
 
     responseProcessorAssessment:
       replicaCount: 4
@@ -42,6 +118,44 @@ hatchet:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
         tag: clean-argocd
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/component
+                      operator: In
+                      values:
+                        - hatchet-worker-response-processor-assessment
+                topologyKey: kubernetes.io/hostname
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: klickerasm
+                    operator: In
+                    values:
+                      - reserved
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: hatchet-worker-response-processor-assessment
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: hatchet-worker-response-processor-assessment
+      tolerations:
+        - key: klickerasm
+          operator: Equal
+          value: reserved
+          effect: NoSchedule
 
 auth:
   priorityClassName: production-workload
@@ -50,6 +164,32 @@ auth:
 
   autoscaling:
     enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - auth
+            topologyKey: kubernetes.io/hostname
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: klickeruzh
+                operator: In
+                values:
+                  - reserved
+  tolerations:
+    - key: klickeruzh
+      operator: Equal
+      value: reserved
+      effect: NoSchedule
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm-prd
@@ -90,6 +230,32 @@ chat:
   autoscaling:
     enabled: false
 
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - chat
+            topologyKey: kubernetes.io/hostname
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: klickeruzh
+                operator: In
+                values:
+                  - reserved
+
+  tolerations:
+    - key: klickeruzh
+      operator: Equal
+      value: reserved
+      effect: NoSchedule
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm-prd
     pullPolicy: Always
@@ -129,6 +295,32 @@ frontendPWA:
   autoscaling:
     enabled: false
 
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - frontend-pwa
+            topologyKey: kubernetes.io/hostname
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: klickeruzh
+                operator: In
+                values:
+                  - reserved
+  tolerations:
+    - key: klickeruzh
+      operator: Equal
+      value: reserved
+      effect: NoSchedule
+
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm-prd
     pullPolicy: Always
@@ -166,6 +358,32 @@ frontendManage:
 
   autoscaling:
     enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - frontend-manage
+            topologyKey: kubernetes.io/hostname
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: klickeruzh
+                operator: In
+                values:
+                  - reserved
+  tolerations:
+    - key: klickeruzh
+      operator: Equal
+      value: reserved
+      effect: NoSchedule
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm-prd
@@ -210,6 +428,32 @@ frontendControl:
   autoscaling:
     enabled: false
 
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - frontend-control
+            topologyKey: kubernetes.io/hostname
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: klickeruzh
+                operator: In
+                values:
+                  - reserved
+  tolerations:
+    - key: klickeruzh
+      operator: Equal
+      value: reserved
+      effect: NoSchedule
+
   ingress:
     className: haproxy
     annotations:
@@ -242,6 +486,33 @@ backendGraphql:
 
   autoscaling:
     enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - backend-graphql
+            topologyKey: kubernetes.io/hostname
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: klickeruzh
+                operator: In
+                values:
+                  - reserved
+
+  tolerations:
+    - key: klickeruzh
+      operator: Equal
+      value: reserved
+      effect: NoSchedule
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
@@ -302,6 +573,32 @@ olatApi:
   autoscaling:
     enabled: false
 
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - olat-api
+            topologyKey: kubernetes.io/hostname
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: klickeruzh
+                operator: In
+                values:
+                  - reserved
+  tolerations:
+    - key: klickeruzh
+      operator: Equal
+      value: reserved
+      effect: NoSchedule
+
   ingress:
     className: haproxy
     annotations:
@@ -330,6 +627,33 @@ olatApi:
 lti:
   priorityClassName: production-workload
   replicaCount: 2
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - lti
+            topologyKey: kubernetes.io/hostname
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: klickeruzh
+                operator: In
+                values:
+                  - reserved
+  tolerations:
+    - key: klickeruzh
+      operator: Equal
+      value: reserved
+      effect: NoSchedule
+
   redirectURL: https://lti.klicker.prd.df-app.ch
   url: https://exp.olat.uzh.ch
   name: OLAT UZH
@@ -372,6 +696,32 @@ responseApi:
   autoscaling:
     enabled: false
 
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - response-api
+            topologyKey: kubernetes.io/hostname
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: klickeruzh
+                operator: In
+                values:
+                  - reserved
+  tolerations:
+    - key: klickeruzh
+      operator: Equal
+      value: reserved
+      effect: NoSchedule
+
   ingress:
     className: haproxy
     annotations:
@@ -403,6 +753,45 @@ assessment:
     replicaCount: 3
     autoscaling:
       enabled: false
+
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/component
+                    operator: In
+                    values:
+                      - frontend-pwa-assessment
+              topologyKey: kubernetes.io/hostname
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: klickerasm
+                  operator: In
+                  values:
+                    - reserved
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: frontend-pwa-assessment
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: frontend-pwa-assessment
+    tolerations:
+      - key: klickerasm
+        operator: Equal
+        value: reserved
+        effect: NoSchedule
 
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm-prd
@@ -439,6 +828,45 @@ assessment:
     replicaCount: 3
     autoscaling:
       enabled: false
+
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/component
+                    operator: In
+                    values:
+                      - backend-assessment
+              topologyKey: kubernetes.io/hostname
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: klickerasm
+                  operator: In
+                  values:
+                    - reserved
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: backend-assessment
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: backend-assessment
+    tolerations:
+      - key: klickerasm
+        operator: Equal
+        value: reserved
+        effect: NoSchedule
 
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
