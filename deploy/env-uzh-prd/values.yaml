@@ -925,6 +925,32 @@ assessment:
     autoscaling:
       enabled: false
 
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/component
+                    operator: In
+                    values:
+                      - response-api-assessment
+              topologyKey: kubernetes.io/hostname
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: klickerasm
+                  operator: In
+                  values:
+                    - reserved
+    tolerations:
+      - key: klickerasm
+        operator: Equal
+        value: reserved
+        effect: NoSchedule
+
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: Always
