@@ -91,6 +91,7 @@ model Participant {
   chatUsageCredits                ChatUsageCredits[]
   invitations                     ParticipantInvitation[]
   pointCorrections                PointCorrection[]
+  individualPointCorrections      PointCorrection[]                @relation("PointCorrectionParticipants")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

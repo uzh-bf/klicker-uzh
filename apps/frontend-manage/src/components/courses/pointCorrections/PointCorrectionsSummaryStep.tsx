@@ -25,6 +25,9 @@ function PointCorrectionsSummaryStep({
     [PointCorrectionType.Single]: t(
       'manage.pointCorrections.participantScopeSingle'
     ),
+    [PointCorrectionType.Multiple]: t(
+      'manage.pointCorrections.participantScopeMultiple'
+    ),
     [PointCorrectionType.Participating]: t(
       'manage.pointCorrections.participantScopeParticipating'
     ),
@@ -45,6 +48,19 @@ function PointCorrectionsSummaryStep({
     participantSummary =
       participant?.email ??
       t('manage.pointCorrections.summaryParticipantNotSelected')
+  } else if (values.participantScope === PointCorrectionType.Multiple) {
+    const selectedParticipants = participants.filter((item) =>
+      values.participantIds.includes(item.id)
+    )
+    if (selectedParticipants.length > 0) {
+      participantSummary = selectedParticipants
+        .map((participant) => participant.email)
+        .join(', ')
+    } else {
+      participantSummary = t(
+        'manage.pointCorrections.summaryParticipantNotSelected'
+      )
+    }
   } else {
     participantSummary = participantLabels[values.participantScope]
   }
