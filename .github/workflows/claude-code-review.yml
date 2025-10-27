@@ -220,7 +220,7 @@ jobs:
 
           # Claude arguments including MCP config and allowed tools
           claude_args: |
-            --model claude-opus-4-1-20250805
+            --model claude-sonnet-4-5-20250929
             --mcp-config .github/mcp-config.json
             --allowedTools Bash(pnpm:*)
             --allowedTools mcp__serena__*

@@ -51,23 +51,44 @@ services:
     volumes:
       - ../../../../util/init.sql:/docker-entrypoint-initdb.d/init.sql
 
+  # Dedicated database for Hatchet workflows
+  postgres_hatchet:
+    image: docker.io/library/postgres:15
+    environment:
+      POSTGRES_USER: hatchet
+      POSTGRES_PASSWORD: hatchet
+      POSTGRES_DB: hatchet
+    ports:
+      - 5433:5432
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'hatchet', '-d', 'hatchet']
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - klicker
+
   # Hatchet service for workflow orchestration
   hatchet:
-    image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:latest
+    image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:v0.73.1
     ports:
       - '8888:8888'
       - '7077:7077'
     environment:
-      DATABASE_URL: 'postgresql://hatchet:hatchet@postgres:5432/hatchet?sslmode=disable'
+      DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
       SERVER_AUTH_COOKIE_DOMAIN: localhost
       SERVER_AUTH_COOKIE_INSECURE: 't'
       SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
       SERVER_GRPC_INSECURE: 't'
       SERVER_GRPC_BROADCAST_ADDRESS: localhost:7077
+      SERVER_INTERNAL_CLIENT_INTERNAL_GRPC_BROADCAST_ADDRESS: localhost:7077
       SERVER_GRPC_PORT: '7077'
       SERVER_URL: http://localhost:8888
       SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
       SERVER_DEFAULT_ENGINE_VERSION: 'V1'
+      SERVER_LOGGER_LEVEL: debug
+      SERVER_LOGGER_FORMAT: console
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:8888/healthz']
       interval: 10s
@@ -78,6 +99,9 @@ services:
       - 'hatchet_lite_config:/config'
     networks:
       - klicker
+    depends_on:
+      postgres_hatchet:
+        condition: service_healthy
 
   redis_exec:
     image: docker.io/library/redis:7
@@ -90,6 +114,13 @@ services:
     image: docker.io/library/redis:7
     ports:
       - 6380:6379
+    networks:
+      - klicker
+
+  redis_cache:
+    image: docker.io/library/redis:7
+    ports:
+      - 6381:6379
     networks:
       - klicker
 

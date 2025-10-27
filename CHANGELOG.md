@@ -2,6 +2,60 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.38](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.37...v3.4.0-alpha.38) (2025-10-15)
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add display name to lecturer cockpit ([#4953](https://github.com/uzh-bf/klicker-uzh/issues/4953)) ([41eefef](https://github.com/uzh-bf/klicker-uzh/commit/41eefefa8d0d53e83254479e1e3cc93b950713c8))
+
+## [3.4.0-alpha.37](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.36...v3.4.0-alpha.37) (2025-10-13)
+
+
+### Bug Fixes
+
+* **cypress:** resolve issues with cypress tests caused by missing element tile in asynchronous activities ([#4952](https://github.com/uzh-bf/klicker-uzh/issues/4952)) ([e5ee90c](https://github.com/uzh-bf/klicker-uzh/commit/e5ee90c430b579018ab4e1d91ed9da4c7e040a98))
+* **packages/shared-components:** handle undefined text for slate conversion ([#4956](https://github.com/uzh-bf/klicker-uzh/issues/4956)) ([80897ce](https://github.com/uzh-bf/klicker-uzh/commit/80897ce1ed510670cd0007939f32ccfcb7d06789))
+
+## [3.4.0-alpha.36](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.35...v3.4.0-alpha.36) (2025-09-30)
+
+
+### Features
+
+* add overview of student assessment performance on course level ([#4951](https://github.com/uzh-bf/klicker-uzh/issues/4951)) ([ff61d9b](https://github.com/uzh-bf/klicker-uzh/commit/ff61d9bc720eef7770dcb56d2ec6676a05f4bfe7))
+
+
+### Bug Fixes
+
+* **ci:** resolve issues with hatchet usage in graphql integration tests ([#4950](https://github.com/uzh-bf/klicker-uzh/issues/4950)) ([98c5e91](https://github.com/uzh-bf/klicker-uzh/commit/98c5e919e70ee3ee4148b2ebb66f725804fa47da))
+* **packages/graphql:** ensure that student reason is shown on student corrections list ([f097b73](https://github.com/uzh-bf/klicker-uzh/commit/f097b73ccfe4ca638282c2fa7609df7f25e42e11))
+
+## [3.4.0-alpha.35](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.34...v3.4.0-alpha.35) (2025-09-29)
+
+
+### Bug Fixes
+
+* **packages/shared-components:** temporarily open selection question inputs to the top to avoid interference with resizable ([e499344](https://github.com/uzh-bf/klicker-uzh/commit/e499344e1e949fc4748a1f75dad455045f9990cf))
+
+## [3.4.0-alpha.34](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.33...v3.4.0-alpha.34) (2025-09-29)
+
+
+### Features
+
+* add point correction mechanisms on instance and quiz level ([#4941](https://github.com/uzh-bf/klicker-uzh/issues/4941)) ([5abd6df](https://github.com/uzh-bf/klicker-uzh/commit/5abd6dfca6101a6bc1f1cdc557697823628433d0))
+* display point corrections and applied point corrections on overviews and detailed student response listings ([#4945](https://github.com/uzh-bf/klicker-uzh/issues/4945)) ([6c1a03b](https://github.com/uzh-bf/klicker-uzh/commit/6c1a03bc74f0a0f17161f663d7407414af64ebd6))
+
+
+### Bug Fixes
+
+* **packages/graphql:** avoid hatchet rate limits by using batch task calls for point correction audit logs ([#4949](https://github.com/uzh-bf/klicker-uzh/issues/4949)) ([3e02b4b](https://github.com/uzh-bf/klicker-uzh/commit/3e02b4b3b3a330a5c60b3d1b57f2d24581b8423c))
+* **packages/graphql:** ensure that only students with a submitted response are counted as participating ([#4948](https://github.com/uzh-bf/klicker-uzh/issues/4948)) ([0a8c545](https://github.com/uzh-bf/klicker-uzh/commit/0a8c545c4f3f2c5c60c952365d6cf405fe53c9c1))
+
+
+### Enhancements
+
+* **apps/frontend-manage:** add quick access options to point corrections dialog from assessment results view ([#4944](https://github.com/uzh-bf/klicker-uzh/issues/4944)) ([787dab8](https://github.com/uzh-bf/klicker-uzh/commit/787dab8ff2b590599da55cacee360bc8b6035cde))
+
 ## [3.4.0-alpha.33](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.32...v3.4.0-alpha.33) (2025-09-23)
 
 

@@ -1,5 +1,6 @@
 fragment ActivityStudentPerformanceData on ActivityStudentPerformance {
   id
+  activityId
   displayName
   finishedAt
   multiplier
@@ -10,4 +11,18 @@ fragment ActivityStudentPerformanceData on ActivityStudentPerformance {
   availableCorrectnessPoints
   bonusPoints
   availableBonusPoints
+
+  corrections {
+    id
+    lecturerReason
+    studentReason
+
+    awardedBasePoints
+    awardedCorrectnessPoints
+    awardedBonusPoints
+
+    deductedBasePoints
+    deductedCorrectnessPoints
+    deductedBonusPoints
+  }
 }

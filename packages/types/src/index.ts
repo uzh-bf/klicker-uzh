@@ -1,4 +1,5 @@
 import type {
+  AppliedPointCorrection,
   Element,
   ElementInstance,
   ElementStatus,
@@ -7,6 +8,7 @@ import type {
   ObjectType,
   ParameterType,
   PerformanceLevel,
+  PointCorrection,
   ResponseCorrectness as PrismaResponseCorrectness,
 } from '@klicker-uzh/prisma/client'
 
@@ -971,6 +973,7 @@ export type ActivityQuizAnalytics = {
 // #region
 export type ActivityStudentPerformance = {
   id: string
+  activityId: string
   displayName: string
   finishedAt: Date
   multiplier: number
@@ -980,9 +983,22 @@ export type ActivityStudentPerformance = {
   availableCorrectnessPoints: number
   bonusPoints: number
   availableBonusPoints: number
+  corrections: StudentPointCorrection[]
 }
 
-export type StudentAssessmentQuizResults = {
+export type StudentPointCorrection = {
+  id: number
+  lecturerReason?: string | null
+  studentReason: string
+  awardedBasePoints: number
+  awardedCorrectnessPoints: number
+  awardedBonusPoints: number
+  deductedBasePoints: number
+  deductedCorrectnessPoints: number
+  deductedBonusPoints: number
+}
+
+export type StudentAssessmentResultsItem = {
   participantId: string
   participantEmail: string
   basePoints: number
@@ -997,7 +1013,16 @@ export type AssessmentResultsLiveQuiz = {
   availableBasePoints: number
   availableCorrectnessPoints: number
   availableBonusPoints: number
-  studentResults: StudentAssessmentQuizResults[]
+  numberOfCorrections: number
+  studentResults: StudentAssessmentResultsItem[]
+}
+export type AssessmentResultsCourse = {
+  name: string
+  availableBasePoints: number
+  availableCorrectnessPoints: number
+  availableBonusPoints: number
+  numberOfCorrections: number
+  studentResults: StudentAssessmentResultsItem[]
 }
 
 export type StudentAssessmentBlockResponse = {
@@ -1006,10 +1031,19 @@ export type StudentAssessmentBlockResponse = {
 }
 export type StudentAssessmentInstanceResponse = {
   instance: ElementInstance
+  corrections: (AppliedPointCorrection & {
+    pointCorrection: PointCorrection
+  })[]
   basePoints: number
   correctnessPoints: number
   bonusPoints: number
   correctness?: PrismaResponseCorrectness | null
   submission?: SingleQuestionResponseLiveQuiz | null
+}
+
+export enum PointCorrectionType {
+  ALL_COURSE = 'ALL_COURSE',
+  PARTICIPATING = 'PARTICIPATING',
+  SINGLE = 'SINGLE',
 }
 // #endregion

@@ -5,6 +5,8 @@ import {
   faCircleMinus,
   faCircleXmark,
   faFileCircleCheck,
+  faPenToSquare,
+  faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -24,8 +26,10 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import { Fragment, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import PointCorrectionsModal from '../../courses/PointCorrectionsModal'
 import StudentAssessmentResponseModal, {
   AssessmentResultInstance,
 } from './StudentAssessmentResponseModal'
@@ -69,12 +73,17 @@ function LiveQuizSingleStudentResults({
   quizBonusPoints: number
 }) {
   const t = useTranslations()
+  const router = useRouter()
   const formatter = useFormatter()
   const toStudentElementResponse = useStudentInstanceResponseMapper()
 
+  const [instancePointCorrection, setInstancePointCorrection] = useState<
+    { instanceId: string; participantId: string } | undefined
+  >(undefined)
+
   const { data, error } = useSuspenseQuery(
     GetLiveQuizStudentAssessmentResponsesDocument,
-    { variables: { liveQuizId, participantId } }
+    { variables: { liveQuizId, participantId }, fetchPolicy: 'network-only' }
   )
   const [selectedInstance, setSelectedInstance] = useState<{
     instance: AssessmentResultInstance
@@ -123,6 +132,7 @@ function LiveQuizSingleStudentResults({
           totalPoints,
           totalAvailablePoints,
           submission: instanceObj.submission,
+          corrections: instanceObj.corrections,
         }
       })
 
@@ -211,7 +221,7 @@ function LiveQuizSingleStudentResults({
             <ShadcnTableHead className="w-10 whitespace-normal px-2 text-center text-[0.7rem] leading-tight">
               {t('shared.generic.total')}
             </ShadcnTableHead>
-            <ShadcnTableHead className="w-10 whitespace-normal px-1 text-center text-[0.7rem] leading-tight">
+            <ShadcnTableHead className="whitespace-normal px-0 text-center text-[0.7rem] leading-tight">
               <span className="sr-only">
                 {t('manage.assessment.liveQuizResponse')}
               </span>
@@ -250,7 +260,7 @@ function LiveQuizSingleStudentResults({
                       totals.totalAvailablePoints
                     )}
                   </ShadcnTableCell>
-                  <ShadcnTableCell />
+                  <ShadcnTableCell className="w-0 max-w-0 px-0" />
                 </ShadcnTableRow>
 
                 {instances.map((instance, instanceIx) => {
@@ -287,6 +297,158 @@ function LiveQuizSingleStudentResults({
                             <span className="line-clamp-1 text-sm leading-tight">
                               {elementData.name}
                             </span>
+                            {instance.corrections &&
+                            instance.corrections.length > 0 ? (
+                              <Tooltip
+                                className={{ tooltip: 'md:w-105 w-60' }}
+                                tooltip={
+                                  <div className="flex w-full flex-col gap-3 text-left text-sm">
+                                    <div className="text-foreground border-b pb-2 text-sm font-semibold">
+                                      {t(
+                                        'manage.pointCorrections.responseCorrectionsApplied'
+                                      )}
+                                    </div>
+
+                                    {instance.corrections.map(
+                                      (appliedCorrection, index) => {
+                                        const adjustments = [
+                                          {
+                                            key: `awarded-base-${appliedCorrection.id}`,
+                                            amount:
+                                              appliedCorrection.awardedBasePoints,
+                                            label: t(
+                                              'manage.general.basePointsDescription'
+                                            ),
+                                            variant: 'positive' as const,
+                                          },
+                                          {
+                                            key: `awarded-correctness-${appliedCorrection.id}`,
+                                            amount:
+                                              appliedCorrection.awardedCorrectnessPoints,
+                                            label: t(
+                                              'manage.general.correctnessPointsDescription'
+                                            ),
+                                            variant: 'positive' as const,
+                                          },
+                                          {
+                                            key: `awarded-bonus-${appliedCorrection.id}`,
+                                            amount:
+                                              appliedCorrection.awardedBonusPoints,
+                                            label: t(
+                                              'manage.general.bonusPointsDescription'
+                                            ),
+                                            variant: 'positive' as const,
+                                          },
+                                          {
+                                            key: `deducted-base-${appliedCorrection.id}`,
+                                            amount:
+                                              appliedCorrection.deductedBasePoints,
+                                            label: t(
+                                              'manage.general.basePointsDescription'
+                                            ),
+                                            variant: 'negative' as const,
+                                          },
+                                          {
+                                            key: `deducted-correctness-${appliedCorrection.id}`,
+                                            amount:
+                                              appliedCorrection.deductedCorrectnessPoints,
+                                            label: t(
+                                              'manage.general.correctnessPointsDescription'
+                                            ),
+                                            variant: 'negative' as const,
+                                          },
+                                          {
+                                            key: `deducted-bonus-${appliedCorrection.id}`,
+                                            amount:
+                                              appliedCorrection.deductedBonusPoints,
+                                            label: t(
+                                              'manage.general.bonusPointsDescription'
+                                            ),
+                                            variant: 'negative' as const,
+                                          },
+                                        ].filter(({ amount }) => amount > 0)
+
+                                        return (
+                                          <div
+                                            key={appliedCorrection.id}
+                                            className={twMerge(
+                                              'flex flex-col gap-2',
+                                              index > 0 &&
+                                                'border-border border-t pt-2'
+                                            )}
+                                          >
+                                            <div className="flex flex-col gap-0.5">
+                                              <div className="text-muted-foreground text-[0.65rem] uppercase tracking-wide">
+                                                {t(
+                                                  'manage.pointCorrections.summaryLecturerReasonLabel'
+                                                )}
+                                              </div>
+                                              <div className="text-foreground text-sm">
+                                                {appliedCorrection.pointCorrection.reason.trim()}
+                                              </div>
+                                            </div>
+
+                                            <div className="flex flex-col gap-0.5">
+                                              <div className="text-muted-foreground text-[0.65rem] uppercase tracking-wide">
+                                                {t(
+                                                  'manage.pointCorrections.summaryAdjustmentsLabel'
+                                                )}
+                                              </div>
+                                              {adjustments.length > 0 ? (
+                                                <ul className="flex flex-col gap-1">
+                                                  {adjustments.map(
+                                                    ({
+                                                      key,
+                                                      amount,
+                                                      label,
+                                                      variant,
+                                                    }) => (
+                                                      <li
+                                                        key={key}
+                                                        className="flex items-center gap-2"
+                                                      >
+                                                        <span
+                                                          className={twMerge(
+                                                            'rounded-sm px-1.5 py-0.5 text-xs font-semibold',
+                                                            variant ===
+                                                              'positive'
+                                                              ? 'bg-emerald-100 text-emerald-700'
+                                                              : 'bg-rose-100 text-rose-700'
+                                                          )}
+                                                        >
+                                                          {`${
+                                                            variant ===
+                                                            'positive'
+                                                              ? '+ '
+                                                              : '- '
+                                                          }${formatPoints(amount)}`}
+                                                        </span>
+                                                        <span>{label}</span>
+                                                      </li>
+                                                    )
+                                                  )}
+                                                </ul>
+                                              ) : (
+                                                <div>
+                                                  {t(
+                                                    'manage.pointCorrections.noAdjustmentsApplied'
+                                                  )}
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        )
+                                      }
+                                    )}
+                                  </div>
+                                }
+                              >
+                                <FontAwesomeIcon
+                                  icon={faTriangleExclamation}
+                                  className="ml-1.5 text-orange-500"
+                                />
+                              </Tooltip>
+                            ) : null}
                           </div>
                           <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-[0.7rem] leading-tight">
                             <span>{elementTypeLabel}</span>
@@ -327,41 +489,71 @@ function LiveQuizSingleStudentResults({
                           instance.totalAvailablePoints
                         )}
                       </ShadcnTableCell>
-                      <ShadcnTableCell className="px-1 py-3 text-center">
-                        <Tooltip
-                          tooltip={
-                            !!instance.submission
-                              ? t('manage.assessment.liveQuizOpenResponse')
-                              : t(
-                                  'manage.assessment.liveQuizNoResponseSubmitted'
-                                )
-                          }
-                        >
-                          <Button
-                            className={{ root: 'h-7 w-7 justify-center p-0' }}
-                            disabled={!instance.submission}
-                            onClick={() => {
-                              if (!instance.submission) return
-
-                              const response = toStudentElementResponse({
-                                instance,
-                                submission: instance.submission,
-                              })
-
-                              if (!response) return
-                              setSelectedInstance({ instance, response })
-                            }}
-                            data={{
-                              cy: `live-quiz-student-instance-${blockIx}-${instanceIx}-modal`,
-                            }}
-                            variant="ghost"
+                      <ShadcnTableCell className="px-0 py-3">
+                        <div className="flex justify-center gap-0">
+                          <Tooltip
+                            tooltip={
+                              !!instance.submission
+                                ? t('manage.assessment.liveQuizOpenResponse')
+                                : t(
+                                    'manage.assessment.liveQuizNoResponseSubmitted'
+                                  )
+                            }
                           >
-                            <Button.Icon
-                              icon={faFileCircleCheck}
-                              className={{ root: 'h-3.5 w-3.5' }}
-                            />
-                          </Button>
-                        </Tooltip>
+                            <Button
+                              className={{
+                                root: 'h-7 w-7 items-center justify-center',
+                              }}
+                              disabled={!instance.submission}
+                              onClick={() => {
+                                if (!instance.submission) return
+
+                                const response = toStudentElementResponse({
+                                  instance,
+                                  submission: instance.submission,
+                                })
+
+                                if (!response) return
+                                setSelectedInstance({ instance, response })
+                              }}
+                              data={{
+                                cy: `live-quiz-student-instance-${blockIx}-${instanceIx}-modal`,
+                              }}
+                              variant="ghost"
+                            >
+                              <Button.Icon
+                                withoutLabel
+                                icon={faFileCircleCheck}
+                                className={{ root: 'h-3.5 w-3.5' }}
+                              />
+                            </Button>
+                          </Tooltip>
+                          <Tooltip
+                            tooltip={t(
+                              'manage.assessment.liveQuizOpenCorrection'
+                            )}
+                          >
+                            <Button
+                              className={{ root: 'h-7 w-7 justify-center p-0' }}
+                              onClick={() => {
+                                setInstancePointCorrection({
+                                  instanceId: String(instance.id),
+                                  participantId,
+                                })
+                              }}
+                              data={{
+                                cy: `live-quiz-student-instance-${blockIx}-${instanceIx}-correction`,
+                              }}
+                              variant="ghost"
+                            >
+                              <Button.Icon
+                                withoutLabel
+                                icon={faPenToSquare}
+                                className={{ root: 'h-3.5 w-3.5' }}
+                              />
+                            </Button>
+                          </Tooltip>
+                        </div>
                       </ShadcnTableCell>
                     </ShadcnTableRow>
                   )
@@ -380,6 +572,16 @@ function LiveQuizSingleStudentResults({
           onClose={() => setSelectedInstance(null)}
         />
       )}
+
+      {typeof instancePointCorrection !== 'undefined' && router.query.id ? (
+        <PointCorrectionsModal
+          courseId={router.query.id as string}
+          onClose={() => setInstancePointCorrection(undefined)}
+          preselectedLiveQuizId={router.query.quizId as string}
+          preselectedInstanceId={instancePointCorrection?.instanceId}
+          preselectedParticipantId={instancePointCorrection?.participantId}
+        />
+      ) : null}
     </>
   )
 }

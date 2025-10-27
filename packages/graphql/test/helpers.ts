@@ -13,12 +13,20 @@ import {
   PermissionLevel,
   PrismaClient,
   PublicationStatus,
+  ResponseCorrectness,
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
-import { ElementData, ElementInstanceResults } from '@klicker-uzh/types'
 import {
+  DisplayMode,
+  ElementData,
+  ElementInstanceOptions,
+  ElementInstanceResults,
+} from '@klicker-uzh/types'
+import {
+  getInitialInstanceResults,
   MISSING_CATALOG_COLLECTION_ID,
+  processElementData,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
@@ -125,12 +133,12 @@ export async function testInitialization(
   // initialize tasks to be called
   const tasks = {
     createAuditLogEntry: hatchet.task({
-      name: 'create-audit-logging-entry',
+      name: 'create-audit-log-entry',
       fn: async ({
         message,
       }: {
         message: Record<string, string | undefined> & {
-          correlationId: string
+          correlationId?: string
           info: string
         }
       }) => {
@@ -1062,5 +1070,298 @@ export async function seedGroupActivity(
   })
 
   return groupActivity
+}
+// #endregion
+
+// ! Specific test case helpers (e.g. seeding of live quiz including responses to test correction workflows)
+// #region
+export async function seedLiveQuizWithResponses({
+  userOneCtx,
+  userTwoCtx,
+  userThreeCtx,
+  userFourCtx,
+}: {
+  userOneCtx: ContextWithUser
+  userTwoCtx: ContextWithUser
+  userThreeCtx: ContextWithUser
+  userFourCtx: ContextWithUser
+}) {
+  const SCQuestion = await prisma.element.create({
+    data: {
+      status: 'READY',
+      type: 'SC',
+      name: 'Single Choice Question',
+      content: 'What is the capital of Switzerland?',
+      explanation: 'The capital of Switzerland is Bern.',
+      options: {
+        choices: [
+          { ix: 0, value: 'Zurich', correct: false },
+          { ix: 1, value: 'Bern', correct: true },
+          { ix: 2, value: 'Geneva', correct: false },
+          { ix: 3, value: 'Lucerne', correct: true },
+        ],
+        displayMode: DisplayMode.LIST,
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: true,
+      },
+      basePoints: false,
+      pointsMultiplier: 1,
+      ownerId: userOneCtx.user.sub,
+    },
+  })
+  await recomputeDerivedPermissions(
+    { elementId: SCQuestion.id, userId: userOneCtx.user.sub },
+    prisma
+  )
+
+  const MCQuestion = await prisma.element.create({
+    data: {
+      status: 'READY',
+      type: 'MC',
+      name: 'Multiple Choice Question',
+      content: 'What are the capitals of Switzerland?',
+      explanation: 'The capital of Switzerland is Bern.',
+      options: {
+        choices: [
+          { ix: 0, value: 'Zurich', correct: false },
+          { ix: 1, value: 'Bern', correct: true },
+          { ix: 2, value: 'Geneva', correct: false },
+          { ix: 3, value: 'Lucerne', correct: true },
+        ],
+        displayMode: DisplayMode.LIST,
+        hasSampleSolution: true,
+        hasAnswerFeedbacks: true,
+      },
+      basePoints: true,
+      pointsMultiplier: 2,
+      ownerId: userOneCtx.user.sub,
+    },
+  })
+  await recomputeDerivedPermissions(
+    { elementId: MCQuestion.id, userId: userOneCtx.user.sub },
+    prisma
+  )
+
+  // create an assessment course
+  const assessmentCourse = await prisma.course.create({
+    data: {
+      name: 'Assessment Course',
+      displayName: 'Assessment Course',
+      isGamificationEnabled: false,
+      isAssessmentEnabled: true,
+      authType: 'SSO',
+      startDate: new Date(),
+      endDate: new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 30), // 30 days from now
+      groupDeadlineDate: new Date(),
+      owner: { connect: { id: userOneCtx.user.sub } },
+    },
+  })
+  await recomputeDerivedPermissions(
+    { courseId: assessmentCourse.id, userId: userOneCtx.user.sub },
+    prisma
+  )
+
+  // create a live quiz with both questions
+  const liveQuiz = await prisma.liveQuiz.create({
+    data: {
+      name: 'Live Quiz',
+      displayName: 'Live Quiz',
+      ownerId: userOneCtx.user.sub,
+      pointsMultiplier: 1,
+      isGamificationEnabled: false,
+      isAssessmentEnabled: true,
+      pinCode: 'D5G4HU',
+      courseId: assessmentCourse.id,
+      defaultPoints: 20,
+      defaultCorrectPoints: 50,
+      maxBonusPoints: 30,
+      blocks: {
+        create: [
+          {
+            order: 0,
+            elements: {
+              create: [
+                {
+                  type: ElementInstanceType.LIVE_QUIZ,
+                  elementId: SCQuestion.id,
+                  elementType: ElementType.SC,
+                  order: 0,
+                  options: {
+                    pointsMultiplier: 1,
+                    basePoints: false,
+                  } as ElementInstanceOptions,
+                  elementData: processElementData(SCQuestion),
+                  results: getInitialInstanceResults(
+                    processElementData(SCQuestion)
+                  ),
+                  anonymousResults: getInitialInstanceResults(
+                    processElementData(SCQuestion)
+                  ),
+                  ownerId: userOneCtx.user.sub,
+                },
+                {
+                  type: ElementInstanceType.LIVE_QUIZ,
+                  elementId: MCQuestion.id,
+                  elementType: ElementType.MC,
+                  order: 1,
+                  options: {
+                    pointsMultiplier: 2,
+                    basePoints: true,
+                  } as ElementInstanceOptions,
+                  elementData: processElementData(MCQuestion),
+                  results: getInitialInstanceResults(
+                    processElementData(MCQuestion)
+                  ),
+                  anonymousResults: getInitialInstanceResults(
+                    processElementData(MCQuestion)
+                  ),
+                  ownerId: userOneCtx.user.sub,
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    include: {
+      blocks: { include: { elements: { orderBy: { order: 'asc' } } } },
+    },
+  })
+  await recomputeDerivedPermissions(
+    { liveQuizId: liveQuiz.id, userId: userOneCtx.user.sub },
+    prisma
+  )
+  const instanceId1 = liveQuiz.blocks[0]!.elements[0]!.id
+  const instanceId2 = liveQuiz.blocks[0]!.elements[1]!.id
+
+  // share the course with users two, three, and four
+  await prisma.permission.createMany({
+    data: [
+      {
+        userId: userTwoCtx.user.sub,
+        courseId: assessmentCourse.id,
+        permissionLevel: PermissionLevel.READ,
+      },
+      {
+        userId: userThreeCtx.user.sub,
+        courseId: assessmentCourse.id,
+        permissionLevel: PermissionLevel.WRITE,
+      },
+      {
+        userId: userFourCtx.user.sub,
+        courseId: assessmentCourse.id,
+        permissionLevel: PermissionLevel.ADMIN,
+      },
+    ],
+  })
+  await recomputeDerivedPermissions({ courseId: assessmentCourse.id }, prisma)
+
+  // create participant 1 with a correct answer to both questions
+  const participant1 = await prisma.participant.create({
+    data: {
+      id: '36a3b9cf-00eb-46f3-a701-b222b68d0386',
+      username: 'participant1',
+      password: 'participant1',
+      participations: { create: [{ courseId: assessmentCourse.id }] },
+    },
+  })
+  const p1Response1 = await prisma.liveQuizResponse.create({
+    data: {
+      submittedAt: new Date(),
+      response: {
+        choices: [
+          { ix: 0, selected: false },
+          { ix: 1, selected: true },
+          { ix: 2, selected: false },
+          { ix: 3, selected: false },
+        ],
+      },
+      correctness: ResponseCorrectness.CORRECT,
+      basePoints: 0, // no base points for this question
+      correctnessPoints: 50,
+      bonusPoints: 30,
+      timeSpent: -1,
+      elementBlockExecution: 0,
+      instance: { connect: { id: instanceId1 } },
+      participant: { connect: { id: participant1.id } },
+    },
+  })
+  const p1Response2 = await prisma.liveQuizResponse.create({
+    data: {
+      submittedAt: new Date(),
+      response: {
+        choices: [
+          { ix: 0, selected: false },
+          { ix: 1, selected: true },
+          { ix: 2, selected: false },
+          { ix: 3, selected: false },
+        ],
+      },
+      correctness: ResponseCorrectness.CORRECT,
+      basePoints: 20,
+      correctnessPoints: 100,
+      bonusPoints: 60,
+      timeSpent: -1,
+      elementBlockExecution: 0,
+      instance: { connect: { id: instanceId2 } },
+      participant: { connect: { id: participant1.id } },
+    },
+  })
+
+  // create participant 2 with a partially correct answer to the first question and no answer to the second one
+  const participant2 = await prisma.participant.create({
+    data: {
+      id: 'fbdc8107-0f7e-4b9b-9dc5-9268c99dc784',
+      username: 'participant2',
+      password: 'participant2',
+      participations: { create: [{ courseId: assessmentCourse.id }] },
+    },
+  })
+  const p2Response1 = await prisma.liveQuizResponse.create({
+    data: {
+      submittedAt: new Date(),
+      response: {
+        choices: [
+          { ix: 0, selected: false },
+          { ix: 1, selected: true },
+          { ix: 2, selected: true },
+          { ix: 3, selected: false },
+        ],
+      },
+      correctness: ResponseCorrectness.PARTIAL, // correctness assumed to be 50%
+      basePoints: 0, // no base points for this question
+      correctnessPoints: 25,
+      bonusPoints: 15,
+      timeSpent: -1,
+      elementBlockExecution: 0,
+      instance: { connect: { id: instanceId1 } },
+      participant: { connect: { id: participant2.id } },
+    },
+  })
+
+  // create participant 3 with a course participation but no answers
+  const participant3 = await prisma.participant.create({
+    data: {
+      id: '56409db9-4bba-425d-81f6-98864ca3daed',
+      username: 'participant3',
+      password: 'participant3',
+      participations: { create: [{ courseId: assessmentCourse.id }] },
+    },
+  })
+
+  return {
+    assessmentCourse,
+    liveQuiz,
+    instanceId1,
+    instanceId2,
+    SCQuestion,
+    MCQuestion,
+    participant1,
+    participant2,
+    participant3,
+    p1Response1,
+    p1Response2,
+    p2Response1,
+  }
 }
 // #endregion

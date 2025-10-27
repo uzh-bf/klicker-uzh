@@ -341,7 +341,7 @@ export async function processAssessmentResponse(
   ) {
     // if we are processing a first response, set the timestamp on the instance
     // this will allow us to award points for response timing
-    redisExec.hsetnx(
+    await redisExec.hsetnx(
       `${instanceKey}:info`,
       'firstResponseReceivedAt',
       responseTimestamp

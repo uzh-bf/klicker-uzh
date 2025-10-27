@@ -90,6 +90,7 @@ model Participant {
   chatThreads                     ChatThread[]
   chatUsageCredits                ChatUsageCredits[]
   invitations                     ParticipantInvitation[]
+  pointCorrections                PointCorrection[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
