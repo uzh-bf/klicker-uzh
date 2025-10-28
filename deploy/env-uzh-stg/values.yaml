@@ -38,19 +38,6 @@ hatchet:
                       values:
                         - hatchet-worker-general
                 topologyKey: kubernetes.io/hostname
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: klickeruzh
-                    operator: In
-                    values:
-                      - reserved
-      tolerations:
-        - key: klickeruzh
-          operator: Equal
-          value: reserved
-          effect: NoSchedule
 
     responseProcessor:
       replicaCount: 1
@@ -71,19 +58,6 @@ hatchet:
                       values:
                         - hatchet-worker-response-processor
                 topologyKey: kubernetes.io/hostname
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: klickeruzh
-                    operator: In
-                    values:
-                      - reserved
-      tolerations:
-        - key: klickeruzh
-          operator: Equal
-          value: reserved
-          effect: NoSchedule
 
     responseProcessorAssessment:
       replicaCount: 1
@@ -138,19 +112,6 @@ auth:
                   values:
                     - auth
             topologyKey: kubernetes.io/hostname
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: klickeruzh
-                operator: In
-                values:
-                  - reserved
-  tolerations:
-    - key: klickeruzh
-      operator: Equal
-      value: reserved
-      effect: NoSchedule
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
@@ -203,19 +164,6 @@ chat:
                   values:
                     - chat
             topologyKey: kubernetes.io/hostname
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: klickeruzh
-                operator: In
-                values:
-                  - reserved
-  tolerations:
-    - key: klickeruzh
-      operator: Equal
-      value: reserved
-      effect: NoSchedule
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
@@ -268,19 +216,6 @@ frontendPWA:
                   values:
                     - frontend-pwa
             topologyKey: kubernetes.io/hostname
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: klickeruzh
-                operator: In
-                values:
-                  - reserved
-  tolerations:
-    - key: klickeruzh
-      operator: Equal
-      value: reserved
-      effect: NoSchedule
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
@@ -332,19 +267,6 @@ frontendManage:
                   values:
                     - frontend-manage
             topologyKey: kubernetes.io/hostname
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: klickeruzh
-                operator: In
-                values:
-                  - reserved
-  tolerations:
-    - key: klickeruzh
-      operator: Equal
-      value: reserved
-      effect: NoSchedule
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
@@ -401,19 +323,6 @@ frontendControl:
                   values:
                     - frontend-control
             topologyKey: kubernetes.io/hostname
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: klickeruzh
-                operator: In
-                values:
-                  - reserved
-  tolerations:
-    - key: klickeruzh
-      operator: Equal
-      value: reserved
-      effect: NoSchedule
 
   ingress:
     className: haproxy
@@ -460,19 +369,6 @@ backendGraphql:
                   values:
                     - backend-graphql
             topologyKey: kubernetes.io/hostname
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: klickeruzh
-                operator: In
-                values:
-                  - reserved
-  tolerations:
-    - key: klickeruzh
-      operator: Equal
-      value: reserved
-      effect: NoSchedule
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
@@ -545,19 +441,6 @@ olatApi:
                   values:
                     - olat-api
             topologyKey: kubernetes.io/hostname
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: klickeruzh
-                operator: In
-                values:
-                  - reserved
-  tolerations:
-    - key: klickeruzh
-      operator: Equal
-      value: reserved
-      effect: NoSchedule
 
   ingress:
     className: haproxy
@@ -600,19 +483,6 @@ lti:
                   values:
                     - lti
             topologyKey: kubernetes.io/hostname
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: klickeruzh
-                operator: In
-                values:
-                  - reserved
-  tolerations:
-    - key: klickeruzh
-      operator: Equal
-      value: reserved
-      effect: NoSchedule
 
   redirectURL: https://lti.klicker.stg.df-app.ch
   url: https://exp.olat.uzh.ch
@@ -668,19 +538,6 @@ responseApi:
                   values:
                     - response-api
             topologyKey: kubernetes.io/hostname
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-          - matchExpressions:
-              - key: klickeruzh
-                operator: In
-                values:
-                  - reserved
-  tolerations:
-    - key: klickeruzh
-      operator: Equal
-      value: reserved
-      effect: NoSchedule
 
   ingress:
     className: haproxy
