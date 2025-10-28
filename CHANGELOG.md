@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.39](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.38...v3.4.0-alpha.39) (2025-10-28)
+
+
+### Bug Fixes
+
+* **apps/chat:** add dedicated healthcheck endpoint ([aad5826](https://github.com/uzh-bf/klicker-uzh/commit/aad58263919f5dc3eb8955156411ee2fa42ea9f9))
+
 ## [3.4.0-alpha.38](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.37...v3.4.0-alpha.38) (2025-10-15)
 
 
