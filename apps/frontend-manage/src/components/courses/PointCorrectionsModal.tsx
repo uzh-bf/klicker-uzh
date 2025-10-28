@@ -68,11 +68,12 @@ function PointCorrectionsModal({
 
   const { data: endedQuizzesData, loading: endedQuizzesLoading } = useQuery(
     GetEndedLiveQuizzesCourseDocument,
-    { variables: { courseId } }
+    { variables: { courseId }, fetchPolicy: 'network-only' }
   )
   const { data: courseParticipantsData, loading: courseParticipantsLoading } =
     useQuery(GetAssessmentCourseParticipantsDocument, {
       variables: { courseId },
+      fetchPolicy: 'network-only',
     })
   const [correctAssessmentPointsInstance] = useMutation(
     CorrectAssessmentPointsInstanceDocument
@@ -131,6 +132,7 @@ function PointCorrectionsModal({
       participantScope: Yup.mixed<PointCorrectionType>()
         .oneOf([
           PointCorrectionType.Single,
+          PointCorrectionType.Multiple,
           PointCorrectionType.Participating,
           PointCorrectionType.AllCourse,
         ])
@@ -142,6 +144,17 @@ function PointCorrectionsModal({
           then: (schema) =>
             schema.required(
               t('manage.pointCorrections.errorParticipantRequired')
+            ),
+          otherwise: (schema) => schema.notRequired(),
+        }),
+      participantIds: Yup.array()
+        .of(Yup.string().trim())
+        .when('participantScope', {
+          is: PointCorrectionType.Multiple,
+          then: (schema) =>
+            schema.min(
+              1,
+              t('manage.pointCorrections.errorParticipantsRequired')
             ),
           otherwise: (schema) => schema.notRequired(),
         }),
@@ -176,6 +189,7 @@ function PointCorrectionsModal({
       ? PointCorrectionType.Single
       : '',
     participantId: preselectedParticipantId ?? '',
+    participantIds: [],
     lecturerReason: '',
     studentReason: '',
     useSameReasonForStudents: false,
@@ -237,6 +251,7 @@ function PointCorrectionsModal({
                   : values.studentReason.trim(),
                 scope: values.participantScope,
                 participantId: values.participantId,
+                participantIds: values.participantIds,
               },
               refetchQueries: [
                 {
@@ -281,6 +296,7 @@ function PointCorrectionsModal({
                   : values.studentReason,
                 scope: values.participantScope,
                 participantId: values.participantId,
+                participantIds: values.participantIds,
               },
               refetchQueries: [
                 {
@@ -383,7 +399,9 @@ function PointCorrectionsModal({
         const audienceValid = Boolean(
           values.participantScope &&
             (values.participantScope !== PointCorrectionType.Single ||
-              values.participantId)
+              values.participantId) &&
+            (values.participantScope !== PointCorrectionType.Multiple ||
+              (values.participantIds && values.participantIds.length > 0))
         )
         const adjustmentsValid = Object.values(values.adjustments).some(Boolean)
         const reasonValid = Boolean(

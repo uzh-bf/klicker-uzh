@@ -148,6 +148,7 @@ enum PointCorrectionType {
   ALL_COURSE
   PARTICIPATING
   SINGLE
+  MULTIPLE
 }
 
 model PointCorrection {
@@ -170,6 +171,9 @@ model PointCorrection {
   // link to the participant that is affected by the correction (only set if type is SINGLE)
   participant   Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   participantId String?      @db.Uuid
+
+  // link to the participants that are affected by the correction (only set if type is MULTIPLE)
+  participants Participant[] @relation("PointCorrectionParticipants")
 
   // link to the user that created the correction
   correctedBy   User?   @relation(fields: [correctedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
