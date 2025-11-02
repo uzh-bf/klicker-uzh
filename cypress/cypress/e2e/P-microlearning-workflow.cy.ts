@@ -1774,7 +1774,7 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="start-microlearning"]').click()
 
     // answer elements in stack 1
-    cy.findByText(this.data.CSML2.title).should('exist')
+    cy.findByText(this.data.CSML2.content).should('exist')
     cy.answerCaseStudy({
       elementIx: 0,
       answers: this.data.CSML2.answers,
@@ -1879,7 +1879,7 @@ describe('Different microlearning workflows', function () {
     cy.get('[data-cy="start-microlearning"]').click()
 
     // answer elements in stack 1
-    cy.findByText(this.data.CSML2.title).should('exist')
+    cy.findByText(this.data.CSML2.content).should('exist')
     cy.answerCaseStudy({
       elementIx: 0,
       answers: this.data.CSML2.answers,

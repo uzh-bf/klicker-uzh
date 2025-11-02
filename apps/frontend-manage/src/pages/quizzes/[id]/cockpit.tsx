@@ -69,6 +69,7 @@ function Cockpit() {
   const {
     id,
     name,
+    displayName,
     pinCode,
     isLiveQAEnabled,
     isGamificationEnabled,
@@ -89,6 +90,7 @@ function Cockpit() {
           assessmentMode={isAssessmentEnabled}
           quizId={id}
           quizName={name}
+          quizDisplayName={displayName}
           quizPin={pinCode}
           blocks={blocks ?? []}
           language={course?.language ?? null}

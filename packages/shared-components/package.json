@@ -37,7 +37,7 @@
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/markdown": "workspace:*",
     "@tailwindcss/postcss": "^4.1.11",
-    "@uzh-bf/design-system": "4.1.4",
+    "@uzh-bf/design-system": "4.1.6",
     "compromise": "^14.14.4",
     "d3-cloud": "^1.2.7",
     "dayjs": "^1.11.13",

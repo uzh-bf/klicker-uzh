@@ -8,6 +8,7 @@ export interface PointCorrectionsFormValues {
   instanceId: string
   participantScope: PointCorrectionType | ''
   participantId: string
+  participantIds: string[]
   lecturerReason: string
   studentReason: string
   useSameReasonForStudents: boolean

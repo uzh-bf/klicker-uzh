@@ -187,7 +187,7 @@ export const convertToSlate = (mdObj?: string | null) => {
 }
 
 const formatText = (input: any) => {
-  if (input.text === '') {
+  if (!input || !input.text || input.text === '') {
     return ''
   }
   return serialize({

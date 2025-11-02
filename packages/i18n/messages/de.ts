@@ -3022,7 +3022,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sobald Punktkorrekturen speziell für die ausgewählte Quizfrage vorgenommen wurden, erscheinen diese hier. Für das gesamte Quiz vorgenommene Punktkorrekturen werden nicht angezeigt, wenn eine einzelne Frage für die Korrektur ausgewählt ist.',
       historyApplied: 'Angewendet am {appliedAt} durch {user}',
       historyScopeParticipantUnknown: 'Unbekannte Person',
+      historyScopeParticipantsUnknown: 'Unbekannte Personen',
       historyScopeSingle: 'Einzelne Person ({participant})',
+      historyScopeMultiple: 'Mehrere Personen ({participants})',
       historyScopeParticipatingQuiz:
         'Alle Studierenden mit mindestens einer Antwort in diesem Quiz',
       historyScopeParticipatingInstance:
@@ -3035,11 +3037,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       audienceLabel: 'Zielgruppe',
       audiencePlaceholder: 'Zielgruppe auswählen',
       audienceOptionSingle: 'Einzelne Person',
+      audienceOptionMultiple: 'Mehrere Personen',
       audienceOptionParticipating: 'Alle teilnehmenden Nutzer',
       audienceOptionCourse: 'Alle Teilnehmer des Assessment-Kurses',
       participantLabel: 'Teilnehmende Person',
+      participantsLabel: 'Teilnehmende Personen',
       participantPlaceholder: 'Teilnehmende Person auswählen',
+      participantsPlaceholder: 'Teilnehmende Personen auswählen',
       participantScopeSingle: 'Ausgewählte Person',
+      participantScopeMultiple: 'Ausgewählte Personen',
       participantScopeParticipating: 'Alle teilnehmenden Nutzer',
       participantScopeCourse: 'Alle Teilnehmer des Assessment-Kurses',
       adjustmentsTitle: 'Punkte anpassen',
@@ -3090,6 +3096,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte wählen Sie eine Instanz aus, wenn Sie eine Punktekorrektur für eine einzelne Quizfrage vornehmen möchten.',
       errorParticipantRequired:
         'Bitte wählen Sie eine Person aus, wenn Sie eine Punktekorrektur für eine einzelne Person vornehmen möchten.',
+      errorParticipantsRequired:
+        'Bitte wählen Sie mindestens eine Person aus, wenn Sie eine Punktekorrektur für mehrere Personen vornehmen möchten.',
       errorLecturerReasonRequired:
         'Bitte geben Sie eine Notiz für diese Korrektur aus, welche Ihnen eine Zuordnung zu einem späteren Zeitpunkt erlaubt.',
       errorStudentReasonRequired:

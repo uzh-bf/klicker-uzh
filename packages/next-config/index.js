@@ -17,6 +17,15 @@ function getNextBaseConfig({
       if (!isServer && isStaging) {
         config.devtool = 'cheap-module-source-map'
       }
+      // Configure webpack to resolve conditional exports correctly
+      if (isServer) {
+        // For server builds: prioritize 'node' condition for packages like file-type
+        // that have Node.js-specific exports (e.g., PayloadCMS's file-type dependency)
+        config.resolve.conditionNames = ['node', 'development', '...']
+      } else {
+        // For client builds: use standard conditions plus 'development' for local packages
+        config.resolve.conditionNames = ['development', '...']
+      }
       return config
     },
     compress: true,
@@ -27,6 +36,7 @@ function getNextBaseConfig({
       '@klicker-uzh/i18n',
       '@klicker-uzh/util',
       '@klicker-uzh/prisma',
+      '@uzh-bf/design-system',
     ],
     eslint: {
       ignoreDuringBuilds: true,
