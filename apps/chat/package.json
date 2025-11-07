@@ -24,7 +24,7 @@
     "@radix-ui/react-switch": "1.2.5",
     "@radix-ui/react-tooltip": "1.2.7",
     "@uzh-bf/design-system": "4.1.6",
-    "ai": "5.0.8",
+    "ai": "5.0.52",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "jose": "5.9.4",
