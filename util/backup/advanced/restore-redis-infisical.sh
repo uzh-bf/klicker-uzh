@@ -164,22 +164,20 @@ esac
 # =============================================================================
 # INFISICAL DELEGATION
 # =============================================================================
-
-export PROJECT_ID="6ae965bb-3cf8-4d44-9658-9cd4d58f754c"
-export BACKUP_ENCRYPTION_KEY=$(infisical secrets get BACKUP_ENCRYPTION_KEY --projectId="$PROJECT_ID" --env="$ENVIRONMENT" --plain)
+export BACKUP_ENCRYPTION_KEY=$(infisical secrets get BACKUP_ENCRYPTION_KEY --env="$ENVIRONMENT" --plain)
 
 if [[ "$ENVIRONMENT" != "dev" ]]; then
     export REDIS_ASSESSMENT_TLS="true"
     if [[ "$INSTANCE" == "assessment" ]]; then
-        export REDIS_ASSESSMENT_HOST=$(infisical secrets get REDIS_ASSESSMENT_HOST --projectId="$PROJECT_ID" --env="$ENVIRONMENT" --plain)
-        export REDIS_ASSESSMENT_PORT=10002
-        export REDIS_ASSESSMENT_PASS=$(infisical secrets get REDIS_ASSESSMENT_PASS --projectId="$PROJECT_ID" --env="$ENVIRONMENT" --plain)
-        
+        export REDIS_ASSESSMENT_HOST=$(infisical secrets get REDIS_ASSESSMENT_HOST --env="$ENVIRONMENT" --plain)
+        export REDIS_ASSESSMENT_PORT=$(infisical secrets get REDIS_ASSESSMENT_PORT --env="$ENVIRONMENT" --plain)
+        export REDIS_ASSESSMENT_PASS=$(infisical secrets get REDIS_ASSESSMENT_PASS --env="$ENVIRONMENT" --plain)
+
         export REDIS_URL="rediss://default:${REDIS_ASSESSMENT_PASS}@${REDIS_ASSESSMENT_HOST}:${REDIS_ASSESSMENT_PORT}"
     else
-        export REDIS_HOST=$(infisical secrets get REDIS_HOST --projectId="$PROJECT_ID" --env="$ENVIRONMENT" --plain)
-        export REDIS_PORT=10000
-        export REDIS_PASS=$(infisical secrets get REDIS_PASS --projectId="$PROJECT_ID" --env="$ENVIRONMENT" --plain)
+        export REDIS_HOST=$(infisical secrets get REDIS_HOST --env="$ENVIRONMENT" --plain)
+        export REDIS_PORT=$(infisical secrets get REDIS_PORT --env="$ENVIRONMENT" --plain)
+        export REDIS_PASS=$(infisical secrets get REDIS_PASS --env="$ENVIRONMENT" --plain)
         export REDIS_URL="rediss://default:${REDIS_PASS}@${REDIS_HOST}:${REDIS_PORT}"
     fi
 else

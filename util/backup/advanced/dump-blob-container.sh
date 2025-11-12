@@ -21,9 +21,13 @@ EOF
 # PARSE ARGS
 # -------------------------------------------------------------------
 ACCOUNT_NAME=""
-
+ENVIRONMENT=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        dev|stg|prd)
+            ENVIRONMENT="$1"
+            shift
+            ;;
         --account)
             ACCOUNT_NAME="$2"
             shift 2
@@ -46,6 +50,17 @@ if [[ -z "$ACCOUNT_NAME" ]]; then
     print_help
     exit 1
 fi
+case "$ENVIRONMENT" in
+    "dev"|"stg"|"prd")
+        echo "🎯 Target environment: $ENVIRONMENT"
+        ;;
+    *)
+        echo "ERROR: Invalid environment '$ENVIRONMENT'. Valid environments: dev, stg, prd"
+        echo ""
+        show_usage
+        exit 1
+        ;;
+esac
 
 # -------------------------------------------------------------------
 # CONFIG
@@ -53,17 +68,13 @@ fi
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 REPO_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
 
-PROJECT_ID="6ae965bb-3cf8-4d44-9658-9cd4d58f754c"
-BACKUP_ENCRYPTION_KEY="$(infisical secrets get BACKUP_ENCRYPTION_KEY \
-    --projectId="$PROJECT_ID" --env=prd --plain)"
-
+BACKUP_ENCRYPTION_KEY="$(infisical secrets get BACKUP_ENCRYPTION_KEY --env=$ENVIRONMENT --plain)"
 TIMESTAMP="$(date +"%Y%m%d_%H%M%S")"
 
 CONTAINER_NAMES=$(az storage container list \
-  --account-name stgklickermediaz7tg1 \
+  --account-name $ACCOUNT_NAME \
   --auth-mode login  --query "[].name" \
   -o tsv)
-
 for CONTAINER_NAME in $CONTAINER_NAMES; do
     DUMP_DIR="$REPO_ROOT/util/backup/dumps/blob/$ACCOUNT_NAME/container/$CONTAINER_NAME"
     WORK_DIR="$DUMP_DIR/$TIMESTAMP"

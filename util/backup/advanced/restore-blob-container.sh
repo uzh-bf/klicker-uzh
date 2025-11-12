@@ -23,7 +23,7 @@ EOF
 # -------------------------------------------------------------------
 ACCOUNT_NAME=""
 CONTAINER_NAME=""
-
+ENVIRONMENT=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --account)
@@ -33,6 +33,10 @@ while [[ $# -gt 0 ]]; do
         --container)
             CONTAINER_NAME="$2"
             shift 2
+            ;;
+        dev|stg|prd)
+            ENVIRONMENT="$1"
+            shift
             ;;
         -h|--help)
             print_help
@@ -52,6 +56,17 @@ if [[ -z "$ACCOUNT_NAME" || -z "$CONTAINER_NAME" ]]; then
     print_help
     exit 1
 fi
+case "$ENVIRONMENT" in
+    "dev"|"stg"|"prd")
+        echo "🎯 Target environment: $ENVIRONMENT"
+        ;;
+    *)
+        echo "ERROR: Invalid environment '$ENVIRONMENT'. Valid environments: dev, stg, prd"
+        echo ""
+        show_usage
+        exit 1
+        ;;
+esac
 
 # -------------------------------------------------------------------
 # CONFIG
@@ -59,14 +74,56 @@ fi
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 REPO_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
 
-PROJECT_ID="6ae965bb-3cf8-4d44-9658-9cd4d58f754c"
-BACKUP_ENCRYPTION_KEY="$(infisical secrets get BACKUP_ENCRYPTION_KEY \
-    --projectId="$PROJECT_ID" --env=prd --plain)"
+BACKUP_ENCRYPTION_KEY="$(infisical secrets get BACKUP_ENCRYPTION_KEY --env=$ENVIRONMENT --plain)"
 
 DUMP_DIR="$REPO_ROOT/util/backup/dumps/blob/$ACCOUNT_NAME/container/$CONTAINER_NAME"
 ENCRYPTED_FILE="$DUMP_DIR/latest"
 CHECKSUM_FILE="$DUMP_DIR/latest.sha256"
 DECRYPTED_FILE="$DUMP_DIR/dump-latest.tar.gz"
+
+# =============================================================================
+# PRODUCTION SAFETY CHECKS
+# =============================================================================
+
+if [[ "$ENVIRONMENT" == "prd" ]]; then
+    echo ""
+    echo "⚠️  PRODUCTION ENVIRONMENT DETECTED ⚠️"
+    echo "======================================="
+    echo ""
+    echo "You are about to restore to the PRODUCTION blob storage container."
+    echo "This operation will:"
+    echo "  • Replace all existing production data"
+    echo "  • Potentially cause service downtime"
+    echo "  • Affect live users and applications"
+    echo ""
+    echo "Dump file: $ENCRYPTED_FILE"
+    echo "Target: Production Blob Storage Container"
+    echo ""
+
+    # Require explicit confirmation
+    read -p "Are you absolutely sure you want to proceed? Type 'RESTORE PRODUCTION' to confirm: " confirmation
+
+    if [[ "$confirmation" != "RESTORE PRODUCTION" ]]; then
+        echo "❌ Production restore cancelled by user"
+        exit 1
+    fi
+
+    echo ""
+    echo "✅ Production restore confirmed"
+    echo ""
+
+    # Additional confirmation for extra safety
+    read -p "Final confirmation - type 'YES' to proceed with production restore: " final_confirmation
+
+    if [[ "$final_confirmation" != "YES" ]]; then
+        echo "❌ Production restore cancelled by user"
+        exit 1
+    fi
+
+    echo ""
+    echo "🚀 Proceeding with production blob storage container restore..."
+    echo ""
+fi
 
 # -------------------------------------------------------------------
 # CLEANUP HANDLER

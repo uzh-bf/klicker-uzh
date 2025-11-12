@@ -65,7 +65,7 @@
     "check": "tsc --noEmit",
     "dev": "cross-env NODE_ENV=development next dev --turbo --port 3003",
     "dev:assessment": "pnpm run dev",
-    "dev:doppler": "doppler run --config dev -- pnpm run dev",
+    "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",
     "dev:offline": "cross-env NODE_ENV=development next dev --port 3003",
     "dev:test": "cross-env NODE_ENV=test next dev --port 3003",
     "lint": "next lint",

@@ -126,7 +126,7 @@ fi
 case "$ENVIRONMENT" in
     "dev"|"stg"|"prd")
         echo "🎯 Target environment: $ENVIRONMENT"
-echo "🎯 Target instance: $INSTANCE"
+        echo "🎯 Target instance: $INSTANCE"
         ;;
     *)
         echo "ERROR: Invalid environment '$ENVIRONMENT'. Valid environments: dev, stg, prd"
@@ -139,20 +139,18 @@ esac
 # =============================================================================
 # INFISICAL DELEGATION
 # =============================================================================
-
-export PROJECT_ID="6ae965bb-3cf8-4d44-9658-9cd4d58f754c"
-export BACKUP_ENCRYPTION_KEY=$(infisical secrets get BACKUP_ENCRYPTION_KEY --projectId="$PROJECT_ID" --env="$ENVIRONMENT" --plain)
+export BACKUP_ENCRYPTION_KEY=$(infisical secrets get BACKUP_ENCRYPTION_KEY --env="$ENVIRONMENT" --plain)
 
 if [[ "$ENVIRONMENT" != "dev" ]]; then
     if [[ "$INSTANCE" == "assessment" ]]; then
-        export REDIS_ASSESSMENT_HOST=$(infisical secrets get REDIS_ASSESSMENT_HOST --projectId="$PROJECT_ID" --env="$ENVIRONMENT" --plain)
-        export REDIS_ASSESSMENT_PORT=10002
-        export REDIS_ASSESSMENT_PASS=$(infisical secrets get REDIS_ASSESSMENT_PASS --projectId="$PROJECT_ID" --env="$ENVIRONMENT" --plain)
+        export REDIS_ASSESSMENT_HOST=$(infisical secrets get REDIS_ASSESSMENT_HOST --env="$ENVIRONMENT" --plain)
+        export REDIS_ASSESSMENT_PORT=$(infisical secrets get REDIS_ASSESSMENT_PORT --env="$ENVIRONMENT" --plain)
+        export REDIS_ASSESSMENT_PASS=$(infisical secrets get REDIS_ASSESSMENT_PASS --env="$ENVIRONMENT" --plain)
         export REDIS_ASSESSMENT_TLS="true"
     else
-        export REDIS_HOST=$(infisical secrets get REDIS_HOST --projectId="$PROJECT_ID" --env="$ENVIRONMENT" --plain)
-        export REDIS_PORT=10000
-        export REDIS_PASS=$(infisical secrets get REDIS_PASS --projectId="$PROJECT_ID" --env="$ENVIRONMENT" --plain)
+        export REDIS_HOST=$(infisical secrets get REDIS_HOST --env="$ENVIRONMENT" --plain)
+        export REDIS_PORT=$(infisical secrets get REDIS_PORT --env="$ENVIRONMENT" --plain)
+        export REDIS_PASS=$(infisical secrets get REDIS_PASS --env="$ENVIRONMENT" --plain)
         export REDIS_TLS="true"
     fi
 else
@@ -184,7 +182,7 @@ fi
 
 echo "========================================"
 echo "Starting Redis Data Dump Process"
-echo "Environment: ${CONFIG:-unknown}"
+echo "Environment: ${ENVIRONMENT:-unknown}"
 echo "========================================"
 
 # Additional cleanup for dump-specific variables
@@ -200,7 +198,7 @@ trap cleanup_dump EXIT
 
 echo "\n🔐 Step 1: Environment Configuration Loaded"
 echo "---------------------------------------------"
-log "Infisical environment loaded successfully for config: ${CONFIG:-unknown}"
+log "Infisical environment loaded successfully for config: ${ENVIRONMENT:-unknown}"
 
 echo "\n🔍 Step 2: Validating Redis Connection Variables"
 echo "---------------------------------------------------"

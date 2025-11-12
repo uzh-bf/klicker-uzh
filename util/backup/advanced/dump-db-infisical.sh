@@ -111,10 +111,8 @@ esac
 # =============================================================================
 # INFISICAL DELEGATION
 # =============================================================================
-
-export PROJECT_ID="6ae965bb-3cf8-4d44-9658-9cd4d58f754c"
-export BACKUP_ENCRYPTION_KEY=$(infisical secrets get BACKUP_ENCRYPTION_KEY --projectId="$PROJECT_ID" --env="$ENVIRONMENT" --plain)
-export DATABASE_URL=$(infisical secrets get DIRECT_DATABASE_URL --projectId="$PROJECT_ID" --env="$ENVIRONMENT" --plain)
+export BACKUP_ENCRYPTION_KEY=$(infisical secrets get BACKUP_ENCRYPTION_KEY --env="$ENVIRONMENT" --plain)
+export DATABASE_URL=$(infisical secrets get DIRECT_DATABASE_URL --env="$ENVIRONMENT" --plain)
 
 # =============================================================================
 # SOURCE UTILITIES

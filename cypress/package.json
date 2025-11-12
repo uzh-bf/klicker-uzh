@@ -22,12 +22,12 @@
     "uuid": "~10.0.0"
   },
   "scripts": {
-    "test": "CONFIG=dev_cypress ../util/_run_with_doppler.sh cypress open",
+    "test": "../util/_run_with_infisical.sh --env dev-cypress cypress open",
     "test:raw": "cypress open",
-    "test:run": "CONFIG=dev_cypress ../util/_run_with_doppler.sh cypress run",
-    "test:run:one": "CONFIG=dev_cypress ../util/_run_with_doppler.sh cypress run --spec",
+    "test:run": "../util/_run_with_infisical.sh --env dev-cypress cypress run",
+    "test:run:one": "../util/_run_with_infisical.sh --env dev-cypress cypress run --spec",
     "test:run:raw": "cypress run",
-    "test:watch": "CONFIG=dev_cypress ../util/_run_with_doppler.sh cypress open --watch"
+    "test:watch": "../util/_run_with_infisical.sh --env dev-cypress cypress open --watch"
   },
   "engines": {
     "node": "=20"
