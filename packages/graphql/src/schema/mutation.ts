@@ -1456,6 +1456,7 @@ export const Mutation = builder.mutationType({
           studentReason: t.arg.string({ required: true }),
           scope: t.arg({ type: PointCorrectionType, required: true }),
           participantId: t.arg.string({ required: false }),
+          participantIds: t.arg.stringList({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await CourseService.correctAssessmentPointsInstance(args, ctx)
@@ -1477,6 +1478,7 @@ export const Mutation = builder.mutationType({
           studentReason: t.arg.string({ required: true }),
           scope: t.arg({ type: PointCorrectionType, required: true }),
           participantId: t.arg.string({ required: false }),
+          participantIds: t.arg.stringList({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await CourseService.correctAssessmentPointsLiveQuiz(args, ctx)

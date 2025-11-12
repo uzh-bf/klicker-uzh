@@ -2958,7 +2958,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Once points corrections have been made specifically for the selected quiz question, they will appear here. Point corrections applied to the entire live quiz are not shown when one single question is selected for corrections.',
       historyApplied: 'Applied on {appliedAt} by {user}',
       historyScopeParticipantUnknown: 'Unknown participant',
+      historyScopeParticipantsUnknown: 'Unknown participants',
       historyScopeSingle: 'Single participant ({participant})',
+      historyScopeMultiple: 'Multiple participants ({participants})',
       historyScopeParticipatingQuiz:
         'All students with at least one answer in this quiz',
       historyScopeParticipatingInstance:
@@ -2971,11 +2973,15 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       audienceLabel: 'Audience',
       audiencePlaceholder: 'Select an audience',
       audienceOptionSingle: 'Single participant',
+      audienceOptionMultiple: 'Multiple participants',
       audienceOptionParticipating: 'All participating users',
       audienceOptionCourse: 'All assessment course participants',
       participantLabel: 'Participant',
+      participantsLabel: 'Participants',
       participantPlaceholder: 'Select a participant',
+      participantsPlaceholder: 'Select participants',
       participantScopeSingle: 'Selected participant',
+      participantScopeMultiple: 'Selected participants',
       participantScopeParticipating: 'All participating users',
       participantScopeCourse: 'All assessment course participants',
       adjustmentsTitle: 'Adjust Points',
@@ -3023,6 +3029,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Please select an instance if you want to make a point correction for a single quiz question.',
       errorParticipantRequired:
         'Please select a participant if you want to make a point correction for a single person.',
+      errorParticipantsRequired:
+        'Please select at least one participant if you want to make a point correction for multiple people.',
       errorLecturerReasonRequired:
         'Please provide a note for this correction that allows you to reference it at a later time.',
       errorStudentReasonRequired:

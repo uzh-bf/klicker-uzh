@@ -30,12 +30,15 @@ function PreviousPointCorrectionList({
 }: {
   corrections: (Omit<
     PointCorrection,
-    'correctedBy' | 'instance' | 'liveQuiz' | 'participant'
+    'correctedBy' | 'instance' | 'liveQuiz' | 'participant' | 'participants'
   > & {
     correctedBy?: Pick<User, 'id' | 'shortname'> | null
     instance?: { elementData?: { name?: string } } | null
     liveQuiz?: { id: string; name: string } | null
     participant?: { id: string; email?: string | null; username: string } | null
+    participants?:
+      | { id: string; email?: string | null; username: string }[]
+      | null
   })[]
 }) {
   const t = useTranslations()
@@ -79,6 +82,9 @@ function PreviousPointCorrectionList({
           correction.participant?.email ??
           correction.participant?.username ??
           t('manage.pointCorrections.historyScopeParticipantUnknown')
+        const participantEmails = correction.participants?.map(
+          (p) => p.email ?? p.username
+        )
 
         const instanceName = correction.instance?.elementData?.name?.trim()
 
@@ -87,16 +93,24 @@ function PreviousPointCorrectionList({
             ? t('manage.pointCorrections.historyScopeSingle', {
                 participant: participantEmail,
               })
-            : correction.type === PointCorrectionType.Participating
-              ? t(
-                  correction.instance
-                    ? 'manage.pointCorrections.historyScopeParticipatingInstance'
-                    : 'manage.pointCorrections.historyScopeParticipatingQuiz',
-                  { name: instanceName ?? '' }
-                )
-              : correction.type === PointCorrectionType.AllCourse
-                ? t('manage.pointCorrections.historyScopeCourse')
-                : null,
+            : correction.type === PointCorrectionType.Multiple
+              ? t('manage.pointCorrections.historyScopeMultiple', {
+                  participants: participantEmails
+                    ? participantEmails.join(', ')
+                    : t(
+                        'manage.pointCorrections.historyScopeParticipantsUnknown'
+                      ),
+                })
+              : correction.type === PointCorrectionType.Participating
+                ? t(
+                    correction.instance
+                      ? 'manage.pointCorrections.historyScopeParticipatingInstance'
+                      : 'manage.pointCorrections.historyScopeParticipatingQuiz',
+                    { name: instanceName ?? '' }
+                  )
+                : correction.type === PointCorrectionType.AllCourse
+                  ? t('manage.pointCorrections.historyScopeCourse')
+                  : null,
         ].filter((entry): entry is string => Boolean(entry))
 
         const scopeDisplay =
