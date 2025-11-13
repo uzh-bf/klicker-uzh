@@ -59,7 +59,7 @@ jobs:
         with:
           context: .
           file: apps/auth/Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/arm64
           no-cache: true
