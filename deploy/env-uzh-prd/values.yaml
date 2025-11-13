@@ -1,4 +1,4 @@
-dfDomain: prd.df-app.ch
+dfDomain: df-app.ch
 
 heartbeats:
   dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
@@ -420,7 +420,7 @@ backendGraphql:
   debug: true
   apiDomain: backend-sls.klicker.prd.df-app.ch
   appManageDomain: manage.klicker.prd.df-app.ch
-  appStudentDomain: assessment.klicker.prd.df-app.ch
+  appStudentDomain: pwa.klicker.prd.df-app.ch
   appControlDomain: control.klicker.prd.df-app.ch
   cookieDomain: .klicker.prd.df-app.ch
 
@@ -433,15 +433,15 @@ backendGraphql:
         paths:
           - path: /
             pathType: ImplementationSpecific
-      - host: backend-sls.klicker.prd.df-app.ch
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
+      # - host: backend-sls.klicker.prd.df-app.ch
+      #   paths:
+      #     - path: /
+      #       pathType: ImplementationSpecific
     tls:
       - secretName: klicker-backend-graphql-tls
         hosts:
           - api.klicker.prd.df-app.ch
-          - backend-sls.klicker.prd.df-app.ch
+          # - backend-sls.klicker.prd.df-app.ch
 
   strategy:
     type: Recreate
@@ -738,12 +738,6 @@ assessment:
     appStudentDomain: assessment.klicker.prd.df-app.ch
     appControlDomain: control.klicker.prd.df-app.ch
     cookieDomain: .klicker.prd.df-app.ch
-
-    # Enable dual Redis mode for parallel testing
-    dualRedisMode: true
-
-    # Preserve Redis data after quiz ends for comparison
-    preserveRedisForComparison: true
 
     ingress:
       className: haproxy
