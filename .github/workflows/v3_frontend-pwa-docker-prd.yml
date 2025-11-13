@@ -21,7 +21,7 @@ env:
 jobs:
   build-arm:
     if: github.event.pull_request.draft == false
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write

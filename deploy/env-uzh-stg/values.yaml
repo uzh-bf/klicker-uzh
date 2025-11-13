@@ -1,4 +1,4 @@
-dfDomain: stg.df-app.ch
+dfDomain: df-app.ch
 
 heartbeats:
   dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
@@ -669,7 +669,7 @@ assessment:
     appControlSubdomain: control
 
     debug: true
-    apiDomain: api.klicker.stg.df-app.ch
+    apiDomain: assessment-api.klicker.stg.df-app.ch
     appManageDomain: manage.klicker.stg.df-app.ch
     appStudentDomain: assessment.klicker.stg.df-app.ch
     appControlDomain: control.klicker.stg.df-app.ch
