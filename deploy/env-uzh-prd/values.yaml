@@ -5,7 +5,7 @@ heartbeats:
 
 global:
   appOrigins:
-    api: 'https://backend-sls.klicker.prd.df-app.ch'
+    api: 'https://api.klicker.prd.df-app.ch'
     auth: 'https://auth.klicker.prd.df-app.ch'
     lti: 'https://lti.klicker.prd.df-app.ch'
     pwa: 'https://pwa.klicker.prd.df-app.ch'
@@ -733,7 +733,7 @@ assessment:
     appControlSubdomain: control
 
     debug: true
-    apiDomain: backend-sls.klicker.prd.df-app.ch
+    apiDomain: api.klicker.prd.df-app.ch
     appManageDomain: manage.klicker.prd.df-app.ch
     appStudentDomain: assessment.klicker.prd.df-app.ch
     appControlDomain: control.klicker.prd.df-app.ch
