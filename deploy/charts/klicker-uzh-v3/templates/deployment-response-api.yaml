@@ -6,6 +6,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: response-api
 spec:
+  revisionHistoryLimit: 5
   {{- with .Values.responseApi.strategy }}
   strategy:
     {{- toYaml . | nindent 4 }}
@@ -90,6 +91,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: response-api-assessment
 spec:
+  revisionHistoryLimit: 5
   {{- with .Values.assessment.responseApi.strategy }}
   strategy:
     {{- toYaml . | nindent 4 }}

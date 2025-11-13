@@ -6,6 +6,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: frontend-assessment
 spec:
+  revisionHistoryLimit: 5
   {{- with .Values.assessment.frontendPWA.strategy }}
   strategy:
     {{- toYaml . | nindent 4 }}
@@ -29,7 +30,6 @@ spec:
         {{- include "chart.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: frontend-assessment
     spec:
-      revisionHistoryLimit: 5
       priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.assessment.frontendPWA.priorityClassName }}
       {{- with .Values.assessment.frontendPWA.imagePullSecrets }}
       imagePullSecrets:
@@ -85,6 +85,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: backend-assessment
 spec:
+  revisionHistoryLimit: 5
   {{- with .Values.assessment.backendGraphql.strategy }}
   strategy:
     {{- toYaml . | nindent 4 }}

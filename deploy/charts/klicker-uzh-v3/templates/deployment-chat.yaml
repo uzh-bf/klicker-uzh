@@ -6,6 +6,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: chat
 spec:
+  revisionHistoryLimit: 5
   {{- with .Values.chat.strategy }}
   strategy:
     {{- toYaml . | nindent 4 }}

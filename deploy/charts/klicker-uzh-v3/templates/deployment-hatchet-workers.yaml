@@ -6,6 +6,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: hatchet-worker-general
 spec:
+  revisionHistoryLimit: 5
   {{- with .Values.hatchet.workers.general.strategy }}
   strategy:
     {{- toYaml . | nindent 4 }}
@@ -83,6 +84,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: hatchet-worker-response-processor
 spec:
+  revisionHistoryLimit: 5
   {{- with .Values.hatchet.workers.responseProcessor.strategy }}
   strategy:
     {{- toYaml . | nindent 4 }}
@@ -160,6 +162,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: hatchet-worker-response-processor-assessment
 spec:
+  revisionHistoryLimit: 5
   {{- with .Values.hatchet.workers.responseProcessorAssessment.strategy }}
   strategy:
     {{- toYaml . | nindent 4 }}

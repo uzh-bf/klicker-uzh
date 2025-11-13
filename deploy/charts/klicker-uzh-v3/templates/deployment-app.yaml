@@ -6,6 +6,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: auth
 spec:
+  revisionHistoryLimit: 5
   {{- with .Values.auth.strategy }}
   strategy:
     {{- toYaml . | nindent 4 }}
@@ -29,7 +30,6 @@ spec:
         {{- include "chart.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: auth
     spec:
-      revisionHistoryLimit: 5
       priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.auth.priorityClassName }}
       {{- with .Values.auth.imagePullSecrets }}
       imagePullSecrets:
@@ -85,6 +85,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: frontend-pwa
 spec:
+  revisionHistoryLimit: 5
   {{- with .Values.frontendPWA.strategy }}
   strategy:
     {{- toYaml . | nindent 4 }}
@@ -163,6 +164,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: frontend-manage
 spec:
+  revisionHistoryLimit: 5
   {{- with .Values.frontendManage.strategy }}
   strategy:
     {{- toYaml . | nindent 4 }}
@@ -241,6 +243,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: frontend-control
 spec:
+  revisionHistoryLimit: 5
   {{- with .Values.frontendControl.strategy }}
   strategy:
     {{- toYaml . | nindent 4 }}
@@ -319,6 +322,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: backend-graphql
 spec:
+  revisionHistoryLimit: 5
   {{- with .Values.backendGraphql.strategy }}
   strategy:
     {{- toYaml . | nindent 4 }}
@@ -401,6 +405,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: olat-api
 spec:
+  revisionHistoryLimit: 5
   {{- with .Values.olatApi.strategy }}
   strategy:
     {{- toYaml . | nindent 4 }}
@@ -480,6 +485,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: lti
 spec:
+  revisionHistoryLimit: 5
   {{- with .Values.lti.strategy }}
   strategy:
     {{- toYaml . | nindent 4 }}
