@@ -418,7 +418,7 @@ backendGraphql:
   appControlSubdomain: control
 
   debug: true
-  apiDomain: backend-sls.klicker.prd.df-app.ch
+  apiDomain: api.klicker.prd.df-app.ch
   appManageDomain: manage.klicker.prd.df-app.ch
   appStudentDomain: pwa.klicker.prd.df-app.ch
   appControlDomain: control.klicker.prd.df-app.ch

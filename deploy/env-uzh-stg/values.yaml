@@ -5,7 +5,7 @@ heartbeats:
 
 global:
   appOrigins:
-    api: 'https://backend-sls.klicker.stg.df-app.ch'
+    api: 'https://api.klicker.stg.df-app.ch'
     auth: 'https://auth.klicker.stg.df-app.ch'
     lti: 'https://lti.klicker.stg.df-app.ch'
     pwa: 'https://pwa.klicker.stg.df-app.ch'
@@ -380,7 +380,7 @@ backendGraphql:
   appControlSubdomain: control
 
   debug: true
-  apiDomain: backend-sls.klicker.stg.df-app.ch
+  apiDomain: api.klicker.stg.df-app.ch
   appManageDomain: manage.klicker.stg.df-app.ch
   appStudentDomain: pwa.klicker.stg.df-app.ch
   appControlDomain: control.klicker.stg.df-app.ch
@@ -669,7 +669,7 @@ assessment:
     appControlSubdomain: control
 
     debug: true
-    apiDomain: backend-sls.klicker.stg.df-app.ch
+    apiDomain: api.klicker.stg.df-app.ch
     appManageDomain: manage.klicker.stg.df-app.ch
     appStudentDomain: assessment.klicker.stg.df-app.ch
     appControlDomain: control.klicker.stg.df-app.ch

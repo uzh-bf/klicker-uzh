@@ -13,7 +13,7 @@
 # Features:
 # - Service type and environment parameter validation
 # - Support for backing up both services with a single command
-# - Automatic CONFIG variable setting for Doppler integration
+# - Automatic CONFIG variable setting for Infisical integration
 # - Delegation to appropriate service-specific scripts
 # - Comprehensive error handling and logging
 # - Help and usage information
@@ -97,8 +97,8 @@ DESCRIPTION:
     environment parameters and delegates to the appropriate dump script.
 
     For all environments:
-    - Uses Doppler for secrets management and configuration
-    - Sets appropriate CONFIG environment variable for Doppler integration
+    - Uses Infisical for secrets management and configuration
+    - Sets appropriate CONFIG environment variable for Infisical integration
     - Calls dump-{service}.sh {environment} scripts
 
     The 'both' service type will execute database and main Redis dumps
@@ -107,12 +107,12 @@ DESCRIPTION:
     (main and assessment) sequentially.
 
 CONFIGURATION:
-    Environment variables are loaded via Doppler for each environment:
+    Environment variables are loaded via Infisical for each environment:
     - dev: Development configuration
     - stg: Staging configuration  
     - prd: Production configuration
 
-    Required environment variables (loaded via Doppler):
+    Required environment variables (loaded via Infisical):
     - BACKUP_ENCRYPTION_KEY: GPG passphrase for dump encryption
     - DATABASE_* or DATABASE_URL: Database connection parameters
     - REDIS_* or REDIS_URL: Redis connection parameters

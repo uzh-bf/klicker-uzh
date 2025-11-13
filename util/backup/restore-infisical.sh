@@ -12,7 +12,7 @@
 #
 # Features:
 # - Service type and environment parameter validation
-# - Automatic CONFIG variable setting for Doppler integration
+# - Automatic CONFIG variable setting for Infisical integration
 # - Delegation to appropriate environment-specific scripts
 # - Comprehensive error handling and logging
 # - Help and usage information
@@ -76,7 +76,7 @@ SERVICES:
 
 ENVIRONMENTS:
     dev           Development environment (local services)
-    stg           Staging environment (uses Doppler for configuration)
+    stg           Staging environment (uses Infisical for configuration)
 
 EXAMPLES:
     $0 db dev             # Restore database in development environment
@@ -101,8 +101,8 @@ DESCRIPTION:
     - Calls restore-{service}.sh dev
 
     For staging (stg):
-    - Uses Doppler for secrets management
-    - Sets CONFIG=stg for Doppler integration
+    - Uses Infisical for secrets management
+    - Sets CONFIG=stg for Infisical integration
     - Calls restore-{service}.sh stg
 
 PRODUCTION SAFETY:
@@ -185,9 +185,9 @@ restore_service() {
             ;;
         "stg")
             log_info "Using staging environment configuration"
-            # Set CONFIG for Doppler integration
+            # Set CONFIG for Infisical integration
             export CONFIG="stg"
-            log_info "Set CONFIG=$CONFIG for Doppler integration"
+            log_info "Set CONFIG=$CONFIG for Infisical integration"
             ;;
         *)
             error_exit "Unsupported environment: $environment"
