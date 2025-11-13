@@ -21,7 +21,7 @@ env:
 jobs:
   build-arm:
     if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
       packages: write
@@ -62,6 +62,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/arm64
+          no-cache: true
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             NEXT_PUBLIC_ENV=${{ startsWith(github.ref, 'refs/tags/') && 'production' || 'staging' }}
