@@ -29,6 +29,7 @@ spec:
         {{- include "chart.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: hatchet-worker-general
     spec:
+      revisionHistoryLimit: 5
       priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.hatchet.workers.general.priorityClassName }}
       {{- with .Values.hatchet.workers.general.imagePullSecrets }}
       imagePullSecrets:

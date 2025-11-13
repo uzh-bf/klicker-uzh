@@ -29,6 +29,7 @@ spec:
         {{- include "chart.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: response-api
     spec:
+      revisionHistoryLimit: 5
       priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.responseApi.priorityClassName }}
       {{- with .Values.responseApi.imagePullSecrets }}
       imagePullSecrets:

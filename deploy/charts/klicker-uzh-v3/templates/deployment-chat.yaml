@@ -29,6 +29,7 @@ spec:
         {{- include "chart.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: chat
     spec:
+      revisionHistoryLimit: 5
       priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.chat.priorityClassName }}
       {{- with .Values.chat.imagePullSecrets }}
       imagePullSecrets:
@@ -55,11 +56,11 @@ spec:
                 name: {{ include "chart.fullname" . }}-secret-chat
           livenessProbe:
             httpGet:
-              path: /
+              path: /api/health
               port: http
           readinessProbe:
             httpGet:
-              path: /
+              path: /api/health
               port: http
           resources:
             {{- toYaml .Values.chat.resources | nindent 12 }}

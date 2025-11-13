@@ -29,6 +29,7 @@ spec:
         {{- include "chart.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: auth
     spec:
+      revisionHistoryLimit: 5
       priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.auth.priorityClassName }}
       {{- with .Values.auth.imagePullSecrets }}
       imagePullSecrets:
