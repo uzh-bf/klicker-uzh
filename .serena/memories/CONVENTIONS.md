@@ -39,7 +39,7 @@
 
 **Required:**
 - Tailwind CSS exclusively (zero inline styles)
-- UZH Design System components (`@uzh-bf/design-system`)
+- Custom Design System components (`@uzh-bf/design-system`)
 - `tailwind-merge` (twMerge) for dynamic classes
 - Mobile-first responsive design (test all viewports)
 

@@ -5,8 +5,8 @@
 ### Prerequisites
 
 **Required:**
-- Node.js 20.19.4 (Volta recommended for version management)
-- pnpm 10.15.0
+- Node.js (LTS version via Volta - check .volta in package.json)
+- pnpm (version specified in package.json)
 - Docker Desktop
 - Git
 

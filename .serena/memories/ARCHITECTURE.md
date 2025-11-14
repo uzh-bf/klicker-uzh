@@ -40,7 +40,7 @@ KlickerUZH is a microservices-based educational platform built as a Turborepo mo
 - `lti` - LTI 1.3 for LMS integration (Moodle, OpenOLAT)
 - `olat-api` - REST API for OpenOLAT
 - `analytics` - Analytics processing (Python)
-- `docs` - Docusaurus documentation site
+- `docs` - Docusaurus documentation site + main landing page (www.klicker.uzh.ch)
 
 ### Packages (13 packages in `/packages`)
 
@@ -102,13 +102,13 @@ KlickerUZH is a microservices-based educational platform built as a Turborepo mo
 - Faster builds with Turbo caching
 - Consistent quality standards
 
-### Why Next.js 15?
+### Why Next.js?
 
 **Decision:** Next.js for all frontends
 **Rationale:**
 - Full-stack framework (API routes + frontend)
 - Server-side rendering for better SEO and performance
-- App Router for modern React patterns
+- Pages Router (primary), App Router (chat app only)
 - Built-in optimizations (images, fonts, code splitting)
 - Excellent TypeScript support
 
@@ -195,7 +195,7 @@ KlickerUZH is a microservices-based educational platform built as a Turborepo mo
 
 ## Database Design
 
-**Technology:** PostgreSQL 15 + Prisma 6
+**Technology:** PostgreSQL + Prisma ORM
 
 **Schema organization:**
 - Modular: Split across 12 domain files
@@ -264,19 +264,6 @@ KlickerUZH is a microservices-based educational platform built as a Turborepo mo
 - **Development:** Local with Docker Compose
 - **QA:** Kubernetes cluster (staging)
 - **Production:** Kubernetes cluster (live)
-
-## Technology Versions (Critical for Compatibility)
-
-| Technology | Version | Why This Version |
-|------------|---------|------------------|
-| Node.js | 20.19.4 | LTS, Volta managed |
-| pnpm | 10.15.0 | Faster than npm/yarn |
-| Next.js | 15.3.4 | Latest with App Router |
-| React | 19.1.0 | Latest stable |
-| TypeScript | 5.6.3 | Latest stable |
-| Prisma | 6.16.1 | Latest with Postgres adapter |
-| PostgreSQL | 15 | Stable, production-ready |
-| Redis | 7 | Latest stable |
 
 ## Scalability Considerations
 

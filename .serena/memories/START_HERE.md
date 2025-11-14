@@ -7,23 +7,23 @@ Open-source audience interaction platform for universities. Real-time polling, q
 ## Stack at a Glance
 
 **Core:**
-- Next.js 15.3.4 + React 19.1.0 + TypeScript 5.6.3 (strict mode)
-- Prisma 6.16.1 + PostgreSQL 15
-- GraphQL (Pothos 4.3.0 for schema, Yoga 3.9.1 for server)
-- Node 20.19.4 (managed via Volta)
-- pnpm 10.15.0 workspaces
+- Next.js + React + TypeScript (strict mode)
+- Prisma ORM + PostgreSQL
+- GraphQL (Pothos for code-first schema, Yoga for server)
+- Node.js LTS (managed via Volta)
+- pnpm workspaces
 
 **Infrastructure:**
-- Turborepo 2.5.6 monorepo
+- Turborepo monorepo
 - Docker + Kubernetes with Helm
-- Redis 7 (3 instances: exec, cache, assessment)
-- Hatchet 1.9.4 for distributed workflows
+- Redis (3 instances: exec, cache, assessment)
+- Hatchet for distributed workflows
 
 **Frontend:**
-- Next.js App Router (all frontends)
-- Apollo Client 3.13.8 (GraphQL state)
-- Tailwind CSS 4.1.11 + UZH Design System 4.1.6
-- Cypress 15.2.0 (E2E) + Vitest 3.2.4 (unit)
+- Next.js Pages Router (most apps), App Router (chat app only)
+- Apollo Client (GraphQL state management)
+- Tailwind CSS + custom Design System (@uzh-bf/design-system)
+- Cypress (E2E) + Vitest (unit)
 
 ## Architecture
 
