@@ -21,7 +21,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/hatchet-worker-response-processor
+  IMAGE_NAME: ${{ github.repository }}/hatchet-worker-response-processor-prd
 
 jobs:
   build-arm:

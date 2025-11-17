@@ -19,7 +19,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/chat
+  IMAGE_NAME: ${{ github.repository }}/chat-prd
 
 jobs:
   build-arm:

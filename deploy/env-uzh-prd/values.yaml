@@ -23,7 +23,7 @@ hatchet:
       replicaCount: 2
       priorityClassName: production-workload
       image:
-        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-prd-arm
         pullPolicy: Always
         tag: v3-clean-argocd
       affinity:
@@ -56,7 +56,7 @@ hatchet:
       replicaCount: 4
       priorityClassName: production-workload
       image:
-        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-prd-arm
         pullPolicy: Always
         tag: v3-clean-argocd
       affinity:
@@ -89,7 +89,7 @@ hatchet:
       replicaCount: 4
       priorityClassName: production-workload
       image:
-        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-prd-arm
         pullPolicy: Always
         tag: v3-clean-argocd
       affinity:
@@ -153,7 +153,7 @@ auth:
             topologyKey: kubernetes.io/hostname
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm-prd
+    repository: ghcr.io/uzh-bf/klicker-uzh/auth-prd-arm
     pullPolicy: Always
     tag: v3-clean-argocd
 
@@ -204,7 +204,7 @@ chat:
                     - chat
             topologyKey: kubernetes.io/hostname
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm-prd
+    repository: ghcr.io/uzh-bf/klicker-uzh/chat-prd-arm
     pullPolicy: Always
     tag: v3-clean-argocd
 
@@ -256,7 +256,7 @@ frontendPWA:
             topologyKey: kubernetes.io/hostname
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm-prd
+    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-prd-arm
     pullPolicy: Always
     tag: v3-clean-argocd
 
@@ -307,7 +307,7 @@ frontendManage:
             topologyKey: kubernetes.io/hostname
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm-prd
+    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-prd-arm
     pullPolicy: Always
     tag: v3-clean-argocd
 
@@ -342,7 +342,7 @@ frontendControl:
   replicaCount: 1
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm-prd
+    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-prd-arm
     pullPolicy: Always
     tag: v3-clean-argocd
 
@@ -409,7 +409,7 @@ backendGraphql:
             topologyKey: kubernetes.io/hostname
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
+    repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-prd-arm
     pullPolicy: Always
     tag: v3-clean-argocd
 
@@ -460,7 +460,7 @@ olatApi:
   replicaCount: 1
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
+    repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-prd-arm
     pullPolicy: Always
     tag: v3-clean-argocd
 
@@ -531,7 +531,7 @@ lti:
   cookieDomain: .klicker.prd.df-app.ch
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
+    repository: ghcr.io/uzh-bf/klicker-uzh/lti-prd-arm
     pullPolicy: Always
     tag: v3-clean-argocd
 
@@ -557,7 +557,7 @@ responseApi:
   replicaCount: 4
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
+    repository: ghcr.io/uzh-bf/klicker-uzh/response-api-prd-arm
     tag: v3-clean-argocd
     pullPolicy: Always
 
@@ -649,7 +649,7 @@ assessment:
         effect: NoSchedule
 
     image:
-      repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm-prd
+      repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-prd-arm
       pullPolicy: Always
       tag: v3-clean-argocd
 
@@ -724,7 +724,7 @@ assessment:
         effect: NoSchedule
 
     image:
-      repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
+      repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-prd-arm
       pullPolicy: Always
       tag: v3-clean-argocd
 
@@ -801,7 +801,7 @@ assessment:
         effect: NoSchedule
 
     image:
-      repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
+      repository: ghcr.io/uzh-bf/klicker-uzh/response-api-prd-arm
       pullPolicy: Always
       tag: v3-clean-argocd
 

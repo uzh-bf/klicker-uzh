@@ -19,7 +19,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/frontend-pwa
+  IMAGE_NAME: ${{ github.repository }}/frontend-pwa-prd
 
 jobs:
   build-arm:

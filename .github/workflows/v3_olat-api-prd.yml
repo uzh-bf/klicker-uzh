@@ -19,7 +19,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/olat-api-arm
+  IMAGE_NAME: ${{ github.repository }}/olat-api-prd
 
 jobs:
   build-arm:

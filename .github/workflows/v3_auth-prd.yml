@@ -19,7 +19,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/auth
+  IMAGE_NAME: ${{ github.repository }}/auth-prd
 
 jobs:
   build-arm:

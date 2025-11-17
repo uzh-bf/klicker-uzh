@@ -19,7 +19,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/frontend-control
+  IMAGE_NAME: ${{ github.repository }}/frontend-control-prd
 
 jobs:
   build-arm:
