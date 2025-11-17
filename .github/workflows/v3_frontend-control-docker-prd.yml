@@ -2,7 +2,10 @@ name: Build Docker image for frontend-control (prd)
 
 on:
   push:
-    tags: ['v*.*.*']
+    # tags: ['v*.*.*']
+    branches:
+      - 'v3'
+      - 'v3*'
   pull_request:
     # branches: [ "v3" ]
     types: [opened, synchronize, reopened, ready_for_review]
