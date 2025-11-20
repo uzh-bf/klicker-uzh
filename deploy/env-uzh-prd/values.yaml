@@ -14,6 +14,9 @@ global:
     assessmentApi: 'https://assessment-api.klicker.prd.df-app.ch'
     assessmentPwa: 'https://assessment.klicker.prd.df-app.ch'
 
+podAnnotations:
+  reloader.stakater.com/auto: 'true'
+
 hatchet:
   client:
     tlsStrategy: 'none'

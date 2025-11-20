@@ -5,6 +5,8 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: response-api
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   revisionHistoryLimit: 5
   {{- with .Values.responseApi.strategy }}
