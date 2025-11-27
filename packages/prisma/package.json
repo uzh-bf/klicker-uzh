@@ -38,7 +38,7 @@
     "prisma:deploy:prod": "../../util/_run_with_infisical.sh --env prd pnpm run prisma:deploy:raw",
     "prisma:deploy:qa": "../../util/_run_with_infisical.sh --env stg pnpm run prisma:deploy:raw",
     "prisma:deploy:raw": "prisma migrate deploy",
-    "prisma:diff": "../../util/_run_with_infisical.sh --env dev bash -c \"prisma migrate diff --from-url $PROD_DATABASE_URL --to-migrations src/prisma/migrations --shadow-database-url postgres://klicker-prod:klicker@localhost:5432/shadow\"",
+    "prisma:diff": "../../util/_run_with_infisical.sh --env prd bash -c \"prisma migrate diff --from-url \\$DATABASE_URL --to-migrations src/prisma/migrations --shadow-database-url postgres://klicker-prod:klicker@localhost:5432/shadow\"",
     "prisma:migrate": "../../util/_run_with_infisical.sh --env dev prisma migrate dev",
     "prisma:migrate:create": "../../util/_run_with_infisical.sh --env dev prisma migrate dev --create-only",
     "prisma:push": "../../util/_run_with_infisical.sh --env dev pnpm run prisma:push:raw",
