@@ -20,7 +20,7 @@ podAnnotations:
 hatchet:
   client:
     tlsStrategy: 'none'
-    apiUrl: 'http://hatchet-qa-api:8080'
+    apiUrl: 'http://app-klicker-uzh-hatchet-api.prd-hatchet.svc.cluster.local:8080'
   workers:
     general:
       replicaCount: 2
@@ -28,7 +28,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-prd-arm
         pullPolicy: Always
-        tag: v3-clean-argocd
+        tag: v3.4.0-alpha.41
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -61,7 +61,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-prd-arm
         pullPolicy: Always
-        tag: v3-clean-argocd
+        tag: v3.4.0-alpha.41
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -94,7 +94,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-prd-arm
         pullPolicy: Always
-        tag: v3-clean-argocd
+        tag: v3.4.0-alpha.41
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -158,7 +158,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-prd-arm
     pullPolicy: Always
-    tag: v3-clean-argocd
+    tag: v3.4.0-alpha.41
 
   ingress:
     annotations:
@@ -209,7 +209,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-prd-arm
     pullPolicy: Always
-    tag: v3-clean-argocd
+    tag: v3.4.0-alpha.41
 
   ingress:
     annotations:
@@ -261,7 +261,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-prd-arm
     pullPolicy: Always
-    tag: v3-clean-argocd
+    tag: v3.4.0-alpha.41
 
   ingress:
     className: haproxy
@@ -312,7 +312,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-prd-arm
     pullPolicy: Always
-    tag: v3-clean-argocd
+    tag: v3.4.0-alpha.41
 
   ingress:
     className: haproxy
@@ -347,7 +347,7 @@ frontendControl:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-prd-arm
     pullPolicy: Always
-    tag: v3-clean-argocd
+    tag: v3.4.0-alpha.41
 
   autoscaling:
     enabled: false
@@ -414,7 +414,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-prd-arm
     pullPolicy: Always
-    tag: v3-clean-argocd
+    tag: v3.4.0-alpha.41
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -465,7 +465,7 @@ olatApi:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-prd-arm
     pullPolicy: Always
-    tag: v3-clean-argocd
+    tag: v3.4.0-alpha.41
 
   autoscaling:
     enabled: false
@@ -536,7 +536,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-prd-arm
     pullPolicy: Always
-    tag: v3-clean-argocd
+    tag: v3.4.0-alpha.41
 
   ingress:
     className: haproxy
@@ -561,7 +561,7 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-prd-arm
-    tag: v3-clean-argocd
+    tag: v3.4.0-alpha.41
     pullPolicy: Always
 
   autoscaling:
@@ -654,7 +654,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-prd-arm
       pullPolicy: Always
-      tag: v3-clean-argocd
+      tag: v3.4.0-alpha.41
 
     ingress:
       className: haproxy
@@ -729,7 +729,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-prd-arm
       pullPolicy: Always
-      tag: v3-clean-argocd
+      tag: v3.4.0-alpha.41
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -806,7 +806,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-prd-arm
       pullPolicy: Always
-      tag: v3-clean-argocd
+      tag: v3.4.0-alpha.41
 
     ingress:
       className: haproxy
