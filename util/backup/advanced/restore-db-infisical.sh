@@ -131,12 +131,19 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+ROOT_DIR=$(git rev-parse --show-toplevel)
+if [[ "$ENVIRONMENT" == "prd" ]]; then
+    CONFIG_FILE="$ROOT_DIR/.infisical_prd.json"
+else
+    CONFIG_FILE="$ROOT_DIR/.infisical_stg.json"
+fi
+PROJECT_ID=$(jq -r '.workspaceId' "$CONFIG_FILE")
 
 # =============================================================================
 # INFISICAL DELEGATION
 # =============================================================================
-export BACKUP_ENCRYPTION_KEY=$(infisical secrets get BACKUP_ENCRYPTION_KEY --env="$ENVIRONMENT" --plain)
-export DATABASE_URL=$(infisical secrets get DIRECT_DATABASE_URL --env="$ENVIRONMENT" --plain)
+export BACKUP_ENCRYPTION_KEY=$(infisical secrets get BACKUP_ENCRYPTION_KEY --env="$ENVIRONMENT" --projectId="$PROJECT_ID" --plain)
+export DATABASE_URL=$(infisical secrets get DIRECT_DATABASE_URL --env="$ENVIRONMENT" --projectId="$PROJECT_ID" --plain)
 
 # =============================================================================
 # SOURCE UTILITIES

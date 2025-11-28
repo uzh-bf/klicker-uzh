@@ -67,14 +67,16 @@ if [[ ${#ARGS[@]} -eq 0 ]]; then
 fi
 
 # --- Select Infisical project ---
+ROOT_DIR=$(git rev-parse --show-toplevel)
 if [[ "$ENV" == "prd" ]]; then
-    PROJECT_ID="742d8433-d76f-414f-aeeb-73a47b8edbbc"
+    CONFIG_FILE="$ROOT_DIR/.infisical_prd.json"
 else
-    PROJECT_ID="4766eb9c-c0a2-413c-9673-6cffc42b541c"
+    CONFIG_FILE="$ROOT_DIR/.infisical_stg.json"
 fi
+PROJECT_ID=$(jq -r '.workspaceId' "$CONFIG_FILE")
 
 echo "🔐 Running in Infisical environment: $ENV (Project: $PROJECT_ID)"
 echo "▶️ Command: ${ARGS[*]}"
 
 # --- Execute command with secrets ---
-infisical run --env="$ENV" --projectId="$PROJECT_ID" -- "${ARGS[@]}"
+infisical run --watch --env="$ENV" --project-config-dir="$CONFIG_FILE" --projectId="$PROJECT_ID" -- "${ARGS[@]}"

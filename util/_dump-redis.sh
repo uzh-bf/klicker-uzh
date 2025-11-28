@@ -21,6 +21,14 @@ if [[ ! " ${VALID_ENVS[*]} " =~ " ${ENV} " ]]; then
   exit 1
 fi
 
+ROOT_DIR=$(git rev-parse --show-toplevel)
+if [[ "$ENV" == "prd" ]]; then
+    CONFIG_FILE="$ROOT_DIR/.infisical_prd.json"
+else
+    CONFIG_FILE="$ROOT_DIR/.infisical_stg.json"
+fi
+PROJECT_ID=$(jq -r '.workspaceId' "$CONFIG_FILE")
+
 MODE=${2:-default}
 if [[ ! " ${VALID_MODES[*]} " =~ " ${MODE} " ]]; then
   echo "❌ Invalid mode: ${MODE}"
@@ -48,5 +56,4 @@ case "$MODE" in
     ;;
 esac
 
-infisical run --env $ENV -- env HOST_VAR="$HOST_VAR" PORT_VAR="$PORT_VAR" PASS_VAR="$PASS_VAR" \ 
-                            sh -c './upstash-redis-dump -host "${!HOST_VAR}" -port "${!PORT_VAR}" -pass "${!PASS_VAR}" -tls > redis.dump'
+env HOST_VAR="$HOST_VAR" PORT_VAR="$PORT_VAR" PASS_VAR="$PASS_VAR" infisical run --watch --env $ENV --project-config-dir="$CONFIG_FILE" --projectId="$PROJECT_ID" -- sh -c './upstash-redis-dump -host "${!HOST_VAR}" -port "${!PORT_VAR}" -pass "${!PASS_VAR}" -tls > redis.dump'

@@ -67,6 +67,13 @@ case "$ENVIRONMENT" in
         exit 1
         ;;
 esac
+ROOT_DIR=$(git rev-parse --show-toplevel)
+if [[ "$ENVIRONMENT" == "prd" ]]; then
+    CONFIG_FILE="$ROOT_DIR/.infisical_prd.json"
+else
+    CONFIG_FILE="$ROOT_DIR/.infisical_stg.json"
+fi
+PROJECT_ID=$(jq -r '.workspaceId' "$CONFIG_FILE")
 
 # -------------------------------------------------------------------
 # CONFIG
@@ -74,7 +81,7 @@ esac
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 REPO_ROOT="$( cd "$SCRIPT_DIR/../../.." && pwd )"
 
-BACKUP_ENCRYPTION_KEY="$(infisical secrets get BACKUP_ENCRYPTION_KEY --env=$ENVIRONMENT --plain)"
+BACKUP_ENCRYPTION_KEY="$(infisical secrets get BACKUP_ENCRYPTION_KEY --env=$ENVIRONMENT --projectId="$PROJECT_ID" --plain)"
 
 DUMP_DIR="$REPO_ROOT/util/backup/dumps/blob/$ACCOUNT_NAME/container/$CONTAINER_NAME"
 ENCRYPTED_FILE="$DUMP_DIR/latest"
