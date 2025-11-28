@@ -39,7 +39,7 @@
     "build:test": "pnpm run build",
     "check": "tsc --noEmit",
     "dev": "pnpm dev:ts",
-    "dev:doppler": "doppler run --config dev -- pnpm run dev",
+    "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",
     "dev:offline": "pnpm run dev",
     "dev:ts": "cross-env NODE_ENV=development tsx --watch src/index.ts",
     "start": "node dist/index.js",

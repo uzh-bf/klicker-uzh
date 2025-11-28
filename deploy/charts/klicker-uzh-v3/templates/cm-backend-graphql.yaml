@@ -1,0 +1,25 @@
+{{- $fullName := include "chart.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-backend-graphql
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  API_DOMAIN: {{ .Values.backendGraphql.apiDomain | quote }}
+  APP_MANAGE_DOMAIN: {{ .Values.backendGraphql.appManageDomain | quote }}
+  APP_STUDENT_DOMAIN: {{ .Values.backendGraphql.appStudentDomain | quote }}
+  APP_CONTROL_DOMAIN: {{ .Values.backendGraphql.appControlDomain | quote }}
+  APP_MANAGE_SUBDOMAIN: {{ .Values.backendGraphql.appManageSubdomain | quote }}
+  APP_STUDENT_SUBDOMAIN: {{ .Values.backendGraphql.appStudentSubdomain | quote }}
+  APP_CONTROL_SUBDOMAIN: {{ .Values.backendGraphql.appControlSubdomain | quote }}
+  COOKIE_DOMAIN: {{ .Values.backendGraphql.cookieDomain | quote }}
+  {{- if .Values.backendGraphql.debug }}
+  DEBUG: {{ .Values.backendGraphql.debug | quote }}
+  {{ end }}
+  {{- if .Values.heartbeats.dailyGroupScores }}
+  HEARTBEAT_DAILY_GROUP_SCORES: {{ .Values.heartbeats.dailyGroupScores | quote }}
+  {{ end }}
+  HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
+  # Deprecated - kept for backward compatibility during transition
+  HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}

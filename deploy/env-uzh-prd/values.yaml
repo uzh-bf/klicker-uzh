@@ -1,0 +1,834 @@
+dfDomain: df-app.ch
+
+heartbeats:
+  dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
+
+global:
+  appOrigins:
+    api: 'https://api.klicker.prd.df-app.ch'
+    auth: 'https://auth.klicker.prd.df-app.ch'
+    lti: 'https://lti.klicker.prd.df-app.ch'
+    pwa: 'https://pwa.klicker.prd.df-app.ch'
+    manage: 'https://manage.klicker.prd.df-app.ch'
+    control: 'https://control.klicker.prd.df-app.ch'
+    assessmentApi: 'https://assessment-api.klicker.prd.df-app.ch'
+    assessmentPwa: 'https://assessment.klicker.prd.df-app.ch'
+
+podAnnotations:
+  reloader.stakater.com/auto: 'true'
+
+hatchet:
+  client:
+    tlsStrategy: 'none'
+    apiUrl: 'http://app-klicker-uzh-hatchet-api.prd-hatchet.svc.cluster.local:8080'
+  workers:
+    general:
+      replicaCount: 2
+      priorityClassName: production-workload
+      image:
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-prd-arm
+        pullPolicy: Always
+        tag: v3.4.0-alpha.41
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/component
+                      operator: In
+                      values:
+                        - hatchet-worker-general
+                topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: hatchet-worker-general
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: hatchet-worker-general
+
+    responseProcessor:
+      replicaCount: 4
+      priorityClassName: production-workload
+      image:
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-prd-arm
+        pullPolicy: Always
+        tag: v3.4.0-alpha.41
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/component
+                      operator: In
+                      values:
+                        - hatchet-worker-response-processor
+                topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: hatchet-worker-response-processor
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: hatchet-worker-response-processor
+
+    responseProcessorAssessment:
+      replicaCount: 4
+      priorityClassName: production-workload
+      image:
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-prd-arm
+        pullPolicy: Always
+        tag: v3.4.0-alpha.41
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/component
+                      operator: In
+                      values:
+                        - hatchet-worker-response-processor-assessment
+                topologyKey: kubernetes.io/hostname
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: klickerasm
+                    operator: In
+                    values:
+                      - reserved
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: hatchet-worker-response-processor-assessment
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: hatchet-worker-response-processor-assessment
+      tolerations:
+        - key: klickerasm
+          operator: Equal
+          value: reserved
+          effect: NoSchedule
+
+auth:
+  priorityClassName: production-workload
+
+  replicaCount: 3
+
+  autoscaling:
+    enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - auth
+            topologyKey: kubernetes.io/hostname
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/auth-prd-arm
+    pullPolicy: Always
+    tag: v3.4.0-alpha.41
+
+  ingress:
+    annotations:
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
+    className: haproxy
+    hosts:
+      - host: auth.klicker.prd.df-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-frontend-auth-tls
+        hosts:
+          - auth.klicker.prd.df-app.ch
+
+  strategy:
+    type: RollingUpdate
+    # type: Recreate
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
+chat:
+  priorityClassName: production-workload
+
+  replicaCount: 1
+
+  autoscaling:
+    enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - chat
+            topologyKey: kubernetes.io/hostname
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/chat-prd-arm
+    pullPolicy: Always
+    tag: v3.4.0-alpha.41
+
+  ingress:
+    annotations:
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
+    className: haproxy
+    hosts:
+      - host: chat.klicker.prd.df-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-frontend-chat-tls
+        hosts:
+          - chat.klicker.prd.df-app.ch
+
+  strategy:
+    type: RollingUpdate
+    # type: Recreate
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
+frontendPWA:
+  priorityClassName: production-workload
+
+  replicaCount: 3
+
+  autoscaling:
+    enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - frontend-pwa
+            topologyKey: kubernetes.io/hostname
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-prd-arm
+    pullPolicy: Always
+    tag: v3.4.0-alpha.41
+
+  ingress:
+    className: haproxy
+    annotations:
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
+    hosts:
+      - host: pwa.klicker.prd.df-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-frontend-pwa-tls
+        hosts:
+          - pwa.klicker.prd.df-app.ch
+
+  strategy:
+    type: Recreate
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
+frontendManage:
+  priorityClassName: production-workload
+
+  replicaCount: 3
+
+  autoscaling:
+    enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - frontend-manage
+            topologyKey: kubernetes.io/hostname
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-prd-arm
+    pullPolicy: Always
+    tag: v3.4.0-alpha.41
+
+  ingress:
+    className: haproxy
+    annotations:
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
+    hosts:
+      - host: manage.klicker.prd.df-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-frontend-manage-tls
+        hosts:
+          - manage.klicker.prd.df-app.ch
+
+  strategy:
+    type: Recreate
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
+frontendControl:
+  priorityClassName: production-workload
+
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-prd-arm
+    pullPolicy: Always
+    tag: v3.4.0-alpha.41
+
+  autoscaling:
+    enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - frontend-control
+            topologyKey: kubernetes.io/hostname
+
+  ingress:
+    className: haproxy
+    annotations:
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
+    hosts:
+      - host: control.klicker.prd.df-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-frontend-control-tls
+        hosts:
+          - control.klicker.prd.df-app.ch
+
+  strategy:
+    type: Recreate
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
+backendGraphql:
+  priorityClassName: production-workload
+
+  replicaCount: 3
+
+  autoscaling:
+    enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - backend-graphql
+            topologyKey: kubernetes.io/hostname
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-prd-arm
+    pullPolicy: Always
+    tag: v3.4.0-alpha.41
+
+  appManageSubdomain: manage
+  appStudentSubdomain: pwa
+  appControlSubdomain: control
+
+  debug: true
+  apiDomain: api.klicker.prd.df-app.ch
+  appManageDomain: manage.klicker.prd.df-app.ch
+  appStudentDomain: pwa.klicker.prd.df-app.ch
+  appControlDomain: control.klicker.prd.df-app.ch
+  cookieDomain: .klicker.prd.df-app.ch
+
+  ingress:
+    className: haproxy
+    annotations:
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
+    hosts:
+      - host: api.klicker.prd.df-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+      # - host: backend-sls.klicker.prd.df-app.ch
+      #   paths:
+      #     - path: /
+      #       pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-backend-graphql-tls
+        hosts:
+          - api.klicker.prd.df-app.ch
+          # - backend-sls.klicker.prd.df-app.ch
+
+  strategy:
+    type: Recreate
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
+olatApi:
+  priorityClassName: production-workload
+
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-prd-arm
+    pullPolicy: Always
+    tag: v3.4.0-alpha.41
+
+  autoscaling:
+    enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - olat-api
+            topologyKey: kubernetes.io/hostname
+
+  ingress:
+    className: haproxy
+    annotations:
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
+    hosts:
+      - host: olat-api.klicker.prd.df-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-olat-api-tls
+        hosts:
+          - olat-api.klicker.prd.df-app.ch
+
+  strategy:
+    type: Recreate
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
+lti:
+  priorityClassName: production-workload
+  replicaCount: 2
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - lti
+            topologyKey: kubernetes.io/hostname
+
+  redirectURL: https://lti.klicker.prd.df-app.ch
+  url: https://exp.olat.uzh.ch
+  name: OLAT UZH
+  authEndpoint: https://exp.olat.uzh.ch/lti/auth
+  tokenEndpoint: https://exp.olat.uzh.ch/lti/token
+  keysEndpoint: https://exp.olat.uzh.ch/lti/keys
+  cookieDomain: .klicker.prd.df-app.ch
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/lti-prd-arm
+    pullPolicy: Always
+    tag: v3.4.0-alpha.41
+
+  ingress:
+    className: haproxy
+    annotations:
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
+    hosts:
+      - host: lti.klicker.prd.df-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-lti-tls
+        hosts:
+          - lti.klicker.prd.df-app.ch
+
+responseApi:
+  corsAllowedOrigins: 'https://pwa.klicker.prd.df-app.ch'
+
+  priorityClassName: production-workload
+
+  replicaCount: 4
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/response-api-prd-arm
+    tag: v3.4.0-alpha.41
+    pullPolicy: Always
+
+  autoscaling:
+    enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - response-api
+            topologyKey: kubernetes.io/hostname
+
+  ingress:
+    className: haproxy
+    annotations:
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
+    hosts:
+      - host: response-api.klicker.prd.df-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-response-api-tls
+        hosts:
+          - response-api.klicker.prd.df-app.ch
+
+  strategy:
+    type: Recreate
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
+assessment:
+  frontendPWA:
+    priorityClassName: production-workload
+    replicaCount: 3
+    autoscaling:
+      enabled: false
+
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/component
+                    operator: In
+                    values:
+                      - frontend-pwa-assessment
+              topologyKey: kubernetes.io/hostname
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: klickerasm
+                  operator: In
+                  values:
+                    - reserved
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: frontend-pwa-assessment
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: frontend-pwa-assessment
+    tolerations:
+      - key: klickerasm
+        operator: Equal
+        value: reserved
+        effect: NoSchedule
+
+    image:
+      repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-prd-arm
+      pullPolicy: Always
+      tag: v3.4.0-alpha.41
+
+    ingress:
+      className: haproxy
+      annotations:
+        cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
+      hosts:
+        - host: assessment.klicker.prd.df-app.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: klicker-frontend-assessment-tls
+          hosts:
+            - assessment.klicker.prd.df-app.ch
+
+    strategy:
+      type: Recreate
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 50Mi
+      limits:
+        cpu: 200m
+        memory: 200Mi
+
+  backendGraphql:
+    priorityClassName: production-workload
+    replicaCount: 3
+    autoscaling:
+      enabled: false
+
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/component
+                    operator: In
+                    values:
+                      - backend-assessment
+              topologyKey: kubernetes.io/hostname
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: klickerasm
+                  operator: In
+                  values:
+                    - reserved
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: backend-assessment
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: backend-assessment
+    tolerations:
+      - key: klickerasm
+        operator: Equal
+        value: reserved
+        effect: NoSchedule
+
+    image:
+      repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-prd-arm
+      pullPolicy: Always
+      tag: v3.4.0-alpha.41
+
+    appManageSubdomain: manage
+    appStudentSubdomain: assessment
+    appControlSubdomain: control
+
+    debug: true
+    apiDomain: api.klicker.prd.df-app.ch
+    appManageDomain: manage.klicker.prd.df-app.ch
+    appStudentDomain: assessment.klicker.prd.df-app.ch
+    appControlDomain: control.klicker.prd.df-app.ch
+    cookieDomain: .klicker.prd.df-app.ch
+
+    ingress:
+      className: haproxy
+      annotations:
+        cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
+      hosts:
+        - host: assessment-api.klicker.prd.df-app.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: klicker-backend-assessment-tls
+          hosts:
+            - assessment-api.klicker.prd.df-app.ch
+
+    strategy:
+      type: Recreate
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 50Mi
+      limits:
+        cpu: 200m
+        memory: 200Mi
+
+  responseApi:
+    corsAllowedOrigins: 'https://assessment.klicker.prd.df-app.ch'
+
+    priorityClassName: production-workload
+
+    replicaCount: 3
+
+    autoscaling:
+      enabled: false
+
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/component
+                    operator: In
+                    values:
+                      - response-api-assessment
+              topologyKey: kubernetes.io/hostname
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: klickerasm
+                  operator: In
+                  values:
+                    - reserved
+    tolerations:
+      - key: klickerasm
+        operator: Equal
+        value: reserved
+        effect: NoSchedule
+
+    image:
+      repository: ghcr.io/uzh-bf/klicker-uzh/response-api-prd-arm
+      pullPolicy: Always
+      tag: v3.4.0-alpha.41
+
+    ingress:
+      className: haproxy
+      annotations:
+        cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
+      hosts:
+        - host: response-api-assessment.klicker.prd.df-app.ch
+          paths:
+            - path: /
+              pathType: ImplementationSpecific
+      tls:
+        - secretName: klicker-response-api-assessment-tls
+          hosts:
+            - response-api-assessment.klicker.prd.df-app.ch
+
+    strategy:
+      type: Recreate
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 50Mi
+      limits:
+        cpu: 200m
+        memory: 200Mi

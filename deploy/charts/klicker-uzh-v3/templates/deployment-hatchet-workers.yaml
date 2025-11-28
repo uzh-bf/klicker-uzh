@@ -1,0 +1,234 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart.fullname" . }}-hatchet-worker-general
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: hatchet-worker-general
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  revisionHistoryLimit: 5
+  {{- with .Values.hatchet.workers.general.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if not .Values.hatchet.workers.general.autoscaling.enabled }}
+  replicas: {{ .Values.hatchet.workers.general.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: hatchet-worker-general
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/cm-hatchet-workers.yaml") . | sha256sum }}
+        release: {{ .Chart.AppVersion }}
+      {{- with .Values.hatchet.workers.general.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: hatchet-worker-general
+    spec:
+      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.hatchet.workers.general.priorityClassName }}
+      {{- with .Values.hatchet.workers.general.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.hatchet.workers.general.podSecurityContext | nindent 8 }}
+      containers:
+        - name: hatchet-worker-general
+          securityContext:
+            {{- toYaml .Values.hatchet.workers.general.securityContext | nindent 12 }}
+          image: "{{ .Values.hatchet.workers.general.image.repository }}:{{ .Values.hatchet.workers.general.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.hatchet.workers.general.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-hatchet-worker-general
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-hatchet-worker-general
+          # TODO: add liveness and readiness probes to container
+          # livenessProbe:
+          #   httpGet:
+          #     path: /healthz
+          #     port: http
+          #   initialDelaySeconds: 600
+          # readinessProbe:
+          #   httpGet:
+          #     path: /healthz
+          #     port: http
+          resources:
+            {{- toYaml .Values.hatchet.workers.general.resources | nindent 12 }}
+      {{- with .Values.hatchet.workers.general.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.hatchet.workers.general.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.hatchet.workers.general.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart.fullname" . }}-hatchet-worker-response-processor
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: hatchet-worker-response-processor
+spec:
+  revisionHistoryLimit: 5
+  {{- with .Values.hatchet.workers.responseProcessor.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if not .Values.hatchet.workers.responseProcessor.autoscaling.enabled }}
+  replicas: {{ .Values.hatchet.workers.responseProcessor.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: hatchet-worker-response-processor
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/cm-hatchet-workers.yaml") . | sha256sum }}
+        release: {{ .Chart.AppVersion }}
+      {{- with .Values.hatchet.workers.responseProcessor.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: hatchet-worker-response-processor
+    spec:
+      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.hatchet.workers.responseProcessor.priorityClassName }}
+      {{- with .Values.hatchet.workers.responseProcessor.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.hatchet.workers.responseProcessor.podSecurityContext | nindent 8 }}
+      containers:
+        - name: hatchet-worker-response-processor
+          securityContext:
+            {{- toYaml .Values.hatchet.workers.responseProcessor.securityContext | nindent 12 }}
+          image: "{{ .Values.hatchet.workers.responseProcessor.image.repository }}:{{ .Values.hatchet.workers.responseProcessor.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.hatchet.workers.responseProcessor.image.pullPolicy }}
+
+          envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-hatchet-worker-response-processor
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-hatchet-worker-response-processor
+          # TODO: add liveness and readiness probes to container
+          # livenessProbe:
+          #   httpGet:
+          #     path: /healthz
+          #     port: http
+          #   initialDelaySeconds: 600
+          # readinessProbe:
+          #   httpGet:
+          #     path: /healthz
+          #     port: http
+          resources:
+            {{- toYaml .Values.hatchet.workers.responseProcessor.resources | nindent 12 }}
+      {{- with .Values.hatchet.workers.responseProcessor.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.hatchet.workers.responseProcessor.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.hatchet.workers.responseProcessor.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart.fullname" . }}-hatchet-worker-response-processor-assessment
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: hatchet-worker-response-processor-assessment
+spec:
+  revisionHistoryLimit: 5
+  {{- with .Values.hatchet.workers.responseProcessorAssessment.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if not .Values.hatchet.workers.responseProcessorAssessment.autoscaling.enabled }}
+  replicas: {{ .Values.hatchet.workers.responseProcessorAssessment.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: hatchet-worker-response-processor-assessment
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/cm-hatchet-workers.yaml") . | sha256sum }}
+        release: {{ .Chart.AppVersion }}
+      {{- with .Values.hatchet.workers.responseProcessorAssessment.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: hatchet-worker-response-processor-assessment
+    spec:
+      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.hatchet.workers.responseProcessorAssessment.priorityClassName }}
+      {{- with .Values.hatchet.workers.responseProcessorAssessment.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.hatchet.workers.responseProcessorAssessment.podSecurityContext | nindent 8 }}
+      containers:
+        - name: hatchet-worker-response-processor-assessment
+          securityContext:
+            {{- toYaml .Values.hatchet.workers.responseProcessorAssessment.securityContext | nindent 12 }}
+          image: "{{ .Values.hatchet.workers.responseProcessorAssessment.image.repository }}:{{ .Values.hatchet.workers.responseProcessorAssessment.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.hatchet.workers.responseProcessorAssessment.image.pullPolicy }}
+
+          envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-hatchet-worker-response-processor-assessment
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-hatchet-worker-response-processor-assessment
+          # TODO: add liveness and readiness probes to container
+          # livenessProbe:
+          #   httpGet:
+          #     path: /healthz
+          #     port: http
+          #   initialDelaySeconds: 600
+          # readinessProbe:
+          #   httpGet:
+          #     path: /healthz
+          #     port: http
+          resources:
+            {{- toYaml .Values.hatchet.workers.responseProcessorAssessment.resources | nindent 12 }}
+      {{- with .Values.hatchet.workers.responseProcessorAssessment.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.hatchet.workers.responseProcessorAssessment.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.hatchet.workers.responseProcessorAssessment.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

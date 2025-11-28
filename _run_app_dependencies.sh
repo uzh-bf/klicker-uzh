@@ -105,6 +105,7 @@ if confirm "Run pnpm run build?"; then
 	pnpm run build
 else
 	echo "Skipping pnpm run build"
+	bash .github/scripts/wait-for-services.sh
 fi
 
 # create hatchet client token (switch script for cypress/test mode)

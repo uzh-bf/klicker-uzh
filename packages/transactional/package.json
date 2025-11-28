@@ -18,9 +18,9 @@
   "scripts": {
     "build": "email export -d src/emails",
     "dev:email": "email dev -d src/emails",
-    "update-templates": "doppler run --config dev -- tsx src/scripts/deploy.ts",
-    "update-templates:prod": "doppler run --config prd -- tsx src/scripts/deploy.ts",
-    "update-templates:qa": "doppler run --config stg -- tsx src/scripts/deploy.ts"
+    "update-templates": "../../util/_run_with_infisical.sh --env dev tsx src/scripts/deploy.ts",
+    "update-templates:prod": "../../util/_run_with_infisical.sh --env prd tsx src/scripts/deploy.ts",
+    "update-templates:qa": "../../util/_run_with_infisical.sh --env stg tsx src/scripts/deploy.ts"
   },
   "volta": {
     "extends": "../../package.json"

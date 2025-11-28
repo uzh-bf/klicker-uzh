@@ -1,0 +1,6 @@
+apiVersion: v2
+name: klicker-uzh-v2
+description: A Helm chart for the KlickerUZH
+type: application
+version: 3.4.0-alpha.21
+appVersion: v3.4.0-alpha.21

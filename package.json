@@ -9,7 +9,8 @@
   "license": "AGPL-3.0",
   "maintainers": [
     "Roland Schlaefli <roland.schlaefli@df.uzh.ch>",
-    "Julius Schlapbach <julius.schlapbach@df.uzh.ch>"
+    "Julius Schlapbach <julius.schlapbach@df.uzh.ch>",
+    "Patrick Louis Aldover <patrick.aldover@df.uzh.ch>"
   ],
   "contributors": [
     "Alex Scheitlin <alex.scheitlin@bf.uzh.ch",
@@ -46,15 +47,15 @@
     "check:format": "lint-staged",
     "check:lint": "turbo run lint --parallel --continue",
     "check:syncpack": "syncpack lint",
-    "dev": "CONFIG=dev ./util/_run_with_doppler.sh pnpm dev:raw",
-    "dev:assessment": "CONFIG=dev_assessment ./util/_run_with_doppler.sh turbo run dev:assessment --concurrency 30",
-    "dev:cleverreach": "doppler run --config dev_cleverreach -- pnpm run dev:raw",
+    "dev": "./util/_run_with_infisical.sh --env dev pnpm dev:raw",
+    "dev:assessment": "./util/_run_with_infisical.sh --env dev-assessment turbo run dev:assessment --concurrency 30",
+    "dev:cleverreach": "./util/_run_with_infisical.sh --env dev-cleverreach pnpm run dev:raw",
     "dev:docs": "turbo run dev:docs",
-    "dev:lti": "doppler run --config dev_lti -- turbo run dev:lti",
-    "dev:offline": "doppler run --config dev -- turbo run dev:offline --concurrency 30",
+    "dev:lti": "./util/_run_with_infisical.sh --env dev-lti turbo run dev:lti",
+    "dev:offline": "./util/_run_with_infisical.sh --env dev turbo run dev:offline --concurrency 30",
     "dev:prepare-prod": "./util/_prepare_local_prod.sh",
     "dev:raw": "turbo run dev --concurrency 30",
-    "dev:test": "doppler run --config dev_cypress -- cross-env NODE_ENV=test turbo run dev:test",
+    "dev:test": "./util/_run_with_infisical.sh --env dev-cypress bash -c \"cross-env NODE_ENV=test turbo run dev:test\"",
     "format": "prettier --write . --config .prettierrc.mjs",
     "format:check": "prettier --check . --config .prettierrc.mjs",
     "lint": "turbo run lint --parallel --continue",

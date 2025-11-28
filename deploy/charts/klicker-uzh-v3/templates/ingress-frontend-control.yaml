@@ -1,0 +1,46 @@
+{{- if .Values.frontendControl.ingress.enabled -}}
+{{- $fullName := include "chart.fullname" . -}}
+{{- $svcPort := .Values.frontendControl.service.port -}}
+{{- if and .Values.frontendControl.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey .Values.frontendControl.ingress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set .Values.frontendControl.ingress.annotations "kubernetes.io/ingress.class" .Values.frontendControl.ingress.className}}
+  {{- end }}
+{{- end }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullName }}-frontend-control
+  labels:
+    {{- include "chart.ingressLabels" . | nindent 4 }}
+  {{- with .Values.frontendControl.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.frontendControl.ingress.className }}
+  {{- if .Values.frontendControl.ingress.tls }}
+  tls:
+    {{- range .Values.frontendControl.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.frontendControl.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ $fullName }}-frontend-control
+                port:
+                  number: {{ $svcPort }}
+          {{- end }}
+    {{- end }}
+{{- end }}
