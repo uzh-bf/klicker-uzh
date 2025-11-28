@@ -32,7 +32,6 @@ spec:
         {{- include "chart.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: chat
     spec:
-      revisionHistoryLimit: 5
       priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.chat.priorityClassName }}
       {{- with .Values.chat.imagePullSecrets }}
       imagePullSecrets:
