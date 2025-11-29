@@ -2,18 +2,7 @@ name: Build Docker image for backend-docker (prd)
 
 on:
   push:
-    # tags: ['v*.*.*']
-    branches:
-      - 'v3'
-      - 'v3*'
-  pull_request:
-    # branches: [ "v3" ]
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - 'apps/backend-docker/**'
-      - 'packages/graphql/**'
-      - 'packages/prisma/**'
-      - '.github/workflows/v3_backend-docker**'
+    tags: ["v*.*.*"]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -21,7 +10,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/backend-docker-prd
+  IMAGE_NAME: ${{ github.repository }}/backend-docker
 
 jobs:
   build-arm:

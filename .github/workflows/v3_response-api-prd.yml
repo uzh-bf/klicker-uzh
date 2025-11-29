@@ -2,16 +2,7 @@ name: Build Docker image for response-api (prd)
 
 on:
   push:
-    # tags: ['v*.*.*']
-    branches:
-      - 'v3'
-      - 'v3*'
-  pull_request:
-    # branches: [ "v3" ]
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - 'apps/response-api/**'
-      - '.github/workflows/v3_response-api**'
+    tags: ["v*.*.*"]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -19,7 +10,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/response-api-prd
+  IMAGE_NAME: ${{ github.repository }}/response-api
 
 jobs:
   build-arm:

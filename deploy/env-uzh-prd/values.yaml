@@ -26,9 +26,9 @@ hatchet:
       replicaCount: 2
       priorityClassName: production-workload
       image:
-        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-prd-arm
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: Always
-        tag: v3.4.0-alpha.41
+        tag: v3.4.0-alpha.42
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -59,9 +59,9 @@ hatchet:
       replicaCount: 4
       priorityClassName: production-workload
       image:
-        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-prd-arm
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3.4.0-alpha.41
+        tag: v3.4.0-alpha.42
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -92,9 +92,9 @@ hatchet:
       replicaCount: 4
       priorityClassName: production-workload
       image:
-        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-prd-arm
+        repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3.4.0-alpha.41
+        tag: v3.4.0-alpha.42
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -156,9 +156,9 @@ auth:
             topologyKey: kubernetes.io/hostname
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/auth-prd-arm
+    repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.41
+    tag: v3.4.0-alpha.42
 
   ingress:
     annotations:
@@ -207,9 +207,9 @@ chat:
                     - chat
             topologyKey: kubernetes.io/hostname
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/chat-prd-arm
+    repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.41
+    tag: v3.4.0-alpha.42
 
   ingress:
     annotations:
@@ -259,9 +259,9 @@ frontendPWA:
             topologyKey: kubernetes.io/hostname
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-prd-arm
+    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.41
+    tag: v3.4.0-alpha.42
 
   ingress:
     className: haproxy
@@ -310,9 +310,9 @@ frontendManage:
             topologyKey: kubernetes.io/hostname
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-prd-arm
+    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.41
+    tag: v3.4.0-alpha.42
 
   ingress:
     className: haproxy
@@ -345,9 +345,9 @@ frontendControl:
   replicaCount: 1
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-prd-arm
+    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.41
+    tag: v3.4.0-alpha.42
 
   autoscaling:
     enabled: false
@@ -412,9 +412,9 @@ backendGraphql:
             topologyKey: kubernetes.io/hostname
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-prd-arm
+    repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.41
+    tag: v3.4.0-alpha.42
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -463,9 +463,9 @@ olatApi:
   replicaCount: 1
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-prd-arm
+    repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.41
+    tag: v3.4.0-alpha.42
 
   autoscaling:
     enabled: false
@@ -534,9 +534,9 @@ lti:
   cookieDomain: .klicker.uzh.ch
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/lti-prd-arm
+    repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.41
+    tag: v3.4.0-alpha.42
 
   ingress:
     className: haproxy
@@ -560,8 +560,8 @@ responseApi:
   replicaCount: 4
 
   image:
-    repository: ghcr.io/uzh-bf/klicker-uzh/response-api-prd-arm
-    tag: v3.4.0-alpha.41
+    repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
+    tag: v3.4.0-alpha.42
     pullPolicy: Always
 
   autoscaling:
@@ -652,9 +652,9 @@ assessment:
         effect: NoSchedule
 
     image:
-      repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-prd-arm
+      repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: Always
-      tag: v3.4.0-alpha.41
+      tag: v3.4.0-alpha.42
 
     ingress:
       className: haproxy
@@ -727,9 +727,9 @@ assessment:
         effect: NoSchedule
 
     image:
-      repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-prd-arm
+      repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: Always
-      tag: v3.4.0-alpha.41
+      tag: v3.4.0-alpha.42
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -804,9 +804,9 @@ assessment:
         effect: NoSchedule
 
     image:
-      repository: ghcr.io/uzh-bf/klicker-uzh/response-api-prd-arm
+      repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: Always
-      tag: v3.4.0-alpha.41
+      tag: v3.4.0-alpha.42
 
     ingress:
       className: haproxy
