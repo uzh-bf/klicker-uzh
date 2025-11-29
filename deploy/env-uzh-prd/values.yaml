@@ -488,14 +488,14 @@ olatApi:
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
     hosts:
-      - host: olat-backend-sls.klicker.uzh.ch
+      - host: olat-api.klicker.uzh.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-olat-api-tls
         hosts:
-          - olat-backend-sls.klicker.uzh.ch
+          - olat-api.klicker.uzh.ch
 
   strategy:
     type: Recreate
