@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.43](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.42...v3.4.0-alpha.43) (2025-11-29)
+
+
+### Bug Fixes
+
+* **apps/auth:** remove prd from eduid client id ([44e7f21](https://github.com/uzh-bf/klicker-uzh/commit/44e7f212c422b2ff37523c511f5efc0fd49c9f0c))
+
 ## [3.4.0-alpha.42](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.41...v3.4.0-alpha.42) (2025-11-29)
 
 ## [3.4.0-alpha.41](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.40...v3.4.0-alpha.41) (2025-11-29)
