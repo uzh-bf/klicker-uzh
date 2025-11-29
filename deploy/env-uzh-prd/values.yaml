@@ -5,14 +5,14 @@ heartbeats:
 
 global:
   appOrigins:
-    api: 'https://api.klicker.prd.df-app.ch'
-    auth: 'https://auth.klicker.prd.df-app.ch'
-    lti: 'https://lti.klicker.prd.df-app.ch'
-    pwa: 'https://pwa.klicker.prd.df-app.ch'
-    manage: 'https://manage.klicker.prd.df-app.ch'
-    control: 'https://control.klicker.prd.df-app.ch'
-    assessmentApi: 'https://assessment-api.klicker.prd.df-app.ch'
-    assessmentPwa: 'https://assessment.klicker.prd.df-app.ch'
+    api: 'https://backend-sls.klicker.uzh.ch'
+    auth: 'https://auth.klicker.uzh.ch'
+    lti: 'https://lti.klicker.uzh.ch'
+    pwa: 'https://pwa.klicker.uzh.ch'
+    manage: 'https://manage.klicker.uzh.ch'
+    control: 'https://control.klicker.uzh.ch'
+    assessmentApi: 'https://assessment-api.klicker.uzh.ch'
+    assessmentPwa: 'https://assessment.klicker.uzh.ch'
 
 podAnnotations:
   reloader.stakater.com/auto: 'true'
@@ -165,14 +165,14 @@ auth:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
     className: haproxy
     hosts:
-      - host: auth.klicker.prd.df-app.ch
+      - host: auth.klicker.uzh.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-frontend-auth-tls
         hosts:
-          - auth.klicker.prd.df-app.ch
+          - auth.klicker.uzh.ch
 
   strategy:
     type: RollingUpdate
@@ -216,14 +216,14 @@ chat:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
     className: haproxy
     hosts:
-      - host: chat.klicker.prd.df-app.ch
+      - host: chat.klicker.uzh.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-frontend-chat-tls
         hosts:
-          - chat.klicker.prd.df-app.ch
+          - chat.klicker.uzh.ch
 
   strategy:
     type: RollingUpdate
@@ -268,14 +268,14 @@ frontendPWA:
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
     hosts:
-      - host: pwa.klicker.prd.df-app.ch
+      - host: pwa.klicker.uzh.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-frontend-pwa-tls
         hosts:
-          - pwa.klicker.prd.df-app.ch
+          - pwa.klicker.uzh.ch
 
   strategy:
     type: Recreate
@@ -319,14 +319,14 @@ frontendManage:
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
     hosts:
-      - host: manage.klicker.prd.df-app.ch
+      - host: manage.klicker.uzh.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-frontend-manage-tls
         hosts:
-          - manage.klicker.prd.df-app.ch
+          - manage.klicker.uzh.ch
 
   strategy:
     type: Recreate
@@ -370,14 +370,14 @@ frontendControl:
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
     hosts:
-      - host: control.klicker.prd.df-app.ch
+      - host: control.klicker.uzh.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-frontend-control-tls
         hosts:
-          - control.klicker.prd.df-app.ch
+          - control.klicker.uzh.ch
 
   strategy:
     type: Recreate
@@ -421,30 +421,30 @@ backendGraphql:
   appControlSubdomain: control
 
   debug: true
-  apiDomain: api.klicker.prd.df-app.ch
-  appManageDomain: manage.klicker.prd.df-app.ch
-  appStudentDomain: pwa.klicker.prd.df-app.ch
-  appControlDomain: control.klicker.prd.df-app.ch
-  cookieDomain: .klicker.prd.df-app.ch
+  apiDomain: backend-sls.klicker.uzh.ch
+  appManageDomain: manage.klicker.uzh.ch
+  appStudentDomain: pwa.klicker.uzh.ch
+  appControlDomain: control.klicker.uzh.ch
+  cookieDomain: .klicker.uzh.ch
 
   ingress:
     className: haproxy
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
     hosts:
-      - host: api.klicker.prd.df-app.ch
+      - host: backend-sls.klicker.uzh.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
-      # - host: backend-sls.klicker.prd.df-app.ch
+      # - host: backend-sls.klicker.uzh.ch
       #   paths:
       #     - path: /
       #       pathType: ImplementationSpecific
     tls:
       - secretName: klicker-backend-graphql-tls
         hosts:
-          - api.klicker.prd.df-app.ch
-          # - backend-sls.klicker.prd.df-app.ch
+          - backend-sls.klicker.uzh.ch
+          # - backend-sls.klicker.uzh.ch
 
   strategy:
     type: Recreate
@@ -488,14 +488,14 @@ olatApi:
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
     hosts:
-      - host: olat-api.klicker.prd.df-app.ch
+      - host: olat-backend-sls.klicker.uzh.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-olat-api-tls
         hosts:
-          - olat-api.klicker.prd.df-app.ch
+          - olat-backend-sls.klicker.uzh.ch
 
   strategy:
     type: Recreate
@@ -525,13 +525,13 @@ lti:
                     - lti
             topologyKey: kubernetes.io/hostname
 
-  redirectURL: https://lti.klicker.prd.df-app.ch
+  redirectURL: https://lti.klicker.uzh.ch
   url: https://exp.olat.uzh.ch
   name: OLAT UZH
   authEndpoint: https://exp.olat.uzh.ch/lti/auth
   tokenEndpoint: https://exp.olat.uzh.ch/lti/token
   keysEndpoint: https://exp.olat.uzh.ch/lti/keys
-  cookieDomain: .klicker.prd.df-app.ch
+  cookieDomain: .klicker.uzh.ch
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-prd-arm
@@ -543,17 +543,17 @@ lti:
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
     hosts:
-      - host: lti.klicker.prd.df-app.ch
+      - host: lti.klicker.uzh.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-lti-tls
         hosts:
-          - lti.klicker.prd.df-app.ch
+          - lti.klicker.uzh.ch
 
 responseApi:
-  corsAllowedOrigins: 'https://pwa.klicker.prd.df-app.ch'
+  corsAllowedOrigins: 'https://pwa.klicker.uzh.ch'
 
   priorityClassName: production-workload
 
@@ -585,14 +585,14 @@ responseApi:
     annotations:
       cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
     hosts:
-      - host: response-api.klicker.prd.df-app.ch
+      - host: response-api.klicker.uzh.ch
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: klicker-response-api-tls
         hosts:
-          - response-api.klicker.prd.df-app.ch
+          - response-api.klicker.uzh.ch
 
   strategy:
     type: Recreate
@@ -661,14 +661,14 @@ assessment:
       annotations:
         cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
       hosts:
-        - host: assessment.klicker.prd.df-app.ch
+        - host: assessment.klicker.uzh.ch
           paths:
             - path: /
               pathType: ImplementationSpecific
       tls:
         - secretName: klicker-frontend-assessment-tls
           hosts:
-            - assessment.klicker.prd.df-app.ch
+            - assessment.klicker.uzh.ch
 
     strategy:
       type: Recreate
@@ -736,25 +736,25 @@ assessment:
     appControlSubdomain: control
 
     debug: true
-    apiDomain: api.klicker.prd.df-app.ch
-    appManageDomain: manage.klicker.prd.df-app.ch
-    appStudentDomain: assessment.klicker.prd.df-app.ch
-    appControlDomain: control.klicker.prd.df-app.ch
-    cookieDomain: .klicker.prd.df-app.ch
+    apiDomain: backend-sls.klicker.uzh.ch
+    appManageDomain: manage.klicker.uzh.ch
+    appStudentDomain: assessment.klicker.uzh.ch
+    appControlDomain: control.klicker.uzh.ch
+    cookieDomain: .klicker.uzh.ch
 
     ingress:
       className: haproxy
       annotations:
         cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
       hosts:
-        - host: assessment-api.klicker.prd.df-app.ch
+        - host: assessment-api.klicker.uzh.ch
           paths:
             - path: /
               pathType: ImplementationSpecific
       tls:
         - secretName: klicker-backend-assessment-tls
           hosts:
-            - assessment-api.klicker.prd.df-app.ch
+            - assessment-api.klicker.uzh.ch
 
     strategy:
       type: Recreate
@@ -768,7 +768,7 @@ assessment:
         memory: 200Mi
 
   responseApi:
-    corsAllowedOrigins: 'https://assessment.klicker.prd.df-app.ch'
+    corsAllowedOrigins: 'https://assessment.klicker.uzh.ch'
 
     priorityClassName: production-workload
 
@@ -813,14 +813,14 @@ assessment:
       annotations:
         cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-prd-apps-default
       hosts:
-        - host: response-api-assessment.klicker.prd.df-app.ch
+        - host: assessment-response-api.klicker.uzh.ch
           paths:
             - path: /
               pathType: ImplementationSpecific
       tls:
         - secretName: klicker-response-api-assessment-tls
           hosts:
-            - response-api-assessment.klicker.prd.df-app.ch
+            - assessment-response-api.klicker.uzh.ch
 
     strategy:
       type: Recreate
