@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { getLogger } from './logger/base'
 
 export async function sendTeamsNotifications(scope: string, text: string) {
   if (process.env.TEAMS_WEBHOOK_URL) {
@@ -11,7 +12,10 @@ export async function sendTeamsNotifications(scope: string, text: string) {
         text: `[${process.env.NODE_ENV}:${scope}] ${text}`,
       })
     } catch (error) {
-      console.error('Failed to send Teams notification:', error)
+      getLogger().error(
+        { err: error, scope },
+        'failed to send Teams notification'
+      )
       return null
     }
   }

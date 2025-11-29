@@ -25,6 +25,8 @@ import {
   LECTURER_REDIRECT_COOKIE_NAME,
   STUDENT_REDIRECT_COOKIE_NAME,
 } from './constants'
+import type { AppLogger } from './logger/base'
+import { getLogger } from './logger/base'
 
 export interface ExtendedProfile extends Profile {
   swissEduPersonUniqueID: string
@@ -84,9 +86,17 @@ function isManageHost(host: string): boolean {
   return getLecturerHosts().includes(host)
 }
 
+function scopedLogger(
+  logger: AppLogger | undefined,
+  scope: string,
+  bindings: Record<string, unknown> = {}
+): AppLogger {
+  return (logger ?? getLogger()).child({ scope, ...bindings })
+}
+
 export function getAuthContext(
   req: NextApiRequest,
-  reqId: string
+  logger?: AppLogger
 ): 'lecturer' | 'participant' {
   const { participant, callbackUrl } = req.query as {
     participant?: string
@@ -111,45 +121,50 @@ export function getAuthContext(
     callback: hostFrom(callbackUrl),
   }
 
-  console.log(`[AUTH ${reqId}] Context detection input:`, {
-    url: req.url,
+  const log = scopedLogger(logger, 'authContext', {
     method: req.method,
-    participant,
-    hasStudentCookie: Boolean(studentRedirect),
-    hasLecturerCookie: Boolean(lecturerRedirect),
-    hosts,
+    url: req.url,
   })
+  log.info(
+    {
+      participant,
+      hasStudentCookie: Boolean(studentRedirect),
+      hasLecturerCookie: Boolean(lecturerRedirect),
+      hosts,
+    },
+    'context detection input'
+  )
 
   // 1) Explicit participant flag wins
   if (participant === 'true') {
-    console.log(`[AUTH ${reqId}] Context: participant (explicit param)`)
+    log.info('context resolved: participant (explicit param)')
     return 'participant'
   }
 
   // 2) callbackUrl host is authoritative when present
   if (hosts.callback) {
     if (isAssessmentHost(hosts.callback)) {
-      console.log(`[AUTH ${reqId}] Context: participant (callbackUrl host)`)
+      log.info('context resolved: participant (callbackUrl host)')
       return 'participant'
     }
     if (isManageHost(hosts.callback)) {
-      console.log(`[AUTH ${reqId}] Context: lecturer (callbackUrl host)`)
+      log.info('context resolved: lecturer (callbackUrl host)')
       return 'lecturer'
     }
   }
 
   // 3) Specific cookies (student first)
   if (hosts.student && isAssessmentHost(hosts.student)) {
-    console.log(`[AUTH ${reqId}] Context: participant (student cookie host)`)
+    log.info('context resolved: participant (student cookie host)')
     return 'participant'
   }
   if (hosts.lecturer && isManageHost(hosts.lecturer)) {
-    console.log(`[AUTH ${reqId}] Context: lecturer (lecturer cookie host)`)
+    log.info('context resolved: lecturer (lecturer cookie host)')
     return 'lecturer'
   }
 
   // 4) Default to lecturer
-  console.log(`[AUTH ${reqId}] Context: lecturer (default)`)
+  log.info('context resolved: lecturer (default)')
   return 'lecturer'
 }
 
@@ -157,7 +172,8 @@ export async function autoAcceptInvitations(
   tx: PrismaTransactionClient,
   emailCollection: CollectedInvitationEmails,
   participantId?: string,
-  invitationEmailMode: InvitationEmailMode = InvitationEmailMode.AffiliationsOnly
+  invitationEmailMode: InvitationEmailMode = InvitationEmailMode.AffiliationsOnly,
+  logger?: AppLogger
 ) {
   let matchingParticipantId: string | undefined = participantId
 
@@ -176,10 +192,16 @@ export async function autoAcceptInvitations(
     )
   )
 
+  const getLog = () =>
+    scopedLogger(logger, 'autoAcceptInvitations', {
+      participantId: matchingParticipantId ?? participantId,
+      invitationEmailMode,
+    })
+
   try {
     if (!participantId) {
       if (normalizedLookupEmails.length === 0) {
-        console.log('No emails provided for participant lookup')
+        getLog().info('no emails provided for participant lookup')
         return 0
       }
 
@@ -192,7 +214,10 @@ export async function autoAcceptInvitations(
       })
 
       if (!participant) {
-        console.log('No participant found for emails:', normalizedLookupEmails)
+        getLog().info(
+          { emails: normalizedLookupEmails },
+          'no participant found for emails'
+        )
         return 0
       }
 
@@ -200,12 +225,12 @@ export async function autoAcceptInvitations(
     }
 
     if (normalizedInvitationEmails.length === 0) {
-      console.log(
-        `Invitation mode ${invitationEmailMode} provided no eligible emails.`,
+      getLog().info(
         {
           profileEmails: emailCollection.profileEmails,
           affiliationEmails: emailCollection.affiliationEmails,
-        }
+        },
+        'invitation mode provided no eligible emails'
       )
       return 0
     }
@@ -218,9 +243,12 @@ export async function autoAcceptInvitations(
       },
     })
 
-    console.log(
-      `Found ${pendingInvitations.length} pending invitations for mode ${invitationEmailMode}:`,
-      normalizedInvitationEmails
+    getLog().info(
+      {
+        count: pendingInvitations.length,
+        emails: normalizedInvitationEmails,
+      },
+      'found pending invitations'
     )
 
     let acceptedCount = 0
@@ -254,7 +282,11 @@ export async function autoAcceptInvitations(
 
         acceptedCount++
       } catch (error) {
-        console.error(`Error accepting invitation ${invitation.id}:`, error)
+        scopedLogger(logger, 'autoAcceptInvitations', {
+          invitationId: invitation.id,
+          participantId: matchingParticipantId ?? participantId,
+          invitationEmailMode,
+        }).error({ err: error }, 'error accepting invitation')
       }
     }
 
@@ -267,7 +299,7 @@ export async function autoAcceptInvitations(
 
     return acceptedCount
   } catch (error) {
-    console.error('Error in autoAcceptInvitations:', error)
+    getLog().error({ err: error }, 'autoAcceptInvitations failed')
     return 0
   }
 }
@@ -275,7 +307,8 @@ export async function autoAcceptInvitations(
 // Helper function to create user affiliations
 export async function createUserAffiliations(
   userId: string,
-  affiliationIds?: string[]
+  affiliationIds?: string[],
+  logger?: AppLogger
 ) {
   // if affiliations are present, add corresponding accounts for the user
   if (affiliationIds && affiliationIds.length > 0) {
@@ -305,7 +338,10 @@ export async function createUserAffiliations(
           },
         })
       } catch (error) {
-        console.error(`Failed to add affiliation ${affiliationId}:`, error)
+        scopedLogger(logger, 'createUserAffiliations', {
+          userId,
+          affiliationId,
+        }).error({ err: error }, 'failed to add affiliation')
         // Continue with other affiliations
       }
     }
@@ -317,7 +353,8 @@ async function createParticipantAffiliations(
   tx: PrismaTransactionClient,
   participantId: string,
   affiliationIds: string[],
-  affiliationEmails?: string[] // Make emails optional
+  affiliationEmails?: string[], // Make emails optional
+  logger?: AppLogger
 ) {
   let processedAffiliations = new Set<string>()
 
@@ -356,20 +393,26 @@ async function createParticipantAffiliations(
 
       processedAffiliations.add(affiliationId)
     } catch (error) {
-      console.error(
-        `Failed to add participant affiliation ${affiliationId}:`,
-        error
-      )
+      scopedLogger(logger, 'createParticipantAffiliations', {
+        participantId,
+        affiliationId,
+      }).error({ err: error }, 'failed to add participant affiliation')
     }
   }
   return [...processedAffiliations]
 }
 
 // Enhanced participant authentication helper function
-export async function createOrLinkParticipant(profile: ExtendedProfile) {
+export async function createOrLinkParticipant(
+  profile: ExtendedProfile,
+  logger?: AppLogger
+) {
   const randomUsername = generateRandomString(10)
 
   const participant = await prisma.$transaction(async (tx) => {
+    const log = scopedLogger(logger, 'createOrLinkParticipant', {
+      profileSub: profile.sub,
+    })
     // Lookup existing account via ssoId (Edu-ID sub)
     const existing = await tx.participantAccount.findUnique({
       where: { ssoId: profile.sub },
@@ -379,11 +422,12 @@ export async function createOrLinkParticipant(profile: ExtendedProfile) {
     if (existing) {
       // Update affiliations for existing participant
       if (profile.swissEduIDLinkedAffiliationUniqueID) {
-        const participantAffiliations = await createParticipantAffiliations(
+        await createParticipantAffiliations(
           tx,
           existing.participantId,
           profile.swissEduIDLinkedAffiliationUniqueID,
-          profile.swissEduIDLinkedAffiliationMail // Pass undefined if not available
+          profile.swissEduIDLinkedAffiliationMail, // Pass undefined if not available
+          logger
         )
       }
 
@@ -398,16 +442,22 @@ export async function createOrLinkParticipant(profile: ExtendedProfile) {
         const acceptedCount = await autoAcceptInvitations(
           tx,
           emailCollection,
-          existing.participantId
+          existing.participantId,
+          InvitationEmailMode.AffiliationsOnly,
+          logger
         )
-        console.log(
-          `Auto-accepted ${acceptedCount} invitations for existing user with emails:`,
-          emailCollection.allEmails
+        log.info(
+          {
+            acceptedCount,
+            participantId: existing.participantId,
+            emails: emailCollection.allEmails,
+          },
+          'auto-accepted invitations for existing participant'
         )
       } catch (error) {
-        console.error(
-          'Error auto-accepting invitations for existing user:',
-          error
+        log.error(
+          { err: error },
+          'error auto-accepting invitations for existing participant'
         )
       }
 
@@ -485,7 +535,8 @@ export async function createOrLinkParticipant(profile: ExtendedProfile) {
         tx,
         participant.id,
         profile.swissEduIDLinkedAffiliationUniqueID,
-        profile.swissEduIDLinkedAffiliationMail
+        profile.swissEduIDLinkedAffiliationMail,
+        logger
       )
     }
 
@@ -500,16 +551,22 @@ export async function createOrLinkParticipant(profile: ExtendedProfile) {
       const acceptedCount = await autoAcceptInvitations(
         tx,
         emailCollection,
-        participant.id
+        participant.id,
+        InvitationEmailMode.AffiliationsOnly,
+        logger
       )
-      console.log(
-        `Auto-accepted ${acceptedCount} invitations for new participant with emails:`,
-        emailCollection.allEmails
+      log.info(
+        {
+          acceptedCount,
+          participantId: participant.id,
+          emails: emailCollection.allEmails,
+        },
+        'auto-accepted invitations for new participant'
       )
     } catch (error) {
-      console.error(
-        'Error auto-accepting invitations for new participant:',
-        error
+      log.error(
+        { err: error },
+        'error auto-accepting invitations for new participant'
       )
     }
 
