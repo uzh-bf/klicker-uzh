@@ -35,7 +35,7 @@
     "@sentry/tracing": "7.114.0",
     "cookie-parser": "1.4.7",
     "cors": "2.8.5",
-    "express": "4.21.1",
+    "express": "4.22.0",
     "graphql": "16.11.0",
     "graphql-ws": "5.16.0",
     "graphql-yoga": "3.9.1",
