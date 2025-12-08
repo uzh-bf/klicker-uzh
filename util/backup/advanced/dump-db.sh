@@ -170,10 +170,12 @@ echo "\n🔍 Step 2: Validating Database Connection Variables"
 echo "----------------------------------------------------"
 
 # Validate database connection variables
-if [[ -n "${DATABASE_URL:-}" ]]; then
+if [[ -n "${DATABASE_URL:-}" && -n "${HATCHET_DATABASE_URL:-}" && -n "${LTI_DATABASE_URL:-}" ]]; then
   log "Using DATABASE_URL for connection"
   # Remove unsupported query parameters like "schema" and "pgbouncer" that pg_dump doesn't understand
   DB_CONN=$(echo "$DATABASE_URL" | sed 's/[?&]schema=[^&]*//g' | sed 's/[?&]sslmode=[^&]*//g' | sed 's/[?&]pgbouncer=[^&]*//g' | sed 's/?$//')
+  DB_CONN_HATCHET=$(echo "$HATCHET_DATABASE_URL" | sed 's/[?&]schema=[^&]*//g' | sed 's/[?&]sslmode=[^&]*//g' | sed 's/[?&]pgbouncer=[^&]*//g' | sed 's/?$//')
+  DB_CONN_LTI=$(echo "$LTI_DATABASE_URL" | sed 's/[?&]schema=[^&]*//g' | sed 's/[?&]sslmode=[^&]*//g' | sed 's/[?&]pgbouncer=[^&]*//g' | sed 's/?$//')
 else
   log "Using individual database variables for connection"
   echo "  🔍 Checking DATABASE_USER..."
@@ -234,12 +236,22 @@ TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 
 # Get the appropriate dump directory
 DUMP_DIR=$(get_dump_directory "db")
+DUMP_DIR_HATCHET=$(get_dump_directory "db_hatchet")
+DUMP_DIR_LTI=$(get_dump_directory "db_lti")
 mkdir -p "$DUMP_DIR"
+mkdir -p "$DUMP_DIR_HATCHET"
+mkdir -p "$DUMP_DIR_LTI"
 
 # Set full path for dump file
 DUMP_FILE="$DUMP_DIR/dump_${TIMESTAMP}.tar"
+DUMP_FILE_HATCHET="$DUMP_DIR_HATCHET/dump_${TIMESTAMP}.tar"
+DUMP_FILE_LTI="$DUMP_DIR_LTI/dump_${TIMESTAMP}.tar"
 echo "  💾 Dump file will be: $DUMP_FILE"
+echo "  💾 Dump file will be: $DUMP_FILE_HATCHET"
+echo "  💾 Dump file will be: $DUMP_FILE_LTI"
 echo "  📁 Dump directory: $DUMP_DIR"
+echo "  📁 Dump directory: $DUMP_DIR_HATCHET"
+echo "  📁 Dump directory: $DUMP_DIR_LTI"
 
 if is_automated_mode; then
     echo "  🤖 Running in automated mode"
@@ -250,10 +262,18 @@ fi
 echo "\n🚀 Step 5: Executing Database Dump"
 echo "------------------------------------"
 log "Creating database dump: $DUMP_FILE"
+log "Creating database dump: $DUMP_FILE_HATCHET"
+log "Creating database dump: $DUMP_FILE_LTI"
 
 # Run pg_dump with error handling
 echo "  📊 Starting pg_dump process (this may take a while)..."
 if ! pg_dump --dbname="$DB_CONN" --format=t --file="$DUMP_FILE" --no-owner --verbose; then
+    error_exit "Database dump failed"
+fi
+if ! pg_dump --dbname="$DB_CONN_HATCHET" --format=t --file="$DUMP_FILE_HATCHET" --no-owner --verbose; then
+    error_exit "Database dump failed"
+fi
+if ! pg_dump --dbname="$DB_CONN_LTI" --format=t --file="$DUMP_FILE_LTI" --no-owner --verbose; then
     error_exit "Database dump failed"
 fi
 
@@ -286,6 +306,12 @@ fi
 if ! verify_dump_file "$DUMP_FILE" 1024; then
   error_exit "Database dump file verification failed"
 fi
+if ! verify_dump_file "$DUMP_FILE_HATCHET" 1024; then
+  error_exit "Database dump file verification failed"
+fi
+if ! verify_dump_file "$DUMP_FILE_LTI" 1024; then
+  error_exit "Database dump file verification failed"
+fi
 
 echo "\n🔒 Step 8: Post-Processing"
 echo "--------------------------"
@@ -305,16 +331,40 @@ if ! gpg --batch --yes --passphrase "$BACKUP_ENCRYPTION_KEY" \
         --output "${DUMP_FILE}.gpg" "$DUMP_FILE"; then
     error_exit "Failed to encrypt dump file"
 fi
+if ! gpg --batch --yes --passphrase "$BACKUP_ENCRYPTION_KEY" \
+        --cipher-algo AES256 --symmetric \
+        --output "${DUMP_FILE_HATCHET}.gpg" "$DUMP_FILE_HATCHET"; then
+    error_exit "Failed to encrypt dump file"
+fi
+if ! gpg --batch --yes --passphrase "$BACKUP_ENCRYPTION_KEY" \
+        --cipher-algo AES256 --symmetric \
+        --output "${DUMP_FILE_LTI}.gpg" "$DUMP_FILE_LTI"; then
+    error_exit "Failed to encrypt dump file"
+fi
 
 # Remove unencrypted version (security requirement)
 rm -f "$DUMP_FILE"
+rm -f "$DUMP_FILE_HATCHET"
+rm -f "$DUMP_FILE_LTI"
 DUMP_FILE="${DUMP_FILE}.gpg"
+DUMP_FILE_HATCHET="${DUMP_FILE_HATCHET}.gpg"
+DUMP_FILE_LTI="${DUMP_FILE_LTI}.gpg"
 echo "  ✅ Dump file encrypted successfully"
 
 # Generate checksum for encrypted file (for integrity verification)
 echo "  🔍 Generating integrity checksum..."
 if command -v generate_checksum &> /dev/null; then
     if generate_checksum "$DUMP_FILE" >/dev/null; then
+        echo "  ✅ Checksum generated successfully"
+    else
+        echo "  ⚠️  Warning: Failed to generate checksum (backup still valid)"
+    fi
+    if generate_checksum "$DUMP_FILE_HATCHET" >/dev/null; then
+        echo "  ✅ Checksum generated successfully"
+    else
+        echo "  ⚠️  Warning: Failed to generate checksum (backup still valid)"
+    fi
+    if generate_checksum "$DUMP_FILE_LTI" >/dev/null; then
         echo "  ✅ Checksum generated successfully"
     else
         echo "  ⚠️  Warning: Failed to generate checksum (backup still valid)"
@@ -337,6 +387,22 @@ if [[ -f "$(dirname "$0")/../lib/_backup-verify.sh" ]]; then
         rm -f "$DUMP_FILE"
         error_exit "Backup verification failed - backup was corrupted and removed"
     fi
+    if verify_backup_decrypt "$DUMP_FILE_HATCHET" 1048576 "$BACKUP_ENCRYPTION_KEY"; then
+        echo "  ✅ Backup verification successful - can be decrypted"
+    else
+        echo "  ❌ ERROR: Backup verification failed - cannot decrypt!"
+        echo "  🗑️  Removing corrupted backup file..."
+        rm -f "$DUMP_FILE_HATCHET"
+        error_exit "Backup verification failed - backup was corrupted and removed"
+    fi
+    if verify_backup_decrypt "$DUMP_FILE_LTI" 1048576 "$BACKUP_ENCRYPTION_KEY"; then
+        echo "  ✅ Backup verification successful - can be decrypted"
+    else
+        echo "  ❌ ERROR: Backup verification failed - cannot decrypt!"
+        echo "  🗑️  Removing corrupted backup file..."
+        rm -f "$DUMP_FILE_LTI"
+        error_exit "Backup verification failed - backup was corrupted and removed"
+    fi
 else
     echo "  ⚠️  Warning: Backup verification not available (skipping decrypt test)"
 fi
@@ -348,21 +414,43 @@ if should_update_latest; then
     ln -sf "$(basename "$DUMP_FILE")" "latest"
     echo "  ✅ Latest symlink updated to $(basename "$DUMP_FILE")"
     cd - > /dev/null
+    cd "$DUMP_DIR_HATCHET"
+    ln -sf "$(basename "$DUMP_FILE_HATCHET")" "latest"
+    echo "  ✅ Latest symlink updated to $(basename "$DUMP_FILE_HATCHET")"
+    cd - > /dev/null
+    cd "$DUMP_DIR_LTI"
+    ln -sf "$(basename "$DUMP_FILE_LTI")" "latest"
+    echo "  ✅ Latest symlink updated to $(basename "$DUMP_FILE_LTI")"
+    cd - > /dev/null
 fi
 
 # Cleanup old dumps if in automated mode
 if should_cleanup; then
     echo "  🧹 Cleaning up old dumps..."
     cleanup_old_dumps "$DUMP_DIR"
+    cleanup_old_dumps "$DUMP_DIR_HATCHET"
+    cleanup_old_dumps "$DUMP_DIR_LTI"
 fi
 
 echo "\n🎉 DATABASE DUMP COMPLETED SUCCESSFULLY!"
 echo "================================================"
 echo "Dump file: $(basename "$DUMP_FILE")"
+echo "Dump file: $(basename "$DUMP_FILE_HATCHET")"
+echo "Dump file: $(basename "$DUMP_FILE_LTI")"
 echo "Location: $DUMP_FILE"
+echo "Location: $DUMP_FILE_HATCHET"
+echo "Location: $DUMP_FILE_LTI"
 echo "Directory: $DUMP_DIR"
+echo "Directory: $DUMP_DIR_HATCHET"
+echo "Directory: $DUMP_DIR_LTI"
 echo "Generated: $(date)"
 if [[ -L "$DUMP_DIR/latest" ]]; then
     echo "Latest link: $DUMP_DIR/latest -> $(readlink "$DUMP_DIR/latest")"
+fi
+if [[ -L "$DUMP_DIR_HATCHET/latest" ]]; then
+    echo "Latest link: $DUMP_DIR_HATCHET/latest -> $(readlink "$DUMP_DIR_HATCHET/latest")"
+fi
+if [[ -L "$DUMP_DIR_LTI/latest" ]]; then
+    echo "Latest link: $DUMP_DIR_LTI/latest -> $(readlink "$DUMP_DIR_LTI/latest")"
 fi
 echo "================================================"

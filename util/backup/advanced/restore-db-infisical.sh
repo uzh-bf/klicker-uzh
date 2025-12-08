@@ -143,7 +143,9 @@ PROJECT_ID=$(jq -r '.workspaceId' "$CONFIG_FILE")
 # INFISICAL DELEGATION
 # =============================================================================
 export BACKUP_ENCRYPTION_KEY=$(infisical secrets get BACKUP_ENCRYPTION_KEY --env="$ENVIRONMENT" --projectId="$PROJECT_ID" --plain)
-export DATABASE_URL=$(infisical secrets get DIRECT_DATABASE_URL --env="$ENVIRONMENT" --projectId="$PROJECT_ID" --plain)
+export DATABASE_URL=$(infisical secrets get DATABASE_URL --env="$ENVIRONMENT" --projectId="$PROJECT_ID" --plain)
+export DATABASE_URL_HATCHET=$(infisical secrets get HATCHET_DATABASE_URL --env="$ENVIRONMENT" --projectId="$PROJECT_ID" --plain)
+export DATABASE_URL_LTI=$(infisical secrets get LTI_DB_CONNECTION_STRING --env="$ENVIRONMENT" --projectId="$PROJECT_ID" --plain)
 
 # =============================================================================
 # SOURCE UTILITIES
@@ -202,6 +204,30 @@ if [[ -z "${DUMP_FILE:-}" ]]; then
     fi
 else
     log_info "Using explicitly provided dump file: $DUMP_FILE"
+fi
+if [[ -z "${DUMP_FILE_HATCHET:-}" ]]; then
+    if DISCOVERED_DUMP=$(find_latest_dump "db_hatchet"); then
+        DUMP_FILE_HATCHET="$DISCOVERED_DUMP"
+        log_info "Auto-discovered dump file: $DUMP_FILE_HATCHET"
+    else
+        # Fallback to default location for backward compatibility
+        DUMP_FILE_HATCHET="${SCRIPT_DIR}/../dump.tar"
+        log_warning "No dumps found, using fallback: $DUMP_FILE_HATCHET"
+    fi
+else
+    log_info "Using explicitly provided dump file: $DUMP_FILE_HATCHET"
+fi
+if [[ -z "${DUMP_FILE_LTI:-}" ]]; then
+    if DISCOVERED_DUMP=$(find_latest_dump "db_lti"); then
+        DUMP_FILE_LTI="$DISCOVERED_DUMP"
+        log_info "Auto-discovered dump file: $DUMP_FILE_LTI"
+    else
+        # Fallback to default location for backward compatibility
+        DUMP_FILE_LTI="${SCRIPT_DIR}/../dump.tar"
+        log_warning "No dumps found, using fallback: $DUMP_FILE_LTI"
+    fi
+else
+    log_info "Using explicitly provided dump file: $DUMP_FILE_LTI"
 fi
 
 # =============================================================================
@@ -291,7 +317,6 @@ restore_database() {
     if [[ -L "$DUMP_FILE" ]]; then
         actual_file=$(readlink -f "$DUMP_FILE" 2>/dev/null || readlink "$DUMP_FILE" 2>/dev/null || echo "$DUMP_FILE")
     fi
-
     if [[ "$actual_file" != *.gpg ]]; then
         echo "  ❌ ERROR: Security Policy Violation - Unencrypted dump detected"
         echo "  🔒 All dump files must be encrypted for security"
@@ -304,8 +329,42 @@ restore_database() {
         echo ""
         error_exit "Unencrypted dumps are not allowed - security policy violation"
     fi
+    local actual_file_hatchet="$DUMP_FILE_HATCHET"
+    if [[ -L "$DUMP_FILE_HATCHET" ]]; then
+        actual_file_hatchet=$(readlink -f "$DUMP_FILE_HATCHET" 2>/dev/null || readlink "$DUMP_FILE_HATCHET" 2>/dev/null || echo "$DUMP_FILE_HATCHET")
+    fi
+    if [[ "$actual_file_hatchet" != *.gpg ]]; then
+        echo "  ❌ ERROR: Security Policy Violation - Unencrypted dump detected"
+        echo "  🔒 All dump files must be encrypted for security"
+        echo "  📁 File: $(basename "$DUMP_FILE_HATCHET")"
+        echo "  💡 Expected: $(basename "$actual_file_hatchet").gpg"
+        echo ""
+        echo "  📋 To fix this:"
+        echo "     1. Create encrypted dumps: BACKUP_ENCRYPTION_KEY='key' ./dump-db.sh"
+        echo "     2. Contact admin for encrypted production dumps"
+        echo ""
+        error_exit "Unencrypted dumps are not allowed - security policy violation"
+    fi
+    local actual_file_lti="$DUMP_FILE_LTI"
+    if [[ -L "$DUMP_FILE_LTI" ]]; then
+        actual_file_lti=$(readlink -f "$DUMP_FILE_LTI" 2>/dev/null || readlink "$DUMP_FILE_LTI" 2>/dev/null || echo "$DUMP_FILE_LTI")
+    fi
+    if [[ "$actual_file_lti" != *.gpg ]]; then
+        echo "  ❌ ERROR: Security Policy Violation - Unencrypted dump detected"
+        echo "  🔒 All dump files must be encrypted for security"
+        echo "  📁 File: $(basename "$DUMP_FILE_LTI")"
+        echo "  💡 Expected: $(basename "$actual_file_lti").gpg"
+        echo ""
+        echo "  📋 To fix this:"
+        echo "     1. Create encrypted dumps: BACKUP_ENCRYPTION_KEY='key' ./dump-db.sh"
+        echo "     2. Contact admin for encrypted production dumps"
+        echo ""
+        error_exit "Unencrypted dumps are not allowed - security policy violation"
+    fi
 
     log_info "🔒 Encrypted dump detected: $(basename "$DUMP_FILE")"
+    log_info "🔒 Encrypted dump detected: $(basename "$DUMP_FILE_HATCHET")"
+    log_info "🔒 Encrypted dump detected: $(basename "$DUMP_FILE_LTI")"
 
     if [[ -z "${BACKUP_ENCRYPTION_KEY:-}" ]]; then
         echo "  ❌ ERROR: Missing required encryption key"
@@ -330,17 +389,37 @@ restore_database() {
             log_warning "💡 Use --skip-checksum to bypass verification (not recommended)"
             error_exit "File integrity check failed - backup may be corrupted"
         fi
+        if verify_checksum "$actual_file_hatchet" "" true; then
+            log_info "✅ File integrity verification passed"
+        else
+            log_warning "❌ File integrity verification failed"
+            log_warning "💡 Use --skip-checksum to bypass verification (not recommended)"
+            error_exit "File integrity check failed - backup may be corrupted"
+        fi
+        if verify_checksum "$actual_file_lti" "" true; then
+            log_info "✅ File integrity verification passed"
+        else
+            log_warning "❌ File integrity verification failed"
+            log_warning "💡 Use --skip-checksum to bypass verification (not recommended)"
+            error_exit "File integrity check failed - backup may be corrupted"
+        fi
     else
         log_info "⚠️  Checksum verification not available (skipping)"
     fi
 
     # Perform decryption with enhanced logging
     DUMP_FILE=$(decrypt_dump_if_needed "$DUMP_FILE")
+    DUMP_FILE_HATCHET=$(decrypt_dump_if_needed "$DUMP_FILE_HATCHET")
+    DUMP_FILE_LTI=$(decrypt_dump_if_needed "$DUMP_FILE_LTI")
     log_info "✅ Using prepared dump file: $(basename "$DUMP_FILE")"
+    log_info "✅ Using prepared dump file: $(basename "$DUMP_FILE_HATCHET")"
+    log_info "✅ Using prepared dump file: $(basename "$DUMP_FILE_LTI")"
 
     # Verify dump file exists and is valid
     log_step "Verifying Dump File"
     validate_dump_file "$DUMP_FILE" "database dump"
+    validate_dump_file "$DUMP_FILE_HATCHET" "hatchet database dump"
+    validate_dump_file "$DUMP_FILE_LTI" "lti database dump"
     log_success "Dump file verification completed"
 
     # Validate database environment variables
@@ -356,14 +435,23 @@ restore_database() {
         DB_CONN=$(build_pg_connection_string)
         log_info "Connection string prepared"
     else
-        log_info "Using individual database parameters for connection"
-        log_info "Host: ${DATABASE_HOST}"
-        log_info "Database: ${DATABASE_NAME}"
-        log_info "User: ${DATABASE_USER}"
-
-        # Set PGPASSWORD for pg_restore
-        export PGPASSWORD="${DATABASE_PASS}"
-        DB_CONN="postgresql://${DATABASE_USER}:${DATABASE_PASS}@${DATABASE_HOST}:${DATABASE_PORT:-5432}/${DATABASE_NAME}"
+        error_exit "DATABASE_URL is not set"
+    fi
+    if [[ -n "${DATABASE_URL_HATCHET:-}" ]]; then
+        log_info "Using DATABASE_URL_HATCHET for connection"
+        # Clean up DATABASE_URL_HATCHET for pg_restore
+        DB_CONN_HATCHET=$DATABASE_URL_HATCHET
+        log_info "Connection string prepared"
+    else
+        error_exit "DATABASE_URL_HATCHET is not set"
+    fi
+    if [[ -n "${DATABASE_URL_LTI:-}" ]]; then
+        log_info "Using DATABASE_URL_LTI for connection"
+        # Clean up DATABASE_URL_LTI for pg_restore
+        DB_CONN_LTI=$DATABASE_URL_LTI
+        log_info "Connection string prepared"
+    else
+        error_exit "DATABASE_URL_LTI is not set"
     fi
 
     log_success "Database connection prepared"
@@ -379,6 +467,16 @@ restore_database() {
         else
             if ! pg_isready -h "${DATABASE_HOST}" -p "${DATABASE_PORT:-5432}" -U "${DATABASE_USER}" -d "${DATABASE_NAME}" -t 10; then
                 error_exit "Database connectivity test failed. Please check your database configuration."
+            fi
+        fi
+        if [[ -n "${DATABASE_URL_HATCHET:-}" ]]; then
+            if ! pg_isready -d "$DB_CONN_HATCHET" -t 10; then
+                error_exit "Hatchet database connectivity test failed. Please check your database configuration."
+            fi
+        fi
+        if [[ -n "${DATABASE_URL_LTI:-}" ]]; then
+            if ! pg_isready -d "$DB_CONN_LTI" -t 10; then
+                error_exit "LTI database connectivity test failed. Please check your database configuration."
             fi
         fi
         log_success "Database connectivity confirmed"
@@ -430,7 +528,24 @@ restore_database() {
             restore_exit_code=${PIPESTATUS[0]}
         fi
     fi
-
+    if [[ -n "${DATABASE_URL_HATCHET:-}" ]]; then
+        # Use DATABASE_URL connection with real-time streaming
+        echo "  📡 Using DATABASE_URL connection"
+        if pg_restore --dbname="$DB_CONN_HATCHET" --no-owner --format="t" --clean --verbose "$DUMP_FILE_HATCHET" 2>&1 | tee "$log_file"; then
+            restore_exit_code=0
+        else
+            restore_exit_code=${PIPESTATUS[0]}
+        fi
+    fi
+    if [[ -n "${DATABASE_URL_LTI:-}" ]]; then
+        # Use DATABASE_URL connection with real-time streaming
+        echo "  📡 Using DATABASE_URL connection"
+        if pg_restore --dbname="$DB_CONN_LTI" --no-owner --format="t" --clean --verbose "$DUMP_FILE_LTI" 2>&1 | tee "$log_file"; then
+            restore_exit_code=0
+        else
+            restore_exit_code=${PIPESTATUS[0]}
+        fi
+    fi
     # Stop progress indicator
     if [[ -n "${PROGRESS_PID:-}" ]]; then
         kill $PROGRESS_PID 2>/dev/null || true
@@ -452,7 +567,7 @@ restore_database() {
         if [[ -n "${DATABASE_URL:-}" ]]; then
             verify_conn="$DB_CONN"
         else
-            verify_conn="postgresql://${DATABASE_USER}:${DATABASE_PASS}@${DATABASE_HOST}:${DATABASE_PORT:-5432}/${DATABASE_NAME}"
+            error_exit "DATABASE_URL is not set"
         fi
 
         # Run KlickerUZH-specific database verification
@@ -471,6 +586,8 @@ restore_database() {
         echo "  📊 Restore Summary:"
         echo "  ✅ Database restored successfully"
         echo "  📁 Source file: $DUMP_FILE"
+        echo "  📁 Source file: $DUMP_FILE_HATCHET"
+        echo "  📁 Source file: $DUMP_FILE_LTI"
         echo "  🎯 Target: $ENVIRONMENT Database"
         echo "  🕐 Completed at: $(date '+%Y-%m-%d %H:%M:%S')"
 

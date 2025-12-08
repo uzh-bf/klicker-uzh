@@ -439,12 +439,18 @@ get_dump_directory() {
 # Function to find latest dump file for a service
 find_latest_dump() {
     local service="$1"  # "db" or "redis"
-
+    
     # 1. Check if explicit dump file provided
-    if [[ -n "${DUMP_FILE:-}" ]] && [[ -f "$DUMP_FILE" ]]; then
-        echo "$DUMP_FILE"
-        return 0
-    fi
+    # if { [[ -n "${DUMP_FILE:-}" ]] && [[ -f "$DUMP_FILE" ]]; } \
+    # || { [[ -n "${DUMP_FILE_HATCHET:-}" ]] && [[ -f "$DUMP_FILE_HATCHET" ]]; } \
+    # || { [[ -n "${DUMP_FILE_LTI:-}" ]] && [[ -f "$DUMP_FILE_LTI" ]]; }; then
+
+    #     echo "$DUMP_FILE"
+    #     echo "$DUMP_FILE_HATCHET"
+    #     echo "$DUMP_FILE_LTI"
+    #     return 0
+    # fi
+
 
     # 2. Determine search directory
     local dump_dir="$(get_dump_directory "$service")"
@@ -457,7 +463,7 @@ find_latest_dump() {
 
     # 4. Find most recent dump by timestamp
     local pattern
-    if [[ "$service" == "db" ]]; then
+    if [[ "$service" == "db" || "$service" == "db_hatchet" || "$service" == "db_lti" ]]; then
         pattern="dump_*.tar*"
     elif [[ "$service" == "redis-assessment" ]]; then
         pattern="redis_assessment_dump_*.dump*"
@@ -473,7 +479,7 @@ find_latest_dump() {
 
     # 5. Fallback to legacy location (backward compatibility)
     local script_dir="$(get_script_dir)"
-    if [[ "$service" == "db" ]] && [[ -f "${script_dir}/../dump.tar" ]]; then
+    if [[ "$service" == "db" || "$service" == "db_hatchet" || "$service" == "db_lti" ]] && [[ -f "${script_dir}/../dump.tar" ]]; then
         echo "${script_dir}/../dump.tar"
         return 0
     elif [[ "$service" == "redis" ]] && [[ -f "${script_dir}/../redis.dump" ]]; then
