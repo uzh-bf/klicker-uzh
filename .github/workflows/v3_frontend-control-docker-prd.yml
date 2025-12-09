@@ -2,7 +2,7 @@ name: Build Docker image for frontend-control (prd)
 
 on:
   push:
-    tags: ["v*.*.*"]
+    tags: ['v*.*.*']
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
