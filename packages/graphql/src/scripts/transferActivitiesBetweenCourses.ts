@@ -19,7 +19,6 @@ async function run() {
   const oldCourse = await prisma.course.findUnique({
     where: { id: oldCourseId },
     include: {
-      owner: true,
       liveQuizzes: true,
       practiceQuizzes: true,
       microLearnings: true,
@@ -29,9 +28,6 @@ async function run() {
   })
   const newCourse = await prisma.course.findUnique({
     where: { id: newCourseId },
-    include: {
-      owner: true,
-    },
   })
 
   if (!oldCourse) {
@@ -41,13 +37,11 @@ async function run() {
     throw new Error(`Destination course with ID ${newCourseId} not found`)
   }
 
-  if (oldCourse.owner.id !== newCourse.owner.id) {
+  if (oldCourse.ownerId !== newCourse.ownerId) {
     throw new Error(
       `Old course owner and new course owner are not the same user (ID: ${oldCourse.ownerId})`
     )
   }
-  const oldUserId = oldCourse.owner.id
-  const newUserId = newCourse.owner.id
 
   await prisma.$transaction(
     async (prisma) => {
@@ -79,17 +73,6 @@ async function run() {
         await recomputeDerivedPermissions(
           {
             liveQuizId,
-            userId: oldUserId,
-            updateAccessRequests: true,
-          },
-          prisma
-        )
-
-        // recompute derived permissions for the new user (-> add owner permissions)
-        await recomputeDerivedPermissions(
-          {
-            liveQuizId,
-            userId: newUserId,
             updateAccessRequests: true,
           },
           prisma
@@ -122,13 +105,10 @@ async function run() {
 
         // recompute derived permissions for the old user (-> remove owner permissions)
         await recomputeDerivedPermissions(
-          { practiceQuizId, userId: oldUserId, updateAccessRequests: true },
-          prisma
-        )
-
-        // recompute derived permissions for the new user (-> add owner permissions)
-        await recomputeDerivedPermissions(
-          { practiceQuizId, userId: newUserId, updateAccessRequests: true },
+          {
+            practiceQuizId,
+            updateAccessRequests: true,
+          },
           prisma
         )
       }
@@ -159,13 +139,10 @@ async function run() {
 
         // recompute derived permissions for the old user (-> remove owner permissions)
         await recomputeDerivedPermissions(
-          { microLearningId, userId: oldUserId, updateAccessRequests: true },
-          prisma
-        )
-
-        // recompute derived permissions for the new user (-> add owner permissions)
-        await recomputeDerivedPermissions(
-          { microLearningId, userId: newUserId, updateAccessRequests: true },
+          {
+            microLearningId,
+            updateAccessRequests: true,
+          },
           prisma
         )
       }
@@ -181,7 +158,7 @@ async function run() {
         }
 
         console.log(
-          `Transferring group activity: ${groupActivityName} (ID: ${groupActivityId}; ${++groupActivityCounter}/${oldCourse.groupActivities.length})`
+          `Transferring group activity: ${groupActivityName} (ID: ${groupActivityId}; ${++groupActivityCounter}/${groupActivityIds.length})`
         )
 
         await prisma.groupActivity.update({
@@ -194,15 +171,12 @@ async function run() {
           id: groupActivityId,
         })
 
-        // recompute derived permissions for the old user (-> remove owner permissions)
+        // recompute derived permissions
         await recomputeDerivedPermissions(
-          { groupActivityId, userId: oldUserId, updateAccessRequests: true },
-          prisma
-        )
-
-        // recompute derived permissions for the new user (-> add owner permissions)
-        await recomputeDerivedPermissions(
-          { groupActivityId, userId: newUserId, updateAccessRequests: true },
+          {
+            groupActivityId,
+            updateAccessRequests: true,
+          },
           prisma
         )
       }
