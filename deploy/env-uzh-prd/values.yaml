@@ -451,11 +451,11 @@ backendGraphql:
 
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
+      cpu: 100m
+      memory: 100Mi
     limits:
       cpu: 200m
-      memory: 200Mi
+      memory: 500Mi
 
 olatApi:
   priorityClassName: production-workload
@@ -761,11 +761,11 @@ assessment:
 
     resources:
       requests:
-        cpu: 50m
-        memory: 50Mi
+        cpu: 100m
+        memory: 100Mi
       limits:
         cpu: 200m
-        memory: 200Mi
+        memory: 500Mi
 
   responseApi:
     corsAllowedOrigins: 'https://assessment.klicker.uzh.ch'
