@@ -9,11 +9,11 @@ async function run() {
   // ! Set old and new user IDs and the course IDs, which should be transferred including all activities and elements
   const oldCourseId = ''
   const newCourseId = ''
-  const liveQuizIds: string[] = []
-  const practiceQuizIds: string[] = []
-  const microLearningIds: string[] = []
-  const groupActivityIds: string[] = []
-  const chatbotIds: string[] = []
+  const liveQuizIds = new Set<string>([])
+  const practiceQuizIds = new Set<string>([])
+  const microLearningIds = new Set<string>([])
+  const groupActivityIds = new Set<string>([])
+  const chatbotIds = new Set<string>([])
 
   // fetch all content of the old user
   const oldCourse = await prisma.course.findUnique({
@@ -51,12 +51,12 @@ async function run() {
         id: liveQuizId,
         name: liveQuizName,
       } of oldCourse.liveQuizzes) {
-        if (!liveQuizIds.includes(liveQuizId)) {
+        if (!liveQuizIds.has(liveQuizId)) {
           continue
         }
 
         console.log(
-          `Transferring live quiz: ${liveQuizName} (ID: ${liveQuizId}, ${++liveQuizCounter}/${liveQuizIds.length})`
+          `Transferring live quiz: ${liveQuizName} (ID: ${liveQuizId}, ${++liveQuizCounter}/${liveQuizIds.size})`
         )
 
         await prisma.liveQuiz.update({
@@ -85,12 +85,12 @@ async function run() {
         id: practiceQuizId,
         name: practiceQuizName,
       } of oldCourse.practiceQuizzes) {
-        if (!practiceQuizIds.includes(practiceQuizId)) {
+        if (!practiceQuizIds.has(practiceQuizId)) {
           continue
         }
 
         console.log(
-          `Transferring practice quiz: ${practiceQuizName} (ID: ${practiceQuizId}; ${++practiceQuizCounter}/${practiceQuizIds.length})`
+          `Transferring practice quiz: ${practiceQuizName} (ID: ${practiceQuizId}; ${++practiceQuizCounter}/${practiceQuizIds.size})`
         )
 
         await prisma.practiceQuiz.update({
@@ -119,12 +119,12 @@ async function run() {
         id: microLearningId,
         name: microLearningName,
       } of oldCourse.microLearnings) {
-        if (!microLearningIds.includes(microLearningId)) {
+        if (!microLearningIds.has(microLearningId)) {
           continue
         }
 
         console.log(
-          `Transferring microlearning: ${microLearningName} (ID: ${microLearningId}; ${++microLearningCounter}/${microLearningIds.length})`
+          `Transferring microlearning: ${microLearningName} (ID: ${microLearningId}; ${++microLearningCounter}/${microLearningIds.size})`
         )
 
         await prisma.microLearning.update({
@@ -153,12 +153,12 @@ async function run() {
         id: groupActivityId,
         name: groupActivityName,
       } of oldCourse.groupActivities) {
-        if (!groupActivityIds.includes(groupActivityId)) {
+        if (!groupActivityIds.has(groupActivityId)) {
           continue
         }
 
         console.log(
-          `Transferring group activity: ${groupActivityName} (ID: ${groupActivityId}; ${++groupActivityCounter}/${groupActivityIds.length})`
+          `Transferring group activity: ${groupActivityName} (ID: ${groupActivityId}; ${++groupActivityCounter}/${groupActivityIds.size})`
         )
 
         await prisma.groupActivity.update({
@@ -184,12 +184,12 @@ async function run() {
       // migrate chatbots to new owner
       let chatbotCounter = 0
       for (const { id: chatbotId, name: chatbotName } of oldCourse.chatbots) {
-        if (!chatbotIds.includes(chatbotId)) {
+        if (!chatbotIds.has(chatbotId)) {
           continue
         }
 
         console.log(
-          `Transferring chatbot: ${chatbotName} (ID: ${chatbotId}; ${++chatbotCounter}/${chatbotIds.length})`
+          `Transferring chatbot: ${chatbotName} (ID: ${chatbotId}; ${++chatbotCounter}/${chatbotIds.size})`
         )
 
         await prisma.chatbot.update({
