@@ -263,6 +263,17 @@ type AnswerCollection {
   updatedAt: Date
 }
 
+type AnswerCollectionBasic {
+  id: Int!
+  name: String!
+  numOfEntries: Int
+  version: Int!
+}
+
+type AnswerCollectionDownloadLink {
+  downloadLink: String!
+}
+
 type AnswerCollectionEntry {
   id: Int!
   numSolutionUsages: Int
@@ -995,12 +1006,51 @@ enum ElementDisplayMode {
   LIST
 }
 
+type ElementDownloadLink {
+  downloadLink: String!
+}
+
+type ElementExistsInfo {
+  exists: Boolean!
+  id: Int!
+  isAnswerCollectionIdMismatch: Boolean!
+  isBasePointsMismatch: Boolean!
+  isContentMismatch: Boolean!
+  isExplanationMismatch: Boolean!
+  isNameMismatch: Boolean!
+  isOptionsMismatch: Boolean!
+  isPointsMultiplierMismatch: Boolean!
+  isStatusMismatch: Boolean!
+  isVersionMismatch: Boolean!
+  name: String!
+}
+
 type ElementFeedback {
   downvote: Boolean!
   elementInstanceId: Int!
   feedback: String
   id: Int!
   upvote: Boolean!
+}
+
+input ElementImportInput {
+  answerCollectionId: Int
+  basePoints: Boolean!
+  content: String!
+  explanation: String
+  id: Int!
+  isArchived: Boolean!
+  name: String!
+  optionsCaseStudy: OptionsCaseStudyInput
+  optionsChoices: OptionsChoicesInput
+  optionsFreeText: OptionsFreeTextInput
+  optionsNumerical: OptionsNumericalInput
+  optionsSelection: OptionsSelectionInput
+  originalId: Int
+  pointsMultiplier: Float!
+  status: ElementStatus!
+  type: ElementType!
+  version: Int!
 }
 
 type ElementInstance {
@@ -1700,6 +1750,7 @@ type Mutation {
   changeShortname(shortname: String!): User
   changeUserGroupName(id: Int!, name: String!): Boolean!
   changeUserLocale(locale: LocaleType!): User
+  checkExistingImportedElements(elements: [ElementImportInput!]!): [ElementExistsInfo!]
   copyCatalogObjectToAccount(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
   correctAssessmentPointsInstance(awardBasePoints: Boolean, awardBonusPoints: Boolean, awardCorrectnessPoints: Boolean, deductBasePoints: Boolean, deductBonusPoints: Boolean, deductCorrectnessPoints: Boolean, instanceId: Int!, participantId: String, participantIds: [String!], reason: String!, scope: PointCorrectionType!, studentReason: String!): PointCorrection
   correctAssessmentPointsLiveQuiz(awardBasePoints: Boolean, awardBonusPoints: Boolean, awardCorrectnessPoints: Boolean, deductBasePoints: Boolean, deductBonusPoints: Boolean, deductCorrectnessPoints: Boolean, liveQuizId: String!, participantId: String, participantIds: [String!], reason: String!, scope: PointCorrectionType!, studentReason: String!): PointCorrection
@@ -2261,8 +2312,10 @@ type Query {
   getActivityAnalytics(activityId: String!): QuizAnalytics
   getActivityTemplate(templateId: String!): ActivityTemplate
   getAnswerCollectionCatalogInfo(catalogCollectionId: String, collectionId: Int!): AnswerCollection
+  getAnswerCollectionDownloadLink(answerCollectionId: Int!): AnswerCollectionDownloadLink
   getAnswerCollectionsElements(templateId: String): [AnswerCollection!]
   getAnswerCollectionsInfo: [AnswerCollection!]
+  getAnswerCollectionsInfoBasic: [AnswerCollectionBasic!]
   getBookmarkedElementStacks(courseId: String!): [ElementStack!]
   getBookmarksPracticeQuiz(courseId: String!, quizId: String): [Int!]
   getCatalogAnswerCollections: [CatalogSelectionObject!]
@@ -2287,6 +2340,7 @@ type Query {
   getCourseWeeklyActivity(courseId: String): WeeklyCourseActivities
   getDerivedObjectPermissions(objectId: String!, objectType: ObjectType!): [DerivedPermissionInfo!]
   getDerivedPermissionOrigin(id: Int!): DerivedPermissionOriginInformation
+  getElementDownloadLink(elementIds: [Int!]!): ElementDownloadLink
   getElementSummary(id: Int!): ElementSummary
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary

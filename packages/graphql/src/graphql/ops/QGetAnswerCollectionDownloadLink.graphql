@@ -1,0 +1,5 @@
+query GetAnswerCollectionDownloadLink($answerCollectionId: Int!) {
+  getAnswerCollectionDownloadLink(answerCollectionId: $answerCollectionId) {
+    downloadLink
+  }
+}

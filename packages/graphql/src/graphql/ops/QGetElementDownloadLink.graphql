@@ -1,0 +1,5 @@
+query GetElementDownloadLink($elementIds: [Int!]!) {
+  getElementDownloadLink(elementIds: $elementIds) {
+    downloadLink
+  }
+}

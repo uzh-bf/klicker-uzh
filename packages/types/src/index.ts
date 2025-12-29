@@ -751,6 +751,29 @@ export type GroupActivityResults = {
 }
 // #endregion
 
+// ----- IMPORT / EXPORT -----
+// #region
+export type ElementImportInput = {
+  id: number
+  isArchived: boolean
+  name: string
+  content: string
+  type: ElementType
+  optionsChoices?: OptionsChoicesInput | null
+  optionsNumerical?: OptionsNumericalInput | null
+  optionsFreeText?: OptionsFreeTextInput | null
+  optionsSelection?: OptionsSelectionInput | null
+  optionsCaseStudy?: OptionsCaseStudyInput | null
+  pointsMultiplier: number
+  explanation?: string | null
+  originalId?: number | null
+  version: number
+  status: ElementStatus
+  answerCollectionId?: number | null
+  basePoints: boolean
+}
+// #endregion
+
 // ----- INSTANCE EVALUATION -----
 // #region
 export interface IQuestionFeedback {

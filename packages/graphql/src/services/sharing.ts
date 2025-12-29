@@ -1,3 +1,4 @@
+import { BlobServiceClient } from '@azure/storage-blob'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityLogModificationFieldType,
@@ -11,10 +12,12 @@ import {
   recomputeDerivedPermissions,
   updateAccessRequestInstances,
 } from '@klicker-uzh/util'
+import { randomUUID } from 'crypto'
 import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
+import { getFileUploadSas } from './elements.js'
 
 // ! Helper functions
 // #region
@@ -6900,5 +6903,75 @@ export async function getObjectActivity(
     isOwn: entry.userId === ctx.user.sub,
     isEdited: entry.updatedAt.getTime() > entry.createdAt.getTime(),
   }))
+}
+
+export async function getAnswerCollectionDownloadLink(
+  { answerCollectionId }: { answerCollectionId: number },
+  ctx: ContextWithUser
+) {
+  const answerCollection = await ctx.prisma.answerCollection.findUnique({
+    where: {
+      id: answerCollectionId,
+    },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      version: true,
+      // ownerId: true,
+      // createdAt: true,
+      // updatedAt: true,
+      // isDeleted: true,
+      originalId: true,
+      entries: {
+        select: {
+          id: true,
+          value: true,
+        },
+      },
+      catalogAssignments: {
+        select: {
+          id: true,
+          access: true,
+          catalogCollectionId: true,
+          // answerCollectionId: true,
+          // elementId: true,
+          // courseId: true,
+          // liveQuizId: true,
+          // practiceQuizId: true,
+          // microLearningId: true,
+          // groupActivityId: true,
+          // createdAt: true,
+          // updatedAt: true,
+        },
+      },
+    },
+  })
+
+  const fileID = randomUUID()
+  const filename = `answercollection-export-${fileID}.json`
+  const json = JSON.stringify(answerCollection, null, 2)
+  const buffer = Buffer.from(json, 'utf8')
+
+  const data = await getFileUploadSas(
+    { fileName: filename, contentType: 'application/json' },
+    ctx
+  )
+
+  const blobServiceClient = new BlobServiceClient(data.uploadSasURL)
+  const containerClient = blobServiceClient.getContainerClient(
+    data.containerName
+  )
+  const blobClient = containerClient.getBlobClient(data.fileName)
+  const blockBlobClient = blobClient.getBlockBlobClient()
+  await blockBlobClient.uploadData(buffer, {
+    blobHTTPHeaders: {
+      blobContentType: 'application/json',
+    },
+  })
+
+  return {
+    downloadLink: data.uploadHref,
+  }
 }
 // #endregion

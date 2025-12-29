@@ -23,6 +23,8 @@ import { PointCorrection, PointCorrectionType } from './assessment.js'
 import { Course } from './course.js'
 import {
   Element,
+  ElementExistsInfo,
+  ElementImportInput,
   ElementInstance,
   OptionsCaseStudyInput,
   OptionsChoicesInput,
@@ -3471,6 +3473,23 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      // #endregion
+
+      // ----- IMPORT -----
+      // #region
+      checkExistingImportedElements: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: [ElementExistsInfo],
+        args: {
+          elements: t.arg({
+            type: [ElementImportInput],
+            required: true,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ElementService.checkExistingImportedElements(args, ctx)
+        },
+      }),
       // #endregion
     }
   },

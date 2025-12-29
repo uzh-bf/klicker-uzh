@@ -403,6 +403,16 @@ export async function getAnswerCollectionsInfo(ctx: ContextWithUser) {
   return collections
 }
 
+export async function getAnswerCollectionsInfoBasic(ctx: ContextWithUser) {
+  const collections = await getAnswerCollectionsInfo(ctx)
+  return collections.map((collection) => ({
+    id: collection.id,
+    name: collection.name,
+    numOfEntries: collection.numOfEntries,
+    version: collection.version,
+  }))
+}
+
 export async function modifyAnswerCollection(
   {
     id,

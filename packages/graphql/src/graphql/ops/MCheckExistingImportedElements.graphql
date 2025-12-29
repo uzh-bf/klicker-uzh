@@ -1,0 +1,16 @@
+mutation CheckExistingImportedElements($elements: [ElementImportInput!]!) {
+  checkExistingImportedElements(elements: $elements) {
+    id
+    name
+    exists
+    isNameMismatch
+    isContentMismatch
+    isOptionsMismatch
+    isPointsMultiplierMismatch
+    isExplanationMismatch
+    isVersionMismatch
+    isStatusMismatch
+    isAnswerCollectionIdMismatch
+    isBasePointsMismatch
+  }
+}

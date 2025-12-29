@@ -1,5 +1,9 @@
 import { useQuery } from '@apollo/client'
-import { faListCheck } from '@fortawesome/free-solid-svg-icons'
+import {
+  faDownload,
+  faListCheck,
+  faUpload,
+} from '@fortawesome/free-solid-svg-icons'
 import {
   ActivityType,
   Element,
@@ -11,7 +15,9 @@ import { Button, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { Suspense, useCallback, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import DownloadModal from '~/components/elements/manipulation/DownloadModal'
+import UploadModal from '~/components/elements/manipulation/UploadModal'
 import ActivityCreation from '../components/activities/ActivityCreation'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
 import Pagination from '../components/common/Pagination'
@@ -57,6 +63,14 @@ function Index() {
     }
     return 10
   })
+
+  // export elements
+  const [uploadElements, setUploadElements] = useState(false)
+  const [downloadElements, setDownloadElements] = useState(false)
+  const [updatedElementsForDownload, setUpdatedElementsForDownload] =
+    useState(false)
+  const seenElementIds = useRef<Record<string, string>>({})
+  const seenAnswerCollections = useRef<Record<string, string>>({})
 
   const [modificationModalOpen, setModificationModalOpen] = useState(false)
   const [batchOperationsOpen, setBatchOperationsOpen] = useState(false)
@@ -260,6 +274,25 @@ function Index() {
     }
   }, [router.query.filterByCourse, router.query.filterByActivity])
 
+  // update selected elements for download
+  useEffect(() => {
+    if (updatedElementsForDownload) {
+      setSelectedElements((prev) => {
+        const copy = { ...prev }
+        const newSelection: Record<number, Element> = {}
+
+        for (const [id, el] of Object.entries(copy)) {
+          const newElement = elements.find((e) => e.id === Number(id))
+          newSelection[Number(id)] = newElement ?? el
+        }
+
+        return newSelection
+      })
+
+      setDownloadElements(true)
+    }
+  }, [updatedElementsForDownload])
+
   // since only applying the course filter does not result in a filtering of the elements, no warning should be shown
   const filtersActiveExceptCourse = !!(
     filters.tags.length > 0 ||
@@ -332,7 +365,7 @@ function Index() {
 
         <div className="flex w-full flex-1 flex-col overflow-auto">
           <>
-            <div className="flex flex-none flex-row content-center items-end justify-between pb-2.5">
+            <div className="flex flex-none flex-row flex-wrap content-center items-end justify-between pb-2.5">
               <div className="flex flex-row items-center gap-1.5">
                 <ElementListSelectAllCheckbox
                   elements={elements}
@@ -365,6 +398,26 @@ function Index() {
                     </Button.Label>
                   </Button>
                 ) : null}
+                <Button
+                  className={{
+                    root: 'h-9',
+                  }}
+                  onClick={() => setUpdatedElementsForDownload(true)}
+                  data={{ cy: 'elements-download' }}
+                >
+                  <Button.Icon icon={faDownload} />
+                  <Button.Label>{t('shared.generic.download')}</Button.Label>
+                </Button>
+                <Button
+                  className={{
+                    root: 'h-9',
+                  }}
+                  onClick={() => setUploadElements(true)}
+                  data={{ cy: 'elements-upload' }}
+                >
+                  <Button.Icon icon={faUpload} />
+                  <Button.Label>{t('shared.generic.upload')}</Button.Label>
+                </Button>
                 <Button
                   primary
                   onClick={() => {
@@ -485,6 +538,20 @@ function Index() {
             await refetchElements()
           }}
         />
+      )}
+      {downloadElements && (
+        <DownloadModal
+          selectedElements={Object.values(selectedElements)}
+          seenElementIds={seenElementIds}
+          seenAnswerCollections={seenAnswerCollections}
+          onClose={() => {
+            setUpdatedElementsForDownload(false)
+            setDownloadElements(false)
+          }}
+        />
+      )}
+      {uploadElements && (
+        <UploadModal onClose={() => setUploadElements(false)} />
       )}
       {batchOperationsOpen && (
         <ElementBatchOperationsModal

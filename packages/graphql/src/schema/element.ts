@@ -903,6 +903,85 @@ export const UserElementList = builder.objectType(UserElementListRef, {
     elements: t.expose('elements', { type: [Element] }),
   }),
 })
+export interface IElementDownloadLink {
+  downloadLink: string
+}
+export const ElementDownloadLinkRef = builder.objectRef<IElementDownloadLink>(
+  'ElementDownloadLink'
+)
+export const ElementDownloadLink = ElementDownloadLinkRef.implement({
+  fields: (t) => ({
+    downloadLink: t.exposeString('downloadLink'),
+  }),
+})
+
+export const ElementImportInput = builder.inputType('ElementImportInput', {
+  fields: (t) => ({
+    id: t.int({ required: true }),
+    isArchived: t.boolean({ required: true }),
+    name: t.string({ required: true }),
+    content: t.string({ required: true }),
+    type: t.field({ type: ElementType, required: true }),
+    optionsChoices: t.field({ type: OptionsChoicesInputRef, required: false }),
+    optionsNumerical: t.field({
+      type: OptionsNumericalInputRef,
+      required: false,
+    }),
+    optionsFreeText: t.field({
+      type: OptionsFreeTextInputRef,
+      required: false,
+    }),
+    optionsSelection: t.field({
+      type: OptionsSelectionInputRef,
+      required: false,
+    }),
+    optionsCaseStudy: t.field({
+      type: OptionsCaseStudyInputRef,
+      required: false,
+    }),
+    pointsMultiplier: t.float({ required: true }),
+    explanation: t.string(),
+    originalId: t.int(),
+    version: t.int({ required: true }),
+    status: t.field({ type: ElementStatus, required: true }),
+    answerCollectionId: t.int(),
+    basePoints: t.boolean({ required: true }),
+  }),
+})
+export interface IElementExistsInfo {
+  id: number
+  name: string
+  exists: boolean
+  isNameMismatch: boolean
+  isContentMismatch: boolean
+  isOptionsMismatch: boolean
+  isPointsMultiplierMismatch: boolean
+  isExplanationMismatch: boolean
+  isVersionMismatch: boolean
+  isStatusMismatch: boolean
+  isAnswerCollectionIdMismatch: boolean
+  isBasePointsMismatch: boolean
+}
+export const ElementExistsInfoRef =
+  builder.objectRef<IElementExistsInfo>('ElementExistsInfo')
+export const ElementExistsInfo = ElementExistsInfoRef.implement({
+  fields: (t) => ({
+    id: t.exposeInt('id'),
+    name: t.exposeString('name'),
+    exists: t.exposeBoolean('exists'),
+    isNameMismatch: t.exposeBoolean('isNameMismatch'),
+    isContentMismatch: t.exposeBoolean('isContentMismatch'),
+    isOptionsMismatch: t.exposeBoolean('isOptionsMismatch'),
+    isPointsMultiplierMismatch: t.exposeBoolean('isPointsMultiplierMismatch'),
+    isExplanationMismatch: t.exposeBoolean('isExplanationMismatch'),
+    isVersionMismatch: t.exposeBoolean('isVersionMismatch'),
+    isStatusMismatch: t.exposeBoolean('isStatusMismatch'),
+    isAnswerCollectionIdMismatch: t.exposeBoolean(
+      'isAnswerCollectionIdMismatch'
+    ),
+    isBasePointsMismatch: t.exposeBoolean('isBasePointsMismatch'),
+  }),
+})
 
 interface IElementSummary {
   sharedElementActivityUse: boolean // = true if the element is used in an activity by a user with shared access

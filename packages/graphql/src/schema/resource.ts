@@ -85,4 +85,36 @@ export const AnswerCollection = AnswerCollectionRef.implement({
   }),
 })
 
+interface IAnswerCollectionsInfoBasic {
+  id: number
+  name: string
+  numOfEntries?: number
+  version: number
+}
+export const AnswerCollectionsInfoBasicRef =
+  builder.objectRef<IAnswerCollectionsInfoBasic>('AnswerCollectionBasic')
+export const AnswerCollectionsInfoBasic =
+  AnswerCollectionsInfoBasicRef.implement({
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      name: t.exposeString('name'),
+      numOfEntries: t.exposeInt('numOfEntries', { nullable: true }),
+      version: t.exposeInt('version'),
+    }),
+  })
+
+interface IAnswerCollectionDownloadLink {
+  downloadLink: string
+}
+export const AnswerCollectionDownloadLinkRef =
+  builder.objectRef<IAnswerCollectionDownloadLink>(
+    'AnswerCollectionDownloadLink'
+  )
+export const AnswerCollectionDownloadLink =
+  AnswerCollectionDownloadLinkRef.implement({
+    fields: (t) => ({
+      downloadLink: t.exposeString('downloadLink'),
+    }),
+  })
+
 // #endregion

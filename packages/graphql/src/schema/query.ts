@@ -52,6 +52,7 @@ import {
 } from './course.js'
 import {
   Element,
+  ElementDownloadLink,
   ElementInstance,
   ElementInstanceVersionInfo,
   ElementSummary,
@@ -92,7 +93,12 @@ import {
   ReviewStatus,
   StackFeedback,
 } from './practiceQuiz.js'
-import { AnswerCollection, AnswerCollectionPreviewEntry } from './resource.js'
+import {
+  AnswerCollection,
+  AnswerCollectionDownloadLink,
+  AnswerCollectionPreviewEntry,
+  AnswerCollectionsInfoBasic,
+} from './resource.js'
 import {
   ActivityLogEntry,
   CatalogCollection,
@@ -855,6 +861,20 @@ export const Query = builder.queryType({
         ),
       }),
 
+      getElementDownloadLink: t.withAuth(asUser).field({
+        nullable: true,
+        type: ElementDownloadLink,
+        args: {
+          elementIds: t.arg.intList({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          console.log('ElementService', ElementService)
+          const res = await ElementService.getElementDownloadLink(args, ctx)
+          console.log(res)
+          return res
+        },
+      }),
+
       getOutdatedElementInstances: t.withAuth(asUser).field({
         nullable: true,
         type: [ElementInstanceVersionInfo],
@@ -1407,6 +1427,14 @@ export const Query = builder.queryType({
         type: [AnswerCollection],
         resolve: async (_, __, ctx) => {
           return await ResourcesService.getAnswerCollectionsInfo(ctx)
+        },
+      }),
+
+      getAnswerCollectionsInfoBasic: t.withAuth(asUser).field({
+        nullable: true,
+        type: [AnswerCollectionsInfoBasic],
+        resolve: async (_, __, ctx) => {
+          return await ResourcesService.getAnswerCollectionsInfoBasic(ctx)
         },
       }),
 
@@ -2095,6 +2123,17 @@ export const Query = builder.queryType({
         },
         resolve: async (_, args, ctx) => {
           return await SharingService.getAnswerCollectionCatalogInfo(args, ctx)
+        },
+      }),
+
+      getAnswerCollectionDownloadLink: t.withAuth(asUser).field({
+        nullable: true,
+        type: AnswerCollectionDownloadLink,
+        args: {
+          answerCollectionId: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SharingService.getAnswerCollectionDownloadLink(args, ctx)
         },
       }),
     }
