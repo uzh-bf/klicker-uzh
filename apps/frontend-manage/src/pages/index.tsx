@@ -551,7 +551,12 @@ function Index() {
         />
       )}
       {uploadElements && (
-        <UploadModal onClose={() => setUploadElements(false)} />
+        <UploadModal
+          onClose={() => setUploadElements(false)}
+          refetchElements={async () => {
+            await refetchElements()
+          }}
+        />
       )}
       {batchOperationsOpen && (
         <ElementBatchOperationsModal

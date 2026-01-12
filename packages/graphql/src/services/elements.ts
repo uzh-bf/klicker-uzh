@@ -1526,8 +1526,8 @@ export async function getElementDownloadLink(
       id: { in: elementIds },
     },
     select: {
-      id: true,
-      isArchived: true,
+      // id: true,
+      // isArchived: true,
       // isDeleted: true,
       name: true,
       content: true,
@@ -1538,10 +1538,16 @@ export async function getElementDownloadLink(
       // updatedAt: true,
       pointsMultiplier: true,
       explanation: true,
-      originalId: true,
+      // originalId: true,
       version: true,
       status: true,
       answerCollectionId: true,
+      answerCollectionItems: {
+        select: {
+          id: true,
+          value: true,
+        },
+      },
       basePoints: true,
     },
   })

@@ -1145,7 +1145,6 @@ export type ElementImportInput = {
   optionsFreeText?: InputMaybe<OptionsFreeTextInput>;
   optionsNumerical?: InputMaybe<OptionsNumericalInput>;
   optionsSelection?: InputMaybe<OptionsSelectionInput>;
-  originalId?: InputMaybe<Scalars['Int']['input']>;
   pointsMultiplier: Scalars['Float']['input'];
   status: ElementStatus;
   type: ElementType;

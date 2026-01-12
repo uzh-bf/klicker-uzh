@@ -941,7 +941,7 @@ export const ElementImportInput = builder.inputType('ElementImportInput', {
     }),
     pointsMultiplier: t.float({ required: true }),
     explanation: t.string(),
-    originalId: t.int(),
+    // originalId: t.string(),
     version: t.int({ required: true }),
     status: t.field({ type: ElementStatus, required: true }),
     answerCollectionId: t.int(),

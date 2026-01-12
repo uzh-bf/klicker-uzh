@@ -1046,7 +1046,6 @@ input ElementImportInput {
   optionsFreeText: OptionsFreeTextInput
   optionsNumerical: OptionsNumericalInput
   optionsSelection: OptionsSelectionInput
-  originalId: Int
   pointsMultiplier: Float!
   status: ElementStatus!
   type: ElementType!
