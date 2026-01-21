@@ -39,7 +39,7 @@
     "js-cookie": "3.0.5",
     "js-search": "2.0.1",
     "localforage": "1.10.0",
-    "lodash": "4.17.21",
+    "lodash": "4.17.23",
     "nanoid": "5.0.8",
     "next": "15.3.8",
     "next-intl": "4.3.4",
