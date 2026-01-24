@@ -41,6 +41,7 @@ interface PracticeQuizProps {
   currentIx: number
   setCurrentIx: (ix: number) => void
   handleNextElement: () => void
+  onAllStacksCompletion?: () => void
   showResetLocalStorage?: boolean
   previewOnly?: boolean
 }
@@ -50,6 +51,7 @@ function PracticeQuiz({
   currentIx,
   setCurrentIx,
   handleNextElement,
+  onAllStacksCompletion,
   showResetLocalStorage = false,
   previewOnly = false,
 }: PracticeQuizProps) {
@@ -59,6 +61,16 @@ function PracticeQuiz({
   const { data: dataParticipant } = useQuery(SelfDocument, {
     skip: previewOnly,
   })
+
+  const handleAllStacksCompletion = () => {
+    if (onAllStacksCompletion) {
+      onAllStacksCompletion()
+      return
+    }
+
+    // TODO: re-introduce summary page for practice quiz
+    router.push(`/`)
+  }
 
   const [progressState, setProgressState] = useLocalStorage<
     Record<
@@ -173,10 +185,7 @@ function PracticeQuiz({
               !!dataParticipant?.self &&
               dataParticipant.self.role !== UserRole.TemporaryParticipant
             }
-            onAllStacksCompletion={() =>
-              // TODO: re-introduce summary page for practice quiz
-              router.push(`/`)
-            }
+            onAllStacksCompletion={handleAllStacksCompletion}
             bookmarks={bookmarksData?.getBookmarksPracticeQuiz}
             previewOnly={previewOnly}
           />
