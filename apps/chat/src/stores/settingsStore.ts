@@ -26,7 +26,8 @@ interface SettingsState {
   // Actions
   setSelectedModel: (model: ModelID) => void
   setSelectedMode: (mode: string) => void
-  loadBootstrap: (chatbotId: string) => Promise<void>
+  loadModeOptions: (chatbotId: string) => Promise<void>
+  loadCredits: (chatbotId: string) => Promise<void>
   decrementCredits: (amount: number) => void
   resetCredits: () => void
 }
@@ -51,24 +52,46 @@ export const useSettingsStore = create<SettingsState>()(
       setSelectedModel: (model) => set({ selectedModel: model }),
       setSelectedMode: (mode: string) => set({ selectedMode: mode }),
 
-      loadBootstrap: async (chatbotId: string) => {
+      loadModeOptions: async (chatbotId: string) => {
         try {
-          const response = await fetch(`/api/chatbots/${chatbotId}/bootstrap`)
+          const response = await fetch(`/api/chatbots/${chatbotId}`)
+          const responseData = await response.json()
           if (!response.ok) {
-            console.error('Failed to load bootstrap:', response.statusText)
+            console.warn(
+              'No valid mode options found, falling back to defaults.'
+            )
+            set((state) => ({
+              modeOptions: Object.fromEntries(
+                Object.entries(DEFAULT_PROMPT).map(([key, value]) => [
+                  key,
+                  (value as { description: string }).description,
+                ])
+              ),
+              selectedMode:
+                Object.keys(DEFAULT_PROMPT)[0] ?? state.selectedMode,
+              modelSelectionEnabled: false,
+            }))
             return
           }
 
-          const data = await response.json()
+          const modelSelectionEnabled = responseData.modelSelection ?? false
 
-          const creditsData = data.credits ?? { current: 0, total: 0 }
-          const modelSelectionEnabled = data.modelSelectionEnabled ?? false
-          const availableModels: ModelOption[] = data.availableModels ?? []
-          const automaticModelId: string | undefined = data.automaticModelId
+          const modes: Record<string, string> = {}
+          if (responseData.systemPrompts) {
+            for (const [key, value] of Object.entries(
+              responseData.systemPrompts
+            )) {
+              const description = (value as { description?: string })
+                ?.description
+              if (typeof description === 'string') {
+                modes[key] = description
+              }
+            }
+          }
 
           const resolvedModeOptions: Record<string, string> =
-            data.modeOptions && Object.keys(data.modeOptions).length > 0
-              ? data.modeOptions
+            Object.keys(modes).length > 0
+              ? modes
               : Object.fromEntries(
                   Object.entries(DEFAULT_PROMPT).map(([key, value]) => [
                     key,
@@ -82,8 +105,38 @@ export const useSettingsStore = create<SettingsState>()(
               selectedMode = Object.keys(resolvedModeOptions)[0] ?? selectedMode
             }
 
+            return {
+              modeOptions: resolvedModeOptions,
+              modelSelectionEnabled,
+              selectedMode,
+            }
+          })
+        } catch (error) {
+          console.error('Error fetching mode options:', error)
+        }
+      },
+
+      loadCredits: async (chatbotId: string) => {
+        try {
+          const response = await fetch(`/api/chatbots/${chatbotId}/credits`)
+          if (!response.ok) {
+            console.error('Failed to load credits:', response.statusText)
+            return
+          }
+
+          const data = await response.json()
+
+          const creditsData = {
+            current: data.current ?? 0,
+            total: data.total ?? 0,
+          }
+          const availableModels: ModelOption[] = data.availableModels ?? []
+          const automaticModelId: string | undefined = data.automaticModelId
+
+          set((state) => {
             let selectedModel = state.selectedModel
-            if (!modelSelectionEnabled) {
+
+            if (!state.modelSelectionEnabled) {
               if (automaticModelId) selectedModel = automaticModelId
             } else {
               const isSelectedModelAvailable = availableModels.some(
@@ -97,15 +150,12 @@ export const useSettingsStore = create<SettingsState>()(
 
             return {
               credits: creditsData,
-              modelSelectionEnabled,
-              modeOptions: resolvedModeOptions,
               modelOptions: availableModels,
-              selectedMode,
               selectedModel,
             }
           })
         } catch (error) {
-          console.error('Error loading bootstrap:', error)
+          console.error('Error loading credits:', error)
         }
       },
 

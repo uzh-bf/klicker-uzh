@@ -52,87 +52,44 @@ const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
 ]
 
 let cachedRegistry: ChatModelConfig[] | null = null
-let warnedMissingRegistry = false
-let warnedInvalidAutoModels = false
 
-function validateUniqueIds(models: ChatModelConfig[]) {
-  const ids = new Set<string>()
-  for (const model of models) {
-    if (ids.has(model.id)) {
-      throw new Error(`Duplicate model id in registry: ${model.id}`)
-    }
-    ids.add(model.id)
-  }
-}
-
-function getRegistryFromEnv(): ChatModelConfig[] {
+export function getChatModelRegistry(): ChatModelConfig[] {
   if (cachedRegistry) return cachedRegistry
 
   const raw = process.env.CHAT_MODEL_REGISTRY_JSON
   if (!raw) {
-    if (!warnedMissingRegistry) {
-      warnedMissingRegistry = true
-      console.warn(
-        '[chat] CHAT_MODEL_REGISTRY_JSON is not set; falling back to built-in defaults.'
-      )
-    }
     cachedRegistry = DEFAULT_MODEL_REGISTRY
     return cachedRegistry
   }
 
-  const parsedJson = JSON.parse(raw)
-  const models = chatModelRegistrySchema.parse(parsedJson)
-  validateUniqueIds(models)
-
-  cachedRegistry = models
-  return cachedRegistry
-}
-
-export function getChatModelRegistry(): ChatModelConfig[] {
-  return getRegistryFromEnv()
-}
-
-export function getChatModel(modelId: string): ChatModelConfig | undefined {
-  return getRegistryFromEnv().find((m) => m.id === modelId)
-}
-
-export function getPublicChatModels(): PublicChatModel[] {
-  return getRegistryFromEnv().map(({ id, name, description, fallback }) => ({
-    id,
-    name,
-    description,
-    fallback,
-  }))
+  try {
+    cachedRegistry = chatModelRegistrySchema.parse(JSON.parse(raw))
+    return cachedRegistry
+  } catch (error) {
+    console.warn(
+      '[chat] Invalid CHAT_MODEL_REGISTRY_JSON; falling back to built-in defaults.',
+      error
+    )
+    cachedRegistry = DEFAULT_MODEL_REGISTRY
+    return cachedRegistry
+  }
 }
 
 export function getAutomaticModelId(credits: { current: number }): string {
-  const registry = getRegistryFromEnv()
+  const registry = getChatModelRegistry()
 
   const configuredPrimary = process.env.CHAT_PRIMARY_MODEL_ID
   const configuredFallback = process.env.CHAT_FALLBACK_MODEL_ID
 
-  const primaryId = configuredPrimary ?? 'gpt-4.1'
-  const fallbackId = configuredFallback ?? 'gpt-4.1-mini'
-
-  const primaryExists = registry.some((m) => m.id === primaryId)
-  const fallbackExists = registry.some((m) => m.id === fallbackId)
-
-  if ((!primaryExists || !fallbackExists) && !warnedInvalidAutoModels) {
-    warnedInvalidAutoModels = true
-    console.warn(
-      `[chat] CHAT_PRIMARY_MODEL_ID/CHAT_FALLBACK_MODEL_ID do not match registry (primary=${primaryId} exists=${primaryExists}, fallback=${fallbackId} exists=${fallbackExists}). Falling back to registry-derived defaults.`
-    )
-  }
-
-  const derivedPrimary =
-    registry.find((m) => m.id === primaryId) ??
-    registry.find((m) => m.fallback === false) ??
+  const primary =
+    (configuredPrimary && registry.find((m) => m.id === configuredPrimary)) ||
+    registry.find((m) => m.fallback === false) ||
     registry[0]
 
-  const derivedFallback =
-    registry.find((m) => m.id === fallbackId) ??
-    registry.find((m) => m.fallback === true) ??
-    derivedPrimary
+  const fallback =
+    (configuredFallback && registry.find((m) => m.id === configuredFallback)) ||
+    registry.find((m) => m.fallback === true) ||
+    primary
 
-  return credits.current > 0 ? derivedPrimary.id : derivedFallback.id
+  return credits.current > 0 ? primary.id : fallback.id
 }

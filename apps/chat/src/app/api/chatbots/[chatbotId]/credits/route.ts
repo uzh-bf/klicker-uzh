@@ -1,3 +1,7 @@
+import {
+  getAutomaticModelId,
+  getChatModelRegistry,
+} from '@/src/lib/server/chatModelRegistry'
 import { CreditsService } from '@/src/services/credits'
 import { JWTPayload, jwtVerify } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
@@ -51,7 +55,22 @@ export async function GET(
       chatbotId
     )
 
-    return NextResponse.json(credits)
+    const allModels = getChatModelRegistry().map(
+      ({ id, name, description, fallback }) => ({
+        id,
+        name,
+        description,
+        fallback,
+      })
+    )
+    const availableModels =
+      credits.current > 0 ? allModels : allModels.filter((m) => m.fallback)
+
+    return NextResponse.json({
+      ...credits,
+      availableModels,
+      automaticModelId: getAutomaticModelId(credits),
+    })
   } catch (error) {
     console.error('Failed to fetch credits:', error)
     return NextResponse.json(

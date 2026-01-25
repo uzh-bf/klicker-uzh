@@ -19,7 +19,8 @@ export function RuntimeProvider({
   children: React.ReactNode
 }>) {
   const { activeThreadId, threads, setMessages, loadThreads } = useChatStore()
-  const { selectedModel, selectedMode, loadBootstrap } = useSettingsStore()
+  const { selectedModel, selectedMode, loadCredits, loadModeOptions } =
+    useSettingsStore()
 
   // get current thread state
   const activeThread = threads.find((t) => t.id === activeThreadId)
@@ -29,8 +30,11 @@ export function RuntimeProvider({
   // load threads, modeOptions and credits on component mount
   useEffect(() => {
     loadThreads(chatbotId)
-    loadBootstrap(chatbotId)
-  }, [chatbotId, loadBootstrap, loadThreads])
+    ;(async () => {
+      await loadModeOptions(chatbotId)
+      await loadCredits(chatbotId)
+    })()
+  }, [chatbotId, loadCredits, loadModeOptions, loadThreads])
 
   // init chat response handling hook
   const { generateChatResponse, abortControllerRef } = useChatResponse(

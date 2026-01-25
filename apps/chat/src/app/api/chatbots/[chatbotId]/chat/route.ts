@@ -1,6 +1,6 @@
 import {
   getAutomaticModelId,
-  getChatModel,
+  getChatModelRegistry,
 } from '@/src/lib/server/chatModelRegistry'
 import {
   getAggregatedMCPTools,
@@ -309,22 +309,41 @@ export async function POST(
   if (!chatbot) {
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
   }
+
+  const modelRegistry = getChatModelRegistry()
+
   // Override model selection if modelSelection is disabled
+  let userCredits: { current: number; total: number } | null = null
   if (!chatbot.modelSelection) {
     // Get current user credits to determine automatic model selection
-    const userCredits = await CreditsService.getUserCredits(
-      participantId,
-      chatbotId
-    )
+    userCredits = await CreditsService.getUserCredits(participantId, chatbotId)
     selectedModel = getAutomaticModelId(userCredits)
   }
 
-  const selectedModelConfig = getChatModel(selectedModel)
+  let selectedModelConfig = modelRegistry.find((m) => m.id === selectedModel)
   if (!selectedModelConfig) {
     return NextResponse.json(
       { error: `Unknown model: ${selectedModel}` },
       { status: 400 }
     )
+  }
+
+  // Enforce fallback-only usage when the user has no credits left.
+  // This prevents bypassing credit gating by manually calling the API.
+  if (chatbot.modelSelection && !selectedModelConfig.fallback) {
+    userCredits =
+      userCredits ??
+      (await CreditsService.getUserCredits(participantId, chatbotId))
+    if (userCredits.current <= 0) {
+      selectedModel = getAutomaticModelId(userCredits)
+      selectedModelConfig = modelRegistry.find((m) => m.id === selectedModel)
+      if (!selectedModelConfig) {
+        return NextResponse.json(
+          { error: `Unknown model: ${selectedModel}` },
+          { status: 400 }
+        )
+      }
+    }
   }
 
   const result = streamText({
