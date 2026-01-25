@@ -1,9 +1,7 @@
 import {
-  getModelCost,
-  getModelLink,
-  MODEL_IDS,
-  type ModelID,
-} from '@/src/lib/config/models'
+  getAutomaticModelId,
+  getChatModel,
+} from '@/src/lib/server/chatModelRegistry'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
@@ -29,9 +27,11 @@ import { z } from 'zod'
 
 export const maxDuration = 30
 
-function getAzureModel(chatbot: Chatbot, modelId: ModelID): LanguageModel {
-  const apiVersion = getModelLink(modelId).split('?api-version=')[1]
-
+function getAzureModel(
+  chatbot: Chatbot,
+  deploymentId: string,
+  apiVersion: string
+): LanguageModel {
   // Use per-chatbot Azure configuration if available, otherwise fallback to environment
   const apiKey = chatbot?.azureOpenAIKey
     ? safeDecrypt(chatbot.azureOpenAIKey)
@@ -48,7 +48,7 @@ function getAzureModel(chatbot: Chatbot, modelId: ModelID): LanguageModel {
     apiVersion: apiVersion || 'preview',
   })
 
-  return azure(modelId)
+  return azure(deploymentId)
 }
 
 /**
@@ -159,7 +159,7 @@ export async function POST(
       })
     ),
     threadId: z.string().min(1).nullable().optional(),
-    selectedModel: z.enum(MODEL_IDS),
+    selectedModel: z.string().min(1),
     selectedMode: z
       .string()
       .optional()
@@ -316,11 +316,23 @@ export async function POST(
       participantId,
       chatbotId
     )
-    selectedModel = CreditsService.getAutomaticModel(userCredits) as any
+    selectedModel = getAutomaticModelId(userCredits)
+  }
+
+  const selectedModelConfig = getChatModel(selectedModel)
+  if (!selectedModelConfig) {
+    return NextResponse.json(
+      { error: `Unknown model: ${selectedModel}` },
+      { status: 400 }
+    )
   }
 
   const result = streamText({
-    model: getAzureModel(chatbot, selectedModel),
+    model: getAzureModel(
+      chatbot,
+      selectedModelConfig.deploymentId,
+      selectedModelConfig.apiVersion
+    ),
     messages: convertToModelMessages(uiMessages),
     tools: mcpTools,
     toolChoice: 'auto',
@@ -399,7 +411,7 @@ export async function POST(
       // deduct credits
       if (result.totalUsage) {
         try {
-          const costBase = getModelCost(selectedModel)
+          const costBase = selectedModelConfig.cost
 
           const totalCost = calcCost(
             costBase,
@@ -451,7 +463,7 @@ export async function POST(
 
       if (steps) {
         let totalCost = 0
-        const costBase = getModelCost(selectedModel)
+        const costBase = selectedModelConfig.cost
         if (steps && Array.isArray(steps.steps)) {
           for (const step of steps.steps) {
             if (step.usage) {

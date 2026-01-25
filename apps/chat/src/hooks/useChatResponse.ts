@@ -25,7 +25,7 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
   const { chatbotId } = useParams<{ chatbotId: string }>()
 
   const { setMessages, setIsRunning } = useChatStore()
-  const { loadCredits } = useSettingsStore()
+  const { loadBootstrap } = useSettingsStore()
 
   // AbortController to handle request cancellation
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -372,7 +372,7 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
         // refresh credits after chat completion
         if (chatbotId) {
           try {
-            await loadCredits(chatbotId)
+            await loadBootstrap(chatbotId)
           } catch (error) {
             console.error('Failed to refresh credits after chat:', error)
           }
@@ -385,7 +385,7 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
       selectedModel,
       selectedMode,
       chatbotId,
-      loadCredits,
+      loadBootstrap,
     ]
   )
 

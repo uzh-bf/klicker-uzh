@@ -1,3 +1,4 @@
+import { getAutomaticModelId } from '@/src/lib/server/chatModelRegistry'
 import { prisma } from '@klicker-uzh/prisma'
 import { CreditResetPeriod } from '@klicker-uzh/prisma/client'
 import { getCurrentPeriodStart, isPeriodExpired } from '../utils/creditPeriods'
@@ -136,8 +137,6 @@ export class CreditsService {
    * Returns the primary model if credits are available, otherwise fallback model
    */
   static getAutomaticModel(credits: UserCredits): string {
-    // Use primary model (GPT-4.1) when credits are available
-    // Use fallback model (GPT-4.1-mini) when no credits
-    return credits.current > 0 ? 'gpt-4.1' : 'gpt-4.1-mini'
+    return getAutomaticModelId(credits)
   }
 }
