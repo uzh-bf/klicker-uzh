@@ -1153,13 +1153,22 @@ Cypress.Commands.add(
   ({ cyString, deselectorString, datetime }: SetDatetimeArgs) => {
     cy.get(`[data-cy="${cyString}"]`).realClick()
 
+    const hour = String(datetime.hour).padStart(2, '0')
+    const minute = String(datetime.minute).padStart(2, '0')
+
     if (datetime.monthDelta > 0) {
       for (let i = 0; i < datetime.monthDelta; i++) {
-        cy.get(`[data-cy="${cyString}-next-month"]`).realClick().wait(100)
+        cy.get(`[data-cy="${cyString}-next-month"]`)
+          .closest('button')
+          .realClick()
+          .wait(100)
       }
     } else if (datetime.monthDelta < 0) {
       for (let i = 0; i < Math.abs(datetime.monthDelta); i++) {
-        cy.get(`[data-cy="${cyString}-previous-month"]`).realClick().wait(100)
+        cy.get(`[data-cy="${cyString}-previous-month"]`)
+          .closest('button')
+          .realClick()
+          .wait(100)
       }
     }
 
@@ -1169,13 +1178,16 @@ Cypress.Commands.add(
       .wait(100)
     cy.get(`[data-cy="${cyString}-hours"]`)
       .realClick()
-      .type(String(datetime.hour))
+      .type(hour, { delay: 50 })
     cy.get(`[data-cy="${cyString}-minutes"]`)
       .realClick()
-      .type(String(datetime.minute))
+      .type(minute, { delay: 50 })
     cy.get(`[data-cy="${deselectorString}"]`).realClick()
     cy.get(`[data-cy="${cyString}-minutes"]`).should('not.exist')
-    cy.get(`[data-cy="${cyString}"]`).should('contain', datetime.validation)
+    cy.get(`[data-cy="${cyString}"]`, { timeout: 10000 }).should(
+      'contain',
+      datetime.validation
+    )
   }
 )
 
@@ -1192,11 +1204,17 @@ Cypress.Commands.add(
 
     if (date.monthDelta > 0) {
       for (let i = 0; i < date.monthDelta; i++) {
-        cy.get(`[data-cy="${cyString}-next-month"]`).realClick().wait(100)
+        cy.get(`[data-cy="${cyString}-next-month"]`)
+          .closest('button')
+          .realClick()
+          .wait(100)
       }
     } else if (date.monthDelta < 0) {
       for (let i = 0; i < Math.abs(date.monthDelta); i++) {
-        cy.get(`[data-cy="${cyString}-previous-month"]`).realClick().wait(100)
+        cy.get(`[data-cy="${cyString}-previous-month"]`)
+          .closest('button')
+          .realClick()
+          .wait(100)
       }
     }
 
@@ -1206,7 +1224,10 @@ Cypress.Commands.add(
       .wait(100)
     cy.get(`[data-cy="${deselectorString}"]`).realClick()
     cy.get(`[data-cy="${cyString}-minutes"]`).should('not.exist')
-    cy.get(`[data-cy="${cyString}"]`).should('contain', date.validation)
+    cy.get(`[data-cy="${cyString}"]`, { timeout: 10000 }).should(
+      'contain',
+      date.validation
+    )
   }
 )
 
