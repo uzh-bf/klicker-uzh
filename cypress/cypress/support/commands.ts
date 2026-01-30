@@ -1148,6 +1148,21 @@ interface SetDatetimeArgs {
   datetime: DatetimeType // object containing monthDelta, day, hour, minute, and validation string
 }
 
+function getCalendarDataDay(validation: string) {
+  const match = validation.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/)
+  if (!match) {
+    throw new Error(
+      `setDate/setDatetime: cannot parse date from "${validation}"`
+    )
+  }
+  const [, dayString, monthString, yearString] = match
+  return new Date(
+    Number(yearString),
+    Number(monthString) - 1,
+    Number(dayString)
+  ).toLocaleDateString()
+}
+
 Cypress.Commands.add(
   'setDatetime',
   ({ cyString, deselectorString, datetime }: SetDatetimeArgs) => {
@@ -1155,6 +1170,7 @@ Cypress.Commands.add(
 
     const hour = String(datetime.hour).padStart(2, '0')
     const minute = String(datetime.minute).padStart(2, '0')
+    const targetDataDay = getCalendarDataDay(datetime.validation)
 
     if (datetime.monthDelta > 0) {
       for (let i = 0; i < datetime.monthDelta; i++) {
@@ -1177,7 +1193,8 @@ Cypress.Commands.add(
     }
 
     cy.get(`[data-cy="${cyString}-calendar"]`)
-      .findByText(String(datetime.day))
+      .find(`[data-day="${targetDataDay}"]`)
+      .should('have.length', 1)
       .realClick()
       .wait(100)
     cy.get(`[data-cy="${cyString}-hours"]`)
@@ -1206,6 +1223,8 @@ Cypress.Commands.add(
   ({ cyString, deselectorString, date }: SetDateArgs) => {
     cy.get(`[data-cy="${cyString}"]`).realClick()
 
+    const targetDataDay = getCalendarDataDay(date.validation)
+
     if (date.monthDelta > 0) {
       for (let i = 0; i < date.monthDelta; i++) {
         cy.get(`[data-cy="${cyString}-next-month"]`)
@@ -1223,7 +1242,8 @@ Cypress.Commands.add(
     }
 
     cy.get(`[data-cy="${cyString}-calendar"]`)
-      .findByText(String(date.day))
+      .find(`[data-day="${targetDataDay}"]`)
+      .should('have.length', 1)
       .realClick()
       .wait(100)
     cy.get(`[data-cy="${deselectorString}"]`).realClick()
