@@ -1160,6 +1160,8 @@ Cypress.Commands.add(
       for (let i = 0; i < datetime.monthDelta; i++) {
         cy.get(`[data-cy="${cyString}-next-month"]`)
           .closest('button')
+          .should('not.be.disabled')
+          .should('not.have.attr', 'aria-disabled', 'true')
           .realClick()
           .wait(100)
       }
@@ -1167,6 +1169,8 @@ Cypress.Commands.add(
       for (let i = 0; i < Math.abs(datetime.monthDelta); i++) {
         cy.get(`[data-cy="${cyString}-previous-month"]`)
           .closest('button')
+          .should('not.be.disabled')
+          .should('not.have.attr', 'aria-disabled', 'true')
           .realClick()
           .wait(100)
       }
