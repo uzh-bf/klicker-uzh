@@ -86,7 +86,39 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
         })
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
+          let errorMessage = `HTTP error! status: ${response.status}`
+          try {
+            const errorPayload = await response.json()
+            if (errorPayload?.error) {
+              errorMessage = `${errorPayload.error}`
+            } else if (errorPayload?.message) {
+              errorMessage = `${errorPayload.message}`
+            }
+          } catch {
+            try {
+              const errorText = await response.text()
+              if (errorText) {
+                errorMessage = errorText
+              }
+            } catch {
+              // ignore parsing errors and fall back to status message
+            }
+          }
+
+          const assistantMessage: ExtendedThreadMessageLike = {
+            id: assistantMessageId,
+            role: 'assistant',
+            content: [
+              {
+                type: 'text',
+                text: `\n\n**Error**: ${errorMessage}`,
+              },
+            ],
+            createdAt: new Date(),
+            parentId: triggerMessage.id,
+          }
+          setMessages([...messagesToSend, assistantMessage])
+          return
         }
 
         // setup streaming response parsing
@@ -98,6 +130,8 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
         const orderedContentParts: any[] = []
         let currentTextContent = ''
         const toolCallsMap: Map<string, any> = new Map()
+        let finishReason: string | null = null
+        let hasFinishEvent = false
 
         if (reader) {
           /**
@@ -294,15 +328,22 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
 
                   // stop processing the stream on error
                   break
+                } else if (jsonData.type === 'finish') {
+                  finishReason = jsonData.messageMetadata?.finishReason ?? null
+                  hasFinishEvent = true
+                } else if (jsonData.type === 'message-metadata') {
+                  // No UI update needed
                 } else if (
                   [
                     'start', // stream started
-                    'finish', // stream ended
                     'start-step', // processing step started
                     'finish-step', // processing step completed
                     'tool-input-delta', // tool argument building
                     'text-start', // text generation started
                     'text-end', // text generation ended
+                    'reasoning-start', // reasoning generation started
+                    'reasoning-delta', // reasoning delta
+                    'reasoning-end', // reasoning generation ended
                   ].includes(jsonData.type)
                 ) {
                   // STREAM LIFECYCLE: No action needed for these events
@@ -324,6 +365,18 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
                 'text')
           ) {
             orderedContentParts.push({ type: 'text', text: currentTextContent })
+          }
+
+          if (finishReason === 'length') {
+            orderedContentParts.push({
+              type: 'text',
+              text: '\n\n_(Response truncated — ask “continue” or request a shorter answer.)_',
+            })
+          } else if (!hasFinishEvent) {
+            orderedContentParts.push({
+              type: 'text',
+              text: '\n\n_(Connection interrupted — response may be incomplete.)_',
+            })
           }
 
           // create final message and update store

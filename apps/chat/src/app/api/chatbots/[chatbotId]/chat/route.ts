@@ -25,7 +25,7 @@ import { DisclaimersService } from 'src/services/disclaimers'
 import { ThreadService } from 'src/services/threads'
 import { z } from 'zod'
 
-export const maxDuration = 30
+export const maxDuration = 60
 
 function getAzureModel(
   chatbot: Chatbot,
@@ -41,14 +41,23 @@ function getAzureModel(
     ? new URL(chatbot.azureOpenAIEndpoint).hostname.split('.')[0]
     : process.env.AZURE_RESOURCE_NAME || 'klicker-ai'
 
+  const useResponsesApi = true
+
+  const responsesApiVersion =
+    process.env.AZURE_RESPONSES_API_VERSION || 'preview'
+  const chatApiVersion = process.env.AZURE_CHAT_API_VERSION || apiVersion
+  const effectiveApiVersion = useResponsesApi
+    ? responsesApiVersion
+    : chatApiVersion
+
   const azure = createAzure({
     resourceName,
     apiKey,
-    useDeploymentBasedUrls: true,
-    apiVersion: apiVersion || 'preview',
+    useDeploymentBasedUrls: !useResponsesApi,
+    apiVersion: effectiveApiVersion || 'preview',
   })
 
-  return azure(deploymentId)
+  return useResponsesApi ? azure.responses(deploymentId) : azure(deploymentId)
 }
 
 /**
@@ -328,6 +337,9 @@ export async function POST(
     )
   }
 
+  const maxOutputTokens =
+    selectedModelConfig.id === 'gpt-5.1' ? 2048 : undefined
+
   // Enforce fallback-only usage when the user has no credits left.
   // This prevents bypassing credit gating by manually calling the API.
   if (chatbot.modelSelection && !selectedModelConfig.fallback) {
@@ -352,6 +364,7 @@ export async function POST(
       selectedModelConfig.deploymentId,
       selectedModelConfig.apiVersion
     ),
+    maxOutputTokens,
     messages: convertToModelMessages(uiMessages),
     tools: mcpTools,
     toolChoice: 'auto',
@@ -513,7 +526,17 @@ export async function POST(
       console.error('Error during streaming response:', error)
     },
   })
-  return result.toUIMessageStreamResponse()
+  return result.toUIMessageStreamResponse({
+    messageMetadata: ({ part }) => {
+      if (part.type !== 'finish') {
+        return undefined
+      }
+
+      return {
+        finishReason: part.finishReason,
+      }
+    },
+  })
 }
 
 // Function to calculate cost based on token usage and model pricing

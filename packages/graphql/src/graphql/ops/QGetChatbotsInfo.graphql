@@ -1,0 +1,47 @@
+query GetChatbotsInfo {
+  getChatbotsInfo {
+    id
+    name
+    description
+    avatar
+    modelSelection
+    creditInitialCredits
+    creditResetPeriod
+    creditResetAmount
+    creditMaxCredits
+    courses {
+      id
+      name
+    }
+    usageSummary {
+      threadCount
+      messageCount
+      participantCount
+      lastActivityAt
+      totalCredits
+      currentCredits
+      totalResets
+      lastResetAt
+    }
+    disclaimerSummary {
+      id
+      name
+      title
+      acceptedCount
+      declinedCount
+      pendingCount
+    }
+    mcpConfigurations {
+      serverId
+      serverName
+      serverDescription
+      serverIsActive
+      chatMode
+      isEnabled
+      priority
+      allowedToolsCount
+    }
+    createdAt
+    updatedAt
+  }
+}
