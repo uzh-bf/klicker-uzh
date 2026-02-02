@@ -39,6 +39,9 @@ export interface ApiMessage {
   threadId: string
   role: 'user' | 'assistant'
   content: ApiContentPart[]
+  chatMode?: string | null
+  modelId?: string | null
+  creditsUsed?: number | null
   parentId?: string | null
   createdAt: string
   updatedAt: string
@@ -141,6 +144,9 @@ export const convertApiMessageToMessage = (
     // fallback for unknown types
     return item
   }) as ExtendedThreadMessageLike['content'],
+  chatMode: apiMessage.chatMode ?? null,
+  modelId: apiMessage.modelId ?? null,
+  creditsUsed: apiMessage.creditsUsed ?? null,
   createdAt: new Date(apiMessage.createdAt),
   parentId: apiMessage.parentId || undefined,
 })

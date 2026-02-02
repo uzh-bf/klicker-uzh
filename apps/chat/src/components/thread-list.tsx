@@ -6,7 +6,7 @@ import type { FC } from 'react'
 import { useState } from 'react'
 
 import { Button, TextField } from '@uzh-bf/design-system'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useChatStore, type Thread } from '../stores/chatStore'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
@@ -21,13 +21,17 @@ export const ThreadList: FC = () => {
 
 const ThreadListNew: FC = () => {
   const { chatbotId } = useParams<{ chatbotId: string }>()
+  const router = useRouter()
   const { createThread, participationRequired } = useChatStore()
 
-  const handleNewThread = () => {
+  const handleNewThread = async () => {
     if (participationRequired) return
-    void createThread(chatbotId).catch(() => {
+    try {
+      const threadId = await createThread(chatbotId)
+      router.push(`/${chatbotId}/threads/${threadId}`)
+    } catch {
       /* handled centrally */
-    })
+    }
   }
 
   return (
@@ -46,9 +50,12 @@ const ThreadListNew: FC = () => {
 }
 
 const ThreadListItems: FC = () => {
-  const { chatbotId } = useParams<{ chatbotId: string }>()
-  const { threads, activeThreadId, switchToThread, deleteThread } =
-    useChatStore()
+  const { chatbotId, threadId } = useParams<{
+    chatbotId: string
+    threadId?: string
+  }>()
+  const router = useRouter()
+  const { threads, deleteThread } = useChatStore()
 
   return (
     <div className="flex flex-col gap-1">
@@ -56,9 +63,14 @@ const ThreadListItems: FC = () => {
         <ThreadListItem
           key={thread.id}
           thread={thread}
-          isActive={thread.id === activeThreadId}
-          onSelect={() => switchToThread(chatbotId, thread.id)}
-          onDelete={() => deleteThread(chatbotId, thread.id)}
+          isActive={thread.id === threadId}
+          onSelect={() => router.push(`/${chatbotId}/threads/${thread.id}`)}
+          onDelete={async () => {
+            const deleted = await deleteThread(chatbotId, thread.id)
+            if (deleted && thread.id === threadId) {
+              router.replace(`/${chatbotId}`)
+            }
+          }}
         />
       ))}
     </div>

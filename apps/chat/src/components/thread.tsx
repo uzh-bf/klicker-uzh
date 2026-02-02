@@ -16,6 +16,7 @@ import {
 import type { FC } from 'react'
 
 import { Button } from '@uzh-bf/design-system'
+import { useSettingsStore } from '../stores/settingsStore'
 import { BranchPicker } from './branch-picker'
 import { MarkdownText } from './markdown-text'
 import { ToolFallback } from './tool-fallback'
@@ -26,6 +27,59 @@ import Image from 'next/image'
 import { twMerge } from 'tailwind-merge'
 
 type ThreadProps = { chatbotAvatar: string }
+
+const formatCredits = (value: number) => {
+  if (!Number.isFinite(value)) return '0'
+  const absValue = Math.abs(value)
+  if (absValue === 0) return '0'
+
+  const decimals =
+    absValue < 1 ? Math.max(1, -Math.floor(Math.log10(absValue))) : 0
+  const rounded = value.toFixed(decimals)
+  return rounded.replace(/0+$/, '').replace(/\.$/, '')
+}
+
+const formatTitleCase = (value: string) =>
+  value
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+
+const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
+  includeCredits = false,
+}) => {
+  const message = useMessage() as {
+    metadata?: { custom?: Record<string, unknown> | null } | null
+  }
+  const { modelOptions } = useSettingsStore()
+
+  const custom = message.metadata?.custom ?? {}
+  const chatMode = typeof custom.chatMode === 'string' ? custom.chatMode : null
+  const modelId = typeof custom.modelId === 'string' ? custom.modelId : null
+  const creditsUsed =
+    typeof custom.creditsUsed === 'number' ? custom.creditsUsed : null
+
+  const modeLabel = chatMode ? formatTitleCase(chatMode) : null
+  const modelLabel = modelId
+    ? modelOptions.find((option) => option.id === modelId)?.name || modelId
+    : null
+
+  const parts = [modeLabel ?? '—', modelLabel ?? '—']
+  if (includeCredits) {
+    const creditsLabel =
+      typeof creditsUsed === 'number'
+        ? `${formatCredits(creditsUsed)} credits`
+        : '—'
+    parts.push(creditsLabel)
+  }
+
+  return (
+    <div className="text-muted-foreground mt-1 text-xs">
+      {parts.join(' — ')}
+    </div>
+  )
+}
 
 export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
   return (
@@ -188,6 +242,10 @@ const UserMessage: FC = () => {
       <div className="bg-muted text-foreground col-start-2 row-start-2 max-w-[calc(var(--thread-max-width)*0.8)] break-words rounded-3xl px-5 py-2.5">
         <MessagePrimitive.Content />
       </div>
+
+      <div className="col-start-2 row-start-3 max-w-[calc(var(--thread-max-width)*0.8)]">
+        <MessageMetadata />
+      </div>
     </MessagePrimitive.Root>
   )
 }
@@ -277,6 +335,7 @@ const AssistantMessage: FC<{ chatbotAvatar: string }> = ({ chatbotAvatar }) => {
         <MessagePrimitive.Content
           components={{ Text: MarkdownText, tools: { Fallback: ToolFallback } }}
         />
+        <MessageMetadata includeCredits />
       </div>
 
       <AssistantActionBar />

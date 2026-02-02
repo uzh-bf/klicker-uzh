@@ -131,6 +131,11 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
         let currentTextContent = ''
         const toolCallsMap: Map<string, any> = new Map()
         let finishReason: string | null = null
+        let messageMetadata: {
+          chatMode?: string | null
+          modelId?: string | null
+          creditsUsed?: number | null
+        } | null = null
         let hasFinishEvent = false
 
         if (reader) {
@@ -330,6 +335,16 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
                   break
                 } else if (jsonData.type === 'finish') {
                   finishReason = jsonData.messageMetadata?.finishReason ?? null
+                  messageMetadata =
+                    typeof jsonData.messageMetadata === 'object' &&
+                    jsonData.messageMetadata !== null
+                      ? {
+                          chatMode: jsonData.messageMetadata.chatMode ?? null,
+                          modelId: jsonData.messageMetadata.modelId ?? null,
+                          creditsUsed:
+                            jsonData.messageMetadata.creditsUsed ?? null,
+                        }
+                      : null
                   hasFinishEvent = true
                 } else if (jsonData.type === 'message-metadata') {
                   // No UI update needed
@@ -387,16 +402,43 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
               content: orderedContentParts,
               createdAt: new Date(),
               parentId: triggerMessage.id,
+              chatMode: messageMetadata?.chatMode ?? null,
+              modelId: messageMetadata?.modelId ?? null,
+              creditsUsed: messageMetadata?.creditsUsed ?? null,
             }
 
-            const newCurrentPath = [...messagesToSend, finalAssistantMessage]
+            const updatedUserMessage = {
+              ...triggerMessage,
+              chatMode: messageMetadata?.chatMode ?? triggerMessage.chatMode,
+              modelId: messageMetadata?.modelId ?? triggerMessage.modelId,
+            }
+
+            const newCurrentPath = [
+              ...messagesToSend.slice(0, -1),
+              updatedUserMessage,
+              finalAssistantMessage,
+            ]
 
             // update both current message path and complete message history
             const { threads } = useChatStore.getState()
             const activeThread = threads.find((t) => t.id === threadId)
-            const updatedAllMessages = activeThread
-              ? [...activeThread.allMessages, finalAssistantMessage]
+            const baseAllMessages = activeThread
+              ? activeThread.allMessages.map((message) =>
+                  message.id === updatedUserMessage.id
+                    ? updatedUserMessage
+                    : message
+                )
               : newCurrentPath
+
+            const updatedAllMessages = baseAllMessages.some(
+              (message) => message.id === finalAssistantMessage.id
+            )
+              ? baseAllMessages.map((message) =>
+                  message.id === finalAssistantMessage.id
+                    ? finalAssistantMessage
+                    : message
+                )
+              : [...baseAllMessages, finalAssistantMessage]
 
             // persist final state to store
             useChatStore.setState((state) => ({

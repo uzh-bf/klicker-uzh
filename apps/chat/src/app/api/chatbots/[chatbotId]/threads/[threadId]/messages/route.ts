@@ -95,6 +95,13 @@ export async function GET(
         threadId: msg.threadId,
         role: msg.role,
         content: msg.content,
+        chatMode: msg.chatMode ?? null,
+        modelId: msg.modelId ?? null,
+        creditsUsed: msg.creditsUsed
+          ? (
+              msg.creditsUsed as unknown as { toNumber: () => number }
+            ).toNumber()
+          : null,
         parentId: (msg as { parentId?: string | null }).parentId || null,
         createdAt: msg.createdAt.toISOString(),
         updatedAt: msg.updatedAt.toISOString(),

@@ -267,38 +267,9 @@ export async function POST(
     }
   }
 
-  // save user message to database
-  if (currentThreadId && messages.length > 0) {
-    const lastMessage = messages[messages.length - 1]
-    if (lastMessage.role === 'user') {
-      userMessageId = lastMessage.id
-
-      try {
-        // check if message already exists (e.g. in case of retries)
-        const existingMessage = await prisma.chatMessage.findUnique({
-          where: { id: userMessageId },
-        })
-        if (!existingMessage) {
-          await prisma.chatMessage.create({
-            data: {
-              id: lastMessage.id,
-              threadId: currentThreadId,
-              parentId: parentId || null,
-              role: lastMessage.role,
-              content: [{ type: 'text', text: lastMessage.content }],
-            },
-          })
-        }
-
-        // update thread's timestamp
-        await prisma.chatThread.update({
-          where: { id: currentThreadId },
-          data: { updatedAt: new Date() },
-        })
-      } catch (error) {
-        console.error('Failed to save user message:', error)
-      }
-    }
+  const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null
+  if (lastMessage?.role === 'user') {
+    userMessageId = lastMessage.id
   }
 
   // track partial content for cancelled streams
@@ -358,6 +329,76 @@ export async function POST(
     }
   }
 
+  const owningThread = currentThreadId
+    ? await prisma.chatThread.findFirst({
+        where: {
+          id: currentThreadId,
+          participantId,
+          chatbotId,
+        },
+        select: { id: true },
+      })
+    : null
+
+  // save user message to database (after effective model selection)
+  if (
+    currentThreadId &&
+    owningThread &&
+    lastMessage?.role === 'user' &&
+    userMessageId
+  ) {
+    try {
+      const metadata = {
+        chatMode: selectedMode,
+        modelId: selectedModelConfig.id,
+      }
+      const updated = await prisma.chatMessage.updateMany({
+        where: { id: userMessageId, threadId: currentThreadId },
+        data: metadata,
+      })
+
+      if (updated.count === 0) {
+        const existingMessage = await prisma.chatMessage.findUnique({
+          where: { id: userMessageId },
+          select: { id: true },
+        })
+        if (existingMessage) {
+          console.warn(
+            'Skipping user message update: message exists outside current thread',
+            {
+              messageId: userMessageId,
+              threadId: currentThreadId,
+            }
+          )
+        } else {
+          await prisma.chatMessage.create({
+            data: {
+              id: lastMessage.id,
+              threadId: currentThreadId,
+              parentId: parentId || null,
+              role: lastMessage.role,
+              content: [{ type: 'text', text: lastMessage.content }],
+              ...metadata,
+            },
+          })
+        }
+      }
+
+      // update thread's timestamp
+      await prisma.chatThread.update({
+        where: { id: currentThreadId },
+        data: { updatedAt: new Date() },
+      })
+    } catch (error) {
+      console.error('Failed to save user message:', error)
+    }
+  } else if (currentThreadId && !owningThread && userMessageId) {
+    console.warn('Skipping user message save: thread ownership mismatch', {
+      messageId: userMessageId,
+      threadId: currentThreadId,
+    })
+  }
+
   const result = streamText({
     model: getAzureModel(
       chatbot,
@@ -380,8 +421,21 @@ export async function POST(
     },
 
     onFinish: async (result) => {
+      const creditsUsed = result.totalUsage
+        ? calcCost(
+            selectedModelConfig.cost,
+            result.totalUsage.inputTokens || 0,
+            result.totalUsage.outputTokens || 0
+          )
+        : null
+
       // save assistant response to database
-      if (currentThreadId && result.steps && result.steps.length > 0) {
+      if (
+        currentThreadId &&
+        owningThread &&
+        result.steps &&
+        result.steps.length > 0
+      ) {
         try {
           const content = []
 
@@ -415,19 +469,42 @@ export async function POST(
             }
           }
           // save assistant message to db
-          const existingMessage = await prisma.chatMessage.findUnique({
-            where: { id: assistantMessageId },
+          const metadata = {
+            chatMode: selectedMode,
+            modelId: selectedModelConfig.id,
+            creditsUsed,
+          }
+          const updated = await prisma.chatMessage.updateMany({
+            where: { id: assistantMessageId, threadId: currentThreadId },
+            data: metadata,
           })
-          if (!existingMessage) {
-            await prisma.chatMessage.create({
-              data: {
-                id: assistantMessageId,
-                threadId: currentThreadId,
-                parentId: userMessageId,
-                role: 'assistant',
-                content: content,
-              },
+
+          if (updated.count === 0) {
+            const existingMessage = await prisma.chatMessage.findUnique({
+              where: { id: assistantMessageId },
+              select: { id: true },
             })
+
+            if (existingMessage) {
+              console.warn(
+                'Skipping assistant message update: message exists outside current thread',
+                {
+                  messageId: assistantMessageId,
+                  threadId: currentThreadId,
+                }
+              )
+            } else {
+              await prisma.chatMessage.create({
+                data: {
+                  id: assistantMessageId,
+                  threadId: currentThreadId,
+                  parentId: userMessageId,
+                  role: 'assistant',
+                  content: content,
+                  ...metadata,
+                },
+              })
+            }
           }
 
           // update thread's timestamp
@@ -438,24 +515,24 @@ export async function POST(
         } catch (error) {
           console.error('Failed to save assistant message:', error)
         }
+      } else if (currentThreadId && !owningThread) {
+        console.warn(
+          'Skipping assistant message save: thread ownership mismatch',
+          {
+            messageId: assistantMessageId,
+            threadId: currentThreadId,
+          }
+        )
       }
 
       // deduct credits
-      if (result.totalUsage) {
+      if (creditsUsed !== null) {
         try {
-          const costBase = selectedModelConfig.cost
-
-          const totalCost = calcCost(
-            costBase,
-            result.totalUsage.inputTokens || 0,
-            result.totalUsage.outputTokens || 0
-          )
-
           if (participantData.sub) {
             await CreditsService.decrementCredits(
               participantData.sub as string,
               chatbotId,
-              totalCost
+              creditsUsed
             )
           }
         } catch (error) {
@@ -465,22 +542,79 @@ export async function POST(
     },
 
     onAbort: async (steps) => {
+      let creditsUsed: number | null = null
+      if (steps && Array.isArray(steps.steps)) {
+        let totalCost = 0
+        let hasUsage = false
+        const costBase = selectedModelConfig.cost
+
+        for (const step of steps.steps) {
+          if (step.usage) {
+            hasUsage = true
+            totalCost += calcCost(
+              costBase,
+              step.usage.inputTokens || 0,
+              step.usage.outputTokens || 0
+            )
+          }
+        }
+
+        if (hasUsage) {
+          creditsUsed = totalCost
+        }
+
+        if (participantData.sub && creditsUsed !== null && creditsUsed > 0) {
+          try {
+            await CreditsService.decrementCredits(
+              participantData.sub as string,
+              chatbotId,
+              creditsUsed
+            )
+          } catch (error) {
+            console.error('Failed to deduct credits:', error)
+          }
+        }
+      }
+
       // save partial message
-      if (currentThreadId && partialContent.trim()) {
+      if (currentThreadId && owningThread && partialContent.trim()) {
         try {
-          const existingMessage = await prisma.chatMessage.findUnique({
-            where: { id: assistantMessageId },
+          const metadata = {
+            chatMode: selectedMode,
+            modelId: selectedModelConfig.id,
+            creditsUsed,
+          }
+          const updated = await prisma.chatMessage.updateMany({
+            where: { id: assistantMessageId, threadId: currentThreadId },
+            data: metadata,
           })
-          if (!existingMessage) {
-            await prisma.chatMessage.create({
-              data: {
-                id: assistantMessageId,
-                threadId: currentThreadId,
-                parentId: userMessageId,
-                role: 'assistant',
-                content: [{ type: 'text', text: partialContent }],
-              },
+
+          if (updated.count === 0) {
+            const existingMessage = await prisma.chatMessage.findUnique({
+              where: { id: assistantMessageId },
+              select: { id: true },
             })
+
+            if (existingMessage) {
+              console.warn(
+                'Skipping assistant message update: message exists outside current thread',
+                {
+                  messageId: assistantMessageId,
+                  threadId: currentThreadId,
+                }
+              )
+            } else {
+              await prisma.chatMessage.create({
+                data: {
+                  id: assistantMessageId,
+                  threadId: currentThreadId,
+                  parentId: userMessageId,
+                  role: 'assistant',
+                  content: [{ type: 'text', text: partialContent }],
+                  ...metadata,
+                },
+              })
+            }
           }
 
           // update thread's timestamp
@@ -491,33 +625,14 @@ export async function POST(
         } catch (error) {
           console.error('Failed to save partial message:', error)
         }
-      }
-
-      if (steps) {
-        let totalCost = 0
-        const costBase = selectedModelConfig.cost
-        if (steps && Array.isArray(steps.steps)) {
-          for (const step of steps.steps) {
-            if (step.usage) {
-              totalCost += calcCost(
-                costBase,
-                step.usage.inputTokens || 0,
-                step.usage.outputTokens || 0
-              )
-            }
+      } else if (currentThreadId && !owningThread && partialContent.trim()) {
+        console.warn(
+          'Skipping assistant message save: thread ownership mismatch',
+          {
+            messageId: assistantMessageId,
+            threadId: currentThreadId,
           }
-          if (participantData.sub && totalCost > 0) {
-            try {
-              await CreditsService.decrementCredits(
-                participantData.sub as string,
-                chatbotId,
-                totalCost
-              )
-            } catch (error) {
-              console.error('Failed to deduct credits:', error)
-            }
-          }
-        }
+        )
       }
     },
 
@@ -532,8 +647,19 @@ export async function POST(
         return undefined
       }
 
+      const creditsUsed = part.totalUsage
+        ? calcCost(
+            selectedModelConfig.cost,
+            part.totalUsage.inputTokens || 0,
+            part.totalUsage.outputTokens || 0
+          )
+        : null
+
       return {
         finishReason: part.finishReason,
+        chatMode: selectedMode,
+        modelId: selectedModelConfig.id,
+        creditsUsed,
       }
     },
   })
