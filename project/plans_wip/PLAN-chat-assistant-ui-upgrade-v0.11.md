@@ -4,6 +4,16 @@
 
 Upgrade `@assistant-ui/*` packages in `apps/chat` to the latest `0.11.x` series (from `0.10.x`) to pick up upstream fixes/features, while keeping the current “external store runtime” architecture.
 
+## Progress (feat/chat-gpt-5-1)
+
+**Done on this branch**
+- Preserved extra per-message fields by mapping them into `metadata.custom` in `RuntimeProvider.tsx`.
+- Implemented URL-based thread navigation while retaining the external-store runtime approach.
+
+**Remaining**
+- Upgrade `@assistant-ui/*` to v0.11.x and fix breaking changes; verify tool fallback + markdown rendering.
+- Re-verify that `metadata.custom` mapping survives the upgrade.
+
 ## Current state (code)
 
 - `apps/chat/package.json`:

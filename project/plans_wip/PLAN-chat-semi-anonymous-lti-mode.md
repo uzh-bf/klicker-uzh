@@ -6,6 +6,16 @@ Enable **LTI-verified users** (e.g., from OLAT) to use the tutor chatbot **witho
 
 Key constraint: **never merge anonymous chats into the real account**, to avoid retroactive de-anonymization.
 
+## Progress (feat/chat-gpt-5-1)
+
+**Done on this branch**
+- No semi-anonymous implementation yet; prerequisites like URL-based thread routing and server-side metadata persistence are now in place.
+
+**Remaining**
+- Implement `chat_participant_token` + deterministic guest persona creation/lookup.
+- Ensure guest enrollment/participation uses the specific course context from LTI (not `chatbot.courseId`) under course↔chatbot many-to-many.
+- Enforce anonymous-mode model restrictions (server + UI).
+
 ## Goals
 
 1. Users can enter chat via LTI even if no participant account exists.
@@ -15,6 +25,10 @@ Key constraint: **never merge anonymous chats into the real account**, to avoid 
 3. Anonymous mode is visibly indicated in UI.
 4. Anonymous mode is restricted to **cheapest unlimited models**.
 5. Anonymous auth must be **chat-only** (must not grant access to PWA/GraphQL).
+
+Entry/redirects should use course-scoped chat routes (courseId is available via LTI):
+- `/course/<courseId>/chatbot/<chatbotId>`
+- membership checks use explicit courseId, avoiding reliance on `chatbot.courseId`.
 
 ## Current state (relevant code)
 

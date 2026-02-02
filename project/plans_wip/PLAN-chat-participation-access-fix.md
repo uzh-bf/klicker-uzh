@@ -4,6 +4,17 @@
 
 Ensure chat access is gated by **course membership** (Participation record existence) and not by leaderboard opt-in, while also fixing inconsistent/unsafe access control across chat API routes.
 
+## Progress (feat/chat-gpt-5-1)
+
+**Done on this branch**
+- Hardened ChatMessage persistence: verify owning thread and scope updates by `(id, threadId)` via `updateMany` to prevent cross-thread overwrites.
+- Improved thread switching/deletion behavior with URL-based navigation and better failure handling.
+
+**Remaining**
+- Secure `/api/chatbots/[chatbotId]` (currently unauthenticated) and return only safe fields.
+- Add course participation checks to credits + disclaimer endpoints; factor shared auth/membership helpers.
+- Update participation logic for the course↔chatbot many-to-many relationship (avoid relying on `chatbot.courseId`); decide whether access/threads/credits are per chatbot or per course↔chatbot context.
+
 ## Current state (code)
 
 ### Membership check pattern
@@ -14,6 +25,11 @@ Both:
 - verify `participant_token` (JWT via `jose.jwtVerify(APP_SECRET)`)
 - check `Participation.findUnique({ where: { courseId_participantId: { courseId, participantId }}})`
 - deny with 403 if missing
+
+Target design (course-scoped routing):
+- Receive `courseId` from the route/API.
+- Verify the chatbot is linked to the course (via link table).
+- Then check `Participation(courseId, participantId)`.
 
 Important: `Participation.isActive` is **not checked** (good).
 
@@ -50,19 +66,20 @@ Create shared helpers in `apps/chat`, e.g.:
   - support both `participant_token` and `chat_participant_token` (see semi-anonymous plan)
 
 - `src/lib/auth/requireChatbotAndCourseMembership.ts`
-  - fetch chatbot `{ id, courseId, ...safeFields }`
+  - fetch chatbot `{ id, ...safeFields }`
+  - verify link `{ courseId, chatbotId }` via link table
   - if chatbot missing → return 404
   - check `Participation` existence for `(courseId, participantId)`
   - if missing → return 403 with consistent error shape
 
 ### 2) Enforce on all chatbot API routes
 
-Apply the shared checks to:
-- `/api/chatbots/[chatbotId]` (model/mode metadata)
-- `/api/chatbots/[chatbotId]/credits`
-- `/api/chatbots/[chatbotId]/disclaimer`
-- `/api/chatbots/[chatbotId]/threads/*`
-- `/api/chatbots/[chatbotId]/chat`
+Apply the shared checks to course-scoped endpoints:
+- `/api/courses/[courseId]/chatbots/[chatbotId]` (model/mode metadata)
+- `/api/courses/[courseId]/chatbots/[chatbotId]/credits`
+- `/api/courses/[courseId]/chatbots/[chatbotId]/disclaimer`
+- `/api/courses/[courseId]/chatbots/[chatbotId]/threads/*`
+- `/api/courses/[courseId]/chatbots/[chatbotId]/chat`
 
 ### 3) Return only safe chatbot fields
 

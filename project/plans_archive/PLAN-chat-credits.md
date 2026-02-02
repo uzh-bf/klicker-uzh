@@ -2,52 +2,42 @@
 
 ## Current System Analysis
 
+## Progress (feat/chat-gpt-5-1)
+
+**Done on this branch**
+- Persisted and displayed per-message `creditsUsed` (computed from token usage), enabling cost auditing per assistant response.
+- Credits initialization/reset exists server-side via scalar chatbot fields + fixed-period logic (this differs from the JSON sketch in this doc).
+
+**Remaining**
+- Reconcile this plan with the current implementation so it matches reality.
+- With course↔chatbot many-to-many, decide whether credits are per chatbot or per course↔chatbot context; update schema/unique keys accordingly if per-course.
+
 ### Existing Structure
 
-- `ChatUsageCredits` model tracks credits per participant-chatbot pair
-- Credits are decremented when AI responses consume tokens via `CreditsService.decrementCredits()`
-- Current implementation initializes new users with **0 credits** (critical gap)
-- No automatic reset or refill mechanism exists
-- Frontend displays credit progress bar and switches available models based on credit balance
+- `ChatUsageCredits` tracks credits per `(participantId, chatbotId)`.
+- Credits are initialized and reset via fixed-period logic in `apps/chat/src/services/credits.ts`.
+- Credit policy is stored on `Chatbot` as scalar fields: `creditInitialCredits`, `creditResetPeriod`, `creditResetAmount`, `creditMaxCredits`.
+- Atomic helpers in `apps/chat/src/utils/transactions.ts` avoid race conditions.
+- Frontend uses `/api/chatbots/<chatbotId>/credits` to load `availableModels` + `automaticModelId`.
 
 ### Identified Issues
 
-1. **New User Experience**: Students joining a course get 0 credits, blocking immediate access
-2. **No Reset Mechanism**: Once credits are consumed, users cannot get more without manual intervention
-3. **Missing Configuration**: No way to configure credit policies per chatbot
-4. **No Periodic Refresh**: No support for "X credits per week/month" scenarios
+1. **Plan/documentation drift**: this document still describes a JSON-based configuration that is no longer used.
+2. **Course↔chatbot N:N**: credits are currently chatbot-scoped; keep as-is or decide on course-scoped credits if policy differs by course.
 
 ## Implementation Plan
 
 ### Phase 1: Database Schema Updates
 
-#### 1.1 Extend Chatbot Model
+#### 1.1 Current Chatbot Credit Fields
 
-Add `creditSettings` JSON field to the `Chatbot` model:
+Credit policy is defined via scalar fields on `Chatbot`:
 
 ```prisma
-model Chatbot {
-  // ... existing fields
-
-  // Credit configuration per chatbot
-  creditSettings Json? // {
-    // initialCredits: 100,
-    // resetPeriod: 'weekly',
-    // resetAmount: 50,
-    // maxCredits: 100
-    // }
-}
-```
-
-**Credit Settings Schema:**
-
-```typescript
-interface CreditSettings {
-  initialCredits: number // Credits given to new users
-  resetPeriod: 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'none'
-  resetAmount: number // Credits restored on reset
-  maxCredits: number // Maximum credits (for partial resets)
-}
+creditInitialCredits Int
+creditResetPeriod    CreditResetPeriod
+creditResetAmount    Int
+creditMaxCredits     Int
 ```
 
 #### 1.2 Extend ChatUsageCredits Model
@@ -67,143 +57,29 @@ model ChatUsageCredits {
 
 ### Phase 2: Credit Initialization System
 
-#### 2.1 Update CreditsService.getUserCredits()
+#### 2.1 Current CreditsService behavior
 
-Current behavior creates 0 credits for new users. Enhanced logic:
+See `apps/chat/src/services/credits.ts`:
+- Initializes credits using fixed period alignment (`getCurrentPeriodStart`).
+- Uses atomic helpers for initialize/reset/decrement.
+- Resets happen when `isPeriodExpired()` returns true.
 
-```typescript
-static async getUserCredits(
-  participantId: string,
-  chatbotId: string
-): Promise<UserCredits> {
-  let credits = await prisma.chatUsageCredits.findUnique({
-    where: { participantId_chatbotId: { participantId, chatbotId } }
-  })
+#### 2.2 Atomic helpers (current)
 
-  if (!credits) {
-    // Initialize with chatbot's default settings
-    credits = await this.initializeCredits(participantId, chatbotId)
-  } else {
-    // Check if reset is needed
-    credits = await this.checkAndResetCredits(credits, chatbotId)
-  }
-
-  return {
-    current: credits.current.toNumber(),
-    total: credits.total.toNumber()
-  }
-}
-```
-
-#### 2.2 Create CreditsService.initializeCredits()
-
-```typescript
-static async initializeCredits(
-  participantId: string,
-  chatbotId: string
-): Promise<ChatUsageCredits> {
-  const chatbot = await prisma.chatbot.findUnique({
-    where: { id: chatbotId },
-    select: { creditSettings: true }
-  })
-
-  const settings = chatbot?.creditSettings as CreditSettings | null
-  const initialAmount = settings?.initialCredits ?? 10 // default fallback
-
-  return await prisma.chatUsageCredits.create({
-    data: {
-      participantId,
-      chatbotId,
-      total: initialAmount,
-      current: initialAmount,
-      periodStartedAt: new Date(),
-      lastResetAt: new Date(),
-      resetCount: 0
-    }
-  })
-}
-```
+See `apps/chat/src/utils/transactions.ts` for:
+- `atomicInitializeCredits`
+- `atomicResetCreditsIfNeeded`
+- `atomicDecrementCredits`
 
 ### Phase 3: Periodic Reset Mechanism
 
-#### 3.1 Reset Period Calculations
+#### 3.1 Reset Period Calculations (current)
 
-```typescript
-enum ResetPeriod {
-  DAILY = 'daily',
-  WEEKLY = 'weekly',
-  BIWEEKLY = 'biweekly',
-  MONTHLY = 'monthly',
-  NONE = 'none'
-}
+Implemented in `apps/chat/src/utils/creditPeriods.ts` with fixed period alignment.
 
-static shouldResetCredits(
-  lastResetAt: Date,
-  resetPeriod: ResetPeriod
-): boolean {
-  const now = new Date()
-  const timeDiff = now.getTime() - lastResetAt.getTime()
+#### 3.2 Credit Reset Logic (current)
 
-  switch (resetPeriod) {
-    case ResetPeriod.DAILY:
-      return timeDiff >= 24 * 60 * 60 * 1000 // 24 hours
-    case ResetPeriod.WEEKLY:
-      return timeDiff >= 7 * 24 * 60 * 60 * 1000 // 7 days
-    case ResetPeriod.BIWEEKLY:
-      return timeDiff >= 14 * 24 * 60 * 60 * 1000 // 14 days
-    case ResetPeriod.MONTHLY:
-      // Reset on same day of month (e.g., every 1st of month)
-      const lastResetMonth = lastResetAt.getMonth()
-      const currentMonth = now.getMonth()
-      return lastResetMonth !== currentMonth ||
-             (now.getFullYear() > lastResetAt.getFullYear())
-    case ResetPeriod.NONE:
-    default:
-      return false
-  }
-}
-```
-
-#### 3.2 Credit Reset Logic
-
-```typescript
-static async checkAndResetCredits(
-  existingCredits: ChatUsageCredits,
-  chatbotId: string
-): Promise<ChatUsageCredits> {
-  const chatbot = await prisma.chatbot.findUnique({
-    where: { id: chatbotId },
-    select: { creditSettings: true }
-  })
-
-  const settings = chatbot?.creditSettings as CreditSettings | null
-  if (!settings || settings.resetPeriod === 'none') {
-    return existingCredits
-  }
-
-  const shouldReset = this.shouldResetCredits(
-    existingCredits.lastResetAt || existingCredits.createdAt,
-    settings.resetPeriod as ResetPeriod
-  )
-
-  if (shouldReset) {
-    return await prisma.chatUsageCredits.update({
-      where: { id: existingCredits.id },
-      data: {
-        current: Math.min(
-          existingCredits.current.toNumber() + settings.resetAmount,
-          settings.maxCredits
-        ),
-        total: settings.maxCredits,
-        lastResetAt: new Date(),
-        resetCount: existingCredits.resetCount + 1
-      }
-    })
-  }
-
-  return existingCredits
-}
-```
+Handled inside `atomicResetCreditsIfNeeded` using fixed-period checks.
 
 ### Phase 4: API Updates
 
@@ -232,16 +108,19 @@ export async function GET(
 
   const chatbot = await prisma.chatbot.findUnique({
     where: { id: chatbotId },
-    select: { creditSettings: true },
+    select: {
+      creditResetPeriod: true,
+      creditInitialCredits: true,
+      creditResetAmount: true,
+      creditMaxCredits: true,
+    },
   })
 
-  const settings = chatbot?.creditSettings as CreditSettings | null
-
   return NextResponse.json({
-    resetPeriod: settings?.resetPeriod || 'none',
-    initialCredits: settings?.initialCredits || 10,
-    resetAmount: settings?.resetAmount || 10,
-    maxCredits: settings?.maxCredits || 10,
+    resetPeriod: chatbot?.creditResetPeriod ?? 'none',
+    initialCredits: chatbot?.creditInitialCredits ?? 0,
+    resetAmount: chatbot?.creditResetAmount ?? 0,
+    maxCredits: chatbot?.creditMaxCredits ?? 0,
   })
 }
 ```
@@ -282,26 +161,7 @@ interface SettingsState {
 
 ### Phase 6: Migration Strategy
 
-#### 6.1 Database Migration
-
-```sql
--- Add creditSettings to existing chatbots with defaults
-UPDATE "Chatbot"
-SET "creditSettings" = '{"initialCredits": 10, "resetPeriod": "weekly", "resetAmount": 10, "maxCredits": 10}'
-WHERE "creditSettings" IS NULL;
-
--- Add tracking fields to existing credit records
-ALTER TABLE "ChatUsageCredits"
-ADD COLUMN "periodStartedAt" TIMESTAMP,
-ADD COLUMN "lastResetAt" TIMESTAMP,
-ADD COLUMN "resetCount" INTEGER DEFAULT 0;
-
--- Initialize tracking for existing records
-UPDATE "ChatUsageCredits"
-SET "periodStartedAt" = "createdAt",
-    "lastResetAt" = "createdAt"
-WHERE "periodStartedAt" IS NULL;
-```
+No additional migration is required for credit configuration; the scalar credit fields already exist on `Chatbot`, and the credit tracking fields are present on `ChatUsageCredits`.
 
 #### 6.2 Existing User Credits
 
@@ -315,23 +175,8 @@ Options for users with 0 credits:
 
 #### 7.1 Common Credit Policies
 
-```json
-// Conservative daily allowance
-{
-  "initialCredits": 5,
-  "resetPeriod": "daily",
-  "resetAmount": 5,
-  "maxCredits": 5
-}
-
-// Weekly batch with accumulation
-{
-  "initialCredits": 20,
-  "resetPeriod": "weekly",
-  "resetAmount": 15,
-  "maxCredits": 30
-}
-
+- Conservative daily allowance: `creditInitialCredits=5`, `creditResetPeriod=daily`, `creditResetAmount=5`, `creditMaxCredits=5`
+- Weekly batch with accumulation: `creditInitialCredits=20`, `creditResetPeriod=weekly`, `creditResetAmount=15`, `creditMaxCredits=30`
 // Monthly research allowance
 {
   "initialCredits": 100,

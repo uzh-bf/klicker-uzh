@@ -8,23 +8,38 @@ Must remain compatible with:
 - existing credit-based fallback behavior
 - semi-anonymous chat mode (forced cheapest unlimited model)
 
+## Progress (feat/chat-gpt-5-1)
+
+**Done on this branch**
+- Added GPT-5.1 to the server-side model registry (`apps/chat/src/lib/server/chatModelRegistry.ts`).
+- Fixed GPT-5.1 streaming truncation by switching to Azure Responses API (`azure.responses(deploymentId)`, `api-version=preview`) and surfacing `finishReason` to the UI.
+- Added a CLI debug script (`util/azureOpenAiTest.ts`) to validate Azure endpoint + api-version combinations.
+- Persisted and displayed per-message metadata (`chatMode`, `modelId`, `creditsUsed`).
+
+**Remaining**
+- Implement GPT-5.1 reasoning effort selection (UI + request schema + provider options).
+- Decide the long-term default/limit for GPT-5.1 max output tokens (currently capped in the route).
+- If model selection needs per-course behavior later, decide whether it lives on the course↔chatbot link.
+
 ## Current state (code)
 
 ### Model registry
-- `apps/chat/src/lib/config/models.ts`
-  - `MODEL_IDS = ['gpt-4.1', 'gpt-4.1-mini']`
-  - Model “link” is also used to parse `api-version`.
+- `apps/chat/src/lib/server/chatModelRegistry.ts`
+  - Source of truth for model IDs, Azure deployments, api-version, and pricing.
+  - Can be overridden via `CHAT_MODEL_REGISTRY_JSON`.
 
 ### Selection logic
 - `apps/chat/src/stores/settingsStore.ts`
-  - If `chatbot.modelSelection === false`, UI shows read-only selection and auto-picks model based on credits.
-  - If credits are `0`, available models are filtered to `fallback: true`.
+  - Loads `availableModels` + `automaticModelId` from `/api/chatbots/<chatbotId>/credits`.
+  - If `chatbot.modelSelection === false`, UI auto-picks `automaticModelId`.
+  - If credits are `0`, backend filters models to `fallback: true`.
 
 ### Server enforcement
 - `apps/chat/src/app/api/chatbots/[chatbotId]/chat/route.ts`
   - If `!chatbot.modelSelection`, server overrides client selection based on credits.
-  - Uses `createAzure({ useDeploymentBasedUrls: true })` and calls `azure(modelId)` → **ModelID must match Azure deployment name**.
-  - No support for reasoning effort.
+  - Uses Azure **Responses API** via `azure.responses(deploymentId)` with `api-version=preview` (override: `AZURE_RESPONSES_API_VERSION`).
+  - Persists `chatMode`, `modelId`, and `creditsUsed` per message.
+  - No support for reasoning effort yet.
 
 ## Requirements
 
@@ -37,19 +52,18 @@ Must remain compatible with:
 
 ### 1) Extend model registry
 
-Update `apps/chat/src/lib/config/models.ts`:
+Update `apps/chat/src/lib/server/chatModelRegistry.ts`:
 
-- Add `gpt-5.1` to `MODEL_IDS` and `MODEL_CONFIGS`.
-- Add pricing for GPT‑5.1.
-- Add capability metadata for UI:
+- Ensure GPT‑5.1 is present in the default registry and/or `CHAT_MODEL_REGISTRY_JSON`.
+- Keep pricing + api-version centralized in the registry.
+- Add capability metadata for UI (if needed on the client):
 
 ```ts
 supportsReasoningEffort?: boolean
 reasoningEffortOptions?: Array<'none'|'low'|'medium'|'high'>
 ```
 
-Optional cleanup (recommended): stop parsing `api-version` from `link`.
-- Add `apiVersion` as an explicit field in the model config.
+Optional cleanup (recommended): add a public client model registry endpoint or extend `/api/chatbots/<chatbotId>/credits` to include reasoning capability metadata.
 
 ### 2) Add reasoning effort state
 
@@ -107,13 +121,13 @@ If provider doesn’t support it even after upgrade:
 
 ### 6) Credits + pricing
 
-- Extend cost calculation (`getModelCost`) for GPT‑5.1.
+- Credits are computed from `ChatModelConfig.cost` in `chatModelRegistry.ts`.
 - Keep billing on `inputTokens`/`outputTokens` as currently.
 - If Azure exposes separate “reasoning tokens”, decide later how to bill (out of scope for first iteration).
 
 ## Implementation steps
 
-1. Add GPT‑5.1 to `models.ts` and update `MODEL_IDS`.
+1. Ensure GPT‑5.1 is in `chatModelRegistry.ts` (default registry or `CHAT_MODEL_REGISTRY_JSON`).
 2. Add `selectedReasoningEffort` state + actions in `settingsStore.ts`.
 3. Add reasoning effort UI in `settings-panel.tsx`.
 4. Update chat API route schema to accept `reasoningEffort`.
@@ -137,5 +151,5 @@ If provider doesn’t support it even after upgrade:
 
 ## Open questions
 
-1. What is the correct Azure deployment name for GPT‑5.1 (must match `ModelID` unless we add mapping)?
+1. If we move to course-scoped endpoints, should the credits/model picker be moved under `/api/courses/<courseId>/chatbots/<chatbotId>/credits`?
 2. Default reasoning effort should be `none` or `medium`?
