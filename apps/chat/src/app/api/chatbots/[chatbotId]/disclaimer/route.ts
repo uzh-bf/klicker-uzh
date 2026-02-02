@@ -1,4 +1,5 @@
 import { DisclaimersService } from '@/src/services/disclaimers'
+import { prisma } from '@klicker-uzh/prisma'
 import { jwtVerify, type JWTPayload } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -44,6 +45,37 @@ export async function GET(
     return NextResponse.json(
       { error: 'Invalid authentication token' },
       { status: 401 }
+    )
+  }
+
+  // check participation
+  try {
+    const participation = await prisma.participation.findUnique({
+      where: {
+        courseId_participantId: {
+          courseId:
+            (
+              await prisma.chatbot.findUnique({
+                where: { id: chatbotId },
+                select: { courseId: true },
+              })
+            )?.courseId ?? '',
+          participantId: participantId,
+        },
+      },
+    })
+
+    if (!participation) {
+      return NextResponse.json(
+        { error: 'No valid participation found for this chatbot' },
+        { status: 403 }
+      )
+    }
+  } catch (error) {
+    console.error('Error checking participation:', error)
+    return NextResponse.json(
+      { error: 'Error checking participation' },
+      { status: 500 }
     )
   }
 
@@ -111,6 +143,37 @@ export async function POST(
     return NextResponse.json(
       { error: 'Invalid authentication token' },
       { status: 401 }
+    )
+  }
+
+  // check participation
+  try {
+    const participation = await prisma.participation.findUnique({
+      where: {
+        courseId_participantId: {
+          courseId:
+            (
+              await prisma.chatbot.findUnique({
+                where: { id: chatbotId },
+                select: { courseId: true },
+              })
+            )?.courseId ?? '',
+          participantId: participantId,
+        },
+      },
+    })
+
+    if (!participation) {
+      return NextResponse.json(
+        { error: 'No valid participation found for this chatbot' },
+        { status: 403 }
+      )
+    }
+  } catch (error) {
+    console.error('Error checking participation:', error)
+    return NextResponse.json(
+      { error: 'Error checking participation' },
+      { status: 500 }
     )
   }
 

@@ -9,6 +9,7 @@ Upgrade `@assistant-ui/*` packages in `apps/chat` to the latest `0.11.x` series 
 **Done on this branch**
 - Preserved extra per-message fields by mapping them into `metadata.custom` in `RuntimeProvider.tsx`.
 - Implemented URL-based thread navigation while retaining the external-store runtime approach.
+- Browser validation confirmed thread deletion + title editing behavior after URL-based routing changes.
 
 **Remaining**
 - Upgrade `@assistant-ui/*` to v0.11.x and fix breaking changes; verify tool fallback + markdown rendering.

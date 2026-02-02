@@ -10,6 +10,7 @@ Key constraint: **never merge anonymous chats into the real account**, to avoid 
 
 **Done on this branch**
 - No semi-anonymous implementation yet; prerequisites like URL-based thread routing and server-side metadata persistence are now in place.
+- Verified LTI token acquisition upserts Participation before chat redirect (so check-only `ensureParticipation` does not block LTI entry).
 
 **Remaining**
 - Implement `chat_participant_token` + deterministic guest persona creation/lookup.

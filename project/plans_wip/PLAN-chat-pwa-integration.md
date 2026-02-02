@@ -5,7 +5,7 @@
 Make the course chatbot easy to access from the Student PWA:
 
 1. “Jump to chatbot” from course pages.
-2. Optional **side panel chat** during practice quizzes (embedded mode).
+2. Optional **side panel chat** on course pages (embedded mode, minimal UI).
 3. Avoid brittle coupling (PWA shouldn’t need hardcoded chatbot IDs if possible).
 
 ## Progress (feat/chat-gpt-5-1)
@@ -14,11 +14,14 @@ Make the course chatbot easy to access from the Student PWA:
 - Chat now supports URL-addressable threads (`/<chatbotId>/threads/<threadId>`) while keeping the assistant runtime mounted via layout nesting.
 - Manage UI links to chatbots via the existing PWA redirect route (courseId + chatbotId), ensuring participant auth.
 - OLAT API now exposes course chatbots for course managers (individual chatbots; no overview entry).
+- Fixed PWA login crash caused by dual Formik bundles by adding `formik` to `transpilePackages` (PWA/Manage/Control).
+- `ensureParticipation(courseId)` is now check-only (no implicit Participation creation); LTI still creates Participation during token acquisition.
 
 **Remaining**
 - Phase 1: implement chat `/course/<courseId>` entry route and PWA `/course/<courseId>/chatbot` redirect.
 - Because courses can have multiple chatbots and chatbots can be attached to multiple courses, define a stable “default chatbot per course” rule (ideally stored on the course↔chatbot link, e.g. `CourseChatbot.isDefault`).
 - Phase 2 (optional): participant-facing chatbot discovery/picker for a course based on course↔chatbot links.
+- Add PWA sidebar chat (course pages): chatbot picker, `?embed=1` minimal UI, and always start a new thread on open.
 - Add `?embed=1` mode + CSP `frame-ancestors` to support an iframe side panel in the PWA.
 - Update OLAT/PWA/chat implementations to stop relying on `chatbot.courseId` once the link table exists.
 
@@ -70,6 +73,26 @@ Use it to:
 - Enable deep-linking via existing `/course/[courseId]/chatbot/[chatbotId]` page.
 
 ### Embedded side panel during practice quizzes
+
+Practice quizzes can reuse the same embed-mode chat UI described below.
+
+### Sidebar chat on course pages (minimal UI, no history)
+
+Target scope: Student PWA course pages (initially), with a simplified UI and **no chat history**.
+
+#### Variant A (recommended): iframe embed
+- PWA renders a sidebar/drawer containing an iframe to `chat.klicker.com`.
+- Chat app supports `?embed=1` (hide thread list/chrome) and `?newThread=1` (always create a fresh thread on open).
+- PWA shows a **chatbot picker** (course-scoped) before opening the sidebar.
+
+#### Variant B: native sidebar (no iframe)
+- PWA renders a minimal chat UI directly, calling chat APIs.
+- Higher effort (auth, streaming, threads) but more control.
+
+Required support (regardless of variant):
+- `courseChatbots(courseId)` participant-safe query for the picker.
+- Embed-safe CSP (`frame-ancestors` allow `https://pwa.klicker.com`).
+- New-thread-on-open semantics for the “no history” UX.
 
 #### Chat app: embed mode
 - Add `?embed=1` support in chat UI:

@@ -7,6 +7,7 @@
 **Done on this branch**
 - Persisted and displayed per-message `creditsUsed` (computed from token usage), enabling cost auditing per assistant response.
 - Credits initialization/reset exists server-side via scalar chatbot fields + fixed-period logic (this differs from the JSON sketch in this doc).
+- Credits endpoint now enforces course membership (403 for non-members).
 
 **Remaining**
 - Reconcile this plan with the current implementation so it matches reality.

@@ -9,6 +9,7 @@ This plan outlines the implementation of a comprehensive disclaimer system for K
 **Done on this branch**
 - Implemented disclaimer read + accept/decline endpoints (`/api/chatbots/[chatbotId]/disclaimer`) with acceptance tracked in `ChatUsageCredits`.
 - Enforced disclaimer acceptance in the main chat send endpoint (blocks usage when required + not accepted).
+- Disclaimer GET/POST now enforce course membership.
 
 **Remaining**
 - Enforce disclaimer guard consistently across other endpoints (threads/messages/credits) and return `428 Precondition Required` with remediation info as per this plan.

@@ -9,10 +9,12 @@ Ensure chat access is gated by **course membership** (Participation record exist
 **Done on this branch**
 - Hardened ChatMessage persistence: verify owning thread and scope updates by `(id, threadId)` via `updateMany` to prevent cross-thread overwrites.
 - Improved thread switching/deletion behavior with URL-based navigation and better failure handling.
+- Added participation checks to credits + disclaimer endpoints.
+- Made `ensureParticipation(courseId)` check-only (no implicit Participation creation).
 
 **Remaining**
 - Secure `/api/chatbots/[chatbotId]` (currently unauthenticated) and return only safe fields.
-- Add course participation checks to credits + disclaimer endpoints; factor shared auth/membership helpers.
+- Factor shared auth/membership helpers across routes and apply consistently.
 - Update participation logic for the course↔chatbot many-to-many relationship (avoid relying on `chatbot.courseId`); decide whether access/threads/credits are per chatbot or per course↔chatbot context.
 
 ## Current state (code)

@@ -15,6 +15,7 @@ Must remain compatible with:
 - Fixed GPT-5.1 streaming truncation by switching to Azure Responses API (`azure.responses(deploymentId)`, `api-version=preview`) and surfacing `finishReason` to the UI.
 - Added a CLI debug script (`util/azureOpenAiTest.ts`) to validate Azure endpoint + api-version combinations.
 - Persisted and displayed per-message metadata (`chatMode`, `modelId`, `creditsUsed`).
+- Browser validation confirmed model/mode selection and metadata persistence.
 
 **Remaining**
 - Implement GPT-5.1 reasoning effort selection (UI + request schema + provider options).
