@@ -95,12 +95,24 @@ export async function getCourseActivityTypes(
     },
     select: {
       isGamificationEnabled: true,
+      permissions: {
+        where: { userId: account.userId },
+        select: { permissionLevel: true },
+      },
       liveQuizzes: { where: { isDeleted: false } },
       practiceQuizzes: { where: { isDeleted: false } },
       microLearnings: { where: { isDeleted: false } },
+      chatbots: { select: { id: true } },
     },
   })
   if (!course) return null
+
+  const isManager = course.permissions.some(
+    (permission) =>
+      permission.permissionLevel === 'OWNER' ||
+      permission.permissionLevel === 'ADMIN'
+  )
+  const hasChatbots = course.chatbots.length > 0
 
   const mapSubselection: Record<
     string,
@@ -122,6 +134,20 @@ export async function getCourseActivityTypes(
       olatConfigurationKey,
       isSubselectionRequired,
     }) => {
+      if (olatConfigurationKey === 'chatbot') {
+        return isManager && hasChatbots
+          ? {
+              id,
+              title_de: titleDE,
+              title_en: titleEN,
+              title_fr: titleFR,
+              title_it: titleIT,
+              olatConfigurationKey,
+              isSubselectionRequired,
+            }
+          : []
+      }
+
       // Subselection activities: only include if they have items
       if (olatConfigurationKey in mapSubselection) {
         return {
@@ -182,6 +208,35 @@ export async function getActivities(
     select: { userId: true },
   })
   if (!account) return null
+
+  if (activityTypeKey === 'chatbot') {
+    const course = await prisma.course.findUnique({
+      where: {
+        id: courseID,
+        permissions: {
+          some: {
+            userId: account.userId,
+            permissionLevel: { in: ['OWNER', 'ADMIN'] },
+          },
+        },
+      },
+      select: {
+        chatbots: {
+          select: { id: true, name: true },
+          orderBy: { name: 'asc' },
+        },
+      },
+    })
+    if (!course) return null
+
+    return course.chatbots.map((chatbot) => ({
+      id: chatbot.id,
+      title_de: chatbot.name,
+      title_en: chatbot.name,
+      title_fr: chatbot.name,
+      title_it: chatbot.name,
+    }))
+  }
 
   const course = await prisma.course.findUnique({
     where: {

@@ -55,6 +55,17 @@
     "isEmailTransferRequired": false
   },
   {
+    "id": "CHATBOT",
+    "title_de": "Chatbot",
+    "title_en": "Chatbot",
+    "title_fr": "Chatbot",
+    "title_it": "Chatbot",
+    "path": "/chatbot",
+    "olatConfigurationKey": "chatbot",
+    "isSubselectionRequired": true,
+    "isEmailTransferRequired": false
+  },
+  {
     "id": "COURSE_LEADERBOARD",
     "title_de": "Kurs-Rangliste",
     "title_en": "Course Leaderboard",

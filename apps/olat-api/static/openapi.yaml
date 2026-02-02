@@ -229,6 +229,7 @@ components:
           - live-quiz
           - practice-quiz
           - micro-learning
+          - chatbot
           - course-leaderboard
           - manage-account
           - docs
