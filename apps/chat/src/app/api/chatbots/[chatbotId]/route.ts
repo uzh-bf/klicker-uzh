@@ -1,4 +1,4 @@
-import { ChatbotsService } from '@/src/services/chatbots'
+import { getChatbotOr404 } from '@/src/lib/server/apiGuards'
 import { NextRequest, NextResponse } from 'next/server'
 
 /**
@@ -11,8 +11,21 @@ export async function GET(
   const { chatbotId } = await params
 
   try {
-    const modelDetails = await ChatbotsService.getChatbotById(chatbotId)
-    return NextResponse.json(modelDetails)
+    const chatbotResult = await getChatbotOr404(chatbotId, {
+      id: true,
+      name: true,
+      description: true,
+      avatar: true,
+      modelSelection: true,
+      systemPrompts: true,
+      disclaimerId: true,
+    })
+
+    if ('response' in chatbotResult) {
+      return chatbotResult.response
+    }
+
+    return NextResponse.json(chatbotResult.chatbot)
   } catch (error) {
     console.error('Failed to fetch model details:', error)
     return NextResponse.json(
