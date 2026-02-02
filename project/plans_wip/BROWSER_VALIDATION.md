@@ -117,7 +117,8 @@ Verify in the details panel (visually + spot-check via text):
     - `/course/<courseId>/chatbot/<chatbotId>`
 - Credits section shows initial/reset/max.
 - Usage summary shows thread/message/participant counts (may start at 0).
-- Disclaimer summary and MCP configuration tables render (if present).
+- Disclaimer summary renders (accepted/declined totals if present).
+- MCP configuration list/table renders without errors (if present).
 
 ### A3 Capture the “Open Chatbot” URL and open it (don’t rely on new tabs)
 
@@ -147,6 +148,17 @@ Steps:
 Expectation: **Chatbots entry is absent**.
 
 (Optionally verify other privatePreview-gated entries show “Coming soon” disabled state, but Chatbots should be missing, not disabled.)
+
+### B3 Direct URL access should be denied
+
+Expectation: direct navigation to Chatbots resources is not allowed for `pro1` and `free`.
+
+Steps (repeat for each user):
+
+1. Login as `pro1` / `abcd`.
+2. `agent-browser open https://manage.klicker.com/en/resources/chatbots` (use the locale prefix used in your environment).
+3. Confirm redirect, 404, or access-denied state.
+4. Repeat as `free` / `abcd`.
 
 ## 5) Smoke test flow C — PWA: chatbot redirect + ensureParticipation
 
@@ -251,6 +263,20 @@ Checks:
 2. Refresh the page.
 3. Confirm metadata still shows (persistence).
 
+### D3b Credits before/after a response
+
+Expectation: credits decrement after a successful assistant response and `creditsUsed` displays in metadata.
+
+Steps:
+
+1. Capture current credits before sending a message:
+   - `agent-browser eval "fetch('/api/chatbots/8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f/credits').then(r => r.json()).then(j => j.current)"`
+2. Send a new message and wait for streaming to complete.
+3. Capture credits after:
+   - `agent-browser eval "fetch('/api/chatbots/8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f/credits').then(r => r.json()).then(j => j.current)"`
+4. Confirm `current` decreased (or confirm a transaction/usage indicator is visible if credits are non-decrementing in your seed config).
+5. Confirm the assistant message metadata shows `creditsUsed` and persists after refresh.
+
 ### D4 Model selection + mode selection
 
 Expectation:
@@ -308,7 +334,46 @@ Steps:
 3. Confirm usage summary changed (thread/message counts increased).
 4. Confirm disclaimer summary reflects accepts/declines (if shown).
 
-## 8) What Droid can test vs what you should acceptance-test
+## 8) Smoke test flow F — API semantics for chatbotId (401/404)
+
+Use `agent-browser eval` so HTTP status is explicit.
+
+### F1 Logged-out → valid chatbot ⇒ 401
+
+1. Clear cookies/storage.
+2. `agent-browser open https://chat.klicker.com`
+3. `agent-browser eval "fetch('/api/chatbots/8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f/credits').then(r => r.status)"`
+4. Expect **401**.
+
+### F2 Logged-in → invalid chatbotId ⇒ 404
+
+1. From an authenticated chat session:
+2. `agent-browser eval "fetch('/api/chatbots/not-a-uuid/credits').then(r => r.status)"`
+3. Expect **404**.
+
+### F3 Logged-in → nonexistent chatbotId (valid UUID) ⇒ 404
+
+1. `agent-browser eval "fetch('/api/chatbots/00000000-0000-0000-0000-000000000000/threads').then(r => r.status)"`
+2. Expect **404**.
+
+### F4 Deep route invalid chatbotId ⇒ 404
+
+1. `agent-browser eval "fetch('/api/chatbots/not-a-uuid/threads/anything/messages').then(r => r.status)"`
+2. Expect **404**.
+
+## 9) Smoke test flow G — Control app smoke
+
+Expectation: Control loads without crashing (Formik transpilation regression guard).
+
+Steps:
+
+1. Clear cookies/storage.
+2. `agent-browser open https://control.klicker.com`
+3. `agent-browser wait --load networkidle`
+4. `agent-browser screenshot /tmp/control-00-landing.png --full`
+5. If prompted to login, use Delegated Access with `lecturer` / `abcd` and confirm a post-login screen renders.
+
+## 10) What Droid can test vs what you should acceptance-test
 
 ### 8.1 Droid (agent-browser) can cover
 
@@ -321,6 +386,8 @@ Steps:
 - Chat streaming completion (no mid-stream truncation)
 - Mode/model selection flow + metadata rendering + persistence
 - Basic “aggregates updated” check back in Manage
+- API status behavior for invalid/missing chatbotId
+- Control app basic smoke
 
 ### 8.2 You should acceptance-test (not reliable for agent-browser)
 
@@ -331,32 +398,28 @@ Steps:
 - OLAT consumer integration end-to-end (OLAT UI calling the API, embeddings/iframe contexts)
 - Long-running and cost-sensitive GPT‑5.1 usage scenarios (very long responses, sustained sessions)
 
-## 9) Evidence checklist (what I’ll return after running this)
+## 11) Evidence checklist (what I’ll return after running this)
 
-- A pass/fail checklist for each flow (A–E)
+- A pass/fail checklist for each flow (A–G)
 - The visited URLs
-- Screenshots from `/tmp/` for each major step
-- Any console/network errors observed during the run
+- Screenshots from `/tmp/` for each major step (at least one before/after per flow)
+- Screenshots for any error states (403/401/404, disclaimer decline, participation required)
+- Any console/network errors observed during the run (`agent-browser errors`, `agent-browser console`)
 
-## 10) Progress / Run log (feat/chat-gpt-5-1)
+## 12) Progress / Run log (feat/chat-gpt-5-1)
 
-### Flow results
-- A (Manage Chatbots): Pass
-- B (Manage gating): Pass
-- C1/C2 (PWA login + enrolled redirect): Pass
-- C3 (non-enrolled participant): Failed initially (non-enrolled user redirected into chat)
-  - Fix: `ensureParticipation` made check-only + participation checks on credits/disclaimer
-  - Re-run: pending after fix
-- D0–D4 (disclaimer accept, threads, streaming, metadata, model/mode): Pass
-- D5–D7 (decline, delete, edit title): Pass
-- E (Manage aggregates): Pass
+### Flow results (template)
+- A (Manage Chatbots): Pending
+- B (Manage gating): Pending
+- C (PWA login + participation): Pending
+- D (Chat UX/threads/streaming/metadata): Pending
+- E (Manage aggregates): Pending
+- F (API semantics 401/404): Pending
+- G (Control smoke): Pending
 
 ### Issues found + fixes
-1. PWA login crash after clearing cookies: Formik context mismatch (CJS vs ESM bundles)
-   - Fix: add `formik` to `transpilePackages` in PWA/Manage/Control Next configs.
-2. Participation gating inconsistency: non-enrolled users could reach chat and see partial UI
-   - Fix: `ensureParticipation` now check-only; added participation checks to credits + disclaimer endpoints.
+- (none)
 
 ### Notes
 - LTI entry already creates Participation during token acquisition (`loginParticipantWithLti`).
-- Validators: `pnpm run lint`, `pnpm run check` (pass).
+- Validators: Pending
