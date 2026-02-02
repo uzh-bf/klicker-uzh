@@ -71,6 +71,19 @@ Use `agent-browser` when changes affect browser behavior and need real UI valida
 
 Prereqs: the app is running locally in **dev mode** and the database is **seeded**.
 
+### Troubleshooting agent-browser + Traefik
+
+If `https://*.klicker.com` shows **502 Bad Gateway**, Traefik or the target app is not reachable.
+Before running UI flows:
+
+- Confirm Traefik is up and routing to the expected ports.
+- Confirm each app is listening on its local port (3001/3002/3003/3004/3000/3010).
+- If Traefik is blocked, temporarily use the documented `http://localhost:<port>` URLs.
+
+For flaky interactions, always `agent-browser wait --load networkidle` before `find/click/fill`.
+If you see `Resource temporarily unavailable (os error 35)` or `(no interactive elements)`, take a screenshot,
+then retry after a short wait or reload. If the screenshot shows 502, fix the environment first.
+
 If `agent-browser` is missing entirely:
 
 ```bash
