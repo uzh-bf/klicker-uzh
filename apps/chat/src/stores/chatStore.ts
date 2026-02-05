@@ -16,6 +16,7 @@ import {
   getBranches,
   getPathToLeaf,
 } from '../lib/api/utils'
+import { type ReasoningEffort } from '../lib/config/reasoning'
 
 /**
  * Extended thread message type that includes parentId for conversation branching
@@ -24,6 +25,8 @@ export type ExtendedThreadMessageLike = ThreadMessageLike & {
   parentId?: string | null
   chatMode?: string | null
   modelId?: string | null
+  reasoningEffort?: ReasoningEffort | null
+  reasoningContent?: string | null
   creditsUsed?: number | null
 }
 

@@ -3,6 +3,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { type ModelID, type ModelOption } from '../lib/config/models'
 import { DEFAULT_PROMPT } from '../lib/config/prompts'
+import { type ReasoningEffort } from '../lib/config/reasoning'
 
 export interface ModeOption {
   name: string
@@ -13,6 +14,7 @@ interface SettingsState {
   // Current selections
   selectedModel: ModelID
   selectedMode: string
+  selectedReasoningEffort: ReasoningEffort
   credits: {
     current: number
     total: number
@@ -26,6 +28,7 @@ interface SettingsState {
   // Actions
   setSelectedModel: (model: ModelID) => void
   setSelectedMode: (mode: string) => void
+  setSelectedReasoningEffort: (effort: ReasoningEffort) => void
   loadModeOptions: (chatbotId: string) => Promise<void>
   loadCredits: (chatbotId: string) => Promise<void>
   decrementCredits: (amount: number) => void
@@ -38,6 +41,7 @@ export const useSettingsStore = create<SettingsState>()(
       // initial state
       selectedModel: 'gpt-4.1',
       selectedMode: 'tutor',
+      selectedReasoningEffort: 'none',
       credits: {
         current: 0.0,
         total: 0.0,
@@ -51,6 +55,8 @@ export const useSettingsStore = create<SettingsState>()(
       // actions
       setSelectedModel: (model) => set({ selectedModel: model }),
       setSelectedMode: (mode: string) => set({ selectedMode: mode }),
+      setSelectedReasoningEffort: (effort: ReasoningEffort) =>
+        set({ selectedReasoningEffort: effort }),
 
       loadModeOptions: async (chatbotId: string) => {
         try {
@@ -179,6 +185,7 @@ export const useSettingsStore = create<SettingsState>()(
       partialize: (state) => ({
         selectedModel: state.selectedModel,
         selectedMode: state.selectedMode,
+        selectedReasoningEffort: state.selectedReasoningEffort,
       }),
     }
   )

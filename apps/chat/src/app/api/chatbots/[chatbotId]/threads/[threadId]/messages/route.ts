@@ -68,6 +68,8 @@ export async function GET(
         content: msg.content,
         chatMode: msg.chatMode ?? null,
         modelId: msg.modelId ?? null,
+        reasoningEffort: msg.reasoningEffort ?? null,
+        reasoningContent: msg.reasoningContent ?? null,
         creditsUsed: msg.creditsUsed
           ? (
               msg.creditsUsed as unknown as { toNumber: () => number }

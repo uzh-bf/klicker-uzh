@@ -20,6 +20,12 @@ import {
 } from 'ai'
 import { NextRequest, NextResponse } from 'next/server'
 import { DEFAULT_PROMPT } from 'src/lib/config/prompts'
+import {
+  GPT_5_1_MODEL_ID,
+  REASONING_EFFORT_OPTIONS,
+  type ReasoningEffort,
+  supportsReasoningEffort,
+} from 'src/lib/config/reasoning'
 import { CreditsService } from 'src/services/credits'
 import { DisclaimersService } from 'src/services/disclaimers'
 import { ThreadService } from 'src/services/threads'
@@ -41,24 +47,23 @@ function getAzureModel(
     ? new URL(chatbot.azureOpenAIEndpoint).hostname.split('.')[0]
     : process.env.AZURE_RESOURCE_NAME || 'klicker-ai'
 
-  const useResponsesApi = true
-
   const responsesApiVersion =
-    process.env.AZURE_RESPONSES_API_VERSION || 'preview'
-  const chatApiVersion = process.env.AZURE_CHAT_API_VERSION || apiVersion
-  const effectiveApiVersion = useResponsesApi
-    ? responsesApiVersion
-    : chatApiVersion
+    process.env.AZURE_RESPONSES_API_VERSION || apiVersion || 'preview'
 
   const azure = createAzure({
     resourceName,
     apiKey,
-    useDeploymentBasedUrls: !useResponsesApi,
-    apiVersion: effectiveApiVersion || 'preview',
+    useDeploymentBasedUrls: false,
+    apiVersion: responsesApiVersion,
   })
 
-  return useResponsesApi ? azure.responses(deploymentId) : azure(deploymentId)
+  return azure.responses(deploymentId)
 }
+
+const normalizeReasoningContent = (
+  value: string | null | undefined
+): string | null =>
+  typeof value === 'string' && value.trim().length > 0 ? value : null
 
 /**
  * Main chat endpoint that processes AI conversations with streaming responses.
@@ -145,6 +150,10 @@ export async function POST(
       .optional()
       .transform((val) => val?.toLowerCase())
       .default('tutor'),
+    reasoningEffort: z
+      .enum(REASONING_EFFORT_OPTIONS)
+      .optional()
+      .default('none'),
     parentId: z.string().min(1).nullable().optional(),
     assistantMessageId: z.string().min(1),
   })
@@ -155,8 +164,14 @@ export async function POST(
     console.error('Invalid request body:', e)
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
-  const { messages, threadId, selectedMode, parentId, assistantMessageId } =
-    parsed
+  const {
+    messages,
+    threadId,
+    selectedMode,
+    reasoningEffort: requestedReasoningEffort,
+    parentId,
+    assistantMessageId,
+  } = parsed
 
   let selectedModel = parsed.selectedModel
 
@@ -245,6 +260,8 @@ export async function POST(
 
   // track partial content for cancelled streams
   let partialContent = ''
+  let partialReasoningContent = ''
+  let assistantReasoningContent: string | null = null
 
   // convert to UIMessage format
   const uiMessages: UIMessage[] = messages.map((msg) => ({
@@ -280,7 +297,7 @@ export async function POST(
   }
 
   const maxOutputTokens =
-    selectedModelConfig.id === 'gpt-5.1' ? 2048 : undefined
+    selectedModelConfig.id === GPT_5_1_MODEL_ID ? 2048 : undefined
 
   // Enforce fallback-only usage when the user has no credits left.
   // This prevents bypassing credit gating by manually calling the API.
@@ -299,6 +316,16 @@ export async function POST(
       }
     }
   }
+
+  const appliedReasoningEffort: ReasoningEffort | null =
+    supportsReasoningEffort(selectedModelConfig.id)
+      ? requestedReasoningEffort
+      : null
+
+  const providerReasoningEffort =
+    appliedReasoningEffort && appliedReasoningEffort !== 'none'
+      ? appliedReasoningEffort
+      : undefined
 
   const owningThread = currentThreadId
     ? await prisma.chatThread.findFirst({
@@ -322,6 +349,7 @@ export async function POST(
       const metadata = {
         chatMode: selectedMode,
         modelId: selectedModelConfig.id,
+        reasoningEffort: appliedReasoningEffort,
       }
       const updated = await prisma.chatMessage.updateMany({
         where: { id: userMessageId, threadId: currentThreadId },
@@ -377,6 +405,13 @@ export async function POST(
       selectedModelConfig.apiVersion
     ),
     maxOutputTokens,
+    providerOptions: providerReasoningEffort
+      ? {
+          openai: {
+            reasoningEffort: providerReasoningEffort,
+          },
+        }
+      : undefined,
     messages: convertToModelMessages(uiMessages),
     tools: mcpTools,
     toolChoice: 'auto',
@@ -389,6 +424,9 @@ export async function POST(
       if (chunk.type === 'text-delta' && chunk.text) {
         partialContent += chunk.text
       }
+      if (chunk.type === 'reasoning-delta' && chunk.text) {
+        partialReasoningContent += chunk.text
+      }
     },
 
     onFinish: async (result) => {
@@ -399,6 +437,15 @@ export async function POST(
             result.totalUsage.outputTokens || 0
           )
         : null
+      const finishedReasoningContent =
+        normalizeReasoningContent(
+          result.reasoningText ||
+            result.steps
+              .map((step) => step.reasoningText || '')
+              .filter((value) => value.length > 0)
+              .join('')
+        ) ?? normalizeReasoningContent(partialReasoningContent)
+      assistantReasoningContent = finishedReasoningContent
 
       // save assistant response to database
       if (
@@ -443,6 +490,8 @@ export async function POST(
           const metadata = {
             chatMode: selectedMode,
             modelId: selectedModelConfig.id,
+            reasoningEffort: appliedReasoningEffort,
+            reasoningContent: finishedReasoningContent,
             creditsUsed,
           }
           const updated = await prisma.chatMessage.updateMany({
@@ -545,12 +594,29 @@ export async function POST(
         }
       }
 
+      const abortedReasoningContent =
+        normalizeReasoningContent(
+          Array.isArray(steps?.steps)
+            ? steps.steps
+                .map((step) => step.reasoningText || '')
+                .filter((value) => value.length > 0)
+                .join('')
+            : ''
+        ) ?? normalizeReasoningContent(partialReasoningContent)
+      assistantReasoningContent = abortedReasoningContent
+
       // save partial message
-      if (currentThreadId && owningThread && partialContent.trim()) {
+      if (
+        currentThreadId &&
+        owningThread &&
+        (partialContent.trim() || abortedReasoningContent)
+      ) {
         try {
           const metadata = {
             chatMode: selectedMode,
             modelId: selectedModelConfig.id,
+            reasoningEffort: appliedReasoningEffort,
+            reasoningContent: abortedReasoningContent,
             creditsUsed,
           }
           const updated = await prisma.chatMessage.updateMany({
@@ -579,7 +645,9 @@ export async function POST(
                   threadId: currentThreadId,
                   parentId: userMessageId,
                   role: 'assistant',
-                  content: [{ type: 'text', text: partialContent }],
+                  content: partialContent.trim()
+                    ? [{ type: 'text', text: partialContent }]
+                    : [],
                   ...metadata,
                 },
               })
@@ -594,7 +662,11 @@ export async function POST(
         } catch (error) {
           console.error('Failed to save partial message:', error)
         }
-      } else if (currentThreadId && !owningThread && partialContent.trim()) {
+      } else if (
+        currentThreadId &&
+        !owningThread &&
+        (partialContent.trim() || abortedReasoningContent)
+      ) {
         console.warn(
           'Skipping assistant message save: thread ownership mismatch',
           {
@@ -611,6 +683,7 @@ export async function POST(
     },
   })
   return result.toUIMessageStreamResponse({
+    sendReasoning: true,
     messageMetadata: ({ part }) => {
       if (part.type !== 'finish') {
         return undefined
@@ -628,6 +701,8 @@ export async function POST(
         finishReason: part.finishReason,
         chatMode: selectedMode,
         modelId: selectedModelConfig.id,
+        reasoningEffort: appliedReasoningEffort,
+        reasoningContent: assistantReasoningContent,
         creditsUsed,
       }
     },

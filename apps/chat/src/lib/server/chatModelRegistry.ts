@@ -13,7 +13,36 @@ const chatModelSchema = z.object({
   }),
 })
 
-const chatModelRegistrySchema = z.array(chatModelSchema).min(1)
+const chatModelRegistrySchema = z
+  .array(chatModelSchema)
+  .min(1)
+  .superRefine((models, ctx) => {
+    const seenIds = new Set<string>()
+    let hasFallback = false
+
+    for (const [index, model] of models.entries()) {
+      if (seenIds.has(model.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [index, 'id'],
+          message: `Duplicate model id "${model.id}"`,
+        })
+      }
+      seenIds.add(model.id)
+
+      if (model.fallback) {
+        hasFallback = true
+      }
+    }
+
+    if (!hasFallback) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          'At least one model with "fallback: true" is required for credit-safe automatic selection.',
+      })
+    }
+  })
 
 export type ChatModelConfig = z.infer<typeof chatModelSchema>
 export type PublicChatModel = Pick<
@@ -81,15 +110,41 @@ export function getAutomaticModelId(credits: { current: number }): string {
   const configuredPrimary = process.env.CHAT_PRIMARY_MODEL_ID
   const configuredFallback = process.env.CHAT_FALLBACK_MODEL_ID
 
+  const defaultPrimary = registry.find((model) => model.fallback === false)
+  const defaultFallback = registry.find((model) => model.fallback === true)
+
   const primary =
-    (configuredPrimary && registry.find((m) => m.id === configuredPrimary)) ||
-    registry.find((m) => m.fallback === false) ||
+    (configuredPrimary &&
+      registry.find((model) => model.id === configuredPrimary)) ||
+    defaultPrimary ||
     registry[0]
 
+  if (configuredPrimary && primary.id !== configuredPrimary) {
+    console.warn(
+      `[chat] CHAT_PRIMARY_MODEL_ID="${configuredPrimary}" is not in the registry; using "${primary.id}".`
+    )
+  }
+
+  const fallbackCandidate = configuredFallback
+    ? registry.find((model) => model.id === configuredFallback)
+    : undefined
+
   const fallback =
-    (configuredFallback && registry.find((m) => m.id === configuredFallback)) ||
-    registry.find((m) => m.fallback === true) ||
+    (fallbackCandidate?.fallback ? fallbackCandidate : null) ||
+    defaultFallback ||
     primary
+
+  if (configuredFallback && fallback.id !== configuredFallback) {
+    if (fallbackCandidate) {
+      console.warn(
+        `[chat] CHAT_FALLBACK_MODEL_ID="${configuredFallback}" is not marked as fallback; using "${fallback.id}".`
+      )
+    } else {
+      console.warn(
+        `[chat] CHAT_FALLBACK_MODEL_ID="${configuredFallback}" is not in the registry; using "${fallback.id}".`
+      )
+    }
+  }
 
   return credits.current > 0 ? primary.id : fallback.id
 }

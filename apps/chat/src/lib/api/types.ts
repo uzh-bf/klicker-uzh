@@ -1,4 +1,5 @@
 import { ExtendedThreadMessageLike, Thread } from '../../stores/chatStore'
+import { type ReasoningEffort } from '../config/reasoning'
 
 export interface ApiError extends Error {
   status: number
@@ -41,6 +42,8 @@ export interface ApiMessage {
   content: ApiContentPart[]
   chatMode?: string | null
   modelId?: string | null
+  reasoningEffort?: ReasoningEffort | null
+  reasoningContent?: string | null
   creditsUsed?: number | null
   parentId?: string | null
   createdAt: string
@@ -146,6 +149,8 @@ export const convertApiMessageToMessage = (
   }) as ExtendedThreadMessageLike['content'],
   chatMode: apiMessage.chatMode ?? null,
   modelId: apiMessage.modelId ?? null,
+  reasoningEffort: apiMessage.reasoningEffort ?? null,
+  reasoningContent: apiMessage.reasoningContent ?? null,
   creditsUsed: apiMessage.creditsUsed ?? null,
   createdAt: new Date(apiMessage.createdAt),
   parentId: apiMessage.parentId || undefined,

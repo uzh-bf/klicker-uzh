@@ -2,6 +2,11 @@
 
 import { useState } from 'react'
 import { type ModelID } from '../lib/config/models'
+import {
+  REASONING_EFFORT_OPTIONS,
+  type ReasoningEffort,
+  supportsReasoningEffort,
+} from '../lib/config/reasoning'
 import { useSettingsStore } from '../stores/settingsStore'
 
 import { Progress, Select } from '@uzh-bf/design-system'
@@ -11,12 +16,14 @@ export function SettingsPanel() {
   const {
     selectedModel,
     selectedMode,
+    selectedReasoningEffort,
     credits,
     modelOptions,
     modeOptions,
     modelSelectionEnabled,
     setSelectedModel,
     setSelectedMode,
+    setSelectedReasoningEffort,
   } = useSettingsStore()
   const [open, setOpen] = useState(true)
 
@@ -30,6 +37,13 @@ export function SettingsPanel() {
   const handleModeChange = (value: string) => {
     setSelectedMode(value as string)
   }
+
+  const handleReasoningEffortChange = (value: string) => {
+    setSelectedReasoningEffort(value as ReasoningEffort)
+  }
+
+  const showReasoningEffortSelector =
+    modelSelectionEnabled && supportsReasoningEffort(selectedModel)
 
   return (
     <div>
@@ -114,6 +128,27 @@ export function SettingsPanel() {
                 </>
               )}
             </div>
+
+            {showReasoningEffortSelector ? (
+              <div className="space-y-2">
+                <label className="text-sm font-bold">Reasoning Effort</label>
+                <Select
+                  placeholder="Select reasoning effort"
+                  items={REASONING_EFFORT_OPTIONS.map((value) => ({
+                    value,
+                    label: value.charAt(0).toUpperCase() + value.slice(1),
+                  }))}
+                  onChange={(newValue) => {
+                    handleReasoningEffortChange(newValue)
+                  }}
+                  value={selectedReasoningEffort}
+                />
+                <p className="text-muted-foreground text-sm">
+                  Higher effort can improve difficult responses at the cost of
+                  additional latency.
+                </p>
+              </div>
+            ) : null}
           </div>
         </div>
       )}

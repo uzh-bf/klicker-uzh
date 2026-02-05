@@ -70,11 +70,15 @@ fi
 ROOT_DIR=$(git rev-parse --show-toplevel)
 if [[ "$ENV" == "prd" ]]; then
     CONFIG_FILE="$ROOT_DIR/.infisical_prd.json"
-# TODO: cover all dev variants in the future (in ...)
-elif [[ "$ENV" == "dev" ]]; then
+elif [[ "$ENV" == "stg" ]]; then
+    CONFIG_FILE="$ROOT_DIR/.infisical_stg.json"
+elif [[ "$ENV" == "dev" || "$ENV" == "dev-assessment" || "$ENV" == "dev-cypress" || "$ENV" == "dev-cleverreach" ]]; then
     CONFIG_FILE="$ROOT_DIR/.infisical_dev.json"
 else
-    CONFIG_FILE="$ROOT_DIR/.infisical_stg.json"
+    echo "❌ Unsupported environment '$ENV'."
+    echo ""
+    print_help
+    exit 1
 fi
 PROJECT_ID=$(jq -r '.workspaceId' "$CONFIG_FILE")
 

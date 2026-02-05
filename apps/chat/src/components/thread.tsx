@@ -13,7 +13,7 @@ import {
   PencilIcon,
   RefreshCwIcon,
 } from 'lucide-react'
-import type { FC } from 'react'
+import { type FC, useState } from 'react'
 
 import { Button } from '@uzh-bf/design-system'
 import { useSettingsStore } from '../stores/settingsStore'
@@ -46,12 +46,14 @@ const formatTitleCase = (value: string) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ')
 
+type MessageWithCustomMetadata = {
+  metadata?: { custom?: Record<string, unknown> | null } | null
+}
+
 const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   includeCredits = false,
 }) => {
-  const message = useMessage() as {
-    metadata?: { custom?: Record<string, unknown> | null } | null
-  }
+  const message = useMessage() as MessageWithCustomMetadata
   const { modelOptions } = useSettingsStore()
 
   const custom = message.metadata?.custom ?? {}
@@ -77,6 +79,44 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   return (
     <div className="text-muted-foreground mt-1 text-xs">
       {parts.join(' — ')}
+    </div>
+  )
+}
+
+const AssistantReasoningToggle: FC = () => {
+  const message = useMessage() as MessageWithCustomMetadata
+  const [isOpen, setIsOpen] = useState(false)
+
+  const custom = message.metadata?.custom ?? {}
+  const reasoningContent =
+    typeof custom.reasoningContent === 'string' &&
+    custom.reasoningContent.trim().length > 0
+      ? custom.reasoningContent
+      : null
+  const reasoningEffort =
+    typeof custom.reasoningEffort === 'string' ? custom.reasoningEffort : null
+
+  if (!reasoningContent) {
+    return null
+  }
+
+  return (
+    <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+      <button
+        type="button"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((state) => !state)}
+        className="text-muted-foreground hover:text-foreground text-xs font-medium"
+      >
+        {isOpen ? 'Hide reasoning' : 'Show reasoning'}
+        {reasoningEffort ? ` (${formatTitleCase(reasoningEffort)})` : ''}
+      </button>
+
+      {isOpen ? (
+        <pre className="text-muted-foreground mt-2 whitespace-pre-wrap text-xs leading-5">
+          {reasoningContent}
+        </pre>
+      ) : null}
     </div>
   )
 }
@@ -335,6 +375,7 @@ const AssistantMessage: FC<{ chatbotAvatar: string }> = ({ chatbotAvatar }) => {
         <MessagePrimitive.Content
           components={{ Text: MarkdownText, tools: { Fallback: ToolFallback } }}
         />
+        <AssistantReasoningToggle />
         <MessageMetadata includeCredits />
       </div>
 
