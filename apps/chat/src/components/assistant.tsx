@@ -176,13 +176,15 @@ export const Assistant = ({
             {participationMessage ??
               'You need to join the corresponding KlickerUZH course before you can use this chatbot. Please enrol in the course or contact your instructor for access.'}
           </p>
-          <Link
-            href={pwaBaseUrl}
-            className="bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 mt-8 inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-base font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-            prefetch={false}
-          >
-            Open KlickerUZH
-          </Link>
+          {!embedded && (
+            <Link
+              href={pwaBaseUrl}
+              className="bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 mt-8 inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-base font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              prefetch={false}
+            >
+              Open KlickerUZH
+            </Link>
+          )}
         </div>
       </div>
     )
@@ -210,16 +212,18 @@ export const Assistant = ({
               You declined the chatbot disclaimer. Accept the terms to continue
               using the chatbot.
             </p>
-            <button
-              onClick={() => setShowDisclaimerModal(true)}
-              className="mt-4 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
-            >
-              Show disclaimer again
-            </button>
+            {!embedded && (
+              <button
+                onClick={() => setShowDisclaimerModal(true)}
+                className="mt-4 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+              >
+                Show disclaimer again
+              </button>
+            )}
           </div>
         </div>
 
-        {disclaimer && (
+        {!embedded && disclaimer && (
           <DisclaimerModal
             disclaimer={disclaimer}
             isOpen={showDisclaimerModal}

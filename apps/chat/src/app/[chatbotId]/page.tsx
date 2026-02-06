@@ -1,6 +1,5 @@
-'use server'
-
 import { prisma } from '@klicker-uzh/prisma'
+import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
 import { notFound } from 'next/navigation'
 import { Assistant } from '../../components/assistant'
 
@@ -12,9 +11,7 @@ interface ChatPageProps {
 export default async function ChatPage({ params, searchParams }: ChatPageProps) {
   const { chatbotId } = await params
   const resolvedSearchParams = (await searchParams) ?? {}
-  const embedParam = resolvedSearchParams.embed
-  const embedValue = Array.isArray(embedParam) ? embedParam[0] : embedParam
-  const embedded = embedValue === 'true' || embedValue === '1'
+  const embedded = parseEmbedParam(resolvedSearchParams.embed)
 
   try {
     const chatbot = await prisma.chatbot.findUnique({

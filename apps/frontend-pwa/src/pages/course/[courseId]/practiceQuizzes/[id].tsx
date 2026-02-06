@@ -4,6 +4,7 @@ import {
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
@@ -144,9 +145,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     const apolloClient = initializeApollo()
 
-    const embedParam = ctx.query.embed
-    const embedValue = Array.isArray(embedParam) ? embedParam[0] : embedParam
-    const embedded = embedValue === 'true' || embedValue === '1'
+    const embedded = parseEmbedParam(ctx.query.embed)
 
     const { participantToken, cookiesAvailable } = await getParticipantToken({
       apolloClient,

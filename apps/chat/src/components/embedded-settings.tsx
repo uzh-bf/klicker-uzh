@@ -17,9 +17,9 @@ export function EmbeddedSettings() {
     <div className="w-full max-w-xs">
       <Select
         placeholder="Select Chat Mode"
-        items={modeEntries.map(([key]) => ({
+        items={modeEntries.map(([key, description]) => ({
           value: key,
-          label: key.charAt(0).toUpperCase() + key.slice(1),
+          label: description || key.charAt(0).toUpperCase() + key.slice(1),
         }))}
         onChange={(newValue) => setSelectedMode(newValue)}
         value={selectedMode}
