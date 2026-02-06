@@ -5,7 +5,7 @@ import {
 } from '@/src/lib/server/apiGuards'
 import {
   getAutomaticModelId,
-  getChatModelRegistry,
+  getModelsForChatbot,
 } from '@/src/lib/server/chatModelRegistry'
 import { CreditsService } from '@/src/services/credits'
 import { NextRequest, NextResponse } from 'next/server'
@@ -24,7 +24,10 @@ export async function GET(
   }
   const { participantId } = participantResult
 
-  const chatbotResult = await getChatbotOr404(chatbotId, { courseId: true })
+  const chatbotResult = await getChatbotOr404(chatbotId, {
+    courseId: true,
+    allowedModelIds: true,
+  })
   if ('response' in chatbotResult) {
     return chatbotResult.response
   }
@@ -43,17 +46,16 @@ export async function GET(
       chatbotId
     )
 
-    const allModels = getChatModelRegistry().map(
-      ({ id, name, description, fallback, supportsReasoning }) => ({
-        id,
-        name,
-        description,
-        fallback,
-        supportsReasoning,
-      })
-    )
-    const availableModels =
-      credits.current > 0 ? allModels : allModels.filter((m) => m.fallback)
+    const availableModels = getModelsForChatbot(
+      chatbotResult.chatbot,
+      credits
+    ).map(({ id, name, description, fallback, supportsReasoning }) => ({
+      id,
+      name,
+      description,
+      fallback,
+      supportsReasoning,
+    }))
 
     return NextResponse.json({
       ...credits,

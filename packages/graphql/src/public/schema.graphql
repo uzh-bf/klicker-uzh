@@ -605,6 +605,7 @@ type CatalogSelectionObject {
 }
 
 type Chatbot {
+  allowedModelIds: [String!]!
   avatar: String
   courses: [CourseListEntry!]!
   createdAt: Date

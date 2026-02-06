@@ -352,6 +352,10 @@ export async function POST(
   }
 
   const modelRegistry = getChatModelRegistry()
+  const allowedIds =
+    chatbot.allowedModelIds.length > 0
+      ? new Set(chatbot.allowedModelIds as string[])
+      : null
 
   // Override model selection if modelSelection is disabled
   let userCredits: { current: number; total: number } | null = null
@@ -365,6 +369,14 @@ export async function POST(
   if (!selectedModelConfig) {
     return NextResponse.json(
       { error: `Unknown model: ${selectedModel}` },
+      { status: 400 }
+    )
+  }
+
+  // Enforce per-chatbot model allow-list
+  if (allowedIds && !allowedIds.has(selectedModelConfig.id)) {
+    return NextResponse.json(
+      { error: `Model not available for this chatbot: ${selectedModel}` },
       { status: 400 }
     )
   }

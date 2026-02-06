@@ -110,6 +110,25 @@ export function getChatModelRegistry(): ChatModelConfig[] {
   }
 }
 
+/**
+ * Filters the global model registry by a chatbot's allow-list and credit availability.
+ * Empty allowedModelIds means all models are available (backward-compatible default).
+ */
+export function getModelsForChatbot(
+  chatbot: { allowedModelIds: string[] },
+  credits: { current: number }
+): ChatModelConfig[] {
+  let models = getChatModelRegistry()
+  if (chatbot.allowedModelIds.length > 0) {
+    const allowed = new Set(chatbot.allowedModelIds)
+    models = models.filter((m) => allowed.has(m.id))
+  }
+  if (credits.current <= 0) {
+    models = models.filter((m) => m.fallback)
+  }
+  return models
+}
+
 export function getAutomaticModelId(credits: { current: number }): string {
   const registry = getChatModelRegistry()
 

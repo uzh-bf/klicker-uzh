@@ -3069,6 +3069,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       modelSelection: 'Model selection',
       modelSelectionEnabled: 'Enabled',
       modelSelectionDisabled: 'Disabled',
+      allowedModels: 'Allowed models',
+      allowedModelsAll: 'All',
       creditResetPeriodDaily: 'Daily',
       creditResetPeriodWeekly: 'Weekly',
       creditResetPeriodBiweekly: 'Biweekly',

@@ -365,6 +365,13 @@ function ChatbotDetails({
           </div>
           <div>•</div>
           <div>
+            {t('manage.resources.allowedModels')}:{' '}
+            {chatbot.allowedModelIds && chatbot.allowedModelIds.length > 0
+              ? chatbot.allowedModelIds.join(', ')
+              : t('manage.resources.allowedModelsAll')}
+          </div>
+          <div>•</div>
+          <div>
             {t('shared.generic.createdAt', {
               date: createdAtLabel,
             })}

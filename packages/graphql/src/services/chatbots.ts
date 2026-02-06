@@ -28,6 +28,7 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
       description: true,
       avatar: true,
       modelSelection: true,
+      allowedModelIds: true,
       creditInitialCredits: true,
       creditResetPeriod: true,
       creditResetAmount: true,
