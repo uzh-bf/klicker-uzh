@@ -9,6 +9,7 @@ const EMBED_VERSION = 1
 
 const LIMIT_DEFAULT = 20
 const LIMIT_MAX = 50
+const REPLIES_PER_THREAD_MAX = 50
 
 const ANON_SCOPE_WINDOW_SEC = 90
 const ANON_SCOPE_LIMIT = 1
@@ -179,7 +180,9 @@ interface CanonicalScope {
 }
 
 function normalizeContent(content: string) {
-  const normalized = content.trim()
+  const normalized = content
+    .trim()
+    .replace(/<[^>]*>/g, '')
   if (normalized.length === 0) return null
 
   return normalized.slice(0, 4000)
@@ -290,10 +293,18 @@ function getRequestUserAgent(ctx: Context) {
   return 'unknown-user-agent'
 }
 
+function getAppSecret(): string {
+  const secret = process.env.APP_SECRET
+  if (!secret) {
+    throw new Error('APP_SECRET environment variable is required for discussion features')
+  }
+  return secret
+}
+
 function hashAnonymousFingerprint(ctx: Context, courseId: string) {
   const ip = getRequestIP(ctx)
   const userAgent = getRequestUserAgent(ctx)
-  const salt = process.env.APP_SECRET ?? 'discussion-default-salt'
+  const salt = getAppSecret()
 
   return createHash('sha256')
     .update(`${salt}|${courseId}|${ip}|${userAgent}`)
@@ -754,7 +765,7 @@ async function verifyEmbedToken(
   }
 
   try {
-    const payload = await verifyJWT(embedToken, process.env.APP_SECRET as string, {
+    const payload = await verifyJWT(embedToken, getAppSecret(), {
       issuer: process.env.APP_ORIGIN_API,
     })
 
@@ -940,6 +951,7 @@ function buildThreadInclude(participantId?: string | null) {
     replies: {
       where: { isDeleted: false },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: REPLIES_PER_THREAD_MAX,
       include: replyInclude,
     },
   }
@@ -1427,7 +1439,7 @@ export async function getCourseDiscussionEmbeddingInfo(
       scopeKey: resolvedScope.scopeKey,
       allowAnonymous: anonymousAllowed,
     },
-    process.env.APP_SECRET as string,
+    getAppSecret(),
     {
       algorithm: 'HS256',
       expiresIn: `${validHours}h`,
@@ -1925,12 +1937,15 @@ export async function toggleCourseDiscussionThreadUpvote(
         },
       })
 
+      const currentThread = await tx.discussionThread.findUnique({
+        where: { id: threadId },
+        select: { upvotes: true },
+      })
+
       await tx.discussionThread.update({
         where: { id: threadId },
         data: {
-          upvotes: {
-            decrement: 1,
-          },
+          upvotes: Math.max(0, (currentThread?.upvotes ?? 1) - 1),
         },
       })
     }
@@ -2001,12 +2016,15 @@ export async function toggleCourseDiscussionReplyUpvote(
         },
       })
 
+      const currentReply = await tx.discussionReply.findUnique({
+        where: { id: replyId },
+        select: { upvotes: true },
+      })
+
       await tx.discussionReply.update({
         where: { id: replyId },
         data: {
-          upvotes: {
-            decrement: 1,
-          },
+          upvotes: Math.max(0, (currentReply?.upvotes ?? 1) - 1),
         },
       })
     }
@@ -2035,6 +2053,36 @@ export async function toggleCourseDiscussionReplyUpvote(
   return mapReply(reply as DiscussionReplyWithRelations)
 }
 
+async function canDeleteDiscussionContent(
+  {
+    courseId,
+    authorParticipantId,
+  }: {
+    courseId: string
+    authorParticipantId: string | null
+  },
+  ctx: Context
+): Promise<{ allowed: boolean; actor: ResolvedActor | null }> {
+  const actor = await getCourseAccessActor({ courseId }, ctx)
+  if (!actor) return { allowed: false, actor: null }
+
+  if (actor.participantId && actor.participantId === authorParticipantId) {
+    return { allowed: true, actor }
+  }
+
+  if (actor.userId) {
+    const writeAccess = await getCourseAccessActor(
+      { courseId, minimumPermissionLevel: DB.PermissionLevel.WRITE },
+      ctx
+    )
+    if (writeAccess?.userId) {
+      return { allowed: true, actor }
+    }
+  }
+
+  return { allowed: false, actor }
+}
+
 export async function deleteCourseDiscussionThread(
   { threadId }: { threadId: number },
   ctx: Context
@@ -2059,35 +2107,20 @@ export async function deleteCourseDiscussionThread(
   const courseId = extractCourseIdFromSpace(thread.space)
   if (!courseId) return false
 
-  const actor = await getCourseAccessActor({ courseId }, ctx)
-  if (!actor) return false
+  const { allowed, actor } = await canDeleteDiscussionContent(
+    { courseId, authorParticipantId: thread.authorParticipantId },
+    ctx
+  )
+  if (!allowed) return false
 
-  const canDeleteAsParticipant =
-    !!actor.participantId && actor.participantId === thread.authorParticipantId
-
-  let canDeleteAsUser = false
-  if (!canDeleteAsParticipant && actor.userId) {
-    const validAccess = await getCourseAccessActor(
-      {
-        courseId,
-        minimumPermissionLevel: DB.PermissionLevel.WRITE,
-      },
-      ctx
-    )
-
-    canDeleteAsUser = !!validAccess?.userId
-  }
-
-  if (!canDeleteAsParticipant && !canDeleteAsUser) {
-    return false
-  }
+  const now = new Date()
 
   await ctx.prisma.$transaction(async (tx) => {
     await tx.discussionThread.update({
       where: { id: threadId },
       data: {
         isDeleted: true,
-        deletedAt: new Date(),
+        deletedAt: now,
         content: '',
         replyCount: 0,
       },
@@ -2100,8 +2133,19 @@ export async function deleteCourseDiscussionThread(
       },
       data: {
         isDeleted: true,
-        deletedAt: new Date(),
+        deletedAt: now,
         content: '',
+      },
+    })
+
+    await tx.discussionEvent.create({
+      data: {
+        spaceId: thread.spaceId,
+        scopeId: thread.scopeId,
+        threadId,
+        participantId: actor?.participantId ?? null,
+        eventType: DB.DiscussionEventType.THREAD_CREATED,
+        metadata: { action: 'deleted' },
       },
     })
   })
@@ -2128,6 +2172,8 @@ export async function deleteCourseDiscussionReply(
       thread: {
         select: {
           id: true,
+          spaceId: true,
+          scopeId: true,
         },
       },
     },
@@ -2138,35 +2184,20 @@ export async function deleteCourseDiscussionReply(
   const courseId = extractCourseIdFromSpace(reply.space)
   if (!courseId) return false
 
-  const actor = await getCourseAccessActor({ courseId }, ctx)
-  if (!actor) return false
+  const { allowed, actor } = await canDeleteDiscussionContent(
+    { courseId, authorParticipantId: reply.authorParticipantId },
+    ctx
+  )
+  if (!allowed) return false
 
-  const canDeleteAsParticipant =
-    !!actor.participantId && actor.participantId === reply.authorParticipantId
-
-  let canDeleteAsUser = false
-  if (!canDeleteAsParticipant && actor.userId) {
-    const validAccess = await getCourseAccessActor(
-      {
-        courseId,
-        minimumPermissionLevel: DB.PermissionLevel.WRITE,
-      },
-      ctx
-    )
-
-    canDeleteAsUser = !!validAccess?.userId
-  }
-
-  if (!canDeleteAsParticipant && !canDeleteAsUser) {
-    return false
-  }
+  const now = new Date()
 
   await ctx.prisma.$transaction(async (tx) => {
     await tx.discussionReply.update({
       where: { id: replyId },
       data: {
         isDeleted: true,
-        deletedAt: new Date(),
+        deletedAt: now,
         content: '',
       },
     })
@@ -2184,7 +2215,19 @@ export async function deleteCourseDiscussionReply(
       },
       data: {
         replyCount: nonDeletedRepliesCount,
-        lastActivityAt: new Date(),
+        lastActivityAt: now,
+      },
+    })
+
+    await tx.discussionEvent.create({
+      data: {
+        spaceId: reply.thread.spaceId,
+        scopeId: reply.thread.scopeId,
+        threadId: reply.thread.id,
+        replyId,
+        participantId: actor?.participantId ?? null,
+        eventType: DB.DiscussionEventType.REPLY_CREATED,
+        metadata: { action: 'deleted' },
       },
     })
   })
