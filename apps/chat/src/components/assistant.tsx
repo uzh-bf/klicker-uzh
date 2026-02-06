@@ -16,7 +16,9 @@ import { useEffect, useState } from 'react'
 import { RuntimeProvider } from '../app/RuntimeProvider'
 import { useChatStore } from '../stores/chatStore'
 import { AppSidebar } from './app-sidebar'
+import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { DisclaimerModal } from './disclaimer-modal'
+import { EmbeddedSettings } from './embedded-settings'
 import { Thread } from './thread'
 
 interface ChatbotDisclaimer {
@@ -38,8 +40,10 @@ interface DisclaimerStatus {
 
 export const Assistant = ({
   chatbot,
+  embedded = false,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
+  embedded?: boolean
 }) => {
   const {
     activeThreadId,
@@ -229,36 +233,14 @@ export const Assistant = ({
 
   return (
     <>
-      <RuntimeProvider chatbotId={chatbot.id}>
-        <SidebarProvider>
-          <AppSidebar />
-          <SidebarInset>
-            <div className="p-4">
-              <header className="flex h-10 shrink-0 items-center gap-2 rounded-md border-b bg-gray-50 px-4">
-                <Breadcrumb>
-                  <BreadcrumbList>
-                    <BreadcrumbItem className="hidden sm:block">
-                      <BreadcrumbLink asChild>
-                        <div className="cursor-pointer">{chatbot.name}</div>
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator className="hidden sm:block" />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage>
-                        {activeThread?.title || 'New Chat'}
-                      </BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </BreadcrumbList>
-                </Breadcrumb>
-              </header>
-            </div>
-            <div className="flex flex-1 flex-col">
-              <Thread chatbotAvatar={chatbot.avatar ?? ''} />
-              <Footer />
-            </div>
-          </SidebarInset>
-        </SidebarProvider>
-      </RuntimeProvider>
+      <ChatUiProvider embedded={embedded}>
+        <RuntimeProvider chatbotId={chatbot.id}>
+          <AssistantLayout
+            chatbot={chatbot}
+            activeThreadTitle={activeThread?.title || 'New Chat'}
+          />
+        </RuntimeProvider>
+      </ChatUiProvider>
 
       {/* Disclaimer Modal */}
       {disclaimer && (
@@ -270,5 +252,59 @@ export const Assistant = ({
         />
       )}
     </>
+  )
+}
+
+function AssistantLayout({
+  chatbot,
+  activeThreadTitle,
+}: {
+  chatbot: { id: string; name: string; avatar?: string }
+  activeThreadTitle: string
+}) {
+  const { showSidebar, showFooter } = useChatUi()
+
+  if (showSidebar) {
+    return (
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <div className="p-4">
+            <header className="flex h-10 shrink-0 items-center gap-2 rounded-md border-b bg-gray-50 px-4">
+              <Breadcrumb>
+                <BreadcrumbList>
+                  <BreadcrumbItem className="hidden sm:block">
+                    <BreadcrumbLink asChild>
+                      <div className="cursor-pointer">{chatbot.name}</div>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="hidden sm:block" />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>{activeThreadTitle}</BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
+            </header>
+          </div>
+          <div className="flex flex-1 flex-col">
+            <Thread chatbotAvatar={chatbot.avatar ?? ''} />
+            {showFooter && <Footer />}
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    )
+  }
+
+  return (
+    <div className="flex h-screen w-full flex-col">
+      <div className="flex items-center justify-between gap-4 border-b bg-gray-50 px-4 py-3">
+        <div className="text-sm font-semibold">{chatbot.name}</div>
+        <EmbeddedSettings />
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col">
+        <Thread chatbotAvatar={chatbot.avatar ?? ''} />
+        {showFooter && <Footer />}
+      </div>
+    </div>
   )
 }

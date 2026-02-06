@@ -17,6 +17,7 @@ import type { FC } from 'react'
 
 import { Button } from '@uzh-bf/design-system'
 import { BranchPicker } from './branch-picker'
+import { useChatUi } from './chat-ui-context'
 import { MarkdownText } from './markdown-text'
 import { ToolFallback } from './tool-fallback'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -193,6 +194,9 @@ const UserMessage: FC = () => {
 }
 
 const UserActionBar: FC = () => {
+  const { showMessageActions } = useChatUi()
+  if (!showMessageActions) return null
+
   return (
     <ActionBarPrimitive.Root
       hideWhenRunning
@@ -217,6 +221,9 @@ const UserActionBar: FC = () => {
 }
 
 const EditComposer: FC = () => {
+  const { showMessageActions } = useChatUi()
+  if (!showMessageActions) return null
+
   return (
     <ComposerPrimitive.Root className="bg-muted my-4 flex w-full max-w-[var(--thread-max-width)] flex-col gap-2 rounded-xl">
       <ComposerPrimitive.Input className="text-foreground flex h-8 w-full resize-none bg-transparent p-4 pb-0 outline-none" />
@@ -285,6 +292,9 @@ const AssistantMessage: FC<{ chatbotAvatar: string }> = ({ chatbotAvatar }) => {
 }
 
 const AssistantActionBar: FC = () => {
+  const { showMessageActions } = useChatUi()
+  if (!showMessageActions) return null
+
   return (
     <ActionBarPrimitive.Root
       hideWhenRunning

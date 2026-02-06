@@ -31,6 +31,9 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     const apolloClient = initializeApollo(undefined, ctx)
     const courseId = ctx.params.courseId as string
     const chatbotId = ctx.params.chatbotId as string
+    const embedParam = ctx.query.embed
+    const embedValue = Array.isArray(embedParam) ? embedParam[0] : embedParam
+    const embedded = embedValue === 'true' || embedValue === '1'
 
     const { participantToken } = await getParticipantToken({
       apolloClient,
@@ -42,7 +45,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     const coursePath = `${localePrefix}/course/${courseId}`
 
     if (!participantToken) {
-      const currentPath = `${coursePath}/chatbot/${chatbotId}`
+      const currentPath = `${coursePath}/chatbot/${chatbotId}${embedded ? '?embed=true' : ''}`
       const loginUrl = `${localePrefix}/login?redirect_to=${encodeURIComponent(currentPath)}`
 
       return {
@@ -88,12 +91,17 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
+    const chatDestination = new URL(
+      encodeURIComponent(chatbotId),
+      process.env.NEXT_PUBLIC_CHAT_URL
+    )
+    if (embedded) {
+      chatDestination.searchParams.set('embed', 'true')
+    }
+
     return {
       redirect: {
-        destination: new URL(
-          encodeURIComponent(chatbotId),
-          process.env.NEXT_PUBLIC_CHAT_URL
-        ).toString(),
+        destination: chatDestination.toString(),
         permanent: false,
       },
     }

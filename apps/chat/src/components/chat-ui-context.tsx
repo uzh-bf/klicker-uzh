@@ -1,0 +1,44 @@
+'use client'
+
+import { createContext, useContext, useMemo, type ReactNode } from 'react'
+
+interface ChatUiContextValue {
+  embedded: boolean
+  showSidebar: boolean
+  showFooter: boolean
+  showHistoryUi: boolean
+  showMinimalSettings: boolean
+  showMessageActions: boolean
+}
+
+const ChatUiContext = createContext<ChatUiContextValue | null>(null)
+
+export function ChatUiProvider({
+  embedded,
+  children,
+}: {
+  embedded: boolean
+  children: ReactNode
+}) {
+  const value = useMemo<ChatUiContextValue>(
+    () => ({
+      embedded,
+      showSidebar: !embedded,
+      showFooter: !embedded,
+      showHistoryUi: !embedded,
+      showMinimalSettings: embedded,
+      showMessageActions: !embedded,
+    }),
+    [embedded]
+  )
+
+  return <ChatUiContext.Provider value={value}>{children}</ChatUiContext.Provider>
+}
+
+export function useChatUi() {
+  const context = useContext(ChatUiContext)
+  if (!context) {
+    throw new Error('useChatUi must be used within ChatUiProvider')
+  }
+  return context
+}

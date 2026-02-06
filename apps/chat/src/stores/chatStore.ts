@@ -58,6 +58,7 @@ interface ChatState {
   ) => Promise<string | null>
   setMessages: (messages: ExtendedThreadMessageLike[]) => void
   setIsRunning: (isRunning: boolean) => void
+  resetSession: () => void
 
   // tree navigation actions
   switchToBranch: (leafId: string) => void
@@ -415,6 +416,18 @@ export const useChatStore = create<ChatState>((set, get) => {
           thread.id === state.activeThreadId ? { ...thread, isRunning } : thread
         ),
       }))
+    },
+
+    /**
+     * Clears local chat session state.
+     * Used by embedded mode to avoid preloading existing chat history in UI.
+     */
+    resetSession: () => {
+      set({
+        threads: [],
+        activeThreadId: null,
+        isLoading: false,
+      })
     },
 
     /**

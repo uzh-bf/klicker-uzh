@@ -6,10 +6,15 @@ import { Assistant } from '../../components/assistant'
 
 interface ChatPageProps {
   params: Promise<{ chatbotId: string }>
+  searchParams?: Promise<{ embed?: string | string[] }>
 }
 
-export default async function ChatPage({ params }: ChatPageProps) {
+export default async function ChatPage({ params, searchParams }: ChatPageProps) {
   const { chatbotId } = await params
+  const resolvedSearchParams = (await searchParams) ?? {}
+  const embedParam = resolvedSearchParams.embed
+  const embedValue = Array.isArray(embedParam) ? embedParam[0] : embedParam
+  const embedded = embedValue === 'true' || embedValue === '1'
 
   try {
     const chatbot = await prisma.chatbot.findUnique({
@@ -22,6 +27,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
     return (
       <Assistant
         chatbot={{ ...chatbot, avatar: chatbot.avatar ?? undefined }}
+        embedded={embedded}
       />
     )
   } catch (error) {
