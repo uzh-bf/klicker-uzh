@@ -14,7 +14,7 @@ export function EmbeddedSettings() {
   if (modeEntries.length <= 1) return null
 
   return (
-    <div className="w-full max-w-xs">
+    <div className="min-w-0 max-w-[12rem] shrink sm:max-w-xs">
       <Select
         placeholder="Select Chat Mode"
         items={modeEntries.map(([key, description]) => ({
