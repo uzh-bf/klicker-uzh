@@ -67,6 +67,32 @@ export function useChatResponse(
       const assistantMessageId = generateId()
 
       try {
+        const serializeMessageContent = (
+          message: ExtendedThreadMessageLike
+        ): string => {
+          if (!Array.isArray(message.content)) {
+            return String(message.content ?? '')
+          }
+
+          return message.content
+            .filter(
+              (
+                part
+              ): part is {
+                type: 'text'
+                text: string
+              } =>
+                typeof part === 'object' &&
+                part !== null &&
+                'type' in part &&
+                part.type === 'text' &&
+                'text' in part &&
+                typeof part.text === 'string'
+            )
+            .map((part) => part.text)
+            .join('')
+        }
+
         // send request to API with streaming enabled
         const response = await fetch(`/api/chatbots/${chatbotId}/chat`, {
           method: 'POST',
@@ -76,15 +102,7 @@ export function useChatResponse(
             messages: messagesToSend.map((m) => ({
               id: m.id,
               role: m.role,
-              content: Array.isArray(m.content)
-                ? m.content
-                    .map((c: { type?: string; text?: string } | string) =>
-                      typeof c === 'object' && c.type === 'text'
-                        ? c.text || ''
-                        : String(c)
-                    )
-                    .join('')
-                : String(m.content),
+              content: serializeMessageContent(m),
             })),
             threadId,
             selectedModel,
@@ -250,6 +268,24 @@ export function useChatResponse(
                   const reasoningDelta = jsonData.text || jsonData.delta || ''
                   if (reasoningDelta) {
                     currentReasoningContent += reasoningDelta
+
+                    if (
+                      orderedContentParts.length === 0 ||
+                      orderedContentParts[orderedContentParts.length - 1]
+                        .type !== 'reasoning'
+                    ) {
+                      orderedContentParts.push({
+                        type: 'reasoning',
+                        text: reasoningDelta,
+                      })
+                    } else {
+                      const lastPart =
+                        orderedContentParts[orderedContentParts.length - 1]
+                      if (lastPart.type === 'reasoning') {
+                        lastPart.text += reasoningDelta
+                      }
+                    }
+
                     setMessages([...messagesToSend, buildAssistantMessage()])
                   }
                 } else if (jsonData.type === 'tool-input-start') {
@@ -402,6 +438,16 @@ export function useChatResponse(
                 'text')
           ) {
             orderedContentParts.push({ type: 'text', text: currentTextContent })
+          }
+
+          if (
+            currentReasoningContent.trim() &&
+            !orderedContentParts.some((part) => part.type === 'reasoning')
+          ) {
+            orderedContentParts.unshift({
+              type: 'reasoning',
+              text: currentReasoningContent,
+            })
           }
 
           if (finishReason === 'length') {

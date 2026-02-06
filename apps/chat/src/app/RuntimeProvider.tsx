@@ -150,7 +150,6 @@ export function RuntimeProvider({
         chatMode,
         modelId,
         reasoningEffort,
-        reasoningContent,
         creditsUsed,
         metadata,
         ...rest
@@ -160,7 +159,6 @@ export function RuntimeProvider({
         chatMode: chatMode ?? null,
         modelId: modelId ?? null,
         reasoningEffort: reasoningEffort ?? null,
-        reasoningContent: reasoningContent ?? null,
         creditsUsed: creditsUsed ?? null,
       }
 

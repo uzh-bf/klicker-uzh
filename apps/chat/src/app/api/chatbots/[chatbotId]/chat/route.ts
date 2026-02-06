@@ -65,6 +65,94 @@ const normalizeReasoningContent = (
 ): string | null =>
   typeof value === 'string' && value.trim().length > 0 ? value : null
 
+type PersistedAssistantContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'reasoning'; text: string }
+  | {
+      type: 'tool-call'
+      toolCallId: string
+      toolName: string
+      args?: unknown
+      result?: unknown
+    }
+
+const mapAssistantStepContent = (
+  steps: Array<{ content?: unknown[] }> | undefined
+): PersistedAssistantContentPart[] => {
+  const content: PersistedAssistantContentPart[] = []
+  const toolCallIndexById = new Map<string, number>()
+
+  for (const step of steps ?? []) {
+    if (!Array.isArray(step.content)) continue
+
+    for (const rawPart of step.content) {
+      if (!rawPart || typeof rawPart !== 'object') continue
+
+      const part = rawPart as {
+        type?: unknown
+        text?: unknown
+        toolCallId?: unknown
+        toolName?: unknown
+        input?: unknown
+        output?: unknown
+      }
+
+      if (part.type === 'text' && typeof part.text === 'string') {
+        content.push({ type: 'text', text: part.text })
+        continue
+      }
+
+      if (part.type === 'reasoning' && typeof part.text === 'string') {
+        content.push({ type: 'reasoning', text: part.text })
+        continue
+      }
+
+      if (
+        part.type === 'tool-call' &&
+        typeof part.toolCallId === 'string' &&
+        typeof part.toolName === 'string'
+      ) {
+        const nextToolCall = {
+          type: 'tool-call' as const,
+          toolCallId: part.toolCallId,
+          toolName: part.toolName,
+          args: part.input,
+        }
+        content.push(nextToolCall)
+        toolCallIndexById.set(nextToolCall.toolCallId, content.length - 1)
+        continue
+      }
+
+      if (part.type === 'tool-result' && typeof part.toolCallId === 'string') {
+        const toolCallIndex = toolCallIndexById.get(part.toolCallId)
+        if (toolCallIndex !== undefined) {
+          const existingToolCall = content[toolCallIndex]
+          if (existingToolCall?.type === 'tool-call') {
+            existingToolCall.result = part.output
+          }
+          continue
+        }
+
+        if (typeof part.toolName !== 'string') {
+          continue
+        }
+
+        const toolCallWithResult = {
+          type: 'tool-call' as const,
+          toolCallId: part.toolCallId,
+          toolName: part.toolName,
+          args: {},
+          result: part.output,
+        }
+        content.push(toolCallWithResult)
+        toolCallIndexById.set(part.toolCallId, content.length - 1)
+      }
+    }
+  }
+
+  return content
+}
+
 /**
  * Main chat endpoint that processes AI conversations with streaming responses.
  * Handles thread creation, message persistence, and AI model interactions with tools.
@@ -455,37 +543,7 @@ export async function POST(
         result.steps.length > 0
       ) {
         try {
-          const content = []
-
-          for (const step of result.steps) {
-            if (step.content && Array.isArray(step.content)) {
-              if (
-                step.content.length === 1 &&
-                step.content[0].type === 'text'
-              ) {
-                // Case 1: single text content
-                content.push({ type: 'text', text: step.content[0].text })
-              } else if (step.content.length === 2) {
-                // Case 2: tool call with tool-call and tool-result
-                const toolCall = step.content.find(
-                  (item) => item.type === 'tool-call'
-                )
-                const toolResult = step.content.find(
-                  (item) => item.type === 'tool-result'
-                )
-
-                if (toolCall && toolResult) {
-                  content.push({
-                    type: 'tool-call',
-                    toolCallId: toolCall.toolCallId,
-                    toolName: toolCall.toolName,
-                    args: toolCall.input,
-                    result: toolResult.output,
-                  })
-                }
-              }
-            }
-          }
+          const content = mapAssistantStepContent(result.steps)
           // save assistant message to db
           const metadata = {
             chatMode: selectedMode,
@@ -496,7 +554,10 @@ export async function POST(
           }
           const updated = await prisma.chatMessage.updateMany({
             where: { id: assistantMessageId, threadId: currentThreadId },
-            data: metadata,
+            data: {
+              content,
+              ...metadata,
+            },
           })
 
           if (updated.count === 0) {
@@ -612,6 +673,17 @@ export async function POST(
         (partialContent.trim() || abortedReasoningContent)
       ) {
         try {
+          const partialAssistantContent: PersistedAssistantContentPart[] = []
+          if (partialContent.trim()) {
+            partialAssistantContent.push({ type: 'text', text: partialContent })
+          }
+          if (abortedReasoningContent) {
+            partialAssistantContent.push({
+              type: 'reasoning',
+              text: abortedReasoningContent,
+            })
+          }
+
           const metadata = {
             chatMode: selectedMode,
             modelId: selectedModelConfig.id,
@@ -621,7 +693,10 @@ export async function POST(
           }
           const updated = await prisma.chatMessage.updateMany({
             where: { id: assistantMessageId, threadId: currentThreadId },
-            data: metadata,
+            data: {
+              content: partialAssistantContent,
+              ...metadata,
+            },
           })
 
           if (updated.count === 0) {
@@ -645,9 +720,7 @@ export async function POST(
                   threadId: currentThreadId,
                   parentId: userMessageId,
                   role: 'assistant',
-                  content: partialContent.trim()
-                    ? [{ type: 'text', text: partialContent }]
-                    : [],
+                  content: partialAssistantContent,
                   ...metadata,
                 },
               })

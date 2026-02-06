@@ -2,6 +2,7 @@ import {
   ActionBarPrimitive,
   ComposerPrimitive,
   MessagePrimitive,
+  type ReasoningMessagePartProps,
   ThreadPrimitive,
   useMessage,
 } from '@assistant-ui/react'
@@ -83,20 +84,15 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   )
 }
 
-const AssistantReasoningToggle: FC = () => {
+const AssistantReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
   const message = useMessage() as MessageWithCustomMetadata
   const [isOpen, setIsOpen] = useState(false)
 
   const custom = message.metadata?.custom ?? {}
-  const reasoningContent =
-    typeof custom.reasoningContent === 'string' &&
-    custom.reasoningContent.trim().length > 0
-      ? custom.reasoningContent
-      : null
   const reasoningEffort =
     typeof custom.reasoningEffort === 'string' ? custom.reasoningEffort : null
 
-  if (!reasoningContent) {
+  if (!text || text.trim().length === 0) {
     return null
   }
 
@@ -114,7 +110,7 @@ const AssistantReasoningToggle: FC = () => {
 
       {isOpen ? (
         <pre className="text-muted-foreground mt-2 whitespace-pre-wrap text-xs leading-5">
-          {reasoningContent}
+          {text}
         </pre>
       ) : null}
     </div>
@@ -373,9 +369,12 @@ const AssistantMessage: FC<{ chatbotAvatar: string }> = ({ chatbotAvatar }) => {
       </div>
       <div className="text-foreground col-span-2 col-start-2 row-start-1 my-1.5 max-w-[calc(var(--thread-max-width)*0.8)] break-words leading-7">
         <MessagePrimitive.Content
-          components={{ Text: MarkdownText, tools: { Fallback: ToolFallback } }}
+          components={{
+            Text: MarkdownText,
+            Reasoning: AssistantReasoningPart,
+            tools: { Fallback: ToolFallback },
+          }}
         />
-        <AssistantReasoningToggle />
         <MessageMetadata includeCredits />
       </div>
 
