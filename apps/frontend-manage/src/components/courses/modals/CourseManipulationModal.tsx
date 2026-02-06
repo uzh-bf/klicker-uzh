@@ -51,6 +51,8 @@ export interface CourseManipulationFormData {
   language: LocaleType
   notificationEmail: string
   isGamificationEnabled: boolean
+  isCourseQAEnabled: boolean
+  isCourseQAAnonymousEnabled: boolean
   isGroupCreationEnabled: boolean
   groupCreationDeadline: Date
   maxGroupSize?: number
@@ -138,6 +140,8 @@ function CourseManipulationModal({
       .required(t('manage.courseList.notificationEmailReq')),
     // gamification settings
     isGamificationEnabled: yup.boolean(),
+    isCourseQAEnabled: yup.boolean(),
+    isCourseQAAnonymousEnabled: yup.boolean(),
     isGroupCreationEnabled: yup.boolean(),
     groupCreationDeadline: initialValues?.groupDeadlineDate
       ? yup
@@ -247,6 +251,9 @@ function CourseManipulationModal({
           startDate: startDateInit,
           endDate: endDateInit,
           isGamificationEnabled: initialValues?.isGamificationEnabled ?? true,
+          isCourseQAEnabled: initialValues?.isCourseQAEnabled ?? false,
+          isCourseQAAnonymousEnabled:
+            initialValues?.isCourseQAAnonymousEnabled ?? false,
           isGroupCreationEnabled: initialValues?.isGroupCreationEnabled ?? true,
           groupCreationDeadline: groupDeadlineDateInit,
           maxGroupSize: initialValues?.maxGroupSize ?? undefined,
@@ -477,6 +484,37 @@ function CourseManipulationModal({
                       </div>
                     )}
                 </div>
+
+                {initialValues && (
+                  <div>
+                    <H3>Course Q&A</H3>
+                    <div className="flex flex-col gap-2 md:grid md:grid-cols-3">
+                      <FormikSwitchField
+                        required
+                        labelLeft
+                        name="isCourseQAEnabled"
+                        label="Enable Course Q&A"
+                        tooltip="Allow participants to post and reply to course-level discussion threads."
+                        className={{
+                          label: 'font-bold text-gray-600',
+                        }}
+                        data={{ cy: 'course-qa-enabled' }}
+                      />
+                      <FormikSwitchField
+                        required
+                        labelLeft
+                        disabled={!values.isCourseQAEnabled}
+                        name="isCourseQAAnonymousEnabled"
+                        label="Allow Anonymous in Embeds"
+                        tooltip="Allow anonymous posting in embedded Q&A views when a valid embed token is used."
+                        className={{
+                          label: 'font-bold text-gray-600',
+                        }}
+                        data={{ cy: 'course-qa-anonymous-enabled' }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
               {initialValues?.groupDeadlineDate &&
                 touched.groupCreationDeadline &&

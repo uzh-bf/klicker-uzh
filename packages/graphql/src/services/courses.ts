@@ -2813,6 +2813,8 @@ interface UpdateCourseSettingsArgs {
   notificationEmail?: string | null
   isGamificationEnabled?: boolean | null
   isAssessmentEnabled?: boolean | null
+  isCourseQAEnabled?: boolean | null
+  isCourseQAAnonymousEnabled?: boolean | null
 }
 
 export async function updateCourseSettings(
@@ -2830,6 +2832,8 @@ export async function updateCourseSettings(
     notificationEmail,
     isGamificationEnabled,
     isAssessmentEnabled,
+    isCourseQAEnabled,
+    isCourseQAAnonymousEnabled,
   }: UpdateCourseSettingsArgs,
   ctx: ContextWithUser
 ) {
@@ -2894,6 +2898,8 @@ export async function updateCourseSettings(
       isGamificationEnabled: newGamificationSetting,
       // set assessment mode - if enabling, remove PIN
       isAssessmentEnabled: isAssessmentEnabled ?? undefined,
+      isCourseQAEnabled: isCourseQAEnabled ?? undefined,
+      isCourseQAAnonymousEnabled: isCourseQAAnonymousEnabled ?? undefined,
       pinCode: isAssessmentEnabled ? null : undefined,
       // reset the random assignment tracking if the group deadline is extended
       randomAssignmentFinalized: !newGroupDeadlinePast ? false : undefined,

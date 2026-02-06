@@ -66,6 +66,10 @@ export const Course = builder.objectType(CourseRef, {
     isArchived: t.exposeBoolean('isArchived'),
     isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
     isAssessmentEnabled: t.exposeBoolean('isAssessmentEnabled'),
+    isCourseQAEnabled: t.exposeBoolean('isCourseQAEnabled'),
+    isCourseQAAnonymousEnabled: t.exposeBoolean(
+      'isCourseQAAnonymousEnabled'
+    ),
 
     numOfParticipants: t.exposeInt('numOfParticipants', {
       nullable: true,

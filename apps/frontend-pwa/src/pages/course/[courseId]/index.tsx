@@ -198,6 +198,17 @@ function CourseOverview({
       course.description ? (
         <>
           <div className="md:mx-auto md:w-full md:max-w-6xl">
+            {course.isCourseQAEnabled && (
+              <div className="mb-2 flex justify-end">
+                <Button
+                  className={{ root: 'h-8' }}
+                  onClick={() => router.push(`/course/${courseId}/qa`)}
+                  data={{ cy: 'course-qa-link' }}
+                >
+                  <Button.Label>Course Q&A</Button.Label>
+                </Button>
+              </div>
+            )}
             <Tabs
               defaultValue={
                 course.isAssessmentEnabled

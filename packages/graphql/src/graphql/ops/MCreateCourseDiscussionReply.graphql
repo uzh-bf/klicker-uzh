@@ -1,0 +1,5 @@
+mutation CreateCourseDiscussionReply($input: CreateCourseDiscussionReplyInput!) {
+  createCourseDiscussionReply(input: $input) {
+    ...DiscussionReplyData
+  }
+}

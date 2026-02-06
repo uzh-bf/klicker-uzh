@@ -27,6 +27,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
 import CourseCalendarView from '../../../components/courses/CourseCalendarView'
+import CourseDiscussionOverview from '../../../components/courses/CourseDiscussionOverview'
 import CourseGamificationInfos from '../../../components/courses/CourseGamificationInfos'
 import CourseOverviewHeader from '../../../components/courses/CourseOverviewHeader'
 import GroupActivityList from '../../../components/courses/GroupActivityList'
@@ -221,6 +222,18 @@ function CourseOverviewPage() {
           {course.isGamificationEnabled
             ? t('shared.generic.enabled')
             : t('shared.generic.disabled')}
+          <div className="font-bold">Course Q&A</div>
+          {course.isCourseQAEnabled
+            ? t('shared.generic.enabled')
+            : t('shared.generic.disabled')}
+          {course.isCourseQAEnabled && (
+            <>
+              <div className="font-bold">Anonymous in Embeds</div>
+              {course.isCourseQAAnonymousEnabled
+                ? t('shared.generic.enabled')
+                : t('shared.generic.disabled')}
+            </>
+          )}
           {course.isGamificationEnabled && (
             <>
               <div className="font-bold">
@@ -342,6 +355,12 @@ function CourseOverviewPage() {
                 tooltipDelay: 0,
                 data: { cy: 'tab-groupActivities' },
               },
+              {
+                id: 'tab-discussions',
+                value: 'discussions',
+                label: 'Q&A',
+                data: { cy: 'tab-discussions' },
+              },
             ]}
             className={{ root: 'flex-1 basis-3/5' }}
           >
@@ -393,6 +412,16 @@ function CourseOverviewPage() {
                 groupActivities={course.groupActivitiesInfo ?? []}
                 openCalendarView={() => showCalendarView(true)}
                 highlightedActivity={highlightedActivity}
+              />
+            </TabContent>
+            <TabContent
+              key="content-discussions"
+              value="discussions"
+              className={{ root: 'px-0 py-1' }}
+            >
+              <CourseDiscussionOverview
+                courseId={course.id}
+                isCourseQAEnabled={course.isCourseQAEnabled}
               />
             </TabContent>
           </Tabs>

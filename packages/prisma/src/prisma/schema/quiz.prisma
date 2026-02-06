@@ -121,6 +121,7 @@ model LiveQuiz {
 
   feedbacks          Feedback[]
   confusionFeedbacks ConfusionTimestep[]
+  discussionSpace    DiscussionSpace?
 
   directPermissions  Permission[]
   permissions        DerivedPermission[]

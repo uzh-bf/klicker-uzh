@@ -1,0 +1,16 @@
+query GetCourseDiscussionScopes($courseId: String!) {
+  courseDiscussionScopes(courseId: $courseId) {
+    id
+    spaceId
+    scopeType
+    scopeKey
+    scopeLabel
+    threadCount
+    lastActivityAt
+    sourceKey
+    sourceLabel
+    spaceType
+    liveQuizId
+    liveQuizName
+  }
+}

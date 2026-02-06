@@ -1,0 +1,37 @@
+fragment DiscussionThreadData on DiscussionThread {
+  id
+  spaceId
+  scopeId
+  content
+  isAnonymous
+  isDeleted
+  authorParticipantId
+  upvotes
+  hasUpvoted
+  replyCount
+  lastActivityAt
+  sourceKey
+  sourceLabel
+  liveQuizId
+  liveQuizName
+  createdAt
+  updatedAt
+  scope {
+    id
+    spaceId
+    scopeType
+    scopeKey
+    scopeLabel
+    practiceQuizId
+    stackId
+    instanceId
+    liveBlockId
+    externalSource
+    externalRef
+    createdAt
+    updatedAt
+  }
+  replies {
+    ...DiscussionReplyData
+  }
+}

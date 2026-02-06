@@ -1,0 +1,3 @@
+mutation DeleteCourseDiscussionReply($replyId: Int!) {
+  deleteCourseDiscussionReply(replyId: $replyId)
+}

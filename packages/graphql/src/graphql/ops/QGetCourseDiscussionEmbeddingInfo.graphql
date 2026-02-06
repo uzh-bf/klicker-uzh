@@ -1,0 +1,23 @@
+query GetCourseDiscussionEmbeddingInfo(
+  $courseId: String!
+  $scope: DiscussionScopeInput!
+  $scopeLabel: String
+  $allowAnonymous: Boolean
+  $expiresInHours: Int
+) {
+  getCourseDiscussionEmbeddingInfo(
+    courseId: $courseId
+    scope: $scope
+    scopeLabel: $scopeLabel
+    allowAnonymous: $allowAnonymous
+    expiresInHours: $expiresInHours
+  ) {
+    courseId
+    scopeKey
+    scopeLabel
+    allowAnonymous
+    expiresAt
+    embedToken
+    embedUrl
+  }
+}

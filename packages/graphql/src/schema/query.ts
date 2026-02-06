@@ -6,6 +6,7 @@ import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
 import * as CourseService from '../services/courses.js'
+import * as DiscussionService from '../services/discussions.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
@@ -50,6 +51,14 @@ import {
   LiveQuizSelectionItem,
   StudentCourse,
 } from './course.js'
+import {
+  CourseDiscussionEmbeddingInfoRef,
+  CourseDiscussionOverviewRef,
+  DiscussionScopeInput,
+  DiscussionScopeSummaryRef,
+  DiscussionSort,
+  DiscussionThreadPageRef,
+} from './discussions.js'
 import {
   Element,
   ElementInstance,
@@ -216,6 +225,67 @@ export const Query = builder.queryType({
         resolve: async (_, args, ctx) => {
           return await FeedbackService.getFeedbacks(args, ctx)
         },
+      }),
+
+      courseDiscussionScopes: t.field({
+        type: [DiscussionScopeSummaryRef],
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await DiscussionService.courseDiscussionScopes(args, ctx)
+        },
+      }),
+
+      courseDiscussionThreads: t.field({
+        type: DiscussionThreadPageRef,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          scopeKey: t.arg.string({ required: false }),
+          sort: t.arg({ type: DiscussionSort, required: false }),
+          limit: t.arg.int({ required: false }),
+          cursor: t.arg.string({ required: false }),
+          includeLinkedLiveQuizSpaces: t.arg.boolean({ required: false }),
+          embedToken: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await DiscussionService.courseDiscussionThreads(args, ctx)
+        },
+      }),
+
+      courseDiscussionOverview: t.field({
+        type: CourseDiscussionOverviewRef,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          sort: t.arg({ type: DiscussionSort, required: false }),
+          limit: t.arg.int({ required: false }),
+          cursor: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await DiscussionService.courseDiscussionOverview(args, ctx)
+        },
+      }),
+
+      getCourseDiscussionEmbeddingInfo: t.withAuth(asUser).field({
+        nullable: true,
+        type: CourseDiscussionEmbeddingInfoRef,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          scope: t.arg({ type: DiscussionScopeInput, required: true }),
+          scopeLabel: t.arg.string({ required: false }),
+          allowAnonymous: t.arg.boolean({ required: false }),
+          expiresInHours: t.arg.int({ required: false }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            return await DiscussionService.getCourseDiscussionEmbeddingInfo(
+              args,
+              ctx
+            )
+          }
+        ),
       }),
 
       userProfile: t.withAuth(asUser).field({
