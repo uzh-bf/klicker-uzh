@@ -11,6 +11,10 @@ const LIMIT_DEFAULT = 20
 const LIMIT_MAX = 50
 const REPLIES_PER_THREAD_MAX = 50
 
+const SCOPE_LABEL_MAX_LENGTH = 200
+const EXTERNAL_SOURCE_MAX_LENGTH = 100
+const EXTERNAL_REF_MAX_LENGTH = 200
+
 const ANON_SCOPE_WINDOW_SEC = 90
 const ANON_SCOPE_LIMIT = 1
 const ANON_COURSE_WINDOW_SEC = 60 * 60
@@ -315,6 +319,26 @@ function encodeScopePart(value: string) {
   return encodeURIComponent(value.trim())
 }
 
+function truncateString(value: string, maxLength: number) {
+  return value.length > maxLength ? value.slice(0, maxLength) : value
+}
+
+function rejectEmbedCourseMismatch(
+  embedClaims: CourseEmbedClaims | null,
+  courseId: string
+): boolean {
+  if (!embedClaims) return false
+
+  if (
+    embedClaims.spaceType === DB.DiscussionSpaceType.COURSE &&
+    embedClaims.courseId !== courseId
+  ) {
+    return true
+  }
+
+  return false
+}
+
 async function incrementCounter(
   ctx: Context,
   key: string,
@@ -458,6 +482,10 @@ async function canonicalizeScope(
   },
   ctx: Context
 ): Promise<CanonicalScope | null> {
+  const safeScopeLabel = scopeLabel
+    ? truncateString(scopeLabel.trim(), SCOPE_LABEL_MAX_LENGTH)
+    : null
+
   if (space.spaceType === DB.DiscussionSpaceType.COURSE) {
     if (!space.courseId) return null
 
@@ -466,7 +494,7 @@ async function canonicalizeScope(
         return {
           scopeType: scope.scopeType,
           scopeKey: `course:${space.courseId}`,
-          scopeLabel: scopeLabel?.trim() || 'Course',
+          scopeLabel: safeScopeLabel || 'Course',
         }
       }
 
@@ -486,7 +514,7 @@ async function canonicalizeScope(
           scopeType: scope.scopeType,
           scopeKey: `pq:${practiceQuiz.id}`,
           scopeLabel:
-            scopeLabel?.trim() || `Practice Quiz: ${practiceQuiz.displayName}`,
+            safeScopeLabel || `Practice Quiz: ${practiceQuiz.displayName}`,
           practiceQuizId: practiceQuiz.id,
         }
       }
@@ -514,7 +542,7 @@ async function canonicalizeScope(
           scopeType: scope.scopeType,
           scopeKey: `pq:${stack.practiceQuizId}:stack:${stack.id}`,
           scopeLabel:
-            scopeLabel?.trim() ||
+            safeScopeLabel ||
             stack.displayName ||
             `Practice Stack ${stack.order}`,
           practiceQuizId: stack.practiceQuizId,
@@ -558,7 +586,7 @@ async function canonicalizeScope(
           scopeType: scope.scopeType,
           scopeKey: `pq:${scope.practiceQuizId}:stack:${scope.stackId}:instance:${instance.id}`,
           scopeLabel:
-            scopeLabel?.trim() || elementName || `Practice Element ${instance.id}`,
+            safeScopeLabel || elementName || `Practice Element ${instance.id}`,
           practiceQuizId: scope.practiceQuizId,
           stackId: scope.stackId,
           instanceId: instance.id,
@@ -568,15 +596,21 @@ async function canonicalizeScope(
       case DB.DiscussionScopeType.EXTERNAL_BLOCK: {
         if (!scope.externalSource || !scope.externalRef) return null
 
-        const externalSource = scope.externalSource.trim()
-        const externalRef = scope.externalRef.trim()
+        const externalSource = truncateString(
+          scope.externalSource.trim(),
+          EXTERNAL_SOURCE_MAX_LENGTH
+        )
+        const externalRef = truncateString(
+          scope.externalRef.trim(),
+          EXTERNAL_REF_MAX_LENGTH
+        )
 
         if (!externalSource || !externalRef) return null
 
         return {
           scopeType: scope.scopeType,
           scopeKey: `ext:${encodeScopePart(externalSource)}:${encodeScopePart(externalRef)}`,
-          scopeLabel: scopeLabel?.trim() || `${externalSource}:${externalRef}`,
+          scopeLabel: safeScopeLabel || `${externalSource}:${externalRef}`,
           externalSource,
           externalRef,
         }
@@ -594,7 +628,7 @@ async function canonicalizeScope(
       return {
         scopeType: scope.scopeType,
         scopeKey: `lq:${space.liveQuizId}`,
-        scopeLabel: scopeLabel?.trim() || 'Live Quiz',
+        scopeLabel: safeScopeLabel || 'Live Quiz',
       }
 
     case DB.DiscussionScopeType.LIVE_BLOCK: {
@@ -613,7 +647,7 @@ async function canonicalizeScope(
       return {
         scopeType: scope.scopeType,
         scopeKey: `lq:${space.liveQuizId}:block:${block.id}`,
-        scopeLabel: scopeLabel?.trim() || `Live Block ${block.order}`,
+        scopeLabel: safeScopeLabel || `Live Block ${block.order}`,
         liveBlockId: block.id,
       }
     }
@@ -648,7 +682,7 @@ async function canonicalizeScope(
       return {
         scopeType: scope.scopeType,
         scopeKey: `lq:${space.liveQuizId}:block:${scope.liveBlockId}:instance:${instance.id}`,
-        scopeLabel: scopeLabel?.trim() || elementName || `Live Instance ${instance.id}`,
+        scopeLabel: safeScopeLabel || elementName || `Live Instance ${instance.id}`,
         liveBlockId: scope.liveBlockId,
         instanceId: instance.id,
       }
@@ -657,15 +691,21 @@ async function canonicalizeScope(
     case DB.DiscussionScopeType.EXTERNAL_BLOCK: {
       if (!scope.externalSource || !scope.externalRef) return null
 
-      const externalSource = scope.externalSource.trim()
-      const externalRef = scope.externalRef.trim()
+      const externalSource = truncateString(
+        scope.externalSource.trim(),
+        EXTERNAL_SOURCE_MAX_LENGTH
+      )
+      const externalRef = truncateString(
+        scope.externalRef.trim(),
+        EXTERNAL_REF_MAX_LENGTH
+      )
 
       if (!externalSource || !externalRef) return null
 
       return {
         scopeType: scope.scopeType,
         scopeKey: `ext:${encodeScopePart(externalSource)}:${encodeScopePart(externalRef)}`,
-        scopeLabel: scopeLabel?.trim() || `${externalSource}:${externalRef}`,
+        scopeLabel: safeScopeLabel || `${externalSource}:${externalRef}`,
         externalSource,
         externalRef,
       }
@@ -1161,10 +1201,7 @@ export async function courseDiscussionThreads(
       return { threads: [], nextCursor: null, hasMore: false }
     }
   } else {
-    if (
-      embedClaims.spaceType === DB.DiscussionSpaceType.COURSE &&
-      embedClaims.courseId !== courseId
-    ) {
+    if (rejectEmbedCourseMismatch(embedClaims, courseId)) {
       return { threads: [], nextCursor: null, hasMore: false }
     }
   }
@@ -1481,6 +1518,11 @@ export async function createCourseDiscussionThread(
   const course = await getCourseSettings(courseId, ctx)
   if (!course || !course.isCourseQAEnabled) return null
 
+  // Verify embed token early to reject courseId mismatches before creating
+  // spaces or scopes as a side effect
+  const embedClaims = await verifyEmbedToken(embedToken)
+  if (rejectEmbedCourseMismatch(embedClaims, courseId)) return null
+
   const space = await resolveOrCreateSpace(
     {
       spaceType: DB.DiscussionSpaceType.COURSE,
@@ -1502,7 +1544,6 @@ export async function createCourseDiscussionThread(
 
   if (!resolvedScope) return null
 
-  const embedClaims = await verifyEmbedToken(embedToken)
   const anonymous = !!isAnonymous
 
   let participantId: string | null = null
@@ -1613,6 +1654,10 @@ export async function createCourseDiscussionReply(
   const course = await getCourseSettings(courseId, ctx)
   if (!course || !course.isCourseQAEnabled) return null
 
+  // Verify embed token early to reject courseId mismatches before any lookups
+  const embedClaims = await verifyEmbedToken(embedToken)
+  if (rejectEmbedCourseMismatch(embedClaims, courseId)) return null
+
   const thread = await ctx.prisma.discussionThread.findUnique({
     where: {
       id: threadId,
@@ -1636,7 +1681,6 @@ export async function createCourseDiscussionReply(
   const threadCourseId = extractCourseIdFromSpace(thread.space)
   if (!threadCourseId || threadCourseId !== courseId) return null
 
-  const embedClaims = await verifyEmbedToken(embedToken)
   const anonymous = !!isAnonymous
 
   let participantId: string | null = null
