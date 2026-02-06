@@ -282,7 +282,9 @@ export const useChatStore = create<ChatState>((set, get) => {
         set((state) => {
           const filteredThreads = state.threads.filter((t) => t.id !== threadId)
           const newActiveThreadId =
-            state.activeThreadId === threadId ? null : state.activeThreadId
+            state.activeThreadId === threadId
+              ? (filteredThreads[0]?.id ?? null)
+              : state.activeThreadId
 
           return {
             threads: filteredThreads,

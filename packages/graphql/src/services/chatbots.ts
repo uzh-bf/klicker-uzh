@@ -1,3 +1,4 @@
+import { Prisma } from '@klicker-uzh/prisma/client'
 import type { ContextWithUser } from '../lib/context.js'
 
 const toNumber = (value: unknown): number | null => {
@@ -110,15 +111,22 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
     declinedCounts.map((entry) => [entry.chatbotId, entry._count._all])
   )
 
-  const messageCounts = await Promise.all(
-    chatbotIds.map((chatbotId) =>
-      ctx.prisma.chatMessage.count({
-        where: { thread: { chatbotId } },
-      })
-    )
+  const messageCountRows = await ctx.prisma.$queryRaw<
+    { chatbotId: string; count: bigint }[]
+  >(
+    Prisma.sql`
+      SELECT t."chatbotId", COUNT(m.id) AS count
+      FROM "public"."ChatMessage" m
+      JOIN "public"."ChatThread" t ON t.id = m."threadId"
+      WHERE t."chatbotId" = ANY(${chatbotIds}::uuid[])
+      GROUP BY t."chatbotId"
+    `
+  )
+  const messageCountById = new Map(
+    messageCountRows.map((row) => [row.chatbotId, Number(row.count)])
   )
 
-  return chatbots.map((chatbot, index) => {
+  return chatbots.map((chatbot) => {
     const creditAggregate = creditAggregateById.get(chatbot.id)
     const threadAggregate = threadAggregateById.get(chatbot.id)
     const participantCount = creditAggregate?._count._all ?? 0
@@ -131,7 +139,7 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
 
     const usageSummary = {
       threadCount: threadAggregate?._count._all ?? 0,
-      messageCount: messageCounts[index] ?? 0,
+      messageCount: messageCountById.get(chatbot.id) ?? 0,
       participantCount,
       lastActivityAt: threadAggregate?._max.updatedAt ?? null,
       totalCredits: toNumber(creditAggregate?._sum.total),

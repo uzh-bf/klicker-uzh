@@ -1,10 +1,13 @@
-import { getChatbotOr404, getParticipantId } from '@/src/lib/server/apiGuards'
+import {
+  getChatbotOr404,
+  getParticipantId,
+  requireParticipation,
+} from '@/src/lib/server/apiGuards'
 import {
   getAutomaticModelId,
   getChatModelRegistry,
 } from '@/src/lib/server/chatModelRegistry'
 import { CreditsService } from '@/src/services/credits'
-import { prisma } from '@klicker-uzh/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 
 /**
@@ -25,31 +28,13 @@ export async function GET(
   if ('response' in chatbotResult) {
     return chatbotResult.response
   }
-  const { courseId } = chatbotResult.chatbot
 
-  // check participation
-  try {
-    const participation = await prisma.participation.findUnique({
-      where: {
-        courseId_participantId: {
-          courseId,
-          participantId,
-        },
-      },
-    })
-
-    if (!participation) {
-      return NextResponse.json(
-        { error: 'No valid participation found for this chatbot' },
-        { status: 403 }
-      )
-    }
-  } catch (error) {
-    console.error('Error checking participation:', error)
-    return NextResponse.json(
-      { error: 'Error checking participation' },
-      { status: 500 }
-    )
+  const participationResult = await requireParticipation(
+    participantId,
+    chatbotResult.chatbot.courseId
+  )
+  if ('response' in participationResult) {
+    return participationResult.response
   }
 
   try {
@@ -59,11 +44,12 @@ export async function GET(
     )
 
     const allModels = getChatModelRegistry().map(
-      ({ id, name, description, fallback }) => ({
+      ({ id, name, description, fallback, supportsReasoning }) => ({
         id,
         name,
         description,
         fallback,
+        supportsReasoning,
       })
     )
     const availableModels =

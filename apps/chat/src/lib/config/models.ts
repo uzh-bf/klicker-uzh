@@ -5,4 +5,5 @@ export interface ModelOption {
   name: string
   description: string
   fallback: boolean
+  supportsReasoning: boolean
 }
