@@ -16,6 +16,7 @@ import {
   getBranches,
   getPathToLeaf,
 } from '../lib/api/utils'
+import { type ReasoningEffort } from '../lib/config/reasoning'
 
 /**
  * Extended thread message type that includes parentId for conversation branching
@@ -24,6 +25,8 @@ export type ExtendedThreadMessageLike = ThreadMessageLike & {
   parentId?: string | null
   chatMode?: string | null
   modelId?: string | null
+  reasoningEffort?: ReasoningEffort | null
+  reasoningContent?: string | null
   creditsUsed?: number | null
 }
 
@@ -279,7 +282,9 @@ export const useChatStore = create<ChatState>((set, get) => {
         set((state) => {
           const filteredThreads = state.threads.filter((t) => t.id !== threadId)
           const newActiveThreadId =
-            state.activeThreadId === threadId ? null : state.activeThreadId
+            state.activeThreadId === threadId
+              ? (filteredThreads[0]?.id ?? null)
+              : state.activeThreadId
 
           return {
             threads: filteredThreads,

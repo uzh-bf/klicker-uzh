@@ -94,12 +94,80 @@ export const CreditResetPeriod = builder.enumType('CreditResetPeriod', {
   values: Object.values(DB.CreditResetPeriod),
 })
 
+export const ReasoningEffort = builder.enumType('ReasoningEffort', {
+  values: ['none', 'minimal', 'low', 'medium', 'high'] as const,
+})
+
+export interface IChatbotReasoningConfig {
+  modelId: string
+  efforts: Array<'none' | 'minimal' | 'low' | 'medium' | 'high'>
+}
+
+export type ChatbotReasoningConfigInputType = {
+  modelId: string
+  efforts: Array<'none' | 'minimal' | 'low' | 'medium' | 'high'>
+}
+
+export const ChatbotReasoningConfigInputRef =
+  builder.inputRef<ChatbotReasoningConfigInputType>(
+    'ChatbotReasoningConfigInput'
+  )
+export const ChatbotReasoningConfigInput =
+  ChatbotReasoningConfigInputRef.implement({
+    fields: (t) => ({
+      modelId: t.string({ required: true }),
+      efforts: t.field({ type: [ReasoningEffort], required: true }),
+    }),
+  })
+
+export const ChatbotReasoningConfigRef =
+  builder.objectRef<IChatbotReasoningConfig>('ChatbotReasoningConfig')
+export const ChatbotReasoningConfig = ChatbotReasoningConfigRef.implement({
+  fields: (t) => ({
+    modelId: t.exposeString('modelId'),
+    efforts: t.field({
+      type: [ReasoningEffort],
+      resolve: (config) => config.efforts,
+    }),
+  }),
+})
+
+export interface IChatModelCapability {
+  id: string
+  name: string
+  description: string
+  fallback: boolean
+  supportsReasoning: boolean
+  supportedReasoningEfforts: Array<
+    'none' | 'minimal' | 'low' | 'medium' | 'high'
+  >
+}
+
+export const ChatModelCapabilityRef = builder.objectRef<IChatModelCapability>(
+  'ChatModelCapability'
+)
+export const ChatModelCapability = ChatModelCapabilityRef.implement({
+  fields: (t) => ({
+    id: t.exposeString('id'),
+    name: t.exposeString('name'),
+    description: t.exposeString('description'),
+    fallback: t.exposeBoolean('fallback'),
+    supportsReasoning: t.exposeBoolean('supportsReasoning'),
+    supportedReasoningEfforts: t.field({
+      type: [ReasoningEffort],
+      resolve: (model) => model.supportedReasoningEfforts,
+    }),
+  }),
+})
+
 export interface IChatbot {
   id: string
   name: string
   description?: string | null
   avatar?: string | null
   modelSelection: boolean
+  allowedModelIds: string[]
+  allowedReasoningEffortsByModel?: IChatbotReasoningConfig[]
   creditInitialCredits: number
   creditResetPeriod: DB.CreditResetPeriod
   creditResetAmount: number
@@ -203,6 +271,11 @@ export const Chatbot = ChatbotRef.implement({
     description: t.exposeString('description', { nullable: true }),
     avatar: t.exposeString('avatar', { nullable: true }),
     modelSelection: t.exposeBoolean('modelSelection'),
+    allowedModelIds: t.exposeStringList('allowedModelIds'),
+    allowedReasoningEffortsByModel: t.field({
+      type: [ChatbotReasoningConfigRef],
+      resolve: (chatbot) => chatbot.allowedReasoningEffortsByModel ?? [],
+    }),
     creditInitialCredits: t.exposeInt('creditInitialCredits'),
     creditResetPeriod: t.expose('creditResetPeriod', {
       type: CreditResetPeriod,

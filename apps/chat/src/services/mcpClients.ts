@@ -1,8 +1,9 @@
 'use server'
 
+import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
 import { safeDecrypt } from '@klicker-uzh/util'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import { experimental_createMCPClient } from 'ai'
+import { createHash } from 'crypto'
 
 // Type definitions for MCP server configuration
 export interface MCPServerConfig {
@@ -25,6 +26,62 @@ export interface MCPConfigSettings {
 export interface MCPServerWithConfig {
   server: MCPServerConfig
   config: MCPConfigSettings
+}
+
+const MAX_TOOL_NAME_LENGTH = 64
+const TOOL_NAME_SUFFIX_LENGTH = 8
+
+function toToolNameHash(rawName: string): string {
+  return createHash('sha256')
+    .update(rawName)
+    .digest('hex')
+    .slice(0, TOOL_NAME_SUFFIX_LENGTH)
+}
+
+function normalizeToolName(rawName: string): string {
+  const normalized = rawName
+    .replace(/[^A-Za-z0-9_-]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+
+  return normalized.length > 0 ? normalized : 'tool'
+}
+
+function withHashSuffix(baseName: string, hash: string): string {
+  const maxBaseLength = MAX_TOOL_NAME_LENGTH - TOOL_NAME_SUFFIX_LENGTH - 1
+  const trimmedBase = baseName.slice(0, maxBaseLength) || 'tool'
+  return `${trimmedBase}_${hash}`
+}
+
+function toSafeToolName(
+  serverName: string,
+  toolName: string,
+  usedNames: Set<string>
+): string {
+  const rawName = `${serverName}_${toolName}`
+  const baseName = normalizeToolName(rawName)
+
+  // Keep readable/stable names whenever no disambiguation is required.
+  if (baseName.length <= MAX_TOOL_NAME_LENGTH && !usedNames.has(baseName)) {
+    return baseName
+  }
+
+  let candidate = withHashSuffix(baseName, toToolNameHash(rawName))
+  if (!usedNames.has(candidate)) {
+    return candidate
+  }
+
+  // Rare fallback: ensure uniqueness in deterministic order.
+  let attempt = 1
+  while (usedNames.has(candidate)) {
+    candidate = withHashSuffix(
+      baseName,
+      toToolNameHash(`${rawName}:${attempt}`)
+    )
+    attempt += 1
+  }
+
+  return candidate
 }
 
 /**
@@ -102,7 +159,7 @@ export async function createMCPClient(
       }
     )
 
-    const client = await experimental_createMCPClient({
+    const client = await createSDKMCPClient({
       transport: httpTransport,
     })
 
@@ -149,12 +206,14 @@ async function loadServerTools(
 
     // Apply tool filtering
     const filteredTools: Record<string, any> = {}
+    const usedNames = new Set<string>()
 
     Object.entries(rawTools).forEach(([toolName, toolDefinition]) => {
       if (isToolAllowed(toolName, config.allowedTools || [])) {
-        // Add namespace prefix to prevent conflicts
-        const namespacedName = `${server.name}.${toolName}`
+        // Keep tool names in OpenAI-compatible format and make them deterministic.
+        const namespacedName = toSafeToolName(server.name, toolName, usedNames)
         filteredTools[namespacedName] = toolDefinition
+        usedNames.add(namespacedName)
       }
     })
 

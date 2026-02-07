@@ -3069,6 +3069,20 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       modelSelection: 'Model selection',
       modelSelectionEnabled: 'Enabled',
       modelSelectionDisabled: 'Disabled',
+      modelSelectionEnabledDescription:
+        'Participants can choose among the allowed models.',
+      modelSelectionDisabledDescription:
+        'Model selection is automatic and based on credit availability.',
+      allowedModels: 'Allowed models',
+      allowedModelsAll: 'All',
+      chatbotModelSettings: 'Model & Reasoning Settings',
+      reasoningEffortsByModel: 'Reasoning efforts by model',
+      singleReasoningEffortFixed: 'Fixed by model: {effort}',
+      chatbotModelSettingsSave: 'Save model settings',
+      chatbotModelSettingsSaving: 'Saving...',
+      chatbotModelSettingsSaveSuccess: 'Model settings saved.',
+      chatbotModelSettingsSaveError:
+        'Could not save chatbot model settings. Please try again.',
       creditResetPeriodDaily: 'Daily',
       creditResetPeriodWeekly: 'Weekly',
       creditResetPeriodBiweekly: 'Biweekly',

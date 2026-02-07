@@ -9,31 +9,53 @@ import {
   SidebarRail,
   SidebarTrigger,
 } from '@uzh-bf/design-system'
-import { MessagesSquare } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useParams, useRouter } from 'next/navigation'
 import * as React from 'react'
+import { useChatStore } from '../stores/chatStore'
 import { SettingsPanel } from './settings-panel'
 import { ThreadList } from './thread-list'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const router = useRouter()
+  const { createThread, participationRequired } = useChatStore()
+
+  const handleNewThread = async () => {
+    if (participationRequired) return
+    try {
+      const threadId = await createThread(chatbotId)
+      router.push(`/${chatbotId}/threads/${threadId}`)
+    } catch {
+      /* handled centrally */
+    }
+  }
+
   return (
     <Sidebar {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className="mt-2 flex items-center justify-between gap-2 p-2 pr-0">
-              <div className="flex items-center gap-2">
-                <MessagesSquare className="size-6" />
-                <span className="text-lg font-semibold">Chat History</span>
+            <div className="flex items-center gap-2 p-2">
+              <button
+                onClick={handleNewThread}
+                disabled={participationRequired}
+                className="bg-uzh-blue hover:bg-uzh-blue-80 flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-white shadow-sm transition-colors disabled:pointer-events-none disabled:opacity-50"
+              >
+                <Plus className="size-4" />
+                New Chat
+              </button>
+              <div className="ml-auto">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <SidebarTrigger className="size-5" />
+                  </TooltipTrigger>
+                  <TooltipContent>Close sidebar</TooltipContent>
+                </Tooltip>
               </div>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <SidebarTrigger className="mr-1 size-5" />
-                </TooltipTrigger>
-                <TooltipContent>Close sidebar</TooltipContent>
-              </Tooltip>
             </div>
           </SidebarMenuItem>
         </SidebarMenu>

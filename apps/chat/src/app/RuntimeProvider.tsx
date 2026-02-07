@@ -24,8 +24,13 @@ export function RuntimeProvider({
 }>) {
   const { activeThreadId, threads, setMessages, loadThreads, switchToThread } =
     useChatStore()
-  const { selectedModel, selectedMode, loadCredits, loadModeOptions } =
-    useSettingsStore()
+  const {
+    selectedModel,
+    selectedMode,
+    selectedReasoningEffort,
+    loadCredits,
+    loadModeOptions,
+  } = useSettingsStore()
   const { threadId } = useParams<{ chatbotId: string; threadId?: string }>()
   const router = useRouter()
   const [threadsLoaded, setThreadsLoaded] = useState(false)
@@ -129,7 +134,8 @@ export function RuntimeProvider({
   // init chat response handling hook
   const { generateChatResponse, abortControllerRef } = useChatResponse(
     selectedModel,
-    selectedMode
+    selectedMode,
+    selectedReasoningEffort
   )
 
   // init thread management hooks
@@ -140,11 +146,19 @@ export function RuntimeProvider({
 
   const convertMessage = useCallback(
     (message: ExtendedThreadMessageLike): ThreadMessageLike => {
-      const { chatMode, modelId, creditsUsed, metadata, ...rest } = message
+      const {
+        chatMode,
+        modelId,
+        reasoningEffort,
+        creditsUsed,
+        metadata,
+        ...rest
+      } = message
       const custom = {
         ...(metadata?.custom ?? {}),
         chatMode: chatMode ?? null,
         modelId: modelId ?? null,
+        reasoningEffort: reasoningEffort ?? null,
         creditsUsed: creditsUsed ?? null,
       }
 

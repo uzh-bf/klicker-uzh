@@ -1,5 +1,9 @@
 import { useParams } from 'next/navigation'
 import { useCallback, useRef } from 'react'
+import {
+  REASONING_EFFORT_OPTIONS,
+  type ReasoningEffort,
+} from '../lib/config/reasoning'
 import { generateId } from '../lib/utils/chatUtils'
 import {
   useChatStore,
@@ -19,9 +23,14 @@ import { useSettingsStore } from '../stores/settingsStore'
  *
  * @param selectedModel - The AI model to use for responses
  * @param chatMode - The chat mode/configuration
+ * @param selectedReasoningEffort - Requested reasoning effort
  * @returns Object containing generateChatResponse function and abort controller ref
  */
-export function useChatResponse(selectedModel: string, selectedMode: string) {
+export function useChatResponse(
+  selectedModel: string,
+  selectedMode: string,
+  selectedReasoningEffort: ReasoningEffort
+) {
   const { chatbotId } = useParams<{ chatbotId: string }>()
 
   const { setMessages, setIsRunning } = useChatStore()
@@ -58,6 +67,32 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
       const assistantMessageId = generateId()
 
       try {
+        const serializeMessageContent = (
+          message: ExtendedThreadMessageLike
+        ): string => {
+          if (!Array.isArray(message.content)) {
+            return String(message.content ?? '')
+          }
+
+          return message.content
+            .filter(
+              (
+                part
+              ): part is {
+                type: 'text'
+                text: string
+              } =>
+                typeof part === 'object' &&
+                part !== null &&
+                'type' in part &&
+                part.type === 'text' &&
+                'text' in part &&
+                typeof part.text === 'string'
+            )
+            .map((part) => part.text)
+            .join('')
+        }
+
         // send request to API with streaming enabled
         const response = await fetch(`/api/chatbots/${chatbotId}/chat`, {
           method: 'POST',
@@ -67,19 +102,12 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
             messages: messagesToSend.map((m) => ({
               id: m.id,
               role: m.role,
-              content: Array.isArray(m.content)
-                ? m.content
-                    .map((c: { type?: string; text?: string } | string) =>
-                      typeof c === 'object' && c.type === 'text'
-                        ? c.text || ''
-                        : String(c)
-                    )
-                    .join('')
-                : String(m.content),
+              content: serializeMessageContent(m),
             })),
             threadId,
             selectedModel,
             selectedMode,
+            reasoningEffort: selectedReasoningEffort,
             parentId: parentId || undefined,
             assistantMessageId,
           }),
@@ -115,7 +143,7 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
               },
             ],
             createdAt: new Date(),
-            parentId: triggerMessage.id,
+            parentId: triggerMessage?.id || null,
           }
           setMessages([...messagesToSend, assistantMessage])
           return
@@ -129,14 +157,32 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
         // state management for streaming content assembly
         const orderedContentParts: any[] = []
         let currentTextContent = ''
+        let currentReasoningContent = ''
         const toolCallsMap: Map<string, any> = new Map()
         let finishReason: string | null = null
         let messageMetadata: {
           chatMode?: string | null
           modelId?: string | null
+          reasoningEffort?: ReasoningEffort | null
+          reasoningContent?: string | null
           creditsUsed?: number | null
         } | null = null
         let hasFinishEvent = false
+
+        const buildAssistantMessage = (): ExtendedThreadMessageLike => ({
+          id: assistantMessageId,
+          role: 'assistant',
+          content: orderedContentParts,
+          createdAt: new Date(),
+          parentId: triggerMessage?.id || null,
+          chatMode: messageMetadata?.chatMode ?? null,
+          modelId: messageMetadata?.modelId ?? null,
+          reasoningEffort: messageMetadata?.reasoningEffort ?? null,
+          reasoningContent:
+            (messageMetadata?.reasoningContent ?? currentReasoningContent) ||
+            null,
+          creditsUsed: messageMetadata?.creditsUsed ?? null,
+        })
 
         if (reader) {
           /**
@@ -217,14 +263,31 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
                     }
                   }
 
-                  const assistantMessage: ExtendedThreadMessageLike = {
-                    id: assistantMessageId,
-                    role: 'assistant',
-                    content: orderedContentParts,
-                    createdAt: new Date(),
-                    parentId: triggerMessage.id,
+                  setMessages([...messagesToSend, buildAssistantMessage()])
+                } else if (jsonData.type === 'reasoning-delta') {
+                  const reasoningDelta = jsonData.text || jsonData.delta || ''
+                  if (reasoningDelta) {
+                    currentReasoningContent += reasoningDelta
+
+                    if (
+                      orderedContentParts.length === 0 ||
+                      orderedContentParts[orderedContentParts.length - 1]
+                        .type !== 'reasoning'
+                    ) {
+                      orderedContentParts.push({
+                        type: 'reasoning',
+                        text: reasoningDelta,
+                      })
+                    } else {
+                      const lastPart =
+                        orderedContentParts[orderedContentParts.length - 1]
+                      if (lastPart.type === 'reasoning') {
+                        lastPart.text += reasoningDelta
+                      }
+                    }
+
+                    setMessages([...messagesToSend, buildAssistantMessage()])
                   }
-                  setMessages([...messagesToSend, assistantMessage])
                 } else if (jsonData.type === 'tool-input-start') {
                   // TOOL-CALL INITIALIZATION
                   if (
@@ -253,14 +316,7 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
                   toolCallsMap.set(jsonData.toolCallId, toolCall)
                   orderedContentParts.push(toolCall)
 
-                  const assistantMessage: ExtendedThreadMessageLike = {
-                    id: assistantMessageId,
-                    role: 'assistant',
-                    content: orderedContentParts,
-                    createdAt: new Date(),
-                    parentId: triggerMessage.id,
-                  }
-                  setMessages([...messagesToSend, assistantMessage])
+                  setMessages([...messagesToSend, buildAssistantMessage()])
                 } else if (jsonData.type === 'tool-input-available') {
                   // TOOL-CALL ARGS READY
                   const existingToolCall = toolCallsMap.get(jsonData.toolCallId)
@@ -268,14 +324,7 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
                     existingToolCall.args = jsonData.input
                     existingToolCall.result = 'Executing...'
 
-                    const assistantMessage: ExtendedThreadMessageLike = {
-                      id: assistantMessageId,
-                      role: 'assistant',
-                      content: orderedContentParts,
-                      createdAt: new Date(),
-                      parentId: triggerMessage.id,
-                    }
-                    setMessages([...messagesToSend, assistantMessage])
+                    setMessages([...messagesToSend, buildAssistantMessage()])
                   }
                 } else if (jsonData.type === 'tool-output-available') {
                   // TOOL-CALL RESULT READY
@@ -283,14 +332,7 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
                   if (existingToolCall) {
                     existingToolCall.result = jsonData.output
 
-                    const assistantMessage: ExtendedThreadMessageLike = {
-                      id: assistantMessageId,
-                      role: 'assistant',
-                      content: orderedContentParts,
-                      createdAt: new Date(),
-                      parentId: triggerMessage.id,
-                    }
-                    setMessages([...messagesToSend, assistantMessage])
+                    setMessages([...messagesToSend, buildAssistantMessage()])
                   }
                 } else if (jsonData.type === 'tool-output-error') {
                   // TOOL-CALL FAILURE
@@ -298,14 +340,7 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
                   if (existingToolCall) {
                     existingToolCall.result = `Error: ${jsonData.errorText || 'Tool execution failed'}`
 
-                    const assistantMessage: ExtendedThreadMessageLike = {
-                      id: assistantMessageId,
-                      role: 'assistant',
-                      content: orderedContentParts,
-                      createdAt: new Date(),
-                      parentId: triggerMessage.id,
-                    }
-                    setMessages([...messagesToSend, assistantMessage])
+                    setMessages([...messagesToSend, buildAssistantMessage()])
                   }
                 } else if (jsonData.type === 'error') {
                   // STREAM ERROR
@@ -322,29 +357,53 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
 
                   orderedContentParts.push(errorContent)
 
-                  const assistantMessage: ExtendedThreadMessageLike = {
-                    id: assistantMessageId,
-                    role: 'assistant',
-                    content: orderedContentParts,
-                    createdAt: new Date(),
-                    parentId: triggerMessage.id,
-                  }
-                  setMessages([...messagesToSend, assistantMessage])
+                  setMessages([...messagesToSend, buildAssistantMessage()])
 
                   // stop processing the stream on error
                   break
                 } else if (jsonData.type === 'finish') {
                   finishReason = jsonData.messageMetadata?.finishReason ?? null
-                  messageMetadata =
+                  if (
                     typeof jsonData.messageMetadata === 'object' &&
                     jsonData.messageMetadata !== null
-                      ? {
-                          chatMode: jsonData.messageMetadata.chatMode ?? null,
-                          modelId: jsonData.messageMetadata.modelId ?? null,
-                          creditsUsed:
-                            jsonData.messageMetadata.creditsUsed ?? null,
-                        }
-                      : null
+                  ) {
+                    const metadata = jsonData.messageMetadata as Record<
+                      string,
+                      unknown
+                    >
+                    const reasoningEffort =
+                      typeof metadata.reasoningEffort === 'string' &&
+                      REASONING_EFFORT_OPTIONS.includes(
+                        metadata.reasoningEffort as ReasoningEffort
+                      )
+                        ? (metadata.reasoningEffort as ReasoningEffort)
+                        : null
+
+                    messageMetadata = {
+                      chatMode:
+                        typeof metadata.chatMode === 'string'
+                          ? metadata.chatMode
+                          : null,
+                      modelId:
+                        typeof metadata.modelId === 'string'
+                          ? metadata.modelId
+                          : null,
+                      reasoningEffort,
+                      reasoningContent:
+                        typeof metadata.reasoningContent === 'string'
+                          ? metadata.reasoningContent
+                          : null,
+                      creditsUsed:
+                        typeof metadata.creditsUsed === 'number'
+                          ? metadata.creditsUsed
+                          : null,
+                    }
+                  } else {
+                    messageMetadata = null
+                  }
+                  if (messageMetadata?.reasoningContent) {
+                    currentReasoningContent = messageMetadata.reasoningContent
+                  }
                   hasFinishEvent = true
                 } else if (jsonData.type === 'message-metadata') {
                   // No UI update needed
@@ -357,7 +416,6 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
                     'text-start', // text generation started
                     'text-end', // text generation ended
                     'reasoning-start', // reasoning generation started
-                    'reasoning-delta', // reasoning delta
                     'reasoning-end', // reasoning generation ended
                   ].includes(jsonData.type)
                 ) {
@@ -382,6 +440,16 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
             orderedContentParts.push({ type: 'text', text: currentTextContent })
           }
 
+          if (
+            currentReasoningContent.trim() &&
+            !orderedContentParts.some((part) => part.type === 'reasoning')
+          ) {
+            orderedContentParts.unshift({
+              type: 'reasoning',
+              text: currentReasoningContent,
+            })
+          }
+
           if (finishReason === 'length') {
             orderedContentParts.push({
               type: 'text',
@@ -401,30 +469,43 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
               role: 'assistant',
               content: orderedContentParts,
               createdAt: new Date(),
-              parentId: triggerMessage.id,
+              parentId: triggerMessage?.id || null,
               chatMode: messageMetadata?.chatMode ?? null,
               modelId: messageMetadata?.modelId ?? null,
+              reasoningEffort: messageMetadata?.reasoningEffort ?? null,
+              reasoningContent:
+                (messageMetadata?.reasoningContent ??
+                  currentReasoningContent) ||
+                null,
               creditsUsed: messageMetadata?.creditsUsed ?? null,
             }
 
-            const updatedUserMessage = {
-              ...triggerMessage,
-              chatMode: messageMetadata?.chatMode ?? triggerMessage.chatMode,
-              modelId: messageMetadata?.modelId ?? triggerMessage.modelId,
-            }
+            const updatedUserMessage = triggerMessage
+              ? {
+                  ...triggerMessage,
+                  chatMode:
+                    messageMetadata?.chatMode ?? triggerMessage.chatMode,
+                  modelId: messageMetadata?.modelId ?? triggerMessage.modelId,
+                  reasoningEffort:
+                    messageMetadata?.reasoningEffort ??
+                    triggerMessage.reasoningEffort,
+                }
+              : null
 
-            const newCurrentPath = [
-              ...messagesToSend.slice(0, -1),
-              updatedUserMessage,
-              finalAssistantMessage,
-            ]
+            const newCurrentPath = updatedUserMessage
+              ? [
+                  ...messagesToSend.slice(0, -1),
+                  updatedUserMessage,
+                  finalAssistantMessage,
+                ]
+              : [...messagesToSend, finalAssistantMessage]
 
             // update both current message path and complete message history
             const { threads } = useChatStore.getState()
             const activeThread = threads.find((t) => t.id === threadId)
             const baseAllMessages = activeThread
               ? activeThread.allMessages.map((message) =>
-                  message.id === updatedUserMessage.id
+                  updatedUserMessage && message.id === updatedUserMessage.id
                     ? updatedUserMessage
                     : message
                 )
@@ -479,6 +560,7 @@ export function useChatResponse(selectedModel: string, selectedMode: string) {
       setIsRunning,
       selectedModel,
       selectedMode,
+      selectedReasoningEffort,
       chatbotId,
       loadCredits,
     ]
