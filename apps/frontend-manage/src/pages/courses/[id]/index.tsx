@@ -222,13 +222,13 @@ function CourseOverviewPage() {
           {course.isGamificationEnabled
             ? t('shared.generic.enabled')
             : t('shared.generic.disabled')}
-          <div className="font-bold">Course Q&A</div>
+          <div className="font-bold">{t('manage.course.courseQA')}</div>
           {course.isCourseQAEnabled
             ? t('shared.generic.enabled')
             : t('shared.generic.disabled')}
           {course.isCourseQAEnabled && (
             <>
-              <div className="font-bold">Anonymous in Embeds</div>
+              <div className="font-bold">{t('manage.course.courseQAAnonymousInEmbeds')}</div>
               {course.isCourseQAAnonymousEnabled
                 ? t('shared.generic.enabled')
                 : t('shared.generic.disabled')}
@@ -358,7 +358,7 @@ function CourseOverviewPage() {
               {
                 id: 'tab-discussions',
                 value: 'discussions',
-                label: 'Q&A',
+                label: t('manage.course.courseQA'),
                 data: { cy: 'tab-discussions' },
               },
             ]}

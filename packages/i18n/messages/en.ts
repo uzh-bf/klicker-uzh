@@ -916,6 +916,30 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       feedbackSubmitted:
         'Your feedback / question has been successfully submitted.',
     },
+    courseQA: {
+      title: 'Course Q&A',
+      scopeFilter: 'Scope Filter',
+      allScopes: 'All Scopes',
+      newThread: 'New Thread',
+      threadPlaceholder: 'Ask a question for this scope...',
+      threadCreationNotAvailable:
+        'Thread creation is not available for this selected source.',
+      threadScopeLimited:
+        'New threads are currently limited to course-space scopes.',
+      postThread: 'Post Thread',
+      postAnonymously: 'Post anonymously',
+      replyAnonymously: 'Reply anonymously',
+      replyPlaceholder: 'Write a reply...',
+      reply: 'Reply',
+      nReply: '{count, plural, =1 {1 reply} other {# replies}}',
+      noThreads: 'No discussion threads yet for this scope.',
+      threadPostFailed: 'Unable to post thread. Check permissions or embed settings.',
+      threadPostError: 'Unable to post thread. Please try again.',
+      replyPostFailed: 'Unable to post reply. Check permissions or embed settings.',
+      replyPostError: 'Unable to post reply. Please try again.',
+      upvoteFailed: 'Unable to update upvote. Sign in as a participant to vote.',
+      loadMore: 'Load more',
+    },
     profile: {
       publicProfile: 'Profile Visibility',
       isProfilePublic:
@@ -2735,6 +2759,31 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       saveDescription: 'Save description',
       noDescriptionNotification: 'No description available.',
       reviewProgress: 'Review progress',
+      courseQA: 'Course Q&A',
+      courseQAAnonymousInEmbeds: 'Anonymous in Embeds',
+      enableCourseQA: 'Enable Course Q&A',
+      enableCourseQATooltip:
+        'Allow participants to post and reply to course-level discussion threads.',
+      allowAnonymousInEmbeds: 'Allow Anonymous in Embeds',
+      allowAnonymousInEmbedsTooltip:
+        'Allow anonymous posting in embedded Q&A views when a valid embed token is used.',
+      courseQADisabledNotice:
+        'Course Q&A is currently disabled. Enable it in course settings to activate discussion features.',
+      embedLinkGenerator: 'Embed Link Generator',
+      discussionOverview: 'Discussion Overview',
+      noThreadsYet: 'No threads available yet in this course.',
+      generateEmbedLink: 'Generate Embed Link',
+      copyUrl: 'Copy URL',
+      refreshOverview: 'Refresh Overview',
+      embedUrl: 'Embed URL',
+      expiresAt: 'Expires: {date}',
+      embedGenFailed: 'Failed to generate embedding information.',
+      embedCopied: 'Embed URL copied to clipboard.',
+      scopeLabel: 'Scope',
+      tokenLifetime: 'Token Lifetime (hours)',
+      allowAnonymousPosting: 'Allow anonymous posting',
+      noPersistentScope:
+        'No persisted course scope found yet. A default course scope token will be generated.',
       activityNotAvailableAssessment:
         '{activityType} are currently not supported in assessment courses.',
       withGroups: 'With Groups',
