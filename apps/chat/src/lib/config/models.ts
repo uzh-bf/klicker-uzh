@@ -1,3 +1,4 @@
+import { type ReasoningEffort } from './reasoning'
 export type ModelID = string
 
 export interface ModelOption {
@@ -6,4 +7,5 @@ export interface ModelOption {
   description: string
   fallback: boolean
   supportsReasoning: boolean
+  allowedReasoningEfforts: ReasoningEffort[]
 }

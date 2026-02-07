@@ -87,8 +87,9 @@ model Chatbot {
   creditMaxCredits     Int               @default(1)
 
   // Model selection control
-  modelSelection  Boolean  @default(false) // Whether users can select models (false = automatic selection)
-  allowedModelIds String[] @default([])   // Restrict to these registry model IDs (empty = all models)
+  modelSelection                 Boolean  @default(false) // Whether users can select models (false = automatic selection)
+  allowedModelIds                String[] @default([])   // Restrict to these registry model IDs (empty = all models)
+  allowedReasoningEffortsByModel Json? // { [modelId: string]: ReasoningEffort[] } where missing key = all supported efforts
 
   // Azure OpenAI Configuration
   azureOpenAIKey      String? @db.Text // Encrypted API key using APP_SECRET

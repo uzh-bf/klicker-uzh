@@ -3121,6 +3121,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modelSelection: 'Modellauswahl',
       modelSelectionEnabled: 'Aktiviert',
       modelSelectionDisabled: 'Deaktiviert',
+      modelSelectionEnabledDescription:
+        'Teilnehmende können zwischen den erlaubten Modellen wählen.',
+      modelSelectionDisabledDescription:
+        'Die Modellauswahl erfolgt automatisch basierend auf der Credit-Verfügbarkeit.',
+      allowedModels: 'Erlaubte Modelle',
+      allowedModelsAll: 'Alle',
+      chatbotModelSettings: 'Modell- und Reasoning-Einstellungen',
+      reasoningEffortsByModel: 'Reasoning-Level pro Modell',
+      singleReasoningEffortFixed: 'Vom Modell vorgegeben: {effort}',
+      chatbotModelSettingsSave: 'Modelleinstellungen speichern',
+      chatbotModelSettingsSaving: 'Speichern...',
+      chatbotModelSettingsSaveSuccess: 'Modelleinstellungen gespeichert.',
+      chatbotModelSettingsSaveError:
+        'Die Chatbot-Modelleinstellungen konnten nicht gespeichert werden. Bitte erneut versuchen.',
       creditResetPeriodDaily: 'Täglich',
       creditResetPeriodWeekly: 'Wöchentlich',
       creditResetPeriodBiweekly: 'Alle zwei Wochen',

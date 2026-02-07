@@ -5,7 +5,7 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "@ai-sdk/azure": "2.0.40",
-    "@ai-sdk/mcp": "1.0.19",
+    "@ai-sdk/mcp": "0.0.13",
     "@assistant-ui/react": "0.10.43",
     "@assistant-ui/react-ai-sdk": "1.0.3",
     "@assistant-ui/react-markdown": "0.10.9",

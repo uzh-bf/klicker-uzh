@@ -2,10 +2,7 @@
 
 import { useState } from 'react'
 import { type ModelID } from '../lib/config/models'
-import {
-  REASONING_EFFORT_OPTIONS,
-  type ReasoningEffort,
-} from '../lib/config/reasoning'
+import { type ReasoningEffort } from '../lib/config/reasoning'
 import { useSettingsStore } from '../stores/settingsStore'
 
 import { Progress, Select } from '@uzh-bf/design-system'
@@ -44,8 +41,11 @@ export function SettingsPanel() {
   const selectedModelOption = modelOptions.find(
     (option) => option.id === selectedModel
   )
-  const showReasoningEffortSelector =
-    modelSelectionEnabled && !!selectedModelOption?.supportsReasoning
+  const availableReasoningEfforts =
+    selectedModelOption?.supportsReasoning === true
+      ? selectedModelOption.allowedReasoningEfforts
+      : []
+  const showReasoningEffortSelector = availableReasoningEfforts.length > 1
 
   return (
     <div>
@@ -136,7 +136,7 @@ export function SettingsPanel() {
                 <label className="text-sm font-bold">Reasoning Effort</label>
                 <Select
                   placeholder="Select reasoning effort"
-                  items={REASONING_EFFORT_OPTIONS.map((value) => ({
+                  items={availableReasoningEfforts.map((value) => ({
                     value,
                     label: value.charAt(0).toUpperCase() + value.slice(1),
                   }))}

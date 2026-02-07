@@ -1,5 +1,10 @@
 import { useQuery } from '@apollo/client'
-import { Chatbot, GetChatbotsInfoDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  Chatbot,
+  ChatModelCapability,
+  GetChatModelRegistryDocument,
+  GetChatbotsInfoDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -12,8 +17,16 @@ function Chatbots() {
   const { data, loading } = useQuery(GetChatbotsInfoDocument, {
     fetchPolicy: 'network-only',
   })
+  const { data: modelRegistryData, loading: modelRegistryLoading } = useQuery(
+    GetChatModelRegistryDocument,
+    {
+      fetchPolicy: 'cache-first',
+    }
+  )
 
   const chatbots = data?.getChatbotsInfo ?? []
+  const modelRegistry: ChatModelCapability[] =
+    modelRegistryData?.getChatModelRegistry ?? []
   const selectedId =
     typeof router.query?.chatbotId === 'string'
       ? router.query.chatbotId
@@ -37,7 +50,11 @@ function Chatbots() {
       <H2>{t('manage.resources.chatbots')}</H2>
       <div className="mt-6 flex flex-col lg:flex-row-reverse">
         <div className="lg:w-1/2 lg:border-l lg:pl-4">
-          <ChatbotDetails chatbot={selectedChatbot} loading={loading} />
+          <ChatbotDetails
+            chatbot={selectedChatbot}
+            modelRegistry={modelRegistry}
+            loading={loading || modelRegistryLoading}
+          />
         </div>
         <div className="lg:w-1/2 lg:pr-4">
           <ChatbotList

@@ -17,6 +17,7 @@ export async function GET(
       description: true,
       avatar: true,
       modelSelection: true,
+      allowedReasoningEffortsByModel: true,
       systemPrompts: true,
       disclaimerId: true,
     })

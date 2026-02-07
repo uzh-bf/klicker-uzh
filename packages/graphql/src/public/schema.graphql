@@ -604,8 +604,18 @@ type CatalogSelectionObject {
   name: String!
 }
 
+type ChatModelCapability {
+  description: String!
+  fallback: Boolean!
+  id: String!
+  name: String!
+  supportedReasoningEfforts: [ReasoningEffort!]!
+  supportsReasoning: Boolean!
+}
+
 type Chatbot {
   allowedModelIds: [String!]!
+  allowedReasoningEffortsByModel: [ChatbotReasoningConfig!]!
   avatar: String
   courses: [CourseListEntry!]!
   createdAt: Date
@@ -641,6 +651,16 @@ type ChatbotMcpConfigurationSummary {
   serverId: ID!
   serverIsActive: Boolean!
   serverName: String!
+}
+
+type ChatbotReasoningConfig {
+  efforts: [ReasoningEffort!]!
+  modelId: String!
+}
+
+input ChatbotReasoningConfigInput {
+  efforts: [ReasoningEffort!]!
+  modelId: String!
 }
 
 type ChatbotUsageSummary {
@@ -1879,6 +1899,7 @@ type Mutation {
   unpublishMicroLearning(id: String!): MicroLearning
   unpublishPracticeQuiz(id: String!): PracticeQuiz
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
+  updateChatbotModelSettings(allowedModelIds: [String!]!, allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!], chatbotId: String!, modelSelection: Boolean!): Chatbot
   updateCourseSettings(color: String, description: String, displayName: String, endDate: Date, groupDeadlineDate: Date, id: String!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean, language: LocaleType!, name: String, notificationEmail: String, startDate: Date): Course
   updateElementInstances(elementId: Int!, includeTemplates: Boolean!): [ElementInstance!]
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
@@ -2330,6 +2351,7 @@ type Query {
   getCatalogLiveQuizTemplates: [CatalogSelectionObject!]
   getCatalogObjects(catalogCollectionId: String): [CatalogObject!]
   getCatalogSharingRequests: [ObjectSharingRequest!]
+  getChatModelRegistry: [ChatModelCapability!]!
   getChatbotsInfo: [Chatbot!]
   getCourseActivities(courseId: String!): Course
   getCourseActivityAnalytics(courseId: String!): CourseActivityAnalytics
@@ -2423,6 +2445,14 @@ type QuizAnalytics {
   activityType: ActivityType!
   courseParticipants: Int!
   instanceQuizAnalytics: [InstanceQuizAnalytics!]!
+}
+
+enum ReasoningEffort {
+  high
+  low
+  medium
+  minimal
+  none
 }
 
 type ReducedActivityInfo {

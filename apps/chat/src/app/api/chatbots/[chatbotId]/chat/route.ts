@@ -4,6 +4,7 @@ import {
   requireParticipation,
 } from '@/src/lib/server/apiGuards'
 import {
+  getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
   getChatModelRegistry,
 } from '@/src/lib/server/chatModelRegistry'
@@ -17,11 +18,11 @@ import { Chatbot } from '@klicker-uzh/prisma/client'
 import { safeDecrypt } from '@klicker-uzh/util'
 import {
   convertToModelMessages,
-  type StepResult,
   LanguageModel,
   stepCountIs,
   streamText,
   UIMessage,
+  type StepResult,
 } from 'ai'
 import { createHash, randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
@@ -52,7 +53,10 @@ type AzureModelSelection = {
   }
 }
 
-function getAzureModel(chatbot: Chatbot, deploymentId: string): AzureModelSelection {
+function getAzureModel(
+  chatbot: Chatbot,
+  deploymentId: string
+): AzureModelSelection {
   // Use per-chatbot Azure configuration if available, otherwise fallback to environment
   let hasCustomApiKey = false
   let decryptedApiKey: string | null = null
@@ -105,7 +109,10 @@ function asObject(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>
 }
 
-function truncateString(value: string, maxLength = MAX_LOG_STRING_LENGTH): string {
+function truncateString(
+  value: string,
+  maxLength = MAX_LOG_STRING_LENGTH
+): string {
   if (value.length <= maxLength) return value
   return `${value.slice(0, maxLength - 3)}...`
 }
@@ -129,6 +136,59 @@ function safeSize(value: unknown): number | null {
   const serialized = safeSerialize(value)
   if (serialized === null) return null
   return Buffer.byteLength(serialized, 'utf8')
+}
+
+function toTokenCount(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'string') {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : null
+  }
+  return null
+}
+
+function extractReasoningTokens(providerMetadata: unknown): number | null {
+  if (!providerMetadata) return null
+
+  const queue: unknown[] = [providerMetadata]
+  while (queue.length > 0) {
+    const value = queue.shift()
+    const record = asObject(value)
+    if (!record) continue
+
+    const directReasoningTokens = toTokenCount(record.reasoningTokens)
+    if (directReasoningTokens !== null) {
+      return directReasoningTokens
+    }
+
+    const outputTokensDetails = asObject(record.outputTokensDetails)
+    const nestedReasoningTokens = toTokenCount(
+      outputTokensDetails?.reasoningTokens
+    )
+    if (nestedReasoningTokens !== null) {
+      return nestedReasoningTokens
+    }
+
+    for (const nestedValue of Object.values(record)) {
+      if (nestedValue && typeof nestedValue === 'object') {
+        queue.push(nestedValue)
+      }
+    }
+  }
+
+  return null
+}
+
+function getDefaultReasoningEffort(
+  allowedReasoningEfforts: ReasoningEffort[]
+): ReasoningEffort | null {
+  if (allowedReasoningEfforts.length === 0) {
+    return null
+  }
+  if (allowedReasoningEfforts.includes('medium')) {
+    return 'medium'
+  }
+  return allowedReasoningEfforts[0]
 }
 
 function logChatDev(
@@ -659,6 +719,8 @@ export async function POST(
               authType: config.mcpServer.authType,
               authSecret: config.mcpServer.authSecret ?? '',
               parameters: config.mcpServer.parameters,
+              passChatbotId: config.mcpServer.passChatbotId,
+              chatbotIdHeader: config.mcpServer.chatbotIdHeader ?? undefined,
             },
             config: {
               allowedTools: config.allowedTools as string[] | undefined,
@@ -668,7 +730,10 @@ export async function POST(
           })) || []
     }
   } catch (error) {
-    console.error('Failed to fetch chatbot configuration:', { requestId, error })
+    console.error('Failed to fetch chatbot configuration:', {
+      requestId,
+      error,
+    })
   }
 
   // create a new thread if none exists
@@ -705,6 +770,7 @@ export async function POST(
 
   // Load MCP tools from database configurations or fallback to legacy
   const mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
+  const toolNames = Object.keys(mcpTools || {})
 
   if (!chatbot) {
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
@@ -760,8 +826,16 @@ export async function POST(
     }
   }
 
+  const allowedReasoningEfforts = getAllowedReasoningEffortsForModel(
+    selectedModelConfig,
+    chatbot.allowedReasoningEffortsByModel
+  )
   const appliedReasoningEffort: ReasoningEffort | null =
-    selectedModelConfig.supportsReasoning ? requestedReasoningEffort : null
+    allowedReasoningEfforts.length > 0
+      ? allowedReasoningEfforts.includes(requestedReasoningEffort)
+        ? requestedReasoningEffort
+        : getDefaultReasoningEffort(allowedReasoningEfforts)
+      : null
 
   const providerReasoningEffort =
     appliedReasoningEffort && appliedReasoningEffort !== 'none'
@@ -788,9 +862,10 @@ export async function POST(
     deploymentId: selectedModelConfig.deploymentId,
     selectedMode,
     reasoningEffort: appliedReasoningEffort,
+    allowedReasoningEfforts,
     maxOutputTokens: maxOutputTokens ?? null,
-    toolCount: Object.keys(mcpTools || {}).length,
-    toolNames: Object.keys(mcpTools || {}),
+    toolCount: toolNames.length,
+    toolNames,
     azure: azureModelSelection.debug,
     systemPromptLength: systemPrompt.length,
     systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
@@ -916,6 +991,7 @@ export async function POST(
       ? {
           openai: {
             reasoningEffort: providerReasoningEffort,
+            reasoningSummary: 'auto',
           },
         }
       : undefined,
@@ -962,6 +1038,10 @@ export async function POST(
               .join('')
         ) ?? normalizeReasoningContent(partialReasoningContent)
       assistantReasoningContent = finishedReasoningContent
+      const providerReasoningTokens = extractReasoningTokens(
+        asObject(result)?.providerMetadata
+      )
+      const finishOutputTokens = result.totalUsage?.outputTokens || 0
 
       logEvent('stream.finish', {
         elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
@@ -973,6 +1053,11 @@ export async function POST(
             }
           : null,
         creditsUsed,
+        reasoningTokens: providerReasoningTokens,
+        reasoningTokensIncludedInOutput:
+          providerReasoningTokens !== null
+            ? finishOutputTokens >= providerReasoningTokens
+            : null,
         stepsCount: result.steps?.length ?? 0,
         partialTextLength: partialContent.length,
         partialReasoningLength: partialReasoningContent.length,
@@ -1249,13 +1334,18 @@ export async function POST(
 
     onStepFinish: async (step) => {
       const diagnostics = collectStepToolDiagnostics(step)
+      const toolCallNames = Array.from(
+        new Set(diagnostics.map((diagnostic) => diagnostic.toolName))
+      )
+      const toolCallsCount = diagnostics.length
+      const providerReasoningTokens = extractReasoningTokens(
+        asObject(step)?.providerMetadata
+      )
+      const stepOutputTokens = step.usage?.outputTokens || 0
       logEvent('stream.step.finish', {
         elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
         finishReason: step.finishReason,
         warningsCount: step.warnings?.length ?? 0,
-        toolCallsCount: step.toolCalls?.length ?? 0,
-        toolCallNames: (step.toolCalls ?? []).map((toolCall) => toolCall.toolName),
-        toolResultsCount: step.toolResults?.length ?? 0,
         usage: step.usage
           ? {
               inputTokens: step.usage.inputTokens || 0,
@@ -1263,6 +1353,13 @@ export async function POST(
               totalTokens: step.usage.totalTokens || 0,
             }
           : null,
+        reasoningTokens: providerReasoningTokens,
+        reasoningTokensIncludedInOutput:
+          providerReasoningTokens !== null
+            ? stepOutputTokens >= providerReasoningTokens
+            : null,
+        toolCallsCount,
+        toolCallNames,
         toolDiagnostics: diagnostics,
       })
     },

@@ -31,7 +31,8 @@ export function useThreadManagement(
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
   const { createThread, addMessage, setIsRunning } = useChatStore()
-  const { selectedMode, selectedModel } = useSettingsStore()
+  const { selectedMode, selectedModel, selectedReasoningEffort } =
+    useSettingsStore()
 
   /**
    * Handles creation of new user messages and generates response
@@ -69,6 +70,7 @@ export function useThreadManagement(
         parentId: message.parentId || null,
         chatMode: selectedMode,
         modelId: selectedModel,
+        reasoningEffort: selectedReasoningEffort,
       }
 
       try {
@@ -97,6 +99,7 @@ export function useThreadManagement(
       router,
       selectedMode,
       selectedModel,
+      selectedReasoningEffort,
     ]
   )
 
@@ -128,6 +131,7 @@ export function useThreadManagement(
         parentId: parentId,
         chatMode: selectedMode,
         modelId: selectedModel,
+        reasoningEffort: selectedReasoningEffort,
       }
 
       // build new conversation path up to the parent + edited message
@@ -162,7 +166,7 @@ export function useThreadManagement(
       // generate new response from the edited conversation state
       await generateChatResponse(newCurrentPath, threadId)
     },
-    [generateChatResponse, selectedMode, selectedModel]
+    [generateChatResponse, selectedMode, selectedModel, selectedReasoningEffort]
   )
 
   /**

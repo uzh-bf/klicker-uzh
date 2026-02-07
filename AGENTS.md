@@ -91,19 +91,19 @@ cypress/                   # E2E tests
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend framework | Next.js 15, React, TypeScript |
-| Styling | TailwindCSS, @uzh-bf/design-system |
-| GraphQL server | GraphQL Yoga + Pothos schema builder |
-| GraphQL client | Apollo Client |
-| ORM | Prisma 6 (PostgreSQL) |
-| Caching | Redis (ioredis) |
-| Workflow orchestration | Hatchet (workers for async processing) |
-| Auth | Edu-ID (OIDC), magic links, LTI, delegated login |
-| Build | Turborepo + Rollup |
-| Test | Vitest (unit), Cypress (E2E) |
-| Formatting | Prettier (no semi, single quotes, trailing comma es5) |
+| Layer                  | Technology                                            |
+| ---------------------- | ----------------------------------------------------- |
+| Frontend framework     | Next.js 15, React, TypeScript                         |
+| Styling                | TailwindCSS, @uzh-bf/design-system                    |
+| GraphQL server         | GraphQL Yoga + Pothos schema builder                  |
+| GraphQL client         | Apollo Client                                         |
+| ORM                    | Prisma 6 (PostgreSQL)                                 |
+| Caching                | Redis (ioredis)                                       |
+| Workflow orchestration | Hatchet (workers for async processing)                |
+| Auth                   | Edu-ID (OIDC), magic links, LTI, delegated login      |
+| Build                  | Turborepo + Rollup                                    |
+| Test                   | Vitest (unit), Cypress (E2E)                          |
+| Formatting             | Prettier (no semi, single quotes, trailing comma es5) |
 
 ## GraphQL Workflow
 
@@ -146,18 +146,18 @@ Prisma schema is split across multiple files in `packages/prisma/src/prisma/sche
 
 Local dev uses Traefik reverse proxy with `*.klicker.com` custom domains (requires `/etc/hosts` entries + mkcert certs). Docker Compose runs PostgreSQL, Redis, Traefik, and Hatchet-lite.
 
-| URL | App | Port |
-|---|---|---:|
-| https://pwa.klicker.com | Student PWA | 3001 |
-| https://manage.klicker.com | Lecturer UI | 3002 |
-| https://control.klicker.com | Controller | 3003 |
-| https://chat.klicker.com | Chat | 3004 |
-| https://auth.klicker.com | Auth | 3010 |
-| https://api.klicker.com | Backend/GraphQL | 3000 |
-| https://assessment.klicker.com | Assessment PWA (same as PWA) | 3001 |
-| https://assessment-api.klicker.com | Assessment API (same as API) | 3000 |
-| https://response-api.klicker.com | Response API | 7078 |
-| https://response-api-assessment.klicker.com | Response API (assessment) | 7078 |
+| URL                                         | App                          | Port |
+| ------------------------------------------- | ---------------------------- | ---: |
+| https://pwa.klicker.com                     | Student PWA                  | 3001 |
+| https://manage.klicker.com                  | Lecturer UI                  | 3002 |
+| https://control.klicker.com                 | Controller                   | 3003 |
+| https://chat.klicker.com                    | Chat                         | 3004 |
+| https://auth.klicker.com                    | Auth                         | 3010 |
+| https://api.klicker.com                     | Backend/GraphQL              | 3000 |
+| https://assessment.klicker.com              | Assessment PWA (same as PWA) | 3001 |
+| https://assessment-api.klicker.com          | Assessment API (same as API) | 3000 |
+| https://response-api.klicker.com            | Response API                 | 7078 |
+| https://response-api-assessment.klicker.com | Response API (assessment)    | 7078 |
 
 Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` domains better mirror production cookie/domain behavior.
 
