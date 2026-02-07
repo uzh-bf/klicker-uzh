@@ -138,6 +138,7 @@ const AssistantReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
 export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
   return (
     <ThreadPrimitive.Root
+      data-cy="chat-thread"
       className="bg-background box-border flex h-full flex-col overflow-hidden"
       style={{
         ['--thread-max-width' as string]: '60rem',
@@ -190,7 +191,7 @@ const ThreadWelcome: FC = () => {
     <ThreadPrimitive.Empty>
       <div className="flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col">
         <div className="flex w-full flex-grow flex-col items-center justify-center">
-          <p className="mt-4 font-medium">How can I help you today?</p>
+          <p data-cy="chat-welcome-message" className="mt-4 font-medium">How can I help you today?</p>
         </div>
         {/* <ThreadWelcomeSuggestions /> */}
       </div>
@@ -222,8 +223,9 @@ const ThreadWelcome: FC = () => {
 
 const Composer: FC = () => {
   return (
-    <ComposerPrimitive.Root className="focus-within:border-ring/20 flex w-full flex-wrap items-center rounded-lg border bg-inherit px-2.5 shadow-sm transition-colors ease-in">
+    <ComposerPrimitive.Root data-cy="chat-composer" className="focus-within:border-ring/20 flex w-full flex-wrap items-center rounded-lg border bg-inherit px-2.5 shadow-sm transition-colors ease-in">
       <ComposerPrimitive.Input
+        data-cy="chat-composer-input"
         rows={1}
         autoFocus
         placeholder="Write a message..."
@@ -240,6 +242,7 @@ const ComposerAction: FC = () => {
       <ThreadPrimitive.If running={false}>
         <ComposerPrimitive.Send asChild>
           <Button
+            data-cy="chat-send-button"
             style={{
               borderRadius: '50%',
               width: '36px',
@@ -260,6 +263,7 @@ const ComposerAction: FC = () => {
       <ThreadPrimitive.If running>
         <ComposerPrimitive.Cancel asChild>
           <Button
+            data-cy="chat-cancel-button"
             style={{
               borderRadius: '50%',
               width: '36px',
@@ -290,10 +294,10 @@ const ComposerAction: FC = () => {
 
 const UserMessage: FC = () => {
   return (
-    <MessagePrimitive.Root className="grid w-full max-w-[var(--thread-max-width)] auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] gap-y-2 py-4 [&:where(>*)]:col-start-2">
+    <MessagePrimitive.Root data-cy="chat-user-message" className="grid w-full max-w-[var(--thread-max-width)] auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] gap-y-2 py-4 [&:where(>*)]:col-start-2">
       <UserActionBar />
 
-      <div className="bg-muted text-foreground col-start-2 row-start-2 max-w-[calc(var(--thread-max-width)*0.8)] break-words rounded-2xl px-5 py-2.5">
+      <div data-cy="chat-user-message-content" className="bg-muted text-foreground col-start-2 row-start-2 max-w-[calc(var(--thread-max-width)*0.8)] break-words rounded-2xl px-5 py-2.5">
         <MessagePrimitive.Content />
       </div>
 
@@ -314,7 +318,7 @@ const UserActionBar: FC = () => {
       <Tooltip>
         <TooltipTrigger asChild>
           <ActionBarPrimitive.Edit asChild>
-            <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
+            <button data-cy="chat-edit-message-button" className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
               <PencilIcon />
               <span className="sr-only">Edit</span>
             </button>
@@ -330,12 +334,13 @@ const UserActionBar: FC = () => {
 
 const EditComposer: FC = () => {
   return (
-    <ComposerPrimitive.Root className="bg-muted my-4 flex w-full max-w-[var(--thread-max-width)] flex-col gap-2 rounded-2xl">
-      <ComposerPrimitive.Input className="text-foreground flex min-h-[2.5rem] w-full resize-none bg-transparent px-4 py-3 outline-none" />
+    <ComposerPrimitive.Root data-cy="chat-edit-composer" className="bg-muted my-4 flex w-full max-w-[var(--thread-max-width)] flex-col gap-2 rounded-2xl">
+      <ComposerPrimitive.Input data-cy="chat-edit-composer-input" className="text-foreground flex min-h-[2.5rem] w-full resize-none bg-transparent px-4 py-3 outline-none" />
 
       <div className="mx-3 mb-2 flex items-center justify-center gap-2 self-end">
         <ComposerPrimitive.Cancel asChild>
           <Button
+            data-cy="chat-edit-cancel-button"
             style={{
               backgroundColor: '#000000',
               color: '#ffffff',
@@ -349,6 +354,7 @@ const EditComposer: FC = () => {
         </ComposerPrimitive.Cancel>
         <ComposerPrimitive.Send asChild>
           <Button
+            data-cy="chat-edit-send-button"
             style={{
               backgroundColor: '#ffffff',
               color: '#000000',
@@ -426,7 +432,7 @@ const PartGroup: FC<
 
 const AssistantMessage: FC<{ chatbotAvatar: string }> = ({ chatbotAvatar }) => {
   return (
-    <MessagePrimitive.Root className="relative grid w-full max-w-[var(--thread-max-width)] grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] py-4">
+    <MessagePrimitive.Root data-cy="chat-assistant-message" className="relative grid w-full max-w-[var(--thread-max-width)] grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] py-4">
       {/* Avatar image in first column */}
       <div className="col-start-1 row-span-2 row-start-1 mr-3 mt-3 flex items-start pr-2">
         <Image
@@ -444,7 +450,7 @@ const AssistantMessage: FC<{ chatbotAvatar: string }> = ({ chatbotAvatar }) => {
           )}
         />
       </div>
-      <div className="text-foreground col-span-2 col-start-2 row-start-1 my-1.5 max-w-[calc(var(--thread-max-width)*0.8)] break-words leading-7">
+      <div data-cy="chat-assistant-message-content" className="text-foreground col-span-2 col-start-2 row-start-1 my-1.5 max-w-[calc(var(--thread-max-width)*0.8)] break-words leading-7">
         <MessagePrimitive.Unstable_PartsGrouped
           groupingFunction={groupConsecutiveByType}
           components={{
@@ -473,7 +479,7 @@ const AssistantActionBar: FC = () => {
       <Tooltip>
         <TooltipTrigger asChild>
           <ActionBarPrimitive.Copy asChild>
-            <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
+            <button data-cy="chat-copy-message-button" className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
               <MessagePrimitive.If copied>
                 <CheckIcon />
               </MessagePrimitive.If>
@@ -489,7 +495,7 @@ const AssistantActionBar: FC = () => {
       <Tooltip>
         <TooltipTrigger asChild>
           <ActionBarPrimitive.Reload asChild>
-            <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
+            <button data-cy="chat-reload-message-button" className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
               <RefreshCwIcon />
               <span className="sr-only">Refresh</span>
             </button>

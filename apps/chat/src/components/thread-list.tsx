@@ -26,7 +26,7 @@ const ThreadListItems: FC = () => {
   const { threads, deleteThread } = useChatStore()
 
   return (
-    <div className="flex flex-col gap-0.5">
+    <div data-cy="chat-thread-list" className="flex flex-col gap-0.5">
       {threads.map((thread) => (
         <ThreadListItem
           key={thread.id}
@@ -108,11 +108,13 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
 
   return (
     <div
+      data-cy="chat-thread-item"
       className={`hover:bg-accent focus-visible:bg-muted focus-visible:ring-ring flex items-center gap-1 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 ${isActive ? 'bg-muted' : ''}`}
     >
       {isEditing ? (
         <>
           <TextField
+            data-cy="chat-thread-title-input"
             value={editTitle}
             onChange={setEditTitle}
             onKeyDown={handleKeyDown}
@@ -122,6 +124,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <button
+                data-cy="chat-thread-title-save"
                 onClick={handleEditSave}
                 className="text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring mr-1 inline-flex size-4 items-center justify-center whitespace-nowrap rounded-md p-0 text-sm font-medium transition-colors hover:text-green-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
               >
@@ -134,6 +137,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <button
+                data-cy="chat-thread-title-cancel"
                 onClick={handleEditCancel}
                 className="text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring mr-2 inline-flex size-4 items-center justify-center whitespace-nowrap rounded-md p-0 text-sm font-medium transition-colors hover:text-red-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
               >
@@ -146,12 +150,13 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
         </>
       ) : (
         <>
-          <button onClick={onSelect} className="flex-grow px-3 py-1 text-start">
+          <button data-cy="chat-thread-select" onClick={onSelect} className="flex-grow px-3 py-1 text-start">
             <p className="line-clamp-2 text-sm">{getThreadTitle()}</p>
           </button>
           <Tooltip>
             <TooltipTrigger asChild>
               <button
+                data-cy="chat-thread-edit-button"
                 onClick={handleEditStart}
                 className="hover:text-primary text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring mr-1 inline-flex size-4 items-center justify-center whitespace-nowrap rounded-md p-0 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
               >
@@ -164,6 +169,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <button
+                data-cy="chat-thread-delete-button"
                 onClick={onDelete}
                 className="hover:text-destructive text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring mr-2 inline-flex size-4 items-center justify-center whitespace-nowrap rounded-md p-0 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
               >

@@ -147,7 +147,7 @@ export const Assistant = ({
 
   if (participationRequired) {
     return (
-      <div className="bg-muted flex min-h-screen w-full items-center justify-center px-4">
+      <div data-cy="chat-participation-required" className="bg-muted flex min-h-screen w-full items-center justify-center px-4">
         <div className="bg-card w-full max-w-lg rounded-lg border p-8 text-center shadow-sm">
           <h1 className="text-foreground text-2xl font-semibold">
             Course Access Required
@@ -171,7 +171,7 @@ export const Assistant = ({
   // Show loading state while fetching disclaimer information
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div data-cy="chat-loading" className="flex h-screen items-center justify-center">
         <div className="text-lg">Loading chatbot...</div>
       </div>
     )
@@ -181,7 +181,7 @@ export const Assistant = ({
   if (disclaimerStatus?.required && disclaimerStatus?.declined) {
     return (
       <>
-        <div className="flex h-screen items-center justify-center">
+        <div data-cy="chat-disclaimer-declined" className="flex h-screen items-center justify-center">
           <div className="max-w-md rounded-lg bg-red-50 p-6 text-center">
             <h2 className="mb-4 text-xl font-semibold text-red-800">
               Chatbot unavailable
@@ -191,6 +191,7 @@ export const Assistant = ({
               using the chatbot.
             </p>
             <button
+              data-cy="chat-show-disclaimer-again"
               onClick={() => setShowDisclaimerModal(true)}
               className="mt-4 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
             >
