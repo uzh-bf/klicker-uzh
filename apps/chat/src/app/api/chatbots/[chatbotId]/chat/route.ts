@@ -17,11 +17,13 @@ import { Chatbot } from '@klicker-uzh/prisma/client'
 import { safeDecrypt } from '@klicker-uzh/util'
 import {
   convertToModelMessages,
+  type StepResult,
   LanguageModel,
   stepCountIs,
   streamText,
   UIMessage,
 } from 'ai'
+import { createHash, randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { DEFAULT_PROMPT } from 'src/lib/config/prompts'
 import {
@@ -34,23 +36,51 @@ import { ThreadService } from 'src/services/threads'
 import { z } from 'zod'
 
 export const maxDuration = 60
+const DEFAULT_AZURE_RESPONSES_API_VERSION = 'preview'
+const CHAT_LOG_PREFIX = '[chat:dev]'
+const isDevLogging = process.env.NODE_ENV === 'development'
+const MAX_LOG_STRING_LENGTH = 500
+const HASH_DIGEST_LENGTH = 12
 
-function getAzureModel(
-  chatbot: Chatbot,
-  deploymentId: string,
-  apiVersion: string
-): LanguageModel {
+type AzureModelSelection = {
+  model: LanguageModel
+  debug: {
+    resourceName: string
+    responsesApiVersion: string
+    hasCustomEndpoint: boolean
+    hasCustomApiKey: boolean
+  }
+}
+
+function getAzureModel(chatbot: Chatbot, deploymentId: string): AzureModelSelection {
   // Use per-chatbot Azure configuration if available, otherwise fallback to environment
-  const apiKey = chatbot?.azureOpenAIKey
-    ? safeDecrypt(chatbot.azureOpenAIKey)
-    : process.env.AZURE_API_KEY
+  let hasCustomApiKey = false
+  let decryptedApiKey: string | null = null
+  if (
+    typeof chatbot.azureOpenAIKey === 'string' &&
+    chatbot.azureOpenAIKey.length > 0
+  ) {
+    hasCustomApiKey = true
+    decryptedApiKey = safeDecrypt(chatbot.azureOpenAIKey)
+  }
+  const apiKey =
+    decryptedApiKey ||
+    process.env.AZURE_API_KEY ||
+    process.env.AZURE_OPENAI_API_KEY
 
-  const resourceName = chatbot?.azureOpenAIEndpoint
-    ? new URL(chatbot.azureOpenAIEndpoint).hostname.split('.')[0]
-    : process.env.AZURE_RESOURCE_NAME || 'klicker-ai'
+  let hasCustomEndpoint = false
+  let resourceName = process.env.AZURE_RESOURCE_NAME || 'klicker-ai'
+  if (
+    typeof chatbot.azureOpenAIEndpoint === 'string' &&
+    chatbot.azureOpenAIEndpoint.length > 0
+  ) {
+    hasCustomEndpoint = true
+    resourceName = new URL(chatbot.azureOpenAIEndpoint).hostname.split('.')[0]
+  }
 
   const responsesApiVersion =
-    process.env.AZURE_RESPONSES_API_VERSION || apiVersion || 'preview'
+    process.env.AZURE_RESPONSES_API_VERSION ||
+    DEFAULT_AZURE_RESPONSES_API_VERSION
 
   const azure = createAzure({
     resourceName,
@@ -59,7 +89,318 @@ function getAzureModel(
     apiVersion: responsesApiVersion,
   })
 
-  return azure.responses(deploymentId)
+  return {
+    model: azure.responses(deploymentId),
+    debug: {
+      resourceName,
+      responsesApiVersion,
+      hasCustomEndpoint,
+      hasCustomApiKey,
+    },
+  }
+}
+
+function asObject(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object') return null
+  return value as Record<string, unknown>
+}
+
+function truncateString(value: string, maxLength = MAX_LOG_STRING_LENGTH): string {
+  if (value.length <= maxLength) return value
+  return `${value.slice(0, maxLength - 3)}...`
+}
+
+function hashSnippet(value: string): string {
+  return createHash('sha256')
+    .update(value)
+    .digest('hex')
+    .slice(0, HASH_DIGEST_LENGTH)
+}
+
+function safeSerialize(value: unknown): string | null {
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return null
+  }
+}
+
+function safeSize(value: unknown): number | null {
+  const serialized = safeSerialize(value)
+  if (serialized === null) return null
+  return Buffer.byteLength(serialized, 'utf8')
+}
+
+function logChatDev(
+  event: string,
+  context: Record<string, unknown>,
+  level: 'info' | 'error' = 'info'
+) {
+  if (!isDevLogging) return
+  const message = `${CHAT_LOG_PREFIX} ${event}`
+  if (level === 'error') {
+    console.error(message, context)
+  } else {
+    console.info(message, context)
+  }
+}
+
+type ToolDiagnostic = {
+  toolName: string
+  inputBytes: number | null
+  outputBytes: number | null
+  inputHash: string | null
+  outputHash: string | null
+}
+
+function collectStepToolDiagnostics(
+  step: Pick<StepResult<any>, 'content'>
+): ToolDiagnostic[] {
+  const diagnostics: ToolDiagnostic[] = []
+
+  for (const part of step.content ?? []) {
+    if (!part || typeof part !== 'object') continue
+    if (!('type' in part)) continue
+
+    const typedPart = part as {
+      type?: unknown
+      toolName?: unknown
+      input?: unknown
+      output?: unknown
+      result?: unknown
+      args?: unknown
+    }
+
+    if (
+      typedPart.type !== 'tool-call' &&
+      typedPart.type !== 'tool-result' &&
+      typedPart.type !== 'tool-error'
+    ) {
+      continue
+    }
+
+    const toolName =
+      typeof typedPart.toolName === 'string' ? typedPart.toolName : 'unknown'
+    const inputValue = typedPart.input ?? typedPart.args ?? null
+    const outputValue = typedPart.output ?? typedPart.result ?? null
+
+    const inputSerialized = safeSerialize(inputValue)
+    const outputSerialized = safeSerialize(outputValue)
+
+    diagnostics.push({
+      toolName,
+      inputBytes: safeSize(inputValue),
+      outputBytes: safeSize(outputValue),
+      inputHash: inputSerialized ? hashSnippet(inputSerialized) : null,
+      outputHash: outputSerialized ? hashSnippet(outputSerialized) : null,
+    })
+  }
+
+  return diagnostics
+}
+
+function extractSafeHeaders(headers: unknown): Record<string, unknown> | null {
+  const headerRecord = asObject(headers)
+  if (!headerRecord) return null
+
+  const allowedKeys = new Set([
+    'x-request-id',
+    'x-ms-request-id',
+    'x-ms-client-request-id',
+    'x-trace-id',
+    'traceparent',
+    'tracestate',
+    'apim-request-id',
+  ])
+
+  const safeHeaders: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(headerRecord)) {
+    const normalized = key.toLowerCase()
+    if (allowedKeys.has(normalized)) {
+      safeHeaders[key] = value
+    }
+  }
+
+  return Object.keys(safeHeaders).length > 0 ? safeHeaders : null
+}
+
+type SerializedStreamError = {
+  name: string | null
+  message: string | null
+  type: string | null
+  code: string | null
+  statusCode: number | null
+  sequenceNumber: number | null
+  providerType: string | null
+  providerCode: string | null
+  providerMessage: string | null
+  providerParam: string | null
+  safeHeaders: Record<string, unknown> | null
+  raw: string | null
+  messageHash: string | null
+  providerMessageHash: string | null
+}
+
+function serializeStreamError(error: unknown): SerializedStreamError {
+  const root = asObject(error)
+  const nestedError = asObject(root?.error)
+  const providerError = asObject(nestedError?.error)
+
+  const message =
+    (typeof root?.message === 'string' && root.message) ||
+    (typeof nestedError?.message === 'string' && nestedError.message) ||
+    (typeof providerError?.message === 'string' && providerError.message) ||
+    null
+
+  const statusCode =
+    (typeof root?.statusCode === 'number' && root.statusCode) ||
+    (typeof nestedError?.statusCode === 'number' && nestedError.statusCode) ||
+    null
+
+  const sequenceNumber =
+    (typeof nestedError?.sequence_number === 'number' &&
+      nestedError.sequence_number) ||
+    (typeof root?.sequence_number === 'number' && root.sequence_number) ||
+    null
+
+  const raw =
+    typeof error === 'string'
+      ? truncateString(error)
+      : root
+        ? truncateString(
+            `error object keys: ${Object.keys(root).join(', ') || '(none)'}`
+          )
+        : error instanceof Error
+          ? truncateString(`${error.name}: ${error.message}`)
+          : null
+
+  return {
+    name:
+      (typeof root?.name === 'string' && root.name) ||
+      (error instanceof Error ? error.name : null),
+    message,
+    type:
+      (typeof root?.type === 'string' && root.type) ||
+      (typeof nestedError?.type === 'string' && nestedError.type) ||
+      null,
+    code:
+      (typeof root?.code === 'string' && root.code) ||
+      (typeof nestedError?.code === 'string' && nestedError.code) ||
+      null,
+    statusCode,
+    sequenceNumber,
+    providerType:
+      (typeof providerError?.type === 'string' && providerError.type) || null,
+    providerCode:
+      (typeof providerError?.code === 'string' && providerError.code) || null,
+    providerMessage:
+      (typeof providerError?.message === 'string' && providerError.message) ||
+      null,
+    providerParam:
+      (typeof providerError?.param === 'string' && providerError.param) || null,
+    safeHeaders:
+      extractSafeHeaders(providerError?.headers) ||
+      extractSafeHeaders(nestedError?.headers) ||
+      extractSafeHeaders(root?.headers),
+    raw,
+    messageHash: message ? hashSnippet(message) : null,
+    providerMessageHash:
+      typeof providerError?.message === 'string'
+        ? hashSnippet(providerError.message)
+        : null,
+  }
+}
+
+type StreamErrorClassification =
+  | 'model_error'
+  | 'rate_limit_or_quota'
+  | 'auth_or_permission'
+  | 'content_filter_or_policy'
+  | 'unknown'
+
+function classifyStreamError(serializedError: SerializedStreamError): {
+  classification: StreamErrorClassification
+  retryable: boolean
+  suggestedAction: string
+} {
+  const code = (
+    serializedError.providerCode ||
+    serializedError.code ||
+    ''
+  ).toLowerCase()
+  const type = (
+    serializedError.providerType ||
+    serializedError.type ||
+    ''
+  ).toLowerCase()
+  const message = (
+    serializedError.providerMessage ||
+    serializedError.message ||
+    ''
+  ).toLowerCase()
+
+  if (type === 'model_error') {
+    return {
+      classification: 'model_error',
+      retryable: true,
+      suggestedAction:
+        'Check prompt/tool output structure, retry with reduced complexity, and compare with another model.',
+    }
+  }
+
+  if (
+    serializedError.statusCode === 429 ||
+    code.includes('rate') ||
+    code.includes('quota') ||
+    message.includes('rate limit') ||
+    message.includes('quota')
+  ) {
+    return {
+      classification: 'rate_limit_or_quota',
+      retryable: true,
+      suggestedAction:
+        'Retry with backoff and check deployment capacity/quota settings.',
+    }
+  }
+
+  if (
+    serializedError.statusCode === 401 ||
+    serializedError.statusCode === 403 ||
+    code.includes('unauthorized') ||
+    code.includes('forbidden') ||
+    message.includes('permission') ||
+    message.includes('unauthorized')
+  ) {
+    return {
+      classification: 'auth_or_permission',
+      retryable: false,
+      suggestedAction:
+        'Verify Azure credentials, deployment access, and endpoint/resource configuration.',
+    }
+  }
+
+  if (
+    type.includes('content') ||
+    type.includes('policy') ||
+    code.includes('content_filter') ||
+    code.includes('policy') ||
+    message.includes('content filter') ||
+    message.includes('policy')
+  ) {
+    return {
+      classification: 'content_filter_or_policy',
+      retryable: false,
+      suggestedAction:
+        'Review prompt/tool outputs for policy triggers and adjust instructions accordingly.',
+    }
+  }
+
+  return {
+    classification: 'unknown',
+    retryable: true,
+    suggestedAction:
+      'Check serialized provider error details and retry while monitoring stream events.',
+  }
 }
 
 const normalizeReasoningContent = (
@@ -164,6 +505,8 @@ export async function POST(
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
   const { chatbotId } = await params
+  const requestId = randomUUID()
+  const requestStartedAtMs = Date.now()
   const participantResult = await getParticipantId(req)
   if ('response' in participantResult) {
     return participantResult.response
@@ -201,7 +544,7 @@ export async function POST(
       )
     }
   } catch (error) {
-    console.error('Error checking disclaimer status:', error)
+    console.error('Error checking disclaimer status:', { requestId, error })
     return NextResponse.json(
       { error: 'Error checking disclaimer status' },
       { status: 500 }
@@ -234,7 +577,7 @@ export async function POST(
   try {
     parsed = bodySchema.parse(await req.json())
   } catch (e) {
-    console.error('Invalid request body:', e)
+    console.error('Invalid request body:', { requestId, error: e })
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
   const {
@@ -245,6 +588,22 @@ export async function POST(
     parentId,
     assistantMessageId,
   } = parsed
+
+  const userPrompt = messages
+    .filter((message) => message.role === 'user')
+    .map((message) => message.content)
+    .join('\n')
+
+  logChatDev('request.received', {
+    requestId,
+    chatbotId,
+    participantId,
+    threadId,
+    assistantMessageId,
+    selectedModel: parsed.selectedModel,
+    selectedMode,
+    messageCount: messages.length,
+  })
 
   let selectedModel = parsed.selectedModel
 
@@ -309,7 +668,7 @@ export async function POST(
           })) || []
     }
   } catch (error) {
-    console.error('Failed to fetch chatbot configuration:', error)
+    console.error('Failed to fetch chatbot configuration:', { requestId, error })
   }
 
   // create a new thread if none exists
@@ -322,7 +681,7 @@ export async function POST(
       )
       currentThreadId = newThread.id
     } catch (error) {
-      console.error('Failed to create thread:', error)
+      console.error('Failed to create thread:', { requestId, error })
     }
   }
 
@@ -409,6 +768,37 @@ export async function POST(
       ? appliedReasoningEffort
       : undefined
 
+  const azureModelSelection = getAzureModel(
+    chatbot,
+    selectedModelConfig.deploymentId
+  )
+  const logEvent = (
+    event: string,
+    context: Record<string, unknown>,
+    level: 'info' | 'error' = 'info'
+  ) => logChatDev(event, { requestId, ...context }, level)
+
+  logEvent('request.context', {
+    chatbotId,
+    participantId,
+    threadId: currentThreadId,
+    assistantMessageId,
+    selectedModel,
+    resolvedModelId: selectedModelConfig.id,
+    deploymentId: selectedModelConfig.deploymentId,
+    selectedMode,
+    reasoningEffort: appliedReasoningEffort,
+    maxOutputTokens: maxOutputTokens ?? null,
+    toolCount: Object.keys(mcpTools || {}).length,
+    toolNames: Object.keys(mcpTools || {}),
+    azure: azureModelSelection.debug,
+    systemPromptLength: systemPrompt.length,
+    systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
+    userPromptLengthTotal: userPrompt.length,
+    userPromptHash: userPrompt ? hashSnippet(userPrompt) : null,
+    elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
+  })
+
   const owningThread = currentThreadId
     ? await prisma.chatThread.findFirst({
         where: {
@@ -419,6 +809,11 @@ export async function POST(
         select: { id: true },
       })
     : null
+
+  logEvent('thread.resolved', {
+    hasOwningThread: Boolean(owningThread),
+    elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
+  })
 
   // save user message to database (after effective model selection)
   if (
@@ -447,6 +842,8 @@ export async function POST(
           console.warn(
             'Skipping user message update: message exists outside current thread',
             {
+              requestId,
+              phase: 'persist.userMessage',
               messageId: userMessageId,
               threadId: currentThreadId,
             }
@@ -471,21 +868,49 @@ export async function POST(
         data: { updatedAt: new Date() },
       })
     } catch (error) {
-      console.error('Failed to save user message:', error)
+      console.error('Failed to save user message:', {
+        requestId,
+        phase: 'persist.userMessage',
+        error,
+      })
     }
   } else if (currentThreadId && !owningThread && userMessageId) {
     console.warn('Skipping user message save: thread ownership mismatch', {
+      requestId,
+      phase: 'persist.userMessage',
       messageId: userMessageId,
       threadId: currentThreadId,
     })
   }
 
+  const streamStartedAtMs = Date.now()
+  let hasLoggedFirstChunk = false
+  let firstError: SerializedStreamError | null = null
+  let sawAbort = false
+  let sawFinish = false
+  let finalEmitted = false
+
+  const emitFinalOnce = (
+    status: 'success' | 'error' | 'aborted',
+    payload: Record<string, unknown>
+  ) => {
+    if (finalEmitted) return
+    finalEmitted = true
+    logEvent('stream.final', {
+      status,
+      sawFinish,
+      sawAbort,
+      hadError: Boolean(firstError),
+      ...payload,
+    })
+  }
+
+  logEvent('stream.start', {
+    elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
+  })
+
   const result = streamText({
-    model: getAzureModel(
-      chatbot,
-      selectedModelConfig.deploymentId,
-      selectedModelConfig.apiVersion
-    ),
+    model: azureModelSelection.model,
     maxOutputTokens,
     providerOptions: providerReasoningEffort
       ? {
@@ -503,6 +928,14 @@ export async function POST(
     abortSignal: req.signal,
 
     onChunk: ({ chunk }) => {
+      if (!hasLoggedFirstChunk) {
+        hasLoggedFirstChunk = true
+        logEvent('stream.chunk.first', {
+          firstChunkType: chunk.type,
+          elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+        })
+      }
+
       if (chunk.type === 'text-delta' && chunk.text) {
         partialContent += chunk.text
       }
@@ -512,6 +945,7 @@ export async function POST(
     },
 
     onFinish: async (result) => {
+      sawFinish = true
       const creditsUsed = result.totalUsage
         ? calcCost(
             selectedModelConfig.cost,
@@ -528,6 +962,23 @@ export async function POST(
               .join('')
         ) ?? normalizeReasoningContent(partialReasoningContent)
       assistantReasoningContent = finishedReasoningContent
+
+      logEvent('stream.finish', {
+        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+        usage: result.totalUsage
+          ? {
+              inputTokens: result.totalUsage.inputTokens || 0,
+              outputTokens: result.totalUsage.outputTokens || 0,
+              totalTokens: result.totalUsage.totalTokens || 0,
+            }
+          : null,
+        creditsUsed,
+        stepsCount: result.steps?.length ?? 0,
+        partialTextLength: partialContent.length,
+        partialReasoningLength: partialReasoningContent.length,
+        hadPriorError: Boolean(firstError),
+        hadAbort: sawAbort,
+      })
 
       // save assistant response to database
       if (
@@ -564,6 +1015,8 @@ export async function POST(
               console.warn(
                 'Skipping assistant message update: message exists outside current thread',
                 {
+                  requestId,
+                  phase: 'persist.assistantMessage',
                   messageId: assistantMessageId,
                   threadId: currentThreadId,
                 }
@@ -588,12 +1041,18 @@ export async function POST(
             data: { updatedAt: new Date() },
           })
         } catch (error) {
-          console.error('Failed to save assistant message:', error)
+          console.error('Failed to save assistant message:', {
+            requestId,
+            phase: 'persist.assistantMessage',
+            error,
+          })
         }
       } else if (currentThreadId && !owningThread) {
         console.warn(
           'Skipping assistant message save: thread ownership mismatch',
           {
+            requestId,
+            phase: 'persist.assistantMessage',
             messageId: assistantMessageId,
             threadId: currentThreadId,
           }
@@ -609,12 +1068,31 @@ export async function POST(
             creditsUsed
           )
         } catch (error) {
-          console.error('Failed to deduct credits:', error)
+          console.error('Failed to deduct credits:', {
+            requestId,
+            phase: 'credits.decrement',
+            error,
+          })
         }
+      }
+
+      if (!firstError && !sawAbort) {
+        emitFinalOnce('success', {
+          elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+          usage: result.totalUsage
+            ? {
+                inputTokens: result.totalUsage.inputTokens || 0,
+                outputTokens: result.totalUsage.outputTokens || 0,
+                totalTokens: result.totalUsage.totalTokens || 0,
+              }
+            : null,
+          stepsCount: result.steps?.length ?? 0,
+        })
       }
     },
 
     onAbort: async (steps) => {
+      sawAbort = true
       let creditsUsed: number | null = null
       if (steps && Array.isArray(steps.steps)) {
         let totalCost = 0
@@ -644,7 +1122,11 @@ export async function POST(
               creditsUsed
             )
           } catch (error) {
-            console.error('Failed to deduct credits:', error)
+            console.error('Failed to deduct credits:', {
+              requestId,
+              phase: 'credits.decrement',
+              error,
+            })
           }
         }
       }
@@ -659,6 +1141,14 @@ export async function POST(
             : ''
         ) ?? normalizeReasoningContent(partialReasoningContent)
       assistantReasoningContent = abortedReasoningContent
+
+      logEvent('stream.abort', {
+        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+        stepsCount: Array.isArray(steps?.steps) ? steps.steps.length : 0,
+        creditsUsed,
+        partialTextLength: partialContent.length,
+        partialReasoningLength: partialReasoningContent.length,
+      })
 
       // save partial message
       if (
@@ -703,6 +1193,8 @@ export async function POST(
               console.warn(
                 'Skipping assistant message update: message exists outside current thread',
                 {
+                  requestId,
+                  phase: 'persist.partialAssistantMessage',
                   messageId: assistantMessageId,
                   threadId: currentThreadId,
                 }
@@ -727,7 +1219,11 @@ export async function POST(
             data: { updatedAt: new Date() },
           })
         } catch (error) {
-          console.error('Failed to save partial message:', error)
+          console.error('Failed to save partial message:', {
+            requestId,
+            phase: 'persist.partialAssistantMessage',
+            error,
+          })
         }
       } else if (
         currentThreadId &&
@@ -737,18 +1233,74 @@ export async function POST(
         console.warn(
           'Skipping assistant message save: thread ownership mismatch',
           {
+            requestId,
+            phase: 'persist.partialAssistantMessage',
             messageId: assistantMessageId,
             threadId: currentThreadId,
           }
         )
       }
+
+      emitFinalOnce('aborted', {
+        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+        stepsCount: Array.isArray(steps?.steps) ? steps.steps.length : 0,
+      })
+    },
+
+    onStepFinish: async (step) => {
+      const diagnostics = collectStepToolDiagnostics(step)
+      logEvent('stream.step.finish', {
+        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+        finishReason: step.finishReason,
+        warningsCount: step.warnings?.length ?? 0,
+        toolCallsCount: step.toolCalls?.length ?? 0,
+        toolCallNames: (step.toolCalls ?? []).map((toolCall) => toolCall.toolName),
+        toolResultsCount: step.toolResults?.length ?? 0,
+        usage: step.usage
+          ? {
+              inputTokens: step.usage.inputTokens || 0,
+              outputTokens: step.usage.outputTokens || 0,
+              totalTokens: step.usage.totalTokens || 0,
+            }
+          : null,
+        toolDiagnostics: diagnostics,
+      })
     },
 
     onError: async (error) => {
-      // handle error
-      console.error('Error during streaming response:', error)
+      const serializedError = serializeStreamError(error)
+      firstError = firstError ?? serializedError
+      const classification = classifyStreamError(serializedError)
+
+      logEvent(
+        'stream.error',
+        {
+          elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+          ...serializedError,
+          classification: classification.classification,
+          retryable: classification.retryable,
+          suggestedAction: classification.suggestedAction,
+        },
+        'error'
+      )
+
+      console.error('Error during streaming response:', {
+        requestId,
+        error: serializedError,
+      })
+
+      emitFinalOnce('error', {
+        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+        classification: classification.classification,
+      })
     },
   })
+
+  logEvent('response.stream.created', {
+    stage: 'response-object-created',
+    elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
+  })
+
   return result.toUIMessageStreamResponse({
     sendReasoning: true,
     messageMetadata: ({ part }) => {

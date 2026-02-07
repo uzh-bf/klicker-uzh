@@ -60,7 +60,7 @@ const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     description: 'OpenAI model',
     fallback: false,
     supportsReasoning: false,
-    apiVersion: '2025-01-01-preview',
+    apiVersion: 'preview',
     cost: { input: 2.0, output: 8.0 },
   },
   {
@@ -71,7 +71,7 @@ const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     fallback: false,
     supportsReasoning: true,
     maxOutputTokens: 2048,
-    apiVersion: '2025-04-01-preview',
+    apiVersion: 'preview',
     cost: { input: 1.25, output: 10.0 },
   },
   {
@@ -81,7 +81,7 @@ const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     description: 'Small OpenAI model',
     fallback: true,
     supportsReasoning: false,
-    apiVersion: '2025-01-01-preview',
+    apiVersion: 'preview',
     cost: { input: 0.4, output: 1.6 },
   },
 ]
