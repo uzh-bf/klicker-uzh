@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.47](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.46...v3.4.0-alpha.47) (2026-02-04)
+
+
+### Enhancements
+
+* **apps/frontend-pwa:** add embedded mode for practice quiz ([#4987](https://github.com/uzh-bf/klicker-uzh/issues/4987)) ([79c8628](https://github.com/uzh-bf/klicker-uzh/commit/79c86281999bc2359743d8afa5122197aedbadc2))
+
 ## [3.4.0-alpha.46](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.45...v3.4.0-alpha.46) (2025-12-12)
 
 ## [3.4.0-alpha.45](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.44...v3.4.0-alpha.45) (2025-12-09)
