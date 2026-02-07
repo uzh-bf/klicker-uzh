@@ -4,12 +4,13 @@ import {
   InvitationEmailMode,
   InvitationEmailMode as InvitationEmailModeValue,
   normalizeEmail,
+  normalizeMatriculationNumber,
 } from '@klicker-uzh/util'
 import * as R from 'remeda'
 
 export interface InvitationResult {
   email: string
-  status: 'created' | 'auto_accepted' | 'duplicate' | 'error'
+  status: 'created' | 'auto_accepted' | 'duplicate' | 'duplicate_updated' | 'error'
   invitationId?: number
   participantId?: string
   error?: string
@@ -90,10 +91,11 @@ export async function createParticipantInvitations(
       })
 
       if (existingInvitation) {
-        if (
+        const matriculationUpdated =
           normalizedMatriculationNumber &&
           existingInvitation.matriculationNumber !== normalizedMatriculationNumber
-        ) {
+
+        if (matriculationUpdated) {
           await prisma.participantInvitation.update({
             where: { id: existingInvitation.id },
             data: {
@@ -104,7 +106,7 @@ export async function createParticipantInvitations(
 
         results.push({
           email: normalizedEmail,
-          status: 'duplicate',
+          status: matriculationUpdated ? 'duplicate_updated' : 'duplicate',
           invitationId: existingInvitation.id,
         })
         continue
@@ -176,7 +178,7 @@ export async function createParticipantInvitations(
     totalProcessed: invitations.length,
     created: statusCounts.created || 0,
     autoAccepted: statusCounts.auto_accepted || 0,
-    duplicates: statusCounts.duplicate || 0,
+    duplicates: (statusCounts.duplicate || 0) + (statusCounts.duplicate_updated || 0),
     errors: statusCounts.error || 0,
     results,
   }
@@ -227,17 +229,4 @@ async function autoAcceptInvitation(
   })
 
   return result
-}
-
-function normalizeMatriculationNumber(
-  matriculationNumber?: string | null
-): string | null {
-  if (typeof matriculationNumber !== 'string') {
-    return null
-  }
-
-  const trimmedMatriculationNumber = matriculationNumber.trim()
-  return trimmedMatriculationNumber.length > 0
-    ? trimmedMatriculationNumber
-    : null
 }

@@ -2,7 +2,10 @@
 
 import { prisma } from '@klicker-uzh/prisma'
 import { InvitationStatus } from '@klicker-uzh/prisma/client'
-import { InvitationEmailMode } from '@klicker-uzh/util'
+import {
+  InvitationEmailMode,
+  normalizeMatriculationNumber,
+} from '@klicker-uzh/util'
 import { parse } from 'csv-parse/sync'
 import { readFileSync } from 'fs'
 import * as R from 'remeda'
@@ -161,12 +164,12 @@ async function run() {
 
         for (const invitation of invitations) {
           const normalizedEmail = invitation.email.toLowerCase()
-          const matriculationNumber = normalizeMatriculationNumber(
-            invitation.matriculationNumber
-          )
 
-          if (matriculationNumber) {
-            latestMatriculationByEmail.set(normalizedEmail, matriculationNumber)
+          if (invitation.matriculationNumber) {
+            latestMatriculationByEmail.set(
+              normalizedEmail,
+              invitation.matriculationNumber
+            )
           }
         }
 
@@ -425,19 +428,6 @@ async function run() {
   }
 }
 
-function normalizeMatriculationNumber(
-  matriculationNumber?: string | null
-): string | null {
-  if (typeof matriculationNumber !== 'string') {
-    return null
-  }
-
-  const trimmedMatriculationNumber = matriculationNumber.trim()
-  return trimmedMatriculationNumber.length > 0
-    ? trimmedMatriculationNumber
-    : null
-}
-
 async function updateExistingInvitationMatriculationNumbers(
   existingInvitations: ExistingInvitationInfo[],
   latestMatriculationByEmail: Map<string, string>,
@@ -492,6 +482,7 @@ function summarizeInvitationResults(results: InvitationResult[]) {
           summary.autoAccepted += 1
           break
         case 'duplicate':
+        case 'duplicate_updated':
           summary.duplicates += 1
           break
         case 'error':
@@ -518,9 +509,7 @@ async function resolveParticipantWithoutInvitation(
   dryRun: boolean
 ): Promise<InvitationResult | null> {
   const normalizedEmail = invitation.email.toLowerCase()
-  const matriculationNumber = normalizeMatriculationNumber(
-    invitation.matriculationNumber
-  )
+  const matriculationNumber = invitation.matriculationNumber ?? null
 
   const participantAccount = await prisma.participantAccount.findFirst({
     where: {
