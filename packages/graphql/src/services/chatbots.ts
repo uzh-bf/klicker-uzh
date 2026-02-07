@@ -30,7 +30,10 @@ const chatModelSchema = z.object({
 const chatModelRegistrySchema = z.array(chatModelSchema).min(1)
 
 type RawChatModelConfig = z.infer<typeof chatModelSchema>
-type ChatModelCapability = Omit<RawChatModelConfig, 'supportedReasoningEfforts'> & {
+type ChatModelCapability = Omit<
+  RawChatModelConfig,
+  'supportedReasoningEfforts'
+> & {
   supportedReasoningEfforts: ReasoningEffort[]
 }
 type ChatbotReasoningConfigEntry = {
@@ -107,7 +110,9 @@ const normalizeReasoningEffortOrder = (efforts: readonly ReasoningEffort[]) => {
   return REASONING_EFFORT_OPTIONS.filter((effort) => effortSet.has(effort))
 }
 
-function getDefaultReasoningEffortsForModel(modelId: string): ReasoningEffort[] {
+function getDefaultReasoningEffortsForModel(
+  modelId: string
+): ReasoningEffort[] {
   const normalizedId = modelId.toLowerCase()
   if (normalizedId.startsWith('gpt-5.1')) {
     return [...ALL_REASONING_EFFORTS]
@@ -378,9 +383,10 @@ type UpdateChatbotModelSettingsArgs = {
   chatbotId: string
   modelSelection: boolean
   allowedModelIds: string[]
-  allowedReasoningEffortsByModel?:
-    | Array<{ modelId: string; efforts: ReasoningEffort[] }>
-    | null
+  allowedReasoningEffortsByModel?: Array<{
+    modelId: string
+    efforts: ReasoningEffort[]
+  }> | null
 }
 
 export async function updateChatbotModelSettings(
@@ -422,9 +428,7 @@ export async function updateChatbotModelSettings(
     (modelId) => !modelById.has(modelId)
   )
   if (unknownAllowedModelIds.length > 0) {
-    throw new Error(
-      `Unknown model id(s): ${unknownAllowedModelIds.join(', ')}`
-    )
+    throw new Error(`Unknown model id(s): ${unknownAllowedModelIds.join(', ')}`)
   }
 
   const normalizedReasoningConfigEntries =

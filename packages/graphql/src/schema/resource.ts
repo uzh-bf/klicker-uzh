@@ -143,8 +143,9 @@ export interface IChatModelCapability {
   >
 }
 
-export const ChatModelCapabilityRef =
-  builder.objectRef<IChatModelCapability>('ChatModelCapability')
+export const ChatModelCapabilityRef = builder.objectRef<IChatModelCapability>(
+  'ChatModelCapability'
+)
 export const ChatModelCapability = ChatModelCapabilityRef.implement({
   fields: (t) => ({
     id: t.exposeString('id'),

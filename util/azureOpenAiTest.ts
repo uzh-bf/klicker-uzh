@@ -336,7 +336,8 @@ function resolveTargets(
 
   const matchedModel = registry.find(
     (entry) =>
-      entry.deploymentId === options.deployment || entry.id === options.deployment
+      entry.deploymentId === options.deployment ||
+      entry.id === options.deployment
   )
   const apiVersion = options.apiVersion || matchedModel?.apiVersion
   if (!apiVersion) {
@@ -725,7 +726,9 @@ function printTable(results: ProbeResult[]) {
   console.log(headerLine)
   console.log(separatorLine)
   for (const row of rows) {
-    console.log(row.map((value, index) => pad(value, widths[index])).join(' | '))
+    console.log(
+      row.map((value, index) => pad(value, widths[index])).join(' | ')
+    )
   }
 }
 
@@ -779,7 +782,10 @@ function buildRecommendations(results: ProbeResult[]): string[] {
       )
     }
 
-    if (primaryResponses.statusCode === 401 || primaryResponses.statusCode === 403) {
+    if (
+      primaryResponses.statusCode === 401 ||
+      primaryResponses.statusCode === 403
+    ) {
       recommendations.push(
         `[${modelId}] authorization failure. Verify AZURE_API_KEY / AZURE_OPENAI_API_KEY and deployment access.`
       )
@@ -881,7 +887,9 @@ async function run() {
     }
   }
 
-  const hasRequiredFailure = results.some((result) => result.required && !result.ok)
+  const hasRequiredFailure = results.some(
+    (result) => result.required && !result.ok
+  )
   if (hasRequiredFailure) {
     process.exit(1)
   }

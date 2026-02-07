@@ -10,7 +10,13 @@ import {
   UpdateChatbotModelSettingsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Badge, Button, H3, Switch, UserNotification } from '@uzh-bf/design-system'
+import {
+  Badge,
+  Button,
+  H3,
+  Switch,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -558,7 +564,9 @@ function ChatbotDetails({
                   type="checkbox"
                   className="h-4 w-4"
                   checked={useAllModels}
-                  onChange={(event) => handleAllModelsToggle(event.target.checked)}
+                  onChange={(event) =>
+                    handleAllModelsToggle(event.target.checked)
+                  }
                 />
                 {t('manage.resources.allowedModelsAll')}
               </label>
@@ -585,7 +593,10 @@ function ChatbotDetails({
                         checked={checked}
                         disabled={useAllModels}
                         onChange={(event) =>
-                          handleAllowedModelToggle(model.id, event.target.checked)
+                          handleAllowedModelToggle(
+                            model.id,
+                            event.target.checked
+                          )
                         }
                       />
                       <span className="flex flex-col">
@@ -612,7 +623,8 @@ function ChatbotDetails({
                       model.supportedReasoningEfforts as ReasoningEffort[]
                     )
                     const configuredEfforts = normalizeReasoningEfforts(
-                      (reasoningConfig[model.id] ?? supportedEfforts) as ReasoningEffort[]
+                      (reasoningConfig[model.id] ??
+                        supportedEfforts) as ReasoningEffort[]
                     )
                     const isFixedReasoning = supportedEfforts.length <= 1
 
@@ -644,7 +656,9 @@ function ChatbotDetails({
                                     checked
                                       ? 'border-blue-300 bg-blue-50 text-blue-900'
                                       : 'border-gray-300 text-gray-700',
-                                    !checked && !canToggleOff ? 'opacity-60' : ''
+                                    !checked && !canToggleOff
+                                      ? 'opacity-60'
+                                      : ''
                                   )}
                                 >
                                   <input
@@ -713,7 +727,7 @@ function ChatbotDetails({
               ? t('manage.resources.allowedModelsAll')
               : allowedModelIds.length > 0
                 ? allowedModelIds.join(', ')
-              : t('manage.resources.allowedModelsAll')}
+                : t('manage.resources.allowedModelsAll')}
           </div>
           <div>•</div>
           <div>

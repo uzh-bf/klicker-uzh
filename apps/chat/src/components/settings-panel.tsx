@@ -50,7 +50,7 @@ export function SettingsPanel() {
   return (
     <div>
       <div
-        className="flex cursor-pointer items-center gap-2 border-t p-4 hover:bg-gray-100"
+        className="flex cursor-pointer items-center gap-2 border-t px-3 py-2 hover:bg-gray-100"
         onClick={() => setOpen(!open)}
       >
         <Settings2 className="h-4 w-4" />
@@ -65,10 +65,10 @@ export function SettingsPanel() {
         </span>
       </div>
       {open && (
-        <div className="border-muted space-y-4 border-t px-4 pb-4">
+        <div className="border-muted space-y-3 border-t px-3 pb-2 pt-2">
           <div>
             {/* mode selection */}
-            <div className="space-y-2">
+            <div className="space-y-1">
               <label className="text-sm font-bold">Chat Mode</label>
               <Select
                 placeholder="Select Chat Mode"
@@ -93,7 +93,7 @@ export function SettingsPanel() {
             </div>
 
             {/* model selection */}
-            <div className="space-y-2">
+            <div className="mt-2 space-y-1">
               <label className="text-sm font-bold">AI Model</label>
               {modelSelectionEnabled ? (
                 <>
@@ -132,7 +132,7 @@ export function SettingsPanel() {
             </div>
 
             {showReasoningEffortSelector ? (
-              <div className="space-y-2">
+              <div className="mt-2 space-y-1">
                 <label className="text-sm font-bold">Reasoning Effort</label>
                 <Select
                   placeholder="Select reasoning effort"
@@ -155,9 +155,9 @@ export function SettingsPanel() {
         </div>
       )}
 
-      <div className="border-t p-4">
+      <div className="border-t px-3 py-2">
         {/* credits display */}
-        <div className="space-y-2">
+        <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4" />
             <span className="text-sm font-medium">Available Credits</span>
