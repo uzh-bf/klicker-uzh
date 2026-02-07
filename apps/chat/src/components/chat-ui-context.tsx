@@ -6,7 +6,6 @@ interface ChatUiContextValue {
   embedded: boolean
   showSidebar: boolean
   showFooter: boolean
-  showHistoryUi: boolean
   showMinimalSettings: boolean
   showMessageActions: boolean
 }
@@ -25,7 +24,6 @@ export function ChatUiProvider({
       embedded,
       showSidebar: !embedded,
       showFooter: !embedded,
-      showHistoryUi: !embedded,
       showMinimalSettings: embedded,
       showMessageActions: !embedded,
     }),

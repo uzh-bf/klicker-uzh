@@ -13,6 +13,7 @@ import {
 } from '@uzh-bf/design-system'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { RuntimeProvider } from '../app/RuntimeProvider'
 import { useChatStore } from '../stores/chatStore'
 import { AppSidebar } from './app-sidebar'
@@ -167,22 +168,44 @@ export const Assistant = ({
 
   if (participationRequired) {
     return (
-      <div className="bg-muted flex min-h-screen w-full items-center justify-center px-4">
-        <div className="bg-card w-full max-w-lg rounded-lg border p-8 text-center shadow-sm">
-          <h1 className="text-foreground text-2xl font-semibold">
+      <div
+        className={twMerge(
+          'bg-muted flex w-full items-center justify-center px-4',
+          embedded ? 'h-full p-4' : 'min-h-screen'
+        )}
+      >
+        <div
+          className={twMerge(
+            'bg-card w-full rounded-lg border text-center shadow-sm',
+            embedded ? 'max-w-sm p-4' : 'max-w-lg p-8'
+          )}
+        >
+          <h1
+            className={twMerge(
+              'text-foreground font-semibold',
+              embedded ? 'text-lg' : 'text-2xl'
+            )}
+          >
             Course Access Required
           </h1>
-          <p className="text-muted-foreground mt-4 text-base">
+          <p
+            className={twMerge(
+              'text-muted-foreground',
+              embedded ? 'mt-2 text-sm' : 'mt-4 text-base'
+            )}
+          >
             {participationMessage ??
               'You need to join the corresponding KlickerUZH course before you can use this chatbot. Please enrol in the course or contact your instructor for access.'}
           </p>
-          <Link
-            href={pwaBaseUrl}
-            className="bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 mt-8 inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-base font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-            prefetch={false}
-          >
-            Open KlickerUZH
-          </Link>
+          {!embedded && (
+            <Link
+              href={pwaBaseUrl}
+              className="bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 mt-8 inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-base font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              prefetch={false}
+            >
+              Open KlickerUZH
+            </Link>
+          )}
         </div>
       </div>
     )
@@ -191,8 +214,15 @@ export const Assistant = ({
   // Show loading state while fetching disclaimer information
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-lg">Loading chatbot...</div>
+      <div
+        className={twMerge(
+          'flex items-center justify-center',
+          embedded ? 'h-full' : 'h-screen'
+        )}
+      >
+        <div className={embedded ? 'text-sm' : 'text-lg'}>
+          Loading chatbot...
+        </div>
       </div>
     )
   }
@@ -201,25 +231,42 @@ export const Assistant = ({
   if (disclaimerStatus?.required && disclaimerStatus?.declined) {
     return (
       <>
-        <div className="flex h-screen items-center justify-center">
-          <div className="max-w-md rounded-lg bg-red-50 p-6 text-center">
-            <h2 className="mb-4 text-xl font-semibold text-red-800">
+        <div
+          className={twMerge(
+            'flex items-center justify-center',
+            embedded ? 'h-full p-4' : 'h-screen'
+          )}
+        >
+          <div
+            className={twMerge(
+              'rounded-lg bg-red-50 text-center',
+              embedded ? 'max-w-sm p-4' : 'max-w-md p-6'
+            )}
+          >
+            <h2
+              className={twMerge(
+                'font-semibold text-red-800',
+                embedded ? 'mb-2 text-base' : 'mb-4 text-xl'
+              )}
+            >
               Chatbot unavailable
             </h2>
-            <p className="text-red-700">
+            <p className={twMerge('text-red-700', embedded && 'text-sm')}>
               You declined the chatbot disclaimer. Accept the terms to continue
               using the chatbot.
             </p>
-            <button
-              onClick={() => setShowDisclaimerModal(true)}
-              className="mt-4 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
-            >
-              Show disclaimer again
-            </button>
+            {!embedded && (
+              <button
+                onClick={() => setShowDisclaimerModal(true)}
+                className="mt-4 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+              >
+                Show disclaimer again
+              </button>
+            )}
           </div>
         </div>
 
-        {disclaimer && (
+        {!embedded && disclaimer && (
           <DisclaimerModal
             disclaimer={disclaimer}
             isOpen={showDisclaimerModal}
@@ -296,9 +343,11 @@ function AssistantLayout({
   }
 
   return (
-    <div className="flex h-screen w-full flex-col">
-      <div className="flex items-center justify-between gap-4 border-b bg-gray-50 px-4 py-3">
-        <div className="text-sm font-semibold">{chatbot.name}</div>
+    <div className="flex h-full w-full flex-col">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b bg-gray-50 px-2 py-1.5 sm:gap-4 sm:px-4 sm:py-3">
+        <div className="min-w-0 truncate text-xs font-semibold sm:text-sm">
+          {chatbot.name}
+        </div>
         <EmbeddedSettings />
       </div>
       <div className="flex min-h-0 flex-1 flex-col">

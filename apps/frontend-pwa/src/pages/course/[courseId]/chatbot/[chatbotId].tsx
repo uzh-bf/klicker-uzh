@@ -1,4 +1,5 @@
 import { EnsureParticipationDocument } from '@klicker-uzh/graphql/dist/ops'
+import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -31,9 +32,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     const apolloClient = initializeApollo(undefined, ctx)
     const courseId = ctx.params.courseId as string
     const chatbotId = ctx.params.chatbotId as string
-    const embedParam = ctx.query.embed
-    const embedValue = Array.isArray(embedParam) ? embedParam[0] : embedParam
-    const embedded = embedValue === 'true' || embedValue === '1'
+    const embedded = parseEmbedParam(ctx.query.embed)
 
     const { participantToken } = await getParticipantToken({
       apolloClient,
