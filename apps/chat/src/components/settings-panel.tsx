@@ -5,7 +5,6 @@ import { type ModelID } from '../lib/config/models'
 import {
   REASONING_EFFORT_OPTIONS,
   type ReasoningEffort,
-  supportsReasoningEffort,
 } from '../lib/config/reasoning'
 import { useSettingsStore } from '../stores/settingsStore'
 
@@ -42,8 +41,11 @@ export function SettingsPanel() {
     setSelectedReasoningEffort(value as ReasoningEffort)
   }
 
+  const selectedModelOption = modelOptions.find(
+    (option) => option.id === selectedModel
+  )
   const showReasoningEffortSelector =
-    modelSelectionEnabled && supportsReasoningEffort(selectedModel)
+    modelSelectionEnabled && !!selectedModelOption?.supportsReasoning
 
   return (
     <div>

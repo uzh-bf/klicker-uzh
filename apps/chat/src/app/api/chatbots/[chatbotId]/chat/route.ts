@@ -1,4 +1,8 @@
-import { getChatbotOr404, getParticipantId } from '@/src/lib/server/apiGuards'
+import {
+  getChatbotOr404,
+  getParticipantId,
+  requireParticipation,
+} from '@/src/lib/server/apiGuards'
 import {
   getAutomaticModelId,
   getChatModelRegistry,
@@ -21,10 +25,8 @@ import {
 import { NextRequest, NextResponse } from 'next/server'
 import { DEFAULT_PROMPT } from 'src/lib/config/prompts'
 import {
-  GPT_5_1_MODEL_ID,
   REASONING_EFFORT_OPTIONS,
   type ReasoningEffort,
-  supportsReasoningEffort,
 } from 'src/lib/config/reasoning'
 import { CreditsService } from 'src/services/credits'
 import { DisclaimersService } from 'src/services/disclaimers'
@@ -174,29 +176,12 @@ export async function POST(
   }
   const { courseId } = chatbotResult.chatbot
 
-  // check participation
-  try {
-    const participation = await prisma.participation.findUnique({
-      where: {
-        courseId_participantId: {
-          courseId,
-          participantId,
-        },
-      },
-    })
-
-    if (!participation) {
-      return NextResponse.json(
-        { error: 'No valid participation found for this chatbot' },
-        { status: 403 }
-      )
-    }
-  } catch (error) {
-    console.error('Error checking participation:', error)
-    return NextResponse.json(
-      { error: 'Error checking participation' },
-      { status: 500 }
-    )
+  const participationResult = await requireParticipation(
+    participantId,
+    courseId
+  )
+  if ('response' in participationResult) {
+    return participationResult.response
   }
 
   // check disclaimer acceptance
@@ -367,6 +352,10 @@ export async function POST(
   }
 
   const modelRegistry = getChatModelRegistry()
+  const allowedIds =
+    chatbot.allowedModelIds.length > 0
+      ? new Set(chatbot.allowedModelIds as string[])
+      : null
 
   // Override model selection if modelSelection is disabled
   let userCredits: { current: number; total: number } | null = null
@@ -384,8 +373,15 @@ export async function POST(
     )
   }
 
-  const maxOutputTokens =
-    selectedModelConfig.id === GPT_5_1_MODEL_ID ? 2048 : undefined
+  // Enforce per-chatbot model allow-list
+  if (allowedIds && !allowedIds.has(selectedModelConfig.id)) {
+    return NextResponse.json(
+      { error: `Model not available for this chatbot: ${selectedModel}` },
+      { status: 400 }
+    )
+  }
+
+  const maxOutputTokens = selectedModelConfig.maxOutputTokens
 
   // Enforce fallback-only usage when the user has no credits left.
   // This prevents bypassing credit gating by manually calling the API.
@@ -406,9 +402,7 @@ export async function POST(
   }
 
   const appliedReasoningEffort: ReasoningEffort | null =
-    supportsReasoningEffort(selectedModelConfig.id)
-      ? requestedReasoningEffort
-      : null
+    selectedModelConfig.supportsReasoning ? requestedReasoningEffort : null
 
   const providerReasoningEffort =
     appliedReasoningEffort && appliedReasoningEffort !== 'none'

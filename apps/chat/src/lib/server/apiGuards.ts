@@ -82,3 +82,38 @@ export async function getChatbotOr404<TSelect extends Prisma.ChatbotSelect>(
 
   return { chatbot }
 }
+
+export async function requireParticipation(
+  participantId: string,
+  courseId: string
+): Promise<{ ok: true } | { response: NextResponse }> {
+  try {
+    const participation = await prisma.participation.findUnique({
+      where: {
+        courseId_participantId: {
+          courseId,
+          participantId,
+        },
+      },
+    })
+
+    if (!participation) {
+      return {
+        response: NextResponse.json(
+          { error: 'No valid participation found for this chatbot' },
+          { status: 403 }
+        ),
+      }
+    }
+
+    return { ok: true }
+  } catch (error) {
+    console.error('Error checking participation:', error)
+    return {
+      response: NextResponse.json(
+        { error: 'Error checking participation' },
+        { status: 500 }
+      ),
+    }
+  }
+}

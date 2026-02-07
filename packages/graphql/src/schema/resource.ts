@@ -100,6 +100,7 @@ export interface IChatbot {
   description?: string | null
   avatar?: string | null
   modelSelection: boolean
+  allowedModelIds: string[]
   creditInitialCredits: number
   creditResetPeriod: DB.CreditResetPeriod
   creditResetAmount: number
@@ -203,6 +204,7 @@ export const Chatbot = ChatbotRef.implement({
     description: t.exposeString('description', { nullable: true }),
     avatar: t.exposeString('avatar', { nullable: true }),
     modelSelection: t.exposeBoolean('modelSelection'),
+    allowedModelIds: t.exposeStringList('allowedModelIds'),
     creditInitialCredits: t.exposeInt('creditInitialCredits'),
     creditResetPeriod: t.expose('creditResetPeriod', {
       type: CreditResetPeriod,

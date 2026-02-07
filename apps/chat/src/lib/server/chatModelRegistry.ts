@@ -6,6 +6,8 @@ const chatModelSchema = z.object({
   name: z.string().min(1),
   description: z.string().default(''),
   fallback: z.boolean().default(false),
+  supportsReasoning: z.boolean().default(false),
+  maxOutputTokens: z.number().positive().optional(),
   apiVersion: z.string().min(1),
   cost: z.object({
     input: z.number().nonnegative(),
@@ -47,7 +49,7 @@ const chatModelRegistrySchema = z
 export type ChatModelConfig = z.infer<typeof chatModelSchema>
 export type PublicChatModel = Pick<
   ChatModelConfig,
-  'id' | 'name' | 'description' | 'fallback'
+  'id' | 'name' | 'description' | 'fallback' | 'supportsReasoning'
 >
 
 const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
@@ -57,6 +59,7 @@ const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     name: 'GPT-4.1',
     description: 'OpenAI model',
     fallback: false,
+    supportsReasoning: false,
     apiVersion: '2025-01-01-preview',
     cost: { input: 2.0, output: 8.0 },
   },
@@ -66,6 +69,8 @@ const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     name: 'GPT-5.1',
     description: 'OpenAI reasoning model',
     fallback: false,
+    supportsReasoning: true,
+    maxOutputTokens: 2048,
     apiVersion: '2025-04-01-preview',
     cost: { input: 1.25, output: 10.0 },
   },
@@ -75,6 +80,7 @@ const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     name: 'GPT-4.1 Mini',
     description: 'Small OpenAI model',
     fallback: true,
+    supportsReasoning: false,
     apiVersion: '2025-01-01-preview',
     cost: { input: 0.4, output: 1.6 },
   },
@@ -102,6 +108,25 @@ export function getChatModelRegistry(): ChatModelConfig[] {
     cachedRegistry = DEFAULT_MODEL_REGISTRY
     return cachedRegistry
   }
+}
+
+/**
+ * Filters the global model registry by a chatbot's allow-list and credit availability.
+ * Empty allowedModelIds means all models are available (backward-compatible default).
+ */
+export function getModelsForChatbot(
+  chatbot: { allowedModelIds: string[] },
+  credits: { current: number }
+): ChatModelConfig[] {
+  let models = getChatModelRegistry()
+  if (chatbot.allowedModelIds.length > 0) {
+    const allowed = new Set(chatbot.allowedModelIds)
+    models = models.filter((m) => allowed.has(m.id))
+  }
+  if (credits.current <= 0) {
+    models = models.filter((m) => m.fallback)
+  }
+  return models
 }
 
 export function getAutomaticModelId(credits: { current: number }): string {
