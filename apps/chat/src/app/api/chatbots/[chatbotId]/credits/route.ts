@@ -27,6 +27,7 @@ export async function GET(
   const chatbotResult = await getChatbotOr404(chatbotId, {
     courseId: true,
     allowedModelIds: true,
+    allowedReasoningEffortsByModel: true,
   })
   if ('response' in chatbotResult) {
     return chatbotResult.response
@@ -49,13 +50,23 @@ export async function GET(
     const availableModels = getModelsForChatbot(
       chatbotResult.chatbot,
       credits
-    ).map(({ id, name, description, fallback, supportsReasoning }) => ({
-      id,
-      name,
-      description,
-      fallback,
-      supportsReasoning,
-    }))
+    ).map(
+      ({
+        id,
+        name,
+        description,
+        fallback,
+        supportsReasoning,
+        supportedReasoningEfforts,
+      }) => ({
+        id,
+        name,
+        description,
+        fallback,
+        supportsReasoning,
+        allowedReasoningEfforts: supportedReasoningEfforts,
+      })
+    )
 
     return NextResponse.json({
       ...credits,

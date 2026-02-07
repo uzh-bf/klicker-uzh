@@ -10,6 +10,38 @@ export interface ModeOption {
   description: string
 }
 
+const DEFAULT_REASONING_EFFORT: ReasoningEffort = 'none'
+
+const resolveAllowedReasoningEfforts = (model?: ModelOption): ReasoningEffort[] => {
+  if (!model?.supportsReasoning) {
+    return []
+  }
+
+  return model.allowedReasoningEfforts.length > 0
+    ? model.allowedReasoningEfforts
+    : [DEFAULT_REASONING_EFFORT]
+}
+
+const resolveReasoningEffortForModel = (
+  currentEffort: ReasoningEffort,
+  model?: ModelOption
+): ReasoningEffort => {
+  const allowedReasoningEfforts = resolveAllowedReasoningEfforts(model)
+  if (allowedReasoningEfforts.length === 0) {
+    return DEFAULT_REASONING_EFFORT
+  }
+
+  if (allowedReasoningEfforts.includes(currentEffort)) {
+    return currentEffort
+  }
+
+  if (allowedReasoningEfforts.includes('medium')) {
+    return 'medium'
+  }
+
+  return allowedReasoningEfforts[0]
+}
+
 interface SettingsState {
   // Current selections
   selectedModel: ModelID
@@ -53,10 +85,33 @@ export const useSettingsStore = create<SettingsState>()(
       modelOptions: [],
 
       // actions
-      setSelectedModel: (model) => set({ selectedModel: model }),
+      setSelectedModel: (model) =>
+        set((state) => {
+          const selectedModelOption = state.modelOptions.find(
+            (option) => option.id === model
+          )
+
+          return {
+            selectedModel: model,
+            selectedReasoningEffort: resolveReasoningEffortForModel(
+              state.selectedReasoningEffort,
+              selectedModelOption
+            ),
+          }
+        }),
       setSelectedMode: (mode: string) => set({ selectedMode: mode }),
       setSelectedReasoningEffort: (effort: ReasoningEffort) =>
-        set({ selectedReasoningEffort: effort }),
+        set((state) => {
+          const selectedModelOption = state.modelOptions.find(
+            (option) => option.id === state.selectedModel
+          )
+          const resolvedEffort = resolveReasoningEffortForModel(
+            effort,
+            selectedModelOption
+          )
+
+          return { selectedReasoningEffort: resolvedEffort }
+        }),
 
       loadModeOptions: async (chatbotId: string) => {
         try {
@@ -154,10 +209,19 @@ export const useSettingsStore = create<SettingsState>()(
               }
             }
 
+            const selectedModelOption = availableModels.find(
+              (modelOption) => modelOption.id === selectedModel
+            )
+            const selectedReasoningEffort = resolveReasoningEffortForModel(
+              state.selectedReasoningEffort,
+              selectedModelOption
+            )
+
             return {
               credits: creditsData,
               modelOptions: availableModels,
               selectedModel,
+              selectedReasoningEffort,
             }
           })
         } catch (error) {

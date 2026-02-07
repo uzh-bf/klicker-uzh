@@ -1,23 +1,112 @@
+import { useMutation } from '@apollo/client'
 import { faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Chatbot, CreditResetPeriod } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ChatModelCapability,
+  Chatbot,
+  CreditResetPeriod,
+  GetChatbotsInfoDocument,
+  ReasoningEffort,
+  UpdateChatbotModelSettingsDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Badge, H3, UserNotification } from '@uzh-bf/design-system'
+import { Badge, Button, H3, Switch, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+
+type ReasoningConfigState = Record<string, ReasoningEffort[]>
+
+const REASONING_EFFORT_ORDER: ReasoningEffort[] = [
+  ReasoningEffort.None,
+  ReasoningEffort.Minimal,
+  ReasoningEffort.Low,
+  ReasoningEffort.Medium,
+  ReasoningEffort.High,
+]
+
+const normalizeReasoningEfforts = (
+  efforts: readonly ReasoningEffort[]
+): ReasoningEffort[] => {
+  const effortSet = new Set(efforts)
+  return REASONING_EFFORT_ORDER.filter((effort) => effortSet.has(effort))
+}
+
+const buildReasoningConfigState = (
+  chatbot: Chatbot,
+  modelRegistry: ChatModelCapability[]
+): ReasoningConfigState => {
+  const existingConfig = new Map(
+    (chatbot.allowedReasoningEffortsByModel ?? []).map((entry) => [
+      entry.modelId,
+      normalizeReasoningEfforts(entry.efforts as ReasoningEffort[]),
+    ])
+  )
+
+  const nextState: ReasoningConfigState = {}
+  for (const model of modelRegistry) {
+    if (!model.supportsReasoning) continue
+
+    const supportedEfforts = normalizeReasoningEfforts(
+      model.supportedReasoningEfforts as ReasoningEffort[]
+    )
+    const configuredEfforts = existingConfig.get(model.id)
+    if (configuredEfforts && configuredEfforts.length > 0) {
+      const supportedSet = new Set(supportedEfforts)
+      const intersected = configuredEfforts.filter((effort) =>
+        supportedSet.has(effort)
+      )
+      nextState[model.id] =
+        intersected.length > 0 ? intersected : supportedEfforts
+    } else {
+      nextState[model.id] = supportedEfforts
+    }
+  }
+
+  return nextState
+}
 
 function ChatbotDetails({
   chatbot,
+  modelRegistry,
   loading,
 }: {
   chatbot?: Chatbot
+  modelRegistry: ChatModelCapability[]
   loading: boolean
 }) {
   const t = useTranslations()
   const { locale } = useRouter()
+  const [updateChatbotModelSettings, { loading: isSaving }] = useMutation(
+    UpdateChatbotModelSettingsDocument
+  )
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saveSuccess, setSaveSuccess] = useState(false)
+  const [modelSelectionEnabled, setModelSelectionEnabled] = useState(false)
+  const [useAllModels, setUseAllModels] = useState(true)
+  const [allowedModelIds, setAllowedModelIds] = useState<string[]>([])
+  const [reasoningConfig, setReasoningConfig] = useState<ReasoningConfigState>(
+    {}
+  )
+
+  const reasoningModels = useMemo(
+    () => modelRegistry.filter((model) => model.supportsReasoning),
+    [modelRegistry]
+  )
+
+  useEffect(() => {
+    if (!chatbot) return
+
+    setModelSelectionEnabled(chatbot.modelSelection)
+    setUseAllModels(chatbot.allowedModelIds.length === 0)
+    setAllowedModelIds(chatbot.allowedModelIds)
+    setReasoningConfig(buildReasoningConfigState(chatbot, modelRegistry))
+    setSaveError(null)
+    setSaveSuccess(false)
+  }, [chatbot, modelRegistry])
 
   if (loading) {
     return <Loader />
@@ -74,6 +163,91 @@ function ChatbotDetails({
   const localePrefix = locale ? `/${locale}` : ''
   const buildChatbotUrl = (courseId: string) =>
     `${pwaBaseUrl}${localePrefix}/course/${encodeURIComponent(courseId)}/chatbot/${encodeURIComponent(chatbot.id)}`
+
+  const handleAllowedModelToggle = (modelId: string, checked: boolean) => {
+    setAllowedModelIds((currentAllowedModelIds) => {
+      const modelSet = new Set(currentAllowedModelIds)
+      if (checked) {
+        modelSet.add(modelId)
+      } else {
+        modelSet.delete(modelId)
+      }
+      return Array.from(modelSet)
+    })
+  }
+
+  const handleAllModelsToggle = (checked: boolean) => {
+    setUseAllModels(checked)
+    if (!checked && allowedModelIds.length === 0) {
+      setAllowedModelIds(modelRegistry.map((model) => model.id))
+    }
+  }
+
+  const handleReasoningEffortToggle = (
+    modelId: string,
+    effort: ReasoningEffort,
+    checked: boolean
+  ) => {
+    setReasoningConfig((currentConfig) => {
+      const existingEfforts = currentConfig[modelId] ?? []
+      const effortSet = new Set(existingEfforts)
+      if (checked) {
+        effortSet.add(effort)
+      } else if (effortSet.size > 1) {
+        effortSet.delete(effort)
+      }
+
+      const nextEfforts = normalizeReasoningEfforts(
+        Array.from(effortSet) as ReasoningEffort[]
+      )
+
+      return {
+        ...currentConfig,
+        [modelId]: nextEfforts,
+      }
+    })
+  }
+
+  const handleSaveModelSettings = async () => {
+    setSaveError(null)
+    setSaveSuccess(false)
+
+    const normalizedAllowedModelIds = useAllModels
+      ? []
+      : Array.from(new Set(allowedModelIds)).sort()
+    const normalizedReasoningConfig = reasoningModels.map((model) => {
+      const configuredEfforts = normalizeReasoningEfforts(
+        (reasoningConfig[model.id] ??
+          (model.supportedReasoningEfforts as ReasoningEffort[])) as ReasoningEffort[]
+      )
+
+      return {
+        modelId: model.id,
+        efforts: configuredEfforts,
+      }
+    })
+
+    try {
+      await updateChatbotModelSettings({
+        variables: {
+          chatbotId: chatbot.id,
+          modelSelection: modelSelectionEnabled,
+          allowedModelIds: normalizedAllowedModelIds,
+          allowedReasoningEffortsByModel: normalizedReasoningConfig,
+        },
+        refetchQueries: [{ query: GetChatbotsInfoDocument }],
+        awaitRefetchQueries: true,
+      })
+
+      setSaveSuccess(true)
+    } catch (error) {
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : t('manage.resources.chatbotModelSettingsSaveError')
+      )
+    }
+  }
 
   return (
     <div data-cy="chatbot-details">
@@ -356,18 +530,189 @@ function ChatbotDetails({
           </div>
         )}
 
+        <div>
+          <div className="mb-2 text-sm font-medium text-gray-700">
+            {t('manage.resources.chatbotModelSettings')}
+          </div>
+          <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-medium text-gray-700">
+                  {t('manage.resources.modelSelection')}
+                </span>
+                <Switch
+                  checked={modelSelectionEnabled}
+                  onCheckedChange={setModelSelectionEnabled}
+                />
+              </div>
+              <div className="text-xs text-gray-500">
+                {modelSelectionEnabled
+                  ? t('manage.resources.modelSelectionEnabledDescription')
+                  : t('manage.resources.modelSelectionDisabledDescription')}
+              </div>
+            </div>
+
+            <div className="space-y-2 border-t pt-4">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={useAllModels}
+                  onChange={(event) => handleAllModelsToggle(event.target.checked)}
+                />
+                {t('manage.resources.allowedModelsAll')}
+              </label>
+
+              <div className="grid gap-2 md:grid-cols-2">
+                {modelRegistry.map((model) => {
+                  const checked = useAllModels
+                    ? true
+                    : allowedModelIds.includes(model.id)
+                  return (
+                    <label
+                      key={`allowed-model-${model.id}`}
+                      className={twMerge(
+                        'flex items-start gap-2 rounded-md border px-3 py-2 text-sm',
+                        checked
+                          ? 'border-blue-300 bg-blue-50 text-blue-900'
+                          : 'border-gray-200 text-gray-700',
+                        useAllModels ? 'opacity-60' : ''
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        className="mt-1 h-4 w-4"
+                        checked={checked}
+                        disabled={useAllModels}
+                        onChange={(event) =>
+                          handleAllowedModelToggle(model.id, event.target.checked)
+                        }
+                      />
+                      <span className="flex flex-col">
+                        <span className="font-medium">{model.name}</span>
+                        <span className="text-xs text-gray-500">
+                          {model.description}
+                        </span>
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+
+            {reasoningModels.length > 0 && (
+              <div className="space-y-3 border-t pt-4">
+                <div className="text-sm font-medium text-gray-700">
+                  {t('manage.resources.reasoningEffortsByModel')}
+                </div>
+
+                <div className="space-y-3">
+                  {reasoningModels.map((model) => {
+                    const supportedEfforts = normalizeReasoningEfforts(
+                      model.supportedReasoningEfforts as ReasoningEffort[]
+                    )
+                    const configuredEfforts = normalizeReasoningEfforts(
+                      (reasoningConfig[model.id] ?? supportedEfforts) as ReasoningEffort[]
+                    )
+                    const isFixedReasoning = supportedEfforts.length <= 1
+
+                    return (
+                      <div
+                        key={`reasoning-model-${model.id}`}
+                        className="rounded-md border border-gray-200 bg-gray-50 p-3"
+                      >
+                        <div className="mb-2 text-sm font-semibold text-gray-800">
+                          {model.name}
+                        </div>
+
+                        {isFixedReasoning ? (
+                          <div className="text-xs text-gray-600">
+                            {t('manage.resources.singleReasoningEffortFixed', {
+                              effort: supportedEfforts[0],
+                            })}
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            {supportedEfforts.map((effort) => {
+                              const checked = configuredEfforts.includes(effort)
+                              const canToggleOff = configuredEfforts.length > 1
+                              return (
+                                <label
+                                  key={`reasoning-effort-${model.id}-${effort}`}
+                                  className={twMerge(
+                                    'flex items-center gap-2 rounded-full border px-3 py-1 text-xs',
+                                    checked
+                                      ? 'border-blue-300 bg-blue-50 text-blue-900'
+                                      : 'border-gray-300 text-gray-700',
+                                    !checked && !canToggleOff ? 'opacity-60' : ''
+                                  )}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    className="h-3.5 w-3.5"
+                                    checked={checked}
+                                    onChange={(event) =>
+                                      handleReasoningEffortToggle(
+                                        model.id,
+                                        effort,
+                                        event.target.checked
+                                      )
+                                    }
+                                  />
+                                  <span>{effort}</span>
+                                </label>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 border-t pt-4">
+              <Button
+                onClick={handleSaveModelSettings}
+                disabled={isSaving}
+                data={{ cy: 'chatbot-model-settings-save' }}
+              >
+                <Button.Label>
+                  {isSaving
+                    ? t('manage.resources.chatbotModelSettingsSaving')
+                    : t('manage.resources.chatbotModelSettingsSave')}
+                </Button.Label>
+              </Button>
+              {saveSuccess && (
+                <span className="text-xs text-green-700">
+                  {t('manage.resources.chatbotModelSettingsSaveSuccess')}
+                </span>
+              )}
+            </div>
+
+            {saveError && (
+              <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+                {saveError}
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="mt-8 flex flex-wrap gap-4 border-t pt-4 text-xs text-gray-500">
           <div>
             {t('manage.resources.modelSelection')}:{' '}
-            {chatbot.modelSelection
+            {modelSelectionEnabled
               ? t('manage.resources.modelSelectionEnabled')
               : t('manage.resources.modelSelectionDisabled')}
           </div>
           <div>•</div>
           <div>
             {t('manage.resources.allowedModels')}:{' '}
-            {chatbot.allowedModelIds && chatbot.allowedModelIds.length > 0
-              ? chatbot.allowedModelIds.join(', ')
+            {useAllModels
+              ? t('manage.resources.allowedModelsAll')
+              : allowedModelIds.length > 0
+                ? allowedModelIds.join(', ')
               : t('manage.resources.allowedModelsAll')}
           </div>
           <div>•</div>

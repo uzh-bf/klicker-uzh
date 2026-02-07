@@ -60,6 +60,8 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   const custom = message.metadata?.custom ?? {}
   const chatMode = typeof custom.chatMode === 'string' ? custom.chatMode : null
   const modelId = typeof custom.modelId === 'string' ? custom.modelId : null
+  const reasoningEffort =
+    typeof custom.reasoningEffort === 'string' ? custom.reasoningEffort : null
   const creditsUsed =
     typeof custom.creditsUsed === 'number' ? custom.creditsUsed : null
 
@@ -67,8 +69,9 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   const modelLabel = modelId
     ? modelOptions.find((option) => option.id === modelId)?.name || modelId
     : null
+  const reasoningLabel = reasoningEffort ? formatTitleCase(reasoningEffort) : null
 
-  const parts = [modeLabel ?? '—', modelLabel ?? '—']
+  const parts = [modeLabel ?? '—', modelLabel ?? '—', reasoningLabel ?? '—']
   if (includeCredits) {
     const creditsLabel =
       typeof creditsUsed === 'number'

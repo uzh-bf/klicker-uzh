@@ -2,7 +2,8 @@
 
 import { safeDecrypt } from '@klicker-uzh/util'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import { experimental_createMCPClient } from 'ai'
+import { createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
+import { createHash } from 'crypto'
 
 // Type definitions for MCP server configuration
 export interface MCPServerConfig {
@@ -25,6 +26,27 @@ export interface MCPConfigSettings {
 export interface MCPServerWithConfig {
   server: MCPServerConfig
   config: MCPConfigSettings
+}
+
+const MAX_TOOL_NAME_LENGTH = 64
+const TOOL_NAME_SUFFIX_LENGTH = 8
+
+function toSafeToolName(serverName: string, toolName: string): string {
+  const rawName = `${serverName}_${toolName}`
+  const normalized = rawName
+    .replace(/[^A-Za-z0-9_-]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+
+  const fallbackName = normalized.length > 0 ? normalized : 'tool'
+  const suffix = createHash('sha256')
+    .update(rawName)
+    .digest('hex')
+    .slice(0, TOOL_NAME_SUFFIX_LENGTH)
+  const maxBaseLength = MAX_TOOL_NAME_LENGTH - TOOL_NAME_SUFFIX_LENGTH - 1
+  const trimmedBase = fallbackName.slice(0, maxBaseLength)
+
+  return `${trimmedBase}_${suffix}`
 }
 
 /**
@@ -102,7 +124,7 @@ export async function createMCPClient(
       }
     )
 
-    const client = await experimental_createMCPClient({
+    const client = await createSDKMCPClient({
       transport: httpTransport,
     })
 
@@ -152,8 +174,8 @@ async function loadServerTools(
 
     Object.entries(rawTools).forEach(([toolName, toolDefinition]) => {
       if (isToolAllowed(toolName, config.allowedTools || [])) {
-        // Add namespace prefix to prevent conflicts
-        const namespacedName = `${server.name}.${toolName}`
+        // Keep tool names in OpenAI-compatible format and make them deterministic.
+        const namespacedName = toSafeToolName(server.name, toolName)
         filteredTools[namespacedName] = toolDefinition
       }
     })

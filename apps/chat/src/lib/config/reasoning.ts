@@ -1,5 +1,6 @@
 export const REASONING_EFFORT_OPTIONS = [
   'none',
+  'minimal',
   'low',
   'medium',
   'high',

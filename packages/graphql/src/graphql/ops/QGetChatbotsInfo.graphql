@@ -6,6 +6,10 @@ query GetChatbotsInfo {
     avatar
     modelSelection
     allowedModelIds
+    allowedReasoningEffortsByModel {
+      modelId
+      efforts
+    }
     creditInitialCredits
     creditResetPeriod
     creditResetAmount

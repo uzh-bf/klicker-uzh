@@ -1,4 +1,10 @@
 import { z } from 'zod'
+import {
+  REASONING_EFFORT_OPTIONS,
+  type ReasoningEffort,
+} from '../config/reasoning'
+
+const reasoningEffortSchema = z.enum(REASONING_EFFORT_OPTIONS)
 
 const chatModelSchema = z.object({
   id: z.string().min(1),
@@ -7,6 +13,7 @@ const chatModelSchema = z.object({
   description: z.string().default(''),
   fallback: z.boolean().default(false),
   supportsReasoning: z.boolean().default(false),
+  supportedReasoningEfforts: z.array(reasoningEffortSchema).optional(),
   maxOutputTokens: z.number().positive().optional(),
   apiVersion: z.string().min(1),
   cost: z.object({
@@ -46,11 +53,76 @@ const chatModelRegistrySchema = z
     }
   })
 
-export type ChatModelConfig = z.infer<typeof chatModelSchema>
-export type PublicChatModel = Pick<
-  ChatModelConfig,
-  'id' | 'name' | 'description' | 'fallback' | 'supportsReasoning'
->
+type RawChatModelConfig = z.infer<typeof chatModelSchema>
+export type ReasoningEffortByModel = Record<string, ReasoningEffort[]>
+export type ChatModelConfig = Omit<
+  RawChatModelConfig,
+  'supportedReasoningEfforts'
+> & {
+  supportedReasoningEfforts: ReasoningEffort[]
+}
+
+const ALL_REASONING_EFFORTS: ReasoningEffort[] = [
+  'none',
+  'minimal',
+  'low',
+  'medium',
+  'high',
+]
+const GPT5_REASONING_EFFORTS: ReasoningEffort[] = [
+  'minimal',
+  'low',
+  'medium',
+  'high',
+]
+
+function dedupeReasoningEfforts(efforts: readonly ReasoningEffort[]) {
+  const seen = new Set<ReasoningEffort>()
+  const deduped: ReasoningEffort[] = []
+  for (const effort of efforts) {
+    if (seen.has(effort)) continue
+    seen.add(effort)
+    deduped.push(effort)
+  }
+  return deduped
+}
+
+function getDefaultReasoningEffortsForModel(modelId: string): ReasoningEffort[] {
+  const normalizedId = modelId.toLowerCase()
+  if (normalizedId.startsWith('gpt-5.1')) {
+    return [...ALL_REASONING_EFFORTS]
+  }
+  if (normalizedId.startsWith('gpt-5')) {
+    return [...GPT5_REASONING_EFFORTS]
+  }
+  return [...ALL_REASONING_EFFORTS]
+}
+
+function normalizeChatModelConfig(model: RawChatModelConfig): ChatModelConfig {
+  if (!model.supportsReasoning) {
+    return {
+      ...model,
+      supportedReasoningEfforts: [],
+    }
+  }
+
+  const providedEfforts = model.supportedReasoningEfforts ?? []
+  const normalizedEfforts =
+    providedEfforts.length > 0
+      ? dedupeReasoningEfforts(providedEfforts)
+      : getDefaultReasoningEffortsForModel(model.id)
+
+  return {
+    ...model,
+    supportedReasoningEfforts: normalizedEfforts,
+  }
+}
+
+function parseRegistryValue(value: unknown): ChatModelConfig[] {
+  return chatModelRegistrySchema
+    .parse(value)
+    .map((model) => normalizeChatModelConfig(model))
+}
 
 const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
   {
@@ -60,7 +132,8 @@ const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     description: 'OpenAI model',
     fallback: false,
     supportsReasoning: false,
-    apiVersion: '2025-01-01-preview',
+    supportedReasoningEfforts: [],
+    apiVersion: 'preview',
     cost: { input: 2.0, output: 8.0 },
   },
   {
@@ -70,8 +143,9 @@ const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     description: 'OpenAI reasoning model',
     fallback: false,
     supportsReasoning: true,
+    supportedReasoningEfforts: [...ALL_REASONING_EFFORTS],
     maxOutputTokens: 2048,
-    apiVersion: '2025-04-01-preview',
+    apiVersion: 'preview',
     cost: { input: 1.25, output: 10.0 },
   },
   {
@@ -81,7 +155,8 @@ const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     description: 'Small OpenAI model',
     fallback: true,
     supportsReasoning: false,
-    apiVersion: '2025-01-01-preview',
+    supportedReasoningEfforts: [],
+    apiVersion: 'preview',
     cost: { input: 0.4, output: 1.6 },
   },
 ]
@@ -98,7 +173,7 @@ export function getChatModelRegistry(): ChatModelConfig[] {
   }
 
   try {
-    cachedRegistry = chatModelRegistrySchema.parse(JSON.parse(raw))
+    cachedRegistry = parseRegistryValue(JSON.parse(raw))
     return cachedRegistry
   } catch (error) {
     console.warn(
@@ -110,12 +185,60 @@ export function getChatModelRegistry(): ChatModelConfig[] {
   }
 }
 
+export function parseReasoningEffortByModel(
+  rawConfig: unknown
+): ReasoningEffortByModel {
+  if (!rawConfig || typeof rawConfig !== 'object' || Array.isArray(rawConfig)) {
+    return {}
+  }
+
+  const result: ReasoningEffortByModel = {}
+  for (const [modelId, rawEfforts] of Object.entries(
+    rawConfig as Record<string, unknown>
+  )) {
+    if (!Array.isArray(rawEfforts)) continue
+    const validEfforts: ReasoningEffort[] = rawEfforts.filter(
+      (effort): effort is ReasoningEffort =>
+        typeof effort === 'string' &&
+        REASONING_EFFORT_OPTIONS.includes(effort as ReasoningEffort)
+    )
+
+    const dedupedEfforts = dedupeReasoningEfforts(validEfforts)
+    if (dedupedEfforts.length === 0) continue
+
+    result[modelId] = dedupedEfforts
+  }
+
+  return result
+}
+
+export function getAllowedReasoningEffortsForModel(
+  model: Pick<ChatModelConfig, 'id' | 'supportsReasoning' | 'supportedReasoningEfforts'>,
+  rawConfig: unknown
+): ReasoningEffort[] {
+  if (!model.supportsReasoning) return []
+
+  const supportedEfforts = dedupeReasoningEfforts(model.supportedReasoningEfforts)
+  if (supportedEfforts.length === 0) return []
+
+  const configuredByModel = parseReasoningEffortByModel(rawConfig)
+  const configuredEfforts = configuredByModel[model.id]
+  if (!configuredEfforts || configuredEfforts.length === 0) {
+    return supportedEfforts
+  }
+
+  const allowedSet = new Set(configuredEfforts)
+  const intersection = supportedEfforts.filter((effort) => allowedSet.has(effort))
+
+  return intersection.length > 0 ? intersection : supportedEfforts
+}
+
 /**
  * Filters the global model registry by a chatbot's allow-list and credit availability.
  * Empty allowedModelIds means all models are available (backward-compatible default).
  */
 export function getModelsForChatbot(
-  chatbot: { allowedModelIds: string[] },
+  chatbot: { allowedModelIds: string[]; allowedReasoningEffortsByModel?: unknown },
   credits: { current: number }
 ): ChatModelConfig[] {
   let models = getChatModelRegistry()
@@ -126,7 +249,13 @@ export function getModelsForChatbot(
   if (credits.current <= 0) {
     models = models.filter((m) => m.fallback)
   }
-  return models
+  return models.map((model) => ({
+    ...model,
+    supportedReasoningEfforts: getAllowedReasoningEffortsForModel(
+      model,
+      chatbot.allowedReasoningEffortsByModel
+    ),
+  }))
 }
 
 export function getAutomaticModelId(credits: { current: number }): string {

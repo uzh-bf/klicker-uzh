@@ -96,6 +96,7 @@ import {
 import {
   AnswerCollection,
   AnswerCollectionPreviewEntry,
+  ChatModelCapability,
   Chatbot,
 } from './resource.js'
 import {
@@ -1420,6 +1421,14 @@ export const Query = builder.queryType({
         type: [Chatbot],
         resolve: async (_, __, ctx) => {
           return await ChatbotsService.getChatbotsInfo(ctx)
+        },
+      }),
+
+      getChatModelRegistry: t.withAuth(asUser).field({
+        nullable: false,
+        type: [ChatModelCapability],
+        resolve: async () => {
+          return ChatbotsService.getChatModelRegistry()
         },
       }),
 
