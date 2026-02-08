@@ -1,32 +1,3 @@
-'use server'
-
-import { prisma } from '@klicker-uzh/prisma'
-import { notFound } from 'next/navigation'
-import { Assistant } from '../../components/assistant'
-
-interface ChatPageProps {
-  params: Promise<{ chatbotId: string }>
-}
-
-export default async function ChatPage({ params }: ChatPageProps) {
-  const { chatbotId } = await params
-
-  try {
-    const chatbot = await prisma.chatbot.findUnique({
-      where: { id: chatbotId },
-      select: { id: true, name: true, avatar: true },
-    })
-
-    if (!chatbot) notFound()
-
-    return (
-      <Assistant
-        chatbot={{ ...chatbot, avatar: chatbot.avatar ?? undefined }}
-      />
-    )
-  } catch (error) {
-    // handle invalid UUID or other db errors
-    console.error('Error fetching chatbot:', error)
-    notFound()
-  }
+export default function ChatPage() {
+  return null
 }

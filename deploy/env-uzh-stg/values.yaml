@@ -150,6 +150,39 @@ auth:
 chat:
   priorityClassName: staging-workload
 
+  automaticModels:
+    primaryId: gpt-4.1
+    fallbackId: gpt-4.1-mini
+
+  modelRegistry:
+    - id: gpt-4.1
+      deploymentId: gpt-4.1
+      name: GPT-4.1
+      description: OpenAI model
+      fallback: false
+      apiVersion: 2025-01-01-preview
+      cost:
+        input: 2.0
+        output: 8.0
+    - id: gpt-5.1
+      deploymentId: gpt-5.1
+      name: GPT-5.1
+      description: OpenAI reasoning model
+      fallback: false
+      apiVersion: 2025-04-01-preview
+      cost:
+        input: 1.25
+        output: 10.0
+    - id: gpt-4.1-mini
+      deploymentId: gpt-4.1-mini
+      name: GPT-4.1 Mini
+      description: Small OpenAI model
+      fallback: true
+      apiVersion: 2025-01-01-preview
+      cost:
+        input: 0.4
+        output: 1.6
+
   replicaCount: 1
 
   autoscaling:

@@ -1,4 +1,5 @@
 import { ExtendedThreadMessageLike, Thread } from '../../stores/chatStore'
+import { type ReasoningEffort } from '../config/reasoning'
 
 export interface ApiError extends Error {
   status: number
@@ -23,6 +24,7 @@ export interface ApiThread {
  */
 export type ApiContentPart =
   | { type: 'text'; text: string }
+  | { type: 'reasoning'; text: string }
   | {
       type: 'tool-call'
       toolCallId: string
@@ -39,6 +41,11 @@ export interface ApiMessage {
   threadId: string
   role: 'user' | 'assistant'
   content: ApiContentPart[]
+  chatMode?: string | null
+  modelId?: string | null
+  reasoningEffort?: ReasoningEffort | null
+  reasoningContent?: string | null
+  creditsUsed?: number | null
   parentId?: string | null
   createdAt: string
   updatedAt: string
@@ -120,11 +127,15 @@ export const convertApiThreadToThread = (apiThread: ApiThread): Thread => ({
  */
 export const convertApiMessageToMessage = (
   apiMessage: ApiMessage
-): ExtendedThreadMessageLike => ({
-  id: apiMessage.id,
-  role: apiMessage.role,
-  content: apiMessage.content.map((item) => {
-    if (item.type === 'text') {
+): ExtendedThreadMessageLike => {
+  const normalizedReasoningContent =
+    typeof apiMessage.reasoningContent === 'string' &&
+    apiMessage.reasoningContent.trim().length > 0
+      ? apiMessage.reasoningContent
+      : null
+
+  const content: ApiContentPart[] = apiMessage.content.map((item) => {
+    if (item.type === 'text' || item.type === 'reasoning') {
       return {
         type: item.type,
         text: item.text,
@@ -140,7 +151,29 @@ export const convertApiMessageToMessage = (
     }
     // fallback for unknown types
     return item
-  }) as ExtendedThreadMessageLike['content'],
-  createdAt: new Date(apiMessage.createdAt),
-  parentId: apiMessage.parentId || undefined,
-})
+  })
+
+  const hasReasoningPart =
+    apiMessage.role === 'assistant' &&
+    content.some((item) => item.type === 'reasoning')
+
+  const contentWithLegacyFallback: ApiContentPart[] =
+    apiMessage.role === 'assistant' &&
+    !hasReasoningPart &&
+    normalizedReasoningContent
+      ? [{ type: 'reasoning', text: normalizedReasoningContent }, ...content]
+      : content
+
+  return {
+    id: apiMessage.id,
+    role: apiMessage.role,
+    content: contentWithLegacyFallback as ExtendedThreadMessageLike['content'],
+    chatMode: apiMessage.chatMode ?? null,
+    modelId: apiMessage.modelId ?? null,
+    reasoningEffort: apiMessage.reasoningEffort ?? null,
+    reasoningContent: apiMessage.reasoningContent ?? null,
+    creditsUsed: apiMessage.creditsUsed ?? null,
+    createdAt: new Date(apiMessage.createdAt),
+    parentId: apiMessage.parentId || undefined,
+  }
+}

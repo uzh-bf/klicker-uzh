@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { SharingType as SharingTypeEnum } from '@klicker-uzh/types'
 import builder from '../builder.js'
+import { type ICourseListEntry, CourseListEntryRef } from './course.js'
 import { PermissionLevel, SharingType } from './sharing.js'
 
 // ----- ANSWER COLLECTIONS -----
@@ -80,6 +81,225 @@ export const AnswerCollection = AnswerCollectionRef.implement({
     isDeletable: t.exposeBoolean('isDeletable', { nullable: true }),
     sharingType: t.expose('sharingType', { type: SharingType, nullable: true }),
 
+    createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
+    updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
+  }),
+})
+
+// #endregion
+
+// ----- CHATBOTS -----
+// #region
+export const CreditResetPeriod = builder.enumType('CreditResetPeriod', {
+  values: Object.values(DB.CreditResetPeriod),
+})
+
+export const ReasoningEffort = builder.enumType('ReasoningEffort', {
+  values: ['none', 'minimal', 'low', 'medium', 'high'] as const,
+})
+
+export interface IChatbotReasoningConfig {
+  modelId: string
+  efforts: Array<'none' | 'minimal' | 'low' | 'medium' | 'high'>
+}
+
+export type ChatbotReasoningConfigInputType = {
+  modelId: string
+  efforts: Array<'none' | 'minimal' | 'low' | 'medium' | 'high'>
+}
+
+export const ChatbotReasoningConfigInputRef =
+  builder.inputRef<ChatbotReasoningConfigInputType>(
+    'ChatbotReasoningConfigInput'
+  )
+export const ChatbotReasoningConfigInput =
+  ChatbotReasoningConfigInputRef.implement({
+    fields: (t) => ({
+      modelId: t.string({ required: true }),
+      efforts: t.field({ type: [ReasoningEffort], required: true }),
+    }),
+  })
+
+export const ChatbotReasoningConfigRef =
+  builder.objectRef<IChatbotReasoningConfig>('ChatbotReasoningConfig')
+export const ChatbotReasoningConfig = ChatbotReasoningConfigRef.implement({
+  fields: (t) => ({
+    modelId: t.exposeString('modelId'),
+    efforts: t.field({
+      type: [ReasoningEffort],
+      resolve: (config) => config.efforts,
+    }),
+  }),
+})
+
+export interface IChatModelCapability {
+  id: string
+  name: string
+  description: string
+  fallback: boolean
+  supportsReasoning: boolean
+  supportedReasoningEfforts: Array<
+    'none' | 'minimal' | 'low' | 'medium' | 'high'
+  >
+}
+
+export const ChatModelCapabilityRef = builder.objectRef<IChatModelCapability>(
+  'ChatModelCapability'
+)
+export const ChatModelCapability = ChatModelCapabilityRef.implement({
+  fields: (t) => ({
+    id: t.exposeString('id'),
+    name: t.exposeString('name'),
+    description: t.exposeString('description'),
+    fallback: t.exposeBoolean('fallback'),
+    supportsReasoning: t.exposeBoolean('supportsReasoning'),
+    supportedReasoningEfforts: t.field({
+      type: [ReasoningEffort],
+      resolve: (model) => model.supportedReasoningEfforts,
+    }),
+  }),
+})
+
+export interface IChatbot {
+  id: string
+  name: string
+  description?: string | null
+  avatar?: string | null
+  modelSelection: boolean
+  allowedModelIds: string[]
+  allowedReasoningEffortsByModel?: IChatbotReasoningConfig[]
+  creditInitialCredits: number
+  creditResetPeriod: DB.CreditResetPeriod
+  creditResetAmount: number
+  creditMaxCredits: number
+  courses?: ICourseListEntry[]
+  createdAt?: Date | null
+  updatedAt?: Date | null
+  usageSummary?: IChatbotUsageSummary | null
+  disclaimerSummary?: IChatbotDisclaimerSummary | null
+  mcpConfigurations?: IChatbotMcpConfigurationSummary[]
+}
+
+export interface IChatbotUsageSummary {
+  threadCount: number
+  messageCount: number
+  participantCount: number
+  lastActivityAt?: Date | null
+  totalCredits?: number | null
+  currentCredits?: number | null
+  totalResets?: number | null
+  lastResetAt?: Date | null
+}
+
+export const ChatbotUsageSummaryRef = builder.objectRef<IChatbotUsageSummary>(
+  'ChatbotUsageSummary'
+)
+export const ChatbotUsageSummary = ChatbotUsageSummaryRef.implement({
+  fields: (t) => ({
+    threadCount: t.exposeInt('threadCount'),
+    messageCount: t.exposeInt('messageCount'),
+    participantCount: t.exposeInt('participantCount'),
+    lastActivityAt: t.expose('lastActivityAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+    totalCredits: t.exposeFloat('totalCredits', { nullable: true }),
+    currentCredits: t.exposeFloat('currentCredits', { nullable: true }),
+    totalResets: t.exposeInt('totalResets', { nullable: true }),
+    lastResetAt: t.expose('lastResetAt', { type: 'Date', nullable: true }),
+  }),
+})
+
+export interface IChatbotDisclaimerSummary {
+  id: string
+  name: string
+  title: string
+  acceptedCount: number
+  declinedCount: number
+  pendingCount: number
+}
+
+export const ChatbotDisclaimerSummaryRef =
+  builder.objectRef<IChatbotDisclaimerSummary>('ChatbotDisclaimerSummary')
+export const ChatbotDisclaimerSummary = ChatbotDisclaimerSummaryRef.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    name: t.exposeString('name'),
+    title: t.exposeString('title'),
+    acceptedCount: t.exposeInt('acceptedCount'),
+    declinedCount: t.exposeInt('declinedCount'),
+    pendingCount: t.exposeInt('pendingCount'),
+  }),
+})
+
+export interface IChatbotMcpConfigurationSummary {
+  serverId: string
+  serverName: string
+  serverDescription?: string | null
+  serverIsActive: boolean
+  chatMode: string
+  isEnabled: boolean
+  priority: number
+  allowedToolsCount?: number | null
+}
+
+export const ChatbotMcpConfigurationSummaryRef =
+  builder.objectRef<IChatbotMcpConfigurationSummary>(
+    'ChatbotMcpConfigurationSummary'
+  )
+export const ChatbotMcpConfigurationSummary =
+  ChatbotMcpConfigurationSummaryRef.implement({
+    fields: (t) => ({
+      serverId: t.exposeID('serverId'),
+      serverName: t.exposeString('serverName'),
+      serverDescription: t.exposeString('serverDescription', {
+        nullable: true,
+      }),
+      serverIsActive: t.exposeBoolean('serverIsActive'),
+      chatMode: t.exposeString('chatMode'),
+      isEnabled: t.exposeBoolean('isEnabled'),
+      priority: t.exposeInt('priority'),
+      allowedToolsCount: t.exposeInt('allowedToolsCount', { nullable: true }),
+    }),
+  })
+
+export const ChatbotRef = builder.objectRef<IChatbot>('Chatbot')
+export const Chatbot = ChatbotRef.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    name: t.exposeString('name'),
+    description: t.exposeString('description', { nullable: true }),
+    avatar: t.exposeString('avatar', { nullable: true }),
+    modelSelection: t.exposeBoolean('modelSelection'),
+    allowedModelIds: t.exposeStringList('allowedModelIds'),
+    allowedReasoningEffortsByModel: t.field({
+      type: [ChatbotReasoningConfigRef],
+      resolve: (chatbot) => chatbot.allowedReasoningEffortsByModel ?? [],
+    }),
+    creditInitialCredits: t.exposeInt('creditInitialCredits'),
+    creditResetPeriod: t.expose('creditResetPeriod', {
+      type: CreditResetPeriod,
+    }),
+    creditResetAmount: t.exposeInt('creditResetAmount'),
+    creditMaxCredits: t.exposeInt('creditMaxCredits'),
+    courses: t.field({
+      type: [CourseListEntryRef],
+      resolve: (chatbot) => chatbot.courses ?? [],
+    }),
+    usageSummary: t.field({
+      type: ChatbotUsageSummaryRef,
+      nullable: true,
+      resolve: (chatbot) => chatbot.usageSummary ?? null,
+    }),
+    disclaimerSummary: t.field({
+      type: ChatbotDisclaimerSummaryRef,
+      nullable: true,
+      resolve: (chatbot) => chatbot.disclaimerSummary ?? null,
+    }),
+    mcpConfigurations: t.field({
+      type: [ChatbotMcpConfigurationSummaryRef],
+      resolve: (chatbot) => chatbot.mcpConfigurations ?? [],
+    }),
     createdAt: t.expose('createdAt', { type: 'Date', nullable: true }),
     updatedAt: t.expose('updatedAt', { type: 'Date', nullable: true }),
   }),

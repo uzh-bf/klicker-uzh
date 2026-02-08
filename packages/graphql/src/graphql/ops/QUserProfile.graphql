@@ -11,5 +11,6 @@ query UserProfile {
     catalystTier
     publicPreview
     privatePreview
+    numChatbots
   }
 }

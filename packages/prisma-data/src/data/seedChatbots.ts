@@ -48,7 +48,9 @@ Der Chatbot soll **kursbezogene Fragen** im Kurs "Banking and Finance I/II" bean
 
   const testChatbot = await prisma.chatbot.upsert({
     where: { id: CHATBOT_ID_TEST },
-    update: {},
+    update: {
+      modelSelection: true,
+    },
     create: {
       id: CHATBOT_ID_TEST,
       name: 'Benibot',
@@ -71,7 +73,7 @@ Der Chatbot soll **kursbezogene Fragen** im Kurs "Banking and Finance I/II" bean
       creditResetPeriod: 'WEEKLY', // Weekly reset for testing
       creditResetAmount: 50, // Add 50 credits on reset
       creditMaxCredits: 100, // Max 100 credits
-      modelSelection: false, // Automatic model selection for testing
+      modelSelection: true, // Allow model selection for testing
       disclaimerId: testDisclaimer.id,
     },
   })

@@ -2,6 +2,7 @@ import {
   ActionBarPrimitive,
   ComposerPrimitive,
   MessagePrimitive,
+  type ReasoningMessagePartProps,
   ThreadPrimitive,
   useMessage,
 } from '@assistant-ui/react'
@@ -9,13 +10,16 @@ import { faPaperPlane } from '@fortawesome/free-solid-svg-icons'
 import {
   ArrowDownIcon,
   CheckIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
   CopyIcon,
   PencilIcon,
   RefreshCwIcon,
 } from 'lucide-react'
-import type { FC } from 'react'
+import { type FC, type PropsWithChildren, useState } from 'react'
 
 import { Button } from '@uzh-bf/design-system'
+import { useSettingsStore } from '../stores/settingsStore'
 import { BranchPicker } from './branch-picker'
 import { MarkdownText } from './markdown-text'
 import { ToolFallback } from './tool-fallback'
@@ -26,6 +30,110 @@ import Image from 'next/image'
 import { twMerge } from 'tailwind-merge'
 
 type ThreadProps = { chatbotAvatar: string }
+
+const formatCredits = (value: number) => {
+  if (!Number.isFinite(value)) return '0'
+  const absValue = Math.abs(value)
+  if (absValue === 0) return '0'
+
+  const decimals =
+    absValue < 1 ? Math.max(1, -Math.floor(Math.log10(absValue))) : 0
+  const rounded = value.toFixed(decimals)
+  return rounded.replace(/0+$/, '').replace(/\.$/, '')
+}
+
+const formatTitleCase = (value: string) =>
+  value
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+
+type MessageWithCustomMetadata = {
+  metadata?: { custom?: Record<string, unknown> | null } | null
+}
+
+const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
+  includeCredits = false,
+}) => {
+  const message = useMessage() as MessageWithCustomMetadata & {
+    role: string
+    status?: { type: string }
+  }
+  const { modelOptions } = useSettingsStore()
+
+  // Hide metadata while the assistant is still streaming
+  if (message.role === 'assistant' && message.status?.type === 'running') {
+    return null
+  }
+
+  const custom = message.metadata?.custom ?? {}
+  const chatMode = typeof custom.chatMode === 'string' ? custom.chatMode : null
+  const modelId = typeof custom.modelId === 'string' ? custom.modelId : null
+  const reasoningEffort =
+    typeof custom.reasoningEffort === 'string' ? custom.reasoningEffort : null
+  const creditsUsed =
+    typeof custom.creditsUsed === 'number' ? custom.creditsUsed : null
+
+  const modeLabel = chatMode ? formatTitleCase(chatMode) : null
+  const modelLabel = modelId
+    ? modelOptions.find((option) => option.id === modelId)?.name || modelId
+    : null
+  const reasoningLabel = reasoningEffort
+    ? formatTitleCase(reasoningEffort)
+    : null
+
+  const parts = [modeLabel, modelLabel, reasoningLabel].filter(Boolean)
+  if (includeCredits && typeof creditsUsed === 'number') {
+    parts.push(`${formatCredits(creditsUsed)} credits`)
+  }
+
+  if (parts.length === 0) return null
+
+  return (
+    <div className="text-muted-foreground mt-1 text-xs">
+      {parts.join(' — ')}
+    </div>
+  )
+}
+
+const AssistantReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
+  const message = useMessage() as MessageWithCustomMetadata
+  const [isOpen, setIsOpen] = useState(false)
+
+  const custom = message.metadata?.custom ?? {}
+  const reasoningEffort =
+    typeof custom.reasoningEffort === 'string' ? custom.reasoningEffort : null
+
+  if (!text || text.trim().length === 0) {
+    return null
+  }
+
+  return (
+    <div className="mt-1">
+      <button
+        type="button"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((state) => !state)}
+        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
+      >
+        {isOpen ? (
+          <ChevronDownIcon className="size-3" />
+        ) : (
+          <ChevronRightIcon className="size-3" />
+        )}
+        Reasoning
+        {reasoningEffort ? ` (${formatTitleCase(reasoningEffort)})` : ''}
+      </button>
+
+      {isOpen ? (
+        <pre className="text-muted-foreground mt-1 whitespace-pre-wrap border-l-2 border-slate-200 pl-3 text-xs leading-5">
+          {text}
+        </pre>
+      ) : null}
+    </div>
+  )
+}
 
 export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
   return (
@@ -185,8 +293,12 @@ const UserMessage: FC = () => {
     <MessagePrimitive.Root className="grid w-full max-w-[var(--thread-max-width)] auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] gap-y-2 py-4 [&:where(>*)]:col-start-2">
       <UserActionBar />
 
-      <div className="bg-muted text-foreground col-start-2 row-start-2 max-w-[calc(var(--thread-max-width)*0.8)] break-words rounded-3xl px-5 py-2.5">
+      <div className="bg-muted text-foreground col-start-2 row-start-2 max-w-[calc(var(--thread-max-width)*0.8)] break-words rounded-2xl px-5 py-2.5">
         <MessagePrimitive.Content />
+      </div>
+
+      <div className="col-start-2 row-start-3 max-w-[calc(var(--thread-max-width)*0.8)]">
+        <MessageMetadata />
       </div>
     </MessagePrimitive.Root>
   )
@@ -218,10 +330,10 @@ const UserActionBar: FC = () => {
 
 const EditComposer: FC = () => {
   return (
-    <ComposerPrimitive.Root className="bg-muted my-4 flex w-full max-w-[var(--thread-max-width)] flex-col gap-2 rounded-xl">
-      <ComposerPrimitive.Input className="text-foreground flex h-8 w-full resize-none bg-transparent p-4 pb-0 outline-none" />
+    <ComposerPrimitive.Root className="bg-muted my-4 flex w-full max-w-[var(--thread-max-width)] flex-col gap-2 rounded-2xl">
+      <ComposerPrimitive.Input className="text-foreground flex min-h-[2.5rem] w-full resize-none bg-transparent px-4 py-3 outline-none" />
 
-      <div className="mx-3 mb-3 flex items-center justify-center gap-2 self-end">
+      <div className="mx-3 mb-2 flex items-center justify-center gap-2 self-end">
         <ComposerPrimitive.Cancel asChild>
           <Button
             style={{
@@ -253,6 +365,65 @@ const EditComposer: FC = () => {
   )
 }
 
+const groupConsecutiveByType = (
+  parts: readonly { type: string }[]
+): { groupKey: string | undefined; indices: number[] }[] => {
+  const groups: { groupKey: string | undefined; indices: number[] }[] = []
+
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i]!
+    const key =
+      part.type === 'reasoning' || part.type === 'tool-call'
+        ? part.type
+        : undefined
+
+    const prev = groups[groups.length - 1]
+    if (prev && key !== undefined && prev.groupKey === key) {
+      prev.indices.push(i)
+    } else {
+      groups.push({ groupKey: key, indices: [i] })
+    }
+  }
+
+  return groups
+}
+
+const PartGroup: FC<
+  PropsWithChildren<{ groupKey: string | undefined; indices: number[] }>
+> = ({ groupKey, indices, children }) => {
+  const [isOpen, setIsOpen] = useState(false)
+
+  if (!groupKey || indices.length <= 1) {
+    return <>{children}</>
+  }
+
+  const label =
+    groupKey === 'reasoning'
+      ? `Reasoning (${indices.length} parts)`
+      : `${indices.length} tool calls`
+
+  return (
+    <div className="mt-1">
+      <button
+        type="button"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((s) => !s)}
+        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
+      >
+        {isOpen ? (
+          <ChevronDownIcon className="size-3" />
+        ) : (
+          <ChevronRightIcon className="size-3" />
+        )}
+        {label}
+      </button>
+      {isOpen ? (
+        <div className="mt-1 border-l-2 border-slate-200 pl-3">{children}</div>
+      ) : null}
+    </div>
+  )
+}
+
 const AssistantMessage: FC<{ chatbotAvatar: string }> = ({ chatbotAvatar }) => {
   return (
     <MessagePrimitive.Root className="relative grid w-full max-w-[var(--thread-max-width)] grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] py-4">
@@ -274,9 +445,16 @@ const AssistantMessage: FC<{ chatbotAvatar: string }> = ({ chatbotAvatar }) => {
         />
       </div>
       <div className="text-foreground col-span-2 col-start-2 row-start-1 my-1.5 max-w-[calc(var(--thread-max-width)*0.8)] break-words leading-7">
-        <MessagePrimitive.Content
-          components={{ Text: MarkdownText, tools: { Fallback: ToolFallback } }}
+        <MessagePrimitive.Unstable_PartsGrouped
+          groupingFunction={groupConsecutiveByType}
+          components={{
+            Text: MarkdownText,
+            Reasoning: AssistantReasoningPart,
+            tools: { Fallback: ToolFallback },
+            Group: PartGroup,
+          }}
         />
+        <MessageMetadata includeCredits />
       </div>
 
       <AssistantActionBar />
