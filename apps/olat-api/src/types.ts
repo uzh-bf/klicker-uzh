@@ -34,6 +34,7 @@ export const activityOlatConfigurationKeys = [
   'live-quiz',
   'practice-quiz',
   'micro-learning',
+  'chatbot',
 ] as const // NOTE: add more if required
 export type ActivityOlatConfigurationKey =
   (typeof activityOlatConfigurationKeys)[number]

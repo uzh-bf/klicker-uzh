@@ -16,12 +16,18 @@ import {
   getBranches,
   getPathToLeaf,
 } from '../lib/api/utils'
+import { type ReasoningEffort } from '../lib/config/reasoning'
 
 /**
  * Extended thread message type that includes parentId for conversation branching
  */
 export type ExtendedThreadMessageLike = ThreadMessageLike & {
   parentId?: string | null
+  chatMode?: string | null
+  modelId?: string | null
+  reasoningEffort?: ReasoningEffort | null
+  reasoningContent?: string | null
+  creditsUsed?: number | null
 }
 
 export interface Thread {
@@ -43,8 +49,8 @@ interface ChatState {
   // thread management actions
   createThread: (chatbotId: string) => Promise<string>
   loadThreads: (chatbotId: string) => Promise<void>
-  switchToThread: (chatbotId: string, threadId: string) => Promise<void>
-  deleteThread: (chatbotId: string, threadId: string) => Promise<void>
+  switchToThread: (chatbotId: string, threadId: string) => Promise<boolean>
+  deleteThread: (chatbotId: string, threadId: string) => Promise<boolean>
   updateThreadTitle: (
     chatbotId: string,
     threadId: string,
@@ -202,7 +208,7 @@ export const useChatStore = create<ChatState>((set, get) => {
 
         if (existingThread && existingThread.allMessages.length > 0) {
           set({ isLoading: false })
-          return
+          return true
         }
 
         // Load all messages for the thread from the server
@@ -210,6 +216,22 @@ export const useChatStore = create<ChatState>((set, get) => {
           `/chatbots/${chatbotId}/threads/${threadId}/messages`
         )
         const allMessages = apiMessages.map(convertApiMessageToMessage)
+
+        if (allMessages.length === 0) {
+          set((state) => ({
+            threads: state.threads.map((thread) =>
+              thread.id === threadId
+                ? {
+                    ...thread,
+                    allMessages: [],
+                    messages: [],
+                  }
+                : thread
+            ),
+            isLoading: false,
+          }))
+          return true
+        }
 
         // find most recent leaf message to set as current conversation branch
         const leafMessages = findLeafMessages(allMessages)
@@ -238,10 +260,12 @@ export const useChatStore = create<ChatState>((set, get) => {
           ),
           isLoading: false,
         }))
+        return true
       } catch (error) {
         console.error('Failed to switch to thread:', error)
         handleApiError(error)
         set({ isLoading: false })
+        return false
       }
     },
 
@@ -260,9 +284,7 @@ export const useChatStore = create<ChatState>((set, get) => {
           const filteredThreads = state.threads.filter((t) => t.id !== threadId)
           const newActiveThreadId =
             state.activeThreadId === threadId
-              ? filteredThreads.length > 0
-                ? filteredThreads[0].id
-                : null
+              ? (filteredThreads[0]?.id ?? null)
               : state.activeThreadId
 
           return {
@@ -270,9 +292,11 @@ export const useChatStore = create<ChatState>((set, get) => {
             activeThreadId: newActiveThreadId,
           }
         })
+        return true
       } catch (error) {
         console.error('Failed to delete thread:', error)
         handleApiError(error)
+        return false
       }
     },
 

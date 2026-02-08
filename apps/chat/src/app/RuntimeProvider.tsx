@@ -5,10 +5,14 @@ import {
   useExternalStoreRuntime,
   type ThreadMessageLike,
 } from '@assistant-ui/react'
-import { useCallback, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useChatResponse } from 'src/hooks/useChatResponse'
 import { useThreadManagement } from 'src/hooks/useThreadManagement'
-import { useChatStore } from 'src/stores/chatStore'
+import {
+  useChatStore,
+  type ExtendedThreadMessageLike,
+} from 'src/stores/chatStore'
 import { useSettingsStore } from 'src/stores/settingsStore'
 import { useChatUi } from '../components/chat-ui-context'
 
@@ -20,10 +24,26 @@ export function RuntimeProvider({
   children: React.ReactNode
 }>) {
   const { embedded } = useChatUi()
-  const { activeThreadId, threads, setMessages, loadThreads, resetSession } =
-    useChatStore()
-  const { selectedModel, selectedMode, loadModeOptions, loadCredits } =
-    useSettingsStore()
+  const {
+    activeThreadId,
+    threads,
+    setMessages,
+    loadThreads,
+    switchToThread,
+    resetSession,
+  } = useChatStore()
+  const {
+    selectedModel,
+    selectedMode,
+    selectedReasoningEffort,
+    loadCredits,
+    loadModeOptions,
+  } = useSettingsStore()
+  const { threadId } = useParams<{ chatbotId: string; threadId?: string }>()
+  const router = useRouter()
+  const [threadsLoaded, setThreadsLoaded] = useState(false)
+  const lastSyncedThreadId = useRef<string | null>(null)
+  const syncInFlight = useRef<string | null>(null)
 
   // get current thread state
   const activeThread = threads.find((t) => t.id === activeThreadId)
@@ -34,24 +54,104 @@ export function RuntimeProvider({
   useEffect(() => {
     if (embedded) {
       resetSession()
-    } else {
-      loadThreads(chatbotId)
+      return
     }
-    loadCredits(chatbotId)
-    loadModeOptions(chatbotId)
+
+    let isMounted = true
+
+    setThreadsLoaded(false)
+    lastSyncedThreadId.current = null
+
+    void (async () => {
+      await loadThreads(chatbotId)
+      if (isMounted) setThreadsLoaded(true)
+    })()
+
+    void (async () => {
+      await loadModeOptions(chatbotId)
+      await loadCredits(chatbotId)
+    })()
+
+    return () => {
+      isMounted = false
+    }
+  }, [chatbotId, embedded, loadCredits, loadModeOptions, loadThreads, resetSession])
+
+  // sync active thread with URL params (non-embedded only)
+  useEffect(() => {
+    if (embedded) return
+    if (!threadsLoaded) return
+
+    if (!threadId) {
+      if (activeThreadId !== null) {
+        useChatStore.setState({ activeThreadId: null })
+      }
+      lastSyncedThreadId.current = null
+      syncInFlight.current = null
+      return
+    }
+
+    const existingThread = threads.find((thread) => thread.id === threadId)
+
+    if (!existingThread) {
+      router.replace(`/${chatbotId}`)
+      lastSyncedThreadId.current = null
+      syncInFlight.current = null
+      return
+    }
+
+    if (activeThreadId === threadId) {
+      if (
+        existingThread.allMessages.length > 0 ||
+        existingThread.messages.length > 0
+      ) {
+        lastSyncedThreadId.current = threadId
+        return
+      }
+
+      if (lastSyncedThreadId.current === threadId) {
+        return
+      }
+    }
+
+    if (
+      lastSyncedThreadId.current === threadId &&
+      activeThreadId === threadId
+    ) {
+      return
+    }
+
+    if (syncInFlight.current === threadId) {
+      return
+    }
+
+    syncInFlight.current = threadId
+
+    void switchToThread(chatbotId, threadId).then((success) => {
+      if (success) {
+        lastSyncedThreadId.current = threadId
+      }
+
+      if (syncInFlight.current === threadId) {
+        syncInFlight.current = null
+      }
+    })
   }, [
+    activeThreadId,
     chatbotId,
     embedded,
-    loadCredits,
-    loadModeOptions,
-    loadThreads,
-    resetSession,
+    router,
+    switchToThread,
+    threadId,
+    threads,
+    threadsLoaded,
   ])
 
   // init chat response handling hook
   const { generateChatResponse, abortControllerRef } = useChatResponse(
     selectedModel,
-    selectedMode
+    selectedMode,
+    selectedReasoningEffort
   )
 
   // init thread management hooks
@@ -61,7 +161,31 @@ export function RuntimeProvider({
   )
 
   const convertMessage = useCallback(
-    (message: ThreadMessageLike) => message,
+    (message: ExtendedThreadMessageLike): ThreadMessageLike => {
+      const {
+        chatMode,
+        modelId,
+        reasoningEffort,
+        creditsUsed,
+        metadata,
+        ...rest
+      } = message
+      const custom = {
+        ...(metadata?.custom ?? {}),
+        chatMode: chatMode ?? null,
+        modelId: modelId ?? null,
+        reasoningEffort: reasoningEffort ?? null,
+        creditsUsed: creditsUsed ?? null,
+      }
+
+      return {
+        ...rest,
+        metadata: {
+          ...metadata,
+          custom,
+        },
+      }
+    },
     []
   )
 

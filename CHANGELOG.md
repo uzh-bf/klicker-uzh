@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.48](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.47...v3.4.0-alpha.48) (2026-02-08)
+
+
+### Enhancements
+
+* configurable model registry with reasoning, chatbot management UI, and chat UX improvements ([#4989](https://github.com/uzh-bf/klicker-uzh/issues/4989)) ([5bc3460](https://github.com/uzh-bf/klicker-uzh/commit/5bc3460e749bf29536ad50999c87526f69fb3802))
+
+
+### Deployment
+
+* add model registry config for prd chatbot ([cf700fc](https://github.com/uzh-bf/klicker-uzh/commit/cf700fc02e03e4f4b657dc5bd78bb3daed3c4692))
+
 ## [3.4.0-alpha.47](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.46...v3.4.0-alpha.47) (2026-02-04)
 
 

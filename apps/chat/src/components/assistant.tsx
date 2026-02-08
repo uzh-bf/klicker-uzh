@@ -1,16 +1,7 @@
 'use client'
 
 import Footer from '@klicker-uzh/shared-components/src/Footer'
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-  SidebarInset,
-  SidebarProvider,
-} from '@uzh-bf/design-system'
+import { SidebarInset, SidebarProvider } from '@uzh-bf/design-system'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -46,19 +37,12 @@ export const Assistant = ({
   chatbot: { id: string; name: string; avatar?: string }
   embedded?: boolean
 }) => {
-  const {
-    activeThreadId,
-    threads,
-    participationRequired,
-    participationMessage,
-  } = useChatStore()
+  const { participationRequired, participationMessage } = useChatStore()
   const [disclaimer, setDisclaimer] = useState<ChatbotDisclaimer | null>(null)
   const [disclaimerStatus, setDisclaimerStatus] =
     useState<DisclaimerStatus | null>(null)
   const [showDisclaimerModal, setShowDisclaimerModal] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-
-  const activeThread = threads.find((t) => t.id === activeThreadId)
 
   // Fetch disclaimer information on component mount
   useEffect(() => {
@@ -284,7 +268,6 @@ export const Assistant = ({
         <RuntimeProvider chatbotId={chatbot.id}>
           <AssistantLayout
             chatbot={chatbot}
-            activeThreadTitle={activeThread?.title || 'New Chat'}
           />
         </RuntimeProvider>
       </ChatUiProvider>
@@ -304,10 +287,8 @@ export const Assistant = ({
 
 function AssistantLayout({
   chatbot,
-  activeThreadTitle,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
-  activeThreadTitle: string
 }) {
   const { showSidebar, showFooter } = useChatUi()
 
@@ -316,23 +297,6 @@ function AssistantLayout({
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
-          <div className="p-4">
-            <header className="flex h-10 shrink-0 items-center gap-2 rounded-md border-b bg-gray-50 px-4">
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem className="hidden sm:block">
-                    <BreadcrumbLink asChild>
-                      <div className="cursor-pointer">{chatbot.name}</div>
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="hidden sm:block" />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>{activeThreadTitle}</BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
-            </header>
-          </div>
           <div className="flex flex-1 flex-col">
             <Thread chatbotAvatar={chatbot.avatar ?? ''} />
             {showFooter && <Footer />}

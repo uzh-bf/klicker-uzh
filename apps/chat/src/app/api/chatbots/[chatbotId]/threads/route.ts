@@ -1,5 +1,4 @@
-import { prisma } from '@klicker-uzh/prisma'
-import { JWTPayload, jwtVerify } from 'jose'
+import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { NextRequest, NextResponse } from 'next/server'
 import { ThreadService } from 'src/services/threads'
 
@@ -12,71 +11,11 @@ export async function GET(
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
   const { chatbotId } = await params
-  const participantToken = req.cookies.get('participant_token')?.value
-
-  if (!participantToken) {
-    return NextResponse.json(
-      { error: 'No authentication token found' },
-      { status: 401 }
-    )
+  const authResult = await withChatbotAuth(req, chatbotId)
+  if ('response' in authResult) {
+    return authResult.response
   }
-
-  let participantData: JWTPayload
-  let participantId: string | null = null
-  try {
-    const jwtPayload = await jwtVerify(
-      participantToken,
-      new TextEncoder().encode(process.env.APP_SECRET || '')
-    )
-    participantData = jwtPayload.payload
-    participantId =
-      typeof participantData.sub === 'string' && participantData.sub
-        ? participantData.sub
-        : null
-    if (!participantId) {
-      return NextResponse.json(
-        { error: 'Invalid authentication token' },
-        { status: 401 }
-      )
-    }
-  } catch (error) {
-    console.error('JWT verification failed:', error)
-    return NextResponse.json(
-      { error: 'Invalid authentication token' },
-      { status: 401 }
-    )
-  }
-
-  // check participation
-  try {
-    const participation = await prisma.participation.findUnique({
-      where: {
-        courseId_participantId: {
-          courseId:
-            (
-              await prisma.chatbot.findUnique({
-                where: { id: chatbotId },
-                select: { courseId: true },
-              })
-            )?.courseId ?? '',
-          participantId: participantId,
-        },
-      },
-    })
-
-    if (!participation) {
-      return NextResponse.json(
-        { error: 'No valid participation found for this chatbot' },
-        { status: 403 }
-      )
-    }
-  } catch (error) {
-    console.error('Error checking participation:', error)
-    return NextResponse.json(
-      { error: 'Error checking participation' },
-      { status: 500 }
-    )
-  }
+  const { participantId } = authResult
 
   try {
     const threads = await ThreadService.getAllThreads(participantId, chatbotId)
@@ -99,71 +38,11 @@ export async function POST(
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
   const { chatbotId } = await params
-  const participantToken = req.cookies.get('participant_token')?.value
-
-  if (!participantToken) {
-    return NextResponse.json(
-      { error: 'No authentication token found' },
-      { status: 401 }
-    )
+  const authResult = await withChatbotAuth(req, chatbotId)
+  if ('response' in authResult) {
+    return authResult.response
   }
-
-  let participantData: JWTPayload
-  let participantId: string | null = null
-  try {
-    const jwtPayload = await jwtVerify(
-      participantToken,
-      new TextEncoder().encode(process.env.APP_SECRET || '')
-    )
-    participantData = jwtPayload.payload
-    participantId =
-      typeof participantData.sub === 'string' && participantData.sub
-        ? participantData.sub
-        : null
-    if (!participantId) {
-      return NextResponse.json(
-        { error: 'Invalid authentication token' },
-        { status: 401 }
-      )
-    }
-  } catch (error) {
-    console.error('JWT verification failed:', error)
-    return NextResponse.json(
-      { error: 'Invalid authentication token' },
-      { status: 401 }
-    )
-  }
-
-  // check participation
-  try {
-    const participation = await prisma.participation.findUnique({
-      where: {
-        courseId_participantId: {
-          courseId:
-            (
-              await prisma.chatbot.findUnique({
-                where: { id: chatbotId },
-                select: { courseId: true },
-              })
-            )?.courseId ?? '',
-          participantId: participantData.sub as string,
-        },
-      },
-    })
-
-    if (!participation) {
-      return NextResponse.json(
-        { error: 'No valid participation found for this chatbot' },
-        { status: 403 }
-      )
-    }
-  } catch (error) {
-    console.error('Error checking participation:', error)
-    return NextResponse.json(
-      { error: 'Error checking participation' },
-      { status: 500 }
-    )
-  }
+  const { participantId } = authResult
 
   try {
     const { title } = await req.json()
