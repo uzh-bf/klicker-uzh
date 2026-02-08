@@ -176,6 +176,16 @@ export const useSettingsStore = create<SettingsState>()(
           })
         } catch (error) {
           console.error('Error fetching mode options:', error)
+          set((state) => ({
+            modeOptions: Object.fromEntries(
+              Object.entries(DEFAULT_PROMPT).map(([key, value]) => [
+                key,
+                (value as { description: string }).description,
+              ])
+            ),
+            selectedMode: Object.keys(DEFAULT_PROMPT)[0] ?? state.selectedMode,
+            modelSelectionEnabled: false,
+          }))
         }
       },
 

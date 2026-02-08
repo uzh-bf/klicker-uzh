@@ -49,7 +49,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       onClick: () => router.push('/resources/answerCollections'),
       data: { cy: 'answer-collections' },
     },
-    ...(user?.privatePreview && (user?.numChatbots ?? 0) > 0
+    ...(user?.privatePreview
       ? [
           {
             key: 'chatbots-item',

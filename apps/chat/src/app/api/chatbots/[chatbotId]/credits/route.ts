@@ -1,8 +1,4 @@
-import {
-  getChatbotOr404,
-  getParticipantId,
-  requireParticipation,
-} from '@/src/lib/server/apiGuards'
+import { getChatbotOr404, withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
   getAutomaticModelId,
   getModelsForChatbot,
@@ -18,11 +14,11 @@ export async function GET(
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
   const { chatbotId } = await params
-  const participantResult = await getParticipantId(req)
-  if ('response' in participantResult) {
-    return participantResult.response
+  const authResult = await withChatbotAuth(req, chatbotId)
+  if ('response' in authResult) {
+    return authResult.response
   }
-  const { participantId } = participantResult
+  const { participantId } = authResult
 
   const chatbotResult = await getChatbotOr404(chatbotId, {
     courseId: true,
@@ -31,14 +27,6 @@ export async function GET(
   })
   if ('response' in chatbotResult) {
     return chatbotResult.response
-  }
-
-  const participationResult = await requireParticipation(
-    participantId,
-    chatbotResult.chatbot.courseId
-  )
-  if ('response' in participationResult) {
-    return participationResult.response
   }
 
   try {

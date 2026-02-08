@@ -1,8 +1,4 @@
-import {
-  getChatbotOr404,
-  getParticipantId,
-  requireParticipation,
-} from '@/src/lib/server/apiGuards'
+import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { NextRequest, NextResponse } from 'next/server'
 import { ThreadService } from 'src/services/threads'
 
@@ -15,24 +11,11 @@ export async function PUT(
   { params }: { params: Promise<{ chatbotId: string; threadId: string }> }
 ) {
   const { chatbotId, threadId } = await params
-  const participantResult = await getParticipantId(req)
-  if ('response' in participantResult) {
-    return participantResult.response
+  const authResult = await withChatbotAuth(req, chatbotId)
+  if ('response' in authResult) {
+    return authResult.response
   }
-  const { participantId } = participantResult
-
-  const chatbotResult = await getChatbotOr404(chatbotId, { courseId: true })
-  if ('response' in chatbotResult) {
-    return chatbotResult.response
-  }
-
-  const participationResult = await requireParticipation(
-    participantId,
-    chatbotResult.chatbot.courseId
-  )
-  if ('response' in participationResult) {
-    return participationResult.response
-  }
+  const { participantId } = authResult
 
   try {
     const { title } = await req.json()

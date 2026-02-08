@@ -1,8 +1,4 @@
-import {
-  getChatbotOr404,
-  getParticipantId,
-  requireParticipation,
-} from '@/src/lib/server/apiGuards'
+import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { prisma } from '@klicker-uzh/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -15,24 +11,11 @@ export async function GET(
   { params }: { params: Promise<{ chatbotId: string; threadId: string }> }
 ) {
   const { chatbotId, threadId } = await params
-  const participantResult = await getParticipantId(req)
-  if ('response' in participantResult) {
-    return participantResult.response
+  const authResult = await withChatbotAuth(req, chatbotId)
+  if ('response' in authResult) {
+    return authResult.response
   }
-  const { participantId } = participantResult
-
-  const chatbotResult = await getChatbotOr404(chatbotId, { courseId: true })
-  if ('response' in chatbotResult) {
-    return chatbotResult.response
-  }
-
-  const participationResult = await requireParticipation(
-    participantId,
-    chatbotResult.chatbot.courseId
-  )
-  if ('response' in participationResult) {
-    return participationResult.response
-  }
+  const { participantId } = authResult
 
   try {
     const messages = await prisma.chatMessage.findMany({
@@ -56,11 +39,12 @@ export async function GET(
         modelId: msg.modelId ?? null,
         reasoningEffort: msg.reasoningEffort ?? null,
         reasoningContent: msg.reasoningContent ?? null,
-        creditsUsed: msg.creditsUsed
-          ? (
-              msg.creditsUsed as unknown as { toNumber: () => number }
-            ).toNumber()
-          : null,
+        creditsUsed:
+          msg.creditsUsed != null
+            ? (
+                msg.creditsUsed as unknown as { toNumber: () => number }
+              ).toNumber()
+            : null,
         parentId: (msg as { parentId?: string | null }).parentId || null,
         createdAt: msg.createdAt.toISOString(),
         updatedAt: msg.updatedAt.toISOString(),

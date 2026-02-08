@@ -1,8 +1,4 @@
-import {
-  getChatbotOr404,
-  getParticipantId,
-  requireParticipation,
-} from '@/src/lib/server/apiGuards'
+import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
@@ -567,25 +563,11 @@ export async function POST(
   const { chatbotId } = await params
   const requestId = randomUUID()
   const requestStartedAtMs = Date.now()
-  const participantResult = await getParticipantId(req)
-  if ('response' in participantResult) {
-    return participantResult.response
+  const authResult = await withChatbotAuth(req, chatbotId)
+  if ('response' in authResult) {
+    return authResult.response
   }
-  const { participantId } = participantResult
-
-  const chatbotResult = await getChatbotOr404(chatbotId, { courseId: true })
-  if ('response' in chatbotResult) {
-    return chatbotResult.response
-  }
-  const { courseId } = chatbotResult.chatbot
-
-  const participationResult = await requireParticipation(
-    participantId,
-    courseId
-  )
-  if ('response' in participationResult) {
-    return participationResult.response
-  }
+  const { participantId } = authResult
 
   // check disclaimer acceptance
   try {

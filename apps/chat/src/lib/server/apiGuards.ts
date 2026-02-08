@@ -83,6 +83,35 @@ export async function getChatbotOr404<TSelect extends Prisma.ChatbotSelect>(
   return { chatbot }
 }
 
+export async function withChatbotAuth(
+  req: NextRequest,
+  chatbotId: string
+): Promise<
+  | { participantId: string; chatbot: { courseId: string } }
+  | { response: NextResponse }
+> {
+  const participantResult = await getParticipantId(req)
+  if ('response' in participantResult) {
+    return participantResult
+  }
+  const { participantId } = participantResult
+
+  const chatbotResult = await getChatbotOr404(chatbotId, { courseId: true })
+  if ('response' in chatbotResult) {
+    return chatbotResult
+  }
+
+  const participationResult = await requireParticipation(
+    participantId,
+    chatbotResult.chatbot.courseId
+  )
+  if ('response' in participationResult) {
+    return participationResult
+  }
+
+  return { participantId, chatbot: chatbotResult.chatbot }
+}
+
 export async function requireParticipation(
   participantId: string,
   courseId: string

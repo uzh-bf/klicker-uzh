@@ -192,6 +192,16 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 - Keep changes small, follow existing patterns in the touched app/package.
 - Don't add/update dependencies unless required for the task.
 - Feature branches from `v3`. Conventional commits preferred.
+- **AGENTS.md is a living document.** When you discover a non-obvious pattern, gotcha, or architectural decision during work, add it to the Codebase Learnings section below before the task is marked complete. Keep entries concise (1-2 sentences) with the file path where the pattern applies. Remove entries that become outdated (e.g., if a pattern is refactored away).
+
+## Codebase Learnings
+
+- **Prisma Decimal nullish check**: `Decimal` fields are objects, not numbers. `Decimal(0)` is truthy, so never use truthy checks for Decimal-to-number conversions -- always use `!= null`. (`packages/graphql/src/`)
+- **Chat app auth guard pattern**: Route handlers in `apps/chat/src/app/api/chatbots/` use a 3-step auth pattern: `getParticipantId` -> `getChatbotOr404` -> `requireParticipation`. The composed helper `withChatbotAuth(req, chatbotId)` in `apps/chat/src/lib/server/apiGuards.ts` handles the standard `{ courseId: true }` case. Use it for new routes; only fall back to individual guards when you need a custom chatbot `select`.
+- **Feature flag guards**: Don't combine feature flags with data-dependent counts (e.g., `privatePreview && numChatbots > 0`). The flag alone should gate visibility; combining with counts creates chicken-and-egg problems.
+- **Zustand store error handling**: Async actions in zustand stores must set fallback state in `catch` blocks, not just log. Otherwise the UI stays in loading/broken state on network errors. (`apps/chat/src/stores/`)
+- **Test environment caveats**: `pnpm run test:run` triggers Cypress which needs a running DB + seeded data. `pnpm --filter @klicker-uzh/graphql test` needs `HATCHET_CLIENT_TOKEN`. For verifying non-DB changes locally, target specific packages (e.g., `pnpm --filter @klicker-uzh/grading test`, `pnpm --filter @klicker-uzh/util test`).
+- **PR review triage**: Copilot/CodeRabbit/SonarCloud flag many false positives. Always check if guards/fallbacks already exist before "fixing" reported issues. Confirm with the actual code, not the bot summary.
 
 ## Factory Skills (AI Assistance)
 
