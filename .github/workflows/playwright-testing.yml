@@ -147,12 +147,20 @@ jobs:
         run: |
           ./util/_create_hatchet_token_cypress.sh
 
-      - name: Apply migrations and seed the database
+      - name: Apply migrations and reset database
         run: |
           cd packages/prisma
           pnpm run prisma:reset:raw -f
         env:
           DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
+
+      - name: Seed test participants for Playwright
+        run: pnpm --filter @klicker-uzh/prisma-data seed:test
+        env:
+          DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @klicker-uzh/playwright exec playwright install --with-deps chromium firefox webkit
 
       - name: Start services and wait for readiness
         run: |
@@ -180,8 +188,32 @@ jobs:
           APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
           APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
 
-      - name: Install Playwright browsers
-        run: pnpm --filter @klicker-uzh/playwright exec playwright install --with-deps chromium firefox webkit
+      - name: Verify services are still reachable
+        run: |
+          ENDPOINTS=(
+            "http://127.0.0.1:3000/healthz"
+            "http://127.0.0.1:3001"
+            "http://127.0.0.1:3002"
+            "http://127.0.0.1:3003"
+            "http://127.0.0.1:3010"
+          )
+
+          for endpoint in "${ENDPOINTS[@]}"; do
+            echo "Checking ${endpoint}..."
+            for attempt in {1..60}; do
+              if curl -fsS "${endpoint}" >/dev/null; then
+                echo "${endpoint} reachable"
+                break
+              fi
+
+              if [ "${attempt}" -eq 60 ]; then
+                echo "Endpoint not reachable after 300s: ${endpoint}"
+                exit 1
+              fi
+
+              sleep 5
+            done
+          done
 
       - name: Run Playwright tests
         run: pnpm --filter @klicker-uzh/playwright test:run
