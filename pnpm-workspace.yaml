@@ -2,6 +2,7 @@ packages:
   - apps/*
   - packages/*
   - cypress
+  - playwright
 
 ignoredBuiltDependencies:
   - '@microsoft/teamsapp-cli'
