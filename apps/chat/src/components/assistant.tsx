@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { RuntimeProvider } from '../app/RuntimeProvider'
+import { useEmbedded } from '../hooks/useEmbedded'
 import { useChatStore } from '../stores/chatStore'
 import { AppSidebar } from './app-sidebar'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
@@ -32,11 +33,10 @@ interface DisclaimerStatus {
 
 export const Assistant = ({
   chatbot,
-  embedded = false,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
-  embedded?: boolean
 }) => {
+  const embedded = useEmbedded()
   const { participationRequired, participationMessage } = useChatStore()
   const [disclaimer, setDisclaimer] = useState<ChatbotDisclaimer | null>(null)
   const [disclaimerStatus, setDisclaimerStatus] =
@@ -264,7 +264,7 @@ export const Assistant = ({
 
   return (
     <>
-      <ChatUiProvider embedded={embedded}>
+      <ChatUiProvider>
         <RuntimeProvider chatbotId={chatbot.id}>
           <AssistantLayout chatbot={chatbot} />
         </RuntimeProvider>

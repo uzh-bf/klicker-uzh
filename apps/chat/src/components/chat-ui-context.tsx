@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
+import { useEmbedded } from '../hooks/useEmbedded'
 
 interface ChatUiContextValue {
   embedded: boolean
@@ -12,13 +13,9 @@ interface ChatUiContextValue {
 
 const ChatUiContext = createContext<ChatUiContextValue | null>(null)
 
-export function ChatUiProvider({
-  embedded,
-  children,
-}: {
-  embedded: boolean
-  children: ReactNode
-}) {
+export function ChatUiProvider({ children }: { children: ReactNode }) {
+  const embedded = useEmbedded()
+
   const value = useMemo<ChatUiContextValue>(
     () => ({
       embedded,
