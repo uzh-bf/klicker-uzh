@@ -75,7 +75,14 @@ export function RuntimeProvider({
     return () => {
       isMounted = false
     }
-  }, [chatbotId, embedded, loadCredits, loadModeOptions, loadThreads, resetSession])
+  }, [
+    chatbotId,
+    embedded,
+    loadCredits,
+    loadModeOptions,
+    loadThreads,
+    resetSession,
+  ])
 
   // sync active thread with URL params (non-embedded only)
   useEffect(() => {

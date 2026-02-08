@@ -8,7 +8,10 @@ interface ChatPageProps {
   searchParams?: Promise<{ embed?: string | string[] }>
 }
 
-export default async function ChatPage({ params, searchParams }: ChatPageProps) {
+export default async function ChatPage({
+  params,
+  searchParams,
+}: ChatPageProps) {
   const { chatbotId } = await params
   const resolvedSearchParams = (await searchParams) ?? {}
   const embedded = parseEmbedParam(resolvedSearchParams.embed)

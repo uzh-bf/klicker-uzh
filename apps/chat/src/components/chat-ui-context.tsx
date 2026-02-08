@@ -30,7 +30,9 @@ export function ChatUiProvider({
     [embedded]
   )
 
-  return <ChatUiContext.Provider value={value}>{children}</ChatUiContext.Provider>
+  return (
+    <ChatUiContext.Provider value={value}>{children}</ChatUiContext.Provider>
+  )
 }
 
 export function useChatUi() {

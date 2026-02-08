@@ -266,9 +266,7 @@ export const Assistant = ({
     <>
       <ChatUiProvider embedded={embedded}>
         <RuntimeProvider chatbotId={chatbot.id}>
-          <AssistantLayout
-            chatbot={chatbot}
-          />
+          <AssistantLayout chatbot={chatbot} />
         </RuntimeProvider>
       </ChatUiProvider>
 

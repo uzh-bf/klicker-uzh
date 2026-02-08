@@ -202,6 +202,7 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 - **Zustand store error handling**: Async actions in zustand stores must set fallback state in `catch` blocks, not just log. Otherwise the UI stays in loading/broken state on network errors. (`apps/chat/src/stores/`)
 - **Test environment caveats**: `pnpm run test:run` triggers Cypress which needs a running DB + seeded data. `pnpm --filter @klicker-uzh/graphql test` needs `HATCHET_CLIENT_TOKEN`. For verifying non-DB changes locally, target specific packages (e.g., `pnpm --filter @klicker-uzh/grading test`, `pnpm --filter @klicker-uzh/util test`).
 - **PR review triage**: Copilot/CodeRabbit/SonarCloud flag many false positives. Always check if guards/fallbacks already exist before "fixing" reported issues. Confirm with the actual code, not the bot summary.
+- **agent-browser via npx**: Always use `npx agent-browser` instead of bare `agent-browser`. Global install conflicts with Volta's Node shim and fails with "Could not execute command".
 
 ## Factory Skills (AI Assistance)
 
@@ -256,16 +257,16 @@ For flaky interactions, always `agent-browser wait --load networkidle` before `f
 If you see `Resource temporarily unavailable (os error 35)` or `(no interactive elements)`, take a screenshot,
 then retry after a short wait or reload. If the screenshot shows 502, fix the environment first.
 
-If `agent-browser` is missing entirely:
+**Always run `agent-browser` via `npx`** (avoids Volta/global-install issues):
 
 ```bash
-npm i -g agent-browser
+npx agent-browser <command>
 ```
 
 If the browser executable is missing on a new machine, run once:
 
 ```bash
-agent-browser install
+npx agent-browser install
 ```
 
 For automated runs, **do not use Edu-ID** (it will not work with `agent-browser`). Always use **Delegated login**:
