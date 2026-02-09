@@ -8,8 +8,6 @@ import { initializeApollo } from '../../../../lib/apollo'
 import getParticipantToken from '../../../../lib/getParticipantToken'
 
 type ChatbotPageProps = {
-  requiresLogin?: boolean
-  loginUrl?: string
   participationError?: boolean
   courseLink?: string
 }
@@ -46,12 +44,9 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       const loginUrl = `${localePrefix}/login?redirect_to=${encodeURIComponent(currentPath)}`
 
       return {
-        props: {
-          requiresLogin: true,
-          loginUrl,
-          messages: (
-            await import(`@klicker-uzh/i18n/messages/${ctx.locale ?? 'en'}`)
-          ).default,
+        redirect: {
+          destination: loginUrl,
+          permanent: false,
         },
       }
     }
@@ -109,33 +104,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   }
 }
 
-const ChatbotPage = ({
-  requiresLogin,
-  loginUrl,
-  participationError,
-  courseLink,
-}: ChatbotPageProps) => {
+const ChatbotPage = ({ participationError, courseLink }: ChatbotPageProps) => {
   const t = useTranslations()
-
-  if (requiresLogin) {
-    return (
-      <Layout>
-        <div className="flex flex-col gap-4 md:mx-auto md:w-full md:max-w-xl md:py-10">
-          <UserNotification type="error">
-            {t('pwa.chatbot.loginRequiredMessage')}
-          </UserNotification>
-          {loginUrl && (
-            <Link
-              href={loginUrl}
-              className="bg-uzh-blue hover:bg-uzh-blue-80 rounded px-4 py-2 text-center text-white"
-            >
-              {t('pwa.chatbot.goToLogin')}
-            </Link>
-          )}
-        </div>
-      </Layout>
-    )
-  }
 
   if (participationError) {
     return (
