@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.49](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.48...v3.4.0-alpha.49) (2026-02-09)
+
+
+### Bug Fixes
+
+* redirectTo for chatbot no login ([c7378fe](https://github.com/uzh-bf/klicker-uzh/commit/c7378fe6d9aa6e76864f4641d8481f952f5bc39a))
+
 ## [3.4.0-alpha.48](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.47...v3.4.0-alpha.48) (2026-02-08)
 
 
