@@ -15,7 +15,9 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
     ? process.env.NEXT_PUBLIC_PWA_URL.replace(/\/$/, '')
     : 'https://pwa.klicker.uzh.ch'
 
-  const loginHref = `${loginBaseUrl}/login`
+  const loginHref = redirectTo
+    ? `${loginBaseUrl}/login?redirect_to=${encodeURIComponent(redirectTo)}`
+    : `${loginBaseUrl}/login`
 
   return (
     <div className="bg-muted flex min-h-screen w-full items-center justify-center px-4">
