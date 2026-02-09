@@ -4863,6 +4863,18 @@ describe('Different live-quiz workflows', function () {
       cy.get('[data-cy="word-cloud-filter-select-all"]').click()
       cy.wait(650)
     }
+
+    // verify premium mode still renders as temporary fallback
+    cy.get('[data-cy="evaluate-question-select"]').click()
+    cy.get(
+      `[data-cy="evaluation-select-instance-${this.data.FT4.title}"]`
+    ).click()
+    cy.get('[data-cy="change-word-cloud-mode"]').click()
+    cy.get('[data-cy="change-word-cloud-mode-Premium"]').click()
+    cy.wait(1000)
+    cy.get('[data-cy="word-cloud"] div svg g > text')
+      .its('length')
+      .should('be.greaterThan', 0)
   })
   // #endregion
 

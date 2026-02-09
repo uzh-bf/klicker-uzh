@@ -2,12 +2,13 @@ import {
   type ElementInstanceEvaluation,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
+import type { LayoutWord } from '@klicker-uzh/word-cloud'
 import { CHART_COLORS } from '@klicker-uzh/shared-components/src/constants'
 import { UserNotification } from '@uzh-bf/design-system'
 import nlp from 'compromise'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   removeStopwords,
   deu as stopwordsDeu,
@@ -19,6 +20,7 @@ import EvaluationExplanation from '../evaluation/EvaluationExplanation'
 import FontSizeButtons from '../FontSizeButtons'
 import { useTextPresenceObserverWordCloud } from '../hooks/useTextPresenceObserverWordCloud'
 import { WordCloudFilter } from '../WordCloudFilter'
+import NativeD3WordCloud from './NativeD3WordCloud'
 const ReactWordcloud = dynamic(() => import('react-wordcloud'), {
   ssr: false,
 })
@@ -207,51 +209,70 @@ function ElementWordCloud({
     language === WordCloudLanguage.EN ? stopwordsEng : stopwordsDeu
 
   // determine frequencies of responses
-  const frequencies = getWordFrequencies({
-    data,
-    tags,
-    mode,
-    applyFilter,
-    stopwords,
-  })
+  const frequencies = useMemo(
+    () =>
+      getWordFrequencies({
+        data,
+        tags,
+        mode,
+        applyFilter,
+        stopwords,
+      }),
+    [applyFilter, data, mode, stopwords, tags]
+  )
 
   // transform to format required by react-wordcloud
-  const processedData = Object.entries(frequencies).map(([value, count]) => ({
-    text: value,
-    value: count,
-  })) // TODO: for complete sentences, this can become quite slow - limit number of visible entries?
+  const processedData = useMemo(
+    () =>
+      Object.entries(frequencies).map(([value, count]) => ({
+        text: value,
+        value: count,
+      })),
+    [frequencies]
+  ) // TODO: for complete sentences, this can become quite slow - limit number of visible entries?
   const hasEnoughDataToDisplay = processedData.length > 1
 
   // when displaying only one answer, do not rotate
-  const rotationAngles: [number, number] = [
-    0,
-    hasEnoughDataToDisplay ? -90 : 0, // applyFilter && hasEnoughDataToDisplay ? -90 : 0, // TODO: maybe don't rotate for sentences
-  ]
-  // tooltip config
-  const callbacks = {
-    getWordTooltip: (word: any) =>
+  const rotationAngles: [number, number] = useMemo(
+    () => [0, hasEnoughDataToDisplay ? -90 : 0],
+    [hasEnoughDataToDisplay]
+  )
+  const getWordTooltipHtml = useCallback(
+    (word: Pick<LayoutWord, 'text' | 'value'>) =>
       `<div style="text-align:center; background-color: ${BACKGROUND_COLOR_TOOLTIP}; padding: 5px 15px; opacity: 0.85; border-radius: 10px; font-size: 22px;"><strong>${word.text}</strong><br/>${t('manage.evaluation.numberOfVotes', { number: word.value })}</div>`,
-    onWordMouseOver: (word: any, event: any) => {
-      const el = event.target as SVGTextElement
-      el.setAttribute(
-        'data-original-transform',
-        el.getAttribute('transform') || ''
-      )
-      el.style.transition = 'transform 0.2s ease, font-weight 0.2s ease'
-      el.setAttribute('transform', `${el.getAttribute('transform')} scale(1.1)`)
-    },
-    onWordMouseOut: (word: any, event: any) => {
-      const el = event.target as SVGTextElement
-      el.setAttribute(
-        'transform',
-        el.getAttribute('data-original-transform') || ''
-      )
-    },
-  }
+    [t]
+  )
+  // tooltip config for legacy premium renderer
+  const premiumCallbacks = useMemo(
+    () => ({
+      getWordTooltip: (word: any) => getWordTooltipHtml(word),
+      onWordMouseOver: (_word: any, event: any) => {
+        const el = event.target as SVGTextElement
+        el.setAttribute(
+          'data-original-transform',
+          el.getAttribute('transform') || ''
+        )
+        el.style.transition = 'transform 0.2s ease, font-weight 0.2s ease'
+        el.setAttribute(
+          'transform',
+          `${el.getAttribute('transform')} scale(1.1)`
+        )
+      },
+      onWordMouseOut: (_word: any, event: any) => {
+        const el = event.target as SVGTextElement
+        el.setAttribute(
+          'transform',
+          el.getAttribute('data-original-transform') || ''
+        )
+      },
+    }),
+    [getWordTooltipHtml]
+  )
 
   // detect the word cloud displays any text at all
   const divRef = useRef<HTMLDivElement>(null)
   const hasText = useTextPresenceObserverWordCloud(divRef, [
+    mode,
     processedData,
     minTextSize,
     maxTextSize,
@@ -269,36 +290,53 @@ function ElementWordCloud({
         <div className="h-[90%] w-full flex-1" data-cy="word-cloud">
           {processedData.length > 0 ? (
             <div className="h-full w-full">
-              <div ref={divRef} className="h-full w-full">
-                <ReactWordcloud
-                  key={`wc-${processedData.length}`}
-                  callbacks={callbacks}
+              {mode === WordCloudMode.STANDARD ? (
+                <NativeD3WordCloud
                   words={processedData}
-                  options={{
-                    enableTooltip: true,
-                    deterministic: true,
-                    randomSeed: '42',
-                    padding: 5,
-                    rotations: 2,
-                    rotationAngles: rotationAngles,
-                    fontFamily: WORD_CLOUD_FONT_FAMILY,
-                    fontSizes: [minTextSize, maxTextSize],
-                    colors: CHART_COLORS,
-                    transitionDuration: 350,
-                    scale: 'log',
-                    spiral: 'archimedean',
-                    tooltipOptions: {
-                      allowHTML: true,
-                      inertia: true,
-                      placement: 'top',
-                    },
-                  }}
+                  minTextSize={minTextSize}
+                  maxTextSize={maxTextSize}
+                  colors={CHART_COLORS}
+                  fontFamily={WORD_CLOUD_FONT_FAMILY}
+                  transitionDuration={350}
+                  getWordTooltip={getWordTooltipHtml}
+                  emptyStateText={t(
+                    'manage.evaluation.wordCloudNoResponsesDisplayed'
+                  )}
                 />
-              </div>
-              {!hasText && (
-                <div className="absolute inset-0 z-10 flex h-full w-full items-center justify-center text-center text-xl">
-                  {t('manage.evaluation.wordCloudNoResponsesDisplayed')}
-                </div>
+              ) : (
+                <>
+                  <div ref={divRef} className="h-full w-full">
+                    <ReactWordcloud
+                      key={`wc-${processedData.length}`}
+                      callbacks={premiumCallbacks}
+                      words={processedData}
+                      options={{
+                        enableTooltip: true,
+                        deterministic: true,
+                        randomSeed: '42',
+                        padding: 5,
+                        rotations: 2,
+                        rotationAngles: rotationAngles,
+                        fontFamily: WORD_CLOUD_FONT_FAMILY,
+                        fontSizes: [minTextSize, maxTextSize],
+                        colors: CHART_COLORS,
+                        transitionDuration: 350,
+                        scale: 'log',
+                        spiral: 'archimedean',
+                        tooltipOptions: {
+                          allowHTML: true,
+                          inertia: true,
+                          placement: 'top',
+                        },
+                      }}
+                    />
+                  </div>
+                  {!hasText && (
+                    <div className="absolute inset-0 z-10 flex h-full w-full items-center justify-center text-center text-xl">
+                      {t('manage.evaluation.wordCloudNoResponsesDisplayed')}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           ) : (
