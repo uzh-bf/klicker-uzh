@@ -1,8 +1,15 @@
 'use client'
 
 import Footer from '@klicker-uzh/shared-components/src/Footer'
-import { SidebarInset, SidebarProvider } from '@uzh-bf/design-system'
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from '@uzh-bf/design-system'
+import { Loader2, Plus } from 'lucide-react'
 import Link from 'next/link'
+import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { RuntimeProvider } from '../app/RuntimeProvider'
@@ -13,6 +20,7 @@ import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { DisclaimerModal } from './disclaimer-modal'
 import { EmbeddedSettings } from './embedded-settings'
 import { Thread } from './thread'
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 interface ChatbotDisclaimer {
   id: string
@@ -283,6 +291,66 @@ export const Assistant = ({
   )
 }
 
+function SidebarMain({
+  chatbot,
+  showFooter,
+}: {
+  chatbot: { id: string; name: string; avatar?: string }
+  showFooter: boolean
+}) {
+  const { open } = useSidebar()
+  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const router = useRouter()
+  const { createThread, participationRequired, isLoading } = useChatStore()
+
+  const handleNewThread = async () => {
+    if (participationRequired) return
+    try {
+      const threadId = await createThread(chatbotId)
+      router.push(`/${chatbotId}/threads/${threadId}`)
+    } catch {
+      /* handled centrally */
+    }
+  }
+
+  return (
+    <SidebarInset>
+      <div
+        className={twMerge(
+          'flex shrink-0 items-center gap-2 border-b bg-gray-50 px-2 py-1.5',
+          open && 'md:hidden'
+        )}
+      >
+        <SidebarTrigger className="size-5" />
+        <span className="min-w-0 truncate text-sm">{chatbot.name}</span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={handleNewThread}
+              disabled={participationRequired}
+              className="text-muted-foreground hover:text-foreground ml-auto inline-flex size-5 items-center justify-center rounded-sm transition-colors disabled:pointer-events-none disabled:opacity-50"
+            >
+              <Plus className="size-4" />
+              <span className="sr-only">New Chat</span>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>New Chat</TooltipContent>
+        </Tooltip>
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col">
+        {isLoading ? (
+          <div className="flex flex-1 items-center justify-center">
+            <Loader2 className="text-muted-foreground size-6 animate-spin" />
+          </div>
+        ) : (
+          <Thread chatbotAvatar={chatbot.avatar ?? ''} />
+        )}
+        {showFooter && <Footer />}
+      </div>
+    </SidebarInset>
+  )
+}
+
 function AssistantLayout({
   chatbot,
 }: {
@@ -292,20 +360,15 @@ function AssistantLayout({
 
   if (showSidebar) {
     return (
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <div className="flex flex-1 flex-col">
-            <Thread chatbotAvatar={chatbot.avatar ?? ''} />
-            {showFooter && <Footer />}
-          </div>
-        </SidebarInset>
+      <SidebarProvider className="h-dvh overflow-hidden">
+        <AppSidebar chatbotName={chatbot.name} />
+        <SidebarMain chatbot={chatbot} showFooter={showFooter} />
       </SidebarProvider>
     )
   }
 
   return (
-    <div className="flex h-full w-full flex-col">
+    <div className="flex h-dvh w-full flex-col overflow-hidden">
       <div className="flex shrink-0 items-center justify-between gap-2 border-b bg-gray-50 px-2 py-1.5 sm:gap-4 sm:px-4 sm:py-3">
         <div className="min-w-0 truncate text-xs font-semibold sm:text-sm">
           {chatbot.name}

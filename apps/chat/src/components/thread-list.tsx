@@ -108,7 +108,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
 
   return (
     <div
-      className={`hover:bg-accent focus-visible:bg-muted focus-visible:ring-ring flex items-center gap-1 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 ${isActive ? 'bg-muted' : ''}`}
+      className={`hover:bg-accent focus-visible:bg-muted focus-visible:ring-ring flex items-center gap-1 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 ${isActive ? 'bg-primary/15' : ''}`}
     >
       {isEditing ? (
         <>

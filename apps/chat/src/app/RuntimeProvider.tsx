@@ -50,12 +50,16 @@ export function RuntimeProvider({
   const messages = activeThread?.messages || []
   const isRunning = activeThread?.isRunning || false
 
+  // reset session for embedded mode without a thread
+  useEffect(() => {
+    if (embedded && !threadId) {
+      resetSession()
+    }
+  }, [embedded, resetSession, threadId])
+
   // load runtime data on component mount / chatbot changes
   useEffect(() => {
-    if (embedded) {
-      resetSession()
-      return
-    }
+    if (embedded && !threadId) return
 
     let isMounted = true
 
@@ -75,18 +79,14 @@ export function RuntimeProvider({
     return () => {
       isMounted = false
     }
-  }, [
-    chatbotId,
-    embedded,
-    loadCredits,
-    loadModeOptions,
-    loadThreads,
-    resetSession,
-  ])
+    // threadId intentionally excluded -- thread switches are handled by the
+    // sync effect below; re-running loadThreads on every navigation wipes
+    // already-fetched messages and causes race conditions.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatbotId, embedded, loadCredits, loadModeOptions, loadThreads])
 
-  // sync active thread with URL params (non-embedded only)
+  // sync active thread with URL params
   useEffect(() => {
-    if (embedded) return
     if (!threadsLoaded) return
 
     if (!threadId) {
@@ -146,7 +146,6 @@ export function RuntimeProvider({
   }, [
     activeThreadId,
     chatbotId,
-    embedded,
     router,
     switchToThread,
     threadId,

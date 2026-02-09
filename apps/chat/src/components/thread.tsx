@@ -141,29 +141,27 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
 
   return (
     <ThreadPrimitive.Root
-      className="bg-background box-border flex h-full flex-col overflow-hidden"
+      className="bg-background box-border flex min-h-0 flex-1 flex-col overflow-hidden"
       style={{
         ['--thread-max-width' as string]: embedded ? '100%' : '60rem',
       }}
     >
       <ThreadPrimitive.Viewport
         className={twMerge(
-          'flex flex-1 flex-col items-center overflow-y-scroll scroll-smooth bg-inherit',
-          embedded ? 'px-2 pt-1' : 'px-2 pt-2 sm:px-4 sm:pt-8'
+          'flex min-h-0 flex-1 flex-col items-center scroll-smooth bg-inherit',
+          embedded
+            ? 'scrollbar-none overflow-y-auto px-2 pt-2'
+            : 'overflow-y-scroll px-2 pt-2 sm:px-4 sm:pt-8'
         )}
       >
         <ThreadWelcome />
 
         <ThreadPrimitive.Messages
           components={{
-            UserMessage: embedded ? CompactUserMessage : UserMessage,
+            UserMessage: UserMessage,
             EditComposer: EditComposer,
             AssistantMessage: (props) => (
-              <AssistantMessage
-                {...props}
-                chatbotAvatar={chatbotAvatar}
-                embedded={embedded}
-              />
+              <AssistantMessage {...props} chatbotAvatar={chatbotAvatar} />
             ),
           }}
         />
@@ -319,16 +317,6 @@ const ComposerAction: FC = () => {
   )
 }
 
-const CompactUserMessage: FC = () => {
-  return (
-    <MessagePrimitive.Root className="flex w-full max-w-[var(--thread-max-width)] justify-end py-1">
-      <div className="text-muted-foreground max-w-[85%] break-words text-right text-sm italic">
-        <MessagePrimitive.Content />
-      </div>
-    </MessagePrimitive.Root>
-  )
-}
-
 const UserMessage: FC = () => {
   return (
     <MessagePrimitive.Root className="grid w-full max-w-[var(--thread-max-width)] auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] gap-y-2 py-2 sm:py-4 [&:where(>*)]:col-start-2">
@@ -473,59 +461,56 @@ const PartGroup: FC<
 
 const AssistantMessage: FC<{
   chatbotAvatar: string
-  embedded?: boolean
-}> = ({ chatbotAvatar, embedded }) => {
-  if (embedded) {
-    return (
-      <MessagePrimitive.Root className="relative w-full max-w-[var(--thread-max-width)] py-1">
-        <div className="text-foreground max-w-[calc(var(--thread-max-width)*0.95)] break-words text-sm leading-6">
-          <MessagePrimitive.Unstable_PartsGrouped
-            groupingFunction={groupConsecutiveByType}
-            components={{
-              Text: MarkdownText,
-              Reasoning: AssistantReasoningPart,
-              tools: { Fallback: ToolFallback },
-              Group: PartGroup,
-            }}
-          />
-        </div>
-      </MessagePrimitive.Root>
-    )
-  }
+}> = ({ chatbotAvatar }) => {
+  const { embedded } = useChatUi()
 
   return (
-    <MessagePrimitive.Root className="relative grid w-full max-w-[var(--thread-max-width)] grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] py-2 sm:py-4">
-      <div className="col-start-1 row-span-2 row-start-1 mr-2 mt-2 flex items-start pr-1 sm:mr-3 sm:mt-3 sm:pr-2">
-        <Image
-          src={
-            chatbotAvatar
-              ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbotAvatar}.svg`
-              : '../../public/user-solid.svg'
-          }
-          alt=""
-          width={chatbotAvatar ? '35' : '32'}
-          height="35"
-          className={twMerge(
-            'hover:bg-uzh-red-20 hidden cursor-pointer rounded-full bg-white sm:block',
-            chatbotAvatar ? '' : 'p-1'
-          )}
-        />
-        <Image
-          src={
-            chatbotAvatar
-              ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbotAvatar}.svg`
-              : '../../public/user-solid.svg'
-          }
-          alt=""
-          width="24"
-          height="24"
-          className={twMerge(
-            'hover:bg-uzh-red-20 cursor-pointer rounded-full bg-white sm:hidden',
-            chatbotAvatar ? '' : 'p-1'
-          )}
-        />
-      </div>
-      <div className="text-foreground col-span-2 col-start-2 row-start-1 my-1.5 max-w-[calc(var(--thread-max-width)*0.8)] break-words leading-7">
+    <MessagePrimitive.Root
+      className={twMerge(
+        'relative grid w-full max-w-[var(--thread-max-width)] grid-rows-[auto_1fr] py-2 sm:py-4',
+        embedded ? 'grid-cols-[auto_1fr]' : 'grid-cols-[auto_auto_1fr]'
+      )}
+    >
+      {!embedded && (
+        <div className="col-start-1 row-span-2 row-start-1 mr-2 mt-2 flex items-start pr-1 sm:mr-3 sm:mt-3 sm:pr-2">
+          <Image
+            src={
+              chatbotAvatar
+                ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbotAvatar}.svg`
+                : '../../public/user-solid.svg'
+            }
+            alt=""
+            width={chatbotAvatar ? '35' : '32'}
+            height="35"
+            className={twMerge(
+              'hover:bg-uzh-red-20 hidden cursor-pointer rounded-full bg-white sm:block',
+              chatbotAvatar ? '' : 'p-1'
+            )}
+          />
+          <Image
+            src={
+              chatbotAvatar
+                ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbotAvatar}.svg`
+                : '../../public/user-solid.svg'
+            }
+            alt=""
+            width="24"
+            height="24"
+            className={twMerge(
+              'hover:bg-uzh-red-20 cursor-pointer rounded-full bg-white sm:hidden',
+              chatbotAvatar ? '' : 'p-1'
+            )}
+          />
+        </div>
+      )}
+      <div
+        className={twMerge(
+          'text-foreground col-span-2 row-start-1 my-1.5 break-words leading-7',
+          embedded
+            ? 'col-start-1 max-w-full'
+            : 'col-start-2 max-w-[calc(var(--thread-max-width)*0.8)]'
+        )}
+      >
         <MessagePrimitive.Unstable_PartsGrouped
           groupingFunction={groupConsecutiveByType}
           components={{
@@ -538,12 +523,12 @@ const AssistantMessage: FC<{
         <MessageMetadata includeCredits />
       </div>
 
-      <AssistantActionBar />
+      <AssistantActionBar embedded={embedded} />
     </MessagePrimitive.Root>
   )
 }
 
-const AssistantActionBar: FC = () => {
+const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
   const { showMessageActions } = useChatUi()
   if (!showMessageActions) return null
 
@@ -552,7 +537,10 @@ const AssistantActionBar: FC = () => {
       hideWhenRunning
       autohide="not-last"
       autohideFloat="single-branch"
-      className="text-muted-foreground data-[floating]:bg-background col-start-3 row-start-2 -ml-1 flex gap-1 data-[floating]:absolute data-[floating]:rounded-md data-[floating]:border data-[floating]:p-1 data-[floating]:shadow-sm"
+      className={twMerge(
+        'text-muted-foreground data-[floating]:bg-background row-start-2 -ml-1 flex gap-1 data-[floating]:absolute data-[floating]:rounded-md data-[floating]:border data-[floating]:p-1 data-[floating]:shadow-sm',
+        embedded ? 'col-start-2' : 'col-start-3'
+      )}
     >
       <Tooltip>
         <TooltipTrigger asChild>

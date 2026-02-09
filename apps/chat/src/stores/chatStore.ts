@@ -146,7 +146,7 @@ export const useChatStore = create<ChatState>((set, get) => {
 
         set((state) => {
           return {
-            threads: [...state.threads, newThread],
+            threads: [newThread, ...state.threads],
             activeThreadId: newThread.id,
             isLoading: false,
           }
