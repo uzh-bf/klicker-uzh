@@ -44,6 +44,11 @@ export function RuntimeProvider({
   const [threadsLoaded, setThreadsLoaded] = useState(false)
   const lastSyncedThreadId = useRef<string | null>(null)
   const syncInFlight = useRef<string | null>(null)
+  const previousRuntimeContext = useRef<{
+    chatbotId: string
+    embedded: boolean
+    threadId?: string
+  } | null>(null)
 
   // get current thread state
   const activeThread = threads.find((t) => t.id === activeThreadId)
@@ -59,7 +64,26 @@ export function RuntimeProvider({
 
   // load runtime data on component mount / chatbot changes
   useEffect(() => {
-    if (embedded && !threadId) return
+    const previousContext = previousRuntimeContext.current
+
+    if (embedded && !threadId) {
+      previousRuntimeContext.current = { chatbotId, embedded, threadId }
+      return
+    }
+
+    const chatbotChanged = previousContext?.chatbotId !== chatbotId
+    const embeddedThreadBecameAvailable =
+      embedded &&
+      !!threadId &&
+      previousContext?.embedded &&
+      !previousContext.threadId
+
+    const shouldLoadRuntimeData =
+      !previousContext || chatbotChanged || embeddedThreadBecameAvailable
+
+    previousRuntimeContext.current = { chatbotId, embedded, threadId }
+
+    if (!shouldLoadRuntimeData) return
 
     let isMounted = true
 
@@ -79,11 +103,7 @@ export function RuntimeProvider({
     return () => {
       isMounted = false
     }
-    // threadId intentionally excluded -- thread switches are handled by the
-    // sync effect below; re-running loadThreads on every navigation wipes
-    // already-fetched messages and causes race conditions.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatbotId, embedded, loadCredits, loadModeOptions, loadThreads])
+  }, [chatbotId, embedded, loadCredits, loadModeOptions, loadThreads, threadId])
 
   // sync active thread with URL params
   useEffect(() => {
