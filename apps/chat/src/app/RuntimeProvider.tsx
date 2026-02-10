@@ -6,7 +6,7 @@ import {
   type ThreadMessageLike,
 } from '@assistant-ui/react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useChatResponse } from 'src/hooks/useChatResponse'
 import { useThreadManagement } from 'src/hooks/useThreadManagement'
 import {
@@ -45,10 +45,10 @@ export function RuntimeProvider({
   const [threadsLoaded, setThreadsLoaded] = useState(false)
   const lastSyncedThreadId = useRef<string | null>(null)
   const syncInFlight = useRef<string | null>(null)
-  const missingThreadRedirectTarget = useMemo(() => {
-    const queryString = searchParams.toString()
-    return queryString ? `/${chatbotId}?${queryString}` : `/${chatbotId}`
-  }, [chatbotId, searchParams])
+  const currentQueryString = searchParams.toString()
+  const missingThreadRedirectTarget = currentQueryString
+    ? `/${chatbotId}?${currentQueryString}`
+    : `/${chatbotId}`
 
   // get current thread state
   const activeThread = threads.find((t) => t.id === activeThreadId)
