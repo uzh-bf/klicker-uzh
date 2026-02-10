@@ -10,7 +10,12 @@ import * as R from 'remeda'
 
 export interface InvitationResult {
   email: string
-  status: 'created' | 'auto_accepted' | 'duplicate' | 'duplicate_updated' | 'error'
+  status:
+    | 'created'
+    | 'auto_accepted'
+    | 'duplicate'
+    | 'duplicate_updated'
+    | 'error'
   invitationId?: number
   participantId?: string
   error?: string
@@ -92,8 +97,9 @@ export async function createParticipantInvitations(
 
       if (existingInvitation) {
         const matriculationUpdated =
-          normalizedMatriculationNumber &&
-          existingInvitation.matriculationNumber !== normalizedMatriculationNumber
+          normalizedMatriculationNumber != null &&
+          existingInvitation.matriculationNumber !==
+            normalizedMatriculationNumber
 
         if (matriculationUpdated) {
           await prisma.participantInvitation.update({
@@ -178,7 +184,8 @@ export async function createParticipantInvitations(
     totalProcessed: invitations.length,
     created: statusCounts.created || 0,
     autoAccepted: statusCounts.auto_accepted || 0,
-    duplicates: (statusCounts.duplicate || 0) + (statusCounts.duplicate_updated || 0),
+    duplicates:
+      (statusCounts.duplicate || 0) + (statusCounts.duplicate_updated || 0),
     errors: statusCounts.error || 0,
     results,
   }
