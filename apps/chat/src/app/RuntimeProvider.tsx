@@ -5,7 +5,7 @@ import {
   useExternalStoreRuntime,
   type ThreadMessageLike,
 } from '@assistant-ui/react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useChatResponse } from 'src/hooks/useChatResponse'
 import { useThreadManagement } from 'src/hooks/useThreadManagement'
@@ -41,6 +41,11 @@ export function RuntimeProvider({
   } = useSettingsStore()
   const { threadId } = useParams<{ chatbotId: string; threadId?: string }>()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const queryString = searchParams.toString()
+  const missingThreadRedirectPath = queryString
+    ? `/${chatbotId}?${queryString}`
+    : `/${chatbotId}`
   const [threadsLoaded, setThreadsLoaded] = useState(false)
   const lastSyncedThreadId = useRef<string | null>(null)
   const syncInFlight = useRef<string | null>(null)
@@ -121,7 +126,7 @@ export function RuntimeProvider({
     const existingThread = threads.find((thread) => thread.id === threadId)
 
     if (!existingThread) {
-      router.replace(`/${chatbotId}`)
+      router.replace(missingThreadRedirectPath)
       lastSyncedThreadId.current = null
       syncInFlight.current = null
       return
@@ -166,6 +171,7 @@ export function RuntimeProvider({
   }, [
     activeThreadId,
     chatbotId,
+    missingThreadRedirectPath,
     router,
     switchToThread,
     threadId,
