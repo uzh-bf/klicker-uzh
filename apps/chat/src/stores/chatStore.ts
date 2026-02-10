@@ -64,6 +64,7 @@ interface ChatState {
   ) => Promise<string | null>
   setMessages: (messages: ExtendedThreadMessageLike[]) => void
   setIsRunning: (isRunning: boolean) => void
+  resetSession: () => void
 
   // tree navigation actions
   switchToBranch: (leafId: string) => void
@@ -145,7 +146,7 @@ export const useChatStore = create<ChatState>((set, get) => {
 
         set((state) => {
           return {
-            threads: [...state.threads, newThread],
+            threads: [newThread, ...state.threads],
             activeThreadId: newThread.id,
             isLoading: false,
           }
@@ -173,14 +174,39 @@ export const useChatStore = create<ChatState>((set, get) => {
           `/chatbots/${chatbotId}/threads`
         )
 
-        const threads = apiThreads.map(convertApiThreadToThread)
+        const freshThreads = apiThreads.map(convertApiThreadToThread)
 
-        set({
-          threads,
-          activeThreadId: null,
-          isLoading: false,
-          participationRequired: false,
-          participationMessage: null,
+        set((state) => {
+          // Preserve cached messages for threads that already exist
+          const existingMap = new Map(state.threads.map((t) => [t.id, t]))
+          const merged = freshThreads.map((fresh) => {
+            const existing = existingMap.get(fresh.id)
+            if (
+              existing &&
+              (existing.allMessages.length > 0 || existing.messages.length > 0)
+            ) {
+              return {
+                ...fresh,
+                messages: existing.messages,
+                allMessages: existing.allMessages,
+                isRunning: existing.isRunning,
+              }
+            }
+            return fresh
+          })
+
+          // Keep activeThreadId if the thread still exists in the new list
+          const activeStillExists =
+            state.activeThreadId != null &&
+            merged.some((t) => t.id === state.activeThreadId)
+
+          return {
+            threads: merged,
+            activeThreadId: activeStillExists ? state.activeThreadId : null,
+            isLoading: false,
+            participationRequired: false,
+            participationMessage: null,
+          }
         })
       } catch (error) {
         console.error('Failed to load threads:', error)
@@ -197,6 +223,7 @@ export const useChatStore = create<ChatState>((set, get) => {
      * @param threadId - The ID of the thread to switch to
      */
     switchToThread: async (chatbotId: string, threadId: string) => {
+      const previousActiveThreadId = get().activeThreadId
       try {
         set({ isLoading: true })
 
@@ -263,7 +290,7 @@ export const useChatStore = create<ChatState>((set, get) => {
       } catch (error) {
         console.error('Failed to switch to thread:', error)
         handleApiError(error)
-        set({ isLoading: false })
+        set({ activeThreadId: previousActiveThreadId, isLoading: false })
         return false
       }
     },
@@ -439,6 +466,18 @@ export const useChatStore = create<ChatState>((set, get) => {
           thread.id === state.activeThreadId ? { ...thread, isRunning } : thread
         ),
       }))
+    },
+
+    /**
+     * Clears local chat session state.
+     * Used by embedded mode to avoid preloading existing chat history in UI.
+     */
+    resetSession: () => {
+      set({
+        threads: [],
+        activeThreadId: null,
+        isLoading: false,
+      })
     },
 
     /**

@@ -19,7 +19,10 @@ import { SettingsPanel } from './settings-panel'
 import { ThreadList } from './thread-list'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+  chatbotName,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & { chatbotName?: string }) {
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
   const { createThread, participationRequired } = useChatStore()
@@ -39,23 +42,29 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className="flex items-center gap-2 p-2">
-              <button
-                onClick={handleNewThread}
-                disabled={participationRequired}
-                className="bg-uzh-blue hover:bg-uzh-blue-80 flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-white shadow-sm transition-colors disabled:pointer-events-none disabled:opacity-50"
-              >
-                <Plus className="size-4" />
-                New Chat
-              </button>
-              <div className="ml-auto">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <SidebarTrigger className="size-5" />
-                  </TooltipTrigger>
-                  <TooltipContent>Close sidebar</TooltipContent>
-                </Tooltip>
-              </div>
+            <div className="flex items-center py-1.5 pl-3">
+              {chatbotName && (
+                <span className="min-w-0 truncate text-sm">{chatbotName}</span>
+              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleNewThread}
+                    disabled={participationRequired}
+                    className="text-muted-foreground hover:text-foreground ml-auto mr-1 inline-flex size-4 items-center justify-center rounded-sm transition-colors disabled:pointer-events-none disabled:opacity-50"
+                  >
+                    <Plus className="size-4" />
+                    <span className="sr-only">New Chat</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>New Chat</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <SidebarTrigger className="mr-2 size-4 shrink-0" />
+                </TooltipTrigger>
+                <TooltipContent>Close sidebar</TooltipContent>
+              </Tooltip>
             </div>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -80,7 +89,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   alt="Klicker Logo"
                   width={120}
                   height={60}
-                  className="h-8 w-auto object-contain"
+                  className="h-6 w-auto object-contain md:h-8"
                 />
               </Link>
             </SidebarMenuButton>

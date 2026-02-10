@@ -21,7 +21,7 @@ export function SettingsPanel() {
     setSelectedMode,
     setSelectedReasoningEffort,
   } = useSettingsStore()
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(false)
 
   const creditsPercentage =
     credits.total > 0 ? (credits.current / credits.total) * 100 : 0

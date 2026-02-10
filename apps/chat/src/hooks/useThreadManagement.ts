@@ -1,5 +1,5 @@
 import { type AppendMessage } from '@assistant-ui/react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 import { generateId } from '../lib/utils/chatUtils'
 import {
@@ -30,6 +30,7 @@ export function useThreadManagement(
 ) {
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { createThread, addMessage, setIsRunning } = useChatStore()
   const { selectedMode, selectedModel, selectedReasoningEffort } =
     useSettingsStore()
@@ -81,7 +82,8 @@ export function useThreadManagement(
       }
 
       if (shouldReplaceUrl) {
-        router.replace(`/${chatbotId}/threads/${threadId}`)
+        const qs = searchParams.toString()
+        router.replace(`/${chatbotId}/threads/${threadId}${qs ? `?${qs}` : ''}`)
       }
 
       const currentMessages =
@@ -97,6 +99,7 @@ export function useThreadManagement(
       generateChatResponse,
       chatbotId,
       router,
+      searchParams,
       selectedMode,
       selectedModel,
       selectedReasoningEffort,
