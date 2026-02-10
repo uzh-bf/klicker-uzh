@@ -260,3 +260,67 @@ Phases D–E layer on top.
 | `apps/chat/src/middleware.ts` | Modify — add `/auth/launch` to bypass list |
 | `apps/chat/src/app/api/chatbots/[chatbotId]/chat/route.ts` | Modify — integration-aware model restriction |
 | `apps/chat/src/app/api/chatbots/[chatbotId]/credits/route.ts` | Modify — integration-aware filtering |
+
+---
+
+## Review Feedback (2026-02-10)
+
+### 1. Critical implementation gaps in the current LTI baseline (fix before generalization)
+
+1. **[P0] Anonymous model restriction is bypassed when `modelSelection=false`.**  
+   In `/Users/rolandschlaefli/gitlocal/klicker/klicker-uzh/apps/chat/src/app/api/chatbots/[chatbotId]/chat/route.ts:769`, anonymous users are forced to fallback first, but later overwritten by automatic model selection at `/Users/rolandschlaefli/gitlocal/klicker/klicker-uzh/apps/chat/src/app/api/chatbots/[chatbotId]/chat/route.ts:781`.  
+   This violates the cost-control objective and must be fixed before reuse in embed auth.
+
+2. **[P1] Credits API exposes inconsistent model state for anonymous users.**  
+   `/Users/rolandschlaefli/gitlocal/klicker/klicker-uzh/apps/chat/src/app/api/chatbots/[chatbotId]/credits/route.ts:66` returns `automaticModelId` without anonymous restriction, while available models are filtered.  
+   `/Users/rolandschlaefli/gitlocal/klicker/klicker-uzh/apps/chat/src/stores/settingsStore.ts:219` then uses that automatic ID when model selection is disabled.
+
+3. **[P1] Existing-account LTI path assumes `participant_token` but does not check it.**  
+   `/Users/rolandschlaefli/gitlocal/klicker/klicker-uzh/apps/chat/src/app/auth/lti/route.ts:126` redirects account users directly, but does not verify cookie presence.  
+   Users with an account but no active `participant_token` are redirected to login instead of getting a deterministic fallback flow.
+
+4. **[P2] LTI-specific no-login UX is currently unreachable.**  
+   `/Users/rolandschlaefli/gitlocal/klicker/klicker-uzh/apps/chat/src/app/noLogin/page.tsx:13` expects `lti=1`, but middleware never sets that query param during redirect (`/Users/rolandschlaefli/gitlocal/klicker/klicker-uzh/apps/chat/src/middleware.ts:106`).
+
+5. **[P1] LTI JWT verification does not enforce issuer.**  
+   `/Users/rolandschlaefli/gitlocal/klicker/klicker-uzh/apps/chat/src/lib/server/ltiGuest.ts:210` verifies signature/scope but not `iss`, although issuer is set in `/Users/rolandschlaefli/gitlocal/klicker/klicker-uzh/apps/lti/src/index.ts:79`.
+
+6. **[P1] Guest persona creation is race-prone.**  
+   `/Users/rolandschlaefli/gitlocal/klicker/klicker-uzh/apps/chat/src/lib/server/ltiGuest.ts:92` does read-then-create without conflict retry handling for unique `ssoId`.
+
+### 2. Required design upgrades for generalized embed guest auth
+
+1. **Strengthen launch/session token model.**  
+   Add `iss`, `aud`, `jti`, and explicit token type (`scope`) validation.  
+   For launch tokens, implement one-time consumption (`jti`) with short TTL storage to actually enforce anti-replay (not just short expiry).
+
+2. **Add source context to guest session token.**  
+   Current chat guest token only carries `sub` + `scope`; this is insufficient for per-integration policies.  
+   Include `integrationId` (or equivalent policy key) in `chat_participant_token` so model/credit restrictions can be applied deterministically in chat/credits routes.
+
+3. **Define cross-site iframe cookie strategy explicitly.**  
+   For non-`*.klicker.*` hosts, `SameSite=Lax` is not sufficient.  
+   Specify expected behavior for `SameSite=None; Secure` (and `Partitioned` if used), browser compatibility constraints, and fallback when third-party cookies are blocked.
+
+4. **Make CSP `frame-ancestors` implementation concrete.**  
+   The plan should specify where headers are enforced (middleware/route-level), how per-integration allowlists are applied after launch, and how non-embedded chat remains unaffected.
+
+5. **Refine `EmbedIntegration` schema types.**  
+   `modelRestriction` should not be free-form `String` with JSON-in-string encoding.  
+   Use explicit enum/JSON structure for safer validation and migration, and define key rotation/revocation metadata for integration credentials.
+
+6. **Define cookie precedence and mode switching rules.**  
+   Clarify behavior when both `participant_token` and `chat_participant_token` exist, stale guest cookies are present, or account and guest sessions coexist.
+
+7. **Add Phase 0 for baseline hardening.**  
+   Before schema/API expansion, first fix the current LTI baseline issues above to avoid carrying flawed assumptions into embed generalization.
+
+### 3. Additional acceptance criteria to include in execution plan
+
+1. Anonymous user stays restricted to fallback model when `modelSelection=true`.
+2. Anonymous user stays restricted to fallback model when `modelSelection=false`.
+3. Launch token replay with same `jti` is rejected.
+4. Launch token with wrong issuer/audience is rejected.
+5. Existing account without `participant_token` follows defined fallback behavior (not accidental login redirect).
+6. Cross-origin embed works with the defined cookie strategy across supported browsers.
+7. `frame-ancestors` blocks non-allowlisted parent origins and allows configured origins only.
