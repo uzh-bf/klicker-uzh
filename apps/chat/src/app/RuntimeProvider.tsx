@@ -112,7 +112,7 @@ export function RuntimeProvider({
       await loadModeOptions(chatbotId)
       await loadCredits(chatbotId)
     })()
-  }, [chatbotId, embedded, loadCredits, loadModeOptions, loadThreads, threadId])
+  }, [chatbotId, embedded, loadCredits, loadModeOptions, loadThreads])
 
   // sync active thread with URL params
   useEffect(() => {
