@@ -17,6 +17,7 @@ export function SettingsPanel() {
     modelOptions,
     modeOptions,
     modelSelectionEnabled,
+    authMode,
     setSelectedModel,
     setSelectedMode,
     setSelectedReasoningEffort,
@@ -95,7 +96,17 @@ export function SettingsPanel() {
             {/* model selection */}
             <div className="mt-2 space-y-1">
               <label className="text-sm font-bold">AI Model</label>
-              {modelSelectionEnabled ? (
+              {authMode === 'anonymous' ? (
+                <div className="rounded-md border bg-blue-50 px-3 py-2 text-sm">
+                  <p className="font-medium text-blue-800">
+                    {modelOptions.find((option) => option.id === selectedModel)
+                      ?.name || selectedModel}
+                  </p>
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    Guest access uses the standard model.
+                  </p>
+                </div>
+              ) : modelSelectionEnabled ? (
                 <>
                   <Select
                     placeholder="Select AI Model"
@@ -182,8 +193,9 @@ export function SettingsPanel() {
             />
             {credits.current === 0 ? (
               <div className="text-muted-foreground text-sm">
-                You have used up all your credits. However, you can still use
-                the smaller model.
+                {authMode === 'anonymous'
+                  ? 'You have used up all your guest credits for this period.'
+                  : 'You have used up all your credits. However, you can still use the smaller model.'}
               </div>
             ) : null}
           </div>

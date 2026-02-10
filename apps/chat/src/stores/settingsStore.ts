@@ -5,6 +5,8 @@ import { type ModelID, type ModelOption } from '../lib/config/models'
 import { DEFAULT_PROMPT } from '../lib/config/prompts'
 import { type ReasoningEffort } from '../lib/config/reasoning'
 
+export type AuthMode = 'account' | 'anonymous'
+
 export interface ModeOption {
   name: string
   description: string
@@ -54,6 +56,7 @@ interface SettingsState {
     total: number
   }
   modelSelectionEnabled: boolean
+  authMode: AuthMode
 
   // Available options
   modelOptions: ModelOption[]
@@ -81,6 +84,7 @@ export const useSettingsStore = create<SettingsState>()(
         total: 0.0,
       },
       modelSelectionEnabled: false,
+      authMode: 'account' as AuthMode,
       modeOptions: {},
 
       // available options
@@ -205,6 +209,8 @@ export const useSettingsStore = create<SettingsState>()(
           }
           const availableModels: ModelOption[] = data.availableModels ?? []
           const automaticModelId: string | undefined = data.automaticModelId
+          const serverAuthMode: AuthMode =
+            data.authMode === 'anonymous' ? 'anonymous' : 'account'
 
           set((state) => {
             let selectedModel = state.selectedModel
@@ -234,6 +240,7 @@ export const useSettingsStore = create<SettingsState>()(
               modelOptions: availableModels,
               selectedModel,
               selectedReasoningEffort,
+              authMode: serverAuthMode,
             }
           })
         } catch (error) {

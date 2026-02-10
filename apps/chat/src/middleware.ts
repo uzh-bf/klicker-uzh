@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server'
  * Uses a separate secret (APP_CHAT_GUEST_SECRET or derived from APP_SECRET).
  */
 async function verifyChatGuestTokenMiddleware(token: string): Promise<boolean> {
-  const secret = getChatGuestSecretForMiddleware()
+  const secret = await getChatGuestSecretForMiddleware()
   if (!secret) return false
 
   try {
@@ -24,22 +24,48 @@ async function verifyChatGuestTokenMiddleware(token: string): Promise<boolean> {
 }
 
 /**
- * Derive the chat guest secret the same way as ltiGuest.ts.
- * Middleware runs in the Edge runtime so we use the Web Crypto-compatible
- * TextEncoder approach rather than Node crypto.
+ * Derive the chat guest secret the same way as ltiGuest.ts getChatGuestSecret().
+ * Middleware runs in the Edge runtime, so we use the Web Crypto API
+ * (crypto.subtle) instead of Node crypto.createHmac.
+ *
+ * Result is cached for the lifetime of the edge worker instance.
  */
-function getChatGuestSecretForMiddleware(): string | null {
+let cachedDerivedSecret: string | null = null
+
+async function getChatGuestSecretForMiddleware(): Promise<string | null> {
   if (process.env.APP_CHAT_GUEST_SECRET) {
     return process.env.APP_CHAT_GUEST_SECRET
   }
-  // For the middleware we cannot easily replicate the HMAC derivation from
-  // ltiGuest.ts (which uses Node crypto). Instead, when APP_CHAT_GUEST_SECRET
-  // is not set, fall back to a convention: the hex HMAC is pre-computed at
-  // startup by the API routes. For middleware, we accept that in dev
-  // environments without APP_CHAT_GUEST_SECRET, the middleware will fall
-  // through to the participant_token check. The API route guards in
-  // apiGuards.ts handle the authoritative verification.
-  return null
+
+  if (cachedDerivedSecret) {
+    return cachedDerivedSecret
+  }
+
+  const appSecret = process.env.APP_SECRET
+  if (!appSecret) {
+    return null
+  }
+
+  // Replicate the HMAC-SHA256 derivation from ltiGuest.ts using Web Crypto API
+  // HMAC(APP_SECRET, 'chat-guest-secret') → hex digest
+  const encoder = new TextEncoder()
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(appSecret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    cryptoKey,
+    encoder.encode('chat-guest-secret')
+  )
+  cachedDerivedSecret = Array.from(new Uint8Array(signature))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+
+  return cachedDerivedSecret
 }
 
 export async function middleware(request: NextRequest) {

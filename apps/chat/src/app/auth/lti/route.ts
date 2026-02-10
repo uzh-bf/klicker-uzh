@@ -100,6 +100,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
   }
 
+  // Verify the chatbot actually belongs to the requested course
+  if (chatbot.courseId !== courseId) {
+    console.error(LTI_AUTH_LOG_PREFIX, 'Chatbot does not belong to course', {
+      chatbotCourseId: chatbot.courseId,
+      requestedCourseId: courseId,
+      chatbotId,
+    })
+    return NextResponse.json(
+      { error: 'Chatbot not found in this course' },
+      { status: 403 }
+    )
+  }
+
   // -----------------------------------------------------------------------
   // 4. Check if LTI user has an existing Klicker participant account
   // -----------------------------------------------------------------------
