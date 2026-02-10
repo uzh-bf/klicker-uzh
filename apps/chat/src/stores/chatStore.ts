@@ -183,8 +183,7 @@ export const useChatStore = create<ChatState>((set, get) => {
             const existing = existingMap.get(fresh.id)
             if (
               existing &&
-              (existing.allMessages.length > 0 ||
-                existing.messages.length > 0)
+              (existing.allMessages.length > 0 || existing.messages.length > 0)
             ) {
               return {
                 ...fresh,
@@ -203,9 +202,7 @@ export const useChatStore = create<ChatState>((set, get) => {
 
           return {
             threads: merged,
-            activeThreadId: activeStillExists
-              ? state.activeThreadId
-              : null,
+            activeThreadId: activeStillExists ? state.activeThreadId : null,
             isLoading: false,
             participationRequired: false,
             participationMessage: null,
