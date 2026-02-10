@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.50](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.49...v3.4.0-alpha.50) (2026-02-10)
+
+
+### Enhancements
+
+* **apps/chat:** embedded mode + sidebar/thread UX improvements ([#5005](https://github.com/uzh-bf/klicker-uzh/issues/5005)) ([79750ce](https://github.com/uzh-bf/klicker-uzh/commit/79750ceb33a083692bb58b64932caa5dfaa6d5ea))
+
 ## [3.4.0-alpha.49](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.48...v3.4.0-alpha.49) (2026-02-09)
 
 
