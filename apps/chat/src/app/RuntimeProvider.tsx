@@ -45,11 +45,6 @@ export function RuntimeProvider({
   const [threadsLoaded, setThreadsLoaded] = useState(false)
   const lastSyncedThreadId = useRef<string | null>(null)
   const syncInFlight = useRef<string | null>(null)
-  const currentQueryString = searchParams.toString()
-  const missingThreadRedirectTarget = currentQueryString
-    ? `/${chatbotId}?${currentQueryString}`
-    : `/${chatbotId}`
-
   // get current thread state
   const activeThread = threads.find((t) => t.id === activeThreadId)
   const messages = activeThread?.messages || []
@@ -106,7 +101,12 @@ export function RuntimeProvider({
     const existingThread = threads.find((thread) => thread.id === threadId)
 
     if (!existingThread) {
-      router.replace(missingThreadRedirectTarget)
+      const queryString = searchParams.toString()
+      const redirectTarget = queryString
+        ? `/${chatbotId}?${queryString}`
+        : `/${chatbotId}`
+
+      router.replace(redirectTarget)
       lastSyncedThreadId.current = null
       syncInFlight.current = null
       return
@@ -151,8 +151,8 @@ export function RuntimeProvider({
   }, [
     activeThreadId,
     chatbotId,
-    missingThreadRedirectTarget,
     router,
+    searchParams,
     switchToThread,
     threadId,
     threads,
