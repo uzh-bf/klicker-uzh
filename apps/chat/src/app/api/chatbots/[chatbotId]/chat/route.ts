@@ -567,7 +567,7 @@ export async function POST(
   if ('response' in authResult) {
     return authResult.response
   }
-  const { participantId } = authResult
+  const { participantId, authMode } = authResult
 
   // check disclaimer acceptance
   try {
@@ -763,6 +763,15 @@ export async function POST(
     chatbot.allowedModelIds.length > 0
       ? new Set(chatbot.allowedModelIds as string[])
       : null
+
+  // Anonymous (LTI guest) users are restricted to fallback models only.
+  // This enforces the cost constraint from the semi-anonymous LTI mode design.
+  if (authMode === 'anonymous') {
+    const fallbackModel = modelRegistry.find((m) => m.fallback)
+    if (fallbackModel) {
+      selectedModel = fallbackModel.id
+    }
+  }
 
   // Override model selection if modelSelection is disabled
   let userCredits: { current: number; total: number } | null = null

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 interface NoLoginPageProps {
-  searchParams?: Promise<{ redirectTo?: string | string[] }>
+  searchParams?: Promise<{ redirectTo?: string | string[]; lti?: string }>
 }
 
 export default async function Page({ searchParams }: NoLoginPageProps) {
@@ -10,6 +10,7 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
   const redirectTo = Array.isArray(redirectToParam)
     ? redirectToParam[0]
     : redirectToParam
+  const isLtiContext = resolvedSearchParams.lti === '1'
 
   const loginBaseUrl = process.env.NEXT_PUBLIC_PWA_URL
     ? process.env.NEXT_PUBLIC_PWA_URL.replace(/\/$/, '')
@@ -25,10 +26,23 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
         <h1 className="text-foreground text-2xl font-semibold">
           Login Required
         </h1>
-        <p className="text-muted-foreground mt-4 text-base">
-          You need to create a KlickerUZH account or log in before you can
-          access this chatbot.
-        </p>
+        {isLtiContext ? (
+          <>
+            <p className="text-muted-foreground mt-4 text-base">
+              Your LTI session could not be verified. The link may have expired
+              or be invalid.
+            </p>
+            <p className="text-muted-foreground mt-2 text-sm">
+              Please return to your LMS and re-launch the chatbot, or create a
+              KlickerUZH account to access it directly.
+            </p>
+          </>
+        ) : (
+          <p className="text-muted-foreground mt-4 text-base">
+            You need to create a KlickerUZH account or log in before you can
+            access this chatbot.
+          </p>
+        )}
         {redirectTo && (
           <p className="text-muted-foreground mt-2 text-sm">
             After logging in, return to{' '}

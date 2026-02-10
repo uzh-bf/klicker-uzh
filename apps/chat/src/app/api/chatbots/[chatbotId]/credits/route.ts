@@ -18,7 +18,7 @@ export async function GET(
   if ('response' in authResult) {
     return authResult.response
   }
-  const { participantId } = authResult
+  const { participantId, authMode } = authResult
 
   const chatbotResult = await getChatbotOr404(chatbotId, {
     courseId: true,
@@ -35,10 +35,14 @@ export async function GET(
       chatbotId
     )
 
-    const availableModels = getModelsForChatbot(
-      chatbotResult.chatbot,
-      credits
-    ).map(
+    let availableModels = getModelsForChatbot(chatbotResult.chatbot, credits)
+
+    // Anonymous (LTI guest) users are restricted to fallback models only
+    if (authMode === 'anonymous') {
+      availableModels = availableModels.filter((m) => m.fallback)
+    }
+
+    const models = availableModels.map(
       ({
         id,
         name,
@@ -58,8 +62,9 @@ export async function GET(
 
     return NextResponse.json({
       ...credits,
-      availableModels,
+      availableModels: models,
       automaticModelId: getAutomaticModelId(credits),
+      authMode,
     })
   } catch (error) {
     console.error('Failed to fetch credits:', error)
