@@ -157,28 +157,24 @@ export async function ensureParticipation(
   try {
     const course = await ctx.prisma.course.findUnique({
       where: { id: courseId },
-      select: { id: true, isAssessmentEnabled: true },
+      select: { id: true },
     })
 
-    if (!course || course.isAssessmentEnabled) {
+    if (!course) {
       return false
     }
 
-    await ctx.prisma.participation.upsert({
+    const participation = await ctx.prisma.participation.findUnique({
       where: {
         courseId_participantId: {
           courseId,
           participantId: ctx.user.sub,
         },
       },
-      create: {
-        course: { connect: { id: courseId } },
-        participant: { connect: { id: ctx.user.sub } },
-      },
-      update: {},
+      select: { id: true },
     })
 
-    return true
+    return participation !== null
   } catch (error) {
     console.error('ensureParticipation failed', {
       courseId,

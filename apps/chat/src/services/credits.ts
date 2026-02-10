@@ -130,14 +130,4 @@ export class CreditsService {
     // Then atomically decrement
     return await atomicDecrementCredits(participantId, chatbotId, amount)
   }
-
-  /**
-   * Determines which model to use based on credit availability
-   * Returns the primary model if credits are available, otherwise fallback model
-   */
-  static getAutomaticModel(credits: UserCredits): string {
-    // Use primary model (GPT-4.1) when credits are available
-    // Use fallback model (GPT-4.1-mini) when no credits
-    return credits.current > 0 ? 'gpt-4.1' : 'gpt-4.1-mini'
-  }
 }

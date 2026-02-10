@@ -101,11 +101,13 @@ docker compose up --build -d postgres redis_exec redis_assessment redis_cache "$
 	exit 1
 }
 
+# wait for infra (postgres, redis, hatchet) before proceeding
+bash .github/scripts/wait-for-infra.sh
+
 if confirm "Run pnpm run build?"; then
 	pnpm run build
 else
 	echo "Skipping pnpm run build"
-	bash .github/scripts/wait-for-services.sh
 fi
 
 # create hatchet client token (switch script for cypress/test mode)

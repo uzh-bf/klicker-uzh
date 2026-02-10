@@ -1,11 +1,12 @@
 import { type AppendMessage } from '@assistant-ui/react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 import { generateId } from '../lib/utils/chatUtils'
 import {
   useChatStore,
   type ExtendedThreadMessageLike,
 } from '../stores/chatStore'
+import { useSettingsStore } from '../stores/settingsStore'
 
 /**
  * Hook for managing chat thread operations.
@@ -28,7 +29,11 @@ export function useThreadManagement(
   abortControllerRef: React.MutableRefObject<AbortController | null>
 ) {
   const { chatbotId } = useParams<{ chatbotId: string }>()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const { createThread, addMessage, setIsRunning } = useChatStore()
+  const { selectedMode, selectedModel, selectedReasoningEffort } =
+    useSettingsStore()
 
   /**
    * Handles creation of new user messages and generates response
@@ -40,11 +45,13 @@ export function useThreadManagement(
       const { activeThreadId: currentActiveThreadId } = useChatStore.getState()
 
       let threadId = currentActiveThreadId
+      let shouldReplaceUrl = false
 
       // create new thread if none exists
       if (!threadId) {
         try {
           threadId = await createThread(chatbotId)
+          shouldReplaceUrl = true
         } catch (error) {
           console.error('Failed to create thread', error)
           return
@@ -62,6 +69,9 @@ export function useThreadManagement(
         content: message.content,
         createdAt: new Date(),
         parentId: message.parentId || null,
+        chatMode: selectedMode,
+        modelId: selectedModel,
+        reasoningEffort: selectedReasoningEffort,
       }
 
       try {
@@ -71,6 +81,11 @@ export function useThreadManagement(
         return
       }
 
+      if (shouldReplaceUrl) {
+        const qs = searchParams.toString()
+        router.replace(`/${chatbotId}/threads/${threadId}${qs ? `?${qs}` : ''}`)
+      }
+
       const currentMessages =
         useChatStore.getState().threads.find((t) => t.id === threadId)
           ?.messages || []
@@ -78,7 +93,17 @@ export function useThreadManagement(
       // generate response based on current conversation
       await generateChatResponse(currentMessages, threadId)
     },
-    [createThread, addMessage, generateChatResponse, chatbotId]
+    [
+      createThread,
+      addMessage,
+      generateChatResponse,
+      chatbotId,
+      router,
+      searchParams,
+      selectedMode,
+      selectedModel,
+      selectedReasoningEffort,
+    ]
   )
 
   /**
@@ -107,6 +132,9 @@ export function useThreadManagement(
         id: generateId(),
         createdAt: new Date(),
         parentId: parentId,
+        chatMode: selectedMode,
+        modelId: selectedModel,
+        reasoningEffort: selectedReasoningEffort,
       }
 
       // build new conversation path up to the parent + edited message
@@ -141,7 +169,7 @@ export function useThreadManagement(
       // generate new response from the edited conversation state
       await generateChatResponse(newCurrentPath, threadId)
     },
-    [generateChatResponse]
+    [generateChatResponse, selectedMode, selectedModel, selectedReasoningEffort]
   )
 
   /**

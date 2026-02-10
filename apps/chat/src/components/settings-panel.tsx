@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { type ModelID } from '../lib/config/models'
+import { type ReasoningEffort } from '../lib/config/reasoning'
 import { useSettingsStore } from '../stores/settingsStore'
 
 import { Progress, Select } from '@uzh-bf/design-system'
@@ -11,14 +12,16 @@ export function SettingsPanel() {
   const {
     selectedModel,
     selectedMode,
+    selectedReasoningEffort,
     credits,
     modelOptions,
     modeOptions,
     modelSelectionEnabled,
     setSelectedModel,
     setSelectedMode,
+    setSelectedReasoningEffort,
   } = useSettingsStore()
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(false)
 
   const creditsPercentage =
     credits.total > 0 ? (credits.current / credits.total) * 100 : 0
@@ -31,10 +34,23 @@ export function SettingsPanel() {
     setSelectedMode(value as string)
   }
 
+  const handleReasoningEffortChange = (value: string) => {
+    setSelectedReasoningEffort(value as ReasoningEffort)
+  }
+
+  const selectedModelOption = modelOptions.find(
+    (option) => option.id === selectedModel
+  )
+  const availableReasoningEfforts =
+    selectedModelOption?.supportsReasoning === true
+      ? selectedModelOption.allowedReasoningEfforts
+      : []
+  const showReasoningEffortSelector = availableReasoningEfforts.length > 1
+
   return (
     <div>
       <div
-        className="flex cursor-pointer items-center gap-2 border-t p-4 hover:bg-gray-100"
+        className="flex cursor-pointer items-center gap-2 border-t px-3 py-2 hover:bg-gray-100"
         onClick={() => setOpen(!open)}
       >
         <Settings2 className="h-4 w-4" />
@@ -49,10 +65,10 @@ export function SettingsPanel() {
         </span>
       </div>
       {open && (
-        <div className="border-muted space-y-4 border-t px-4 pb-4">
+        <div className="border-muted space-y-3 border-t px-3 pb-2 pt-2">
           <div>
             {/* mode selection */}
-            <div className="space-y-2">
+            <div className="space-y-1">
               <label className="text-sm font-bold">Chat Mode</label>
               <Select
                 placeholder="Select Chat Mode"
@@ -77,7 +93,7 @@ export function SettingsPanel() {
             </div>
 
             {/* model selection */}
-            <div className="space-y-2">
+            <div className="mt-2 space-y-1">
               <label className="text-sm font-bold">AI Model</label>
               {modelSelectionEnabled ? (
                 <>
@@ -114,13 +130,34 @@ export function SettingsPanel() {
                 </>
               )}
             </div>
+
+            {showReasoningEffortSelector ? (
+              <div className="mt-2 space-y-1">
+                <label className="text-sm font-bold">Reasoning Effort</label>
+                <Select
+                  placeholder="Select reasoning effort"
+                  items={availableReasoningEfforts.map((value) => ({
+                    value,
+                    label: value.charAt(0).toUpperCase() + value.slice(1),
+                  }))}
+                  onChange={(newValue) => {
+                    handleReasoningEffortChange(newValue)
+                  }}
+                  value={selectedReasoningEffort}
+                />
+                <p className="text-muted-foreground text-sm">
+                  Higher effort can improve difficult responses at the cost of
+                  additional latency.
+                </p>
+              </div>
+            ) : null}
           </div>
         </div>
       )}
 
-      <div className="border-t p-4">
+      <div className="border-t px-3 py-2">
         {/* credits display */}
-        <div className="space-y-2">
+        <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4" />
             <span className="text-sm font-medium">Available Credits</span>
