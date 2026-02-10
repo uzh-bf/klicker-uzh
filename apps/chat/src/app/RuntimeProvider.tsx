@@ -49,6 +49,9 @@ export function RuntimeProvider({
   const [threadsLoaded, setThreadsLoaded] = useState(false)
   const lastSyncedThreadId = useRef<string | null>(null)
   const syncInFlight = useRef<string | null>(null)
+  const syncRetryCount = useRef(0)
+  const loadGeneration = useRef(0)
+  const [syncRetryTrigger, setSyncRetryTrigger] = useState(0)
   const previousRuntimeContext = useRef<{
     chatbotId: string
     embedded: boolean
@@ -90,24 +93,25 @@ export function RuntimeProvider({
 
     if (!shouldLoadRuntimeData) return
 
-    let isMounted = true
+    const currentGen = ++loadGeneration.current
 
     setThreadsLoaded(false)
     lastSyncedThreadId.current = null
 
     void (async () => {
-      await loadThreads(chatbotId)
-      if (isMounted) setThreadsLoaded(true)
+      try {
+        await loadThreads(chatbotId)
+      } catch (error) {
+        console.error('Failed to load threads:', error)
+      } finally {
+        if (loadGeneration.current === currentGen) setThreadsLoaded(true)
+      }
     })()
 
     void (async () => {
       await loadModeOptions(chatbotId)
       await loadCredits(chatbotId)
     })()
-
-    return () => {
-      isMounted = false
-    }
   }, [chatbotId, embedded, loadCredits, loadModeOptions, loadThreads, threadId])
 
   // sync active thread with URL params
@@ -120,6 +124,7 @@ export function RuntimeProvider({
       }
       lastSyncedThreadId.current = null
       syncInFlight.current = null
+      syncRetryCount.current = 0
       return
     }
 
@@ -129,6 +134,7 @@ export function RuntimeProvider({
       router.replace(missingThreadRedirectPath)
       lastSyncedThreadId.current = null
       syncInFlight.current = null
+      syncRetryCount.current = 0
       return
     }
 
@@ -162,6 +168,10 @@ export function RuntimeProvider({
     void switchToThread(chatbotId, threadId).then((success) => {
       if (success) {
         lastSyncedThreadId.current = threadId
+        syncRetryCount.current = 0
+      } else if (syncRetryCount.current < 2) {
+        syncRetryCount.current++
+        setTimeout(() => setSyncRetryTrigger((c) => c + 1), 2000)
       }
 
       if (syncInFlight.current === threadId) {
@@ -174,6 +184,7 @@ export function RuntimeProvider({
     missingThreadRedirectPath,
     router,
     switchToThread,
+    syncRetryTrigger,
     threadId,
     threads,
     threadsLoaded,

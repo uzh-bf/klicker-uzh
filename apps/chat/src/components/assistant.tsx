@@ -338,13 +338,14 @@ function SidebarMain({
         </Tooltip>
       </div>
       <div className="flex min-h-0 flex-1 flex-col">
-        {isLoading ? (
-          <div className="flex flex-1 items-center justify-center">
-            <Loader2 className="text-muted-foreground size-6 animate-spin" />
-          </div>
-        ) : (
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          {isLoading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white">
+              <Loader2 className="text-muted-foreground size-6 animate-spin" />
+            </div>
+          )}
           <Thread chatbotAvatar={chatbot.avatar ?? ''} />
-        )}
+        </div>
         {showFooter && <Footer />}
       </div>
     </SidebarInset>
