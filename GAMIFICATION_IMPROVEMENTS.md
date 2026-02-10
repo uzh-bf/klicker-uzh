@@ -396,3 +396,127 @@ Use phased experiments, not full-course default rollouts.
 - [Educational Research Review (2026 systematic review on reward strategies)](https://www.sciencedirect.com/science/article/pii/S1747938X26000059)
 - [NBER Working Paper (2025 streak highlighting field experiment)](https://www.nber.org/papers/w34173)
 - [Springer (2024 leaderboard impact in online assessment, cites leaderboard-position literature)](https://link.springer.com/article/10.1007/s10639-024-12845-2)
+
+## Part 8: Updated Research Synthesis (What Works, What Fails, What Varies)
+
+### 8.1 Core Evidence Signal
+
+Across recent meta-analyses, the direction of effect is consistently positive, but the variance is high. Reported effect sizes range from small to moderate (and occasionally higher in specific contexts), with strong dependence on design quality, learning context, and intervention duration. A stable pattern is that cognitive/achievement outcomes are typically more robust than intrinsic-motivation gains: for example, Sailer & Homner (2020) report stronger cognitive effects than motivational/behavioral effects, while Li et al. (2024) show a smaller but significant intrinsic-motivation effect. The practical synthesis is that gamification can work well in higher education, but only as a context-sensitive design strategy rather than a universal recipe.
+
+### 8.2 Mechanisms With Strongest Support
+
+The evidence aligns most strongly with four explanatory lenses:
+- **Self-Determination Theory (SDT)**: durability improves when autonomy, competence, and relatedness are actively supported.
+- **Flow Theory**: engagement improves when challenge-skill balance and feedback loops are continuously maintained.
+- **Goal-Setting Theory**: clear, specific, escalating goals increase focused effort and persistence.
+- **Social Comparison Theory**: social ranking can motivate or demotivate depending on visibility, rank position, and learner profile.
+
+A consistent cross-study signal is that competence often lags unless systems provide high-quality feedback and meaningful progression scaffolding.
+
+### 8.3 Which Game Elements Tend to Help vs. Hurt
+
+More reliable patterns in the literature:
+- High-quality, immediate, informational feedback loops.
+- Mastery-oriented progression and clear progress visualization.
+- Collaborative-competitive blends (team dynamics + challenge).
+- Narrative/context framing that makes activity meaning explicit.
+
+Mixed or higher-risk patterns:
+- Isolated PBL (points-badges-leaderboards) without pedagogical integration.
+- Permanent absolute leaderboards with strong public comparison pressure.
+- Heavy extrinsic reward pressure for already intrinsically meaningful tasks.
+- Speed-dominant scoring where speed is not the learning objective.
+
+The key synthesis is that combinations and coherence of mechanics matter more than any single element in isolation.
+
+### 8.4 Context-Specific Findings Relevant to KlickerUZH
+
+- **Classroom response / live quiz** contexts show some of the strongest evidence for engagement and achievement gains, especially when used consistently as low-stakes formative practice.
+- **Practice and self-study** contexts perform best when gamification is combined with regularity mechanisms and quality feedback rather than pure reward loops.
+- **Semester-long deployments** commonly show a novelty dip; sustained effects are more likely when design elements are refreshed over time.
+- **AI/chatbot-based learning** results are promising but still emerging; adaptation quality and pedagogical alignment are the main determinants of value.
+
+### 8.5 Failure Modes Reported in the Literature
+
+- Novelty decay after early engagement gains.
+- Overjustification and reward dependence under controlling extrinsic designs.
+- "Gaming the system" behavior (optimizing points over learning quality).
+- Equity risks in competitive mechanics, including subgroup differences.
+- Instructor workload escalation when systems are not operationally sustainable.
+
+### 8.6 Synthesis-Based Implications for This Concept
+
+The strategic direction in this document remains valid, but the synthesis suggests four evidence-led cautions:
+- Prioritize design coherence and pedagogical fit over adding more mechanics.
+- Evaluate each mechanic by its contribution to autonomy, competence, and relatedness.
+- Treat equity, privacy, and learner diversity as first-order design constraints.
+- Judge success longitudinally (not only at launch) to separate novelty from durable impact.
+
+### 8.7 Sources From GAMIFICATION_RESEARCH.md
+
+- Sailer, M., & Homner, L. (2020). *The Gamification of Learning: A Meta-analysis*. Educational Psychology Review. ([link](https://link.springer.com/article/10.1007/s10648-019-09498-w))
+- Bai, S., Hew, K. F., & Huang, B. (2020). *Does gamification improve student learning outcome?* Educational Research Review. ([link](https://doi.org/10.1016/j.edurev.2020.100322))
+- Li, M., Ma, S., & Shi, Y. (2023). *Examining the effectiveness of gamification...: a meta-analysis*. Frontiers in Psychology. ([link](https://pmc.ncbi.nlm.nih.gov/articles/PMC10591086/))
+- Li, L., Hew, K. F., & Du, J. (2024). *Gamification enhances student intrinsic motivation...*. ETR&D. ([link](https://link.springer.com/article/10.1007/s11423-023-10337-7))
+- Hanus, M. D., & Fox, J. (2015). *Assessing the effects of gamification in the classroom*. Computers & Education. ([link](https://doi.org/10.1016/j.compedu.2014.08.019))
+- Landers, R. N., & Landers, A. K. (2014). *An Empirical Test of the Theory of Gamified Learning*. Simulation & Gaming. ([link](https://doi.org/10.1177/1046878114563662))
+- Rodrigues et al. (2022), longitudinal evidence on novelty dip and later stabilization (as synthesized in `GAMIFICATION_RESEARCH.md`).
+
+## Part 9: What We Should Adapt in This Concept After the Research Synthesis
+
+### 9.1 Feedback Adaptations (How We Judge Claims)
+
+To improve decision quality, recommendations should be explicitly confidence-labeled:
+- **High confidence**: supported by meta-analyses/systematic reviews.
+- **Moderate confidence**: supported by quasi-experiments/field studies.
+- **Exploratory**: promising but context-limited evidence.
+
+Given the high heterogeneity reported across studies, there is no universal “best mechanic.” Claims should be framed as “likely under these conditions” rather than “generally effective in all contexts.”
+
+### 9.2 Concept Adaptations (What Changes in Priorities)
+
+The concept should shift from a **feature-first** framing to a **mechanism-first** framing.
+
+Reprioritized emphasis:
+1. Feedback quality, mastery coherence, and guardrails.
+2. XP economy redesign with stability controls.
+3. Social/leaderboard redesign with harm-minimization defaults.
+4. Streaks/challenges as controlled pilots.
+
+This preserves the strategic direction while making rollout evidence-gated and context-specific.
+
+### 9.3 Mechanics We Should Treat More Cautiously
+
+The following mechanics need stronger caution and stricter safeguards:
+- Permanent absolute leaderboards.
+- Heavy extrinsic incentives directly tied to grading.
+- Speed-dominant scoring where speed is not the intended learning objective.
+- Streak designs that strongly penalize missed days.
+
+These are not “remove” recommendations; they are “design carefully, pilot first, and monitor harm” recommendations.
+
+### 9.4 New Non-Negotiables for Design Quality
+
+Four non-negotiables should be explicit in future concept updates:
+- Support intrinsic needs (autonomy, competence, relatedness).
+- Default to equity, accessibility, and privacy-safe behavior.
+- Keep instructor operations sustainable (low maintenance burden).
+- Evaluate longitudinally, assuming a novelty dip is likely.
+
+### 9.5 Practical Delta vs Earlier Parts
+
+Compared with Parts 7 and 8, this adds:
+- Stronger confidence labeling of claims.
+- Stronger harm-minimization posture for social mechanics.
+- Stronger caution against grade-coupled reward escalation.
+- Stronger emphasis on design coherence over mechanic count.
+
+### 9.6 Sources Informing This Adaptation
+
+- Sailer, M., & Homner, L. (2020). *The Gamification of Learning: A Meta-analysis*. Educational Psychology Review.
+- Bai, S., Hew, K. F., & Huang, B. (2020). *Does gamification improve student learning outcome?* Educational Research Review.
+- Li, M., Ma, S., & Shi, Y. (2023). *Examining the effectiveness of gamification...: a meta-analysis*. Frontiers in Psychology.
+- Li, L., Hew, K. F., & Du, J. (2024). *Gamification enhances student intrinsic motivation...*. ETR&D.
+- Hanus, M. D., & Fox, J. (2015). *Assessing the effects of gamification in the classroom*. Computers & Education.
+- Landers, R. N., & Landers, A. K. (2014). *An Empirical Test of the Theory of Gamified Learning*. Simulation & Gaming.
+- Rodrigues et al. (2022) longitudinal novelty trajectory (as synthesized in `GAMIFICATION_RESEARCH.md`).
