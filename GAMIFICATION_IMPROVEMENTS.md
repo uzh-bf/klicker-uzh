@@ -259,3 +259,140 @@ These recommendations are for lecturers deploying gamification in their courses:
 - [Personality traits and gamification (Smart Learning Environments)](https://link.springer.com/article/10.1186/s40561-019-0098-x)
 - [Unlocking student engagement via leaderboards (Springer 2024)](https://link.springer.com/article/10.1007/s10639-024-12845-2)
 - [Streaks and milestones for gamification in mobile apps (Plotline)](https://www.plotline.so/blog/streaks-for-gamification-in-mobile-apps)
+
+## Part 7: Detailed Feedback on This Concept (Evidence + Codebase Fit)
+
+### Overall Assessment
+
+This concept is directionally strong and addresses real motivational issues in the current system, especially the binary XP rule and over-reliance on absolute leaderboard rank. The proposal is also unusually pragmatic because it maps product ideas to concrete implementation areas.
+
+The main improvements needed are:
+- correcting a few current-state assumptions that are already implemented in KlickerUZH,
+- separating high-confidence evidence from illustrative/product-example evidence,
+- adding explicit safeguards for fairness, stress, and incentive abuse,
+- making experimentation and measurement a prerequisite for high-effort features (streaks/challenges).
+
+In short: keep the strategic direction, tighten factual accuracy, and introduce stronger rollout discipline.
+
+### What Is Strong and Should Be Kept
+
+- Root-cause framing is correct: the XP all-or-nothing rule can suppress perceived progress and competence.
+- The document correctly uses SDT (competence/autonomy/relatedness) as a design lens instead of only “add more rewards.”
+- The concept balances in-product changes with lecturer-level deployment guidance, which is critical in education contexts.
+- The proposal identifies novelty decay and recommends variation over semester time, which aligns with longitudinal evidence.
+- Priority framing (impact vs effort) is useful and implementation-oriented.
+- The proposal already avoids a common anti-pattern (showing full rankings for everyone) by preserving the idea of relative comparison and top-10+self behavior.
+
+### Accuracy Corrections Against Current KlickerUZH State
+
+The following corrections improve factual accuracy of the “current state” analysis:
+
+- **Correct as written**: XP is binary today (`10` only for 100% correctness, otherwise `0`) in `computeAwardedXp` at `/Users/rolandschlaefli/.codex/worktrees/d1aa/klicker-uzh/packages/grading/src/index.ts:396`.
+- **Correction**: Timeline is already surfaced to students in the PWA insights view, not only stored in DB. See `/Users/rolandschlaefli/.codex/worktrees/d1aa/klicker-uzh/apps/frontend-pwa/src/pages/insights/timeline.tsx:1`.
+- **Correction**: Next-level progress preview already exists on profile via progress bar and next-level XP threshold. See `/Users/rolandschlaefli/.codex/worktrees/d1aa/klicker-uzh/apps/frontend-pwa/src/components/participant/ProfileData.tsx:97`.
+- **Correction**: Repeatability infrastructure for achievements already exists (`achievedCount` + upsert increment), so this is partly an expansion problem, not greenfield architecture:
+  - `/Users/rolandschlaefli/.codex/worktrees/d1aa/klicker-uzh/packages/prisma/src/prisma/schema/gamification.prisma:63`
+  - `/Users/rolandschlaefli/.codex/worktrees/d1aa/klicker-uzh/packages/graphql/src/services/liveQuizzes.ts:1898`
+  - `/Users/rolandschlaefli/.codex/worktrees/d1aa/klicker-uzh/packages/graphql/src/services/groups.ts:2349`
+- **Correction**: Leaderboard already supports course vs rolling-style views (biweekly in student flow) and top-10+self rendering behavior:
+  - `/Users/rolandschlaefli/.codex/worktrees/d1aa/klicker-uzh/packages/graphql/src/services/courses.ts:2557`
+  - `/Users/rolandschlaefli/.codex/worktrees/d1aa/klicker-uzh/packages/shared-components/src/Leaderboard.tsx:47`
+- **Valid finding**: Some achievement descriptions are currently empty placeholders in seed data. Example at `/Users/rolandschlaefli/.codex/worktrees/d1aa/klicker-uzh/packages/prisma-data/src/data/data/TEST.ts:1062`.
+
+### Evidence Quality Audit of Referenced Sources
+
+Use a tiered evidence model when prioritizing implementation.
+
+- **Tier A (Core justification: peer-reviewed meta-analyses/systematic reviews)**
+- Supports: positive but heterogeneous effects, need for contextual design, novelty/fatigue risks, SDT alignment.
+- Recommended use: justify roadmap direction and guardrails, not deterministic effect sizes for this exact product.
+
+- **Tier B (Promising but not definitive for this context)**
+- Includes: strong field experiments or high-quality quasi-experimental studies not directly in HE/Klicker-like constraints.
+- Supports: mechanisms worth piloting (e.g., streak highlighting can improve usage and some learning outcomes).
+- Recommended use: pilot-first, with explicit uncertainty in external validity.
+
+- **Tier C (Product examples/practitioner guidance)**
+- Includes: vendor case studies and product design blogs.
+- Supports: implementation patterns and UX inspiration.
+- Not sufficient for causal learning-effect claims.
+
+Operationally, this means: keep Duolingo/industry references as design examples, but base prioritization claims on Tier A/B.
+
+### Risks and Missing Safeguards
+
+The concept should explicitly account for the following failure modes before rollout:
+
+- **XP economy inflation and drift**
+- Stacking graduated XP + streak multipliers + bonuses can destabilize progression pacing and level meaning.
+- Add caps, diminishing returns, and periodic economy calibration.
+
+- **Equity and stress risks**
+- Competitive mechanics can differentially harm lower-ranked or competition-averse students.
+- Add stress-minimizing defaults: relative views, opt-out controls, non-punitive streak recovery, and collaborative paths.
+
+- **Motivation-quality tradeoff with grade-linked rewards**
+- Tying gamification directly to grades can shift behavior toward reward maximization rather than deep learning.
+- If grade bonuses are used, keep stakes low, transparent, and norm-based rather than winner-takes-all.
+
+- **Abuse and gaming behavior**
+- Multi-accounting, low-effort farming, and timing exploits can appear once rewards are intensified.
+- Add anomaly detection and anti-farming rules before scaling rewards.
+
+### Revised Priority Order (Actionable)
+
+- **P0: Measurement and guardrail foundation (must happen first)**
+- Define success + harm metrics, logging, and experiment design before introducing stronger incentives.
+
+- **P1: XP redesign with economy controls**
+- Replace binary XP with graduated XP, but pair with caps and monitoring to avoid inflation.
+
+- **P1: Achievement celebration + content hygiene**
+- Add immediate achievement feedback and remove placeholder achievement text to improve clarity and salience.
+
+- **P2: Leaderboard redesign (relative + movers + percentile)**
+- Keep top-10+self, add “top movers” and local competition windows to reduce fixed-rank demotivation.
+
+- **P2: Streak pilot (limited scope)**
+- Pilot streaks in one or few courses with freeze logic and gentle reminders; do not full-rollout by default.
+
+- **P3: Achievement expansion using existing repeatability infrastructure**
+- Build tiered/milestone achievements on top of existing `achievedCount` mechanics rather than new schema-first design.
+
+- **P3: Daily/weekly challenge system**
+- Execute only after P0–P2 data confirms benefits without unacceptable harm signals.
+
+### Measurement Plan (A/B + Harm Metrics)
+
+Use phased experiments, not full-course default rollouts.
+
+- **Experiment design**
+- Start with course-level randomization where possible to reduce contamination.
+- Run minimum one full teaching cycle per major feature (XP, streaks, leaderboard redesign).
+
+- **Primary outcomes (learning quality)**
+- Assessment/performance quality (not only attempts).
+- Completion quality for practice/microlearning tasks.
+
+- **Secondary outcomes (engagement)**
+- Participation frequency, return rate, and sustained activity across weeks.
+- Contribution volume adjusted for course activity availability.
+
+- **Harm metrics (must be first-class stop signals)**
+- Leaderboard opt-out rates.
+- Reported stress/anxiety and support tickets related to gamification pressure.
+- Drop-off among lower-ranked participants and widening participation gaps.
+- Suspicious behavior indicators (rapid low-effort farming, multi-account patterns).
+
+- **Decision gates**
+- Promote feature scope only if primary outcomes improve and harm metrics remain within predefined thresholds.
+- Roll back or redesign if engagement rises but learning quality or fairness indicators degrade.
+
+### Source List (Validated)
+
+- [Educational Technology Research and Development (2024 SDT meta-analysis)](https://link.springer.com/article/10.1007/s11423-023-10337-7)
+- [Heliyon (2023 systematic review on motivation + novelty effect)](https://www.sciencedirect.com/science/article/pii/S2405844023062412)
+- [Frontiers in Psychology (2023 meta-analysis)](https://pmc.ncbi.nlm.nih.gov/articles/PMC10591086/)
+- [Educational Research Review (2026 systematic review on reward strategies)](https://www.sciencedirect.com/science/article/pii/S1747938X26000059)
+- [NBER Working Paper (2025 streak highlighting field experiment)](https://www.nber.org/papers/w34173)
+- [Springer (2024 leaderboard impact in online assessment, cites leaderboard-position literature)](https://link.springer.com/article/10.1007/s10639-024-12845-2)
