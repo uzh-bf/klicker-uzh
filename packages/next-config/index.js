@@ -103,4 +103,18 @@ function getNextPWAConfig({ NODE_ENV }) {
   }
 }
 
-export { getNextBaseConfig, getNextPWAConfig }
+function getSecurityHeaders() {
+  const allowedFrameAncestors = process.env.ALLOWED_FRAME_ANCESTORS
+  const frameAncestors = allowedFrameAncestors
+    ? `frame-ancestors 'self' ${allowedFrameAncestors}`
+    : "frame-ancestors 'self'"
+
+  return [
+    {
+      key: 'Content-Security-Policy',
+      value: frameAncestors,
+    },
+  ]
+}
+
+export { getNextBaseConfig, getNextPWAConfig, getSecurityHeaders }
