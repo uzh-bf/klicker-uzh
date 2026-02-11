@@ -126,6 +126,7 @@ services:
     image: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa:v3
     environment:
       APP_SECRET: abcd
+      ALLOWED_FRAME_ANCESTORS: 'https://*.klicker.com'
     ports:
       - 3001:3000
     networks:
