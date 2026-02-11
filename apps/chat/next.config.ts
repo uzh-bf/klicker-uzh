@@ -1,4 +1,4 @@
-import { getNextBaseConfig } from '@klicker-uzh/next-config'
+import { getNextBaseConfig, getSecurityHeaders } from '@klicker-uzh/next-config'
 import { NextConfig } from 'next'
 import createNextIntlPlugin from 'next-intl/plugin'
 
@@ -11,6 +11,14 @@ const nextConfig: NextConfig = {
     NODE_ENV: process.env.NODE_ENV as string,
     NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV as string,
   }),
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: getSecurityHeaders(),
+      },
+    ]
+  },
   webpack: (config, { isServer }) => {
     // Call the base config webpack function if it exists
     const baseConfig = getNextBaseConfig({
