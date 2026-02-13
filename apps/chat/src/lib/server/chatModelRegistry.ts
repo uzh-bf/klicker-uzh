@@ -256,7 +256,7 @@ export function getModelsForChatbot(
   let models = getChatModelRegistry()
   if (chatbot.allowedModelIds.length > 0) {
     const allowed = new Set(chatbot.allowedModelIds)
-    models = models.filter((m) => allowed.has(m.id))
+    models = models.filter((m) => allowed.has(m.id) || m.fallback)
   }
   if (credits.current <= 0) {
     models = models.filter((m) => m.fallback)
@@ -270,8 +270,19 @@ export function getModelsForChatbot(
   }))
 }
 
-export function getAutomaticModelId(credits: { current: number }): string {
-  const registry = getChatModelRegistry()
+export function getAutomaticModelId(
+  credits: { current: number },
+  allowedModelIds?: string[]
+): string {
+  let registry = getChatModelRegistry()
+
+  if (allowedModelIds && allowedModelIds.length > 0) {
+    const allowed = new Set(allowedModelIds)
+    const filtered = registry.filter((m) => allowed.has(m.id) || m.fallback)
+    if (filtered.length > 0) {
+      registry = filtered
+    }
+  }
 
   const configuredPrimary = process.env.CHAT_PRIMARY_MODEL_ID
   const configuredFallback = process.env.CHAT_FALLBACK_MODEL_ID
