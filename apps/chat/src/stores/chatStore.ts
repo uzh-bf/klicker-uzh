@@ -60,7 +60,8 @@ interface ChatState {
   // active thread message actions
   addMessage: (
     chatbotId: string,
-    message: ExtendedThreadMessageLike
+    message: ExtendedThreadMessageLike,
+    targetThreadId?: string
   ) => Promise<string | null>
   setMessages: (messages: ExtendedThreadMessageLike[]) => void
   setIsRunning: (isRunning: boolean) => void
@@ -366,10 +367,10 @@ export const useChatStore = create<ChatState>((set, get) => {
      * @param message - The message to add to the conversation
      * @returns Promise<string | null> The ID of the thread the message was added to
      */
-    addMessage: async (chatbotId: string, message) => {
+    addMessage: async (chatbotId: string, message, targetThreadId?: string) => {
       const state = get()
 
-      let currentThreadId = state.activeThreadId
+      let currentThreadId = targetThreadId ?? state.activeThreadId
 
       // create a new thread if none is active
       if (!currentThreadId) {

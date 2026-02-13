@@ -74,16 +74,16 @@ export function useThreadManagement(
         reasoningEffort: selectedReasoningEffort,
       }
 
-      try {
-        await addMessage(chatbotId, userMessage)
-      } catch (error) {
-        console.error('Failed to add message', error)
-        return
-      }
-
       if (shouldReplaceUrl) {
         const qs = searchParams.toString()
         router.replace(`/${chatbotId}/threads/${threadId}${qs ? `?${qs}` : ''}`)
+      }
+
+      try {
+        await addMessage(chatbotId, userMessage, threadId)
+      } catch (error) {
+        console.error('Failed to add message', error)
+        return
       }
 
       const currentMessages =
