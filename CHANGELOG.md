@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.51](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.50...v3.4.0-alpha.51) (2026-02-13)
+
+
+### Bug Fixes
+
+* add frame-ancestors config to allow embedding in other apps ([#5019](https://github.com/uzh-bf/klicker-uzh/issues/5019)) ([458f4c7](https://github.com/uzh-bf/klicker-uzh/commit/458f4c7605968f163d52ac0990565da9c3008dec))
+* **apps/chat:** ensure that fallback model can always be used, use available model when model selection is disabled ([574c8d4](https://github.com/uzh-bf/klicker-uzh/commit/574c8d48b4a2959d4f5e6887ede35959bceccc26))
+* **apps/chat:** prevent duplicate thread creation on first message ([a52ff82](https://github.com/uzh-bf/klicker-uzh/commit/a52ff8203dda637827df2903081ec7a32ca57693))
+* **apps/chat:** show modes also when no description is provided ([8ae6ae6](https://github.com/uzh-bf/klicker-uzh/commit/8ae6ae657861b11dad8bab7477d88e5c56e160a5))
+
 ## [3.4.0-alpha.50](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.49...v3.4.0-alpha.50) (2026-02-10)
 
 
