@@ -85,11 +85,6 @@ export function SettingsPanel() {
                 }}
                 value={selectedMode}
               />
-              <p className="text-muted-foreground text-sm">
-                {selectedMode
-                  ? modeOptions[selectedMode] || 'No description available.'
-                  : 'No mode selected.'}
-              </p>
             </div>
 
             {/* model selection */}
