@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.52](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.51...v3.4.0-alpha.52) (2026-02-14)
+
+
+### Bug Fixes
+
+* **apps/chat:** use blob storage url from env to allow avatar display ([339ffe4](https://github.com/uzh-bf/klicker-uzh/commit/339ffe428b543274afac9fd82e767a959c95e3a7))
+
 ## [3.4.0-alpha.51](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.50...v3.4.0-alpha.51) (2026-02-13)
 
 
