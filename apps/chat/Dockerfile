@@ -32,6 +32,8 @@ RUN pnpm i --ignore-scripts
 ARG NODE_ENV="production"
 
 COPY --from=builder /app/out/full/ .
+
+ARG BLOB_STORAGE_ACCOUNT_URL
 RUN pnpm run build --filter=@klicker-uzh/chat
 
 
