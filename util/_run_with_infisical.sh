@@ -68,18 +68,7 @@ fi
 
 # --- Select Infisical project ---
 ROOT_DIR=$(git rev-parse --show-toplevel)
-if [[ "$ENV" == "prd" ]]; then
-    CONFIG_FILE="$ROOT_DIR/.infisical_prd.json"
-elif [[ "$ENV" == "stg" ]]; then
-    CONFIG_FILE="$ROOT_DIR/.infisical_stg.json"
-elif [[ "$ENV" == "dev" || "$ENV" == "dev-assessment" || "$ENV" == "dev-cypress" || "$ENV" == "dev-cleverreach" ]]; then
-    CONFIG_FILE="$ROOT_DIR/.infisical_dev.json"
-else
-    echo "❌ Unsupported environment '$ENV'."
-    echo ""
-    print_help
-    exit 1
-fi
+CONFIG_FILE="$ROOT_DIR/.infisical.json"
 PROJECT_ID=$(jq -r '.workspaceId' "$CONFIG_FILE")
 
 echo "🔐 Running in Infisical environment: $ENV (Project: $PROJECT_ID)"
