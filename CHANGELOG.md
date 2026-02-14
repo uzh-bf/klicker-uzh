@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.54](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.53...v3.4.0-alpha.54) (2026-02-14)
+
+
+### Bug Fixes
+
+* rework frame ancestors to middleware ([2a0a78c](https://github.com/uzh-bf/klicker-uzh/commit/2a0a78caa8c5bf34612e9bcf5b2618e9c3e3d1bc))
+
 ## [3.4.0-alpha.53](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.52...v3.4.0-alpha.53) (2026-02-14)
 
 
