@@ -11,8 +11,8 @@ import { readFileSync } from 'fs'
 import * as R from 'remeda'
 import * as z from 'zod'
 import type {
-  CreateParticipantInvitationInput,
   CreateInvitationsResponse,
+  CreateParticipantInvitationInput,
   InvitationResult,
 } from '../services/participantInvitations.js'
 import { createParticipantInvitations } from '../services/participantInvitations.js'
@@ -135,7 +135,9 @@ async function run() {
 
       try {
         const normalizedUniqueEmails = Array.from(
-          new Set(invitations.map((invitation) => invitation.email.toLowerCase()))
+          new Set(
+            invitations.map((invitation) => invitation.email.toLowerCase())
+          )
         )
 
         const existingInvitations: ExistingInvitationInfo[] =
