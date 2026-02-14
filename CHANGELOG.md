@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.53](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.52...v3.4.0-alpha.53) (2026-02-14)
+
+
+### Enhancements
+
+* enable import of matriculation number for participant invitations ([#5003](https://github.com/uzh-bf/klicker-uzh/issues/5003)) ([4061cb6](https://github.com/uzh-bf/klicker-uzh/commit/4061cb6305ed6bf4a45635fff10371e4344ad3f8))
+
 ## [3.4.0-alpha.52](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.51...v3.4.0-alpha.52) (2026-02-14)
 
 
