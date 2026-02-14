@@ -4,7 +4,6 @@ heartbeats:
   dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
 
 global:
-  allowedFrameAncestors: 'https://*.df-app.ch'
   appOrigins:
     api: 'https://api.klicker.stg.df-app.ch'
     auth: 'https://auth.klicker.stg.df-app.ch'
@@ -149,6 +148,7 @@ auth:
       memory: 200Mi
 
 chat:
+  allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch'
   priorityClassName: staging-workload
 
   automaticModels:
@@ -234,6 +234,7 @@ chat:
       memory: 200Mi
 
 frontendPWA:
+  allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch'
   priorityClassName: staging-workload
 
   replicaCount: 1
@@ -336,6 +337,7 @@ frontendManage:
       memory: 200Mi
 
 frontendControl:
+  allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch'
   priorityClassName: staging-workload
 
   replicaCount: 1

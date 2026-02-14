@@ -37,7 +37,6 @@ vapid:
   privateKey: ''
 
 global:
-  allowedFrameAncestors: ''
   appOrigins:
     # Canonical origins per app (scheme + host[:port])
     api: ''

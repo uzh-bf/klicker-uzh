@@ -8,3 +8,6 @@ metadata:
 data:
   # SSR-only GraphQL endpoint for PWA (internal service DNS)
   API_URL_SSR: "http://{{ include "chart.fullname" . }}-backend-graphql:3000/api/graphql"
+  {{- if .Values.frontendPWA.allowedFrameAncestors }}
+  ALLOWED_FRAME_ANCESTORS: {{ .Values.frontendPWA.allowedFrameAncestors | quote }}
+  {{- end }}

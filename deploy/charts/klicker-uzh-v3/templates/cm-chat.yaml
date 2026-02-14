@@ -16,3 +16,6 @@ data:
   {{- if and .Values.chat.automaticModels .Values.chat.automaticModels.fallbackId }}
   CHAT_FALLBACK_MODEL_ID: {{ .Values.chat.automaticModels.fallbackId | quote }}
   {{- end }}
+  {{- if .Values.chat.allowedFrameAncestors }}
+  ALLOWED_FRAME_ANCESTORS: {{ .Values.chat.allowedFrameAncestors | quote }}
+  {{- end }}

@@ -4,7 +4,6 @@ heartbeats:
   dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
 
 global:
-  allowedFrameAncestors: 'https://*.klicker.uzh.ch'
   appOrigins:
     api: 'https://backend-sls.klicker.uzh.ch'
     auth: 'https://auth.klicker.uzh.ch'
@@ -188,6 +187,7 @@ auth:
       memory: 200Mi
 
 chat:
+  allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch'
   priorityClassName: production-workload
 
   replicaCount: 1
@@ -272,6 +272,7 @@ chat:
       memory: 200Mi
 
 frontendPWA:
+  allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch'
   priorityClassName: production-workload
 
   replicaCount: 3
@@ -374,6 +375,7 @@ frontendManage:
       memory: 200Mi
 
 frontendControl:
+  allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch'
   priorityClassName: production-workload
 
   replicaCount: 1

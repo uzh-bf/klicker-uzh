@@ -8,3 +8,6 @@ metadata:
 data:
   # SSR-only GraphQL endpoint for Manage frontend (internal service DNS)
   API_URL_SSR: "http://{{ include "chart.fullname" . }}-backend-graphql:3000/api/graphql"
+  {{- if .Values.frontendManage.allowedFrameAncestors }}
+  ALLOWED_FRAME_ANCESTORS: {{ .Values.frontendManage.allowedFrameAncestors | quote }}
+  {{- end }}
