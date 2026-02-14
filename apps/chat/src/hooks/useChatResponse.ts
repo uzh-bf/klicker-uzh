@@ -33,7 +33,6 @@ export function useChatResponse(
 ) {
   const { chatbotId } = useParams<{ chatbotId: string }>()
 
-  const { setMessages, setIsRunning } = useChatStore()
   const { loadCredits } = useSettingsStore()
 
   // AbortController to handle request cancellation
@@ -58,7 +57,25 @@ export function useChatResponse(
       const abortController = new AbortController()
       abortControllerRef.current = abortController
 
-      setIsRunning(true)
+      // Thread-specific helpers that target threadId directly,
+      // bypassing activeThreadId which may be stale during race conditions
+      const updateThreadMessages = (messages: ExtendedThreadMessageLike[]) => {
+        useChatStore.setState((state) => ({
+          threads: state.threads.map((thread) =>
+            thread.id === threadId ? { ...thread, messages } : thread
+          ),
+        }))
+      }
+
+      const updateThreadRunning = (isRunning: boolean) => {
+        useChatStore.setState((state) => ({
+          threads: state.threads.map((thread) =>
+            thread.id === threadId ? { ...thread, isRunning } : thread
+          ),
+        }))
+      }
+
+      updateThreadRunning(true)
 
       const triggerMessage = messagesToSend[messagesToSend.length - 1]
       const parentId = triggerMessage?.parentId
@@ -145,7 +162,7 @@ export function useChatResponse(
             createdAt: new Date(),
             parentId: triggerMessage?.id || null,
           }
-          setMessages([...messagesToSend, assistantMessage])
+          updateThreadMessages([...messagesToSend, assistantMessage])
           return
         }
 
@@ -263,7 +280,10 @@ export function useChatResponse(
                     }
                   }
 
-                  setMessages([...messagesToSend, buildAssistantMessage()])
+                  updateThreadMessages([
+                    ...messagesToSend,
+                    buildAssistantMessage(),
+                  ])
                 } else if (jsonData.type === 'reasoning-delta') {
                   const reasoningDelta = jsonData.text || jsonData.delta || ''
                   if (reasoningDelta) {
@@ -286,7 +306,10 @@ export function useChatResponse(
                       }
                     }
 
-                    setMessages([...messagesToSend, buildAssistantMessage()])
+                    updateThreadMessages([
+                      ...messagesToSend,
+                      buildAssistantMessage(),
+                    ])
                   }
                 } else if (jsonData.type === 'tool-input-start') {
                   // TOOL-CALL INITIALIZATION
@@ -316,7 +339,10 @@ export function useChatResponse(
                   toolCallsMap.set(jsonData.toolCallId, toolCall)
                   orderedContentParts.push(toolCall)
 
-                  setMessages([...messagesToSend, buildAssistantMessage()])
+                  updateThreadMessages([
+                    ...messagesToSend,
+                    buildAssistantMessage(),
+                  ])
                 } else if (jsonData.type === 'tool-input-available') {
                   // TOOL-CALL ARGS READY
                   const existingToolCall = toolCallsMap.get(jsonData.toolCallId)
@@ -324,7 +350,10 @@ export function useChatResponse(
                     existingToolCall.args = jsonData.input
                     existingToolCall.result = 'Executing...'
 
-                    setMessages([...messagesToSend, buildAssistantMessage()])
+                    updateThreadMessages([
+                      ...messagesToSend,
+                      buildAssistantMessage(),
+                    ])
                   }
                 } else if (jsonData.type === 'tool-output-available') {
                   // TOOL-CALL RESULT READY
@@ -332,7 +361,10 @@ export function useChatResponse(
                   if (existingToolCall) {
                     existingToolCall.result = jsonData.output
 
-                    setMessages([...messagesToSend, buildAssistantMessage()])
+                    updateThreadMessages([
+                      ...messagesToSend,
+                      buildAssistantMessage(),
+                    ])
                   }
                 } else if (jsonData.type === 'tool-output-error') {
                   // TOOL-CALL FAILURE
@@ -340,7 +372,10 @@ export function useChatResponse(
                   if (existingToolCall) {
                     existingToolCall.result = `Error: ${jsonData.errorText || 'Tool execution failed'}`
 
-                    setMessages([...messagesToSend, buildAssistantMessage()])
+                    updateThreadMessages([
+                      ...messagesToSend,
+                      buildAssistantMessage(),
+                    ])
                   }
                 } else if (jsonData.type === 'error') {
                   // STREAM ERROR
@@ -357,7 +392,10 @@ export function useChatResponse(
 
                   orderedContentParts.push(errorContent)
 
-                  setMessages([...messagesToSend, buildAssistantMessage()])
+                  updateThreadMessages([
+                    ...messagesToSend,
+                    buildAssistantMessage(),
+                  ])
 
                   // stop processing the stream on error
                   break
@@ -542,7 +580,7 @@ export function useChatResponse(
           console.error('Chat error:', error)
         }
       } finally {
-        setIsRunning(false)
+        updateThreadRunning(false)
         abortControllerRef.current = null
 
         // refresh credits after chat completion
@@ -556,8 +594,6 @@ export function useChatResponse(
       }
     },
     [
-      setMessages,
-      setIsRunning,
       selectedModel,
       selectedMode,
       selectedReasoningEffort,

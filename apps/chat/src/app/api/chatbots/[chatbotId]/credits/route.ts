@@ -59,7 +59,10 @@ export async function GET(
     return NextResponse.json({
       ...credits,
       availableModels,
-      automaticModelId: getAutomaticModelId(credits),
+      automaticModelId: getAutomaticModelId(
+        credits,
+        chatbotResult.chatbot.allowedModelIds
+      ),
     })
   } catch (error) {
     console.error('Failed to fetch credits:', error)

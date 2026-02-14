@@ -769,7 +769,10 @@ export async function POST(
   if (!chatbot.modelSelection) {
     // Get current user credits to determine automatic model selection
     userCredits = await CreditsService.getUserCredits(participantId, chatbotId)
-    selectedModel = getAutomaticModelId(userCredits)
+    selectedModel = getAutomaticModelId(
+      userCredits,
+      chatbot.allowedModelIds as string[]
+    )
   }
 
   let selectedModelConfig = modelRegistry.find((m) => m.id === selectedModel)
@@ -781,7 +784,11 @@ export async function POST(
   }
 
   // Enforce per-chatbot model allow-list
-  if (allowedIds && !allowedIds.has(selectedModelConfig.id)) {
+  if (
+    allowedIds &&
+    !allowedIds.has(selectedModelConfig.id) &&
+    !selectedModelConfig.fallback
+  ) {
     return NextResponse.json(
       { error: `Model not available for this chatbot: ${selectedModel}` },
       { status: 400 }
@@ -797,7 +804,10 @@ export async function POST(
       userCredits ??
       (await CreditsService.getUserCredits(participantId, chatbotId))
     if (userCredits.current <= 0) {
-      selectedModel = getAutomaticModelId(userCredits)
+      selectedModel = getAutomaticModelId(
+        userCredits,
+        chatbot.allowedModelIds as string[]
+      )
       selectedModelConfig = modelRegistry.find((m) => m.id === selectedModel)
       if (!selectedModelConfig) {
         return NextResponse.json(

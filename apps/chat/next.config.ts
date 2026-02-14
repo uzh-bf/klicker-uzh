@@ -7,7 +7,7 @@ const withNextIntl = createNextIntlPlugin('./src/types/i18n.ts')
 // @ts-expect-error
 const nextConfig: NextConfig = {
   ...getNextBaseConfig({
-    BLOB_STORAGE_ACCOUNT_URL: '',
+    BLOB_STORAGE_ACCOUNT_URL: process.env.BLOB_STORAGE_ACCOUNT_URL ?? '',
     NODE_ENV: process.env.NODE_ENV as string,
     NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV as string,
   }),
@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
   webpack: (config, { isServer }) => {
     // Call the base config webpack function if it exists
     const baseConfig = getNextBaseConfig({
-      BLOB_STORAGE_ACCOUNT_URL: '',
+      BLOB_STORAGE_ACCOUNT_URL: process.env.BLOB_STORAGE_ACCOUNT_URL ?? '',
       NODE_ENV: process.env.NODE_ENV as string,
       NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV as string,
     })

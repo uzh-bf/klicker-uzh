@@ -146,9 +146,7 @@ export const useSettingsStore = create<SettingsState>()(
             )) {
               const description = (value as { description?: string })
                 ?.description
-              if (typeof description === 'string') {
-                modes[key] = description
-              }
+              modes[key] = typeof description === 'string' ? description : ''
             }
           }
 

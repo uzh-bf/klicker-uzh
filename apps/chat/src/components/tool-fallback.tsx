@@ -89,7 +89,7 @@ export const ToolFallback: ToolCallContentPartComponent = ({
             <LoaderCircleIcon className="size-3 animate-spin" />
             {server && (
               <>
-                <span className="font-medium">{server}</span>
+                <span className="font-medium uppercase">{server}</span>
                 <MoveRightIcon className="size-2.5" />
               </>
             )}
@@ -99,7 +99,7 @@ export const ToolFallback: ToolCallContentPartComponent = ({
           <>
             {server && (
               <>
-                <span className="font-medium">{server}</span>
+                <span className="font-medium uppercase">{server}</span>
                 <MoveRightIcon className="size-2.5" />
               </>
             )}
