@@ -148,7 +148,7 @@ auth:
       memory: 200Mi
 
 chat:
-  allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch'
+  allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
 
   automaticModels:
@@ -234,7 +234,7 @@ chat:
       memory: 200Mi
 
 frontendPWA:
-  allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch'
+  allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
 
   replicaCount: 1
@@ -337,7 +337,7 @@ frontendManage:
       memory: 200Mi
 
 frontendControl:
-  allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch'
+  allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
 
   replicaCount: 1
