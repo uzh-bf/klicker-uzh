@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.56](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.55...v3.4.0-alpha.56) (2026-02-15)
+
+
+### Bug Fixes
+
+* **deploy:** allow embedding in lms.uzh.ch for staging klicker ([1352f8c](https://github.com/uzh-bf/klicker-uzh/commit/1352f8ce2b9ff9817a282725b736ea85172c8cda))
+* **deploy:** allow ius.zone embedding ([564dc74](https://github.com/uzh-bf/klicker-uzh/commit/564dc746ceb8c8e30c0395b34d5205a2e6491bf8))
+
+
+### Enhancements
+
+* **apps/lti:** add launch target resolver and docs for LTI custom claims to support system-level moodle integration ([#5023](https://github.com/uzh-bf/klicker-uzh/issues/5023)) ([54a01b0](https://github.com/uzh-bf/klicker-uzh/commit/54a01b009b8721284018a20694681315ba71f305))
+
 ## [3.4.0-alpha.55](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.54...v3.4.0-alpha.55) (2026-02-15)
 
 
