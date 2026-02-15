@@ -3,7 +3,7 @@
 
 const CUSTOM_REDIRECT_CLAIM_KEY = 'klicker_redirect_to'
 
-export type LaunchTargetSource = 'custom' | 'query' | 'env'
+export type LaunchTargetSource = 'custom' | 'query'
 
 export type LaunchTargetFailureReason =
   | 'missing_target'
@@ -32,10 +32,6 @@ export function resolveLaunchTarget(
     {
       source: 'query',
       value: req.query.redirectTo,
-    },
-    {
-      source: 'env',
-      value: process.env.LTI_REDIRECT_URL,
     },
   ]
 

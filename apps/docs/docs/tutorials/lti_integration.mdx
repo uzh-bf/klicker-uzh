@@ -48,9 +48,10 @@ Launch target resolution uses the following precedence:
 
 1. `token.platformContext.custom.klicker_redirect_to`
 2. `redirectTo` query parameter on the LTI URL
-3. `LTI_REDIRECT_URL` environment fallback
 
 This means existing OLAT links with `?redirectTo=...` remain fully supported and can continue to be used unchanged.
+
+If neither `klicker_redirect_to` nor `redirectTo` is provided, the launch is rejected as a configuration error.
 
 ## How can I integrate KlickerUZH pages into my OLAT course?
 
