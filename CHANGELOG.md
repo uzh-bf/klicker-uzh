@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.55](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.54...v3.4.0-alpha.55) (2026-02-15)
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** handle iframe differently for pwa login message ([#5022](https://github.com/uzh-bf/klicker-uzh/issues/5022)) ([c2afb6c](https://github.com/uzh-bf/klicker-uzh/commit/c2afb6c6dc1c0717120478b7469edbb791e7aa28))
+
 ## [3.4.0-alpha.54](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.53...v3.4.0-alpha.54) (2026-02-14)
 
 
