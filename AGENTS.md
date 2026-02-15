@@ -203,6 +203,7 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 - **Test environment caveats**: `pnpm run test:run` triggers Cypress which needs a running DB + seeded data. `pnpm --filter @klicker-uzh/graphql test` needs `HATCHET_CLIENT_TOKEN`. For verifying non-DB changes locally, target specific packages (e.g., `pnpm --filter @klicker-uzh/grading test`, `pnpm --filter @klicker-uzh/util test`).
 - **PR review triage**: Copilot/CodeRabbit/SonarCloud flag many false positives. Always check if guards/fallbacks already exist before "fixing" reported issues. Confirm with the actual code, not the bot summary.
 - **agent-browser via npx**: Always use `npx agent-browser` instead of bare `agent-browser`. Global install conflicts with Volta's Node shim and fails with "Could not execute command".
+- **LTI launch target resolver contract**: Launch targets are resolved in strict precedence `custom claim (klicker_redirect_to)` -> `query redirectTo` -> `LTI_REDIRECT_URL`, and validation fails closed on the first present invalid source. Use URL hostname exact/subdomain checks against `COOKIE_DOMAIN` and `DF_DOMAIN` (never substring matching). (`apps/lti/src/launchTarget.ts`)
 
 ## Factory Skills (AI Assistance)
 
