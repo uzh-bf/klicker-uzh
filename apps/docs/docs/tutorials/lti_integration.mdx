@@ -40,14 +40,37 @@ While this means that all activities integrated into OLAT using the provided LTI
 
 You can configure Moodle with one fixed KlickerUZH LTI tool URL and route each activity launch through a custom LTI parameter.
 
-- Use your KlickerUZH LTI URL as the fixed launch URL of the Moodle tool.
-- For each Moodle activity, set the custom parameter `klicker_redirect_to=<absolute target URL>`, where the value is the full target URL in KlickerUZH (for example a practice quiz, microlearning, leaderboard, or account page).
-- The value of `klicker_redirect_to` must be an **absolute URL** on an allowed KlickerUZH domain.
+1. In Moodle, create or edit your tool in **Site administration -> Plugins -> Activity modules -> External tool -> Manage tools**.
+2. Set the tool launch URL to your fixed KlickerUZH LTI URL.
+3. In your course, add an **External tool** activity that uses this configured tool.
+4. In the activity settings, open **Show more...** and set **Custom parameters** to:
+   `klicker_redirect_to=<absolute KlickerUZH target URL>`
+5. If you set multiple parameters, use one `key=value` pair per line. Then save and test the launch.
+
+Examples of absolute KlickerUZH target URLs (value of `klicker_redirect_to`):
+
+- `https://pwa.klicker.uzh.ch/en/course/abc123/liveQuizzes/overview`
+- `https://pwa.klicker.uzh.ch/en/course/abc123/practiceQuizzes/overview`
+- `https://pwa.klicker.uzh.ch/en/course/abc123/practiceQuizzes/pq789/`
+- `https://pwa.klicker.uzh.ch/en/course/abc123/microLearnings/ml456/`
+
+Links copied from the Manage interface are OLAT-style launch links and must be adapted for Moodle custom parameters.
+
+- Copied from Manage (OLAT-style):
+  `https://lti.klicker.uzh.ch/lti?redirectTo=https://pwa.klicker.uzh.ch/en/course/abc123/practiceQuizzes/overview`
+- Moodle custom parameter (adapted):
+  `klicker_redirect_to=https://pwa.klicker.uzh.ch/en/course/abc123/practiceQuizzes/overview`
+
+Keep the Moodle tool launch URL fixed and pass only the target URL as `klicker_redirect_to`.
+
+`klicker_redirect_to` must be an absolute `http(s)` URL on an allowed KlickerUZH domain.
 
 Launch target resolution uses the following precedence:
 
 1. `token.platformContext.custom.klicker_redirect_to`
 2. `redirectTo` query parameter on the LTI URL
+
+If both are present, the custom claim value wins.
 
 This means existing OLAT links with `?redirectTo=...` remain fully supported and can continue to be used unchanged.
 
