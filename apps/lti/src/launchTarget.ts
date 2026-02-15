@@ -72,6 +72,15 @@ export function validateLaunchTarget(
     }
   }
 
+  if (target.protocol !== 'http:' && target.protocol !== 'https:') {
+    return {
+      ok: false,
+      source,
+      reason: 'invalid_url',
+      rawValue,
+    }
+  }
+
   const allowedDomains = getAllowedDomains()
   if (!isAllowedHost(target.hostname, allowedDomains)) {
     return {
@@ -115,11 +124,31 @@ function getAllowedDomains(): string[] {
 }
 
 function normalizeDomain(domain: string): string {
-  return domain.trim().toLowerCase().replace(/^\.+/, '').replace(/\.+$/, '')
+  let normalized = domain.trim().toLowerCase()
+
+  while (normalized.startsWith('.')) {
+    normalized = normalized.slice(1)
+  }
+
+  while (normalized.endsWith('.')) {
+    normalized = normalized.slice(0, -1)
+  }
+
+  return normalized
 }
 
 function normalizeHost(host: string): string {
-  return host.trim().toLowerCase().replace(/\.+$/, '')
+  let normalized = host.trim().toLowerCase()
+
+  while (normalized.startsWith('.')) {
+    normalized = normalized.slice(1)
+  }
+
+  while (normalized.endsWith('.')) {
+    normalized = normalized.slice(0, -1)
+  }
+
+  return normalized
 }
 
 function isAllowedHost(host: string, allowedDomains: string[]): boolean {
