@@ -261,18 +261,18 @@ Test `computeDisplayStreakLength()`:
 
 ## Files to Modify
 
-| File | Changes |
-| --- | --- |
-| `packages/prisma/src/prisma/schema/participant.prisma` | Add 7 streak fields to `Participation` |
-| `packages/prisma/src/prisma/schema/course.prisma` | Add 5 streak config fields to `Course` |
-| `packages/prisma/src/prisma/schema/migrations/20260210120000_gamification_streaks/migration.sql` | New migration |
-| `packages/graphql/src/services/participants.ts` | Add `updateStreakOnAction()`, `getStreakXpMultiplier()`, `computeDisplayStreakLength()`, extend weekly cronjob |
-| `packages/graphql/src/services/stacks.ts` | Hook streak update + XP multiplier in `respondToQuestion()` with correctness check |
-| `packages/graphql/src/services/liveQuizzes.ts` | Hook streak update + XP multiplier at session end |
-| `packages/graphql/src/graphql/` (Pothos types) | Add streak fields to Participation and Course types |
-| `packages/graphql/src/graphql/ops/` | Add streak fields to relevant operation files |
-| `apps/frontend-pwa/` (course page) | Minimal streak display component |
-| `packages/graphql/src/services/__tests__/streaks.test.ts` | New test file for streak logic |
+| File                                                                                             | Changes                                                                                                        |
+| ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `packages/prisma/src/prisma/schema/participant.prisma`                                           | Add 7 streak fields to `Participation`                                                                         |
+| `packages/prisma/src/prisma/schema/course.prisma`                                                | Add 5 streak config fields to `Course`                                                                         |
+| `packages/prisma/src/prisma/schema/migrations/20260210120000_gamification_streaks/migration.sql` | New migration                                                                                                  |
+| `packages/graphql/src/services/participants.ts`                                                  | Add `updateStreakOnAction()`, `getStreakXpMultiplier()`, `computeDisplayStreakLength()`, extend weekly cronjob |
+| `packages/graphql/src/services/stacks.ts`                                                        | Hook streak update + XP multiplier in `respondToQuestion()` with correctness check                             |
+| `packages/graphql/src/services/liveQuizzes.ts`                                                   | Hook streak update + XP multiplier at session end                                                              |
+| `packages/graphql/src/graphql/` (Pothos types)                                                   | Add streak fields to Participation and Course types                                                            |
+| `packages/graphql/src/graphql/ops/`                                                              | Add streak fields to relevant operation files                                                                  |
+| `apps/frontend-pwa/` (course page)                                                               | Minimal streak display component                                                                               |
+| `packages/graphql/src/services/__tests__/streaks.test.ts`                                        | New test file for streak logic                                                                                 |
 
 ## Verification
 
@@ -286,51 +286,51 @@ Test `computeDisplayStreakLength()`:
 ## Review Feedback (2026-02-10)
 
 1. [P0] Streak state transitions currently allow streak preservation without meeting the daily threshold.
-Evidence: `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:75` defines `streakLastActiveDate` as “last date threshold was met”, but `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:111` to `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:113` sets it to today on first action in non-same-day paths.
-Impact: a student can keep a streak alive with one non-qualifying action per day.
-Recommendation: split semantics into two fields (`streakDailyDate` for daily counters, `streakLastQualifiedDate` for threshold-met days). Only advance streak/update qualified date when threshold is crossed.
+   Evidence: `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:75` defines `streakLastActiveDate` as “last date threshold was met”, but `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:111` to `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:113` sets it to today on first action in non-same-day paths.
+   Impact: a student can keep a streak alive with one non-qualifying action per day.
+   Recommendation: split semantics into two fields (`streakDailyDate` for daily counters, `streakLastQualifiedDate` for threshold-met days). Only advance streak/update qualified date when threshold is crossed.
 
 2. [P1] Live quiz deduplication key design will suppress valid same-day live-quiz activity.
-Evidence: dedupe is based on counted `elementInstanceId` (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:30`), and live quiz proposes sentinel `elementInstanceId: 0` (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:147`).
-Impact: after the first live quiz action on a day, later live quiz sessions that day won’t count.
-Recommendation: use namespaced action keys (e.g. `q:<instanceId>`, `lq:<quizId>:<executionOrFinishDate>`) instead of a single numeric sentinel.
+   Evidence: dedupe is based on counted `elementInstanceId` (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:30`), and live quiz proposes sentinel `elementInstanceId: 0` (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:147`).
+   Impact: after the first live quiz action on a day, later live quiz sessions that day won’t count.
+   Recommendation: use namespaced action keys (e.g. `q:<instanceId>`, `lq:<quizId>:<executionOrFinishDate>`) instead of a single numeric sentinel.
 
 3. [P1] XP accounting will become internally inconsistent if only participant XP/timeline are multiplied.
-Evidence: concept explicitly keeps base `xpAwarded` in detail records (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:136` to `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:139`). Current code persists awarded XP in response aggregates and details (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/services/stacks.ts:2396`, `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/services/stacks.ts:2459`, `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/services/stacks.ts:2505`) and past timeline recomputation sums detail XP (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/scripts/2025-02-18_compute_past_timeline_entries.ts:80`).
-Impact: participant XP, timeline XP, and response-level XP histories diverge.
-Recommendation: persist multiplied XP as the awarded value everywhere, or introduce explicit dual fields (`baseXpAwarded`, `finalXpAwarded`) and update readers accordingly.
+   Evidence: concept explicitly keeps base `xpAwarded` in detail records (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:136` to `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:139`). Current code persists awarded XP in response aggregates and details (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/services/stacks.ts:2396`, `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/services/stacks.ts:2459`, `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/services/stacks.ts:2505`) and past timeline recomputation sums detail XP (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/scripts/2025-02-18_compute_past_timeline_entries.ts:80`).
+   Impact: participant XP, timeline XP, and response-level XP histories diverge.
+   Recommendation: persist multiplied XP as the awarded value everywhere, or introduce explicit dual fields (`baseXpAwarded`, `finalXpAwarded`) and update readers accordingly.
 
 4. [P1] Live quiz multiplier plan risks multiplying achievement XP, not only activity XP.
-Evidence: concept says to apply multiplier at live quiz end (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:146` to `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:147`). Current flow mutates `participant.xp` with rank achievements before persistence (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/services/liveQuizzes.ts:1778` to `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/services/liveQuizzes.ts:1793`) and then writes that total (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/services/liveQuizzes.ts:1805` to `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/services/liveQuizzes.ts:1810`).
-Impact: achievement rewards get unintentionally amplified.
-Recommendation: split live-quiz XP into `activityXp` and `achievementXp`; apply streak multiplier only to `activityXp`.
+   Evidence: concept says to apply multiplier at live quiz end (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:146` to `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:147`). Current flow mutates `participant.xp` with rank achievements before persistence (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/services/liveQuizzes.ts:1778` to `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/services/liveQuizzes.ts:1793`) and then writes that total (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/services/liveQuizzes.ts:1805` to `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/services/liveQuizzes.ts:1810`).
+   Impact: achievement rewards get unintentionally amplified.
+   Recommendation: split live-quiz XP into `activityXp` and `achievementXp`; apply streak multiplier only to `activityXp`.
 
 5. [P2] “Configurable per course” is underspecified in implementation steps.
-Evidence: concept introduces course config fields (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:84` to `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:90`), but current course settings mutation does not include them (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/schema/mutation.ts:1352` to `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/schema/mutation.ts:1371`, `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/graphql/ops/MUpdateCourseSettings.graphql:1`).
-Impact: values remain effectively hardcoded defaults.
-Recommendation: add streak fields to create/update course inputs, corresponding ops, and lecturer-side settings UI.
+   Evidence: concept introduces course config fields (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:84` to `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:90`), but current course settings mutation does not include them (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/schema/mutation.ts:1352` to `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/schema/mutation.ts:1371`, `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/graphql/ops/MUpdateCourseSettings.graphql:1`).
+   Impact: values remain effectively hardcoded defaults.
+   Recommendation: add streak fields to create/update course inputs, corresponding ops, and lecturer-side settings UI.
 
 6. [P2] JSON set update strategy is race-prone under concurrent responses.
-Evidence: proposed design keeps a mutable per-day set in `Participation` JSON (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:30`, `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:72`, `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:106` to `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:115`).
-Impact: double-counts or dropped increments are possible with parallel submissions/retries.
-Recommendation: enforce row-level lock/serializable retry on streak row updates, or move dedupe to a keyed table with a uniqueness constraint.
+   Evidence: proposed design keeps a mutable per-day set in `Participation` JSON (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:30`, `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:72`, `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:106` to `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:115`).
+   Impact: double-counts or dropped increments are possible with parallel submissions/retries.
+   Recommendation: enforce row-level lock/serializable retry on streak row updates, or move dedupe to a keyed table with a uniqueness constraint.
 
 7. [P2] Daily boundary/timezone behavior is not explicitly defined and likely inconsistent.
-Evidence: concept uses “today/yesterday” semantics (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:109` to `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:126`), cleanup dates are relative wall-clock (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:161`, `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:176`), and existing timeline cron is UTC midnight (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/hatchet/src/index.ts:264`) while daily upserts use raw `new Date()` (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/services/participants.ts:890`, `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/services/participants.ts:896`).
-Impact: off-by-one-day streak behavior near midnight/timezone boundaries.
-Recommendation: define one canonical timezone for streak logic (UTC or course timezone) and normalize all day comparisons to start-of-day in that timezone.
+   Evidence: concept uses “today/yesterday” semantics (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:109` to `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:126`), cleanup dates are relative wall-clock (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:161`, `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:176`), and existing timeline cron is UTC midnight (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/hatchet/src/index.ts:264`) while daily upserts use raw `new Date()` (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/services/participants.ts:890`, `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/services/participants.ts:896`).
+   Impact: off-by-one-day streak behavior near midnight/timezone boundaries.
+   Recommendation: define one canonical timezone for streak logic (UTC or course timezone) and normalize all day comparisons to start-of-day in that timezone.
 
 8. [P2] Cron pseudocode assigns a JSON string instead of a JSON array.
-Evidence: cleanup sets `streakDailyCountedInstances: '[]'` (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:172`, `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:186`).
-Impact: value may be stored as JSON string rather than array, breaking dedupe parsing.
-Recommendation: write `[]` (JSON array), not `'[]'` (string literal).
+   Evidence: cleanup sets `streakDailyCountedInstances: '[]'` (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:172`, `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:186`).
+   Impact: value may be stored as JSON string rather than array, breaking dedupe parsing.
+   Recommendation: write `[]` (JSON array), not `'[]'` (string literal).
 
 9. [P3] Test plan should align with existing package conventions and cover integration edges.
-Evidence: proposed path is `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:232`, while current GraphQL tests are primarily in `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/test/*.test.ts`.
-Impact: lower maintainability and possible missed integration regressions.
-Recommendation: add service-level unit tests plus integration tests around `respondToQuestion` and `endLiveQuiz`, and include day-boundary/freeze-consumption cases.
+   Evidence: proposed path is `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:232`, while current GraphQL tests are primarily in `/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/test/*.test.ts`.
+   Impact: lower maintainability and possible missed integration regressions.
+   Recommendation: add service-level unit tests plus integration tests around `respondToQuestion` and `endLiveQuiz`, and include day-boundary/freeze-consumption cases.
 
 10. [P3] Hook-point naming is outdated for live quiz finalization.
-Evidence: concept references `deactivateLiveQuiz()` (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:142`), while current flow uses `endLiveQuiz` (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/services/liveQuizzes.ts:1637`).
-Impact: implementation confusion and wrong integration target.
-Recommendation: update concept text to target `endLiveQuiz` transaction path explicitly.
+    Evidence: concept references `deactivateLiveQuiz()` (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/GAMIFICATION_STREAKS.md:142`), while current flow uses `endLiveQuiz` (`/Users/rolandschlaefli/.codex/worktrees/7759/klicker-uzh/packages/graphql/src/services/liveQuizzes.ts:1637`).
+    Impact: implementation confusion and wrong integration target.
+    Recommendation: update concept text to target `endLiveQuiz` transaction path explicitly.

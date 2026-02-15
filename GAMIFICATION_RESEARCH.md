@@ -100,14 +100,14 @@ Yet narrative remains the most neglected category. Palomino and colleagues (2019
 
 The table below summarizes the major meta-analyses, representing the strongest available evidence:
 
-| Study | Year | Studies included | Participants | Effect size (Hedges' g) | Outcome focus |
-|-------|------|-----------------|-------------|------------------------|---------------|
-| Sailer & Homner | 2020 | 19/16/9 | 1,686–2,246 | 0.49 / 0.36 / 0.25 | Cognitive / Motivational / Behavioral |
-| Bai, Hew & Huang | 2020 | 30 | 3,202 | 0.504 | Academic performance |
-| Huang et al. | 2020 | 30 | 3,083 | 0.464 | Learning outcomes |
-| Li, Ma & Shi | 2023 | 41 | 5,071+ | 0.822 | Learning outcomes |
-| Zeng et al. | 2024 | 22 | — | 0.782 | Academic performance |
-| Li et al. | 2024 | 35 | 2,500 | 0.257 | Intrinsic motivation |
+| Study            | Year | Studies included | Participants | Effect size (Hedges' g) | Outcome focus                         |
+| ---------------- | ---- | ---------------- | ------------ | ----------------------- | ------------------------------------- |
+| Sailer & Homner  | 2020 | 19/16/9          | 1,686–2,246  | 0.49 / 0.36 / 0.25      | Cognitive / Motivational / Behavioral |
+| Bai, Hew & Huang | 2020 | 30               | 3,202        | 0.504                   | Academic performance                  |
+| Huang et al.     | 2020 | 30               | 3,083        | 0.464                   | Learning outcomes                     |
+| Li, Ma & Shi     | 2023 | 41               | 5,071+       | 0.822                   | Learning outcomes                     |
+| Zeng et al.      | 2024 | 22               | —            | 0.782                   | Academic performance                  |
+| Li et al.        | 2024 | 35               | 2,500        | 0.257                   | Intrinsic motivation                  |
 
 **Cognitive learning outcomes** show the most robust effects (g = 0.49, stable under high methodological rigor in Sailer & Homner's analysis). **Motivational** and **behavioral** outcomes show positive but less stable effects when restricted to high-rigor studies. **Intrinsic motivation** specifically shows a smaller effect (g = 0.257), which aligns with the theoretical concern that many implementations rely on extrinsic rather than intrinsic mechanisms.
 
