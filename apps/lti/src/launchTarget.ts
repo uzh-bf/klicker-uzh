@@ -117,10 +117,18 @@ function extractCustomRedirectTarget(token: unknown): unknown {
 }
 
 function getAllowedDomains(): string[] {
-  return [process.env.COOKIE_DOMAIN, process.env.DF_DOMAIN]
+  const allowedDomains = [process.env.COOKIE_DOMAIN, process.env.DF_DOMAIN]
     .filter((domain): domain is string => typeof domain === 'string')
     .map((domain) => normalizeDomain(domain))
     .filter((domain) => domain.length > 0)
+
+  if (allowedDomains.length === 0) {
+    throw new Error(
+      'No allowed LTI redirect domains configured. Please set at least one of COOKIE_DOMAIN or DF_DOMAIN environment variables.'
+    )
+  }
+
+  return allowedDomains
 }
 
 function normalizeDomain(domain: string): string {
