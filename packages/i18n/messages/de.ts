@@ -536,6 +536,8 @@ export default {
       liveQA: 'Live-Q&A',
       userNotLoggedIn:
         'Sie sind aktuell nicht eingeloggt. <login>Loggen Sie sich bitte ein</login>, falls Sie Punkte und XP sammeln und eine Übersicht über Ihren Lernfortschritt sehen möchten.',
+      userNotLoggedInFrame:
+        'Sie sind aktuell nicht eingeloggt. Bitte loggen Sie sich über die Plattform ein, in der diese Seite eingebettet ist, falls Sie Punkte und XP sammeln und eine Übersicht über Ihren Lernfortschritt sehen möchten.',
       noLiveQuizzesActive: 'Keine Live Quizzes aktiv.',
       activeLiveQuizzesBy: 'Aktive Live Quizzes von {name}',
       activeLiveQuizzesInCourse: 'Aktive Live Quizzes in {name}',

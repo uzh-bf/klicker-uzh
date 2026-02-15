@@ -10,16 +10,16 @@ KlickerUZH has a multi-layered gamification system (points, XP, levels, leaderbo
 
 ### What Exists Today
 
-| Element | Description | Key Files |
-|---------|-------------|-----------|
-| **Points** | Earned per response. Live quizzes: base + correctness + time-bonus. Async: simple percentage-based. Multipliers 1-4x per activity. | `packages/grading/src/index.ts:258-401` |
-| **XP** | Binary: 10 XP if 100% correct, 0 otherwise. Feeds level progression. | `packages/grading/src/index.ts:392-401` |
-| **Levels** | 11 levels, quadratic XP curve. Avatar unlocked per level. | `packages/util/src/levels.ts`, `packages/prisma/src/prisma/schema/gamification.prisma:153-169` |
-| **Leaderboard** | Course-wide and session-level. Multiple time windows (rolling, weekly, custom). Opt-in. Top 10 + self shown. | `packages/graphql/src/services/courses.ts`, `packages/shared-components/src/Leaderboard.tsx` |
-| **Achievements** | ~11 predefined badges (Explorer, Busy Bee, Champion, etc.). Awarded for placement, completion, group work. | `packages/prisma/src/prisma/schema/gamification.prisma:1-117`, `packages/graphql/src/services/liveQuizzes.ts` |
-| **Groups** | Group leaderboard based on groupActivityScore + averageMemberScore. Group achievements for activity completion. | `packages/graphql/src/services/groups.ts` |
-| **Timeline** | Daily/weekly aggregation of points/XP per course for trend views. | `packages/graphql/src/services/participants.ts:859-959` |
-| **Podium** | Visual top-3 display during live quizzes with rank images. | `packages/shared-components/src/Podium.tsx` |
+| Element          | Description                                                                                                                        | Key Files                                                                                                     |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Points**       | Earned per response. Live quizzes: base + correctness + time-bonus. Async: simple percentage-based. Multipliers 1-4x per activity. | `packages/grading/src/index.ts:258-401`                                                                       |
+| **XP**           | Binary: 10 XP if 100% correct, 0 otherwise. Feeds level progression.                                                               | `packages/grading/src/index.ts:392-401`                                                                       |
+| **Levels**       | 11 levels, quadratic XP curve. Avatar unlocked per level.                                                                          | `packages/util/src/levels.ts`, `packages/prisma/src/prisma/schema/gamification.prisma:153-169`                |
+| **Leaderboard**  | Course-wide and session-level. Multiple time windows (rolling, weekly, custom). Opt-in. Top 10 + self shown.                       | `packages/graphql/src/services/courses.ts`, `packages/shared-components/src/Leaderboard.tsx`                  |
+| **Achievements** | ~11 predefined badges (Explorer, Busy Bee, Champion, etc.). Awarded for placement, completion, group work.                         | `packages/prisma/src/prisma/schema/gamification.prisma:1-117`, `packages/graphql/src/services/liveQuizzes.ts` |
+| **Groups**       | Group leaderboard based on groupActivityScore + averageMemberScore. Group achievements for activity completion.                    | `packages/graphql/src/services/groups.ts`                                                                     |
+| **Timeline**     | Daily/weekly aggregation of points/XP per course for trend views.                                                                  | `packages/graphql/src/services/participants.ts:859-959`                                                       |
+| **Podium**       | Visual top-3 display during live quizzes with rank images.                                                                         | `packages/shared-components/src/Podium.tsx`                                                                   |
 
 ### How Students Experience It
 
@@ -31,13 +31,16 @@ KlickerUZH has a multi-layered gamification system (points, XP, levels, leaderbo
 ### Technical Details
 
 **XP Calculation** (`packages/grading/src/index.ts`):
+
 - `computeAwardedXp()`: Awards exactly 10 XP if `pointsPercentage === 1` (100% correct), otherwise 0.
 
 **Level Progression** (`packages/util/src/levels.ts`):
+
 - Quadratic formula: `xpForLevel(level) = (3000/2) * level^2 + 3000 * 1.5 * level - 3000 * 2`
 - 11 levels total, each with a unique avatar SVG.
 
 **Points Calculation** (`packages/grading/src/index.ts`):
+
 - Live quizzes: `basePoints + correctnessPoints + bonusPoints` where bonus decays linearly from `maxBonus` to 0 over `timeToZeroBonus` seconds.
 - Async activities: `points * pointsPercentage * pointsMultiplier`.
 
@@ -48,12 +51,14 @@ KlickerUZH has a multi-layered gamification system (points, XP, levels, leaderbo
 ## Part 2: Why Students Are Rarely Motivated — Root Cause Analysis
 
 ### Problem 1: XP System Is Too Binary and Unrewarding
+
 - XP is all-or-nothing: **10 XP for 100% correct, 0 otherwise** (`computeAwardedXp()` at `packages/grading/src/index.ts:392-401`).
 - Partial credit gives zero XP. A student who gets 90% correct on a hard MC question earns the same XP (0) as someone who didn't try.
 - This violates Self-Determination Theory's (SDT) **competence** need — students don't feel progress from near-misses.
 - The level curve is quadratic, so early levels come fast but later ones feel impossible without mass participation.
 
 ### Problem 2: Achievements Are Static and Few
+
 - Only ~11 achievements, most tied to placement (top 3) or completion (all microlearnings done).
 - No progressive/repeatable achievements (e.g., "answered 10 questions", "answered 50 questions").
 - No course-specific or topic-specific achievements.
@@ -61,29 +66,34 @@ KlickerUZH has a multi-layered gamification system (points, XP, levels, leaderbo
 - No visual ceremony or notification when an achievement is earned — they just appear on the profile.
 
 ### Problem 3: Leaderboard Primarily Motivates Top Performers
+
 - Research consistently shows leaderboards demotivate students at the bottom ([PMC/JMIR 2021](https://pmc.ncbi.nlm.nih.gov/articles/PMC8097522/)).
 - KlickerUZH shows top 10 + self position, which is better than showing everyone, but students in the middle/bottom see a large gap to the top with no clear path to close it.
 - No "top movers" or "most improved" mechanic — only absolute score matters.
 - Leaderboard creates a disconnect between effort and visible result for most students.
 
 ### Problem 4: No Engagement Loop Between Sessions
+
 - No streaks, daily challenges, or push notifications.
 - Students have no reason to open the app between live lectures.
 - Practice quizzes and microlearnings exist but have no gamified pull (no streak bonus, no daily XP goals).
 - The timeline tracking (daily/weekly aggregation) exists in the DB but is barely surfaced to students.
 
 ### Problem 5: No Autonomy or Personalization
+
 - Students cannot choose goals, customize challenges, or select which achievements to pursue.
 - The avatar system (level-based avatars) offers only level-unlocked variants — no player agency.
 - No choice of learning path or difficulty — everyone gets the same point structure.
 - SDT research shows **autonomy** is critical for sustained intrinsic motivation ([Springer 2024](https://link.springer.com/article/10.1007/s11423-023-10337-7)).
 
 ### Problem 6: Novelty Effect Wears Off
+
 - Research warns that gamification's motivational effects decline with prolonged exposure ([PMC 2023](https://pmc.ncbi.nlm.nih.gov/articles/PMC10448467/)).
 - KlickerUZH's gamification is static — the same elements throughout the semester.
 - No seasonal events, time-limited challenges, or evolving content to refresh engagement.
 
 ### Problem 7: Weak Social/Relatedness Features
+
 - Groups exist but are limited to group activities.
 - No peer challenges, friend systems, or social recognition beyond the leaderboard.
 - SDT's **relatedness** need is underserved — gamification feels like a solo competition against a board.
@@ -107,6 +117,7 @@ XP = floor(10 * pointsPercentage)  // 0-10 XP per question
 - This single change makes every answer feel meaningful.
 
 **Files to modify:**
+
 - `packages/grading/src/index.ts` — `computeAwardedXp()` function
 - Tests in `packages/grading/src/__tests__/`
 
@@ -120,9 +131,11 @@ Add a daily activity streak system modeled on [Duolingo's proven approach](https
 - **Visual streak counter**: Prominent display on profile and course page.
 
 **Database changes:**
+
 - Add to `Participation` model: `currentStreak`, `longestStreak`, `lastActiveDate`, `streakFreezeAvailable`
 
 **Files to modify:**
+
 - `packages/prisma/src/prisma/schema/participant.prisma` — add streak fields
 - `packages/grading/src/index.ts` — apply streak multiplier
 - `apps/frontend-pwa/` — display streak on profile and course views
@@ -141,6 +154,7 @@ Add progressive, repeatable, and varied achievements:
 Introduce achievement **tiers** (Bronze/Silver/Gold) so students always have the next goal in sight.
 
 **Files to modify:**
+
 - `packages/prisma/src/prisma/schema/gamification.prisma` — add tier field to Achievement model
 - `packages/prisma-data/src/data/` — seed new achievements
 - `packages/graphql/src/services/participants.ts` — achievement check logic
@@ -156,6 +170,7 @@ Based on [leaderboard design research](https://pmc.ncbi.nlm.nih.gov/articles/PMC
 - **Course leaderboard periodic reset option**: Periodic resets give everyone a fresh start and reduce the "I'm too far behind" effect.
 
 **Files to modify:**
+
 - `packages/shared-components/src/Leaderboard.tsx` — add relative/percentile mode
 - `packages/graphql/src/services/courses.ts` — add "top movers" query logic
 - `apps/frontend-pwa/` — leaderboard mode selector
@@ -167,6 +182,7 @@ Based on [leaderboard design research](https://pmc.ncbi.nlm.nih.gov/articles/PMC
 - **Next-level preview**: Show "You need X more XP for Level N" with a progress bar.
 
 **Files to modify:**
+
 - `apps/frontend-pwa/` — add progress summary section to profile and course views
 - `packages/graphql/src/graphql/ops/` — new query for timeline data
 
@@ -179,6 +195,7 @@ Based on [leaderboard design research](https://pmc.ncbi.nlm.nih.gov/articles/PMC
 This creates the engagement loop between sessions that is currently missing. Works synergistically with the streak system.
 
 **Database changes:**
+
 - New `Challenge` model with deadline, reward, and completion tracking.
 
 ### 3.7 Achievement Notification / Celebration (Low Effort, Medium Impact)
@@ -187,6 +204,7 @@ This creates the engagement loop between sessions that is currently missing. Wor
 - Currently achievements appear silently on the profile — no dopamine hit.
 
 **Files to modify:**
+
 - `apps/frontend-pwa/` — add achievement notification component
 - `packages/graphql/src/graphql/ops/` — subscription or polling for new achievements
 
@@ -197,14 +215,17 @@ This creates the engagement loop between sessions that is currently missing. Wor
 These recommendations are for lecturers deploying gamification in their courses:
 
 ### 4.1 Frame Gamification Intentionally
+
 - Introduce gamification at the start of the semester with clear explanations of what students earn, why it exists, and how it connects to learning.
 - Research shows gamification works best when students understand its purpose ([TechTrends 2025](https://link.springer.com/article/10.1007/s11528-025-01056-2)).
 
 ### 4.2 Use Multipliers Strategically
+
 - The 1-4x multiplier system already exists — lecturers should use higher multipliers for harder/more important content, not uniformly.
 - This signals to students which material is high-priority and creates varied reward density.
 
 ### 4.3 Vary the Gamification Elements Over the Semester
+
 - Start the semester with individual points/XP (low social pressure).
 - Introduce the leaderboard after 2-3 weeks once students have a baseline.
 - Add group challenges mid-semester to refresh engagement and add social mechanics.
@@ -212,18 +233,22 @@ These recommendations are for lecturers deploying gamification in their courses:
 - This combats the novelty effect identified in research.
 
 ### 4.4 Connect Gamification to Real Outcomes
+
 - Award small exam bonuses (0.25-0.5 grade points) for top leaderboard performers or achievement completers.
 - Research shows gamification has stronger effects when tied to tangible outcomes ([MDPI 2025](https://www.mdpi.com/2227-7102/15/8/1054)).
 
 ### 4.5 Mix Competition and Collaboration
+
 - Use individual leaderboards for live quizzes but group challenges for practice activities.
 - [University of Waterloo guidance](https://uwaterloo.ca/centre-for-teaching-excellence/catalogs/tip-sheets/gamification-and-game-based-learning) recommends balancing both to avoid alienating competition-averse students.
 
 ### 4.6 Provide Narrative / Theming
+
 - Lecturers could frame the course as a "quest" or "journey" with thematic milestones.
 - Even simple narrative framing ("You are exploring the fundamentals of statistics") increases engagement according to gamification research.
 
 ### 4.7 Acknowledge Progress Publicly (Not Just Rankings)
+
 - Mention top movers or streaks in lectures, not just "who has the most points."
 - Celebrate class-wide milestones ("The class answered 1,000 questions this week!").
 
@@ -231,15 +256,15 @@ These recommendations are for lecturers deploying gamification in their courses:
 
 ## Part 5: Priority Ranking for Implementation
 
-| Priority | Change | Impact | Effort | Rationale |
-|----------|--------|--------|--------|-----------|
-| **P0** | Fix XP system (graduated XP) | High | Low | Single function change, removes biggest demotivator |
-| **P1** | Achievement notifications/celebration | Medium | Low | Tiny UX addition, big psychological impact |
-| **P1** | Surface weekly progress/timeline to students | Medium | Medium | Data already collected, just needs frontend |
-| **P2** | Streak system | High | Medium | Proven engagement mechanic (Duolingo model) |
-| **P2** | Expand achievements (tiers + milestones) | High | High | More goals = more sustained motivation |
-| **P2** | Leaderboard improvements (relative, top movers, percentile) | Medium | Medium | Reduces demotivation for non-top students |
-| **P3** | Daily/weekly challenges | High | High | Full feature build, but highest long-term value |
+| Priority | Change                                                      | Impact | Effort | Rationale                                           |
+| -------- | ----------------------------------------------------------- | ------ | ------ | --------------------------------------------------- |
+| **P0**   | Fix XP system (graduated XP)                                | High   | Low    | Single function change, removes biggest demotivator |
+| **P1**   | Achievement notifications/celebration                       | Medium | Low    | Tiny UX addition, big psychological impact          |
+| **P1**   | Surface weekly progress/timeline to students                | Medium | Medium | Data already collected, just needs frontend         |
+| **P2**   | Streak system                                               | High   | Medium | Proven engagement mechanic (Duolingo model)         |
+| **P2**   | Expand achievements (tiers + milestones)                    | High   | High   | More goals = more sustained motivation              |
+| **P2**   | Leaderboard improvements (relative, top movers, percentile) | Medium | Medium | Reduces demotivation for non-top students           |
+| **P3**   | Daily/weekly challenges                                     | High   | High   | Full feature build, but highest long-term value     |
 
 ---
 
@@ -267,6 +292,7 @@ These recommendations are for lecturers deploying gamification in their courses:
 This concept is directionally strong and addresses real motivational issues in the current system, especially the binary XP rule and over-reliance on absolute leaderboard rank. The proposal is also unusually pragmatic because it maps product ideas to concrete implementation areas.
 
 The main improvements needed are:
+
 - correcting a few current-state assumptions that are already implemented in KlickerUZH,
 - separating high-confidence evidence from illustrative/product-example evidence,
 - adding explicit safeguards for fairness, stress, and incentive abuse,
@@ -406,6 +432,7 @@ Across recent meta-analyses, the direction of effect is consistently positive, b
 ### 8.2 Mechanisms With Strongest Support
 
 The evidence aligns most strongly with four explanatory lenses:
+
 - **Self-Determination Theory (SDT)**: durability improves when autonomy, competence, and relatedness are actively supported.
 - **Flow Theory**: engagement improves when challenge-skill balance and feedback loops are continuously maintained.
 - **Goal-Setting Theory**: clear, specific, escalating goals increase focused effort and persistence.
@@ -416,12 +443,14 @@ A consistent cross-study signal is that competence often lags unless systems pro
 ### 8.3 Which Game Elements Tend to Help vs. Hurt
 
 More reliable patterns in the literature:
+
 - High-quality, immediate, informational feedback loops.
 - Mastery-oriented progression and clear progress visualization.
 - Collaborative-competitive blends (team dynamics + challenge).
 - Narrative/context framing that makes activity meaning explicit.
 
 Mixed or higher-risk patterns:
+
 - Isolated PBL (points-badges-leaderboards) without pedagogical integration.
 - Permanent absolute leaderboards with strong public comparison pressure.
 - Heavy extrinsic reward pressure for already intrinsically meaningful tasks.
@@ -447,6 +476,7 @@ The key synthesis is that combinations and coherence of mechanics matter more th
 ### 8.6 Synthesis-Based Implications for This Concept
 
 The strategic direction in this document remains valid, but the synthesis suggests four evidence-led cautions:
+
 - Prioritize design coherence and pedagogical fit over adding more mechanics.
 - Evaluate each mechanic by its contribution to autonomy, competence, and relatedness.
 - Treat equity, privacy, and learner diversity as first-order design constraints.
@@ -454,12 +484,12 @@ The strategic direction in this document remains valid, but the synthesis sugges
 
 ### 8.7 Sources From GAMIFICATION_RESEARCH.md
 
-- Sailer, M., & Homner, L. (2020). *The Gamification of Learning: A Meta-analysis*. Educational Psychology Review. ([link](https://link.springer.com/article/10.1007/s10648-019-09498-w))
-- Bai, S., Hew, K. F., & Huang, B. (2020). *Does gamification improve student learning outcome?* Educational Research Review. ([link](https://doi.org/10.1016/j.edurev.2020.100322))
-- Li, M., Ma, S., & Shi, Y. (2023). *Examining the effectiveness of gamification...: a meta-analysis*. Frontiers in Psychology. ([link](https://pmc.ncbi.nlm.nih.gov/articles/PMC10591086/))
-- Li, L., Hew, K. F., & Du, J. (2024). *Gamification enhances student intrinsic motivation...*. ETR&D. ([link](https://link.springer.com/article/10.1007/s11423-023-10337-7))
-- Hanus, M. D., & Fox, J. (2015). *Assessing the effects of gamification in the classroom*. Computers & Education. ([link](https://doi.org/10.1016/j.compedu.2014.08.019))
-- Landers, R. N., & Landers, A. K. (2014). *An Empirical Test of the Theory of Gamified Learning*. Simulation & Gaming. ([link](https://doi.org/10.1177/1046878114563662))
+- Sailer, M., & Homner, L. (2020). _The Gamification of Learning: A Meta-analysis_. Educational Psychology Review. ([link](https://link.springer.com/article/10.1007/s10648-019-09498-w))
+- Bai, S., Hew, K. F., & Huang, B. (2020). _Does gamification improve student learning outcome?_ Educational Research Review. ([link](https://doi.org/10.1016/j.edurev.2020.100322))
+- Li, M., Ma, S., & Shi, Y. (2023). _Examining the effectiveness of gamification...: a meta-analysis_. Frontiers in Psychology. ([link](https://pmc.ncbi.nlm.nih.gov/articles/PMC10591086/))
+- Li, L., Hew, K. F., & Du, J. (2024). _Gamification enhances student intrinsic motivation..._. ETR&D. ([link](https://link.springer.com/article/10.1007/s11423-023-10337-7))
+- Hanus, M. D., & Fox, J. (2015). _Assessing the effects of gamification in the classroom_. Computers & Education. ([link](https://doi.org/10.1016/j.compedu.2014.08.019))
+- Landers, R. N., & Landers, A. K. (2014). _An Empirical Test of the Theory of Gamified Learning_. Simulation & Gaming. ([link](https://doi.org/10.1177/1046878114563662))
 - Rodrigues et al. (2022), longitudinal evidence on novelty dip and later stabilization (as synthesized in `GAMIFICATION_RESEARCH.md`).
 
 ## Part 9: What We Should Adapt in This Concept After the Research Synthesis
@@ -467,6 +497,7 @@ The strategic direction in this document remains valid, but the synthesis sugges
 ### 9.1 Feedback Adaptations (How We Judge Claims)
 
 To improve decision quality, recommendations should be explicitly confidence-labeled:
+
 - **High confidence**: supported by meta-analyses/systematic reviews.
 - **Moderate confidence**: supported by quasi-experiments/field studies.
 - **Exploratory**: promising but context-limited evidence.
@@ -478,6 +509,7 @@ Given the high heterogeneity reported across studies, there is no universal “b
 The concept should shift from a **feature-first** framing to a **mechanism-first** framing.
 
 Reprioritized emphasis:
+
 1. Feedback quality, mastery coherence, and guardrails.
 2. XP economy redesign with stability controls.
 3. Social/leaderboard redesign with harm-minimization defaults.
@@ -488,6 +520,7 @@ This preserves the strategic direction while making rollout evidence-gated and c
 ### 9.3 Mechanics We Should Treat More Cautiously
 
 The following mechanics need stronger caution and stricter safeguards:
+
 - Permanent absolute leaderboards.
 - Heavy extrinsic incentives directly tied to grading.
 - Speed-dominant scoring where speed is not the intended learning objective.
@@ -498,6 +531,7 @@ These are not “remove” recommendations; they are “design carefully, pilot 
 ### 9.4 New Non-Negotiables for Design Quality
 
 Four non-negotiables should be explicit in future concept updates:
+
 - Support intrinsic needs (autonomy, competence, relatedness).
 - Default to equity, accessibility, and privacy-safe behavior.
 - Keep instructor operations sustainable (low maintenance burden).
@@ -506,6 +540,7 @@ Four non-negotiables should be explicit in future concept updates:
 ### 9.5 Practical Delta vs Earlier Parts
 
 Compared with Parts 7 and 8, this adds:
+
 - Stronger confidence labeling of claims.
 - Stronger harm-minimization posture for social mechanics.
 - Stronger caution against grade-coupled reward escalation.
@@ -513,10 +548,10 @@ Compared with Parts 7 and 8, this adds:
 
 ### 9.6 Sources Informing This Adaptation
 
-- Sailer, M., & Homner, L. (2020). *The Gamification of Learning: A Meta-analysis*. Educational Psychology Review.
-- Bai, S., Hew, K. F., & Huang, B. (2020). *Does gamification improve student learning outcome?* Educational Research Review.
-- Li, M., Ma, S., & Shi, Y. (2023). *Examining the effectiveness of gamification...: a meta-analysis*. Frontiers in Psychology.
-- Li, L., Hew, K. F., & Du, J. (2024). *Gamification enhances student intrinsic motivation...*. ETR&D.
-- Hanus, M. D., & Fox, J. (2015). *Assessing the effects of gamification in the classroom*. Computers & Education.
-- Landers, R. N., & Landers, A. K. (2014). *An Empirical Test of the Theory of Gamified Learning*. Simulation & Gaming.
+- Sailer, M., & Homner, L. (2020). _The Gamification of Learning: A Meta-analysis_. Educational Psychology Review.
+- Bai, S., Hew, K. F., & Huang, B. (2020). _Does gamification improve student learning outcome?_ Educational Research Review.
+- Li, M., Ma, S., & Shi, Y. (2023). _Examining the effectiveness of gamification...: a meta-analysis_. Frontiers in Psychology.
+- Li, L., Hew, K. F., & Du, J. (2024). _Gamification enhances student intrinsic motivation..._. ETR&D.
+- Hanus, M. D., & Fox, J. (2015). _Assessing the effects of gamification in the classroom_. Computers & Education.
+- Landers, R. N., & Landers, A. K. (2014). _An Empirical Test of the Theory of Gamified Learning_. Simulation & Gaming.
 - Rodrigues et al. (2022) longitudinal novelty trajectory (as synthesized in `GAMIFICATION_RESEARCH.md`).
