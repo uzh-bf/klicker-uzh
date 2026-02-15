@@ -36,6 +36,23 @@ KlickerUZH allows you to set a course language during creation or in the course 
 
 While this means that all activities integrated into OLAT using the provided LTI access links will be displayed in the course language, students may still change the language to their preferred language using the corresponding functionality in the avatar dropdown. Students accessing your course activities directly through the KlickerUZH app will see the activities in their preferred language, which they can set in the app settings.
 
+## How can I configure Moodle with a system-wide LTI tool?
+
+You can configure Moodle with one fixed KlickerUZH LTI tool URL and route each activity launch through a custom LTI parameter.
+
+- Use your KlickerUZH LTI URL as the fixed launch URL of the Moodle tool.
+- For each Moodle activity, set the custom parameter `klicker_redirect_to=<absolute target URL>`, where the value is the full target URL in KlickerUZH (for example a practice quiz, microlearning, leaderboard, or account page).
+- The value of `klicker_redirect_to` must be an **absolute URL** on an allowed KlickerUZH domain.
+
+Launch target resolution uses the following precedence:
+
+1. `token.platformContext.custom.klicker_redirect_to`
+2. `redirectTo` query parameter on the LTI URL
+
+This means existing OLAT links with `?redirectTo=...` remain fully supported and can continue to be used unchanged.
+
+If neither `klicker_redirect_to` nor `redirectTo` is provided, the launch is rejected as a configuration error.
+
 ## How can I integrate KlickerUZH pages into my OLAT course?
 
 To successfully integrate individual KlickerUZH pages into your OLAT course, we outline the required steps for the different components below, showing you how to integrate the [course overview and student documentation](#course-overview-and-student-documentation), [activity lists (including Live Quiz and Live Q&A)](#activity-lists-including-live-quiz-and-live-qa), [leaderboard](#leaderboard), [account management](#account-management), and [individual activity links](#individual-activity-links).
@@ -43,7 +60,7 @@ To successfully integrate individual KlickerUZH pages into your OLAT course, we 
 To embed a KlickerUZH element in OLAT, you always start by creating a new course element of the type “LTI Page.” The subsequent steps depend on the type of KlickerUZH element you would like to create (as listed below).
 
 :::warning
-Please note that the LTI integration is currently only supported for UZH OLAT for security reasons. If you would like to use it at your institution or with another LMS, please have your administrator reach out to us.
+The examples below focus on UZH OLAT. Moodle can also be integrated with a system-wide LTI tool using `klicker_redirect_to` as described above. If you would like to use another LMS, please have your administrator reach out to us.
 :::
 
 ### Course Overview and Student Documentation
