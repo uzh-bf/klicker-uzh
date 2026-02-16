@@ -20,6 +20,7 @@ import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import Bookmark from './Bookmark'
@@ -28,6 +29,7 @@ import InstanceHeader from './InstanceHeader'
 interface ElementStackProps {
   parentId: string
   courseId: string
+  embedded?: boolean
   stack: ElementStackType
   currentStep: number
   totalSteps: number
@@ -52,6 +54,7 @@ interface ElementStackProps {
 function ElementStack({
   parentId,
   courseId,
+  embedded = false,
   stack,
   currentStep,
   totalSteps,
@@ -373,7 +376,12 @@ function ElementStack({
               handleNextElement()
             }
           }}
-          className={{ root: 'float-right mt-4' }}
+          className={{
+            root: twMerge(
+              'float-right mt-4',
+              embedded && 'fixed bottom-4 right-4 z-50 shadow-lg'
+            ),
+          }}
           data={{ cy: 'student-stack-continue' }}
         >
           <Button.Label>
@@ -387,7 +395,12 @@ function ElementStack({
       {/* display mark all as read button, if only content elements have not been answered yet */}
       {typeof stackStorage === 'undefined' && showMarkAsRead && (
         <Button
-          className={{ root: 'float-right mt-4' }}
+          className={{
+            root: twMerge(
+              'float-right mt-4',
+              embedded && 'fixed bottom-4 right-4 z-50 shadow-lg'
+            ),
+          }}
           disabled={Object.values(studentResponse).some(
             (response) => !response.valid
           )}
@@ -426,7 +439,12 @@ function ElementStack({
             (!previewOnly && activityExpired) ||
             Object.values(studentResponse).some((response) => !response.valid)
           }
-          className={{ root: 'float-right mt-4' }}
+          className={{
+            root: twMerge(
+              'float-right mt-4',
+              embedded && 'fixed bottom-4 right-4 z-50 shadow-lg'
+            ),
+          }}
           onClick={async () => {
             const result = await respondToElementStack({
               variables: {

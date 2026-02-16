@@ -1,3 +1,33 @@
+/**
+ * Embedded quiz postMessage protocol (for parent/embedding apps):
+ *
+ * When loaded with ?embed=true, this page posts messages to window.parent:
+ *   { type: 'klicker:quiz-state', payload: { status, currentStep, totalSteps } }
+ *
+ * status values:
+ *   'overview'    - quiz not yet started (or data still loading)
+ *   'in-progress' - student is answering questions
+ *   'completed'   - all stacks answered, quiz finished
+ *
+ * Example listener in the embedding app:
+ *
+ *   function useKlickerQuizState(iframeOrigin: string) {
+ *     const [quizState, setQuizState] = useState({ status: 'overview' })
+ *     useEffect(() => {
+ *       const handler = (e: MessageEvent) => {
+ *         if (e.origin !== iframeOrigin) return
+ *         if (e.data?.type === 'klicker:quiz-state') setQuizState(e.data.payload)
+ *       }
+ *       window.addEventListener('message', handler)
+ *       return () => window.removeEventListener('message', handler)
+ *     }, [iframeOrigin])
+ *     return quizState
+ *   }
+ *
+ *   // Usage: hide e-learning "Weiter" until quiz is completed
+ *   const quizState = useKlickerQuizState('https://pwa.klicker.uzh.ch')
+ *   {quizState.status === 'completed' && <button>Weiter</button>}
+ */
 import { useQuery } from '@apollo/client'
 import {
   GetPracticeQuizDocument,
@@ -13,7 +43,7 @@ import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Layout from '../../../../components/Layout'
 import Footer from '../../../../components/common/Footer'
 import PracticeQuiz from '../../../../components/practiceQuiz/PracticeQuiz'
@@ -42,6 +72,37 @@ function PracticeQuizPage({
   const { loading, error, data } = useQuery(GetPracticeQuizDocument, {
     variables: { id },
   })
+
+  // track whether quiz was ever started to distinguish overview vs completed
+  const hasStarted = useRef(false)
+  if (currentIx >= 0) {
+    hasStarted.current = true
+  }
+
+  // post quiz state to parent window when embedded
+  const totalSteps = data?.practiceQuiz?.stacks?.length ?? 0
+  useEffect(() => {
+    if (!embedded) return
+
+    let status: 'overview' | 'in-progress' | 'completed'
+    if (currentIx === -1) {
+      status = hasStarted.current ? 'completed' : 'overview'
+    } else {
+      status = 'in-progress'
+    }
+
+    window.parent.postMessage(
+      {
+        type: 'klicker:quiz-state',
+        payload: {
+          status,
+          currentStep: currentIx + 1,
+          totalSteps,
+        },
+      },
+      '*'
+    )
+  }, [embedded, currentIx, totalSteps])
 
   if (loading)
     return (
@@ -104,6 +165,7 @@ function PracticeQuizPage({
     >
       <PracticeQuiz
         showResetLocalStorage
+        embedded={embedded}
         quiz={{
           ...data.practiceQuiz,
           course: data.practiceQuiz.course!,

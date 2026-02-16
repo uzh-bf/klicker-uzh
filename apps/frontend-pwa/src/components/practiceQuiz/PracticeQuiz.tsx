@@ -43,6 +43,7 @@ interface PracticeQuizProps {
   handleNextElement: () => void
   onAllStacksCompletion?: () => void
   showResetLocalStorage?: boolean
+  embedded?: boolean
   previewOnly?: boolean
 }
 
@@ -53,6 +54,7 @@ function PracticeQuiz({
   handleNextElement,
   onAllStacksCompletion,
   showResetLocalStorage = false,
+  embedded = false,
   previewOnly = false,
 }: PracticeQuizProps) {
   const router = useRouter()
@@ -170,6 +172,7 @@ function PracticeQuiz({
             key={currentStack.id}
             parentId={quiz.id}
             courseId={quiz.course!.id}
+            embedded={embedded}
             stack={currentStack}
             currentStep={currentIx + 1}
             totalSteps={quiz.stacks?.length ?? 0}
