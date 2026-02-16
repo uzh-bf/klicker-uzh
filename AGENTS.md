@@ -204,6 +204,8 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 - **PR review triage**: Copilot/CodeRabbit/SonarCloud flag many false positives. Always check if guards/fallbacks already exist before "fixing" reported issues. Confirm with the actual code, not the bot summary.
 - **agent-browser via npx**: Always use `npx agent-browser` instead of bare `agent-browser`. Global install conflicts with Volta's Node shim and fails with "Could not execute command".
 - **LTI launch target resolver contract**: Launch targets are resolved in strict precedence `custom claim (klicker_redirect_to)` -> `query redirectTo`; no env fallback is used in resolver logic. Validation fails closed on the first present invalid source and enforces URL hostname exact/subdomain checks against `COOKIE_DOMAIN` and `DF_DOMAIN` (never substring matching). (`apps/lti/src/launchTarget.ts`)
+- **Devrouter Redis auto-start**: Since v0.0.13 upgrade, Redis services are declared as `kind: dependency` entries in `.devrouter.yml`. Running `dev app run api` now auto-starts all 3 Redis instances (redis-exec, redis-assessment, redis-cache) alongside postgres. No manual Redis startup needed. (`.devrouter.yml`, `docker-compose.devrouter.yml`)
+- **Devrouter Postgres credential override**: This repo intentionally uses `klicker-prod` Postgres credentials instead of devrouter Prisma defaults, so `util/devrouter/run-api.sh` overrides `DATABASE_URL`/`SHADOW_DATABASE_URL` from injected `POSTGRES_HOST`/`POSTGRES_PORT` to keep local API startup compatible. (`util/devrouter/run-api.sh`)
 
 ## Factory Skills (AI Assistance)
 
@@ -303,3 +305,67 @@ agent-browser close
 ```
 
 These credentials are intended for local seeded dev environments only.
+
+<!-- devrouter -->
+
+## devrouter
+
+This repository uses [devrouter](https://github.com/rolandhordos/devrouter) for local dev routing.
+All apps and dependencies are declared in `.devrouter.yml`.
+
+Full reference (config schema, docker requirements, env injection, commands):
+`.factory/skills/devrouter/SKILL.md`
+
+Quick validation sequence:
+
+- `dev up`
+- `dev tls install` (required when repo defines tcp/postgres apps)
+- `dev app ls --repo .`
+- `dev app run <host-app> --repo . --yes`
+- `dev ls`
+
+<!-- devrouter-linear-workflow -->
+
+## linear-workflow
+
+This repository can optionally use a Linear-centered workflow with a minimal workspace/team/project mapping.
+Use the managed AGENTS metadata block as source of truth before creating/updating Linear issues.
+
+Skill and templates:
+
+- `.factory/skills/linear-workflow/SKILL.md`
+- `.factory/skills/linear-workflow/references/LINEAR_ISSUE_TEMPLATE.md`
+- `.factory/skills/linear-workflow/references/MILESTONE_PLAN_TEMPLATE.md`
+- `.factory/skills/linear-workflow/references/PROGRESS_UPDATE_TEMPLATE.md`
+
+Managed metadata block:
+
+- `<!-- devrouter-linear-workflow-config:start -->
+
+```yaml
+linear:
+  workspace:
+    name: 'schlaefli-net'
+  team:
+    name: 'KlickerUZH'
+  project:
+    name: 'KlickerUZH'
+  updated_at: '2026-02-15T18:31:03.237Z'
+  capture_mode: 'interactive'
+```
+
+<!-- devrouter-linear-workflow-config:end -->
+
+`
+
+Required Linear execution hygiene:
+
+- Set issue status at session start and update it at each phase transition.
+- Post progress comments at meaningful checkpoints during implementation.
+- Before ending a session, post a final comment with completed work, remaining work, risks, and next step.
+- Re-check status and comment freshness toward/at session end before stopping.
+
+Bootstrap commands:
+
+- `dev init --with-linear --write-agents --write-skill`
+- `dev repo agents --with-linear`

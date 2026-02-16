@@ -1,0 +1,74 @@
+version: 1
+
+devrouter:
+  version: 0.0.14
+
+project:
+  name: klicker-uzh
+
+apps:
+  - name: postgres
+    host: db.klicker.localhost
+    protocol: tcp
+    tcpProtocol: postgres
+    runtime: docker
+    docker:
+      service: postgres
+      internalPort: 5432
+      composeFiles:
+        - docker-compose.devrouter.yml
+
+  - name: redis-exec
+    kind: dependency
+    runtime: docker
+    docker:
+      service: redis_exec
+      composeFiles:
+        - docker-compose.devrouter.yml
+
+  - name: redis-assessment
+    kind: dependency
+    runtime: docker
+    docker:
+      service: redis_assessment
+      composeFiles:
+        - docker-compose.devrouter.yml
+
+  - name: redis-cache
+    kind: dependency
+    runtime: docker
+    docker:
+      service: redis_cache
+      composeFiles:
+        - docker-compose.devrouter.yml
+
+  - name: api
+    host: api.klicker.localhost
+    protocol: http
+    runtime: host
+    hostRun:
+      command: infisical run --env dev -- ./util/devrouter/run-api.sh
+      cwd: .
+    dependencies:
+      - app: postgres
+      - app: redis-exec
+      - app: redis-assessment
+      - app: redis-cache
+
+  - name: pwa
+    host: pwa.klicker.localhost
+    protocol: http
+    runtime: host
+    hostRun:
+      command: infisical run --env dev -- ./util/devrouter/run-pwa.sh
+      cwd: .
+
+  - name: chat
+    host: chat.klicker.localhost
+    protocol: http
+    runtime: host
+    hostRun:
+      command: infisical run --env dev -- ./util/devrouter/run-chat.sh
+      cwd: .
+    dependencies:
+      - app: postgres
