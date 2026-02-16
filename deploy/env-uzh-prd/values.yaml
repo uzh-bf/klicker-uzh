@@ -187,7 +187,7 @@ auth:
       memory: 200Mi
 
 chat:
-  allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch'
+  allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://*.df-app.ch'
   priorityClassName: production-workload
 
   replicaCount: 1
@@ -272,7 +272,7 @@ chat:
       memory: 200Mi
 
 frontendPWA:
-  allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://ius.zone'
+  allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://ius.zone https://*.df-app.ch'
   priorityClassName: production-workload
 
   replicaCount: 3
@@ -375,7 +375,7 @@ frontendManage:
       memory: 200Mi
 
 frontendControl:
-  allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch'
+  allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://*.df-app.ch'
   priorityClassName: production-workload
 
   replicaCount: 1
