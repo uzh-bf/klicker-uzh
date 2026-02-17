@@ -125,9 +125,12 @@ export default async function getParticipantToken({
       }
     }
 
-    participantToken = result?.data?.loginParticipantWithLti?.participantToken
+    const ltiParticipantToken =
+      result?.data?.loginParticipantWithLti?.participantToken ?? null
 
-    if (participantToken) {
+    if (ltiParticipantToken) {
+      participantToken = ltiParticipantToken
+
       // set a proper participant_token
       nookies.set(ctx, 'participant_token', participantToken, {
         domain: process.env.COOKIE_DOMAIN,

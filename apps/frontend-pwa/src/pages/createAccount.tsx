@@ -1,4 +1,5 @@
 import { signJWT, verifyJWT } from '@klicker-uzh/util'
+import { toast } from '@uzh-bf/design-system'
 import generatePassword from 'generate-password'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -60,9 +61,10 @@ function CreateAccount({
             },
           })
 
-          if (login) {
-            const participantToken =
-              login.data?.createParticipantAccount?.participantToken ?? null
+          const createResult = login.data?.createParticipantAccount
+          const participantToken = createResult?.participantToken ?? null
+
+          if (participantToken) {
             await router.replace(
               `/editProfile?newAccount=true&participantToken=${participantToken}`,
               {
@@ -73,7 +75,23 @@ function CreateAccount({
                 },
               }
             )
+            return
           }
+
+          // keep legacy non-LTI behavior for direct /createAccount usage
+          if (!signedLtiData && createResult?.participant) {
+            await router.push({
+              pathname: '/login',
+              query: { newAccount: true },
+            })
+            return
+          }
+
+          toast({
+            type: 'error',
+            message: t('pwa.profile.createProfileFailed'),
+            options: { duration: 6000 },
+          })
 
           setSubmitting(false)
         }}
