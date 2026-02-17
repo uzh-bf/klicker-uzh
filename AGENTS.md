@@ -204,6 +204,7 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 - **PR review triage**: Copilot/CodeRabbit/SonarCloud flag many false positives. Always check if guards/fallbacks already exist before "fixing" reported issues. Confirm with the actual code, not the bot summary.
 - **agent-browser via npx**: Always use `npx agent-browser` instead of bare `agent-browser`. Global install conflicts with Volta's Node shim and fails with "Could not execute command".
 - **LTI launch target resolver contract**: Launch targets are resolved in strict precedence `custom claim (klicker_redirect_to)` -> `query redirectTo`; no env fallback is used in resolver logic. Validation fails closed on the first present invalid source and enforces URL hostname exact/subdomain checks against `COOKIE_DOMAIN` and `DF_DOMAIN` (never substring matching). (`apps/lti/src/launchTarget.ts`)
+- **Next middleware CSP scope**: Setting frame-ancestor CSP via middleware with matcher `/:path*` can break Next prefetch/static-props requests (`_next/data`, `_next/static`) and cascade Cypress failures. Limit matcher scope to document routes and set the CSP header only for document-like requests. (`apps/frontend-manage/src/middleware.ts`, `apps/frontend-control/src/middleware.ts`, `apps/frontend-pwa/src/middleware.ts`)
 
 ## Factory Skills (AI Assistance)
 
