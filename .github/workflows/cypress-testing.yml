@@ -181,6 +181,7 @@ jobs:
           .github/scripts/wait-for-services.sh
         env:
           APP_SECRET: abcd
+          DISABLE_FRAME_ANCESTORS_MIDDLEWARE: 'true'
           DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
           NODE_ENV: production
           SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010'
@@ -214,6 +215,7 @@ jobs:
         env:
           CYPRESS_FAIL_FAST: 'false'
           APP_SECRET: abcd
+          DISABLE_FRAME_ANCESTORS_MIDDLEWARE: 'true'
           DATABASE_URL: postgres://klicker-prod:klicker@127.0.0.1:5432/klicker-prod
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_ENV: production
@@ -394,6 +396,7 @@ jobs:
           .github/scripts/wait-for-services.sh
         env:
           APP_SECRET: abcd
+          DISABLE_FRAME_ANCESTORS_MIDDLEWARE: 'true'
           DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
           NODE_ENV: production
           SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3010'
@@ -433,6 +436,7 @@ jobs:
         env:
           CYPRESS_FAIL_FAST: 'false'
           APP_SECRET: abcd
+          DISABLE_FRAME_ANCESTORS_MIDDLEWARE: 'true'
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           DATABASE_URL: postgres://klicker-prod:klicker@127.0.0.1:5432/klicker-prod
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
