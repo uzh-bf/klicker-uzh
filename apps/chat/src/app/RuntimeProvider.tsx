@@ -27,7 +27,7 @@ export function RuntimeProvider({
   const {
     activeThreadId,
     threads,
-    setMessages,
+    setMessages: setMessagesInternal,
     loadThreads,
     switchToThread,
     resetSession,
@@ -230,6 +230,14 @@ export function RuntimeProvider({
       }
     },
     []
+  )
+
+  // Wrap setMessages to handle readonly array from useExternalStoreRuntime
+  const setMessages = useCallback(
+    (messages: readonly ExtendedThreadMessageLike[]) => {
+      setMessagesInternal([...messages])
+    },
+    [setMessagesInternal]
   )
 
   // runtime config for assistant UI
