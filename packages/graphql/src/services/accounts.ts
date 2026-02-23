@@ -562,6 +562,7 @@ interface ResolveOrCreateParticipantForLtiArgs {
   username?: string
   password?: string
   isProfilePublic?: boolean
+  courseId?: string
 }
 
 async function resolveOrCreateParticipantForLti(
@@ -571,20 +572,36 @@ async function resolveOrCreateParticipantForLti(
     username,
     password,
     isProfilePublic,
+    courseId,
   }: ResolveOrCreateParticipantForLtiArgs,
   ctx: Context
 ): Promise<ResolveOrCreateParticipantForLtiResult> {
-  return ctx.prisma.$transaction(async (prisma) => {
-    const ltiData = (await verifyJWT(
-      signedLtiData,
-      process.env.APP_SECRET as string
-    )) as {
-      email?: string
-      sub: string
-      scope: string
-    }
+  const ltiData = (await verifyJWT(
+    signedLtiData,
+    process.env.APP_SECRET as string
+  )) as {
+    email?: string
+    sub: string
+    scope: string
+  }
 
+  return ctx.prisma.$transaction(async (prisma) => {
     const normalizedEmail = normalizeEmail(ltiData.email)
+
+    const ensureParticipation = async (participantId: string) => {
+      if (courseId) {
+        await prisma.participation.upsert({
+          where: {
+            courseId_participantId: { courseId, participantId },
+          },
+          create: {
+            course: { connect: { id: courseId } },
+            participant: { connect: { id: participantId } },
+          },
+          update: {},
+        })
+      }
+    }
 
     const accountBySsoId = await prisma.participantAccount.findUnique({
       where: { ssoId: ltiData.sub },
@@ -604,6 +621,8 @@ async function resolveOrCreateParticipantForLti(
       console.info(
         `event=lti_linked_by_ssoid participantId=${account.participant.id} ssoType=${account.ssoType}`
       )
+
+      await ensureParticipation(account.participant.id)
 
       return {
         type: 'resolved',
@@ -655,6 +674,8 @@ async function resolveOrCreateParticipantForLti(
             `event=lti_linked_by_email participantId=${account.participant.id} ssoType=${account.ssoType} reusedSsoType=true`
           )
 
+          await ensureParticipation(account.participant.id)
+
           return {
             type: 'resolved',
             mode: 'linked_by_email',
@@ -679,6 +700,8 @@ async function resolveOrCreateParticipantForLti(
         console.info(
           `event=lti_linked_by_email participantId=${account.participant.id} ssoType=${account.ssoType} reusedSsoType=false`
         )
+
+        await ensureParticipation(account.participant.id)
 
         return {
           type: 'resolved',
@@ -740,6 +763,8 @@ async function resolveOrCreateParticipantForLti(
       `event=lti_created_new participantId=${account.participant.id} ssoType=${account.ssoType}`
     )
 
+    await ensureParticipation(account.participant.id)
+
     return {
       type: 'resolved',
       mode: 'created_new',
@@ -787,29 +812,16 @@ export async function createParticipantAccount(
         username,
         password,
         isProfilePublic,
+        courseId: courseId ?? undefined,
       },
       ctx
     )
-    if (resolved.type !== 'resolved') return null
+    if (resolved.type !== 'resolved') {
+      console.warn(`event=lti_create_account_failed type=${resolved.type}`)
+      return null
+    }
 
     const account = resolved.account
-
-    // if a courseId is specified, add a participation in the corresponding course
-    if (courseId) {
-      await ctx.prisma.participation.upsert({
-        where: {
-          courseId_participantId: {
-            courseId,
-            participantId: account.participant.id,
-          },
-        },
-        create: {
-          course: { connect: { id: courseId } },
-          participant: { connect: { id: account.participant.id } },
-        },
-        update: {},
-      })
-    }
 
     try {
       const jwt = await doParticipantLogin(
@@ -958,29 +970,17 @@ export async function loginParticipantWithLti(
     {
       signedLtiData,
       allowCreate: false,
+      courseId: courseId ?? undefined,
     },
     ctx
   )
 
-  if (resolved.type !== 'resolved') return null
+  if (resolved.type !== 'resolved') {
+    console.warn(`event=lti_login_failed type=${resolved.type}`)
+    return null
+  }
 
   const account = resolved.account
-
-  if (courseId) {
-    await ctx.prisma.participation.upsert({
-      where: {
-        courseId_participantId: {
-          courseId,
-          participantId: account.participant.id,
-        },
-      },
-      create: {
-        course: { connect: { id: courseId } },
-        participant: { connect: { id: account.participant.id } },
-      },
-      update: {},
-    })
-  }
 
   const jwt = await doParticipantLogin(
     {

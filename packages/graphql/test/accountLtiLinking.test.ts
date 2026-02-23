@@ -76,6 +76,12 @@ async function cleanupTestData() {
 
   const participantIds = participants.map((participant) => participant.id)
 
+  if (participantIds.length > 0) {
+    await prisma.participation.deleteMany({
+      where: { participantId: { in: participantIds } },
+    })
+  }
+
   await prisma.participantAccount.deleteMany({
     where:
       participantIds.length > 0
@@ -93,6 +99,37 @@ async function cleanupTestData() {
       where: { id: { in: participantIds } },
     })
   }
+
+  await prisma.course.deleteMany({
+    where: { name: { startsWith: TEST_PREFIX } },
+  })
+
+  await prisma.user.deleteMany({
+    where: { email: { startsWith: TEST_PREFIX } },
+  })
+}
+
+async function createTestCourse() {
+  const user = await prisma.user.create({
+    data: {
+      email: `${TEST_PREFIX}-owner@example.com`,
+      shortname: TEST_PREFIX.slice(0, 10),
+    },
+  })
+
+  const now = new Date()
+  const course = await prisma.course.create({
+    data: {
+      name: `${TEST_PREFIX}-course`,
+      displayName: 'Test Course',
+      startDate: now,
+      endDate: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000),
+      groupDeadlineDate: new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000),
+      owner: { connect: { id: user.id } },
+    },
+  })
+
+  return { user, course }
 }
 
 describe('LTI participant linking and creation', () => {
@@ -246,6 +283,81 @@ describe('LTI participant linking and creation', () => {
       where: { ssoId: ssoIdFor('ambiguous') },
     })
     expect(account).toBeNull()
+  })
+
+  it('creates participation when courseId is provided during LTI login', async () => {
+    const { course } = await createTestCourse()
+
+    const participant = await prisma.participant.create({
+      data: {
+        email: emailFor('participation'),
+        username: usernameFor('participation'),
+        password: await bcrypt.hash('password123', 10),
+        isSSOAccount: false,
+      },
+    })
+
+    const signedLtiData = await createSignedLtiData({
+      sub: ssoIdFor('participation'),
+      email: emailFor('participation'),
+    })
+
+    const result = await loginParticipantWithLti(
+      { signedLtiData, courseId: course.id },
+      createCtx()
+    )
+
+    expect(result?.participant?.id).toBe(participant.id)
+
+    const participation = await prisma.participation.findUnique({
+      where: {
+        courseId_participantId: {
+          courseId: course.id,
+          participantId: participant.id,
+        },
+      },
+    })
+    expect(participation).not.toBeNull()
+  })
+
+  it('reuses existing ParticipantAccount when same ssoType but different ssoId matches by email', async () => {
+    const participant = await prisma.participant.create({
+      data: {
+        email: emailFor('reuse-sso'),
+        username: usernameFor('reuse-sso'),
+        password: await bcrypt.hash('password123', 10),
+        isSSOAccount: false,
+      },
+    })
+
+    const firstAccount = await prisma.participantAccount.create({
+      data: {
+        ssoId: ssoIdFor('reuse-sso-old'),
+        ssoType: 'LTI1.3',
+        ssoEmail: emailFor('reuse-sso'),
+        participant: { connect: { id: participant.id } },
+      },
+    })
+
+    const signedLtiData = await createSignedLtiData({
+      sub: ssoIdFor('reuse-sso-new'),
+      email: emailFor('reuse-sso'),
+      scope: 'LTI1.3',
+    })
+
+    const result = await loginParticipantWithLti({ signedLtiData }, createCtx())
+
+    expect(result?.participant?.id).toBe(participant.id)
+
+    const updatedAccount = await prisma.participantAccount.findUnique({
+      where: { id: firstAccount.id },
+    })
+    expect(updatedAccount?.ssoId).toBe(ssoIdFor('reuse-sso-new'))
+
+    const allAccounts = await prisma.participantAccount.findMany({
+      where: { participantId: participant.id, ssoType: 'LTI1.3' },
+    })
+    expect(allAccounts).toHaveLength(1)
   })
 
   it('rejects non-LTI account creation when email already exists in another auth mode', async () => {
