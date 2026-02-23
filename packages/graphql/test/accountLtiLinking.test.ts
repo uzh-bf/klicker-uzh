@@ -122,6 +122,7 @@ async function createTestCourse() {
     data: {
       name: `${TEST_PREFIX}-course`,
       displayName: 'Test Course',
+      pinCode: 123456,
       startDate: now,
       endDate: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000),
       groupDeadlineDate: new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000),
