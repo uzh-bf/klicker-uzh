@@ -152,6 +152,9 @@ export default async function getParticipantToken({
         domain: process.env.COOKIE_DOMAIN,
         path: '/',
       })
+    } else {
+      // LTI auth attempted but failed -- clear stale token to prevent session leakage
+      participantToken = null
     }
 
     return {
