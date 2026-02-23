@@ -1,0 +1,229 @@
+{
+  "main": {
+    "id": "32b1396c00e2c205",
+    "type": "split",
+    "children": [
+      {
+        "id": "f7a6b97a478fdc9a",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "07f8a00725536afe",
+            "type": "leaf",
+            "state": {
+              "type": "canvas",
+              "state": {
+                "file": "Overview.canvas",
+                "viewState": {
+                  "x": -134.49982297742528,
+                  "y": 182.18523902772222,
+                  "zoom": -0.6959106445312502
+                }
+              },
+              "icon": "lucide-layout-dashboard",
+              "title": "Overview"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "d7fc7bec5933474c",
+    "type": "split",
+    "children": [
+      {
+        "id": "e457218084951e31",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "0f41f21187b80bf1",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "7b2f50ca12fd17c0",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "d246ab85f869af5e",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "17227c1a1658e4ee",
+    "type": "split",
+    "children": [
+      {
+        "id": "256cf0409a3abcf5",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "81b74b42f61a2b45",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "Overview.canvas",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for Overview"
+            }
+          },
+          {
+            "id": "1b7e8a040f5d8e33",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Overview.canvas",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from Overview"
+            }
+          },
+          {
+            "id": "eacd36bd5a1b17c1",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "cd3641a2e1c97a78",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "9e7fb0ec46a69ec1",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Overview.canvas",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of Overview"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "07f8a00725536afe",
+  "lastOpenFiles": [
+    "09-Runbooks/02-Release and Deploy.md",
+    "09-Runbooks/01-Local Development.md",
+    "08-ADRs/ADR-Index.md",
+    "08-ADRs/ADR-0000-Template.md",
+    "07-Cross-cutting Concepts/07-MCP Servers and Tooling.md",
+    "07-Cross-cutting Concepts/06-AI Keys and Model Registry.md",
+    "07-Cross-cutting Concepts/05-Blob Storage and SAS Upload.md",
+    "07-Cross-cutting Concepts/04-Hatchet Eventing.md",
+    "07-Cross-cutting Concepts/03-Redis Topology.md",
+    "07-Cross-cutting Concepts/02-Authentication and Cookies.md",
+    "07-Cross-cutting Concepts/01-Assessment vs Non-assessment Split.md",
+    "06-Deployment Views/05-Configuration and Secrets.md",
+    "06-Deployment Views/04-Environments - stg vs prd.md",
+    "06-Deployment Views/03-Helm - klicker-uzh-v3.md",
+    "06-Deployment Views/02-Node Pools and Scheduling.md",
+    "06-Deployment Views/01-Kubernetes Overview.md",
+    "05-Runtime Views/03-Chat Request Lifecycle.md",
+    "05-Runtime Views/02-Live Quiz - Assessment.md",
+    "05-Runtime Views/01-Live Quiz - Non-assessment.md",
+    "04-Building Blocks/Packages/Prisma Data (Seeds).md",
+    "04-Building Blocks/Packages/Util.md",
+    "04-Building Blocks/Packages/Types.md",
+    "04-Building Blocks/Packages/Markdown.md",
+    "04-Building Blocks/Packages/Shared Components.md",
+    "04-Building Blocks/Packages/I18n.md",
+    "04-Building Blocks/Packages/Grading.md",
+    "09-Runbooks",
+    "08-ADRs",
+    "07-Cross-cutting Concepts",
+    "06-Deployment Views",
+    "05-Runtime Views",
+    "04-Building Blocks/Workloads/Klicker",
+    "04-Building Blocks/Workloads/Assessment",
+    "04-Building Blocks/Workloads/AI Infra",
+    "04-Building Blocks/Workloads",
+    "04-Building Blocks/Packages",
+    "Overview.canvas"
+  ]
+}
