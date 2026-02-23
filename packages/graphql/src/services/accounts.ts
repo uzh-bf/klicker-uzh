@@ -3,6 +3,7 @@ import { DisplayMode } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
+  normalizeEmail,
   processElementData,
   recomputeDerivedPermissions,
   signJWT,
@@ -540,6 +541,238 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
   return true
 }
 
+type ResolveOrCreateParticipantForLtiResult =
+  | {
+      type: 'resolved'
+      mode: 'linked_by_ssoid' | 'linked_by_email' | 'created_new'
+      account: DB.ParticipantAccount & { participant: DB.Participant }
+    }
+  | {
+      type:
+        | 'conflict_duplicate_email'
+        | 'missing_email'
+        | 'not_found'
+        | 'username_taken'
+        | 'invalid_create_input'
+    }
+
+interface ResolveOrCreateParticipantForLtiArgs {
+  signedLtiData: string
+  allowCreate: boolean
+  username?: string
+  password?: string
+  isProfilePublic?: boolean
+  courseId?: string
+}
+
+async function resolveOrCreateParticipantForLti(
+  {
+    signedLtiData,
+    allowCreate,
+    username,
+    password,
+    isProfilePublic,
+    courseId,
+  }: ResolveOrCreateParticipantForLtiArgs,
+  ctx: Context
+): Promise<ResolveOrCreateParticipantForLtiResult> {
+  const ltiData = (await verifyJWT(
+    signedLtiData,
+    process.env.APP_SECRET as string
+  )) as {
+    email?: string
+    sub: string
+    scope: string
+  }
+
+  return ctx.prisma.$transaction(async (prisma) => {
+    const normalizedEmail = normalizeEmail(ltiData.email)
+
+    const ensureParticipation = async (participantId: string) => {
+      if (courseId) {
+        await prisma.participation.upsert({
+          where: {
+            courseId_participantId: { courseId, participantId },
+          },
+          create: {
+            course: { connect: { id: courseId } },
+            participant: { connect: { id: participantId } },
+          },
+          update: {},
+        })
+      }
+    }
+
+    const accountBySsoId = await prisma.participantAccount.findUnique({
+      where: { ssoId: ltiData.sub },
+      include: { participant: true },
+    })
+
+    if (accountBySsoId) {
+      const account =
+        normalizedEmail && accountBySsoId.ssoEmail !== normalizedEmail
+          ? await prisma.participantAccount.update({
+              where: { id: accountBySsoId.id },
+              data: { ssoEmail: normalizedEmail },
+              include: { participant: true },
+            })
+          : accountBySsoId
+
+      console.info(
+        `event=lti_linked_by_ssoid participantId=${account.participant.id} ssoType=${account.ssoType}`
+      )
+
+      await ensureParticipation(account.participant.id)
+
+      return {
+        type: 'resolved',
+        mode: 'linked_by_ssoid',
+        account,
+      }
+    }
+
+    if (normalizedEmail) {
+      const matchedParticipants = await prisma.participant.findMany({
+        where: { email: normalizedEmail },
+      })
+
+      if (matchedParticipants.length > 1) {
+        console.warn(
+          `event=lti_conflict_duplicate_email normalizedEmail=${normalizedEmail} matches=${matchedParticipants.length}`
+        )
+        return { type: 'conflict_duplicate_email' }
+      }
+
+      if (matchedParticipants.length === 1) {
+        const participant = matchedParticipants[0]!
+
+        const accountForSsoType = await prisma.participantAccount.findUnique({
+          where: {
+            participantId_ssoType: {
+              participantId: participant.id,
+              ssoType: ltiData.scope,
+            },
+          },
+          include: { participant: true },
+        })
+
+        if (accountForSsoType) {
+          const account =
+            accountForSsoType.ssoId !== ltiData.sub ||
+            accountForSsoType.ssoEmail !== normalizedEmail
+              ? await prisma.participantAccount.update({
+                  where: { id: accountForSsoType.id },
+                  data: {
+                    ssoId: ltiData.sub,
+                    ssoEmail: normalizedEmail,
+                  },
+                  include: { participant: true },
+                })
+              : accountForSsoType
+
+          console.info(
+            `event=lti_linked_by_email participantId=${account.participant.id} ssoType=${account.ssoType} reusedSsoType=true`
+          )
+
+          await ensureParticipation(account.participant.id)
+
+          return {
+            type: 'resolved',
+            mode: 'linked_by_email',
+            account,
+          }
+        }
+
+        const account = await prisma.participantAccount.create({
+          data: {
+            ssoId: ltiData.sub,
+            ssoType: ltiData.scope,
+            ssoEmail: normalizedEmail,
+            participant: {
+              connect: {
+                id: participant.id,
+              },
+            },
+          },
+          include: { participant: true },
+        })
+
+        console.info(
+          `event=lti_linked_by_email participantId=${account.participant.id} ssoType=${account.ssoType} reusedSsoType=false`
+        )
+
+        await ensureParticipation(account.participant.id)
+
+        return {
+          type: 'resolved',
+          mode: 'linked_by_email',
+          account,
+        }
+      }
+    }
+
+    if (!allowCreate) {
+      return normalizedEmail ? { type: 'not_found' } : { type: 'missing_email' }
+    }
+
+    if (!normalizedEmail) {
+      return { type: 'missing_email' }
+    }
+
+    if (!username || !password || typeof isProfilePublic !== 'boolean') {
+      return { type: 'invalid_create_input' }
+    }
+
+    const trimmedUsername = username.trim()
+    const existingUsername = await prisma.participant.findUnique({
+      where: { username: trimmedUsername },
+      select: { id: true },
+    })
+
+    if (existingUsername) {
+      return { type: 'username_taken' }
+    }
+
+    const participant = await prisma.participant.create({
+      data: {
+        email: normalizedEmail,
+        username: trimmedUsername,
+        password: await bcrypt.hash(password, 10),
+        isEmailValid: true,
+        isProfilePublic,
+        isSSOAccount: true,
+        lastLoginAt: new Date(),
+      },
+    })
+
+    const account = await prisma.participantAccount.create({
+      data: {
+        ssoId: ltiData.sub,
+        ssoType: ltiData.scope,
+        ssoEmail: normalizedEmail,
+        participant: {
+          connect: {
+            id: participant.id,
+          },
+        },
+      },
+      include: { participant: true },
+    })
+
+    console.info(
+      `event=lti_created_new participantId=${account.participant.id} ssoType=${account.ssoType}`
+    )
+
+    await ensureParticipation(account.participant.id)
+
+    return {
+      type: 'resolved',
+      mode: 'created_new',
+      account,
+    }
+  })
+}
+
 interface CreateParticipantAccountArgs {
   email: string
   username: string
@@ -572,71 +805,23 @@ export async function createParticipantAccount(
   }
 
   if (signedLtiData) {
-    const account = await ctx.prisma.$transaction(async (prisma) => {
-      const ltiData = (await verifyJWT(
+    const resolved = await resolveOrCreateParticipantForLti(
+      {
         signedLtiData,
-        process.env.APP_SECRET as string
-      )) as { email: string; sub: string; scope: 'LTI1.1' | 'LTI1.3' }
-      // check if the username is already taken by another user
-      const existingUser = await prisma.participant.findMany({
-        where: {
-          OR: [{ username: username.trim() }, { email: ltiData.email }],
-        },
-      })
+        allowCreate: true,
+        username,
+        password,
+        isProfilePublic,
+        courseId: courseId ?? undefined,
+      },
+      ctx
+    )
+    if (resolved.type !== 'resolved') {
+      console.warn(`event=lti_create_account_failed type=${resolved.type}`)
+      return null
+    }
 
-      if (existingUser.length > 0) {
-        // another user already uses the requested username or email, returning old user
-        return null
-      }
-
-      const account = await prisma.participantAccount.create({
-        data: {
-          ssoId: ltiData.sub,
-          ssoType: ltiData.scope,
-          participant: {
-            connectOrCreate: {
-              where: {
-                email_isSSOAccount: {
-                  email: ltiData.email.toLowerCase(),
-                  isSSOAccount: true,
-                },
-              },
-              create: {
-                email: ltiData.email.toLowerCase(),
-                username: username.trim(),
-                password: await bcrypt.hash(password, 10),
-                isEmailValid: true,
-                isProfilePublic,
-                isSSOAccount: true,
-                lastLoginAt: new Date(),
-              },
-            },
-          },
-        },
-        include: { participant: true },
-      })
-
-      // if a courseId is specified, add a participation in the corresponding course
-      if (courseId) {
-        await prisma.participation.upsert({
-          where: {
-            courseId_participantId: {
-              courseId,
-              participantId: account.participant.id,
-            },
-          },
-          create: {
-            course: { connect: { id: courseId } },
-            participant: { connect: { id: account.participant.id } },
-          },
-          update: {},
-        })
-      }
-
-      return account
-    })
-
-    if (!account) return null
+    const account = resolved.account
 
     try {
       const jwt = await doParticipantLogin(
@@ -657,11 +842,25 @@ export async function createParticipantAccount(
     }
   }
 
+  const normalizedEmail = normalizeEmail(email)
+  if (!normalizedEmail) return null
+
+  const existingParticipantWithEmail = await ctx.prisma.participant.findFirst({
+    where: {
+      email: normalizedEmail,
+    },
+    select: { id: true },
+  })
+
+  if (existingParticipantWithEmail) {
+    return null
+  }
+
   try {
     const participant = await ctx.prisma.$transaction(async (prisma) => {
       const participant = await prisma.participant.create({
         data: {
-          email: email.trim().toLowerCase(),
+          email: normalizedEmail,
           username: username.trim(),
           password: await bcrypt.hash(password, 10),
           isEmailValid: false,
@@ -690,6 +889,8 @@ export async function createParticipantAccount(
 
       return participant
     })
+
+    if (!participant) return null
 
     const activationJWT = await signJWT(
       {
@@ -765,72 +966,21 @@ export async function loginParticipantWithLti(
     }
   }
 
-  const ltiData = (await verifyJWT(
-    signedLtiData,
-    process.env.APP_SECRET as string
-  )) as {
-    sub: string
-    email?: string
-    scope: string
+  const resolved = await resolveOrCreateParticipantForLti(
+    {
+      signedLtiData,
+      allowCreate: false,
+      courseId: courseId ?? undefined,
+    },
+    ctx
+  )
+
+  if (resolved.type !== 'resolved') {
+    console.warn(`event=lti_login_failed type=${resolved.type}`)
+    return null
   }
 
-  console.log('ltiData', ltiData)
-
-  let account = await ctx.prisma.participantAccount.findUnique({
-    where: { ssoId: ltiData.sub as string },
-    include: { participant: true },
-  })
-
-  console.log('account', account)
-
-  // check if there is a participant account already given the email address
-  // if so, create a new participant account with the LTI data and new sub
-  if (!account && ltiData.email) {
-    const existingParticipant = await ctx.prisma.participant.findUnique({
-      where: {
-        email_isSSOAccount: { email: ltiData.email, isSSOAccount: true },
-      },
-    })
-
-    console.log('existingParticipant', existingParticipant)
-
-    if (!existingParticipant) {
-      return null
-    }
-
-    account = await ctx.prisma.participantAccount.create({
-      data: {
-        ssoId: ltiData.sub,
-        ssoType: ltiData.scope,
-        participant: {
-          connect: {
-            id: existingParticipant.id,
-          },
-        },
-      },
-      include: { participant: true },
-    })
-  }
-
-  if (!account?.participant) return null
-
-  if (courseId) {
-    const participation = await ctx.prisma.participation.upsert({
-      where: {
-        courseId_participantId: {
-          courseId,
-          participantId: account.participant.id,
-        },
-      },
-      create: {
-        course: { connect: { id: courseId } },
-        participant: { connect: { id: account.participant.id } },
-      },
-      update: {},
-    })
-
-    console.log('participation', participation)
-  }
+  const account = resolved.account
 
   const jwt = await doParticipantLogin(
     {

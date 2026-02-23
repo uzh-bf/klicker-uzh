@@ -3,4 +3,7 @@ version = 1
 name = "klicker-uzh"
 
 [setup]
-script = "pnpm install"
+script = '''
+pnpm install
+pnpm build
+'''
