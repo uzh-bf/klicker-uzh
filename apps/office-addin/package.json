@@ -42,7 +42,7 @@
     "office-addin-manifest": "~1.13.6",
     "postcss": "~8.4.47",
     "postcss-import": "~16.1.0",
-    "rollup": "~4.34.9",
+    "rollup": "~4.59.0",
     "rollup-plugin-copy": "~3.5.0",
     "rollup-plugin-delete": "~2.1.0",
     "rollup-plugin-livereload": "~2.0.5",
