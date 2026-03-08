@@ -41,22 +41,22 @@ function getOpenAIModel(chatbot: Chatbot, modelId: string) {
   let hasCustomApiKey = false
   let decryptedApiKey: string | null = null
   if (
-    typeof chatbot.azureOpenAIKey === 'string' &&
-    chatbot.azureOpenAIKey.length > 0
+    typeof chatbot.openaiApiKey === 'string' &&
+    chatbot.openaiApiKey.length > 0
   ) {
     hasCustomApiKey = true
-    decryptedApiKey = safeDecrypt(chatbot.azureOpenAIKey)
+    decryptedApiKey = safeDecrypt(chatbot.openaiApiKey)
   }
   const apiKey = decryptedApiKey || process.env.OPENAI_API_KEY
 
   let hasCustomEndpoint = false
   let baseUrl = process.env.OPENAI_BASE_URL
   if (
-    typeof chatbot.azureOpenAIEndpoint === 'string' &&
-    chatbot.azureOpenAIEndpoint.length > 0
+    typeof chatbot.openaiBaseUrl === 'string' &&
+    chatbot.openaiBaseUrl.length > 0
   ) {
     hasCustomEndpoint = true
-    baseUrl = chatbot.azureOpenAIEndpoint
+    baseUrl = chatbot.openaiBaseUrl
   }
 
   const openai = createOpenAI({
