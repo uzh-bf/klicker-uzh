@@ -951,7 +951,7 @@ export async function POST(
   })
 
   const result = streamText({
-    model: openaiModelSelection.model as unknown as LanguageModel,
+    model: openaiModelSelection.model as LanguageModel,
     maxOutputTokens,
     providerOptions: providerReasoningEffort
       ? {
