@@ -30,6 +30,8 @@ import { DisclaimersService } from 'src/services/disclaimers'
 import { ThreadService } from 'src/services/threads'
 import { z } from 'zod'
 
+export const runtime = 'nodejs'
+
 export const maxDuration = 60
 const CHAT_LOG_PREFIX = '[chat:dev]'
 const isDevLogging = process.env.NODE_ENV === 'development'
@@ -953,6 +955,7 @@ export async function POST(
   const result = streamText({
     model: openaiModelSelection.model as LanguageModel,
     maxOutputTokens,
+    experimental_telemetry: { isEnabled: true },
     providerOptions: providerReasoningEffort
       ? {
           openai: {
