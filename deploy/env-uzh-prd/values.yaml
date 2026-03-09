@@ -183,7 +183,6 @@ auth:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 chat:
@@ -268,14 +267,13 @@ chat:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 frontendPWA:
   allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://ius.zone https://*.df-app.ch'
   priorityClassName: production-workload
 
-  replicaCount: 3
+  replicaCount: 4
 
   autoscaling:
     enabled: false
@@ -317,11 +315,10 @@ frontendPWA:
 
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
-    limits:
-      cpu: 200m
+      cpu: 100m
       memory: 200Mi
+    limits:
+      memory: 600Mi
 
 frontendManage:
   priorityClassName: production-workload
@@ -371,7 +368,6 @@ frontendManage:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 frontendControl:
@@ -423,13 +419,12 @@ frontendControl:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 backendGraphql:
   priorityClassName: production-workload
 
-  replicaCount: 3
+  replicaCount: 4
 
   autoscaling:
     enabled: false
@@ -488,10 +483,9 @@ backendGraphql:
   resources:
     requests:
       cpu: 100m
-      memory: 100Mi
+      memory: 200Mi
     limits:
-      cpu: 200m
-      memory: 500Mi
+      memory: 600Mi
 
 olatApi:
   priorityClassName: production-workload
@@ -541,7 +535,6 @@ olatApi:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 lti:
@@ -638,13 +631,12 @@ responseApi:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 assessment:
   frontendPWA:
     priorityClassName: production-workload
-    replicaCount: 3
+    replicaCount: 4
     autoscaling:
       enabled: false
 
@@ -711,15 +703,14 @@ assessment:
 
     resources:
       requests:
-        cpu: 50m
-        memory: 50Mi
-      limits:
-        cpu: 200m
+        cpu: 100m
         memory: 200Mi
+      limits:
+        memory: 600Mi
 
   backendGraphql:
     priorityClassName: production-workload
-    replicaCount: 3
+    replicaCount: 4
     autoscaling:
       enabled: false
 
@@ -798,10 +789,9 @@ assessment:
     resources:
       requests:
         cpu: 100m
-        memory: 100Mi
+        memory: 200Mi
       limits:
-        cpu: 200m
-        memory: 500Mi
+        memory: 600Mi
 
   responseApi:
     corsAllowedOrigins: 'https://assessment.klicker.uzh.ch'
@@ -866,5 +856,4 @@ assessment:
         cpu: 50m
         memory: 50Mi
       limits:
-        cpu: 200m
         memory: 200Mi
