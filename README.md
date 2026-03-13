@@ -35,6 +35,60 @@ To share code more easily between different services, we added new packages to t
 
 For more code commonality between different projects at the Teaching Center and the Department of Finance more generally, we also use a [Design System Package](https://github.com/uzh-bf/design-system) with commonly used, pre-styled and theme-based components.
 
+## Local Development
+
+### Start Infra
+
+Use `_run_app_dependencies.sh` to start only the infrastructure services your task needs. It does **not** start app dev servers; run those separately with your usual `pnpm dev` or app-specific dev command.
+
+Common profiles:
+
+- `./_run_app_dependencies.sh --profile manage`
+  - Start everything for Manage / Auth development (postgres, redis_exec, redis_assessment, redis_cache, proxy, hatchet, local Hatchet token, build prompt, Prisma setup)
+- `./_run_app_dependencies.sh --profile chat`
+  - Start infra for Chat development (postgres, redis_exec, redis_cache, proxy, hatchet, local Hatchet token)
+- `./_run_app_dependencies.sh --profile graphql`
+  - Start infra for GraphQL/backend development (postgres, redis_exec, redis_cache, hatchet, local Hatchet token; no proxy)
+- `./_run_app_dependencies.sh --profile minimal`
+  - Start just postgres + redis_exec
+
+Fast-loop without prompts:
+
+```bash
+./_run_app_dependencies.sh --profile chat --skip-build --skip-prisma --skip-schema-sync
+```
+
+If you don't need Traefik / `*.klicker.com` domains, skip the proxy:
+
+```bash
+./_run_app_dependencies.sh --profile chat --no-proxy --skip-build --skip-prisma --skip-schema-sync
+```
+
+Combine profiles with explicit apps or services:
+
+```bash
+./_run_app_dependencies.sh --apps chat,auth
+./_run_app_dependencies.sh --services postgres,redis_exec
+```
+
+All profiles and app-selectors:
+- `--profile <full|manage|pwa|chat|graphql|minimal>`
+- `--apps <csv>`
+- `--services <csv>`
+- `--skip-build`
+- `--skip-prisma`
+- `--skip-schema-sync`
+- `--no-proxy`
+- `--dry-run`
+- `--help`
+
+Cleanup:
+- Press **Ctrl+C** to stop. The script cleans up only the services it started this run, not any pre-existing containers.
+
+Notes:
+- Some profiles run a Hatchet token helper that writes/updates ignored local `.env` files in app directories (e.g., `apps/backend-docker/.env`, `apps/response-api/.env`). Those files are gitignored and safe to leave.
+- On macOS with proxy enabled, the script creates SSL certificates under `util/traefik/ssl/` (also gitignored).
+
 ## Roadmap / Issues
 
 The KlickerUZH project is publicly managed and documented in this repository. A corresponding roadmap of our current developments can be found on our [Homepage](https://www.klicker.uzh.ch/development). Please feel free to add any issues or feature requests you might have to the [Roadmap](https://klicker-uzh.feedbear.com) and [Bug reports](https://klicker-uzh.feedbear.com/boards/bug-reports) or start a new discussion in our [Community](https://community.klicker.uzh.ch/).

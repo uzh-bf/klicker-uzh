@@ -208,6 +208,7 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 - **Infisical + Turbo env sync**: Any Infisical-managed env var used by tasks must be listed in `turbo.json` `globalEnv`; otherwise task runs/cache behavior can become stale or inconsistent across environments.
 - **Participant email uniqueness across auth modes**: Prisma enforces `Participant @@unique([email, isSSOAccount])`, so the same normalized email can exist once as manual and once as SSO. To block new cross-mode duplicates, account creation must explicitly check normalized email collisions in service logic. (`packages/graphql/src/services/accounts.ts`)
 - **Helm v3 secrets are external**: `deploy/charts/klicker-uzh-v3/` deployments reference `envFrom.secretRef` names, but the chart currently defines no `Secret` manifests; secrets must be provisioned out-of-band with matching names. (`deploy/charts/klicker-uzh-v3/templates/`)
+- **Infra bootstrap app context**: `_run_app_dependencies.sh` treats `--profile` and `--apps` as logical context selectors that resolve to infra-only compose services; they do not start app dev processes directly. Keep new bootstrap options aligned with `util/_app_dependencies_lib.sh` mapping logic and `test/run-app-dependencies-plan-test.sh`. (`_run_app_dependencies.sh`, `util/_app_dependencies_lib.sh`)
 
 ## Factory Skills (AI Assistance)
 
