@@ -928,6 +928,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       editProfile: 'Profil editieren',
       editProfileFailed:
         'Leider ist beim Speichern der Änderungen ein Fehler aufgetreten. Möglicherweise ist der von Ihnen gewählte Nutzername bereits vergeben. Bitte überprüfen Sie Ihre Eingaben und versuchen es nochmal.',
+      createProfileFailed:
+        'Leider konnte Ihr Konto nicht erstellt oder verknüpft werden. Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut.',
       editProfileSuccess: 'Ihr Profil wurde erfolgreich aktualisiert.',
       achievements: 'Errungenschaften',
       myProfile: 'Mein Profil',
