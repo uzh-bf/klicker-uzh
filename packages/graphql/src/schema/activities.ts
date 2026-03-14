@@ -313,6 +313,7 @@ export const CourseActivityItem = builder.objectType(CourseActivityItemRef, {
 
 export interface ICourseActivityList {
   liveQuizzes: ICourseActivityItem[]
+  polls: ICourseActivityItem[]
   practiceQuizzes: ICourseActivityItem[]
   microLearnings: ICourseActivityItem[]
   groupActivities: ICourseActivityItem[]
@@ -324,6 +325,7 @@ export const CourseActivityList = builder.objectType(CourseActivityListRef, {
   name: 'CourseActivityList',
   fields: (t) => ({
     liveQuizzes: t.expose('liveQuizzes', { type: [CourseActivityItem] }),
+    polls: t.expose('polls', { type: [CourseActivityItem] }),
     practiceQuizzes: t.expose('practiceQuizzes', {
       type: [CourseActivityItem],
     }),

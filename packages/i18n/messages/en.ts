@@ -196,6 +196,8 @@ export default {
       evaluation: 'Evaluation',
       liveQuiz: 'Live Quiz',
       liveQuizzes: 'Live Quizzes',
+      poll: 'Poll',
+      polls: 'Polls',
       practiceQuiz: 'Practice Quiz',
       practiceQuizzes: 'Practice Quizzes',
       microlearnings: 'Microlearnings',

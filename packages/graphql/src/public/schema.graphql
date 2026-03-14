@@ -943,6 +943,7 @@ type CourseActivityList {
   groupActivities: [CourseActivityItem!]!
   liveQuizzes: [CourseActivityItem!]!
   microLearnings: [CourseActivityItem!]!
+  polls: [CourseActivityItem!]!
   practiceQuizzes: [CourseActivityItem!]!
 }
 

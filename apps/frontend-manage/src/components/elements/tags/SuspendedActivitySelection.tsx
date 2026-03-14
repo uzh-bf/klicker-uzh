@@ -42,6 +42,14 @@ function SuspendedActivitySelection({
           })) || [],
       },
       {
+        label: t('shared.generic.polls'),
+        items:
+          courseActivities?.getCourseActivityIds?.polls.map((poll) => ({
+            value: poll.id,
+            label: poll.name,
+          })) || [],
+      },
+      {
         label: t('shared.generic.practiceQuizzes'),
         items:
           courseActivities?.getCourseActivityIds?.practiceQuizzes.map(

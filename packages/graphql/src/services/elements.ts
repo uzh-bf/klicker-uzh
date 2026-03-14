@@ -123,6 +123,7 @@ export async function getUserElements(
                   some: {
                     OR: [
                       { elementBlock: { liveQuizId: activityId } },
+                      { elementStack: { pollId: activityId } },
                       { elementStack: { practiceQuizId: activityId } },
                       { elementStack: { microLearningId: activityId } },
                       { elementStack: { groupActivityId: activityId } },

@@ -198,6 +198,8 @@ export default {
       evaluation: 'Auswertung',
       liveQuiz: 'Live Quiz',
       liveQuizzes: 'Live Quizzes',
+      poll: 'Umfrage',
+      polls: 'Umfragen',
       practiceQuiz: 'Übungs-Quiz',
       practiceQuizzes: 'Übungs-Quizzes',
       microlearnings: 'Microlearnings',
