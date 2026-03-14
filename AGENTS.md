@@ -188,6 +188,7 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 ## Important Notes
 
 - Dev scripts use `./util/_run_with_infisical.sh` for secret injection. Avoid starting dev servers unless explicitly asked.
+- If you add or rename an Infisical-managed env var/secret, also update `turbo.json` `globalEnv` so Turborepo sees it during task execution and cache invalidation.
 - Never commit secrets, `.env` files, or credentials.
 - Keep changes small, follow existing patterns in the touched app/package.
 - Don't add/update dependencies unless required for the task.
@@ -207,6 +208,9 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 - **Next middleware CSP scope**: Setting frame-ancestor CSP via middleware with matcher `/:path*` can break Next prefetch/static-props requests (`_next/data`, `_next/static`) and cascade Cypress failures. Limit matcher scope to document routes and set the CSP header only for document-like requests. (`apps/frontend-manage/src/middleware.ts`, `apps/frontend-control/src/middleware.ts`, `apps/frontend-pwa/src/middleware.ts`)
 - **Cypress CI signal timing**: `cypress: default-group (merge)` can report an increasing failed-test count while `cypress-run-cloud` is still in progress; wait for `cypress-run-cloud` completion before expecting downloadable GitHub job logs. (`.github/workflows/cypress-testing.yml`)
 - **Cypress middleware kill-switch**: Use `DISABLE_FRAME_ANCESTORS_MIDDLEWARE=true` in Cypress workflow env to isolate middleware-related regressions in CI while keeping runtime CSP behavior enabled by default in non-test environments. (`.github/workflows/cypress-testing.yml`, `apps/frontend-manage/src/middleware.ts`, `apps/frontend-control/src/middleware.ts`, `apps/frontend-pwa/src/middleware.ts`)
+- **Infisical + Turbo env sync**: Any Infisical-managed env var used by tasks must be listed in `turbo.json` `globalEnv`; otherwise task runs/cache behavior can become stale or inconsistent across environments.
+- **Participant email uniqueness across auth modes**: Prisma enforces `Participant @@unique([email, isSSOAccount])`, so the same normalized email can exist once as manual and once as SSO. To block new cross-mode duplicates, account creation must explicitly check normalized email collisions in service logic. (`packages/graphql/src/services/accounts.ts`)
+- **Helm v3 secrets are external**: `deploy/charts/klicker-uzh-v3/` deployments reference `envFrom.secretRef` names, but the chart currently defines no `Secret` manifests; secrets must be provisioned out-of-band with matching names. (`deploy/charts/klicker-uzh-v3/templates/`)
 
 ## Factory Skills (AI Assistance)
 

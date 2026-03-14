@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.57](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.56...v3.4.0-alpha.57) (2026-02-23)
+
+
+### Enhancements
+
+* **apps/lti:** allow linking of existing credential-based user account with new LTI ([#5026](https://github.com/uzh-bf/klicker-uzh/issues/5026)) ([2a6a612](https://github.com/uzh-bf/klicker-uzh/commit/2a6a6125fbea8ce6225a1e3972fa5fd552c06523))
+
 ## [3.4.0-alpha.56](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.55...v3.4.0-alpha.56) (2026-02-15)
 
 

@@ -8,18 +8,11 @@ import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
 } from '@/src/services/mcpClients'
-import { createAzure } from '@ai-sdk/azure'
+import { createOpenAI } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
 import { Chatbot } from '@klicker-uzh/prisma/client'
 import { safeDecrypt } from '@klicker-uzh/util'
-import {
-  convertToModelMessages,
-  LanguageModel,
-  stepCountIs,
-  streamText,
-  UIMessage,
-  type StepResult,
-} from 'ai'
+import { stepCountIs, streamText, type StepResult } from 'ai'
 import { createHash, randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { DEFAULT_PROMPT } from 'src/lib/config/prompts'
@@ -32,68 +25,48 @@ import { DisclaimersService } from 'src/services/disclaimers'
 import { ThreadService } from 'src/services/threads'
 import { z } from 'zod'
 
+export const runtime = 'nodejs'
+
 export const maxDuration = 60
-const DEFAULT_AZURE_RESPONSES_API_VERSION = 'preview'
 const CHAT_LOG_PREFIX = '[chat:dev]'
 const isDevLogging = process.env.NODE_ENV === 'development'
 const MAX_LOG_STRING_LENGTH = 500
 const HASH_DIGEST_LENGTH = 12
 
-type AzureModelSelection = {
-  model: LanguageModel
-  debug: {
-    resourceName: string
-    responsesApiVersion: string
-    hasCustomEndpoint: boolean
-    hasCustomApiKey: boolean
-  }
-}
-
-function getAzureModel(
-  chatbot: Chatbot,
-  deploymentId: string
-): AzureModelSelection {
-  // Use per-chatbot Azure configuration if available, otherwise fallback to environment
+function getOpenAIModel(chatbot: Chatbot, modelId: string) {
+  // Use per-chatbot configuration if available, otherwise fallback to environment
   let hasCustomApiKey = false
   let decryptedApiKey: string | null = null
   if (
-    typeof chatbot.azureOpenAIKey === 'string' &&
-    chatbot.azureOpenAIKey.length > 0
+    typeof chatbot.openaiApiKey === 'string' &&
+    chatbot.openaiApiKey.length > 0
   ) {
     hasCustomApiKey = true
-    decryptedApiKey = safeDecrypt(chatbot.azureOpenAIKey)
+    decryptedApiKey = safeDecrypt(chatbot.openaiApiKey)
   }
-  const apiKey =
-    decryptedApiKey ||
-    process.env.AZURE_API_KEY ||
-    process.env.AZURE_OPENAI_API_KEY
+  const apiKey = decryptedApiKey || process.env.OPENAI_API_KEY
 
   let hasCustomEndpoint = false
-  let resourceName = process.env.AZURE_RESOURCE_NAME || 'klicker-ai'
+  let baseUrl = process.env.OPENAI_BASE_URL
   if (
-    typeof chatbot.azureOpenAIEndpoint === 'string' &&
-    chatbot.azureOpenAIEndpoint.length > 0
+    typeof chatbot.openaiBaseUrl === 'string' &&
+    chatbot.openaiBaseUrl.length > 0
   ) {
     hasCustomEndpoint = true
-    resourceName = new URL(chatbot.azureOpenAIEndpoint).hostname.split('.')[0]
+    baseUrl = chatbot.openaiBaseUrl
   }
 
-  const responsesApiVersion =
-    process.env.AZURE_RESPONSES_API_VERSION ||
-    DEFAULT_AZURE_RESPONSES_API_VERSION
-
-  const azure = createAzure({
-    resourceName,
+  const openai = createOpenAI({
+    baseURL: baseUrl,
     apiKey,
-    useDeploymentBasedUrls: false,
-    apiVersion: responsesApiVersion,
   })
 
+  const model = openai(modelId)
+
   return {
-    model: azure.responses(deploymentId),
+    model,
     debug: {
-      resourceName,
-      responsesApiVersion,
+      baseUrl: baseUrl,
       hasCustomEndpoint,
       hasCustomApiKey,
     },
@@ -415,7 +388,7 @@ function classifyStreamError(serializedError: SerializedStreamError): {
       classification: 'rate_limit_or_quota',
       retryable: true,
       suggestedAction:
-        'Retry with backoff and check deployment capacity/quota settings.',
+        'Retry with backoff and check rate limit/quota settings.',
     }
   }
 
@@ -431,7 +404,7 @@ function classifyStreamError(serializedError: SerializedStreamError): {
       classification: 'auth_or_permission',
       retryable: false,
       suggestedAction:
-        'Verify Azure credentials, deployment access, and endpoint/resource configuration.',
+        'Verify API credentials, model access permissions, and endpoint configuration.',
     }
   }
 
@@ -742,12 +715,10 @@ export async function POST(
   let partialReasoningContent = ''
   let assistantReasoningContent: string | null = null
 
-  // convert to UIMessage format
-  const uiMessages: UIMessage[] = messages.map((msg) => ({
-    id: msg.id,
-    role: msg.role as 'user' | 'assistant',
+  // convert messages to simple format for AI SDK v6
+  const modelMessages = messages.map((msg) => ({
+    role: msg.role,
     content: msg.content,
-    parts: [{ type: 'text' as const, text: msg.content }],
   }))
 
   // Load MCP tools from database configurations or fallback to legacy
@@ -834,7 +805,7 @@ export async function POST(
       ? appliedReasoningEffort
       : undefined
 
-  const azureModelSelection = getAzureModel(
+  const openaiModelSelection = getOpenAIModel(
     chatbot,
     selectedModelConfig.deploymentId
   )
@@ -858,7 +829,7 @@ export async function POST(
     maxOutputTokens: maxOutputTokens ?? null,
     toolCount: toolNames.length,
     toolNames,
-    azure: azureModelSelection.debug,
+    openai: openaiModelSelection.debug,
     systemPromptLength: systemPrompt.length,
     systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
     userPromptLengthTotal: userPrompt.length,
@@ -977,17 +948,19 @@ export async function POST(
   })
 
   const result = streamText({
-    model: azureModelSelection.model,
+    model: openaiModelSelection.model,
     maxOutputTokens,
-    providerOptions: providerReasoningEffort
-      ? {
-          openai: {
-            reasoningEffort: providerReasoningEffort,
-            reasoningSummary: 'auto',
-          },
-        }
-      : undefined,
-    messages: convertToModelMessages(uiMessages),
+    experimental_telemetry: { isEnabled: true },
+    providerOptions: {
+      openai: {
+        store: false,
+        ...(providerReasoningEffort && {
+          reasoningEffort: providerReasoningEffort,
+          reasoningSummary: 'auto',
+        }),
+      },
+    },
+    messages: modelMessages,
     tools: mcpTools,
     toolChoice: 'auto',
     stopWhen: stepCountIs(5),
