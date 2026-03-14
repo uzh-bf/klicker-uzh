@@ -20,6 +20,8 @@ http:
         - 'web'
         - 'websecure'
       service: 'pwa'
+      middlewares:
+        - 'csp-frame-ancestors'
 
     assessment:
       rule: 'Host(`assessment.klicker.com`)'
@@ -27,6 +29,8 @@ http:
         - 'web'
         - 'websecure'
       service: 'pwa'
+      middlewares:
+        - 'csp-frame-ancestors'
 
     manage:
       rule: 'Host(`manage.klicker.com`)'
@@ -41,6 +45,8 @@ http:
         - 'web'
         - 'websecure'
       service: 'control'
+      middlewares:
+        - 'csp-frame-ancestors'
 
     chat:
       rule: 'Host(`chat.klicker.com`)'
@@ -48,6 +54,8 @@ http:
         - 'web'
         - 'websecure'
       service: 'chat'
+      middlewares:
+        - 'csp-frame-ancestors'
 
     auth:
       rule: 'Host(`auth.klicker.com`)'
@@ -69,6 +77,12 @@ http:
         - 'web'
         - 'websecure'
       service: 'response-api'
+
+  middlewares:
+    csp-frame-ancestors:
+      headers:
+        customResponseHeaders:
+          Content-Security-Policy: "frame-ancestors 'self' *.uzh.ch"
 
   services:
     api:

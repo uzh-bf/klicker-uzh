@@ -65,6 +65,71 @@ gh run download <run-id> --repo uzh-bf/klicker-uzh --dir /tmp/klicker-cypress-ru
 
 After you identify the failing spec path in logs, reproduce locally with `test:run:one`.
 
+## CI mass-failure triage workflow (Cypress Cloud + GH)
+
+Use this when failures explode across many specs (for example, fail count rising continuously in Cypress Cloud).
+
+### 1) Monitor run completion first
+
+```bash
+# quick status of the two key checks on a PR
+gh pr checks <pr-number> --json name,bucket,state,description,link \
+  --jq '.[] | select(.name=="cypress-run-cloud" or .name=="cypress: default-group (merge)") | [.name,.bucket,.state,(.description//"-"),.link] | @tsv'
+
+# inspect cypress workflow job/step state
+gh run view <run-id> --json jobs \
+  --jq '.jobs[] | select(.name=="cypress-run-cloud") | {status,conclusion,steps:[.steps[]|{n:.number,name:.name,status:.status,conclusion:.conclusion}]}'
+```
+
+Important: `gh run view --log-failed` and `--job ... --log` only work after the run/job has completed.
+
+### 2) Capture logs immediately after completion
+
+```bash
+gh run view <run-id> --log-failed > /tmp/cypress-run-<run-id>-failed.log
+gh run view <run-id> --job <job-id> --log > /tmp/cypress-run-<run-id>-job-<job-id>.log
+```
+
+### 3) Classify failure signatures
+
+```bash
+rg -n "Failed to load static props|unhandled promise rejection|Y\\.prefetch|_next/static/chunks/main" \
+  /tmp/cypress-run-<run-id>-failed.log /tmp/cypress-run-<run-id>-job-<job-id>.log
+```
+
+Buckets:
+
+- prefetch/static-props crash signatures (`Failed to load static props`, `Y.prefetch`, Next chunk stack)
+- broad app-level unhandled promise rejection signatures
+- ordinary selector/timeout/assertion failures
+
+### 4) Decision tree
+
+- If prefetch/static-props signatures appear across many specs:
+  - treat as middleware interception regression
+  - harden middleware in all three apps:
+    - `apps/frontend-manage/src/middleware.ts`
+    - `apps/frontend-control/src/middleware.ts`
+    - `apps/frontend-pwa/src/middleware.ts`
+  - skip CSP mutation on prefetch requests (`next-router-prefetch`, `purpose=prefetch`, equivalent headers)
+  - broaden matcher exclusion from selective `_next/static|_next/image|_next/data` to all `_next`
+  - keep runtime `ALLOWED_FRAME_ANCESTORS` behavior (do not move back to build-time-only CSP config)
+- If signatures are absent and failures are localized:
+  - split by spec and fix as isolated test/app issues instead of a global middleware rollback
+
+### 5) Post-fix validation gate
+
+```bash
+# optional fast local smoke on critical specs
+pnpm --filter @klicker-uzh/cypress test:run:one --spec cypress/e2e/0-baseline-ops.cy.ts
+pnpm --filter @klicker-uzh/cypress test:run:one --spec cypress/e2e/A-login-workflow.cy.ts
+
+# CI must not show the catastrophic signature anymore
+gh run view <new-run-id> --log-failed | rg -n "Failed to load static props|unhandled promise rejection|Y\\.prefetch"
+```
+
+Passing this gate means Cypress can still have isolated flakes, but no suite-wide early-collapse pattern.
+
 ## Cypress debugging cookbook
 
 ### 1) Reduce the problem
