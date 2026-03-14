@@ -51,3 +51,5 @@ dumps/**/*.dump.gpg
 
 # Obsidian workspace state (keep `deploy/docs/.obsidian/` tracked; ignore the docs-site vault state)
 /apps/docs/docs/.obsidian/
+
+.claude/worktrees
