@@ -228,3 +228,39 @@ export async function getSinglePoll({ id }: { id: string }, ctx: Context) {
 
   return poll
 }
+
+export async function changePollName(
+  { id, name, displayName }: { id: string; name: string; displayName: string },
+  ctx: ContextWithUser
+) {
+  const poll = await ctx.prisma.poll.findUnique({
+    where: { id },
+  })
+
+  if (!poll) return false
+
+  // if both name and displayname remain unchanged, skip the update
+  if (poll.name === name && poll.displayName === displayName) {
+    return true
+  }
+
+  try {
+    await ctx.prisma.poll.update({
+      where: { id },
+      data: {
+        name,
+        displayName,
+        reviewStatus:
+          poll.reviewStatus === DB.ReviewStatus.REVIEWED
+            ? DB.ReviewStatus.MODIFIED_AFTER_REVIEW
+            : undefined,
+      },
+    })
+
+    ctx.emitter.emit('invalidate', { typename: 'Poll', id })
+    return true
+  } catch (error) {
+    console.error('Error changing poll name:', error)
+    return false
+  }
+}

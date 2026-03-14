@@ -1576,6 +1576,21 @@ export const Mutation = builder.mutationType({
             }
 
             return await LiveQuizService.changeLiveQuizName(args, ctx)
+          } else if (args.type === ActivityTypeEnum.POLL) {
+            const validAccess = await checkAccess(
+              [
+                {
+                  pollId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await PollService.changePollName(args, ctx)
           } else if (args.type === ActivityTypeEnum.PRACTICE_QUIZ) {
             const validAccess = await checkAccess(
               [
