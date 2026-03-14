@@ -444,12 +444,12 @@ model ConfusionTimestep {
 // ----- USER ACTIVITIES VIEW -----
 // #region
 /// A unified view of all user activities across different activity types
-/// This view combines data from LiveQuiz, PracticeQuiz, MicroLearning, and GroupActivity
+/// This view combines data from LiveQuiz, Poll, PracticeQuiz, MicroLearning, and GroupActivity
 /// along with permission and course information for efficient querying and sorting
 view UserActivities {
   // core activity fields
   id           String            @db.Uuid
-  type         String // 'LIVE_QUIZ', 'PRACTICE_QUIZ', 'MICRO_LEARNING', 'GROUP_ACTIVITY'
+  type         String // 'LIVE_QUIZ', 'POLL', 'PRACTICE_QUIZ', 'MICRO_LEARNING', 'GROUP_ACTIVITY'
   typeOrder    Int // custom order for sorting by activity type (in order as listed above)
   name         String
   displayName  String

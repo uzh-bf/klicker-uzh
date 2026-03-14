@@ -1300,6 +1300,89 @@ function getAsyncActivityPointsElements({
   }
 }
 
+export async function getPollDetails(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const poll = await ctx.prisma.poll.findUnique({
+    where: { id },
+    include: {
+      owner: true,
+      _count: {
+        select: {
+          permissions: {
+            where: {
+              userId: ctx.user.sub,
+              permissionLevel: {
+                in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+              },
+            },
+          },
+        },
+      },
+      stacks: {
+        include: {
+          elements: {
+            include: {
+              element: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.WRITE,
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
+        orderBy: { order: 'asc' },
+      },
+    },
+  })
+
+  if (!poll) {
+    return null
+  }
+
+  const arePointsAwarded = false // for polls no points are awarded
+  const pointsMultiplierActivity = 1 // no point multiplier is defined for polls
+  const stacks = poll.stacks.map((stack) =>
+    getAsyncActivityPointsElements({ stack, arePointsAwarded })
+  )
+
+  const totalPoints = arePointsAwarded
+    ? stacks.reduce((acc, stack) => {
+        acc += stack.stackPoints ?? 0
+        return acc
+      }, 0)
+    : 0
+
+  const isActivityManager = poll._count.permissions > 0
+  return {
+    ...poll,
+    isActivityReviewer: false, // polls cannot be assigned to courses
+    isActivityManager,
+    isPinProtected: false,
+    ownerShortname: poll.owner.shortname,
+    ownerEmail: isActivityManager ? poll.owner.email : null,
+    arePointsAwarded,
+    isGamificationEnabled: false,
+    isAssessmentEnabled: false,
+    pointsMultiplier: pointsMultiplierActivity,
+    totalPoints,
+    stacks,
+  }
+}
+
 export async function getPracticeQuizDetails(
   { id }: { id: string },
   ctx: ContextWithUser

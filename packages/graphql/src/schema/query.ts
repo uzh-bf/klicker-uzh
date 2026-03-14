@@ -359,6 +359,28 @@ export const Query = builder.queryType({
             return liveQuiz
           }
 
+          // poll activity
+          else if (args.activityType === ActivityTypeEnum.POLL) {
+            // permission check - minimum read level required
+            const validAccess = await checkAccess(
+              [
+                {
+                  pollId: args.activityId,
+                  minimumPermissionLevel: DB.PermissionLevel.READ,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) return null
+
+            // get poll details
+            const poll = await ActivityService.getPollDetails(
+              { id: args.activityId },
+              ctx
+            )
+            return poll
+          }
+
           // practice quiz activity
           else if (args.activityType === ActivityTypeEnum.PRACTICE_QUIZ) {
             // permission check - minimum read level required

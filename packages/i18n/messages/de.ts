@@ -406,6 +406,8 @@ export default {
       ACTIVITIES: 'Aktivitäten',
       LIVE_QUIZ: 'Live Quiz',
       LIVE_QUIZ_TEMPLATE: 'Live Quiz Vorlage',
+      POLL: 'Umfrage',
+      POLL_TEMPLATE: 'Umfrage Vorlage',
       PRACTICE_QUIZ: 'Übungs-Quiz',
       PRACTICE_QUIZ_TEMPLATE: 'Übungs-Quiz Vorlage',
       MICRO_LEARNING: 'Microlearning',

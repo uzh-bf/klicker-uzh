@@ -21,6 +21,7 @@ import {
   faQuestion,
   faQuestionCircle,
   faShieldHalved,
+  faSquarePollHorizontal,
   faStamp,
   faTriangleExclamation,
   faTrophy,
@@ -52,6 +53,7 @@ const STATUS_ICONS = {
 
 const TYPE_ICONS = {
   [ActivityType.LiveQuiz]: [faQuestionCircle, faQuestionCircle],
+  [ActivityType.Poll]: [faSquarePollHorizontal, faSquarePollHorizontal],
   [ActivityType.PracticeQuiz]: [faListCheck, faListCheck],
   [ActivityType.MicroLearning]: [faGraduationCap, faGraduationCap],
   [ActivityType.GroupActivity]: [faUserGroup, faUserGroup],
@@ -170,6 +172,7 @@ function ActivityOverviewFilters({
         >
           {[
             ActivityType.LiveQuiz,
+            ActivityType.Poll,
             ActivityType.PracticeQuiz,
             ActivityType.MicroLearning,
             ActivityType.GroupActivity,
