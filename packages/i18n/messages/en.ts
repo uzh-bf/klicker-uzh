@@ -196,6 +196,8 @@ export default {
       evaluation: 'Evaluation',
       liveQuiz: 'Live Quiz',
       liveQuizzes: 'Live Quizzes',
+      poll: 'Poll',
+      polls: 'Polls',
       practiceQuiz: 'Practice Quiz',
       practiceQuizzes: 'Practice Quizzes',
       microlearnings: 'Microlearnings',
@@ -404,6 +406,8 @@ export default {
       ACTIVITIES: 'Activities',
       LIVE_QUIZ: 'Live Quiz',
       LIVE_QUIZ_TEMPLATE: 'Live Quiz Template',
+      POLL: 'Poll',
+      POLL_TEMPLATE: 'Poll Template',
       PRACTICE_QUIZ: 'Practice Quiz',
       PRACTICE_QUIZ_TEMPLATE: 'Practice Quiz Template',
       MICRO_LEARNING: 'Microlearning',
@@ -426,6 +430,7 @@ export default {
     },
     short: {
       LIVE_QUIZ: 'LQ',
+      POLL: 'PO',
       PRACTICE_QUIZ: 'PQ',
       MICRO_LEARNING: 'ML',
       GROUP_ACTIVITY: 'GA',
@@ -1447,6 +1452,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     },
     questionPool: {
       createLiveQuiz: 'Create live quiz',
+      createPoll: 'Create poll',
       createMicrolearning: 'Create microlearning',
       createPracticeQuiz: 'Create practice quiz',
       createGroupTask: 'Create group activity',
@@ -1957,6 +1963,30 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       liveQuizTimeToZeroBonusMin:
         'The time to zero bonus points must be at least 1.',
       liveQuizTSinceFirstCorrect: 'Time since first correct answer [s]',
+      pollIntroductionName:
+        'Please enter a name for your poll. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
+      pollName:
+        'The name should allow you to distinguish this poll from others. It will not be shown to participants, so please use the display name in the next field.',
+      pollUseCase:
+        '<link>Polls</link> allow you to collect fully anonymous responses asynchronously outside of lectures or for research purposes. Personalized poll links ensure that each user can only answer the poll once.',
+      pollLecturerDocs:
+        'For more information on the creation and execution of polls, visit the <link>Lecturer Documentation</link>.',
+      pollStudentDocs:
+        'For more information on the student view, visit the <link>Student Documentation</link>.',
+      pollDescField:
+        'You can enter an optional description for the poll here. This will be displayed to participants at the beginning of the poll.',
+      pollTypes:
+        'Polls support all question types as well as content elements. Learning cards cannot be used in polls.',
+      pollInformation:
+        'Enter the name for the poll in this step and find helpful information about creating the element.',
+      pollDescription:
+        'Enter the name and description of the poll in this step.',
+      pollContent:
+        'In this step, select the questions and content elements for your poll.',
+      pollCreationFailed: 'Failed to customize the poll...',
+      pollEditingFailed: 'Failed to create the poll...',
+      pollCreated: 'Poll <b>{name}</b> created successfully.',
+      pollUpdated: 'Poll <b>{name}</b> updated successfully.',
       practiceQuizNoCourse:
         'Practice quizzes must be assigned to a running course. Please create a course first via the corresponding menu or extend an existing one before continuing with the creation.',
       practiceQuizIntroductionName:
@@ -2136,6 +2166,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       errorLoadingTemplate: 'An error occurred while loading the template...',
       templateInfoLIVE_QUIZ:
         'This view allows you to create your own live quiz activity from the live quiz template "{templateName}". You will be guided step by step through the creation and adjust or replace the existing content in each step. Please pay particular attention to the following instructions left by the creators of the template.',
+      templateInfoPOLL:
+        'This view allows you to create your own poll from the poll template "{templateName}". You will be guided step by step through the creation and adjust or replace the existing content in each step. Please pay particular attention to the following instructions left by the creators of the template.',
       templateInfoPRACTICE_QUIZ:
         'This view allows you to create your own practice quiz from the practice quiz template "{templateName}". You will be guided step by step through the creation and adjust or replace the existing content in each step. Please pay particular attention to the following instructions left by the creators of the template.',
       templateInfoGROUP_ACTIVITY:

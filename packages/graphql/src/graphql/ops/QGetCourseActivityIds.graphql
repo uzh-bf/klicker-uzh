@@ -4,6 +4,10 @@ query GetCourseActivityIds($courseId: String) {
       id
       name
     }
+    polls {
+      id
+      name
+    }
     practiceQuizzes {
       id
       name

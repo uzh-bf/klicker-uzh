@@ -163,6 +163,9 @@ model ElementStack {
   elements     ElementInstance[]
   bookmarkedBy Participation[]
 
+  poll   Poll?   @relation(fields: [pollId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  pollId String? @unique @db.Uuid
+
   practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   practiceQuizId String?       @db.Uuid
 

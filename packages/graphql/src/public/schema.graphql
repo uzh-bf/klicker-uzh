@@ -239,6 +239,7 @@ enum ActivityType {
   GROUP_ACTIVITY
   LIVE_QUIZ
   MICRO_LEARNING
+  POLL
   PRACTICE_QUIZ
 }
 
@@ -942,6 +943,7 @@ type CourseActivityList {
   groupActivities: [CourseActivityItem!]!
   liveQuizzes: [CourseActivityItem!]!
   microLearnings: [CourseActivityItem!]!
+  polls: [CourseActivityItem!]!
   practiceQuizzes: [CourseActivityItem!]!
 }
 
@@ -1792,6 +1794,7 @@ type Mutation {
   createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): ActivityInfo
   createParticipantAccount(courseId: String, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
+  createPoll(description: String, displayName: String!, name: String!, stacks: [ElementStackInput!]!): ActivityInfo
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): ActivityInfo
   createUserGroup(members: [UserGroupMembersInput!]!, name: String!): UserGroup
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
@@ -1821,6 +1824,7 @@ type Mutation {
   editGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
   editLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, isPinProtected: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): ActivityInfo
   editMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): ActivityInfo
+  editPoll(description: String, displayName: String!, id: String!, name: String!, stacks: [ElementStackInput!]!): ActivityInfo
   editPracticeQuiz(courseId: String!, description: String, displayName: String!, id: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): ActivityInfo
   editTag(id: Int!, name: String!): Tag
   enableCourseGamification(courseId: String!): Course
@@ -2280,6 +2284,21 @@ enum PointCorrectionType {
   SINGLE
 }
 
+type Poll {
+  course: Course
+  createdAt: Date
+  description: String
+  displayName: String!
+  id: String!
+  isOwner: Boolean
+  name: String!
+  numOfStacks: Int
+  stacks: [ElementStack!]
+  status: PublicationStatus!
+  templateName: String
+  updatedAt: Date
+}
+
 type PracticeQuiz {
   availableFrom: Date
   course: Course
@@ -2390,6 +2409,7 @@ type Query {
   getSingleAnswerCollection(id: Int!): AnswerCollection
   getSingleElementInstance(id: Int!): ElementInstance
   getSingleMicroLearning(id: String!): MicroLearning
+  getSinglePoll(id: String!): Poll
   getSinglePracticeQuiz(id: String!): PracticeQuiz
   getStackElementFeedbacks(elementInstanceIds: [Int!]!): [ElementFeedback!]
   getStudentCourseLeaderboard(courseId: String!, mode: String!): StudentCourseLeaderboard

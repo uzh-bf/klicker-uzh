@@ -14,7 +14,14 @@ import StackBlockCreation from './StackBlockCreation'
 import { ElementStackFormValues } from './WizardLayout'
 import WizardNavigation from './WizardNavigation'
 import { MicroLearningWizardStepProps } from './microLearning/MicroLearningWizard'
+import { PollWizardStepProps } from './poll/PollWizard'
 import { PracticeQuizWizardStepProps } from './practiceQuiz/PracticeQuizWizard'
+
+interface PollStackCreationStepProps extends PollWizardStepProps {
+  acceptedTypes: ElementType[]
+  selection: Record<number, Element>
+  resetSelection: () => void
+}
 
 interface PracticeQuizStackCreationStepProps
   extends PracticeQuizWizardStepProps {
@@ -45,7 +52,10 @@ function StackCreationStep({
   onPrevStep,
   onSubmit,
   closeWizard,
-}: MicroLearningStackCreationStepProps | PracticeQuizStackCreationStepProps) {
+}:
+  | PollStackCreationStepProps
+  | MicroLearningStackCreationStepProps
+  | PracticeQuizStackCreationStepProps) {
   // get all instances of elements alongside with the included element version
   const instanceVersionMap = useMemo(
     () =>

@@ -13,6 +13,7 @@ import * as GroupService from '../services/groups.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as ParticipantService from '../services/participants.js'
+import * as PollService from '../services/polls.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
@@ -85,6 +86,7 @@ import {
   Participation,
   StudentCourseLeaderboard,
 } from './participant.js'
+import { Poll } from './poll.js'
 import {
   ActivitySummary,
   ElementStack,
@@ -355,6 +357,28 @@ export const Query = builder.queryType({
               ctx
             )
             return liveQuiz
+          }
+
+          // poll activity
+          else if (args.activityType === ActivityTypeEnum.POLL) {
+            // permission check - minimum read level required
+            const validAccess = await checkAccess(
+              [
+                {
+                  pollId: args.activityId,
+                  minimumPermissionLevel: DB.PermissionLevel.READ,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) return null
+
+            // get poll details
+            const poll = await ActivityService.getPollDetails(
+              { id: args.activityId },
+              ctx
+            )
+            return poll
           }
 
           // practice quiz activity
@@ -635,6 +659,19 @@ export const Query = builder.queryType({
               args,
               ctx
             )
+          }
+        ),
+      }),
+
+      getSinglePoll: t.withAuth(asUser).field({
+        nullable: true,
+        type: Poll,
+        args: { id: t.arg.string({ required: true }) },
+        resolve: withPermission(
+          (args) => ({ pollId: args.id }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            return await PollService.getSinglePoll(args, ctx)
           }
         ),
       }),

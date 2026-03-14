@@ -5642,6 +5642,7 @@ export type PermissionCheck =
     }
   | { elementId: number; minimumPermissionLevel: DB.PermissionLevel }
   | { liveQuizId: string; minimumPermissionLevel: DB.PermissionLevel }
+  | { pollId: string; minimumPermissionLevel: DB.PermissionLevel }
   | { practiceQuizId: string; minimumPermissionLevel: DB.PermissionLevel }
   | { microLearningId: string; minimumPermissionLevel: DB.PermissionLevel }
   | { groupActivityId: string; minimumPermissionLevel: DB.PermissionLevel }
@@ -5714,6 +5715,22 @@ export async function checkAccess(
         where: {
           liveQuizId_userId: {
             liveQuizId: check.liveQuizId,
+            userId: ctx.user.sub,
+          },
+          permissionLevel: {
+            in: acceptedPermissionLevels[check.minimumPermissionLevel],
+          },
+        },
+      })
+
+      if (!permission) {
+        return false
+      }
+    } else if ('pollId' in check && typeof check.pollId !== 'undefined') {
+      const permission = await ctx.prisma.derivedPermission.findUnique({
+        where: {
+          pollId_userId: {
+            pollId: check.pollId,
             userId: ctx.user.sub,
           },
           permissionLevel: {
@@ -5956,6 +5973,7 @@ export type ObjectSelectorFunction = (
   | { elementId: number }
   | { courseId: string }
   | { liveQuizId: string }
+  | { pollId: string }
   | { practiceQuizId: string }
   | { microLearningId: string }
   | { groupActivityId: string }

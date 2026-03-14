@@ -8,6 +8,7 @@ import WizardNavigation from './WizardNavigation'
 import { GroupActivityWizardStepProps } from './groupActivity/GroupActivityWizard'
 import { LiveQuizWizardStepProps } from './liveQuiz/LiveQuizWizard'
 import { MicroLearningWizardStepProps } from './microLearning/MicroLearningWizard'
+import { PollWizardStepProps } from './poll/PollWizard'
 import { PracticeQuizWizardStepProps } from './practiceQuiz/PracticeQuizWizard'
 
 interface MicroLearningDescriptionStepProps
@@ -30,6 +31,15 @@ interface PracticeQuizDescriptionStepProps extends PracticeQuizWizardStepProps {
 }
 
 interface LiveQuizDescriptionStepProps extends LiveQuizWizardStepProps {
+  displayNameTooltip: string
+  descriptionTooltip: string
+  descriptionLabel?: string
+  dataDisplayName?: { test?: string; cy?: string }
+  dataDescription?: { test?: string; cy?: string }
+  descriptionRequired?: boolean
+}
+
+interface PollDescriptionStepProps extends PollWizardStepProps {
   displayNameTooltip: string
   descriptionTooltip: string
   descriptionLabel?: string
@@ -67,9 +77,10 @@ function DescriptionStep({
   onPrevStep,
   closeWizard,
 }:
+  | LiveQuizDescriptionStepProps
+  | PollDescriptionStepProps
   | MicroLearningDescriptionStepProps
   | PracticeQuizDescriptionStepProps
-  | LiveQuizDescriptionStepProps
   | GroupActivityDescriptionStepProps) {
   const t = useTranslations()
 

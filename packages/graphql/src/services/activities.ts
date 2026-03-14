@@ -1300,6 +1300,89 @@ function getAsyncActivityPointsElements({
   }
 }
 
+export async function getPollDetails(
+  { id }: { id: string },
+  ctx: ContextWithUser
+) {
+  const poll = await ctx.prisma.poll.findUnique({
+    where: { id },
+    include: {
+      owner: true,
+      _count: {
+        select: {
+          permissions: {
+            where: {
+              userId: ctx.user.sub,
+              permissionLevel: {
+                in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
+              },
+            },
+          },
+        },
+      },
+      stacks: {
+        include: {
+          elements: {
+            include: {
+              element: {
+                include: {
+                  permissions: {
+                    where: {
+                      userId: ctx.user.sub,
+                      permissionLevel: {
+                        in: [
+                          DB.PermissionLevel.WRITE,
+                          DB.PermissionLevel.ADMIN,
+                          DB.PermissionLevel.OWNER,
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
+        orderBy: { order: 'asc' },
+      },
+    },
+  })
+
+  if (!poll) {
+    return null
+  }
+
+  const arePointsAwarded = false // for polls no points are awarded
+  const pointsMultiplierActivity = 1 // no point multiplier is defined for polls
+  const stacks = poll.stacks.map((stack) =>
+    getAsyncActivityPointsElements({ stack, arePointsAwarded })
+  )
+
+  const totalPoints = arePointsAwarded
+    ? stacks.reduce((acc, stack) => {
+        acc += stack.stackPoints ?? 0
+        return acc
+      }, 0)
+    : 0
+
+  const isActivityManager = poll._count.permissions > 0
+  return {
+    ...poll,
+    isActivityReviewer: false, // polls cannot be assigned to courses
+    isActivityManager,
+    isPinProtected: false,
+    ownerShortname: poll.owner.shortname,
+    ownerEmail: isActivityManager ? poll.owner.email : null,
+    arePointsAwarded,
+    isGamificationEnabled: false,
+    isAssessmentEnabled: false,
+    pointsMultiplier: pointsMultiplierActivity,
+    totalPoints,
+    stacks,
+  }
+}
+
 export async function getPracticeQuizDetails(
   { id }: { id: string },
   ctx: ContextWithUser
@@ -1725,6 +1808,7 @@ export async function getCourseActivityIds(
         where: {
           OR: [
             { liveQuiz: { isDeleted: false, courseId: courseId ?? null } },
+            ...(courseId ? [] : [{ poll: { isDeleted: false } }]),
             ...(courseId
               ? [{ practiceQuiz: { isDeleted: false, courseId } }]
               : []),
@@ -1738,6 +1822,7 @@ export async function getCourseActivityIds(
         },
         include: {
           liveQuiz: { select: { id: true, name: true } },
+          poll: { select: { id: true, name: true } },
           practiceQuiz: { select: { id: true, name: true } },
           microLearning: { select: { id: true, name: true } },
           groupActivity: { select: { id: true, name: true } },
@@ -1748,44 +1833,54 @@ export async function getCourseActivityIds(
 
   if (!user) return null
 
-  const { liveQuizzes, practiceQuizzes, microLearnings, groupActivities } =
-    user.objects.reduce<{
-      liveQuizzes: { id: string; name: string }[]
-      practiceQuizzes: { id: string; name: string }[]
-      microLearnings: { id: string; name: string }[]
-      groupActivities: { id: string; name: string }[]
-    }>(
-      (acc, obj) => {
-        if (obj.liveQuiz) {
-          acc.liveQuizzes.push({ id: obj.liveQuiz.id, name: obj.liveQuiz.name })
-        } else if (obj.practiceQuiz) {
-          acc.practiceQuizzes.push({
-            id: obj.practiceQuiz.id,
-            name: obj.practiceQuiz.name,
-          })
-        } else if (obj.microLearning) {
-          acc.microLearnings.push({
-            id: obj.microLearning.id,
-            name: obj.microLearning.name,
-          })
-        } else if (obj.groupActivity) {
-          acc.groupActivities.push({
-            id: obj.groupActivity.id,
-            name: obj.groupActivity.name,
-          })
-        }
-        return acc
-      },
-      {
-        liveQuizzes: [],
-        practiceQuizzes: [],
-        microLearnings: [],
-        groupActivities: [],
+  const {
+    liveQuizzes,
+    polls,
+    practiceQuizzes,
+    microLearnings,
+    groupActivities,
+  } = user.objects.reduce<{
+    liveQuizzes: { id: string; name: string }[]
+    polls: { id: string; name: string }[]
+    practiceQuizzes: { id: string; name: string }[]
+    microLearnings: { id: string; name: string }[]
+    groupActivities: { id: string; name: string }[]
+  }>(
+    (acc, obj) => {
+      if (obj.liveQuiz) {
+        acc.liveQuizzes.push({ id: obj.liveQuiz.id, name: obj.liveQuiz.name })
+      } else if (obj.poll) {
+        acc.polls.push({ id: obj.poll.id, name: obj.poll.name })
+      } else if (obj.practiceQuiz) {
+        acc.practiceQuizzes.push({
+          id: obj.practiceQuiz.id,
+          name: obj.practiceQuiz.name,
+        })
+      } else if (obj.microLearning) {
+        acc.microLearnings.push({
+          id: obj.microLearning.id,
+          name: obj.microLearning.name,
+        })
+      } else if (obj.groupActivity) {
+        acc.groupActivities.push({
+          id: obj.groupActivity.id,
+          name: obj.groupActivity.name,
+        })
       }
-    )
+      return acc
+    },
+    {
+      liveQuizzes: [],
+      polls: [],
+      practiceQuizzes: [],
+      microLearnings: [],
+      groupActivities: [],
+    }
+  )
 
   return {
     liveQuizzes,
+    polls,
     practiceQuizzes,
     microLearnings,
     groupActivities,

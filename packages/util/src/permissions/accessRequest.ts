@@ -39,6 +39,7 @@ export async function updateAccessRequestInstances(
     elementId,
     courseId,
     liveQuizId,
+    pollId,
     practiceQuizId,
     microLearningId,
     groupActivityId,
@@ -50,6 +51,7 @@ export async function updateAccessRequestInstances(
     elementId?: number
     courseId?: string
     liveQuizId?: string
+    pollId?: string
     practiceQuizId?: string
     microLearningId?: string
     groupActivityId?: string
@@ -61,6 +63,7 @@ export async function updateAccessRequestInstances(
     | { elementId: number }
     | { courseId: string }
     | { liveQuizId: string }
+    | { pollId: string }
     | { practiceQuizId: string }
     | { microLearningId: string }
     | { groupActivityId: string }
@@ -74,6 +77,7 @@ export async function updateAccessRequestInstances(
     typeof elementId === 'undefined' &&
     typeof courseId === 'undefined' &&
     typeof liveQuizId === 'undefined' &&
+    typeof pollId === 'undefined' &&
     typeof practiceQuizId === 'undefined' &&
     typeof microLearningId === 'undefined' &&
     typeof groupActivityId === 'undefined'
@@ -141,6 +145,13 @@ export async function updateAccessRequestInstances(
                 userId,
               }
             : undefined,
+        pollId_userId:
+          typeof pollId !== 'undefined'
+            ? {
+                pollId,
+                userId,
+              }
+            : undefined,
         practiceQuizId_userId:
           typeof practiceQuizId !== 'undefined'
             ? {
@@ -175,6 +186,7 @@ export async function updateAccessRequestInstances(
           elementId,
           courseId,
           liveQuizId,
+          pollId,
           practiceQuizId,
           microLearningId,
           groupActivityId,
@@ -192,6 +204,7 @@ export async function updateAccessRequestInstances(
         elementId,
         courseId,
         liveQuizId,
+        pollId,
         practiceQuizId,
         microLearningId,
         groupActivityId,
@@ -247,6 +260,14 @@ export async function updateAccessRequestInstances(
                       objectAdminOrOwnerId: userId,
                     }
                   : undefined,
+              pollId_userId_objectAdminOrOwnerId:
+                typeof pollId !== 'undefined'
+                  ? {
+                      pollId,
+                      userId: requestingUserId,
+                      objectAdminOrOwnerId: userId,
+                    }
+                  : undefined,
               practiceQuizId_userId_objectAdminOrOwnerId:
                 typeof practiceQuizId !== 'undefined'
                   ? {
@@ -296,6 +317,10 @@ export async function updateAccessRequestInstances(
                 typeof liveQuizId !== 'undefined'
                   ? { connect: { id: liveQuizId } }
                   : undefined,
+              poll:
+                typeof pollId !== 'undefined'
+                  ? { connect: { id: pollId } }
+                  : undefined,
               practiceQuiz:
                 typeof practiceQuizId !== 'undefined'
                   ? { connect: { id: practiceQuizId } }
@@ -339,6 +364,7 @@ export async function updateAccessRequestInstances(
         elementId,
         courseId,
         liveQuizId,
+        pollId,
         practiceQuizId,
         microLearningId,
         groupActivityId,
@@ -360,6 +386,7 @@ export async function updateAccessRequestInstances(
         elementId,
         courseId,
         liveQuizId,
+        pollId,
         practiceQuizId,
         microLearningId,
         groupActivityId,
@@ -374,6 +401,7 @@ export async function updateAccessRequestInstances(
         elementId,
         courseId,
         liveQuizId,
+        pollId,
         practiceQuizId,
         microLearningId,
         groupActivityId,
@@ -438,6 +466,14 @@ export async function updateAccessRequestInstances(
                       objectAdminOrOwnerId: adminOrOwnerUserId,
                     }
                   : undefined,
+              pollId_userId_objectAdminOrOwnerId:
+                typeof pollId !== 'undefined'
+                  ? {
+                      pollId,
+                      userId: requestingUserId,
+                      objectAdminOrOwnerId: adminOrOwnerUserId,
+                    }
+                  : undefined,
               practiceQuizId_userId_objectAdminOrOwnerId:
                 typeof practiceQuizId !== 'undefined'
                   ? {
@@ -486,6 +522,10 @@ export async function updateAccessRequestInstances(
               liveQuiz:
                 typeof liveQuizId !== 'undefined'
                   ? { connect: { id: liveQuizId } }
+                  : undefined,
+              poll:
+                typeof pollId !== 'undefined'
+                  ? { connect: { id: pollId } }
                   : undefined,
               practiceQuiz:
                 typeof practiceQuizId !== 'undefined'

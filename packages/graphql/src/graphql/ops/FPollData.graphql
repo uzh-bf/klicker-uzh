@@ -1,0 +1,22 @@
+fragment PollData on Poll {
+  id
+  status
+  name
+  displayName
+  description
+  numOfStacks
+
+  stacks {
+    id
+    type
+    displayName
+    description
+    order
+    elements {
+      id
+      type
+      elementType
+      ...ElementData
+    }
+  }
+}

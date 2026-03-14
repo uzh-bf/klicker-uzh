@@ -7,6 +7,7 @@ import {
   GetGroupActivityDocument,
   GetSingleLiveQuizDocument,
   GetSingleMicroLearningDocument,
+  GetSinglePollDocument,
   GetSinglePracticeQuizDocument,
   GroupActivity,
   MicroLearning,
@@ -19,6 +20,7 @@ import { useMemo } from 'react'
 import GroupActivityWizard from './creation/groupActivity/GroupActivityWizard'
 import LiveQuizWizard from './creation/liveQuiz/LiveQuizWizard'
 import MicroLearningWizard from './creation/microLearning/MicroLearningWizard'
+import PollWizard from './creation/poll/PollWizard'
 import PracticeQuizWizard from './creation/practiceQuiz/PracticeQuizWizard'
 
 export type ElementSelectCourse = {
@@ -65,6 +67,17 @@ function ActivityCreation({
         (editMode !== ActivityType.LiveQuiz &&
           duplicationMode !== ActivityType.LiveQuiz) ||
         conversionMode === 'microLearningToPracticeQuiz',
+      fetchPolicy: 'network-only',
+    }
+  )
+  const { data: dataPoll, loading: pollLoading } = useQuery(
+    GetSinglePollDocument,
+    {
+      variables: { id: activityId || '' },
+      skip:
+        !activityId ||
+        (editMode !== ActivityType.Poll &&
+          duplicationMode !== ActivityType.Poll),
       fetchPolicy: 'network-only',
     }
   )
@@ -163,6 +176,10 @@ function ActivityCreation({
         duplicationMode === ActivityType.LiveQuiz) &&
       liveLoading) ||
     (activityId &&
+      (editMode === ActivityType.Poll ||
+        duplicationMode === ActivityType.Poll) &&
+      pollLoading) ||
+    (activityId &&
       (editMode === ActivityType.MicroLearning ||
         duplicationMode === ActivityType.MicroLearning) &&
       microLoading) ||
@@ -233,6 +250,26 @@ function ActivityCreation({
                       course: { id: 'no-course-selected' },
                     }
                   : dataLiveQuiz.liveQuiz
+                : undefined
+            }
+            selection={selectedElements}
+            resetSelection={resetSelection}
+            editMode={editMode === ActivityType.LiveQuiz}
+            duplicationMode={duplicationMode === ActivityType.LiveQuiz}
+          />
+        )}
+        {creationMode === ActivityType.Poll && (
+          <PollWizard
+            title={t('shared.generic.liveQuiz')}
+            closeWizard={closeWizard}
+            initialValues={
+              dataPoll?.getSinglePoll
+                ? duplicationMode === ActivityType.LiveQuiz
+                  ? {
+                      ...dataPoll.getSinglePoll,
+                      name: `${dataPoll.getSinglePoll.name} (Copy)`,
+                    }
+                  : dataPoll.getSinglePoll
                 : undefined
             }
             selection={selectedElements}

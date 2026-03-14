@@ -1,0 +1,17 @@
+mutation EditPoll(
+  $id: String!
+  $name: String!
+  $displayName: String!
+  $description: String
+  $stacks: [ElementStackInput!]!
+) {
+  editPoll(
+    id: $id
+    name: $name
+    displayName: $displayName
+    description: $description
+    stacks: $stacks
+  ) {
+    ...ActivityInfoData
+  }
+}

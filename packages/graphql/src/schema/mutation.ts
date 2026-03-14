@@ -13,6 +13,7 @@ import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as NotificationService from '../services/notifications.js'
 import * as ParticipantService from '../services/participants.js'
+import * as PollService from '../services/polls.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
@@ -956,6 +957,49 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
+      createPoll: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: ActivityInfo,
+          args: {
+            name: t.arg.string({ required: true }),
+            displayName: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            stacks: t.arg({
+              type: [ElementStackInput],
+              required: true,
+            }),
+          },
+          resolve: async (_, args, ctx) => {
+            return await PollService.manipulatePoll(args, ctx)
+          },
+        }),
+
+      editPoll: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: ActivityInfo,
+          args: {
+            id: t.arg.string({ required: true }),
+            name: t.arg.string({ required: true }),
+            displayName: t.arg.string({ required: true }),
+            description: t.arg.string({ required: false }),
+            stacks: t.arg({
+              type: [ElementStackInput],
+              required: true,
+            }),
+          },
+          resolve: withPermission(
+            (args) => ({ pollId: args.id }),
+            DB.PermissionLevel.WRITE,
+            async (_, args, ctx) => {
+              return await PollService.manipulatePoll(args, ctx)
+            }
+          ),
+        }),
+
       changeElementStatus: t.withAuth(asUserFullAccess).boolean({
         nullable: true,
         args: {
@@ -1532,6 +1576,21 @@ export const Mutation = builder.mutationType({
             }
 
             return await LiveQuizService.changeLiveQuizName(args, ctx)
+          } else if (args.type === ActivityTypeEnum.POLL) {
+            const validAccess = await checkAccess(
+              [
+                {
+                  pollId: args.id,
+                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
+                },
+              ],
+              ctx
+            )
+            if (!validAccess) {
+              return null
+            }
+
+            return await PollService.changePollName(args, ctx)
           } else if (args.type === ActivityTypeEnum.PRACTICE_QUIZ) {
             const validAccess = await checkAccess(
               [

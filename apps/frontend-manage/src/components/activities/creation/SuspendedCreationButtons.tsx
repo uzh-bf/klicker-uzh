@@ -7,6 +7,7 @@ import {
 import {
   faChalkboardUser,
   faGraduationCap,
+  faSquarePollHorizontal,
   faUserGroup,
   faUsersLine,
 } from '@fortawesome/free-solid-svg-icons'
@@ -27,19 +28,21 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
       <CreationButton
         icon={faUsersLine}
         text={t('manage.questionPool.createLiveQuiz')}
-        onClick={() => {
-          setCreationMode(ActivityType.LiveQuiz)
-        }}
+        onClick={() => setCreationMode(ActivityType.LiveQuiz)}
         data={{ cy: 'create-live-quiz' }}
+      />
+      <CreationButton
+        icon={faSquarePollHorizontal}
+        text={t('manage.questionPool.createPoll')}
+        onClick={() => setCreationMode(ActivityType.Poll)}
+        data={{ cy: 'create-poll' }}
       />
       <CreationButton
         isCatalystRequired
         disabled={!data?.userProfile?.catalyst}
         icon={faChalkboardUser}
         text={t('manage.questionPool.createMicrolearning')}
-        onClick={() => {
-          setCreationMode(ActivityType.MicroLearning)
-        }}
+        onClick={() => setCreationMode(ActivityType.MicroLearning)}
         data={{ cy: 'create-microlearning' }}
       />
       <CreationButton
@@ -47,9 +50,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         disabled={!data?.userProfile?.catalyst}
         icon={faGraduationCap}
         text={t('manage.questionPool.createPracticeQuiz')}
-        onClick={() => {
-          setCreationMode(ActivityType.PracticeQuiz)
-        }}
+        onClick={() => setCreationMode(ActivityType.PracticeQuiz)}
         data={{ cy: 'create-practice-quiz' }}
       />
       <CreationButton
@@ -57,9 +58,7 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
         disabled={!data?.userProfile?.catalyst}
         icon={faUserGroup}
         text={t('manage.questionPool.createGroupTask')}
-        onClick={() => {
-          setCreationMode(ActivityType.GroupActivity)
-        }}
+        onClick={() => setCreationMode(ActivityType.GroupActivity)}
         data={{ cy: 'create-group-activity' }}
       />
     </div>

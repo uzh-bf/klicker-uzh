@@ -119,6 +119,7 @@ model User {
   tags               Tag[]
   groupActivities    GroupActivity[]
   elementInstances   ElementInstance[]
+  polls              Poll[]
   practiceQuizzes    PracticeQuiz[]
   microLearnings     MicroLearning[]
   liveQuizzes        LiveQuiz[]
