@@ -60,6 +60,9 @@ model Permission {
     liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     liveQuizId String?   @db.Uuid
 
+    poll   Poll?   @relation(fields: [pollId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    pollId String? @db.Uuid
+
     practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     practiceQuizId String?       @db.Uuid
 
@@ -120,6 +123,9 @@ model AccessRequest {
 
     liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     liveQuizId String?   @db.Uuid
+
+    poll   Poll?   @relation(fields: [pollId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    pollId String? @db.Uuid
 
     practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     practiceQuizId String?       @db.Uuid
@@ -202,6 +208,9 @@ model DerivedPermission {
     liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     liveQuizId String?   @db.Uuid
 
+    poll   Poll?   @relation(fields: [pollId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    pollId String? @db.Uuid
+
     practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     practiceQuizId String?       @db.Uuid
 
@@ -247,6 +256,9 @@ model ActivityTemplate {
     // link to at least one activity for which this template is used
     liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     liveQuizId String?   @unique @db.Uuid
+
+    poll   Poll?   @relation(fields: [pollId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    pollId String? @unique @db.Uuid
 
     practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     practiceQuizId String?       @unique @db.Uuid
@@ -295,6 +307,9 @@ model CatalogCollectionAssignment {
 
     liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     liveQuizId String?   @db.Uuid
+
+    poll   Poll?   @relation(fields: [pollId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    pollId String? @db.Uuid
 
     practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     practiceQuizId String?       @db.Uuid
@@ -440,6 +455,9 @@ model ActivityLogEntry {
 
     liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     liveQuizId String?   @db.Uuid
+
+    poll   Poll?   @relation(fields: [pollId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    pollId String? @db.Uuid
 
     practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     practiceQuizId String?       @db.Uuid

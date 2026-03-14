@@ -145,6 +145,54 @@ model LiveQuiz {
 
 // #endregion
 
+// ----- POLLS -----
+// #region
+model Poll {
+  id String @id @default(uuid()) @db.Uuid
+
+  name         String
+  displayName  String
+  description  String?
+  status       PublicationStatus @default(DRAFT)
+  reviewStatus ReviewStatus      @default(INCOMPLETE)
+  isDeleted    Boolean           @default(false)
+
+  endDate                   DateTime? // during publication, the user can optionally set an end date (-> poll unavailable afterwards through hatchet and unused poll instances are deleted)
+  scheduledCompletionTaskId String? // task id of the scheduled hatchet task (to be removed on unpublishing)
+
+  areInstancesOutdated Boolean @default(false) // flag to indicate if the any instances in this poll are outdated due to changes in the corresponding element
+
+  stacks        ElementStack[]
+  pollInstances PollInstance[]
+
+  templateInfo ActivityTemplate?
+  templateName String? // name of the template the quiz was created from
+
+  directPermissions  Permission[]
+  permissions        DerivedPermission[]
+  accessRequests     AccessRequest[]
+  catalogAssignments CatalogCollectionAssignment[]
+  activityLog        ActivityLogEntry[]
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PollInstance {
+  id String @id @default(uuid()) @db.Uuid // is also used as the access key for participants to join the poll
+
+  poll   Poll   @relation(fields: [pollId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  pollId String @db.Uuid
+
+  lastAnsweredStackId Int? // stack that was answered last by the user -> used to resume the poll where the user left off
+  completed           Boolean @default(false)
+}
+
+// #endregion
+
 // ----- MICROLEARNING -----
 // #region
 model MicroLearning {
