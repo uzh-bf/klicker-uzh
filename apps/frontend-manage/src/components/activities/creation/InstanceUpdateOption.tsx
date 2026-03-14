@@ -12,6 +12,7 @@ import {
   GroupActivityFormValues,
   LiveQuizFormValues,
   MicroLearningFormValues,
+  PollFormValues,
   PracticeQuizFormValues,
 } from './WizardLayout'
 
@@ -34,6 +35,7 @@ function InstanceUpdateOption({
 }: {
   values:
     | LiveQuizFormValues
+    | PollFormValues
     | PracticeQuizFormValues
     | MicroLearningFormValues
     | GroupActivityFormValues

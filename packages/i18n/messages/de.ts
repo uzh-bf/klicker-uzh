@@ -1451,6 +1451,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     questionPool: {
       createLiveQuiz: 'Live Quiz erstellen',
+      createPoll: 'Umfrage erstellen',
       createMicrolearning: 'Microlearning erstellen',
       createPracticeQuiz: 'Übungs-Quiz erstellen',
       createGroupTask: 'Gruppenaktivität erstellen',
@@ -1973,6 +1974,30 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizTimeToZeroBonusMin:
         'Die Zeit bis zum Ende der Vergabe von Bonuspunkten muss mindestens 1 Sekunde betragen.',
       liveQuizTSinceFirstCorrect: 'Zeit seit erster korrekter Antwort [s]',
+      pollIntroductionName:
+        'Bitte geben Sie einen Namen für Ihre Umfrage ein. Für weitere Informationen zu den spezifischen Feldern während der Erstellung können Sie die entsprechenden Tooltips konsultieren.',
+      pollName:
+        'Der Name soll Ihnen ermöglichen, diese Umfrage von anderen zu unterscheiden. Er wird den Teilnehmenden nicht angezeigt, verwenden Sie hierfür bitte den Anzeigenamen im nächsten Feld.',
+      pollUseCase:
+        '<link>Umfragen</link> erlauben es Ihnen, asynchron ausserhalb der Vorlesung oder zu Forschungszwecken vollständig anonym Antworten zu sammeln. Personalisierte Umfragelinks stellen sicher, dass jeder Nutzer die Umfrage nur einmal beantworten kann.',
+      pollLecturerDocs:
+        'Für weitere Informationen zur Erstellung und Durchführung von Umfragen, besuchen Sie die <link>Dozierenden-Dokumentation</link>.',
+      pollStudentDocs:
+        'Für weitere Informationen zur Studierenden-Ansicht, besuchen Sie die <link>Studierenden-Dokumentation</link>.',
+      pollDescField:
+        'Hier können Sie eine optionale Beschreibung der Umfrage eingeben. Diese wird in den Teilnehmenden zu Beginn der Umfrage angezeigt.',
+      pollTypes:
+        'Umfragen unterstützen alle Fragetypen sowie Inhaltselemente. Lernkarten können nicht in Umfragen genutzt werden.',
+      pollInformation:
+        'Geben Sie in diesem Schritt den Namen für die Umfrage ein und finden Sie hilfreiche Informationen zur Erstellung des Elements.',
+      pollDescription:
+        'Geben Sie in diesem Schritt den Namen und die Beschreibung der Umfrage ein.',
+      pollContent:
+        'Wählen Sie in diesem Schritt die Fragen und Inhaltselemente für Ihre Umfrage aus.',
+      pollCreationFailed: 'Anpassen der Umfrage fehlgeschlagen...',
+      pollEditingFailed: 'Erstellen der Umfrage fehlgeschlagen...',
+      pollCreated: 'Umfrage <b>{name}</b> erfolgreich erstellt.',
+      pollUpdated: 'Umfrage <b>{name}</b> erfolgreich modifiziert.',
       practiceQuizNoCourse:
         'Übungs-Quizzes müssen einem laufenden Kurs zugeordnet werden. Bitte erstellen Sie zuerst einen Kurs über das entsprechende Menü oder verlängern Sie einen bestehenden Kurs, bevor sie mit der Erstellung fortfahren.',
       practiceQuizIntroductionName:

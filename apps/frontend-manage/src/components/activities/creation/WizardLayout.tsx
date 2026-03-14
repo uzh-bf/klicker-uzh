@@ -84,6 +84,10 @@ export interface LiveQuizFormValues extends CommonFormValues {
   timeToZeroBonus: number
 }
 
+export interface PollFormValues extends Omit<CommonFormValues, 'multiplier'> {
+  stacks: ElementStackFormValues[]
+}
+
 export interface MicroLearningFormValues extends CommonFormValues {
   stacks: ElementStackFormValues[]
   startDate: Date
@@ -105,6 +109,7 @@ export interface GroupActivityFormValues extends CommonFormValues {
 
 export type CreationFormValues =
   | LiveQuizFormValues
+  | PollFormValues
   | MicroLearningFormValues
   | PracticeQuizFormValues
   | GroupActivityFormValues

@@ -11,6 +11,7 @@ import { recomputeElementPermissions } from './permissions/element.js'
 import { recomputeGroupActivityPermissions } from './permissions/groupActivity.js'
 import { recomputeLiveQuizPermissions } from './permissions/liveQuiz.js'
 import { recomputeMicroLearningPermissions } from './permissions/microlearning.js'
+import { recomputePollPermissions } from './permissions/poll.js'
 import { recomputePracticeQuizPermissions } from './permissions/practiceQuiz.js'
 import { type PrismaTransactionClient } from './types.js'
 export * from './permissions/accessRequest.js'
@@ -60,6 +61,7 @@ export async function recomputeDerivedPermissions(
     elementId,
     courseId,
     liveQuizId,
+    pollId,
     practiceQuizId,
     microLearningId,
     groupActivityId,
@@ -76,6 +78,7 @@ export async function recomputeDerivedPermissions(
     practiceQuizId?: string
     microLearningId?: string
     groupActivityId?: string
+    pollId?: string
     userId?: string
     updateAccessRequests?: boolean
   } & (
@@ -84,6 +87,7 @@ export async function recomputeDerivedPermissions(
     | { elementId: number }
     | { courseId: string }
     | { liveQuizId: string }
+    | { pollId: string }
     | { practiceQuizId: string }
     | { microLearningId: string }
     | { groupActivityId: string }
@@ -108,6 +112,11 @@ export async function recomputeDerivedPermissions(
   } else if (typeof liveQuizId !== 'undefined') {
     await recomputeLiveQuizPermissions(
       { id: liveQuizId, userId, updateAccessRequests },
+      prisma
+    )
+  } else if (typeof pollId !== 'undefined') {
+    await recomputePollPermissions(
+      { id: pollId, userId, updateAccessRequests },
       prisma
     )
   } else if (typeof practiceQuizId !== 'undefined') {

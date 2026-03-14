@@ -1,0 +1,15 @@
+mutation CreatePoll(
+  $name: String!
+  $displayName: String!
+  $description: String
+  $stacks: [ElementStackInput!]!
+) {
+  createPoll(
+    name: $name
+    displayName: $displayName
+    description: $description
+    stacks: $stacks
+  ) {
+    ...ActivityInfoData
+  }
+}

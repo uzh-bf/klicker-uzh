@@ -1447,6 +1447,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     },
     questionPool: {
       createLiveQuiz: 'Create live quiz',
+      createPoll: 'Create poll',
       createMicrolearning: 'Create microlearning',
       createPracticeQuiz: 'Create practice quiz',
       createGroupTask: 'Create group activity',
@@ -1957,6 +1958,30 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       liveQuizTimeToZeroBonusMin:
         'The time to zero bonus points must be at least 1.',
       liveQuizTSinceFirstCorrect: 'Time since first correct answer [s]',
+      pollIntroductionName:
+        'Please enter a name for your poll. For more information on the specific fields during creation, you can refer to the corresponding tooltips.',
+      pollName:
+        'The name should allow you to distinguish this poll from others. It will not be shown to participants, so please use the display name in the next field.',
+      pollUseCase:
+        '<link>Polls</link> allow you to collect fully anonymous responses asynchronously outside of lectures or for research purposes. Personalized poll links ensure that each user can only answer the poll once.',
+      pollLecturerDocs:
+        'For more information on the creation and execution of polls, visit the <link>Lecturer Documentation</link>.',
+      pollStudentDocs:
+        'For more information on the student view, visit the <link>Student Documentation</link>.',
+      pollDescField:
+        'You can enter an optional description for the poll here. This will be displayed to participants at the beginning of the poll.',
+      pollTypes:
+        'Polls support all question types as well as content elements. Learning cards cannot be used in polls.',
+      pollInformation:
+        'Enter the name for the poll in this step and find helpful information about creating the element.',
+      pollDescription:
+        'Enter the name and description of the poll in this step.',
+      pollContent:
+        'In this step, select the questions and content elements for your poll.',
+      pollCreationFailed: 'Failed to customize the poll...',
+      pollEditingFailed: 'Failed to create the poll...',
+      pollCreated: 'Poll <b>{name}</b> created successfully.',
+      pollUpdated: 'Poll <b>{name}</b> updated successfully.',
       practiceQuizNoCourse:
         'Practice quizzes must be assigned to a running course. Please create a course first via the corresponding menu or extend an existing one before continuing with the creation.',
       practiceQuizIntroductionName:

@@ -1,0 +1,5 @@
+query GetSinglePoll($id: String!) {
+  getSinglePoll(id: $id) {
+    ...PollData
+  }
+}

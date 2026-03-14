@@ -48,6 +48,7 @@ export enum SortByType {
 
 export enum ActivityType {
   LIVE_QUIZ = 'LIVE_QUIZ',
+  POLL = 'POLL',
   PRACTICE_QUIZ = 'PRACTICE_QUIZ',
   MICRO_LEARNING = 'MICRO_LEARNING',
   GROUP_ACTIVITY = 'GROUP_ACTIVITY',
