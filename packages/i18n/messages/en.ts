@@ -430,6 +430,7 @@ export default {
     },
     short: {
       LIVE_QUIZ: 'LQ',
+      POLL: 'PO',
       PRACTICE_QUIZ: 'PQ',
       MICRO_LEARNING: 'ML',
       GROUP_ACTIVITY: 'GA',
@@ -2165,6 +2166,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       errorLoadingTemplate: 'An error occurred while loading the template...',
       templateInfoLIVE_QUIZ:
         'This view allows you to create your own live quiz activity from the live quiz template "{templateName}". You will be guided step by step through the creation and adjust or replace the existing content in each step. Please pay particular attention to the following instructions left by the creators of the template.',
+      templateInfoPOLL:
+        'This view allows you to create your own poll from the poll template "{templateName}". You will be guided step by step through the creation and adjust or replace the existing content in each step. Please pay particular attention to the following instructions left by the creators of the template.',
       templateInfoPRACTICE_QUIZ:
         'This view allows you to create your own practice quiz from the practice quiz template "{templateName}". You will be guided step by step through the creation and adjust or replace the existing content in each step. Please pay particular attention to the following instructions left by the creators of the template.',
       templateInfoGROUP_ACTIVITY:

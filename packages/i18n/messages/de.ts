@@ -432,6 +432,7 @@ export default {
     },
     short: {
       LIVE_QUIZ: 'LQ',
+      POLL: 'PO',
       PRACTICE_QUIZ: 'ÜQ',
       MICRO_LEARNING: 'ML',
       GROUP_ACTIVITY: 'GA',
@@ -2187,6 +2188,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Laden der Vorlage ist ein Fehler aufgetreten...',
       templateInfoLIVE_QUIZ:
         'Diese Ansicht ermöglicht es Ihnen aus der Live-Quiz Vorlage "{templateName}" ihre eigene Live-Quiz Aktivität zu erstellen. Sie werden schrittweise durch die Erstellung geführt und in jedem Schritt die bestehenden Inhalte anpassen oder ersetzen. Bitte beachten Sie besonders auch die folgenden Instruktionen, welche von den Erstellern des Templates hinterlassen wurden.',
+      templateInfoPOLL:
+        'Diese Ansicht ermöglicht es Ihnen aus der Umfrage Vorlage "{templateName}" ihre eigene Umfrage Aktivität zu erstellen. Sie werden schrittweise durch die Erstellung geführt und in jedem Schritt die bestehenden Inhalte anpassen oder ersetzen. Bitte beachten Sie besonders auch die folgenden Instruktionen, welche von den Erstellern des Templates hinterlassen wurden.',
       templateInfoPRACTICE_QUIZ:
         'Diese Ansicht ermöglicht es Ihnen aus der Übungs-Quiz Vorlage "{templateName}" ihre eigene Übungs-Quiz Aktivität zu erstellen. Sie werden schrittweise durch die Erstellung geführt und in jedem Schritt die bestehenden Inhalte anpassen oder ersetzen. Bitte beachten Sie besonders auch die folgenden Instruktionen, welche von den Erstellern des Templates hinterlassen wurden.',
       templateInfoGROUP_ACTIVITY:
