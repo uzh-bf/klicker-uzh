@@ -12,12 +12,7 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
 import { Chatbot } from '@klicker-uzh/prisma/client'
 import { safeDecrypt } from '@klicker-uzh/util'
-import {
-  stepCountIs,
-  streamText,
-  type LanguageModel,
-  type StepResult,
-} from 'ai'
+import { stepCountIs, streamText, type StepResult } from 'ai'
 import { createHash, randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { DEFAULT_PROMPT } from 'src/lib/config/prompts'
@@ -953,7 +948,7 @@ export async function POST(
   })
 
   const result = streamText({
-    model: openaiModelSelection.model as LanguageModel,
+    model: openaiModelSelection.model,
     maxOutputTokens,
     experimental_telemetry: { isEnabled: true },
     providerOptions: {
