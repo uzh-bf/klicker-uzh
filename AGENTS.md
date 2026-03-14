@@ -188,6 +188,7 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 ## Important Notes
 
 - Dev scripts use `./util/_run_with_infisical.sh` for secret injection. Avoid starting dev servers unless explicitly asked.
+- If you add or rename an Infisical-managed env var/secret, also update `turbo.json` `globalEnv` so Turborepo sees it during task execution and cache invalidation.
 - Never commit secrets, `.env` files, or credentials.
 - Keep changes small, follow existing patterns in the touched app/package.
 - Don't add/update dependencies unless required for the task.
@@ -204,6 +205,9 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 - **PR review triage**: Copilot/CodeRabbit/SonarCloud flag many false positives. Always check if guards/fallbacks already exist before "fixing" reported issues. Confirm with the actual code, not the bot summary.
 - **agent-browser via npx**: Always use `npx agent-browser` instead of bare `agent-browser`. Global install conflicts with Volta's Node shim and fails with "Could not execute command".
 - **LTI launch target resolver contract**: Launch targets are resolved in strict precedence `custom claim (klicker_redirect_to)` -> `query redirectTo`; no env fallback is used in resolver logic. Validation fails closed on the first present invalid source and enforces URL hostname exact/subdomain checks against `COOKIE_DOMAIN` and `DF_DOMAIN` (never substring matching). (`apps/lti/src/launchTarget.ts`)
+- **CSP frame-ancestors via ingress, not middleware**: Pages Router apps (manage, pwa, control) must NOT use Next.js middleware for CSP -- it breaks `_next/data` routes in production builds (known Next.js bug). CSP `frame-ancestors` is set at the reverse proxy layer: HAProxy ingress annotations in K8s (`haproxy.org/response-set-header`), Traefik `customResponseHeaders` middleware in local dev. (`deploy/charts/klicker-uzh-v3/templates/ingress-*.yaml`, `util/traefik/rules_docker.yaml`)
+- **Cypress CI signal timing**: `cypress: default-group (merge)` can report an increasing failed-test count while `cypress-run-cloud` is still in progress; wait for `cypress-run-cloud` completion before expecting downloadable GitHub job logs. (`.github/workflows/cypress-testing.yml`)
+- **Infisical + Turbo env sync**: Any Infisical-managed env var used by tasks must be listed in `turbo.json` `globalEnv`; otherwise task runs/cache behavior can become stale or inconsistent across environments.
 - **Participant email uniqueness across auth modes**: Prisma enforces `Participant @@unique([email, isSSOAccount])`, so the same normalized email can exist once as manual and once as SSO. To block new cross-mode duplicates, account creation must explicitly check normalized email collisions in service logic. (`packages/graphql/src/services/accounts.ts`)
 - **Helm v3 secrets are external**: `deploy/charts/klicker-uzh-v3/` deployments reference `envFrom.secretRef` names, but the chart currently defines no `Secret` manifests; secrets must be provisioned out-of-band with matching names. (`deploy/charts/klicker-uzh-v3/templates/`)
 

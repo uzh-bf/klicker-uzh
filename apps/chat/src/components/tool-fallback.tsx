@@ -1,11 +1,10 @@
-import { ToolCallContentPartComponent } from '@assistant-ui/react'
 import {
   ChevronDownIcon,
   ChevronRightIcon,
   LoaderCircleIcon,
   MoveRightIcon,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type FC } from 'react'
 
 const MAX_PREVIEW_LINES = 10
 
@@ -56,7 +55,14 @@ function formatToolName(raw: string) {
   }
 }
 
-export const ToolFallback: ToolCallContentPartComponent = ({
+interface ToolFallbackProps {
+  toolName: string
+  argsText: string
+  result?: unknown
+  status: { type: string }
+}
+
+export const ToolFallback: FC<ToolFallbackProps> = ({
   toolName,
   argsText,
   result,

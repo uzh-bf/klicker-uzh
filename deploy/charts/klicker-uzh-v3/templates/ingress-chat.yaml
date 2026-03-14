@@ -12,9 +12,15 @@ metadata:
   name: {{ $fullName }}-chat
   labels:
     {{- include "chart.ingressLabels" . | nindent 4 }}
-  {{- with .Values.chat.ingress.annotations }}
+  {{- if or .Values.chat.ingress.annotations .Values.chat.allowedFrameAncestors }}
   annotations:
+  {{- with .Values.chat.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if .Values.chat.allowedFrameAncestors }}
+    haproxy.org/response-set-header: |
+      Content-Security-Policy "frame-ancestors 'self' {{ .Values.chat.allowedFrameAncestors }}"
+  {{- end }}
   {{- end }}
 spec:
   ingressClassName: {{ .Values.chat.ingress.className }}

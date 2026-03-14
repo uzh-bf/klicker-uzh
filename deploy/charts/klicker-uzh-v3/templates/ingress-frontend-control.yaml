@@ -12,9 +12,15 @@ metadata:
   name: {{ $fullName }}-frontend-control
   labels:
     {{- include "chart.ingressLabels" . | nindent 4 }}
-  {{- with .Values.frontendControl.ingress.annotations }}
+  {{- if or .Values.frontendControl.ingress.annotations .Values.frontendControl.allowedFrameAncestors }}
   annotations:
+  {{- with .Values.frontendControl.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if .Values.frontendControl.allowedFrameAncestors }}
+    haproxy.org/response-set-header: |
+      Content-Security-Policy "frame-ancestors 'self' {{ .Values.frontendControl.allowedFrameAncestors }}"
+  {{- end }}
   {{- end }}
 spec:
   ingressClassName: {{ .Values.frontendControl.ingress.className }}

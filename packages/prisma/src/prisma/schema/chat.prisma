@@ -91,9 +91,9 @@ model Chatbot {
   allowedModelIds                String[] @default([])   // Restrict to these registry model IDs (empty = all models)
   allowedReasoningEffortsByModel Json? // { [modelId: string]: ReasoningEffort[] } where missing key = all supported efforts
 
-  // Azure OpenAI Configuration
-  azureOpenAIKey      String? @db.Text // Encrypted API key using APP_SECRET
-  azureOpenAIEndpoint String? // Optional custom endpoint (defaults to model config)
+  // OpenAI-compatible Configuration
+  openaiApiKey  String? @db.Text // Encrypted API key using APP_SECRET
+  openaiBaseUrl String? // Optional custom endpoint (defaults to model config)
 
   // Disclaimer configuration
   disclaimer   ChatbotDisclaimer? @relation(fields: [disclaimerId], references: [id], onDelete: SetNull, onUpdate: Cascade)
