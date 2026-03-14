@@ -66,7 +66,7 @@ function getOpenAIModel(chatbot: Chatbot, modelId: string) {
     apiKey,
   })
 
-  const model = openai.chat(modelId)
+  const model = openai(modelId)
 
   return {
     model,
@@ -956,14 +956,15 @@ export async function POST(
     model: openaiModelSelection.model as LanguageModel,
     maxOutputTokens,
     experimental_telemetry: { isEnabled: true },
-    providerOptions: providerReasoningEffort
-      ? {
-          openai: {
-            reasoningEffort: providerReasoningEffort,
-            reasoningSummary: 'auto',
-          },
-        }
-      : undefined,
+    providerOptions: {
+      openai: {
+        store: false,
+        ...(providerReasoningEffort && {
+          reasoningEffort: providerReasoningEffort,
+          reasoningSummary: 'auto',
+        }),
+      },
+    },
     messages: modelMessages,
     tools: mcpTools,
     toolChoice: 'auto',
