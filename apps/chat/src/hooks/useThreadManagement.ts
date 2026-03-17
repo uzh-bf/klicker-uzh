@@ -62,6 +62,24 @@ export function useThreadManagement(
         }
       }
 
+      const imageContent = message.attachments
+        ?.flatMap((attachment) => attachment.content ?? [])
+        .find(
+          (
+            part
+          ): part is {
+            type: 'image'
+            image: string
+          } =>
+            typeof part === 'object' &&
+            part !== null &&
+            'type' in part &&
+            part.type === 'image' &&
+            'image' in part &&
+            typeof part.image === 'string'
+        )
+      const imageBase64 = imageContent?.image ?? null
+
       // create user message with unique ID and metadata
       const userMessage: ExtendedThreadMessageLike = {
         id: generateId(),
@@ -72,6 +90,13 @@ export function useThreadManagement(
         chatMode: selectedMode,
         modelId: selectedModel,
         reasoningEffort: selectedReasoningEffort,
+        attachment: imageBase64
+          ? {
+              type: 'image',
+              imageBase64,
+              imageDescription: null,
+            }
+          : null,
       }
 
       if (shouldReplaceUrl) {

@@ -1,10 +1,12 @@
 import {
   ActionBarPrimitive,
+  AttachmentPrimitive,
   ComposerPrimitive,
   MessagePrimitive,
   type ReasoningMessagePartProps,
   ThreadPrimitive,
   useMessage,
+  useThreadComposerAttachment,
 } from '@assistant-ui/react'
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons'
 import {
@@ -13,6 +15,7 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   CopyIcon,
+  ImagePlusIcon,
   PencilIcon,
   RefreshCwIcon,
 } from 'lucide-react'
@@ -51,7 +54,22 @@ const formatTitleCase = (value: string) =>
     .join(' ')
 
 type MessageWithCustomMetadata = {
-  metadata?: { custom?: Record<string, unknown> | null } | null
+  attachment?: {
+    type?: 'image'
+    imageBase64?: string | null
+    imageDescription?: string | null
+  } | null
+  metadata?: {
+    custom?:
+      | (Record<string, unknown> & {
+          attachment?: {
+            type?: 'image'
+            imageBase64?: string | null
+            imageDescription?: string | null
+          } | null
+        })
+      | null
+  } | null
 }
 
 const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
@@ -239,18 +257,115 @@ const Composer: FC = () => {
   const { embedded } = useChatUi()
 
   return (
-    <ComposerPrimitive.Root className="focus-within:border-ring/20 flex w-full max-w-[var(--thread-max-width)] flex-wrap items-center rounded-lg border bg-inherit px-2.5 shadow-sm transition-colors ease-in">
-      <ComposerPrimitive.Input
-        rows={1}
-        autoFocus
-        placeholder="Write a message..."
-        className={twMerge(
-          'placeholder:text-muted-foreground flex-grow resize-none border-none bg-transparent px-2 text-sm outline-none focus:ring-0 disabled:cursor-not-allowed',
-          embedded ? 'max-h-20 py-2' : 'max-h-40 py-4'
-        )}
-      />
-      <ComposerAction />
+    <ComposerPrimitive.Root className="focus-within:border-ring/20 flex w-full max-w-[var(--thread-max-width)] flex-col rounded-lg border bg-inherit px-2.5 shadow-sm transition-colors ease-in">
+      <ComposerAttachments />
+
+      <div className="flex w-full items-center">
+        <ComposerAttachButton />
+        <ComposerPrimitive.Input
+          rows={1}
+          autoFocus
+          placeholder="Write a message..."
+          className={twMerge(
+            'placeholder:text-muted-foreground flex-grow resize-none border-none bg-transparent px-2 text-sm outline-none focus:ring-0 disabled:cursor-not-allowed',
+            embedded ? 'max-h-20 py-2' : 'max-h-40 py-4'
+          )}
+        />
+        <ComposerAction />
+      </div>
     </ComposerPrimitive.Root>
+  )
+}
+
+const ComposerAttachments: FC = () => {
+  return (
+    <div className="flex w-full flex-wrap gap-2 py-2 empty:hidden">
+      <ComposerPrimitive.Attachments
+        components={{
+          Image: ComposerImageAttachment,
+          Document: ComposerImageAttachment,
+          File: ComposerImageAttachment,
+          Attachment: ComposerImageAttachment,
+        }}
+      />
+    </div>
+  )
+}
+
+const ComposerImageAttachment: FC = () => {
+  const { embedded } = useChatUi()
+  const imageSrc = useThreadComposerAttachment((attachment) => {
+    const imagePart = attachment.content?.find(
+      (
+        part
+      ): part is {
+        type: 'image'
+        image: string
+      } =>
+        typeof part === 'object' &&
+        part !== null &&
+        'type' in part &&
+        part.type === 'image' &&
+        'image' in part &&
+        typeof part.image === 'string'
+    )
+
+    return imagePart?.image ?? null
+  })
+  const attachmentName = useThreadComposerAttachment(
+    (attachment) => attachment.name
+  )
+
+  return (
+    <AttachmentPrimitive.Root className="relative">
+      {imageSrc ? (
+        <img
+          src={imageSrc}
+          alt={attachmentName || 'Attachment preview'}
+          className={twMerge(
+            'size-14 rounded-md border object-cover',
+            embedded ? 'max-h-20 max-w-20' : 'max-h-28 max-w-28'
+          )}
+        />
+      ) : (
+        <div
+          className={twMerge(
+            'text-muted-foreground bg-muted flex size-14 items-center justify-center rounded-md border px-2 text-[10px]',
+            embedded ? 'max-h-20 max-w-20' : 'max-h-28 max-w-28'
+          )}
+        >
+          {attachmentName}
+        </div>
+      )}
+      <AttachmentPrimitive.Remove asChild>
+        <button
+          type="button"
+          className="bg-background text-muted-foreground hover:text-foreground absolute right-1 top-1 inline-flex size-5 items-center justify-center rounded-full border"
+          aria-label="Remove attachment"
+        >
+          ×
+        </button>
+      </AttachmentPrimitive.Remove>
+    </AttachmentPrimitive.Root>
+  )
+}
+
+const ComposerAttachButton: FC = () => {
+  const { embedded } = useChatUi()
+
+  return (
+    <ComposerPrimitive.AddAttachment asChild>
+      <button
+        type="button"
+        className={twMerge(
+          'text-muted-foreground hover:text-foreground inline-flex items-center justify-center rounded-md',
+          embedded ? 'm-1 size-7' : 'm-2 size-9'
+        )}
+        aria-label="Attach image"
+      >
+        <ImagePlusIcon className={embedded ? 'size-4' : 'size-5'} />
+      </button>
+    </ComposerPrimitive.AddAttachment>
   )
 }
 
@@ -318,11 +433,37 @@ const ComposerAction: FC = () => {
 }
 
 const UserMessage: FC = () => {
+  const { embedded } = useChatUi()
+  const message = useMessage() as MessageWithCustomMetadata
+  const attachment =
+    (message.attachment && typeof message.attachment === 'object'
+      ? message.attachment
+      : null) ??
+    (message.metadata?.custom?.attachment &&
+    typeof message.metadata.custom.attachment === 'object'
+      ? message.metadata.custom.attachment
+      : null)
+
+  const imageBase64 =
+    attachment && typeof attachment.imageBase64 === 'string'
+      ? attachment.imageBase64
+      : null
+
   return (
     <MessagePrimitive.Root className="grid w-full max-w-[var(--thread-max-width)] auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] gap-y-2 py-2 sm:py-4 [&:where(>*)]:col-start-2">
       <UserActionBar />
 
       <div className="bg-muted text-foreground col-start-2 row-start-2 max-w-[calc(var(--thread-max-width)*0.8)] break-words rounded-2xl px-5 py-2.5">
+        {imageBase64 ? (
+          <img
+            src={imageBase64}
+            alt="Attached by user"
+            className={twMerge(
+              'mb-2 rounded-md border object-cover',
+              embedded ? 'max-w-[200px]' : 'max-w-[300px]'
+            )}
+          />
+        ) : null}
         <MessagePrimitive.Content />
       </div>
 

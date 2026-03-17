@@ -12,7 +12,7 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
 import { Chatbot } from '@klicker-uzh/prisma/client'
 import { safeDecrypt } from '@klicker-uzh/util'
-import { stepCountIs, streamText, type StepResult } from 'ai'
+import { generateText, stepCountIs, streamText, type StepResult } from 'ai'
 import { createHash, randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { DEFAULT_PROMPT } from 'src/lib/config/prompts'
@@ -572,6 +572,7 @@ export async function POST(
         id: z.string().min(1),
         role: z.enum(['user', 'assistant']),
         content: z.string(),
+        imageDescription: z.string().optional(),
       })
     ),
     threadId: z.string().min(1).nullable().optional(),
@@ -587,6 +588,13 @@ export async function POST(
       .default('none'),
     parentId: z.string().min(1).nullable().optional(),
     assistantMessageId: z.string().min(1),
+    imageBase64: z
+      .string()
+      .max(3_000_000)
+      .refine((value) => value.startsWith('data:image/'), {
+        message: 'Must be a base64 data URL',
+      })
+      .optional(),
   })
   let parsed
   try {
@@ -602,6 +610,7 @@ export async function POST(
     reasoningEffort: requestedReasoningEffort,
     parentId,
     assistantMessageId,
+    imageBase64,
   } = parsed
 
   const userPrompt = messages
@@ -809,6 +818,49 @@ export async function POST(
     chatbot,
     selectedModelConfig.deploymentId
   )
+
+  // create image description if image attached
+  let imageDescription: string | null = null
+  if (imageBase64) {
+    try {
+      const descriptionResult = await generateText({
+        model: openaiModelSelection.model,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'image', image: imageBase64 },
+              {
+                type: 'text',
+                text: `${lastMessage?.content ? `User message context: ${lastMessage.content}\n\n` : ''}Describe this image in detail. Include all visible text, diagrams, charts, equations, labels, and notable visual elements. This description will serve as context for an ongoing conversation.`,
+              },
+            ],
+          },
+        ],
+        maxOutputTokens: 1000,
+      })
+      imageDescription = descriptionResult.text
+    } catch (error) {
+      console.error('Failed to generate image description:', {
+        requestId,
+        error,
+      })
+      imageDescription =
+        'The user attached an image that could not be described automatically.'
+    }
+
+    // insert image description into user message content
+    if (lastMessage?.role === 'user' && imageDescription) {
+      const lastMessageIndex = messages.length - 1
+      if (lastMessageIndex >= 0) {
+        modelMessages[lastMessageIndex] = {
+          ...modelMessages[lastMessageIndex],
+          content: `${modelMessages[lastMessageIndex].content}\n\n[Attached image description: ${imageDescription}]`,
+        }
+      }
+    }
+  }
+
   const logEvent = (
     event: string,
     context: Record<string, unknown>,
@@ -853,6 +905,19 @@ export async function POST(
     elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
   })
 
+  // inject image descriptions from prior messages into model context (client already has them)
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i]
+    if (!msg || msg.role !== 'user' || !msg.imageDescription) continue
+    // skip the current message — already handled by the describe-once block above
+    if (imageDescription && msg.id === lastMessage?.id) continue
+
+    modelMessages[i] = {
+      ...modelMessages[i],
+      content: `${modelMessages[i].content}\n\n[Attached image description: ${msg.imageDescription}]`,
+    }
+  }
+
   // save user message to database (after effective model selection)
   if (
     currentThreadId &&
@@ -866,6 +931,26 @@ export async function POST(
         modelId: selectedModelConfig.id,
         reasoningEffort: appliedReasoningEffort,
       }
+
+      const upsertAttachment = async (messageId: string) => {
+        if (!imageBase64 && !imageDescription) return
+
+        await prisma.chatAttachment.upsert({
+          where: { messageId },
+          update: {
+            type: 'IMAGE',
+            imageBase64: imageBase64 ?? null,
+            imageDescription: imageDescription ?? null,
+          },
+          create: {
+            type: 'IMAGE',
+            messageId,
+            imageBase64: imageBase64 ?? null,
+            imageDescription: imageDescription ?? null,
+          },
+        })
+      }
+
       const updated = await prisma.chatMessage.updateMany({
         where: { id: userMessageId, threadId: currentThreadId },
         data: metadata,
@@ -897,7 +982,11 @@ export async function POST(
               ...metadata,
             },
           })
+
+          await upsertAttachment(lastMessage.id)
         }
+      } else {
+        await upsertAttachment(userMessageId)
       }
 
       // update thread's timestamp

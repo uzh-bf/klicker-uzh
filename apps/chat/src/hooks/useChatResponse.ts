@@ -120,6 +120,7 @@ export function useChatResponse(
               id: m.id,
               role: m.role,
               content: serializeMessageContent(m),
+              imageDescription: m.attachment?.imageDescription ?? undefined,
             })),
             threadId,
             selectedModel,
@@ -127,6 +128,7 @@ export function useChatResponse(
             reasoningEffort: selectedReasoningEffort,
             parentId: parentId || undefined,
             assistantMessageId,
+            imageBase64: triggerMessage?.attachment?.imageBase64 ?? undefined,
           }),
         })
 

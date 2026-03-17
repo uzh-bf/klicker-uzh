@@ -46,6 +46,11 @@ export interface ApiMessage {
   reasoningEffort?: ReasoningEffort | null
   reasoningContent?: string | null
   creditsUsed?: number | null
+  attachment?: {
+    type: 'image'
+    imageBase64?: string | null
+    imageDescription?: string | null
+  } | null
   parentId?: string | null
   createdAt: string
   updatedAt: string
@@ -173,6 +178,7 @@ export const convertApiMessageToMessage = (
     reasoningEffort: apiMessage.reasoningEffort ?? null,
     reasoningContent: apiMessage.reasoningContent ?? null,
     creditsUsed: apiMessage.creditsUsed ?? null,
+    attachment: apiMessage.attachment ?? null,
     createdAt: new Date(apiMessage.createdAt),
     parentId: apiMessage.parentId || undefined,
   }

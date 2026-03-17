@@ -26,6 +26,9 @@ export async function GET(
           chatbotId,
         },
       },
+      include: {
+        attachment: true,
+      },
       orderBy: { createdAt: 'asc' },
     })
 
@@ -45,6 +48,13 @@ export async function GET(
                 msg.creditsUsed as unknown as { toNumber: () => number }
               ).toNumber()
             : null,
+        attachment: msg.attachment
+          ? {
+              type: 'image' as const,
+              imageBase64: msg.attachment.imageBase64 ?? null,
+              imageDescription: msg.attachment.imageDescription ?? null,
+            }
+          : null,
         parentId: (msg as { parentId?: string | null }).parentId || null,
         createdAt: msg.createdAt.toISOString(),
         updatedAt: msg.updatedAt.toISOString(),

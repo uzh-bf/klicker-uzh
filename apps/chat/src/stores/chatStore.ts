@@ -28,6 +28,11 @@ export type ExtendedThreadMessageLike = ThreadMessageLike & {
   reasoningEffort?: ReasoningEffort | null
   reasoningContent?: string | null
   creditsUsed?: number | null
+  attachment?: {
+    type: 'image'
+    imageBase64?: string | null
+    imageDescription?: string | null
+  } | null
 }
 
 export interface Thread {

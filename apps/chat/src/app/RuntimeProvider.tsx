@@ -15,6 +15,7 @@ import {
 } from 'src/stores/chatStore'
 import { useSettingsStore } from 'src/stores/settingsStore'
 import { useChatUi } from '../components/chat-ui-context'
+import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
 
 export function RuntimeProvider({
   chatbotId,
@@ -210,6 +211,7 @@ export function RuntimeProvider({
         modelId,
         reasoningEffort,
         creditsUsed,
+        attachment,
         metadata,
         ...rest
       } = message
@@ -219,6 +221,7 @@ export function RuntimeProvider({
         modelId: modelId ?? null,
         reasoningEffort: reasoningEffort ?? null,
         creditsUsed: creditsUsed ?? null,
+        attachment: attachment ?? null,
       }
 
       return {
@@ -250,6 +253,9 @@ export function RuntimeProvider({
     onReload,
     onCancel,
     convertMessage,
+    adapters: {
+      attachments: imageAttachmentAdapter,
+    },
   })
 
   return (
