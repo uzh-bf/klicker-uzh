@@ -33,44 +33,37 @@ const isDevLogging = process.env.NODE_ENV === 'development'
 const MAX_LOG_STRING_LENGTH = 500
 const HASH_DIGEST_LENGTH = 12
 
-function getOpenAIModel(chatbot: Chatbot, modelId: string) {
-  // Use per-chatbot configuration if available, otherwise fallback to environment
-  let hasCustomApiKey = false
-  let decryptedApiKey: string | null = null
-  if (
-    typeof chatbot.openaiApiKey === 'string' &&
-    chatbot.openaiApiKey.length > 0
-  ) {
-    hasCustomApiKey = true
-    decryptedApiKey = safeDecrypt(chatbot.openaiApiKey)
+function getModel(chatbot: Chatbot, modelId: string) {
+  // Use per-chatbot configuration if available
+  const hasCustomConfig =
+    (typeof chatbot.openaiApiKey === 'string' &&
+      chatbot.openaiApiKey.length > 0) ||
+    (typeof chatbot.openaiBaseUrl === 'string' &&
+      chatbot.openaiBaseUrl.length > 0)
+
+  if (hasCustomConfig) {
+    const apiKey =
+      typeof chatbot.openaiApiKey === 'string' &&
+      chatbot.openaiApiKey.length > 0
+        ? safeDecrypt(chatbot.openaiApiKey)
+        : 'litellm-proxy'
+    const baseUrl =
+      typeof chatbot.openaiBaseUrl === 'string' &&
+      chatbot.openaiBaseUrl.length > 0
+        ? chatbot.openaiBaseUrl
+        : process.env.LITELLM_BASE_URL
+
+    return createOpenAI({
+      baseURL: baseUrl,
+      apiKey: apiKey || 'litellm-proxy',
+    })(modelId)
   }
-  const apiKey = decryptedApiKey || process.env.OPENAI_API_KEY
 
-  let hasCustomEndpoint = false
-  let baseUrl = process.env.OPENAI_BASE_URL
-  if (
-    typeof chatbot.openaiBaseUrl === 'string' &&
-    chatbot.openaiBaseUrl.length > 0
-  ) {
-    hasCustomEndpoint = true
-    baseUrl = chatbot.openaiBaseUrl
-  }
-
-  const openai = createOpenAI({
-    baseURL: baseUrl,
-    apiKey,
-  })
-
-  const model = openai(modelId)
-
-  return {
-    model,
-    debug: {
-      baseUrl: baseUrl,
-      hasCustomEndpoint,
-      hasCustomApiKey,
-    },
-  }
+  // Default: route through LiteLLM
+  return createOpenAI({
+    baseURL: process.env.LITELLM_BASE_URL,
+    apiKey: 'litellm-proxy',
+  })(modelId)
 }
 
 function asObject(value: unknown): Record<string, unknown> | null {
@@ -805,10 +798,7 @@ export async function POST(
       ? appliedReasoningEffort
       : undefined
 
-  const openaiModelSelection = getOpenAIModel(
-    chatbot,
-    selectedModelConfig.deploymentId
-  )
+  const model = getModel(chatbot, selectedModelConfig.deploymentId)
   const logEvent = (
     event: string,
     context: Record<string, unknown>,
@@ -829,7 +819,6 @@ export async function POST(
     maxOutputTokens: maxOutputTokens ?? null,
     toolCount: toolNames.length,
     toolNames,
-    openai: openaiModelSelection.debug,
     systemPromptLength: systemPrompt.length,
     systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
     userPromptLengthTotal: userPrompt.length,
@@ -948,7 +937,7 @@ export async function POST(
   })
 
   const result = streamText({
-    model: openaiModelSelection.model,
+    model: model,
     maxOutputTokens,
     experimental_telemetry: { isEnabled: true },
     providerOptions: {
