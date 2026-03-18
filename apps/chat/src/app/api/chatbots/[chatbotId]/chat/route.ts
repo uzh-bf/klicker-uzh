@@ -33,6 +33,32 @@ const isDevLogging = process.env.NODE_ENV === 'development'
 const MAX_LOG_STRING_LENGTH = 500
 const HASH_DIGEST_LENGTH = 12
 
+/**
+ * Custom fetch that patches Responses API request body to add
+ * `status: "completed"` and `type: "message"` on assistant messages.
+ * AI SDK omits these fields but some strict Responses API providers require them.
+ *
+ * Workaround for: https://github.com/vercel/ai/issues/12754
+ */
+const responsesApiFetch: typeof globalThis.fetch = async (input, init) => {
+  if (init?.body && typeof init.body === 'string') {
+    try {
+      const body = JSON.parse(init.body)
+      if (Array.isArray(body.input)) {
+        body.input = body.input.map((item: Record<string, unknown>) =>
+          item.role === 'assistant'
+            ? { ...item, type: 'message', status: 'completed' }
+            : item
+        )
+        init = { ...init, body: JSON.stringify(body) }
+      }
+    } catch {
+      // not JSON, pass through
+    }
+  }
+  return globalThis.fetch(input, init)
+}
+
 function getModel(chatbot: Chatbot, modelId: string) {
   // Use per-chatbot configuration if available
   const hasCustomConfig =
@@ -56,6 +82,7 @@ function getModel(chatbot: Chatbot, modelId: string) {
     return createOpenAI({
       baseURL: baseUrl,
       apiKey: apiKey || 'litellm-proxy',
+      fetch: responsesApiFetch,
     })(modelId)
   }
 
@@ -63,6 +90,7 @@ function getModel(chatbot: Chatbot, modelId: string) {
   return createOpenAI({
     baseURL: process.env.LITELLM_BASE_URL,
     apiKey: 'litellm-proxy',
+    fetch: responsesApiFetch,
   })(modelId)
 }
 
@@ -708,7 +736,6 @@ export async function POST(
   let partialReasoningContent = ''
   let assistantReasoningContent: string | null = null
 
-  // convert messages to simple format for AI SDK v6
   const modelMessages = messages.map((msg) => ({
     role: msg.role,
     content: msg.content,
