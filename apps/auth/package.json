@@ -18,7 +18,7 @@
     "js-cookie": "3.0.5",
     "localforage": "1.10.0",
     "lucide-react": "0.522.0",
-    "next": "15.3.8",
+    "next": "15.5.14",
     "next-auth": "4.24.11",
     "next-intl": "4.3.4",
     "react": "19.1.2",
