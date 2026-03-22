@@ -102,7 +102,9 @@ export function transformLiveQuizResponse(row: LiveQuizResponseRow): unknown[] {
     row.instance.id,
     row.instance.elementType,
     elementData.name,
-    elementData.content.substring(0, 200),
+    elementData.content.length > 200
+      ? elementData.content.substring(0, 200) + '...'
+      : elementData.content,
     liveQuiz?.id ?? '',
     liveQuiz?.displayName ?? '',
     block?.id ?? '',

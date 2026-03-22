@@ -1724,13 +1724,13 @@ importers:
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../prisma
-      '@klicker-uzh/types':
-        specifier: workspace:*
-        version: link:../types
       exceljs:
         specifier: 4.4.0
         version: 4.4.0
     devDependencies:
+      '@klicker-uzh/types':
+        specifier: workspace:*
+        version: link:../types
       '@rollup/plugin-node-resolve':
         specifier: ~15.3.1
         version: 15.3.1(rollup@4.34.9)
