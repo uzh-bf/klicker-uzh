@@ -1,9 +1,14 @@
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 
-import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import ExcelJS from 'exceljs'
+import type { ReadonlyPrismaClient } from './readonlyPrisma.js'
 
+import {
+  CORRECTION_HEADERS,
+  fetchCorrections,
+  transformCorrection,
+} from './corrections.js'
 import { writeCsv } from './csv.js'
 import {
   INVITATION_HEADERS,
@@ -21,22 +26,36 @@ import {
   transformParticipant,
 } from './participants.js'
 
-function sanitizeName(name: string): string {
-  return name.replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 80)
-}
-
-export async function exportCourseData(
-  prisma: PrismaClient,
-  courseId: string,
-  outputDir: string
-): Promise<{
+export interface CourseExportResult {
   outputPath: string
+  courseName: string
   counts: {
     liveQuizResponses: number
     participants: number
     invitations: number
+    corrections: number
   }
-}> {
+  data: {
+    liveQuizRows: unknown[][]
+    participantRows: unknown[][]
+    invitationRows: unknown[][]
+    correctionRows: unknown[][]
+  }
+}
+
+function sanitizeName(name: string): string {
+  return name.replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 80)
+}
+
+function sanitizeSheetPrefix(name: string): string {
+  return name.replace(/[*?:\\/[\]]/g, '-').substring(0, 20)
+}
+
+export async function exportCourseData(
+  prisma: ReadonlyPrismaClient,
+  courseId: string,
+  outputDir: string
+): Promise<CourseExportResult> {
   const course = await prisma.course.findUniqueOrThrow({
     where: { id: courseId },
     select: { id: true, name: true, displayName: true },
@@ -48,21 +67,23 @@ export async function exportCourseData(
 
   console.log(`Exporting course "${course.displayName}" (${course.id})...`)
 
-  // Fetch all data
-  const [liveQuizResponses, participants, invitations] = await Promise.all([
-    fetchLiveQuizResponses(prisma, courseId),
-    fetchParticipants(prisma, courseId),
-    fetchInvitations(prisma, courseId),
-  ])
+  const [liveQuizResponses, participants, invitations, corrections] =
+    await Promise.all([
+      fetchLiveQuizResponses(prisma, courseId),
+      fetchParticipants(prisma, courseId),
+      fetchInvitations(prisma, courseId),
+      fetchCorrections(prisma, courseId),
+    ])
 
   const liveQuizRows = liveQuizResponses.map(transformLiveQuizResponse)
   const participantRows = participants.map(transformParticipant)
   const invitationRows = invitations.map(transformInvitation)
+  const correctionRows = corrections.map(transformCorrection)
 
   // Write CSVs
   await Promise.all([
     writeCsv(
-      join(outputPath, 'responses-livequiz.csv'),
+      join(outputPath, 'responses.csv'),
       LIVE_QUIZ_RESPONSE_HEADERS,
       liveQuizRows
     ),
@@ -76,33 +97,77 @@ export async function exportCourseData(
       INVITATION_HEADERS,
       invitationRows
     ),
+    writeCsv(
+      join(outputPath, 'corrections.csv'),
+      CORRECTION_HEADERS,
+      correctionRows
+    ),
   ])
 
   // Write XLSX workbook
   const workbook = new ExcelJS.Workbook()
-
-  addSheet(
-    workbook,
-    'LiveQuiz Responses',
-    LIVE_QUIZ_RESPONSE_HEADERS,
-    liveQuizRows
-  )
-  addSheet(workbook, 'Participants', PARTICIPANT_HEADERS, participantRows)
-  addSheet(workbook, 'Invitations', INVITATION_HEADERS, invitationRows)
-
+  addSheet(workbook, 'RESPONSES', LIVE_QUIZ_RESPONSE_HEADERS, liveQuizRows)
+  addSheet(workbook, 'PARTICIPANTS', PARTICIPANT_HEADERS, participantRows)
+  addSheet(workbook, 'INVITATIONS', INVITATION_HEADERS, invitationRows)
+  addSheet(workbook, 'CORRECTIONS', CORRECTION_HEADERS, correctionRows)
   await workbook.xlsx.writeFile(join(outputPath, 'export.xlsx'))
 
   const counts = {
     liveQuizResponses: liveQuizResponses.length,
     participants: participants.length,
     invitations: invitations.length,
+    corrections: corrections.length,
   }
 
   console.log(
-    `Wrote ${counts.liveQuizResponses} responses, ${counts.participants} participants, ${counts.invitations} invitations`
+    `Wrote ${counts.liveQuizResponses} responses, ${counts.participants} participants, ${counts.invitations} invitations, ${counts.corrections} corrections`
   )
 
-  return { outputPath, counts }
+  return {
+    outputPath,
+    courseName: course.displayName || course.name,
+    counts,
+    data: { liveQuizRows, participantRows, invitationRows, correctionRows },
+  }
+}
+
+export async function writeCombinedWorkbook(
+  results: CourseExportResult[],
+  outputDir: string
+): Promise<string> {
+  const workbook = new ExcelJS.Workbook()
+
+  for (const result of results) {
+    const prefix = sanitizeSheetPrefix(result.courseName)
+    addSheet(
+      workbook,
+      `${prefix} RESP`,
+      LIVE_QUIZ_RESPONSE_HEADERS,
+      result.data.liveQuizRows
+    )
+    addSheet(
+      workbook,
+      `${prefix} PART`,
+      PARTICIPANT_HEADERS,
+      result.data.participantRows
+    )
+    addSheet(
+      workbook,
+      `${prefix} INV`,
+      INVITATION_HEADERS,
+      result.data.invitationRows
+    )
+    addSheet(
+      workbook,
+      `${prefix} CORR`,
+      CORRECTION_HEADERS,
+      result.data.correctionRows
+    )
+  }
+
+  const outputPath = join(outputDir, 'combined-export.xlsx')
+  await workbook.xlsx.writeFile(outputPath)
+  return outputPath
 }
 
 function addSheet(

@@ -1,12 +1,8 @@
-import type { PrismaClient } from '@klicker-uzh/prisma/client'
+import type { ReadonlyPrismaClient } from './readonlyPrisma.js'
 
 export const PARTICIPANT_HEADERS = [
   'participantId',
-  'username',
   'email',
-  'participantIsActive',
-  'isSSOAccount',
-  'participationId',
   'participationIsActive',
   'participationCreatedAt',
   'ssoType',
@@ -16,22 +12,18 @@ export const PARTICIPANT_HEADERS = [
 ]
 
 export async function fetchParticipants(
-  prisma: PrismaClient,
+  prisma: ReadonlyPrismaClient,
   courseId: string
 ) {
   return prisma.participation.findMany({
     where: { courseId },
     select: {
-      id: true,
       isActive: true,
       createdAt: true,
       participant: {
         select: {
           id: true,
-          username: true,
           email: true,
-          isActive: true,
-          isSSOAccount: true,
           createdAt: true,
           accounts: {
             select: { ssoType: true, ssoId: true, ssoEmail: true },
@@ -40,7 +32,7 @@ export async function fetchParticipants(
         },
       },
     },
-    orderBy: { participant: { username: 'asc' } },
+    orderBy: { participant: { email: 'asc' } },
   })
 }
 
@@ -50,11 +42,7 @@ export function transformParticipant(row: ParticipationRow): unknown[] {
   const account = row.participant.accounts[0]
   return [
     row.participant.id,
-    row.participant.username,
     row.participant.email ?? '',
-    row.participant.isActive,
-    row.participant.isSSOAccount,
-    row.id,
     row.isActive,
     row.createdAt.toISOString(),
     account?.ssoType ?? '',

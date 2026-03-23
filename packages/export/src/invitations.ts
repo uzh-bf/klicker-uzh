@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@klicker-uzh/prisma/client'
+import type { ReadonlyPrismaClient } from './readonlyPrisma.js'
 
 export const INVITATION_HEADERS = [
   'invitationId',
@@ -8,10 +8,12 @@ export const INVITATION_HEADERS = [
   'invitedAt',
   'acceptedAt',
   'participantId',
-  'participantUsername',
 ]
 
-export async function fetchInvitations(prisma: PrismaClient, courseId: string) {
+export async function fetchInvitations(
+  prisma: ReadonlyPrismaClient,
+  courseId: string
+) {
   return prisma.participantInvitation.findMany({
     where: { courseId },
     select: {
@@ -21,7 +23,7 @@ export async function fetchInvitations(prisma: PrismaClient, courseId: string) {
       status: true,
       invitedAt: true,
       acceptedAt: true,
-      participant: { select: { id: true, username: true } },
+      participant: { select: { id: true } },
     },
     orderBy: { email: 'asc' },
   })
@@ -38,6 +40,5 @@ export function transformInvitation(row: InvitationRow): unknown[] {
     row.invitedAt.toISOString(),
     row.acceptedAt?.toISOString() ?? '',
     row.participant?.id ?? '',
-    row.participant?.username ?? '',
   ]
 }

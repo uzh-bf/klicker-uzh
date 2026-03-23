@@ -1,8 +1,7 @@
-import type { PrismaClient } from '@klicker-uzh/prisma/client'
+import type { ReadonlyPrismaClient } from './readonlyPrisma.js'
 
 export const LIVE_QUIZ_RESPONSE_HEADERS = [
   'participantId',
-  'username',
   'email',
   'elementInstanceId',
   'elementType',
@@ -10,8 +9,6 @@ export const LIVE_QUIZ_RESPONSE_HEADERS = [
   'elementContent',
   'liveQuizId',
   'liveQuizName',
-  'blockId',
-  'blockOrder',
   'blockExecution',
   'response',
   'correctness',
@@ -21,13 +18,11 @@ export const LIVE_QUIZ_RESPONSE_HEADERS = [
   'totalPoints',
   'correctionOnly',
   'appliedCorrectionsCount',
-  'timeSpent',
   'submittedAt',
-  'createdAt',
 ]
 
 export async function fetchLiveQuizResponses(
-  prisma: PrismaClient,
+  prisma: ReadonlyPrismaClient,
   courseId: string
 ) {
   return prisma.liveQuizResponse.findMany({
@@ -45,13 +40,11 @@ export async function fetchLiveQuizResponses(
       basePoints: true,
       correctnessPoints: true,
       bonusPoints: true,
-      timeSpent: true,
       submittedAt: true,
       correctionOnly: true,
       elementBlockExecution: true,
-      createdAt: true,
       participant: {
-        select: { id: true, username: true, email: true },
+        select: { id: true, email: true },
       },
       instance: {
         select: {
@@ -60,8 +53,6 @@ export async function fetchLiveQuizResponses(
           elementData: true,
           elementBlock: {
             select: {
-              id: true,
-              order: true,
               liveQuiz: {
                 select: { id: true, name: true, displayName: true },
               },
@@ -72,7 +63,7 @@ export async function fetchLiveQuizResponses(
       _count: { select: { appliedCorrections: true } },
     },
     orderBy: [
-      { participant: { username: 'asc' } },
+      { participant: { email: 'asc' } },
       { instance: { elementBlock: { liveQuiz: { name: 'asc' } } } },
       { instance: { elementBlock: { order: 'asc' } } },
       { elementBlockExecution: 'asc' },
@@ -97,7 +88,6 @@ export function transformLiveQuizResponse(row: LiveQuizResponseRow): unknown[] {
 
   return [
     row.participant.id,
-    row.participant.username,
     row.participant.email ?? '',
     row.instance.id,
     row.instance.elementType,
@@ -107,8 +97,6 @@ export function transformLiveQuizResponse(row: LiveQuizResponseRow): unknown[] {
       : elementData.content,
     liveQuiz?.id ?? '',
     liveQuiz?.displayName ?? '',
-    block?.id ?? '',
-    block?.order ?? '',
     row.elementBlockExecution,
     row.response != null ? JSON.stringify(row.response) : '',
     row.correctness,
@@ -118,8 +106,6 @@ export function transformLiveQuizResponse(row: LiveQuizResponseRow): unknown[] {
     totalPoints,
     row.correctionOnly,
     row._count.appliedCorrections,
-    row.timeSpent,
     row.submittedAt.toISOString(),
-    row.createdAt.toISOString(),
   ]
 }
