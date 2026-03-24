@@ -72,24 +72,24 @@ function getModel(chatbot: Chatbot, modelId: string) {
       typeof chatbot.openaiApiKey === 'string' &&
       chatbot.openaiApiKey.length > 0
         ? safeDecrypt(chatbot.openaiApiKey)
-        : 'litellm-proxy'
+        : process.env.OPENAI_API_KEY
     const baseUrl =
       typeof chatbot.openaiBaseUrl === 'string' &&
       chatbot.openaiBaseUrl.length > 0
         ? chatbot.openaiBaseUrl
-        : process.env.LITELLM_BASE_URL
+        : process.env.OPENAI_BASE_URL
 
     return createOpenAI({
       baseURL: baseUrl,
-      apiKey: apiKey || 'litellm-proxy',
+      apiKey: apiKey || 'no-key',
       fetch: responsesApiFetch,
     })(modelId)
   }
 
-  // Default: route through LiteLLM
+  // Default: route through OpenAI-compatible endpoint
   return createOpenAI({
-    baseURL: process.env.LITELLM_BASE_URL,
-    apiKey: 'litellm-proxy',
+    baseURL: process.env.OPENAI_BASE_URL,
+    apiKey: process.env.OPENAI_API_KEY || 'no-key',
     fetch: responsesApiFetch,
   })(modelId)
 }
