@@ -28,6 +28,17 @@ import { z } from 'zod'
 export const runtime = 'nodejs'
 
 export const maxDuration = 60
+
+if (!process.env.OPENAI_BASE_URL) {
+  console.warn(
+    '[chat] OPENAI_BASE_URL is not set — model requests will use provider defaults'
+  )
+}
+if (!process.env.OPENAI_API_KEY) {
+  console.warn(
+    '[chat] OPENAI_API_KEY is not set — model requests without per-chatbot keys will fail'
+  )
+}
 const CHAT_LOG_PREFIX = '[chat:dev]'
 const isDevLogging = process.env.NODE_ENV === 'development'
 const MAX_LOG_STRING_LENGTH = 500
@@ -52,46 +63,86 @@ const responsesApiFetch: typeof globalThis.fetch = async (input, init) => {
         )
         init = { ...init, body: JSON.stringify(body) }
       }
-    } catch {
-      // not JSON, pass through
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        // not JSON, pass through
+      } else {
+        console.error(
+          '[responsesApiFetch] Unexpected error patching body:',
+          error
+        )
+        throw error
+      }
     }
   }
   return globalThis.fetch(input, init)
 }
 
+type ModelRouting = {
+  source: 'custom' | 'default'
+  hasCustomKey: boolean
+  baseUrl: string | undefined
+}
+
 function getModel(chatbot: Chatbot, modelId: string) {
   // Use per-chatbot configuration if available
-  const hasCustomConfig =
-    (typeof chatbot.openaiApiKey === 'string' &&
-      chatbot.openaiApiKey.length > 0) ||
-    (typeof chatbot.openaiBaseUrl === 'string' &&
-      chatbot.openaiBaseUrl.length > 0)
+  const hasCustomKey =
+    typeof chatbot.openaiApiKey === 'string' && chatbot.openaiApiKey.length > 0
+  const hasCustomBaseUrl =
+    typeof chatbot.openaiBaseUrl === 'string' &&
+    chatbot.openaiBaseUrl.length > 0
+  const hasCustomConfig = hasCustomKey || hasCustomBaseUrl
 
   if (hasCustomConfig) {
-    const apiKey =
-      typeof chatbot.openaiApiKey === 'string' &&
-      chatbot.openaiApiKey.length > 0
-        ? safeDecrypt(chatbot.openaiApiKey)
-        : process.env.OPENAI_API_KEY
-    const baseUrl =
-      typeof chatbot.openaiBaseUrl === 'string' &&
-      chatbot.openaiBaseUrl.length > 0
-        ? chatbot.openaiBaseUrl
-        : process.env.OPENAI_BASE_URL
+    let apiKey: string | undefined
+    if (hasCustomKey) {
+      try {
+        apiKey = safeDecrypt(chatbot.openaiApiKey!)
+      } catch (error) {
+        console.error('Failed to decrypt API key for chatbot:', {
+          chatbotId: chatbot.id,
+          error,
+        })
+        throw new Error(`Failed to decrypt API key for chatbot ${chatbot.id}`)
+      }
+    } else {
+      apiKey = process.env.OPENAI_API_KEY
+    }
+    const baseUrl = hasCustomBaseUrl
+      ? chatbot.openaiBaseUrl!
+      : process.env.OPENAI_BASE_URL
 
-    return createOpenAI({
-      baseURL: baseUrl,
-      apiKey: apiKey || 'no-key',
-      fetch: responsesApiFetch,
-    })(modelId)
+    const routing: ModelRouting = {
+      source: 'custom',
+      hasCustomKey,
+      baseUrl,
+    }
+
+    return {
+      model: createOpenAI({
+        baseURL: baseUrl,
+        apiKey: apiKey || 'no-key',
+        fetch: responsesApiFetch,
+      })(modelId),
+      routing,
+    }
   }
 
   // Default: route through OpenAI-compatible endpoint
-  return createOpenAI({
-    baseURL: process.env.OPENAI_BASE_URL,
-    apiKey: process.env.OPENAI_API_KEY || 'no-key',
-    fetch: responsesApiFetch,
-  })(modelId)
+  const routing: ModelRouting = {
+    source: 'default',
+    hasCustomKey: false,
+    baseUrl: process.env.OPENAI_BASE_URL,
+  }
+
+  return {
+    model: createOpenAI({
+      baseURL: process.env.OPENAI_BASE_URL,
+      apiKey: process.env.OPENAI_API_KEY || 'no-key',
+      fetch: responsesApiFetch,
+    })(modelId),
+    routing,
+  }
 }
 
 function asObject(value: unknown): Record<string, unknown> | null {
@@ -825,7 +876,7 @@ export async function POST(
       ? appliedReasoningEffort
       : undefined
 
-  const model = getModel(chatbot, selectedModelConfig.deploymentId)
+  const { model, routing } = getModel(chatbot, selectedModelConfig.deploymentId)
   const logEvent = (
     event: string,
     context: Record<string, unknown>,
@@ -840,6 +891,7 @@ export async function POST(
     selectedModel,
     resolvedModelId: selectedModelConfig.id,
     deploymentId: selectedModelConfig.deploymentId,
+    routing,
     selectedMode,
     reasoningEffort: appliedReasoningEffort,
     allowedReasoningEfforts,
@@ -964,7 +1016,7 @@ export async function POST(
   })
 
   const result = streamText({
-    model: model,
+    model,
     maxOutputTokens,
     experimental_telemetry: { isEnabled: true },
     providerOptions: {

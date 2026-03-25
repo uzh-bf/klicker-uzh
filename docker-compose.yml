@@ -254,20 +254,21 @@ services:
       - klicker
 
   litellm:
-    image: ghcr.io/berriai/litellm:main-latest
+    image: ghcr.io/berriai/litellm-database:main-1.80.15-stable.1
     ports:
       - '4000:4000'
     environment:
-      UPSTREAM_OPENAI_API_KEY: '${UPSTREAM_OPENAI_API_KEY:-}'
-      UPSTREAM_OPENAI_BASE_URL: '${UPSTREAM_OPENAI_BASE_URL:-}'
+      UPSTREAM_OPENAI_API_KEY: '${UPSTREAM_OPENAI_API_KEY}'
+      UPSTREAM_OPENAI_BASE_URL: '${UPSTREAM_OPENAI_BASE_URL}'
     volumes:
       - './util/litellm/config.yaml:/app/config.yaml'
     command: ['--config', '/app/config.yaml', '--port', '4000']
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:4000/health']
+      test: ['CMD', 'curl', '-f', 'http://localhost:4000/health/liveliness']
       interval: 15s
       timeout: 5s
-      retries: 3
+      retries: 5
+      start_period: 30s
     networks:
       - klicker
 
