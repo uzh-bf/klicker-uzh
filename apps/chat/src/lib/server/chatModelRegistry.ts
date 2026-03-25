@@ -15,7 +15,7 @@ const chatModelSchema = z.object({
   supportsReasoning: z.boolean().default(false),
   supportedReasoningEfforts: z.array(reasoningEffortSchema).optional(),
   maxOutputTokens: z.number().positive().optional(),
-  apiVersion: z.string().min(1),
+  apiVersion: z.string().min(1).optional(),
   cost: z.object({
     input: z.number().nonnegative(),
     output: z.number().nonnegative(),
@@ -135,7 +135,6 @@ const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     fallback: false,
     supportsReasoning: false,
     supportedReasoningEfforts: [],
-    apiVersion: 'preview',
     cost: { input: 2.0, output: 8.0 },
   },
   {
@@ -147,7 +146,6 @@ const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     supportsReasoning: true,
     supportedReasoningEfforts: [...ALL_REASONING_EFFORTS],
     maxOutputTokens: 2048,
-    apiVersion: 'preview',
     cost: { input: 1.25, output: 10.0 },
   },
   {
@@ -158,7 +156,6 @@ const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     fallback: true,
     supportsReasoning: false,
     supportedReasoningEfforts: [],
-    apiVersion: 'preview',
     cost: { input: 0.4, output: 1.6 },
   },
 ]

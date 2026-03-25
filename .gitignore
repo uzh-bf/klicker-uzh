@@ -12,6 +12,7 @@ secrets*.yaml
 .env
 **/**/.env
 .github/copilot-instructions.md
+.claude/worktrees/
 
 **/.DS_Store
 *.pem
