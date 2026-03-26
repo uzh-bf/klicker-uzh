@@ -28,48 +28,120 @@ import { z } from 'zod'
 export const runtime = 'nodejs'
 
 export const maxDuration = 60
+
+if (!process.env.OPENAI_BASE_URL) {
+  console.warn(
+    '[chat] OPENAI_BASE_URL is not set — model requests will use provider defaults'
+  )
+}
+if (!process.env.OPENAI_API_KEY) {
+  console.warn(
+    '[chat] OPENAI_API_KEY is not set — model requests without per-chatbot keys will fail'
+  )
+}
 const CHAT_LOG_PREFIX = '[chat:dev]'
 const isDevLogging = process.env.NODE_ENV === 'development'
 const MAX_LOG_STRING_LENGTH = 500
 const HASH_DIGEST_LENGTH = 12
 
-function getOpenAIModel(chatbot: Chatbot, modelId: string) {
-  // Use per-chatbot configuration if available, otherwise fallback to environment
-  let hasCustomApiKey = false
-  let decryptedApiKey: string | null = null
-  if (
-    typeof chatbot.openaiApiKey === 'string' &&
-    chatbot.openaiApiKey.length > 0
-  ) {
-    hasCustomApiKey = true
-    decryptedApiKey = safeDecrypt(chatbot.openaiApiKey)
+/**
+ * Custom fetch that patches Responses API request body to add
+ * `status: "completed"` and `type: "message"` on assistant messages.
+ * AI SDK omits these fields but some strict Responses API providers require them.
+ *
+ * Workaround for: https://github.com/vercel/ai/issues/12754
+ */
+const responsesApiFetch: typeof globalThis.fetch = async (input, init) => {
+  if (init?.body && typeof init.body === 'string') {
+    try {
+      const body = JSON.parse(init.body)
+      if (Array.isArray(body.input)) {
+        body.input = body.input.map((item: Record<string, unknown>) =>
+          item.role === 'assistant'
+            ? { ...item, type: 'message', status: 'completed' }
+            : item
+        )
+        init = { ...init, body: JSON.stringify(body) }
+      }
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        // not JSON, pass through
+      } else {
+        console.error(
+          '[responsesApiFetch] Unexpected error patching body:',
+          error
+        )
+        throw error
+      }
+    }
   }
-  const apiKey = decryptedApiKey || process.env.OPENAI_API_KEY
+  return globalThis.fetch(input, init)
+}
 
-  let hasCustomEndpoint = false
-  let baseUrl = process.env.OPENAI_BASE_URL
-  if (
+type ModelRouting = {
+  source: 'custom' | 'default'
+  hasCustomKey: boolean
+  baseUrl: string | undefined
+}
+
+function getModel(chatbot: Chatbot, modelId: string) {
+  // Use per-chatbot configuration if available
+  const hasCustomKey =
+    typeof chatbot.openaiApiKey === 'string' && chatbot.openaiApiKey.length > 0
+  const hasCustomBaseUrl =
     typeof chatbot.openaiBaseUrl === 'string' &&
     chatbot.openaiBaseUrl.length > 0
-  ) {
-    hasCustomEndpoint = true
-    baseUrl = chatbot.openaiBaseUrl
+  const hasCustomConfig = hasCustomKey || hasCustomBaseUrl
+
+  if (hasCustomConfig) {
+    let apiKey: string | undefined
+    if (hasCustomKey) {
+      try {
+        apiKey = safeDecrypt(chatbot.openaiApiKey!)
+      } catch (error) {
+        console.error('Failed to decrypt API key for chatbot:', {
+          chatbotId: chatbot.id,
+          error,
+        })
+        throw new Error(`Failed to decrypt API key for chatbot ${chatbot.id}`)
+      }
+    } else {
+      apiKey = process.env.OPENAI_API_KEY
+    }
+    const baseUrl = hasCustomBaseUrl
+      ? chatbot.openaiBaseUrl!
+      : process.env.OPENAI_BASE_URL
+
+    const routing: ModelRouting = {
+      source: 'custom',
+      hasCustomKey,
+      baseUrl,
+    }
+
+    return {
+      model: createOpenAI({
+        baseURL: baseUrl,
+        apiKey: apiKey || 'no-key',
+        fetch: responsesApiFetch,
+      })(modelId),
+      routing,
+    }
   }
 
-  const openai = createOpenAI({
-    baseURL: baseUrl,
-    apiKey,
-  })
-
-  const model = openai(modelId)
+  // Default: route through OpenAI-compatible endpoint
+  const routing: ModelRouting = {
+    source: 'default',
+    hasCustomKey: false,
+    baseUrl: process.env.OPENAI_BASE_URL,
+  }
 
   return {
-    model,
-    debug: {
-      baseUrl: baseUrl,
-      hasCustomEndpoint,
-      hasCustomApiKey,
-    },
+    model: createOpenAI({
+      baseURL: process.env.OPENAI_BASE_URL,
+      apiKey: process.env.OPENAI_API_KEY || 'no-key',
+      fetch: responsesApiFetch,
+    })(modelId),
+    routing,
   }
 }
 
@@ -724,7 +796,6 @@ export async function POST(
   let partialReasoningContent = ''
   let assistantReasoningContent: string | null = null
 
-  // convert messages to simple format for AI SDK v6
   const modelMessages = messages.map((msg) => ({
     role: msg.role,
     content: msg.content,
@@ -814,17 +885,14 @@ export async function POST(
       ? appliedReasoningEffort
       : undefined
 
-  const openaiModelSelection = getOpenAIModel(
-    chatbot,
-    selectedModelConfig.deploymentId
-  )
+  const { model, routing } = getModel(chatbot, selectedModelConfig.deploymentId)
 
   // create image description if image attached
   let imageDescription: string | null = null
   if (imageBase64) {
     try {
       const descriptionResult = await generateText({
-        model: openaiModelSelection.model,
+        model: model,
         messages: [
           {
             role: 'user',
@@ -875,17 +943,21 @@ export async function POST(
     selectedModel,
     resolvedModelId: selectedModelConfig.id,
     deploymentId: selectedModelConfig.deploymentId,
+    routing,
     selectedMode,
     reasoningEffort: appliedReasoningEffort,
     allowedReasoningEfforts,
     maxOutputTokens: maxOutputTokens ?? null,
     toolCount: toolNames.length,
     toolNames,
-    openai: openaiModelSelection.debug,
     systemPromptLength: systemPrompt.length,
     systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
     userPromptLengthTotal: userPrompt.length,
     userPromptHash: userPrompt ? hashSnippet(userPrompt) : null,
+    imageAttachment: Boolean(imageBase64),
+    imageAttachmentSize: imageBase64
+      ? Buffer.byteLength(imageBase64, 'utf8')
+      : null,
     elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
   })
 
@@ -1037,7 +1109,7 @@ export async function POST(
   })
 
   const result = streamText({
-    model: openaiModelSelection.model,
+    model,
     maxOutputTokens,
     experimental_telemetry: { isEnabled: true },
     providerOptions: {

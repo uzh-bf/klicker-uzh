@@ -19,7 +19,7 @@ metadata:
   {{- end }}
   {{- if .Values.frontendControl.allowedFrameAncestors }}
     haproxy.org/response-set-header: |
-      Content-Security-Policy "frame-ancestors 'self' {{ .Values.frontendControl.allowedFrameAncestors }}"
+      Content-Security-Policy frame-ancestors 'self' {{ .Values.frontendControl.allowedFrameAncestors }}
   {{- end }}
   {{- end }}
 spec:

@@ -151,6 +151,9 @@ chat:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
 
+  openai:
+    baseUrl: 'http://litellm:4000/v1'
+
   automaticModels:
     primaryId: gpt-4.1
     fallbackId: gpt-4.1-mini
@@ -161,7 +164,6 @@ chat:
       name: GPT-4.1
       description: OpenAI model
       fallback: false
-      apiVersion: 2025-01-01-preview
       cost:
         input: 2.0
         output: 8.0
@@ -170,7 +172,6 @@ chat:
       name: GPT-5.1
       description: OpenAI reasoning model
       fallback: false
-      apiVersion: 2025-04-01-preview
       cost:
         input: 1.25
         output: 10.0
@@ -179,7 +180,6 @@ chat:
       name: GPT-4.1 Mini
       description: Small OpenAI model
       fallback: true
-      apiVersion: 2025-01-01-preview
       cost:
         input: 0.4
         output: 1.6
