@@ -168,6 +168,15 @@ export function useThreadManagement(
           ? activeThread.messages.findIndex((m) => m.id === parentId)
           : -1
 
+      // carry over the attachment from the original message being edited
+      const originalMessage =
+        parentIndex >= 0 && activeThread
+          ? activeThread.messages[parentIndex + 1]
+          : null
+      if (originalMessage?.attachment) {
+        editedMessage.attachment = originalMessage.attachment
+      }
+
       const newCurrentPath =
         parentIndex >= 0 && activeThread
           ? [...activeThread.messages.slice(0, parentIndex + 1), editedMessage]

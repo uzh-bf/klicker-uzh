@@ -502,11 +502,35 @@ const UserActionBar: FC = () => {
 }
 
 const EditComposer: FC = () => {
-  const { showMessageActions } = useChatUi()
+  const { showMessageActions, embedded } = useChatUi()
+  const message = useMessage() as MessageWithCustomMetadata
+  const attachment =
+    (message.attachment && typeof message.attachment === 'object'
+      ? message.attachment
+      : null) ??
+    (message.metadata?.custom?.attachment &&
+    typeof message.metadata.custom.attachment === 'object'
+      ? message.metadata.custom.attachment
+      : null)
+  const imageBase64 =
+    attachment && typeof attachment.imageBase64 === 'string'
+      ? attachment.imageBase64
+      : null
+
   if (!showMessageActions) return null
 
   return (
     <ComposerPrimitive.Root className="bg-muted my-4 flex w-full max-w-[var(--thread-max-width)] flex-col gap-2 rounded-2xl">
+      {imageBase64 ? (
+        <img
+          src={imageBase64}
+          alt="Attached by user"
+          className={twMerge(
+            'mb-0 ml-4 mt-3 rounded-md border object-cover',
+            embedded ? 'max-w-[200px]' : 'max-w-[300px]'
+          )}
+        />
+      ) : null}
       <ComposerPrimitive.Input className="text-foreground flex min-h-[2.5rem] w-full resize-none bg-transparent px-4 py-3 outline-none" />
 
       <div className="mx-3 mb-2 flex items-center justify-center gap-2 self-end">
