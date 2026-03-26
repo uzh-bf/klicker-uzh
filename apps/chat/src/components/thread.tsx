@@ -698,45 +698,48 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
   if (!showMessageActions) return null
 
   return (
-    <ActionBarPrimitive.Root
-      hideWhenRunning
-      autohide="not-last"
-      autohideFloat="single-branch"
+    <div
       className={twMerge(
-        'text-muted-foreground data-[floating]:bg-background row-start-2 -ml-1 flex gap-1 data-[floating]:absolute data-[floating]:rounded-md data-[floating]:border data-[floating]:p-1 data-[floating]:shadow-sm',
+        'row-start-2 min-h-8',
         embedded ? 'col-start-2' : 'col-start-3'
       )}
     >
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <ActionBarPrimitive.Copy asChild>
-            <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
-              <MessagePrimitive.If copied>
-                <CheckIcon />
-              </MessagePrimitive.If>
-              <MessagePrimitive.If copied={false}>
-                <CopyIcon />
-              </MessagePrimitive.If>
-              <span className="sr-only">Copy</span>
-            </button>
-          </ActionBarPrimitive.Copy>
-        </TooltipTrigger>
-        <TooltipContent>Copy</TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <ActionBarPrimitive.Reload asChild>
-            <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
-              <RefreshCwIcon />
-              <span className="sr-only">Refresh</span>
-            </button>
-          </ActionBarPrimitive.Reload>
-        </TooltipTrigger>
-        <TooltipContent>Refresh</TooltipContent>
-      </Tooltip>
+      <ActionBarPrimitive.Root
+        hideWhenRunning
+        autohide="not-last"
+        className="text-muted-foreground -ml-1 flex gap-1"
+      >
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <ActionBarPrimitive.Copy asChild>
+              <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
+                <MessagePrimitive.If copied>
+                  <CheckIcon />
+                </MessagePrimitive.If>
+                <MessagePrimitive.If copied={false}>
+                  <CopyIcon />
+                </MessagePrimitive.If>
+                <span className="sr-only">Copy</span>
+              </button>
+            </ActionBarPrimitive.Copy>
+          </TooltipTrigger>
+          <TooltipContent>Copy</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <ActionBarPrimitive.Reload asChild>
+              <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
+                <RefreshCwIcon />
+                <span className="sr-only">Refresh</span>
+              </button>
+            </ActionBarPrimitive.Reload>
+          </TooltipTrigger>
+          <TooltipContent>Refresh</TooltipContent>
+        </Tooltip>
 
-      <BranchPickerWrapper />
-    </ActionBarPrimitive.Root>
+        <BranchPickerWrapper />
+      </ActionBarPrimitive.Root>
+    </div>
   )
 }
 
