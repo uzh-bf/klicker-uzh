@@ -663,9 +663,15 @@ export async function POST(
     imageBase64: z
       .string()
       .max(3_000_000)
-      .refine((value) => value.startsWith('data:image/'), {
-        message: 'Must be a base64 data URL',
-      })
+      .refine(
+        (value) =>
+          /^data:image\/(jpeg|png|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(
+            value
+          ),
+        {
+          message: 'Must be a base64 data URL for jpeg, png, gif, or webp',
+        }
+      )
       .optional(),
   })
   let parsed
