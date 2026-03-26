@@ -894,6 +894,7 @@ export async function POST(
   const { model, routing } = getModel(chatbot, selectedModelConfig.deploymentId)
 
   // create image description if image attached
+  let imageDescriptionCost: number = 0
   let imageDescription: string | null = null
   if (imageBase64) {
     try {
@@ -914,6 +915,32 @@ export async function POST(
         maxOutputTokens: 1000,
       })
       imageDescription = descriptionResult.text
+
+      // deduct credits for image description generation
+      if (descriptionResult.usage) {
+        imageDescriptionCost = calcCost(
+          selectedModelConfig.cost,
+          descriptionResult.usage.inputTokens || 0,
+          descriptionResult.usage.outputTokens || 0
+        )
+        if (imageDescriptionCost > 0) {
+          try {
+            await CreditsService.decrementCredits(
+              participantId,
+              chatbotId,
+              imageDescriptionCost
+            )
+          } catch (creditsError) {
+            console.error(
+              'Failed to decrement credits for image description:',
+              {
+                requestId,
+                error: creditsError,
+              }
+            )
+          }
+        }
+      }
     } catch (error) {
       console.error('Failed to generate image description:', {
         requestId,
@@ -1159,7 +1186,7 @@ export async function POST(
             selectedModelConfig.cost,
             result.totalUsage.inputTokens || 0,
             result.totalUsage.outputTokens || 0
-          )
+          ) + imageDescriptionCost
         : null
       const finishedReasoningContent =
         normalizeReasoningContent(
@@ -1328,7 +1355,7 @@ export async function POST(
         }
 
         if (hasUsage) {
-          creditsUsed = totalCost
+          creditsUsed = totalCost + imageDescriptionCost
         }
 
         if (creditsUsed !== null && creditsUsed > 0) {
@@ -1542,7 +1569,7 @@ export async function POST(
             selectedModelConfig.cost,
             part.totalUsage.inputTokens || 0,
             part.totalUsage.outputTokens || 0
-          )
+          ) + imageDescriptionCost
         : null
 
       return {
