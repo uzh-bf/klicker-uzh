@@ -915,30 +915,13 @@ export async function POST(
       })
       imageDescription = descriptionResult.text
 
-      // deduct credits for image description generation
+      // compute image description cost; billed via creditsUsed at finish/abort
       if (descriptionResult.usage) {
         imageDescriptionCost = calcCost(
           selectedModelConfig.cost,
           descriptionResult.usage.inputTokens || 0,
           descriptionResult.usage.outputTokens || 0
         )
-        if (imageDescriptionCost > 0) {
-          try {
-            await CreditsService.decrementCredits(
-              participantId,
-              chatbotId,
-              imageDescriptionCost
-            )
-          } catch (creditsError) {
-            console.error(
-              'Failed to decrement credits for image description:',
-              {
-                requestId,
-                error: creditsError,
-              }
-            )
-          }
-        }
       }
     } catch (error) {
       console.error('Failed to generate image description:', {
