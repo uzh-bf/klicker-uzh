@@ -661,7 +661,7 @@ export async function POST(
     assistantMessageId: z.string().min(1),
     imageBase64: z
       .string()
-      .max(3_000_000)
+      .max(7_000_000)
       .refine(
         (value) =>
           /^data:image\/(jpeg|png|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(

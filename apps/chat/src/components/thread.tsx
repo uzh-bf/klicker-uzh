@@ -18,10 +18,12 @@ import {
   ImagePlusIcon,
   PencilIcon,
   RefreshCwIcon,
+  XIcon,
 } from 'lucide-react'
 import { type FC, type PropsWithChildren, useState } from 'react'
 
 import { Button } from '@uzh-bf/design-system'
+import { useComposerStore } from '../stores/composerStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { BranchPicker } from './branch-picker'
 import { useChatUi } from './chat-ui-context'
@@ -255,10 +257,28 @@ const ThreadWelcome: FC = () => {
 
 const Composer: FC = () => {
   const { embedded } = useChatUi()
+  const attachmentError = useComposerStore((s) => s.attachmentError)
+  const setAttachmentError = useComposerStore((s) => s.setAttachmentError)
 
   return (
     <ComposerPrimitive.Root className="focus-within:border-ring/20 flex w-full max-w-[var(--thread-max-width)] flex-col rounded-lg border bg-inherit px-2.5 shadow-sm transition-colors ease-in">
       <ComposerAttachments />
+
+      {attachmentError && (
+        <div className="px-2 pt-2">
+          <div className="inline-flex items-center gap-1.5 rounded-md bg-red-50 px-2 py-1 text-xs text-red-600">
+            <span>{attachmentError}</span>
+            <button
+              type="button"
+              onClick={() => setAttachmentError(null)}
+              className="rounded hover:bg-red-100"
+              aria-label="Dismiss error"
+            >
+              <XIcon className="size-3" />
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="flex w-full items-center">
         <ComposerAttachButton />
