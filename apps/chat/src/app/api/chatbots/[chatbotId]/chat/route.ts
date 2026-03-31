@@ -999,12 +999,13 @@ export async function POST(
         m.role === 'user' && !(imageDescription && m.id === lastMessage?.id) // skip current
     )
     .map((m) => m.id)
-  if (priorMessageIds.length > 0) {
+  if (owningThread && priorMessageIds.length > 0) {
     try {
       const priorAttachments = await prisma.chatAttachment.findMany({
         where: {
           messageId: { in: priorMessageIds },
           imageDescription: { not: null },
+          message: { threadId: owningThread.id },
         },
         select: { messageId: true, imageDescription: true },
       })
