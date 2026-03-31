@@ -895,7 +895,7 @@ export async function POST(
   // create image description if image attached
   let imageDescriptionCost: number = 0
   let imageDescription: string | null = null
-  if (imageBase64) {
+  if (imageBase64 && lastMessage?.role === 'user') {
     try {
       const descriptionResult = await generateText({
         model: model,
