@@ -644,7 +644,6 @@ export async function POST(
         id: z.string().min(1),
         role: z.enum(['user', 'assistant']),
         content: z.string(),
-        imageDescription: z.string().optional(),
       })
     ),
     threadId: z.string().min(1).nullable().optional(),
@@ -1010,16 +1009,39 @@ export async function POST(
     elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
   })
 
-  // inject image descriptions from prior messages into model context (client already has them)
-  for (let i = 0; i < messages.length; i++) {
-    const msg = messages[i]
-    if (!msg || msg.role !== 'user' || !msg.imageDescription) continue
-    // skip the current message — already handled by the describe-once block above
-    if (imageDescription && msg.id === lastMessage?.id) continue
-
-    modelMessages[i] = {
-      ...modelMessages[i],
-      content: `${modelMessages[i].content}\n\n[Attached image description: ${msg.imageDescription}]`,
+  // inject image descriptions from prior messages into model context; fetch from DB
+  const priorMessageIds = messages
+    .filter(
+      (m) =>
+        m.role === 'user' && !(imageDescription && m.id === lastMessage?.id) // skip current
+    )
+    .map((m) => m.id)
+  if (priorMessageIds.length > 0) {
+    try {
+      const priorAttachments = await prisma.chatAttachment.findMany({
+        where: {
+          messageId: { in: priorMessageIds },
+          imageDescription: { not: null },
+        },
+        select: { messageId: true, imageDescription: true },
+      })
+      const descriptionsByMsgId = new Map(
+        priorAttachments.map((a) => [a.messageId, a.imageDescription!])
+      )
+      for (let i = 0; i < messages.length; i++) {
+        const desc = descriptionsByMsgId.get(messages[i].id)
+        if (desc) {
+          modelMessages[i] = {
+            ...modelMessages[i],
+            content: `${modelMessages[i].content}\n\n[Attached image description: ${desc}]`,
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch prior image descriptions:', {
+        requestId,
+        error,
+      })
     }
   }
 

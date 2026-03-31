@@ -120,7 +120,6 @@ export function useChatResponse(
               id: m.id,
               role: m.role,
               content: serializeMessageContent(m),
-              imageDescription: m.attachment?.imageDescription ?? undefined,
             })),
             threadId,
             selectedModel,
