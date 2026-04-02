@@ -554,6 +554,23 @@ const UserActionBar: FC = () => {
         </TooltipContent>
       </Tooltip>
 
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <ActionBarPrimitive.Copy asChild>
+            <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
+              <MessagePrimitive.If copied>
+                <CheckIcon />
+              </MessagePrimitive.If>
+              <MessagePrimitive.If copied={false}>
+                <CopyIcon />
+              </MessagePrimitive.If>
+              <span className="sr-only">Copy</span>
+            </button>
+          </ActionBarPrimitive.Copy>
+        </TooltipTrigger>
+        <TooltipContent>Copy</TooltipContent>
+      </Tooltip>
+
       <BranchPickerWrapper />
     </ActionBarPrimitive.Root>
   )
