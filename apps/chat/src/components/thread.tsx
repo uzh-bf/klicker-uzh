@@ -162,7 +162,7 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
 
   return (
     <ThreadPrimitive.Root
-      className="bg-background box-border flex min-h-0 flex-1 flex-col overflow-hidden"
+      className="bg-background relative box-border flex min-h-0 flex-1 flex-col overflow-hidden"
       style={{
         ['--thread-max-width' as string]: embedded ? '100%' : '60rem',
       }}
@@ -171,8 +171,8 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
         className={twMerge(
           'flex min-h-0 flex-1 flex-col items-center scroll-smooth bg-inherit',
           embedded
-            ? 'scrollbar-none overflow-y-auto px-2 pt-2'
-            : 'overflow-y-scroll px-2 pt-2 sm:px-4 sm:pt-8'
+            ? 'scrollbar-none overflow-y-auto px-2 pb-24 pt-2'
+            : 'overflow-y-scroll px-2 pb-28 pt-2 sm:px-4 sm:pt-8'
         )}
       >
         <ThreadWelcome />
@@ -186,18 +186,15 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
             ),
           }}
         />
-
-        <ThreadPrimitive.If empty={false}>
-          <div className="min-h-8 flex-grow" />
-        </ThreadPrimitive.If>
       </ThreadPrimitive.Viewport>
 
       <div
         className={twMerge(
-          'relative flex w-full shrink-0 flex-col items-center justify-end bg-inherit',
+          'absolute bottom-0 left-0 right-0 z-10 flex w-full flex-col items-center justify-end',
           embedded ? 'px-2 pb-2' : 'px-2 pb-4 sm:px-4'
         )}
       >
+        <div className="from-background pointer-events-none absolute inset-x-0 bottom-full h-12 to-transparent" />
         {!embedded && <ThreadScrollToBottom />}
         <Composer />
       </div>
@@ -261,7 +258,7 @@ const Composer: FC = () => {
   const setAttachmentError = useComposerStore((s) => s.setAttachmentError)
 
   return (
-    <ComposerPrimitive.Root className="focus-within:border-ring/20 flex w-full max-w-[var(--thread-max-width)] flex-col rounded-lg border bg-inherit px-2.5 shadow-sm transition-colors ease-in">
+    <ComposerPrimitive.Root className="flex w-full max-w-3xl flex-col rounded-3xl border border-gray-200 bg-gray-100/80 px-2.5 shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-colors ease-in focus-within:border-gray-300">
       <ComposerAttachments />
 
       {attachmentError && (
@@ -287,7 +284,7 @@ const Composer: FC = () => {
           autoFocus
           placeholder="Write a message..."
           className={twMerge(
-            'placeholder:text-muted-foreground flex-grow resize-none border-none bg-transparent px-2 text-sm outline-none focus:ring-0 disabled:cursor-not-allowed',
+            'placeholder:text-muted-foreground text-md flex-grow resize-none border-none bg-transparent px-2 outline-none focus:ring-0 disabled:cursor-not-allowed',
             embedded ? 'max-h-20 py-2' : 'max-h-40 py-4'
           )}
         />
