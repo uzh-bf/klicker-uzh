@@ -8,4 +8,5 @@ export interface ModelOption {
   fallback: boolean
   supportsReasoning: boolean
   allowedReasoningEfforts: ReasoningEffort[]
+  supportsImageAttachments: boolean
 }

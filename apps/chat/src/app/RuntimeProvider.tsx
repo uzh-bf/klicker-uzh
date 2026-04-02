@@ -37,6 +37,7 @@ export function RuntimeProvider({
     selectedModel,
     selectedMode,
     selectedReasoningEffort,
+    modelOptions,
     loadCredits,
     loadModeOptions,
   } = useSettingsStore()
@@ -254,7 +255,10 @@ export function RuntimeProvider({
     onCancel,
     convertMessage,
     adapters: {
-      attachments: imageAttachmentAdapter,
+      ...(modelOptions.find((m) => m.id === selectedModel)
+        ?.supportsImageAttachments !== false && {
+        attachments: imageAttachmentAdapter,
+      }),
     },
   })
 

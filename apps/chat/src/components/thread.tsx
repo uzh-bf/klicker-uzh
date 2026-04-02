@@ -17,6 +17,7 @@ import {
   CopyIcon,
   ImagePlusIcon,
   PencilIcon,
+  PencilOffIcon,
   RefreshCwIcon,
   XIcon,
 } from 'lucide-react'
@@ -372,6 +373,12 @@ const ComposerImageAttachment: FC = () => {
 
 const ComposerAttachButton: FC = () => {
   const { embedded } = useChatUi()
+  const { selectedModel, modelOptions } = useSettingsStore()
+  const supportsImages =
+    modelOptions.find((m) => m.id === selectedModel)
+      ?.supportsImageAttachments !== false
+
+  if (!supportsImages) return null
 
   return (
     <ComposerPrimitive.AddAttachment asChild>
@@ -496,7 +503,25 @@ const UserMessage: FC = () => {
 
 const UserActionBar: FC = () => {
   const { showMessageActions } = useChatUi()
+  const { selectedModel, modelOptions } = useSettingsStore()
+  const message = useMessage() as MessageWithCustomMetadata
+
   if (!showMessageActions) return null
+
+  const attachment =
+    (message.attachment && typeof message.attachment === 'object'
+      ? message.attachment
+      : null) ??
+    (message.metadata?.custom?.attachment &&
+    typeof message.metadata.custom.attachment === 'object'
+      ? message.metadata.custom.attachment
+      : null)
+  const hasImage = attachment?.type === 'image' && !!attachment.imageBase64
+
+  const supportsImages =
+    modelOptions.find((m) => m.id === selectedModel)
+      ?.supportsImageAttachments !== false
+  const editDisabled = hasImage && !supportsImages
 
   return (
     <ActionBarPrimitive.Root
@@ -506,14 +531,28 @@ const UserActionBar: FC = () => {
     >
       <Tooltip>
         <TooltipTrigger asChild>
-          <ActionBarPrimitive.Edit asChild>
-            <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
-              <PencilIcon />
-              <span className="sr-only">Edit</span>
+          {editDisabled ? (
+            <button
+              disabled
+              className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
+            >
+              <PencilOffIcon />
+              <span className="sr-only">Edit unavailable</span>
             </button>
-          </ActionBarPrimitive.Edit>
+          ) : (
+            <ActionBarPrimitive.Edit asChild>
+              <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
+                <PencilIcon />
+                <span className="sr-only">Edit</span>
+              </button>
+            </ActionBarPrimitive.Edit>
+          )}
         </TooltipTrigger>
-        <TooltipContent>Edit</TooltipContent>
+        <TooltipContent>
+          {editDisabled
+            ? 'Cannot edit: selected model does not support images'
+            : 'Edit'}
+        </TooltipContent>
       </Tooltip>
 
       <BranchPickerWrapper />
