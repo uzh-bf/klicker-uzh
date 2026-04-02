@@ -194,7 +194,7 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
 
       <div
         className={twMerge(
-          'flex w-full shrink-0 flex-col items-center justify-end bg-inherit',
+          'relative flex w-full shrink-0 flex-col items-center justify-end bg-inherit',
           embedded ? 'px-2 pb-2' : 'px-2 pb-4 sm:px-4'
         )}
       >
@@ -210,13 +210,12 @@ const ThreadScrollToBottom: FC = () => {
     <Tooltip>
       <TooltipTrigger asChild>
         <ThreadPrimitive.ScrollToBottom asChild>
-          <button className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring absolute -top-8 inline-flex h-9 w-9 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-50">
+          <button className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring absolute bottom-full mb-2 inline-flex h-9 w-9 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-50">
             <ArrowDownIcon />
             <span className="sr-only">Scroll to bottom</span>
           </button>
         </ThreadPrimitive.ScrollToBottom>
       </TooltipTrigger>
-      <TooltipContent>Scroll to bottom</TooltipContent>
     </Tooltip>
   )
 }
