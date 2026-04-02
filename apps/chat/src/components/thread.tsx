@@ -477,10 +477,8 @@ const UserMessage: FC = () => {
       : null
 
   return (
-    <MessagePrimitive.Root className="grid w-full max-w-[var(--thread-max-width)] auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] gap-y-2 py-2 sm:py-4 [&:where(>*)]:col-start-2">
-      <UserActionBar />
-
-      <div className="bg-muted text-foreground col-start-2 row-start-2 max-w-[calc(var(--thread-max-width)*0.8)] break-words rounded-2xl px-5 py-2.5">
+    <MessagePrimitive.Root className="flex w-full max-w-[var(--thread-max-width)] flex-col items-end gap-y-1 py-2 sm:py-4">
+      <div className="bg-muted text-foreground max-w-[calc(var(--thread-max-width)*0.8)] break-words rounded-2xl px-5 py-2.5">
         {imageBase64 ? (
           <img
             src={imageBase64}
@@ -494,8 +492,9 @@ const UserMessage: FC = () => {
         <MessagePrimitive.Content />
       </div>
 
-      <div className="col-start-2 row-start-3 max-w-[calc(var(--thread-max-width)*0.8)]">
-        <MessageMetadata />
+      <MessageMetadata />
+      <div className="flex min-h-6 items-center">
+        <UserActionBar />
       </div>
     </MessagePrimitive.Root>
   )
@@ -527,7 +526,7 @@ const UserActionBar: FC = () => {
     <ActionBarPrimitive.Root
       hideWhenRunning
       autohide="not-last"
-      className="col-start-1 row-start-2 mr-3 mt-2.5 flex flex-col items-end"
+      className="text-muted-foreground flex items-center gap-1"
     >
       <Tooltip>
         <TooltipTrigger asChild>
