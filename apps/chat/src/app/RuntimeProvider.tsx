@@ -212,7 +212,7 @@ export function RuntimeProvider({
         modelId,
         reasoningEffort,
         creditsUsed,
-        attachment,
+        imageAttachments,
         metadata,
         ...rest
       } = message
@@ -222,7 +222,7 @@ export function RuntimeProvider({
         modelId: modelId ?? null,
         reasoningEffort: reasoningEffort ?? null,
         creditsUsed: creditsUsed ?? null,
-        attachment: attachment ?? null,
+        imageAttachments: imageAttachments ?? [],
       }
 
       return {

@@ -659,19 +659,21 @@ export async function POST(
       .default('none'),
     parentId: z.string().min(1).nullable().optional(),
     assistantMessageId: z.string().min(1),
-    imageBase64: z
-      .string()
-      .max(7_000_000)
-      .refine(
-        (value) =>
-          /^data:image\/(jpeg|png|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(
-            value
-          ),
-        {
-          message: 'Must be a base64 data URL for jpeg, png, gif, or webp',
-        }
+    images: z
+      .array(
+        z
+          .string()
+          .max(7_000_000)
+          .refine(
+            (value) => /^data:image\/(jpeg|png|gif|webp);base64,/.test(value),
+            {
+              message: 'Must be a base64 data URL for jpeg, png, gif, or webp',
+            }
+          )
       )
-      .optional(),
+      .max(3)
+      .optional()
+      .default([]),
   })
   let parsed
   try {
@@ -687,7 +689,7 @@ export async function POST(
     reasoningEffort: requestedReasoningEffort,
     parentId,
     assistantMessageId,
-    imageBase64,
+    images,
   } = parsed
 
   const userPrompt = messages
@@ -892,53 +894,81 @@ export async function POST(
 
   const { model, routing } = getModel(chatbot, selectedModelConfig.deploymentId)
 
-  // create image description if image attached
+  // create image descriptions if images attached
   let imageDescriptionCost: number = 0
-  let imageDescription: string | null = null
-  if (imageBase64 && lastMessage?.role === 'user') {
-    try {
-      const descriptionResult = await generateText({
-        model: model,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'image', image: imageBase64 },
-              {
-                type: 'text',
-                text: `${lastMessage?.content ? `User message context: ${lastMessage.content}\n\n` : ''}Describe this image in detail. Include all visible text, diagrams, charts, equations, labels, and notable visual elements. This description will serve as context for an ongoing conversation.`,
-              },
-            ],
-          },
-        ],
-        maxOutputTokens: 1000,
-      })
-      imageDescription = descriptionResult.text
+  const imageAttachments: {
+    imageBase64: string
+    imageDescription: string | null
+  }[] = []
+  if (images.length > 0 && lastMessage?.role === 'user') {
+    const descriptionPrompt = (userContent: string | undefined) =>
+      `${userContent ? `User message context: ${userContent}\n\n` : ''}Describe this image in detail. Include all visible text, diagrams, charts, equations, labels, and notable visual elements. This description will serve as context for an ongoing conversation.`
 
-      // compute image description cost; billed via creditsUsed at finish/abort
-      if (descriptionResult.usage) {
-        imageDescriptionCost = calcCost(
-          selectedModelConfig.cost,
-          descriptionResult.usage.inputTokens || 0,
-          descriptionResult.usage.outputTokens || 0
-        )
-      }
-    } catch (error) {
-      console.error('Failed to generate image description:', {
-        requestId,
-        error,
+    const results = await Promise.allSettled(
+      images.map(async (imgBase64) => {
+        const descriptionResult = await generateText({
+          model: model,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'image', image: imgBase64 },
+                {
+                  type: 'text',
+                  text: descriptionPrompt(lastMessage?.content),
+                },
+              ],
+            },
+          ],
+          maxOutputTokens: 1000,
+        })
+        return { imgBase64, descriptionResult }
       })
-      imageDescription =
-        'The user attached an image that could not be described automatically.'
+    )
+
+    for (const result of results) {
+      if (result.status === 'fulfilled') {
+        const { imgBase64, descriptionResult } = result.value
+        imageAttachments.push({
+          imageBase64: imgBase64,
+          imageDescription: descriptionResult.text,
+        })
+        if (descriptionResult.usage) {
+          imageDescriptionCost += calcCost(
+            selectedModelConfig.cost,
+            descriptionResult.usage.inputTokens || 0,
+            descriptionResult.usage.outputTokens || 0
+          )
+        }
+      } else {
+        console.error('Failed to generate image description:', {
+          requestId,
+          error: result.reason,
+        })
+        // find the corresponding image from the original array
+        const idx = results.indexOf(result)
+        imageAttachments.push({
+          imageBase64: images[idx],
+          imageDescription:
+            'The user attached an image that could not be described automatically.',
+        })
+      }
     }
 
-    // insert image description into user message content
-    if (lastMessage?.role === 'user' && imageDescription) {
+    // insert all image descriptions into user message content
+    const descriptions = imageAttachments
+      .map((a, i) =>
+        a.imageDescription
+          ? `[Attached image ${i + 1} description: ${a.imageDescription}]`
+          : null
+      )
+      .filter(Boolean)
+    if (descriptions.length > 0) {
       const lastMessageIndex = messages.length - 1
       if (lastMessageIndex >= 0) {
         modelMessages[lastMessageIndex] = {
           ...modelMessages[lastMessageIndex],
-          content: `${modelMessages[lastMessageIndex].content}\n\n[Attached image description: ${imageDescription}]`,
+          content: `${modelMessages[lastMessageIndex].content}\n\n${descriptions.join('\n\n')}`,
         }
       }
     }
@@ -969,10 +999,8 @@ export async function POST(
     systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
     userPromptLengthTotal: userPrompt.length,
     userPromptHash: userPrompt ? hashSnippet(userPrompt) : null,
-    imageAttachment: Boolean(imageBase64),
-    imageAttachmentSize: imageBase64
-      ? Buffer.byteLength(imageBase64, 'utf8')
-      : null,
+    imageAttachmentCount: images.length,
+    imageAttachmentSizes: images.map((img) => Buffer.byteLength(img, 'utf8')),
     elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
   })
 
@@ -996,7 +1024,8 @@ export async function POST(
   const priorMessageIds = messages
     .filter(
       (m) =>
-        m.role === 'user' && !(imageDescription && m.id === lastMessage?.id) // skip current
+        m.role === 'user' &&
+        !(imageAttachments.length > 0 && m.id === lastMessage?.id) // skip current
     )
     .map((m) => m.id)
   if (owningThread && priorMessageIds.length > 0) {
@@ -1009,15 +1038,29 @@ export async function POST(
         },
         select: { messageId: true, imageDescription: true },
       })
-      const descriptionsByMsgId = new Map(
-        priorAttachments.map((a) => [a.messageId, a.imageDescription!])
-      )
+      const descriptionsByMsgId = new Map<string, string[]>()
+      for (const a of priorAttachments) {
+        // get existing descriptions for this message, append if exist, or create new array
+        const existing = descriptionsByMsgId.get(a.messageId) ?? []
+        existing.push(a.imageDescription!)
+        descriptionsByMsgId.set(a.messageId, existing)
+      }
       for (let i = 0; i < messages.length; i++) {
-        const desc = descriptionsByMsgId.get(messages[i].id)
-        if (desc) {
+        const descs = descriptionsByMsgId.get(messages[i].id)
+        if (descs && descs.length > 0) {
+          // append all descriptions for this message into the content
+          const suffix =
+            descs.length === 1
+              ? `\n\n[Attached image description: ${descs[0]}]`
+              : '\n\n' +
+                descs
+                  .map(
+                    (d, idx) => `[Attached image ${idx + 1} description: ${d}]`
+                  )
+                  .join('\n\n')
           modelMessages[i] = {
             ...modelMessages[i],
-            content: `${modelMessages[i].content}\n\n[Attached image description: ${desc}]`,
+            content: `${modelMessages[i].content}${suffix}`,
           }
         }
       }
@@ -1043,22 +1086,18 @@ export async function POST(
         reasoningEffort: appliedReasoningEffort,
       }
 
-      const upsertAttachment = async (messageId: string) => {
-        if (!imageBase64 && !imageDescription) return
+      const persistAttachments = async (messageId: string) => {
+        if (imageAttachments.length === 0) return
 
-        await prisma.chatAttachment.upsert({
-          where: { messageId },
-          update: {
-            type: 'IMAGE',
-            imageBase64: imageBase64 ?? null,
-            imageDescription: imageDescription ?? null,
-          },
-          create: {
-            type: 'IMAGE',
+        // delete existing attachments for this message, then create new ones
+        await prisma.chatAttachment.deleteMany({ where: { messageId } })
+        await prisma.chatAttachment.createMany({
+          data: imageAttachments.map((att) => ({
+            type: 'IMAGE' as const,
             messageId,
-            imageBase64: imageBase64 ?? null,
-            imageDescription: imageDescription ?? null,
-          },
+            imageBase64: att.imageBase64 ?? null,
+            imageDescription: att.imageDescription ?? null,
+          })),
         })
       }
 
@@ -1094,10 +1133,10 @@ export async function POST(
             },
           })
 
-          await upsertAttachment(lastMessage.id)
+          await persistAttachments(lastMessage.id)
         }
       } else {
-        await upsertAttachment(userMessageId)
+        await persistAttachments(userMessageId)
       }
 
       // update thread's timestamp

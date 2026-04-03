@@ -127,7 +127,9 @@ export function useChatResponse(
             reasoningEffort: selectedReasoningEffort,
             parentId: parentId || undefined,
             assistantMessageId,
-            imageBase64: triggerMessage?.attachment?.imageBase64 ?? undefined,
+            images: (triggerMessage?.imageAttachments ?? [])
+              .map((a) => a.imageBase64)
+              .filter((img): img is string => typeof img === 'string'),
           }),
         })
 

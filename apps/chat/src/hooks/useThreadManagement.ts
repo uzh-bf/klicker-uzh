@@ -62,9 +62,9 @@ export function useThreadManagement(
         }
       }
 
-      const imageContent = message.attachments
-        ?.flatMap((attachment) => attachment.content ?? [])
-        .find(
+      const imageBase64List = (message.attachments ?? [])
+        .flatMap((attachment) => attachment.content ?? [])
+        .filter(
           (
             part
           ): part is {
@@ -78,7 +78,7 @@ export function useThreadManagement(
             'image' in part &&
             typeof part.image === 'string'
         )
-      const imageBase64 = imageContent?.image ?? null
+        .map((part) => part.image)
 
       // create user message with unique ID and metadata
       const userMessage: ExtendedThreadMessageLike = {
@@ -90,13 +90,11 @@ export function useThreadManagement(
         chatMode: selectedMode,
         modelId: selectedModel,
         reasoningEffort: selectedReasoningEffort,
-        attachment: imageBase64
-          ? {
-              type: 'image',
-              imageBase64,
-              imageDescription: null,
-            }
-          : null,
+        imageAttachments: imageBase64List.map((img) => ({
+          type: 'image' as const,
+          imageBase64: img,
+          imageDescription: null,
+        })),
       }
 
       if (shouldReplaceUrl) {
@@ -168,13 +166,16 @@ export function useThreadManagement(
           ? activeThread.messages.findIndex((m) => m.id === parentId)
           : -1
 
-      // carry over the attachment from the original message being edited
+      // carry over the attachments from the original message being edited
       const originalMessage =
         parentIndex >= 0 && activeThread
           ? activeThread.messages[parentIndex + 1]
           : null
-      if (originalMessage?.attachment) {
-        editedMessage.attachment = originalMessage.attachment
+      if (
+        originalMessage?.imageAttachments &&
+        originalMessage.imageAttachments.length > 0
+      ) {
+        editedMessage.imageAttachments = originalMessage.imageAttachments
       }
 
       const newCurrentPath =

@@ -24,7 +24,10 @@ import {
 import { type FC, type PropsWithChildren, useState } from 'react'
 
 import { Button } from '@uzh-bf/design-system'
-import { useComposerStore } from '../stores/composerStore'
+import {
+  MAX_IMAGE_ATTACHMENTS,
+  useComposerStore,
+} from '../stores/composerStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { BranchPicker } from './branch-picker'
 import { useChatUi } from './chat-ui-context'
@@ -56,20 +59,18 @@ const formatTitleCase = (value: string) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ')
 
+type ImageAttachment = {
+  type?: 'image'
+  imageBase64?: string | null
+  imageDescription?: string | null
+}
+
 type MessageWithCustomMetadata = {
-  attachment?: {
-    type?: 'image'
-    imageBase64?: string | null
-    imageDescription?: string | null
-  } | null
+  imageAttachments?: ImageAttachment[]
   metadata?: {
     custom?:
       | (Record<string, unknown> & {
-          attachment?: {
-            type?: 'image'
-            imageBase64?: string | null
-            imageDescription?: string | null
-          } | null
+          imageAttachments?: ImageAttachment[]
         })
       | null
   } | null
@@ -370,11 +371,12 @@ const ComposerImageAttachment: FC = () => {
 const ComposerAttachButton: FC = () => {
   const { embedded } = useChatUi()
   const { selectedModel, modelOptions } = useSettingsStore()
+  const attachmentCount = useComposerStore((s) => s.attachmentCount)
   const supportsImages =
     modelOptions.find((m) => m.id === selectedModel)
       ?.supportsImageAttachments !== false
 
-  if (!supportsImages) return null
+  if (!supportsImages || attachmentCount >= MAX_IMAGE_ATTACHMENTS) return null
 
   return (
     <ComposerPrimitive.AddAttachment asChild>
@@ -455,36 +457,41 @@ const ComposerAction: FC = () => {
   )
 }
 
+const getMessageAttachments = (
+  message: MessageWithCustomMetadata
+): ImageAttachment[] => {
+  const direct = message.imageAttachments
+  if (Array.isArray(direct) && direct.length > 0) return direct
+  const fromMeta = message.metadata?.custom?.imageAttachments
+  if (Array.isArray(fromMeta) && fromMeta.length > 0) return fromMeta
+  return []
+}
+
 const UserMessage: FC = () => {
   const { embedded } = useChatUi()
   const message = useMessage() as MessageWithCustomMetadata
-  const attachment =
-    (message.attachment && typeof message.attachment === 'object'
-      ? message.attachment
-      : null) ??
-    (message.metadata?.custom?.attachment &&
-    typeof message.metadata.custom.attachment === 'object'
-      ? message.metadata.custom.attachment
-      : null)
-
-  const imageBase64 =
-    attachment && typeof attachment.imageBase64 === 'string'
-      ? attachment.imageBase64
-      : null
+  const attachments = getMessageAttachments(message)
 
   return (
     <MessagePrimitive.Root className="flex w-full max-w-[var(--thread-max-width)] flex-col items-end gap-y-1 py-2 sm:py-4">
       <div className="bg-muted text-foreground max-w-[calc(var(--thread-max-width)*0.8)] break-words rounded-2xl px-5 py-2.5">
-        {imageBase64 ? (
-          <img
-            src={imageBase64}
-            alt="Attached by user"
-            className={twMerge(
-              'mb-2 rounded-md border object-cover',
-              embedded ? 'max-w-[200px]' : 'max-w-[300px]'
+        {attachments.length > 0 && (
+          <div className="mb-2 flex flex-wrap gap-2">
+            {attachments.map((att, i) =>
+              att.imageBase64 ? (
+                <img
+                  key={i}
+                  src={att.imageBase64}
+                  alt={`Attached by user (${i + 1})`}
+                  className={twMerge(
+                    'rounded-md border object-cover',
+                    embedded ? 'max-w-[200px]' : 'max-w-[300px]'
+                  )}
+                />
+              ) : null
             )}
-          />
-        ) : null}
+          </div>
+        )}
         <MessagePrimitive.Content />
       </div>
 
@@ -503,20 +510,15 @@ const UserActionBar: FC = () => {
 
   if (!showMessageActions) return null
 
-  const attachment =
-    (message.attachment && typeof message.attachment === 'object'
-      ? message.attachment
-      : null) ??
-    (message.metadata?.custom?.attachment &&
-    typeof message.metadata.custom.attachment === 'object'
-      ? message.metadata.custom.attachment
-      : null)
-  const hasImage = attachment?.type === 'image' && !!attachment.imageBase64
+  const attachments = getMessageAttachments(message)
+  const hasImages = attachments.some(
+    (a) => a.type === 'image' && !!a.imageBase64
+  )
 
   const supportsImages =
     modelOptions.find((m) => m.id === selectedModel)
       ?.supportsImageAttachments !== false
-  const editDisabled = hasImage && !supportsImages
+  const editDisabled = hasImages && !supportsImages
 
   return (
     <ActionBarPrimitive.Root
@@ -575,33 +577,29 @@ const UserActionBar: FC = () => {
 const EditComposer: FC = () => {
   const { showMessageActions, embedded } = useChatUi()
   const message = useMessage() as MessageWithCustomMetadata
-  const attachment =
-    (message.attachment && typeof message.attachment === 'object'
-      ? message.attachment
-      : null) ??
-    (message.metadata?.custom?.attachment &&
-    typeof message.metadata.custom.attachment === 'object'
-      ? message.metadata.custom.attachment
-      : null)
-  const imageBase64 =
-    attachment && typeof attachment.imageBase64 === 'string'
-      ? attachment.imageBase64
-      : null
+  const attachments = getMessageAttachments(message)
 
   if (!showMessageActions) return null
 
   return (
     <ComposerPrimitive.Root className="bg-muted my-4 flex w-full max-w-[var(--thread-max-width)] flex-col gap-2 rounded-2xl">
-      {imageBase64 ? (
-        <img
-          src={imageBase64}
-          alt="Attached by user"
-          className={twMerge(
-            'mb-0 ml-4 mt-3 rounded-md border object-cover',
-            embedded ? 'max-w-[200px]' : 'max-w-[300px]'
+      {attachments.length > 0 && (
+        <div className="ml-4 mt-3 flex flex-wrap gap-2">
+          {attachments.map((att, i) =>
+            att.imageBase64 ? (
+              <img
+                key={i}
+                src={att.imageBase64}
+                alt={`Attached by user (${i + 1})`}
+                className={twMerge(
+                  'rounded-md border object-cover',
+                  embedded ? 'max-w-[200px]' : 'max-w-[300px]'
+                )}
+              />
+            ) : null
           )}
-        />
-      ) : null}
+        </div>
+      )}
       <ComposerPrimitive.Input className="text-foreground flex min-h-[2.5rem] w-full resize-none bg-transparent px-4 py-3 outline-none" />
 
       <div className="mx-3 mb-2 flex items-center justify-center gap-2 self-end">

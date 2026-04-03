@@ -15,9 +15,6 @@ CREATE TABLE "public"."ChatAttachment" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ChatAttachment_messageId_key" ON "public"."ChatAttachment"("messageId");
-
--- CreateIndex
 CREATE INDEX "ChatAttachment_messageId_idx" ON "public"."ChatAttachment"("messageId");
 
 -- AddForeignKey

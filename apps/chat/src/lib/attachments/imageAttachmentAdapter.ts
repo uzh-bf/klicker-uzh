@@ -4,7 +4,10 @@ import type {
   PendingAttachment,
 } from '@assistant-ui/react'
 
-import { useComposerStore } from '../../stores/composerStore'
+import {
+  MAX_IMAGE_ATTACHMENTS,
+  useComposerStore,
+} from '../../stores/composerStore'
 
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
 const HEIC_TYPES = new Set(['image/heic', 'image/heif'])
@@ -68,7 +71,14 @@ export const imageAttachmentAdapter: AttachmentAdapter = {
   accept: [...ACCEPTED_TYPES, ...HEIC_TYPES].join(','),
 
   async add({ file }) {
-    const { setAttachmentError } = useComposerStore.getState()
+    const { setAttachmentError, attachmentCount } = useComposerStore.getState()
+
+    // validate max attachment count
+    if (attachmentCount >= MAX_IMAGE_ATTACHMENTS) {
+      const msg = `You can attach up to ${MAX_IMAGE_ATTACHMENTS} images per message.`
+      setAttachmentError(msg)
+      throw new Error(msg)
+    }
 
     // validate MIME type
     if (!ACCEPTED_TYPES.includes(file.type) && !HEIC_TYPES.has(file.type)) {
@@ -118,8 +128,9 @@ export const imageAttachmentAdapter: AttachmentAdapter = {
       reader.readAsDataURL(blob)
     })
 
-    // clear any prior error on success
+    // clear any prior error on success and track count
     setAttachmentError(null)
+    useComposerStore.getState().setAttachmentCount(attachmentCount + 1)
 
     return {
       id: crypto.randomUUID(),
@@ -133,6 +144,8 @@ export const imageAttachmentAdapter: AttachmentAdapter = {
   },
 
   async send(attachment) {
+    // reset count when attachments are sent with the message
+    useComposerStore.getState().setAttachmentCount(0)
     return {
       ...attachment,
       status: { type: 'complete' },
@@ -140,6 +153,7 @@ export const imageAttachmentAdapter: AttachmentAdapter = {
   },
 
   async remove() {
-    // no-op: remove from local composer state only
+    const { attachmentCount, setAttachmentCount } = useComposerStore.getState()
+    setAttachmentCount(Math.max(0, attachmentCount - 1))
   },
 }
