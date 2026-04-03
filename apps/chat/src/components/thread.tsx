@@ -5,10 +5,10 @@ import {
   MessagePrimitive,
   type ReasoningMessagePartProps,
   ThreadPrimitive,
+  useComposer,
   useMessage,
   useThreadComposerAttachment,
 } from '@assistant-ui/react'
-import { faPaperPlane } from '@fortawesome/free-solid-svg-icons'
 import {
   ArrowDownIcon,
   CheckIcon,
@@ -19,6 +19,8 @@ import {
   PencilIcon,
   PencilOffIcon,
   RefreshCwIcon,
+  SendHorizontalIcon,
+  SquareIcon,
   XIcon,
 } from 'lucide-react'
 import { type FC, type PropsWithChildren, useState } from 'react'
@@ -396,6 +398,7 @@ const ComposerAttachButton: FC = () => {
 
 const ComposerAction: FC = () => {
   const { embedded } = useChatUi()
+  const isEmpty = useComposer((s) => s.isEmpty)
   const size = embedded ? '28px' : '36px'
 
   return (
@@ -403,53 +406,49 @@ const ComposerAction: FC = () => {
       <ThreadPrimitive.If running={false}>
         <ComposerPrimitive.Send asChild>
           <Button
+            basic
             style={{
-              borderRadius: '50%',
               width: size,
               height: size,
               minWidth: size,
               minHeight: size,
               padding: '0',
-              paddingLeft: embedded ? '3px' : '5px',
+              margin: '5px',
+              color: isEmpty ? 'var(--muted-foreground)' : 'black',
             }}
             className={{
               root: twMerge(
-                'flex items-center justify-center rounded-lg',
-                embedded ? 'm-1' : 'm-2 h-12 w-12'
+                'flex items-center justify-center rounded-md transition-colors',
+                embedded ? 'm-1' : 'm-2',
+                !isEmpty && 'hover:bg-accent'
               ),
             }}
           >
-            <Button.Icon icon={faPaperPlane} />
+            <SendHorizontalIcon className={embedded ? 'size-4' : 'size-5'} />
           </Button>
         </ComposerPrimitive.Send>
       </ThreadPrimitive.If>
       <ThreadPrimitive.If running>
         <ComposerPrimitive.Cancel asChild>
           <Button
+            basic
             style={{
-              borderRadius: '50%',
               width: size,
               height: size,
               minWidth: size,
               minHeight: size,
               padding: '0',
+              margin: '5px',
+              color: 'black',
             }}
             className={{
               root: twMerge(
-                'flex items-center justify-center rounded-lg',
-                embedded ? 'm-1' : 'm-2 h-12 w-12'
+                'hover:bg-accent flex items-center justify-center rounded-md transition-colors',
+                embedded ? 'm-1' : 'm-2'
               ),
             }}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 16 16"
-              fill="currentColor"
-              width={embedded ? '16' : '20'}
-              height={embedded ? '16' : '20'}
-            >
-              <rect width="10" height="10" x="3" y="3" rx="2" />
-            </svg>
+            <SquareIcon className={embedded ? 'size-4' : 'size-5'} />
           </Button>
         </ComposerPrimitive.Cancel>
       </ThreadPrimitive.If>
