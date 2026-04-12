@@ -96,7 +96,7 @@ if [ "$PLATFORM" = "mac" ]; then
 fi
 
 # start postgres, redis, proxy, hatchet
-docker compose up --build -d postgres redis_exec redis_assessment redis_cache "$PROXY" hatchet || {
+./util/_run_with_infisical.sh --env dev docker compose up --build -d postgres redis_exec redis_assessment redis_cache "$PROXY" hatchet litellm || {
 	echo "Failed to start docker compose services" >&2
 	exit 1
 }
