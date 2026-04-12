@@ -67,7 +67,6 @@ hatchet:
           cpu: 50m
           memory: 64Mi
         limits:
-          cpu: 200m
           memory: 256Mi
       autoscaling:
         enabled: false
@@ -90,7 +89,6 @@ hatchet:
           cpu: 50m
           memory: 64Mi
         limits:
-          cpu: 200m
           memory: 256Mi
       autoscaling:
         enabled: false
@@ -113,7 +111,6 @@ hatchet:
           cpu: 50m
           memory: 64Mi
         limits:
-          cpu: 200m
           memory: 256Mi
       autoscaling:
         enabled: false
@@ -149,7 +146,6 @@ auth:
       cpu: 200m
       memory: 200Mi
     limits:
-      cpu: 400m
       memory: 400Mi
 
   autoscaling:
@@ -170,9 +166,8 @@ chat:
 
   replicaCount: 1
 
-  azure:
-    resourceName: ''
-    apiKey: ''
+  openai:
+    baseUrl: ''
 
   mcp:
     key: ''
@@ -196,7 +191,6 @@ chat:
       cpu: 200m
       memory: 200Mi
     limits:
-      cpu: 400m
       memory: 400Mi
 
   autoscaling:
@@ -236,7 +230,6 @@ frontendPWA:
       cpu: 200m
       memory: 200Mi
     limits:
-      cpu: 1000m
       memory: 1000Mi
 
   autoscaling:
@@ -276,7 +269,6 @@ frontendManage:
       cpu: 200m
       memory: 200Mi
     limits:
-      cpu: 1000m
       memory: 1000Mi
 
   autoscaling:
@@ -316,7 +308,6 @@ frontendControl:
       cpu: 200m
       memory: 200Mi
     limits:
-      cpu: 1000m
       memory: 1000Mi
 
   autoscaling:
@@ -356,7 +347,6 @@ backendGraphql:
       cpu: 200m
       memory: 200Mi
     limits:
-      cpu: 1000m
       memory: 1000Mi
 
   autoscaling:
@@ -421,7 +411,6 @@ lti:
       cpu: 200m
       memory: 200Mi
     limits:
-      cpu: 500m
       memory: 500Mi
 
   autoscaling:
@@ -462,7 +451,6 @@ olatApi:
       cpu: 200m
       memory: 200Mi
     limits:
-      cpu: 1000m
       memory: 1000Mi
 
   autoscaling:
@@ -504,7 +492,6 @@ responseApi:
       cpu: 100m
       memory: 128Mi
     limits:
-      cpu: 200m
       memory: 256Mi
 
   autoscaling:
@@ -548,7 +535,6 @@ assessment:
         cpu: 200m
         memory: 200Mi
       limits:
-        cpu: 1000m
         memory: 1000Mi
 
     autoscaling:
@@ -588,7 +574,6 @@ assessment:
         cpu: 200m
         memory: 200Mi
       limits:
-        cpu: 1000m
         memory: 1000Mi
 
     autoscaling:
@@ -630,7 +615,6 @@ assessment:
         cpu: 100m
         memory: 128Mi
       limits:
-        cpu: 200m
         memory: 256Mi
 
     autoscaling:

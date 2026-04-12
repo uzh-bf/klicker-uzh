@@ -8,18 +8,11 @@ import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
 } from '@/src/services/mcpClients'
-import { createAzure } from '@ai-sdk/azure'
+import { createOpenAI } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
 import { Chatbot } from '@klicker-uzh/prisma/client'
 import { safeDecrypt } from '@klicker-uzh/util'
-import {
-  convertToModelMessages,
-  LanguageModel,
-  stepCountIs,
-  streamText,
-  UIMessage,
-  type StepResult,
-} from 'ai'
+import { stepCountIs, streamText, type StepResult } from 'ai'
 import { createHash, randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { DEFAULT_PROMPT } from 'src/lib/config/prompts'
@@ -32,71 +25,123 @@ import { DisclaimersService } from 'src/services/disclaimers'
 import { ThreadService } from 'src/services/threads'
 import { z } from 'zod'
 
+export const runtime = 'nodejs'
+
 export const maxDuration = 60
-const DEFAULT_AZURE_RESPONSES_API_VERSION = 'preview'
+
+if (!process.env.OPENAI_BASE_URL) {
+  console.warn(
+    '[chat] OPENAI_BASE_URL is not set — model requests will use provider defaults'
+  )
+}
+if (!process.env.OPENAI_API_KEY) {
+  console.warn(
+    '[chat] OPENAI_API_KEY is not set — model requests without per-chatbot keys will fail'
+  )
+}
 const CHAT_LOG_PREFIX = '[chat:dev]'
 const isDevLogging = process.env.NODE_ENV === 'development'
 const MAX_LOG_STRING_LENGTH = 500
 const HASH_DIGEST_LENGTH = 12
 
-type AzureModelSelection = {
-  model: LanguageModel
-  debug: {
-    resourceName: string
-    responsesApiVersion: string
-    hasCustomEndpoint: boolean
-    hasCustomApiKey: boolean
+/**
+ * Custom fetch that patches Responses API request body to add
+ * `status: "completed"` and `type: "message"` on assistant messages.
+ * AI SDK omits these fields but some strict Responses API providers require them.
+ *
+ * Workaround for: https://github.com/vercel/ai/issues/12754
+ */
+const responsesApiFetch: typeof globalThis.fetch = async (input, init) => {
+  if (init?.body && typeof init.body === 'string') {
+    try {
+      const body = JSON.parse(init.body)
+      if (Array.isArray(body.input)) {
+        body.input = body.input.map((item: Record<string, unknown>) =>
+          item.role === 'assistant'
+            ? { ...item, type: 'message', status: 'completed' }
+            : item
+        )
+        init = { ...init, body: JSON.stringify(body) }
+      }
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        // not JSON, pass through
+      } else {
+        console.error(
+          '[responsesApiFetch] Unexpected error patching body:',
+          error
+        )
+        throw error
+      }
+    }
   }
+  return globalThis.fetch(input, init)
 }
 
-function getAzureModel(
-  chatbot: Chatbot,
-  deploymentId: string
-): AzureModelSelection {
-  // Use per-chatbot Azure configuration if available, otherwise fallback to environment
-  let hasCustomApiKey = false
-  let decryptedApiKey: string | null = null
-  if (
-    typeof chatbot.azureOpenAIKey === 'string' &&
-    chatbot.azureOpenAIKey.length > 0
-  ) {
-    hasCustomApiKey = true
-    decryptedApiKey = safeDecrypt(chatbot.azureOpenAIKey)
+type ModelRouting = {
+  source: 'custom' | 'default'
+  hasCustomKey: boolean
+  baseUrl: string | undefined
+}
+
+function getModel(chatbot: Chatbot, modelId: string) {
+  // Use per-chatbot configuration if available
+  const hasCustomKey =
+    typeof chatbot.openaiApiKey === 'string' && chatbot.openaiApiKey.length > 0
+  const hasCustomBaseUrl =
+    typeof chatbot.openaiBaseUrl === 'string' &&
+    chatbot.openaiBaseUrl.length > 0
+  const hasCustomConfig = hasCustomKey || hasCustomBaseUrl
+
+  if (hasCustomConfig) {
+    let apiKey: string | undefined
+    if (hasCustomKey) {
+      try {
+        apiKey = safeDecrypt(chatbot.openaiApiKey!)
+      } catch (error) {
+        console.error('Failed to decrypt API key for chatbot:', {
+          chatbotId: chatbot.id,
+          error,
+        })
+        throw new Error(`Failed to decrypt API key for chatbot ${chatbot.id}`)
+      }
+    } else {
+      apiKey = process.env.OPENAI_API_KEY
+    }
+    const baseUrl = hasCustomBaseUrl
+      ? chatbot.openaiBaseUrl!
+      : process.env.OPENAI_BASE_URL
+
+    const routing: ModelRouting = {
+      source: 'custom',
+      hasCustomKey,
+      baseUrl,
+    }
+
+    return {
+      model: createOpenAI({
+        baseURL: baseUrl,
+        apiKey: apiKey || 'no-key',
+        fetch: responsesApiFetch,
+      })(modelId),
+      routing,
+    }
   }
-  const apiKey =
-    decryptedApiKey ||
-    process.env.AZURE_API_KEY ||
-    process.env.AZURE_OPENAI_API_KEY
 
-  let hasCustomEndpoint = false
-  let resourceName = process.env.AZURE_RESOURCE_NAME || 'klicker-ai'
-  if (
-    typeof chatbot.azureOpenAIEndpoint === 'string' &&
-    chatbot.azureOpenAIEndpoint.length > 0
-  ) {
-    hasCustomEndpoint = true
-    resourceName = new URL(chatbot.azureOpenAIEndpoint).hostname.split('.')[0]
+  // Default: route through OpenAI-compatible endpoint
+  const routing: ModelRouting = {
+    source: 'default',
+    hasCustomKey: false,
+    baseUrl: process.env.OPENAI_BASE_URL,
   }
-
-  const responsesApiVersion =
-    process.env.AZURE_RESPONSES_API_VERSION ||
-    DEFAULT_AZURE_RESPONSES_API_VERSION
-
-  const azure = createAzure({
-    resourceName,
-    apiKey,
-    useDeploymentBasedUrls: false,
-    apiVersion: responsesApiVersion,
-  })
 
   return {
-    model: azure.responses(deploymentId),
-    debug: {
-      resourceName,
-      responsesApiVersion,
-      hasCustomEndpoint,
-      hasCustomApiKey,
-    },
+    model: createOpenAI({
+      baseURL: process.env.OPENAI_BASE_URL,
+      apiKey: process.env.OPENAI_API_KEY || 'no-key',
+      fetch: responsesApiFetch,
+    })(modelId),
+    routing,
   }
 }
 
@@ -415,7 +460,7 @@ function classifyStreamError(serializedError: SerializedStreamError): {
       classification: 'rate_limit_or_quota',
       retryable: true,
       suggestedAction:
-        'Retry with backoff and check deployment capacity/quota settings.',
+        'Retry with backoff and check rate limit/quota settings.',
     }
   }
 
@@ -431,7 +476,7 @@ function classifyStreamError(serializedError: SerializedStreamError): {
       classification: 'auth_or_permission',
       retryable: false,
       suggestedAction:
-        'Verify Azure credentials, deployment access, and endpoint/resource configuration.',
+        'Verify API credentials, model access permissions, and endpoint configuration.',
     }
   }
 
@@ -742,12 +787,9 @@ export async function POST(
   let partialReasoningContent = ''
   let assistantReasoningContent: string | null = null
 
-  // convert to UIMessage format
-  const uiMessages: UIMessage[] = messages.map((msg) => ({
-    id: msg.id,
-    role: msg.role as 'user' | 'assistant',
+  const modelMessages = messages.map((msg) => ({
+    role: msg.role,
     content: msg.content,
-    parts: [{ type: 'text' as const, text: msg.content }],
   }))
 
   // Load MCP tools from database configurations or fallback to legacy
@@ -834,10 +876,7 @@ export async function POST(
       ? appliedReasoningEffort
       : undefined
 
-  const azureModelSelection = getAzureModel(
-    chatbot,
-    selectedModelConfig.deploymentId
-  )
+  const { model, routing } = getModel(chatbot, selectedModelConfig.deploymentId)
   const logEvent = (
     event: string,
     context: Record<string, unknown>,
@@ -852,13 +891,13 @@ export async function POST(
     selectedModel,
     resolvedModelId: selectedModelConfig.id,
     deploymentId: selectedModelConfig.deploymentId,
+    routing,
     selectedMode,
     reasoningEffort: appliedReasoningEffort,
     allowedReasoningEfforts,
     maxOutputTokens: maxOutputTokens ?? null,
     toolCount: toolNames.length,
     toolNames,
-    azure: azureModelSelection.debug,
     systemPromptLength: systemPrompt.length,
     systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
     userPromptLengthTotal: userPrompt.length,
@@ -977,17 +1016,19 @@ export async function POST(
   })
 
   const result = streamText({
-    model: azureModelSelection.model,
+    model,
     maxOutputTokens,
-    providerOptions: providerReasoningEffort
-      ? {
-          openai: {
-            reasoningEffort: providerReasoningEffort,
-            reasoningSummary: 'auto',
-          },
-        }
-      : undefined,
-    messages: convertToModelMessages(uiMessages),
+    experimental_telemetry: { isEnabled: true },
+    providerOptions: {
+      openai: {
+        store: false,
+        ...(providerReasoningEffort && {
+          reasoningEffort: providerReasoningEffort,
+          reasoningSummary: 'auto',
+        }),
+      },
+    },
+    messages: modelMessages,
     tools: mcpTools,
     toolChoice: 'auto',
     stopWhen: stepCountIs(5),
