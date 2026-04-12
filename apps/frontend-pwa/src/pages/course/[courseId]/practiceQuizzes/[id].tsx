@@ -9,6 +9,7 @@ import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import { Button, UserNotification } from '@uzh-bf/design-system'
+import Link from 'next/link'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -104,18 +105,15 @@ function PracticeQuizPage({
       displayName={data.practiceQuiz.displayName}
       course={data.practiceQuiz.course ?? undefined}
     >
-      {!embedded && (
+      {!embedded && data.practiceQuiz.course?.isCourseQAEnabled && (
         <div className="mb-2 flex justify-end">
-          <Button
-            onClick={() =>
-              router.push(
-                `/course/${courseId}/qa?scopeKey=${encodeURIComponent(`pq:${id}`)}`
-              )
-            }
-            data={{ cy: 'practice-quiz-qa-link' }}
-          >
-            <Button.Label>Course Q&A</Button.Label>
-          </Button>
+          <Link href={`/course/${courseId}/qa?scopeKey=${encodeURIComponent(`pq:${id}`)}`}>
+            <Button
+              data={{ cy: 'practice-quiz-qa-link' }}
+            >
+              <Button.Label>{t('pwa.courseQA.title')}</Button.Label>
+            </Button>
+          </Link>
         </div>
       )}
       <PracticeQuiz

@@ -487,26 +487,24 @@ function CourseManipulationModal({
 
                 {initialValues && (
                   <div>
-                    <H3>Course Q&A</H3>
+                    <H3>{t('manage.course.courseQA')}</H3>
                     <div className="flex flex-col gap-2 md:grid md:grid-cols-3">
                       <FormikSwitchField
-                        required
                         labelLeft
                         name="isCourseQAEnabled"
-                        label="Enable Course Q&A"
-                        tooltip="Allow participants to post and reply to course-level discussion threads."
+                        label={t('manage.course.enableCourseQA')}
+                        tooltip={t('manage.course.enableCourseQATooltip')}
                         className={{
                           label: 'font-bold text-gray-600',
                         }}
                         data={{ cy: 'course-qa-enabled' }}
                       />
                       <FormikSwitchField
-                        required
                         labelLeft
                         disabled={!values.isCourseQAEnabled}
                         name="isCourseQAAnonymousEnabled"
-                        label="Allow Anonymous in Embeds"
-                        tooltip="Allow anonymous posting in embedded Q&A views when a valid embed token is used."
+                        label={t('manage.course.allowAnonymousInEmbeds')}
+                        tooltip={t('manage.course.allowAnonymousInEmbedsTooltip')}
                         className={{
                           label: 'font-bold text-gray-600',
                         }}

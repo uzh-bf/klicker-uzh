@@ -34,6 +34,7 @@ import nookies from 'nookies'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
+import Link from 'next/link'
 import { Suspense, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
@@ -200,13 +201,14 @@ function CourseOverview({
           <div className="md:mx-auto md:w-full md:max-w-6xl">
             {course.isCourseQAEnabled && (
               <div className="mb-2 flex justify-end">
-                <Button
-                  className={{ root: 'h-8' }}
-                  onClick={() => router.push(`/course/${courseId}/qa`)}
-                  data={{ cy: 'course-qa-link' }}
-                >
-                  <Button.Label>Course Q&A</Button.Label>
-                </Button>
+                <Link href={`/course/${courseId}/qa`}>
+                  <Button
+                    className={{ root: 'h-8' }}
+                    data={{ cy: 'course-qa-link' }}
+                  >
+                    <Button.Label>{t('pwa.courseQA.title')}</Button.Label>
+                  </Button>
+                </Link>
               </div>
             )}
             <Tabs

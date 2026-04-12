@@ -921,6 +921,30 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       feedbackSubmitted:
         'Ihr Feedback / ihre Frage wurde erfolgreich übermittelt.',
     },
+    courseQA: {
+      title: 'Kurs Q&A',
+      scopeFilter: 'Bereichsfilter',
+      allScopes: 'Alle Bereiche',
+      newThread: 'Neuer Beitrag',
+      threadPlaceholder: 'Stellen Sie eine Frage zu diesem Bereich...',
+      threadCreationNotAvailable:
+        'Die Erstellung von Beiträgen ist für diese Quelle nicht verfügbar.',
+      threadScopeLimited:
+        'Neue Beiträge sind derzeit auf Kursebene beschränkt.',
+      postThread: 'Beitrag erstellen',
+      postAnonymously: 'Anonym posten',
+      replyAnonymously: 'Anonym antworten',
+      replyPlaceholder: 'Antwort schreiben...',
+      reply: 'Antworten',
+      nReply: '{count, plural, =1 {1 Antwort} other {# Antworten}}',
+      noThreads: 'Noch keine Diskussionsbeiträge für diesen Bereich.',
+      threadPostFailed: 'Beitrag konnte nicht erstellt werden. Überprüfen Sie die Berechtigungen oder Embed-Einstellungen.',
+      threadPostError: 'Beitrag konnte nicht erstellt werden. Bitte versuchen Sie es erneut.',
+      replyPostFailed: 'Antwort konnte nicht gesendet werden. Überprüfen Sie die Berechtigungen oder Embed-Einstellungen.',
+      replyPostError: 'Antwort konnte nicht gesendet werden. Bitte versuchen Sie es erneut.',
+      upvoteFailed: 'Upvote konnte nicht aktualisiert werden. Melden Sie sich als Teilnehmer an, um abzustimmen.',
+      loadMore: 'Mehr laden',
+    },
     profile: {
       publicProfile: 'Profilsichtbarkeit',
       isProfilePublic:
@@ -2789,6 +2813,31 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       saveDescription: 'Beschreibung speichern',
       noDescriptionNotification: 'Keine Beschreibung vorhanden',
       reviewProgress: 'Review-Fortschritt',
+      courseQA: 'Kurs Q&A',
+      courseQAAnonymousInEmbeds: 'Anonym in Einbettungen',
+      enableCourseQA: 'Kurs Q&A aktivieren',
+      enableCourseQATooltip:
+        'Ermöglicht es Teilnehmenden, Diskussionsbeiträge auf Kursebene zu erstellen und zu beantworten.',
+      allowAnonymousInEmbeds: 'Anonyme Beiträge in Einbettungen erlauben',
+      allowAnonymousInEmbedsTooltip:
+        'Ermöglicht anonymes Posten in eingebetteten Q&A-Ansichten bei gültigem Embed-Token.',
+      courseQADisabledNotice:
+        'Kurs Q&A ist derzeit deaktiviert. Aktivieren Sie es in den Kurseinstellungen, um die Diskussionsfunktionen zu nutzen.',
+      embedLinkGenerator: 'Embed-Link Generator',
+      discussionOverview: 'Diskussionsübersicht',
+      noThreadsYet: 'Es sind noch keine Diskussionsbeiträge in diesem Kurs vorhanden.',
+      generateEmbedLink: 'Embed-Link generieren',
+      copyUrl: 'URL kopieren',
+      refreshOverview: 'Übersicht aktualisieren',
+      embedUrl: 'Embed URL',
+      expiresAt: 'Gültig bis: {date}',
+      embedGenFailed: 'Die Generierung der Embed-Informationen ist fehlgeschlagen.',
+      embedCopied: 'Embed-URL in die Zwischenablage kopiert.',
+      scopeLabel: 'Bereich',
+      tokenLifetime: 'Token-Gültigkeitsdauer (Stunden)',
+      allowAnonymousPosting: 'Anonymes Posten erlauben',
+      noPersistentScope:
+        'Kein persistierter Kursbereich gefunden. Ein Standard-Kursbereich-Token wird generiert.',
       activityNotAvailableAssessment:
         '{activityType} werden in Assessment-Kursen leider aktuell noch nicht unterstützt.',
       withGroups: 'Mit Gruppen',
