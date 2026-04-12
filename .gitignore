@@ -12,6 +12,7 @@ secrets*.yaml
 .env
 **/**/.env
 .github/copilot-instructions.md
+.claude/worktrees/
 
 **/.DS_Store
 *.pem
@@ -48,3 +49,8 @@ dumps/**/*.dump.gpg
 
 # Environment-specific files
 .env.*
+
+# Obsidian workspace state (keep `deploy/docs/.obsidian/` tracked; ignore the docs-site vault state)
+/apps/docs/docs/.obsidian/
+
+.claude/worktrees

@@ -1,4 +1,5 @@
 import { EnsureParticipationDocument } from '@klicker-uzh/graphql/dist/ops'
+import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -8,8 +9,6 @@ import { initializeApollo } from '../../../../lib/apollo'
 import getParticipantToken from '../../../../lib/getParticipantToken'
 
 type ChatbotPageProps = {
-  requiresLogin?: boolean
-  loginUrl?: string
   participationError?: boolean
   courseLink?: string
 }
@@ -31,6 +30,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     const apolloClient = initializeApollo(undefined, ctx)
     const courseId = ctx.params.courseId as string
     const chatbotId = ctx.params.chatbotId as string
+    const embedded = parseEmbedParam(ctx.query.embed)
 
     const { participantToken } = await getParticipantToken({
       apolloClient,
@@ -42,16 +42,13 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     const coursePath = `${localePrefix}/course/${courseId}`
 
     if (!participantToken) {
-      const currentPath = `${coursePath}/chatbot/${chatbotId}`
+      const currentPath = `${coursePath}/chatbot/${chatbotId}${embedded ? '?embed=true' : ''}`
       const loginUrl = `${localePrefix}/login?redirect_to=${encodeURIComponent(currentPath)}`
 
       return {
-        props: {
-          requiresLogin: true,
-          loginUrl,
-          messages: (
-            await import(`@klicker-uzh/i18n/messages/${ctx.locale ?? 'en'}`)
-          ).default,
+        redirect: {
+          destination: loginUrl,
+          permanent: false,
         },
       }
     }
@@ -88,12 +85,17 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
+    const chatDestination = new URL(
+      encodeURIComponent(chatbotId),
+      process.env.NEXT_PUBLIC_CHAT_URL
+    )
+    if (embedded) {
+      chatDestination.searchParams.set('embed', 'true')
+    }
+
     return {
       redirect: {
-        destination: new URL(
-          encodeURIComponent(chatbotId),
-          process.env.NEXT_PUBLIC_CHAT_URL
-        ).toString(),
+        destination: chatDestination.toString(),
         permanent: false,
       },
     }
@@ -109,33 +111,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   }
 }
 
-const ChatbotPage = ({
-  requiresLogin,
-  loginUrl,
-  participationError,
-  courseLink,
-}: ChatbotPageProps) => {
+const ChatbotPage = ({ participationError, courseLink }: ChatbotPageProps) => {
   const t = useTranslations()
-
-  if (requiresLogin) {
-    return (
-      <Layout>
-        <div className="flex flex-col gap-4 md:mx-auto md:w-full md:max-w-xl md:py-10">
-          <UserNotification type="error">
-            {t('pwa.chatbot.loginRequiredMessage')}
-          </UserNotification>
-          {loginUrl && (
-            <Link
-              href={loginUrl}
-              className="bg-uzh-blue hover:bg-uzh-blue-80 rounded px-4 py-2 text-center text-white"
-            >
-              {t('pwa.chatbot.goToLogin')}
-            </Link>
-          )}
-        </div>
-      </Layout>
-    )
-  }
 
   if (participationError) {
     return (

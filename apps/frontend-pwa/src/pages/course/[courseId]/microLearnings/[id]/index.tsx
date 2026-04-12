@@ -38,6 +38,10 @@ function MicrolearningIntroduction({
   const t = useTranslations()
   const router = useRouter()
 
+  const pageInFrame =
+    global?.window &&
+    global?.window?.location !== global?.window?.parent.location
+
   useParticipantToken({
     participantToken,
     cookiesAvailable,
@@ -103,29 +107,31 @@ function MicrolearningIntroduction({
             />
           ) : (
             <UserNotification type="warning" className={{ root: 'mb-4' }}>
-              {t.rich('pwa.general.userNotLoggedIn', {
-                login: (text) => (
-                  <Button
-                    basic
-                    className={{
-                      root: 'hover:text-primary-100 p-0! font-bold hover:bg-transparent',
-                    }}
-                    onClick={() =>
-                      router.push(
-                        `/login?expired=true&redirect_to=${
-                          encodeURIComponent(
-                            window?.location?.pathname +
-                              (window?.location?.search ?? '')
-                          ) ?? '/'
-                        }`
-                      )
-                    }
-                    data={{ cy: 'login-to-start-microlearning' }}
-                  >
-                    <Button.Label>{text}</Button.Label>
-                  </Button>
-                ),
-              })}
+              {pageInFrame
+                ? t('pwa.general.userNotLoggedInFrame')
+                : t.rich('pwa.general.userNotLoggedIn', {
+                    login: (text) => (
+                      <Button
+                        basic
+                        className={{
+                          root: 'hover:text-primary-100 p-0! font-bold hover:bg-transparent',
+                        }}
+                        onClick={() =>
+                          router.push(
+                            `/login?expired=true&redirect_to=${
+                              encodeURIComponent(
+                                window?.location?.pathname +
+                                  (window?.location?.search ?? '')
+                              ) ?? '/'
+                            }`
+                          )
+                        }
+                        data={{ cy: 'login-to-start-microlearning' }}
+                      >
+                        <Button.Label>{text}</Button.Label>
+                      </Button>
+                    ),
+                  })}
             </UserNotification>
           ))}
         {microLearningPast ? (

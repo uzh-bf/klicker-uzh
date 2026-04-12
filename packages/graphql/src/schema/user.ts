@@ -38,6 +38,14 @@ export const User = UserRef.implement({
     publicPreview: t.exposeBoolean('publicPreview'),
     privatePreview: t.exposeBoolean('privatePreview'),
 
+    numChatbots: t.int({
+      resolve: async (user, _, ctx) => {
+        return await ctx.prisma.chatbot.count({
+          where: { ownerId: user.id },
+        })
+      },
+    }),
+
     mediaFiles: t.expose('mediaFiles', {
       type: [MediaFileRef],
       nullable: true,

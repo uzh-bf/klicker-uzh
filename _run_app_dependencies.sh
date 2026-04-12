@@ -96,16 +96,18 @@ if [ "$PLATFORM" = "mac" ]; then
 fi
 
 # start postgres, redis, proxy, hatchet
-docker compose up --build -d postgres redis_exec redis_assessment redis_cache "$PROXY" hatchet || {
+./util/_run_with_infisical.sh --env dev docker compose up --build -d postgres redis_exec redis_assessment redis_cache "$PROXY" hatchet litellm || {
 	echo "Failed to start docker compose services" >&2
 	exit 1
 }
+
+# wait for infra (postgres, redis, hatchet) before proceeding
+bash .github/scripts/wait-for-infra.sh
 
 if confirm "Run pnpm run build?"; then
 	pnpm run build
 else
 	echo "Skipping pnpm run build"
-	bash .github/scripts/wait-for-services.sh
 fi
 
 # create hatchet client token (switch script for cypress/test mode)

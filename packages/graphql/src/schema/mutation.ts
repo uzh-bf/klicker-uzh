@@ -4,6 +4,7 @@ import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
+import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseService from '../services/courses.js'
 import * as DiscussionService from '../services/discussions.js'
 import * as ElementService from '../services/elements.js'
@@ -75,7 +76,12 @@ import {
   StackFeedback,
   StackResponseInput,
 } from './practiceQuiz.js'
-import { AnswerCollection, AnswerCollectionEntry } from './resource.js'
+import {
+  AnswerCollection,
+  AnswerCollectionEntry,
+  Chatbot,
+  ChatbotReasoningConfigInput,
+} from './resource.js'
 import {
   ActivityLogEntry,
   CatalogCollection,
@@ -1457,6 +1463,23 @@ export const Mutation = builder.mutationType({
             return await CourseService.updateCourseSettings(args, ctx)
           }
         ),
+      }),
+
+      updateChatbotModelSettings: t.withAuth(asUser).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          modelSelection: t.arg.boolean({ required: true }),
+          allowedModelIds: t.arg.stringList({ required: true }),
+          allowedReasoningEffortsByModel: t.arg({
+            type: [ChatbotReasoningConfigInput],
+            required: false,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.updateChatbotModelSettings(args, ctx)
+        },
       }),
 
       updateWeeklyTimelineEntriesCourse: t.withAuth(asUserFullAccess).boolean({

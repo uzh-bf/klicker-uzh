@@ -148,7 +148,41 @@ auth:
       memory: 200Mi
 
 chat:
+  allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
+
+  openai:
+    baseUrl: 'http://litellm:4000/v1'
+
+  automaticModels:
+    primaryId: gpt-4.1
+    fallbackId: gpt-4.1-mini
+
+  modelRegistry:
+    - id: gpt-4.1
+      deploymentId: gpt-4.1
+      name: GPT-4.1
+      description: OpenAI model
+      fallback: false
+      cost:
+        input: 2.0
+        output: 8.0
+    - id: gpt-5.1
+      deploymentId: gpt-5.1
+      name: GPT-5.1
+      description: OpenAI reasoning model
+      fallback: false
+      cost:
+        input: 1.25
+        output: 10.0
+    - id: gpt-4.1-mini
+      deploymentId: gpt-4.1-mini
+      name: GPT-4.1 Mini
+      description: Small OpenAI model
+      fallback: true
+      cost:
+        input: 0.4
+        output: 1.6
 
   replicaCount: 1
 
@@ -200,6 +234,7 @@ chat:
       memory: 200Mi
 
 frontendPWA:
+  allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
 
   replicaCount: 1
@@ -302,6 +337,7 @@ frontendManage:
       memory: 200Mi
 
 frontendControl:
+  allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
 
   replicaCount: 1

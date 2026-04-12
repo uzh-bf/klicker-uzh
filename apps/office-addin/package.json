@@ -1,14 +1,14 @@
 {
   "name": "@klicker-uzh/office-addin",
-  "version": "3.4.0-alpha.47",
+  "version": "3.4.0-alpha.57",
   "license": "AGPL-3.0",
   "dependencies": {
     "@uzh-bf/design-system": "4.1.6",
     "core-js": "3.30.2",
     "es6-promise": "4.2.8",
     "formik": "2.4.6",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "react": "19.1.2",
+    "react-dom": "19.1.2",
     "yup": "1.6.1"
   },
   "devDependencies": {

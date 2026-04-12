@@ -28,7 +28,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: Always
-        tag: v3.4.0-alpha.47
+        tag: v3.4.0-alpha.57
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -61,7 +61,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3.4.0-alpha.47
+        tag: v3.4.0-alpha.57
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -94,7 +94,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3.4.0-alpha.47
+        tag: v3.4.0-alpha.57
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -158,7 +158,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.47
+    tag: v3.4.0-alpha.57
 
   ingress:
     annotations:
@@ -183,16 +183,49 @@ auth:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 chat:
+  allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://*.df-app.ch'
   priorityClassName: production-workload
+
+  openai:
+    baseUrl: 'http://litellm:4000/v1'
 
   replicaCount: 1
 
   autoscaling:
     enabled: false
+
+  automaticModels:
+    primaryId: gpt-4.1
+    fallbackId: gpt-4.1-mini
+
+  modelRegistry:
+    - id: gpt-4.1
+      deploymentId: gpt-4.1
+      name: GPT-4.1
+      description: OpenAI model
+      fallback: false
+      cost:
+        input: 2.0
+        output: 8.0
+    - id: gpt-5.1
+      deploymentId: gpt-5.1
+      name: GPT-5.1
+      description: OpenAI reasoning model
+      fallback: false
+      cost:
+        input: 1.25
+        output: 10.0
+    - id: gpt-4.1-mini
+      deploymentId: gpt-4.1-mini
+      name: GPT-4.1 Mini
+      description: Small OpenAI model
+      fallback: true
+      cost:
+        input: 0.4
+        output: 1.6
 
   affinity:
     podAntiAffinity:
@@ -209,7 +242,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.47
+    tag: v3.4.0-alpha.57
 
   ingress:
     annotations:
@@ -234,13 +267,13 @@ chat:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 frontendPWA:
+  allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://ius.zone https://*.df-app.ch'
   priorityClassName: production-workload
 
-  replicaCount: 3
+  replicaCount: 4
 
   autoscaling:
     enabled: false
@@ -261,7 +294,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.47
+    tag: v3.4.0-alpha.57
 
   ingress:
     className: haproxy
@@ -282,11 +315,10 @@ frontendPWA:
 
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
-    limits:
-      cpu: 200m
+      cpu: 100m
       memory: 200Mi
+    limits:
+      memory: 600Mi
 
 frontendManage:
   priorityClassName: production-workload
@@ -312,7 +344,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.47
+    tag: v3.4.0-alpha.57
 
   ingress:
     className: haproxy
@@ -336,10 +368,10 @@ frontendManage:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 frontendControl:
+  allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://*.df-app.ch'
   priorityClassName: production-workload
 
   replicaCount: 1
@@ -347,7 +379,7 @@ frontendControl:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.47
+    tag: v3.4.0-alpha.57
 
   autoscaling:
     enabled: false
@@ -387,13 +419,12 @@ frontendControl:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 backendGraphql:
   priorityClassName: production-workload
 
-  replicaCount: 3
+  replicaCount: 4
 
   autoscaling:
     enabled: false
@@ -414,7 +445,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.47
+    tag: v3.4.0-alpha.57
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -452,10 +483,9 @@ backendGraphql:
   resources:
     requests:
       cpu: 100m
-      memory: 100Mi
+      memory: 200Mi
     limits:
-      cpu: 200m
-      memory: 500Mi
+      memory: 600Mi
 
 olatApi:
   priorityClassName: production-workload
@@ -465,7 +495,7 @@ olatApi:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.47
+    tag: v3.4.0-alpha.57
 
   autoscaling:
     enabled: false
@@ -505,7 +535,6 @@ olatApi:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 lti:
@@ -536,7 +565,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.47
+    tag: v3.4.0-alpha.57
 
   ingress:
     className: haproxy
@@ -561,7 +590,7 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3.4.0-alpha.47
+    tag: v3.4.0-alpha.57
     pullPolicy: Always
 
   autoscaling:
@@ -602,13 +631,12 @@ responseApi:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 assessment:
   frontendPWA:
     priorityClassName: production-workload
-    replicaCount: 3
+    replicaCount: 4
     autoscaling:
       enabled: false
 
@@ -654,7 +682,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: Always
-      tag: v3.4.0-alpha.47
+      tag: v3.4.0-alpha.57
 
     ingress:
       className: haproxy
@@ -675,15 +703,14 @@ assessment:
 
     resources:
       requests:
-        cpu: 50m
-        memory: 50Mi
-      limits:
-        cpu: 200m
+        cpu: 100m
         memory: 200Mi
+      limits:
+        memory: 600Mi
 
   backendGraphql:
     priorityClassName: production-workload
-    replicaCount: 3
+    replicaCount: 4
     autoscaling:
       enabled: false
 
@@ -729,7 +756,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: Always
-      tag: v3.4.0-alpha.47
+      tag: v3.4.0-alpha.57
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -762,10 +789,9 @@ assessment:
     resources:
       requests:
         cpu: 100m
-        memory: 100Mi
+        memory: 200Mi
       limits:
-        cpu: 200m
-        memory: 500Mi
+        memory: 600Mi
 
   responseApi:
     corsAllowedOrigins: 'https://assessment.klicker.uzh.ch'
@@ -806,7 +832,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: Always
-      tag: v3.4.0-alpha.47
+      tag: v3.4.0-alpha.57
 
     ingress:
       className: haproxy
@@ -830,5 +856,4 @@ assessment:
         cpu: 50m
         memory: 50Mi
       limits:
-        cpu: 200m
         memory: 200Mi
