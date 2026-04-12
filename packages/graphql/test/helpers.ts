@@ -69,11 +69,20 @@ import {
 
 // ! General Test Suite Helpers (general setup, user seeding, database connections, cleanup, etc.)
 // #region
+type TestInitializationResult = {
+  userOneCtx: ContextWithUser
+  userTwoCtx: ContextWithUser
+  userThreeCtx: ContextWithUser
+  userFourCtx: ContextWithUser
+  userFiveCtx: ContextWithUser
+  userSixCtx: ContextWithUser
+}
+
 export async function testInitialization(
   prisma: PrismaClient,
   hatchet: Hatchet,
   emitter: EventEmitter
-) {
+): Promise<TestInitializationResult> {
   // upsert all users in the database
   await Promise.all(
     [userOne, userTwo, userThree, userFour, userFive, userSix].map(
@@ -272,7 +281,7 @@ export async function testInitialization(
   }
 
   // mock context with user including all required properties
-  const userOneCtx = {
+  const userOneCtx: ContextWithUser = {
     user: {
       sub: userOne.sub,
       role: UserRole.USER,
@@ -295,23 +304,23 @@ export async function testInitialization(
   }
 
   // mock remaining contexts
-  const userTwoCtx = {
+  const userTwoCtx: ContextWithUser = {
     ...userOneCtx,
     user: { ...userOneCtx.user, sub: userTwo.sub },
   }
-  const userThreeCtx = {
+  const userThreeCtx: ContextWithUser = {
     ...userOneCtx,
     user: { ...userOneCtx.user, sub: userThree.sub },
   }
-  const userFourCtx = {
+  const userFourCtx: ContextWithUser = {
     ...userOneCtx,
     user: { ...userOneCtx.user, sub: userFour.sub },
   }
-  const userFiveCtx = {
+  const userFiveCtx: ContextWithUser = {
     ...userOneCtx,
     user: { ...userOneCtx.user, sub: userFive.sub },
   }
-  const userSixCtx = {
+  const userSixCtx: ContextWithUser = {
     ...userOneCtx,
     user: { ...userOneCtx.user, sub: userSix.sub },
   }

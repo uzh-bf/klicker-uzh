@@ -3,15 +3,16 @@ import { createWriteStream } from 'node:fs'
 function escapeCsvValue(val: unknown): string {
   if (val == null) return ''
   const str = String(val)
+  const sanitized = /^\s*[=+\-@]/.test(str) ? `'${str}` : str
   if (
-    str.includes(',') ||
-    str.includes('"') ||
-    str.includes('\n') ||
-    str.includes('\r')
+    sanitized.includes(',') ||
+    sanitized.includes('"') ||
+    sanitized.includes('\n') ||
+    sanitized.includes('\r')
   ) {
-    return `"${str.replace(/"/g, '""')}"`
+    return `"${sanitized.replace(/"/g, '""')}"`
   }
-  return str
+  return sanitized
 }
 
 export async function writeCsv(

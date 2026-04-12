@@ -26,8 +26,14 @@ export async function fetchParticipants(
           email: true,
           createdAt: true,
           accounts: {
-            select: { ssoType: true, ssoId: true, ssoEmail: true },
-            take: 1,
+            select: {
+              ssoType: true,
+              ssoId: true,
+              ssoEmail: true,
+              isPrimary: true,
+              isVerified: true,
+              createdAt: true,
+            },
           },
         },
       },
@@ -37,9 +43,25 @@ export async function fetchParticipants(
 }
 
 type ParticipationRow = Awaited<ReturnType<typeof fetchParticipants>>[number]
+type ParticipantAccountRow = ParticipationRow['participant']['accounts'][number]
+
+function pickParticipantAccount(accounts: ParticipantAccountRow[]) {
+  return [...accounts].sort((a, b) => {
+    if (a.isPrimary !== b.isPrimary) return a.isPrimary ? -1 : 1
+    if (a.isVerified !== b.isVerified) return a.isVerified ? -1 : 1
+
+    const createdAtDiff = a.createdAt.getTime() - b.createdAt.getTime()
+    if (createdAtDiff !== 0) return createdAtDiff
+
+    const typeDiff = a.ssoType.localeCompare(b.ssoType)
+    if (typeDiff !== 0) return typeDiff
+
+    return a.ssoId.localeCompare(b.ssoId)
+  })[0]
+}
 
 export function transformParticipant(row: ParticipationRow): unknown[] {
-  const account = row.participant.accounts[0]
+  const account = pickParticipantAccount(row.participant.accounts)
   return [
     row.participant.id,
     row.participant.email ?? '',

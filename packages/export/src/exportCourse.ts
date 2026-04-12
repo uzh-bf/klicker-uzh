@@ -48,7 +48,35 @@ function sanitizeName(name: string): string {
 }
 
 function sanitizeSheetPrefix(name: string): string {
-  return name.replace(/[*?:\\/[\]]/g, '-').substring(0, 20)
+  return name
+    .replace(/[*?:\\/[\]]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function createUniqueSheetName(
+  usedNames: Set<string>,
+  courseName: string,
+  suffix: string
+): string {
+  const baseName = sanitizeSheetPrefix(courseName) || 'Course'
+  let counter = 1
+
+  while (true) {
+    const counterSuffix = counter === 1 ? '' : ` ${counter}`
+    const maxBaseLength = 31 - suffix.length - counterSuffix.length - 1
+    const truncatedBase =
+      baseName.substring(0, maxBaseLength).trimEnd() || 'Course'
+    const sheetName = `${truncatedBase} ${suffix}${counterSuffix}`
+    const normalizedSheetName = sheetName.toLowerCase()
+
+    if (!usedNames.has(normalizedSheetName)) {
+      usedNames.add(normalizedSheetName)
+      return sheetName
+    }
+
+    counter++
+  }
 }
 
 export async function exportCourseData(
@@ -136,30 +164,30 @@ export async function writeCombinedWorkbook(
   outputDir: string
 ): Promise<string> {
   const workbook = new ExcelJS.Workbook()
+  const usedSheetNames = new Set<string>()
 
   for (const result of results) {
-    const prefix = sanitizeSheetPrefix(result.courseName)
     addSheet(
       workbook,
-      `${prefix} RESP`,
+      createUniqueSheetName(usedSheetNames, result.courseName, 'RESP'),
       LIVE_QUIZ_RESPONSE_HEADERS,
       result.data.liveQuizRows
     )
     addSheet(
       workbook,
-      `${prefix} PART`,
+      createUniqueSheetName(usedSheetNames, result.courseName, 'PART'),
       PARTICIPANT_HEADERS,
       result.data.participantRows
     )
     addSheet(
       workbook,
-      `${prefix} INV`,
+      createUniqueSheetName(usedSheetNames, result.courseName, 'INV'),
       INVITATION_HEADERS,
       result.data.invitationRows
     )
     addSheet(
       workbook,
-      `${prefix} CORR`,
+      createUniqueSheetName(usedSheetNames, result.courseName, 'CORR'),
       CORRECTION_HEADERS,
       result.data.correctionRows
     )
