@@ -73,6 +73,10 @@ function ElementStack({
   const timeRef = useRef(0)
   useComponentVisibleCounter({ timeRef })
 
+  const embeddedButtonClass = embedded
+    ? 'fixed bottom-4 right-4 z-50 shadow-lg'
+    : 'float-right mt-4'
+
   const [respondToElementStack, { loading: submittingResponse }] = useMutation(
     RespondToElementStackDocument
   )
@@ -296,7 +300,7 @@ function ElementStack({
   ])
 
   return (
-    <div className="pb-12">
+    <div className={twMerge('pb-12', embedded && 'pb-28')}>
       <div className="w-full">
         {activityExpired && activityExpiredMessage && (
           <UserNotification
@@ -377,10 +381,7 @@ function ElementStack({
             }
           }}
           className={{
-            root: twMerge(
-              'float-right mt-4',
-              embedded && 'fixed bottom-4 right-4 z-50 shadow-lg'
-            ),
+            root: embeddedButtonClass,
           }}
           data={{ cy: 'student-stack-continue' }}
         >
@@ -396,10 +397,7 @@ function ElementStack({
       {typeof stackStorage === 'undefined' && showMarkAsRead && (
         <Button
           className={{
-            root: twMerge(
-              'float-right mt-4',
-              embedded && 'fixed bottom-4 right-4 z-50 shadow-lg'
-            ),
+            root: embeddedButtonClass,
           }}
           disabled={Object.values(studentResponse).some(
             (response) => !response.valid
@@ -440,10 +438,7 @@ function ElementStack({
             Object.values(studentResponse).some((response) => !response.valid)
           }
           className={{
-            root: twMerge(
-              'float-right mt-4',
-              embedded && 'fixed bottom-4 right-4 z-50 shadow-lg'
-            ),
+            root: embeddedButtonClass,
           }}
           onClick={async () => {
             const result = await respondToElementStack({

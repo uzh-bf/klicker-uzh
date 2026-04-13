@@ -1,37 +1,72 @@
 /**
  * Embedded quiz postMessage protocol (for parent/embedding apps):
  *
- * When loaded with ?embed=true, this page posts messages to window.parent:
- *   { type: 'klicker:quiz-state', payload: { status, currentStep, totalSteps } }
+ * When loaded with ?embed=true, the parent app must first register itself:
+ *   iframe.contentWindow?.postMessage({ type: 'klicker:embed-init' }, iframeOrigin)
+ *
+ * After receiving that init message, this page posts state updates to the
+ * registered parent origin:
+ *   {
+ *     type: 'klicker:quiz-state',
+ *     payload: { version, status, currentStep, totalSteps },
+ *   }
  *
  * status values:
- *   'overview'    - quiz not yet started (or data still loading)
+ *   'overview'    - quiz not yet started
  *   'in-progress' - student is answering questions
  *   'completed'   - all stacks answered, quiz finished
  *
  * Example listener in the embedding app:
  *
- *   function useKlickerQuizState(iframeOrigin: string) {
- *     const [quizState, setQuizState] = useState({ status: 'overview' })
+ *   function useKlickerQuizState(iframe: HTMLIFrameElement, iframeOrigin: string) {
+ *     const [quizState, setQuizState] = useState({
+ *       version: 1,
+ *       status: 'overview',
+ *       currentStep: 0,
+ *       totalSteps: 0,
+ *     })
  *     useEffect(() => {
  *       const handler = (e: MessageEvent) => {
  *         if (e.origin !== iframeOrigin) return
- *         if (e.data?.type === 'klicker:quiz-state') setQuizState(e.data.payload)
+ *         if (e.data?.type === 'klicker:quiz-state') {
+ *           setQuizState(e.data.payload)
+ *         }
  *       }
+ *
  *       window.addEventListener('message', handler)
+ *
+ *       const frame = iframe
+ *       if (frame) {
+ *         const registerParent = () => {
+ *           frame.contentWindow?.postMessage(
+ *             { type: 'klicker:embed-init' },
+ *             iframeOrigin
+ *           )
+ *         }
+ *
+ *         frame.addEventListener('load', registerParent)
+ *         registerParent()
+ *
+ *         return () => {
+ *           window.removeEventListener('message', handler)
+ *           frame.removeEventListener('load', registerParent)
+ *         }
+ *       }
+ *
  *       return () => window.removeEventListener('message', handler)
  *     }, [iframeOrigin])
  *     return quizState
  *   }
  *
  *   // Usage: hide e-learning "Weiter" until quiz is completed
- *   const quizState = useKlickerQuizState('https://pwa.klicker.uzh.ch')
+ *   const quizState = useKlickerQuizState(iframeElement, 'https://pwa.klicker.uzh.ch')
  *   {quizState.status === 'completed' && <button>Weiter</button>}
  */
 import { useQuery } from '@apollo/client'
 import {
   GetPracticeQuizDocument,
   PublicationStatus,
+  StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
@@ -43,10 +78,31 @@ import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Layout from '../../../../components/Layout'
 import Footer from '../../../../components/common/Footer'
 import PracticeQuiz from '../../../../components/practiceQuiz/PracticeQuiz'
+
+const EMBED_INIT_MESSAGE_TYPE = 'klicker:embed-init'
+const QUIZ_STATE_MESSAGE_TYPE = 'klicker:quiz-state'
+const QUIZ_STATE_VERSION = 1
+
+type EmbedQuizStatus = 'overview' | 'in-progress' | 'completed'
+
+type EmbedQuizStatePayload = {
+  version: typeof QUIZ_STATE_VERSION
+  status: EmbedQuizStatus
+  currentStep: number
+  totalSteps: number
+}
+
+type PracticeQuizProgressState = Record<
+  string,
+  {
+    status: StackFeedbackStatus
+    score?: number | null
+  }
+>
 
 function PracticeQuizPage({
   courseId,
@@ -63,6 +119,8 @@ function PracticeQuizPage({
 }) {
   const t = useTranslations()
   const [currentIx, setCurrentIx] = useState(-1)
+  const [parentOrigin, setParentOrigin] = useState<string | null>(null)
+  const [isCompleted, setIsCompleted] = useState(false)
 
   useParticipantToken({
     participantToken,
@@ -73,36 +131,65 @@ function PracticeQuizPage({
     variables: { id },
   })
 
-  // track whether quiz was ever started to distinguish overview vs completed
-  const hasStarted = useRef(false)
-  if (currentIx >= 0) {
-    hasStarted.current = true
-  }
-
-  // post quiz state to parent window when embedded
   const totalSteps = data?.practiceQuiz?.stacks?.length ?? 0
+
   useEffect(() => {
     if (!embedded) return
 
-    let status: 'overview' | 'in-progress' | 'completed'
-    if (currentIx === -1) {
-      status = hasStarted.current ? 'completed' : 'overview'
-    } else {
-      status = 'in-progress'
+    function handleMessage(event: MessageEvent) {
+      if (event.source !== window.parent) return
+      if (!isEmbedInitMessage(event.data) || event.origin === 'null') return
+
+      setParentOrigin((currentOrigin) =>
+        currentOrigin === event.origin ? currentOrigin : event.origin
+      )
     }
+
+    window.addEventListener('message', handleMessage)
+
+    return () => {
+      window.removeEventListener('message', handleMessage)
+    }
+  }, [embedded])
+
+  useEffect(() => {
+    if (!embedded || !data?.practiceQuiz) return
+
+    const stackIds = data.practiceQuiz.stacks?.map((stack) => stack.id) ?? []
+    setIsCompleted(readStoredCompletion(id, stackIds))
+  }, [embedded, id, data?.practiceQuiz])
+
+  useEffect(() => {
+    if (currentIx >= 0) {
+      setIsCompleted(false)
+    }
+  }, [currentIx])
+
+  useEffect(() => {
+    if (!embedded || !parentOrigin || loading || !data?.practiceQuiz) return
+
+    const payload = buildQuizStatePayload({
+      currentIx,
+      isCompleted,
+      totalSteps,
+    })
 
     window.parent.postMessage(
       {
-        type: 'klicker:quiz-state',
-        payload: {
-          status,
-          currentStep: currentIx + 1,
-          totalSteps,
-        },
+        type: QUIZ_STATE_MESSAGE_TYPE,
+        payload,
       },
-      '*'
+      parentOrigin
     )
-  }, [embedded, currentIx, totalSteps])
+  }, [
+    embedded,
+    parentOrigin,
+    loading,
+    data?.practiceQuiz,
+    currentIx,
+    isCompleted,
+    totalSteps,
+  ])
 
   if (loading)
     return (
@@ -176,6 +263,7 @@ function PracticeQuizPage({
         onAllStacksCompletion={
           embedded
             ? () => {
+                setIsCompleted(true)
                 setCurrentIx(-1)
               }
             : undefined
@@ -262,3 +350,78 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 }
 
 export default PracticeQuizPage
+
+function buildQuizStatePayload({
+  currentIx,
+  isCompleted,
+  totalSteps,
+}: {
+  currentIx: number
+  isCompleted: boolean
+  totalSteps: number
+}): EmbedQuizStatePayload {
+  if (currentIx >= 0) {
+    return {
+      version: QUIZ_STATE_VERSION,
+      status: 'in-progress',
+      currentStep: currentIx + 1,
+      totalSteps,
+    }
+  }
+
+  if (isCompleted) {
+    return {
+      version: QUIZ_STATE_VERSION,
+      status: 'completed',
+      currentStep: totalSteps,
+      totalSteps,
+    }
+  }
+
+  return {
+    version: QUIZ_STATE_VERSION,
+    status: 'overview',
+    currentStep: 0,
+    totalSteps,
+  }
+}
+
+function isEmbedInitMessage(data: unknown): boolean {
+  return isRecord(data) && data.type === EMBED_INIT_MESSAGE_TYPE
+}
+
+function readStoredCompletion(
+  quizId: string,
+  stackIds: Array<string | number>
+): boolean {
+  if (typeof window === 'undefined' || stackIds.length === 0) {
+    return false
+  }
+
+  try {
+    const rawProgressState = window.localStorage.getItem(`pq-${quizId}`)
+    if (!rawProgressState) return false
+
+    const progressState = JSON.parse(
+      rawProgressState
+    ) as PracticeQuizProgressState
+
+    return stackIds.every((stackId) => {
+      const status = progressState?.[String(stackId)]?.status
+      return status && status !== StackFeedbackStatus.Unanswered
+    })
+  } catch (error) {
+    console.warn(
+      'Failed to read stored practice quiz progress for embed state',
+      {
+        quizId,
+        error,
+      }
+    )
+    return false
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
