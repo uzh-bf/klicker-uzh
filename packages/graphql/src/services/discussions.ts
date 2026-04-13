@@ -110,6 +110,8 @@ export interface DiscussionThreadPage {
   threads: DiscussionThreadWithRelations[]
   nextCursor: string | null
   hasMore: boolean
+  canPostAnonymously: boolean
+  isAccessible: boolean
 }
 
 export interface DiscussionScopeSummary {
@@ -184,9 +186,7 @@ interface CanonicalScope {
 }
 
 function normalizeContent(content: string) {
-  const normalized = content
-    .trim()
-    .replace(/<[^>]*>/g, '')
+  const normalized = content.trim().replace(/<[^>]*>/g, '')
   if (normalized.length === 0) return null
 
   return normalized.slice(0, 4000)
@@ -206,7 +206,9 @@ function parseCursor(cursor?: string | null) {
   return parsed
 }
 
-function getThreadOrderBy(sort?: DiscussionSort | null): DB.Prisma.DiscussionThreadOrderByWithRelationInput[] {
+function getThreadOrderBy(
+  sort?: DiscussionSort | null
+): DB.Prisma.DiscussionThreadOrderByWithRelationInput[] {
   if (sort === 'NEWEST_DESC') {
     return [{ createdAt: 'desc' }, { id: 'desc' }]
   }
@@ -238,14 +240,18 @@ function sourceLabelForSpace(space: DiscussionSpaceWithLiveQuiz) {
   return 'Live Quiz'
 }
 
-function mapReply(reply: DiscussionReplyWithRelations): DiscussionReplyWithRelations {
+function mapReply(
+  reply: DiscussionReplyWithRelations
+): DiscussionReplyWithRelations {
   return {
     ...reply,
     hasUpvoted: (reply.votes?.length ?? 0) > 0,
   }
 }
 
-function mapThread(thread: DiscussionThreadWithRelations): DiscussionThreadWithRelations {
+function mapThread(
+  thread: DiscussionThreadWithRelations
+): DiscussionThreadWithRelations {
   const sourceKey = sourceKeyForSpace(thread.space)
   const sourceLabel = sourceLabelForSpace(thread.space)
 
@@ -284,7 +290,7 @@ function getRequestIP(ctx: Context) {
 
 function getRequestUserAgent(ctx: Context) {
   const headers = ctx.req?.headers ?? {}
-  const userAgent = headers['user-agent']
+  const userAgent = headers['user-agent'] as string | string[] | undefined
 
   if (typeof userAgent === 'string') {
     return userAgent
@@ -300,7 +306,9 @@ function getRequestUserAgent(ctx: Context) {
 function getAppSecret(): string {
   const secret = process.env.APP_SECRET
   if (!secret) {
-    throw new Error('APP_SECRET environment variable is required for discussion features')
+    throw new Error(
+      'APP_SECRET environment variable is required for discussion features'
+    )
   }
   return secret
 }
@@ -394,7 +402,10 @@ async function getCourseAccessActor(
     return { participantId: participation.participantId }
   }
 
-  if (ctx.user.role === DB.UserRole.USER || ctx.user.role === DB.UserRole.ADMIN) {
+  if (
+    ctx.user.role === DB.UserRole.USER ||
+    ctx.user.role === DB.UserRole.ADMIN
+  ) {
     const validAccess = await checkAccess(
       [
         {
@@ -577,7 +588,7 @@ async function canonicalizeScope(
           typeof instance.elementData === 'object' &&
           instance.elementData &&
           !Array.isArray(instance.elementData)
-            ? (instance.elementData as Record<string, unknown>)
+            ? (instance.elementData as unknown as Record<string, unknown>)
             : null
         const elementName =
           typeof elementData?.name === 'string' ? elementData.name : null
@@ -674,7 +685,7 @@ async function canonicalizeScope(
         typeof instance.elementData === 'object' &&
         instance.elementData &&
         !Array.isArray(instance.elementData)
-          ? (instance.elementData as Record<string, unknown>)
+          ? (instance.elementData as unknown as Record<string, unknown>)
           : null
       const elementName =
         typeof elementData?.name === 'string' ? elementData.name : null
@@ -682,7 +693,8 @@ async function canonicalizeScope(
       return {
         scopeType: scope.scopeType,
         scopeKey: `lq:${space.liveQuizId}:block:${scope.liveBlockId}:instance:${instance.id}`,
-        scopeLabel: safeScopeLabel || elementName || `Live Instance ${instance.id}`,
+        scopeLabel:
+          safeScopeLabel || elementName || `Live Instance ${instance.id}`,
         liveBlockId: scope.liveBlockId,
         instanceId: instance.id,
       }
@@ -840,7 +852,8 @@ async function verifyEmbedToken(
       scope: payload.scope,
       version: payload.version,
       spaceType: payload.spaceType,
-      courseId: typeof payload.courseId === 'string' ? payload.courseId : undefined,
+      courseId:
+        typeof payload.courseId === 'string' ? payload.courseId : undefined,
       liveQuizId:
         typeof payload.liveQuizId === 'string' ? payload.liveQuizId : undefined,
       scopeKey: payload.scopeKey,
@@ -1007,7 +1020,10 @@ function buildThreadInclude(participantId?: string | null) {
 }
 
 async function getDiscussionThreadById(
-  { threadId, participantId }: { threadId: number; participantId?: string | null },
+  {
+    threadId,
+    participantId,
+  }: { threadId: number; participantId?: string | null },
   ctx: Context
 ): Promise<DiscussionThreadWithRelations | null> {
   const thread = await ctx.prisma.discussionThread.findUnique({
@@ -1019,7 +1035,7 @@ async function getDiscussionThreadById(
     return null
   }
 
-  return mapThread(thread as DiscussionThreadWithRelations)
+  return mapThread(thread as unknown as DiscussionThreadWithRelations)
 }
 
 async function verifyEmbedScopeBinding(
@@ -1047,10 +1063,16 @@ async function verifyEmbedScopeBinding(
   }
 
   if (expectedSpace.spaceType === DB.DiscussionSpaceType.COURSE) {
-    if (!expectedSpace.courseId || embedClaims.courseId !== expectedSpace.courseId) {
+    if (
+      !expectedSpace.courseId ||
+      embedClaims.courseId !== expectedSpace.courseId
+    ) {
       return false
     }
-  } else if (!expectedSpace.liveQuizId || embedClaims.liveQuizId !== expectedSpace.liveQuizId) {
+  } else if (
+    !expectedSpace.liveQuizId ||
+    embedClaims.liveQuizId !== expectedSpace.liveQuizId
+  ) {
     return false
   }
 
@@ -1059,7 +1081,10 @@ async function verifyEmbedScopeBinding(
       return false
     }
 
-    if (expectedSpace.spaceType !== DB.DiscussionSpaceType.COURSE || !expectedSpace.courseId) {
+    if (
+      expectedSpace.spaceType !== DB.DiscussionSpaceType.COURSE ||
+      !expectedSpace.courseId
+    ) {
       return false
     }
 
@@ -1190,7 +1215,13 @@ export async function courseDiscussionThreads(
 
   const course = await getCourseSettings(courseId, ctx)
   if (!course || !course.isCourseQAEnabled) {
-    return { threads: [], nextCursor: null, hasMore: false }
+    return {
+      threads: [],
+      nextCursor: null,
+      hasMore: false,
+      canPostAnonymously: false,
+      isAccessible: false,
+    }
   }
 
   const embedClaims = await verifyEmbedToken(embedToken)
@@ -1198,13 +1229,28 @@ export async function courseDiscussionThreads(
   if (!embedClaims) {
     const actor = await getCourseAccessActor({ courseId }, ctx)
     if (!actor) {
-      return { threads: [], nextCursor: null, hasMore: false }
+      return {
+        threads: [],
+        nextCursor: null,
+        hasMore: false,
+        canPostAnonymously: false,
+        isAccessible: false,
+      }
     }
   } else {
     if (rejectEmbedCourseMismatch(embedClaims, courseId)) {
-      return { threads: [], nextCursor: null, hasMore: false }
+      return {
+        threads: [],
+        nextCursor: null,
+        hasMore: false,
+        canPostAnonymously: false,
+        isAccessible: false,
+      }
     }
   }
+
+  const canPostAnonymously =
+    !!embedClaims?.allowAnonymous && !!course.isCourseQAAnonymousEnabled
 
   const participantId =
     ctx.user?.role === DB.UserRole.PARTICIPANT && ctx.user.sub
@@ -1214,7 +1260,7 @@ export async function courseDiscussionThreads(
   let spaces: DiscussionSpaceWithLiveQuiz[] = []
 
   if (embedClaims) {
-    spaces = await ctx.prisma.discussionSpace.findMany({
+    spaces = (await ctx.prisma.discussionSpace.findMany({
       where:
         embedClaims.spaceType === DB.DiscussionSpaceType.COURSE
           ? {
@@ -1238,7 +1284,7 @@ export async function courseDiscussionThreads(
           },
         },
       },
-    }) as DiscussionSpaceWithLiveQuiz[]
+    })) as DiscussionSpaceWithLiveQuiz[]
   } else {
     spaces = (await ctx.prisma.discussionSpace.findMany({
       where: {
@@ -1273,12 +1319,24 @@ export async function courseDiscussionThreads(
   }
 
   if (spaces.length === 0) {
-    return { threads: [], nextCursor: null, hasMore: false }
+    return {
+      threads: [],
+      nextCursor: null,
+      hasMore: false,
+      canPostAnonymously,
+      isAccessible: true,
+    }
   }
 
   const effectiveScopeKey = embedClaims?.scopeKey ?? scopeKey ?? undefined
   if (embedClaims && scopeKey && scopeKey !== embedClaims.scopeKey) {
-    return { threads: [], nextCursor: null, hasMore: false }
+    return {
+      threads: [],
+      nextCursor: null,
+      hasMore: false,
+      canPostAnonymously: false,
+      isAccessible: false,
+    }
   }
 
   const threads = await ctx.prisma.discussionThread.findMany({
@@ -1304,15 +1362,19 @@ export async function courseDiscussionThreads(
   const pageThreads = hasMore ? threads.slice(0, pageSize) : threads
 
   const mappedThreads = pageThreads.map((thread) =>
-    mapThread(thread as DiscussionThreadWithRelations)
+    mapThread(thread as unknown as DiscussionThreadWithRelations)
   )
 
-  const nextCursor = hasMore ? String(pageThreads[pageThreads.length - 1]!.id) : null
+  const nextCursor = hasMore
+    ? String(pageThreads[pageThreads.length - 1]!.id)
+    : null
 
   return {
     threads: mappedThreads,
     nextCursor,
     hasMore,
+    canPostAnonymously,
+    isAccessible: true,
   }
 }
 
@@ -1386,7 +1448,9 @@ export async function courseDiscussionOverview(
   const grouped = new Map<string, CourseDiscussionOverviewGroup>()
 
   pageThreads
-    .map((thread) => mapThread(thread as DiscussionThreadWithRelations))
+    .map((thread) =>
+      mapThread(thread as unknown as DiscussionThreadWithRelations)
+    )
     .forEach((thread) => {
       if (!thread.sourceKey || !thread.sourceLabel) return
 
@@ -1406,7 +1470,9 @@ export async function courseDiscussionOverview(
       })
     })
 
-  const nextCursor = hasMore ? String(pageThreads[pageThreads.length - 1]!.id) : null
+  const nextCursor = hasMore
+    ? String(pageThreads[pageThreads.length - 1]!.id)
+    : null
 
   return {
     groups: [...grouped.values()],
@@ -1463,7 +1529,8 @@ export async function getCourseDiscussionEmbeddingInfo(
   if (!resolvedScope) return null
 
   const validHours = Math.max(1, Math.min(24 * 14, expiresInHours ?? 48))
-  const anonymousAllowed = !!allowAnonymous
+  const anonymousAllowed =
+    !!allowAnonymous && !!course.isCourseQAAnonymousEnabled
 
   const embedToken = await signJWT(
     {
@@ -1533,7 +1600,7 @@ export async function createCourseDiscussionThread(
 
   if (!space) return null
 
-  const resolvedScope = await resolveOrCreateScope(
+  const canonicalScope = await canonicalizeScope(
     {
       space,
       scope,
@@ -1542,25 +1609,37 @@ export async function createCourseDiscussionThread(
     ctx
   )
 
-  if (!resolvedScope) return null
+  if (!canonicalScope) return null
 
   const anonymous = !!isAnonymous
 
   let participantId: string | null = null
   let fingerprintHash: string | null = null
+  let resolvedScope: DB.DiscussionScope | null = null
 
   if (anonymous) {
     const validBinding = await verifyEmbedScopeBinding(
       {
         embedClaims,
         expectedSpace: space,
-        expectedScopeKey: resolvedScope.scopeKey,
+        expectedScopeKey: canonicalScope.scopeKey,
         requireAnonymous: true,
       },
       ctx
     )
 
     if (!validBinding) return null
+
+    resolvedScope = await resolveOrCreateScope(
+      {
+        space,
+        scope,
+        scopeLabel,
+      },
+      ctx
+    )
+
+    if (!resolvedScope) return null
 
     fingerprintHash = hashAnonymousFingerprint(ctx, courseId)
 
@@ -1588,7 +1667,7 @@ export async function createCourseDiscussionThread(
         {
           embedClaims,
           expectedSpace: space,
-          expectedScopeKey: resolvedScope.scopeKey,
+          expectedScopeKey: canonicalScope.scopeKey,
           requireAnonymous: false,
         },
         ctx
@@ -1603,6 +1682,19 @@ export async function createCourseDiscussionThread(
     )
     if (!withinRateLimit) return null
   }
+
+  if (!resolvedScope) {
+    resolvedScope = await resolveOrCreateScope(
+      {
+        space,
+        scope,
+        scopeLabel,
+      },
+      ctx
+    )
+  }
+
+  if (!resolvedScope) return null
 
   const thread = await ctx.prisma.$transaction(async (tx) => {
     const createdThread = await tx.discussionThread.create({
@@ -2188,8 +2280,7 @@ export async function deleteCourseDiscussionThread(
         scopeId: thread.scopeId,
         threadId,
         participantId: actor?.participantId ?? null,
-        eventType: DB.DiscussionEventType.THREAD_CREATED,
-        metadata: { action: 'deleted' },
+        eventType: DB.DiscussionEventType.THREAD_DELETED,
       },
     })
   })
@@ -2270,8 +2361,7 @@ export async function deleteCourseDiscussionReply(
         threadId: reply.thread.id,
         replyId,
         participantId: actor?.participantId ?? null,
-        eventType: DB.DiscussionEventType.REPLY_CREATED,
-        metadata: { action: 'deleted' },
+        eventType: DB.DiscussionEventType.REPLY_DELETED,
       },
     })
   })

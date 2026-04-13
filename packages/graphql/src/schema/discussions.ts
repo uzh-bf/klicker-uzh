@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import builder from '../builder.js'
 import type {
   CourseDiscussionEmbeddingInfo,
   CourseDiscussionOverview,
@@ -6,7 +7,6 @@ import type {
   DiscussionScopeSummary,
   DiscussionThreadPage,
 } from '../services/discussions.js'
-import builder from '../builder.js'
 
 export const DiscussionSpaceType = builder.enumType('DiscussionSpaceType', {
   values: Object.values(DB.DiscussionSpaceType),
@@ -72,9 +72,8 @@ export const CreateCourseDiscussionReplyInput = builder.inputType(
 )
 
 export interface IDiscussionScope extends DB.DiscussionScope {}
-export const DiscussionScopeRef = builder.objectRef<IDiscussionScope>(
-  'DiscussionScope'
-)
+export const DiscussionScopeRef =
+  builder.objectRef<IDiscussionScope>('DiscussionScope')
 export const DiscussionScope = DiscussionScopeRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
@@ -98,9 +97,8 @@ export const DiscussionScope = DiscussionScopeRef.implement({
 export interface IDiscussionReply extends DB.DiscussionReply {
   hasUpvoted?: boolean
 }
-export const DiscussionReplyRef = builder.objectRef<IDiscussionReply>(
-  'DiscussionReply'
-)
+export const DiscussionReplyRef =
+  builder.objectRef<IDiscussionReply>('DiscussionReply')
 export const DiscussionReply = DiscussionReplyRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
@@ -132,9 +130,8 @@ export interface IDiscussionThread extends DB.DiscussionThread {
   liveQuizName?: string | null
   hasUpvoted?: boolean
 }
-export const DiscussionThreadRef = builder.objectRef<IDiscussionThread>(
-  'DiscussionThread'
-)
+export const DiscussionThreadRef =
+  builder.objectRef<IDiscussionThread>('DiscussionThread')
 export const DiscussionThread = DiscussionThreadRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
@@ -171,13 +168,16 @@ export const DiscussionThread = DiscussionThreadRef.implement({
   }),
 })
 
-export const DiscussionThreadPageRef =
-  builder.objectRef<DiscussionThreadPage>('DiscussionThreadPage')
+export const DiscussionThreadPageRef = builder.objectRef<DiscussionThreadPage>(
+  'DiscussionThreadPage'
+)
 export const DiscussionThreadPageObject = DiscussionThreadPageRef.implement({
   fields: (t) => ({
     threads: t.expose('threads', { type: [DiscussionThreadRef] }),
     nextCursor: t.exposeString('nextCursor', { nullable: true }),
     hasMore: t.exposeBoolean('hasMore'),
+    canPostAnonymously: t.exposeBoolean('canPostAnonymously'),
+    isAccessible: t.exposeBoolean('isAccessible'),
   }),
 })
 
@@ -208,7 +208,9 @@ export const DiscussionScopeSummaryObject = DiscussionScopeSummaryRef.implement(
 )
 
 export const CourseDiscussionOverviewGroupRef =
-  builder.objectRef<CourseDiscussionOverviewGroup>('CourseDiscussionOverviewGroup')
+  builder.objectRef<CourseDiscussionOverviewGroup>(
+    'CourseDiscussionOverviewGroup'
+  )
 export const CourseDiscussionOverviewGroupObject =
   CourseDiscussionOverviewGroupRef.implement({
     fields: (t) => ({
@@ -223,8 +225,8 @@ export const CourseDiscussionOverviewGroupObject =
 
 export const CourseDiscussionOverviewRef =
   builder.objectRef<CourseDiscussionOverview>('CourseDiscussionOverview')
-export const CourseDiscussionOverviewObject = CourseDiscussionOverviewRef.implement(
-  {
+export const CourseDiscussionOverviewObject =
+  CourseDiscussionOverviewRef.implement({
     fields: (t) => ({
       groups: t.expose('groups', {
         type: [CourseDiscussionOverviewGroupRef],
@@ -233,12 +235,12 @@ export const CourseDiscussionOverviewObject = CourseDiscussionOverviewRef.implem
       hasMore: t.exposeBoolean('hasMore'),
       totalThreads: t.exposeInt('totalThreads'),
     }),
-  }
-)
+  })
 
-export const CourseDiscussionEmbeddingInfoRef = builder.objectRef<CourseDiscussionEmbeddingInfo>(
-  'CourseDiscussionEmbeddingInfo'
-)
+export const CourseDiscussionEmbeddingInfoRef =
+  builder.objectRef<CourseDiscussionEmbeddingInfo>(
+    'CourseDiscussionEmbeddingInfo'
+  )
 export const CourseDiscussionEmbeddingInfoObject =
   CourseDiscussionEmbeddingInfoRef.implement({
     fields: (t) => ({

@@ -31,9 +31,7 @@ interface CourseDiscussionPageProps {
   cookiesAvailable?: boolean
 }
 
-function canCreateThreadForScope(
-  scopeType: string
-) {
+function canCreateThreadForScope(scopeType: string) {
   return (
     scopeType === 'COURSE' ||
     scopeType === 'PRACTICE_QUIZ' ||
@@ -53,7 +51,9 @@ function CourseDiscussionPage({
   const router = useRouter()
 
   const scopeKeyFromQuery =
-    typeof router.query.scopeKey === 'string' ? router.query.scopeKey : undefined
+    typeof router.query.scopeKey === 'string'
+      ? router.query.scopeKey
+      : undefined
   const embedToken =
     typeof router.query.embedToken === 'string'
       ? router.query.embedToken
@@ -106,7 +106,7 @@ function CourseDiscussionPage({
     variables: {
       courseId,
       scopeKey: activeScopeKey || scopeKeyFromQuery,
-      sort: 'ACTIVITY_DESC',
+      sort: 'ACTIVITY_DESC' as any,
       limit: 20,
       includeLinkedLiveQuizSpaces: embedToken ? false : true,
       embedToken,
@@ -123,7 +123,9 @@ function CourseDiscussionPage({
   const [toggleThreadUpvote] = useMutation(
     ToggleCourseDiscussionThreadUpvoteDocument
   )
-  const [toggleReplyUpvote] = useMutation(ToggleCourseDiscussionReplyUpvoteDocument)
+  const [toggleReplyUpvote] = useMutation(
+    ToggleCourseDiscussionReplyUpvoteDocument
+  )
 
   const scopeOptions = useMemo(() => {
     return (
@@ -147,6 +149,17 @@ function CourseDiscussionPage({
   const threads = threadsData?.courseDiscussionThreads?.threads ?? []
   const hasMore = threadsData?.courseDiscussionThreads?.hasMore ?? false
   const nextCursor = threadsData?.courseDiscussionThreads?.nextCursor ?? null
+  const canPostAnonymously =
+    threadsData?.courseDiscussionThreads?.canPostAnonymously ?? false
+  const isAccessible =
+    threadsData?.courseDiscussionThreads?.isAccessible ?? true
+
+  useEffect(() => {
+    if (canPostAnonymously) return
+
+    setPostThreadAnonymous(false)
+    setPostReplyAnonymous({})
+  }, [canPostAnonymously])
 
   const handleCreateThread = useCallback(async () => {
     if (!threadDraft.trim()) return
@@ -164,7 +177,7 @@ function CourseDiscussionPage({
           input: {
             courseId,
             content: threadDraft,
-            scope: parsedScopeInput,
+            scope: parsedScopeInput as any,
             scopeLabel: selectedScope?.scopeLabel,
             isAnonymous: postThreadAnonymous,
             embedToken,
@@ -192,89 +205,115 @@ function CourseDiscussionPage({
       })
     }
   }, [
-    threadDraft, canCreateThread, createThread, courseId, parsedScopeInput,
-    selectedScope?.scopeLabel, postThreadAnonymous, embedToken, refetchThreads,
-    refetchScopes, t,
+    threadDraft,
+    canCreateThread,
+    createThread,
+    courseId,
+    parsedScopeInput,
+    selectedScope?.scopeLabel,
+    postThreadAnonymous,
+    embedToken,
+    refetchThreads,
+    refetchScopes,
+    t,
   ])
 
-  const handleCreateReply = useCallback(async (threadId: number) => {
-    const content = replyDrafts[threadId]?.trim()
-    if (!content) return
+  const handleCreateReply = useCallback(
+    async (threadId: number) => {
+      const content = replyDrafts[threadId]?.trim()
+      if (!content) return
 
-    setReplyingThreadId(threadId)
+      setReplyingThreadId(threadId)
 
-    try {
-      const result = await createReply({
-        variables: {
-          input: {
-            courseId,
-            threadId,
-            content,
-            isAnonymous: postReplyAnonymous[threadId] ?? false,
-            embedToken,
+      try {
+        const result = await createReply({
+          variables: {
+            input: {
+              courseId,
+              threadId,
+              content,
+              isAnonymous: postReplyAnonymous[threadId] ?? false,
+              embedToken,
+            },
           },
-        },
-      })
+        })
 
-      if (!result.data?.createCourseDiscussionReply) {
+        if (!result.data?.createCourseDiscussionReply) {
+          toast({
+            type: 'error',
+            message: t('pwa.courseQA.replyPostFailed'),
+          })
+          return
+        }
+
+        setReplyDrafts((prev) => ({
+          ...prev,
+          [threadId]: '',
+        }))
+        await Promise.all([
+          refetchThreads(),
+          !embedToken ? refetchScopes() : Promise.resolve(),
+        ])
+      } catch {
         toast({
           type: 'error',
-          message: t('pwa.courseQA.replyPostFailed'),
+          message: t('pwa.courseQA.replyPostError'),
         })
-        return
+      } finally {
+        setReplyingThreadId(null)
       }
+    },
+    [
+      replyDrafts,
+      postReplyAnonymous,
+      createReply,
+      courseId,
+      embedToken,
+      refetchThreads,
+      refetchScopes,
+      t,
+    ]
+  )
 
-      setReplyDrafts((prev) => ({
-        ...prev,
-        [threadId]: '',
-      }))
-      await Promise.all([
-        refetchThreads(),
-        !embedToken ? refetchScopes() : Promise.resolve(),
-      ])
-    } catch {
-      toast({
-        type: 'error',
-        message: t('pwa.courseQA.replyPostError'),
-      })
-    } finally {
-      setReplyingThreadId(null)
-    }
-  }, [replyDrafts, postReplyAnonymous, createReply, courseId, embedToken, refetchThreads, refetchScopes, t])
+  const handleToggleThreadUpvote = useCallback(
+    async (threadId: number, hasUpvoted?: boolean | null) => {
+      try {
+        await toggleThreadUpvote({
+          variables: {
+            threadId,
+            upvote: !hasUpvoted,
+          },
+        })
+        await refetchThreads()
+      } catch {
+        toast({
+          type: 'error',
+          message: t('pwa.courseQA.upvoteFailed'),
+        })
+      }
+    },
+    [toggleThreadUpvote, refetchThreads, t]
+  )
 
-  const handleToggleThreadUpvote = useCallback(async (threadId: number, hasUpvoted?: boolean | null) => {
-    try {
-      await toggleThreadUpvote({
-        variables: {
-          threadId,
-          upvote: !hasUpvoted,
-        },
-      })
-      await refetchThreads()
-    } catch {
-      toast({
-        type: 'error',
-        message: t('pwa.courseQA.upvoteFailed'),
-      })
-    }
-  }, [toggleThreadUpvote, refetchThreads, t])
-
-  const handleToggleReplyUpvote = useCallback(async (replyId: number, hasUpvoted?: boolean | null) => {
-    try {
-      await toggleReplyUpvote({
-        variables: {
-          replyId,
-          upvote: !hasUpvoted,
-        },
-      })
-      await refetchThreads()
-    } catch {
-      toast({
-        type: 'error',
-        message: t('pwa.courseQA.upvoteFailed'),
-      })
-    }
-  }, [toggleReplyUpvote, refetchThreads, t])
+  const handleToggleReplyUpvote = useCallback(
+    async (replyId: number, hasUpvoted?: boolean | null) => {
+      try {
+        await toggleReplyUpvote({
+          variables: {
+            replyId,
+            upvote: !hasUpvoted,
+          },
+        })
+        await refetchThreads()
+      } catch {
+        toast({
+          type: 'error',
+          message: t('pwa.courseQA.upvoteFailed'),
+        })
+      }
+    },
+    [toggleReplyUpvote, refetchThreads, t]
+  )
 
   const handleLoadMore = useCallback(async () => {
     if (!nextCursor || !hasMore) return
@@ -294,7 +333,40 @@ function CourseDiscussionPage({
   if (courseError || threadsError) {
     return (
       <Layout embedded={embedded} displayName={t('pwa.courseQA.title')}>
-        <UserNotification type="error" message={t('shared.generic.systemError')} />
+        <UserNotification
+          type="error"
+          message={t('shared.generic.systemError')}
+        />
+      </Layout>
+    )
+  }
+
+  if (
+    !embedded &&
+    courseData?.basicCourseInformation?.isCourseQAEnabled === false
+  ) {
+    return (
+      <Layout
+        embedded={embedded}
+        course={courseData.basicCourseInformation}
+        displayName={t('pwa.courseQA.title')}
+      >
+        <UserNotification type="info" message={t('pwa.courseQA.disabled')} />
+      </Layout>
+    )
+  }
+
+  if (!isAccessible) {
+    return (
+      <Layout
+        embedded={embedded}
+        course={courseData?.basicCourseInformation ?? undefined}
+        displayName={t('pwa.courseQA.title')}
+      >
+        <UserNotification
+          type="warning"
+          message={t('pwa.courseQA.accessDenied')}
+        />
       </Layout>
     )
   }
@@ -311,7 +383,10 @@ function CourseDiscussionPage({
 
           {!embedded && (
             <div className="mb-3 flex flex-col gap-1">
-              <label className="text-sm font-semibold text-gray-700" htmlFor="qa-scope-filter">
+              <label
+                className="text-sm font-semibold text-gray-700"
+                htmlFor="qa-scope-filter"
+              >
                 {t('pwa.courseQA.scopeFilter')}
               </label>
               <select
@@ -331,7 +406,10 @@ function CourseDiscussionPage({
           )}
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-semibold text-gray-700" htmlFor="qa-thread-content">
+            <label
+              className="text-sm font-semibold text-gray-700"
+              htmlFor="qa-thread-content"
+            >
               {t('pwa.courseQA.newThread')}
             </label>
             <textarea
@@ -355,12 +433,14 @@ function CourseDiscussionPage({
               </div>
             )}
 
-            {embedToken && (
+            {embedToken && canPostAnonymously && (
               <label className="inline-flex items-center gap-2 text-sm text-gray-700">
                 <input
                   type="checkbox"
                   checked={postThreadAnonymous}
-                  onChange={(event) => setPostThreadAnonymous(event.target.checked)}
+                  onChange={(event) =>
+                    setPostThreadAnonymous(event.target.checked)
+                  }
                 />
                 {t('pwa.courseQA.postAnonymously')}
               </label>
@@ -405,10 +485,14 @@ function CourseDiscussionPage({
                   <span className="rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">
                     {thread.scope?.scopeLabel ?? thread.scope?.scopeKey}
                   </span>
-                  <span>{dayjs(thread.createdAt).format('DD.MM.YYYY HH:mm')}</span>
+                  <span>
+                    {dayjs(thread.createdAt).format('DD.MM.YYYY HH:mm')}
+                  </span>
                 </div>
 
-                <div className="whitespace-pre-wrap text-sm">{thread.content}</div>
+                <div className="whitespace-pre-wrap text-sm">
+                  {thread.content}
+                </div>
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <Button
@@ -426,14 +510,16 @@ function CourseDiscussionPage({
                     <Button.Label>{String(thread.upvotes)}</Button.Label>
                   </Button>
                   <span className="text-xs text-gray-500">
-                    {thread.replyCount} {thread.replyCount === 1 ? t('pwa.courseQA.reply') : `${t('pwa.courseQA.reply')}`}
+                    {t('pwa.courseQA.nReply', { count: thread.replyCount })}
                   </span>
                 </div>
 
                 <div className="mt-3 flex flex-col gap-2 border-l border-gray-200 pl-3">
                   {thread.replies?.map((reply) => (
                     <div key={reply.id} className="rounded-md bg-gray-50 p-2">
-                      <div className="mb-1 whitespace-pre-wrap text-sm">{reply.content}</div>
+                      <div className="mb-1 whitespace-pre-wrap text-sm">
+                        {reply.content}
+                      </div>
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs text-gray-500">
                           {dayjs(reply.createdAt).format('DD.MM.YYYY HH:mm')}
@@ -449,7 +535,10 @@ function CourseDiscussionPage({
                           data={{ cy: `course-qa-reply-upvote-${reply.id}` }}
                           aria-label={`Upvote reply, ${reply.upvotes} current upvotes`}
                         >
-                          <Button.Icon icon={faThumbsUp} className={{ root: 'h-3 w-3' }} />
+                          <Button.Icon
+                            icon={faThumbsUp}
+                            className={{ root: 'h-3 w-3' }}
+                          />
                           <Button.Label>{String(reply.upvotes)}</Button.Label>
                         </Button>
                       </div>
@@ -472,7 +561,7 @@ function CourseDiscussionPage({
                       aria-label={t('pwa.courseQA.replyPlaceholder')}
                     />
 
-                    {embedToken && (
+                    {embedToken && canPostAnonymously && (
                       <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-700">
                         <input
                           type="checkbox"

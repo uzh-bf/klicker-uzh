@@ -938,11 +938,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       reply: 'Antworten',
       nReply: '{count, plural, =1 {1 Antwort} other {# Antworten}}',
       noThreads: 'Noch keine Diskussionsbeiträge für diesen Bereich.',
-      threadPostFailed: 'Beitrag konnte nicht erstellt werden. Überprüfen Sie die Berechtigungen oder Embed-Einstellungen.',
-      threadPostError: 'Beitrag konnte nicht erstellt werden. Bitte versuchen Sie es erneut.',
-      replyPostFailed: 'Antwort konnte nicht gesendet werden. Überprüfen Sie die Berechtigungen oder Embed-Einstellungen.',
-      replyPostError: 'Antwort konnte nicht gesendet werden. Bitte versuchen Sie es erneut.',
-      upvoteFailed: 'Upvote konnte nicht aktualisiert werden. Melden Sie sich als Teilnehmer an, um abzustimmen.',
+      threadPostFailed:
+        'Beitrag konnte nicht erstellt werden. Überprüfen Sie die Berechtigungen oder Embed-Einstellungen.',
+      threadPostError:
+        'Beitrag konnte nicht erstellt werden. Bitte versuchen Sie es erneut.',
+      replyPostFailed:
+        'Antwort konnte nicht gesendet werden. Überprüfen Sie die Berechtigungen oder Embed-Einstellungen.',
+      replyPostError:
+        'Antwort konnte nicht gesendet werden. Bitte versuchen Sie es erneut.',
+      upvoteFailed:
+        'Upvote konnte nicht aktualisiert werden. Melden Sie sich als Teilnehmer an, um abzustimmen.',
+      disabled: 'Kurs Q&A ist für diesen Kurs nicht aktiviert.',
+      accessDenied:
+        'Sie haben keinen Zugriff auf diese Kurs-Q&A-Ansicht oder der Link ist ungültig.',
       loadMore: 'Mehr laden',
     },
     profile: {
@@ -2825,17 +2833,21 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Kurs Q&A ist derzeit deaktiviert. Aktivieren Sie es in den Kurseinstellungen, um die Diskussionsfunktionen zu nutzen.',
       embedLinkGenerator: 'Embed-Link Generator',
       discussionOverview: 'Diskussionsübersicht',
-      noThreadsYet: 'Es sind noch keine Diskussionsbeiträge in diesem Kurs vorhanden.',
+      noThreadsYet:
+        'Es sind noch keine Diskussionsbeiträge in diesem Kurs vorhanden.',
       generateEmbedLink: 'Embed-Link generieren',
       copyUrl: 'URL kopieren',
       refreshOverview: 'Übersicht aktualisieren',
       embedUrl: 'Embed URL',
       expiresAt: 'Gültig bis: {date}',
-      embedGenFailed: 'Die Generierung der Embed-Informationen ist fehlgeschlagen.',
+      embedGenFailed:
+        'Die Generierung der Embed-Informationen ist fehlgeschlagen.',
       embedCopied: 'Embed-URL in die Zwischenablage kopiert.',
       scopeLabel: 'Bereich',
       tokenLifetime: 'Token-Gültigkeitsdauer (Stunden)',
       allowAnonymousPosting: 'Anonymes Posten erlauben',
+      allowAnonymousPostingDisabled:
+        'Aktivieren Sie anonymes Posten in den Kurseinstellungen, damit es in Embeds verfügbar ist.',
       noPersistentScope:
         'Kein persistierter Kursbereich gefunden. Ein Standard-Kursbereich-Token wird generiert.',
       activityNotAvailableAssessment:

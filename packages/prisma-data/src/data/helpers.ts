@@ -65,6 +65,8 @@ export function prepareCourse({
   description?: string
   isGamificationEnabled: boolean
   isAssessmentEnabled?: boolean
+  isCourseQAEnabled?: boolean
+  isCourseQAAnonymousEnabled?: boolean
   ownerId: string
   color?: string
   pinCode?: number | null

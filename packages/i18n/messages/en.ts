@@ -936,11 +936,17 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       reply: 'Reply',
       nReply: '{count, plural, =1 {1 reply} other {# replies}}',
       noThreads: 'No discussion threads yet for this scope.',
-      threadPostFailed: 'Unable to post thread. Check permissions or embed settings.',
+      threadPostFailed:
+        'Unable to post thread. Check permissions or embed settings.',
       threadPostError: 'Unable to post thread. Please try again.',
-      replyPostFailed: 'Unable to post reply. Check permissions or embed settings.',
+      replyPostFailed:
+        'Unable to post reply. Check permissions or embed settings.',
       replyPostError: 'Unable to post reply. Please try again.',
-      upvoteFailed: 'Unable to update upvote. Sign in as a participant to vote.',
+      upvoteFailed:
+        'Unable to update upvote. Sign in as a participant to vote.',
+      disabled: 'Course Q&A is not enabled for this course.',
+      accessDenied:
+        'You do not have access to this Course Q&A view or the link is invalid.',
       loadMore: 'Load more',
     },
     profile: {
@@ -2787,6 +2793,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       scopeLabel: 'Scope',
       tokenLifetime: 'Token Lifetime (hours)',
       allowAnonymousPosting: 'Allow anonymous posting',
+      allowAnonymousPostingDisabled:
+        'Enable anonymous posting in the course settings to include it in embeds.',
       noPersistentScope:
         'No persisted course scope found yet. A default course scope token will be generated.',
       activityNotAvailableAssessment:

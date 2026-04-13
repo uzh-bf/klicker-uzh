@@ -1,5 +1,6 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
+  DiscussionEventType,
   DiscussionScopeType,
   DiscussionSpaceType,
   PrismaClient,
@@ -11,9 +12,12 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../src/lib/context.js'
 import {
   courseDiscussionOverview,
+  courseDiscussionScopes,
   courseDiscussionThreads,
   createCourseDiscussionReply,
   createCourseDiscussionThread,
+  deleteCourseDiscussionReply,
+  deleteCourseDiscussionThread,
   getCourseDiscussionEmbeddingInfo,
   toggleCourseDiscussionReplyUpvote,
   toggleCourseDiscussionThreadUpvote,
@@ -155,8 +159,14 @@ describe('Integration tests for the course discussion platform', () => {
       courseId: course.id,
     })
 
-    const participantOneCtx = createParticipantContext(userOneCtx, participantOneId)
-    const participantTwoCtx = createParticipantContext(userOneCtx, participantTwoId)
+    const participantOneCtx = createParticipantContext(
+      userOneCtx,
+      participantOneId
+    )
+    const participantTwoCtx = createParticipantContext(
+      userOneCtx,
+      participantTwoId
+    )
 
     const thread = await createCourseDiscussionThread(
       {
@@ -286,6 +296,295 @@ describe('Integration tests for the course discussion platform', () => {
     expect(acceptedThread?.isAnonymous).toBe(true)
   })
 
+  it('keeps discussion functionality disabled when the course flag is off', async () => {
+    const course = await seedCourse({}, userOneCtx)
+    const participantId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const participantCtx = createParticipantContext(userOneCtx, participantId)
+
+    const thread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'This should not be created',
+        scope: { scopeType: DiscussionScopeType.COURSE },
+      },
+      participantCtx
+    )
+
+    expect(thread).toBeNull()
+
+    const threadPage = await courseDiscussionThreads(
+      {
+        courseId: course.id,
+        scopeKey: `course:${course.id}`,
+      },
+      participantCtx
+    )
+
+    expect(threadPage.threads).toHaveLength(0)
+    expect(threadPage.canPostAnonymously).toBe(false)
+
+    const scopes = await courseDiscussionScopes(
+      { courseId: course.id },
+      participantCtx
+    )
+    expect(scopes).toHaveLength(0)
+
+    const embedInfo = await getCourseDiscussionEmbeddingInfo(
+      {
+        courseId: course.id,
+        scope: { scopeType: DiscussionScopeType.COURSE },
+        allowAnonymous: true,
+      },
+      userOneCtx
+    )
+
+    expect(embedInfo).toBeNull()
+  })
+
+  it('only exposes anonymous embed posting when the specific token allows it', async () => {
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, {
+      courseId: course.id,
+      allowAnonymous: true,
+    })
+
+    const participantId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const participantCtx = createParticipantContext(userOneCtx, participantId)
+
+    await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'Visible in embeds',
+        scope: { scopeType: DiscussionScopeType.COURSE },
+      },
+      participantCtx
+    )
+
+    const anonymousEmbedInfo = await getCourseDiscussionEmbeddingInfo(
+      {
+        courseId: course.id,
+        scope: { scopeType: DiscussionScopeType.COURSE },
+        allowAnonymous: true,
+      },
+      userOneCtx
+    )
+
+    const identifiedOnlyEmbedInfo = await getCourseDiscussionEmbeddingInfo(
+      {
+        courseId: course.id,
+        scope: { scopeType: DiscussionScopeType.COURSE },
+        allowAnonymous: false,
+      },
+      userOneCtx
+    )
+
+    expect(anonymousEmbedInfo).toBeTruthy()
+    expect(identifiedOnlyEmbedInfo).toBeTruthy()
+
+    const anonymousPage = await courseDiscussionThreads(
+      {
+        courseId: course.id,
+        scopeKey: `course:${course.id}`,
+        embedToken: anonymousEmbedInfo!.embedToken,
+      },
+      createAnonymousContext(userOneCtx)
+    )
+
+    const identifiedOnlyPage = await courseDiscussionThreads(
+      {
+        courseId: course.id,
+        scopeKey: `course:${course.id}`,
+        embedToken: identifiedOnlyEmbedInfo!.embedToken,
+      },
+      createAnonymousContext(userOneCtx)
+    )
+
+    expect(anonymousPage.canPostAnonymously).toBe(true)
+    expect(identifiedOnlyPage.canPostAnonymously).toBe(false)
+  })
+
+  it('hides anonymous posting when an embed scope key is tampered with', async () => {
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, {
+      courseId: course.id,
+      allowAnonymous: true,
+    })
+
+    const embedInfo = await getCourseDiscussionEmbeddingInfo(
+      {
+        courseId: course.id,
+        scope: { scopeType: DiscussionScopeType.COURSE },
+        allowAnonymous: true,
+      },
+      userOneCtx
+    )
+
+    expect(embedInfo).toBeTruthy()
+
+    const tamperedPage = await courseDiscussionThreads(
+      {
+        courseId: course.id,
+        scopeKey: `course:${course.id}:tampered`,
+        embedToken: embedInfo!.embedToken,
+      },
+      createAnonymousContext(userOneCtx)
+    )
+
+    expect(tamperedPage.threads).toHaveLength(0)
+    expect(tamperedPage.canPostAnonymously).toBe(false)
+    expect(tamperedPage.isAccessible).toBe(false)
+  })
+
+  it('marks non-embed viewers without course access as inaccessible', async () => {
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, { courseId: course.id })
+
+    const deniedPage = await courseDiscussionThreads(
+      {
+        courseId: course.id,
+        scopeKey: `course:${course.id}`,
+      },
+      createAnonymousContext(userOneCtx)
+    )
+
+    expect(deniedPage.threads).toHaveLength(0)
+    expect(deniedPage.canPostAnonymously).toBe(false)
+    expect(deniedPage.isAccessible).toBe(false)
+  })
+
+  it('clamps anonymous embed capability to the course setting', async () => {
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, {
+      courseId: course.id,
+      allowAnonymous: false,
+    })
+
+    const embedInfo = await getCourseDiscussionEmbeddingInfo(
+      {
+        courseId: course.id,
+        scope: { scopeType: DiscussionScopeType.COURSE },
+        allowAnonymous: true,
+      },
+      userOneCtx
+    )
+
+    expect(embedInfo).toBeTruthy()
+    expect(embedInfo?.allowAnonymous).toBe(false)
+  })
+
+  it('does not persist a new scope when a tampered anonymous embed thread is rejected', async () => {
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, {
+      courseId: course.id,
+      allowAnonymous: true,
+    })
+
+    const embedInfo = await getCourseDiscussionEmbeddingInfo(
+      {
+        courseId: course.id,
+        scope: { scopeType: DiscussionScopeType.COURSE },
+        allowAnonymous: true,
+      },
+      userOneCtx
+    )
+
+    expect(embedInfo).toBeTruthy()
+
+    const initialScopeCount = await prisma.discussionScope.count()
+
+    const deniedThread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'This tampered embed request should be rejected',
+        scope: {
+          scopeType: DiscussionScopeType.EXTERNAL_BLOCK,
+          externalSource: 'moodle',
+          externalRef: 'tampered-block',
+        },
+        isAnonymous: true,
+        embedToken: embedInfo!.embedToken,
+      },
+      createAnonymousContext(userOneCtx)
+    )
+
+    expect(deniedThread).toBeNull()
+    expect(await prisma.discussionScope.count()).toBe(initialScopeCount)
+  })
+
+  it('uses explicit delete events and enforces delete authorization', async () => {
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, { courseId: course.id })
+
+    const authorParticipantId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const otherParticipantId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+
+    const authorCtx = createParticipantContext(userOneCtx, authorParticipantId)
+    const otherParticipantCtx = createParticipantContext(
+      userOneCtx,
+      otherParticipantId
+    )
+
+    const thread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'Delete me',
+        scope: { scopeType: DiscussionScopeType.COURSE },
+      },
+      authorCtx
+    )
+    expect(thread).toBeTruthy()
+
+    const reply = await createCourseDiscussionReply(
+      {
+        courseId: course.id,
+        threadId: thread!.id,
+        content: 'Delete this reply',
+      },
+      authorCtx
+    )
+    expect(reply).toBeTruthy()
+
+    const deniedThreadDelete = await deleteCourseDiscussionThread(
+      { threadId: thread!.id },
+      otherParticipantCtx
+    )
+    expect(deniedThreadDelete).toBe(false)
+
+    const replyDeleted = await deleteCourseDiscussionReply(
+      { replyId: reply!.id },
+      authorCtx
+    )
+    expect(replyDeleted).toBe(true)
+
+    const threadDeleted = await deleteCourseDiscussionThread(
+      { threadId: thread!.id },
+      authorCtx
+    )
+    expect(threadDeleted).toBe(true)
+
+    const deleteEvents = await prisma.discussionEvent.findMany({
+      where: {
+        threadId: thread!.id,
+      },
+      orderBy: { id: 'asc' },
+    })
+
+    expect(deleteEvents.map((event) => event.eventType)).toEqual(
+      expect.arrayContaining([
+        DiscussionEventType.REPLY_DELETED,
+        DiscussionEventType.THREAD_DELETED,
+      ])
+    )
+  })
+
   it('aggregates linked live-quiz spaces into course overview and excludes standalone live quizzes', async () => {
     const course = await seedCourse({}, userOneCtx)
     await enableCourseDiscussion(prisma, { courseId: course.id })
@@ -372,7 +671,9 @@ describe('Integration tests for the course discussion platform', () => {
     ).toBe(true)
     expect(
       overviewLabels.some((label) =>
-        label.includes(standaloneLiveQuiz.displayName ?? standaloneLiveQuiz.name)
+        label.includes(
+          standaloneLiveQuiz.displayName ?? standaloneLiveQuiz.name
+        )
       )
     ).toBe(false)
 

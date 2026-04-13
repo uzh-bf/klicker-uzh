@@ -228,7 +228,9 @@ function CourseOverviewPage() {
             : t('shared.generic.disabled')}
           {course.isCourseQAEnabled && (
             <>
-              <div className="font-bold">{t('manage.course.courseQAAnonymousInEmbeds')}</div>
+              <div className="font-bold">
+                {t('manage.course.courseQAAnonymousInEmbeds')}
+              </div>
               {course.isCourseQAAnonymousEnabled
                 ? t('shared.generic.enabled')
                 : t('shared.generic.disabled')}
@@ -422,6 +424,7 @@ function CourseOverviewPage() {
               <CourseDiscussionOverview
                 courseId={course.id}
                 isCourseQAEnabled={course.isCourseQAEnabled}
+                isCourseQAAnonymousEnabled={course.isCourseQAAnonymousEnabled}
               />
             </TabContent>
           </Tabs>

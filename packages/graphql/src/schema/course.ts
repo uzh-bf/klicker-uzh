@@ -67,9 +67,7 @@ export const Course = builder.objectType(CourseRef, {
     isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
     isAssessmentEnabled: t.exposeBoolean('isAssessmentEnabled'),
     isCourseQAEnabled: t.exposeBoolean('isCourseQAEnabled'),
-    isCourseQAAnonymousEnabled: t.exposeBoolean(
-      'isCourseQAAnonymousEnabled'
-    ),
+    isCourseQAAnonymousEnabled: t.exposeBoolean('isCourseQAAnonymousEnabled'),
 
     numOfParticipants: t.exposeInt('numOfParticipants', {
       nullable: true,
@@ -288,6 +286,8 @@ export const StudentCourse = builder.objectType(StudentCourseRef, {
     pinCode: t.exposeInt('pinCode', { nullable: true }),
     color: t.exposeString('color'),
     description: t.exposeString('description', { nullable: true }),
+    isCourseQAEnabled: t.exposeBoolean('isCourseQAEnabled'),
+    isCourseQAAnonymousEnabled: t.exposeBoolean('isCourseQAAnonymousEnabled'),
 
     owner: t.expose('owner', {
       type: UserRef,
