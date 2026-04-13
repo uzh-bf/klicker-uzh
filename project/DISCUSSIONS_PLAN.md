@@ -21,6 +21,23 @@ Core requirements:
 - Real-domain validation on `https://pwa.klicker.com` has already verified enrolled read/write, unauthorized denial, anonymous-vs-identified embed behavior, and tampered-embed fail-closed behavior.
 - Remaining external blockers are lecturer-side validation on `https://manage.klicker.com` (currently misrouted to Jobeye), the unavailable DB-backed GraphQL integration-test environment, and the deferred live-feedback migration work.
 
+## Approved Next Alpha Design (Not Yet Implemented)
+
+- Add a separate hidden course-level rollout gate boolean in the DB.
+- Keep `isCourseQAEnabled` and `isCourseQAAnonymousEnabled` as the runtime/settings booleans after rollout is unlocked.
+- No separate global feature-flag layer will be introduced for this phase.
+- Approved alpha states:
+  1. rollout gate `false`: no Q&A-related UI in Manage or PWA; direct routes fail closed
+  2. rollout gate `true` + `isCourseQAEnabled = false`: lecturer/admin UI visible, students still cannot use Q&A
+  3. rollout gate `true` + `isCourseQAEnabled = true`: full alpha behavior
+- Approved alpha surface model:
+  - `COURSE`: always visible and always writable for enrolled participants; course feed shows only `COURSE` threads
+  - `PRACTICE_STACK`: the only learning-scoped discussion surface for alpha; used for both practice and microlearning; shown only on evaluated/result surfaces; not visible during answering; reachable only from the evaluated stack surface; full history visible there; shown on every evaluated revisit
+  - not in alpha: `PRACTICE_ELEMENT`, `PRACTICE_QUIZ`, `LIVE_QUIZ` migration UI, or aggregating stack threads into the course feed
+- Identity model remains unchanged for this phase:
+  - normal PWA discussion is logged-in participants only
+  - anonymous remains embed-only
+
 ---
 
 ## 2. Product Decisions (Locked)
@@ -386,7 +403,8 @@ Data captured for future abuse systems:
 
 ### Behavior
 
-- default view: course-wide aggregated overview
+- default view: course-wide `COURSE` discussion only
+- course feed does not aggregate learning-scoped stack threads in alpha
 - optional scope filter: only matching scope threads
 - one-level reply UI
 - thumbs-up buttons only
@@ -399,13 +417,17 @@ Data captured for future abuse systems:
 - locks scope based on token
 - shows anonymous composer only when allowed
 
-### Practice quiz integration
+### Learning-scoped integration (approved next alpha step)
 
-- add context entry points for:
-  - quiz-level scope
-  - stack-level scope
-  - element-level scope
-- context page only shows scoped threads
+- keep `COURSE` discussion visible from the normal course surface for enrolled participants when enabled
+- add context entry points only for `PRACTICE_STACK`
+- use the same `PRACTICE_STACK` model for both practice and microlearning
+- show stack discussion only on evaluated/result surfaces for that stack
+- do not show stack discussion during answering
+- keep stack discussion reachable only from the evaluated stack surface in alpha
+- when opened, show the full history for that stack
+- show it again on every evaluated revisit of that stack
+- do not add `PRACTICE_ELEMENT` or `PRACTICE_QUIZ` entry points in this phase
 
 ---
 
@@ -413,24 +435,26 @@ Data captured for future abuse systems:
 
 ### Course page
 
-- add a new `Q&A` tab in course view
-- show grouped overview by source:
+- when rollout gate is `false`: show nothing related to Course Q&A in Manage
+- when rollout gate is `true`: add a `Q&A` tab in course view
+- once visible, show grouped overview by source:
   - `Course`
   - `Live Quiz: <name>` (linked live quiz spaces, when data exists)
 
 ### Course settings
 
-- switches:
+- rollout gate `false`: no Q&A settings shown
+- rollout gate `true`: show switches:
   - `Enable Course Q&A`
   - `Allow Anonymous in Embeds`
 
 ### Embed tooling
 
-- new embedding modal for course discussion links
-- supports generating links for:
+- rollout gate `false`: no embed tooling shown
+- rollout gate `true`: embed tooling available for:
   - course scope
-  - practice scopes
   - external block scope
+- learning-scoped stack discussion remains in-flow only for alpha and is not part of the initial lecturer-side embed/discoverability model
 
 ---
 
@@ -536,18 +560,22 @@ Dual-write must guarantee:
 
 ## 16. Rollout and Enablement
 
-Course Q&A v1 is currently enabled selectively at the course level via:
+Current branch reality:
 
-- `Course.isCourseQAEnabled`
-- `Course.isCourseQAAnonymousEnabled`
+- Course Q&A is currently being exercised through the existing course-level booleans:
+  - `Course.isCourseQAEnabled`
+  - `Course.isCourseQAAnonymousEnabled`
+- This is sufficient for the current branch validation state, but it is not yet the approved alpha rollout model.
 
-Current rollout order:
+Approved next alpha rollout model (not yet implemented):
 
-1. backend models + APIs merged on `course-qa`
-2. PWA and Manage alpha UI merged on `course-qa`
-3. selectively enable known validation courses (for example seeded `Testkurs`)
-4. finish remaining browser/runtime validation and unblock lecturer-side validation on the real manage domain
-5. keep live dual-write/read-switch work as a separate follow-up phase
+1. Add a separate hidden course-level rollout gate boolean in the DB.
+2. Use a three-state rollout model:
+   - rollout gate `false`: no Q&A UI in Manage or PWA; direct routes fail closed
+   - rollout gate `true` + `isCourseQAEnabled = false`: lecturer/admin UI visible, students still cannot use Q&A
+   - rollout gate `true` + `isCourseQAEnabled = true`: full alpha behavior
+3. Keep `isCourseQAAnonymousEnabled` as the runtime embed-anonymity setting once rollout is unlocked.
+4. Do not add a separate global feature-flag layer for this phase.
 
 ---
 
@@ -716,6 +744,7 @@ When implementation starts, expected first PR order:
 - Still blocked:
   - DB-backed GraphQL integration tests time out because the local integration DB/test environment is unavailable
   - `https://manage.klicker.com` is misrouted to the unrelated Jobeye app, so lecturer-side validation on the requested real domain is still blocked
+- Newly approved alpha rollout/surface decisions are documentation-only at this point; they have not been implemented yet.
 
 ### Document Links
 
@@ -724,41 +753,49 @@ When implementation starts, expected first PR order:
 
 ### Remaining Major Work
 
-- `W1` Lecturer-side real-domain validation unblock
-- `W2` Remaining verification scenarios + evidence completion
-- `W3` Live Feedback Migration Path
-- `W4` Rollout + Operations
+- `W1` Hidden rollout gate + UI visibility model
+- `W2` Stack-only alpha surface implementation + validation
+- `W3` Lecturer-side real-domain validation unblock + remaining verification
+- `W4` Live Feedback Migration Path
+- `W5` Rollout + Operations
 
 ---
 
 ## Next Work (Implementation Backlog)
 
-### W1: Lecturer-Side Real-Domain Validation Unblock
+### W1: Hidden Rollout Gate + UI Visibility Model
+
+- Add a separate hidden course-level rollout gate boolean in the DB.
+- Hide all Manage Course Q&A UI unless the rollout gate is enabled for that course.
+- Hide all PWA Course Q&A discoverability unless rollout gate and runtime course enablement permit it.
+- Make direct routes fail closed when rollout gate is off.
+- Exit criteria (pass/fail):
+  - pass: rollout gate cleanly separates hidden, admin-configurable, and fully enabled states
+  - fail: any Q&A UI remains visible when rollout gate is off, or admin controls disappear when rollout is on but runtime enablement is off
+
+### W2: Stack-Only Alpha Surface Implementation + Validation
+
+- Keep the course feed as `COURSE` only.
+- Add learning-scoped entry points only for `PRACTICE_STACK`.
+- Reuse `PRACTICE_STACK` for both practice and microlearning.
+- Show stack discussion only on evaluated/result surfaces, not during answering.
+- Keep stack discussion reachable only from the evaluated stack surface in alpha.
+- Validate the resulting UX and access model on real domains once implemented.
+- Exit criteria (pass/fail):
+  - pass: stack discussion appears only in the approved post-evaluation contexts and course feed remains course-only
+  - fail: stack threads leak into the course feed or discussion is visible during answering
+
+### W3: Lecturer-Side Real-Domain Validation Unblock + Remaining Verification
 
 - Fix routing for `https://manage.klicker.com` so it points to the Klicker lecturer UI rather than Jobeye.
-- Once corrected, execute the remaining lecturer-side browser flows on the requested real domain:
-  - settings persistence
-  - embed generation UI behavior
-  - grouped overview rendering
-- Exit criteria (pass/fail):
-  - pass: lecturer validation can run end-to-end on `https://manage.klicker.com` with evidence
-  - fail: domain remains misrouted or lecturer-side scenarios still cannot be executed on the requested host
-
-### W2: Remaining Verification
-
-- Complete the still-open scenario coverage from `DISCUSSIONS_TESTING_PLAN.md`:
-  - full `QA-001`
-  - full `QA-002` entry-visibility check from the course page (not just direct-route behavior)
-  - `QA-005`
-  - `QA-006`
-  - `QA-010`
-  - `QA-012`
+- Once corrected, execute the remaining lecturer-side browser flows on the requested real domain.
+- Complete the still-open scenario coverage from `DISCUSSIONS_TESTING_PLAN.md`.
 - Re-run DB-backed discussion integration tests once the local test DB is available.
 - Exit criteria (pass/fail):
-  - pass: every required scenario has evidence and the DB-backed test environment is green
-  - fail: any required scenario remains unexecuted, lacks evidence, or the DB-backed integration environment stays unavailable
+  - pass: required lecturer/browser scenarios have evidence and the DB-backed test environment is green
+  - fail: domain remains misrouted, required scenarios remain unexecuted, or the DB-backed integration environment stays unavailable
 
-### W3: Live Feedback Migration Path
+### W4: Live Feedback Migration Path
 
 - Implement backfill job from legacy live feedback to `DiscussionSpaceType.LIVE_QUIZ`.
 - Implement dual-write in legacy feedback service:
@@ -773,7 +810,7 @@ When implementation starts, expected first PR order:
   - pass: dry-run is repeatable and reconciliation output is deterministic
   - fail: non-deterministic mapping or unresolved mismatch classes remain
 
-### W4: Rollout + Operations
+### W5: Rollout + Operations
 
 - Keep rollout explicitly alpha and course-selective through the course booleans.
 - Add monitoring and alert checks:
@@ -787,7 +824,7 @@ When implementation starts, expected first PR order:
 
 ### Coverage and Scope
 
-- Workstream acceptance checks included in this backlog: `W1` to `W4`.
+- Workstream acceptance checks included in this backlog: `W1` to `W5`.
 - UI/browser verification scope is tracked in:
   - `/Volumes/HOME/Git/klicker/klicker-uzh/.claude/worktrees/course-qa/project/DISCUSSIONS_TESTING_PLAN.md`
   - scenarios `QA-001` to `QA-012`

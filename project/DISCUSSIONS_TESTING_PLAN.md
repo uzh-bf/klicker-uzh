@@ -6,6 +6,11 @@ Verify the new discussions platform behavior for Course Q&A using `agent-browser
 
 This runbook has now been partially executed on the real `*.klicker.com` setup and should be treated as the source of truth for both remaining work and already-captured evidence.
 
+The approved next alpha rollout/surface model is not implemented yet. This document therefore tracks two things at once:
+
+- evidence already captured for the current branch behavior
+- the scenario definitions that must be re-run or expanded once the hidden rollout gate and stack-only alpha surface model are implemented
+
 ## Preconditions
 
 - Node 20 is active and dependencies are installed.
@@ -63,11 +68,11 @@ All scenarios are binary:
 | ID | Current Status | Notes / Evidence State |
 |---|---|---|
 | `QA-001` | BLOCKED | Lecturer-side validation is blocked because `https://manage.klicker.com` currently routes to Jobeye instead of the Klicker lecturer UI. |
-| `QA-002` | PARTIAL | Direct `/qa` route behavior was validated for both disabled and enabled states on `https://pwa.klicker.com`, but course-page entry visibility still needs lecturer-side follow-up. |
+| `QA-002` | PARTIAL | Direct `/qa` route behavior was validated for both disabled and enabled states on `https://pwa.klicker.com`, but the approved hidden-rollout / course-entry visibility model is not implemented yet and will need a follow-up run. |
 | `QA-003` | PASS | Real-domain PWA validation confirmed enrolled thread creation and reply creation with screenshots. |
 | `QA-004` | PASS | Real-domain PWA validation confirmed idempotent upvote behavior on the created thread/reply flow with screenshots. |
-| `QA-005` | NOT RUN | Practice-scope runtime validation is still pending. |
-| `QA-006` | BLOCKED | Manage overview grouping still requires lecturer-side validation on the correct manage domain. |
+| `QA-005` | NOT RUN | The approved stack-only practice/microlearning surface is not implemented yet, so this needs a dedicated follow-up run. |
+| `QA-006` | BLOCKED | Manage overview and rollout-gate visibility still require lecturer-side validation on the correct manage domain after the next alpha UI changes are implemented. |
 | `QA-007` | PASS (service-generated URL) | Embed mode rendering was validated on real signed URLs generated directly from app secrets because the manage UI host is currently unavailable. |
 | `QA-008` | PASS (service-generated URL) | Anonymous-enabled vs identified-only embed behavior was validated on real signed URLs on `https://pwa.klicker.com`. |
 | `QA-009` | PASS (service-generated URL) | Tampered embed `scopeKey` was validated to fail closed with an access-denied state and no anonymous UI leak. |
@@ -91,12 +96,12 @@ Additional verification status:
 
 | ID | Scenario | Pass Criteria | Fail Criteria |
 |---|---|---|---|
-| `QA-001` | Manage enables Course Q&A and anonymous embeds toggle persists | Both switches save and remain set after reload | Toggle values reset, save fails, or settings not reflected |
-| `QA-002` | PWA course Q&A route visibility depends on course setting | Link/route available only when enabled | Route exposed when disabled or hidden when enabled |
+| `QA-001` | Manage hidden rollout gate and Q&A settings visibility behave correctly | No Q&A UI visible when rollout gate is off; Q&A settings appear only after rollout gate is activated; settings persist after save | Any Q&A UI visible before rollout activation, or settings fail to persist once visible |
+| `QA-002` | PWA course discoverability follows rollout gate and course setting | No Q&A discoverability when rollout gate is off; course entry appears only when rollout gate and runtime enablement allow it | Q&A entry/route exposed too early, or hidden when the approved state should expose it |
 | `QA-003` | Participant creates thread and reply in course scope | New thread and reply visible with correct scope label | Create fails or content not shown in expected scope |
 | `QA-004` | Participant upvotes thread and reply idempotently | Upvotes increment once and repeated same action does not double-count | Counter drift or repeated same action mutates count unexpectedly |
-| `QA-005` | Practice quiz scoped entry opens filtered Q&A (`pq:{id}`) | Route opens with expected scope filter and relevant threads shown | Scope filter ignored, wrong scope shown, or route broken |
-| `QA-006` | Manage overview groups by source label | Group labels include `Course` and `Live Quiz: <name>` when applicable | Missing/incorrect grouping labels |
+| `QA-005` | Evaluated stack surface opens stack-scoped Q&A (`PRACTICE_STACK`) | Discussion is reachable only from the evaluated stack/microlearning result surface and shows the expected stack history | Discussion appears during answering, wrong scope opens, or stack history is missing |
+| `QA-006` | Manage visibility and overview follow the rollout-gate alpha model | No Course Q&A tab/settings/embed tooling when rollout gate is off; when visible, overview still groups correctly | Manage shows Q&A UI before rollout activation or visible overview/grouping is incorrect |
 | `QA-007` | Embed link generation for course scope opens embed mode | Generated URL loads embed-only discussion view | URL invalid, wrong mode, or scope mismatch |
 | `QA-008` | Anonymous embed posting requires valid token + course setting | Anonymous post succeeds only when both conditions are true | Anonymous post succeeds when it should be denied, or fails when all conditions are valid |
 | `QA-009` | Embed token scope mismatch is denied | Post attempt with mismatched scope token is rejected | Mismatched token still allows write |
@@ -106,7 +111,7 @@ Additional verification status:
 
 ## Detailed agent-browser Flows
 
-### QA-001: Manage enables Course Q&A and anonymous embeds toggle persists
+### QA-001: Manage hidden rollout gate and Q&A settings visibility behave correctly
 
 - Target URL:
   - `https://manage.klicker.com/courses/<course-id>`
@@ -115,6 +120,9 @@ Additional verification status:
   - `agent-browser screenshot /tmp/discussions/QA-001-settings-before.png --full`
   - `agent-browser snapshot -i -c`
   - delegated login actions (if required)
+  - verify no Q&A tab/settings/embed tooling when rollout gate is off
+  - activate rollout gate via admin/precondition step
+  - reload page and verify Q&A UI is now visible
   - open course settings modal
   - enable `Course Q&A` and `Allow Anonymous in Embeds`
   - save changes
@@ -122,13 +130,15 @@ Additional verification status:
   - `agent-browser screenshot /tmp/discussions/QA-001-settings-after.png --full`
   - `agent-browser get url`
 - Expected visible assertions:
+  - nothing Q&A-related visible before rollout activation
+  - settings become visible only after rollout activation
   - both toggles enabled after save
   - values persist after reload
 - Required artifacts:
   - before/after screenshots
   - final URL
 
-### QA-002: PWA route visibility follows course setting
+### QA-002: PWA course discoverability follows rollout gate and course setting
 
 - Target URL:
   - `https://pwa.klicker.com/course/<course-id>`
@@ -136,13 +146,16 @@ Additional verification status:
   - `agent-browser open https://pwa.klicker.com/course/<course-id>`
   - `agent-browser screenshot /tmp/discussions/QA-002-route-before.png --full`
   - `agent-browser snapshot -i -c`
-  - verify `Course Q&A` entry visibility state
-  - toggle course setting in Manage (precondition step) and reload PWA view
+  - verify no Q&A discoverability when rollout gate is off
+  - activate rollout gate and reload PWA view
+  - verify still hidden while `isCourseQAEnabled` is off
+  - enable course Q&A and reload again
   - `agent-browser screenshot /tmp/discussions/QA-002-route-after.png --full`
   - `agent-browser get url`
 - Expected visible assertions:
-  - when enabled: Q&A entry visible and navigable
-  - when disabled: entry hidden or route access denied
+  - when rollout gate is off: no entry and direct route denied
+  - when rollout gate is on but course Q&A disabled: student entry still hidden / route denied
+  - when both rollout gate and course Q&A are enabled: entry visible and navigable
 - Required artifacts:
   - before/after screenshots for both states
   - URL captures
@@ -184,34 +197,38 @@ Additional verification status:
   - before/after screenshots
   - optional snapshots around each click
 
-### QA-005: Practice quiz scoped entry filters to `pq:{id}`
+### QA-005: Evaluated stack surface opens stack-scoped Q&A (`PRACTICE_STACK`)
 
 - Target URL:
-  - `https://pwa.klicker.com/course/<course-id>/practiceQuizzes/<quiz-id>`
+  - evaluated stack or microlearning result surface for `<stack-id>`
 - Command skeleton:
-  - open practice quiz page
+  - open a practice or microlearning flow and reach the evaluated/result state for a stack
   - `agent-browser screenshot /tmp/discussions/QA-005-practice-before.png --full`
-  - click `Course Q&A` scoped entry
-  - verify resulting URL contains scope key for quiz
+  - verify no discussion entry during answering
+  - on the evaluated/result surface, open the stack discussion entry
+  - verify resulting view is stack-scoped
   - `agent-browser screenshot /tmp/discussions/QA-005-practice-after.png --full`
   - `agent-browser get url`
 - Expected visible assertions:
-  - discussion list is filtered to that practice scope
+  - discussion is reachable only from the evaluated/result surface
+  - full stack history is visible there
 - Required artifacts:
   - before/after screenshots
   - URL capture
 
-### QA-006: Manage overview grouping by source label
+### QA-006: Manage visibility and overview follow the rollout-gate alpha model
 
 - Target URL:
   - `https://manage.klicker.com/courses/<course-id>?tab=discussions`
 - Command skeleton:
-  - open course discussions tab
+  - verify the discussions tab is absent when rollout gate is off
+  - activate rollout gate and open course discussions tab
   - `agent-browser screenshot /tmp/discussions/QA-006-overview-before.png --full`
   - refresh overview
   - verify groups for `Course` and `Live Quiz: <name>` when linked live data exists
   - `agent-browser screenshot /tmp/discussions/QA-006-overview-after.png --full`
 - Expected visible assertions:
+  - no discussion tab/overview before rollout activation
   - correct source grouping labels and thread placement
 - Required artifacts:
   - before/after screenshots
