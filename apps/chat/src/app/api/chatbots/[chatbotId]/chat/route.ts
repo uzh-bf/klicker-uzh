@@ -1,54 +1,600 @@
+import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
-  getModelCost,
-  getModelLink,
-  MODEL_IDS,
-  type ModelID,
-} from '@/src/lib/config/models'
+  getAllowedReasoningEffortsForModel,
+  getAutomaticModelId,
+  getChatModelRegistry,
+} from '@/src/lib/server/chatModelRegistry'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
 } from '@/src/services/mcpClients'
-import { createAzure } from '@ai-sdk/azure'
+import { createOpenAI } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
 import { Chatbot } from '@klicker-uzh/prisma/client'
 import { safeDecrypt } from '@klicker-uzh/util'
-import {
-  convertToModelMessages,
-  LanguageModel,
-  stepCountIs,
-  streamText,
-  UIMessage,
-} from 'ai'
-import { JWTPayload, jwtVerify } from 'jose'
+import { stepCountIs, streamText, type StepResult } from 'ai'
+import { createHash, randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { DEFAULT_PROMPT } from 'src/lib/config/prompts'
+import {
+  REASONING_EFFORT_OPTIONS,
+  type ReasoningEffort,
+} from 'src/lib/config/reasoning'
 import { CreditsService } from 'src/services/credits'
 import { DisclaimersService } from 'src/services/disclaimers'
 import { ThreadService } from 'src/services/threads'
 import { z } from 'zod'
 
-export const maxDuration = 30
+export const runtime = 'nodejs'
 
-function getAzureModel(chatbot: Chatbot, modelId: ModelID): LanguageModel {
-  const apiVersion = getModelLink(modelId).split('?api-version=')[1]
+export const maxDuration = 60
 
-  // Use per-chatbot Azure configuration if available, otherwise fallback to environment
-  const apiKey = chatbot?.azureOpenAIKey
-    ? safeDecrypt(chatbot.azureOpenAIKey)
-    : process.env.AZURE_API_KEY
+if (!process.env.OPENAI_BASE_URL) {
+  console.warn(
+    '[chat] OPENAI_BASE_URL is not set — model requests will use provider defaults'
+  )
+}
+if (!process.env.OPENAI_API_KEY) {
+  console.warn(
+    '[chat] OPENAI_API_KEY is not set — model requests without per-chatbot keys will fail'
+  )
+}
+const CHAT_LOG_PREFIX = '[chat:dev]'
+const isDevLogging = process.env.NODE_ENV === 'development'
+const MAX_LOG_STRING_LENGTH = 500
+const HASH_DIGEST_LENGTH = 12
 
-  const resourceName = chatbot?.azureOpenAIEndpoint
-    ? new URL(chatbot.azureOpenAIEndpoint).hostname.split('.')[0]
-    : process.env.AZURE_RESOURCE_NAME || 'klicker-ai'
+/**
+ * Custom fetch that patches Responses API request body to add
+ * `status: "completed"` and `type: "message"` on assistant messages.
+ * AI SDK omits these fields but some strict Responses API providers require them.
+ *
+ * Workaround for: https://github.com/vercel/ai/issues/12754
+ */
+const responsesApiFetch: typeof globalThis.fetch = async (input, init) => {
+  if (init?.body && typeof init.body === 'string') {
+    try {
+      const body = JSON.parse(init.body)
+      if (Array.isArray(body.input)) {
+        body.input = body.input.map((item: Record<string, unknown>) =>
+          item.role === 'assistant'
+            ? { ...item, type: 'message', status: 'completed' }
+            : item
+        )
+        init = { ...init, body: JSON.stringify(body) }
+      }
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        // not JSON, pass through
+      } else {
+        console.error(
+          '[responsesApiFetch] Unexpected error patching body:',
+          error
+        )
+        throw error
+      }
+    }
+  }
+  return globalThis.fetch(input, init)
+}
 
-  const azure = createAzure({
-    resourceName,
-    apiKey,
-    useDeploymentBasedUrls: true,
-    apiVersion: apiVersion || 'preview',
-  })
+type ModelRouting = {
+  source: 'custom' | 'default'
+  hasCustomKey: boolean
+  baseUrl: string | undefined
+}
 
-  return azure(modelId)
+function getModel(chatbot: Chatbot, modelId: string) {
+  // Use per-chatbot configuration if available
+  const hasCustomKey =
+    typeof chatbot.openaiApiKey === 'string' && chatbot.openaiApiKey.length > 0
+  const hasCustomBaseUrl =
+    typeof chatbot.openaiBaseUrl === 'string' &&
+    chatbot.openaiBaseUrl.length > 0
+  const hasCustomConfig = hasCustomKey || hasCustomBaseUrl
+
+  if (hasCustomConfig) {
+    let apiKey: string | undefined
+    if (hasCustomKey) {
+      try {
+        apiKey = safeDecrypt(chatbot.openaiApiKey!)
+      } catch (error) {
+        console.error('Failed to decrypt API key for chatbot:', {
+          chatbotId: chatbot.id,
+          error,
+        })
+        throw new Error(`Failed to decrypt API key for chatbot ${chatbot.id}`)
+      }
+    } else {
+      apiKey = process.env.OPENAI_API_KEY
+    }
+    const baseUrl = hasCustomBaseUrl
+      ? chatbot.openaiBaseUrl!
+      : process.env.OPENAI_BASE_URL
+
+    const routing: ModelRouting = {
+      source: 'custom',
+      hasCustomKey,
+      baseUrl,
+    }
+
+    return {
+      model: createOpenAI({
+        baseURL: baseUrl,
+        apiKey: apiKey || 'no-key',
+        fetch: responsesApiFetch,
+      })(modelId),
+      routing,
+    }
+  }
+
+  // Default: route through OpenAI-compatible endpoint
+  const routing: ModelRouting = {
+    source: 'default',
+    hasCustomKey: false,
+    baseUrl: process.env.OPENAI_BASE_URL,
+  }
+
+  return {
+    model: createOpenAI({
+      baseURL: process.env.OPENAI_BASE_URL,
+      apiKey: process.env.OPENAI_API_KEY || 'no-key',
+      fetch: responsesApiFetch,
+    })(modelId),
+    routing,
+  }
+}
+
+function asObject(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object') return null
+  return value as Record<string, unknown>
+}
+
+function truncateString(
+  value: string,
+  maxLength = MAX_LOG_STRING_LENGTH
+): string {
+  if (value.length <= maxLength) return value
+  return `${value.slice(0, maxLength - 3)}...`
+}
+
+function hashSnippet(value: string): string {
+  return createHash('sha256')
+    .update(value)
+    .digest('hex')
+    .slice(0, HASH_DIGEST_LENGTH)
+}
+
+function safeSerialize(value: unknown): string | null {
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return null
+  }
+}
+
+function safeSize(value: unknown): number | null {
+  const serialized = safeSerialize(value)
+  if (serialized === null) return null
+  return Buffer.byteLength(serialized, 'utf8')
+}
+
+function toTokenCount(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'string') {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : null
+  }
+  return null
+}
+
+function extractReasoningTokens(providerMetadata: unknown): number | null {
+  if (!providerMetadata) return null
+
+  const queue: unknown[] = [providerMetadata]
+  while (queue.length > 0) {
+    const value = queue.shift()
+    const record = asObject(value)
+    if (!record) continue
+
+    const directReasoningTokens = toTokenCount(record.reasoningTokens)
+    if (directReasoningTokens !== null) {
+      return directReasoningTokens
+    }
+
+    const outputTokensDetails = asObject(record.outputTokensDetails)
+    const nestedReasoningTokens = toTokenCount(
+      outputTokensDetails?.reasoningTokens
+    )
+    if (nestedReasoningTokens !== null) {
+      return nestedReasoningTokens
+    }
+
+    for (const nestedValue of Object.values(record)) {
+      if (nestedValue && typeof nestedValue === 'object') {
+        queue.push(nestedValue)
+      }
+    }
+  }
+
+  return null
+}
+
+function getDefaultReasoningEffort(
+  allowedReasoningEfforts: ReasoningEffort[]
+): ReasoningEffort | null {
+  if (allowedReasoningEfforts.length === 0) {
+    return null
+  }
+  if (allowedReasoningEfforts.includes('medium')) {
+    return 'medium'
+  }
+  return allowedReasoningEfforts[0]
+}
+
+function logChatDev(
+  event: string,
+  context: Record<string, unknown>,
+  level: 'info' | 'error' = 'info'
+) {
+  if (!isDevLogging) return
+  const message = `${CHAT_LOG_PREFIX} ${event}`
+  if (level === 'error') {
+    console.error(message, context)
+  } else {
+    console.info(message, context)
+  }
+}
+
+type ToolDiagnostic = {
+  toolName: string
+  inputBytes: number | null
+  outputBytes: number | null
+  inputHash: string | null
+  outputHash: string | null
+}
+
+function collectStepToolDiagnostics(
+  step: Pick<StepResult<any>, 'content'>
+): ToolDiagnostic[] {
+  const diagnostics: ToolDiagnostic[] = []
+
+  for (const part of step.content ?? []) {
+    if (!part || typeof part !== 'object') continue
+    if (!('type' in part)) continue
+
+    const typedPart = part as {
+      type?: unknown
+      toolName?: unknown
+      input?: unknown
+      output?: unknown
+      result?: unknown
+      args?: unknown
+    }
+
+    if (
+      typedPart.type !== 'tool-call' &&
+      typedPart.type !== 'tool-result' &&
+      typedPart.type !== 'tool-error'
+    ) {
+      continue
+    }
+
+    const toolName =
+      typeof typedPart.toolName === 'string' ? typedPart.toolName : 'unknown'
+    const inputValue = typedPart.input ?? typedPart.args ?? null
+    const outputValue = typedPart.output ?? typedPart.result ?? null
+
+    const inputSerialized = safeSerialize(inputValue)
+    const outputSerialized = safeSerialize(outputValue)
+
+    diagnostics.push({
+      toolName,
+      inputBytes: safeSize(inputValue),
+      outputBytes: safeSize(outputValue),
+      inputHash: inputSerialized ? hashSnippet(inputSerialized) : null,
+      outputHash: outputSerialized ? hashSnippet(outputSerialized) : null,
+    })
+  }
+
+  return diagnostics
+}
+
+function extractSafeHeaders(headers: unknown): Record<string, unknown> | null {
+  const headerRecord = asObject(headers)
+  if (!headerRecord) return null
+
+  const allowedKeys = new Set([
+    'x-request-id',
+    'x-ms-request-id',
+    'x-ms-client-request-id',
+    'x-trace-id',
+    'traceparent',
+    'tracestate',
+    'apim-request-id',
+  ])
+
+  const safeHeaders: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(headerRecord)) {
+    const normalized = key.toLowerCase()
+    if (allowedKeys.has(normalized)) {
+      safeHeaders[key] = value
+    }
+  }
+
+  return Object.keys(safeHeaders).length > 0 ? safeHeaders : null
+}
+
+type SerializedStreamError = {
+  name: string | null
+  message: string | null
+  type: string | null
+  code: string | null
+  statusCode: number | null
+  sequenceNumber: number | null
+  providerType: string | null
+  providerCode: string | null
+  providerMessage: string | null
+  providerParam: string | null
+  safeHeaders: Record<string, unknown> | null
+  raw: string | null
+  messageHash: string | null
+  providerMessageHash: string | null
+}
+
+function serializeStreamError(error: unknown): SerializedStreamError {
+  const root = asObject(error)
+  const nestedError = asObject(root?.error)
+  const providerError = asObject(nestedError?.error)
+
+  const message =
+    (typeof root?.message === 'string' && root.message) ||
+    (typeof nestedError?.message === 'string' && nestedError.message) ||
+    (typeof providerError?.message === 'string' && providerError.message) ||
+    null
+
+  const statusCode =
+    (typeof root?.statusCode === 'number' && root.statusCode) ||
+    (typeof nestedError?.statusCode === 'number' && nestedError.statusCode) ||
+    null
+
+  const sequenceNumber =
+    (typeof nestedError?.sequence_number === 'number' &&
+      nestedError.sequence_number) ||
+    (typeof root?.sequence_number === 'number' && root.sequence_number) ||
+    null
+
+  const raw =
+    typeof error === 'string'
+      ? truncateString(error)
+      : root
+        ? truncateString(
+            `error object keys: ${Object.keys(root).join(', ') || '(none)'}`
+          )
+        : error instanceof Error
+          ? truncateString(`${error.name}: ${error.message}`)
+          : null
+
+  return {
+    name:
+      (typeof root?.name === 'string' && root.name) ||
+      (error instanceof Error ? error.name : null),
+    message,
+    type:
+      (typeof root?.type === 'string' && root.type) ||
+      (typeof nestedError?.type === 'string' && nestedError.type) ||
+      null,
+    code:
+      (typeof root?.code === 'string' && root.code) ||
+      (typeof nestedError?.code === 'string' && nestedError.code) ||
+      null,
+    statusCode,
+    sequenceNumber,
+    providerType:
+      (typeof providerError?.type === 'string' && providerError.type) || null,
+    providerCode:
+      (typeof providerError?.code === 'string' && providerError.code) || null,
+    providerMessage:
+      (typeof providerError?.message === 'string' && providerError.message) ||
+      null,
+    providerParam:
+      (typeof providerError?.param === 'string' && providerError.param) || null,
+    safeHeaders:
+      extractSafeHeaders(providerError?.headers) ||
+      extractSafeHeaders(nestedError?.headers) ||
+      extractSafeHeaders(root?.headers),
+    raw,
+    messageHash: message ? hashSnippet(message) : null,
+    providerMessageHash:
+      typeof providerError?.message === 'string'
+        ? hashSnippet(providerError.message)
+        : null,
+  }
+}
+
+type StreamErrorClassification =
+  | 'model_error'
+  | 'rate_limit_or_quota'
+  | 'auth_or_permission'
+  | 'content_filter_or_policy'
+  | 'unknown'
+
+function classifyStreamError(serializedError: SerializedStreamError): {
+  classification: StreamErrorClassification
+  retryable: boolean
+  suggestedAction: string
+} {
+  const code = (
+    serializedError.providerCode ||
+    serializedError.code ||
+    ''
+  ).toLowerCase()
+  const type = (
+    serializedError.providerType ||
+    serializedError.type ||
+    ''
+  ).toLowerCase()
+  const message = (
+    serializedError.providerMessage ||
+    serializedError.message ||
+    ''
+  ).toLowerCase()
+
+  if (type === 'model_error') {
+    return {
+      classification: 'model_error',
+      retryable: true,
+      suggestedAction:
+        'Check prompt/tool output structure, retry with reduced complexity, and compare with another model.',
+    }
+  }
+
+  if (
+    serializedError.statusCode === 429 ||
+    code.includes('rate') ||
+    code.includes('quota') ||
+    message.includes('rate limit') ||
+    message.includes('quota')
+  ) {
+    return {
+      classification: 'rate_limit_or_quota',
+      retryable: true,
+      suggestedAction:
+        'Retry with backoff and check rate limit/quota settings.',
+    }
+  }
+
+  if (
+    serializedError.statusCode === 401 ||
+    serializedError.statusCode === 403 ||
+    code.includes('unauthorized') ||
+    code.includes('forbidden') ||
+    message.includes('permission') ||
+    message.includes('unauthorized')
+  ) {
+    return {
+      classification: 'auth_or_permission',
+      retryable: false,
+      suggestedAction:
+        'Verify API credentials, model access permissions, and endpoint configuration.',
+    }
+  }
+
+  if (
+    type.includes('content') ||
+    type.includes('policy') ||
+    code.includes('content_filter') ||
+    code.includes('policy') ||
+    message.includes('content filter') ||
+    message.includes('policy')
+  ) {
+    return {
+      classification: 'content_filter_or_policy',
+      retryable: false,
+      suggestedAction:
+        'Review prompt/tool outputs for policy triggers and adjust instructions accordingly.',
+    }
+  }
+
+  return {
+    classification: 'unknown',
+    retryable: true,
+    suggestedAction:
+      'Check serialized provider error details and retry while monitoring stream events.',
+  }
+}
+
+const normalizeReasoningContent = (
+  value: string | null | undefined
+): string | null =>
+  typeof value === 'string' && value.trim().length > 0 ? value : null
+
+type PersistedAssistantContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'reasoning'; text: string }
+  | {
+      type: 'tool-call'
+      toolCallId: string
+      toolName: string
+      args?: unknown
+      result?: unknown
+    }
+
+const mapAssistantStepContent = (
+  steps: Array<{ content?: unknown[] }> | undefined
+): PersistedAssistantContentPart[] => {
+  const content: PersistedAssistantContentPart[] = []
+  const toolCallIndexById = new Map<string, number>()
+
+  for (const step of steps ?? []) {
+    if (!Array.isArray(step.content)) continue
+
+    for (const rawPart of step.content) {
+      if (!rawPart || typeof rawPart !== 'object') continue
+
+      const part = rawPart as {
+        type?: unknown
+        text?: unknown
+        toolCallId?: unknown
+        toolName?: unknown
+        input?: unknown
+        output?: unknown
+      }
+
+      if (part.type === 'text' && typeof part.text === 'string') {
+        content.push({ type: 'text', text: part.text })
+        continue
+      }
+
+      if (part.type === 'reasoning' && typeof part.text === 'string') {
+        content.push({ type: 'reasoning', text: part.text })
+        continue
+      }
+
+      if (
+        part.type === 'tool-call' &&
+        typeof part.toolCallId === 'string' &&
+        typeof part.toolName === 'string'
+      ) {
+        const nextToolCall = {
+          type: 'tool-call' as const,
+          toolCallId: part.toolCallId,
+          toolName: part.toolName,
+          args: part.input,
+        }
+        content.push(nextToolCall)
+        toolCallIndexById.set(nextToolCall.toolCallId, content.length - 1)
+        continue
+      }
+
+      if (part.type === 'tool-result' && typeof part.toolCallId === 'string') {
+        const toolCallIndex = toolCallIndexById.get(part.toolCallId)
+        if (toolCallIndex !== undefined) {
+          const existingToolCall = content[toolCallIndex]
+          if (existingToolCall?.type === 'tool-call') {
+            existingToolCall.result = part.output
+          }
+          continue
+        }
+
+        if (typeof part.toolName !== 'string') {
+          continue
+        }
+
+        const toolCallWithResult = {
+          type: 'tool-call' as const,
+          toolCallId: part.toolCallId,
+          toolName: part.toolName,
+          args: {},
+          result: part.output,
+        }
+        content.push(toolCallWithResult)
+        toolCallIndexById.set(part.toolCallId, content.length - 1)
+      }
+    }
+  }
+
+  return content
 }
 
 /**
@@ -60,71 +606,13 @@ export async function POST(
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
   const { chatbotId } = await params
-  const participantToken = req.cookies.get('participant_token')?.value
-
-  if (!participantToken) {
-    return NextResponse.json(
-      { error: 'No authentication token found' },
-      { status: 401 }
-    )
+  const requestId = randomUUID()
+  const requestStartedAtMs = Date.now()
+  const authResult = await withChatbotAuth(req, chatbotId)
+  if ('response' in authResult) {
+    return authResult.response
   }
-
-  let participantData: JWTPayload
-  let participantId: string | null = null
-  try {
-    const jwtPayload = await jwtVerify(
-      participantToken,
-      new TextEncoder().encode(process.env.APP_SECRET || '')
-    )
-    participantData = jwtPayload.payload
-    participantId =
-      typeof participantData.sub === 'string' && participantData.sub
-        ? participantData.sub
-        : null
-    if (!participantId) {
-      return NextResponse.json(
-        { error: 'Invalid authentication token' },
-        { status: 401 }
-      )
-    }
-  } catch (error) {
-    console.error('Unexpected JWT verification failure in API route:', error)
-    return NextResponse.json(
-      { error: 'Invalid authentication token' },
-      { status: 401 }
-    )
-  }
-
-  // check participation
-  try {
-    const participation = await prisma.participation.findUnique({
-      where: {
-        courseId_participantId: {
-          courseId:
-            (
-              await prisma.chatbot.findUnique({
-                where: { id: chatbotId },
-                select: { courseId: true },
-              })
-            )?.courseId ?? '',
-          participantId: participantId,
-        },
-      },
-    })
-
-    if (!participation) {
-      return NextResponse.json(
-        { error: 'No valid participation found for this chatbot' },
-        { status: 403 }
-      )
-    }
-  } catch (error) {
-    console.error('Error checking participation:', error)
-    return NextResponse.json(
-      { error: 'Error checking participation' },
-      { status: 500 }
-    )
-  }
+  const { participantId } = authResult
 
   // check disclaimer acceptance
   try {
@@ -143,7 +631,7 @@ export async function POST(
       )
     }
   } catch (error) {
-    console.error('Error checking disclaimer status:', error)
+    console.error('Error checking disclaimer status:', { requestId, error })
     return NextResponse.json(
       { error: 'Error checking disclaimer status' },
       { status: 500 }
@@ -159,12 +647,16 @@ export async function POST(
       })
     ),
     threadId: z.string().min(1).nullable().optional(),
-    selectedModel: z.enum(MODEL_IDS),
+    selectedModel: z.string().min(1),
     selectedMode: z
       .string()
       .optional()
       .transform((val) => val?.toLowerCase())
       .default('tutor'),
+    reasoningEffort: z
+      .enum(REASONING_EFFORT_OPTIONS)
+      .optional()
+      .default('none'),
     parentId: z.string().min(1).nullable().optional(),
     assistantMessageId: z.string().min(1),
   })
@@ -172,11 +664,33 @@ export async function POST(
   try {
     parsed = bodySchema.parse(await req.json())
   } catch (e) {
-    console.error('Invalid request body:', e)
+    console.error('Invalid request body:', { requestId, error: e })
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
-  const { messages, threadId, selectedMode, parentId, assistantMessageId } =
-    parsed
+  const {
+    messages,
+    threadId,
+    selectedMode,
+    reasoningEffort: requestedReasoningEffort,
+    parentId,
+    assistantMessageId,
+  } = parsed
+
+  const userPrompt = messages
+    .filter((message) => message.role === 'user')
+    .map((message) => message.content)
+    .join('\n')
+
+  logChatDev('request.received', {
+    requestId,
+    chatbotId,
+    participantId,
+    threadId,
+    assistantMessageId,
+    selectedModel: parsed.selectedModel,
+    selectedMode,
+    messageCount: messages.length,
+  })
 
   let selectedModel = parsed.selectedModel
 
@@ -232,6 +746,8 @@ export async function POST(
               authType: config.mcpServer.authType,
               authSecret: config.mcpServer.authSecret ?? '',
               parameters: config.mcpServer.parameters,
+              passChatbotId: config.mcpServer.passChatbotId,
+              chatbotIdHeader: config.mcpServer.chatbotIdHeader ?? undefined,
             },
             config: {
               allowedTools: config.allowedTools as string[] | undefined,
@@ -241,35 +757,204 @@ export async function POST(
           })) || []
     }
   } catch (error) {
-    console.error('Failed to fetch chatbot configuration:', error)
+    console.error('Failed to fetch chatbot configuration:', {
+      requestId,
+      error,
+    })
   }
 
   // create a new thread if none exists
   if (!currentThreadId && messages.length > 0) {
     try {
       const newThread = await ThreadService.createThread(
-        participantData.sub as string,
+        participantId,
         chatbotId,
         null
       )
       currentThreadId = newThread.id
     } catch (error) {
-      console.error('Failed to create thread:', error)
+      console.error('Failed to create thread:', { requestId, error })
     }
   }
 
-  // save user message to database
-  if (currentThreadId && messages.length > 0) {
-    const lastMessage = messages[messages.length - 1]
-    if (lastMessage.role === 'user') {
-      userMessageId = lastMessage.id
+  const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null
+  if (lastMessage?.role === 'user') {
+    userMessageId = lastMessage.id
+  }
 
-      try {
-        // check if message already exists (e.g. in case of retries)
+  // track partial content for cancelled streams
+  let partialContent = ''
+  let partialReasoningContent = ''
+  let assistantReasoningContent: string | null = null
+
+  const modelMessages = messages.map((msg) => ({
+    role: msg.role,
+    content: msg.content,
+  }))
+
+  // Load MCP tools from database configurations or fallback to legacy
+  const mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
+  const toolNames = Object.keys(mcpTools || {})
+
+  if (!chatbot) {
+    return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
+  }
+
+  const modelRegistry = getChatModelRegistry()
+  const allowedIds =
+    chatbot.allowedModelIds.length > 0
+      ? new Set(chatbot.allowedModelIds as string[])
+      : null
+
+  // Override model selection if modelSelection is disabled
+  let userCredits: { current: number; total: number } | null = null
+  if (!chatbot.modelSelection) {
+    // Get current user credits to determine automatic model selection
+    userCredits = await CreditsService.getUserCredits(participantId, chatbotId)
+    selectedModel = getAutomaticModelId(
+      userCredits,
+      chatbot.allowedModelIds as string[]
+    )
+  }
+
+  let selectedModelConfig = modelRegistry.find((m) => m.id === selectedModel)
+  if (!selectedModelConfig) {
+    return NextResponse.json(
+      { error: `Unknown model: ${selectedModel}` },
+      { status: 400 }
+    )
+  }
+
+  // Enforce per-chatbot model allow-list
+  if (
+    allowedIds &&
+    !allowedIds.has(selectedModelConfig.id) &&
+    !selectedModelConfig.fallback
+  ) {
+    return NextResponse.json(
+      { error: `Model not available for this chatbot: ${selectedModel}` },
+      { status: 400 }
+    )
+  }
+
+  const maxOutputTokens = selectedModelConfig.maxOutputTokens
+
+  // Enforce fallback-only usage when the user has no credits left.
+  // This prevents bypassing credit gating by manually calling the API.
+  if (chatbot.modelSelection && !selectedModelConfig.fallback) {
+    userCredits =
+      userCredits ??
+      (await CreditsService.getUserCredits(participantId, chatbotId))
+    if (userCredits.current <= 0) {
+      selectedModel = getAutomaticModelId(
+        userCredits,
+        chatbot.allowedModelIds as string[]
+      )
+      selectedModelConfig = modelRegistry.find((m) => m.id === selectedModel)
+      if (!selectedModelConfig) {
+        return NextResponse.json(
+          { error: `Unknown model: ${selectedModel}` },
+          { status: 400 }
+        )
+      }
+    }
+  }
+
+  const allowedReasoningEfforts = getAllowedReasoningEffortsForModel(
+    selectedModelConfig,
+    chatbot.allowedReasoningEffortsByModel
+  )
+  const appliedReasoningEffort: ReasoningEffort | null =
+    allowedReasoningEfforts.length > 0
+      ? allowedReasoningEfforts.includes(requestedReasoningEffort)
+        ? requestedReasoningEffort
+        : getDefaultReasoningEffort(allowedReasoningEfforts)
+      : null
+
+  const providerReasoningEffort =
+    appliedReasoningEffort && appliedReasoningEffort !== 'none'
+      ? appliedReasoningEffort
+      : undefined
+
+  const { model, routing } = getModel(chatbot, selectedModelConfig.deploymentId)
+  const logEvent = (
+    event: string,
+    context: Record<string, unknown>,
+    level: 'info' | 'error' = 'info'
+  ) => logChatDev(event, { requestId, ...context }, level)
+
+  logEvent('request.context', {
+    chatbotId,
+    participantId,
+    threadId: currentThreadId,
+    assistantMessageId,
+    selectedModel,
+    resolvedModelId: selectedModelConfig.id,
+    deploymentId: selectedModelConfig.deploymentId,
+    routing,
+    selectedMode,
+    reasoningEffort: appliedReasoningEffort,
+    allowedReasoningEfforts,
+    maxOutputTokens: maxOutputTokens ?? null,
+    toolCount: toolNames.length,
+    toolNames,
+    systemPromptLength: systemPrompt.length,
+    systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
+    userPromptLengthTotal: userPrompt.length,
+    userPromptHash: userPrompt ? hashSnippet(userPrompt) : null,
+    elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
+  })
+
+  const owningThread = currentThreadId
+    ? await prisma.chatThread.findFirst({
+        where: {
+          id: currentThreadId,
+          participantId,
+          chatbotId,
+        },
+        select: { id: true },
+      })
+    : null
+
+  logEvent('thread.resolved', {
+    hasOwningThread: Boolean(owningThread),
+    elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
+  })
+
+  // save user message to database (after effective model selection)
+  if (
+    currentThreadId &&
+    owningThread &&
+    lastMessage?.role === 'user' &&
+    userMessageId
+  ) {
+    try {
+      const metadata = {
+        chatMode: selectedMode,
+        modelId: selectedModelConfig.id,
+        reasoningEffort: appliedReasoningEffort,
+      }
+      const updated = await prisma.chatMessage.updateMany({
+        where: { id: userMessageId, threadId: currentThreadId },
+        data: metadata,
+      })
+
+      if (updated.count === 0) {
         const existingMessage = await prisma.chatMessage.findUnique({
           where: { id: userMessageId },
+          select: { id: true },
         })
-        if (!existingMessage) {
+        if (existingMessage) {
+          console.warn(
+            'Skipping user message update: message exists outside current thread',
+            {
+              requestId,
+              phase: 'persist.userMessage',
+              messageId: userMessageId,
+              threadId: currentThreadId,
+            }
+          )
+        } else {
           await prisma.chatMessage.create({
             data: {
               id: lastMessage.id,
@@ -277,51 +962,73 @@ export async function POST(
               parentId: parentId || null,
               role: lastMessage.role,
               content: [{ type: 'text', text: lastMessage.content }],
+              ...metadata,
             },
           })
         }
-
-        // update thread's timestamp
-        await prisma.chatThread.update({
-          where: { id: currentThreadId },
-          data: { updatedAt: new Date() },
-        })
-      } catch (error) {
-        console.error('Failed to save user message:', error)
       }
+
+      // update thread's timestamp
+      await prisma.chatThread.update({
+        where: { id: currentThreadId },
+        data: { updatedAt: new Date() },
+      })
+    } catch (error) {
+      console.error('Failed to save user message:', {
+        requestId,
+        phase: 'persist.userMessage',
+        error,
+      })
     }
+  } else if (currentThreadId && !owningThread && userMessageId) {
+    console.warn('Skipping user message save: thread ownership mismatch', {
+      requestId,
+      phase: 'persist.userMessage',
+      messageId: userMessageId,
+      threadId: currentThreadId,
+    })
   }
 
-  // track partial content for cancelled streams
-  let partialContent = ''
+  const streamStartedAtMs = Date.now()
+  let hasLoggedFirstChunk = false
+  let firstError: SerializedStreamError | null = null
+  let sawAbort = false
+  let sawFinish = false
+  let finalEmitted = false
 
-  // convert to UIMessage format
-  const uiMessages: UIMessage[] = messages.map((msg) => ({
-    id: msg.id,
-    role: msg.role as 'user' | 'assistant',
-    content: msg.content,
-    parts: [{ type: 'text' as const, text: msg.content }],
-  }))
-
-  // Load MCP tools from database configurations or fallback to legacy
-  const mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
-
-  if (!chatbot) {
-    return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
+  const emitFinalOnce = (
+    status: 'success' | 'error' | 'aborted',
+    payload: Record<string, unknown>
+  ) => {
+    if (finalEmitted) return
+    finalEmitted = true
+    logEvent('stream.final', {
+      status,
+      sawFinish,
+      sawAbort,
+      hadError: Boolean(firstError),
+      ...payload,
+    })
   }
-  // Override model selection if modelSelection is disabled
-  if (!chatbot.modelSelection) {
-    // Get current user credits to determine automatic model selection
-    const userCredits = await CreditsService.getUserCredits(
-      participantId,
-      chatbotId
-    )
-    selectedModel = CreditsService.getAutomaticModel(userCredits) as any
-  }
+
+  logEvent('stream.start', {
+    elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
+  })
 
   const result = streamText({
-    model: getAzureModel(chatbot, selectedModel),
-    messages: convertToModelMessages(uiMessages),
+    model,
+    maxOutputTokens,
+    experimental_telemetry: { isEnabled: true },
+    providerOptions: {
+      openai: {
+        store: false,
+        ...(providerReasoningEffort && {
+          reasoningEffort: providerReasoningEffort,
+          reasoningSummary: 'auto',
+        }),
+      },
+    },
+    messages: modelMessages,
     tools: mcpTools,
     toolChoice: 'auto',
     stopWhen: stepCountIs(5),
@@ -330,60 +1037,120 @@ export async function POST(
     abortSignal: req.signal,
 
     onChunk: ({ chunk }) => {
+      if (!hasLoggedFirstChunk) {
+        hasLoggedFirstChunk = true
+        logEvent('stream.chunk.first', {
+          firstChunkType: chunk.type,
+          elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+        })
+      }
+
       if (chunk.type === 'text-delta' && chunk.text) {
         partialContent += chunk.text
+      }
+      if (chunk.type === 'reasoning-delta' && chunk.text) {
+        partialReasoningContent += chunk.text
       }
     },
 
     onFinish: async (result) => {
-      // save assistant response to database
-      if (currentThreadId && result.steps && result.steps.length > 0) {
-        try {
-          const content = []
+      sawFinish = true
+      const creditsUsed = result.totalUsage
+        ? calcCost(
+            selectedModelConfig.cost,
+            result.totalUsage.inputTokens || 0,
+            result.totalUsage.outputTokens || 0
+          )
+        : null
+      const finishedReasoningContent =
+        normalizeReasoningContent(
+          result.reasoningText ||
+            result.steps
+              .map((step) => step.reasoningText || '')
+              .filter((value) => value.length > 0)
+              .join('')
+        ) ?? normalizeReasoningContent(partialReasoningContent)
+      assistantReasoningContent = finishedReasoningContent
+      const providerReasoningTokens = extractReasoningTokens(
+        asObject(result)?.providerMetadata
+      )
+      const finishOutputTokens = result.totalUsage?.outputTokens || 0
 
-          for (const step of result.steps) {
-            if (step.content && Array.isArray(step.content)) {
-              if (
-                step.content.length === 1 &&
-                step.content[0].type === 'text'
-              ) {
-                // Case 1: single text content
-                content.push({ type: 'text', text: step.content[0].text })
-              } else if (step.content.length === 2) {
-                // Case 2: tool call with tool-call and tool-result
-                const toolCall = step.content.find(
-                  (item) => item.type === 'tool-call'
-                )
-                const toolResult = step.content.find(
-                  (item) => item.type === 'tool-result'
-                )
-
-                if (toolCall && toolResult) {
-                  content.push({
-                    type: 'tool-call',
-                    toolCallId: toolCall.toolCallId,
-                    toolName: toolCall.toolName,
-                    args: toolCall.input,
-                    result: toolResult.output,
-                  })
-                }
-              }
+      logEvent('stream.finish', {
+        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+        usage: result.totalUsage
+          ? {
+              inputTokens: result.totalUsage.inputTokens || 0,
+              outputTokens: result.totalUsage.outputTokens || 0,
+              totalTokens: result.totalUsage.totalTokens || 0,
             }
-          }
+          : null,
+        creditsUsed,
+        reasoningTokens: providerReasoningTokens,
+        reasoningTokensIncludedInOutput:
+          providerReasoningTokens !== null
+            ? finishOutputTokens >= providerReasoningTokens
+            : null,
+        stepsCount: result.steps?.length ?? 0,
+        partialTextLength: partialContent.length,
+        partialReasoningLength: partialReasoningContent.length,
+        hadPriorError: Boolean(firstError),
+        hadAbort: sawAbort,
+      })
+
+      // save assistant response to database
+      if (
+        currentThreadId &&
+        owningThread &&
+        result.steps &&
+        result.steps.length > 0
+      ) {
+        try {
+          const content = mapAssistantStepContent(result.steps)
           // save assistant message to db
-          const existingMessage = await prisma.chatMessage.findUnique({
-            where: { id: assistantMessageId },
+          const metadata = {
+            chatMode: selectedMode,
+            modelId: selectedModelConfig.id,
+            reasoningEffort: appliedReasoningEffort,
+            reasoningContent: finishedReasoningContent,
+            creditsUsed,
+          }
+          const updated = await prisma.chatMessage.updateMany({
+            where: { id: assistantMessageId, threadId: currentThreadId },
+            data: {
+              content,
+              ...metadata,
+            },
           })
-          if (!existingMessage) {
-            await prisma.chatMessage.create({
-              data: {
-                id: assistantMessageId,
-                threadId: currentThreadId,
-                parentId: userMessageId,
-                role: 'assistant',
-                content: content,
-              },
+
+          if (updated.count === 0) {
+            const existingMessage = await prisma.chatMessage.findUnique({
+              where: { id: assistantMessageId },
+              select: { id: true },
             })
+
+            if (existingMessage) {
+              console.warn(
+                'Skipping assistant message update: message exists outside current thread',
+                {
+                  requestId,
+                  phase: 'persist.assistantMessage',
+                  messageId: assistantMessageId,
+                  threadId: currentThreadId,
+                }
+              )
+            } else {
+              await prisma.chatMessage.create({
+                data: {
+                  id: assistantMessageId,
+                  threadId: currentThreadId,
+                  parentId: userMessageId,
+                  role: 'assistant',
+                  content: content,
+                  ...metadata,
+                },
+              })
+            }
           }
 
           // update thread's timestamp
@@ -392,51 +1159,176 @@ export async function POST(
             data: { updatedAt: new Date() },
           })
         } catch (error) {
-          console.error('Failed to save assistant message:', error)
+          console.error('Failed to save assistant message:', {
+            requestId,
+            phase: 'persist.assistantMessage',
+            error,
+          })
         }
+      } else if (currentThreadId && !owningThread) {
+        console.warn(
+          'Skipping assistant message save: thread ownership mismatch',
+          {
+            requestId,
+            phase: 'persist.assistantMessage',
+            messageId: assistantMessageId,
+            threadId: currentThreadId,
+          }
+        )
       }
 
       // deduct credits
-      if (result.totalUsage) {
+      if (creditsUsed !== null) {
         try {
-          const costBase = getModelCost(selectedModel)
-
-          const totalCost = calcCost(
-            costBase,
-            result.totalUsage.inputTokens || 0,
-            result.totalUsage.outputTokens || 0
+          await CreditsService.decrementCredits(
+            participantId,
+            chatbotId,
+            creditsUsed
           )
-
-          if (participantData.sub) {
-            await CreditsService.decrementCredits(
-              participantData.sub as string,
-              chatbotId,
-              totalCost
-            )
-          }
         } catch (error) {
-          console.error('Failed to deduct credits:', error)
+          console.error('Failed to deduct credits:', {
+            requestId,
+            phase: 'credits.decrement',
+            error,
+          })
         }
+      }
+
+      if (!firstError && !sawAbort) {
+        emitFinalOnce('success', {
+          elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+          usage: result.totalUsage
+            ? {
+                inputTokens: result.totalUsage.inputTokens || 0,
+                outputTokens: result.totalUsage.outputTokens || 0,
+                totalTokens: result.totalUsage.totalTokens || 0,
+              }
+            : null,
+          stepsCount: result.steps?.length ?? 0,
+        })
       }
     },
 
     onAbort: async (steps) => {
-      // save partial message
-      if (currentThreadId && partialContent.trim()) {
-        try {
-          const existingMessage = await prisma.chatMessage.findUnique({
-            where: { id: assistantMessageId },
-          })
-          if (!existingMessage) {
-            await prisma.chatMessage.create({
-              data: {
-                id: assistantMessageId,
-                threadId: currentThreadId,
-                parentId: userMessageId,
-                role: 'assistant',
-                content: [{ type: 'text', text: partialContent }],
-              },
+      sawAbort = true
+      let creditsUsed: number | null = null
+      if (steps && Array.isArray(steps.steps)) {
+        let totalCost = 0
+        let hasUsage = false
+        const costBase = selectedModelConfig.cost
+
+        for (const step of steps.steps) {
+          if (step.usage) {
+            hasUsage = true
+            totalCost += calcCost(
+              costBase,
+              step.usage.inputTokens || 0,
+              step.usage.outputTokens || 0
+            )
+          }
+        }
+
+        if (hasUsage) {
+          creditsUsed = totalCost
+        }
+
+        if (creditsUsed !== null && creditsUsed > 0) {
+          try {
+            await CreditsService.decrementCredits(
+              participantId,
+              chatbotId,
+              creditsUsed
+            )
+          } catch (error) {
+            console.error('Failed to deduct credits:', {
+              requestId,
+              phase: 'credits.decrement',
+              error,
             })
+          }
+        }
+      }
+
+      const abortedReasoningContent =
+        normalizeReasoningContent(
+          Array.isArray(steps?.steps)
+            ? steps.steps
+                .map((step) => step.reasoningText || '')
+                .filter((value) => value.length > 0)
+                .join('')
+            : ''
+        ) ?? normalizeReasoningContent(partialReasoningContent)
+      assistantReasoningContent = abortedReasoningContent
+
+      logEvent('stream.abort', {
+        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+        stepsCount: Array.isArray(steps?.steps) ? steps.steps.length : 0,
+        creditsUsed,
+        partialTextLength: partialContent.length,
+        partialReasoningLength: partialReasoningContent.length,
+      })
+
+      // save partial message
+      if (
+        currentThreadId &&
+        owningThread &&
+        (partialContent.trim() || abortedReasoningContent)
+      ) {
+        try {
+          const partialAssistantContent: PersistedAssistantContentPart[] = []
+          if (partialContent.trim()) {
+            partialAssistantContent.push({ type: 'text', text: partialContent })
+          }
+          if (abortedReasoningContent) {
+            partialAssistantContent.push({
+              type: 'reasoning',
+              text: abortedReasoningContent,
+            })
+          }
+
+          const metadata = {
+            chatMode: selectedMode,
+            modelId: selectedModelConfig.id,
+            reasoningEffort: appliedReasoningEffort,
+            reasoningContent: abortedReasoningContent,
+            creditsUsed,
+          }
+          const updated = await prisma.chatMessage.updateMany({
+            where: { id: assistantMessageId, threadId: currentThreadId },
+            data: {
+              content: partialAssistantContent,
+              ...metadata,
+            },
+          })
+
+          if (updated.count === 0) {
+            const existingMessage = await prisma.chatMessage.findUnique({
+              where: { id: assistantMessageId },
+              select: { id: true },
+            })
+
+            if (existingMessage) {
+              console.warn(
+                'Skipping assistant message update: message exists outside current thread',
+                {
+                  requestId,
+                  phase: 'persist.partialAssistantMessage',
+                  messageId: assistantMessageId,
+                  threadId: currentThreadId,
+                }
+              )
+            } else {
+              await prisma.chatMessage.create({
+                data: {
+                  id: assistantMessageId,
+                  threadId: currentThreadId,
+                  parentId: userMessageId,
+                  role: 'assistant',
+                  content: partialAssistantContent,
+                  ...metadata,
+                },
+              })
+            }
           }
 
           // update thread's timestamp
@@ -445,44 +1337,125 @@ export async function POST(
             data: { updatedAt: new Date() },
           })
         } catch (error) {
-          console.error('Failed to save partial message:', error)
+          console.error('Failed to save partial message:', {
+            requestId,
+            phase: 'persist.partialAssistantMessage',
+            error,
+          })
         }
+      } else if (
+        currentThreadId &&
+        !owningThread &&
+        (partialContent.trim() || abortedReasoningContent)
+      ) {
+        console.warn(
+          'Skipping assistant message save: thread ownership mismatch',
+          {
+            requestId,
+            phase: 'persist.partialAssistantMessage',
+            messageId: assistantMessageId,
+            threadId: currentThreadId,
+          }
+        )
       }
 
-      if (steps) {
-        let totalCost = 0
-        const costBase = getModelCost(selectedModel)
-        if (steps && Array.isArray(steps.steps)) {
-          for (const step of steps.steps) {
-            if (step.usage) {
-              totalCost += calcCost(
-                costBase,
-                step.usage.inputTokens || 0,
-                step.usage.outputTokens || 0
-              )
+      emitFinalOnce('aborted', {
+        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+        stepsCount: Array.isArray(steps?.steps) ? steps.steps.length : 0,
+      })
+    },
+
+    onStepFinish: async (step) => {
+      const diagnostics = collectStepToolDiagnostics(step)
+      const toolCallNames = Array.from(
+        new Set(diagnostics.map((diagnostic) => diagnostic.toolName))
+      )
+      const toolCallsCount = diagnostics.length
+      const providerReasoningTokens = extractReasoningTokens(
+        asObject(step)?.providerMetadata
+      )
+      const stepOutputTokens = step.usage?.outputTokens || 0
+      logEvent('stream.step.finish', {
+        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+        finishReason: step.finishReason,
+        warningsCount: step.warnings?.length ?? 0,
+        usage: step.usage
+          ? {
+              inputTokens: step.usage.inputTokens || 0,
+              outputTokens: step.usage.outputTokens || 0,
+              totalTokens: step.usage.totalTokens || 0,
             }
-          }
-          if (participantData.sub && totalCost > 0) {
-            try {
-              await CreditsService.decrementCredits(
-                participantData.sub as string,
-                chatbotId,
-                totalCost
-              )
-            } catch (error) {
-              console.error('Failed to deduct credits:', error)
-            }
-          }
-        }
-      }
+          : null,
+        reasoningTokens: providerReasoningTokens,
+        reasoningTokensIncludedInOutput:
+          providerReasoningTokens !== null
+            ? stepOutputTokens >= providerReasoningTokens
+            : null,
+        toolCallsCount,
+        toolCallNames,
+        toolDiagnostics: diagnostics,
+      })
     },
 
     onError: async (error) => {
-      // handle error
-      console.error('Error during streaming response:', error)
+      const serializedError = serializeStreamError(error)
+      firstError = firstError ?? serializedError
+      const classification = classifyStreamError(serializedError)
+
+      logEvent(
+        'stream.error',
+        {
+          elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+          ...serializedError,
+          classification: classification.classification,
+          retryable: classification.retryable,
+          suggestedAction: classification.suggestedAction,
+        },
+        'error'
+      )
+
+      console.error('Error during streaming response:', {
+        requestId,
+        error: serializedError,
+      })
+
+      emitFinalOnce('error', {
+        elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+        classification: classification.classification,
+      })
     },
   })
-  return result.toUIMessageStreamResponse()
+
+  logEvent('response.stream.created', {
+    stage: 'response-object-created',
+    elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
+  })
+
+  return result.toUIMessageStreamResponse({
+    sendReasoning: true,
+    messageMetadata: ({ part }) => {
+      if (part.type !== 'finish') {
+        return undefined
+      }
+
+      const creditsUsed = part.totalUsage
+        ? calcCost(
+            selectedModelConfig.cost,
+            part.totalUsage.inputTokens || 0,
+            part.totalUsage.outputTokens || 0
+          )
+        : null
+
+      return {
+        finishReason: part.finishReason,
+        chatMode: selectedMode,
+        modelId: selectedModelConfig.id,
+        reasoningEffort: appliedReasoningEffort,
+        reasoningContent: assistantReasoningContent,
+        creditsUsed,
+      }
+    },
+  })
 }
 
 // Function to calculate cost based on token usage and model pricing

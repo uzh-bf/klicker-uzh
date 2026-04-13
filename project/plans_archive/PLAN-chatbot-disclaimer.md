@@ -4,14 +4,28 @@
 
 This plan outlines the implementation of a comprehensive disclaimer system for KlickerUZH chatbots. The system ensures students understand AI limitations, data protection requirements, and usage responsibilities before accessing chatbot functionality. It introduces server-side, versioned consent tracking that is enforced by the chat APIs, while providing flexibility for different courses and departments.
 
+## Progress (feat/chat-gpt-5-1)
+
+**Done on this branch**
+- Implemented disclaimer read + accept/decline endpoints (`/api/chatbots/[chatbotId]/disclaimer`) with acceptance tracked in `ChatUsageCredits`.
+- Enforced disclaimer acceptance in the main chat send endpoint (blocks usage when required + not accepted).
+- Disclaimer GET/POST now enforce course membership.
+
+**Remaining**
+- Enforce disclaimer guard consistently across other endpoints (threads/messages/credits) and return `428 Precondition Required` with remediation info as per this plan.
+- With course↔chatbot many-to-many, decide whether disclaimers are per chatbot or per course↔chatbot link (and migrate storage accordingly if per-course).
+- Implement template/versioning/publishing workflow.
+
 ## Problem Statement
 
 ### Current State
 - Students can immediately access chatbot functionality without understanding limitations
 - No mechanism to inform users about data protection and AI accuracy concerns
 - Lecturers cannot customize introductory content for their specific course context
-- No way to track informed consent for chatbot usage
-- A prototype disclaimer dialog exists client-side only (local storage/cookies) and is not enforced or persisted server-side; there is no version awareness
+- Disclaimer data model exists (`ChatbotDisclaimer`) with chatbot-level assignment
+- Acceptance tracked server-side in `ChatUsageCredits` (`acceptedDisclaimerId`, `disclaimerDeclined`)
+- `/api/chatbots/[chatbotId]/disclaimer` GET/POST endpoints exist and the chat endpoint blocks when acceptance is required and missing
+- Acceptance is per (participantId, chatbotId) and shared across courses
 
 ### Risks Without Disclaimer System
 - Students may over-rely on AI-generated content without understanding limitations

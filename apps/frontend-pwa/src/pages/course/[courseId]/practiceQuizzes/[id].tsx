@@ -4,6 +4,7 @@ import {
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
@@ -22,11 +23,13 @@ function PracticeQuizPage({
   id,
   participantToken,
   cookiesAvailable,
+  embedded,
 }: {
   courseId: string
   id: string
   participantToken?: string
   cookiesAvailable?: boolean
+  embedded: boolean
 }) {
   const t = useTranslations()
   const [currentIx, setCurrentIx] = useState(-1)
@@ -42,14 +45,14 @@ function PracticeQuizPage({
 
   if (loading)
     return (
-      <Layout>
+      <Layout embedded={embedded}>
         <Loader />
       </Layout>
     )
 
   if (!data?.practiceQuiz) {
     return (
-      <Layout>
+      <Layout embedded={embedded}>
         <UserNotification
           type="error"
           message={t('pwa.practiceQuiz.notFound')}
@@ -59,7 +62,9 @@ function PracticeQuizPage({
   }
 
   if (error) {
-    return <Layout>{t('shared.generic.systemError')}</Layout>
+    return (
+      <Layout embedded={embedded}>{t('shared.generic.systemError')}</Layout>
+    )
   }
 
   // show notification with activity start date
@@ -69,6 +74,7 @@ function PracticeQuizPage({
   ) {
     return (
       <Layout
+        embedded={embedded}
         displayName={data.practiceQuiz.displayName}
         course={data.practiceQuiz.course ?? undefined}
       >
@@ -92,6 +98,7 @@ function PracticeQuizPage({
 
   return (
     <Layout
+      embedded={embedded}
       displayName={data.practiceQuiz.displayName}
       course={data.practiceQuiz.course ?? undefined}
     >
@@ -104,11 +111,20 @@ function PracticeQuizPage({
         currentIx={currentIx}
         setCurrentIx={setCurrentIx}
         handleNextElement={handleNextQuestion}
+        onAllStacksCompletion={
+          embedded
+            ? () => {
+                setCurrentIx(-1)
+              }
+            : undefined
+        }
         previewOnly={data.practiceQuiz.isOwner ?? undefined}
       />
-      <Footer
-        browserLink={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/practiceQuizzes/${id}`}
-      />
+      {!embedded && (
+        <Footer
+          browserLink={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/practiceQuizzes/${id}`}
+        />
+      )}
     </Layout>
   )
 }
@@ -129,6 +145,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     const apolloClient = initializeApollo()
 
+    const embedded = parseEmbedParam(ctx.query.embed)
+
     const { participantToken, cookiesAvailable } = await getParticipantToken({
       apolloClient,
       courseId: ctx.params.courseId,
@@ -142,6 +160,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           cookiesAvailable,
           id: ctx.params.id,
           courseId: ctx.params.courseId,
+          embedded,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
         },
@@ -152,6 +171,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       props: {
         id: ctx.params.id,
         courseId: ctx.params.courseId,
+        embedded,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },

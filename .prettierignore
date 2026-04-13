@@ -10,6 +10,10 @@ email/
 .serena/
 project/
 
+# Symlinks
+.github/skills
+CLAUDE.md
+
 ops.schema.json
 ops.ts
 schema.graphql
@@ -48,3 +52,12 @@ pnpm-lock.yaml
 # Dumps
 *.tar
 *.gpg
+
+# Unsupported file types
+**/*.toml
+**/*.gitignore
+**/Dockerfile*
+**/*.prisma
+**/*.py
+**/*.txt
+**/.codex/

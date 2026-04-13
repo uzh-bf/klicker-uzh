@@ -30,7 +30,7 @@
     "build:ts": "rollup -c",
     "check": "tsc --noEmit",
     "dev:build": "rollup -c --watch",
-    "dev:doppler": "doppler run --config dev -- pnpm run dev:lti",
+    "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev:lti",
     "dev:lti": "npm-run-all --parallel dev:build dev:run",
     "dev:run": "nodemon -w dist/ --exec 'node ./dist/index.js'",
     "start": "node dist/index.js"

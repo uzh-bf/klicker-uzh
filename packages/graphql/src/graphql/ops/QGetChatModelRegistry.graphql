@@ -1,0 +1,10 @@
+query GetChatModelRegistry {
+  getChatModelRegistry {
+    id
+    name
+    description
+    fallback
+    supportsReasoning
+    supportedReasoningEfforts
+  }
+}

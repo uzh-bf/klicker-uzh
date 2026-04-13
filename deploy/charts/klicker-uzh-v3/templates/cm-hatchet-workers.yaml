@@ -1,0 +1,31 @@
+{{- $fullName := include "chart.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-hatchet-worker-general
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
+  HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-hatchet-worker-response-processor
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
+  HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-hatchet-worker-response-processor-assessment
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
+  HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  ASSESSMENT_MODE: 'true'

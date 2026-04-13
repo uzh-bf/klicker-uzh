@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/grading",
-  "version": "3.4.0-alpha.40",
+  "version": "3.4.0-alpha.57",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -29,7 +29,7 @@
     "build:ts": "cross-env NODE_ENV=production rollup -c",
     "check": "tsc --noEmit",
     "dev": "cross-env NODE_ENV=development rollup -c --watch",
-    "dev:doppler": "doppler run --config dev -- pnpm run dev",
+    "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",
     "dev:offline": "pnpm run dev",
     "test": "vitest run"
   },

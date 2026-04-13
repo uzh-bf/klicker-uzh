@@ -10,7 +10,7 @@
     "@types/react": "^19.1.8",
     "@uzh-bf/design-system": "4.1.6",
     "lucide-react": "~0.522.0",
-    "react": "~19.1.0",
+    "react": "~19.1.2",
     "react-email": "~3.0.1",
     "tsx": "~4.19.4",
     "typescript": "~5.6.3"
@@ -18,9 +18,9 @@
   "scripts": {
     "build": "email export -d src/emails",
     "dev:email": "email dev -d src/emails",
-    "update-templates": "doppler run --config dev -- tsx src/scripts/deploy.ts",
-    "update-templates:prod": "doppler run --config prd -- tsx src/scripts/deploy.ts",
-    "update-templates:qa": "doppler run --config stg -- tsx src/scripts/deploy.ts"
+    "update-templates": "../../util/_run_with_infisical.sh --env dev tsx src/scripts/deploy.ts",
+    "update-templates:prod": "../../util/_run_with_infisical.sh --env prd tsx src/scripts/deploy.ts",
+    "update-templates:qa": "../../util/_run_with_infisical.sh --env stg tsx src/scripts/deploy.ts"
   },
   "volta": {
     "extends": "../../package.json"

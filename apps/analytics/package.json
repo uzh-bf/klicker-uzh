@@ -6,12 +6,12 @@
     "nodemon": "~3.1.10"
   },
   "scripts": {
-    "analytics:dev": "doppler run --config dev -- nodemon --exec 'poetry run poe main' --watch src,prisma --ext py,prisma",
+    "analytics:dev": "../../util/_run_with_infisical.sh --env dev nodemon --exec 'poetry run poe main' --watch src,prisma --ext py,prisma",
     "generate": "poetry run poe generate",
-    "main": "doppler run --config dev -- poetry run poe main",
-    "script": "doppler run --config dev -- poetry run python -m",
-    "script:prod": "doppler run --config prd -- poetry run python -m",
-    "script:qa": "doppler run --config stg -- poetry run python -m"
+    "main": "../../util/_run_with_infisical.sh --env dev poetry run poe main",
+    "script": "../../util/_run_with_infisical.sh --env dev poetry run python -m",
+    "script:prod": "../../util/_run_with_infisical.sh --env prd poetry run python -m",
+    "script:qa": "../../util/_run_with_infisical.sh --env stg poetry run python -m"
   },
   "engines": {
     "node": "=20"

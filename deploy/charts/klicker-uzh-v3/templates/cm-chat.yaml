@@ -1,0 +1,21 @@
+{{- $fullName := include "chart.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-chat
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  OPENAI_BASE_URL: {{ .Values.chat.openai.baseUrl | quote }}
+  {{- if .Values.chat.modelRegistry }}
+  CHAT_MODEL_REGISTRY_JSON: {{ .Values.chat.modelRegistry | toJson | quote }}
+  {{- end }}
+  {{- if and .Values.chat.automaticModels .Values.chat.automaticModels.primaryId }}
+  CHAT_PRIMARY_MODEL_ID: {{ .Values.chat.automaticModels.primaryId | quote }}
+  {{- end }}
+  {{- if and .Values.chat.automaticModels .Values.chat.automaticModels.fallbackId }}
+  CHAT_FALLBACK_MODEL_ID: {{ .Values.chat.automaticModels.fallbackId | quote }}
+  {{- end }}
+  {{- if .Values.chat.allowedFrameAncestors }}
+  ALLOWED_FRAME_ANCESTORS: {{ .Values.chat.allowedFrameAncestors | quote }}
+  {{- end }}
