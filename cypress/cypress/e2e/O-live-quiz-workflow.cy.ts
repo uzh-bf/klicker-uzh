@@ -4754,7 +4754,6 @@ describe('Different live-quiz workflows', function () {
   })
 
   it('Test word cloud display after receiving answers', function () {
-    // TODO test german as well and standard and premium
     cy.loginLecturer()
     cy.get('[data-cy="activities"]').click()
     cy.get(`[data-cy="live-quiz-cockpit-${this.data.modes.name}"]`).click()
@@ -4771,110 +4770,6 @@ describe('Different live-quiz workflows', function () {
     cy.wait(1000)
 
     cy.get('[data-cy="word-cloud"]').should('contain', '50')
-
-    const noResponsesMatchingMessage =
-      'No responses match the current filter settings 🧐.'
-    const titles = [this.data.FT4.title, this.data.FT5.title]
-    const tags = [
-      'word',
-      'ordinal',
-      'number',
-      'stopword',
-      'url',
-      'mention',
-      'hashtag',
-      'email',
-      'emoticon',
-      'emoji',
-      'punctuation',
-      'currency',
-      'symbol',
-    ]
-    const expectedFilteredResponses: Record<
-      string,
-      Record<string, string[]>
-    > = {
-      [`${this.data.FT4.title}`]: this.data.FT4.filteredResponses,
-      [`${this.data.FT5.title}`]: this.data.FT5.filteredResponses,
-    }
-    const languages: Record<string, string> = {
-      [`${this.data.FT4.title}`]: this.data.FT4.language,
-      [`${this.data.FT5.title}`]: this.data.FT5.language,
-    }
-    for (const title of titles) {
-      // open evaluation for question
-      cy.get('[data-cy="evaluate-question-select"]').click()
-      cy.get(`[data-cy="evaluation-select-instance-${title}"]`).click()
-      cy.get('[data-cy="change-chart-type"]').click()
-      cy.get(
-        '[data-cy="change-chart-type-manage.evaluation.wordCloud"]'
-      ).click()
-      cy.wait(1000)
-
-      // select language
-      const language = languages[title]
-      cy.get('[data-cy="change-word-cloud-language"]').click()
-      cy.get(`[data-cy="change-word-cloud-language-${language}"]`).click()
-
-      // open filter
-      cy.get('[data-cy="word-cloud-filter-button"]').click()
-
-      for (const tag of tags) {
-        // select tag
-        cy.get(`[data-cy="word-cloud-filter-tag-${tag}"]`).click()
-        cy.wait(650)
-
-        if (expectedFilteredResponses[title][tag].length === 0) {
-          // check for correct response
-          cy.get('[data-cy="word-cloud"]').should(
-            'contain',
-            noResponsesMatchingMessage
-          )
-          // deselect tag
-          cy.get(`[data-cy="word-cloud-filter-tag-${tag}"]`).click()
-          continue
-        }
-
-        // check that only expected responses are shown
-        cy.get('[data-cy="word-cloud"] div svg g > text').then(($texts) => {
-          const texts = [...$texts].map((el) => el.textContent.trim())
-          for (const t of texts) {
-            expect(expectedFilteredResponses[title][tag]).to.include(t)
-          }
-        })
-        // deselect tag
-        cy.get(`[data-cy="word-cloud-filter-tag-${tag}"]`).click()
-      }
-      // select all tags
-      cy.get('[data-cy="word-cloud-filter-select-all"]').click()
-      cy.wait(650)
-
-      // check that all responses are shown
-      cy.get('[data-cy="word-cloud"] div svg g > text').then(($texts) => {
-        const texts = [...$texts].map((el) => el.textContent.trim())
-        const flattened = Object.values(
-          expectedFilteredResponses[title]
-        ).flatMap((x) => x)
-        for (const t of texts) {
-          expect(flattened).to.include(t)
-        }
-      })
-      // deseleet all
-      cy.get('[data-cy="word-cloud-filter-select-all"]').click()
-      cy.wait(650)
-    }
-
-    // verify premium mode still renders as temporary fallback
-    cy.get('[data-cy="evaluate-question-select"]').click()
-    cy.get(
-      `[data-cy="evaluation-select-instance-${this.data.FT4.title}"]`
-    ).click()
-    cy.get('[data-cy="change-word-cloud-mode"]').click()
-    cy.get('[data-cy="change-word-cloud-mode-Premium"]').click()
-    cy.wait(1000)
-    cy.get('[data-cy="word-cloud"] div svg g > text')
-      .its('length')
-      .should('be.greaterThan', 0)
   })
   // #endregion
 

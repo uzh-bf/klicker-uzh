@@ -4,7 +4,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { CHART_COLORS } from '@klicker-uzh/shared-components/src/constants'
 import type { LayoutWord } from '@klicker-uzh/word-cloud'
-import { UserNotification } from '@uzh-bf/design-system'
+import { Select, Tooltip, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
@@ -28,6 +28,7 @@ export enum WordCloudSplitMode {
 }
 
 export enum WordCloudLanguage {
+  NONE = 'none',
   EN = 'en',
   DE = 'de',
 }
@@ -73,10 +74,10 @@ function getWordFrequencies({
         .replace(/[^a-z0-9äöüß\s'-]/g, '')
         .split(/\s+/)
       for (const word of words) {
-        const filtered = removeStopwords([word], stopwords)[0]
-        if (!filtered) {
-          continue
-        }
+        if (word.length === 0) continue
+        const filtered =
+          stopwords.length > 0 ? removeStopwords([word], stopwords)[0] : word
+        if (!filtered) continue
         frequencies[filtered] = (frequencies[filtered] || 0) + 1
       }
     }
@@ -158,9 +159,13 @@ function ElementWordCloud({
 
   const noResponsesReceived = data.length === 0
 
-  // for Standard filtering, use predefined stopword lists
+  // for Standard filtering, use predefined stopword lists (empty = disabled)
   const stopwords =
-    language === WordCloudLanguage.EN ? stopwordsEng : stopwordsDeu
+    language === WordCloudLanguage.EN
+      ? stopwordsEng
+      : language === WordCloudLanguage.DE
+        ? stopwordsDeu
+        : []
 
   // determine frequencies of responses
   const frequencies = useMemo(
@@ -257,21 +262,53 @@ function ElementWordCloud({
               labelPrefix={t('shared.generic.maximum')}
             />
             {instance.type === ElementType.FreeText && (
-              <button
-                className="rounded border border-gray-300 px-3 py-1 text-sm"
-                onClick={() =>
-                  setSplitMode((prev) =>
-                    prev === WordCloudSplitMode.WORDS
-                      ? WordCloudSplitMode.SENTENCES
-                      : WordCloudSplitMode.WORDS
-                  )
-                }
-              >
-                {splitMode === WordCloudSplitMode.WORDS
-                  ? t('manage.evaluation.wordCloudModeSentences')
-                  : t('manage.evaluation.wordCloudModeWords')}
-              </button>
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-bold">
+                  {t('manage.evaluation.wordCloudFilterMode')}
+                </span>
+                <Select
+                  value={splitMode}
+                  items={[
+                    {
+                      value: WordCloudSplitMode.WORDS,
+                      label: t('manage.evaluation.wordCloudModeWords'),
+                    },
+                    {
+                      value: WordCloudSplitMode.SENTENCES,
+                      label: t('manage.evaluation.wordCloudModeSentences'),
+                    },
+                  ]}
+                  onChange={(val) => setSplitMode(val as WordCloudSplitMode)}
+                />
+              </div>
             )}
+            {instance.type === ElementType.FreeText &&
+              splitMode === WordCloudSplitMode.WORDS && (
+                <div className="flex flex-col gap-1">
+                  <Tooltip
+                    tooltip={t(
+                      'manage.evaluation.wordCloudLanguageFilterTooltip'
+                    )}
+                  >
+                    <span className="w-fit cursor-default text-sm font-bold underline decoration-dotted">
+                      {t('manage.evaluation.wordCloudLanguageFilter')}
+                    </span>
+                  </Tooltip>
+                  <Select
+                    value={language}
+                    items={[
+                      {
+                        value: WordCloudLanguage.NONE,
+                        label: t('manage.evaluation.wordCloudLanguageNone'),
+                      },
+                      { value: WordCloudLanguage.EN, label: 'EN' },
+                      { value: WordCloudLanguage.DE, label: 'DE' },
+                    ]}
+                    onChange={(val) => setLanguage(val as WordCloudLanguage)}
+                    className={{ trigger: 'w-28' }}
+                  />
+                </div>
+              )}
           </div>
         </div>
       </div>
