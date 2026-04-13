@@ -194,9 +194,18 @@ function measureWord(
         const metrics = context.measureText(text)
         const fallback = fallbackMeasureText(text, font.size)
         const rawWidth = metrics.width || fallback.width
-        const rawHeight =
+        // actualBoundingBoxAscent/Descent often underestimates line height.
+        // Use fontBoundingBox values when available (more reliable), otherwise
+        // fall back to em-square approximation (fontSize * 1.2) which is more
+        // conservative than the tight glyph bounds.
+        const boundingHeight =
+          (metrics.fontBoundingBoxAscent ?? 0) +
+          (metrics.fontBoundingBoxDescent ?? 0)
+        const glyphHeight =
           (metrics.actualBoundingBoxAscent ?? 0) +
-            (metrics.actualBoundingBoxDescent ?? 0) || fallback.height
+          (metrics.actualBoundingBoxDescent ?? 0)
+        const rawHeight =
+          Math.max(boundingHeight, glyphHeight) || font.size * 1.2
 
         return {
           width: rawWidth,
@@ -290,8 +299,8 @@ function intersects(
   placedWord: PreparedPlacement
 ) {
   return (
-    Math.abs(x - placedWord.word.x) < halfWidth + placedWord.halfWidth &&
-    Math.abs(y - placedWord.word.y) < halfHeight + placedWord.halfHeight
+    Math.abs(x - placedWord.word.x) <= halfWidth + placedWord.halfWidth &&
+    Math.abs(y - placedWord.word.y) <= halfHeight + placedWord.halfHeight
   )
 }
 
@@ -380,14 +389,7 @@ function layoutSinglePass(
       const y = spiralY
 
       if (
-        !isInBounds(
-          x,
-          y,
-          halfWidth,
-          halfHeight,
-          options.width,
-          options.height
-        )
+        !isInBounds(x, y, halfWidth, halfHeight, options.width, options.height)
       ) {
         continue
       }
@@ -465,12 +467,18 @@ export function computeWordCloudLayout(
     placed = passResult.placedWords
     omitted = passResult.omittedWords
 
-    if (omitted.length === 0 || relayoutCount === normalizedOptions.maxRelayouts) {
+    if (
+      omitted.length === 0 ||
+      relayoutCount === normalizedOptions.maxRelayouts
+    ) {
       break
     }
 
     relayoutCount += 1
-    currentMinFontSize = Math.max(1, currentMinFontSize * normalizedOptions.shrinkFactor)
+    currentMinFontSize = Math.max(
+      1,
+      currentMinFontSize * normalizedOptions.shrinkFactor
+    )
     currentMaxFontSize = Math.max(
       currentMinFontSize,
       currentMaxFontSize * normalizedOptions.shrinkFactor

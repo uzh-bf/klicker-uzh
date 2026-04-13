@@ -17,6 +17,8 @@ interface NativeD3WordCloudProps {
   transitionDuration: number
   emptyStateText: string
   getWordTooltip: (word: LayoutWord) => string
+  rotationAngles?: [number, number]
+  onLayoutChange?: (result: LayoutResult) => void
 }
 
 function NativeD3WordCloud({
@@ -28,6 +30,8 @@ function NativeD3WordCloud({
   transitionDuration,
   emptyStateText,
   getWordTooltip,
+  rotationAngles = [0, -90],
+  onLayoutChange,
 }: NativeD3WordCloudProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const rendererRef = useRef<RendererHandle | null>(null)
@@ -82,13 +86,27 @@ function NativeD3WordCloud({
       seed: '42',
       padding: 5,
       rotations: 2,
-      rotationAngles: [0, -90],
+      rotationAngles,
       fontFamily,
       shrinkFactor: 0.95,
       maxRelayouts: 10,
       maxAttemptsPerWord: 1500,
     })
-  }, [containerSize.height, containerSize.width, fontFamily, maxTextSize, minTextSize, words])
+  }, [
+    containerSize.height,
+    containerSize.width,
+    fontFamily,
+    maxTextSize,
+    minTextSize,
+    rotationAngles,
+    words,
+  ])
+
+  useEffect(() => {
+    if (layoutResult) {
+      onLayoutChange?.(layoutResult)
+    }
+  }, [layoutResult, onLayoutChange])
 
   useEffect(() => {
     const container = containerRef.current

@@ -79,7 +79,10 @@ function renderCloud() {
     minFontSize,
     Math.floor(readNumberInput(inputs.maxFontSize, 48))
   )
-  const rotations = Math.max(1, Math.floor(readNumberInput(inputs.rotations, 2)))
+  const rotations = Math.max(
+    1,
+    Math.floor(readNumberInput(inputs.rotations, 2))
+  )
 
   cloudElement.style.width = `${width}px`
   cloudElement.style.height = `${height}px`
@@ -107,7 +110,9 @@ function renderCloud() {
     renderer.update(layoutResult)
   }
 
-  setEmptyState(layoutResult.inputCount === 0 || layoutResult.placed.length === 0)
+  setEmptyState(
+    layoutResult.inputCount === 0 || layoutResult.placed.length === 0
+  )
   statsElement.textContent = `Placed ${layoutResult.placed.length}/${layoutResult.inputCount} words. Relayout passes: ${layoutResult.relayoutCount}.`
 }
 

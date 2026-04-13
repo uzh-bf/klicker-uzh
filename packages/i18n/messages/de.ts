@@ -2593,6 +2593,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Standard: Reguläre Filter, z. B. Wörter, Zahlen, ...',
       wordCloudModePremiumTooltip:
         'Premium (nur auf Englisch): Erweitertes Set an Filter, z. B. Nomen, Verben, ...',
+      wordCloudModeWords: 'Antworten in Wörter aufteilen',
+      wordCloudOmittedWords:
+        '{count} {count, plural, one {Antwort} other {Antworten}} konnten aufgrund von Platzmangel nicht angezeigt werden.',
+      wordCloudOmittedSentences:
+        '{count} {count, plural, one {Antwort} other {Antworten}} konnten aufgrund von Platzmangel nicht angezeigt werden.',
+      wordCloudModeSentences: 'Vollständige Antworten anzeigen',
       wordCloudNoResponses:
         'Für diese Frage wurden noch keine Antworten von Teilnehmenden gespeichert 😔.',
       wordCloudNoResponsesFiltered:

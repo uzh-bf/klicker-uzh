@@ -1,5 +1,5 @@
-import 'd3-transition'
 import { select } from 'd3-selection'
+import 'd3-transition'
 import type {
   LayoutResult,
   LayoutWord,
@@ -66,7 +66,9 @@ export function renderWordCloud(
     .attr('height', layoutResult.height)
     .attr('viewBox', `0 0 ${layoutResult.width} ${layoutResult.height}`)
     .attr('preserveAspectRatio', 'xMidYMid meet')
-  const rootGroup = svgSelection.append('g').attr('data-word-cloud-root', 'true')
+  const rootGroup = svgSelection
+    .append('g')
+    .attr('data-word-cloud-root', 'true')
   const tooltipElement = document.createElement('div')
   tooltipElement.style.position = 'absolute'
   tooltipElement.style.pointerEvents = 'none'
@@ -109,8 +111,14 @@ export function renderWordCloud(
         'fill',
         (word: LayoutWord) => colors[word.index % colors.length] ?? colors[0]
       )
-      .attr('font-family', renderOptions.fontFamily ?? layoutResult.settings.fontFamily)
-      .attr('font-style', renderOptions.fontStyle ?? layoutResult.settings.fontStyle)
+      .attr(
+        'font-family',
+        renderOptions.fontFamily ?? layoutResult.settings.fontFamily
+      )
+      .attr(
+        'font-style',
+        renderOptions.fontStyle ?? layoutResult.settings.fontStyle
+      )
       .attr(
         'font-weight',
         String(renderOptions.fontWeight ?? layoutResult.settings.fontWeight)

@@ -85,17 +85,14 @@ describe('computeWordCloudLayout', () => {
   })
 
   it('forces single word rotation to 0', () => {
-    const result = computeWordCloudLayout(
-      [{ text: 'single', value: 10 }],
-      {
-        width: 320,
-        height: 220,
-        deterministic: true,
-        seed: '42',
-        rotations: 2,
-        rotationAngles: [0, -90],
-      }
-    )
+    const result = computeWordCloudLayout([{ text: 'single', value: 10 }], {
+      width: 320,
+      height: 220,
+      deterministic: true,
+      seed: '42',
+      rotations: 2,
+      rotationAngles: [0, -90],
+    })
 
     expect(result.placed).toHaveLength(1)
     expect(result.placed[0]?.rotate).toBe(0)
@@ -164,7 +161,9 @@ describe('computeWordCloudLayout', () => {
     const mapByText = (
       layout: ReturnType<typeof computeWordCloudLayout>
     ): Record<string, number> =>
-      Object.fromEntries(layout.placed.map((word) => [word.text, word.fontSize]))
+      Object.fromEntries(
+        layout.placed.map((word) => [word.text, word.fontSize])
+      )
     const getSize = (source: Record<string, number>, key: string) =>
       source[key] ?? 0
     const linearSizes = mapByText(linear)

@@ -1,5 +1,5 @@
-import { createServer } from 'node:http'
 import { readFile, stat } from 'node:fs/promises'
+import { createServer } from 'node:http'
 import { extname, join, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -35,7 +35,8 @@ async function readResolvedFile(filePath) {
 const server = createServer(async (request, response) => {
   try {
     const requestUrl = new URL(request.url ?? '/', `http://${host}:${port}`)
-    const pathname = requestUrl.pathname === '/' ? '/index.html' : requestUrl.pathname
+    const pathname =
+      requestUrl.pathname === '/' ? '/index.html' : requestUrl.pathname
     const root = pathname.startsWith('/dist/') ? distRoot : demoRoot
     const relativePath = pathname.startsWith('/dist/')
       ? pathname.replace('/dist/', '')
