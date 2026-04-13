@@ -14,6 +14,13 @@ Core requirements:
 - live quizzes without a course remain supported via standalone `LIVE_QUIZ` spaces.
 - legacy live feedback system remains active in v1 (no breaking change).
 
+## Current Status (2026-04-13)
+
+- Course Q&A alpha is implemented on branch `course-qa` and currently rolled out through the course-level booleans `isCourseQAEnabled` and `isCourseQAAnonymousEnabled`.
+- No separate runtime feature-flag layer was added for the course-facing v1 scope.
+- Real-domain validation on `https://pwa.klicker.com` has already verified enrolled read/write, unauthorized denial, anonymous-vs-identified embed behavior, and tampered-embed fail-closed behavior.
+- Remaining external blockers are lecturer-side validation on `https://manage.klicker.com` (currently misrouted to Jobeye), the unavailable DB-backed GraphQL integration-test environment, and the deferred live-feedback migration work.
+
 ---
 
 ## 2. Product Decisions (Locked)
@@ -68,7 +75,9 @@ Add:
   - `EXTERNAL_BLOCK`
 - `DiscussionEventType`
   - `THREAD_CREATED`
+  - `THREAD_DELETED`
   - `REPLY_CREATED`
+  - `REPLY_DELETED`
   - `THREAD_UPVOTED`
   - `REPLY_UPVOTED`
   - `ANON_RATE_LIMITED`
@@ -243,6 +252,8 @@ Add types in a new `schema/discussions.ts`:
   - `DiscussionThread`
   - `DiscussionReply`
   - `DiscussionThreadPage`
+    - includes `canPostAnonymously`
+    - includes `isAccessible`
   - `CourseDiscussionOverview`
   - `CourseDiscussionEmbeddingInfo`
 
@@ -523,22 +534,20 @@ Dual-write must guarantee:
 
 ---
 
-## 16. Rollout and Flags
+## 16. Rollout and Enablement
 
-Use feature flags:
+Course Q&A v1 is currently enabled selectively at the course level via:
 
-- `discussion_platform_enabled`
-- `discussion_course_ui_enabled`
-- `discussion_live_dual_write_enabled`
-- `discussion_live_read_enabled`
+- `Course.isCourseQAEnabled`
+- `Course.isCourseQAAnonymousEnabled`
 
-Rollout order:
+Current rollout order:
 
-1. backend models + APIs behind flags
-2. course UI internal testing
-3. staged rollout to selected courses
-4. migration rehearsal in staging
-5. live dual-write opt-in
+1. backend models + APIs merged on `course-qa`
+2. PWA and Manage alpha UI merged on `course-qa`
+3. selectively enable known validation courses (for example seeded `Testkurs`)
+4. finish remaining browser/runtime validation and unblock lecturer-side validation on the real manage domain
+5. keep live dual-write/read-switch work as a separate follow-up phase
 
 ---
 
@@ -563,9 +572,9 @@ Rollout order:
 
 ---
 
-## 18. Deliverables (Planning Artifact Only)
+## 18. Deliverables and Tracking
 
-This document defines implementation-ready work but does **not** execute code changes.
+This document started as the implementation plan and now also tracks actual branch progress, verification status, and remaining follow-up work.
 
 When implementation starts, expected first PR order:
 
@@ -573,7 +582,7 @@ When implementation starts, expected first PR order:
 2. GraphQL schema/services + tests.
 3. PWA course Q&A pages/components.
 4. Manage course Q&A tab + settings + embed modal.
-5. Migration tooling and dual-write flags (behind disabled defaults).
+5. Migration tooling and live-feedback follow-up controls.
 
 ---
 
@@ -668,71 +677,92 @@ When implementation starts, expected first PR order:
   - idempotent upvote toggling for threads and replies
   - anonymous embed token scope mismatch rejection
   - course overview aggregation (includes linked live-quiz spaces, excludes standalone live-quiz spaces)
+- Added follow-up hardening in `packages/graphql/src/services/discussions.ts`:
+  - explicit `THREAD_DELETED` and `REPLY_DELETED` event logging
+  - `DiscussionThreadPage.canPostAnonymously` and `DiscussionThreadPage.isAccessible`
+  - fail-closed handling for invalid/tampered embed scope requests
+  - explicit inaccessible result for unauthorized non-embed viewers
+  - embed generation now clamps anonymous capability to the course setting
+  - embed thread creation validates token binding before persisting new scopes
+- Hardened PWA discussion UX in `apps/frontend-pwa/src/pages/course/[courseId]/qa.tsx`:
+  - explicit disabled-course notice
+  - explicit access-denied notice for inaccessible views
+  - anonymous controls only render when the embed is actually allowed to post anonymously
+  - fixed reply pluralization
+- Hardened Manage embed UX in `apps/frontend-manage/src/components/courses/CourseDiscussionOverview.tsx`:
+  - removed render-time state mutation
+  - disabled anonymous embed control when the course-level anonymous setting is off
+  - aligned reply-count pluralization with i18n
+- Extended seed/helper support in `packages/prisma-data/src/data/helpers.ts` and `packages/prisma-data/src/data/seedTEST.ts` so validation courses can explicitly set:
+  - `isCourseQAEnabled`
+  - `isCourseQAAnonymousEnabled`
+- Enabled seeded `Testkurs` for validation:
+  - seed now sets both booleans to `true`
+  - live dev DB row was updated during validation to avoid waiting for a reseed
 
 ### Environment/Verification Notes
 
-- Automated validation is currently blocked in this worktree because dependencies are not installed:
-  - `pnpm --filter @klicker-uzh/prisma generate` fails (`prisma: command not found`)
-  - `pnpm --filter @klicker-uzh/graphql check` fails (`tsc: command not found`)
-  - `pnpm --filter frontend-pwa check` fails (`tsc: command not found`)
-- Runtime environment warning:
-  - current local Node version is `v25.4.0`, while repo engines require Node `=20`
-- This means Prisma client regeneration and TypeScript compile checks still need to be executed once `node_modules` are available.
+- Green verification completed:
+  - `pnpm --filter @klicker-uzh/graphql check`
+  - `pnpm --filter @klicker-uzh/frontend-pwa check`
+  - `pnpm --filter @klicker-uzh/frontend-manage check`
+  - `pnpm --filter @klicker-uzh/prisma-data exec tsx --eval ...prepareCourse(...)...` confirming the helper propagates both course-Q&A booleans into `create` and `update`
+- Real-domain runtime validation completed on `https://pwa.klicker.com` with screenshots for:
+  - enrolled user sees enabled Course Q&A
+  - unauthorized user sees explicit denial on an enabled course
+  - enrolled thread creation, reply creation, and upvote flow
+  - anonymous-enabled embed vs identified-only embed behavior
+  - tampered embed fail-closed access denial
+- Still blocked:
+  - DB-backed GraphQL integration tests time out because the local integration DB/test environment is unavailable
+  - `https://manage.klicker.com` is misrouted to the unrelated Jobeye app, so lecturer-side validation on the requested real domain is still blocked
 
 ### Document Links
 
-- Primary plan: `/Users/roland/.codex/worktrees/f125/klicker-uzh/project/DISCUSSIONS_PLAN.md`
-- Verification runbook: `/Users/roland/.codex/worktrees/f125/klicker-uzh/project/DISCUSSIONS_TESTING_PLAN.md`
+- Primary plan: `/Volumes/HOME/Git/klicker/klicker-uzh/.claude/worktrees/course-qa/project/DISCUSSIONS_PLAN.md`
+- Verification runbook: `/Volumes/HOME/Git/klicker/klicker-uzh/.claude/worktrees/course-qa/project/DISCUSSIONS_TESTING_PLAN.md`
 
 ### Remaining Major Work
 
-- `W1` Environment + Validation Unblock
-- `W2` Feature Flag Wiring
+- `W1` Lecturer-side real-domain validation unblock
+- `W2` Remaining verification scenarios + evidence completion
 - `W3` Live Feedback Migration Path
-- `W4` End-to-End Verification
-- `W5` Rollout + Operations
+- `W4` Rollout + Operations
 
 ---
 
 ## Next Work (Implementation Backlog)
 
-### W1: Environment + Validation Unblock
+### W1: Lecturer-Side Real-Domain Validation Unblock
 
-- Enforce local runtime alignment with repo requirement: Node `=20`.
-- Install dependencies in the worktree.
-- Run and record:
-  - `pnpm --filter @klicker-uzh/prisma generate`
-  - `pnpm --filter @klicker-uzh/graphql check`
-  - `pnpm --filter frontend-pwa check`
-  - `pnpm --filter @klicker-uzh/graphql test -- discussions.test.ts` (or repository-equivalent targeted test command)
+- Fix routing for `https://manage.klicker.com` so it points to the Klicker lecturer UI rather than Jobeye.
+- Once corrected, execute the remaining lecturer-side browser flows on the requested real domain:
+  - settings persistence
+  - embed generation UI behavior
+  - grouped overview rendering
 - Exit criteria (pass/fail):
-  - pass: all checks are green
-  - fail: any check fails and is captured in an explicit issue list with owner and next action
+  - pass: lecturer validation can run end-to-end on `https://manage.klicker.com` with evidence
+  - fail: domain remains misrouted or lecturer-side scenarios still cannot be executed on the requested host
 
-### W2: Feature Flag Wiring
+### W2: Remaining Verification
 
-- Wire and enforce the following flags:
-  - `discussion_platform_enabled`
-  - `discussion_course_ui_enabled`
-  - `discussion_live_dual_write_enabled`
-  - `discussion_live_read_enabled`
-- Backend gating points:
-  - `/Users/roland/.codex/worktrees/f125/klicker-uzh/packages/graphql/src/schema/query.ts`
-  - `/Users/roland/.codex/worktrees/f125/klicker-uzh/packages/graphql/src/schema/mutation.ts`
-  - `/Users/roland/.codex/worktrees/f125/klicker-uzh/packages/graphql/src/services/discussions.ts`
-- Frontend gating points:
-  - `/Users/roland/.codex/worktrees/f125/klicker-uzh/apps/frontend-pwa/src/pages/course/[courseId]/qa.tsx`
-  - `/Users/roland/.codex/worktrees/f125/klicker-uzh/apps/frontend-manage/src/components/courses/CourseDiscussionOverview.tsx`
-  - existing entry links/tabs in already modified PWA/Manage pages
+- Complete the still-open scenario coverage from `DISCUSSIONS_TESTING_PLAN.md`:
+  - full `QA-001`
+  - full `QA-002` entry-visibility check from the course page (not just direct-route behavior)
+  - `QA-005`
+  - `QA-006`
+  - `QA-010`
+  - `QA-012`
+- Re-run DB-backed discussion integration tests once the local test DB is available.
 - Exit criteria (pass/fail):
-  - pass: when flags are off, UI/API exposure is cleanly hidden/denied with no broken routes; when on, behavior remains as implemented
-  - fail: any bypass or broken state exists when toggling flags
+  - pass: every required scenario has evidence and the DB-backed test environment is green
+  - fail: any required scenario remains unexecuted, lacks evidence, or the DB-backed integration environment stays unavailable
 
 ### W3: Live Feedback Migration Path
 
 - Implement backfill job from legacy live feedback to `DiscussionSpaceType.LIVE_QUIZ`.
 - Implement dual-write in legacy feedback service:
-  - `/Users/roland/.codex/worktrees/f125/klicker-uzh/packages/graphql/src/services/feedbacks.ts`
+  - `/Volumes/HOME/Git/klicker/klicker-uzh/.claude/worktrees/course-qa/packages/graphql/src/services/feedbacks.ts`
 - Add reconciliation metrics and mismatch reporting for:
   - counts
   - ordering
@@ -743,18 +773,9 @@ When implementation starts, expected first PR order:
   - pass: dry-run is repeatable and reconciliation output is deterministic
   - fail: non-deterministic mapping or unresolved mismatch classes remain
 
-### W4: End-to-End Verification
+### W4: Rollout + Operations
 
-- Execute and track the scenario matrix defined in:
-  - `/Users/roland/.codex/worktrees/f125/klicker-uzh/project/DISCUSSIONS_TESTING_PLAN.md`
-- Add Cypress coverage for discussion flows (currently none).
-- Exit criteria (pass/fail):
-  - pass: all required scenarios have evidence and pass status
-  - fail: any required scenario lacks evidence or has unresolved failures
-
-### W5: Rollout + Operations
-
-- Define staged rollout by feature flag.
+- Keep rollout explicitly alpha and course-selective through the course booleans.
 - Add monitoring and alert checks:
   - discussion write/read errors
   - unexpected denial/error rates
@@ -766,9 +787,9 @@ When implementation starts, expected first PR order:
 
 ### Coverage and Scope
 
-- Workstream acceptance checks included in this backlog: `W1` to `W5`.
+- Workstream acceptance checks included in this backlog: `W1` to `W4`.
 - UI/browser verification scope is tracked in:
-  - `/Users/roland/.codex/worktrees/f125/klicker-uzh/project/DISCUSSIONS_TESTING_PLAN.md`
+  - `/Volumes/HOME/Git/klicker/klicker-uzh/.claude/worktrees/course-qa/project/DISCUSSIONS_TESTING_PLAN.md`
   - scenarios `QA-001` to `QA-012`
 - Backend corroboration scope includes:
   - data integrity checks
@@ -778,6 +799,6 @@ When implementation starts, expected first PR order:
 ### Assumptions and Defaults
 
 - Documentation reflects current branch state at update time.
-- Verification is executed later; this update only defines the runbooks.
+- The browser runbook has been partially executed already; see `DISCUSSIONS_TESTING_PLAN.md` for current scenario status.
 - `agent-browser` is the primary browser verification tool and screenshot evidence is mandatory.
 - If the environment is not ready (Node/dependencies/services), execution is deferred but the plan remains valid.

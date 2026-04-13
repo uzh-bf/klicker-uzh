@@ -4,7 +4,7 @@
 
 Verify the new discussions platform behavior for Course Q&A using `agent-browser` with evidence-first execution, while preserving existing live feedback behavior in v1.
 
-This runbook is for later execution and does not imply immediate test execution in this step.
+This runbook has now been partially executed on the real `*.klicker.com` setup and should be treated as the source of truth for both remaining work and already-captured evidence.
 
 ## Preconditions
 
@@ -57,6 +57,35 @@ All scenarios are binary:
 
 - `PASS`: expected behavior observed with required evidence attached
 - `FAIL`: behavior mismatch or missing evidence
+
+## Current Execution Status (2026-04-13)
+
+| ID | Current Status | Notes / Evidence State |
+|---|---|---|
+| `QA-001` | BLOCKED | Lecturer-side validation is blocked because `https://manage.klicker.com` currently routes to Jobeye instead of the Klicker lecturer UI. |
+| `QA-002` | PARTIAL | Direct `/qa` route behavior was validated for both disabled and enabled states on `https://pwa.klicker.com`, but course-page entry visibility still needs lecturer-side follow-up. |
+| `QA-003` | PASS | Real-domain PWA validation confirmed enrolled thread creation and reply creation with screenshots. |
+| `QA-004` | PASS | Real-domain PWA validation confirmed idempotent upvote behavior on the created thread/reply flow with screenshots. |
+| `QA-005` | NOT RUN | Practice-scope runtime validation is still pending. |
+| `QA-006` | BLOCKED | Manage overview grouping still requires lecturer-side validation on the correct manage domain. |
+| `QA-007` | PASS (service-generated URL) | Embed mode rendering was validated on real signed URLs generated directly from app secrets because the manage UI host is currently unavailable. |
+| `QA-008` | PASS (service-generated URL) | Anonymous-enabled vs identified-only embed behavior was validated on real signed URLs on `https://pwa.klicker.com`. |
+| `QA-009` | PASS (service-generated URL) | Tampered embed `scopeKey` was validated to fail closed with an access-denied state and no anonymous UI leak. |
+| `QA-010` | NOT RUN | Anonymous rate-limit behavior is still pending dedicated runtime execution. |
+| `QA-011` | PASS | Non-participating user on an enabled course was validated to receive the explicit access-denied state on the real PWA domain. |
+| `QA-012` | NOT RUN | Legacy live feedback regression validation has not been executed yet. |
+
+Additional verification status:
+
+- Real-domain seed course used for validation: `Testkurs` (`7c12e44e-d083-4acf-845e-4c34aaff6b49`)
+- Seed and live dev DB were both updated so `Testkurs` now has:
+  - `isCourseQAEnabled = true`
+  - `isCourseQAAnonymousEnabled = true`
+- Local compile checks already completed and green:
+  - `pnpm --filter @klicker-uzh/graphql check`
+  - `pnpm --filter @klicker-uzh/frontend-pwa check`
+  - `pnpm --filter @klicker-uzh/frontend-manage check`
+- DB-backed GraphQL integration tests remain blocked by the unavailable integration DB/test environment.
 
 ## Scenario Matrix
 
