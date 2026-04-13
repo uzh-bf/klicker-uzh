@@ -1,0 +1,2 @@
+ALTER TABLE "Course"
+ADD COLUMN "isCourseQARolloutEnabled" BOOLEAN NOT NULL DEFAULT false;

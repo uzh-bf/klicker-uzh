@@ -6,10 +6,11 @@ Verify the new discussions platform behavior for Course Q&A using `agent-browser
 
 This runbook has now been partially executed on the real `*.klicker.com` setup and should be treated as the source of truth for both remaining work and already-captured evidence.
 
-The approved next alpha rollout/surface model is not implemented yet. This document therefore tracks two things at once:
+The approved next alpha rollout/surface model is now split into two phases:
 
 - evidence already captured for the current branch behavior
-- the scenario definitions that must be re-run or expanded once the hidden rollout gate and stack-only alpha surface model are implemented
+- W1 rollout-gate behavior that is implemented in code but not yet fully executed across the full runtime matrix
+- the scenario definitions that must be re-run or expanded once the stack-only alpha surface model is implemented
 
 ## Preconditions
 
@@ -67,12 +68,12 @@ All scenarios are binary:
 
 | ID | Current Status | Notes / Evidence State |
 |---|---|---|
-| `QA-001` | BLOCKED | Lecturer-side validation is blocked because `https://manage.klicker.com` currently routes to Jobeye instead of the Klicker lecturer UI. |
-| `QA-002` | PARTIAL | Direct `/qa` route behavior was validated for both disabled and enabled states on `https://pwa.klicker.com`, but the approved hidden-rollout / course-entry visibility model is not implemented yet and will need a follow-up run. |
+| `QA-001` | BLOCKED | Hidden rollout-gate behavior is implemented in code, but lecturer-side validation is still blocked because `https://manage.klicker.com` routes to Jobeye and even the localhost fallback redirects there after delegated login. |
+| `QA-002` | PARTIAL | Direct `/qa` route behavior was validated earlier and the course-page `Course Q&A` entry is now confirmed on `https://pwa.klicker.com` in the rollout-on/runtime-on state, but rollout-off and rollout-on/runtime-off discoverability evidence is still pending. |
 | `QA-003` | PASS | Real-domain PWA validation confirmed enrolled thread creation and reply creation with screenshots. |
 | `QA-004` | PASS | Real-domain PWA validation confirmed idempotent upvote behavior on the created thread/reply flow with screenshots. |
 | `QA-005` | NOT RUN | The approved stack-only practice/microlearning surface is not implemented yet, so this needs a dedicated follow-up run. |
-| `QA-006` | BLOCKED | Manage overview and rollout-gate visibility still require lecturer-side validation on the correct manage domain after the next alpha UI changes are implemented. |
+| `QA-006` | BLOCKED | Manage overview and rollout-gate visibility still require lecturer-side validation, but lecturer auth currently redirects into the misrouted `manage.klicker.com` host. |
 | `QA-007` | PASS (service-generated URL) | Embed mode rendering was validated on real signed URLs generated directly from app secrets because the manage UI host is currently unavailable. |
 | `QA-008` | PASS (service-generated URL) | Anonymous-enabled vs identified-only embed behavior was validated on real signed URLs on `https://pwa.klicker.com`. |
 | `QA-009` | PASS (service-generated URL) | Tampered embed `scopeKey` was validated to fail closed with an access-denied state and no anonymous UI leak. |
@@ -84,19 +85,24 @@ Additional verification status:
 
 - Real-domain seed course used for validation: `Testkurs` (`7c12e44e-d083-4acf-845e-4c34aaff6b49`)
 - Seed and live dev DB were both updated so `Testkurs` now has:
+  - `isCourseQARolloutEnabled = true`
   - `isCourseQAEnabled = true`
   - `isCourseQAAnonymousEnabled = true`
 - Local compile checks already completed and green:
+  - `pnpm --filter @klicker-uzh/prisma build`
   - `pnpm --filter @klicker-uzh/graphql check`
   - `pnpm --filter @klicker-uzh/frontend-pwa check`
   - `pnpm --filter @klicker-uzh/frontend-manage check`
+- Additional runtime evidence already captured:
+  - `Course Q&A` entry is visible on the real course page in the rollout-on/runtime-on state
+  - localhost Manage fallback reaches the correct Klicker auth page, but post-login redirects to `https://manage.klicker.com/en`, which still resolves to Jobeye
 - DB-backed GraphQL integration tests remain blocked by the unavailable integration DB/test environment.
 
 ## Scenario Matrix
 
 | ID | Scenario | Pass Criteria | Fail Criteria |
 |---|---|---|---|
-| `QA-001` | Manage hidden rollout gate and Q&A settings visibility behave correctly | No Q&A UI visible when rollout gate is off; Q&A settings appear only after rollout gate is activated; settings persist after save | Any Q&A UI visible before rollout activation, or settings fail to persist once visible |
+| `QA-001` | Manage hidden rollout gate and Q&A settings visibility behave correctly | No Q&A UI visible when rollout gate is off; Q&A settings appear only after rollout gate is activated; settings persist after save | Any Q&A UI visible before rollout activation, settings fail to persist once visible, or lecturer-side auth/routing prevents the scenario from being executed |
 | `QA-002` | PWA course discoverability follows rollout gate and course setting | No Q&A discoverability when rollout gate is off; course entry appears only when rollout gate and runtime enablement allow it | Q&A entry/route exposed too early, or hidden when the approved state should expose it |
 | `QA-003` | Participant creates thread and reply in course scope | New thread and reply visible with correct scope label | Create fails or content not shown in expected scope |
 | `QA-004` | Participant upvotes thread and reply idempotently | Upvotes increment once and repeated same action does not double-count | Counter drift or repeated same action mutates count unexpectedly |

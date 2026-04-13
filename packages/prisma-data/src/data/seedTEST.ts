@@ -255,6 +255,7 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       description: 'Das ist ein Testkurs. Hier wird getestet. Viel Spass!',
       isGamificationEnabled: true,
       isAssessmentEnabled: false,
+      isCourseQARolloutEnabled: true,
       isCourseQAEnabled: true,
       isCourseQAAnonymousEnabled: true,
       ownerId: USER_ID_TEST,

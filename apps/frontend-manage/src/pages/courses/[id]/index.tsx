@@ -222,18 +222,22 @@ function CourseOverviewPage() {
           {course.isGamificationEnabled
             ? t('shared.generic.enabled')
             : t('shared.generic.disabled')}
-          <div className="font-bold">{t('manage.course.courseQA')}</div>
-          {course.isCourseQAEnabled
-            ? t('shared.generic.enabled')
-            : t('shared.generic.disabled')}
-          {course.isCourseQAEnabled && (
+          {course.isCourseQARolloutEnabled && (
             <>
-              <div className="font-bold">
-                {t('manage.course.courseQAAnonymousInEmbeds')}
-              </div>
-              {course.isCourseQAAnonymousEnabled
+              <div className="font-bold">{t('manage.course.courseQA')}</div>
+              {course.isCourseQAEnabled
                 ? t('shared.generic.enabled')
                 : t('shared.generic.disabled')}
+              {course.isCourseQAEnabled && (
+                <>
+                  <div className="font-bold">
+                    {t('manage.course.courseQAAnonymousInEmbeds')}
+                  </div>
+                  {course.isCourseQAAnonymousEnabled
+                    ? t('shared.generic.enabled')
+                    : t('shared.generic.disabled')}
+                </>
+              )}
             </>
           )}
           {course.isGamificationEnabled && (
@@ -357,12 +361,16 @@ function CourseOverviewPage() {
                 tooltipDelay: 0,
                 data: { cy: 'tab-groupActivities' },
               },
-              {
-                id: 'tab-discussions',
-                value: 'discussions',
-                label: t('manage.course.courseQA'),
-                data: { cy: 'tab-discussions' },
-              },
+              ...(course.isCourseQARolloutEnabled
+                ? [
+                    {
+                      id: 'tab-discussions',
+                      value: 'discussions',
+                      label: t('manage.course.courseQA'),
+                      data: { cy: 'tab-discussions' },
+                    },
+                  ]
+                : []),
             ]}
             className={{ root: 'flex-1 basis-3/5' }}
           >
@@ -416,17 +424,19 @@ function CourseOverviewPage() {
                 highlightedActivity={highlightedActivity}
               />
             </TabContent>
-            <TabContent
-              key="content-discussions"
-              value="discussions"
-              className={{ root: 'px-0 py-1' }}
-            >
-              <CourseDiscussionOverview
-                courseId={course.id}
-                isCourseQAEnabled={course.isCourseQAEnabled}
-                isCourseQAAnonymousEnabled={course.isCourseQAAnonymousEnabled}
-              />
-            </TabContent>
+            {course.isCourseQARolloutEnabled && (
+              <TabContent
+                key="content-discussions"
+                value="discussions"
+                className={{ root: 'px-0 py-1' }}
+              >
+                <CourseDiscussionOverview
+                  courseId={course.id}
+                  isCourseQAEnabled={course.isCourseQAEnabled}
+                  isCourseQAAnonymousEnabled={course.isCourseQAAnonymousEnabled}
+                />
+              </TabContent>
+            )}
           </Tabs>
         )}
 

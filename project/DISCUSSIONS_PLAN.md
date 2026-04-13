@@ -16,24 +16,40 @@ Core requirements:
 
 ## Current Status (2026-04-13)
 
-- Course Q&A alpha is implemented on branch `course-qa` and currently rolled out through the course-level booleans `isCourseQAEnabled` and `isCourseQAAnonymousEnabled`.
-- No separate runtime feature-flag layer was added for the course-facing v1 scope.
-- Real-domain validation on `https://pwa.klicker.com` has already verified enrolled read/write, unauthorized denial, anonymous-vs-identified embed behavior, and tampered-embed fail-closed behavior.
-- Remaining external blockers are lecturer-side validation on `https://manage.klicker.com` (currently misrouted to Jobeye), the unavailable DB-backed GraphQL integration-test environment, and the deferred live-feedback migration work.
+- Course Q&A alpha is implemented on branch `course-qa`.
+- The hidden course-level rollout gate is now implemented in code via `Course.isCourseQARolloutEnabled`, alongside the existing runtime/settings booleans `isCourseQAEnabled` and `isCourseQAAnonymousEnabled`.
+- No separate global runtime feature-flag layer was added for this phase.
+- Current live dev verification baseline for `Testkurs` (`7c12e44e-d083-4acf-845e-4c34aaff6b49`) is:
+  - `isCourseQARolloutEnabled = true`
+  - `isCourseQAEnabled = true`
+  - `isCourseQAAnonymousEnabled = true`
+- Real-domain validation on `https://pwa.klicker.com` has verified:
+  - direct `/qa` behavior for enabled and disabled states
+  - enrolled read/write and upvote behavior
+  - unauthorized denial on an enabled course
+  - anonymous-vs-identified embed behavior
+  - tampered-embed fail-closed behavior
+  - course-page `Course Q&A` discoverability in the rollout-on/runtime-on state
+- Lecturer-side verification remains externally blocked because `https://manage.klicker.com` is still misrouted to Jobeye, and even the localhost fallback redirects there after delegated login.
+- Remaining major blockers are the lecturer-side routing issue, the unavailable DB-backed GraphQL integration-test environment, the still-pending stack-only alpha surface work, and the deferred live-feedback migration work.
 
-## Approved Next Alpha Design (Not Yet Implemented)
+## Approved Alpha Design State
 
-- Add a separate hidden course-level rollout gate boolean in the DB.
-- Keep `isCourseQAEnabled` and `isCourseQAAnonymousEnabled` as the runtime/settings booleans after rollout is unlocked.
-- No separate global feature-flag layer will be introduced for this phase.
-- Approved alpha states:
+Implemented in code now:
+
+- Separate hidden course-level rollout gate boolean in the DB.
+- `isCourseQAEnabled` and `isCourseQAAnonymousEnabled` remain the runtime/settings booleans after rollout is unlocked.
+- No separate global feature-flag layer is introduced for this phase.
+- Three-state rollout model:
   1. rollout gate `false`: no Q&A-related UI in Manage or PWA; direct routes fail closed
   2. rollout gate `true` + `isCourseQAEnabled = false`: lecturer/admin UI visible, students still cannot use Q&A
   3. rollout gate `true` + `isCourseQAEnabled = true`: full alpha behavior
-- Approved alpha surface model:
-  - `COURSE`: always visible and always writable for enrolled participants; course feed shows only `COURSE` threads
-  - `PRACTICE_STACK`: the only learning-scoped discussion surface for alpha; used for both practice and microlearning; shown only on evaluated/result surfaces; not visible during answering; reachable only from the evaluated stack surface; full history visible there; shown on every evaluated revisit
-  - not in alpha: `PRACTICE_ELEMENT`, `PRACTICE_QUIZ`, `LIVE_QUIZ` migration UI, or aggregating stack threads into the course feed
+
+Approved next alpha surface work (not yet implemented):
+
+- `COURSE`: always visible and always writable for enrolled participants; course feed shows only `COURSE` threads
+- `PRACTICE_STACK`: the only learning-scoped discussion surface for alpha; used for both practice and microlearning; shown only on evaluated/result surfaces; not visible during answering; reachable only from the evaluated stack surface; full history visible there; shown on every evaluated revisit
+- not in alpha: `PRACTICE_ELEMENT`, `PRACTICE_QUIZ`, `LIVE_QUIZ` migration UI, or aggregating stack threads into the course feed
 - Identity model remains unchanged for this phase:
   - normal PWA discussion is logged-in participants only
   - anonymous remains embed-only
@@ -722,15 +738,38 @@ When implementation starts, expected first PR order:
   - disabled anonymous embed control when the course-level anonymous setting is off
   - aligned reply-count pluralization with i18n
 - Extended seed/helper support in `packages/prisma-data/src/data/helpers.ts` and `packages/prisma-data/src/data/seedTEST.ts` so validation courses can explicitly set:
+  - `isCourseQARolloutEnabled`
   - `isCourseQAEnabled`
   - `isCourseQAAnonymousEnabled`
 - Enabled seeded `Testkurs` for validation:
-  - seed now sets both booleans to `true`
+  - seed now sets all three Course Q&A booleans to `true`
   - live dev DB row was updated during validation to avoid waiting for a reseed
+
+### Implemented (W1 Hidden Rollout Gate + Visibility Model)
+
+- Added `Course.isCourseQARolloutEnabled` to the Prisma schema in `packages/prisma/src/prisma/schema/course.prisma` plus migration `20260413120000_course_qa_rollout_gate`.
+- Hardened discussion backend gating in `packages/graphql/src/services/discussions.ts` so discussion reads/writes/embed generation now fail closed unless both:
+  - `isCourseQARolloutEnabled = true`
+  - `isCourseQAEnabled = true`
+- Exposed the rollout gate in GraphQL course surfaces:
+  - `packages/graphql/src/schema/course.ts`
+  - `packages/graphql/src/graphql/ops/QGetSingleCourse.graphql`
+  - `packages/graphql/src/graphql/ops/QGetCourseOverviewData.graphql`
+  - `packages/graphql/src/graphql/ops/QGetBasicCourseInformation.graphql`
+  - `packages/graphql/src/graphql/ops/FPracticeQuizDataWithoutSolutions.graphql`
+- Updated Manage visibility so Course Q&A tab/settings only appear when the rollout gate is enabled:
+  - `apps/frontend-manage/src/pages/courses/[id]/index.tsx`
+  - `apps/frontend-manage/src/components/courses/modals/CourseManipulationModal.tsx`
+- Updated PWA visibility so Course Q&A discoverability is hidden when rollout is off and direct `/qa` access fails closed in that state:
+  - `apps/frontend-pwa/src/pages/course/[courseId]/index.tsx`
+  - `apps/frontend-pwa/src/pages/course/[courseId]/practiceQuizzes/[id].tsx`
+  - `apps/frontend-pwa/src/pages/course/[courseId]/qa.tsx`
+- Added a backend regression test covering rollout-off fail-closed behavior in `packages/graphql/test/discussions.test.ts`.
 
 ### Environment/Verification Notes
 
 - Green verification completed:
+  - `pnpm --filter @klicker-uzh/prisma build`
   - `pnpm --filter @klicker-uzh/graphql check`
   - `pnpm --filter @klicker-uzh/frontend-pwa check`
   - `pnpm --filter @klicker-uzh/frontend-manage check`
@@ -741,10 +780,18 @@ When implementation starts, expected first PR order:
   - enrolled thread creation, reply creation, and upvote flow
   - anonymous-enabled embed vs identified-only embed behavior
   - tampered embed fail-closed access denial
+  - course-page `Course Q&A` entry visible in the rollout-on/runtime-on state
+- Lecturer-side runtime validation findings:
+  - `http://localhost:3002` serves the correct Klicker lecturer auth page
+  - after delegated login, the flow redirects to `https://manage.klicker.com/en`
+  - that host still resolves to Jobeye, so lecturer-side verification is blocked even with the localhost fallback
 - Still blocked:
   - DB-backed GraphQL integration tests time out because the local integration DB/test environment is unavailable
   - `https://manage.klicker.com` is misrouted to the unrelated Jobeye app, so lecturer-side validation on the requested real domain is still blocked
-- Newly approved alpha rollout/surface decisions are documentation-only at this point; they have not been implemented yet.
+  - rollout-off and rollout-on/runtime-off runtime matrix evidence is still pending because the verification run was interrupted before the DB state-flip checks were executed
+- Approved next-alpha surface decisions are only partially implemented at this point:
+  - W1 rollout gate is implemented
+  - W2 stack-only practice/microlearning surface work is still pending
 
 ### Document Links
 
@@ -753,9 +800,9 @@ When implementation starts, expected first PR order:
 
 ### Remaining Major Work
 
-- `W1` Hidden rollout gate + UI visibility model
+- `W1` Hidden rollout gate state-matrix verification + lecturer-side unblock
 - `W2` Stack-only alpha surface implementation + validation
-- `W3` Lecturer-side real-domain validation unblock + remaining verification
+- `W3` Remaining verification + DB-backed integration test unblock
 - `W4` Live Feedback Migration Path
 - `W5` Rollout + Operations
 
@@ -763,15 +810,17 @@ When implementation starts, expected first PR order:
 
 ## Next Work (Implementation Backlog)
 
-### W1: Hidden Rollout Gate + UI Visibility Model
+### W1: Hidden Rollout Gate State-Matrix Verification + Lecturer-Side Unblock
 
-- Add a separate hidden course-level rollout gate boolean in the DB.
-- Hide all Manage Course Q&A UI unless the rollout gate is enabled for that course.
-- Hide all PWA Course Q&A discoverability unless rollout gate and runtime course enablement permit it.
-- Make direct routes fail closed when rollout gate is off.
+- Complete runtime evidence for all three rollout states:
+  - rollout off
+  - rollout on + runtime off
+  - rollout on + runtime on
+- Verify both Manage and PWA visibility rules against that matrix.
+- Unblock lecturer-side verification by fixing `manage.klicker.com` routing or establishing a stable lecturer-only fallback host that does not redirect into Jobeye after login.
 - Exit criteria (pass/fail):
-  - pass: rollout gate cleanly separates hidden, admin-configurable, and fully enabled states
-  - fail: any Q&A UI remains visible when rollout gate is off, or admin controls disappear when rollout is on but runtime enablement is off
+  - pass: rollout gate cleanly separates hidden, admin-configurable, and fully enabled states with screenshot evidence
+  - fail: any Q&A UI remains visible when rollout gate is off, or lecturer-side verification cannot be completed due to host/routing issues
 
 ### W2: Stack-Only Alpha Surface Implementation + Validation
 
@@ -785,15 +834,14 @@ When implementation starts, expected first PR order:
   - pass: stack discussion appears only in the approved post-evaluation contexts and course feed remains course-only
   - fail: stack threads leak into the course feed or discussion is visible during answering
 
-### W3: Lecturer-Side Real-Domain Validation Unblock + Remaining Verification
+### W3: Remaining Verification + DB-Backed Integration Test Unblock
 
-- Fix routing for `https://manage.klicker.com` so it points to the Klicker lecturer UI rather than Jobeye.
-- Once corrected, execute the remaining lecturer-side browser flows on the requested real domain.
-- Complete the still-open scenario coverage from `DISCUSSIONS_TESTING_PLAN.md`.
+- Complete the still-open scenario coverage from `DISCUSSIONS_TESTING_PLAN.md` after W2 is in place.
 - Re-run DB-backed discussion integration tests once the local test DB is available.
+- Corroborate UI evidence with backend/data checks where the testing plan requires it.
 - Exit criteria (pass/fail):
-  - pass: required lecturer/browser scenarios have evidence and the DB-backed test environment is green
-  - fail: domain remains misrouted, required scenarios remain unexecuted, or the DB-backed integration environment stays unavailable
+  - pass: remaining scenario coverage has evidence and the DB-backed test environment is green
+  - fail: required scenarios remain unexecuted, or the DB-backed integration environment stays unavailable
 
 ### W4: Live Feedback Migration Path
 

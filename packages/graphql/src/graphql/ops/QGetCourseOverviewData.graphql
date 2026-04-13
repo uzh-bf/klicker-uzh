@@ -21,6 +21,7 @@ query GetCourseOverviewData($courseId: String!) {
       displayName
       color
       description
+      isCourseQARolloutEnabled
       isGamificationEnabled
       isAssessmentEnabled
       isCourseQAEnabled

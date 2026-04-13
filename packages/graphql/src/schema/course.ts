@@ -66,6 +66,7 @@ export const Course = builder.objectType(CourseRef, {
     isArchived: t.exposeBoolean('isArchived'),
     isGamificationEnabled: t.exposeBoolean('isGamificationEnabled'),
     isAssessmentEnabled: t.exposeBoolean('isAssessmentEnabled'),
+    isCourseQARolloutEnabled: t.exposeBoolean('isCourseQARolloutEnabled'),
     isCourseQAEnabled: t.exposeBoolean('isCourseQAEnabled'),
     isCourseQAAnonymousEnabled: t.exposeBoolean('isCourseQAAnonymousEnabled'),
 
@@ -286,6 +287,7 @@ export const StudentCourse = builder.objectType(StudentCourseRef, {
     pinCode: t.exposeInt('pinCode', { nullable: true }),
     color: t.exposeString('color'),
     description: t.exposeString('description', { nullable: true }),
+    isCourseQARolloutEnabled: t.exposeBoolean('isCourseQARolloutEnabled'),
     isCourseQAEnabled: t.exposeBoolean('isCourseQAEnabled'),
     isCourseQAAnonymousEnabled: t.exposeBoolean('isCourseQAAnonymousEnabled'),
 

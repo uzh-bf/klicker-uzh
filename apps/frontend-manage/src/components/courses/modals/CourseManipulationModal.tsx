@@ -485,7 +485,7 @@ function CourseManipulationModal({
                     )}
                 </div>
 
-                {initialValues && (
+                {initialValues?.isCourseQARolloutEnabled && (
                   <div>
                     <H3>{t('manage.course.courseQA')}</H3>
                     <div className="flex flex-col gap-2 md:grid md:grid-cols-3">
@@ -504,7 +504,9 @@ function CourseManipulationModal({
                         disabled={!values.isCourseQAEnabled}
                         name="isCourseQAAnonymousEnabled"
                         label={t('manage.course.allowAnonymousInEmbeds')}
-                        tooltip={t('manage.course.allowAnonymousInEmbedsTooltip')}
+                        tooltip={t(
+                          'manage.course.allowAnonymousInEmbedsTooltip'
+                        )}
                         className={{
                           label: 'font-bold text-gray-600',
                         }}

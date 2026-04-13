@@ -72,16 +72,21 @@ async function enableCourseDiscussion(
   prisma: PrismaClient,
   {
     courseId,
+    enabled = true,
     allowAnonymous = false,
+    rolloutEnabled = true,
   }: {
     courseId: string
+    enabled?: boolean
     allowAnonymous?: boolean
+    rolloutEnabled?: boolean
   }
 ) {
   await prisma.course.update({
     where: { id: courseId },
     data: {
-      isCourseQAEnabled: true,
+      isCourseQARolloutEnabled: rolloutEnabled,
+      isCourseQAEnabled: enabled,
       isCourseQAAnonymousEnabled: allowAnonymous,
     },
   })
@@ -298,6 +303,12 @@ describe('Integration tests for the course discussion platform', () => {
 
   it('keeps discussion functionality disabled when the course flag is off', async () => {
     const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, {
+      courseId: course.id,
+      enabled: false,
+      rolloutEnabled: true,
+    })
+
     const participantId = await seedParticipantInCourse(prisma, {
       courseId: course.id,
     })
@@ -324,6 +335,61 @@ describe('Integration tests for the course discussion platform', () => {
 
     expect(threadPage.threads).toHaveLength(0)
     expect(threadPage.canPostAnonymously).toBe(false)
+
+    const scopes = await courseDiscussionScopes(
+      { courseId: course.id },
+      participantCtx
+    )
+    expect(scopes).toHaveLength(0)
+
+    const embedInfo = await getCourseDiscussionEmbeddingInfo(
+      {
+        courseId: course.id,
+        scope: { scopeType: DiscussionScopeType.COURSE },
+        allowAnonymous: true,
+      },
+      userOneCtx
+    )
+
+    expect(embedInfo).toBeNull()
+  })
+
+  it('keeps discussion functionality hidden when the rollout gate is off', async () => {
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, {
+      courseId: course.id,
+      enabled: true,
+      allowAnonymous: true,
+      rolloutEnabled: false,
+    })
+
+    const participantId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const participantCtx = createParticipantContext(userOneCtx, participantId)
+
+    const thread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'This should stay hidden behind the rollout gate',
+        scope: { scopeType: DiscussionScopeType.COURSE },
+      },
+      participantCtx
+    )
+
+    expect(thread).toBeNull()
+
+    const threadPage = await courseDiscussionThreads(
+      {
+        courseId: course.id,
+        scopeKey: `course:${course.id}`,
+      },
+      participantCtx
+    )
+
+    expect(threadPage.threads).toHaveLength(0)
+    expect(threadPage.canPostAnonymously).toBe(false)
+    expect(threadPage.isAccessible).toBe(false)
 
     const scopes = await courseDiscussionScopes(
       { courseId: course.id },

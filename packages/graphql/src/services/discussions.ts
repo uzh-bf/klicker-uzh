@@ -366,6 +366,7 @@ async function getCourseSettings(courseId: string, ctx: Context) {
     where: { id: courseId },
     select: {
       id: true,
+      isCourseQARolloutEnabled: true,
       isCourseQAEnabled: true,
       isCourseQAAnonymousEnabled: true,
     },
@@ -1102,7 +1103,8 @@ export async function courseDiscussionScopes(
   ctx: Context
 ): Promise<DiscussionScopeSummary[]> {
   const course = await getCourseSettings(courseId, ctx)
-  if (!course || !course.isCourseQAEnabled) return []
+  if (!course || !course.isCourseQARolloutEnabled || !course.isCourseQAEnabled)
+    return []
 
   const actor = await getCourseAccessActor({ courseId }, ctx)
   if (!actor) return []
@@ -1214,7 +1216,11 @@ export async function courseDiscussionThreads(
   const parsedCursor = parseCursor(cursor)
 
   const course = await getCourseSettings(courseId, ctx)
-  if (!course || !course.isCourseQAEnabled) {
+  if (
+    !course ||
+    !course.isCourseQARolloutEnabled ||
+    !course.isCourseQAEnabled
+  ) {
     return {
       threads: [],
       nextCursor: null,
@@ -1383,7 +1389,11 @@ export async function courseDiscussionOverview(
   ctx: Context
 ): Promise<CourseDiscussionOverview> {
   const course = await getCourseSettings(courseId, ctx)
-  if (!course || !course.isCourseQAEnabled) {
+  if (
+    !course ||
+    !course.isCourseQARolloutEnabled ||
+    !course.isCourseQAEnabled
+  ) {
     return { groups: [], nextCursor: null, hasMore: false, totalThreads: 0 }
   }
 
@@ -1493,7 +1503,8 @@ export async function getCourseDiscussionEmbeddingInfo(
   ctx: ContextWithUser
 ): Promise<CourseDiscussionEmbeddingInfo | null> {
   const course = await getCourseSettings(courseId, ctx)
-  if (!course || !course.isCourseQAEnabled) return null
+  if (!course || !course.isCourseQARolloutEnabled || !course.isCourseQAEnabled)
+    return null
 
   const actor = await getCourseAccessActor(
     {
@@ -1583,7 +1594,8 @@ export async function createCourseDiscussionThread(
   if (!normalizedContent) return null
 
   const course = await getCourseSettings(courseId, ctx)
-  if (!course || !course.isCourseQAEnabled) return null
+  if (!course || !course.isCourseQARolloutEnabled || !course.isCourseQAEnabled)
+    return null
 
   // Verify embed token early to reject courseId mismatches before creating
   // spaces or scopes as a side effect
@@ -1744,7 +1756,8 @@ export async function createCourseDiscussionReply(
   if (!normalizedContent) return null
 
   const course = await getCourseSettings(courseId, ctx)
-  if (!course || !course.isCourseQAEnabled) return null
+  if (!course || !course.isCourseQARolloutEnabled || !course.isCourseQAEnabled)
+    return null
 
   // Verify embed token early to reject courseId mismatches before any lookups
   const embedClaims = await verifyEmbedToken(embedToken)

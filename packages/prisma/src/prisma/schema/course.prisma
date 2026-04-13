@@ -23,6 +23,7 @@ model Course {
   isGamificationEnabled  Boolean @default(true)
   isGroupCreationEnabled Boolean @default(true)
   isAssessmentEnabled    Boolean @default(false)
+  isCourseQARolloutEnabled Boolean @default(false)
   isCourseQAEnabled      Boolean @default(false)
   isCourseQAAnonymousEnabled Boolean @default(false)
 

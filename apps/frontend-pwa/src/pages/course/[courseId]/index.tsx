@@ -29,12 +29,12 @@ import {
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import nookies from 'nookies'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
-import Link from 'next/link'
 import { Suspense, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
@@ -199,7 +199,7 @@ function CourseOverview({
       course.description ? (
         <>
           <div className="md:mx-auto md:w-full md:max-w-6xl">
-            {course.isCourseQAEnabled && (
+            {course.isCourseQARolloutEnabled && course.isCourseQAEnabled && (
               <div className="mb-2 flex justify-end">
                 <Link href={`/course/${courseId}/qa`}>
                   <Button

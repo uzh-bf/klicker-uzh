@@ -343,6 +343,25 @@ function CourseDiscussionPage({
 
   if (
     !embedded &&
+    courseData?.basicCourseInformation?.isCourseQARolloutEnabled === false
+  ) {
+    return (
+      <Layout
+        embedded={embedded}
+        course={courseData.basicCourseInformation}
+        displayName={t('pwa.courseQA.title')}
+      >
+        <UserNotification
+          type="warning"
+          message={t('pwa.courseQA.accessDenied')}
+        />
+      </Layout>
+    )
+  }
+
+  if (
+    !embedded &&
+    courseData?.basicCourseInformation?.isCourseQARolloutEnabled === true &&
     courseData?.basicCourseInformation?.isCourseQAEnabled === false
   ) {
     return (
