@@ -94,6 +94,8 @@ function ElementStack({
   const [studentResponse, setStudentResponse] =
     useState<StackStudentResponseType>({})
 
+  const [openEvaluations, setOpenEvaluations] = useState<Set<number>>(new Set())
+
   const showMarkAsRead = useMemo(() => {
     if (
       Object.entries(studentResponse).some(
@@ -310,7 +312,7 @@ function ElementStack({
           />
         )}
 
-        {!previewOnly && !hideBookmark ? (
+        {!previewOnly && !hideBookmark && !embedded ? (
           <div className="flex flex-row items-center justify-between">
             <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
             <Bookmark
@@ -354,6 +356,21 @@ function ElementStack({
                     showSeparator={
                       element.elementType === ElementType.Flashcard
                     }
+                    evaluationOpen={openEvaluations.has(element.id)}
+                    onToggleEvaluation={
+                      embedded && stackStorage?.[element.id]?.evaluation
+                        ? () =>
+                            setOpenEvaluations((prev) => {
+                              const next = new Set(prev)
+                              if (next.has(element.id)) {
+                                next.delete(element.id)
+                              } else {
+                                next.add(element.id)
+                              }
+                              return next
+                            })
+                        : undefined
+                    }
                   />
                   <StudentElement
                     element={element}
@@ -361,6 +378,7 @@ function ElementStack({
                     studentResponse={studentResponse}
                     setStudentResponse={setStudentResponse}
                     stackStorage={stackStorage}
+                    preview={embedded && !openEvaluations.has(element.id)}
                   />
                 </div>
               )

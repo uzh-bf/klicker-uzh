@@ -112,7 +112,8 @@ function PracticeQuiz({
     <div className="flex-1">
       <div
         className={twMerge(
-          'w-full space-y-4 md:mx-auto md:mb-4 md:max-w-6xl md:rounded md:border md:p-8 md:pt-6'
+          'w-full space-y-4 md:mx-auto md:mb-4 md:max-w-6xl md:rounded md:p-8 md:pt-6',
+          !embedded ? 'md:border' : ''
         )}
       >
         <StepProgressWithScoring
