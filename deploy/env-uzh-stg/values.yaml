@@ -28,7 +28,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: Always
-        tag: v3
+        tag: v3-embedded-pq
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -48,7 +48,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3
+        tag: v3-embedded-pq
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -68,7 +68,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3
+        tag: v3-embedded-pq
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -119,7 +119,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-embedded-pq
 
   ingress:
     annotations:
@@ -152,15 +152,15 @@ chat:
   priorityClassName: staging-workload
 
   openai:
-    baseUrl: 'http://litellm:4000/v1'
+    baseUrl: 'http://litellm.stg-litellm.svc.cluster.local:4000/v1'
 
   automaticModels:
-    primaryId: gpt-4.1
+    primaryId: gpt-5.1
     fallbackId: gpt-4.1-mini
 
   modelRegistry:
     - id: gpt-4.1
-      deploymentId: gpt-4.1
+      deploymentId: klickeruzh/azure/gpt-4.1
       name: GPT-4.1
       description: OpenAI model
       fallback: false
@@ -168,7 +168,7 @@ chat:
         input: 2.0
         output: 8.0
     - id: gpt-5.1
-      deploymentId: gpt-5.1
+      deploymentId: klickeruzh/azure/gpt-5.1
       name: GPT-5.1
       description: OpenAI reasoning model
       fallback: false
@@ -176,7 +176,7 @@ chat:
         input: 1.25
         output: 10.0
     - id: gpt-4.1-mini
-      deploymentId: gpt-4.1-mini
+      deploymentId: klickeruzh/azure/gpt-4.1-mini
       name: GPT-4.1 Mini
       description: Small OpenAI model
       fallback: true
@@ -205,7 +205,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-embedded-pq
 
   ingress:
     annotations:
@@ -258,7 +258,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-embedded-pq
 
   ingress:
     className: haproxy
@@ -309,7 +309,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-embedded-pq
 
   ingress:
     className: haproxy
@@ -345,7 +345,7 @@ frontendControl:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-embedded-pq
 
   autoscaling:
     enabled: false
@@ -412,7 +412,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-embedded-pq
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -463,7 +463,7 @@ olatApi:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-embedded-pq
 
   autoscaling:
     enabled: false
@@ -534,7 +534,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-embedded-pq
 
   ingress:
     className: haproxy
@@ -559,7 +559,7 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3
+    tag: v3-embedded-pq
     pullPolicy: Always
 
   autoscaling:
@@ -639,7 +639,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: Always
-      tag: v3
+      tag: v3-embedded-pq
 
     ingress:
       className: haproxy
@@ -701,7 +701,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: Always
-      tag: v3
+      tag: v3-embedded-pq
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -778,7 +778,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: Always
-      tag: v3
+      tag: v3-embedded-pq
 
     ingress:
       className: haproxy
