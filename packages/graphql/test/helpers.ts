@@ -67,13 +67,22 @@ import {
   userTwo,
 } from './userData.js'
 
+type TestInitializationResult = {
+  userOneCtx: ContextWithUser
+  userTwoCtx: ContextWithUser
+  userThreeCtx: ContextWithUser
+  userFourCtx: ContextWithUser
+  userFiveCtx: ContextWithUser
+  userSixCtx: ContextWithUser
+}
+
 // ! General Test Suite Helpers (general setup, user seeding, database connections, cleanup, etc.)
 // #region
 export async function testInitialization(
   prisma: PrismaClient,
   hatchet: Hatchet,
   emitter: EventEmitter
-) {
+): Promise<TestInitializationResult> {
   // upsert all users in the database
   await Promise.all(
     [userOne, userTwo, userThree, userFour, userFive, userSix].map(
