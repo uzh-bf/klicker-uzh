@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.58](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.57...v3.4.0-alpha.58) (2026-04-14)
+
+
+### Bug Fixes
+
+* **cypress:** move CSP frame-ancestors from Next.js middleware to ingress layer ([#5025](https://github.com/uzh-bf/klicker-uzh/issues/5025)) ([e50a349](https://github.com/uzh-bf/klicker-uzh/commit/e50a349f953872f1f967d3467d33e18a8fed1b63))
+* **cypress:** stabilize local cypress seed + F-elements-sc typing ([#5068](https://github.com/uzh-bf/klicker-uzh/issues/5068)) ([3936210](https://github.com/uzh-bf/klicker-uzh/commit/3936210eeb1eb46cb902f5f090d51b3a0b7b16d1))
+* **deploy:** remove quotes from CSP response-set-header annotation ([bc3ff35](https://github.com/uzh-bf/klicker-uzh/commit/bc3ff357fe81671935eda64c9e2adf3cbd64e923))
+
+
+### Enhancements
+
+* **apps/chat:** add litellm proxy ([#5036](https://github.com/uzh-bf/klicker-uzh/issues/5036)) ([23588c9](https://github.com/uzh-bf/klicker-uzh/commit/23588c91949ca1f1d7fcb6975b9acf1518bfa82d))
+* **apps/chat:** migrate Azure OpenAI to OpenAI-compatible API, upgrade AI SDK v6 ([#5027](https://github.com/uzh-bf/klicker-uzh/issues/5027)) ([558e27d](https://github.com/uzh-bf/klicker-uzh/commit/558e27dc2a5ad061cc862aa0cacc26e6cdc8e867))
+
 ## [3.4.0-alpha.57](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.56...v3.4.0-alpha.57) (2026-02-23)
 
 
