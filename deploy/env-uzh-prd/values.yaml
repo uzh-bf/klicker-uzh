@@ -294,7 +294,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.58
+    tag: v3.4.0-alpha.59
 
   ingress:
     className: haproxy
