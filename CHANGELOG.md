@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.59](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.58...v3.4.0-alpha.59) (2026-04-15)
+
+
+### Enhancements
+
+* improve embedded PQ display and add postMessage interactions with parent app ([#5065](https://github.com/uzh-bf/klicker-uzh/issues/5065)) ([745d634](https://github.com/uzh-bf/klicker-uzh/commit/745d6347fd9631040248a8d9f5d3b8bd0f4a27ce))
+
 ## [3.4.0-alpha.58](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.57...v3.4.0-alpha.58) (2026-04-14)
 
 

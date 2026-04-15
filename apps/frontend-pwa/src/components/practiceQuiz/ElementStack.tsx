@@ -20,6 +20,7 @@ import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import Bookmark from './Bookmark'
@@ -28,6 +29,7 @@ import InstanceHeader from './InstanceHeader'
 interface ElementStackProps {
   parentId: string
   courseId: string
+  embedded?: boolean
   stack: ElementStackType
   currentStep: number
   totalSteps: number
@@ -52,6 +54,7 @@ interface ElementStackProps {
 function ElementStack({
   parentId,
   courseId,
+  embedded = false,
   stack,
   currentStep,
   totalSteps,
@@ -70,6 +73,10 @@ function ElementStack({
   const timeRef = useRef(0)
   useComponentVisibleCounter({ timeRef })
 
+  const embeddedButtonClass = embedded
+    ? 'fixed bottom-4 right-4 z-50 shadow-lg'
+    : 'float-right mt-4'
+
   const [respondToElementStack, { loading: submittingResponse }] = useMutation(
     RespondToElementStackDocument
   )
@@ -86,6 +93,8 @@ function ElementStack({
 
   const [studentResponse, setStudentResponse] =
     useState<StackStudentResponseType>({})
+
+  const [openEvaluations, setOpenEvaluations] = useState<Set<number>>(new Set())
 
   const showMarkAsRead = useMemo(() => {
     if (
@@ -293,7 +302,7 @@ function ElementStack({
   ])
 
   return (
-    <div className="pb-12">
+    <div className={twMerge('pb-12', embedded && 'pb-28')}>
       <div className="w-full">
         {activityExpired && activityExpiredMessage && (
           <UserNotification
@@ -303,7 +312,7 @@ function ElementStack({
           />
         )}
 
-        {!previewOnly && !hideBookmark ? (
+        {!previewOnly && !hideBookmark && !embedded ? (
           <div className="flex flex-row items-center justify-between">
             <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
             <Bookmark
@@ -347,6 +356,21 @@ function ElementStack({
                     showSeparator={
                       element.elementType === ElementType.Flashcard
                     }
+                    evaluationOpen={openEvaluations.has(element.id)}
+                    onToggleEvaluation={
+                      embedded && stackStorage?.[element.id]?.evaluation
+                        ? () =>
+                            setOpenEvaluations((prev) => {
+                              const next = new Set(prev)
+                              if (next.has(element.id)) {
+                                next.delete(element.id)
+                              } else {
+                                next.add(element.id)
+                              }
+                              return next
+                            })
+                        : undefined
+                    }
                   />
                   <StudentElement
                     element={element}
@@ -354,6 +378,7 @@ function ElementStack({
                     studentResponse={studentResponse}
                     setStudentResponse={setStudentResponse}
                     stackStorage={stackStorage}
+                    preview={embedded && !openEvaluations.has(element.id)}
                   />
                 </div>
               )
@@ -373,7 +398,9 @@ function ElementStack({
               handleNextElement()
             }
           }}
-          className={{ root: 'float-right mt-4' }}
+          className={{
+            root: embeddedButtonClass,
+          }}
           data={{ cy: 'student-stack-continue' }}
         >
           <Button.Label>
@@ -387,7 +414,9 @@ function ElementStack({
       {/* display mark all as read button, if only content elements have not been answered yet */}
       {typeof stackStorage === 'undefined' && showMarkAsRead && (
         <Button
-          className={{ root: 'float-right mt-4' }}
+          className={{
+            root: embeddedButtonClass,
+          }}
           disabled={Object.values(studentResponse).some(
             (response) => !response.valid
           )}
@@ -426,7 +455,9 @@ function ElementStack({
             (!previewOnly && activityExpired) ||
             Object.values(studentResponse).some((response) => !response.valid)
           }
-          className={{ root: 'float-right mt-4' }}
+          className={{
+            root: embeddedButtonClass,
+          }}
           onClick={async () => {
             const result = await respondToElementStack({
               variables: {
