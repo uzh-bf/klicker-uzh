@@ -99,12 +99,9 @@ export async function loginParticipant(
   const participantWithUsername = await ctx.prisma.participant.findUnique({
     where: { username: usernameOrEmail.trim() },
   })
-  const participantWithEmail = await ctx.prisma.participant.findUnique({
+  const participantWithEmail = await ctx.prisma.participant.findFirst({
     where: {
-      email_isSSOAccount: {
-        email: usernameOrEmail.trim().toLowerCase(),
-        isSSOAccount: false,
-      },
+      email: usernameOrEmail.trim().toLowerCase(),
     },
   })
 
