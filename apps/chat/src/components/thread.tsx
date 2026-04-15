@@ -26,6 +26,7 @@ import {
 import { type FC, type PropsWithChildren, useState } from 'react'
 
 import { Button } from '@uzh-bf/design-system'
+import { hasAnyImageAttachmentData } from '../lib/attachments/attachmentState'
 import {
   MAX_IMAGE_ATTACHMENTS,
   useComposerStore,
@@ -34,6 +35,7 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { BranchPicker } from './branch-picker'
 import { useChatUi } from './chat-ui-context'
 import { MarkdownText } from './markdown-text'
+import { MessageAttachments } from './message-attachments'
 import { ToolFallback } from './tool-fallback'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
@@ -62,12 +64,18 @@ const formatTitleCase = (value: string) =>
     .join(' ')
 
 type ImageAttachment = {
-  type?: 'image'
+  id?: string
+  type: 'image'
+  position?: number
   imageBase64?: string | null
+  imagePreviewBase64?: string | null
   imageDescription?: string | null
+  hasFullImage?: boolean
 }
 
 type MessageWithCustomMetadata = {
+  id: string
+  attachmentSourceMessageId?: string | null
   imageAttachments?: ImageAttachment[]
   metadata?: {
     custom?:
@@ -467,7 +475,6 @@ const getMessageAttachments = (
 }
 
 const UserMessage: FC = () => {
-  const { embedded } = useChatUi()
   const message = useMessage() as MessageWithCustomMetadata
   const attachments = getMessageAttachments(message)
 
@@ -475,21 +482,12 @@ const UserMessage: FC = () => {
     <MessagePrimitive.Root className="flex w-full max-w-[var(--thread-max-width)] flex-col items-end gap-y-1 py-2 sm:py-4">
       <div className="bg-muted text-foreground max-w-[calc(var(--thread-max-width)*0.8)] break-words rounded-2xl px-5 py-2.5">
         {attachments.length > 0 && (
-          <div className="mb-2 flex flex-wrap gap-2">
-            {attachments.map((att, i) =>
-              att.imageBase64 ? (
-                <img
-                  key={i}
-                  src={att.imageBase64}
-                  alt={`Attached by user (${i + 1})`}
-                  className={twMerge(
-                    'rounded-md border object-cover',
-                    embedded ? 'max-w-[200px]' : 'max-w-[300px]'
-                  )}
-                />
-              ) : null
-            )}
-          </div>
+          <MessageAttachments
+            attachments={attachments}
+            messageId={message.id}
+            hydrationSourceMessageId={message.attachmentSourceMessageId}
+            className="mb-2"
+          />
         )}
         <MessagePrimitive.Content />
       </div>
@@ -510,9 +508,7 @@ const UserActionBar: FC = () => {
   if (!showMessageActions) return null
 
   const attachments = getMessageAttachments(message)
-  const hasImages = attachments.some(
-    (a) => a.type === 'image' && !!a.imageBase64
-  )
+  const hasImages = hasAnyImageAttachmentData(attachments)
 
   const supportsImages =
     modelOptions.find((m) => m.id === selectedModel)
@@ -574,7 +570,7 @@ const UserActionBar: FC = () => {
 }
 
 const EditComposer: FC = () => {
-  const { showMessageActions, embedded } = useChatUi()
+  const { showMessageActions } = useChatUi()
   const message = useMessage() as MessageWithCustomMetadata
   const attachments = getMessageAttachments(message)
 
@@ -583,21 +579,13 @@ const EditComposer: FC = () => {
   return (
     <ComposerPrimitive.Root className="bg-muted my-4 flex w-full max-w-[var(--thread-max-width)] flex-col gap-2 rounded-2xl">
       {attachments.length > 0 && (
-        <div className="ml-4 mt-3 flex flex-wrap gap-2">
-          {attachments.map((att, i) =>
-            att.imageBase64 ? (
-              <img
-                key={i}
-                src={att.imageBase64}
-                alt={`Attached by user (${i + 1})`}
-                className={twMerge(
-                  'rounded-md border object-cover',
-                  embedded ? 'max-w-[200px]' : 'max-w-[300px]'
-                )}
-              />
-            ) : null
-          )}
-        </div>
+        <MessageAttachments
+          attachments={attachments}
+          messageId={message.id}
+          hydrationSourceMessageId={message.attachmentSourceMessageId}
+          variant="edit"
+          className="ml-4 mt-3"
+        />
       )}
       <ComposerPrimitive.Input className="text-foreground flex min-h-[2.5rem] w-full resize-none bg-transparent px-4 py-3 outline-none" />
 

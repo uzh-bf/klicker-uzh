@@ -10,8 +10,63 @@ import {
 } from '../../stores/composerStore'
 
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
+const IMAGE_PREVIEW_MAX_DIMENSION = 256
 const HEIC_TYPES = new Set(['image/heic', 'image/heif'])
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+
+async function readBlobAsDataUrl(blob: Blob): Promise<string> {
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
+}
+
+async function createPreviewDataUrl(blob: Blob): Promise<string> {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return await readBlobAsDataUrl(blob)
+  }
+
+  return await new Promise<string>((resolve) => {
+    const objectUrl = URL.createObjectURL(blob)
+    const image = new Image()
+
+    image.onload = () => {
+      try {
+        const longestSide = Math.max(image.width, image.height)
+        const scale =
+          longestSide > IMAGE_PREVIEW_MAX_DIMENSION
+            ? IMAGE_PREVIEW_MAX_DIMENSION / longestSide
+            : 1
+
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.max(1, Math.round(image.width * scale))
+        canvas.height = Math.max(1, Math.round(image.height * scale))
+
+        const context = canvas.getContext('2d')
+        if (!context) {
+          resolve(readBlobAsDataUrl(blob))
+          return
+        }
+
+        context.drawImage(image, 0, 0, canvas.width, canvas.height)
+        resolve(canvas.toDataURL('image/jpeg', 0.75))
+      } catch {
+        resolve(readBlobAsDataUrl(blob))
+      } finally {
+        URL.revokeObjectURL(objectUrl)
+      }
+    }
+
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      resolve(readBlobAsDataUrl(blob))
+    }
+
+    image.src = objectUrl
+  })
+}
 
 /**
  * Downscale JPEG blob to fit within maxBytes using canvas.
@@ -121,12 +176,8 @@ export const imageAttachmentAdapter: AttachmentAdapter = {
       throw new Error(msg)
     }
 
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = reject
-      reader.readAsDataURL(blob)
-    })
+    const dataUrl = await readBlobAsDataUrl(blob)
+    const previewDataUrl = await createPreviewDataUrl(blob)
 
     // clear any prior error on success and track count
     setAttachmentError(null)
@@ -138,7 +189,13 @@ export const imageAttachmentAdapter: AttachmentAdapter = {
       name: file.name,
       contentType,
       file,
-      content: [{ type: 'image', image: dataUrl }],
+      content: [
+        {
+          type: 'image',
+          image: dataUrl,
+          imagePreview: previewDataUrl,
+        } as any,
+      ],
       status: { type: 'requires-action', reason: 'composer-send' },
     } satisfies PendingAttachment
   },

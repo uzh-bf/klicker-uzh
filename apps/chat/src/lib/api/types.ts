@@ -1,4 +1,5 @@
 import { ExtendedThreadMessageLike, Thread } from '../../stores/chatStore'
+import { sortAttachmentsByPosition } from '../attachments/attachmentState'
 import { type ReasoningEffort } from '../config/reasoning'
 
 export interface ApiError extends Error {
@@ -36,6 +37,29 @@ export type ApiContentPart =
       }
     }
 
+export interface ApiHydratedImageAttachment {
+  id: string
+  type: 'image'
+  position: number
+  imageBase64: string
+  imagePreviewBase64?: string | null
+  imageDescription?: string | null
+  hasFullImage: true
+}
+
+export interface ApiHistoryImageAttachment {
+  id: string
+  type: 'image'
+  position: number
+  imagePreviewBase64?: string | null
+  imageDescription?: string | null
+  hasFullImage: boolean
+}
+
+export type ApiImageAttachment =
+  | ApiHydratedImageAttachment
+  | ApiHistoryImageAttachment
+
 export interface ApiMessage {
   id: string
   threadId: string
@@ -46,11 +70,7 @@ export interface ApiMessage {
   reasoningEffort?: ReasoningEffort | null
   reasoningContent?: string | null
   creditsUsed?: number | null
-  imageAttachments?: {
-    type: 'image'
-    imageBase64?: string | null
-    imageDescription?: string | null
-  }[]
+  imageAttachments?: ApiImageAttachment[]
   parentId?: string | null
   createdAt: string
   updatedAt: string
@@ -178,7 +198,9 @@ export const convertApiMessageToMessage = (
     reasoningEffort: apiMessage.reasoningEffort ?? null,
     reasoningContent: apiMessage.reasoningContent ?? null,
     creditsUsed: apiMessage.creditsUsed ?? null,
-    imageAttachments: apiMessage.imageAttachments ?? [],
+    imageAttachments: sortAttachmentsByPosition(
+      apiMessage.imageAttachments ?? []
+    ),
     createdAt: new Date(apiMessage.createdAt),
     parentId: apiMessage.parentId || undefined,
   }

@@ -4,6 +4,7 @@ import {
   getAutomaticModelId,
   getChatModelRegistry,
 } from '@/src/lib/server/chatModelRegistry'
+import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
@@ -12,7 +13,13 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
 import { Chatbot } from '@klicker-uzh/prisma/client'
 import { safeDecrypt } from '@klicker-uzh/util'
-import { generateText, stepCountIs, streamText, type StepResult } from 'ai'
+import {
+  generateText,
+  stepCountIs,
+  streamText,
+  type ModelMessage,
+  type StepResult,
+} from 'ai'
 import { createHash, randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { DEFAULT_PROMPT } from 'src/lib/config/prompts'
@@ -28,6 +35,18 @@ import { z } from 'zod'
 export const runtime = 'nodejs'
 
 export const maxDuration = 60
+
+type IncomingImageAttachment = {
+  imageBase64: string
+  imagePreviewBase64: string | null
+}
+
+type ChatRouteModelMessage = {
+  role: 'user' | 'assistant'
+  content:
+    | string
+    | Array<{ type: 'text'; text: string } | { type: 'image'; image: string }>
+}
 
 if (!process.env.OPENAI_BASE_URL) {
   console.warn(
@@ -638,6 +657,13 @@ export async function POST(
     )
   }
 
+  const imageDataUrlSchema = z
+    .string()
+    .max(7_000_000)
+    .refine((value) => /^data:image\/(jpeg|png|gif|webp);base64,/.test(value), {
+      message: 'Must be a base64 data URL for jpeg, png, gif, or webp',
+    })
+
   const bodySchema = z.object({
     messages: z.array(
       z.object({
@@ -661,15 +687,13 @@ export async function POST(
     assistantMessageId: z.string().min(1),
     images: z
       .array(
-        z
-          .string()
-          .max(7_000_000)
-          .refine(
-            (value) => /^data:image\/(jpeg|png|gif|webp);base64,/.test(value),
-            {
-              message: 'Must be a base64 data URL for jpeg, png, gif, or webp',
-            }
-          )
+        z.union([
+          imageDataUrlSchema,
+          z.object({
+            imageBase64: imageDataUrlSchema,
+            imagePreviewBase64: imageDataUrlSchema.nullable(),
+          }),
+        ])
       )
       .max(3)
       .optional()
@@ -691,6 +715,18 @@ export async function POST(
     assistantMessageId,
     images,
   } = parsed
+
+  const normalizedImages: IncomingImageAttachment[] = images.map((image) =>
+    typeof image === 'string'
+      ? {
+          imageBase64: image,
+          imagePreviewBase64: null,
+        }
+      : image
+  )
+  const resolvedImages = await Promise.all(
+    normalizedImages.map((image) => ensureImagePreviewBase64(image))
+  )
 
   const userPrompt = messages
     .filter((message) => message.role === 'user')
@@ -803,7 +839,7 @@ export async function POST(
   let partialReasoningContent = ''
   let assistantReasoningContent: string | null = null
 
-  const modelMessages = messages.map((msg) => ({
+  const modelMessages: ChatRouteModelMessage[] = messages.map((msg) => ({
     role: msg.role,
     content: msg.content,
   }))
@@ -898,21 +934,22 @@ export async function POST(
   let imageDescriptionCost: number = 0
   const imageAttachments: {
     imageBase64: string
+    imagePreviewBase64: string | null
     imageDescription: string | null
   }[] = []
-  if (images.length > 0 && lastMessage?.role === 'user') {
+  if (normalizedImages.length > 0 && lastMessage?.role === 'user') {
     const descriptionPrompt = (userContent: string | undefined) =>
       `${userContent ? `User message context: ${userContent}\n\n` : ''}Describe this image in detail. Include all visible text, diagrams, charts, equations, labels, and notable visual elements. This description will serve as context for an ongoing conversation.`
 
     const results = await Promise.allSettled(
-      images.map(async (imgBase64) => {
+      resolvedImages.map(async (image) => {
         const descriptionResult = await generateText({
           model: model,
           messages: [
             {
               role: 'user',
               content: [
-                { type: 'image', image: imgBase64 },
+                { type: 'image', image: image.imageBase64 },
                 {
                   type: 'text',
                   text: descriptionPrompt(lastMessage?.content),
@@ -922,15 +959,16 @@ export async function POST(
           ],
           maxOutputTokens: 1000,
         })
-        return { imgBase64, descriptionResult }
+        return { image, descriptionResult }
       })
     )
 
     for (const result of results) {
       if (result.status === 'fulfilled') {
-        const { imgBase64, descriptionResult } = result.value
+        const { image, descriptionResult } = result.value
         imageAttachments.push({
-          imageBase64: imgBase64,
+          imageBase64: image.imageBase64,
+          imagePreviewBase64: image.imagePreviewBase64,
           imageDescription: descriptionResult.text,
         })
         if (descriptionResult.usage) {
@@ -948,28 +986,29 @@ export async function POST(
         // find the corresponding image from the original array
         const idx = results.indexOf(result)
         imageAttachments.push({
-          imageBase64: images[idx],
+          imageBase64: normalizedImages[idx].imageBase64,
+          imagePreviewBase64: normalizedImages[idx].imagePreviewBase64,
           imageDescription:
             'The user attached an image that could not be described automatically.',
         })
       }
     }
 
-    // insert all image descriptions into user message content
-    const descriptions = imageAttachments
-      .map((a, i) =>
-        a.imageDescription
-          ? `[Attached image ${i + 1} description: ${a.imageDescription}]`
-          : null
-      )
-      .filter(Boolean)
-    if (descriptions.length > 0) {
-      const lastMessageIndex = messages.length - 1
-      if (lastMessageIndex >= 0) {
-        modelMessages[lastMessageIndex] = {
-          ...modelMessages[lastMessageIndex],
-          content: `${modelMessages[lastMessageIndex].content}\n\n${descriptions.join('\n\n')}`,
-        }
+    const lastMessageIndex = messages.length - 1
+    if (lastMessageIndex >= 0) {
+      const messageText = messages[lastMessageIndex]?.content
+
+      modelMessages[lastMessageIndex] = {
+        ...modelMessages[lastMessageIndex],
+        content: [
+          ...(messageText
+            ? [{ type: 'text' as const, text: messageText }]
+            : []),
+          ...resolvedImages.map((image) => ({
+            type: 'image' as const,
+            image: image.imageBase64,
+          })),
+        ],
       }
     }
   }
@@ -1000,7 +1039,9 @@ export async function POST(
     userPromptLengthTotal: userPrompt.length,
     userPromptHash: userPrompt ? hashSnippet(userPrompt) : null,
     imageAttachmentCount: images.length,
-    imageAttachmentSizes: images.map((img) => Buffer.byteLength(img, 'utf8')),
+    imageAttachmentSizes: resolvedImages.map((image) =>
+      Buffer.byteLength(image.imageBase64, 'utf8')
+    ),
     elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
   })
 
@@ -1037,6 +1078,7 @@ export async function POST(
           message: { threadId: owningThread.id },
         },
         select: { messageId: true, imageDescription: true },
+        orderBy: [{ messageId: 'asc' }, { position: 'asc' }],
       })
       const descriptionsByMsgId = new Map<string, string[]>()
       for (const a of priorAttachments) {
@@ -1090,15 +1132,19 @@ export async function POST(
         if (imageAttachments.length === 0) return
 
         // delete existing attachments for this message, then create new ones
-        await prisma.chatAttachment.deleteMany({ where: { messageId } })
-        await prisma.chatAttachment.createMany({
-          data: imageAttachments.map((att) => ({
-            type: 'IMAGE' as const,
-            messageId,
-            imageBase64: att.imageBase64 ?? null,
-            imageDescription: att.imageDescription ?? null,
-          })),
-        })
+        await prisma.$transaction([
+          prisma.chatAttachment.deleteMany({ where: { messageId } }),
+          prisma.chatAttachment.createMany({
+            data: imageAttachments.map((att, position) => ({
+              type: 'IMAGE' as const,
+              messageId,
+              position,
+              imageBase64: att.imageBase64 ?? null,
+              imagePreviewBase64: att.imagePreviewBase64 ?? null,
+              imageDescription: att.imageDescription ?? null,
+            })),
+          }),
+        ])
       }
 
       const updated = await prisma.chatMessage.updateMany({
@@ -1199,7 +1245,7 @@ export async function POST(
         }),
       },
     },
-    messages: modelMessages,
+    messages: modelMessages as ModelMessage[],
     tools: mcpTools,
     toolChoice: 'auto',
     stopWhen: stepCountIs(5),

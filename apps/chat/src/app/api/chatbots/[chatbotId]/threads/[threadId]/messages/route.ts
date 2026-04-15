@@ -1,3 +1,4 @@
+import { buildHistoryAttachmentDto } from '@/src/lib/attachments/attachmentState'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { prisma } from '@klicker-uzh/prisma'
 import { NextRequest, NextResponse } from 'next/server'
@@ -27,7 +28,9 @@ export async function GET(
         },
       },
       include: {
-        attachments: true,
+        attachments: {
+          orderBy: { position: 'asc' },
+        },
       },
       orderBy: { createdAt: 'asc' },
     })
@@ -48,11 +51,9 @@ export async function GET(
                 msg.creditsUsed as unknown as { toNumber: () => number }
               ).toNumber()
             : null,
-        imageAttachments: msg.attachments.map((att) => ({
-          type: 'image' as const,
-          imageBase64: att.imageBase64 ?? null,
-          imageDescription: att.imageDescription ?? null,
-        })),
+        imageAttachments: msg.attachments.map((att) =>
+          buildHistoryAttachmentDto(att)
+        ),
         parentId: (msg as { parentId?: string | null }).parentId || null,
         createdAt: msg.createdAt.toISOString(),
         updatedAt: msg.updatedAt.toISOString(),

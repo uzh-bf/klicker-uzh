@@ -79,7 +79,9 @@ model ChatAttachment {
   id String @id @default(uuid()) @db.Uuid
 
   type             ChatAttachmentType
+  position         Int
   imageBase64      String?            @db.Text // base64 data URL for display 
+  imagePreviewBase64 String?          @db.Text // compact preview data URL for history rendering
   imageDescription String?            @db.Text // AI-generated description for context injection
 
   messageId String      @db.Uuid
@@ -88,7 +90,7 @@ model ChatAttachment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([messageId])
+  @@index([messageId, position])
 }
 
 model Chatbot {
