@@ -90,6 +90,7 @@ function Layout({
       )}
 
       <div
+        id="layout-scroll-container"
         className={twMerge(
           'flex min-h-0 flex-1 flex-col overflow-y-auto',
           embedded ? 'p-0' : 'p-4',

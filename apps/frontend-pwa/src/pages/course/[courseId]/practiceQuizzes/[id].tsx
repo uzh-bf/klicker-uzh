@@ -240,7 +240,7 @@ function PracticeQuizPage({
   }
 
   const handleNextQuestion = () => {
-    scrollTo(0, 0)
+    document.getElementById('layout-scroll-container')?.scrollTo({ top: 0 })
     setCurrentIx((ix) => ix + 1)
   }
 
