@@ -6,6 +6,8 @@ import {
   convertApiMessageToMessage,
   convertApiThreadToThread,
   isApiError,
+  type ApiHydratedImageAttachment,
+  type ApiImageAttachment,
   type ApiMessage,
   type ApiThread,
 } from '../lib/api/types'
@@ -16,6 +18,11 @@ import {
   getBranches,
   getPathToLeaf,
 } from '../lib/api/utils'
+import {
+  hasAllImageAttachmentsHydrated,
+  mergeHydratedAttachments,
+  sortAttachmentsByPosition,
+} from '../lib/attachments/attachmentState'
 import { type ReasoningEffort } from '../lib/config/reasoning'
 
 /**
@@ -23,11 +30,21 @@ import { type ReasoningEffort } from '../lib/config/reasoning'
  */
 export type ExtendedThreadMessageLike = ThreadMessageLike & {
   parentId?: string | null
+  attachmentSourceMessageId?: string | null
   chatMode?: string | null
   modelId?: string | null
   reasoningEffort?: ReasoningEffort | null
   reasoningContent?: string | null
   creditsUsed?: number | null
+  imageAttachments?: {
+    id?: string
+    type: 'image'
+    position?: number
+    imageBase64?: string | null
+    imagePreviewBase64?: string | null
+    imageDescription?: string | null
+    hasFullImage?: boolean
+  }[]
 }
 
 export interface Thread {
@@ -63,6 +80,12 @@ interface ChatState {
     message: ExtendedThreadMessageLike,
     targetThreadId?: string
   ) => Promise<string | null>
+  ensureFullImageAttachments: (
+    chatbotId: string,
+    threadId: string,
+    messageId: string,
+    sourceMessageId?: string
+  ) => Promise<ExtendedThreadMessageLike | undefined>
   setMessages: (messages: ExtendedThreadMessageLike[]) => void
   setIsRunning: (isRunning: boolean) => void
   resetSession: () => void
@@ -85,6 +108,10 @@ interface ChatState {
 export const useChatStore = create<ChatState>((set, get) => {
   const DEFAULT_PARTICIPATION_MESSAGE =
     'You need to join the corresponding KlickerUZH course before you can use this chatbot. Please enrol in the course or contact your instructor for access.'
+  const attachmentHydrationRequests = new Map<
+    string,
+    Promise<ExtendedThreadMessageLike | undefined>
+  >()
 
   const markParticipationRequired = (message?: string) => {
     set({
@@ -97,6 +124,56 @@ export const useChatStore = create<ChatState>((set, get) => {
 
   const clearParticipationNotice = () => {
     set({ participationRequired: false, participationMessage: null })
+  }
+
+  const mergeMessageAttachments = (
+    message: ExtendedThreadMessageLike,
+    hydratedAttachments: ApiHydratedImageAttachment[]
+  ): ExtendedThreadMessageLike => {
+    const currentAttachments = sortAttachmentsByPosition(
+      (message.imageAttachments ?? []).filter(
+        (attachment): attachment is ApiImageAttachment =>
+          typeof attachment.id === 'string' &&
+          typeof attachment.position === 'number'
+      )
+    )
+
+    if (currentAttachments.length === 0) {
+      return message
+    }
+
+    return {
+      ...message,
+      imageAttachments: mergeHydratedAttachments(
+        currentAttachments,
+        hydratedAttachments
+      ),
+    }
+  }
+
+  const updateMessageInCollection = (
+    messages: ExtendedThreadMessageLike[],
+    messageId: string,
+    hydratedAttachments: ApiHydratedImageAttachment[]
+  ): ExtendedThreadMessageLike[] =>
+    messages.map((message) =>
+      message.id === messageId
+        ? mergeMessageAttachments(message, hydratedAttachments)
+        : message
+    )
+
+  const updateMessageIdsInCollection = (
+    messages: ExtendedThreadMessageLike[],
+    messageIds: string[],
+    hydratedAttachments: ApiHydratedImageAttachment[]
+  ): ExtendedThreadMessageLike[] => {
+    const targetIds = new Set(messageIds)
+
+    return messages.map((message) =>
+      typeof message.id === 'string' && targetIds.has(message.id)
+        ? mergeMessageAttachments(message, hydratedAttachments)
+        : message
+    )
   }
 
   const handleApiError = (error: unknown) => {
@@ -439,6 +516,242 @@ export const useChatStore = create<ChatState>((set, get) => {
       }
 
       return currentThreadId
+    },
+
+    ensureFullImageAttachments: async (
+      chatbotId,
+      threadId,
+      messageId,
+      sourceMessageId
+    ) => {
+      const state = get()
+      const thread = state.threads.find(
+        (candidate) => candidate.id === threadId
+      )
+      const fetchMessageId = sourceMessageId ?? messageId
+
+      if (!thread) {
+        return undefined
+      }
+
+      const cachedMessage = thread.allMessages.find(
+        (message) => message.id === messageId
+      )
+      const activePathMessage = thread.messages.find(
+        (message) => message.id === messageId
+      )
+      const sourceCachedMessage = thread.allMessages.find(
+        (message) => message.id === fetchMessageId
+      )
+      const sourceActivePathMessage = thread.messages.find(
+        (message) => message.id === fetchMessageId
+      )
+
+      const cachedIsHydrated = hasAllImageAttachmentsHydrated(
+        cachedMessage?.imageAttachments
+      )
+      const activeIsHydrated = hasAllImageAttachmentsHydrated(
+        activePathMessage?.imageAttachments
+      )
+      const sourceCachedIsHydrated = hasAllImageAttachmentsHydrated(
+        sourceCachedMessage?.imageAttachments
+      )
+      const sourceActiveIsHydrated = hasAllImageAttachmentsHydrated(
+        sourceActivePathMessage?.imageAttachments
+      )
+
+      const attachmentTargetIds =
+        fetchMessageId === messageId ? [messageId] : [messageId, fetchMessageId]
+
+      if (cachedIsHydrated && cachedMessage) {
+        if (activePathMessage && !activeIsHydrated) {
+          const hydratedAttachments =
+            (cachedMessage.imageAttachments as ApiHydratedImageAttachment[]) ??
+            []
+
+          set((currentState) => ({
+            threads: currentState.threads.map((candidate) =>
+              candidate.id === threadId
+                ? {
+                    ...candidate,
+                    messages: updateMessageInCollection(
+                      candidate.messages,
+                      messageId,
+                      hydratedAttachments
+                    ),
+                  }
+                : candidate
+            ),
+          }))
+
+          return mergeMessageAttachments(activePathMessage, hydratedAttachments)
+        }
+
+        return cachedMessage
+      }
+
+      if (
+        sourceCachedIsHydrated &&
+        sourceCachedMessage?.imageAttachments?.length
+      ) {
+        const hydratedAttachments =
+          (sourceCachedMessage.imageAttachments as ApiHydratedImageAttachment[]) ??
+          []
+
+        set((currentState) => ({
+          threads: currentState.threads.map((candidate) =>
+            candidate.id === threadId
+              ? {
+                  ...candidate,
+                  allMessages: updateMessageIdsInCollection(
+                    candidate.allMessages,
+                    attachmentTargetIds,
+                    hydratedAttachments
+                  ),
+                  messages: updateMessageIdsInCollection(
+                    candidate.messages,
+                    attachmentTargetIds,
+                    hydratedAttachments
+                  ),
+                }
+              : candidate
+          ),
+        }))
+
+        return (
+          mergeMessageAttachments(
+            activePathMessage ?? cachedMessage ?? sourceCachedMessage,
+            hydratedAttachments
+          ) ?? sourceCachedMessage
+        )
+      }
+
+      if (activeIsHydrated && activePathMessage) {
+        const hydratedAttachments =
+          (activePathMessage.imageAttachments as ApiHydratedImageAttachment[]) ??
+          []
+
+        set((currentState) => ({
+          threads: currentState.threads.map((candidate) =>
+            candidate.id === threadId
+              ? {
+                  ...candidate,
+                  allMessages: updateMessageInCollection(
+                    candidate.allMessages,
+                    messageId,
+                    hydratedAttachments
+                  ),
+                }
+              : candidate
+          ),
+        }))
+
+        return activePathMessage
+      }
+
+      if (
+        sourceActiveIsHydrated &&
+        sourceActivePathMessage?.imageAttachments?.length
+      ) {
+        const hydratedAttachments =
+          (sourceActivePathMessage.imageAttachments as ApiHydratedImageAttachment[]) ??
+          []
+
+        set((currentState) => ({
+          threads: currentState.threads.map((candidate) =>
+            candidate.id === threadId
+              ? {
+                  ...candidate,
+                  allMessages: updateMessageIdsInCollection(
+                    candidate.allMessages,
+                    attachmentTargetIds,
+                    hydratedAttachments
+                  ),
+                  messages: updateMessageIdsInCollection(
+                    candidate.messages,
+                    attachmentTargetIds,
+                    hydratedAttachments
+                  ),
+                }
+              : candidate
+          ),
+        }))
+
+        return mergeMessageAttachments(
+          activePathMessage ?? cachedMessage ?? sourceActivePathMessage,
+          hydratedAttachments
+        )
+      }
+
+      if (
+        !cachedMessage?.imageAttachments?.length &&
+        !activePathMessage?.imageAttachments?.length &&
+        !sourceCachedMessage?.imageAttachments?.length &&
+        !sourceActivePathMessage?.imageAttachments?.length
+      ) {
+        return cachedMessage ?? activePathMessage
+      }
+
+      const hydrationRequestKey = `${chatbotId}:${threadId}:${messageId}:${fetchMessageId}`
+      const inFlightRequest =
+        attachmentHydrationRequests.get(hydrationRequestKey)
+
+      if (inFlightRequest) {
+        return inFlightRequest
+      }
+
+      const hydrationRequest = (async () => {
+        try {
+          const hydratedAttachments = await apiCall<
+            ApiHydratedImageAttachment[]
+          >(
+            `/chatbots/${chatbotId}/threads/${threadId}/messages/${fetchMessageId}/attachments`
+          )
+
+          set((currentState) => ({
+            threads: currentState.threads.map((candidate) =>
+              candidate.id === threadId
+                ? {
+                    ...candidate,
+                    allMessages: updateMessageIdsInCollection(
+                      candidate.allMessages,
+                      attachmentTargetIds,
+                      hydratedAttachments
+                    ),
+                    messages: updateMessageIdsInCollection(
+                      candidate.messages,
+                      attachmentTargetIds,
+                      hydratedAttachments
+                    ),
+                  }
+                : candidate
+            ),
+          }))
+
+          const updatedThread = get().threads.find(
+            (candidate) => candidate.id === threadId
+          )
+
+          return (
+            updatedThread?.messages.find(
+              (message) => message.id === messageId
+            ) ??
+            updatedThread?.allMessages.find(
+              (message) => message.id === messageId
+            )
+          )
+        } catch (error) {
+          console.error('Failed to hydrate message attachments:', error)
+          handleApiError(error)
+          return cachedMessage ?? activePathMessage
+        } finally {
+          attachmentHydrationRequests.delete(hydrationRequestKey)
+        }
+      })()
+
+      attachmentHydrationRequests.set(hydrationRequestKey, hydrationRequest)
+
+      return hydrationRequest
     },
 
     /**

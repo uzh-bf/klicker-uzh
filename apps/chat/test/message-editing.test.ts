@@ -1,0 +1,266 @@
+import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { useThreadManagement } from '../src/hooks/useThreadManagement'
+import { getEditedMessageSource } from '../src/lib/attachments/attachmentState'
+
+const { mockUseChatStore } = vi.hoisted(() => ({
+  mockUseChatStore: Object.assign(vi.fn(), {
+    getState: vi.fn(),
+    setState: vi.fn(),
+  }),
+}))
+
+vi.mock('next/navigation', () => ({
+  useParams: () => ({ chatbotId: 'chatbot-1' }),
+  useRouter: () => ({ replace: vi.fn() }),
+  useSearchParams: () => ({ toString: () => '' }),
+}))
+
+vi.mock('react', async () => {
+  const actual = await vi.importActual<typeof import('react')>('react')
+
+  return {
+    ...actual,
+    useCallback: <T extends (...args: any[]) => any>(fn: T) => fn,
+  }
+})
+
+vi.mock('../src/lib/utils/chatUtils', () => ({
+  generateId: () => 'edited-message-id',
+}))
+
+vi.mock('../src/stores/settingsStore', () => ({
+  useSettingsStore: () => ({
+    selectedMode: 'chat',
+    selectedModel: 'gpt-test',
+    selectedReasoningEffort: 'medium',
+  }),
+}))
+
+vi.mock('../src/stores/chatStore', () => ({
+  useChatStore: mockUseChatStore,
+}))
+
+type MockState = {
+  activeThreadId: string | null
+  threads: Array<{
+    id: string
+    messages: any[]
+    allMessages: any[]
+  }>
+}
+
+let storeState: MockState
+
+describe('getEditedMessageSource', () => {
+  beforeEach(() => {
+    storeState = {
+      activeThreadId: null,
+      threads: [],
+    }
+
+    mockUseChatStore.mockReset()
+    mockUseChatStore.mockReturnValue({
+      createThread: vi.fn(),
+      addMessage: vi.fn(),
+      setIsRunning: vi.fn(),
+    })
+    mockUseChatStore.getState.mockImplementation(() => storeState)
+    mockUseChatStore.setState.mockImplementation((updater: any) => {
+      const partial =
+        typeof updater === 'function' ? updater(storeState) : updater
+
+      storeState = {
+        ...storeState,
+        ...partial,
+      }
+    })
+  })
+
+  test('resolves the edited root message directly by editedMessageId', () => {
+    const source = getEditedMessageSource({
+      editedMessageId: 'root-user',
+      messages: [
+        {
+          id: 'root-user',
+          role: 'user',
+          imageAttachments: [
+            {
+              id: 'att-1',
+              type: 'image' as const,
+              position: 0,
+              imagePreviewBase64: 'preview-1',
+            },
+          ],
+        },
+        {
+          id: 'assistant-1',
+          role: 'assistant',
+        },
+      ],
+    })
+
+    expect(source).toEqual({
+      id: 'root-user',
+      role: 'user',
+      imageAttachments: [
+        {
+          id: 'att-1',
+          type: 'image',
+          position: 0,
+          imagePreviewBase64: 'preview-1',
+        },
+      ],
+    })
+  })
+
+  test('root user edit preserves attachments on the replacement message', async () => {
+    const originalAttachments = [
+      {
+        id: 'att-1',
+        type: 'image' as const,
+        position: 0,
+        imageBase64: 'full-1',
+        imagePreviewBase64: 'preview-1',
+        imageDescription: 'first attachment',
+        hasFullImage: true,
+      },
+      {
+        id: 'att-2',
+        type: 'image' as const,
+        position: 1,
+        imagePreviewBase64: 'preview-2',
+        imageDescription: 'second attachment',
+        hasFullImage: false,
+      },
+    ]
+
+    storeState = {
+      activeThreadId: 'thread-1',
+      threads: [
+        {
+          id: 'thread-1',
+          messages: [
+            {
+              id: 'root-user',
+              role: 'user',
+              content: [{ type: 'text', text: 'original' }],
+              createdAt: new Date('2026-04-14T00:00:00.000Z'),
+              parentId: null,
+              imageAttachments: originalAttachments,
+            },
+            {
+              id: 'assistant-1',
+              role: 'assistant',
+              content: [{ type: 'text', text: 'reply' }],
+              createdAt: new Date('2026-04-14T00:00:01.000Z'),
+              parentId: 'root-user',
+            },
+          ],
+          allMessages: [
+            {
+              id: 'root-user',
+              role: 'user',
+              content: [{ type: 'text', text: 'original' }],
+              createdAt: new Date('2026-04-14T00:00:00.000Z'),
+              parentId: null,
+              imageAttachments: originalAttachments,
+            },
+            {
+              id: 'assistant-1',
+              role: 'assistant',
+              content: [{ type: 'text', text: 'reply' }],
+              createdAt: new Date('2026-04-14T00:00:01.000Z'),
+              parentId: 'root-user',
+            },
+          ],
+        },
+      ],
+    }
+
+    const generateChatResponse = vi.fn().mockResolvedValue(undefined)
+    const { onEdit } = useThreadManagement(generateChatResponse, {
+      current: null,
+    } as React.MutableRefObject<AbortController | null>)
+
+    await onEdit({
+      id: 'root-user',
+      parentId: null,
+      content: [{ type: 'text', text: 'edited root message' }],
+    } as any)
+
+    const editedMessage = storeState.threads[0]?.messages[0]
+    expect(editedMessage).toMatchObject({
+      id: 'edited-message-id',
+      parentId: null,
+      imageAttachments: originalAttachments,
+    })
+    expect(storeState.threads[0]?.allMessages.at(-1)).toMatchObject({
+      id: 'edited-message-id',
+      imageAttachments: originalAttachments,
+    })
+    expect(generateChatResponse).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          id: 'edited-message-id',
+          attachmentSourceMessageId: 'root-user',
+          imageAttachments: originalAttachments,
+        }),
+      ],
+      'thread-1'
+    )
+  })
+
+  test('new user message preserves attachment previews from composer attachments', async () => {
+    const addMessage = vi.fn().mockResolvedValue('thread-1')
+
+    mockUseChatStore.mockReturnValue({
+      createThread: vi.fn(),
+      addMessage,
+      setIsRunning: vi.fn(),
+    })
+
+    storeState = {
+      activeThreadId: 'thread-1',
+      threads: [
+        {
+          id: 'thread-1',
+          messages: [],
+          allMessages: [],
+        },
+      ],
+    }
+
+    const generateChatResponse = vi.fn().mockResolvedValue(undefined)
+    const { onNew } = useThreadManagement(generateChatResponse, {
+      current: null,
+    } as React.MutableRefObject<AbortController | null>)
+
+    await onNew({
+      content: [{ type: 'text', text: 'new message' }],
+      attachments: [
+        {
+          content: [
+            {
+              type: 'image',
+              image: 'data:image/png;base64,FULL',
+              imagePreview: 'data:image/png;base64,PREVIEW',
+            },
+          ],
+        },
+      ],
+    } as any)
+
+    expect(addMessage).toHaveBeenCalledWith(
+      'chatbot-1',
+      expect.objectContaining({
+        imageAttachments: [
+          expect.objectContaining({
+            imageBase64: 'data:image/png;base64,FULL',
+            imagePreviewBase64: 'data:image/png;base64,PREVIEW',
+          }),
+        ],
+      }),
+      'thread-1'
+    )
+  })
+})
