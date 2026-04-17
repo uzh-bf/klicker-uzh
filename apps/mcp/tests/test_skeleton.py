@@ -33,3 +33,12 @@ def test_settings_defaults() -> None:
     settings = Settings()
     assert settings.port == 7079
     assert settings.mcp_path == "/mcp"
+
+
+def test_ops_manifest_has_known_operations() -> None:
+    from klicker_mcp.gql.ops import OPERATIONS
+
+    # Sanity check: codegen emitted a meaningful manifest.
+    assert isinstance(OPERATIONS, dict)
+    assert len(OPERATIONS) > 50
+    assert "Self" in OPERATIONS, "Self query must be in the persisted-ops manifest"

@@ -24,7 +24,22 @@ dev = [
     "pytest-httpx>=0.30",
     "ruff>=0.7",
     "pyright>=1.1.380",
+    "poethepoet>=0.30",
 ]
+
+[tool.poe.tasks]
+test = "pytest"
+test-v = "pytest -v"
+check = "pyright"
+lint = "ruff check"
+format = "ruff format"
+format-check = "ruff format --check"
+dev = "python -m klicker_mcp.main"
+gen-ops = "python scripts/gen_ops.py"
+
+[tool.poe.tasks.all]
+sequence = ["format-check", "lint", "check", "test"]
+ignore_fail = false
 
 [build-system]
 requires = ["hatchling"]
@@ -43,6 +58,7 @@ reportMissingTypeStubs = false
 line-length = 100
 target-version = "py312"
 src = ["src", "tests"]
+extend-exclude = ["src/klicker_mcp/gql/ops.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "B", "UP", "N", "RUF"]

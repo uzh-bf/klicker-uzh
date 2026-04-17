@@ -20,8 +20,8 @@ Python 3.12 · uv-managed project · FastMCP v3.2 · Streamable HTTP transport �
 
 | # | Title | Status | Hash |
 | - | ----- | ------ | ---- |
-| 1 | Skeleton + PLAN.md                                        | in progress | — |
-| 2 | GraphQL client + persisted-ops codegen                    | pending     | — |
+| 1 | Skeleton + PLAN.md                                        | done        | `d419d767a` |
+| 2 | GraphQL client + persisted-ops codegen + poe tasks        | in progress | — |
 | 3 | Category A lecturer tools (question authoring as drafts)  | pending     | — |
 | 4 | Category A participant tools (quiz discovery + response)  | pending     | — |
 | 5 | OAuth bridge (MCP auth server + apps/auth routes)         | pending     | — |
@@ -39,13 +39,13 @@ Python 3.12 · uv-managed project · FastMCP v3.2 · Streamable HTTP transport �
 
 **Commit:** `feat(mcp): scaffold apps/mcp with FastMCP v3 skeleton`.
 
-## Iteration 2 — GraphQL client + persisted-ops codegen
+## Iteration 2 — GraphQL client + persisted-ops codegen + poe tasks
 
-**Goal:** Any tool can call a GraphQL op by name, forwarding the user's Bearer token. Production-safe: no ad-hoc GraphQL.
+**Goal:** Any tool can call a GraphQL op by name, forwarding the user's Bearer token. Production-safe: no ad-hoc GraphQL. Common dev actions run as poe tasks so the same verb works from `apps/mcp` or via Turborepo.
 
-**Deliverables:** `gql/client.py` (`AsyncGraphQLClient`, httpx-based, APQ shape), `gql/ops.py` (generated dict `{op_name: sha256}`), a small codegen script `scripts/gen_ops.py` that reads `@klicker-uzh/graphql/dist/server.json` and writes `ops.py`. Auth helper `auth/context.py` that pulls the Bearer header from the current request. `whoami` rewired to call `Self` on the GraphQL API.
+**Deliverables:** `gql/client.py` (`AsyncGraphQLClient`, httpx-based, APQ shape). `scripts/gen_ops.py` reads `packages/graphql/src/public/server.json` and regenerates `src/klicker_mcp/gql/ops.py` — currently 283 operations. Auth helper `auth/context.py` pulls the Bearer header from the current FastMCP HTTP request. `whoami` rewired to call the real `Self` query. `[tool.poe.tasks]` covers sync/test/check/lint/format/dev/gen-ops + an `all` sequence. `package.json` thin-wraps them for Turborepo.
 
-**Verification:** A tool round-trip against a recorded VCR cassette returns the expected shape.
+**Verification:** `uv run poe all` runs format-check → ruff → pyright → pytest end-to-end. 19 tests cover auth extraction, client shape, error propagation, unknown-op rejection, shared-client lifecycle, and whoami wiring. Boot smoke confirmed on port 7079.
 
 ## Iteration 3 — Lecturer tools
 
