@@ -1,0 +1,49 @@
+{
+  "name": "@klicker-uzh/hatchet-worker-analytics",
+  "version": "3.3.0-alpha.82",
+  "license": "AGPL-3.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@graphql-yoga/redis-event-target": "1.0.0",
+    "@hatchet-dev/typescript-sdk": "1.9.4",
+    "@klicker-uzh/graphql": "workspace:*",
+    "@klicker-uzh/hatchet": "workspace:*",
+    "@klicker-uzh/prisma": "workspace:*",
+    "@klicker-uzh/types": "workspace:*",
+    "graphql-yoga": "3.9.1",
+    "ioredis": "5.4.1",
+    "pino": "9.9.5",
+    "pino-pretty": "13.1.1"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "~15.3.1",
+    "@rollup/plugin-typescript": "~12.1.4",
+    "@types/node": "^20.19.11",
+    "rollup": "~4.34.9",
+    "tsx": "~4.19.4",
+    "typescript": "~5.6.3"
+  },
+  "scripts": {
+    "build": "run-s build:ts",
+    "build:test": "pnpm run build",
+    "build:ts": "cross-env NODE_ENV=production rollup -c",
+    "check": "tsc --noEmit",
+    "dev": "run-p dev:ts",
+    "dev:assessment": "pnpm run dev",
+    "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",
+    "dev:offline": "pnpm run dev",
+    "dev:ts": "cross-env NODE_ENV=development tsx --watch --env-file .env src/index.ts",
+    "start:test": "node --env-file .env dist/index.js"
+  },
+  "engines": {
+    "node": "=20"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  },
+  "type": "module"
+}

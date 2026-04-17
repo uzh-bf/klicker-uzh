@@ -1,4 +1,6 @@
-// basic structure according to https://github.com/hatchet-dev/hatchet-typescript-quickstart/tree/main/monorepo
+// Dedicated Hatchet worker for the learning-analytics recompute pipeline.
+// Runs only the `recomputeLearningAnalytics` task by default so its container
+// can ship with Python + uv + apps/analytics without bloating the general worker.
 
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { handlers } from '@klicker-uzh/graphql'
@@ -10,25 +12,18 @@ import { Redis } from 'ioredis'
 import logger from './logger.js'
 
 const HATCHET_WORKER_NAME =
-  process.env.HATCHET_WORKER_NAME ?? 'hatchet-worker-general'
+  process.env.HATCHET_WORKER_NAME ?? 'hatchet-worker-analytics'
 
-// Workflows that the general worker cannot run because their handlers need
-// runtime environments this image doesn't ship (e.g. Python + uv). They're
-// owned by dedicated workers (see apps/hatchet-worker-analytics) and must
-// stay off the default pickup set even when HATCHET_WORKFLOWS is unset.
-const DEFAULT_EXCLUDED_WORKFLOWS: Array<keyof PreparedHatchetTasks> = [
+// Default set of workflows to register on this worker. The general worker picks
+// up everything else — this worker is specifically for the heavy Python pipeline.
+const DEFAULT_WORKFLOW_KEYS: Array<keyof PreparedHatchetTasks> = [
   'recomputeLearningAnalytics',
 ]
 
 function selectWorkflows(workflows: PreparedHatchetTasks) {
-  // Select which workflows to load using an env var and keep it type-safe.
-  // If no env var is provided, default to ALL available workflows dynamically
-  // except the DEFAULT_EXCLUDED_WORKFLOWS set above.
-  const defaultWorkflowKeys = (
-    Object.keys(workflows) as Array<keyof PreparedHatchetTasks>
-  ).filter((k) => !DEFAULT_EXCLUDED_WORKFLOWS.includes(k))
-
-  // Parse requested keys; treat empty/whitespace as "unset" so we default to all
+  // HATCHET_WORKFLOWS overrides the default selection for this worker. Empty /
+  // whitespace / unset falls back to DEFAULT_WORKFLOW_KEYS (not all workflows —
+  // this worker is intentionally scoped).
   const envRaw = process.env.HATCHET_WORKFLOWS
   const requestedKeysRaw = envRaw
     ? envRaw
@@ -45,7 +40,7 @@ function selectWorkflows(workflows: PreparedHatchetTasks) {
       ? requestedKeysRaw.filter(
           (k): k is keyof PreparedHatchetTasks => k in workflows
         )
-      : defaultWorkflowKeys
+      : DEFAULT_WORKFLOW_KEYS
   ) as Array<keyof PreparedHatchetTasks>
 
   if (hasRequested) {
@@ -61,9 +56,7 @@ function selectWorkflows(workflows: PreparedHatchetTasks) {
     }
   }
 
-  const selectedWorkflows = validSelectedKeys.map((k) => workflows[k])
-
-  return selectedWorkflows
+  return validSelectedKeys.map((k) => workflows[k])
 }
 
 async function main() {
@@ -136,6 +129,13 @@ async function main() {
   )
   logger.info({ selectedKeys }, 'Selected workflows')
 
+  if (!process.env.ANALYTICS_CWD) {
+    logger.warn(
+      'ANALYTICS_CWD is not set — the recompute handler will refuse to run. ' +
+        'Point it at the apps/analytics directory inside this container.'
+    )
+  }
+
   logger.info(
     { workerName: HATCHET_WORKER_NAME, workflowCount: workflows.length },
     'Creating Hatchet worker'
@@ -153,7 +153,6 @@ async function main() {
 
 process.on('unhandledRejection', (reason) => {
   logger.fatal({ err: reason }, 'Unhandled promise rejection')
-  // Let the process crash; orchestration should restart it
   process.exit(1)
 })
 

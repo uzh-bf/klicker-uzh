@@ -232,3 +232,82 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart.fullname" . }}-hatchet-worker-analytics
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: hatchet-worker-analytics
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  revisionHistoryLimit: 5
+  {{- with .Values.hatchet.workers.analytics.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if not .Values.hatchet.workers.analytics.autoscaling.enabled }}
+  replicas: {{ .Values.hatchet.workers.analytics.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: hatchet-worker-analytics
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/cm-hatchet-workers.yaml") . | sha256sum }}
+        release: {{ .Chart.AppVersion }}
+      {{- with .Values.hatchet.workers.analytics.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: hatchet-worker-analytics
+    spec:
+      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.hatchet.workers.analytics.priorityClassName }}
+      {{- with .Values.hatchet.workers.analytics.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.hatchet.workers.analytics.podSecurityContext | nindent 8 }}
+      containers:
+        - name: hatchet-worker-analytics
+          securityContext:
+            {{- toYaml .Values.hatchet.workers.analytics.securityContext | nindent 12 }}
+          image: "{{ .Values.hatchet.workers.analytics.image.repository }}:{{ .Values.hatchet.workers.analytics.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.hatchet.workers.analytics.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-hatchet-worker-analytics
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-hatchet-worker-analytics
+          # TODO: add liveness and readiness probes to container
+          # livenessProbe:
+          #   httpGet:
+          #     path: /healthz
+          #     port: http
+          #   initialDelaySeconds: 600
+          # readinessProbe:
+          #   httpGet:
+          #     path: /healthz
+          #     port: http
+          resources:
+            {{- toYaml .Values.hatchet.workers.analytics.resources | nindent 12 }}
+      {{- with .Values.hatchet.workers.analytics.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.hatchet.workers.analytics.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.hatchet.workers.analytics.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
