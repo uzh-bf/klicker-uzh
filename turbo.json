@@ -83,7 +83,11 @@
     "UPSTREAM_OPENAI_BASE_URL",
     "LANGFUSE_PUBLIC_KEY",
     "LANGFUSE_SECRET_KEY",
-    "LANGFUSE_HOST"
+    "LANGFUSE_HOST",
+    "MCP_HOST",
+    "MCP_PORT",
+    "MCP_PATH",
+    "LOG_LEVEL"
   ],
   "tasks": {
     "lint": {

@@ -1,0 +1,25 @@
+{
+  "name": "@klicker-uzh/mcp",
+  "version": "0.1.0",
+  "license": "AGPL-3.0",
+  "private": true,
+  "description": "KlickerUZH MCP server (Python, FastMCP v3)",
+  "scripts": {
+    "build": "uv sync --frozen",
+    "check": "uv run pyright",
+    "lint": "uv run ruff check",
+    "format": "uv run ruff format",
+    "format:check": "uv run ruff format --check",
+    "test": "uv run pytest",
+    "test:run": "uv run pytest",
+    "dev": "../../util/_run_with_infisical.sh --env dev uv run python -m klicker_mcp.main",
+    "dev:raw": "uv run python -m klicker_mcp.main",
+    "start": "uv run python -m klicker_mcp.main"
+  },
+  "engines": {
+    "node": "=20"
+  },
+  "volta": {
+    "extends": "../../package.json"
+  }
+}
