@@ -319,6 +319,7 @@ function CourseDiscussionPage({
         <UserNotification
           type="warning"
           message={t('pwa.courseQA.accessDenied')}
+          data={{ cy: 'course-qa-access-denied' }}
         />
       </Layout>
     )
@@ -335,7 +336,11 @@ function CourseDiscussionPage({
         course={courseData.basicCourseInformation}
         displayName={t('pwa.courseQA.title')}
       >
-        <UserNotification type="info" message={t('pwa.courseQA.disabled')} />
+        <UserNotification
+          type="info"
+          message={t('pwa.courseQA.disabled')}
+          data={{ cy: 'course-qa-disabled-notice' }}
+        />
       </Layout>
     )
   }
@@ -350,6 +355,7 @@ function CourseDiscussionPage({
         <UserNotification
           type="warning"
           message={t('pwa.courseQA.accessDenied')}
+          data={{ cy: 'course-qa-access-denied' }}
         />
       </Layout>
     )
@@ -381,6 +387,7 @@ function CourseDiscussionPage({
               placeholder={t('pwa.courseQA.threadPlaceholder')}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
               aria-label={t('pwa.courseQA.newThread')}
+              data-cy="course-qa-thread-input"
             />
 
             {embedToken && canPostAnonymously && (
@@ -391,6 +398,7 @@ function CourseDiscussionPage({
                   onChange={(event) =>
                     setPostThreadAnonymous(event.target.checked)
                   }
+                  data-cy="course-qa-thread-anonymous"
                 />
                 {t('pwa.courseQA.postAnonymously')}
               </label>
@@ -415,17 +423,19 @@ function CourseDiscussionPage({
           </div>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3" data-cy="course-qa-threads-list">
           {threads.length === 0 ? (
             <UserNotification
               type="info"
               message={t('pwa.courseQA.noThreads')}
+              data={{ cy: 'course-qa-empty' }}
             />
           ) : (
             threads.map((thread) => (
               <div
                 key={thread.id}
                 className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+                data-cy={`course-qa-thread-${thread.id}`}
               >
                 <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-gray-600">
                   {thread.sourceLabel && (
@@ -441,7 +451,10 @@ function CourseDiscussionPage({
                   </span>
                 </div>
 
-                <div className="whitespace-pre-wrap text-sm">
+                <div
+                  className="whitespace-pre-wrap text-sm"
+                  data-cy={`course-qa-thread-content-${thread.id}`}
+                >
                   {thread.content}
                 </div>
 
@@ -467,8 +480,15 @@ function CourseDiscussionPage({
 
                 <div className="mt-3 flex flex-col gap-2 border-l border-gray-200 pl-3">
                   {thread.replies?.map((reply) => (
-                    <div key={reply.id} className="rounded-md bg-gray-50 p-2">
-                      <div className="mb-1 whitespace-pre-wrap text-sm">
+                    <div
+                      key={reply.id}
+                      className="rounded-md bg-gray-50 p-2"
+                      data-cy={`course-qa-reply-${reply.id}`}
+                    >
+                      <div
+                        className="mb-1 whitespace-pre-wrap text-sm"
+                        data-cy={`course-qa-reply-content-${reply.id}`}
+                      >
                         {reply.content}
                       </div>
                       <div className="flex items-center justify-between gap-2">
@@ -510,6 +530,7 @@ function CourseDiscussionPage({
                       placeholder={t('pwa.courseQA.replyPlaceholder')}
                       className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
                       aria-label={t('pwa.courseQA.replyPlaceholder')}
+                      data-cy={`course-qa-reply-input-${thread.id}`}
                     />
 
                     {embedToken && canPostAnonymously && (
@@ -523,6 +544,7 @@ function CourseDiscussionPage({
                               [thread.id]: event.target.checked,
                             }))
                           }
+                          data-cy={`course-qa-reply-anonymous-${thread.id}`}
                         />
                         {t('pwa.courseQA.replyAnonymously')}
                       </label>

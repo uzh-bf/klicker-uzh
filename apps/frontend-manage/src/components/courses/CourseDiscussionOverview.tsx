@@ -81,6 +81,7 @@ function CourseDiscussionOverview({
         <UserNotification
           type="info"
           message={t('manage.course.courseQADisabledNotice')}
+          data={{ cy: 'course-qa-disabled-notice' }}
         />
       </div>
     )
@@ -125,6 +126,7 @@ function CourseDiscussionOverview({
               onChange={(event) => setExternalSource(event.target.value)}
               className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
               placeholder={t('manage.course.embedExternalSourcePlaceholder')}
+              data-cy="course-qa-external-source"
             />
           </div>
 
@@ -142,6 +144,7 @@ function CourseDiscussionOverview({
               onChange={(event) => setExternalRef(event.target.value)}
               className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
               placeholder={t('manage.course.embedExternalRefPlaceholder')}
+              data-cy="course-qa-external-ref"
             />
           </div>
 
@@ -170,6 +173,7 @@ function CourseDiscussionOverview({
                 )
               }
               className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+              data-cy="course-qa-expires-hours"
             />
           </div>
 
@@ -184,6 +188,7 @@ function CourseDiscussionOverview({
                 checked={effectiveAllowAnonymous}
                 disabled={!isCourseQAAnonymousEnabled}
                 onChange={(event) => setAllowAnonymous(event.target.checked)}
+                data-cy="course-qa-allow-anonymous-embed"
               />
               {t('manage.course.allowAnonymousPosting')}
             </label>
@@ -282,7 +287,10 @@ function CourseDiscussionOverview({
               {t('manage.course.embedUrl')}
             </div>
             {!embedExpired && (
-              <div className="break-all text-gray-800">
+              <div
+                className="break-all text-gray-800"
+                data-cy="course-qa-embed-url"
+              >
                 {generatedEmbedInfo.embedUrl}
               </div>
             )}
@@ -311,13 +319,18 @@ function CourseDiscussionOverview({
           <UserNotification
             type="info"
             message={t('manage.course.noThreadsYet')}
+            data={{ cy: 'course-qa-overview-empty' }}
           />
         ) : (
-          <div className="flex flex-col gap-3">
+          <div
+            className="flex flex-col gap-3"
+            data-cy="course-qa-overview-groups"
+          >
             {groups.map((group) => (
               <div
                 key={group.sourceKey}
                 className="rounded-md border border-gray-200"
+                data-cy={`course-qa-overview-group-${group.sourceKey}`}
               >
                 <div className="border-b border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold">
                   {group.sourceLabel}
@@ -327,6 +340,7 @@ function CourseDiscussionOverview({
                     <div
                       key={thread.id}
                       className="rounded-md border border-gray-100 p-2"
+                      data-cy={`course-qa-overview-thread-${thread.id}`}
                     >
                       <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-gray-600">
                         <span className="rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">

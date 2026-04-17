@@ -110,6 +110,7 @@ function MicrolearningEvaluation() {
                       <Link
                         href={`/course/${microlearning.course.id}/qa?scopeKey=${encodeURIComponent(`stack:${stack.id}`)}`}
                         className="text-sm font-medium text-blue-700 hover:underline"
+                        data-cy={`microlearning-stack-discussion-link-${ix}`}
                       >
                         {t('pwa.courseQA.openStackDiscussion')}
                       </Link>

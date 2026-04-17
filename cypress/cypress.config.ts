@@ -225,6 +225,9 @@ async function seedDatabase() {
         displayName: 'Testkurs',
         description: 'Das ist ein Testkurs. Hier wird getestet. Viel Spass!',
         isGamificationEnabled: true,
+        isCourseQARolloutEnabled: true,
+        isCourseQAEnabled: true,
+        isCourseQAAnonymousEnabled: true,
         color: '#016272',
         pinCode: 123456789,
         startDate: new Date(`${currentYear - 1}-01-01T00:00`),
@@ -237,7 +240,11 @@ async function seedDatabase() {
           connect: { id: USER_ID_TEST },
         },
       },
-      update: {},
+      update: {
+        isCourseQARolloutEnabled: true,
+        isCourseQAEnabled: true,
+        isCourseQAAnonymousEnabled: true,
+      },
     })
     await prisma.derivedPermission.upsert({
       where: {
@@ -1967,6 +1974,46 @@ export default defineConfig({
         cleanupDatabase,
         seedDatabase,
         seedActivities,
+        // #endregion
+
+        // ! Course Q&A helpers
+        // #region
+        async setCourseQAFlags({
+          courseName,
+          isCourseQARolloutEnabled,
+          isCourseQAEnabled,
+          isCourseQAAnonymousEnabled,
+        }: {
+          courseName: string
+          isCourseQARolloutEnabled?: boolean
+          isCourseQAEnabled?: boolean
+          isCourseQAAnonymousEnabled?: boolean
+        }) {
+          try {
+            const course = await prisma.course.findFirst({
+              where: { name: courseName },
+            })
+            if (!course) return false
+
+            await prisma.course.update({
+              where: { id: course.id },
+              data: {
+                ...(typeof isCourseQARolloutEnabled === 'boolean' && {
+                  isCourseQARolloutEnabled,
+                }),
+                ...(typeof isCourseQAEnabled === 'boolean' && {
+                  isCourseQAEnabled,
+                }),
+                ...(typeof isCourseQAAnonymousEnabled === 'boolean' && {
+                  isCourseQAAnonymousEnabled,
+                }),
+              },
+            })
+            return true
+          } catch (error) {
+            throw error
+          }
+        },
         // #endregion
       })
 
