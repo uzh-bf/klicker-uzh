@@ -278,6 +278,14 @@ export async function testInitialization(
         return { success }
       },
     }),
+    recomputeLearningAnalytics: hatchet.task({
+      name: 'recompute-learning-analytics',
+      fn: async () => {
+        // Test stub — the real handler spawns uv subprocesses and isn't exercised
+        // by unit tests. Returning true lets resolvers that trigger this task pass.
+        return { success: true }
+      },
+    }),
   }
 
   // mock context with user including all required properties

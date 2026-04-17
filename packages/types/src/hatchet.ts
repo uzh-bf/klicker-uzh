@@ -90,6 +90,20 @@ export interface HatchetHandlers {
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
+  handleRecomputeLearningAnalytics: (
+    input: RecomputeLearningAnalyticsInput,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
+}
+
+// Input shape for the weekly learning-analytics recompute. v1 runs the full
+// pipeline regardless of inputs; scope='course' is reserved for a later iteration
+// when the Python scripts support per-course filtering.
+// Uses a type alias (not interface) so it satisfies Hatchet's JsonObject constraint.
+export type RecomputeLearningAnalyticsInput = {
+  scope?: 'all' | 'course'
+  courseId?: string
 }
 
 // Contract for the tasks that are passed into the GraphQL context.
@@ -133,6 +147,10 @@ export interface PreparedHatchetTasks {
   >
   aggregateLiveQuizBlockResultsAssessment: TaskWorkflowDeclaration<
     { liveQuizId: string; blockId: number },
+    { success: boolean }
+  >
+  recomputeLearningAnalytics: TaskWorkflowDeclaration<
+    RecomputeLearningAnalyticsInput,
     { success: boolean }
   >
 }

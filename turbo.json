@@ -1,6 +1,9 @@
 {
   "$schema": "https://turborepo.org/schema.json",
   "globalEnv": [
+    "ANALYTICS_CWD",
+    "ANALYTICS_RUNNER_ARGS",
+    "ANALYTICS_RUNNER_CMD",
     "API_DOMAIN",
     "APP_CONTROL_DOMAIN",
     "APP_CONTROL_SUBDOMAIN",

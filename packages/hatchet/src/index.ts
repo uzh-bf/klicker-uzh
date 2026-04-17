@@ -1,6 +1,9 @@
 import { Priority, type HatchetClient } from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
-import type { HatchetHandlers } from '@klicker-uzh/types'
+import type {
+  HatchetHandlers,
+  RecomputeLearningAnalyticsInput,
+} from '@klicker-uzh/types'
 import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
@@ -286,6 +289,33 @@ export function prepareHatchetTasks({
       // return { success }
     },
   })
+
+  const recomputeLearningAnalytics = hatchet.task({
+    name: 'recompute-learning-analytics',
+    // no retries — the pipeline is expensive and scripts are designed to be
+    // re-run idempotently from the cron, not retried mid-run on transient errors
+    onCrons: [
+      '0 2 * * 1', // Mondays at 02:00 UTC — after weekend data settles
+    ],
+    onEvents: [
+      // Emitted 7 days after Course.endDate passes — emission side is a separate
+      // concern (daily cron scanner or per-course scheduled task registered at
+      // course creation) and is not part of this change.
+      'course-ended',
+      // Instructor- or admin-triggered manual recompute. Dispatchable from the
+      // Hatchet dashboard today; a GraphQL mutation + UI button is deferred to
+      // the admin-surface work (Stage D in the analytics plan).
+      'admin-recompute-analytics',
+    ],
+    fn: async (input: RecomputeLearningAnalyticsInput, executionContext) => {
+      const success = await handlers.handleRecomputeLearningAnalytics(
+        input ?? {},
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
   // #endregion
 
   return {
@@ -303,6 +333,7 @@ export function prepareHatchetTasks({
     aggregateLiveQuizBlockResultsStandard,
     aggregateLiveQuizBlockResultsAssessment,
     createAuditLogEntry,
+    recomputeLearningAnalytics,
   }
 }
 
