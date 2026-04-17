@@ -460,10 +460,10 @@ importers:
         version: 0.522.0(react@19.2.7)
       next:
         specifier: 16.2.10
-        version: 16.2.10(@babel/core@7.28.3)(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 16.2.10(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       next-intl:
         specifier: 4.13.0
-        version: 4.13.0(next@16.2.10(@babel/core@7.28.3)(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(typescript@6.0.3)
+        version: 4.13.0(next@16.2.10(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(typescript@6.0.3)
       nookies:
         specifier: 2.5.2
         version: 2.5.2
@@ -1281,36 +1281,12 @@ importers:
 
   apps/hatchet-worker-analytics:
     dependencies:
-      '@graphql-yoga/redis-event-target':
-        specifier: 1.0.0
-        version: 1.0.0(ioredis@5.4.1)
-      '@hatchet-dev/typescript-sdk':
-        specifier: 1.9.4
-        version: 1.9.4
       '@klicker-uzh/graphql':
         specifier: workspace:*
         version: link:../../packages/graphql
       '@klicker-uzh/hatchet':
         specifier: workspace:*
         version: link:../../packages/hatchet
-      '@klicker-uzh/prisma':
-        specifier: workspace:*
-        version: link:../../packages/prisma
-      '@klicker-uzh/types':
-        specifier: workspace:*
-        version: link:../../packages/types
-      graphql-yoga:
-        specifier: 3.9.1
-        version: 3.9.1(graphql@16.11.0)
-      ioredis:
-        specifier: 5.4.1
-        version: 5.4.1
-      pino:
-        specifier: 9.9.5
-        version: 9.9.5
-      pino-pretty:
-        specifier: 13.1.1
-        version: 13.1.1
     devDependencies:
       '@rollup/plugin-node-resolve':
         specifier: ~15.3.1
@@ -1968,6 +1944,9 @@ importers:
 
   packages/hatchet:
     dependencies:
+      '@graphql-yoga/redis-event-target':
+        specifier: 1.0.0
+        version: 1.0.0(ioredis@5.4.1)
       '@hatchet-dev/typescript-sdk':
         specifier: 1.9.4
         version: 1.9.4
@@ -1977,6 +1956,18 @@ importers:
       '@klicker-uzh/types':
         specifier: workspace:*
         version: link:../types
+      graphql-yoga:
+        specifier: 3.9.1
+        version: 3.9.1(graphql@16.11.0)
+      ioredis:
+        specifier: 5.4.1
+        version: 5.4.1
+      pino:
+        specifier: 9.9.5
+        version: 9.9.5
+      pino-pretty:
+        specifier: 13.1.1
+        version: 13.1.1
     devDependencies:
       '@parcel/watcher':
         specifier: ~2.4.1
@@ -1993,12 +1984,6 @@ importers:
       cross-env:
         specifier: ~7.0.3
         version: 7.0.3
-      graphql-yoga:
-        specifier: ~3.9.1
-        version: 3.9.1(graphql@16.11.0)
-      ioredis:
-        specifier: ~5.4.1
-        version: 5.4.1
       npm-run-all:
         specifier: ~4.1.5
         version: 4.1.5

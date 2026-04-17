@@ -1,13 +1,12 @@
 import os
 
-_SQL_PATH = os.path.join(os.path.dirname(__file__), "aggregated_chatbot_analytics.sql")
+from src.modules.utils import COURSE_TIMESTAMP, load_sql
 
-COURSE_TIMESTAMP = "1970-01-01"
+_DIR = os.path.dirname(__file__)
+_SQL_DEFAULT = load_sql(os.path.join(_DIR, "aggregated_chatbot_analytics.sql"))
+_SQL_WEEKLY = load_sql(os.path.join(_DIR, "aggregated_chatbot_analytics_weekly.sql"))
 
-
-def _load_sql() -> str:
-    with open(_SQL_PATH, "r", encoding="utf-8") as fh:
-        return fh.read()
+__all__ = ["compute_aggregated_chatbot_analytics", "COURSE_TIMESTAMP"]
 
 
 def compute_aggregated_chatbot_analytics(
@@ -20,16 +19,20 @@ def compute_aggregated_chatbot_analytics(
 ):
     """Run the chatbot-level rollup for one window.
 
-    Parameters mirror compute_participant_chat_analytics.
+    WEEKLY windows use a separate SQL that also computes new/returning participant
+    splits via a full-history first_seen CTE. Other window types use the cheaper
+    default SQL (new/returning zeroed out).
     """
     if analytics_type not in ("DAILY", "WEEKLY", "MONTHLY", "COURSE"):
         raise ValueError(f"Unknown analytics type: {analytics_type}")
 
-    sql = _load_sql()
     if verbose:
         print(f"[aggregated_chat_analytics] {analytics_type} {win_start}..{win_end} -> {timestamp}")
 
-    rows_written = db.execute_raw(sql, win_start, win_end, analytics_type, timestamp)
+    if analytics_type == "WEEKLY":
+        rows_written = db.execute_raw(_SQL_WEEKLY, win_start, win_end, timestamp)
+    else:
+        rows_written = db.execute_raw(_SQL_DEFAULT, win_start, win_end, analytics_type, timestamp)
     if verbose:
         print(f"[aggregated_chat_analytics] rows affected: {rows_written}")
     return rows_written

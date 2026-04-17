@@ -1,5 +1,5 @@
-import { spawn } from 'child_process'
 import type { HatchetHandlers } from '@klicker-uzh/types'
+import { spawn } from 'child_process'
 
 // Allow-list of analytics pipeline scripts to run, in dependency order.
 // Kept as a typed const so the handler never invokes an arbitrary module — no
@@ -63,20 +63,26 @@ function runScript(
       clearTimeout(timeout)
       const elapsed = Math.round((Date.now() - started) / 1000)
       if (timedOut) {
-        reject(new Error(`${logPrefix} timed out after ${DEFAULT_SCRIPT_TIMEOUT_MS}ms`))
-      } else if (code === 0) {
-        void Promise.resolve(logger.info(`${logPrefix} OK in ${elapsed}s`)).finally(
-          () => resolve()
+        reject(
+          new Error(
+            `${logPrefix} timed out after ${DEFAULT_SCRIPT_TIMEOUT_MS}ms`
+          )
         )
+      } else if (code === 0) {
+        void Promise.resolve(
+          logger.info(`${logPrefix} OK in ${elapsed}s`)
+        ).finally(() => resolve())
       } else {
-        reject(new Error(`${logPrefix} exited with code ${code} after ${elapsed}s`))
+        reject(
+          new Error(`${logPrefix} exited with code ${code} after ${elapsed}s`)
+        )
       }
     })
   })
 }
 
 export const handleRecomputeLearningAnalytics: HatchetHandlers['handleRecomputeLearningAnalytics'] =
-  async (input, _globalCtx, executionCtx) => {
+  async (_input, _globalCtx, executionCtx) => {
     // Deploy-time config — fail loud if unset so we never silently run against
     // the wrong cwd in a new env.
     const cwd = process.env.ANALYTICS_CWD
@@ -92,14 +98,8 @@ export const handleRecomputeLearningAnalytics: HatchetHandlers['handleRecomputeL
       .filter(Boolean)
 
     await executionCtx.logger.info(
-      `[recomputeLearningAnalytics] scope=${input?.scope ?? 'all'} courseId=${input?.courseId ?? '-'} cwd=${cwd} runner=${[runnerCmd, ...runnerArgs].join(' ')}`
+      `[recomputeLearningAnalytics] cwd=${cwd} runner=${[runnerCmd, ...runnerArgs].join(' ')}`
     )
-
-    if (input?.scope === 'course' && input.courseId) {
-      await executionCtx.logger.info(
-        '[recomputeLearningAnalytics] scope=course is not yet supported by the Python scripts; running full pipeline anyway.'
-      )
-    }
 
     const overallStart = Date.now()
     for (const scriptModule of ANALYTICS_SCRIPTS) {

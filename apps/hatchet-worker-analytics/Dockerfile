@@ -54,8 +54,9 @@ RUN apt-get update && \
         build-essential && \
     rm -rf /var/lib/apt/lists/*
 
-# uv from the official standalone installer — uv auto-discovers python3.12.
-ADD https://astral.sh/uv/install.sh /tmp/uv-install.sh
+# uv from the official standalone installer, pinned for reproducible builds.
+ARG UV_VERSION=0.11.6
+ADD https://astral.sh/uv/${UV_VERSION}/install.sh /tmp/uv-install.sh
 RUN sh /tmp/uv-install.sh && rm /tmp/uv-install.sh
 ENV PATH="/root/.local/bin:${PATH}"
 

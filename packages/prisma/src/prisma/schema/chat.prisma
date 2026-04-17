@@ -73,6 +73,8 @@ model ChatMessage {
 
   @@index([threadId])
   @@index([parentId])
+  // Used by analytics scripts 8/9/13 to scope rollups by date window.
+  @@index([createdAt])
 }
 
 model ChatAttachment {

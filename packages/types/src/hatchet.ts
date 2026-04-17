@@ -97,16 +97,25 @@ export interface HatchetHandlers {
   ) => Promise<boolean>
 }
 
-// Input shape for the weekly learning-analytics recompute. v1 runs the full
-// pipeline regardless of inputs; scope='course' is reserved for a later iteration
-// when the Python scripts support per-course filtering.
-// Uses a type alias (not interface) so it satisfies Hatchet's JsonObject constraint.
-export type RecomputeLearningAnalyticsInput = {
-  scope?: 'all' | 'course'
-  courseId?: string
-}
+// Input shape for the weekly learning-analytics recompute. No fields today —
+// kept as an empty type (not `void`) so it satisfies Hatchet's JsonObject
+// constraint and we can extend it later without reworking the task signature.
+export type RecomputeLearningAnalyticsInput = {}
+
+// Named event constants for Hatchet task triggers. Keeping them here instead of
+// sprinkling string literals across workflow definitions and emitter call sites.
+export const HATCHET_EVENTS = {
+  courseEnded: 'course-ended',
+  adminRecomputeAnalytics: 'admin-recompute-analytics',
+} as const
 
 // Contract for the tasks that are passed into the GraphQL context.
+// NOTE: the historical createAuditLogEntry shape disagrees with the real task
+// implementation in packages/hatchet/src/index.ts (wrapper vs direct payload);
+// GraphQL call sites currently rely on the wrapper shape, so keeping the
+// interface as-is avoids disturbing them. Downstream code that needs the real
+// inferred shape should import PreparedHatchetTasks from @klicker-uzh/hatchet
+// (the ReturnType<typeof prepareHatchetTasks>) instead.
 export interface PreparedHatchetTasks {
   createAuditLogEntry: TaskWorkflowDeclaration<
     {

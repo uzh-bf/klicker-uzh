@@ -1,15 +1,10 @@
 import os
 
-_SQL_PATH = os.path.join(os.path.dirname(__file__), "participant_chat_analytics.sql")
+from src.modules.utils import COURSE_TIMESTAMP, load_sql
 
-# Sentinel timestamp for COURSE rows — matches the existing COURSE-analytics convention
-# used by save_participant_analytics.py.
-COURSE_TIMESTAMP = "1970-01-01"
+_SQL = load_sql(os.path.join(os.path.dirname(__file__), "participant_chat_analytics.sql"))
 
-
-def _load_sql() -> str:
-    with open(_SQL_PATH, "r", encoding="utf-8") as fh:
-        return fh.read()
+__all__ = ["compute_participant_chat_analytics", "COURSE_TIMESTAMP"]
 
 
 def compute_participant_chat_analytics(
@@ -33,12 +28,10 @@ def compute_participant_chat_analytics(
     if analytics_type not in ("DAILY", "WEEKLY", "MONTHLY", "COURSE"):
         raise ValueError(f"Unknown analytics type: {analytics_type}")
 
-    sql = _load_sql()
     if verbose:
         print(f"[chat_analytics] {analytics_type} {win_start}..{win_end} -> {timestamp}")
 
-    # Prisma Python execute_raw uses $-style parameters for Postgres.
-    rows_written = db.execute_raw(sql, win_start, win_end, analytics_type, timestamp)
+    rows_written = db.execute_raw(_SQL, win_start, win_end, analytics_type, timestamp)
     if verbose:
         print(f"[chat_analytics] rows affected: {rows_written}")
     return rows_written

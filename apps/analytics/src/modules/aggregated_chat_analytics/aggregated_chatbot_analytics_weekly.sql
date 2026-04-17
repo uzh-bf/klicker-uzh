@@ -1,11 +1,13 @@
--- AggregatedChatbotAnalytics rollup for DAILY / MONTHLY / COURSE windows.
+-- AggregatedChatbotAnalytics rollup for WEEKLY windows.
 -- Parameters:
 --   $1 timestamptz — window start (inclusive)
 --   $2 timestamptz — window end (exclusive)
---   $3 text        — AnalyticsType ('DAILY' | 'MONTHLY' | 'COURSE')
---   $4 date        — timestamp column value (COURSE uses sentinel 1970-01-01)
--- For these window types the new/returning split isn't populated (deck-only metric
--- meaningful at WEEKLY granularity) — see aggregated_chatbot_analytics_weekly.sql.
+--   $3 date        — timestamp column value
+--
+-- Differs from aggregated_chatbot_analytics.sql by also populating
+-- newParticipants / returningParticipants using a first_seen CTE that scans the
+-- full ChatMessage history. Split out so non-weekly windows (which don't use this
+-- metric) can skip the expensive scan.
 
 WITH params AS (
   SELECT $1::timestamptz AS win_start,
@@ -23,6 +25,14 @@ messages AS (
   WHERE m."createdAt" >= params.win_start AND m."createdAt" < params.win_end
 ),
 user_msgs AS (SELECT * FROM messages WHERE role = 'user'),
+first_seen AS (
+  -- First-ever user message per (participant, chatbot), across ALL history.
+  SELECT ct."chatbotId", ct."participantId", MIN(m."createdAt") AS first_seen_at
+  FROM "ChatMessage" m
+  JOIN "ChatThread" ct ON ct.id = m."threadId"
+  WHERE m.role = 'user'
+  GROUP BY ct."chatbotId", ct."participantId"
+),
 rollup AS (
   SELECT
     "chatbotId",
@@ -38,6 +48,18 @@ assistant_rollup AS (
     COUNT(*)                        AS assistant_messages,
     COALESCE(SUM("creditsUsed"), 0) AS total_credits_used
   FROM messages WHERE role = 'assistant' GROUP BY 1
+),
+new_returning AS (
+  SELECT
+    um."chatbotId",
+    COUNT(DISTINCT um."participantId")
+      FILTER (WHERE fs.first_seen_at >= (SELECT win_start FROM params)
+                AND fs.first_seen_at <  (SELECT win_end   FROM params))  AS new_participants,
+    COUNT(DISTINCT um."participantId")
+      FILTER (WHERE fs.first_seen_at <  (SELECT win_start FROM params))  AS returning_participants
+  FROM user_msgs um
+  JOIN first_seen fs USING ("chatbotId", "participantId")
+  GROUP BY um."chatbotId"
 ),
 hour_of_day_raw AS (
   SELECT
@@ -84,8 +106,6 @@ effort_counts AS (
   ) t GROUP BY 1
 ),
 disclaimer_counts AS (
-  -- Snapshot counts (NOT window-scoped). Overwritten on every run — reflects the
-  -- current state of consent, not the state at the time the window was computed.
   SELECT
     "chatbotId",
     COUNT(*) FILTER (WHERE "acceptedDisclaimerId" IS NOT NULL) AS disclaimer_accepted,
@@ -93,7 +113,6 @@ disclaimer_counts AS (
   FROM "ChatUsageCredits" GROUP BY 1
 ),
 credit_exhaustion AS (
-  -- Snapshot of the live "current" balance, same caveat as disclaimer_counts.
   SELECT
     "chatbotId",
     SUM(CASE WHEN "current" = 0 THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0) AS credit_exhaustion_rate
@@ -110,13 +129,13 @@ INSERT INTO "AggregatedChatbotAnalytics" (
   "createdAt", "updatedAt"
 )
 SELECT
-  $3::"AnalyticsType",
-  $4::date,
+  'WEEKLY'::"AnalyticsType",
+  $3::date,
   r."chatbotId",
   r."courseId",
   r.active_participants,
-  0,                                            -- newParticipants: WEEKLY only
-  0,                                            -- returningParticipants: WEEKLY only
+  COALESCE(nr.new_participants, 0),
+  COALESCE(nr.returning_participants, 0),
   r.threads,
   r.user_messages,
   COALESCE(ar.assistant_messages, 0),
@@ -131,27 +150,11 @@ SELECT
   NOW(), NOW()
 FROM rollup r
 LEFT JOIN assistant_rollup ar  USING ("chatbotId")
+LEFT JOIN new_returning nr     USING ("chatbotId")
 LEFT JOIN hour_of_day hod      USING ("chatbotId")
 LEFT JOIN model_counts mdl     USING ("chatbotId")
 LEFT JOIN mode_counts mc       USING ("chatbotId")
 LEFT JOIN effort_counts ec     USING ("chatbotId")
 LEFT JOIN disclaimer_counts dc USING ("chatbotId")
 LEFT JOIN credit_exhaustion ce USING ("chatbotId")
-ON CONFLICT ("type", "chatbotId", "timestamp") DO UPDATE SET
-  "courseId"                    = EXCLUDED."courseId",
-  "activeParticipants"          = EXCLUDED."activeParticipants",
-  "newParticipants"             = EXCLUDED."newParticipants",
-  "returningParticipants"       = EXCLUDED."returningParticipants",
-  "threads"                     = EXCLUDED."threads",
-  "userMessages"                = EXCLUDED."userMessages",
-  "assistantMessages"           = EXCLUDED."assistantMessages",
-  "totalCreditsUsed"            = EXCLUDED."totalCreditsUsed",
-  "creditExhaustionRate"        = EXCLUDED."creditExhaustionRate",
-  "disclaimerAcceptedCount"     = EXCLUDED."disclaimerAcceptedCount",
-  "disclaimerDeclinedCount"     = EXCLUDED."disclaimerDeclinedCount",
-  "hourOfDayDistribution"       = EXCLUDED."hourOfDayDistribution",
-  "modelDistribution"           = EXCLUDED."modelDistribution",
-  "modeDistribution"            = EXCLUDED."modeDistribution",
-  "reasoningEffortDistribution" = EXCLUDED."reasoningEffortDistribution",
-  "updatedAt"                   = NOW()
-WHERE "AggregatedChatbotAnalytics"."type" = 'COURSE';
+ON CONFLICT ("type", "chatbotId", "timestamp") DO NOTHING;
