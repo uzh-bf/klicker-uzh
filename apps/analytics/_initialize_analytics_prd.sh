@@ -7,3 +7,10 @@ pnpm run script:prod src.scripts.4_initial_participant_performance
 pnpm run script:prod src.scripts.5_initial_participant_course_analytics
 pnpm run script:prod src.scripts.6_initial_activity_progress
 pnpm run script:prod src.scripts.7_participant_activity_performance
+pnpm run script:prod src.scripts.8_initial_chat_analytics
+pnpm run script:prod src.scripts.9_initial_aggregated_chatbot_analytics
+pnpm run script:prod src.scripts.13_platform_semester_analytics
+pnpm run script:prod src.scripts.14_live_quiz_assessment_analytics
+pnpm run script:prod src.scripts.10_chat_topic_clustering
+pnpm run script:prod src.scripts.11_chat_quiz_correlation
+pnpm run script:prod src.scripts.99_mark_analytics_valid
