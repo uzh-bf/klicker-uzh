@@ -18,6 +18,7 @@ client.json
 server.json
 
 *.sql
+*.prisma
 
 CHANGELOG.md
 
