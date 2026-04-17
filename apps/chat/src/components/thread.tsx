@@ -1,28 +1,41 @@
 import {
   ActionBarPrimitive,
+  AttachmentPrimitive,
   ComposerPrimitive,
   MessagePrimitive,
   type ReasoningMessagePartProps,
   ThreadPrimitive,
+  useComposer,
   useMessage,
+  useThreadComposerAttachment,
 } from '@assistant-ui/react'
-import { faPaperPlane } from '@fortawesome/free-solid-svg-icons'
 import {
   ArrowDownIcon,
   CheckIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   CopyIcon,
+  ImagePlusIcon,
   PencilIcon,
+  PencilOffIcon,
   RefreshCwIcon,
+  SendHorizontalIcon,
+  SquareIcon,
+  XIcon,
 } from 'lucide-react'
 import { type FC, type PropsWithChildren, useState } from 'react'
 
 import { Button } from '@uzh-bf/design-system'
+import { hasAnyImageAttachmentData } from '../lib/attachments/attachmentState'
+import {
+  MAX_IMAGE_ATTACHMENTS,
+  useComposerStore,
+} from '../stores/composerStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { BranchPicker } from './branch-picker'
 import { useChatUi } from './chat-ui-context'
 import { MarkdownText } from './markdown-text'
+import { MessageAttachments } from './message-attachments'
 import { ToolFallback } from './tool-fallback'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
@@ -50,8 +63,27 @@ const formatTitleCase = (value: string) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ')
 
+type ImageAttachment = {
+  id?: string
+  type: 'image'
+  position?: number
+  imageBase64?: string | null
+  imagePreviewBase64?: string | null
+  imageDescription?: string | null
+  hasFullImage?: boolean
+}
+
 type MessageWithCustomMetadata = {
-  metadata?: { custom?: Record<string, unknown> | null } | null
+  id: string
+  attachmentSourceMessageId?: string | null
+  imageAttachments?: ImageAttachment[]
+  metadata?: {
+    custom?:
+      | (Record<string, unknown> & {
+          imageAttachments?: ImageAttachment[]
+        })
+      | null
+  } | null
 }
 
 const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
@@ -141,7 +173,7 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
 
   return (
     <ThreadPrimitive.Root
-      className="bg-background box-border flex min-h-0 flex-1 flex-col overflow-hidden"
+      className="bg-background relative box-border flex min-h-0 flex-1 flex-col overflow-hidden"
       style={{
         ['--thread-max-width' as string]: embedded ? '100%' : '60rem',
       }}
@@ -150,8 +182,8 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
         className={twMerge(
           'flex min-h-0 flex-1 flex-col items-center scroll-smooth bg-inherit',
           embedded
-            ? 'scrollbar-none overflow-y-auto px-2 pt-2'
-            : 'overflow-y-scroll px-2 pt-2 sm:px-4 sm:pt-8'
+            ? 'scrollbar-none overflow-y-auto px-2 pb-24 pt-2'
+            : 'overflow-y-scroll px-2 pb-28 pt-2 sm:px-4 sm:pt-8'
         )}
       >
         <ThreadWelcome />
@@ -165,18 +197,15 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
             ),
           }}
         />
-
-        <ThreadPrimitive.If empty={false}>
-          <div className="min-h-8 flex-grow" />
-        </ThreadPrimitive.If>
       </ThreadPrimitive.Viewport>
 
       <div
         className={twMerge(
-          'flex w-full shrink-0 flex-col items-center justify-end bg-inherit',
+          'absolute bottom-0 left-0 right-0 z-10 flex w-full flex-col items-center justify-end',
           embedded ? 'px-2 pb-2' : 'px-2 pb-4 sm:px-4'
         )}
       >
+        <div className="from-background pointer-events-none absolute inset-x-0 bottom-full h-12 to-transparent" />
         {!embedded && <ThreadScrollToBottom />}
         <Composer />
       </div>
@@ -189,13 +218,12 @@ const ThreadScrollToBottom: FC = () => {
     <Tooltip>
       <TooltipTrigger asChild>
         <ThreadPrimitive.ScrollToBottom asChild>
-          <button className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring absolute -top-8 inline-flex h-9 w-9 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-50">
+          <button className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring absolute bottom-full mb-2 inline-flex h-9 w-9 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-50">
             <ArrowDownIcon />
             <span className="sr-only">Scroll to bottom</span>
           </button>
         </ThreadPrimitive.ScrollToBottom>
       </TooltipTrigger>
-      <TooltipContent>Scroll to bottom</TooltipContent>
     </Tooltip>
   )
 }
@@ -237,25 +265,148 @@ const ThreadWelcome: FC = () => {
 
 const Composer: FC = () => {
   const { embedded } = useChatUi()
+  const attachmentError = useComposerStore((s) => s.attachmentError)
+  const setAttachmentError = useComposerStore((s) => s.setAttachmentError)
 
   return (
-    <ComposerPrimitive.Root className="focus-within:border-ring/20 flex w-full max-w-[var(--thread-max-width)] flex-wrap items-center rounded-lg border bg-inherit px-2.5 shadow-sm transition-colors ease-in">
-      <ComposerPrimitive.Input
-        rows={1}
-        autoFocus
-        placeholder="Write a message..."
-        className={twMerge(
-          'placeholder:text-muted-foreground flex-grow resize-none border-none bg-transparent px-2 text-sm outline-none focus:ring-0 disabled:cursor-not-allowed',
-          embedded ? 'max-h-20 py-2' : 'max-h-40 py-4'
-        )}
-      />
-      <ComposerAction />
+    <ComposerPrimitive.Root className="flex w-full max-w-3xl flex-col rounded-3xl border border-gray-200 bg-gray-100/80 px-2.5 shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-colors ease-in focus-within:border-gray-300">
+      <ComposerAttachments />
+
+      {attachmentError && (
+        <div className="px-2 pt-2">
+          <div className="inline-flex items-center gap-1.5 rounded-md bg-red-50 px-2 py-1 text-xs text-red-600">
+            <span>{attachmentError}</span>
+            <button
+              type="button"
+              onClick={() => setAttachmentError(null)}
+              className="rounded hover:bg-red-100"
+              aria-label="Dismiss error"
+            >
+              <XIcon className="size-3" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="flex w-full items-center">
+        <ComposerAttachButton />
+        <ComposerPrimitive.Input
+          rows={1}
+          autoFocus
+          placeholder="Write a message..."
+          className={twMerge(
+            'placeholder:text-muted-foreground text-md flex-grow resize-none border-none bg-transparent px-2 outline-none focus:ring-0 disabled:cursor-not-allowed',
+            embedded ? 'max-h-20 py-2' : 'max-h-40 py-4'
+          )}
+        />
+        <ComposerAction />
+      </div>
     </ComposerPrimitive.Root>
+  )
+}
+
+const ComposerAttachments: FC = () => {
+  return (
+    <div className="flex w-full flex-wrap gap-2 py-2 empty:hidden">
+      <ComposerPrimitive.Attachments
+        components={{
+          Image: ComposerImageAttachment,
+          Document: ComposerImageAttachment,
+          File: ComposerImageAttachment,
+          Attachment: ComposerImageAttachment,
+        }}
+      />
+    </div>
+  )
+}
+
+const ComposerImageAttachment: FC = () => {
+  const { embedded } = useChatUi()
+  const imageSrc = useThreadComposerAttachment((attachment) => {
+    const imagePart = attachment.content?.find(
+      (
+        part
+      ): part is {
+        type: 'image'
+        image: string
+      } =>
+        typeof part === 'object' &&
+        part !== null &&
+        'type' in part &&
+        part.type === 'image' &&
+        'image' in part &&
+        typeof part.image === 'string'
+    )
+
+    return imagePart?.image ?? null
+  })
+  const attachmentName = useThreadComposerAttachment(
+    (attachment) => attachment.name
+  )
+
+  return (
+    <AttachmentPrimitive.Root className="relative">
+      {imageSrc ? (
+        <img
+          src={imageSrc}
+          alt={attachmentName || 'Attachment preview'}
+          className={twMerge(
+            'size-14 rounded-md border object-cover',
+            embedded ? 'max-h-20 max-w-20' : 'max-h-28 max-w-28'
+          )}
+        />
+      ) : (
+        <div
+          className={twMerge(
+            'text-muted-foreground bg-muted flex size-14 items-center justify-center rounded-md border px-2 text-[10px]',
+            embedded ? 'max-h-20 max-w-20' : 'max-h-28 max-w-28'
+          )}
+        >
+          {attachmentName}
+        </div>
+      )}
+      <AttachmentPrimitive.Remove asChild>
+        <button
+          type="button"
+          className="bg-background text-muted-foreground hover:text-foreground absolute right-1 top-1 inline-flex size-5 items-center justify-center rounded-full border"
+          aria-label="Remove attachment"
+        >
+          ×
+        </button>
+      </AttachmentPrimitive.Remove>
+    </AttachmentPrimitive.Root>
+  )
+}
+
+const ComposerAttachButton: FC = () => {
+  const { embedded } = useChatUi()
+  const { selectedModel, modelOptions } = useSettingsStore()
+  const attachmentCount = useComposerStore((s) => s.attachmentCount)
+  const supportsImages =
+    modelOptions.find((m) => m.id === selectedModel)
+      ?.supportsImageAttachments !== false
+
+  if (!supportsImages || attachmentCount >= MAX_IMAGE_ATTACHMENTS) return null
+
+  return (
+    <ComposerPrimitive.AddAttachment asChild>
+      <button
+        type="button"
+        className={twMerge(
+          'text-muted-foreground hover:text-foreground inline-flex items-center justify-center rounded-md',
+          embedded ? 'm-1 size-7' : 'm-2 size-9'
+        )}
+        aria-label="Attach image"
+      >
+        <ImagePlusIcon className={embedded ? 'size-4' : 'size-5'} />
+      </button>
+    </ComposerPrimitive.AddAttachment>
   )
 }
 
 const ComposerAction: FC = () => {
   const { embedded } = useChatUi()
+  const isEmpty = useComposer((s) => s.isEmpty)
   const size = embedded ? '28px' : '36px'
 
   return (
@@ -263,53 +414,49 @@ const ComposerAction: FC = () => {
       <ThreadPrimitive.If running={false}>
         <ComposerPrimitive.Send asChild>
           <Button
+            basic
             style={{
-              borderRadius: '50%',
               width: size,
               height: size,
               minWidth: size,
               minHeight: size,
               padding: '0',
-              paddingLeft: embedded ? '3px' : '5px',
+              margin: '5px',
+              color: isEmpty ? 'var(--muted-foreground)' : 'black',
             }}
             className={{
               root: twMerge(
-                'flex items-center justify-center rounded-lg',
-                embedded ? 'm-1' : 'm-2 h-12 w-12'
+                'flex items-center justify-center rounded-md transition-colors',
+                embedded ? 'm-1' : 'm-2',
+                !isEmpty && 'hover:bg-accent'
               ),
             }}
           >
-            <Button.Icon icon={faPaperPlane} />
+            <SendHorizontalIcon className={embedded ? 'size-4' : 'size-5'} />
           </Button>
         </ComposerPrimitive.Send>
       </ThreadPrimitive.If>
       <ThreadPrimitive.If running>
         <ComposerPrimitive.Cancel asChild>
           <Button
+            basic
             style={{
-              borderRadius: '50%',
               width: size,
               height: size,
               minWidth: size,
               minHeight: size,
               padding: '0',
+              margin: '5px',
+              color: 'black',
             }}
             className={{
               root: twMerge(
-                'flex items-center justify-center rounded-lg',
-                embedded ? 'm-1' : 'm-2 h-12 w-12'
+                'hover:bg-accent flex items-center justify-center rounded-md transition-colors',
+                embedded ? 'm-1' : 'm-2'
               ),
             }}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 16 16"
-              fill="currentColor"
-              width={embedded ? '16' : '20'}
-              height={embedded ? '16' : '20'}
-            >
-              <rect width="10" height="10" x="3" y="3" rx="2" />
-            </svg>
+            <SquareIcon className={embedded ? 'size-4' : 'size-5'} />
           </Button>
         </ComposerPrimitive.Cancel>
       </ThreadPrimitive.If>
@@ -317,17 +464,37 @@ const ComposerAction: FC = () => {
   )
 }
 
-const UserMessage: FC = () => {
-  return (
-    <MessagePrimitive.Root className="grid w-full max-w-[var(--thread-max-width)] auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] gap-y-2 py-2 sm:py-4 [&:where(>*)]:col-start-2">
-      <UserActionBar />
+const getMessageAttachments = (
+  message: MessageWithCustomMetadata
+): ImageAttachment[] => {
+  const direct = message.imageAttachments
+  if (Array.isArray(direct) && direct.length > 0) return direct
+  const fromMeta = message.metadata?.custom?.imageAttachments
+  if (Array.isArray(fromMeta) && fromMeta.length > 0) return fromMeta
+  return []
+}
 
-      <div className="bg-muted text-foreground col-start-2 row-start-2 max-w-[calc(var(--thread-max-width)*0.8)] break-words rounded-2xl px-5 py-2.5">
+const UserMessage: FC = () => {
+  const message = useMessage() as MessageWithCustomMetadata
+  const attachments = getMessageAttachments(message)
+
+  return (
+    <MessagePrimitive.Root className="flex w-full max-w-[var(--thread-max-width)] flex-col items-end gap-y-1 py-2 sm:py-4">
+      <div className="bg-muted text-foreground max-w-[calc(var(--thread-max-width)*0.8)] break-words rounded-2xl px-5 py-2.5">
+        {attachments.length > 0 && (
+          <MessageAttachments
+            attachments={attachments}
+            messageId={message.id}
+            hydrationSourceMessageId={message.attachmentSourceMessageId}
+            className="mb-2"
+          />
+        )}
         <MessagePrimitive.Content />
       </div>
 
-      <div className="col-start-2 row-start-3 max-w-[calc(var(--thread-max-width)*0.8)]">
-        <MessageMetadata />
+      <MessageMetadata />
+      <div className="flex min-h-6 items-center">
+        <UserActionBar />
       </div>
     </MessagePrimitive.Root>
   )
@@ -335,24 +502,66 @@ const UserMessage: FC = () => {
 
 const UserActionBar: FC = () => {
   const { showMessageActions } = useChatUi()
+  const { selectedModel, modelOptions } = useSettingsStore()
+  const message = useMessage() as MessageWithCustomMetadata
+
   if (!showMessageActions) return null
+
+  const attachments = getMessageAttachments(message)
+  const hasImages = hasAnyImageAttachmentData(attachments)
+
+  const supportsImages =
+    modelOptions.find((m) => m.id === selectedModel)
+      ?.supportsImageAttachments !== false
+  const editDisabled = hasImages && !supportsImages
 
   return (
     <ActionBarPrimitive.Root
       hideWhenRunning
       autohide="not-last"
-      className="col-start-1 row-start-2 mr-3 mt-2.5 flex flex-col items-end"
+      className="text-muted-foreground flex items-center gap-1"
     >
       <Tooltip>
         <TooltipTrigger asChild>
-          <ActionBarPrimitive.Edit asChild>
-            <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
-              <PencilIcon />
-              <span className="sr-only">Edit</span>
+          {editDisabled ? (
+            <button
+              disabled
+              className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
+            >
+              <PencilOffIcon />
+              <span className="sr-only">Edit unavailable</span>
             </button>
-          </ActionBarPrimitive.Edit>
+          ) : (
+            <ActionBarPrimitive.Edit asChild>
+              <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
+                <PencilIcon />
+                <span className="sr-only">Edit</span>
+              </button>
+            </ActionBarPrimitive.Edit>
+          )}
         </TooltipTrigger>
-        <TooltipContent>Edit</TooltipContent>
+        <TooltipContent>
+          {editDisabled
+            ? 'Cannot edit: selected model does not support images'
+            : 'Edit'}
+        </TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <ActionBarPrimitive.Copy asChild>
+            <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
+              <MessagePrimitive.If copied>
+                <CheckIcon />
+              </MessagePrimitive.If>
+              <MessagePrimitive.If copied={false}>
+                <CopyIcon />
+              </MessagePrimitive.If>
+              <span className="sr-only">Copy</span>
+            </button>
+          </ActionBarPrimitive.Copy>
+        </TooltipTrigger>
+        <TooltipContent>Copy</TooltipContent>
       </Tooltip>
 
       <BranchPickerWrapper />
@@ -362,10 +571,22 @@ const UserActionBar: FC = () => {
 
 const EditComposer: FC = () => {
   const { showMessageActions } = useChatUi()
+  const message = useMessage() as MessageWithCustomMetadata
+  const attachments = getMessageAttachments(message)
+
   if (!showMessageActions) return null
 
   return (
     <ComposerPrimitive.Root className="bg-muted my-4 flex w-full max-w-[var(--thread-max-width)] flex-col gap-2 rounded-2xl">
+      {attachments.length > 0 && (
+        <MessageAttachments
+          attachments={attachments}
+          messageId={message.id}
+          hydrationSourceMessageId={message.attachmentSourceMessageId}
+          variant="edit"
+          className="ml-4 mt-3"
+        />
+      )}
       <ComposerPrimitive.Input className="text-foreground flex min-h-[2.5rem] w-full resize-none bg-transparent px-4 py-3 outline-none" />
 
       <div className="mx-3 mb-2 flex items-center justify-center gap-2 self-end">
@@ -533,45 +754,48 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
   if (!showMessageActions) return null
 
   return (
-    <ActionBarPrimitive.Root
-      hideWhenRunning
-      autohide="not-last"
-      autohideFloat="single-branch"
+    <div
       className={twMerge(
-        'text-muted-foreground data-[floating]:bg-background row-start-2 -ml-1 flex gap-1 data-[floating]:absolute data-[floating]:rounded-md data-[floating]:border data-[floating]:p-1 data-[floating]:shadow-sm',
+        'row-start-2 min-h-8',
         embedded ? 'col-start-2' : 'col-start-3'
       )}
     >
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <ActionBarPrimitive.Copy asChild>
-            <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
-              <MessagePrimitive.If copied>
-                <CheckIcon />
-              </MessagePrimitive.If>
-              <MessagePrimitive.If copied={false}>
-                <CopyIcon />
-              </MessagePrimitive.If>
-              <span className="sr-only">Copy</span>
-            </button>
-          </ActionBarPrimitive.Copy>
-        </TooltipTrigger>
-        <TooltipContent>Copy</TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <ActionBarPrimitive.Reload asChild>
-            <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
-              <RefreshCwIcon />
-              <span className="sr-only">Refresh</span>
-            </button>
-          </ActionBarPrimitive.Reload>
-        </TooltipTrigger>
-        <TooltipContent>Refresh</TooltipContent>
-      </Tooltip>
+      <ActionBarPrimitive.Root
+        hideWhenRunning
+        autohide="not-last"
+        className="text-muted-foreground -ml-1 flex gap-1"
+      >
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <ActionBarPrimitive.Copy asChild>
+              <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
+                <MessagePrimitive.If copied>
+                  <CheckIcon />
+                </MessagePrimitive.If>
+                <MessagePrimitive.If copied={false}>
+                  <CopyIcon />
+                </MessagePrimitive.If>
+                <span className="sr-only">Copy</span>
+              </button>
+            </ActionBarPrimitive.Copy>
+          </TooltipTrigger>
+          <TooltipContent>Copy</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <ActionBarPrimitive.Reload asChild>
+              <button className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex size-6 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
+                <RefreshCwIcon />
+                <span className="sr-only">Refresh</span>
+              </button>
+            </ActionBarPrimitive.Reload>
+          </TooltipTrigger>
+          <TooltipContent>Refresh</TooltipContent>
+        </Tooltip>
 
-      <BranchPickerWrapper />
-    </ActionBarPrimitive.Root>
+        <BranchPickerWrapper />
+      </ActionBarPrimitive.Root>
+    </div>
   )
 }
 

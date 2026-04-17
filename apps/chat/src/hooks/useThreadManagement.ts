@@ -1,6 +1,7 @@
 import { type AppendMessage } from '@assistant-ui/react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
+import { getEditedMessageSource } from '../lib/attachments/attachmentState'
 import { generateId } from '../lib/utils/chatUtils'
 import {
   useChatStore,
@@ -62,6 +63,31 @@ export function useThreadManagement(
         }
       }
 
+      const imageBase64List = (message.attachments ?? [])
+        .flatMap((attachment) => attachment.content ?? [])
+        .filter(
+          (
+            part
+          ): part is {
+            type: 'image'
+            image: string
+            imagePreview?: string
+          } =>
+            typeof part === 'object' &&
+            part !== null &&
+            'type' in part &&
+            part.type === 'image' &&
+            'image' in part &&
+            typeof part.image === 'string'
+        )
+        .map((part) => ({
+          imageBase64: part.image,
+          imagePreviewBase64:
+            'imagePreview' in part && typeof part.imagePreview === 'string'
+              ? part.imagePreview
+              : part.image,
+        }))
+
       // create user message with unique ID and metadata
       const userMessage: ExtendedThreadMessageLike = {
         id: generateId(),
@@ -72,6 +98,12 @@ export function useThreadManagement(
         chatMode: selectedMode,
         modelId: selectedModel,
         reasoningEffort: selectedReasoningEffort,
+        imageAttachments: imageBase64List.map((img) => ({
+          type: 'image' as const,
+          imageBase64: img.imageBase64,
+          imagePreviewBase64: img.imagePreviewBase64,
+          imageDescription: null,
+        })),
       }
 
       if (shouldReplaceUrl) {
@@ -124,6 +156,13 @@ export function useThreadManagement(
 
       const activeThread = threads.find((t) => t.id === threadId)
       const parentId = message.parentId
+      const editedMessageId =
+        typeof message === 'object' &&
+        message !== null &&
+        'id' in message &&
+        typeof message.id === 'string'
+          ? message.id
+          : null
 
       // create edited message with new ID
       const editedMessage: ExtendedThreadMessageLike = {
@@ -142,6 +181,26 @@ export function useThreadManagement(
         parentId && activeThread
           ? activeThread.messages.findIndex((m) => m.id === parentId)
           : -1
+
+      // carry over the attachments from the original message being edited
+      const originalMessage = activeThread
+        ? getEditedMessageSource({
+            editedMessageId,
+            messages: activeThread.messages,
+          })
+        : undefined
+      if (
+        originalMessage?.imageAttachments &&
+        originalMessage.imageAttachments.length > 0
+      ) {
+        editedMessage.imageAttachments = originalMessage.imageAttachments.map(
+          (attachment) => ({ ...attachment })
+        )
+      }
+      editedMessage.attachmentSourceMessageId =
+        originalMessage?.attachmentSourceMessageId ??
+        originalMessage?.id ??
+        null
 
       const newCurrentPath =
         parentIndex >= 0 && activeThread
