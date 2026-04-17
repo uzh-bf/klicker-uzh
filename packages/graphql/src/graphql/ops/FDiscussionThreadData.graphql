@@ -12,8 +12,6 @@ fragment DiscussionThreadData on DiscussionThread {
   lastActivityAt
   sourceKey
   sourceLabel
-  liveQuizId
-  liveQuizName
   createdAt
   updatedAt
   scope {
@@ -22,10 +20,7 @@ fragment DiscussionThreadData on DiscussionThread {
     scopeType
     scopeKey
     scopeLabel
-    practiceQuizId
     stackId
-    instanceId
-    liveBlockId
     externalSource
     externalRef
     createdAt

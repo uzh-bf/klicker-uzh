@@ -2,16 +2,14 @@
 
 ## 1. Objective
 
-Build a generalized discussion platform that ships first as **Course Q&A** and is explicitly designed to absorb existing **Live Quiz Q&A** later without redesign.
+Build a generalized discussion platform whose shipped alpha surface is intentionally narrow: **Course Q&A** now, with broader learning-scoped and live-quiz scope reuse added later without redesign.
 
 Core requirements:
 
-- v1 user-facing scope is course-focused.
-- backend model supports both `COURSE` and `LIVE_QUIZ` spaces from day one.
-- course view can aggregate:
-  - threads created in course space
-  - threads created in linked live-quiz spaces (`liveQuiz.courseId == courseId`)
-- live quizzes without a course remain supported via standalone `LIVE_QUIZ` spaces.
+- v1 user-facing alpha scope is limited to `COURSE` and evaluated-surface `PRACTICE_STACK`.
+- backend/domain model may retain broader dormant capacity (`COURSE`, `LIVE_QUIZ`, and additional scope types) for later follow-up work.
+- course view in alpha shows only course-space threads; linked live-quiz aggregation is explicitly deferred.
+- broader scope activation must happen through a later follow-up workstream with its own validation matrix.
 - legacy live feedback system remains active in v1 (no breaking change).
 
 ## Current Status (2026-04-13)
@@ -53,6 +51,17 @@ Approved next alpha surface work (not yet implemented):
 - Identity model remains unchanged for this phase:
   - normal PWA discussion is logged-in participants only
   - anonymous remains embed-only
+
+### Deferred Post-Alpha Re-Expansion Targets
+
+These remain part of the broader discussion-platform capacity, but they are not active alpha scope and must be reintroduced deliberately later:
+
+- `PRACTICE_QUIZ` entry points
+- `PRACTICE_ELEMENT` entry points
+- linked `LIVE_QUIZ` aggregation into course-facing feeds or overview surfaces
+- lecturer-facing live-feedback migration/discoverability UI for new discussion surfaces
+
+Any reintroduction of these surfaces must be handled as explicit follow-up work after alpha validation, with updated product wording, GraphQL contract changes where needed, and dedicated verification coverage.
 
 ---
 
@@ -246,21 +255,25 @@ Update:
 
 ## 5. Scope Key Canonicalization
 
-All keys are generated server-side and immutable.
+All keys are generated and validated server-side. The alpha ships with exactly
+three canonical key shapes, enforced by `isSupportedCourseScopeKey` in
+`packages/graphql/src/services/discussions.ts`.
 
-### Course space keys
+### Course space keys (alpha)
 
 - course-level: `course:{courseId}`
-- practice quiz: `pq:{practiceQuizId}`
-- practice stack: `pq:{practiceQuizId}:stack:{stackId}`
-- practice instance: `pq:{practiceQuizId}:stack:{stackId}:instance:{instanceId}`
-- external block: `ext:{externalSource}:{externalRef}`
+- stack: `stack:{stackId}` — activity-agnostic; the server resolves the stack
+  across `course.stacks`, `practiceQuiz.stacks`, and `microLearning.stacks`,
+  which is why a single scope type (`PRACTICE_STACK`) covers both practice
+  quizzes and microlearnings.
+- external block: `ext:{externalSource}:{externalRef}` — only reachable from a
+  signed embed token; not creatable from the in-app PWA surface.
 
-### Live-quiz space keys (future migration)
+### Deferred post-alpha keys
 
-- quiz-level: `lq:{liveQuizId}`
-- block-level: `lq:{liveQuizId}:block:{blockId}`
-- instance-level: `lq:{liveQuizId}:block:{blockId}:instance:{instanceId}`
+Any finer-grained breakdown (per-quiz, per-element, per-instance) and the
+live-quiz family (`lq:*`) remain deferred until a post-alpha re-expansion
+workstream with its own plan and validation matrix.
 
 ---
 
@@ -295,7 +308,7 @@ Add types in a new `schema/discussions.ts`:
 Course-facing v1:
 
 - `courseDiscussionScopes(courseId: String!): [DiscussionScopeSummary!]!`
-- `courseDiscussionThreads(courseId: String!, scopeKey: String, sort: DiscussionSort, limit: Int, cursor: String, includeLinkedLiveQuizSpaces: Boolean = true, embedToken: String): DiscussionThreadPage!`
+- `courseDiscussionThreads(courseId: String!, scopeKey: String, sort: DiscussionSort, limit: Int, cursor: String, embedToken: String): DiscussionThreadPage!`
 - `courseDiscussionOverview(courseId: String!, sort: DiscussionSort, limit: Int, cursor: String): CourseDiscussionOverview!`
 
 Embed support:
@@ -321,6 +334,7 @@ Course settings extension:
 
 - Existing live feedback queries/mutations/subscriptions remain unchanged.
 - v1 does not introduce live-quiz public GraphQL entry points for new discussion model.
+- v1 course-facing queries and overview remain course-only; linked live-quiz aggregation is deferred to a later follow-up contract and verification cycle.
 
 ---
 
@@ -337,7 +351,7 @@ Create `services/discussions.ts` (generalized core) and keep thin course-facing 
 - create thread/reply
 - toggle vote idempotently
 - write events
-- build course overview aggregation
+- build alpha-safe course overview aggregation
 
 ### 7.2 Space access checks
 
@@ -453,9 +467,8 @@ Data captured for future abuse systems:
 
 - when rollout gate is `false`: show nothing related to Course Q&A in Manage
 - when rollout gate is `true`: add a `Q&A` tab in course view
-- once visible, show grouped overview by source:
-  - `Course`
-  - `Live Quiz: <name>` (linked live quiz spaces, when data exists)
+- once visible, show the alpha overview for the course space only
+- linked live-quiz grouping/discoverability remains deferred until the later migration/re-expansion workstream
 
 ### Course settings
 
@@ -479,10 +492,10 @@ Data captured for future abuse systems:
 For `courseDiscussionOverview(courseId)`:
 
 1. include all threads from course space.
-2. include all threads from live-quiz spaces where `liveQuiz.courseId == courseId`.
-3. exclude all standalone live-quiz spaces (`courseId IS NULL`).
+2. do not include linked `LIVE_QUIZ` threads in alpha.
+3. defer linked live aggregation until the post-alpha re-expansion workstream with an explicit contract update and dedicated validation matrix.
 4. each item carries:
-   - source group label (`Course` or `Live Quiz: {displayName}`)
+   - source group label (`Course` in alpha)
    - scope label
    - space metadata
 
@@ -568,9 +581,9 @@ Dual-write must guarantee:
 
 - lecturer enables course Q&A
 - participants post and upvote
-- practice quiz scoped context works
+- stack-scoped evaluated context works
 - embed anonymous flow works with limits
-- manage overview grouping by source labels
+- manage overview remains course-only in alpha
 
 ---
 
@@ -578,14 +591,15 @@ Dual-write must guarantee:
 
 Current branch reality:
 
-- Course Q&A is currently being exercised through the existing course-level booleans:
+- Course Q&A is now exercised through the approved course-level rollout model:
+  - `Course.isCourseQARolloutEnabled`
   - `Course.isCourseQAEnabled`
   - `Course.isCourseQAAnonymousEnabled`
-- This is sufficient for the current branch validation state, but it is not yet the approved alpha rollout model.
+- The hidden rollout gate is already implemented in code and unlocks the lecturer-visible-but-student-disabled intermediate state.
 
-Approved next alpha rollout model (not yet implemented):
+Approved alpha rollout model:
 
-1. Add a separate hidden course-level rollout gate boolean in the DB.
+1. Keep a separate hidden course-level rollout gate boolean in the DB.
 2. Use a three-state rollout model:
    - rollout gate `false`: no Q&A UI in Manage or PWA; direct routes fail closed
    - rollout gate `true` + `isCourseQAEnabled = false`: lecturer/admin UI visible, students still cannot use Q&A
@@ -657,7 +671,7 @@ When implementation starts, expected first PR order:
     - anonymous embed-only write enforcement
     - Redis-based write throttling (anonymous + participant) and `ANON_RATE_LIMITED` event logging
     - thread/reply create, vote toggles, soft delete
-    - course overview aggregation with source labels (`Course`, `Live Quiz: <name>`)
+    - course overview aggregation plus future-capable live-quiz handling that W2 must narrow to the approved alpha surface
 - Added GraphQL schema types:
   - `packages/graphql/src/schema/discussions.ts`
   - enums, inputs, thread/reply/page/overview/embedding types
@@ -694,11 +708,11 @@ When implementation starts, expected first PR order:
     - embed layout mode (`embedded`) support
 - Added entry points into course Q&A:
   - from course overview page (`apps/frontend-pwa/src/pages/course/[courseId]/index.tsx`)
-  - from practice quiz page with preselected practice-quiz scope (`apps/frontend-pwa/src/pages/course/[courseId]/practiceQuizzes/[id].tsx`)
+  - from practice quiz page with preselected learning scope (`apps/frontend-pwa/src/pages/course/[courseId]/practiceQuizzes/[id].tsx`), which W2 must narrow to the approved `PRACTICE_STACK` alpha surface
 - Added initial Manage-side Q&A tab:
   - `apps/frontend-manage/src/components/courses/CourseDiscussionOverview.tsx`
   - wired into course tabs (`apps/frontend-manage/src/pages/courses/[id]/index.tsx`)
-  - includes grouped discussion overview + embed-link generation UI
+  - includes overview + embed-link generation UI, with overview scope still to be narrowed to course-only alpha behavior in W2
 - Extended Manage course settings modal to control course Q&A settings:
   - `apps/frontend-manage/src/components/courses/modals/CourseManipulationModal.tsx`
   - wired update mutation variables in `apps/frontend-manage/src/components/courses/CourseOverviewHeader.tsx`
@@ -720,7 +734,7 @@ When implementation starts, expected first PR order:
   - thread/reply creation flow
   - idempotent upvote toggling for threads and replies
   - anonymous embed token scope mismatch rejection
-  - course overview aggregation (includes linked live-quiz spaces, excludes standalone live-quiz spaces)
+  - current course overview aggregation behavior, which W2 must narrow to course-only alpha coverage and later re-expand under explicit follow-up tests
 - Added follow-up hardening in `packages/graphql/src/services/discussions.ts`:
   - explicit `THREAD_DELETED` and `REPLY_DELETED` event logging
   - `DiscussionThreadPage.canPostAnonymously` and `DiscussionThreadPage.isAccessible`
@@ -789,14 +803,18 @@ When implementation starts, expected first PR order:
   - DB-backed GraphQL integration tests time out because the local integration DB/test environment is unavailable
   - `https://manage.klicker.com` is misrouted to the unrelated Jobeye app, so lecturer-side validation on the requested real domain is still blocked
   - rollout-off and rollout-on/runtime-off runtime matrix evidence is still pending because the verification run was interrupted before the DB state-flip checks were executed
-- Approved next-alpha surface decisions are only partially implemented at this point:
-  - W1 rollout gate is implemented
-  - W2 stack-only practice/microlearning surface work is still pending
+- Approved next-alpha surface decisions status:
+  - W1 rollout gate is implemented and committed
+  - W2 stack-only practice/microlearning surface is implementation-complete
+    (activity-agnostic `stack:{stackId}` scope key, entry points on evaluated
+    practice stacks and microlearning evaluation results, gated on the Q&A
+    rollout + runtime flags); runtime verification on real domains still
+    pending
 
 ### Document Links
 
-- Primary plan: `/Volumes/HOME/Git/klicker/klicker-uzh/.claude/worktrees/course-qa/project/DISCUSSIONS_PLAN.md`
-- Verification runbook: `/Volumes/HOME/Git/klicker/klicker-uzh/.claude/worktrees/course-qa/project/DISCUSSIONS_TESTING_PLAN.md`
+- Primary plan: `project/DISCUSSIONS_PLAN.md`
+- Verification runbook: `project/DISCUSSIONS_TESTING_PLAN.md`
 
 ### Remaining Major Work
 
@@ -805,6 +823,7 @@ When implementation starts, expected first PR order:
 - `W3` Remaining verification + DB-backed integration test unblock
 - `W4` Live Feedback Migration Path
 - `W5` Rollout + Operations
+- `W6` Deferred Scope Re-Expansion (post-alpha)
 
 ---
 
@@ -847,7 +866,7 @@ When implementation starts, expected first PR order:
 
 - Implement backfill job from legacy live feedback to `DiscussionSpaceType.LIVE_QUIZ`.
 - Implement dual-write in legacy feedback service:
-  - `/Volumes/HOME/Git/klicker/klicker-uzh/.claude/worktrees/course-qa/packages/graphql/src/services/feedbacks.ts`
+  - `packages/graphql/src/services/feedbacks.ts`
 - Add reconciliation metrics and mismatch reporting for:
   - counts
   - ordering
@@ -870,16 +889,31 @@ When implementation starts, expected first PR order:
   - pass: operational playbook approved and rollback rehearsed
   - fail: rollout cannot be safely operated or reverted
 
+### W6: Deferred Scope Re-Expansion (Post-Alpha)
+
+- Reintroduce deferred scope entry points only after `W1` to `W5` alpha work is validated.
+- Evaluate and, if approved, add back:
+  - `PRACTICE_QUIZ` entry points
+  - `PRACTICE_ELEMENT` entry points
+  - linked `LIVE_QUIZ` aggregation into course-facing feed/overview surfaces
+  - lecturer-facing migration/discoverability UI for new live discussion surfaces
+- Update GraphQL/service contracts explicitly rather than reusing alpha-only behavior by default.
+- Extend the testing plan with a dedicated follow-up validation matrix for any reintroduced scope.
+- Exit criteria (pass/fail):
+  - pass: every reintroduced surface has explicit product wording, implementation scope, and dedicated verification coverage
+  - fail: deferred scopes leak back into the product without an explicit follow-up contract and test matrix
+
 ### Coverage and Scope
 
-- Workstream acceptance checks included in this backlog: `W1` to `W5`.
+- Workstream acceptance checks included in this backlog: `W1` to `W6`.
 - UI/browser verification scope is tracked in:
-  - `/Volumes/HOME/Git/klicker/klicker-uzh/.claude/worktrees/course-qa/project/DISCUSSIONS_TESTING_PLAN.md`
+  - `project/DISCUSSIONS_TESTING_PLAN.md`
   - scenarios `QA-001` to `QA-012`
 - Backend corroboration scope includes:
   - data integrity checks
   - access and token guardrail checks
   - anonymous rate-limit enforcement checks
+- Any post-alpha reintroduction of deferred scopes requires a dedicated follow-up validation matrix beyond `QA-001` to `QA-012`.
 
 ### Assumptions and Defaults
 

@@ -4,14 +4,12 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetCourseDiscussionEmbeddingInfoDocument,
   GetCourseDiscussionOverviewDocument,
-  GetCourseDiscussionScopesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { parseScopeKeyToInput } from '@klicker-uzh/shared-components/src/discussionUtils'
 import { Button, H3, UserNotification, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 function CourseDiscussionOverview({
   courseId,
@@ -23,9 +21,14 @@ function CourseDiscussionOverview({
   isCourseQAAnonymousEnabled: boolean
 }) {
   const t = useTranslations()
-  const [selectedScopeKey, setSelectedScopeKey] = useState<string>('')
+  const [externalSource, setExternalSource] = useState('')
+  const [externalRef, setExternalRef] = useState('')
   const [allowAnonymous, setAllowAnonymous] = useState(false)
   const [expiresInHours, setExpiresInHours] = useState(48)
+  const [generatedEmbedInfo, setGeneratedEmbedInfo] = useState<{
+    embedUrl: string
+    expiresAt: string
+  } | null>(null)
 
   const {
     data: overviewData,
@@ -42,46 +45,35 @@ function CourseDiscussionOverview({
     fetchPolicy: 'cache-and-network',
   })
 
-  const { data: scopesData, loading: loadingScopes } = useQuery(
-    GetCourseDiscussionScopesDocument,
+  const [generateEmbedInfo, { loading: loadingEmbed }] = useLazyQuery(
+    GetCourseDiscussionEmbeddingInfoDocument,
     {
-      variables: { courseId },
-      skip: !isCourseQAEnabled,
-      pollInterval: 30000,
-      fetchPolicy: 'cache-and-network',
+      fetchPolicy: 'no-cache',
     }
   )
-
-  const [generateEmbedInfo, { data: embedData, loading: loadingEmbed }] =
-    useLazyQuery(GetCourseDiscussionEmbeddingInfoDocument)
-
-  const scopeOptions = scopesData?.courseDiscussionScopes ?? []
-
-  const embedScopeOptions = useMemo(() => {
-    const baseOptions = scopeOptions.filter(
-      (scope) => scope.spaceType === 'COURSE'
-    )
-    return baseOptions.length > 0
-      ? baseOptions
-      : [
-          {
-            scopeKey: `course:${courseId}`,
-            scopeLabel: t('shared.generic.course'),
-            sourceLabel: t('shared.generic.course'),
-            spaceType: 'COURSE' as const,
-          },
-        ]
-  }, [scopeOptions, courseId, t])
-
-  const effectiveSelectedScopeKey =
-    selectedScopeKey || embedScopeOptions[0]?.scopeKey || `course:${courseId}`
   const effectiveAllowAnonymous = isCourseQAAnonymousEnabled && allowAnonymous
+  const hasValidExternalBlock =
+    externalSource.trim().length > 0 && externalRef.trim().length > 0
 
   useEffect(() => {
     if (isCourseQAAnonymousEnabled) return
 
     setAllowAnonymous(false)
   }, [isCourseQAAnonymousEnabled])
+
+  useEffect(() => {
+    if (!generatedEmbedInfo) return
+
+    const intervalId = window.setInterval(() => {
+      setGeneratedEmbedInfo((current) => (current ? { ...current } : current))
+    }, 1000)
+
+    return () => window.clearInterval(intervalId)
+  }, [generatedEmbedInfo])
+
+  useEffect(() => {
+    setGeneratedEmbedInfo(null)
+  }, [externalSource, externalRef, allowAnonymous, expiresInHours])
 
   if (!isCourseQAEnabled) {
     return (
@@ -94,7 +86,7 @@ function CourseDiscussionOverview({
     )
   }
 
-  if (loadingOverview || loadingScopes) {
+  if (loadingOverview) {
     return (
       <div className="px-1 py-2">
         <Loader />
@@ -103,6 +95,9 @@ function CourseDiscussionOverview({
   }
 
   const groups = overviewData?.courseDiscussionOverview?.groups ?? []
+  const embedExpired = generatedEmbedInfo
+    ? dayjs(generatedEmbedInfo.expiresAt).isBefore(dayjs())
+    : false
 
   return (
     <div className="flex flex-col gap-4 px-1 py-2">
@@ -111,32 +106,43 @@ function CourseDiscussionOverview({
           {t('manage.course.embedLinkGenerator')}
         </H3>
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="mb-2 text-sm text-gray-600">
+          {t('manage.course.embedExternalBlockHelp')}
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <div>
             <label
               className="mb-1 block text-xs font-semibold text-gray-700"
-              htmlFor="embed-scope-select"
+              htmlFor="embed-external-source"
             >
-              {t('manage.course.scopeLabel')}
+              {t('manage.course.embedExternalSource')}
             </label>
-            <select
-              id="embed-scope-select"
-              value={effectiveSelectedScopeKey}
-              onChange={(event) => setSelectedScopeKey(event.target.value)}
+            <input
+              id="embed-external-source"
+              type="text"
+              value={externalSource}
+              onChange={(event) => setExternalSource(event.target.value)}
               className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+              placeholder={t('manage.course.embedExternalSourcePlaceholder')}
+            />
+          </div>
+
+          <div>
+            <label
+              className="mb-1 block text-xs font-semibold text-gray-700"
+              htmlFor="embed-external-ref"
             >
-              {embedScopeOptions.map((scope) => (
-                <option key={scope.scopeKey} value={scope.scopeKey}>
-                  {scope.scopeLabel} ({scope.sourceLabel})
-                </option>
-              ))}
-            </select>
-            {scopeOptions.filter((s) => s.spaceType === 'COURSE').length ===
-              0 && (
-              <div className="mt-1 text-xs text-amber-700">
-                {t('manage.course.noPersistentScope')}
-              </div>
-            )}
+              {t('manage.course.embedExternalRef')}
+            </label>
+            <input
+              id="embed-external-ref"
+              type="text"
+              value={externalRef}
+              onChange={(event) => setExternalRef(event.target.value)}
+              className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+              placeholder={t('manage.course.embedExternalRefPlaceholder')}
+            />
           </div>
 
           <div>
@@ -194,21 +200,16 @@ function CourseDiscussionOverview({
           <Button
             primary
             loading={loadingEmbed}
-            disabled={!effectiveSelectedScopeKey || loadingEmbed}
+            disabled={!hasValidExternalBlock || loadingEmbed}
             onClick={async () => {
-              const selectedScope = embedScopeOptions.find(
-                (scope) => scope.scopeKey === effectiveSelectedScopeKey
-              )
-
               try {
                 const result = await generateEmbedInfo({
                   variables: {
                     courseId,
-                    scope: parseScopeKeyToInput(
-                      courseId,
-                      effectiveSelectedScopeKey
-                    ) as any,
-                    scopeLabel: selectedScope?.scopeLabel,
+                    externalBlock: {
+                      externalSource: externalSource.trim(),
+                      externalRef: externalRef.trim(),
+                    },
                     allowAnonymous: effectiveAllowAnonymous,
                     expiresInHours,
                   },
@@ -219,12 +220,22 @@ function CourseDiscussionOverview({
                     type: 'error',
                     message: t('manage.course.embedGenFailed'),
                   })
+                  setGeneratedEmbedInfo(null)
+                  return
                 }
+
+                setGeneratedEmbedInfo({
+                  embedUrl:
+                    result.data.getCourseDiscussionEmbeddingInfo.embedUrl,
+                  expiresAt:
+                    result.data.getCourseDiscussionEmbeddingInfo.expiresAt,
+                })
               } catch {
                 toast({
                   type: 'error',
                   message: t('manage.course.embedGenFailed'),
                 })
+                setGeneratedEmbedInfo(null)
               }
             }}
             data={{ cy: 'course-qa-generate-embed' }}
@@ -234,12 +245,10 @@ function CourseDiscussionOverview({
 
           <Button
             onClick={async () => {
-              if (!embedData?.getCourseDiscussionEmbeddingInfo?.embedUrl) return
+              if (!generatedEmbedInfo?.embedUrl) return
 
               try {
-                await navigator.clipboard.writeText(
-                  embedData.getCourseDiscussionEmbeddingInfo.embedUrl
-                )
+                await navigator.clipboard.writeText(generatedEmbedInfo.embedUrl)
                 toast({
                   type: 'success',
                   message: t('manage.course.embedCopied'),
@@ -251,7 +260,7 @@ function CourseDiscussionOverview({
                 })
               }
             }}
-            disabled={!embedData?.getCourseDiscussionEmbeddingInfo?.embedUrl}
+            disabled={!generatedEmbedInfo?.embedUrl || embedExpired}
             data={{ cy: 'course-qa-copy-embed' }}
           >
             <Button.Label>{t('manage.course.copyUrl')}</Button.Label>
@@ -267,21 +276,28 @@ function CourseDiscussionOverview({
           </Button>
         </div>
 
-        {embedData?.getCourseDiscussionEmbeddingInfo?.embedUrl && (
+        {generatedEmbedInfo?.embedUrl && (
           <div className="mt-3 rounded-md border border-gray-200 bg-gray-50 p-2 text-xs">
             <div className="mb-1 font-semibold text-gray-700">
               {t('manage.course.embedUrl')}
             </div>
-            <div className="break-all text-gray-800">
-              {embedData.getCourseDiscussionEmbeddingInfo.embedUrl}
-            </div>
+            {!embedExpired && (
+              <div className="break-all text-gray-800">
+                {generatedEmbedInfo.embedUrl}
+              </div>
+            )}
             <div className="mt-1 text-gray-600">
               {t('manage.course.expiresAt', {
-                date: dayjs(
-                  embedData.getCourseDiscussionEmbeddingInfo.expiresAt
-                ).format('DD.MM.YYYY HH:mm'),
+                date: dayjs(generatedEmbedInfo.expiresAt).format(
+                  'DD.MM.YYYY HH:mm'
+                ),
               })}
             </div>
+            {embedExpired && (
+              <div className="mt-1 text-amber-700">
+                Generate a new link before copying.
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -2,17 +2,17 @@ import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   DiscussionEventType,
   DiscussionScopeType,
-  DiscussionSpaceType,
+  ElementStackType,
   PrismaClient,
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
+import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../src/lib/context.js'
 import {
   courseDiscussionOverview,
-  courseDiscussionScopes,
   courseDiscussionThreads,
   createCourseDiscussionReply,
   createCourseDiscussionThread,
@@ -25,7 +25,8 @@ import {
 import {
   initializePrisma,
   seedCourse,
-  seedLiveQuiz,
+  seedMicroLearning,
+  seedPracticeQuiz,
   testCleanup,
   testInitialization,
 } from './helpers.js'
@@ -253,11 +254,15 @@ describe('Integration tests for the course discussion platform', () => {
       courseId: course.id,
       allowAnonymous: true,
     })
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
 
     const embedInfo = await getCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
-        scope: { scopeType: DiscussionScopeType.COURSE },
+        externalBlock: {
+          externalSource: 'lms',
+          externalRef: 'chapter-3',
+        },
         allowAnonymous: true,
       },
       userOneCtx
@@ -274,7 +279,7 @@ describe('Integration tests for the course discussion platform', () => {
         scope: {
           scopeType: DiscussionScopeType.EXTERNAL_BLOCK,
           externalSource: 'lms',
-          externalRef: 'chapter-3',
+          externalRef: 'chapter-4',
         },
         isAnonymous: true,
         embedToken: embedInfo!.embedToken,
@@ -289,7 +294,9 @@ describe('Integration tests for the course discussion platform', () => {
         courseId: course.id,
         content: 'Anonymous question in valid scope',
         scope: {
-          scopeType: DiscussionScopeType.COURSE,
+          scopeType: DiscussionScopeType.EXTERNAL_BLOCK,
+          externalSource: 'lms',
+          externalRef: 'chapter-3',
         },
         isAnonymous: true,
         embedToken: embedInfo!.embedToken,
@@ -336,16 +343,13 @@ describe('Integration tests for the course discussion platform', () => {
     expect(threadPage.threads).toHaveLength(0)
     expect(threadPage.canPostAnonymously).toBe(false)
 
-    const scopes = await courseDiscussionScopes(
-      { courseId: course.id },
-      participantCtx
-    )
-    expect(scopes).toHaveLength(0)
-
     const embedInfo = await getCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
-        scope: { scopeType: DiscussionScopeType.COURSE },
+        externalBlock: {
+          externalSource: 'lms',
+          externalRef: 'disabled-course-flag',
+        },
         allowAnonymous: true,
       },
       userOneCtx
@@ -391,16 +395,13 @@ describe('Integration tests for the course discussion platform', () => {
     expect(threadPage.canPostAnonymously).toBe(false)
     expect(threadPage.isAccessible).toBe(false)
 
-    const scopes = await courseDiscussionScopes(
-      { courseId: course.id },
-      participantCtx
-    )
-    expect(scopes).toHaveLength(0)
-
     const embedInfo = await getCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
-        scope: { scopeType: DiscussionScopeType.COURSE },
+        externalBlock: {
+          externalSource: 'lms',
+          externalRef: 'disabled-rollout-gate',
+        },
         allowAnonymous: true,
       },
       userOneCtx
@@ -415,6 +416,7 @@ describe('Integration tests for the course discussion platform', () => {
       courseId: course.id,
       allowAnonymous: true,
     })
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
 
     const participantId = await seedParticipantInCourse(prisma, {
       courseId: course.id,
@@ -433,7 +435,10 @@ describe('Integration tests for the course discussion platform', () => {
     const anonymousEmbedInfo = await getCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
-        scope: { scopeType: DiscussionScopeType.COURSE },
+        externalBlock: {
+          externalSource: 'lms',
+          externalRef: 'anonymous-enabled',
+        },
         allowAnonymous: true,
       },
       userOneCtx
@@ -442,7 +447,10 @@ describe('Integration tests for the course discussion platform', () => {
     const identifiedOnlyEmbedInfo = await getCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
-        scope: { scopeType: DiscussionScopeType.COURSE },
+        externalBlock: {
+          externalSource: 'lms',
+          externalRef: 'identified-only',
+        },
         allowAnonymous: false,
       },
       userOneCtx
@@ -454,7 +462,7 @@ describe('Integration tests for the course discussion platform', () => {
     const anonymousPage = await courseDiscussionThreads(
       {
         courseId: course.id,
-        scopeKey: `course:${course.id}`,
+        scopeKey: 'ext:lms:anonymous-enabled',
         embedToken: anonymousEmbedInfo!.embedToken,
       },
       createAnonymousContext(userOneCtx)
@@ -463,7 +471,7 @@ describe('Integration tests for the course discussion platform', () => {
     const identifiedOnlyPage = await courseDiscussionThreads(
       {
         courseId: course.id,
-        scopeKey: `course:${course.id}`,
+        scopeKey: 'ext:lms:identified-only',
         embedToken: identifiedOnlyEmbedInfo!.embedToken,
       },
       createAnonymousContext(userOneCtx)
@@ -479,11 +487,15 @@ describe('Integration tests for the course discussion platform', () => {
       courseId: course.id,
       allowAnonymous: true,
     })
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
 
     const embedInfo = await getCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
-        scope: { scopeType: DiscussionScopeType.COURSE },
+        externalBlock: {
+          externalSource: 'lms',
+          externalRef: 'untampered-scope',
+        },
         allowAnonymous: true,
       },
       userOneCtx
@@ -494,7 +506,7 @@ describe('Integration tests for the course discussion platform', () => {
     const tamperedPage = await courseDiscussionThreads(
       {
         courseId: course.id,
-        scopeKey: `course:${course.id}:tampered`,
+        scopeKey: 'ext:lms:untampered-scope:tampered',
         embedToken: embedInfo!.embedToken,
       },
       createAnonymousContext(userOneCtx)
@@ -528,11 +540,15 @@ describe('Integration tests for the course discussion platform', () => {
       courseId: course.id,
       allowAnonymous: false,
     })
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
 
     const embedInfo = await getCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
-        scope: { scopeType: DiscussionScopeType.COURSE },
+        externalBlock: {
+          externalSource: 'lms',
+          externalRef: 'anonymous-disabled',
+        },
         allowAnonymous: true,
       },
       userOneCtx
@@ -548,11 +564,15 @@ describe('Integration tests for the course discussion platform', () => {
       courseId: course.id,
       allowAnonymous: true,
     })
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
 
     const embedInfo = await getCourseDiscussionEmbeddingInfo(
       {
         courseId: course.id,
-        scope: { scopeType: DiscussionScopeType.COURSE },
+        externalBlock: {
+          externalSource: 'lms',
+          externalRef: 'tampered-block-origin',
+        },
         allowAnonymous: true,
       },
       userOneCtx
@@ -651,7 +671,194 @@ describe('Integration tests for the course discussion platform', () => {
     )
   })
 
-  it('aggregates linked live-quiz spaces into course overview and excludes standalone live quizzes', async () => {
+  it('creates course discussion threads for activity-agnostic stacks and external blocks', async () => {
+    const course = await seedCourse({}, userOneCtx)
+    await enableCourseDiscussion(prisma, {
+      courseId: course.id,
+      allowAnonymous: true,
+    })
+    await recomputeDerivedPermissions({ courseId: course.id }, prisma)
+
+    const participantId = await seedParticipantInCourse(prisma, {
+      courseId: course.id,
+    })
+    const participantCtx = createParticipantContext(userOneCtx, participantId)
+
+    const practiceQuiz = await seedPracticeQuiz(
+      { courseId: course.id, elements: [] },
+      userOneCtx
+    )
+    const practiceStack = await prisma.elementStack.create({
+      data: {
+        type: ElementStackType.PRACTICE_QUIZ,
+        order: 0,
+        displayName: 'Alpha Stack',
+        practiceQuizId: practiceQuiz.id,
+      },
+    })
+
+    const stackThread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'Practice stack thread',
+        scope: {
+          scopeType: DiscussionScopeType.PRACTICE_STACK,
+          stackId: practiceStack.id,
+        },
+      },
+      participantCtx
+    )
+
+    expect(stackThread).toBeTruthy()
+    expect(stackThread?.scope.scopeType).toBe(
+      DiscussionScopeType.PRACTICE_STACK
+    )
+    expect(stackThread?.scope.scopeKey).toBe(`stack:${practiceStack.id}`)
+
+    const embedInfo = await getCourseDiscussionEmbeddingInfo(
+      {
+        courseId: course.id,
+        externalBlock: {
+          externalSource: 'moodle',
+          externalRef: 'block-7',
+        },
+        allowAnonymous: true,
+      },
+      userOneCtx
+    )
+
+    expect(embedInfo).toBeTruthy()
+
+    const externalThread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'External block thread',
+        scope: {
+          scopeType: DiscussionScopeType.EXTERNAL_BLOCK,
+          externalSource: 'moodle',
+          externalRef: 'block-7',
+        },
+        isAnonymous: true,
+        embedToken: embedInfo!.embedToken,
+      },
+      createAnonymousContext(userOneCtx)
+    )
+
+    expect(externalThread).toBeTruthy()
+    expect(externalThread?.scope.scopeType).toBe(
+      DiscussionScopeType.EXTERNAL_BLOCK
+    )
+    expect(externalThread?.scope.scopeKey).toBe('ext:moodle:block-7')
+
+    const stackPage = await courseDiscussionThreads(
+      {
+        courseId: course.id,
+        scopeKey: `stack:${practiceStack.id}`,
+        limit: 20,
+      },
+      participantCtx
+    )
+
+    expect(stackPage.threads).toHaveLength(1)
+    expect(stackPage.threads[0]?.content).toBe('Practice stack thread')
+
+    const microLearning = await seedMicroLearning(
+      { courseId: course.id, elements: [] },
+      userOneCtx
+    )
+    const microLearningStack = await prisma.elementStack.findFirstOrThrow({
+      where: { microLearningId: microLearning.id },
+      select: { id: true },
+    })
+
+    const microLearningThread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'Microlearning stack thread',
+        scope: {
+          scopeType: DiscussionScopeType.PRACTICE_STACK,
+          stackId: microLearningStack.id,
+        },
+      },
+      participantCtx
+    )
+
+    expect(microLearningThread).toBeTruthy()
+    expect(microLearningThread?.scope.scopeType).toBe(
+      DiscussionScopeType.PRACTICE_STACK
+    )
+    expect(microLearningThread?.scope.scopeKey).toBe(
+      `stack:${microLearningStack.id}`
+    )
+  })
+
+  it('keeps the discussion schema limited to the shipped alpha scope', async () => {
+    const removedSpaceColumns = await prisma.$queryRaw<
+      Array<{ column_name: string }>
+    >`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'DiscussionSpace'
+        AND column_name IN ('liveQuizId')
+    `
+
+    expect(removedSpaceColumns).toHaveLength(0)
+
+    const discussionSpaceCourseColumn = await prisma.$queryRaw<
+      Array<{ is_nullable: string }>
+    >`
+      SELECT is_nullable
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'DiscussionSpace'
+        AND column_name = 'courseId'
+    `
+
+    expect(discussionSpaceCourseColumn).toEqual([{ is_nullable: 'NO' }])
+
+    const removedScopeColumns = await prisma.$queryRaw<
+      Array<{ column_name: string }>
+    >`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'DiscussionScope'
+        AND column_name IN ('practiceQuizId', 'instanceId', 'liveBlockId')
+    `
+
+    expect(removedScopeColumns).toHaveLength(0)
+
+    const discussionSpaceTypes = await prisma.$queryRaw<
+      Array<{ label: string }>
+    >`
+      SELECT enumlabel AS label
+      FROM pg_enum
+      JOIN pg_type ON pg_enum.enumtypid = pg_type.oid
+      WHERE pg_type.typname = 'DiscussionSpaceType'
+      ORDER BY enumsortorder
+    `
+
+    expect(discussionSpaceTypes.map(({ label }) => label)).toEqual(['COURSE'])
+
+    const discussionScopeTypes = await prisma.$queryRaw<
+      Array<{ label: string }>
+    >`
+      SELECT enumlabel AS label
+      FROM pg_enum
+      JOIN pg_type ON pg_enum.enumtypid = pg_type.oid
+      WHERE pg_type.typname = 'DiscussionScopeType'
+      ORDER BY enumsortorder
+    `
+
+    expect(discussionScopeTypes.map(({ label }) => label)).toEqual([
+      'COURSE',
+      'PRACTICE_STACK',
+      'EXTERNAL_BLOCK',
+    ])
+  })
+
+  it('keeps default thread listing course-only even when other scopes exist', async () => {
     const course = await seedCourse({}, userOneCtx)
     await enableCourseDiscussion(prisma, { courseId: course.id })
 
@@ -668,57 +875,66 @@ describe('Integration tests for the course discussion platform', () => {
       },
       participantCtx
     )
+
     expect(courseThread).toBeTruthy()
 
-    const linkedLiveQuiz = await seedLiveQuiz(
-      { elements: [], courseId: course.id },
+    const practiceQuiz = await seedPracticeQuiz(
+      { courseId: course.id, elements: [] },
       userOneCtx
     )
-    const standaloneLiveQuiz = await seedLiveQuiz({ elements: [] }, userOneCtx)
-
-    const linkedSpace = await prisma.discussionSpace.create({
+    const practiceStack = await prisma.elementStack.create({
       data: {
-        spaceType: DiscussionSpaceType.LIVE_QUIZ,
-        liveQuizId: linkedLiveQuiz.id,
-      },
-    })
-    const linkedScope = await prisma.discussionScope.create({
-      data: {
-        spaceId: linkedSpace.id,
-        scopeType: DiscussionScopeType.LIVE_QUIZ,
-        scopeKey: `lq:${linkedLiveQuiz.id}`,
-        scopeLabel: 'Live Quiz Scope',
-      },
-    })
-    await prisma.discussionThread.create({
-      data: {
-        spaceId: linkedSpace.id,
-        scopeId: linkedScope.id,
-        content: 'Linked live-quiz thread',
+        type: ElementStackType.PRACTICE_QUIZ,
+        order: 0,
+        displayName: 'Scoped Practice Stack',
+        practiceQuizId: practiceQuiz.id,
       },
     })
 
-    const standaloneSpace = await prisma.discussionSpace.create({
-      data: {
-        spaceType: DiscussionSpaceType.LIVE_QUIZ,
-        liveQuizId: standaloneLiveQuiz.id,
+    const stackThread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'Practice-stack thread',
+        scope: {
+          scopeType: DiscussionScopeType.PRACTICE_STACK,
+          stackId: practiceStack.id,
+        },
       },
-    })
-    const standaloneScope = await prisma.discussionScope.create({
-      data: {
-        spaceId: standaloneSpace.id,
-        scopeType: DiscussionScopeType.LIVE_QUIZ,
-        scopeKey: `lq:${standaloneLiveQuiz.id}`,
-        scopeLabel: 'Standalone Live Quiz Scope',
+      participantCtx
+    )
+
+    expect(stackThread).toBeTruthy()
+
+    const externalEmbedInfo = await getCourseDiscussionEmbeddingInfo(
+      {
+        courseId: course.id,
+        externalBlock: {
+          externalSource: 'moodle',
+          externalRef: 'course-block',
+        },
+        allowAnonymous: true,
       },
-    })
-    await prisma.discussionThread.create({
-      data: {
-        spaceId: standaloneSpace.id,
-        scopeId: standaloneScope.id,
-        content: 'Standalone live-quiz thread',
+      userOneCtx
+    )
+
+    expect(externalEmbedInfo).toBeTruthy()
+
+    const externalThread = await createCourseDiscussionThread(
+      {
+        courseId: course.id,
+        content: 'External-block thread',
+        scope: {
+          scopeType: DiscussionScopeType.EXTERNAL_BLOCK,
+          externalSource: 'moodle',
+          externalRef: 'course-block',
+        },
+        isAnonymous: true,
+        embedToken: externalEmbedInfo!.embedToken,
       },
-    })
+      createAnonymousContext(userOneCtx)
+    )
+
+    expect(externalThread).toBeTruthy()
 
     const overview = await courseDiscussionOverview(
       {
@@ -729,32 +945,35 @@ describe('Integration tests for the course discussion platform', () => {
     )
 
     const overviewLabels = overview.groups.map((group) => group.sourceLabel)
-    expect(overviewLabels).toContain('Course')
-    expect(
-      overviewLabels.some((label) =>
-        label.includes(linkedLiveQuiz.displayName ?? linkedLiveQuiz.name)
-      )
-    ).toBe(true)
-    expect(
-      overviewLabels.some((label) =>
-        label.includes(
-          standaloneLiveQuiz.displayName ?? standaloneLiveQuiz.name
-        )
-      )
-    ).toBe(false)
+    expect(overviewLabels).toEqual(['Course'])
+    const overviewThreadContents = overview.groups.flatMap((group) =>
+      group.threads.map((thread) => thread.content)
+    )
+    expect(overviewThreadContents).toContain('Course-scope thread')
+    expect(overviewThreadContents).toContain('Practice-stack thread')
+    expect(overviewThreadContents).toContain('External-block thread')
 
     const threadPage = await courseDiscussionThreads(
       {
         courseId: course.id,
-        includeLinkedLiveQuizSpaces: true,
         limit: 50,
+      },
+      participantCtx
+    )
+
+    const leakedExternalPage = await courseDiscussionThreads(
+      {
+        courseId: course.id,
+        scopeKey: 'ext:moodle:course-block',
       },
       participantCtx
     )
 
     const threadContents = threadPage.threads.map((thread) => thread.content)
     expect(threadContents).toContain('Course-scope thread')
-    expect(threadContents).toContain('Linked live-quiz thread')
-    expect(threadContents).not.toContain('Standalone live-quiz thread')
+    expect(threadContents).not.toContain('Practice-stack thread')
+    expect(threadContents).not.toContain('External-block thread')
+    expect(leakedExternalPage.threads).toHaveLength(0)
+    expect(leakedExternalPage.isAccessible).toBe(false)
   })
 })

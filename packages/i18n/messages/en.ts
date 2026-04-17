@@ -921,19 +921,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     },
     courseQA: {
       title: 'Course Q&A',
-      scopeFilter: 'Scope Filter',
-      allScopes: 'All Scopes',
       newThread: 'New Thread',
       threadPlaceholder: 'Ask a question for this scope...',
-      threadCreationNotAvailable:
-        'Thread creation is not available for this selected source.',
-      threadScopeLimited:
-        'New threads are currently limited to course-space scopes.',
       postThread: 'Post Thread',
       postAnonymously: 'Post anonymously',
       replyAnonymously: 'Reply anonymously',
       replyPlaceholder: 'Write a reply...',
       reply: 'Reply',
+      openStackDiscussion: 'Discuss this stack',
       nReply: '{count, plural, =1 {1 reply} other {# replies}}',
       noThreads: 'No discussion threads yet for this scope.',
       threadPostFailed:
@@ -2781,6 +2776,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       courseQADisabledNotice:
         'Course Q&A is currently disabled. Enable it in course settings to activate discussion features.',
       embedLinkGenerator: 'Embed Link Generator',
+      embedExternalBlockHelp:
+        'Generate an embed link for a specific external block by providing its source and reference.',
+      embedExternalSource: 'External Source',
+      embedExternalSourcePlaceholder: 'e.g. moodle',
+      embedExternalRef: 'External Reference',
+      embedExternalRefPlaceholder: 'e.g. course-block-1',
       discussionOverview: 'Discussion Overview',
       noThreadsYet: 'No threads available yet in this course.',
       generateEmbedLink: 'Generate Embed Link',
@@ -2795,8 +2796,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       allowAnonymousPosting: 'Allow anonymous posting',
       allowAnonymousPostingDisabled:
         'Enable anonymous posting in the course settings to include it in embeds.',
-      noPersistentScope:
-        'No persisted course scope found yet. A default course scope token will be generated.',
       activityNotAvailableAssessment:
         '{activityType} are currently not supported in assessment courses.',
       withGroups: 'With Groups',

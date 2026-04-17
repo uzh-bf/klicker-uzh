@@ -11,7 +11,6 @@ const LIMIT_DEFAULT = 20
 const LIMIT_MAX = 50
 const REPLIES_PER_THREAD_MAX = 50
 
-const SCOPE_LABEL_MAX_LENGTH = 200
 const EXTERNAL_SOURCE_MAX_LENGTH = 100
 const EXTERNAL_REF_MAX_LENGTH = 200
 
@@ -24,20 +23,22 @@ const ANON_IP_COURSE_LIMIT = 20
 const PARTICIPANT_COURSE_WINDOW_SEC = 60 * 60
 const PARTICIPANT_COURSE_LIMIT = 60
 
+const ACTIVE_COURSE_SCOPE_TYPES = [
+  DB.DiscussionScopeType.COURSE,
+  DB.DiscussionScopeType.PRACTICE_STACK,
+  DB.DiscussionScopeType.EXTERNAL_BLOCK,
+] as const
+
 type DiscussionSort = 'ACTIVITY_DESC' | 'NEWEST_DESC' | 'UPVOTES_DESC'
 
 export interface DiscussionSpaceInput {
   spaceType: DB.DiscussionSpaceType
-  courseId?: string | null
-  liveQuizId?: string | null
+  courseId: string
 }
 
 export interface DiscussionScopeInput {
   scopeType: DB.DiscussionScopeType
-  practiceQuizId?: string | null
   stackId?: number | null
-  instanceId?: number | null
-  liveBlockId?: number | null
   externalSource?: string | null
   externalRef?: string | null
 }
@@ -46,7 +47,6 @@ export interface CreateCourseDiscussionThreadArgs {
   courseId: string
   content: string
   scope: DiscussionScopeInput
-  scopeLabel?: string | null
   isAnonymous?: boolean | null
   embedToken?: string | null
 }
@@ -65,7 +65,6 @@ export interface CourseDiscussionThreadsArgs {
   sort?: DiscussionSort | null
   limit?: number | null
   cursor?: string | null
-  includeLinkedLiveQuizSpaces?: boolean | null
   embedToken?: string | null
 }
 
@@ -78,8 +77,10 @@ export interface CourseDiscussionOverviewArgs {
 
 export interface GetCourseDiscussionEmbeddingInfoArgs {
   courseId: string
-  scope: DiscussionScopeInput
-  scopeLabel?: string | null
+  externalBlock: {
+    externalSource: string
+    externalRef: string
+  }
   allowAnonymous?: boolean | null
   expiresInHours?: number | null
 }
@@ -89,20 +90,14 @@ interface DiscussionReplyWithRelations extends DB.DiscussionReply {
   hasUpvoted?: boolean
 }
 
-interface DiscussionSpaceWithLiveQuiz extends DB.DiscussionSpace {
-  liveQuiz: Pick<DB.LiveQuiz, 'id' | 'name' | 'displayName' | 'courseId'> | null
-}
-
 interface DiscussionThreadWithRelations extends DB.DiscussionThread {
   scope: DB.DiscussionScope
-  space: DiscussionSpaceWithLiveQuiz
+  space: DB.DiscussionSpace
   replies: DiscussionReplyWithRelations[]
   votes?: Pick<DB.DiscussionThreadVote, 'participantId'>[]
 
   sourceKey?: string
   sourceLabel?: string
-  liveQuizName?: string | null
-  liveQuizId?: string | null
   hasUpvoted?: boolean
 }
 
@@ -114,27 +109,10 @@ export interface DiscussionThreadPage {
   isAccessible: boolean
 }
 
-export interface DiscussionScopeSummary {
-  id: number
-  spaceId: number
-  scopeType: DB.DiscussionScopeType
-  scopeKey: string
-  scopeLabel: string
-  threadCount: number
-  lastActivityAt: Date | null
-  sourceKey: string
-  sourceLabel: string
-  spaceType: DB.DiscussionSpaceType
-  liveQuizId?: string | null
-  liveQuizName?: string | null
-}
-
 export interface CourseDiscussionOverviewGroup {
   sourceKey: string
   sourceLabel: string
   spaceType: DB.DiscussionSpaceType
-  liveQuizId?: string | null
-  liveQuizName?: string | null
   threads: DiscussionThreadWithRelations[]
 }
 
@@ -160,8 +138,7 @@ interface CourseEmbedClaims {
   scope: string
   version: number
   spaceType: DB.DiscussionSpaceType
-  courseId?: string
-  liveQuizId?: string
+  courseId: string
   scopeKey: string
   allowAnonymous: boolean
   iat?: number
@@ -177,10 +154,7 @@ interface CanonicalScope {
   scopeType: DB.DiscussionScopeType
   scopeKey: string
   scopeLabel: string
-  practiceQuizId?: string | null
   stackId?: number | null
-  instanceId?: number | null
-  liveBlockId?: number | null
   externalSource?: string | null
   externalRef?: string | null
 }
@@ -220,24 +194,26 @@ function getThreadOrderBy(
   return [{ lastActivityAt: 'desc' }, { id: 'desc' }]
 }
 
-function sourceKeyForSpace(space: DiscussionSpaceWithLiveQuiz) {
-  if (space.spaceType === DB.DiscussionSpaceType.COURSE) {
-    return `course:${space.courseId}`
-  }
-
-  return `liveQuiz:${space.liveQuizId}`
+function sourceKeyForSpace(space: DB.DiscussionSpace) {
+  return `course:${space.courseId}`
 }
 
-function sourceLabelForSpace(space: DiscussionSpaceWithLiveQuiz) {
-  if (space.spaceType === DB.DiscussionSpaceType.COURSE) {
-    return 'Course'
-  }
+function sourceLabelForSpace() {
+  return 'Course'
+}
 
-  if (space.liveQuiz) {
-    return `Live Quiz: ${space.liveQuiz.displayName}`
-  }
+function isActiveCourseScopeType(scopeType: DB.DiscussionScopeType) {
+  return ACTIVE_COURSE_SCOPE_TYPES.includes(
+    scopeType as (typeof ACTIVE_COURSE_SCOPE_TYPES)[number]
+  )
+}
 
-  return 'Live Quiz'
+function isSupportedCourseScopeKey(courseId: string, scopeKey: string) {
+  return (
+    scopeKey === `course:${courseId}` ||
+    /^stack:\d+$/.test(scopeKey) ||
+    /^ext:[^:]+:.+$/.test(scopeKey)
+  )
 }
 
 function mapReply(
@@ -253,14 +229,12 @@ function mapThread(
   thread: DiscussionThreadWithRelations
 ): DiscussionThreadWithRelations {
   const sourceKey = sourceKeyForSpace(thread.space)
-  const sourceLabel = sourceLabelForSpace(thread.space)
+  const sourceLabel = sourceLabelForSpace()
 
   return {
     ...thread,
     sourceKey,
     sourceLabel,
-    liveQuizId: thread.space.liveQuiz?.id ?? null,
-    liveQuizName: thread.space.liveQuiz?.displayName ?? null,
     hasUpvoted: (thread.votes?.length ?? 0) > 0,
     replies: thread.replies.map(mapReply),
   }
@@ -324,7 +298,7 @@ function hashAnonymousFingerprint(ctx: Context, courseId: string) {
 }
 
 function encodeScopePart(value: string) {
-  return encodeURIComponent(value.trim())
+  return encodeURIComponent(value.trim()).replace(/:/g, '%3A')
 }
 
 function truncateString(value: string, maxLength: number) {
@@ -425,59 +399,32 @@ async function getCourseAccessActor(
   return null
 }
 
-function extractCourseIdFromSpace(
-  space:
-    | (DB.DiscussionSpace & {
-        liveQuiz?: Pick<DB.LiveQuiz, 'courseId'> | null
-      })
-    | null
-) {
+function extractCourseIdFromSpace(space: DB.DiscussionSpace | null) {
   if (!space) return null
 
-  if (space.spaceType === DB.DiscussionSpaceType.COURSE) {
-    return space.courseId
-  }
-
-  return space.liveQuiz?.courseId ?? null
+  return space.spaceType === DB.DiscussionSpaceType.COURSE
+    ? space.courseId
+    : null
 }
 
 async function resolveOrCreateSpace(
   input: DiscussionSpaceInput,
   ctx: Context
 ): Promise<DB.DiscussionSpace | null> {
-  if (input.spaceType === DB.DiscussionSpaceType.COURSE) {
-    if (!input.courseId || input.liveQuizId) {
-      return null
-    }
-
-    return ctx.prisma.discussionSpace.upsert({
-      where: { courseId: input.courseId },
-      create: {
-        spaceType: DB.DiscussionSpaceType.COURSE,
-        course: {
-          connect: { id: input.courseId },
-        },
-      },
-      update: {
-        spaceType: DB.DiscussionSpaceType.COURSE,
-      },
-    })
-  }
-
-  if (!input.liveQuizId || input.courseId) {
+  if (input.spaceType !== DB.DiscussionSpaceType.COURSE) {
     return null
   }
 
   return ctx.prisma.discussionSpace.upsert({
-    where: { liveQuizId: input.liveQuizId },
+    where: { courseId: input.courseId },
     create: {
-      spaceType: DB.DiscussionSpaceType.LIVE_QUIZ,
-      liveQuiz: {
-        connect: { id: input.liveQuizId },
+      spaceType: DB.DiscussionSpaceType.COURSE,
+      course: {
+        connect: { id: input.courseId },
       },
     },
     update: {
-      spaceType: DB.DiscussionSpaceType.LIVE_QUIZ,
+      spaceType: DB.DiscussionSpaceType.COURSE,
     },
   })
 }
@@ -486,122 +433,51 @@ async function canonicalizeScope(
   {
     space,
     scope,
-    scopeLabel,
   }: {
     space: DB.DiscussionSpace
     scope: DiscussionScopeInput
-    scopeLabel?: string | null
   },
   ctx: Context
 ): Promise<CanonicalScope | null> {
-  const safeScopeLabel = scopeLabel
-    ? truncateString(scopeLabel.trim(), SCOPE_LABEL_MAX_LENGTH)
-    : null
-
   if (space.spaceType === DB.DiscussionSpaceType.COURSE) {
-    if (!space.courseId) return null
-
     switch (scope.scopeType) {
       case DB.DiscussionScopeType.COURSE: {
         return {
           scopeType: scope.scopeType,
           scopeKey: `course:${space.courseId}`,
-          scopeLabel: safeScopeLabel || 'Course',
-        }
-      }
-
-      case DB.DiscussionScopeType.PRACTICE_QUIZ: {
-        if (!scope.practiceQuizId) return null
-
-        const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-          where: { id: scope.practiceQuizId },
-          select: { id: true, displayName: true, courseId: true },
-        })
-
-        if (!practiceQuiz || practiceQuiz.courseId !== space.courseId) {
-          return null
-        }
-
-        return {
-          scopeType: scope.scopeType,
-          scopeKey: `pq:${practiceQuiz.id}`,
-          scopeLabel:
-            safeScopeLabel || `Practice Quiz: ${practiceQuiz.displayName}`,
-          practiceQuizId: practiceQuiz.id,
+          scopeLabel: 'Course',
         }
       }
 
       case DB.DiscussionScopeType.PRACTICE_STACK: {
-        if (!scope.practiceQuizId || !scope.stackId) return null
+        if (!scope.stackId) return null
 
         const stack = await ctx.prisma.elementStack.findFirst({
           where: {
             id: scope.stackId,
-            practiceQuizId: scope.practiceQuizId,
-            practiceQuiz: { courseId: space.courseId },
+            OR: [
+              { courseId: space.courseId },
+              { practiceQuiz: { courseId: space.courseId } },
+              { microLearning: { courseId: space.courseId } },
+            ],
           },
           select: {
             id: true,
             order: true,
             displayName: true,
-            practiceQuizId: true,
+            type: true,
           },
         })
 
-        if (!stack || !stack.practiceQuizId) return null
+        if (!stack) return null
 
         return {
           scopeType: scope.scopeType,
-          scopeKey: `pq:${stack.practiceQuizId}:stack:${stack.id}`,
+          scopeKey: `stack:${stack.id}`,
           scopeLabel:
-            safeScopeLabel ||
             stack.displayName ||
-            `Practice Stack ${stack.order}`,
-          practiceQuizId: stack.practiceQuizId,
+            `${stack.type === DB.ElementStackType.MICROLEARNING ? 'Microlearning' : 'Practice'} Stack ${stack.order}`,
           stackId: stack.id,
-        }
-      }
-
-      case DB.DiscussionScopeType.PRACTICE_ELEMENT: {
-        if (!scope.practiceQuizId || !scope.stackId || !scope.instanceId) {
-          return null
-        }
-
-        const instance = await ctx.prisma.elementInstance.findFirst({
-          where: {
-            id: scope.instanceId,
-            elementStackId: scope.stackId,
-            elementStack: {
-              practiceQuizId: scope.practiceQuizId,
-              practiceQuiz: { courseId: space.courseId },
-            },
-          },
-          select: {
-            id: true,
-            elementStackId: true,
-            elementData: true,
-          },
-        })
-
-        if (!instance || !instance.elementStackId) return null
-
-        const elementData =
-          typeof instance.elementData === 'object' &&
-          instance.elementData &&
-          !Array.isArray(instance.elementData)
-            ? (instance.elementData as unknown as Record<string, unknown>)
-            : null
-        const elementName =
-          typeof elementData?.name === 'string' ? elementData.name : null
-
-        return {
-          scopeType: scope.scopeType,
-          scopeKey: `pq:${scope.practiceQuizId}:stack:${scope.stackId}:instance:${instance.id}`,
-          scopeLabel:
-            safeScopeLabel || elementName || `Practice Element ${instance.id}`,
-          practiceQuizId: scope.practiceQuizId,
-          stackId: scope.stackId,
-          instanceId: instance.id,
         }
       }
 
@@ -622,7 +498,7 @@ async function canonicalizeScope(
         return {
           scopeType: scope.scopeType,
           scopeKey: `ext:${encodeScopePart(externalSource)}:${encodeScopePart(externalRef)}`,
-          scopeLabel: safeScopeLabel || `${externalSource}:${externalRef}`,
+          scopeLabel: `${externalSource}:${externalRef}`,
           externalSource,
           externalRef,
         }
@@ -633,111 +509,16 @@ async function canonicalizeScope(
     }
   }
 
-  if (!space.liveQuizId) return null
-
-  switch (scope.scopeType) {
-    case DB.DiscussionScopeType.LIVE_QUIZ:
-      return {
-        scopeType: scope.scopeType,
-        scopeKey: `lq:${space.liveQuizId}`,
-        scopeLabel: safeScopeLabel || 'Live Quiz',
-      }
-
-    case DB.DiscussionScopeType.LIVE_BLOCK: {
-      if (!scope.liveBlockId) return null
-
-      const block = await ctx.prisma.elementBlock.findFirst({
-        where: {
-          id: scope.liveBlockId,
-          liveQuizId: space.liveQuizId,
-        },
-        select: { id: true, order: true },
-      })
-
-      if (!block) return null
-
-      return {
-        scopeType: scope.scopeType,
-        scopeKey: `lq:${space.liveQuizId}:block:${block.id}`,
-        scopeLabel: safeScopeLabel || `Live Block ${block.order}`,
-        liveBlockId: block.id,
-      }
-    }
-
-    case DB.DiscussionScopeType.LIVE_INSTANCE: {
-      if (!scope.liveBlockId || !scope.instanceId) return null
-
-      const instance = await ctx.prisma.elementInstance.findFirst({
-        where: {
-          id: scope.instanceId,
-          elementBlockId: scope.liveBlockId,
-          elementBlock: { liveQuizId: space.liveQuizId },
-        },
-        select: {
-          id: true,
-          elementData: true,
-          elementBlockId: true,
-        },
-      })
-
-      if (!instance || !instance.elementBlockId) return null
-
-      const elementData =
-        typeof instance.elementData === 'object' &&
-        instance.elementData &&
-        !Array.isArray(instance.elementData)
-          ? (instance.elementData as unknown as Record<string, unknown>)
-          : null
-      const elementName =
-        typeof elementData?.name === 'string' ? elementData.name : null
-
-      return {
-        scopeType: scope.scopeType,
-        scopeKey: `lq:${space.liveQuizId}:block:${scope.liveBlockId}:instance:${instance.id}`,
-        scopeLabel:
-          safeScopeLabel || elementName || `Live Instance ${instance.id}`,
-        liveBlockId: scope.liveBlockId,
-        instanceId: instance.id,
-      }
-    }
-
-    case DB.DiscussionScopeType.EXTERNAL_BLOCK: {
-      if (!scope.externalSource || !scope.externalRef) return null
-
-      const externalSource = truncateString(
-        scope.externalSource.trim(),
-        EXTERNAL_SOURCE_MAX_LENGTH
-      )
-      const externalRef = truncateString(
-        scope.externalRef.trim(),
-        EXTERNAL_REF_MAX_LENGTH
-      )
-
-      if (!externalSource || !externalRef) return null
-
-      return {
-        scopeType: scope.scopeType,
-        scopeKey: `ext:${encodeScopePart(externalSource)}:${encodeScopePart(externalRef)}`,
-        scopeLabel: safeScopeLabel || `${externalSource}:${externalRef}`,
-        externalSource,
-        externalRef,
-      }
-    }
-
-    default:
-      return null
-  }
+  return null
 }
 
 async function resolveOrCreateScope(
   {
     space,
     scope,
-    scopeLabel,
   }: {
     space: DB.DiscussionSpace
     scope: DiscussionScopeInput
-    scopeLabel?: string | null
   },
   ctx: Context
 ): Promise<DB.DiscussionScope | null> {
@@ -745,7 +526,6 @@ async function resolveOrCreateScope(
     {
       space,
       scope,
-      scopeLabel,
     },
     ctx
   )
@@ -764,10 +544,7 @@ async function resolveOrCreateScope(
       scopeType: canonicalScope.scopeType,
       scopeKey: canonicalScope.scopeKey,
       scopeLabel: canonicalScope.scopeLabel,
-      practiceQuizId: canonicalScope.practiceQuizId,
       stackId: canonicalScope.stackId,
-      instanceId: canonicalScope.instanceId,
-      liveBlockId: canonicalScope.liveBlockId,
       externalSource: canonicalScope.externalSource,
       externalRef: canonicalScope.externalRef,
     },
@@ -828,23 +605,12 @@ async function verifyEmbedToken(
       typeof payload.sub !== 'string' ||
       typeof payload.scopeKey !== 'string' ||
       typeof payload.allowAnonymous !== 'boolean' ||
-      (payload.spaceType !== DB.DiscussionSpaceType.COURSE &&
-        payload.spaceType !== DB.DiscussionSpaceType.LIVE_QUIZ)
+      payload.spaceType !== DB.DiscussionSpaceType.COURSE
     ) {
       return null
     }
 
-    if (
-      payload.spaceType === DB.DiscussionSpaceType.COURSE &&
-      typeof payload.courseId !== 'string'
-    ) {
-      return null
-    }
-
-    if (
-      payload.spaceType === DB.DiscussionSpaceType.LIVE_QUIZ &&
-      typeof payload.liveQuizId !== 'string'
-    ) {
+    if (typeof payload.courseId !== 'string') {
       return null
     }
 
@@ -853,10 +619,7 @@ async function verifyEmbedToken(
       scope: payload.scope,
       version: payload.version,
       spaceType: payload.spaceType,
-      courseId:
-        typeof payload.courseId === 'string' ? payload.courseId : undefined,
-      liveQuizId:
-        typeof payload.liveQuizId === 'string' ? payload.liveQuizId : undefined,
+      courseId: payload.courseId,
       scopeKey: payload.scopeKey,
       allowAnonymous: payload.allowAnonymous,
       iat: typeof payload.iat === 'number' ? payload.iat : undefined,
@@ -990,18 +753,7 @@ function buildThreadInclude(participantId?: string | null) {
 
   const include: DB.Prisma.DiscussionThreadInclude = {
     scope: true,
-    space: {
-      include: {
-        liveQuiz: {
-          select: {
-            id: true,
-            name: true,
-            displayName: true,
-            courseId: true,
-          },
-        },
-      },
-    },
+    space: true,
     replies: {
       where: { isDeleted: false },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
@@ -1036,6 +788,10 @@ async function getDiscussionThreadById(
     return null
   }
 
+  if (!isActiveCourseScopeType(thread.scope.scopeType)) {
+    return null
+  }
+
   return mapThread(thread as unknown as DiscussionThreadWithRelations)
 }
 
@@ -1063,16 +819,10 @@ async function verifyEmbedScopeBinding(
     return false
   }
 
-  if (expectedSpace.spaceType === DB.DiscussionSpaceType.COURSE) {
-    if (
-      !expectedSpace.courseId ||
-      embedClaims.courseId !== expectedSpace.courseId
-    ) {
-      return false
-    }
-  } else if (
-    !expectedSpace.liveQuizId ||
-    embedClaims.liveQuizId !== expectedSpace.liveQuizId
+  if (
+    expectedSpace.spaceType !== DB.DiscussionSpaceType.COURSE ||
+    !expectedSpace.courseId ||
+    embedClaims.courseId !== expectedSpace.courseId
   ) {
     return false
   }
@@ -1098,108 +848,6 @@ async function verifyEmbedScopeBinding(
   return true
 }
 
-export async function courseDiscussionScopes(
-  { courseId }: { courseId: string },
-  ctx: Context
-): Promise<DiscussionScopeSummary[]> {
-  const course = await getCourseSettings(courseId, ctx)
-  if (!course || !course.isCourseQARolloutEnabled || !course.isCourseQAEnabled)
-    return []
-
-  const actor = await getCourseAccessActor({ courseId }, ctx)
-  if (!actor) return []
-
-  const spaces = await ctx.prisma.discussionSpace.findMany({
-    where: {
-      OR: [
-        {
-          spaceType: DB.DiscussionSpaceType.COURSE,
-          courseId,
-        },
-        {
-          spaceType: DB.DiscussionSpaceType.LIVE_QUIZ,
-          liveQuiz: { courseId },
-        },
-      ],
-    },
-    include: {
-      liveQuiz: {
-        select: {
-          id: true,
-          name: true,
-          displayName: true,
-          courseId: true,
-        },
-      },
-    },
-  })
-
-  if (spaces.length === 0) {
-    return []
-  }
-
-  const spaceById = new Map<number, DiscussionSpaceWithLiveQuiz>()
-  spaces.forEach((space) => {
-    spaceById.set(space.id, space as DiscussionSpaceWithLiveQuiz)
-  })
-
-  const scopes = await ctx.prisma.discussionScope.findMany({
-    where: {
-      spaceId: { in: spaces.map((space) => space.id) },
-    },
-    include: {
-      _count: {
-        select: {
-          threads: {
-            where: { isDeleted: false },
-          },
-        },
-      },
-    },
-    orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
-  })
-
-  if (scopes.length === 0) {
-    return []
-  }
-
-  const lastActivityByScope = await ctx.prisma.discussionThread.groupBy({
-    by: ['scopeId'],
-    where: {
-      scopeId: { in: scopes.map((scope) => scope.id) },
-      isDeleted: false,
-    },
-    _max: {
-      lastActivityAt: true,
-    },
-  })
-
-  const lastActivityMap = new Map<number, Date | null>()
-  lastActivityByScope.forEach((entry) => {
-    lastActivityMap.set(entry.scopeId, entry._max.lastActivityAt ?? null)
-  })
-
-  return scopes.flatMap((scope) => {
-    const space = spaceById.get(scope.spaceId)
-    if (!space) return []
-
-    return {
-      id: scope.id,
-      spaceId: scope.spaceId,
-      scopeType: scope.scopeType,
-      scopeKey: scope.scopeKey,
-      scopeLabel: scope.scopeLabel,
-      threadCount: scope._count.threads,
-      lastActivityAt: lastActivityMap.get(scope.id) ?? null,
-      sourceKey: sourceKeyForSpace(space),
-      sourceLabel: sourceLabelForSpace(space),
-      spaceType: space.spaceType,
-      liveQuizId: space.liveQuiz?.id ?? null,
-      liveQuizName: space.liveQuiz?.displayName ?? null,
-    }
-  })
-}
-
 export async function courseDiscussionThreads(
   {
     courseId,
@@ -1207,7 +855,6 @@ export async function courseDiscussionThreads(
     sort,
     limit,
     cursor,
-    includeLinkedLiveQuizSpaces,
     embedToken,
   }: CourseDiscussionThreadsArgs,
   ctx: Context
@@ -1244,6 +891,16 @@ export async function courseDiscussionThreads(
       }
     }
   } else {
+    if (embedClaims.spaceType !== DB.DiscussionSpaceType.COURSE) {
+      return {
+        threads: [],
+        nextCursor: null,
+        hasMore: false,
+        canPostAnonymously: false,
+        isAccessible: false,
+      }
+    }
+
     if (rejectEmbedCourseMismatch(embedClaims, courseId)) {
       return {
         threads: [],
@@ -1263,66 +920,71 @@ export async function courseDiscussionThreads(
       ? ctx.user.sub
       : null
 
-  let spaces: DiscussionSpaceWithLiveQuiz[] = []
+  const effectiveScopeKey =
+    embedClaims?.scopeKey ?? scopeKey ?? `course:${courseId}`
 
-  if (embedClaims) {
-    spaces = (await ctx.prisma.discussionSpace.findMany({
-      where:
-        embedClaims.spaceType === DB.DiscussionSpaceType.COURSE
-          ? {
-              spaceType: DB.DiscussionSpaceType.COURSE,
-              courseId,
-            }
-          : {
-              spaceType: DB.DiscussionSpaceType.LIVE_QUIZ,
-              liveQuizId: embedClaims.liveQuizId,
-              liveQuiz: {
-                courseId,
-              },
-            },
-      include: {
-        liveQuiz: {
-          select: {
-            id: true,
-            name: true,
-            displayName: true,
-            courseId: true,
-          },
-        },
-      },
-    })) as DiscussionSpaceWithLiveQuiz[]
-  } else {
-    spaces = (await ctx.prisma.discussionSpace.findMany({
+  if (!isSupportedCourseScopeKey(courseId, effectiveScopeKey)) {
+    return {
+      threads: [],
+      nextCursor: null,
+      hasMore: false,
+      canPostAnonymously: false,
+      isAccessible: false,
+    }
+  }
+
+  if (embedClaims && scopeKey && scopeKey !== embedClaims.scopeKey) {
+    return {
+      threads: [],
+      nextCursor: null,
+      hasMore: false,
+      canPostAnonymously: false,
+      isAccessible: false,
+    }
+  }
+
+  if (effectiveScopeKey.startsWith('ext:') && !embedClaims) {
+    return {
+      threads: [],
+      nextCursor: null,
+      hasMore: false,
+      canPostAnonymously: false,
+      isAccessible: false,
+    }
+  }
+
+  const stackScopeMatch = effectiveScopeKey.match(/^stack:(\d+)$/)
+  if (stackScopeMatch) {
+    const stackId = Number.parseInt(stackScopeMatch[1] ?? '', 10)
+    const stack = await ctx.prisma.elementStack.findFirst({
       where: {
+        id: stackId,
         OR: [
-          {
-            spaceType: DB.DiscussionSpaceType.COURSE,
-            courseId,
-          },
-          ...(includeLinkedLiveQuizSpaces === false
-            ? []
-            : [
-                {
-                  spaceType: DB.DiscussionSpaceType.LIVE_QUIZ,
-                  liveQuiz: {
-                    courseId,
-                  },
-                },
-              ]),
+          { courseId },
+          { practiceQuiz: { courseId } },
+          { microLearning: { courseId } },
         ],
       },
-      include: {
-        liveQuiz: {
-          select: {
-            id: true,
-            name: true,
-            displayName: true,
-            courseId: true,
-          },
-        },
-      },
-    })) as DiscussionSpaceWithLiveQuiz[]
+      select: { id: true },
+    })
+
+    if (!stack) {
+      return {
+        threads: [],
+        nextCursor: null,
+        hasMore: false,
+        canPostAnonymously: false,
+        isAccessible: false,
+      }
+    }
   }
+
+  const spaces = await ctx.prisma.discussionSpace.findMany({
+    where: {
+      spaceType: DB.DiscussionSpaceType.COURSE,
+      courseId,
+    },
+  })
 
   if (spaces.length === 0) {
     return {
@@ -1334,28 +996,18 @@ export async function courseDiscussionThreads(
     }
   }
 
-  const effectiveScopeKey = embedClaims?.scopeKey ?? scopeKey ?? undefined
-  if (embedClaims && scopeKey && scopeKey !== embedClaims.scopeKey) {
-    return {
-      threads: [],
-      nextCursor: null,
-      hasMore: false,
-      canPostAnonymously: false,
-      isAccessible: false,
-    }
-  }
-
   const threads = await ctx.prisma.discussionThread.findMany({
     where: {
       spaceId: { in: spaces.map((space) => space.id) },
       isDeleted: false,
-      ...(effectiveScopeKey
-        ? {
-            scope: {
+      scope: {
+        scopeType: { in: [...ACTIVE_COURSE_SCOPE_TYPES] },
+        ...(effectiveScopeKey
+          ? {
               scopeKey: effectiveScopeKey,
-            },
-          }
-        : {}),
+            }
+          : {}),
+      },
     },
     include: buildThreadInclude(participantId),
     orderBy: getThreadOrderBy(sort),
@@ -1406,30 +1058,12 @@ export async function courseDiscussionOverview(
   const parsedCursor = parseCursor(cursor)
   const participantId = actor.participantId ?? null
 
-  const spaces = (await ctx.prisma.discussionSpace.findMany({
+  const spaces = await ctx.prisma.discussionSpace.findMany({
     where: {
-      OR: [
-        {
-          spaceType: DB.DiscussionSpaceType.COURSE,
-          courseId,
-        },
-        {
-          spaceType: DB.DiscussionSpaceType.LIVE_QUIZ,
-          liveQuiz: { courseId },
-        },
-      ],
+      spaceType: DB.DiscussionSpaceType.COURSE,
+      courseId,
     },
-    include: {
-      liveQuiz: {
-        select: {
-          id: true,
-          name: true,
-          displayName: true,
-          courseId: true,
-        },
-      },
-    },
-  })) as DiscussionSpaceWithLiveQuiz[]
+  })
 
   if (spaces.length === 0) {
     return { groups: [], nextCursor: null, hasMore: false, totalThreads: 0 }
@@ -1438,6 +1072,9 @@ export async function courseDiscussionOverview(
   const threadWhere: DB.Prisma.DiscussionThreadWhereInput = {
     spaceId: { in: spaces.map((space) => space.id) },
     isDeleted: false,
+    scope: {
+      scopeType: { in: [...ACTIVE_COURSE_SCOPE_TYPES] },
+    },
   }
 
   const [threads, totalThreads] = await Promise.all([
@@ -1474,8 +1111,6 @@ export async function courseDiscussionOverview(
         sourceKey: thread.sourceKey,
         sourceLabel: thread.sourceLabel,
         spaceType: thread.space.spaceType,
-        liveQuizId: thread.liveQuizId,
-        liveQuizName: thread.liveQuizName,
         threads: [thread],
       })
     })
@@ -1495,8 +1130,7 @@ export async function courseDiscussionOverview(
 export async function getCourseDiscussionEmbeddingInfo(
   {
     courseId,
-    scope,
-    scopeLabel,
+    externalBlock,
     allowAnonymous,
     expiresInHours,
   }: GetCourseDiscussionEmbeddingInfoArgs,
@@ -1509,7 +1143,7 @@ export async function getCourseDiscussionEmbeddingInfo(
   const actor = await getCourseAccessActor(
     {
       courseId,
-      minimumPermissionLevel: DB.PermissionLevel.READ,
+      minimumPermissionLevel: DB.PermissionLevel.WRITE,
     },
     ctx
   )
@@ -1531,8 +1165,11 @@ export async function getCourseDiscussionEmbeddingInfo(
   const resolvedScope = await resolveOrCreateScope(
     {
       space,
-      scope,
-      scopeLabel,
+      scope: {
+        scopeType: DB.DiscussionScopeType.EXTERNAL_BLOCK,
+        externalSource: externalBlock.externalSource,
+        externalRef: externalBlock.externalRef,
+      },
     },
     ctx
   )
@@ -1549,8 +1186,7 @@ export async function getCourseDiscussionEmbeddingInfo(
       scope: EMBED_SCOPE,
       version: EMBED_VERSION,
       spaceType: space.spaceType,
-      courseId: space.courseId ?? undefined,
-      liveQuizId: space.liveQuizId ?? undefined,
+      courseId: space.courseId,
       scopeKey: resolvedScope.scopeKey,
       allowAnonymous: anonymousAllowed,
     },
@@ -1584,7 +1220,6 @@ export async function createCourseDiscussionThread(
     courseId,
     content,
     scope,
-    scopeLabel,
     isAnonymous,
     embedToken,
   }: CreateCourseDiscussionThreadArgs,
@@ -1601,6 +1236,12 @@ export async function createCourseDiscussionThread(
   // spaces or scopes as a side effect
   const embedClaims = await verifyEmbedToken(embedToken)
   if (rejectEmbedCourseMismatch(embedClaims, courseId)) return null
+  if (
+    scope.scopeType === DB.DiscussionScopeType.EXTERNAL_BLOCK &&
+    !embedClaims
+  ) {
+    return null
+  }
 
   const space = await resolveOrCreateSpace(
     {
@@ -1616,7 +1257,6 @@ export async function createCourseDiscussionThread(
     {
       space,
       scope,
-      scopeLabel,
     },
     ctx
   )
@@ -1646,7 +1286,6 @@ export async function createCourseDiscussionThread(
       {
         space,
         scope,
-        scopeLabel,
       },
       ctx
     )
@@ -1700,7 +1339,6 @@ export async function createCourseDiscussionThread(
       {
         space,
         scope,
-        scopeLabel,
       },
       ctx
     )
@@ -1769,19 +1407,12 @@ export async function createCourseDiscussionReply(
     },
     include: {
       scope: true,
-      space: {
-        include: {
-          liveQuiz: {
-            select: {
-              courseId: true,
-            },
-          },
-        },
-      },
+      space: true,
     },
   })
 
   if (!thread || thread.isDeleted) return null
+  if (!isActiveCourseScopeType(thread.scope.scopeType)) return null
 
   const threadCourseId = extractCourseIdFromSpace(thread.space)
   if (!threadCourseId || threadCourseId !== courseId) return null
@@ -1918,9 +1549,8 @@ async function resolveThreadCourseAndActor(
   ctx: Context
 ): Promise<{
   thread: DB.DiscussionThread & {
-    space: DB.DiscussionSpace & {
-      liveQuiz: Pick<DB.LiveQuiz, 'courseId'> | null
-    }
+    scope: Pick<DB.DiscussionScope, 'scopeType'>
+    space: DB.DiscussionSpace
   }
   courseId: string
   actor: ResolvedActor
@@ -1928,19 +1558,13 @@ async function resolveThreadCourseAndActor(
   const thread = await ctx.prisma.discussionThread.findUnique({
     where: { id: threadId },
     include: {
-      space: {
-        include: {
-          liveQuiz: {
-            select: {
-              courseId: true,
-            },
-          },
-        },
-      },
+      scope: true,
+      space: true,
     },
   })
 
   if (!thread || thread.isDeleted) return null
+  if (!isActiveCourseScopeType(thread.scope.scopeType)) return null
 
   const courseId = extractCourseIdFromSpace(thread.space)
   if (!courseId) return null
@@ -1973,10 +1597,10 @@ async function resolveReplyCourseAndActor(
   ctx: Context
 ): Promise<{
   reply: DB.DiscussionReply & {
-    thread: Pick<DB.DiscussionThread, 'id' | 'spaceId' | 'scopeId'>
-    space: DB.DiscussionSpace & {
-      liveQuiz: Pick<DB.LiveQuiz, 'courseId'> | null
+    thread: Pick<DB.DiscussionThread, 'id' | 'spaceId' | 'scopeId'> & {
+      scope: Pick<DB.DiscussionScope, 'scopeType'>
     }
+    space: DB.DiscussionSpace
   }
   courseId: string
   actor: ResolvedActor
@@ -1989,21 +1613,23 @@ async function resolveReplyCourseAndActor(
           id: true,
           spaceId: true,
           scopeId: true,
+          scope: true,
         },
       },
       space: {
-        include: {
-          liveQuiz: {
-            select: {
-              courseId: true,
-            },
-          },
+        select: {
+          id: true,
+          spaceType: true,
+          courseId: true,
+          createdAt: true,
+          updatedAt: true,
         },
       },
     },
   })
 
   if (!reply || reply.isDeleted) return null
+  if (!isActiveCourseScopeType(reply.thread.scope.scopeType)) return null
 
   const courseId = extractCourseIdFromSpace(reply.space)
   if (!courseId) return null
@@ -2239,19 +1865,13 @@ export async function deleteCourseDiscussionThread(
   const thread = await ctx.prisma.discussionThread.findUnique({
     where: { id: threadId },
     include: {
-      space: {
-        include: {
-          liveQuiz: {
-            select: {
-              courseId: true,
-            },
-          },
-        },
-      },
+      scope: true,
+      space: true,
     },
   })
 
   if (!thread || thread.isDeleted) return false
+  if (!isActiveCourseScopeType(thread.scope.scopeType)) return false
 
   const courseId = extractCourseIdFromSpace(thread.space)
   if (!courseId) return false
@@ -2308,26 +1928,20 @@ export async function deleteCourseDiscussionReply(
   const reply = await ctx.prisma.discussionReply.findUnique({
     where: { id: replyId },
     include: {
-      space: {
-        include: {
-          liveQuiz: {
-            select: {
-              courseId: true,
-            },
-          },
-        },
-      },
+      space: true,
       thread: {
         select: {
           id: true,
           spaceId: true,
           scopeId: true,
+          scope: true,
         },
       },
     },
   })
 
   if (!reply || reply.isDeleted) return false
+  if (!isActiveCourseScopeType(reply.thread.scope.scopeType)) return false
 
   const courseId = extractCourseIdFromSpace(reply.space)
   if (!courseId) return false

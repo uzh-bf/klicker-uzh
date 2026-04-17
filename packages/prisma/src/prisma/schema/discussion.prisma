@@ -1,16 +1,10 @@
 enum DiscussionSpaceType {
   COURSE
-  LIVE_QUIZ
 }
 
 enum DiscussionScopeType {
   COURSE
-  PRACTICE_QUIZ
   PRACTICE_STACK
-  PRACTICE_ELEMENT
-  LIVE_QUIZ
-  LIVE_BLOCK
-  LIVE_INSTANCE
   EXTERNAL_BLOCK
 }
 
@@ -29,11 +23,8 @@ model DiscussionSpace {
 
   spaceType DiscussionSpaceType
 
-  course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  courseId String? @unique @db.Uuid
-
-  liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  liveQuizId String?   @unique @db.Uuid
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @unique @db.Uuid
 
   scopes  DiscussionScope[]
   threads DiscussionThread[]
@@ -56,10 +47,7 @@ model DiscussionScope {
   scopeKey   String
   scopeLabel String
 
-  practiceQuizId String? @db.Uuid
   stackId        Int?
-  instanceId     Int?
-  liveBlockId    Int?
   externalSource String?
   externalRef    String?
 

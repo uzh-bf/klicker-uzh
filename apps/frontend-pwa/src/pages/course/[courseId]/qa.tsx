@@ -4,7 +4,6 @@ import {
   CreateCourseDiscussionReplyDocument,
   CreateCourseDiscussionThreadDocument,
   GetBasicCourseInformationDocument,
-  GetCourseDiscussionScopesDocument,
   GetCourseDiscussionThreadsDocument,
   ToggleCourseDiscussionReplyUpvoteDocument,
   ToggleCourseDiscussionThreadUpvoteDocument,
@@ -31,14 +30,12 @@ interface CourseDiscussionPageProps {
   cookiesAvailable?: boolean
 }
 
-function canCreateThreadForScope(scopeType: string) {
-  return (
-    scopeType === 'COURSE' ||
-    scopeType === 'PRACTICE_QUIZ' ||
-    scopeType === 'PRACTICE_STACK' ||
-    scopeType === 'PRACTICE_ELEMENT' ||
-    scopeType === 'EXTERNAL_BLOCK'
-  )
+function getCourseDiscussionScopeKey(courseId: string, scopeKey?: string) {
+  if (scopeKey) {
+    return scopeKey
+  }
+
+  return `course:${courseId}`
 }
 
 function CourseDiscussionPage({
@@ -59,7 +56,6 @@ function CourseDiscussionPage({
       ? router.query.embedToken
       : undefined
 
-  const [activeScopeKey, setActiveScopeKey] = useState(scopeKeyFromQuery ?? '')
   const [threadDraft, setThreadDraft] = useState('')
   const [postThreadAnonymous, setPostThreadAnonymous] = useState(false)
   const [replyDrafts, setReplyDrafts] = useState<Record<number, string>>({})
@@ -68,13 +64,12 @@ function CourseDiscussionPage({
   >({})
   const [replyingThreadId, setReplyingThreadId] = useState<number | null>(null)
 
-  useEffect(() => {
-    if (scopeKeyFromQuery) {
-      setActiveScopeKey(scopeKeyFromQuery)
-    }
-  }, [scopeKeyFromQuery])
-
   useParticipantToken({ participantToken, cookiesAvailable })
+
+  const activeScopeKey = useMemo(
+    () => getCourseDiscussionScopeKey(courseId, scopeKeyFromQuery),
+    [courseId, scopeKeyFromQuery]
+  )
 
   const {
     data: courseData,
@@ -86,17 +81,6 @@ function CourseDiscussionPage({
   })
 
   const {
-    data: scopesData,
-    loading: loadingScopes,
-    refetch: refetchScopes,
-  } = useQuery(GetCourseDiscussionScopesDocument, {
-    variables: { courseId },
-    skip: !courseId || !!embedToken,
-    fetchPolicy: 'cache-and-network',
-    pollInterval: 30000,
-  })
-
-  const {
     data: threadsData,
     loading: loadingThreads,
     error: threadsError,
@@ -105,10 +89,9 @@ function CourseDiscussionPage({
   } = useQuery(GetCourseDiscussionThreadsDocument, {
     variables: {
       courseId,
-      scopeKey: activeScopeKey || scopeKeyFromQuery,
+      scopeKey: activeScopeKey,
       sort: 'ACTIVITY_DESC' as any,
       limit: 20,
-      includeLinkedLiveQuizSpaces: embedToken ? false : true,
       embedToken,
     },
     skip: !courseId,
@@ -127,24 +110,17 @@ function CourseDiscussionPage({
     ToggleCourseDiscussionReplyUpvoteDocument
   )
 
-  const scopeOptions = useMemo(() => {
-    return (
-      scopesData?.courseDiscussionScopes?.map((scope) => ({
-        key: scope.scopeKey,
-        scopeLabel: scope.scopeLabel,
-        label: `${scope.scopeLabel} (${scope.sourceLabel})`,
-        spaceType: scope.spaceType,
-      })) ?? []
-    )
-  }, [scopesData?.courseDiscussionScopes])
+  const parsedScopeInput = parseScopeKeyToInput(courseId, activeScopeKey)
+  const canCreateThreadForActiveScope = useMemo(() => {
+    if (!parsedScopeInput) return false
+    if (activeScopeKey === `course:${courseId}`) return true
+    if (activeScopeKey.startsWith('stack:')) return true
+    if (activeScopeKey.startsWith('ext:') && embedded && !!embedToken) {
+      return true
+    }
 
-  const effectiveScopeKey =
-    activeScopeKey || scopeKeyFromQuery || `course:${courseId}`
-  const selectedScope = scopeOptions.find(
-    (scope) => scope.key === effectiveScopeKey
-  )
-  const parsedScopeInput = parseScopeKeyToInput(courseId, effectiveScopeKey)
-  const canCreateThread = canCreateThreadForScope(parsedScopeInput.scopeType)
+    return false
+  }, [activeScopeKey, courseId, embedded, embedToken, parsedScopeInput])
 
   const threads = threadsData?.courseDiscussionThreads?.threads ?? []
   const hasMore = threadsData?.courseDiscussionThreads?.hasMore ?? false
@@ -162,12 +138,11 @@ function CourseDiscussionPage({
   }, [canPostAnonymously])
 
   const handleCreateThread = useCallback(async () => {
-    if (!threadDraft.trim()) return
-    if (!canCreateThread) {
-      toast({
-        type: 'error',
-        message: t('pwa.courseQA.threadScopeLimited'),
-      })
+    if (
+      !threadDraft.trim() ||
+      !canCreateThreadForActiveScope ||
+      !parsedScopeInput
+    ) {
       return
     }
 
@@ -178,7 +153,6 @@ function CourseDiscussionPage({
             courseId,
             content: threadDraft,
             scope: parsedScopeInput as any,
-            scopeLabel: selectedScope?.scopeLabel,
             isAnonymous: postThreadAnonymous,
             embedToken,
           },
@@ -194,10 +168,7 @@ function CourseDiscussionPage({
       }
 
       setThreadDraft('')
-      await Promise.all([
-        refetchThreads(),
-        !embedToken ? refetchScopes() : Promise.resolve(),
-      ])
+      await refetchThreads()
     } catch {
       toast({
         type: 'error',
@@ -206,15 +177,13 @@ function CourseDiscussionPage({
     }
   }, [
     threadDraft,
-    canCreateThread,
     createThread,
     courseId,
     parsedScopeInput,
-    selectedScope?.scopeLabel,
     postThreadAnonymous,
     embedToken,
+    canCreateThreadForActiveScope,
     refetchThreads,
-    refetchScopes,
     t,
   ])
 
@@ -250,10 +219,7 @@ function CourseDiscussionPage({
           ...prev,
           [threadId]: '',
         }))
-        await Promise.all([
-          refetchThreads(),
-          !embedToken ? refetchScopes() : Promise.resolve(),
-        ])
+        await refetchThreads()
       } catch {
         toast({
           type: 'error',
@@ -270,7 +236,6 @@ function CourseDiscussionPage({
       courseId,
       embedToken,
       refetchThreads,
-      refetchScopes,
       t,
     ]
   )
@@ -322,7 +287,7 @@ function CourseDiscussionPage({
     })
   }, [nextCursor, hasMore, fetchMore])
 
-  if (loadingCourse || loadingThreads || (loadingScopes && !embedToken)) {
+  if (loadingCourse || loadingThreads) {
     return (
       <Layout embedded={embedded} displayName={t('pwa.courseQA.title')}>
         <Loader />
@@ -400,30 +365,6 @@ function CourseDiscussionPage({
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
           <H2 className={{ root: 'mb-2' }}>{t('pwa.courseQA.title')}</H2>
 
-          {!embedded && (
-            <div className="mb-3 flex flex-col gap-1">
-              <label
-                className="text-sm font-semibold text-gray-700"
-                htmlFor="qa-scope-filter"
-              >
-                {t('pwa.courseQA.scopeFilter')}
-              </label>
-              <select
-                id="qa-scope-filter"
-                value={activeScopeKey}
-                onChange={(event) => setActiveScopeKey(event.target.value)}
-                className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
-              >
-                <option value="">{t('pwa.courseQA.allScopes')}</option>
-                {scopeOptions.map((scope) => (
-                  <option value={scope.key} key={scope.key}>
-                    {scope.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
           <div className="flex flex-col gap-2">
             <label
               className="text-sm font-semibold text-gray-700"
@@ -437,20 +378,10 @@ function CourseDiscussionPage({
               maxLength={4000}
               value={threadDraft}
               onChange={(event) => setThreadDraft(event.target.value)}
-              placeholder={
-                canCreateThread
-                  ? t('pwa.courseQA.threadPlaceholder')
-                  : t('pwa.courseQA.threadCreationNotAvailable')
-              }
+              placeholder={t('pwa.courseQA.threadPlaceholder')}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
               aria-label={t('pwa.courseQA.newThread')}
             />
-
-            {!canCreateThread && (
-              <div className="text-xs text-amber-700">
-                {t('pwa.courseQA.threadScopeLimited')}
-              </div>
-            )}
 
             {embedToken && canPostAnonymously && (
               <label className="inline-flex items-center gap-2 text-sm text-gray-700">
@@ -472,7 +403,8 @@ function CourseDiscussionPage({
                 disabled={
                   creatingThread ||
                   threadDraft.trim().length === 0 ||
-                  !canCreateThread
+                  !canCreateThreadForActiveScope ||
+                  !parsedScopeInput
                 }
                 onClick={handleCreateThread}
                 data={{ cy: 'course-qa-create-thread' }}

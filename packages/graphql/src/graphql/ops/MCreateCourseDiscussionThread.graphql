@@ -1,4 +1,6 @@
-mutation CreateCourseDiscussionThread($input: CreateCourseDiscussionThreadInput!) {
+mutation CreateCourseDiscussionThread(
+  $input: CreateCourseDiscussionThreadInput!
+) {
   createCourseDiscussionThread(input: $input) {
     ...DiscussionThreadData
   }

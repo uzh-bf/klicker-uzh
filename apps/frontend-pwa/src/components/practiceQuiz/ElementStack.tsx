@@ -19,6 +19,8 @@ import { ChoicesResponse } from '@klicker-uzh/types'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
@@ -47,6 +49,8 @@ interface ElementStackProps {
   activityExpired?: boolean
   activityExpiredMessage?: string
   previewOnly?: boolean
+  isCourseQARolloutEnabled?: boolean
+  isCourseQAEnabled?: boolean
 }
 
 function ElementStack({
@@ -65,8 +69,11 @@ function ElementStack({
   activityExpired = false,
   activityExpiredMessage,
   previewOnly = false,
+  isCourseQARolloutEnabled = false,
+  isCourseQAEnabled = false,
 }: ElementStackProps) {
   const t = useTranslations()
+  const router = useRouter()
   const timeRef = useRef(0)
   useComponentVisibleCounter({ timeRef })
 
@@ -292,6 +299,20 @@ function ElementStack({
     previewOnly,
   ])
 
+  const isEmbeddedFlow =
+    router.query.embed === '1' ||
+    router.query.embed === 'true' ||
+    typeof router.query.embedToken === 'string'
+  const supportsStackDiscussion =
+    stack.type === 'PRACTICE_QUIZ' &&
+    isCourseQARolloutEnabled &&
+    isCourseQAEnabled
+  const discussionHref = useMemo(
+    () =>
+      `/course/${courseId}/qa?scopeKey=${encodeURIComponent(`stack:${stack.id}`)}`,
+    [courseId, stack.id]
+  )
+
   return (
     <div className="pb-12">
       <div className="w-full">
@@ -363,25 +384,37 @@ function ElementStack({
 
       {/* display continue button if question was already answered */}
       {typeof stackStorage !== 'undefined' && !showMarkAsRead ? (
-        <Button
-          onClick={() => {
-            setStudentResponse({})
+        <div className="mt-4 flex items-center justify-between gap-3">
+          {!previewOnly && !isEmbeddedFlow && supportsStackDiscussion && (
+            <Link
+              href={discussionHref}
+              className="text-sm font-medium text-blue-700 hover:underline"
+              data-cy="student-stack-discussion-link"
+            >
+              {t('pwa.courseQA.openStackDiscussion')}
+            </Link>
+          )}
 
-            if (currentStep === totalSteps) {
-              onAllStacksCompletion()
-            } else {
-              handleNextElement()
-            }
-          }}
-          className={{ root: 'float-right mt-4' }}
-          data={{ cy: 'student-stack-continue' }}
-        >
-          <Button.Label>
-            {currentStep === totalSteps
-              ? t('shared.generic.finish')
-              : t('shared.generic.continue')}
-          </Button.Label>
-        </Button>
+          <Button
+            onClick={() => {
+              setStudentResponse({})
+
+              if (currentStep === totalSteps) {
+                onAllStacksCompletion()
+              } else {
+                handleNextElement()
+              }
+            }}
+            className={{ root: 'ml-auto' }}
+            data={{ cy: 'student-stack-continue' }}
+          >
+            <Button.Label>
+              {currentStep === totalSteps
+                ? t('shared.generic.finish')
+                : t('shared.generic.continue')}
+            </Button.Label>
+          </Button>
+        </div>
       ) : null}
 
       {/* display mark all as read button, if only content elements have not been answered yet */}

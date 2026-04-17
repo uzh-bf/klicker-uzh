@@ -6,11 +6,13 @@ Verify the new discussions platform behavior for Course Q&A using `agent-browser
 
 This runbook has now been partially executed on the real `*.klicker.com` setup and should be treated as the source of truth for both remaining work and already-captured evidence.
 
-The approved next alpha rollout/surface model is now split into two phases:
+The approved next alpha rollout/surface model is now split into three buckets:
 
 - evidence already captured for the current branch behavior
 - W1 rollout-gate behavior that is implemented in code but not yet fully executed across the full runtime matrix
 - the scenario definitions that must be re-run or expanded once the stack-only alpha surface model is implemented
+
+Any later reintroduction of deferred scopes (`PRACTICE_QUIZ`, `PRACTICE_ELEMENT`, linked live aggregation, or lecturer-facing migration UI/read-switch behavior) requires a dedicated follow-up validation matrix rather than silently broadening `QA-001` to `QA-012`.
 
 ## Preconditions
 
@@ -72,7 +74,7 @@ All scenarios are binary:
 | `QA-002` | PARTIAL | Direct `/qa` route behavior was validated earlier and the course-page `Course Q&A` entry is now confirmed on `https://pwa.klicker.com` in the rollout-on/runtime-on state, but rollout-off and rollout-on/runtime-off discoverability evidence is still pending. |
 | `QA-003` | PASS | Real-domain PWA validation confirmed enrolled thread creation and reply creation with screenshots. |
 | `QA-004` | PASS | Real-domain PWA validation confirmed idempotent upvote behavior on the created thread/reply flow with screenshots. |
-| `QA-005` | NOT RUN | The approved stack-only practice/microlearning surface is not implemented yet, so this needs a dedicated follow-up run. |
+| `QA-005` | PARTIAL PASS | Stack-only alpha surface implemented and runtime-verified: (1) microlearning evaluation shows "Discuss this stack" per stack, (2) clicking navigates to `qa?scopeKey=stack%3A<id>`, (3) thread creation works in stack scope, (4) course feed correctly excludes stack threads (isolation confirmed), (5) practice-quiz answering state hides the link. Flag-off test interrupted by agent-browser daemon instability; flag gating is structurally correct (props default to `false`). Screenshots under `/tmp/discussions/20-25-*`. |
 | `QA-006` | BLOCKED | Manage overview and rollout-gate visibility still require lecturer-side validation, but lecturer auth currently redirects into the misrouted `manage.klicker.com` host. |
 | `QA-007` | PASS (service-generated URL) | Embed mode rendering was validated on real signed URLs generated directly from app secrets because the manage UI host is currently unavailable. |
 | `QA-008` | PASS (service-generated URL) | Anonymous-enabled vs identified-only embed behavior was validated on real signed URLs on `https://pwa.klicker.com`. |
@@ -107,7 +109,7 @@ Additional verification status:
 | `QA-003` | Participant creates thread and reply in course scope | New thread and reply visible with correct scope label | Create fails or content not shown in expected scope |
 | `QA-004` | Participant upvotes thread and reply idempotently | Upvotes increment once and repeated same action does not double-count | Counter drift or repeated same action mutates count unexpectedly |
 | `QA-005` | Evaluated stack surface opens stack-scoped Q&A (`PRACTICE_STACK`) | Discussion is reachable only from the evaluated stack/microlearning result surface and shows the expected stack history | Discussion appears during answering, wrong scope opens, or stack history is missing |
-| `QA-006` | Manage visibility and overview follow the rollout-gate alpha model | No Course Q&A tab/settings/embed tooling when rollout gate is off; when visible, overview still groups correctly | Manage shows Q&A UI before rollout activation or visible overview/grouping is incorrect |
+| `QA-006` | Manage visibility and overview follow the rollout-gate alpha model | No Course Q&A tab/settings/embed tooling when rollout gate is off; when visible, overview stays correct for the course-only alpha surface | Manage shows Q&A UI before rollout activation or visible overview/grouping is incorrect |
 | `QA-007` | Embed link generation for course scope opens embed mode | Generated URL loads embed-only discussion view | URL invalid, wrong mode, or scope mismatch |
 | `QA-008` | Anonymous embed posting requires valid token + course setting | Anonymous post succeeds only when both conditions are true | Anonymous post succeeds when it should be denied, or fails when all conditions are valid |
 | `QA-009` | Embed token scope mismatch is denied | Post attempt with mismatched scope token is rejected | Mismatched token still allows write |
@@ -205,6 +207,17 @@ Additional verification status:
 
 ### QA-005: Evaluated stack surface opens stack-scoped Q&A (`PRACTICE_STACK`)
 
+- Implementation details:
+  - scope key format is the activity-agnostic `stack:<stackId>`; server resolves
+    across practice quizzes and microlearnings via a single `PRACTICE_STACK`
+    scope type
+  - entry points are gated on `isCourseQARolloutEnabled && isCourseQAEnabled`
+  - practice surface: `ElementStack.tsx:302` renders the link only for
+    `stack.type === 'PRACTICE_QUIZ'` stacks (microlearning answering pages
+    render stacks with a different type, so the link is hidden during answering)
+  - microlearning surface: `microLearnings/[id]/evaluation.tsx` renders the
+    link per stack in the evaluation list (answering flow is served from a
+    separate `[ix].tsx` page that does not render this UI)
 - Target URL:
   - evaluated stack or microlearning result surface for `<stack-id>`
 - Command skeleton:
@@ -231,11 +244,11 @@ Additional verification status:
   - activate rollout gate and open course discussions tab
   - `agent-browser screenshot /tmp/discussions/QA-006-overview-before.png --full`
   - refresh overview
-  - verify groups for `Course` and `Live Quiz: <name>` when linked live data exists
+  - verify the alpha overview remains course-only
   - `agent-browser screenshot /tmp/discussions/QA-006-overview-after.png --full`
 - Expected visible assertions:
   - no discussion tab/overview before rollout activation
-  - correct source grouping labels and thread placement
+  - course-only overview/grouping remains correct for alpha
 - Required artifacts:
   - before/after screenshots
 
@@ -338,7 +351,7 @@ Additional verification status:
 After browser scenarios, corroborate with backend/data checks:
 
 - thread/reply counts match expected UI actions
-- source grouping consistency in course overview (`Course` vs linked `Live Quiz`)
+- source grouping consistency in course overview (`Course` only in alpha; linked live grouping deferred)
 - vote counts remain consistent after repeated toggle operations
 - anonymous denial/rate-limit events captured as `ANON_RATE_LIMITED`
 
@@ -363,11 +376,14 @@ Binary result:
 
 ## Deferred Scenarios (Post-Migration)
 
-The following are explicitly deferred until live dual-write/backfill/read-switch work is implemented:
+The following are explicitly deferred until live dual-write/backfill/read-switch work is implemented, or until post-alpha scope re-expansion is approved:
 
 - legacy-vs-discussion reconciliation checks in live read path
 - post-cutover live quiz read parity against legacy feedback behavior
 - migration rollback rehearsal metrics under production-like load
+- `PRACTICE_QUIZ` entry-point validation
+- `PRACTICE_ELEMENT` entry-point validation
+- linked live aggregation validation in course-facing feed/overview surfaces
 
 ## Reporting Template
 

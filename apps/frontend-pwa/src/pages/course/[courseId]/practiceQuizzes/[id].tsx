@@ -8,11 +8,10 @@ import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseE
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
-import { Button, UserNotification } from '@uzh-bf/design-system'
+import { UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import nookies from 'nookies'
 import { useState } from 'react'
@@ -105,19 +104,6 @@ function PracticeQuizPage({
       displayName={data.practiceQuiz.displayName}
       course={data.practiceQuiz.course ?? undefined}
     >
-      {!embedded &&
-        data.practiceQuiz.course?.isCourseQARolloutEnabled &&
-        data.practiceQuiz.course?.isCourseQAEnabled && (
-          <div className="mb-2 flex justify-end">
-            <Link
-              href={`/course/${courseId}/qa?scopeKey=${encodeURIComponent(`pq:${id}`)}`}
-            >
-              <Button data={{ cy: 'practice-quiz-qa-link' }}>
-                <Button.Label>{t('pwa.courseQA.title')}</Button.Label>
-              </Button>
-            </Link>
-          </div>
-        )}
       <PracticeQuiz
         showResetLocalStorage
         quiz={{

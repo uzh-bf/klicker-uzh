@@ -189,7 +189,10 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: DiscussionThreadRef,
         args: {
-          input: t.arg({ type: CreateCourseDiscussionThreadInput, required: true }),
+          input: t.arg({
+            type: CreateCourseDiscussionThreadInput,
+            required: true,
+          }),
         },
         resolve: async (_, args, ctx) => {
           return await DiscussionService.createCourseDiscussionThread(
@@ -203,7 +206,10 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: DiscussionReplyRef,
         args: {
-          input: t.arg({ type: CreateCourseDiscussionReplyInput, required: true }),
+          input: t.arg({
+            type: CreateCourseDiscussionReplyInput,
+            required: true,
+          }),
         },
         resolve: async (_, args, ctx) => {
           return await DiscussionService.createCourseDiscussionReply(

@@ -1,4 +1,6 @@
-mutation CreateCourseDiscussionReply($input: CreateCourseDiscussionReplyInput!) {
+mutation CreateCourseDiscussionReply(
+  $input: CreateCourseDiscussionReplyInput!
+) {
   createCourseDiscussionReply(input: $input) {
     ...DiscussionReplyData
   }

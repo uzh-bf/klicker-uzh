@@ -4,16 +4,21 @@ import type {
   CourseDiscussionEmbeddingInfo,
   CourseDiscussionOverview,
   CourseDiscussionOverviewGroup,
-  DiscussionScopeSummary,
   DiscussionThreadPage,
 } from '../services/discussions.js'
 
 export const DiscussionSpaceType = builder.enumType('DiscussionSpaceType', {
-  values: Object.values(DB.DiscussionSpaceType),
+  values: {
+    COURSE: { value: DB.DiscussionSpaceType.COURSE },
+  },
 })
 
 export const DiscussionScopeType = builder.enumType('DiscussionScopeType', {
-  values: Object.values(DB.DiscussionScopeType),
+  values: {
+    COURSE: { value: DB.DiscussionScopeType.COURSE },
+    PRACTICE_STACK: { value: DB.DiscussionScopeType.PRACTICE_STACK },
+    EXTERNAL_BLOCK: { value: DB.DiscussionScopeType.EXTERNAL_BLOCK },
+  },
 })
 
 export const DiscussionSort = builder.enumType('DiscussionSort', {
@@ -24,25 +29,24 @@ export const DiscussionSort = builder.enumType('DiscussionSort', {
   },
 })
 
-export const DiscussionSpaceInput = builder.inputType('DiscussionSpaceInput', {
-  fields: (t) => ({
-    spaceType: t.field({ type: DiscussionSpaceType, required: true }),
-    courseId: t.string({ required: false }),
-    liveQuizId: t.string({ required: false }),
-  }),
-})
-
 export const DiscussionScopeInput = builder.inputType('DiscussionScopeInput', {
   fields: (t) => ({
     scopeType: t.field({ type: DiscussionScopeType, required: true }),
-    practiceQuizId: t.string({ required: false }),
     stackId: t.int({ required: false }),
-    instanceId: t.int({ required: false }),
-    liveBlockId: t.int({ required: false }),
     externalSource: t.string({ required: false }),
     externalRef: t.string({ required: false }),
   }),
 })
+
+export const DiscussionExternalBlockInput = builder.inputType(
+  'DiscussionExternalBlockInput',
+  {
+    fields: (t) => ({
+      externalSource: t.string({ required: true }),
+      externalRef: t.string({ required: true }),
+    }),
+  }
+)
 
 export const CreateCourseDiscussionThreadInput = builder.inputType(
   'CreateCourseDiscussionThreadInput',
@@ -51,7 +55,6 @@ export const CreateCourseDiscussionThreadInput = builder.inputType(
       courseId: t.string({ required: true }),
       content: t.string({ required: true }),
       scope: t.field({ type: DiscussionScopeInput, required: true }),
-      scopeLabel: t.string({ required: false }),
       isAnonymous: t.boolean({ required: false }),
       embedToken: t.string({ required: false }),
     }),
@@ -78,14 +81,14 @@ export const DiscussionScope = DiscussionScopeRef.implement({
   fields: (t) => ({
     id: t.exposeInt('id'),
     spaceId: t.exposeInt('spaceId'),
-    scopeType: t.expose('scopeType', { type: DiscussionScopeType }),
+    scopeType: t.field({
+      type: DiscussionScopeType,
+      resolve: (scope) => scope.scopeType as never,
+    }),
     scopeKey: t.exposeString('scopeKey'),
     scopeLabel: t.exposeString('scopeLabel'),
 
-    practiceQuizId: t.exposeString('practiceQuizId', { nullable: true }),
     stackId: t.exposeInt('stackId', { nullable: true }),
-    instanceId: t.exposeInt('instanceId', { nullable: true }),
-    liveBlockId: t.exposeInt('liveBlockId', { nullable: true }),
     externalSource: t.exposeString('externalSource', { nullable: true }),
     externalRef: t.exposeString('externalRef', { nullable: true }),
 
@@ -126,8 +129,6 @@ export interface IDiscussionThread extends DB.DiscussionThread {
   replies: IDiscussionReply[]
   sourceKey?: string
   sourceLabel?: string
-  liveQuizId?: string | null
-  liveQuizName?: string | null
   hasUpvoted?: boolean
 }
 export const DiscussionThreadRef =
@@ -153,8 +154,6 @@ export const DiscussionThread = DiscussionThreadRef.implement({
 
     sourceKey: t.exposeString('sourceKey', { nullable: true }),
     sourceLabel: t.exposeString('sourceLabel', { nullable: true }),
-    liveQuizId: t.exposeID('liveQuizId', { nullable: true }),
-    liveQuizName: t.exposeString('liveQuizName', { nullable: true }),
 
     scope: t.expose('scope', {
       type: DiscussionScopeRef,
@@ -181,32 +180,6 @@ export const DiscussionThreadPageObject = DiscussionThreadPageRef.implement({
   }),
 })
 
-export const DiscussionScopeSummaryRef =
-  builder.objectRef<DiscussionScopeSummary>('DiscussionScopeSummary')
-export const DiscussionScopeSummaryObject = DiscussionScopeSummaryRef.implement(
-  {
-    fields: (t) => ({
-      id: t.exposeInt('id'),
-      spaceId: t.exposeInt('spaceId'),
-      scopeType: t.expose('scopeType', { type: DiscussionScopeType }),
-      scopeKey: t.exposeString('scopeKey'),
-      scopeLabel: t.exposeString('scopeLabel'),
-
-      threadCount: t.exposeInt('threadCount'),
-      lastActivityAt: t.expose('lastActivityAt', {
-        type: 'Date',
-        nullable: true,
-      }),
-
-      sourceKey: t.exposeString('sourceKey'),
-      sourceLabel: t.exposeString('sourceLabel'),
-      spaceType: t.expose('spaceType', { type: DiscussionSpaceType }),
-      liveQuizId: t.exposeID('liveQuizId', { nullable: true }),
-      liveQuizName: t.exposeString('liveQuizName', { nullable: true }),
-    }),
-  }
-)
-
 export const CourseDiscussionOverviewGroupRef =
   builder.objectRef<CourseDiscussionOverviewGroup>(
     'CourseDiscussionOverviewGroup'
@@ -216,9 +189,10 @@ export const CourseDiscussionOverviewGroupObject =
     fields: (t) => ({
       sourceKey: t.exposeString('sourceKey'),
       sourceLabel: t.exposeString('sourceLabel'),
-      spaceType: t.expose('spaceType', { type: DiscussionSpaceType }),
-      liveQuizId: t.exposeID('liveQuizId', { nullable: true }),
-      liveQuizName: t.exposeString('liveQuizName', { nullable: true }),
+      spaceType: t.field({
+        type: DiscussionSpaceType,
+        resolve: () => DB.DiscussionSpaceType.COURSE,
+      }),
       threads: t.expose('threads', { type: [DiscussionThreadRef] }),
     }),
   })

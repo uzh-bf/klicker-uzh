@@ -12,6 +12,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import PreviewMessage from '../../../../../components/common/PreviewMessage'
 import useStackEvaluationAggregation from '../../../../../components/hooks/useStackEvaluationAggregation'
@@ -39,6 +40,9 @@ function MicrolearningEvaluation() {
   const aggregatedResults = useStackEvaluationAggregation({
     microlearning: microlearning,
   })
+  const courseQAAvailable =
+    !!microlearning?.course?.isCourseQARolloutEnabled &&
+    !!microlearning?.course?.isCourseQAEnabled
 
   if (loading || !microlearning) {
     return (
@@ -93,10 +97,23 @@ function MicrolearningEvaluation() {
             {aggregatedResults &&
               aggregatedResults.evaluation &&
               data.microLearning?.stacks?.map((stack, ix) => (
-                <div className="flex flex-row justify-between" key={stack.id}>
-                  <div>
-                    {stack.displayName ||
-                      t('pwa.microLearning.questionSetN', { number: ix + 1 })}
+                <div
+                  className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between"
+                  key={stack.id}
+                >
+                  <div className="flex flex-col gap-1">
+                    <div>
+                      {stack.displayName ||
+                        t('pwa.microLearning.questionSetN', { number: ix + 1 })}
+                    </div>
+                    {microlearning.course?.id && courseQAAvailable && (
+                      <Link
+                        href={`/course/${microlearning.course.id}/qa?scopeKey=${encodeURIComponent(`stack:${stack.id}`)}`}
+                        className="text-sm font-medium text-blue-700 hover:underline"
+                      >
+                        {t('pwa.courseQA.openStackDiscussion')}
+                      </Link>
+                    )}
                   </div>
                   <div>
                     {typeof aggregatedResults.evaluation[stack.id]
@@ -104,9 +121,7 @@ function MicrolearningEvaluation() {
                       aggregatedResults.evaluation[stack.id]?.pointsAwarded !==
                         null &&
                       participation?.getParticipation?.isActive &&
-                      `${
-                        aggregatedResults.evaluation[stack.id]?.pointsAwarded
-                      }/`}
+                      `${aggregatedResults.evaluation[stack.id]?.pointsAwarded}/`}
                     {aggregatedResults.evaluation[stack.id]?.score}
                     {`/${aggregatedResults.evaluation[stack.id]?.maxPoints}`}
                   </div>

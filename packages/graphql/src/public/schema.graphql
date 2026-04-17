@@ -966,8 +966,6 @@ type CourseDiscussionOverview {
 }
 
 type CourseDiscussionOverviewGroup {
-  liveQuizId: ID
-  liveQuizName: String
   sourceKey: String!
   sourceLabel: String!
   spaceType: DiscussionSpaceType!
@@ -1051,7 +1049,6 @@ input CreateCourseDiscussionThreadInput {
   embedToken: String
   isAnonymous: Boolean
   scope: DiscussionScopeInput!
-  scopeLabel: String
 }
 
 enum CreditResetPeriod {
@@ -1086,6 +1083,11 @@ type DerivedPermissionOriginInformation {
   permissionUser: String!
 }
 
+input DiscussionExternalBlockInput {
+  externalRef: String!
+  externalSource: String!
+}
+
 type DiscussionReply {
   authorParticipantId: String
   content: String!
@@ -1106,9 +1108,6 @@ type DiscussionScope {
   externalRef: String
   externalSource: String
   id: Int!
-  instanceId: Int
-  liveBlockId: Int
-  practiceQuizId: String
   scopeKey: String!
   scopeLabel: String!
   scopeType: DiscussionScopeType!
@@ -1120,36 +1119,13 @@ type DiscussionScope {
 input DiscussionScopeInput {
   externalRef: String
   externalSource: String
-  instanceId: Int
-  liveBlockId: Int
-  practiceQuizId: String
   scopeType: DiscussionScopeType!
   stackId: Int
-}
-
-type DiscussionScopeSummary {
-  id: Int!
-  lastActivityAt: Date
-  liveQuizId: ID
-  liveQuizName: String
-  scopeKey: String!
-  scopeLabel: String!
-  scopeType: DiscussionScopeType!
-  sourceKey: String!
-  sourceLabel: String!
-  spaceId: Int!
-  spaceType: DiscussionSpaceType!
-  threadCount: Int!
 }
 
 enum DiscussionScopeType {
   COURSE
   EXTERNAL_BLOCK
-  LIVE_BLOCK
-  LIVE_INSTANCE
-  LIVE_QUIZ
-  PRACTICE_ELEMENT
-  PRACTICE_QUIZ
   PRACTICE_STACK
 }
 
@@ -1159,15 +1135,8 @@ enum DiscussionSort {
   UPVOTES_DESC
 }
 
-input DiscussionSpaceInput {
-  courseId: String
-  liveQuizId: String
-  spaceType: DiscussionSpaceType!
-}
-
 enum DiscussionSpaceType {
   COURSE
-  LIVE_QUIZ
 }
 
 type DiscussionThread {
@@ -1179,8 +1148,6 @@ type DiscussionThread {
   isAnonymous: Boolean!
   isDeleted: Boolean!
   lastActivityAt: Date!
-  liveQuizId: ID
-  liveQuizName: String
   replies: [DiscussionReply!]!
   replyCount: Int!
   scope: DiscussionScope!
@@ -2499,8 +2466,7 @@ type Query {
   countCatalogSharingRequests: Int!
   course(id: String!): Course
   courseDiscussionOverview(courseId: String!, cursor: String, limit: Int, sort: DiscussionSort): CourseDiscussionOverview!
-  courseDiscussionScopes(courseId: String!): [DiscussionScopeSummary!]!
-  courseDiscussionThreads(courseId: String!, cursor: String, embedToken: String, includeLinkedLiveQuizSpaces: Boolean, limit: Int, scopeKey: String, sort: DiscussionSort): DiscussionThreadPage!
+  courseDiscussionThreads(courseId: String!, cursor: String, embedToken: String, limit: Int, scopeKey: String, sort: DiscussionSort): DiscussionThreadPage!
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   element(id: Int!): Element
   endedLiveQuizzesCourse(courseId: String!): [LiveQuizSelectionItem!]
@@ -2525,7 +2491,7 @@ type Query {
   getCourseActivities(courseId: String!): Course
   getCourseActivityAnalytics(courseId: String!): CourseActivityAnalytics
   getCourseActivityIds(courseId: String): CourseActivityList
-  getCourseDiscussionEmbeddingInfo(allowAnonymous: Boolean, courseId: String!, expiresInHours: Int, scope: DiscussionScopeInput!, scopeLabel: String): CourseDiscussionEmbeddingInfo
+  getCourseDiscussionEmbeddingInfo(allowAnonymous: Boolean, courseId: String!, expiresInHours: Int, externalBlock: DiscussionExternalBlockInput!): CourseDiscussionEmbeddingInfo
   getCourseGroups(courseId: String!): Course
   getCourseLeaderboard(courseId: String!, courseSelection: Boolean!, customSelection: Boolean!, days: Int, endDate: String, rollingSelection: Boolean!, startDate: String, weeklySelection: Boolean!): CourseLeaderboard
   getCourseOverviewData(courseId: String!): ParticipantLearningData

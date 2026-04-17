@@ -55,8 +55,7 @@ import {
 import {
   CourseDiscussionEmbeddingInfoRef,
   CourseDiscussionOverviewRef,
-  DiscussionScopeInput,
-  DiscussionScopeSummaryRef,
+  DiscussionExternalBlockInput,
   DiscussionSort,
   DiscussionThreadPageRef,
 } from './discussions.js'
@@ -233,16 +232,6 @@ export const Query = builder.queryType({
         },
       }),
 
-      courseDiscussionScopes: t.field({
-        type: [DiscussionScopeSummaryRef],
-        args: {
-          courseId: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await DiscussionService.courseDiscussionScopes(args, ctx)
-        },
-      }),
-
       courseDiscussionThreads: t.field({
         type: DiscussionThreadPageRef,
         args: {
@@ -251,7 +240,6 @@ export const Query = builder.queryType({
           sort: t.arg({ type: DiscussionSort, required: false }),
           limit: t.arg.int({ required: false }),
           cursor: t.arg.string({ required: false }),
-          includeLinkedLiveQuizSpaces: t.arg.boolean({ required: false }),
           embedToken: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
@@ -277,14 +265,16 @@ export const Query = builder.queryType({
         type: CourseDiscussionEmbeddingInfoRef,
         args: {
           courseId: t.arg.string({ required: true }),
-          scope: t.arg({ type: DiscussionScopeInput, required: true }),
-          scopeLabel: t.arg.string({ required: false }),
+          externalBlock: t.arg({
+            type: DiscussionExternalBlockInput,
+            required: true,
+          }),
           allowAnonymous: t.arg.boolean({ required: false }),
           expiresInHours: t.arg.int({ required: false }),
         },
         resolve: withPermission(
           (args) => ({ courseId: args.courseId }),
-          DB.PermissionLevel.READ,
+          DB.PermissionLevel.WRITE,
           async (_, args, ctx) => {
             return await DiscussionService.getCourseDiscussionEmbeddingInfo(
               args,

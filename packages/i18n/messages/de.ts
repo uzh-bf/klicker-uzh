@@ -923,19 +923,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
     courseQA: {
       title: 'Kurs Q&A',
-      scopeFilter: 'Bereichsfilter',
-      allScopes: 'Alle Bereiche',
       newThread: 'Neuer Beitrag',
       threadPlaceholder: 'Stellen Sie eine Frage zu diesem Bereich...',
-      threadCreationNotAvailable:
-        'Die Erstellung von Beiträgen ist für diese Quelle nicht verfügbar.',
-      threadScopeLimited:
-        'Neue Beiträge sind derzeit auf Kursebene beschränkt.',
       postThread: 'Beitrag erstellen',
       postAnonymously: 'Anonym posten',
       replyAnonymously: 'Anonym antworten',
       replyPlaceholder: 'Antwort schreiben...',
       reply: 'Antworten',
+      openStackDiscussion: 'Diesen Stack diskutieren',
       nReply: '{count, plural, =1 {1 Antwort} other {# Antworten}}',
       noThreads: 'Noch keine Diskussionsbeiträge für diesen Bereich.',
       threadPostFailed:
@@ -2832,6 +2827,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       courseQADisabledNotice:
         'Kurs Q&A ist derzeit deaktiviert. Aktivieren Sie es in den Kurseinstellungen, um die Diskussionsfunktionen zu nutzen.',
       embedLinkGenerator: 'Embed-Link Generator',
+      embedExternalBlockHelp:
+        'Generieren Sie einen Embed-Link für einen bestimmten externen Block, indem Sie Quelle und Referenz angeben.',
+      embedExternalSource: 'Externe Quelle',
+      embedExternalSourcePlaceholder: 'z.B. moodle',
+      embedExternalRef: 'Externe Referenz',
+      embedExternalRefPlaceholder: 'z.B. course-block-1',
       discussionOverview: 'Diskussionsübersicht',
       noThreadsYet:
         'Es sind noch keine Diskussionsbeiträge in diesem Kurs vorhanden.',
@@ -2848,8 +2849,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       allowAnonymousPosting: 'Anonymes Posten erlauben',
       allowAnonymousPostingDisabled:
         'Aktivieren Sie anonymes Posten in den Kurseinstellungen, damit es in Embeds verfügbar ist.',
-      noPersistentScope:
-        'Kein persistierter Kursbereich gefunden. Ein Standard-Kursbereich-Token wird generiert.',
       activityNotAvailableAssessment:
         '{activityType} werden in Assessment-Kursen leider aktuell noch nicht unterstützt.',
       withGroups: 'Mit Gruppen',

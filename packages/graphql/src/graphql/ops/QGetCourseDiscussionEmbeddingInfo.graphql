@@ -1,14 +1,12 @@
 query GetCourseDiscussionEmbeddingInfo(
   $courseId: String!
-  $scope: DiscussionScopeInput!
-  $scopeLabel: String
+  $externalBlock: DiscussionExternalBlockInput!
   $allowAnonymous: Boolean
   $expiresInHours: Int
 ) {
   getCourseDiscussionEmbeddingInfo(
     courseId: $courseId
-    scope: $scope
-    scopeLabel: $scopeLabel
+    externalBlock: $externalBlock
     allowAnonymous: $allowAnonymous
     expiresInHours: $expiresInHours
   ) {

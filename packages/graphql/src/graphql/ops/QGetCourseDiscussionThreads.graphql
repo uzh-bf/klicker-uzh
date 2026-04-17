@@ -4,7 +4,6 @@ query GetCourseDiscussionThreads(
   $sort: DiscussionSort
   $limit: Int
   $cursor: String
-  $includeLinkedLiveQuizSpaces: Boolean
   $embedToken: String
 ) {
   courseDiscussionThreads(
@@ -13,7 +12,6 @@ query GetCourseDiscussionThreads(
     sort: $sort
     limit: $limit
     cursor: $cursor
-    includeLinkedLiveQuizSpaces: $includeLinkedLiveQuizSpaces
     embedToken: $embedToken
   ) {
     threads {
