@@ -27,7 +27,7 @@ Python 3.12 · uv-managed project · FastMCP v3.2 · Streamable HTTP transport �
 | 5 | OAuth bridge (MCP auth server + apps/auth routes)         | done        | `01916b826` |
 | 6 | Backend Category B exposure queries + MCP tools           | backend done, MCP deferred | `d520532b5` |
 | 7 | Backend Category C aggregation + MCP tools                | backend done, MCP deferred | `f64971a26` |
-| 8 | Deploy surface (Dockerfile, Traefik, Helm)                | done        | — |
+| 8 | Deploy surface (Dockerfile, Traefik, Helm)                | done        | `f555aaec0` |
 
 ## Iteration 1 — Skeleton + PLAN.md
 
