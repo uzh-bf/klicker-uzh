@@ -78,6 +78,13 @@ http:
         - 'websecure'
       service: 'response-api'
 
+    mcp:
+      rule: 'Host(`mcp.klicker.com`)'
+      entrypoints:
+        - 'web'
+        - 'websecure'
+      service: 'mcp'
+
   middlewares:
     csp-frame-ancestors:
       headers:
@@ -119,6 +126,11 @@ http:
       loadBalancer:
         servers:
           - url: 'http://host.docker.internal:7078'
+
+    mcp:
+      loadBalancer:
+        servers:
+          - url: 'http://host.docker.internal:7079'
 
 tls:
   certificates:

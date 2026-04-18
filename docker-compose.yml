@@ -120,6 +120,22 @@ services:
     networks:
       - klicker
 
+  mcp:
+    profiles:
+      - full
+    image: ghcr.io/uzh-bf/klicker-uzh/mcp:v3
+    environment:
+      APP_SECRET: abcd
+      APP_ORIGIN_API: 'http://backend:3000'
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: '7079'
+      MCP_PATH: /mcp
+      LOG_LEVEL: INFO
+    ports:
+      - 7079:7079
+    networks:
+      - klicker
+
   frontend_pwa:
     profiles:
       - full

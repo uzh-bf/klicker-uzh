@@ -7,6 +7,7 @@ server is fully populated by the time anyone reaches `main.py`.
 
 from __future__ import annotations
 
+from klicker_mcp import health  # noqa: F401  # pyright: ignore[reportUnusedImport]
 from klicker_mcp.app import mcp
 from klicker_mcp.tools import common, lecturer, participant  # noqa: F401  # pyright: ignore[reportUnusedImport]
 

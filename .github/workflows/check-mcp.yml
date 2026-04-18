@@ -1,0 +1,42 @@
+name: Check mcp (python)
+
+on:
+  push:
+    branches: ['v3', 'v3*']
+    paths:
+      - apps/mcp/**
+      - .github/workflows/check-mcp.yml
+  pull_request:
+    branches: ['v3', 'v3*']
+    types: [opened, synchronize, reopened]
+    paths:
+      - apps/mcp/**
+      - .github/workflows/check-mcp.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mcp
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: '0.5.x'
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --frozen --group dev
+
+      - name: Run format-check + ruff + pyright + pytest
+        run: uv run poe all

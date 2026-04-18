@@ -27,7 +27,7 @@ Python 3.12 · uv-managed project · FastMCP v3.2 · Streamable HTTP transport �
 | 5 | OAuth bridge (MCP auth server + apps/auth routes)         | done        | `01916b826` |
 | 6 | Backend Category B exposure queries + MCP tools           | backend done, MCP deferred | `d520532b5` |
 | 7 | Backend Category C aggregation + MCP tools                | backend done, MCP deferred | `f64971a26` |
-| 8 | Deploy surface (Dockerfile, Traefik, Helm)                | pending     | — |
+| 8 | Deploy surface (Dockerfile, Traefik, Helm)                | done        | — |
 
 ## Iteration 1 — Skeleton + PLAN.md
 
@@ -114,7 +114,16 @@ Promote-to-ready and per-element-type option schema resources are deferred — t
 
 **Goal:** Production-shaped. Docker image buildable in CI; Helm chart template alongside the other apps; Traefik routing for local dev; `mcp.klicker.com` reachable locally.
 
-**Deliverables:** production Dockerfile, Docker Compose entry, Helm deployment template, Traefik `rules_docker.yaml` entry + mkcert cert, `/etc/hosts` note in README.
+**Deliverables:**
+- Helm: `deploy/charts/klicker-uzh-v3/templates/deployment-mcp.yaml`, `cm-mcp.yaml`, `ingress-mcp.yaml`, and the `mcp:` Service stanza appended to `service-app.yaml`. External Secret `secret-mcp` is referenced by `envFrom.secretRef` (per the "v3 secrets are external" learning in CLAUDE.md). Liveness + readiness probes hit `/health`.
+- `deploy/charts/klicker-uzh-v3/values.yaml` — new top-level `mcp:` block mirrors `responseApi:` for image/resources/service/ingress/autoscaling. Production overlays (`deploy/env-uzh-{stg,prd}`) can override from there.
+- `docker-compose.yml` — new `mcp` service on the `full` profile, port `7079:7079`, same `APP_SECRET`/`APP_ORIGIN_API` pattern as the other apps.
+- Traefik — `util/traefik/rules_docker.yaml` and `rules_wsl.yaml` pick up `mcp.klicker.com` routing to `host.docker.internal:7079` (docker) / `172.25.8.0:7079` (WSL). The `*.klicker.com` mkcert wildcard already covers this host, so no new cert.
+- CI — three new workflows under `.github/workflows/`: `v3_mcp-stg.yml` (ARM + AMD builds on pushes to `v3*` and PRs touching `apps/mcp/**`), `v3_mcp-prd.yml` (version-tag trigger), and `check-mcp.yml` — the repo's **first** Python CI — which installs uv + Python 3.12 and runs `uv run poe all` (format-check → ruff → pyright → pytest).
+- Health endpoint — `apps/mcp/src/klicker_mcp/health.py` registers `GET /health` via FastMCP's `custom_route`. Tested.
+- README + PLAN updated; all new envs already landed in `turbo.json` globalEnv in iteration 5.
+
+**Verification:** `uv run poe all` green with 62 tests (2 new for `/health`). Helm template linting and local `docker compose` boot are manual — run `helm template deploy/charts/klicker-uzh-v3 -f deploy/env-uzh-stg/values.yaml` and `curl https://mcp.klicker.com/health` before shipping the chart rollout.
 
 ## Open questions (tracked, not blocking iteration 1)
 

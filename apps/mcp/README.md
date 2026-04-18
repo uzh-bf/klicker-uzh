@@ -43,7 +43,31 @@ pnpm --filter @klicker-uzh/mcp dev
 | `LOG_LEVEL` | `INFO` | Log level |
 | `APP_ORIGIN_API` | `http://localhost:3000` | KlickerUZH GraphQL endpoint origin |
 | `APP_SECRET` | — | HS256 secret used for JWT verification (must match backend) |
+| `MCP_ORIGIN` | _(unset)_ | Public URL of this server; required for OAuth mode |
+| `MCP_UPSTREAM_CLIENT_ID` | _(unset)_ | Pre-registered client id for the `apps/auth` bridge |
+| `MCP_UPSTREAM_CLIENT_SECRET` | _(unset)_ | Secret paired with the client id |
+| `MCP_UPSTREAM_AUTHORIZE_URL` | _(unset)_ | Typically `${APP_ORIGIN_AUTH}/api/mcp/authorize` |
+| `MCP_UPSTREAM_TOKEN_URL` | _(unset)_ | Typically `${APP_ORIGIN_AUTH}/api/mcp/token` |
+| `MCP_UPSTREAM_ISSUER` | _(unset)_ | Optional JWT `iss` claim to require |
+| `MCP_STORAGE_URL` | _(unset)_ | Redis URL for OAuth code/refresh-token storage (empty = in-memory) |
+
+When all `MCP_UPSTREAM_*` vars are unset, the server starts in pass-through
+mode: MCP clients send a raw `Authorization: Bearer <jwt>` header themselves,
+which the server forwards verbatim to the GraphQL backend. That is the
+default for local dev and CI.
+
+## Health check
+
+`GET /health` returns `{"status": "ok", "version": "<pkg-version>"}`. The
+Helm chart's liveness + readiness probes target this path.
+
+## Local access via Traefik
+
+With the local reverse proxy + mkcert certs in place, the server is reachable
+at `https://mcp.klicker.com` — the wildcard `*.klicker.com` cert covers this
+host already. Add `127.0.0.1 mcp.klicker.com` to `/etc/hosts` if you haven't
+already configured the full `*.klicker.com` set.
 
 ## Status
 
-See `PLAN.md` for the iteration tracker. The server is under active POC development.
+See `PLAN.md` for the iteration tracker.

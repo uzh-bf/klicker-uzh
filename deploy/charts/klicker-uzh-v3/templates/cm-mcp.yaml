@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-mcp
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  MCP_HOST: {{ .Values.mcp.config.host | quote }}
+  MCP_PORT: {{ .Values.mcp.config.port | quote }}
+  MCP_PATH: {{ .Values.mcp.config.path | quote }}
+  MCP_ORIGIN: {{ .Values.mcp.config.origin | quote }}
+  MCP_UPSTREAM_AUTHORIZE_URL: {{ .Values.mcp.config.upstreamAuthorizeUrl | quote }}
+  MCP_UPSTREAM_TOKEN_URL: {{ .Values.mcp.config.upstreamTokenUrl | quote }}
+  MCP_UPSTREAM_ISSUER: {{ .Values.mcp.config.upstreamIssuer | quote }}
+  LOG_LEVEL: {{ .Values.mcp.config.logLevel | quote }}
