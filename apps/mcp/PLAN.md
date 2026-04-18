@@ -25,7 +25,7 @@ Python 3.12 · uv-managed project · FastMCP v3.2 · Streamable HTTP transport �
 | 3 | Category A lecturer tools (question authoring as drafts)  | done        | `a00e38c70` |
 | 4 | Category A participant tools (quiz discovery + response)  | done        | `ab03aad1e` |
 | 5 | OAuth bridge (MCP auth server + apps/auth routes)         | done        | `01916b826` |
-| 6 | Backend Category B exposure queries + MCP tools           | pending     | — |
+| 6 | Backend Category B exposure queries + MCP tools           | backend done, MCP deferred | — |
 | 7 | Backend Category C aggregation + MCP tools                | pending     | — |
 | 8 | Deploy surface (Dockerfile, Traefik, Helm)                | pending     | — |
 
@@ -80,9 +80,18 @@ Promote-to-ready and per-element-type option schema resources are deferred — t
 
 **Goal:** The student can read their own rows of the already-computed analytics tables. This is the highest-leverage backend change.
 
-**Deliverables (backend):** `participantCourseAnalytics`, `participantPerformance`, `myResponseHistory`, `mySRSState` queries, all `asParticipant`, all scoped to `participantId = ctx.user.sub`. Fragments + Pothos types. Codegen run.
+**Deliverables (backend, done in this iteration):**
+- `packages/graphql/src/schema/analytics.ts` — new Pothos types `ParticipantAnalytics`, `MyResponse`, `MyResponseHistoryPage`, `MySRSEntry`, and the `AnalyticsType` enum. Existing `ParticipantPerformance` + `ParticipantActivityPerformance` types reused.
+- `packages/graphql/src/services/analytics.ts` — three new service functions: `getParticipantCourseAnalyticsSelf`, `getParticipantPerformanceSelf`, `getParticipantActivityPerformanceSelf`. All filter by `participantId = ctx.user.sub` so rows of other participants are unreachable.
+- `packages/graphql/src/services/participants.ts` — `getMyResponseHistory` (paginated, correctness-filtered) and `getMySRSStateSelf`. Join through `ElementInstance → Element` for the element metadata the MCP needs.
+- `packages/graphql/src/schema/query.ts` — five new `asParticipant`-gated queries: `participantCourseAnalytics`, `participantPerformance`, `participantActivityPerformance`, `myResponseHistory`, `mySRSState`.
+- `packages/graphql/src/graphql/ops/` — five new `.graphql` files for the query operations.
 
-**Deliverables (MCP):** `get_my_course_analytics`, `get_my_performance`, `get_my_mistakes`, `get_my_response_history`, `get_my_srs_state`, `get_my_streak`.
+**Codegen step (user-driven):** `pnpm --filter @klicker-uzh/graphql generate` regenerates `server.json` / `client.json` with the new persisted-query hashes. Then `uv run poe gen-ops` (from `apps/mcp`) rewrites `src/klicker_mcp/gql/ops.py`. Without that step, calling the new ops from the MCP side throws `UnknownOperationError`.
+
+**Deliverables (MCP, deferred to a follow-up commit after codegen runs):** `get_my_course_analytics`, `get_my_performance`, `get_my_activity_performance`, `get_my_response_history`, `get_my_mistakes` (reshape of `get_my_response_history` with `correctness_in=[WRONG, PARTIAL]`), `get_my_srs_state`. These are straightforward wrappers over the new ops and mirror the iteration 4 pattern.
+
+**Verification (backend):** Because the worktree doesn't have `node_modules`, vitest + `pnpm --filter @klicker-uzh/graphql check` were not run in this session. The user must verify before merging with `pnpm install && pnpm --filter @klicker-uzh/graphql build && pnpm --filter @klicker-uzh/graphql test` (the last needs `HATCHET_CLIENT_TOKEN` injected; see CLAUDE.md).
 
 ## Iteration 7 — Backend Category C aggregation
 

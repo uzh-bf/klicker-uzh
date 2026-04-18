@@ -695,3 +695,52 @@ export async function getActivityAnalytics(
     instanceQuizAnalytics,
   }
 }
+
+// --- Participant self-analytics (iteration 6, Category B) ------------------
+//
+// These helpers return already-computed analytics rows scoped to the calling
+// participant (`participantId = ctx.user.sub`). They are pure reads over
+// existing tables populated by the Python pipeline; no new computation lives
+// here.
+
+export async function getParticipantCourseAnalyticsSelf(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  if (!ctx.user?.sub) return []
+  return await ctx.prisma.participantAnalytics.findMany({
+    where: { participantId: ctx.user.sub, courseId },
+    orderBy: [{ type: 'asc' }, { timestamp: 'asc' }],
+  })
+}
+
+export async function getParticipantPerformanceSelf(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  if (!ctx.user?.sub) return null
+  const row = await ctx.prisma.participantPerformance.findUnique({
+    where: {
+      participantId_courseId: { participantId: ctx.user.sub, courseId },
+    },
+  })
+  return row
+}
+
+export async function getParticipantActivityPerformanceSelf(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  if (!ctx.user?.sub) return []
+  // ParticipantActivityPerformance has no direct courseId; filter by the
+  // practiceQuiz / microLearning linked to the course.
+  return await ctx.prisma.participantActivityPerformance.findMany({
+    where: {
+      participantId: ctx.user.sub,
+      OR: [
+        { practiceQuiz: { courseId } },
+        { microLearning: { courseId } },
+      ],
+    },
+  })
+}

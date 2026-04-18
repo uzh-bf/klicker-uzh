@@ -1,0 +1,11 @@
+query MySRSState($practiceQuizId: String!) {
+  mySRSState(practiceQuizId: $practiceQuizId) {
+    instanceId
+    elementId
+    eFactor
+    interval
+    nextDueAt
+    correctCountStreak
+    lastResponseCorrectness
+  }
+}
