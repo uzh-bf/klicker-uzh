@@ -16,7 +16,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from src.modules.utils import (  # noqa: E402
     analytics_mode,
     analytics_window_since,
+    render_uuid_in_clause,
     scoped_course_ids,
+    should_skip_window,
 )
 
 
@@ -108,6 +110,39 @@ class ScopedCourseIdsTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {"ANALYTICS_MODE": "full"}):
             os.environ.pop("ANALYTICS_COURSE_IDS", None)
             self.assertIsNone(scoped_course_ids(self.db))
+
+
+class ShouldSkipWindowTests(unittest.TestCase):
+    def test_no_cutoff_keeps_every_window(self):
+        self.assertFalse(should_skip_window("2022-10-23", None))
+
+    def test_skips_windows_before_cutoff(self):
+        self.assertTrue(should_skip_window("2026-03-30", "2026-04-01"))
+
+    def test_keeps_cutoff_day(self):
+        self.assertFalse(should_skip_window("2026-04-01", "2026-04-01"))
+
+    def test_invalid_cutoff_keeps_window(self):
+        self.assertFalse(should_skip_window("2026-04-01", "not-a-date"))
+
+
+class RenderUuidInClauseTests(unittest.TestCase):
+    VALID_A = "aaaa0000-0000-0000-0000-000000000001"
+    VALID_B = "aaaa0000-0000-0000-0000-000000000002"
+
+    def test_empty_list_returns_false_guard(self):
+        self.assertEqual(render_uuid_in_clause("c.id", []), "AND false")
+
+    def test_renders_quoted_uuid_list(self):
+        clause = render_uuid_in_clause('lq."courseId"', [self.VALID_A, self.VALID_B])
+        self.assertEqual(
+            clause,
+            f"AND lq.\"courseId\" IN ('{self.VALID_A}', '{self.VALID_B}')",
+        )
+
+    def test_rejects_malformed_uuid(self):
+        with self.assertRaises(ValueError):
+            render_uuid_in_clause("c.id", ["not-a-uuid"])
 
 
 if __name__ == "__main__":

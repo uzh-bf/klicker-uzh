@@ -97,20 +97,14 @@ export interface HatchetHandlers {
   ) => Promise<boolean>
 }
 
-// Input shape for the weekly learning-analytics recompute.
-// - `mode=incremental` (default for the weekly cron) narrows the DAILY/WEEKLY/MONTHLY
-//   iteration via `windowSince` and skips FROZEN (analyticsFinalizedAt NOT NULL) courses.
-// - `mode=finalize` is emitted by the daily scanner per ended course; requires `courseIds`
-//   and stamps `analyticsFinalizedAt` when the run succeeds.
-// - `mode=full` keeps the original "from 2022-10-23 across every course" behaviour for
-//   migrations and one-off backfills.
+// Input shape for the weekly learning-analytics recompute. `mode` defaults to
+// incremental; the scanner sends `courseId` alone and the handler promotes it
+// to finalize for that course.
 export type RecomputeLearningAnalyticsInput = {
   mode?: 'incremental' | 'finalize' | 'full'
   courseIds?: string[]
-  windowSince?: string
-  // Scanner emits `courseEnded` events with a single courseId; the handler
-  // treats this as a finalize run for that one course.
   courseId?: string
+  windowSince?: string
 }
 
 // Named event constants for Hatchet task triggers. Keeping them here instead of

@@ -15,7 +15,7 @@ sys.path.append("../../")
 from src.modules.aggregated_analytics.compute_aggregated_analytics import (
     compute_aggregated_analytics,
 )
-from src.modules.utils import analytics_window_since
+from src.modules.utils import analytics_window_since, should_skip_window
 
 db = Prisma()
 db.connect()
@@ -36,21 +36,13 @@ date_range_weekly = pd.date_range(start=start_date, end=end_date, freq="W")
 date_range_monthly = pd.date_range(start=start_date, end=end_date, freq="ME")
 
 windows_since = analytics_window_since()
-_cutoff = pd.Timestamp(windows_since) if windows_since else None
-
-
-def _skip_window(win_end: str) -> bool:
-    if _cutoff is None:
-        return False
-    return pd.Timestamp(win_end) < _cutoff
-
 
 if compute_daily:
     # Iterate over the date range and compute the participant analytics for each day
     for curr_date in date_range_daily:
         # determine day start and end dates required for aggregation
         specific_date = curr_date.strftime("%Y-%m-%d")
-        if _skip_window(specific_date):
+        if should_skip_window(specific_date, windows_since):
             continue
         day_start = specific_date + "T00:00:00.000Z"
         day_end = specific_date + "T23:59:59.999Z"
@@ -67,7 +59,7 @@ if compute_weekly:
     # Iterate over the date range and compute the participant analytics for each week
     for curr_date in date_range_weekly:
         week_end_date = curr_date.strftime("%Y-%m-%d")
-        if _skip_window(week_end_date):
+        if should_skip_window(week_end_date, windows_since):
             continue
         # determine week start and end dates required for aggregation
         week_end = week_end_date + "T23:59:59.999Z"
@@ -89,7 +81,7 @@ if compute_monthly:
     # Iterate over the date range and compute the participant analytics for each month
     for curr_date in date_range_monthly:
         month_end_date = curr_date.strftime("%Y-%m-%d")
-        if _skip_window(month_end_date):
+        if should_skip_window(month_end_date, windows_since):
             continue
         # determine month start and end dates required for aggregation
         month_end = month_end_date + "T23:59:59.999Z"

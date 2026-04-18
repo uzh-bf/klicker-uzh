@@ -106,10 +106,9 @@ function resolveMode(
 function collectCourseIds(
   input: Parameters<HatchetHandlers['handleRecomputeLearningAnalytics']>[0]
 ): string[] {
-  const ids = new Set<string>()
-  if (input.courseId) ids.add(input.courseId)
-  if (input.courseIds) for (const id of input.courseIds) ids.add(id)
-  return Array.from(ids)
+  return [input.courseId, ...(input.courseIds ?? [])].filter(
+    (id): id is string => Boolean(id)
+  )
 }
 
 export const handleRecomputeLearningAnalytics: HatchetHandlers['handleRecomputeLearningAnalytics'] =

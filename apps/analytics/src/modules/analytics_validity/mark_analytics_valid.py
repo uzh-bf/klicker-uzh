@@ -1,25 +1,27 @@
 import os
-import uuid
 
-from src.modules.utils import analytics_mode, load_sql, scoped_course_ids
+from src.modules.utils import (
+    analytics_mode,
+    load_sql,
+    render_uuid_in_clause,
+    scoped_course_ids,
+)
 
 _SQL = load_sql(os.path.join(os.path.dirname(__file__), "mark_analytics_valid.sql"))
 
+_SET_PLACEHOLDER = "/*COURSE_FINALIZE_SET*/"
+_FILTER_PLACEHOLDER = "/*COURSE_FINALIZE_FILTER*/"
 
-def _render_sql(
-    finalize: bool,
-    course_ids: list[str] | None,
-) -> str:
+
+def _render_sql(finalize: bool, course_ids: list[str] | None) -> str:
     set_clause = ""
     filter_clause = ""
-    if finalize and course_ids:
-        validated = [str(uuid.UUID(cid)) for cid in course_ids]
-        in_list = ", ".join(f"'{cid}'" for cid in validated)
+    if finalize:
         set_clause = '"analyticsFinalizedAt" = NOW(),'
-        filter_clause = f"AND c.id IN ({in_list}) AND c.\"analyticsFinalizedAt\" IS NULL"
-    return (
-        _SQL.replace("/*COURSE_FINALIZE_SET*/", set_clause)
-        .replace("/*COURSE_FINALIZE_FILTER*/", filter_clause)
+        scoped = render_uuid_in_clause("c.id", course_ids or [])
+        filter_clause = f'{scoped} AND c."analyticsFinalizedAt" IS NULL'
+    return _SQL.replace(_SET_PLACEHOLDER, set_clause).replace(
+        _FILTER_PLACEHOLDER, filter_clause
     )
 
 
@@ -42,8 +44,7 @@ def mark_analytics_valid(db, verbose: bool = False):
             f"[analytics_validity] mode={mode} finalize={finalize} "
             f"course_ids={len(course_ids) if course_ids else 0}"
         )
-    sql = _render_sql(finalize, course_ids)
-    rows = db.execute_raw(sql)
+    rows = db.execute_raw(_render_sql(finalize, course_ids))
     if verbose:
         print(f"[analytics_validity] rows affected: {rows}")
     return rows

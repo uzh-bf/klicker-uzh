@@ -21,6 +21,7 @@ from src.modules.participant_analytics.compute_participant_course_analytics impo
 from src.modules.utils import (
     analytics_window_since,
     scoped_course_ids,
+    should_skip_window,
 )
 
 db = Prisma()
@@ -43,22 +44,13 @@ date_range_daily = pd.date_range(start=start_date, end=end_date, freq="D")
 date_range_weekly = pd.date_range(start=start_date, end=end_date, freq="W")
 date_range_monthly = pd.date_range(start=start_date, end=end_date, freq="ME")
 
-# Incremental runs skip windows ending before this cutoff.
 windows_since = analytics_window_since()
-_cutoff = pd.Timestamp(windows_since) if windows_since else None
-
-
-def _skip_window(win_end: str) -> bool:
-    if _cutoff is None:
-        return False
-    return pd.Timestamp(win_end) < _cutoff
-
 
 if compute_daily:
     # Iterate over the date range and compute the participant analytics for each day
     for curr_date in date_range_daily:
         specific_date = curr_date.strftime("%Y-%m-%d")
-        if _skip_window(specific_date):
+        if should_skip_window(specific_date, windows_since):
             continue
         print(f"Computing daily participant analytics for {specific_date}")
 
@@ -76,7 +68,7 @@ if compute_weekly:
     # Iterate over the date range and compute the participant analytics for each week
     for curr_date in date_range_weekly:
         week_end_date = curr_date.strftime("%Y-%m-%d")
-        if _skip_window(week_end_date):
+        if should_skip_window(week_end_date, windows_since):
             continue
         # Fetch all question response detail entries for a specific week
         end_date = week_end_date + "T23:59:59.999Z"
@@ -95,7 +87,7 @@ if compute_monthly:
     # Iterate over the date range and compute the participant analytics for each month
     for curr_date in date_range_monthly:
         month_end_date = curr_date.strftime("%Y-%m-%d")
-        if _skip_window(month_end_date):
+        if should_skip_window(month_end_date, windows_since):
             continue
         # Fetch all question response detail entries for a specific month
         end_date = month_end_date + "T23:59:59.999Z"

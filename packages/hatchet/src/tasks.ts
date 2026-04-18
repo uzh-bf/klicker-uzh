@@ -338,12 +338,14 @@ export function prepareHatchetTasks({
         `[scanEndedCourses] graceDays=${effectiveGrace} cutoff=${cutoff.toISOString()} candidates=${candidates.length}`
       )
 
-      for (const { id } of candidates) {
-        await hatchet.events.push(HATCHET_EVENTS.courseEnded, {
-          mode: 'finalize',
-          courseId: id,
-        } satisfies RecomputeLearningAnalyticsInput)
-      }
+      await Promise.all(
+        candidates.map(({ id }) =>
+          hatchet.events.push(HATCHET_EVENTS.courseEnded, {
+            mode: 'finalize',
+            courseId: id,
+          } satisfies RecomputeLearningAnalyticsInput)
+        )
+      )
 
       return { success: true, emitted: candidates.length }
     },

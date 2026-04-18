@@ -5,6 +5,7 @@ here instead of being copy-pasted into individual ``compute_*.py`` files.
 """
 
 import os
+import uuid
 from datetime import datetime
 from typing import Callable
 
@@ -37,6 +38,33 @@ def _parse_window_since(windows_since: str | None) -> pd.Timestamp | None:
         return None
 
 
+def should_skip_window(win_end: str, windows_since: str | None) -> bool:
+    """Return True when ``win_end`` falls before the ``windows_since`` cutoff.
+
+    Shared by ``iter_analytics_windows`` and the bespoke window loops in
+    scripts 0 / 1 so the cutoff semantics stay in one place.
+    """
+    cutoff = _parse_window_since(windows_since)
+    if cutoff is None:
+        return False
+    return pd.Timestamp(win_end) < cutoff
+
+
+def render_uuid_in_clause(column: str, course_ids: list[str]) -> str:
+    """Render ``AND <column> IN (...)`` with UUID-validated literals.
+
+    Returns ``AND false`` for an empty list so the caller's surrounding
+    predicate still matches zero rows. UUIDs are re-parsed to fail loud on
+    malformed input — placeholders get substituted into raw SQL, so we never
+    inline an unchecked identifier even from a nominally internal env var.
+    """
+    if not course_ids:
+        return "AND false"
+    validated = [str(uuid.UUID(cid)) for cid in course_ids]
+    in_list = ", ".join(f"'{cid}'" for cid in validated)
+    return f"AND {column} IN ({in_list})"
+
+
 def iter_analytics_windows(
     db,
     compute_fn: ComputeFn,
@@ -61,17 +89,14 @@ def iter_analytics_windows(
     filtering courses upstream, not by window cutoff.
     """
     end_date = end_date or datetime.now().strftime("%Y-%m-%d")
-    cutoff = _parse_window_since(windows_since)
 
-    def _skip_window(win_end: str) -> bool:
-        if cutoff is None:
-            return False
-        return pd.Timestamp(win_end) < cutoff
+    def _skip(win_end: str) -> bool:
+        return should_skip_window(win_end, windows_since)
 
     if compute_daily:
         for curr in pd.date_range(start=start_date, end=end_date, freq="D"):
             day = curr.strftime("%Y-%m-%d")
-            if _skip_window(day):
+            if _skip(day):
                 continue
             print(f"Computing daily {label} for {day}")
             compute_fn(
@@ -86,7 +111,7 @@ def iter_analytics_windows(
     if compute_weekly:
         for curr in pd.date_range(start=start_date, end=end_date, freq="W"):
             week_end = curr.strftime("%Y-%m-%d")
-            if _skip_window(week_end):
+            if _skip(week_end):
                 continue
             win_start = (curr - pd.DateOffset(days=6)).strftime("%Y-%m-%d")
             print(f"Computing weekly {label} for {win_start} to {week_end}")
@@ -102,7 +127,7 @@ def iter_analytics_windows(
     if compute_monthly:
         for curr in pd.date_range(start=start_date, end=end_date, freq="ME"):
             month_end = curr.strftime("%Y-%m-%d")
-            if _skip_window(month_end):
+            if _skip(month_end):
                 continue
             win_start = (curr - pd.offsets.MonthBegin(1)).strftime("%Y-%m-%d")
             print(f"Computing monthly {label} for {win_start} to {month_end}")
@@ -169,8 +194,7 @@ def scoped_course_ids(db) -> list[str] | None:
     if explicit is not None:
         return explicit
 
-    mode = analytics_mode()
-    if mode == "incremental":
+    if analytics_mode() == "incremental":
         courses = db.course.find_many(where={"analyticsFinalizedAt": None})
         return [str(c.id) for c in courses]
 
