@@ -24,7 +24,7 @@ Python 3.12 · uv-managed project · FastMCP v3.2 · Streamable HTTP transport �
 | 2 | GraphQL client + persisted-ops codegen + poe tasks        | done        | `496d0b191` |
 | 3 | Category A lecturer tools (question authoring as drafts)  | done        | `a00e38c70` |
 | 4 | Category A participant tools (quiz discovery + response)  | done        | `ab03aad1e` |
-| 5 | OAuth bridge (MCP auth server + apps/auth routes)         | pending     | — |
+| 5 | OAuth bridge (MCP auth server + apps/auth routes)         | done        | — |
 | 6 | Backend Category B exposure queries + MCP tools           | pending     | — |
 | 7 | Backend Category C aggregation + MCP tools                | pending     | — |
 | 8 | Deploy surface (Dockerfile, Traefik, Helm)                | pending     | — |
@@ -69,9 +69,12 @@ Promote-to-ready and per-element-type option schema resources are deferred — t
 
 **Goal:** An external MCP client (Claude Desktop / Cursor) can complete an OAuth 2.1 dance against the MCP and end up able to call tools as the signed-in KlickerUZH user, with no new user database.
 
-**Deliverables:** `auth/oauth_provider.py` subclassing FastMCP's OAuth primitives. `/authorize`, `/token`, `/.well-known/oauth-authorization-server`, `/register` (DCR). In-memory code/refresh-token store with a Redis adapter. Two new routes in `apps/auth/src/pages/api/mcp/`: `start.ts` (kicks off NextAuth), `callback.ts` (signs a short-lived payload, redirects back). MCP wraps the existing KlickerUZH JWT into its own access-token JWT.
+**Deliverables:**
+- MCP side: `auth/oauth.py` wraps FastMCP's `OAuthProxy` with a `JWTVerifier(algorithm="HS256", public_key=APP_SECRET)` so the proxy validates KlickerUZH JWTs without local key infrastructure. OAuth is opt-in — unset envs mean pass-through mode, preserving the iteration 2–4 dev loop. `main.py` attaches the proxy to the shared `mcp` instance at boot. `auth/context.py` grows a two-tier fallback: prefer `get_access_token()` (OAuth mode), fall back to the raw `Authorization` header (pass-through), so tools transparently forward the right JWT in either mode.
+- Upstream side: two new Next.js Pages-Router routes in `apps/auth/src/pages/api/mcp/`. `authorize.ts` enforces the client-id pin, checks the NextAuth session (lecturer or participant cookie depending on `scope`), redirects through the existing sign-in flow if missing, then mints a PKCE-bound authorization code and redirects back to the proxy. `token.ts` validates the client secret + PKCE `S256` digest and returns a 12h HS256 JWT the backend's `jwtMiddleware` already accepts. An in-process `_store.ts` (1 min TTL) holds codes for the POC; production will swap to Redis.
+- New envs: `MCP_ORIGIN`, `MCP_UPSTREAM_CLIENT_ID`, `MCP_UPSTREAM_CLIENT_SECRET`, `MCP_UPSTREAM_AUTHORIZE_URL`, `MCP_UPSTREAM_TOKEN_URL`, `MCP_UPSTREAM_ISSUER`, `MCP_STORAGE_URL`, all added to `turbo.json` globalEnv.
 
-**Verification:** Manual run against Claude Desktop confirms a successful login; automated test exercises the whole dance against a stubbed NextAuth.
+**Verification:** `uv run poe all` green — 60 tests total (7 new for OAuth): proxy-builder opt-in behaviour, bearer-token fallback chain (OAuth wins over header, header wins when OAuth ctx errors or is absent). End-to-end manual validation against Claude Desktop deferred until iteration 8 deploys the routable domain.
 
 ## Iteration 6 — Backend Category B exposure
 
