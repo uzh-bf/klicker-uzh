@@ -5,4 +5,4 @@ the tools on the shared `mcp` instance. `server.py` imports this package to
 trigger those side effects before the server is exposed.
 """
 
-from klicker_mcp.tools import common, lecturer  # noqa: F401  # pyright: ignore[reportUnusedImport]
+from klicker_mcp.tools import common, lecturer, participant  # noqa: F401  # pyright: ignore[reportUnusedImport]

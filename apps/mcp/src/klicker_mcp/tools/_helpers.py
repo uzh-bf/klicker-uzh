@@ -21,3 +21,12 @@ def require_bearer_token() -> str:
             "authenticate with a KlickerUZH JWT before calling role-gated tools."
         )
     return token
+
+
+def optional_bearer_token() -> str | None:
+    """Return the bearer token if present, else None.
+
+    Use for ops the backend marks as open fields (e.g. `GetPracticeQuiz`)
+    where an unauthenticated caller is still a valid caller.
+    """
+    return get_bearer_token()

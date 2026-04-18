@@ -23,7 +23,7 @@ Python 3.12 · uv-managed project · FastMCP v3.2 · Streamable HTTP transport �
 | 1 | Skeleton + PLAN.md                                        | done        | `d419d767a` |
 | 2 | GraphQL client + persisted-ops codegen + poe tasks        | done        | `496d0b191` |
 | 3 | Category A lecturer tools (question authoring as drafts)  | done        | `a00e38c70` |
-| 4 | Category A participant tools (quiz discovery + response)  | pending     | — |
+| 4 | Category A participant tools (quiz discovery + response)  | done        | — |
 | 5 | OAuth bridge (MCP auth server + apps/auth routes)         | pending     | — |
 | 6 | Backend Category B exposure queries + MCP tools           | pending     | — |
 | 7 | Backend Category C aggregation + MCP tools                | pending     | — |
@@ -61,9 +61,9 @@ Promote-to-ready and per-element-type option schema resources are deferred — t
 
 **Goal:** A participant-scoped MCP client can discover practice quizzes, open a stack, submit a response, bookmark, flag, rate, and post to the live Q&A channel. All category-A data is exposed for chatbot reasoning.
 
-**Deliverables:** tools corresponding to the ops listed in the iteration description. pydantic inputs. Guards that reject write tools when the role isn't `PARTICIPANT`.
+**Deliverables:** 21 tools in `tools/participant.py` wrapping existing persisted ops — courses/quizzes/microlearning read, overview/leaderboard/achievements/timeline/assessment/groups read, bookmarks read, live Q&A read, plus write paths: `submit_stack_response` (hero), `bookmark_stack`, `flag_element`, `rate_element`, `post_live_qa_question`, `upvote_live_qa`, `send_confusion_signal`. Pydantic `StackResponse` + `ChoicesResponse` models marshal the union-shaped `StackResponseInput` (including the intentional backend typo `contentReponse`). `optional_bearer_token()` helper for the open-field `GetPracticeQuiz` / `GetMicroLearning` reads. Backend role guards (`asParticipant`) remain authoritative; MCP just forwards the JWT.
 
-**Verification:** Round-trip tests for each write tool; role guard covered.
+**Verification:** `uv run poe all` green — 53 tests total (25 new), covering per-op operation-name + persisted-sha256 + variable shape, `StackResponse` marshalling for all element types, optional-token passthrough, and a full registration sanity check.
 
 ## Iteration 5 — OAuth bridge
 
