@@ -1382,3 +1382,90 @@ export async function getMySRSStateSelf(
     lastResponseCorrectness: row.lastResponseCorrectness,
   }))
 }
+
+// --- Iteration 7: recent activity feed -------------------------------------
+//
+// Unifies the participant's response-detail and achievement-unlock rows
+// into a single chronological feed. Leaderboard-rank deltas are not tracked
+// historically in Prisma today, so that signal is omitted from the POC.
+
+export async function getMyRecentActivity(
+  { limit }: { limit: number },
+  ctx: ContextWithUser
+) {
+  if (!ctx.user?.sub) return []
+
+  const [responses, achievements] = await Promise.all([
+    ctx.prisma.questionResponseDetail.findMany({
+      where: { participantId: ctx.user.sub },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      include: { elementInstance: { include: { element: true } } },
+    }),
+    ctx.prisma.participantAchievementInstance.findMany({
+      where: { participantId: ctx.user.sub },
+      orderBy: { achievedAt: 'desc' },
+      take: limit,
+      include: { achievement: true },
+    }),
+  ])
+
+  const entries: {
+    type: 'RESPONSE' | 'ACHIEVEMENT'
+    timestamp: Date
+    summary: string
+    targetId: string
+  }[] = []
+
+  for (const row of responses) {
+    entries.push({
+      type: 'RESPONSE',
+      timestamp: row.createdAt,
+      summary: `${row.elementInstance.element.name} · ${row.score.toFixed(1)} pts`,
+      targetId: String(row.elementInstanceId),
+    })
+  }
+  for (const row of achievements) {
+    entries.push({
+      type: 'ACHIEVEMENT',
+      timestamp: row.achievedAt ?? row.createdAt,
+      summary: row.achievement.nameEN,
+      targetId: String(row.achievementId),
+    })
+  }
+
+  entries.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+  return entries.slice(0, limit)
+}
+
+// --- Iteration 7: cross-course bookmarks -----------------------------------
+
+export async function getMyBookmarksAcrossCourses(
+  _args: object,
+  ctx: ContextWithUser
+) {
+  if (!ctx.user?.sub) return []
+  // participations.bookmarkedQuestions lives on Participation; we collect
+  // all active participations and map each to a {courseId, courseName,
+  // stacks[]} row.
+  const participations = await ctx.prisma.participation.findMany({
+    where: { participantId: ctx.user.sub, isActive: true },
+    include: {
+      course: { select: { id: true, displayName: true } },
+      bookmarkedElementStacks: true,
+    },
+  })
+
+  return participations
+    .filter((p) => p.bookmarkedElementStacks.length > 0)
+    .map((p) => ({
+      courseId: p.course.id,
+      courseName: p.course.displayName,
+      stacks: p.bookmarkedElementStacks.map((s) => ({
+        id: s.id,
+        displayName: s.displayName,
+        description: s.description,
+        order: s.order,
+      })),
+    }))
+}

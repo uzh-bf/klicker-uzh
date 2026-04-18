@@ -25,14 +25,17 @@ import {
 } from './activities.js'
 import {
   ActivityType,
+  BookmarkedStacksByCourse,
   CourseActivityAnalytics,
   CoursePerformanceAnalytics,
   ElementFeedback,
+  MyActivityEntry,
   MyResponseHistoryPage,
   MySRSEntry,
   ParticipantActivityPerformance,
   ParticipantAnalytics,
   ParticipantPerformance,
+  ParticipantTopicAccuracy,
   QuizAnalytics,
   WeeklyCourseActivities,
 } from './analytics.js'
@@ -536,6 +539,31 @@ export const Query = builder.queryType({
         args: { practiceQuizId: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await ParticipantService.getMySRSStateSelf(args, ctx)
+        },
+      }),
+
+      // --- Iteration 7: Category C aggregation --------------------------
+
+      participantTopicAccuracy: t.withAuth(asParticipant).field({
+        type: [ParticipantTopicAccuracy],
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await AnalyticsService.getParticipantTopicAccuracy(args, ctx)
+        },
+      }),
+
+      myRecentActivity: t.withAuth(asParticipant).field({
+        type: [MyActivityEntry],
+        args: { limit: t.arg.int({ required: true, defaultValue: 20 }) },
+        resolve: async (_, args, ctx) => {
+          return await ParticipantService.getMyRecentActivity(args, ctx)
+        },
+      }),
+
+      myBookmarksAcrossCourses: t.withAuth(asParticipant).field({
+        type: [BookmarkedStacksByCourse],
+        resolve: async (_, __, ctx) => {
+          return await ParticipantService.getMyBookmarksAcrossCourses({}, ctx)
         },
       }),
 

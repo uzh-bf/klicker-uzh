@@ -136,6 +136,103 @@ export const MySRSEntry = builder.objectType(MySRSEntryRef, {
   }),
 })
 
+// --- Iteration 7: Category C aggregation -----------------------------------
+
+// Per-tag accuracy for the authenticated participant. Drives "weak topics"
+// and "mastery map" UIs. Aggregated from QuestionResponse via Element.tags;
+// no new table, no new pipeline.
+interface IParticipantTopicAccuracy {
+  tagId: number
+  tagName: string
+  totalCount: number
+  correctCount: number
+  partialCount: number
+  wrongCount: number
+  lastAnsweredAt: Date | null
+}
+export const ParticipantTopicAccuracyRef =
+  builder.objectRef<IParticipantTopicAccuracy>('ParticipantTopicAccuracy')
+export const ParticipantTopicAccuracy = builder.objectType(
+  ParticipantTopicAccuracyRef,
+  {
+    fields: (t) => ({
+      tagId: t.exposeInt('tagId'),
+      tagName: t.exposeString('tagName'),
+      totalCount: t.exposeInt('totalCount'),
+      correctCount: t.exposeInt('correctCount'),
+      partialCount: t.exposeInt('partialCount'),
+      wrongCount: t.exposeInt('wrongCount'),
+      lastAnsweredAt: t.expose('lastAnsweredAt', {
+        type: 'Date',
+        nullable: true,
+      }),
+    }),
+  }
+)
+
+// Condensed recent-activity feed for the authenticated participant.
+// A chronological merge of achievement unlocks + response detail rows.
+export const MyActivityKind = builder.enumType('MyActivityKind', {
+  values: ['RESPONSE', 'ACHIEVEMENT'] as const,
+})
+
+interface IMyActivityEntry {
+  type: 'RESPONSE' | 'ACHIEVEMENT'
+  timestamp: Date
+  summary: string
+  targetId: string
+}
+export const MyActivityEntryRef =
+  builder.objectRef<IMyActivityEntry>('MyActivityEntry')
+export const MyActivityEntry = builder.objectType(MyActivityEntryRef, {
+  fields: (t) => ({
+    type: t.expose('type', { type: MyActivityKind }),
+    timestamp: t.expose('timestamp', { type: 'Date' }),
+    summary: t.exposeString('summary'),
+    targetId: t.exposeString('targetId'),
+  }),
+})
+
+// Condensed bookmarked-stack row for the cross-course listing. Avoids
+// including the full element tree so the response stays compact — callers
+// that need elements should hit `getBookmarkedElementStacks(courseId)`.
+interface IBookmarkedStackSummary {
+  id: number
+  displayName: string
+  description: string | null
+  order: number
+}
+interface IBookmarkedStacksByCourse {
+  courseId: string
+  courseName: string
+  stacks: IBookmarkedStackSummary[]
+}
+export const BookmarkedStackSummaryRef =
+  builder.objectRef<IBookmarkedStackSummary>('BookmarkedStackSummary')
+export const BookmarkedStackSummary = builder.objectType(
+  BookmarkedStackSummaryRef,
+  {
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      displayName: t.exposeString('displayName'),
+      description: t.exposeString('description', { nullable: true }),
+      order: t.exposeInt('order'),
+    }),
+  }
+)
+export const BookmarkedStacksByCourseRef =
+  builder.objectRef<IBookmarkedStacksByCourse>('BookmarkedStacksByCourse')
+export const BookmarkedStacksByCourse = builder.objectType(
+  BookmarkedStacksByCourseRef,
+  {
+    fields: (t) => ({
+      courseId: t.exposeString('courseId'),
+      courseName: t.exposeString('courseName'),
+      stacks: t.expose('stacks', { type: [BookmarkedStackSummary] }),
+    }),
+  }
+)
+
 // ------ Activity Analytics ------
 // #region
 export const ElementFeedbackRef =

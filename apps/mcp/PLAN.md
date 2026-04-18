@@ -26,7 +26,7 @@ Python 3.12 · uv-managed project · FastMCP v3.2 · Streamable HTTP transport �
 | 4 | Category A participant tools (quiz discovery + response)  | done        | `ab03aad1e` |
 | 5 | OAuth bridge (MCP auth server + apps/auth routes)         | done        | `01916b826` |
 | 6 | Backend Category B exposure queries + MCP tools           | backend done, MCP deferred | `d520532b5` |
-| 7 | Backend Category C aggregation + MCP tools                | pending     | — |
+| 7 | Backend Category C aggregation + MCP tools                | backend done, MCP deferred | — |
 | 8 | Deploy surface (Dockerfile, Traefik, Helm)                | pending     | — |
 
 ## Iteration 1 — Skeleton + PLAN.md
@@ -97,9 +97,18 @@ Promote-to-ready and per-element-type option schema resources are deferred — t
 
 **Goal:** Weak-topics + mastery-map via a backend aggregation service, usable from both MCP and a future PWA page.
 
-**Deliverables (backend):** tag exposure in the participant-scoped element fragment; `getParticipantTopicAccuracy` service grouping `QuestionResponse` by `Element.tags`; new queries.
+**Deliverables (backend, done in this iteration):**
+- `packages/graphql/src/schema/analytics.ts` — new Pothos types `ParticipantTopicAccuracy`, `MyActivityEntry` (+ `MyActivityKind` enum), `BookmarkedStackSummary`, `BookmarkedStacksByCourse`.
+- `packages/graphql/src/services/analytics.ts` — `getParticipantTopicAccuracy` groups the participant's `QuestionResponse` rows by `Element.tags` (many-to-many) in-memory; sorts weakest-first on `1 - correctCount/totalCount`. Stays under a Prisma `findMany`-and-reduce because per-course response counts are low.
+- `packages/graphql/src/services/participants.ts` — `getMyRecentActivity` (chronological merge of `QuestionResponseDetail` + `ParticipantAchievementInstance`) and `getMyBookmarksAcrossCourses` (walks active `Participation.bookmarkedElementStacks`). Leaderboard-rank deltas omitted because Prisma doesn't persist rank history today.
+- `packages/graphql/src/schema/query.ts` — three new `asParticipant`-gated queries: `participantTopicAccuracy`, `myRecentActivity`, `myBookmarksAcrossCourses`.
+- `packages/graphql/src/graphql/ops/` — three new `.graphql` files.
 
-**Deliverables (MCP):** `get_weak_topics`, `get_mastery_map`, `get_my_recent_activity`, `get_bookmarks_across_courses`.
+**Codegen step:** Same as iteration 6 — `pnpm --filter @klicker-uzh/graphql generate && (cd apps/mcp && uv run poe gen-ops)`.
+
+**Deliverables (MCP, deferred):** `get_weak_topics(course_id, limit)` + `get_mastery_map(course_id)` are both reshapes of `ParticipantTopicAccuracy` — weak-topics trims top-N, mastery-map derives `{topic, mastery, coverage}`. `get_my_recent_activity(limit)` and `get_bookmarks_across_courses()` are thin wrappers. Lands after codegen regenerates the persisted-query manifest.
+
+**Verification (backend):** Same caveat as iteration 6 — vitest + typecheck require `pnpm install` at repo root.
 
 ## Iteration 8 — Deploy surface
 

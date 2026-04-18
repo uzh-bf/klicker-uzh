@@ -1,0 +1,11 @@
+query ParticipantTopicAccuracy($courseId: String!) {
+  participantTopicAccuracy(courseId: $courseId) {
+    tagId
+    tagName
+    totalCount
+    correctCount
+    partialCount
+    wrongCount
+    lastAnsweredAt
+  }
+}
