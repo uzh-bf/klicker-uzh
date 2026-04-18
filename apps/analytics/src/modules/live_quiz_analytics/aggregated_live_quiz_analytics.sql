@@ -3,8 +3,9 @@
 
 WITH assessment_live_quizzes AS (
   SELECT id, "courseId", "finishedAt"
-  FROM "LiveQuiz"
+  FROM "LiveQuiz" lq
   WHERE "isAssessmentEnabled" = true AND "courseId" IS NOT NULL
+    /*COURSE_FILTER*/
 ),
 participant_firsts AS (
   SELECT

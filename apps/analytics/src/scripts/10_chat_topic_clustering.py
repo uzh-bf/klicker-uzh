@@ -10,6 +10,7 @@ from prisma import Prisma
 sys.path.append("../../")
 
 from src.modules.chat_topic_clustering.cluster_chatbot import cluster_chatbot
+from src.modules.utils import scoped_course_ids
 
 COURSE_TIMESTAMP = "1970-01-01"
 
@@ -18,8 +19,17 @@ db.connect()
 
 verbose = True
 
-chatbots = db.chatbot.find_many()
-print(f"Found {len(chatbots)} chatbots to cluster")
+scope = scoped_course_ids(db)
+if scope is not None:
+    if not scope:
+        print("[10_chat_topic_clustering] empty course scope — nothing to cluster")
+        chatbots = []
+    else:
+        chatbots = db.chatbot.find_many(where={"courseId": {"in": scope}})
+else:
+    chatbots = db.chatbot.find_many()
+scope_note = f" (scoped to {len(scope)} course ids)" if scope is not None else ""
+print(f"Found {len(chatbots)} chatbots to cluster{scope_note}")
 
 win_start = "2022-10-23T00:00:00.000Z"
 win_end = datetime.now().strftime("%Y-%m-%d") + "T23:59:59.999Z"

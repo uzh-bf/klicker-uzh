@@ -28,6 +28,7 @@ WITH assessment_responses AS (
   WHERE lq."isAssessmentEnabled" = true
     AND lq."courseId" IS NOT NULL
     AND lqr."correctionOnly" = false
+    /*COURSE_FILTER*/
 )
 INSERT INTO "ParticipantLiveQuizAnalytics" (
   "participantId", "liveQuizId", "courseId",
