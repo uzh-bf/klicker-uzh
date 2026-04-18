@@ -23,7 +23,7 @@ Python 3.12 · uv-managed project · FastMCP v3.2 · Streamable HTTP transport �
 | 1 | Skeleton + PLAN.md                                        | done        | `d419d767a` |
 | 2 | GraphQL client + persisted-ops codegen + poe tasks        | done        | `496d0b191` |
 | 3 | Category A lecturer tools (question authoring as drafts)  | done        | `a00e38c70` |
-| 4 | Category A participant tools (quiz discovery + response)  | done        | — |
+| 4 | Category A participant tools (quiz discovery + response)  | done        | `ab03aad1e` |
 | 5 | OAuth bridge (MCP auth server + apps/auth routes)         | pending     | — |
 | 6 | Backend Category B exposure queries + MCP tools           | pending     | — |
 | 7 | Backend Category C aggregation + MCP tools                | pending     | — |
