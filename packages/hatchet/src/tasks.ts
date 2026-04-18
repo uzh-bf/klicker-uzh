@@ -292,10 +292,10 @@ export function prepareHatchetTasks({
     // no retries — the pipeline is expensive and scripts are designed to be
     // re-run idempotently from the cron, not retried mid-run on transient errors
     onCrons: [
-      '0 2 * * 1', // Mondays at 02:00 UTC — after weekend data settles
+      '0 2 * * 1', // Mondays at 02:00 UTC — after weekend data settles (incremental)
     ],
     onEvents: [
-      HATCHET_EVENTS.courseEnded, // emitter TODO: daily scan 7 days after Course.endDate
+      HATCHET_EVENTS.courseEnded, // emitted by scan-ended-courses — triggers finalize for one course
       HATCHET_EVENTS.adminRecomputeAnalytics, // manual dispatch via Hatchet dashboard for now
     ],
     fn: async (input: RecomputeLearningAnalyticsInput, executionContext) => {
@@ -305,6 +305,47 @@ export function prepareHatchetTasks({
         executionContext
       )
       return { success }
+    },
+  })
+
+  const scanEndedCourses = hatchet.task({
+    name: 'scan-ended-courses',
+    retries: 3,
+    onCrons: [
+      // Daily at 01:00 UTC — runs before the Monday 02:00 incremental recompute
+      // so any courses that crossed into FINALIZING in the past day are picked
+      // up, finalised, and then skipped by the weekly cron.
+      '0 1 * * *',
+    ],
+    fn: async (_input, executionContext) => {
+      const graceDays = Number.parseInt(
+        process.env.ANALYTICS_FINALIZE_GRACE_DAYS ?? '7',
+        10
+      )
+      const effectiveGrace =
+        Number.isFinite(graceDays) && graceDays >= 0 ? graceDays : 7
+      const cutoff = new Date(Date.now() - effectiveGrace * 24 * 60 * 60 * 1000)
+
+      const candidates = await prisma.course.findMany({
+        where: {
+          analyticsFinalizedAt: null,
+          OR: [{ endDate: { lte: cutoff } }, { isArchived: true }],
+        },
+        select: { id: true },
+      })
+
+      await executionContext.logger.info(
+        `[scanEndedCourses] graceDays=${effectiveGrace} cutoff=${cutoff.toISOString()} candidates=${candidates.length}`
+      )
+
+      for (const { id } of candidates) {
+        await hatchet.events.push(HATCHET_EVENTS.courseEnded, {
+          mode: 'finalize',
+          courseId: id,
+        } satisfies RecomputeLearningAnalyticsInput)
+      }
+
+      return { success: true, emitted: candidates.length }
     },
   })
   // #endregion
@@ -325,6 +366,7 @@ export function prepareHatchetTasks({
     aggregateLiveQuizBlockResultsAssessment,
     createAuditLogEntry,
     recomputeLearningAnalytics,
+    scanEndedCourses,
   }
 }
 

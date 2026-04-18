@@ -24,6 +24,10 @@ const ANALYTICS_SCRIPTS = [
 
 const DEFAULT_SCRIPT_TIMEOUT_MS = 60 * 60 * 1000 // 1h per script — scripts 8/9 loop over every day since 2022
 
+// Incremental runs cover the last 14 days: one full WEEKLY window plus slack for
+// late data and a tolerated missed cron. Overridable via `windowSince` on the input.
+const INCREMENTAL_LOOKBACK_DAYS = 14
+
 type LogFn = (msg: string) => unknown | Promise<unknown>
 
 function runScript(
@@ -31,13 +35,14 @@ function runScript(
   cwd: string,
   runnerCmd: string,
   runnerArgs: string[],
+  scriptEnv: NodeJS.ProcessEnv,
   logPrefix: string,
   logger: { info: LogFn; error: LogFn }
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const args = [...runnerArgs, '-m', scriptModule]
     const started = Date.now()
-    const child = spawn(runnerCmd, args, { cwd, env: process.env })
+    const child = spawn(runnerCmd, args, { cwd, env: scriptEnv })
 
     let timedOut = false
     const timeout = setTimeout(() => {
@@ -81,8 +86,34 @@ function runScript(
   })
 }
 
+function isoDaysAgo(days: number): string {
+  const d = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+  return d.toISOString().slice(0, 10)
+}
+
+type ResolvedMode = 'incremental' | 'finalize' | 'full'
+
+function resolveMode(
+  input: Parameters<HatchetHandlers['handleRecomputeLearningAnalytics']>[0]
+): ResolvedMode {
+  if (input.mode === 'finalize' || input.mode === 'full') return input.mode
+  if (input.mode === 'incremental') return 'incremental'
+  // A scanner-emitted event carries `courseId` without `mode` — treat that as finalize.
+  if (input.courseId) return 'finalize'
+  return 'incremental'
+}
+
+function collectCourseIds(
+  input: Parameters<HatchetHandlers['handleRecomputeLearningAnalytics']>[0]
+): string[] {
+  const ids = new Set<string>()
+  if (input.courseId) ids.add(input.courseId)
+  if (input.courseIds) for (const id of input.courseIds) ids.add(id)
+  return Array.from(ids)
+}
+
 export const handleRecomputeLearningAnalytics: HatchetHandlers['handleRecomputeLearningAnalytics'] =
-  async (_input, _globalCtx, executionCtx) => {
+  async (input, _globalCtx, executionCtx) => {
     // Deploy-time config — fail loud if unset so we never silently run against
     // the wrong cwd in a new env.
     const cwd = process.env.ANALYTICS_CWD
@@ -97,22 +128,60 @@ export const handleRecomputeLearningAnalytics: HatchetHandlers['handleRecomputeL
       .split(' ')
       .filter(Boolean)
 
+    const mode = resolveMode(input)
+    const courseIds = collectCourseIds(input)
+
+    if (mode === 'finalize' && courseIds.length === 0) {
+      await executionCtx.logger.error(
+        '[recomputeLearningAnalytics] mode=finalize requires courseIds / courseId; aborting.'
+      )
+      return false
+    }
+
+    const windowSince =
+      mode === 'incremental'
+        ? (input.windowSince ?? isoDaysAgo(INCREMENTAL_LOOKBACK_DAYS))
+        : undefined
+
+    const scriptEnv: NodeJS.ProcessEnv = {
+      ...process.env,
+      ANALYTICS_MODE: mode,
+    }
+    if (courseIds.length > 0) {
+      scriptEnv.ANALYTICS_COURSE_IDS = courseIds.join(',')
+    } else {
+      delete scriptEnv.ANALYTICS_COURSE_IDS
+    }
+    if (windowSince) {
+      scriptEnv.ANALYTICS_WINDOW_SINCE = windowSince
+    } else {
+      delete scriptEnv.ANALYTICS_WINDOW_SINCE
+    }
+
     await executionCtx.logger.info(
-      `[recomputeLearningAnalytics] cwd=${cwd} runner=${[runnerCmd, ...runnerArgs].join(' ')}`
+      `[recomputeLearningAnalytics] mode=${mode} courseIds=${courseIds.length} windowSince=${windowSince ?? '-'} cwd=${cwd} runner=${[runnerCmd, ...runnerArgs].join(' ')}`
     )
 
     const overallStart = Date.now()
     for (const scriptModule of ANALYTICS_SCRIPTS) {
       const logPrefix = `[recomputeLearningAnalytics][${scriptModule}]`
       try {
-        await runScript(scriptModule, cwd, runnerCmd, runnerArgs, logPrefix, {
-          info: (msg: string) => executionCtx.logger.info(msg),
-          error: (msg: string) => executionCtx.logger.error(msg),
-        })
+        await runScript(
+          scriptModule,
+          cwd,
+          runnerCmd,
+          runnerArgs,
+          scriptEnv,
+          logPrefix,
+          {
+            info: (msg: string) => executionCtx.logger.info(msg),
+            error: (msg: string) => executionCtx.logger.error(msg),
+          }
+        )
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
         await executionCtx.logger.error(
-          `[recomputeLearningAnalytics] FAILED at ${scriptModule}: ${msg}`
+          `[recomputeLearningAnalytics] FAILED at ${scriptModule} (mode=${mode}): ${msg}`
         )
         return false
       }
@@ -120,7 +189,7 @@ export const handleRecomputeLearningAnalytics: HatchetHandlers['handleRecomputeL
 
     const elapsedSec = Math.round((Date.now() - overallStart) / 1000)
     await executionCtx.logger.info(
-      `[recomputeLearningAnalytics] pipeline OK in ${elapsedSec}s`
+      `[recomputeLearningAnalytics] pipeline OK in ${elapsedSec}s (mode=${mode})`
     )
     return true
   }

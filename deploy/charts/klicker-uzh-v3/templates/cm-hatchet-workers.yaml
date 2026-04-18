@@ -44,3 +44,6 @@ data:
   ANALYTICS_CWD: /app/apps/analytics
   ANALYTICS_RUNNER_CMD: uv
   ANALYTICS_RUNNER_ARGS: 'run python'
+  # Days after Course.endDate before the scanner marks a course as FINALIZING.
+  # Keeps the grace window generous for late student responses / chat messages.
+  ANALYTICS_FINALIZE_GRACE_DAYS: '7'
