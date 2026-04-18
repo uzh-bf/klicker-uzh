@@ -55,7 +55,9 @@ pythonVersion = "3.12"
 reportMissingTypeStubs = false
 
 [tool.ruff]
-line-length = 100
+# 120 keeps long pydantic Field descriptions on one line; the majority of the
+# code is well under 100.
+line-length = 120
 target-version = "py312"
 src = ["src", "tests"]
 extend-exclude = ["src/klicker_mcp/gql/ops.py"]

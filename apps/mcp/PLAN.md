@@ -21,8 +21,8 @@ Python 3.12 · uv-managed project · FastMCP v3.2 · Streamable HTTP transport �
 | # | Title | Status | Hash |
 | - | ----- | ------ | ---- |
 | 1 | Skeleton + PLAN.md                                        | done        | `d419d767a` |
-| 2 | GraphQL client + persisted-ops codegen + poe tasks        | in progress | — |
-| 3 | Category A lecturer tools (question authoring as drafts)  | pending     | — |
+| 2 | GraphQL client + persisted-ops codegen + poe tasks        | done        | `496d0b191` |
+| 3 | Category A lecturer tools (question authoring as drafts)  | in progress | — |
 | 4 | Category A participant tools (quiz discovery + response)  | pending     | — |
 | 5 | OAuth bridge (MCP auth server + apps/auth routes)         | pending     | — |
 | 6 | Backend Category B exposure queries + MCP tools           | pending     | — |
@@ -51,9 +51,11 @@ Python 3.12 · uv-managed project · FastMCP v3.2 · Streamable HTTP transport �
 
 **Goal:** A lecturer-scoped MCP client can create draft questions of every supported element type and list existing questions in their pool.
 
-**Deliverables:** One tool per `manipulate*` mutation, all defaulting `status=DRAFT`. A `list_my_questions` tool wrapping `userElements`. A `promote_to_ready` tool. Pydantic input models with rich descriptions. Element-options JSON schemas exposed as MCP resources so LLMs see the required shape.
+**Deliverables:** Six tools — `create_choices_question` (SC/MC/KPRIM), `create_free_text_question`, `create_numerical_question`, `create_flashcard`, `create_content_element`, `list_my_questions`. All create tools default `status=DRAFT` so LLM-authored questions never reach students without human review. Pydantic models (`Choice`, `NumericalRange`, `NumericalRestrictions`, `FreeTextRestrictions`) carry rich descriptions so the LLM receives a proper JSON schema. Module layout was split so `app.py` holds the `FastMCP` instance, `server.py` imports `tools/` for registration side-effects, and role-scoped tool files can grow without circular imports.
 
-**Verification:** Tool invocations round-trip against recorded cassettes. Defaulting to DRAFT is covered by a unit test.
+**Verification:** `uv run poe all` green — 28 tests including explicit checks that DRAFT is the default, pydantic options marshal correctly (including the camelCase `minLength`/`maxLength` alias for `FreeTextRestrictions`), None-valued arguments are dropped so the backend applies its own defaults, bearer-token absence raises `NotAuthenticatedError`, and every expected tool name is registered on the shared `mcp` instance.
+
+Promote-to-ready and per-element-type option schema resources are deferred — they can land as follow-ups after OAuth so real usage signals what to refine.
 
 ## Iteration 4 — Participant tools
 

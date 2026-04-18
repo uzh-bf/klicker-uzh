@@ -6,7 +6,7 @@ from __future__ import annotations
 import pytest
 from pytest_httpx import HTTPXMock
 
-from klicker_mcp.server import whoami
+from klicker_mcp.tools.common import whoami
 
 
 @pytest.mark.asyncio
@@ -33,7 +33,7 @@ async def test_whoami_forwards_bearer_and_returns_self(httpx_mock: HTTPXMock) ->
 
     from unittest.mock import patch
 
-    with patch("klicker_mcp.server.get_bearer_token", return_value="tkn"):
+    with patch("klicker_mcp.tools.common.get_bearer_token", return_value="tkn"):
         result = await whoami()
 
     request = httpx_mock.get_request()
@@ -54,7 +54,7 @@ async def test_whoami_handles_graphql_errors(httpx_mock: HTTPXMock) -> None:
 
     from unittest.mock import patch
 
-    with patch("klicker_mcp.server.get_bearer_token", return_value="tkn"):
+    with patch("klicker_mcp.tools.common.get_bearer_token", return_value="tkn"):
         result = await whoami()
 
     assert result["authenticated"] is False

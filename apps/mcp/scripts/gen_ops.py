@@ -75,10 +75,7 @@ def main(src: Path = DEFAULT_SRC, out: Path = OUT) -> int:
     content = header + "\n".join(body_lines) + "\n}\n"
     out.write_text(content)
 
-    print(
-        f"Wrote {len(by_name)} operations to {out} "
-        f"(skipped {skipped_fragments} fragment-only documents)"
-    )
+    print(f"Wrote {len(by_name)} operations to {out} (skipped {skipped_fragments} fragment-only documents)")
     return 0
 
 
