@@ -2,16 +2,16 @@
 
 Two modes, probed in order:
 
-1. **OAuth mode (iteration 5).** When the server is configured with
-   `build_oauth_proxy`, FastMCP exposes the access token issued by the proxy
-   via `get_access_token()`. The OAuth proxy stores the upstream KlickerUZH
+1. **OAuth mode.** When the server is configured with `build_oauth_proxy`,
+   FastMCP exposes the access token issued by the proxy via
+   `get_access_token()`. The OAuth proxy stores the upstream KlickerUZH
    JWT alongside it (one-way mapping) and presents the raw KlickerUZH JWT
    back to tools so they can forward it to the GraphQL backend.
 
-2. **Pass-through mode (iterations 2-4).** No OAuth configured; the MCP
-   client sends a raw `Authorization: Bearer <jwt>` header itself, which we
-   forward verbatim. This remains the default for local dev and CI so tests
-   don't need to spin up a mock IdP.
+2. **Pass-through mode.** No OAuth configured; the MCP client sends a raw
+   `Authorization: Bearer <jwt>` header itself, which we forward verbatim.
+   This remains the default for local dev and CI so tests don't need to
+   spin up a mock IdP.
 
 The KlickerUZH GraphQL backend's `jwtMiddleware` is always the authoritative
 verifier.

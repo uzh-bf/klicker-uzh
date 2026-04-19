@@ -13,6 +13,7 @@
 
 import crypto from 'crypto'
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { MCP_ACCESS_TOKEN_TTL_SECONDS } from './_constants'
 import { popCode } from './_store'
 
 export default async function handler(
@@ -72,6 +73,6 @@ export default async function handler(
   res.status(200).json({
     access_token: record.jwt,
     token_type: 'Bearer',
-    expires_in: 12 * 60 * 60,
+    expires_in: MCP_ACCESS_TOKEN_TTL_SECONDS,
   })
 }

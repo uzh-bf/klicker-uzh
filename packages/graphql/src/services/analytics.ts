@@ -696,7 +696,7 @@ export async function getActivityAnalytics(
   }
 }
 
-// --- Participant self-analytics (iteration 6, Category B) ------------------
+// --- Category B: participant self-analytics --------------------------------
 //
 // These helpers return already-computed analytics rows scoped to the calling
 // participant (`participantId = ctx.user.sub`). They are pure reads over
@@ -745,7 +745,7 @@ export async function getParticipantActivityPerformanceSelf(
   })
 }
 
-// --- Iteration 7: per-tag accuracy aggregation ----------------------------
+// --- Category C: per-tag accuracy aggregation -----------------------------
 
 export async function getParticipantTopicAccuracy(
   { courseId }: { courseId: string },

@@ -9,6 +9,19 @@ import httpx
 from klicker_mcp.gql.ops import OPERATIONS
 from klicker_mcp.settings import get_settings
 
+# Module-level shared httpx client. Reused across tool calls so the TCP +
+# TLS connection pool survives between invocations — without this, every
+# tool call was paying the handshake cost anew. Lives for the lifetime of
+# the process; httpx closes its sockets on interpreter shutdown.
+_shared_client: httpx.AsyncClient | None = None
+
+
+def _get_shared_client() -> httpx.AsyncClient:
+    global _shared_client
+    if _shared_client is None:
+        _shared_client = httpx.AsyncClient(timeout=30.0)
+    return _shared_client
+
 
 class GraphQLError(Exception):
     """Raised when the GraphQL response contains a non-empty `errors` array."""
@@ -50,13 +63,13 @@ class AsyncGraphQLClient:
         *,
         endpoint: str | None = None,
         client: httpx.AsyncClient | None = None,
-        timeout: float = 30.0,
+        timeout: float = 30.0,  # retained for API compat; shared client has its own timeout
     ) -> None:
         settings = get_settings()
         origin = settings.api_origin.rstrip("/")
         self._endpoint = endpoint or f"{origin}/api/graphql"
-        self._client = client or httpx.AsyncClient(timeout=timeout)
-        self._owns_client = client is None
+        self._client = client or _get_shared_client()
+        self._owns_client = False
 
     @property
     def endpoint(self) -> str:

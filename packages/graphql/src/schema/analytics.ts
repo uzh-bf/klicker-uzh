@@ -136,7 +136,7 @@ export const MySRSEntry = builder.objectType(MySRSEntryRef, {
   }),
 })
 
-// --- Iteration 7: Category C aggregation -----------------------------------
+// --- Category C: per-tag accuracy + activity feed aggregation --------------
 
 // Per-tag accuracy for the authenticated participant. Drives "weak topics"
 // and "mastery map" UIs. Aggregated from QuestionResponse via Element.tags;

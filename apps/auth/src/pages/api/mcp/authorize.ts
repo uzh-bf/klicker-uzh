@@ -23,6 +23,7 @@ import { signJWT } from '@klicker-uzh/util'
 import crypto from 'crypto'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getToken } from 'next-auth/jwt'
+import { MCP_ACCESS_TOKEN_TTL } from './_constants'
 import { putCode } from './_store'
 
 const REQUIRED_PARAMS = [
@@ -60,8 +61,10 @@ export default async function handler(
     return
   }
 
-  const scope = (params.scope ?? 'lecturer').toLowerCase()
-  const wantsParticipant = scope.includes('participant')
+  // OAuth scope is a space- or comma-separated list of tokens; match on
+  // exact tokens to avoid substring collisions like `participant_preview`.
+  const scopes = (params.scope ?? 'lecturer').toLowerCase().split(/[\s,]+/)
+  const wantsParticipant = scopes.includes('participant')
   const cookieName = wantsParticipant
     ? PARTICIPANT_COOKIE_NAME
     : MANAGER_COOKIE_NAME
@@ -101,7 +104,7 @@ export default async function handler(
       catalystIndividual: (session.catalystIndividual as boolean) ?? false,
     },
     process.env.APP_SECRET as string,
-    { expiresIn: '12h', issuer: process.env.APP_ORIGIN_AUTH }
+    { expiresIn: MCP_ACCESS_TOKEN_TTL, issuer: process.env.APP_ORIGIN_AUTH }
   )
 
   const code = crypto.randomBytes(32).toString('base64url')

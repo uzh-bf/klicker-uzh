@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 
 from klicker_mcp.app import mcp
 from klicker_mcp.gql import AsyncGraphQLClient
-from klicker_mcp.tools._helpers import optional_bearer_token, require_bearer_token
+from klicker_mcp.tools._helpers import get_bearer_token, require_bearer_token
 
 ElementType = Literal[
     "SC",
@@ -127,7 +127,7 @@ async def get_practice_quiz(
     Solutions are never returned ahead of a submitted response — the backend
     gates that server-side via `PracticeQuizDataWithoutSolutions`.
     """
-    token = optional_bearer_token()
+    token = get_bearer_token()
     async with AsyncGraphQLClient() as client:
         data = await client.execute("GetPracticeQuiz", variables={"id": id}, bearer_token=token)
     return data.get("practiceQuiz") or {}
@@ -138,7 +138,7 @@ async def get_microlearning(
     id: Annotated[str, Field(description="Micro-learning ID.")],
 ) -> dict[str, Any]:
     """Return a micro-learning activity with its stacks (solutions gated server-side)."""
-    token = optional_bearer_token()
+    token = get_bearer_token()
     async with AsyncGraphQLClient() as client:
         data = await client.execute("GetMicroLearning", variables={"id": id}, bearer_token=token)
     return data.get("microLearning") or {}

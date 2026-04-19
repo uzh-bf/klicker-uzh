@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     api_origin: str = Field(default="http://localhost:3000", alias="APP_ORIGIN_API")
     app_secret: str = Field(default="abcd", alias="APP_SECRET")
 
-    # --- OAuth bridge (iteration 5) -------------------------------------------
+    # --- OAuth bridge ---------------------------------------------------------
     # When any of these are unset, OAuth is disabled and the server falls back
     # to pass-through mode (clients send Authorization: Bearer headers
     # themselves). That's the local-dev and CI default.

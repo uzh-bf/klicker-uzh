@@ -1308,7 +1308,7 @@ export async function getCourseStudentTimelines(ctx: ContextWithUser) {
   return sortedCourses
 }
 
-// --- Participant self-history (iteration 6, Category B) --------------------
+// --- Category B: participant self-history ---------------------------------
 
 export async function getMyResponseHistory(
   {
@@ -1383,7 +1383,7 @@ export async function getMySRSStateSelf(
   }))
 }
 
-// --- Iteration 7: recent activity feed -------------------------------------
+// --- Category C: recent activity feed -------------------------------------
 //
 // Unifies the participant's response-detail and achievement-unlock rows
 // into a single chronological feed. Leaderboard-rank deltas are not tracked
@@ -1438,7 +1438,7 @@ export async function getMyRecentActivity(
   return entries.slice(0, limit)
 }
 
-// --- Iteration 7: cross-course bookmarks -----------------------------------
+// --- Category C: cross-course bookmarks -----------------------------------
 
 export async function getMyBookmarksAcrossCourses(
   _args: object,

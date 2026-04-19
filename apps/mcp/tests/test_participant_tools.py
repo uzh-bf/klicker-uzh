@@ -85,7 +85,7 @@ async def test_list_practice_quizzes(httpx_mock: HTTPXMock) -> None:
 @pytest.mark.asyncio
 async def test_get_practice_quiz_tolerates_missing_bearer(httpx_mock: HTTPXMock) -> None:
     _mock_graphql(httpx_mock, "GetPracticeQuiz", {"practiceQuiz": {"id": "pq"}})
-    with patch("klicker_mcp.tools._helpers.get_bearer_token", return_value=None):
+    with patch("klicker_mcp.tools.participant.get_bearer_token", return_value=None):
         result = await get_practice_quiz(id="pq")
 
     request = httpx_mock.get_request()
@@ -97,7 +97,7 @@ async def test_get_practice_quiz_tolerates_missing_bearer(httpx_mock: HTTPXMock)
 @pytest.mark.asyncio
 async def test_get_practice_quiz_sends_token_when_available(httpx_mock: HTTPXMock) -> None:
     _mock_graphql(httpx_mock, "GetPracticeQuiz", {"practiceQuiz": {"id": "pq"}})
-    with patch("klicker_mcp.tools._helpers.get_bearer_token", return_value="tkn"):
+    with patch("klicker_mcp.tools.participant.get_bearer_token", return_value="tkn"):
         await get_practice_quiz(id="pq")
 
     request = httpx_mock.get_request()

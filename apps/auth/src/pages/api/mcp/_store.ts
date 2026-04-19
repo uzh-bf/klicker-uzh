@@ -16,7 +16,22 @@ type CodeRecord = {
 }
 
 const CODE_TTL_MS = 60_000
+const SWEEP_INTERVAL_MS = 60_000
 const store = new Map<string, CodeRecord>()
+
+// Periodically drop expired codes so abandoned flows don't accumulate in
+// memory. `popCode` already checks TTL at redemption, but codes that are
+// never redeemed would otherwise live forever.
+if (typeof setInterval !== 'undefined') {
+  const handle = setInterval(() => {
+    const cutoff = Date.now() - CODE_TTL_MS
+    for (const [code, record] of store) {
+      if (record.createdAt < cutoff) store.delete(code)
+    }
+  }, SWEEP_INTERVAL_MS)
+  // Don't keep the Node process alive for this.
+  if (typeof handle.unref === 'function') handle.unref()
+}
 
 export function putCode(code: string, record: Omit<CodeRecord, 'createdAt'>) {
   store.set(code, { ...record, createdAt: Date.now() })

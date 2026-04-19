@@ -480,7 +480,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      // --- Participant self-analytics (iteration 6, Category B) ------------
+      // --- Category B: participant self-analytics --------------------------
       // Each query is scoped to `participantId = ctx.user.sub` in the
       // service. Rows belonging to other participants are never returned.
 
@@ -542,7 +542,7 @@ export const Query = builder.queryType({
         },
       }),
 
-      // --- Iteration 7: Category C aggregation --------------------------
+      // --- Category C: aggregation over existing tables -----------------
 
       participantTopicAccuracy: t.withAuth(asParticipant).field({
         type: [ParticipantTopicAccuracy],
