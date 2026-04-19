@@ -733,16 +733,18 @@ export async function getParticipantActivityPerformanceSelf(
 ) {
   if (!ctx.user?.sub) return []
   // ParticipantActivityPerformance has no direct courseId; filter by the
-  // practiceQuiz / microLearning linked to the course.
-  return await ctx.prisma.participantActivityPerformance.findMany({
+  // practiceQuiz / microLearning linked to the course. Surface whichever
+  // activity id is set as the Pothos-exposed `activityId`.
+  const rows = await ctx.prisma.participantActivityPerformance.findMany({
     where: {
       participantId: ctx.user.sub,
-      OR: [
-        { practiceQuiz: { courseId } },
-        { microLearning: { courseId } },
-      ],
+      OR: [{ practiceQuiz: { courseId } }, { microLearning: { courseId } }],
     },
   })
+  return rows.map((row) => ({
+    ...row,
+    activityId: row.practiceQuizId ?? row.microLearningId ?? '',
+  }))
 }
 
 // --- Category C: per-tag accuracy aggregation -----------------------------

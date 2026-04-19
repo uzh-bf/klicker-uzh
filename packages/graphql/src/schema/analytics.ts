@@ -198,7 +198,7 @@ export const MyActivityEntry = builder.objectType(MyActivityEntryRef, {
 // that need elements should hit `getBookmarkedElementStacks(courseId)`.
 interface IBookmarkedStackSummary {
   id: number
-  displayName: string
+  displayName: string | null
   description: string | null
   order: number
 }
@@ -214,7 +214,7 @@ export const BookmarkedStackSummary = builder.objectType(
   {
     fields: (t) => ({
       id: t.exposeInt('id'),
-      displayName: t.exposeString('displayName'),
+      displayName: t.exposeString('displayName', { nullable: true }),
       description: t.exposeString('description', { nullable: true }),
       order: t.exposeInt('order'),
     }),

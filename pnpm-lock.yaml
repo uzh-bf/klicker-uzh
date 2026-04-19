@@ -1416,6 +1416,8 @@ importers:
         specifier: ~5.6.3
         version: 5.6.3
 
+  apps/mcp: {}
+
   apps/office-addin:
     dependencies:
       '@uzh-bf/design-system':

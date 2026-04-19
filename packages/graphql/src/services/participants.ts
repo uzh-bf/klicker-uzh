@@ -1429,7 +1429,8 @@ export async function getMyRecentActivity(
     entries.push({
       type: 'ACHIEVEMENT',
       timestamp: row.achievedAt ?? row.createdAt,
-      summary: row.achievement.nameEN,
+      summary:
+        row.achievement.nameEN ?? row.achievement.nameDE ?? 'Achievement',
       targetId: String(row.achievementId),
     })
   }

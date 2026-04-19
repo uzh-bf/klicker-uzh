@@ -279,6 +279,13 @@ export enum ActivityType {
   PracticeQuiz = 'PRACTICE_QUIZ'
 }
 
+export enum AnalyticsType {
+  Course = 'COURSE',
+  Daily = 'DAILY',
+  Monthly = 'MONTHLY',
+  Weekly = 'WEEKLY'
+}
+
 export type AnswerCollection = {
   __typename?: 'AnswerCollection';
   createdAt?: Maybe<Scalars['Date']['output']>;
@@ -390,6 +397,21 @@ export type AwardEntry = {
   participant?: Maybe<Participant>;
   participantGroup?: Maybe<ParticipantGroup>;
   type: Scalars['String']['output'];
+};
+
+export type BookmarkedStackSummary = {
+  __typename?: 'BookmarkedStackSummary';
+  description?: Maybe<Scalars['String']['output']>;
+  displayName?: Maybe<Scalars['String']['output']>;
+  id: Scalars['Int']['output'];
+  order: Scalars['Int']['output'];
+};
+
+export type BookmarkedStacksByCourse = {
+  __typename?: 'BookmarkedStacksByCourse';
+  courseId: Scalars['String']['output'];
+  courseName: Scalars['String']['output'];
+  stacks: Array<BookmarkedStackSummary>;
 };
 
 export type CaseStudyActivityEvaluationData = {
@@ -3178,6 +3200,49 @@ export type MutationVoteFeedbackResponseArgs = {
   incrementUpvote: Scalars['Int']['input'];
 };
 
+export type MyActivityEntry = {
+  __typename?: 'MyActivityEntry';
+  summary: Scalars['String']['output'];
+  targetId: Scalars['String']['output'];
+  timestamp: Scalars['Date']['output'];
+  type: MyActivityKind;
+};
+
+export enum MyActivityKind {
+  Achievement = 'ACHIEVEMENT',
+  Response = 'RESPONSE'
+}
+
+export type MyResponse = {
+  __typename?: 'MyResponse';
+  averageTimeSpent: Scalars['Float']['output'];
+  elementId: Scalars['Int']['output'];
+  elementName: Scalars['String']['output'];
+  elementType: ElementType;
+  firstResponseCorrectness: ResponseCorrectness;
+  instanceId: Scalars['Int']['output'];
+  lastAnsweredAt?: Maybe<Scalars['Date']['output']>;
+  lastResponseCorrectness: ResponseCorrectness;
+  trialsCount: Scalars['Int']['output'];
+};
+
+export type MyResponseHistoryPage = {
+  __typename?: 'MyResponseHistoryPage';
+  items: Array<MyResponse>;
+  total: Scalars['Int']['output'];
+};
+
+export type MySrsEntry = {
+  __typename?: 'MySRSEntry';
+  correctCountStreak: Scalars['Int']['output'];
+  eFactor: Scalars['Float']['output'];
+  elementId: Scalars['Int']['output'];
+  instanceId: Scalars['Int']['output'];
+  interval: Scalars['Int']['output'];
+  lastResponseCorrectness: ResponseCorrectness;
+  nextDueAt?: Maybe<Scalars['Date']['output']>;
+};
+
 export type NumericalActivityEvaluationData = {
   __typename?: 'NumericalActivityEvaluationData';
   content: Scalars['String']['output'];
@@ -3437,6 +3502,24 @@ export type ParticipantActivityTimestamp = {
   date: Scalars['Date']['output'];
 };
 
+export type ParticipantAnalytics = {
+  __typename?: 'ParticipantAnalytics';
+  computedAt: Scalars['Date']['output'];
+  firstCorrectCount?: Maybe<Scalars['Float']['output']>;
+  id: Scalars['Int']['output'];
+  lastCorrectCount?: Maybe<Scalars['Float']['output']>;
+  meanCorrectCount: Scalars['Float']['output'];
+  meanPartialCorrectCount: Scalars['Float']['output'];
+  meanWrongCount: Scalars['Float']['output'];
+  responseCount: Scalars['Int']['output'];
+  timestamp: Scalars['Date']['output'];
+  totalPoints: Scalars['Int']['output'];
+  totalScore: Scalars['Int']['output'];
+  totalXp: Scalars['Int']['output'];
+  trialsCount: Scalars['Int']['output'];
+  type: AnalyticsType;
+};
+
 export type ParticipantCourseActivity = {
   __typename?: 'ParticipantCourseActivity';
   activeDaysPerWeek: Scalars['Float']['output'];
@@ -3485,6 +3568,17 @@ export type ParticipantTokenData = {
   __typename?: 'ParticipantTokenData';
   participant?: Maybe<Participant>;
   participantToken?: Maybe<Scalars['String']['output']>;
+};
+
+export type ParticipantTopicAccuracy = {
+  __typename?: 'ParticipantTopicAccuracy';
+  correctCount: Scalars['Int']['output'];
+  lastAnsweredAt?: Maybe<Scalars['Date']['output']>;
+  partialCount: Scalars['Int']['output'];
+  tagId: Scalars['Int']['output'];
+  tagName: Scalars['String']['output'];
+  totalCount: Scalars['Int']['output'];
+  wrongCount: Scalars['Int']['output'];
 };
 
 export type ParticipantWithAchievements = {
@@ -3704,8 +3798,16 @@ export type Query = {
   liveQuizLeaderboard?: Maybe<Array<LeaderboardEntry>>;
   liveQuizStudentAssessmentResponses?: Maybe<Array<StudentAssessmentBlockResponse>>;
   microLearning?: Maybe<MicroLearning>;
+  myBookmarksAcrossCourses: Array<BookmarkedStacksByCourse>;
+  myRecentActivity: Array<MyActivityEntry>;
+  myResponseHistory: MyResponseHistoryPage;
+  mySRSState: Array<MySrsEntry>;
+  participantActivityPerformance: Array<ParticipantActivityPerformance>;
+  participantCourseAnalytics: Array<ParticipantAnalytics>;
   participantCourses?: Maybe<Array<Course>>;
   participantGroups?: Maybe<Array<ParticipantGroup>>;
+  participantPerformance?: Maybe<ParticipantPerformance>;
+  participantTopicAccuracy: Array<ParticipantTopicAccuracy>;
   participations?: Maybe<Array<Participation>>;
   practiceQuiz?: Maybe<PracticeQuiz>;
   previousPointCorrections?: Maybe<Array<PointCorrection>>;
@@ -4137,7 +4239,45 @@ export type QueryMicroLearningArgs = {
 };
 
 
+export type QueryMyRecentActivityArgs = {
+  limit?: Scalars['Int']['input'];
+};
+
+
+export type QueryMyResponseHistoryArgs = {
+  correctnessIn?: InputMaybe<Array<ResponseCorrectness>>;
+  courseId?: InputMaybe<Scalars['String']['input']>;
+  limit?: Scalars['Int']['input'];
+  offset?: Scalars['Int']['input'];
+};
+
+
+export type QueryMySrsStateArgs = {
+  practiceQuizId: Scalars['String']['input'];
+};
+
+
+export type QueryParticipantActivityPerformanceArgs = {
+  courseId: Scalars['String']['input'];
+};
+
+
+export type QueryParticipantCourseAnalyticsArgs = {
+  courseId: Scalars['String']['input'];
+};
+
+
 export type QueryParticipantGroupsArgs = {
+  courseId: Scalars['String']['input'];
+};
+
+
+export type QueryParticipantPerformanceArgs = {
+  courseId: Scalars['String']['input'];
+};
+
+
+export type QueryParticipantTopicAccuracyArgs = {
   courseId: Scalars['String']['input'];
 };
 
@@ -7090,6 +7230,63 @@ export type GroupActivityDetailsQueryVariables = Exact<{
 
 export type GroupActivityDetailsQuery = { __typename?: 'Query', groupActivityDetails?: { __typename?: 'GroupActivityDetails', id: string, displayName: string, status: PublicationStatus, description?: string | null, scheduledStartAt?: any | null, scheduledEndAt?: any | null, clues: Array<{ __typename?: 'GroupActivityClue', id: number, displayName: string }>, stacks: Array<{ __typename?: 'ElementStack', id: number, type: ElementStackType, displayName?: string | null, description?: string | null, order?: number | null, elements?: Array<{ __typename?: 'ElementInstance', id: number, type: ElementInstanceType, elementType: ElementType, elementData: { __typename: 'CaseStudyElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, basePoints: boolean, pointsMultiplier: number, options: { __typename?: 'CaseStudyElementOptions', hasSampleSolution?: boolean | null, items?: Array<{ __typename?: 'ElementOptionsAnswerCollectionEntry', id: number, value: string }> | null, criteria: Array<{ __typename?: 'CaseStudyCriterion', id: string, name: string, min: number, max: number, step: number, unit?: string | null, labels?: { __typename?: 'CaseStudyCriterionLabels', min: string, mid?: string | null, max: string } | null }>, cases: Array<{ __typename?: 'CaseStudyCase', id: string, title: string, description: string }> } } | { __typename: 'ChoicesElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, basePoints: boolean, pointsMultiplier: number, options: { __typename?: 'ChoiceElementOptions', hasSampleSolution?: boolean | null, displayMode: ElementDisplayMode, choices: Array<{ __typename?: 'Choice', ix: number, value: string }> } } | { __typename: 'ContentElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, basePoints: boolean, pointsMultiplier: number } | { __typename?: 'FlashcardElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, basePoints: boolean, pointsMultiplier: number } | { __typename: 'FreeTextElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, basePoints: boolean, pointsMultiplier: number, options: { __typename?: 'FreeTextElementOptions', hasSampleSolution?: boolean | null, restrictions?: { __typename?: 'FreeTextRestrictions', maxLength?: number | null } | null } } | { __typename: 'NumericalElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, basePoints: boolean, pointsMultiplier: number, options: { __typename?: 'NumericalElementOptions', hasSampleSolution?: boolean | null, accuracy?: number | null, placeholder?: string | null, unit?: string | null, restrictions?: { __typename?: 'NumericalRestrictions', min?: number | null, max?: number | null } | null } } | { __typename: 'SelectionElementData', id: string, elementId: number, name: string, type: ElementType, content: string, explanation?: string | null, basePoints: boolean, pointsMultiplier: number, options: { __typename?: 'SelectionElementOptions', hasSampleSolution?: boolean | null, numberOfInputs?: number | null, answerCollection?: { __typename?: 'ElementOptionsAnswerCollection', id: number, entries?: Array<{ __typename?: 'ElementOptionsAnswerCollectionEntry', id: number, value: string }> | null } | null } } }> | null }>, course: { __typename?: 'Course', id: string, displayName: string, color: string }, group: { __typename?: 'ParticipantGroup', id: string, name: string, participants?: Array<{ __typename?: 'Participant', id: string, username: string, avatar?: string | null, isSelf?: boolean | null }> | null }, activityInstance?: { __typename?: 'GroupActivityInstance', id: number, decisionsSubmittedAt?: any | null, resultsComputedAt?: any | null, clues?: Array<{ __typename?: 'GroupActivityClueInstance', id: number, displayName: string, type: ParameterType, unit?: string | null, value?: string | null, participant: { __typename?: 'Participant', id: string, username: string, avatar?: string | null, isSelf?: boolean | null } }> | null, decisions?: Array<{ __typename?: 'GroupActivityDecision', instanceId: number, type: ElementType, freeTextResponse?: string | null, numericalResponse?: number | null, contentResponse?: boolean | null, selectionResponse?: Array<number> | null, choicesResponse?: Array<{ __typename?: 'ChoicesResponseObject', ix: number, selected: boolean }> | null, caseStudyResponse?: Array<{ __typename?: 'SingleQuestionResponseCaseStudyCase', caseId: string, itemResponses: Array<{ __typename?: 'SingleQuestionResponseCaseStudyItem', itemId: number, criterionResponses: Array<{ __typename?: 'SingleQuestionResponseCaseStudyCriterion', criterionId: string, response: number }> }> }> | null }> | null, results?: { __typename?: 'GroupActivityResults', passed: boolean, points: number, comment?: string | null, grading: Array<{ __typename?: 'GroupActivityGrading', instanceId: number, score: number, maxPoints: number, feedback?: string | null }> } | null } | null } | null };
 
+export type MyBookmarksAcrossCoursesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyBookmarksAcrossCoursesQuery = { __typename?: 'Query', myBookmarksAcrossCourses: Array<{ __typename?: 'BookmarkedStacksByCourse', courseId: string, courseName: string, stacks: Array<{ __typename?: 'BookmarkedStackSummary', id: number, displayName?: string | null, description?: string | null, order: number }> }> };
+
+export type MyRecentActivityQueryVariables = Exact<{
+  limit: Scalars['Int']['input'];
+}>;
+
+
+export type MyRecentActivityQuery = { __typename?: 'Query', myRecentActivity: Array<{ __typename?: 'MyActivityEntry', type: MyActivityKind, timestamp: any, summary: string, targetId: string }> };
+
+export type MyResponseHistoryQueryVariables = Exact<{
+  courseId?: InputMaybe<Scalars['String']['input']>;
+  correctnessIn?: InputMaybe<Array<ResponseCorrectness> | ResponseCorrectness>;
+  limit: Scalars['Int']['input'];
+  offset: Scalars['Int']['input'];
+}>;
+
+
+export type MyResponseHistoryQuery = { __typename?: 'Query', myResponseHistory: { __typename?: 'MyResponseHistoryPage', total: number, items: Array<{ __typename?: 'MyResponse', instanceId: number, elementId: number, elementType: ElementType, elementName: string, firstResponseCorrectness: ResponseCorrectness, lastResponseCorrectness: ResponseCorrectness, trialsCount: number, averageTimeSpent: number, lastAnsweredAt?: any | null }> } };
+
+export type MySrsStateQueryVariables = Exact<{
+  practiceQuizId: Scalars['String']['input'];
+}>;
+
+
+export type MySrsStateQuery = { __typename?: 'Query', mySRSState: Array<{ __typename?: 'MySRSEntry', instanceId: number, elementId: number, eFactor: number, interval: number, nextDueAt?: any | null, correctCountStreak: number, lastResponseCorrectness: ResponseCorrectness }> };
+
+export type ParticipantActivityPerformanceQueryVariables = Exact<{
+  courseId: Scalars['String']['input'];
+}>;
+
+
+export type ParticipantActivityPerformanceQuery = { __typename?: 'Query', participantActivityPerformance: Array<{ __typename?: 'ParticipantActivityPerformance', id: number, activityId: string, totalScore: number, completion: number }> };
+
+export type ParticipantCourseAnalyticsQueryVariables = Exact<{
+  courseId: Scalars['String']['input'];
+}>;
+
+
+export type ParticipantCourseAnalyticsQuery = { __typename?: 'Query', participantCourseAnalytics: Array<{ __typename?: 'ParticipantAnalytics', id: number, type: AnalyticsType, timestamp: any, computedAt: any, trialsCount: number, responseCount: number, totalScore: number, totalPoints: number, totalXp: number, meanCorrectCount: number, meanPartialCorrectCount: number, meanWrongCount: number, firstCorrectCount?: number | null, lastCorrectCount?: number | null }> };
+
+export type ParticipantPerformanceQueryVariables = Exact<{
+  courseId: Scalars['String']['input'];
+}>;
+
+
+export type ParticipantPerformanceQuery = { __typename?: 'Query', participantPerformance?: { __typename?: 'ParticipantPerformance', id: number, firstErrorRate: number, firstPerformance: PerformanceLevel, lastErrorRate: number, lastPerformance: PerformanceLevel, totalErrorRate: number, totalPerformance: PerformanceLevel } | null };
+
+export type ParticipantTopicAccuracyQueryVariables = Exact<{
+  courseId: Scalars['String']['input'];
+}>;
+
+
+export type ParticipantTopicAccuracyQuery = { __typename?: 'Query', participantTopicAccuracy: Array<{ __typename?: 'ParticipantTopicAccuracy', tagId: number, tagName: string, totalCount: number, correctCount: number, partialCount: number, wrongCount: number, lastAnsweredAt?: any | null }> };
+
 export type ParticipationsQueryVariables = Exact<{
   endpoint?: InputMaybe<Scalars['String']['input']>;
   assessmentOnly?: InputMaybe<Scalars['Boolean']['input']>;
@@ -7493,6 +7690,14 @@ export const GetUserRunningLiveQuizzesDocument = {"kind":"Document","definitions
 export const GetUserTagsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUserTags"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"userTags"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"order"}}]}}]}}]} as unknown as DocumentNode<GetUserTagsQuery, GetUserTagsQueryVariables>;
 export const GetUsersPrivatePreviewDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUsersPrivatePreview"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getUsersPrivatePreview"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"shortname"}},{"kind":"Field","name":{"kind":"Name","value":"email"}}]}}]}}]} as unknown as DocumentNode<GetUsersPrivatePreviewQuery, GetUsersPrivatePreviewQueryVariables>;
 export const GroupActivityDetailsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GroupActivityDetails"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"activityId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"groupId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"groupActivityDetails"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"activityId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"activityId"}}},{"kind":"Argument","name":{"kind":"Name","value":"groupId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"groupId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"scheduledStartAt"}},{"kind":"Field","name":{"kind":"Name","value":"scheduledEndAt"}},{"kind":"Field","name":{"kind":"Name","value":"clues"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"stacks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"order"}},{"kind":"Field","name":{"kind":"Name","value":"elements"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"elementType"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"ElementDataWithoutSolutions"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"course"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"color"}}]}},{"kind":"Field","name":{"kind":"Name","value":"group"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"participants"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"isSelf"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"activityInstance"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"clues"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"unit"}},{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"participant"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"isSelf"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"decisionsSubmittedAt"}},{"kind":"Field","name":{"kind":"Name","value":"decisions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"instanceId"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"freeTextResponse"}},{"kind":"Field","name":{"kind":"Name","value":"choicesResponse"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ix"}},{"kind":"Field","name":{"kind":"Name","value":"selected"}}]}},{"kind":"Field","name":{"kind":"Name","value":"numericalResponse"}},{"kind":"Field","name":{"kind":"Name","value":"contentResponse"}},{"kind":"Field","name":{"kind":"Name","value":"selectionResponse"}},{"kind":"Field","name":{"kind":"Name","value":"caseStudyResponse"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"caseId"}},{"kind":"Field","name":{"kind":"Name","value":"itemResponses"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"itemId"}},{"kind":"Field","name":{"kind":"Name","value":"criterionResponses"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"criterionId"}},{"kind":"Field","name":{"kind":"Name","value":"response"}}]}}]}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"resultsComputedAt"}},{"kind":"Field","name":{"kind":"Name","value":"results"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"passed"}},{"kind":"Field","name":{"kind":"Name","value":"points"}},{"kind":"Field","name":{"kind":"Name","value":"comment"}},{"kind":"Field","name":{"kind":"Name","value":"grading"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"instanceId"}},{"kind":"Field","name":{"kind":"Name","value":"score"}},{"kind":"Field","name":{"kind":"Name","value":"maxPoints"}},{"kind":"Field","name":{"kind":"Name","value":"feedback"}}]}}]}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"ElementDataWithoutSolutions"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ElementInstance"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"elementData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ChoicesElementData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"elementId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"basePoints"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}},{"kind":"Field","name":{"kind":"Name","value":"options"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasSampleSolution"}},{"kind":"Field","name":{"kind":"Name","value":"displayMode"}},{"kind":"Field","name":{"kind":"Name","value":"choices"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ix"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"NumericalElementData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"elementId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"basePoints"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}},{"kind":"Field","name":{"kind":"Name","value":"options"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasSampleSolution"}},{"kind":"Field","name":{"kind":"Name","value":"accuracy"}},{"kind":"Field","name":{"kind":"Name","value":"placeholder"}},{"kind":"Field","name":{"kind":"Name","value":"unit"}},{"kind":"Field","name":{"kind":"Name","value":"restrictions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"min"}},{"kind":"Field","name":{"kind":"Name","value":"max"}}]}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"FreeTextElementData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"elementId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"basePoints"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}},{"kind":"Field","name":{"kind":"Name","value":"options"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasSampleSolution"}},{"kind":"Field","name":{"kind":"Name","value":"restrictions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"maxLength"}}]}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"SelectionElementData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"elementId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"basePoints"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}},{"kind":"Field","name":{"kind":"Name","value":"options"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasSampleSolution"}},{"kind":"Field","name":{"kind":"Name","value":"numberOfInputs"}},{"kind":"Field","name":{"kind":"Name","value":"answerCollection"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"entries"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}}]}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"CaseStudyElementData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"elementId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"basePoints"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}},{"kind":"Field","name":{"kind":"Name","value":"options"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hasSampleSolution"}},{"kind":"Field","name":{"kind":"Name","value":"hasSampleSolution"}},{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"value"}}]}},{"kind":"Field","name":{"kind":"Name","value":"criteria"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"min"}},{"kind":"Field","name":{"kind":"Name","value":"max"}},{"kind":"Field","name":{"kind":"Name","value":"step"}},{"kind":"Field","name":{"kind":"Name","value":"unit"}},{"kind":"Field","name":{"kind":"Name","value":"labels"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"min"}},{"kind":"Field","name":{"kind":"Name","value":"mid"}},{"kind":"Field","name":{"kind":"Name","value":"max"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"cases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"description"}}]}}]}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"FlashcardElementData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"elementId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"basePoints"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ContentElementData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"elementId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"basePoints"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}}]}}]}}]}}]} as unknown as DocumentNode<GroupActivityDetailsQuery, GroupActivityDetailsQueryVariables>;
+export const MyBookmarksAcrossCoursesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"MyBookmarksAcrossCourses"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"myBookmarksAcrossCourses"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"courseId"}},{"kind":"Field","name":{"kind":"Name","value":"courseName"}},{"kind":"Field","name":{"kind":"Name","value":"stacks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"order"}}]}}]}}]}}]} as unknown as DocumentNode<MyBookmarksAcrossCoursesQuery, MyBookmarksAcrossCoursesQueryVariables>;
+export const MyRecentActivityDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"MyRecentActivity"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"myRecentActivity"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"timestamp"}},{"kind":"Field","name":{"kind":"Name","value":"summary"}},{"kind":"Field","name":{"kind":"Name","value":"targetId"}}]}}]}}]} as unknown as DocumentNode<MyRecentActivityQuery, MyRecentActivityQueryVariables>;
+export const MyResponseHistoryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"MyResponseHistory"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"correctnessIn"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ResponseCorrectness"}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"limit"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"offset"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"myResponseHistory"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"courseId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}}},{"kind":"Argument","name":{"kind":"Name","value":"correctnessIn"},"value":{"kind":"Variable","name":{"kind":"Name","value":"correctnessIn"}}},{"kind":"Argument","name":{"kind":"Name","value":"limit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"limit"}}},{"kind":"Argument","name":{"kind":"Name","value":"offset"},"value":{"kind":"Variable","name":{"kind":"Name","value":"offset"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"total"}},{"kind":"Field","name":{"kind":"Name","value":"items"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"instanceId"}},{"kind":"Field","name":{"kind":"Name","value":"elementId"}},{"kind":"Field","name":{"kind":"Name","value":"elementType"}},{"kind":"Field","name":{"kind":"Name","value":"elementName"}},{"kind":"Field","name":{"kind":"Name","value":"firstResponseCorrectness"}},{"kind":"Field","name":{"kind":"Name","value":"lastResponseCorrectness"}},{"kind":"Field","name":{"kind":"Name","value":"trialsCount"}},{"kind":"Field","name":{"kind":"Name","value":"averageTimeSpent"}},{"kind":"Field","name":{"kind":"Name","value":"lastAnsweredAt"}}]}}]}}]}}]} as unknown as DocumentNode<MyResponseHistoryQuery, MyResponseHistoryQueryVariables>;
+export const MySrsStateDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"MySRSState"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"practiceQuizId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"mySRSState"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"practiceQuizId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"practiceQuizId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"instanceId"}},{"kind":"Field","name":{"kind":"Name","value":"elementId"}},{"kind":"Field","name":{"kind":"Name","value":"eFactor"}},{"kind":"Field","name":{"kind":"Name","value":"interval"}},{"kind":"Field","name":{"kind":"Name","value":"nextDueAt"}},{"kind":"Field","name":{"kind":"Name","value":"correctCountStreak"}},{"kind":"Field","name":{"kind":"Name","value":"lastResponseCorrectness"}}]}}]}}]} as unknown as DocumentNode<MySrsStateQuery, MySrsStateQueryVariables>;
+export const ParticipantActivityPerformanceDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"ParticipantActivityPerformance"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"participantActivityPerformance"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"courseId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"activityId"}},{"kind":"Field","name":{"kind":"Name","value":"totalScore"}},{"kind":"Field","name":{"kind":"Name","value":"completion"}}]}}]}}]} as unknown as DocumentNode<ParticipantActivityPerformanceQuery, ParticipantActivityPerformanceQueryVariables>;
+export const ParticipantCourseAnalyticsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"ParticipantCourseAnalytics"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"participantCourseAnalytics"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"courseId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"timestamp"}},{"kind":"Field","name":{"kind":"Name","value":"computedAt"}},{"kind":"Field","name":{"kind":"Name","value":"trialsCount"}},{"kind":"Field","name":{"kind":"Name","value":"responseCount"}},{"kind":"Field","name":{"kind":"Name","value":"totalScore"}},{"kind":"Field","name":{"kind":"Name","value":"totalPoints"}},{"kind":"Field","name":{"kind":"Name","value":"totalXp"}},{"kind":"Field","name":{"kind":"Name","value":"meanCorrectCount"}},{"kind":"Field","name":{"kind":"Name","value":"meanPartialCorrectCount"}},{"kind":"Field","name":{"kind":"Name","value":"meanWrongCount"}},{"kind":"Field","name":{"kind":"Name","value":"firstCorrectCount"}},{"kind":"Field","name":{"kind":"Name","value":"lastCorrectCount"}}]}}]}}]} as unknown as DocumentNode<ParticipantCourseAnalyticsQuery, ParticipantCourseAnalyticsQueryVariables>;
+export const ParticipantPerformanceDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"ParticipantPerformance"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"participantPerformance"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"courseId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"firstErrorRate"}},{"kind":"Field","name":{"kind":"Name","value":"firstPerformance"}},{"kind":"Field","name":{"kind":"Name","value":"lastErrorRate"}},{"kind":"Field","name":{"kind":"Name","value":"lastPerformance"}},{"kind":"Field","name":{"kind":"Name","value":"totalErrorRate"}},{"kind":"Field","name":{"kind":"Name","value":"totalPerformance"}}]}}]}}]} as unknown as DocumentNode<ParticipantPerformanceQuery, ParticipantPerformanceQueryVariables>;
+export const ParticipantTopicAccuracyDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"ParticipantTopicAccuracy"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"participantTopicAccuracy"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"courseId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"tagId"}},{"kind":"Field","name":{"kind":"Name","value":"tagName"}},{"kind":"Field","name":{"kind":"Name","value":"totalCount"}},{"kind":"Field","name":{"kind":"Name","value":"correctCount"}},{"kind":"Field","name":{"kind":"Name","value":"partialCount"}},{"kind":"Field","name":{"kind":"Name","value":"wrongCount"}},{"kind":"Field","name":{"kind":"Name","value":"lastAnsweredAt"}}]}}]}}]} as unknown as DocumentNode<ParticipantTopicAccuracyQuery, ParticipantTopicAccuracyQueryVariables>;
 export const ParticipationsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Participations"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"endpoint"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"assessmentOnly"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"participations"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"endpoint"},"value":{"kind":"Variable","name":{"kind":"Name","value":"endpoint"}}},{"kind":"Argument","name":{"kind":"Name","value":"assessmentOnly"},"value":{"kind":"Variable","name":{"kind":"Name","value":"assessmentOnly"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"completedMicroLearnings"}},{"kind":"Field","name":{"kind":"Name","value":"subscriptions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"endpoint"}}]}},{"kind":"Field","name":{"kind":"Name","value":"course"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"startDate"}},{"kind":"Field","name":{"kind":"Name","value":"endDate"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"isGamificationEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"microLearnings"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"scheduledStartAt"}},{"kind":"Field","name":{"kind":"Name","value":"scheduledEndAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"liveQuizzes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}}]}}]}}]}}]}}]} as unknown as DocumentNode<ParticipationsQuery, ParticipationsQueryVariables>;
 export const SelfDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Self"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"liveQuizId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"self"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"liveQuizId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"liveQuizId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"role"}},{"kind":"Field","name":{"kind":"Name","value":"scopeQuizId"}},{"kind":"Field","name":{"kind":"Name","value":"isCourseParticipant"}},{"kind":"Field","name":{"kind":"Name","value":"isCourseParticipationActive"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"institutionalEmail"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"locale"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"avatarSettings"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"skinTone"}},{"kind":"Field","name":{"kind":"Name","value":"eyes"}},{"kind":"Field","name":{"kind":"Name","value":"mouth"}},{"kind":"Field","name":{"kind":"Name","value":"hair"}},{"kind":"Field","name":{"kind":"Name","value":"facialHair"}},{"kind":"Field","name":{"kind":"Name","value":"accessory"}},{"kind":"Field","name":{"kind":"Name","value":"hairColor"}},{"kind":"Field","name":{"kind":"Name","value":"clothing"}},{"kind":"Field","name":{"kind":"Name","value":"clothingColor"}}]}},{"kind":"Field","name":{"kind":"Name","value":"isActive"}},{"kind":"Field","name":{"kind":"Name","value":"isProfilePublic"}},{"kind":"Field","name":{"kind":"Name","value":"xp"}},{"kind":"Field","name":{"kind":"Name","value":"level"}},{"kind":"Field","name":{"kind":"Name","value":"levelData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"index"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"requiredXp"}},{"kind":"Field","name":{"kind":"Name","value":"nextLevel"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"index"}},{"kind":"Field","name":{"kind":"Name","value":"requiredXp"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}}]}}]} as unknown as DocumentNode<SelfQuery, SelfQueryVariables>;
 export const SelfWithAchievementsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SelfWithAchievements"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"selfWithAchievements"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"participant"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"avatarSettings"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"skinTone"}},{"kind":"Field","name":{"kind":"Name","value":"eyes"}},{"kind":"Field","name":{"kind":"Name","value":"mouth"}},{"kind":"Field","name":{"kind":"Name","value":"hair"}},{"kind":"Field","name":{"kind":"Name","value":"facialHair"}},{"kind":"Field","name":{"kind":"Name","value":"accessory"}},{"kind":"Field","name":{"kind":"Name","value":"hairColor"}},{"kind":"Field","name":{"kind":"Name","value":"clothing"}},{"kind":"Field","name":{"kind":"Name","value":"clothingColor"}}]}},{"kind":"Field","name":{"kind":"Name","value":"xp"}},{"kind":"Field","name":{"kind":"Name","value":"level"}},{"kind":"Field","name":{"kind":"Name","value":"levelData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"index"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"requiredXp"}},{"kind":"Field","name":{"kind":"Name","value":"nextLevel"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"index"}},{"kind":"Field","name":{"kind":"Name","value":"requiredXp"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"achievements"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"achievedAt"}},{"kind":"Field","name":{"kind":"Name","value":"achievedCount"}},{"kind":"Field","name":{"kind":"Name","value":"achievement"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"nameDE"}},{"kind":"Field","name":{"kind":"Name","value":"nameEN"}},{"kind":"Field","name":{"kind":"Name","value":"descriptionDE"}},{"kind":"Field","name":{"kind":"Name","value":"descriptionEN"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"iconColor"}}]}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"achievements"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"nameDE"}},{"kind":"Field","name":{"kind":"Name","value":"nameEN"}},{"kind":"Field","name":{"kind":"Name","value":"descriptionDE"}},{"kind":"Field","name":{"kind":"Name","value":"descriptionEN"}},{"kind":"Field","name":{"kind":"Name","value":"icon"}},{"kind":"Field","name":{"kind":"Name","value":"iconColor"}}]}}]}}]}}]} as unknown as DocumentNode<SelfWithAchievementsQuery, SelfWithAchievementsQueryVariables>;
