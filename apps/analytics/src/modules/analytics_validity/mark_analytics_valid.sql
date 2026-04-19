@@ -25,5 +25,6 @@ UPDATE "Course" c SET
     ELSE c."chatAnalyticsValidAt"
   END
 WHERE (EXISTS (SELECT 1 FROM quiz_courses qc WHERE qc."courseId" = c.id)
-   OR EXISTS (SELECT 1 FROM chat_courses cc WHERE cc."courseId" = c.id))
+   OR EXISTS (SELECT 1 FROM chat_courses cc WHERE cc."courseId" = c.id)
+   OR /*COURSE_FINALIZE_BYPASS*/)
   /*COURSE_FINALIZE_FILTER*/;
