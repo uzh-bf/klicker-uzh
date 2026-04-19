@@ -20,6 +20,7 @@ from src.modules.participant_analytics.compute_participant_course_analytics impo
 )
 from src.modules.utils import (
     analytics_window_since,
+    apply_course_scope,
     scoped_course_ids,
     should_skip_window,
 )
@@ -106,29 +107,24 @@ if compute_monthly:
 # Fetch all ongoing / past courses
 if compute_course:
     curr_date = datetime.now().strftime("%Y-%m-%d")
-    where: dict = {
-        "startDate": {"lte": curr_date + "T23:59:59.999Z"},
-    }
     scope = scoped_course_ids(db)
-    if scope is not None:
-        if not scope:
-            print(
-                "[0_initial_participant_analytics] empty course scope — skipping COURSE pass"
-            )
-            df_courses = pd.DataFrame()
-        else:
-            where["id"] = {"in": scope}
-            courses = db.course.find_many(where=where)
-            df_courses = pd.DataFrame(list(map(lambda x: x.dict(), courses)))
+    where = apply_course_scope(
+        {"startDate": {"lte": curr_date + "T23:59:59.999Z"}},
+        scope,
+    )
+
+    if where is None:
+        print(
+            "[0_initial_participant_analytics] empty course scope — skipping COURSE pass"
+        )
+        df_courses = pd.DataFrame()
     else:
         courses = db.course.find_many(where=where)
         df_courses = pd.DataFrame(list(map(lambda x: x.dict(), courses)))
 
     scope_note = f" (scoped to {len(scope)} ids)" if scope is not None else ""
     print(
-        "Found {} courses with a start date before {}{}".format(
-            len(df_courses), curr_date, scope_note
-        )
+        f"Found {len(df_courses)} courses with a start date before {curr_date}{scope_note}"
     )
 
     if not df_courses.empty:
@@ -136,7 +132,7 @@ if compute_course:
             db, df_courses, verbose
         )
         print(
-            "Found {} courses without any responses".format(courses_without_responses)
+            f"Found {courses_without_responses} courses without any responses"
         )
 
 # Disconnect from the database

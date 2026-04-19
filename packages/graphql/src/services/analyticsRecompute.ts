@@ -96,9 +96,8 @@ type ResolvedMode = 'incremental' | 'finalize' | 'full'
 function resolveMode(
   input: Parameters<HatchetHandlers['handleRecomputeLearningAnalytics']>[0]
 ): ResolvedMode {
-  if (input.mode === 'finalize' || input.mode === 'full') return input.mode
-  if (input.mode === 'incremental') return 'incremental'
-  // A scanner-emitted event carries `courseId` without `mode` — treat that as finalize.
+  if (input.mode) return input.mode
+  // Scanner emits `courseId` without `mode` — promote it to finalize.
   if (input.courseId) return 'finalize'
   return 'incremental'
 }
@@ -142,20 +141,17 @@ export const handleRecomputeLearningAnalytics: HatchetHandlers['handleRecomputeL
         ? (input.windowSince ?? isoDaysAgo(INCREMENTAL_LOOKBACK_DAYS))
         : undefined
 
+    // Start from a clean slate for the analytics-specific vars so stale values
+    // on the worker process can't leak into the subprocess.
     const scriptEnv: NodeJS.ProcessEnv = {
       ...process.env,
       ANALYTICS_MODE: mode,
     }
-    if (courseIds.length > 0) {
+    delete scriptEnv.ANALYTICS_COURSE_IDS
+    delete scriptEnv.ANALYTICS_WINDOW_SINCE
+    if (courseIds.length > 0)
       scriptEnv.ANALYTICS_COURSE_IDS = courseIds.join(',')
-    } else {
-      delete scriptEnv.ANALYTICS_COURSE_IDS
-    }
-    if (windowSince) {
-      scriptEnv.ANALYTICS_WINDOW_SINCE = windowSince
-    } else {
-      delete scriptEnv.ANALYTICS_WINDOW_SINCE
-    }
+    if (windowSince) scriptEnv.ANALYTICS_WINDOW_SINCE = windowSince
 
     await executionCtx.logger.info(
       `[recomputeLearningAnalytics] mode=${mode} courseIds=${courseIds.length} windowSince=${windowSince ?? '-'} cwd=${cwd} runner=${[runnerCmd, ...runnerArgs].join(' ')}`

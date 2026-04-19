@@ -199,3 +199,25 @@ def scoped_course_ids(db) -> list[str] | None:
         return [str(c.id) for c in courses]
 
     return None
+
+
+def apply_course_scope(
+    where: dict | None,
+    scope: list[str] | None,
+    *,
+    column: str = "id",
+) -> dict | None:
+    """Merge the scope returned by ``scoped_course_ids`` into a Prisma where clause.
+
+    - scope is ``None``            → return ``where`` unchanged (no filter).
+    - scope is an empty list       → return ``None`` — caller should short-circuit
+                                     (explicit empty scope means nothing matches).
+    - scope is a non-empty list    → return ``where`` merged with
+                                     ``{column: {"in": scope}}``.
+    """
+    if scope is not None and not scope:
+        return None
+    merged = dict(where or {})
+    if scope:
+        merged[column] = {"in": scope}
+    return merged

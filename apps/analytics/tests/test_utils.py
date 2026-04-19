@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from src.modules.utils import (  # noqa: E402
     analytics_mode,
     analytics_window_since,
+    apply_course_scope,
     render_uuid_in_clause,
     scoped_course_ids,
     should_skip_window,
@@ -143,6 +144,34 @@ class RenderUuidInClauseTests(unittest.TestCase):
     def test_rejects_malformed_uuid(self):
         with self.assertRaises(ValueError):
             render_uuid_in_clause("c.id", ["not-a-uuid"])
+
+
+class ApplyCourseScopeTests(unittest.TestCase):
+    def test_none_scope_returns_where_unchanged(self):
+        result = apply_course_scope({"startDate": {"gt": "x"}}, None)
+        self.assertEqual(result, {"startDate": {"gt": "x"}})
+
+    def test_none_scope_with_no_where_returns_empty_dict(self):
+        self.assertEqual(apply_course_scope(None, None), {})
+
+    def test_empty_scope_returns_none(self):
+        self.assertIsNone(apply_course_scope({"startDate": {"gt": "x"}}, []))
+
+    def test_non_empty_scope_merges_default_column(self):
+        result = apply_course_scope({"startDate": {"gt": "x"}}, ["a", "b"])
+        self.assertEqual(
+            result,
+            {"startDate": {"gt": "x"}, "id": {"in": ["a", "b"]}},
+        )
+
+    def test_custom_column(self):
+        result = apply_course_scope(None, ["a"], column="courseId")
+        self.assertEqual(result, {"courseId": {"in": ["a"]}})
+
+    def test_does_not_mutate_input(self):
+        original = {"startDate": {"gt": "x"}}
+        apply_course_scope(original, ["a"])
+        self.assertEqual(original, {"startDate": {"gt": "x"}})
 
 
 if __name__ == "__main__":
