@@ -15,7 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from klicker_mcp.app import mcp
 from klicker_mcp.gql import AsyncGraphQLClient
-from klicker_mcp.tools._helpers import require_bearer_token
+from klicker_mcp.tools._helpers import drop_none, require_bearer_token
 
 ElementStatus = Literal["DRAFT", "REVIEW", "READY"]
 ChoicesType = Literal["SC", "MC", "KPRIM"]
@@ -86,11 +86,6 @@ class FreeTextRestrictions(BaseModel):
     pattern: Annotated[str | None, Field(default=None, description="Regex the student's answer must match.")] = None
 
 
-def _drop_none(payload: dict[str, Any]) -> dict[str, Any]:
-    """Strip top-level None values so the GraphQL call uses server defaults."""
-    return {k: v for k, v in payload.items() if v is not None}
-
-
 @mcp.tool
 async def create_choices_question(
     question_type: Annotated[
@@ -151,7 +146,7 @@ async def create_choices_question(
         "hasAnswerFeedbacks": has_answer_feedbacks,
         "displayMode": display_mode,
     }
-    variables = _drop_none(
+    variables = drop_none(
         {
             "id": question_id,
             "type": question_type,
@@ -198,7 +193,7 @@ async def create_free_text_question(
 ) -> dict[str, Any]:
     """Create or update a free-text question. Defaults to DRAFT."""
     token = require_bearer_token()
-    options = _drop_none(
+    options = drop_none(
         {
             "solutions": solutions,
             "hasSampleSolution": has_sample_solution,
@@ -206,7 +201,7 @@ async def create_free_text_question(
             "restrictions": (restrictions.model_dump(exclude_none=True, by_alias=True) if restrictions else None),
         }
     )
-    variables = _drop_none(
+    variables = drop_none(
         {
             "id": question_id,
             "status": status,
@@ -256,7 +251,7 @@ async def create_numerical_question(
 ) -> dict[str, Any]:
     """Create or update a numerical question. Defaults to DRAFT."""
     token = require_bearer_token()
-    options = _drop_none(
+    options = drop_none(
         {
             "exactSolutions": exact_solutions,
             "solutionRanges": ([r.model_dump(exclude_none=True) for r in solution_ranges] if solution_ranges else None),
@@ -267,7 +262,7 @@ async def create_numerical_question(
             "restrictions": restrictions.model_dump(exclude_none=True) if restrictions else None,
         }
     )
-    variables = _drop_none(
+    variables = drop_none(
         {
             "id": question_id,
             "status": status,
@@ -298,7 +293,7 @@ async def create_flashcard(
 ) -> dict[str, Any]:
     """Create or update a flashcard element. Defaults to DRAFT."""
     token = require_bearer_token()
-    variables = _drop_none(
+    variables = drop_none(
         {
             "id": question_id,
             "status": status,
@@ -330,7 +325,7 @@ async def create_content_element(
 ) -> dict[str, Any]:
     """Create or update a content (non-question) element. Defaults to DRAFT."""
     token = require_bearer_token()
-    variables = _drop_none(
+    variables = drop_none(
         {
             "id": question_id,
             "status": status,

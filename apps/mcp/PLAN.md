@@ -18,16 +18,16 @@ Python 3.12 · uv-managed project · FastMCP v3.2 · Streamable HTTP transport �
 
 ## Iteration status
 
-| # | Title | Status | Hash |
-| - | ----- | ------ | ---- |
-| 1 | Skeleton + PLAN.md                                        | done        | `d419d767a` |
-| 2 | GraphQL client + persisted-ops codegen + poe tasks        | done        | `496d0b191` |
-| 3 | Category A lecturer tools (question authoring as drafts)  | done        | `a00e38c70` |
-| 4 | Category A participant tools (quiz discovery + response)  | done        | `ab03aad1e` |
-| 5 | OAuth bridge (MCP auth server + apps/auth routes)         | done        | `01916b826` |
-| 6 | Backend Category B exposure queries + MCP tools           | backend done, MCP deferred | `d520532b5` |
-| 7 | Backend Category C aggregation + MCP tools                | backend done, MCP deferred | `f64971a26` |
-| 8 | Deploy surface (Dockerfile, Traefik, Helm)                | done        | `f555aaec0` |
+| #   | Title                                                    | Status | Hash                                             |
+| --- | -------------------------------------------------------- | ------ | ------------------------------------------------ |
+| 1   | Skeleton + PLAN.md                                       | done   | `d419d767a`                                      |
+| 2   | GraphQL client + persisted-ops codegen + poe tasks       | done   | `496d0b191`                                      |
+| 3   | Category A lecturer tools (question authoring as drafts) | done   | `a00e38c70`                                      |
+| 4   | Category A participant tools (quiz discovery + response) | done   | `ab03aad1e`                                      |
+| 5   | OAuth bridge (MCP auth server + apps/auth routes)        | done   | `01916b826`                                      |
+| 6   | Backend Category B exposure queries + MCP tools          | done   | `d520532b5` (backend), _pending_ (MCP follow-up) |
+| 7   | Backend Category C aggregation + MCP tools               | done   | `f64971a26` (backend), _pending_ (MCP follow-up) |
+| 8   | Deploy surface (Dockerfile, Traefik, Helm)               | done   | `f555aaec0`                                      |
 
 ## Iteration 1 — Skeleton + PLAN.md
 
@@ -70,6 +70,7 @@ Promote-to-ready and per-element-type option schema resources are deferred — t
 **Goal:** An external MCP client (Claude Desktop / Cursor) can complete an OAuth 2.1 dance against the MCP and end up able to call tools as the signed-in KlickerUZH user, with no new user database.
 
 **Deliverables:**
+
 - MCP side: `auth/oauth.py` wraps FastMCP's `OAuthProxy` with a `JWTVerifier(algorithm="HS256", public_key=APP_SECRET)` so the proxy validates KlickerUZH JWTs without local key infrastructure. OAuth is opt-in — unset envs mean pass-through mode, preserving the iteration 2–4 dev loop. `main.py` attaches the proxy to the shared `mcp` instance at boot. `auth/context.py` grows a two-tier fallback: prefer `get_access_token()` (OAuth mode), fall back to the raw `Authorization` header (pass-through), so tools transparently forward the right JWT in either mode.
 - Upstream side: two new Next.js Pages-Router routes in `apps/auth/src/pages/api/mcp/`. `authorize.ts` enforces the client-id pin, checks the NextAuth session (lecturer or participant cookie depending on `scope`), redirects through the existing sign-in flow if missing, then mints a PKCE-bound authorization code and redirects back to the proxy. `token.ts` validates the client secret + PKCE `S256` digest and returns a 12h HS256 JWT the backend's `jwtMiddleware` already accepts. An in-process `_store.ts` (1 min TTL) holds codes for the POC; production will swap to Redis.
 - New envs: `MCP_ORIGIN`, `MCP_UPSTREAM_CLIENT_ID`, `MCP_UPSTREAM_CLIENT_SECRET`, `MCP_UPSTREAM_AUTHORIZE_URL`, `MCP_UPSTREAM_TOKEN_URL`, `MCP_UPSTREAM_ISSUER`, `MCP_STORAGE_URL`, all added to `turbo.json` globalEnv.
@@ -81,6 +82,7 @@ Promote-to-ready and per-element-type option schema resources are deferred — t
 **Goal:** The student can read their own rows of the already-computed analytics tables. This is the highest-leverage backend change.
 
 **Deliverables (backend, done in this iteration):**
+
 - `packages/graphql/src/schema/analytics.ts` — new Pothos types `ParticipantAnalytics`, `MyResponse`, `MyResponseHistoryPage`, `MySRSEntry`, and the `AnalyticsType` enum. Existing `ParticipantPerformance` + `ParticipantActivityPerformance` types reused.
 - `packages/graphql/src/services/analytics.ts` — three new service functions: `getParticipantCourseAnalyticsSelf`, `getParticipantPerformanceSelf`, `getParticipantActivityPerformanceSelf`. All filter by `participantId = ctx.user.sub` so rows of other participants are unreachable.
 - `packages/graphql/src/services/participants.ts` — `getMyResponseHistory` (paginated, correctness-filtered) and `getMySRSStateSelf`. Join through `ElementInstance → Element` for the element metadata the MCP needs.
@@ -89,7 +91,7 @@ Promote-to-ready and per-element-type option schema resources are deferred — t
 
 **Codegen step (user-driven):** `pnpm --filter @klicker-uzh/graphql generate` regenerates `server.json` / `client.json` with the new persisted-query hashes. Then `uv run poe gen-ops` (from `apps/mcp`) rewrites `src/klicker_mcp/gql/ops.py`. Without that step, calling the new ops from the MCP side throws `UnknownOperationError`.
 
-**Deliverables (MCP, deferred to a follow-up commit after codegen runs):** `get_my_course_analytics`, `get_my_performance`, `get_my_activity_performance`, `get_my_response_history`, `get_my_mistakes` (reshape of `get_my_response_history` with `correctness_in=[WRONG, PARTIAL]`), `get_my_srs_state`. These are straightforward wrappers over the new ops and mirror the iteration 4 pattern.
+**Deliverables (MCP, landed after codegen):** `get_my_course_analytics` (with optional client-side timeframe filter), `get_my_performance`, `get_my_activity_performance`, `get_my_response_history`, `get_my_mistakes` (reshape of `get_my_response_history` with `correctness_in=[WRONG, PARTIAL]` hard-coded in the tool body), `get_my_srs_state`. All live in `tools/participant_analytics.py`, follow the iteration 4 pattern, and are covered by `tests/test_participant_analytics_tools.py`.
 
 **Verification (backend):** Because the worktree doesn't have `node_modules`, vitest + `pnpm --filter @klicker-uzh/graphql check` were not run in this session. The user must verify before merging with `pnpm install && pnpm --filter @klicker-uzh/graphql build && pnpm --filter @klicker-uzh/graphql test` (the last needs `HATCHET_CLIENT_TOKEN` injected; see CLAUDE.md).
 
@@ -98,6 +100,7 @@ Promote-to-ready and per-element-type option schema resources are deferred — t
 **Goal:** Weak-topics + mastery-map via a backend aggregation service, usable from both MCP and a future PWA page.
 
 **Deliverables (backend, done in this iteration):**
+
 - `packages/graphql/src/schema/analytics.ts` — new Pothos types `ParticipantTopicAccuracy`, `MyActivityEntry` (+ `MyActivityKind` enum), `BookmarkedStackSummary`, `BookmarkedStacksByCourse`.
 - `packages/graphql/src/services/analytics.ts` — `getParticipantTopicAccuracy` groups the participant's `QuestionResponse` rows by `Element.tags` (many-to-many) in-memory; sorts weakest-first on `1 - correctCount/totalCount`. Stays under a Prisma `findMany`-and-reduce because per-course response counts are low.
 - `packages/graphql/src/services/participants.ts` — `getMyRecentActivity` (chronological merge of `QuestionResponseDetail` + `ParticipantAchievementInstance`) and `getMyBookmarksAcrossCourses` (walks active `Participation.bookmarkedElementStacks`). Leaderboard-rank deltas omitted because Prisma doesn't persist rank history today.
@@ -106,7 +109,7 @@ Promote-to-ready and per-element-type option schema resources are deferred — t
 
 **Codegen step:** Same as iteration 6 — `pnpm --filter @klicker-uzh/graphql generate && (cd apps/mcp && uv run poe gen-ops)`.
 
-**Deliverables (MCP, deferred):** `get_weak_topics(course_id, limit)` + `get_mastery_map(course_id)` are both reshapes of `ParticipantTopicAccuracy` — weak-topics trims top-N, mastery-map derives `{topic, mastery, coverage}`. `get_my_recent_activity(limit)` and `get_bookmarks_across_courses()` are thin wrappers. Lands after codegen regenerates the persisted-query manifest.
+**Deliverables (MCP, landed after codegen):** `get_weak_topics(course_id, limit)` + `get_mastery_map(course_id)` are both reshapes of `ParticipantTopicAccuracy` — weak-topics trims top-N (backend already sorts weakest-first), mastery-map derives `{topic, mastery, coverage}` client-side. `get_my_recent_activity(limit)` and `get_bookmarks_across_courses()` are thin wrappers. All four live in `tools/participant_analytics.py` alongside the iteration 6 tools.
 
 **Verification (backend):** Same caveat as iteration 6 — vitest + typecheck require `pnpm install` at repo root.
 
@@ -115,6 +118,7 @@ Promote-to-ready and per-element-type option schema resources are deferred — t
 **Goal:** Production-shaped. Docker image buildable in CI; Helm chart template alongside the other apps; Traefik routing for local dev; `mcp.klicker.com` reachable locally.
 
 **Deliverables:**
+
 - Helm: `deploy/charts/klicker-uzh-v3/templates/deployment-mcp.yaml`, `cm-mcp.yaml`, `ingress-mcp.yaml`, and the `mcp:` Service stanza appended to `service-app.yaml`. External Secret `secret-mcp` is referenced by `envFrom.secretRef` (per the "v3 secrets are external" learning in CLAUDE.md). Liveness + readiness probes hit `/health`.
 - `deploy/charts/klicker-uzh-v3/values.yaml` — new top-level `mcp:` block mirrors `responseApi:` for image/resources/service/ingress/autoscaling. Production overlays (`deploy/env-uzh-{stg,prd}`) can override from there.
 - `docker-compose.yml` — new `mcp` service on the `full` profile, port `7079:7079`, same `APP_SECRET`/`APP_ORIGIN_API` pattern as the other apps.
@@ -128,6 +132,6 @@ Promote-to-ready and per-element-type option schema resources are deferred — t
 ## Open questions (tracked, not blocking iteration 1)
 
 1. Does `ACCOUNT_OWNER` scope satisfy the `asUserFullAccess` guard used by `manipulate*` mutations? If not, EduID-logged lecturers can't create questions via the MCP without a backend-guard adjustment.
-2. `createdVia` audit field on `Element` — propose and land *before* iteration 3 ships to students, so AI-drafted questions are filterable in the Manage UI.
+2. `createdVia` audit field on `Element` — propose and land _before_ iteration 3 ships to students, so AI-drafted questions are filterable in the Manage UI.
 3. Rate-limiting policy for LLM-initiated writes (question creation, response submission) — decide per-tool caps before iteration 8.
 4. For iteration 6: is there a cohort k-anonymity or pipeline-reliability reason the computed analytics tables were not already exposed to students? Answer shapes how aggressive iteration 6 can be.

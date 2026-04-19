@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from klicker_mcp.auth import get_bearer_token
 
-__all__ = ["NotAuthenticatedError", "get_bearer_token", "require_bearer_token"]
+__all__ = ["NotAuthenticatedError", "drop_none", "get_bearer_token", "require_bearer_token"]
 
 
 class NotAuthenticatedError(RuntimeError):
@@ -23,3 +25,8 @@ def require_bearer_token() -> str:
             "authenticate with a KlickerUZH JWT before calling role-gated tools."
         )
     return token
+
+
+def drop_none(payload: dict[str, Any]) -> dict[str, Any]:
+    """Strip top-level None values so the GraphQL call uses server defaults."""
+    return {k: v for k, v in payload.items() if v is not None}
