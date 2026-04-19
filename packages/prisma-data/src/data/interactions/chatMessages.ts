@@ -83,6 +83,7 @@ export async function seedChatInteractions({
     // ChatUsageCredits with acceptedDisclaimerId set is the §3.9 privacy gate
     // read by scripts 8/9/11 — without it no chat analytics get computed.
     if (chatbot.disclaimerId) {
+      const acceptedAt = calendar.sample(rng)
       await prisma.chatUsageCredits.upsert({
         where: {
           participantId_chatbotId: { participantId, chatbotId: chatbot.id },
@@ -93,11 +94,11 @@ export async function seedChatInteractions({
           total: 1000,
           current: 1000,
           acceptedDisclaimerId: chatbot.disclaimerId,
-          disclaimerAcceptedAt: new Date(),
+          disclaimerAcceptedAt: acceptedAt,
         },
         update: {
           acceptedDisclaimerId: chatbot.disclaimerId,
-          disclaimerAcceptedAt: new Date(),
+          disclaimerAcceptedAt: acceptedAt,
         },
       })
     }

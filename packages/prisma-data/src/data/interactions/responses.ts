@@ -15,6 +15,31 @@ type CourseActivity = {
   instances: { id: number; elementType: string }[]
 }
 
+type Outcome = 'CORRECT' | 'PARTIAL' | 'WRONG'
+
+// Element types the analytics compute_correctness handles. NUMERICAL is
+// technically supported but the existing Testkurs seed uses one-sided
+// solutionRanges like {max: 5}, which the pipeline can't score.
+const SCORABLE_ELEMENT_TYPES = new Set(['SC', 'MC', 'KPRIM', 'FREE_TEXT'])
+
+const OUTCOME_VALUES: Record<
+  Outcome,
+  { score: number; points: number; xp: number }
+> = {
+  CORRECT: { score: 1, points: 10, xp: 1 },
+  PARTIAL: { score: 0.5, points: 5, xp: 0.5 },
+  WRONG: { score: 0, points: 0, xp: 0 },
+}
+
+function activityFkFields(activity: CourseActivity) {
+  return {
+    practiceQuizId:
+      activity.source === 'practiceQuiz' ? activity.activityId : null,
+    microLearningId:
+      activity.source === 'microLearning' ? activity.activityId : null,
+  }
+}
+
 // Pull the full set of practice-quiz + microlearning element instances for
 // one course, so every generated response lands on a real FK target.
 async function loadCourseActivities(
@@ -128,12 +153,7 @@ export async function seedQuestionResponses({
     }[] = []
     for (const a of activities) {
       for (const inst of a.instances) {
-        // Only seed response types the analytics compute_correctness handles.
-        // (NUMERICAL is technically supported but the existing Testkurs seed
-        // uses one-sided solutionRanges like {max: 5}, which the pipeline
-        // can't score — so we leave it out for now.)
-        if (!['SC', 'MC', 'KPRIM', 'FREE_TEXT'].includes(inst.elementType))
-          continue
+        if (!SCORABLE_ELEMENT_TYPES.has(inst.elementType)) continue
         instancePool.push({
           activity: a,
           instanceId: inst.id,
@@ -160,9 +180,9 @@ export async function seedQuestionResponses({
       for (let i = 0; i < attempts; i++) timestamps.push(calendar.sample(rng))
       timestamps.sort((a, b) => a.getTime() - b.getTime())
 
-      const outcomes = timestamps.map(() =>
+      const outcomes: Outcome[] = timestamps.map(() =>
         rng.bool(pCorrect) ? 'CORRECT' : rng.bool(0.3) ? 'PARTIAL' : 'WRONG'
-      ) as ('CORRECT' | 'PARTIAL' | 'WRONG')[]
+      )
 
       const first = outcomes[0]!
       const last = outcomes[outcomes.length - 1]!
@@ -184,10 +204,7 @@ export async function seedQuestionResponses({
       const perResponsePoints =
         last === 'CORRECT' ? 30 : last === 'PARTIAL' ? 15 : 0
       const totalScore =
-        outcomes.reduce(
-          (acc, o) => acc + (o === 'CORRECT' ? 1 : o === 'PARTIAL' ? 0.5 : 0),
-          0
-        ) * 10
+        outcomes.reduce((acc, o) => acc + OUTCOME_VALUES[o].score, 0) * 10
       const timeSpent = 5 + rng.next() * 45
 
       // Aggregated responses JSON has an element-type-dependent shape in
@@ -226,14 +243,7 @@ export async function seedQuestionResponses({
         aggregatedResponses: aggregated,
         createdAt: firstTs,
         updatedAt: lastTs,
-        practiceQuizId:
-          pick.activity.source === 'practiceQuiz'
-            ? pick.activity.activityId
-            : null,
-        microLearningId:
-          pick.activity.source === 'microLearning'
-            ? pick.activity.activityId
-            : null,
+        ...activityFkFields(pick.activity),
       }
 
       const existing = await prisma.questionResponse.findUnique({
@@ -257,39 +267,26 @@ export async function seedQuestionResponses({
         inserted++
       }
 
-      // Per-attempt log. The analytics pipeline reads these (not the
-      // aggregated QuestionResponse row) to compute monthly correctness
-      // windows and activity progress. Wipe + recreate so re-running the
-      // seeder stays idempotent.
+      // Per-attempt log: the analytics pipeline reads these (not the
+      // aggregated QuestionResponse) for monthly correctness windows and
+      // activity progress. Wipe + recreate so re-runs stay idempotent.
       await prisma.questionResponseDetail.deleteMany({
         where: { participantId, elementInstanceId: pick.instanceId },
       })
       await prisma.questionResponseDetail.createMany({
         data: timestamps.map((ts, i) => {
           const outcome = outcomes[i]!
-          const score =
-            outcome === 'CORRECT' ? 1 : outcome === 'PARTIAL' ? 0.5 : 0
-          const attemptPoints =
-            outcome === 'CORRECT' ? 10 : outcome === 'PARTIAL' ? 5 : 0
-          const attemptXp =
-            outcome === 'CORRECT' ? 1 : outcome === 'PARTIAL' ? 0.5 : 0
+          const v = OUTCOME_VALUES[outcome]
           return {
-            score,
-            pointsAwarded: attemptPoints,
-            xpAwarded: attemptXp,
+            score: v.score,
+            pointsAwarded: v.points,
+            xpAwarded: v.xp,
             timeSpent: 5 + rng.next() * 45,
             response: responsePayload(pick.elementType, rng),
             participantId,
             participationId,
             elementInstanceId: pick.instanceId,
-            practiceQuizId:
-              pick.activity.source === 'practiceQuiz'
-                ? pick.activity.activityId
-                : null,
-            microLearningId:
-              pick.activity.source === 'microLearning'
-                ? pick.activity.activityId
-                : null,
+            ...activityFkFields(pick.activity),
             createdAt: ts,
             updatedAt: ts,
           }
