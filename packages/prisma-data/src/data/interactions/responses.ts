@@ -128,6 +128,12 @@ export async function seedQuestionResponses({
     }[] = []
     for (const a of activities) {
       for (const inst of a.instances) {
+        // Only seed response types the analytics compute_correctness handles.
+        // (NUMERICAL is technically supported but the existing Testkurs seed
+        // uses one-sided solutionRanges like {max: 5}, which the pipeline
+        // can't score — so we leave it out for now.)
+        if (!['SC', 'MC', 'KPRIM', 'FREE_TEXT'].includes(inst.elementType))
+          continue
         instancePool.push({
           activity: a,
           instanceId: inst.id,
@@ -250,6 +256,45 @@ export async function seedQuestionResponses({
         await prisma.questionResponse.create({ data: baseData })
         inserted++
       }
+
+      // Per-attempt log. The analytics pipeline reads these (not the
+      // aggregated QuestionResponse row) to compute monthly correctness
+      // windows and activity progress. Wipe + recreate so re-running the
+      // seeder stays idempotent.
+      await prisma.questionResponseDetail.deleteMany({
+        where: { participantId, elementInstanceId: pick.instanceId },
+      })
+      await prisma.questionResponseDetail.createMany({
+        data: timestamps.map((ts, i) => {
+          const outcome = outcomes[i]!
+          const score =
+            outcome === 'CORRECT' ? 1 : outcome === 'PARTIAL' ? 0.5 : 0
+          const attemptPoints =
+            outcome === 'CORRECT' ? 10 : outcome === 'PARTIAL' ? 5 : 0
+          const attemptXp =
+            outcome === 'CORRECT' ? 1 : outcome === 'PARTIAL' ? 0.5 : 0
+          return {
+            score,
+            pointsAwarded: attemptPoints,
+            xpAwarded: attemptXp,
+            timeSpent: 5 + rng.next() * 45,
+            response: responsePayload(pick.elementType, rng),
+            participantId,
+            participationId,
+            elementInstanceId: pick.instanceId,
+            practiceQuizId:
+              pick.activity.source === 'practiceQuiz'
+                ? pick.activity.activityId
+                : null,
+            microLearningId:
+              pick.activity.source === 'microLearning'
+                ? pick.activity.activityId
+                : null,
+            createdAt: ts,
+            updatedAt: ts,
+          }
+        }),
+      })
     }
   }
 

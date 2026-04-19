@@ -3,10 +3,10 @@ import { prisma } from '@klicker-uzh/prisma'
 import { seedInteractions } from '../data/interactions/index.js'
 
 async function main() {
-  if (process.env.ENV !== 'development') {
-    console.error(
-      '[seedInteractions] refusing to run outside ENV=development (set by the pnpm wrapper)'
-    )
+  // Fail closed against production; the pnpm wrapper pins Infisical to --env dev,
+  // but a manual invocation could still override ENV.
+  if (process.env.ENV === 'production') {
+    console.error('[seedInteractions] refusing to run against ENV=production')
     process.exit(1)
   }
   const seed = process.env.ANALYTICS_SEED ?? undefined

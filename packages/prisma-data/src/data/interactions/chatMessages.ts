@@ -64,7 +64,10 @@ export async function seedChatInteractions({
   calendar: Calendar
   rng: Rng
 }): Promise<{ threads: number; messages: number }> {
-  const chatbots = await prisma.chatbot.findMany({ where: { courseId } })
+  const chatbots = await prisma.chatbot.findMany({
+    where: { courseId },
+    select: { id: true, disclaimerId: true },
+  })
   if (chatbots.length === 0) return { threads: 0, messages: 0 }
 
   const topics = Object.keys(USER_PROMPTS_BY_TOPIC)
@@ -76,6 +79,28 @@ export async function seedChatInteractions({
     if (!budget || budget.chatMessagesTarget === 0) continue
 
     const chatbot = rng.pick(chatbots)
+
+    // ChatUsageCredits with acceptedDisclaimerId set is the §3.9 privacy gate
+    // read by scripts 8/9/11 — without it no chat analytics get computed.
+    if (chatbot.disclaimerId) {
+      await prisma.chatUsageCredits.upsert({
+        where: {
+          participantId_chatbotId: { participantId, chatbotId: chatbot.id },
+        },
+        create: {
+          participantId,
+          chatbotId: chatbot.id,
+          total: 1000,
+          current: 1000,
+          acceptedDisclaimerId: chatbot.disclaimerId,
+          disclaimerAcceptedAt: new Date(),
+        },
+        update: {
+          acceptedDisclaimerId: chatbot.disclaimerId,
+          disclaimerAcceptedAt: new Date(),
+        },
+      })
+    }
     // Bunch messages into 1-3 threads per active participant so AggregatedChatbotAnalytics.threadsPerParticipant has variance.
     const threadsForParticipant = Math.min(
       3,
