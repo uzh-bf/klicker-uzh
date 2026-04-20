@@ -13,6 +13,36 @@ def map_element_instance_options(instance: ElementInstance) -> dict:
     }
 
 
+def _selection_correctness(response, options):
+    if not isinstance(options, dict):
+        return None
+
+    if not options.get("hasSampleSolution", False):
+        return "CORRECT"
+
+    if not isinstance(response, dict):
+        return None
+
+    selected = response.get("selection")
+    if not selected:
+        return None
+
+    number_of_inputs = options.get("numberOfInputs")
+    correct_answers = options.get("answerCollectionSolutionIds")
+    if not number_of_inputs or not correct_answers:
+        return None
+
+    deduped = list(dict.fromkeys(selected))
+    valid_responses = [answer_id for answer_id in deduped if answer_id in correct_answers]
+    correctness = len(valid_responses) / number_of_inputs
+
+    if correctness == 1:
+        return "CORRECT"
+    if correctness == 0:
+        return "INCORRECT"
+    return "PARTIAL"
+
+
 def compute_correctness_columns(df_element_instances, row):
     element_instance = df_element_instances[
         df_element_instances["elementInstanceId"] == row["elementInstanceId"]
@@ -119,6 +149,9 @@ def compute_correctness_columns(df_element_instances, row):
             return "CORRECT"
 
         return "INCORRECT"
+
+    elif element_instance["type"] == "SELECTION":
+        return _selection_correctness(response, options)
 
     else:
         raise ValueError("Unknown element type: {}".format(element_instance["type"]))

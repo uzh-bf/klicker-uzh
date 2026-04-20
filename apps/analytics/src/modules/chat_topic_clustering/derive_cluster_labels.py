@@ -2,6 +2,30 @@
 
 from typing import Dict, List, Sequence
 
+_LABEL_STOP_WORDS = {
+    "and",
+    "das",
+    "der",
+    "die",
+    "ein",
+    "eine",
+    "for",
+    "ich",
+    "ist",
+    "mit",
+    "not",
+    "sich",
+    "that",
+    "the",
+    "this",
+    "und",
+    "was",
+    "wie",
+    "with",
+    "you",
+    "your",
+}
+
 
 def _top_terms_per_cluster(
     texts_per_cluster: Dict[int, List[str]],
@@ -20,7 +44,7 @@ def _top_terms_per_cluster(
         max_df=0.9,
         min_df=1,
         ngram_range=(1, 2),
-        stop_words=None,  # keep simple — multilingual; fall back to df-based filtering
+        stop_words=sorted(_LABEL_STOP_WORDS),
         token_pattern=r"(?u)\b[^\W\d_][^\W\d_]{2,}\b",  # words of length >=3, no numbers
         lowercase=True,
     )
