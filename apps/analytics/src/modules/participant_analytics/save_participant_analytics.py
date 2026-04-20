@@ -7,6 +7,20 @@ def save_participant_analytics(db, df_analytics, timestamp, analytics_type="DAIL
     # Create daily / weekly / monthly analytics entries for all participants
     if analytics_type in ["DAILY", "WEEKLY", "MONTHLY"]:
         for _, row in df_analytics.iterrows():
+            # Fields that re-compute on every run. Kept out of the `create` +
+            # `update` split so late-arriving responses actually refresh the
+            # previously-written row.
+            mutable = {
+                "computedAt": computedAt,
+                "trialsCount": row["trialsCount"],
+                "responseCount": row["responseCount"],
+                "totalScore": row["totalScore"],
+                "totalPoints": row["totalPoints"],
+                "totalXp": row["totalXp"],
+                "meanCorrectCount": row["meanCorrectCount"],
+                "meanPartialCorrectCount": row["meanPartialCount"],
+                "meanWrongCount": row["meanWrongCount"],
+            }
             db.participantanalytics.upsert(
                 where={
                     "type_courseId_participantId_timestamp": {
@@ -20,19 +34,11 @@ def save_participant_analytics(db, df_analytics, timestamp, analytics_type="DAIL
                     "create": {
                         "type": analytics_type,
                         "timestamp": timestamp,
-                        "computedAt": computedAt,
-                        "trialsCount": row["trialsCount"],
-                        "responseCount": row["responseCount"],
-                        "totalScore": row["totalScore"],
-                        "totalPoints": row["totalPoints"],
-                        "totalXp": row["totalXp"],
-                        "meanCorrectCount": row["meanCorrectCount"],
-                        "meanPartialCorrectCount": row["meanPartialCount"],
-                        "meanWrongCount": row["meanWrongCount"],
+                        **mutable,
                         "participant": {"connect": {"id": row["participantId"]}},
                         "course": {"connect": {"id": row["courseId"]}},
                     },
-                    "update": {},
+                    "update": mutable,
                 },
             )
 

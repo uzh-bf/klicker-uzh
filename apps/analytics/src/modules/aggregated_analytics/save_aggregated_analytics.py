@@ -7,6 +7,19 @@ def save_aggregated_analytics(db, df_analytics, timestamp, analytics_type="DAILY
     # create daily / weekly / monthly analytics entries for all participants
     if analytics_type in ["DAILY", "WEEKLY", "MONTHLY"]:
         for _, row in df_analytics.iterrows():
+            # Fields that re-compute on every run — late-arriving responses
+            # should refresh the previously-written row.
+            mutable = {
+                "computedAt": computedAt,
+                "participantCount": row["participantCount"],
+                "responseCount": row["responseCount"],
+                "totalScore": row["totalScore"],
+                "totalPoints": row["totalPoints"],
+                "totalXp": row["totalXp"],
+                # TODO: set this value correctly for rolling updates in production code
+                # (cannot be computed for past learning analytics -> therefore set to invalid value)
+                "totalElementsAvailable": -1,
+            }
             db.aggregatedanalytics.upsert(
                 where={
                     "type_courseId_timestamp": {
@@ -19,18 +32,10 @@ def save_aggregated_analytics(db, df_analytics, timestamp, analytics_type="DAILY
                     "create": {
                         "type": analytics_type,
                         "timestamp": timestamp,
-                        "computedAt": computedAt,
-                        "participantCount": row["participantCount"],
-                        "responseCount": row["responseCount"],
-                        "totalScore": row["totalScore"],
-                        "totalPoints": row["totalPoints"],
-                        "totalXp": row["totalXp"],
-                        # TODO: set this value correctly for rolling updates in production code
-                        # (cannot be computed for past learning analytics -> therefore set to invalid value)
-                        "totalElementsAvailable": -1,
+                        **mutable,
                         "course": {"connect": {"id": row["courseId"]}},
                     },
-                    "update": {},
+                    "update": mutable,
                 },
             )
 
