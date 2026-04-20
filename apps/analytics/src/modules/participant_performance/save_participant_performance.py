@@ -1,30 +1,58 @@
-def save_participant_performance(db, df_performance, course_id):
-    for _, row in df_performance.iterrows():
-        db.participantperformance.upsert(
-            where={
-                "participantId_courseId": {
-                    "participantId": row["participantId"],
-                    "courseId": course_id,
-                }
-            },
-            data={
-                "create": {
-                    "firstErrorRate": row["firstErrorRate"],
-                    "firstPerformance": row["firstPerformance"],
-                    "lastErrorRate": row["lastErrorRate"],
-                    "lastPerformance": row["lastPerformance"],
-                    "totalErrorRate": row["totalErrorRate"],
-                    "totalPerformance": row["totalPerformance"],
-                    "participant": {"connect": {"id": row["participantId"]}},
-                    "course": {"connect": {"id": course_id}},
-                },
-                "update": {
-                    "firstErrorRate": row["firstErrorRate"],
-                    "firstPerformance": row["firstPerformance"],
-                    "lastErrorRate": row["lastErrorRate"],
-                    "lastPerformance": row["lastPerformance"],
-                    "totalErrorRate": row["totalErrorRate"],
-                    "totalPerformance": row["totalPerformance"],
-                },
-            },
+from datetime import datetime
+
+from sqlalchemy import delete, tuple_
+from sqlalchemy.orm import Session
+
+from src.db_helpers import bulk_upsert
+from src.models import ParticipantPerformance
+
+
+def save_participant_performance(session: Session, df_performance, course_id: str):
+    if df_performance is None or df_performance.empty:
+        return
+
+    now = datetime.now()
+    rows = [
+        {
+            "firstErrorRate": float(row["firstErrorRate"]),
+            "firstPerformance": row["firstPerformance"],
+            "lastErrorRate": float(row["lastErrorRate"]),
+            "lastPerformance": row["lastPerformance"],
+            "totalErrorRate": float(row["totalErrorRate"]),
+            "totalPerformance": row["totalPerformance"],
+            "participantId": row["participantId"],
+            "courseId": course_id,
+            "createdAt": now,
+            "updatedAt": now,
+        }
+        for _, row in df_performance.iterrows()
+    ]
+
+    target_pairs = {(r["participantId"], r["courseId"]) for r in rows}
+    if target_pairs:
+        session.execute(
+            delete(ParticipantPerformance).where(
+                ParticipantPerformance.courseId == course_id,
+                tuple_(
+                    ParticipantPerformance.participantId,
+                    ParticipantPerformance.courseId,
+                ).notin_(target_pairs),
+            )
         )
+
+    bulk_upsert(
+        session,
+        ParticipantPerformance,
+        rows,
+        conflict_cols=["participantId", "courseId"],
+        update_cols=[
+            "firstErrorRate",
+            "firstPerformance",
+            "lastErrorRate",
+            "lastPerformance",
+            "totalErrorRate",
+            "totalPerformance",
+            "updatedAt",
+        ],
+    )
+    session.commit()

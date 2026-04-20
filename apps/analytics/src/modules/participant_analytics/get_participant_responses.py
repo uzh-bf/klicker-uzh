@@ -1,91 +1,88 @@
 import pandas as pd
 from datetime import date
+from sqlalchemy import select
+from sqlalchemy.orm import Session, selectinload
+
+from src.db_helpers import row_to_dict
+from src.models import (
+    MicroLearning,
+    Participant,
+    PracticeQuiz,
+    QuestionResponseDetail,
+)
 
 
-def map_details(detail, participantId):
-    courseId = detail["practiceQuiz"]["courseId"] if detail["practiceQuiz"] else detail["microLearning"]["courseId"]
-    return {**detail, "participantId": participantId, "courseId": courseId}
+def _detail_to_dict(detail: QuestionResponseDetail, participant_id: str) -> dict:
+    base = row_to_dict(detail)
+    base["participantId"] = participant_id
 
-
-def map_participants(participant):
-    participant_dict = participant.dict()
-    return list(
-        map(
-            lambda detail: map_details(detail, participant_dict["id"]),
-            participant_dict["detailQuestionResponses"],
-        )
-    )
-
-
-def convert_to_df(participants):
-    return pd.DataFrame([item for sublist in list(map(map_participants, participants)) for item in sublist])
-
-
-# Add the course start and end date to the dataframe for filtering of question response details later on
-def set_course_dates(detail):
-    if detail["practiceQuiz"] is not None:
-        course = detail["practiceQuiz"]["course"]
-        detail["course_start_date"] = course["startDate"]
-        detail["course_end_date"] = course["endDate"]
-    elif detail["microLearning"] is not None:
-        course = detail["microLearning"]["course"]
-        detail["course_start_date"] = course["startDate"]
-        detail["course_end_date"] = course["endDate"]
+    if detail.practiceQuiz is not None:
+        base["courseId"] = detail.practiceQuiz.courseId
+        base["course_start_date"] = detail.practiceQuiz.course.startDate
+        base["course_end_date"] = detail.practiceQuiz.course.endDate
+    elif detail.microLearning is not None:
+        base["courseId"] = detail.microLearning.courseId
+        base["course_start_date"] = detail.microLearning.course.startDate
+        base["course_end_date"] = detail.microLearning.course.endDate
     else:
-        # If the instance is not part of a practice quiz or microlearning, set the start date far into the future -> no analytics should be computed
-        detail["course_start_date"] = date(9999, 12, 31)
-        detail["course_end_date"] = date(9999, 12, 31)
+        base["courseId"] = None
+        base["course_start_date"] = date(9999, 12, 31)
+        base["course_end_date"] = date(9999, 12, 31)
 
-    return detail
+    return base
 
 
-def get_participant_responses(db, start_date, end_date, verbose=False, course_ids=None):
-    detail_where = {"createdAt": {"gte": start_date, "lte": end_date}}
-    if course_ids is not None:
-        course_filter = {"courseId": {"in": course_ids}}
-        detail_where["OR"] = [
-            {"practiceQuiz": {"is": course_filter}},
-            {"microLearning": {"is": course_filter}},
-        ]
+def get_participant_responses(
+    session: Session, start_date: str, end_date: str, verbose: bool = False
+):
+    """Return a dataframe of per-response detail rows for the window.
 
-    participant_response_details = db.participant.find_many(
-        where={"detailQuestionResponses": {"some": detail_where}},
-        include={
-            "detailQuestionResponses": {
-                "where": detail_where,
-                "include": {
-                    "practiceQuiz": {"include": {"course": True}},
-                    "microLearning": {"include": {"course": True}},
-                },
-            },
-        },
-    )
-
-    if verbose:
-        # Print the first 5 question response details
-        print(
-            "Found {} participants for the timespan from {} to {}".format(
-                len(participant_response_details), start_date, end_date
+    ``selectinload`` chains replace the Prisma ``include`` tree with one
+    ``IN (...)`` query per relation level — same round-trip count as before.
+    """
+    participants = (
+        session.execute(
+            select(Participant).options(
+                selectinload(Participant.detailQuestionResponses).options(
+                    selectinload(QuestionResponseDetail.practiceQuiz).selectinload(
+                        PracticeQuiz.course
+                    ),
+                    selectinload(QuestionResponseDetail.microLearning).selectinload(
+                        MicroLearning.course
+                    ),
+                )
             )
         )
-        print(participant_response_details[0])
+        .scalars()
+        .all()
+    )
 
-    # Convert the question response details to a pandas dataframe
-    df_details = convert_to_df(participant_response_details)
+    start_ts = pd.Timestamp(start_date)
+    end_ts = pd.Timestamp(end_date)
 
-    # Filter out the question response details that are not within the course dates and do not consider them for the analysis
+    rows = []
+    for participant in participants:
+        pid = participant.id
+        for detail in participant.detailQuestionResponses:
+            if detail.createdAt is None:
+                continue
+            if not (start_ts <= pd.Timestamp(detail.createdAt) <= end_ts):
+                continue
+            rows.append(_detail_to_dict(detail, pid))
+
     if verbose:
         print(
-            "Number of question response details before course date filtering:",
-            len(df_details),
+            "Found {} detail responses for timespan {}..{}".format(
+                len(rows), start_date, end_date
+            )
         )
 
-    df_details = df_details.apply(set_course_dates, axis=1)
+    df_details = pd.DataFrame(rows)
+    if df_details.empty:
+        return df_details
 
-    if len(df_details) > 0:
-        df_details = df_details[
-            (df_details["createdAt"] >= df_details["course_start_date"])
-            & (df_details["createdAt"] <= df_details["course_end_date"])
-        ]
-
+    df_details = df_details[
+        (df_details["createdAt"] >= df_details["course_start_date"])
+        & (df_details["createdAt"] <= df_details["course_end_date"])
+    ]
     return df_details

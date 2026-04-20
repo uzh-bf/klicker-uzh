@@ -10,6 +10,10 @@ from datetime import datetime, timedelta
 from typing import Callable
 
 import pandas as pd
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from src.models import Course
 
 
 def load_sql(path: str) -> str:
@@ -72,7 +76,7 @@ def render_uuid_in_clause(column: str, course_ids: list[str]) -> str:
 
 
 def iter_analytics_windows(
-    db,
+    session: Session,
     compute_fn: ComputeFn,
     *,
     start_date: str = "2022-10-23",
@@ -86,7 +90,7 @@ def iter_analytics_windows(
     verbose: bool = False,
 ) -> None:
     """Iterate DAILY / WEEKLY / MONTHLY / COURSE windows and call ``compute_fn``
-    for each one with the signature ``(db, win_start, win_end, timestamp,
+    for each one with the signature ``(session, win_start, win_end, timestamp,
     analytics_type, verbose)``.
 
     If ``windows_since`` is provided (ISO date), DAILY/WEEKLY/MONTHLY windows
@@ -106,7 +110,7 @@ def iter_analytics_windows(
                 continue
             print(f"Computing daily {label} for {day}")
             compute_fn(
-                db,
+                session,
                 day + "T00:00:00.000Z",
                 exclusive_day_end(day),
                 day,
@@ -122,7 +126,7 @@ def iter_analytics_windows(
             win_start = (curr - pd.DateOffset(days=6)).strftime("%Y-%m-%d")
             print(f"Computing weekly {label} for {win_start} to {week_end}")
             compute_fn(
-                db,
+                session,
                 win_start + "T00:00:00.000Z",
                 exclusive_day_end(week_end),
                 week_end,
@@ -138,7 +142,7 @@ def iter_analytics_windows(
             win_start = (curr - pd.offsets.MonthBegin(1)).strftime("%Y-%m-%d")
             print(f"Computing monthly {label} for {win_start} to {month_end}")
             compute_fn(
-                db,
+                session,
                 win_start + "T00:00:00.000Z",
                 exclusive_day_end(month_end),
                 month_end,
@@ -149,7 +153,7 @@ def iter_analytics_windows(
     if compute_course:
         print(f"Computing course-wide {label} for {start_date} to {end_date}")
         compute_fn(
-            db,
+            session,
             start_date + "T00:00:00.000Z",
             exclusive_day_end(end_date),
             COURSE_TIMESTAMP,
@@ -185,7 +189,7 @@ def _parse_course_ids_env() -> list[str] | None:
     return ids or None
 
 
-def scoped_course_ids(db) -> list[str] | None:
+def scoped_course_ids(session: Session) -> list[str] | None:
     """Return course ids in scope per env, or ``None`` to mean 'all courses'.
 
     Precedence:
@@ -201,29 +205,31 @@ def scoped_course_ids(db) -> list[str] | None:
         return explicit
 
     if analytics_mode() == "incremental":
-        courses = db.course.find_many(where={"analyticsFinalizedAt": None})
-        return [str(c.id) for c in courses]
+        rows = (
+            session.execute(
+                select(Course.id).where(Course.analyticsFinalizedAt.is_(None))
+            )
+            .scalars()
+            .all()
+        )
+        return [str(cid) for cid in rows]
 
     return None
 
 
 def apply_course_scope(
-    where: dict | None,
     scope: list[str] | None,
-    *,
-    column: str = "id",
-) -> dict | None:
-    """Merge the scope returned by ``scoped_course_ids`` into a Prisma where clause.
+    stmt,
+    course_column,
+):
+    """Apply ``scoped_course_ids`` to a SQLAlchemy SELECT.
 
-    - scope is ``None``            → return ``where`` unchanged (no filter).
-    - scope is an empty list       → return ``None`` — caller should short-circuit
-                                     (explicit empty scope means nothing matches).
-    - scope is a non-empty list    → return ``where`` merged with
-                                     ``{column: {"in": scope}}``.
+    - scope is ``None``            → return ``stmt`` unchanged (no filter).
+    - scope is an empty list       → return ``None`` — caller should short-circuit.
+    - scope is a non-empty list    → return ``stmt.where(course_column IN scope)``.
     """
-    if scope is not None and not scope:
+    if scope is None:
+        return stmt
+    if not scope:
         return None
-    merged = dict(where or {})
-    if scope:
-        merged[column] = {"in": scope}
-    return merged
+    return stmt.where(course_column.in_(scope))

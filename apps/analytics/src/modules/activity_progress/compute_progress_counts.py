@@ -29,7 +29,10 @@ def compute_progress_counts(activity):
 
         # count the number of participants that have repeated the activity (completed and min_trials >= 2)
         repeated_count = len(
-            df_statistics[(df_statistics["count"] == num_elements) & (df_statistics["min_trials"] >= 2)]
+            df_statistics[
+                (df_statistics["count"] == num_elements)
+                & (df_statistics["min_trials"] >= 2)
+            ]
         )
 
     else:

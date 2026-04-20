@@ -35,7 +35,9 @@ def embed_texts(texts: Sequence[str]) -> np.ndarray:
     # "query: " matches the ask-a-question retrieval flavor.
     prefixed = [f"query: {t}" for t in texts]
     model = _get_model()
-    return np.asarray(model.encode(prefixed, show_progress_bar=False, normalize_embeddings=True))
+    return np.asarray(
+        model.encode(prefixed, show_progress_bar=False, normalize_embeddings=True)
+    )
 
 
 def cluster_embeddings(embeddings: np.ndarray) -> List[int]:

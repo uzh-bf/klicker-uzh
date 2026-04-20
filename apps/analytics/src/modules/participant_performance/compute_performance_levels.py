@@ -13,15 +13,27 @@ def compute_performance_levels(df_performance):
 
     # set the performance levels based on the quantiles (inverse logic compared to activity - higher error rate is worse)
     df_performance["firstPerformance"] = "MEDIUM"
-    df_performance.loc[df_performance.firstErrorRate <= first_q1, "firstPerformance"] = "HIGH"
-    df_performance.loc[df_performance.firstErrorRate >= first_q3, "firstPerformance"] = "LOW"
+    df_performance.loc[
+        df_performance.firstErrorRate <= first_q1, "firstPerformance"
+    ] = "HIGH"
+    df_performance.loc[
+        df_performance.firstErrorRate >= first_q3, "firstPerformance"
+    ] = "LOW"
 
     df_performance["lastPerformance"] = "MEDIUM"
-    df_performance.loc[df_performance.lastErrorRate <= last_q1, "lastPerformance"] = "HIGH"
-    df_performance.loc[df_performance.lastErrorRate >= last_q3, "lastPerformance"] = "LOW"
+    df_performance.loc[df_performance.lastErrorRate <= last_q1, "lastPerformance"] = (
+        "HIGH"
+    )
+    df_performance.loc[df_performance.lastErrorRate >= last_q3, "lastPerformance"] = (
+        "LOW"
+    )
 
     df_performance["totalPerformance"] = "MEDIUM"
-    df_performance.loc[df_performance.totalErrorRate <= total_q1, "totalPerformance"] = "HIGH"
-    df_performance.loc[df_performance.totalErrorRate >= total_q3, "totalPerformance"] = "LOW"
+    df_performance.loc[
+        df_performance.totalErrorRate <= total_q1, "totalPerformance"
+    ] = "HIGH"
+    df_performance.loc[
+        df_performance.totalErrorRate >= total_q3, "totalPerformance"
+    ] = "LOW"
 
     return df_performance
