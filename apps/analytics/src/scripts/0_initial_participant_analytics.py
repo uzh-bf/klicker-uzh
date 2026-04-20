@@ -4,6 +4,7 @@
 from datetime import datetime
 
 import pandas as pd
+from sqlalchemy import select
 
 # set the python path correctly for module imports to work
 import sys
@@ -11,7 +12,6 @@ import sys
 sys.path.append("../../")
 
 from src.db import SessionLocal
-from src.db_helpers import row_to_dict
 from src.log import script_entry, script_exit
 from src.models import Course
 from src.modules.participant_analytics.compute_participant_analytics import (
@@ -100,9 +100,9 @@ def main() -> None:
         if compute_course:
             curr_date = datetime.now()
 
-            from sqlalchemy import select
-
-            stmt = select(Course).where(Course.startDate <= curr_date)
+            stmt = select(Course.id, Course.startDate, Course.endDate).where(
+                Course.startDate <= curr_date
+            )
             stmt = apply_course_scope(scope, stmt, Course.id)
             if stmt is None:
                 print(
@@ -110,8 +110,9 @@ def main() -> None:
                 )
                 df_courses = pd.DataFrame()
             else:
-                courses = session.execute(stmt).scalars().all()
-                df_courses = pd.DataFrame([row_to_dict(c) for c in courses])
+                df_courses = pd.DataFrame(
+                    [dict(row) for row in session.execute(stmt).mappings().all()]
+                )
 
             scope_note = f" (scoped to {len(scope)} ids)" if scope is not None else ""
             print(

@@ -1,12 +1,11 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from src.db_helpers import bulk_upsert
+from src.db_helpers import bulk_upsert, coerce_date
 from src.models import (
     AggregatedAnalytics,
-    Course,
     ElementStack,
     MicroLearning,
     PracticeQuiz,
@@ -14,24 +13,34 @@ from src.models import (
 
 
 def _count_elements_for_course(session: Session, course_id: str) -> int:
-    course = session.execute(
-        select(Course)
-        .where(Course.id == course_id)
-        .options(
-            selectinload(Course.practiceQuizzes)
-            .selectinload(PracticeQuiz.stacks)
-            .selectinload(ElementStack.elements),
-            selectinload(Course.microLearnings)
-            .selectinload(MicroLearning.stacks)
-            .selectinload(ElementStack.elements),
+    practice_quizzes = (
+        session.execute(
+            select(PracticeQuiz)
+            .where(PracticeQuiz.courseId == course_id)
+            .options(
+                selectinload(PracticeQuiz.stacks).selectinload(ElementStack.elements),
+            )
         )
-    ).scalar_one()
+        .scalars()
+        .all()
+    )
+    micro_learnings = (
+        session.execute(
+            select(MicroLearning)
+            .where(MicroLearning.courseId == course_id)
+            .options(
+                selectinload(MicroLearning.stacks).selectinload(ElementStack.elements),
+            )
+        )
+        .scalars()
+        .all()
+    )
 
     total = 0
-    for pq in course.practiceQuizzes:
+    for pq in practice_quizzes:
         for stack in pq.stacks:
             total += len(stack.elements)
-    for ml in course.microLearnings:
+    for ml in micro_learnings:
         for stack in ml.stacks:
             total += len(stack.elements)
     return total
@@ -43,13 +52,14 @@ def save_aggregated_analytics(
     if df_analytics is None or df_analytics.empty:
         return
 
-    computedAt = datetime.now().strftime("%Y-%m-%d")
+    computedAt = date.today()
+    timestamp_value = coerce_date(timestamp)
 
     if analytics_type in ("DAILY", "WEEKLY", "MONTHLY"):
         rows = [
             {
                 "type": analytics_type,
-                "timestamp": timestamp,
+                "timestamp": timestamp_value,
                 "computedAt": computedAt,
                 "participantCount": int(row["participantCount"]),
                 "responseCount": int(row["responseCount"]),
@@ -72,7 +82,7 @@ def save_aggregated_analytics(
             rows.append(
                 {
                     "type": "COURSE",
-                    "timestamp": timestamp,
+                    "timestamp": timestamp_value,
                     "computedAt": computedAt,
                     "participantCount": int(row["participantCount"]),
                     "responseCount": int(row["responseCount"]),
