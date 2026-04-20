@@ -18,16 +18,17 @@ Python 3.12 · uv-managed project · FastMCP v3.2 · Streamable HTTP transport �
 
 ## Iteration status
 
-| #   | Title                                                    | Status | Hash                                             |
-| --- | -------------------------------------------------------- | ------ | ------------------------------------------------ |
-| 1   | Skeleton + PLAN.md                                       | done   | `d419d767a`                                      |
-| 2   | GraphQL client + persisted-ops codegen + poe tasks       | done   | `496d0b191`                                      |
-| 3   | Category A lecturer tools (question authoring as drafts) | done   | `a00e38c70`                                      |
-| 4   | Category A participant tools (quiz discovery + response) | done   | `ab03aad1e`                                      |
-| 5   | OAuth bridge (MCP auth server + apps/auth routes)        | done   | `01916b826`                                      |
-| 6   | Backend Category B exposure queries + MCP tools          | done   | `d520532b5` (backend), _pending_ (MCP follow-up) |
-| 7   | Backend Category C aggregation + MCP tools               | done   | `f64971a26` (backend), _pending_ (MCP follow-up) |
-| 8   | Deploy surface (Dockerfile, Traefik, Helm)               | done   | `f555aaec0`                                      |
+| #   | Title                                                    | Status | Hash                                     |
+| --- | -------------------------------------------------------- | ------ | ---------------------------------------- |
+| 1   | Skeleton + PLAN.md                                       | done   | `d419d767a`                              |
+| 2   | GraphQL client + persisted-ops codegen + poe tasks       | done   | `496d0b191`                              |
+| 3   | Category A lecturer tools (question authoring as drafts) | done   | `a00e38c70`                              |
+| 4   | Category A participant tools (quiz discovery + response) | done   | `ab03aad1e`                              |
+| 5   | OAuth bridge (MCP auth server + apps/auth routes)        | done   | `01916b826`                              |
+| 6   | Backend Category B exposure queries + MCP tools          | done   | `d520532b5` (backend), `4557252a5` (MCP) |
+| 7   | Backend Category C aggregation + MCP tools               | done   | `f64971a26` (backend), `4557252a5` (MCP) |
+| 8   | Deploy surface (Dockerfile, Traefik, Helm)               | done   | `f555aaec0`                              |
+| 9   | Participant-analytics MCP tools + shared test helpers    | done   | `4557252a5`                              |
 
 ## Iteration 1 — Skeleton + PLAN.md
 
@@ -128,6 +129,31 @@ Promote-to-ready and per-element-type option schema resources are deferred — t
 - README + PLAN updated; all new envs already landed in `turbo.json` globalEnv in iteration 5.
 
 **Verification:** `uv run poe all` green with 62 tests (2 new for `/health`). Helm template linting and local `docker compose` boot are manual — run `helm template deploy/charts/klicker-uzh-v3 -f deploy/env-uzh-stg/values.yaml` and `curl https://mcp.klicker.com/health` before shipping the chart rollout.
+
+## Iteration 9 — Participant-analytics MCP tools + shared test helpers
+
+**Goal:** Close the deferred-MCP gap from iterations 6 and 7 so an MCP client can read weak-topics / SRS / mistakes / performance / analytics directly. Unblocks the `project/TUTORING_EXPANSION.md` P1 (tutor system-prompt v1 in `apps/chat`).
+
+**Deliverables:**
+
+- `apps/mcp/src/klicker_mcp/tools/participant_analytics.py` — 10 read-only tools wrapping the iter 6/7 persisted ops: `get_my_course_analytics` (client-side timeframe filter), `get_my_performance`, `get_my_activity_performance`, `get_my_response_history`, `get_my_mistakes` (hard-codes `correctness_in=[WRONG, PARTIAL]`), `get_my_srs_state`, `get_weak_topics` (trims top-N), `get_mastery_map` (reshapes to `{topic, mastery, coverage}`), `get_my_recent_activity`, `get_bookmarks_across_courses`. All participant-scoped via the existing bearer-token forwarding; backend is authoritative on `participantId = ctx.user.sub`.
+- `apps/mcp/src/klicker_mcp/tools/_helpers.py` — `drop_none` promoted from `lecturer.py`-local to a shared helper; `lecturer.py` + `participant_analytics.py` both import it.
+- `apps/mcp/tests/conftest.py` — `mock_graphql` + `sent_body` moved from per-file test helpers into the shared conftest; the existing `test_participant_tools.py` migrated too, dropping the unused `operation_name` positional.
+- `apps/mcp/src/klicker_mcp/tools/__init__.py` — registers `participant_analytics`; switched from the noqa suppression to `__all__` so the four module imports satisfy pyright strict mode without per-line ignores.
+
+**Verification:** `uv run poe all` green — 81 tests total (19 new for the analytics tools + 1 auth-guard + 1 registration sanity). Pre-commit hook (prettier via lint-staged + turbo check + syncpack + eslint) also green.
+
+## Next steps — candidates for iteration 10
+
+Sized by reference to `project/TUTORING_EXPANSION.md` §7.
+
+1. **P1 — tutor system prompt v1 in `apps/chat`** (~1 week). Consume the now-complete MCP surface: RTRI-style prompt, session-open snapshot calling the 10 analytics tools in parallel, Socratic default, anti-sycophancy grounding via `submit_stack_response` correctness field, solution-gating, adaptive intensity keyed on `get_my_performance` tier. Depends on §8 Q1 (where the tutor lives in the client stack — preference is `apps/chat` → MCP over HTTP) being resolved. **Highest-impact follow-up; depends only on iter 9.**
+2. **End-to-end manual verification of iterations 5–9 against deployed `mcp.klicker.com`** (~0.5 day). Never done against a routable domain. Use a real participant JWT (delegated-login `testuser1`), point Claude Desktop / MCP Inspector at the deployed endpoint, smoke-test one tool per category (1 lecturer write in DRAFT mode, 1 participant write, 1 analytics read). Low risk, high information — validates the OAuth dance, the persisted-ops path, the /health probe, and the ingress setup together.
+3. **Resolve open question 2 (iteration 3 lecturer writes with Edu-ID)** (~0.5–2 days). Verify whether `ACCOUNT_OWNER`-scoped JWTs satisfy `asUserFullAccess`. If not, either adjust the guard, or gate lecturer-write tools behind delegated login for the MCP POC. Blocks any real lecturer usage.
+4. **Resolve open question 2 (`createdVia` audit field on `Element`)** (~0.5 day). Propose + land so AI-drafted questions are filterable in the Manage UI — promised _before_ iter 3 ships to students. Prisma-only change; no new persisted ops needed.
+5. **P3 — solution explanations** (~2 days). Per-element explanations, post-submission gating. Lecturer-authored or LLM-drafted + lecturer-approved via the existing iter 3 `status=DRAFT` pattern. Unlike P2/P4, does not require session memory or cohort norming — can land in parallel with P1 work.
+
+Recommendation: start with step 2 (deploy smoke) because it's cheap and de-risks everything iterations 5–9 assumed. Then step 1 (P1 tutor prompt) in a separate planning round — it's a meaningfully larger commitment and lives in `apps/chat`, not `apps/mcp`, so it warrants its own plan doc.
 
 ## Open questions (tracked, not blocking iteration 1)
 
