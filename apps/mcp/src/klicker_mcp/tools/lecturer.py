@@ -15,7 +15,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from klicker_mcp.app import mcp
 from klicker_mcp.gql import AsyncGraphQLClient
+from klicker_mcp.tools._annotations import CUMULATIVE_WRITE, READ_ONLY
 from klicker_mcp.tools._helpers import drop_none, require_bearer_token
+from klicker_mcp.tools._instrumentation import instrument
+from klicker_mcp.tools._meta import tool_meta
 
 ElementStatus = Literal["DRAFT", "REVIEW", "READY"]
 ChoicesType = Literal["SC", "MC", "KPRIM"]
@@ -86,7 +89,17 @@ class FreeTextRestrictions(BaseModel):
     pattern: Annotated[str | None, Field(default=None, description="Regex the student's answer must match.")] = None
 
 
-@mcp.tool
+@mcp.tool(
+    title="Create choices question",
+    annotations=CUMULATIVE_WRITE,
+    meta=tool_meta(
+        audience="lecturer",
+        category="authoring",
+        lawful_basis="contract",
+        solution_exposure="authoring_self",
+    ),
+)
+@instrument
 async def create_choices_question(
     question_type: Annotated[
         ChoicesType,
@@ -165,7 +178,17 @@ async def create_choices_question(
     return data.get("manipulateChoicesQuestion") or {}
 
 
-@mcp.tool
+@mcp.tool(
+    title="Create free-text question",
+    annotations=CUMULATIVE_WRITE,
+    meta=tool_meta(
+        audience="lecturer",
+        category="authoring",
+        lawful_basis="contract",
+        solution_exposure="authoring_self",
+    ),
+)
+@instrument
 async def create_free_text_question(
     name: Annotated[str, Field(description="Internal name for the question pool.")],
     content: Annotated[str, Field(description="Question body in Markdown.")],
@@ -219,7 +242,17 @@ async def create_free_text_question(
     return data.get("manipulateFreeTextQuestion") or {}
 
 
-@mcp.tool
+@mcp.tool(
+    title="Create numerical question",
+    annotations=CUMULATIVE_WRITE,
+    meta=tool_meta(
+        audience="lecturer",
+        category="authoring",
+        lawful_basis="contract",
+        solution_exposure="authoring_self",
+    ),
+)
+@instrument
 async def create_numerical_question(
     name: Annotated[str, Field(description="Internal name.")],
     content: Annotated[str, Field(description="Question body in Markdown.")],
@@ -280,7 +313,17 @@ async def create_numerical_question(
     return data.get("manipulateNumericalQuestion") or {}
 
 
-@mcp.tool
+@mcp.tool(
+    title="Create flashcard",
+    annotations=CUMULATIVE_WRITE,
+    meta=tool_meta(
+        audience="lecturer",
+        category="authoring",
+        lawful_basis="contract",
+        solution_exposure="authoring_self",
+    ),
+)
+@instrument
 async def create_flashcard(
     name: Annotated[str, Field(description="Internal name.")],
     content: Annotated[str, Field(description="Front of the flashcard (question / prompt), Markdown.")],
@@ -310,7 +353,17 @@ async def create_flashcard(
     return data.get("manipulateFlashcardElement") or {}
 
 
-@mcp.tool
+@mcp.tool(
+    title="Create content element",
+    annotations=CUMULATIVE_WRITE,
+    meta=tool_meta(
+        audience="lecturer",
+        category="authoring",
+        lawful_basis="contract",
+        solution_exposure="authoring_self",
+    ),
+)
+@instrument
 async def create_content_element(
     name: Annotated[str, Field(description="Internal name.")],
     content: Annotated[
@@ -341,7 +394,16 @@ async def create_content_element(
     return data.get("manipulateContentElement") or {}
 
 
-@mcp.tool
+@mcp.tool(
+    title="List my questions",
+    annotations=READ_ONLY,
+    meta=tool_meta(
+        audience="lecturer",
+        category="authoring",
+        solution_exposure="authoring_self",
+    ),
+)
+@instrument
 async def list_my_questions(
     status: Annotated[
         ElementStatus | None,

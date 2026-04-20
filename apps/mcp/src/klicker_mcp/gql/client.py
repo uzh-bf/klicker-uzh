@@ -111,12 +111,19 @@ class AsyncGraphQLClient:
         if bearer_token:
             headers["Authorization"] = f"Bearer {bearer_token}"
 
-        resp = await self._client.post(self._endpoint, json=body, headers=headers)
-        resp.raise_for_status()
+        # Imported here to avoid a client↔errors import cycle at module load.
+        from klicker_mcp.gql.errors import translate_and_raise
+
+        try:
+            resp = await self._client.post(self._endpoint, json=body, headers=headers)
+            resp.raise_for_status()
+        except httpx.HTTPError as exc:
+            translate_and_raise(exc)
+
         payload: dict[str, Any] = resp.json()
 
         if payload.get("errors"):
-            raise GraphQLError(payload["errors"])
+            translate_and_raise(GraphQLError(payload["errors"]))
         data_raw = payload.get("data")
         if isinstance(data_raw, dict):
             return cast(dict[str, Any], data_raw)

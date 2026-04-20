@@ -9,6 +9,11 @@ from __future__ import annotations
 
 from klicker_mcp import health  # noqa: F401  # pyright: ignore[reportUnusedImport]
 from klicker_mcp.app import mcp
-from klicker_mcp.tools import common, lecturer, participant  # noqa: F401  # pyright: ignore[reportUnusedImport]
+from klicker_mcp.tools import (  # noqa: F401
+    common,  # pyright: ignore[reportUnusedImport]
+    lecturer,  # pyright: ignore[reportUnusedImport]
+    participant,  # pyright: ignore[reportUnusedImport]
+    participant_analytics,  # pyright: ignore[reportUnusedImport]
+)
 
 __all__ = ["mcp"]

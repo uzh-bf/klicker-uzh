@@ -49,6 +49,7 @@ async def test_whoami_handles_graphql_errors(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="http://localhost:3000/api/graphql",
         method="POST",
+        status_code=401,
         json={"errors": [{"message": "expired token"}]},
     )
 
@@ -58,4 +59,5 @@ async def test_whoami_handles_graphql_errors(httpx_mock: HTTPXMock) -> None:
         result = await whoami()
 
     assert result["authenticated"] is False
-    assert result["errors"][0]["message"] == "expired token"
+    assert result["error_class"] == "auth"
+    assert "[klicker.auth]" in result["message"]

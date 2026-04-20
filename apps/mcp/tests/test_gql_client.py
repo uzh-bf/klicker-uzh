@@ -6,11 +6,11 @@ import json
 
 import httpx
 import pytest
+from fastmcp.exceptions import ToolError
 from pytest_httpx import HTTPXMock
 
 from klicker_mcp.gql.client import (
     AsyncGraphQLClient,
-    GraphQLError,
     UnknownOperationError,
 )
 
@@ -74,7 +74,7 @@ async def test_unknown_operation_raises() -> None:
 
 
 @pytest.mark.asyncio
-async def test_graphql_errors_are_raised(httpx_mock: HTTPXMock) -> None:
+async def test_graphql_errors_are_translated_to_tool_error(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="http://localhost:3000/api/graphql",
         method="POST",
@@ -82,10 +82,11 @@ async def test_graphql_errors_are_raised(httpx_mock: HTTPXMock) -> None:
     )
 
     async with AsyncGraphQLClient() as client:
-        with pytest.raises(GraphQLError) as exc:
+        with pytest.raises(ToolError) as exc:
             await client.execute("Self")
 
-    assert exc.value.errors[0]["message"] == "nope"
+    assert str(exc.value).startswith("[klicker.validation] ")
+    assert "nope" in str(exc.value)
 
 
 @pytest.mark.asyncio

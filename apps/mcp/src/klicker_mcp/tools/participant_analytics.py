@@ -20,13 +20,21 @@ from pydantic import Field
 
 from klicker_mcp.app import mcp
 from klicker_mcp.gql import AsyncGraphQLClient
+from klicker_mcp.tools._annotations import READ_ONLY
 from klicker_mcp.tools._helpers import drop_none, require_bearer_token
+from klicker_mcp.tools._instrumentation import instrument
+from klicker_mcp.tools._meta import tool_meta
 
 AnalyticsTimeframe = Literal["DAILY", "WEEKLY", "MONTHLY", "COURSE"]
 ResponseCorrectness = Literal["CORRECT", "PARTIAL", "WRONG"]
 
 
-@mcp.tool
+@mcp.tool(
+    title="Get my course analytics",
+    annotations=READ_ONLY,
+    meta=tool_meta(audience="participant", category="analytics"),
+)
+@instrument
 async def get_my_course_analytics(
     course_id: Annotated[str, Field(description="Course ID.")],
     timeframe: Annotated[
@@ -53,7 +61,12 @@ async def get_my_course_analytics(
     return [row for row in rows if row.get("type") == timeframe]
 
 
-@mcp.tool
+@mcp.tool(
+    title="Get my performance",
+    annotations=READ_ONLY,
+    meta=tool_meta(audience="participant", category="analytics"),
+)
+@instrument
 async def get_my_performance(
     course_id: Annotated[str, Field(description="Course ID.")],
 ) -> dict[str, Any]:
@@ -68,7 +81,12 @@ async def get_my_performance(
     return data.get("participantPerformance") or {}
 
 
-@mcp.tool
+@mcp.tool(
+    title="Get my activity performance",
+    annotations=READ_ONLY,
+    meta=tool_meta(audience="participant", category="analytics"),
+)
+@instrument
 async def get_my_activity_performance(
     course_id: Annotated[str, Field(description="Course ID.")],
 ) -> list[dict[str, Any]]:
@@ -83,7 +101,16 @@ async def get_my_activity_performance(
     return data.get("participantActivityPerformance") or []
 
 
-@mcp.tool
+@mcp.tool(
+    title="Get my response history",
+    annotations=READ_ONLY,
+    meta=tool_meta(
+        audience="participant",
+        category="analytics",
+        solution_exposure="submission_gated",
+    ),
+)
+@instrument
 async def get_my_response_history(
     course_id: Annotated[
         str | None,
@@ -111,7 +138,16 @@ async def get_my_response_history(
     return data.get("myResponseHistory") or {}
 
 
-@mcp.tool
+@mcp.tool(
+    title="Get my mistakes",
+    annotations=READ_ONLY,
+    meta=tool_meta(
+        audience="participant",
+        category="analytics",
+        solution_exposure="submission_gated",
+    ),
+)
+@instrument
 async def get_my_mistakes(
     course_id: Annotated[
         str | None,
@@ -140,7 +176,12 @@ async def get_my_mistakes(
     return data.get("myResponseHistory") or {}
 
 
-@mcp.tool
+@mcp.tool(
+    title="Get my SRS state",
+    annotations=READ_ONLY,
+    meta=tool_meta(audience="participant", category="analytics"),
+)
+@instrument
 async def get_my_srs_state(
     practice_quiz_id: Annotated[str, Field(description="Practice quiz ID.")],
 ) -> list[dict[str, Any]]:
@@ -155,7 +196,12 @@ async def get_my_srs_state(
     return data.get("mySRSState") or []
 
 
-@mcp.tool
+@mcp.tool(
+    title="Get my weakest topics",
+    annotations=READ_ONLY,
+    meta=tool_meta(audience="participant", category="analytics"),
+)
+@instrument
 async def get_weak_topics(
     course_id: Annotated[str, Field(description="Course ID.")],
     limit: Annotated[int, Field(description="Max topics to return (weakest first).", ge=1, le=100)] = 10,
@@ -176,7 +222,12 @@ async def get_weak_topics(
     return rows[:limit]
 
 
-@mcp.tool
+@mcp.tool(
+    title="Get my topic mastery map",
+    annotations=READ_ONLY,
+    meta=tool_meta(audience="participant", category="analytics"),
+)
+@instrument
 async def get_mastery_map(
     course_id: Annotated[str, Field(description="Course ID.")],
 ) -> list[dict[str, Any]]:
@@ -203,7 +254,12 @@ async def get_mastery_map(
     return out
 
 
-@mcp.tool
+@mcp.tool(
+    title="Get my recent activity",
+    annotations=READ_ONLY,
+    meta=tool_meta(audience="participant", category="analytics"),
+)
+@instrument
 async def get_my_recent_activity(
     limit: Annotated[int, Field(description="Max entries to return.", ge=1, le=100)] = 20,
 ) -> list[dict[str, Any]]:
@@ -218,7 +274,12 @@ async def get_my_recent_activity(
     return data.get("myRecentActivity") or []
 
 
-@mcp.tool
+@mcp.tool(
+    title="Get bookmarks across courses",
+    annotations=READ_ONLY,
+    meta=tool_meta(audience="participant", category="analytics"),
+)
+@instrument
 async def get_bookmarks_across_courses() -> list[dict[str, Any]]:
     """Return the participant's bookmarked stacks, grouped by course."""
     token = require_bearer_token()
