@@ -3,13 +3,21 @@ import os
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from src.modules.utils import COURSE_TIMESTAMP, load_sql
+from src.modules.utils import COURSE_TIMESTAMP, load_sql, render_uuid_in_clause
 
 _DIR = os.path.dirname(__file__)
 _SQL_DEFAULT = load_sql(os.path.join(_DIR, "aggregated_chatbot_analytics.sql"))
 _SQL_WEEKLY = load_sql(os.path.join(_DIR, "aggregated_chatbot_analytics_weekly.sql"))
+_PLACEHOLDER = "/*COURSE_FILTER*/"
 
 __all__ = ["compute_aggregated_chatbot_analytics", "COURSE_TIMESTAMP"]
+
+
+def _prepare_sql(template: str, course_ids: list[str] | None) -> str:
+    clause = (
+        "" if course_ids is None else render_uuid_in_clause('cb."courseId"', course_ids)
+    )
+    return template.replace(_PLACEHOLDER, clause)
 
 
 def compute_aggregated_chatbot_analytics(
@@ -18,6 +26,7 @@ def compute_aggregated_chatbot_analytics(
     win_end: str,
     timestamp: str,
     analytics_type: str,
+    course_ids: list[str] | None = None,
     verbose: bool = False,
 ):
     """Run the chatbot-level rollup for one window.
@@ -37,12 +46,12 @@ def compute_aggregated_chatbot_analytics(
 
     if analytics_type == "WEEKLY":
         result = session.execute(
-            text(_SQL_WEEKLY),
+            text(_prepare_sql(_SQL_WEEKLY, course_ids)),
             {"win_start": win_start, "win_end": win_end, "ts": timestamp},
         )
     else:
         result = session.execute(
-            text(_SQL_DEFAULT),
+            text(_prepare_sql(_SQL_DEFAULT, course_ids)),
             {
                 "win_start": win_start,
                 "win_end": win_end,

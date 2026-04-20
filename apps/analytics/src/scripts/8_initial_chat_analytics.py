@@ -33,6 +33,7 @@ def main() -> None:
         iter_analytics_windows(
             session,
             compute_participant_chat_analytics,
+            course_ids=scope,
             label="participant chat analytics",
             windows_since=window_since,
             verbose=False,

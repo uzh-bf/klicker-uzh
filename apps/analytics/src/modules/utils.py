@@ -88,6 +88,7 @@ def iter_analytics_windows(
     windows_since: str | None = None,
     label: str = "analytics",
     verbose: bool = False,
+    **compute_kwargs,
 ) -> None:
     """Iterate DAILY / WEEKLY / MONTHLY / COURSE windows and call ``compute_fn``
     for each one with the signature ``(session, win_start, win_end, timestamp,
@@ -115,7 +116,8 @@ def iter_analytics_windows(
                 exclusive_day_end(day),
                 day,
                 "DAILY",
-                verbose,
+                verbose=verbose,
+                **compute_kwargs,
             )
 
     if compute_weekly:
@@ -131,7 +133,8 @@ def iter_analytics_windows(
                 exclusive_day_end(week_end),
                 week_end,
                 "WEEKLY",
-                verbose,
+                verbose=verbose,
+                **compute_kwargs,
             )
 
     if compute_monthly:
@@ -147,7 +150,8 @@ def iter_analytics_windows(
                 exclusive_day_end(month_end),
                 month_end,
                 "MONTHLY",
-                verbose,
+                verbose=verbose,
+                **compute_kwargs,
             )
 
     if compute_course:
@@ -158,7 +162,8 @@ def iter_analytics_windows(
             exclusive_day_end(end_date),
             COURSE_TIMESTAMP,
             "COURSE",
-            verbose,
+            verbose=verbose,
+            **compute_kwargs,
         )
 
 

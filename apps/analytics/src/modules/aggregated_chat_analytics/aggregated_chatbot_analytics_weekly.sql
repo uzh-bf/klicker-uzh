@@ -10,8 +10,8 @@
 -- metric) can skip the expensive scan.
 
 WITH params AS (
-  SELECT :win_start::timestamptz AS win_start,
-         :win_end::timestamptz AS win_end
+  SELECT CAST(:win_start AS timestamptz) AS win_start,
+         CAST(:win_end AS timestamptz) AS win_end
 ),
 messages AS (
   SELECT
@@ -23,6 +23,7 @@ messages AS (
   JOIN "Chatbot" cb   ON cb.id = ct."chatbotId"
   CROSS JOIN params
   WHERE m."createdAt" >= params.win_start AND m."createdAt" < params.win_end
+    /*COURSE_FILTER*/
 ),
 user_msgs AS (SELECT * FROM messages WHERE role = 'user'),
 first_seen AS (
@@ -130,7 +131,7 @@ INSERT INTO "AggregatedChatbotAnalytics" (
 )
 SELECT
   'WEEKLY'::"AnalyticsType",
-  :ts::date,
+  CAST(:ts AS date),
   r."chatbotId",
   r."courseId",
   r.active_participants,

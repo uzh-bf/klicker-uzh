@@ -21,9 +21,9 @@ SELECT
 FROM "ChatMessage" m
 JOIN "ChatThread" ct ON ct.id = m."threadId"
 WHERE m.role = 'user'
-  AND ct."chatbotId" = :chatbot_id::uuid
-  AND m."createdAt" >= :win_start::timestamptz
-  AND m."createdAt" <  :win_end::timestamptz
+  AND ct."chatbotId" = CAST(:chatbot_id AS uuid)
+  AND m."createdAt" >= CAST(:win_start AS timestamptz)
+  AND m."createdAt" <  CAST(:win_end AS timestamptz)
 """
 
 

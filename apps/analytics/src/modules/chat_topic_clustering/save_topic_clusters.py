@@ -9,9 +9,9 @@ MIN_PARTICIPANTS_PER_CLUSTER = 5  # §3.9 privacy threshold
 
 DELETE_SQL = """
 DELETE FROM "ChatTopicCluster"
-WHERE "chatbotId" = :chatbot_id::uuid
-  AND "type" = :analytics_type::"AnalyticsType"
-  AND "timestamp" = :ts::date
+WHERE "chatbotId" = CAST(:chatbot_id AS uuid)
+  AND "type" = CAST(:analytics_type AS "AnalyticsType")
+  AND "timestamp" = CAST(:ts AS date)
 """
 
 INSERT_SQL = """
@@ -22,9 +22,9 @@ INSERT INTO "ChatTopicCluster" (
   "representativeParaphrase", "embeddingCentroid",
   "createdAt"
 ) VALUES (
-  :analytics_type::"AnalyticsType", :ts::date, :chatbot_id::uuid,
-  :cluster_index::int, :cluster_label::text,
-  :message_count::int, :participant_count::int,
+  CAST(:analytics_type AS "AnalyticsType"), CAST(:ts AS date), CAST(:chatbot_id AS uuid),
+  CAST(:cluster_index AS int), CAST(:cluster_label AS text),
+  CAST(:message_count AS int), CAST(:participant_count AS int),
   NULL, NULL,
   NOW()
 )
