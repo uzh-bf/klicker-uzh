@@ -845,7 +845,11 @@ export async function POST(
   }))
 
   // Load MCP tools from database configurations or fallback to legacy
-  const mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
+  const mcpTools = await getAggregatedMCPTools(
+    mcpServersWithConfigs,
+    chatbotId,
+    participantId
+  )
   const toolNames = Object.keys(mcpTools || {})
 
   if (!chatbot) {

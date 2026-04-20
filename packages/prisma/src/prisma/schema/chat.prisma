@@ -144,7 +144,7 @@ model ChatbotMCPServer {
   name        String  @unique // e.g., "RAG_MCP", "Python_Executor", "R_Executor"
   description String?
   url         String // MCP server URL
-  authType    String // 'bearer' | 'basic' | 'none' | 'custom'
+  authType    String // 'bearer' | 'basic' | 'none' | 'custom' | 'klicker-participant-jwt'
   authSecret  String? @db.Text // Encrypted using APP_SECRET
 
   passChatbotId   Boolean @default(false) // Whether to include chatbot ID as header

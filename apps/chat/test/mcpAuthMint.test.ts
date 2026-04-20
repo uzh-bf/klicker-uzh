@@ -1,0 +1,89 @@
+import { verifyJWT } from '@klicker-uzh/util'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import {
+  McpAuthMintError,
+  __resetParticipantMcpJwtCacheForTests,
+  mintParticipantMcpJwt,
+} from '../src/lib/server/mcpAuthMint'
+
+const TEST_SECRET = 'unit-test-app-secret-abcd'
+const TEST_ISSUER = 'https://auth.klicker.test'
+
+describe('mintParticipantMcpJwt', () => {
+  beforeEach(() => {
+    vi.stubEnv('APP_SECRET', TEST_SECRET)
+    vi.stubEnv('APP_ORIGIN_AUTH', TEST_ISSUER)
+    __resetParticipantMcpJwtCacheForTests()
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    __resetParticipantMcpJwtCacheForTests()
+  })
+
+  test('minted token verifies with same secret + issuer and carries participant sub', async () => {
+    const jwt = await mintParticipantMcpJwt('participant-a')
+
+    const payload = await verifyJWT(jwt, TEST_SECRET, {
+      issuer: TEST_ISSUER,
+    })
+
+    expect(payload.sub).toBe('participant-a')
+    expect(payload.role).toBe('PARTICIPANT')
+    expect(payload.iss).toBe(TEST_ISSUER)
+    expect(typeof payload.exp).toBe('number')
+  })
+
+  test('cache hit within TTL returns byte-identical JWT string', async () => {
+    const first = await mintParticipantMcpJwt('participant-cache')
+    const second = await mintParticipantMcpJwt('participant-cache')
+
+    expect(second).toBe(first)
+  })
+
+  test('cache entry past TTL is re-minted', async () => {
+    vi.useFakeTimers()
+    try {
+      const startMs = new Date('2026-04-20T12:00:00.000Z').getTime()
+      vi.setSystemTime(startMs)
+      const first = await mintParticipantMcpJwt('participant-expire')
+
+      // Advance past the 4-minute cache TTL. This moves both the
+      // cache clock (Date.now) and jose's iat source (new Date()).
+      vi.setSystemTime(startMs + 5 * 60 * 1000)
+      const second = await mintParticipantMcpJwt('participant-expire')
+      expect(second).not.toBe(first)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  test('cache is keyed per participant (no cross-participant leakage)', async () => {
+    const a = await mintParticipantMcpJwt('participant-a')
+    const b = await mintParticipantMcpJwt('participant-b')
+    expect(a).not.toBe(b)
+
+    // A re-read for A returns A's cached token, not B's most-recent one.
+    const aAgain = await mintParticipantMcpJwt('participant-a')
+    expect(aAgain).toBe(a)
+
+    const payloadA = await verifyJWT(aAgain, TEST_SECRET, {
+      issuer: TEST_ISSUER,
+    })
+    expect(payloadA.sub).toBe('participant-a')
+  })
+
+  test('missing APP_SECRET throws McpAuthMintError', async () => {
+    delete process.env.APP_SECRET
+    await expect(mintParticipantMcpJwt('participant-x')).rejects.toBeInstanceOf(
+      McpAuthMintError
+    )
+  })
+
+  test('missing APP_ORIGIN_AUTH throws McpAuthMintError', async () => {
+    delete process.env.APP_ORIGIN_AUTH
+    await expect(mintParticipantMcpJwt('participant-x')).rejects.toBeInstanceOf(
+      McpAuthMintError
+    )
+  })
+})
