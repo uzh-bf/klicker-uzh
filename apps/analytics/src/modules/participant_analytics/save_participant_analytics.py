@@ -1,8 +1,8 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy.orm import Session
 
-from src.db_helpers import bulk_upsert
+from src.db_helpers import bulk_upsert, coerce_date
 from src.models import ParticipantAnalytics
 
 
@@ -12,10 +12,10 @@ def save_participant_analytics(
     if df_analytics is None or df_analytics.empty:
         return
 
-    computedAt = datetime.now().strftime("%Y-%m-%d")
+    computedAt = date.today()
 
     if analytics_type in ("DAILY", "WEEKLY", "MONTHLY"):
-        ts = timestamp
+        ts = coerce_date(timestamp)
         rows = [
             {
                 "type": analytics_type,
@@ -37,7 +37,7 @@ def save_participant_analytics(
             for _, row in df_analytics.iterrows()
         ]
     elif analytics_type == "COURSE":
-        ts = "1970-01-01"
+        ts = coerce_date(timestamp)
         rows = [
             {
                 "type": "COURSE",

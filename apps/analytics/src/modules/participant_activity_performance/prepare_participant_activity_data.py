@@ -3,41 +3,40 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from src.models import (
-    Course,
     ElementInstance,
     ElementStack,
     MicroLearning,
+    Participation,
     PracticeQuiz,
 )
 
 
 def prepare_participant_activity_data(session: Session, course_id: str):
-    course = session.execute(
-        select(Course)
-        .where(Course.id == course_id)
+    practice_quizzes = session.execute(
+        select(PracticeQuiz)
+        .where(PracticeQuiz.courseId == course_id)
         .options(
-            selectinload(Course.practiceQuizzes)
-            .selectinload(PracticeQuiz.stacks)
+            selectinload(PracticeQuiz.stacks)
             .selectinload(ElementStack.elements)
-            .selectinload(ElementInstance.responses),
-            selectinload(Course.microLearnings)
-            .selectinload(MicroLearning.stacks)
-            .selectinload(ElementStack.elements)
-            .selectinload(ElementInstance.responses),
-            selectinload(Course.participations),
+            .selectinload(ElementInstance.responses)
         )
-    ).scalar_one_or_none()
-
-    if course is None:
-        return pd.DataFrame(), pd.DataFrame(), []
+    ).scalars().all()
+    micro_learnings = session.execute(
+        select(MicroLearning)
+        .where(MicroLearning.courseId == course_id)
+        .options(
+            selectinload(MicroLearning.stacks)
+            .selectinload(ElementStack.elements)
+            .selectinload(ElementInstance.responses)
+        )
+    ).scalars().all()
+    participant_ids = session.execute(
+        select(Participation.participantId).where(Participation.courseId == course_id)
+    ).scalars().all()
 
     published_statuses = {"PUBLISHED", "ENDED", "GRADED"}
-    practice_quizzes = [
-        pq for pq in course.practiceQuizzes if pq.status in published_statuses
-    ]
-    micro_learnings = [
-        ml for ml in course.microLearnings if ml.status in published_statuses
-    ]
+    practice_quizzes = [pq for pq in practice_quizzes if pq.status in published_statuses]
+    micro_learnings = [ml for ml in micro_learnings if ml.status in published_statuses]
 
     def _activity_rows(activities, activity_type: str):
         return [
@@ -55,8 +54,6 @@ def prepare_participant_activity_data(session: Session, course_id: str):
         _activity_rows(practice_quizzes, "practiceQuizzes")
         + _activity_rows(micro_learnings, "microLearnings")
     )
-
-    participant_ids = [p.participantId for p in course.participations]
 
     responses = []
     for activity in list(practice_quizzes) + list(micro_learnings):
