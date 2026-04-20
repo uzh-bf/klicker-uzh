@@ -120,6 +120,18 @@ def _selection_instance_df(options):
     )
 
 
+def _case_study_instance_df(options):
+    return pd.DataFrame(
+        [
+            {
+                "elementInstanceId": "instance-1",
+                "type": "CASE_STUDY",
+                "options": options,
+            }
+        ]
+    )
+
+
 def test_selection_correctness_without_sample_solution_is_treated_as_correct():
     module = importlib.import_module(
         "src.modules.participant_analytics.compute_correctness"
@@ -168,6 +180,129 @@ def test_selection_correctness_returns_none_when_solution_metadata_missing():
     result = module.compute_correctness_columns(
         _selection_instance_df({"hasSampleSolution": True, "numberOfInputs": 0}),
         {"elementInstanceId": "instance-1", "response": {"selection": [1, 2]}},
+    )
+
+    assert result is None
+
+
+def test_case_study_correctness_without_sample_solution_is_treated_as_correct():
+    module = importlib.import_module(
+        "src.modules.participant_analytics.compute_correctness"
+    )
+
+    result = module.compute_correctness_columns(
+        _case_study_instance_df({"hasSampleSolution": False, "cases": []}),
+        {"elementInstanceId": "instance-1", "response": {}},
+    )
+
+    assert result == "CORRECT"
+
+
+@pytest.mark.parametrize(
+    ("assessment", "expected"),
+    [
+        (
+            [
+                {
+                    "caseId": "case-1",
+                    "itemResponses": [
+                        {
+                            "itemId": 11,
+                            "criterionResponses": [
+                                {"criterionId": "crit-1", "response": 5},
+                                {"criterionId": "crit-2", "response": 9},
+                            ],
+                        }
+                    ],
+                }
+            ],
+            "CORRECT",
+        ),
+        (
+            [
+                {
+                    "caseId": "case-1",
+                    "itemResponses": [
+                        {
+                            "itemId": 11,
+                            "criterionResponses": [
+                                {"criterionId": "crit-1", "response": 5},
+                                {"criterionId": "crit-2", "response": 2},
+                            ],
+                        }
+                    ],
+                }
+            ],
+            "PARTIAL",
+        ),
+        (
+            [
+                {
+                    "caseId": "case-1",
+                    "itemResponses": [
+                        {
+                            "itemId": 11,
+                            "criterionResponses": [
+                                {"criterionId": "crit-1", "response": -1},
+                                {"criterionId": "crit-2", "response": 2},
+                            ],
+                        }
+                    ],
+                }
+            ],
+            "INCORRECT",
+        ),
+    ],
+)
+def test_case_study_correctness_matches_existing_product_grading(
+    assessment, expected
+):
+    module = importlib.import_module(
+        "src.modules.participant_analytics.compute_correctness"
+    )
+
+    result = module.compute_correctness_columns(
+        _case_study_instance_df(
+            {
+                "hasSampleSolution": True,
+                "cases": [
+                    {
+                        "id": "case-1",
+                        "solutions": [
+                            {
+                                "itemId": 11,
+                                "criteriaSolutions": [
+                                    {"criterionId": "crit-1", "min": 4, "max": 6},
+                                    {"criterionId": "crit-2", "min": 8, "max": 10},
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            }
+        ),
+        {"elementInstanceId": "instance-1", "response": {"assessment": assessment}},
+    )
+
+    assert result == expected
+
+
+def test_case_study_correctness_returns_none_when_solution_metadata_missing():
+    module = importlib.import_module(
+        "src.modules.participant_analytics.compute_correctness"
+    )
+
+    result = module.compute_correctness_columns(
+        _case_study_instance_df(
+            {
+                "hasSampleSolution": True,
+                "cases": [{"id": "case-1", "solutions": []}],
+            }
+        ),
+        {
+            "elementInstanceId": "instance-1",
+            "response": {"assessment": [{"caseId": "case-1", "itemResponses": []}]},
+        },
     )
 
     assert result is None

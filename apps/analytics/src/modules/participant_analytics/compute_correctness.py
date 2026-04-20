@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 
 from src.models import ElementInstance
 
+_EPSILON = 2.220446049250313e-16
+
 
 def map_element_instance_options(instance: ElementInstance) -> dict:
     return {
@@ -36,6 +38,112 @@ def _selection_correctness(response, options):
     valid_responses = [answer_id for answer_id in deduped if answer_id in correct_answers]
     correctness = len(valid_responses) / number_of_inputs
 
+    if correctness == 1:
+        return "CORRECT"
+    if correctness == 0:
+        return "INCORRECT"
+    return "PARTIAL"
+
+
+def _case_study_response_map(assessment):
+    if isinstance(assessment, dict):
+        return {
+            str(case_id): {
+                str(item_id): {
+                    str(criterion_id): response_value
+                    for criterion_id, response_value in (criterion_map or {}).items()
+                }
+                for item_id, criterion_map in (case_map or {}).items()
+            }
+            for case_id, case_map in assessment.items()
+        }
+
+    if not isinstance(assessment, list):
+        return {}
+
+    response_map = {}
+    for case_response in assessment:
+        if not isinstance(case_response, dict):
+            continue
+        case_id = case_response.get("caseId")
+        if case_id is None:
+            continue
+        case_bucket = response_map.setdefault(str(case_id), {})
+        for item_response in case_response.get("itemResponses") or []:
+            if not isinstance(item_response, dict):
+                continue
+            item_id = item_response.get("itemId")
+            if item_id is None:
+                continue
+            item_bucket = case_bucket.setdefault(str(item_id), {})
+            for criterion_response in item_response.get("criterionResponses") or []:
+                if not isinstance(criterion_response, dict):
+                    continue
+                criterion_id = criterion_response.get("criterionId")
+                if criterion_id is None:
+                    continue
+                item_bucket[str(criterion_id)] = criterion_response.get("response")
+    return response_map
+
+
+def _case_study_correctness(response, options):
+    if not isinstance(options, dict):
+        return None
+
+    if not options.get("hasSampleSolution", False):
+        return "CORRECT"
+
+    if not isinstance(response, dict):
+        return None
+
+    assessment = response.get("assessment")
+    if not assessment:
+        return None
+
+    cases = options.get("cases")
+    if not isinstance(cases, list) or not cases:
+        return None
+
+    if any(not case_item.get("solutions") for case_item in cases if isinstance(case_item, dict)):
+        return None
+
+    response_map = _case_study_response_map(assessment)
+    total_assessment_cases = 0
+    total_correct_cases = 0
+
+    for case_item in cases:
+        if not isinstance(case_item, dict):
+            continue
+        case_id = str(case_item.get("id"))
+        for item_solution in case_item.get("solutions") or []:
+            if not isinstance(item_solution, dict):
+                continue
+            item_id = str(item_solution.get("itemId"))
+            for criterion_solution in item_solution.get("criteriaSolutions") or []:
+                if not isinstance(criterion_solution, dict):
+                    continue
+                criterion_id = str(criterion_solution.get("criterionId"))
+                response_value = response_map.get(case_id, {}).get(item_id, {}).get(criterion_id)
+                total_assessment_cases += 1
+
+                if response_value is None:
+                    continue
+
+                try:
+                    submitted_value = float(response_value)
+                    min_value = float(criterion_solution["min"])
+                    max_value = float(criterion_solution["max"])
+                except (KeyError, TypeError, ValueError):
+                    continue
+
+                if submitted_value >= min_value - _EPSILON and submitted_value <= max_value + _EPSILON:
+                    total_correct_cases += 1
+
+    correctness = (
+        0
+        if total_assessment_cases == 0
+        else total_correct_cases / total_assessment_cases
+    )
     if correctness == 1:
         return "CORRECT"
     if correctness == 0:
@@ -148,6 +256,9 @@ def compute_correctness_columns(df_element_instances, row):
 
     elif element_instance["type"] == "SELECTION":
         return _selection_correctness(response, options)
+
+    elif element_instance["type"] == "CASE_STUDY":
+        return _case_study_correctness(response, options)
 
     else:
         raise ValueError("Unknown element type: {}".format(element_instance["type"]))
