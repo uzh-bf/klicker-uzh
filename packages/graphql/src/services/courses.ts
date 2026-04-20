@@ -5,7 +5,9 @@ import {
   ActivityType,
   AssessmentResultsCourse,
   AssessmentResultsLiveQuiz,
+  HATCHET_EVENTS,
   PointCorrectionType,
+  RecomputeLearningAnalyticsInput,
   SharingType,
   StudentAssessmentBlockResponse,
   StudentAssessmentInstanceResponse,
@@ -4143,4 +4145,44 @@ export async function getAssessmentCourseParticipants(
     })),
     [prop('email'), 'asc']
   )
+}
+
+// Dispatch an admin-triggered learning-analytics recompute for a single
+// course. Authorization (ADMIN on the target course) is enforced by the
+// withPermission wrapper at the resolver layer; this function just pushes
+// the Hatchet event.
+//
+// Mode must be explicit — the `full` option is accepted here but the
+// analytics worker enforces `ANALYTICS_ALLOW_FULL=1` before running it, so a
+// manage-UI trigger on `full` still has a server-side guard.
+export type RecomputeAnalyticsMode = 'incremental' | 'finalize' | 'full'
+
+export async function recomputeCourseAnalytics(
+  { courseId, mode }: { courseId: string; mode: RecomputeAnalyticsMode },
+  ctx: ContextWithUser
+): Promise<boolean> {
+  const course = await ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    select: { id: true },
+  })
+  if (!course) return false
+
+  const payload: RecomputeLearningAnalyticsInput = { mode, courseId }
+  await ctx.hatchet.events.push(HATCHET_EVENTS.adminRecomputeAnalytics, payload)
+  return true
+}
+
+export async function getCourseAnalyticsStatus(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.course.findUnique({
+    where: { id: courseId },
+    select: {
+      areAnalyticsValid: true,
+      analyticsLastComputedAt: true,
+      analyticsFinalizedAt: true,
+      chatAnalyticsValidAt: true,
+    },
+  })
 }

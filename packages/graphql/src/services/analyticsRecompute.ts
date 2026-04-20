@@ -1,34 +1,18 @@
 import type { HatchetHandlers } from '@klicker-uzh/types'
 import { spawn } from 'child_process'
 
-// Analytics pipeline scripts — runtime-invocable Python modules under
-// apps/analytics. Kept as a named const so the Hatchet workflow references
-// them by symbol rather than string interpolation (per §3.6, no user-supplied
-// script names ever reach spawn()).
-export const ANALYTICS_SCRIPTS = {
-  s0_participant: 'src.scripts.0_initial_participant_analytics',
-  s1_aggregated: 'src.scripts.1_initial_aggregated_analytics',
-  s2_course_heatmap: 'src.scripts.2_initial_aggregated_course_analytics',
-  s3_instance_activity: 'src.scripts.3_initial_instance_activity_performance',
-  s4_participant_perf: 'src.scripts.4_initial_participant_performance',
-  s5_participant_course: 'src.scripts.5_initial_participant_course_analytics',
-  s6_activity_progress: 'src.scripts.6_initial_activity_progress',
-  s7_participant_activity: 'src.scripts.7_participant_activity_performance',
-  s8_chat: 'src.scripts.8_initial_chat_analytics',
-  s9_chatbot: 'src.scripts.9_initial_aggregated_chatbot_analytics',
-  s10_clustering: 'src.scripts.10_chat_topic_clustering',
-  s11_chat_quiz: 'src.scripts.11_chat_quiz_correlation',
-  s13_platform: 'src.scripts.13_platform_semester_analytics',
-  s14_live_quiz: 'src.scripts.14_live_quiz_assessment_analytics',
-  s99_validity: 'src.scripts.99_mark_analytics_valid',
-} as const
+// Re-export ANALYTICS_SCRIPTS / AnalyticsScriptKey for historical consumers of
+// this module. The single source of truth now lives in `@klicker-uzh/types`
+// so the Hatchet workflow (packages/hatchet/src/tasks.ts) and this handler
+// stay in sync without parallel declarations.
+export { ANALYTICS_SCRIPTS } from '@klicker-uzh/types'
+export type { AnalyticsScriptKey } from '@klicker-uzh/types'
 
-export type AnalyticsScriptKey = keyof typeof ANALYTICS_SCRIPTS
-
-// Per-script timeout — scripts 8/9 loop over every day since 2022 in full mode,
-// so 1h is the correct ceiling. The Hatchet workflow tightens this per task for
-// the lighter scripts; this const is the Node-side fallback.
-const DEFAULT_SCRIPT_TIMEOUT_MS = 60 * 60 * 1000
+// Watchdog only — Hatchet's per-task `executionTimeout` is the real fence. We
+// set this strictly greater than the maximum Hatchet timeout (60m) + a grace
+// window so the Node-side SIGTERM only fires if Hatchet itself has gone silent
+// (e.g. lost worker heartbeat), not on a normal-but-slow run.
+const DEFAULT_SCRIPT_TIMEOUT_MS = 65 * 60 * 1000
 
 // Incremental runs cover the last 14 days: one full WEEKLY window plus slack for
 // late data and a tolerated missed cron. Overridable via `windowSince` on the input.
@@ -76,7 +60,7 @@ function runScript(
       if (timedOut) {
         reject(
           new Error(
-            `${logPrefix} timed out after ${DEFAULT_SCRIPT_TIMEOUT_MS}ms`
+            `${logPrefix} timed out after ${DEFAULT_SCRIPT_TIMEOUT_MS}ms (watchdog; Hatchet executionTimeout should fire first)`
           )
         )
       } else if (code === 0) {
@@ -119,16 +103,20 @@ function collectCourseIds(
 // Invoke a single analytics Python script as a subprocess. One call = one task
 // in the Hatchet DAG. Orchestration (order, fan-out, retries) lives in the
 // workflow definition in packages/hatchet/src/tasks.ts.
+//
+// Error contract: throw on any failure so Hatchet's `taskDefaults.retries`
+// triggers and downstream tasks with this node as a parent don't run. Never
+// swallow a failure by returning void from a caught error path — the DAG
+// treats "resolved promise" as success regardless of the return value.
 export const handleRunAnalyticsScript: HatchetHandlers['handleRunAnalyticsScript'] =
   async (input, _globalCtx, executionCtx) => {
     // Deploy-time config — fail loud if unset so we never silently run against
     // the wrong cwd in a new env.
     const cwd = process.env.ANALYTICS_CWD
     if (!cwd) {
-      await executionCtx.logger.error(
-        `[${input.scriptModule}] ANALYTICS_CWD not set — expected path to apps/analytics. Aborting.`
-      )
-      return false
+      const msg = `[${input.scriptModule}] ANALYTICS_CWD not set — expected path to apps/analytics. Aborting.`
+      await executionCtx.logger.error(msg)
+      throw new Error(msg)
     }
     const runnerCmd = process.env.ANALYTICS_RUNNER_CMD ?? 'uv'
     const runnerArgs = (process.env.ANALYTICS_RUNNER_ARGS ?? 'run python')
@@ -138,11 +126,19 @@ export const handleRunAnalyticsScript: HatchetHandlers['handleRunAnalyticsScript
     const mode = resolveMode(input)
     const courseIds = collectCourseIds(input)
 
+    // Full mode walks every course on the platform — refuse unless the worker
+    // has been deliberately opted in. Keeps a stray manual dispatch from
+    // kicking off an unbounded run.
+    if (mode === 'full' && process.env.ANALYTICS_ALLOW_FULL !== '1') {
+      const msg = `[${input.scriptModule}] mode=full refused — set ANALYTICS_ALLOW_FULL=1 on the worker to allow unbounded runs.`
+      await executionCtx.logger.error(msg)
+      throw new Error(msg)
+    }
+
     if (mode === 'finalize' && courseIds.length === 0) {
-      await executionCtx.logger.error(
-        `[${input.scriptModule}] mode=finalize requires courseIds / courseId; aborting.`
-      )
-      return false
+      const msg = `[${input.scriptModule}] mode=finalize requires courseIds / courseId; aborting.`
+      await executionCtx.logger.error(msg)
+      throw new Error(msg)
     }
 
     const windowSince =
@@ -180,12 +176,11 @@ export const handleRunAnalyticsScript: HatchetHandlers['handleRunAnalyticsScript
           error: (msg: string) => executionCtx.logger.error(msg),
         }
       )
-      return true
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       await executionCtx.logger.error(
         `${logPrefix} FAILED (mode=${mode}): ${msg}`
       )
-      return false
+      throw err instanceof Error ? err : new Error(msg)
     }
   }

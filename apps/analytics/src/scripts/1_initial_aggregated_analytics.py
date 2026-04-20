@@ -10,10 +10,16 @@ import sys
 sys.path.append("../../")
 
 from src.db import SessionLocal
+from src.log import script_entry, script_exit
 from src.modules.aggregated_analytics.compute_aggregated_analytics import (
     compute_aggregated_analytics,
 )
-from src.modules.utils import analytics_window_since, should_skip_window
+from src.modules.utils import (
+    analytics_mode,
+    analytics_window_since,
+    scoped_course_ids,
+    should_skip_window,
+)
 
 
 def main() -> None:
@@ -30,8 +36,16 @@ def main() -> None:
     date_range_monthly = pd.date_range(start=start_date, end=end_date, freq="ME")
 
     windows_since = analytics_window_since()
+    mode = analytics_mode()
 
     with SessionLocal() as session:
+        scope = scoped_course_ids(session)
+        started = script_entry(
+            script=__name__,
+            mode=mode,
+            scope_size=len(scope) if scope is not None else None,
+            window_since=windows_since,
+        )
         if compute_daily:
             for curr_date in date_range_daily:
                 specific_date = curr_date.strftime("%Y-%m-%d")
@@ -86,6 +100,8 @@ def main() -> None:
             compute_aggregated_analytics(
                 session, timestamp, timestamp, timestamp, "COURSE", verbose
             )
+
+        script_exit(script=__name__, started=started, rows_written=None)
 
 
 if __name__ == "__main__":

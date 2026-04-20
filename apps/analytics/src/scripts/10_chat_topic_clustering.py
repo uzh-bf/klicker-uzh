@@ -11,9 +11,10 @@ from sqlalchemy import select
 sys.path.append("../../")
 
 from src.db import SessionLocal
+from src.log import script_entry, script_exit
 from src.models import Chatbot
 from src.modules.chat_topic_clustering.cluster_chatbot import cluster_chatbot
-from src.modules.utils import scoped_course_ids
+from src.modules.utils import analytics_mode, analytics_window_since, scoped_course_ids
 
 COURSE_TIMESTAMP = "1970-01-01"
 
@@ -23,6 +24,12 @@ def main() -> None:
 
     with SessionLocal() as session:
         scope = scoped_course_ids(session)
+        started = script_entry(
+            script=__name__,
+            mode=analytics_mode(),
+            scope_size=len(scope) if scope is not None else None,
+            window_since=analytics_window_since(),
+        )
         if scope is not None:
             if not scope:
                 print(
@@ -63,6 +70,8 @@ def main() -> None:
                 print(f"[chat_topic_clustering] chatbot={cb.id} FAILED: {exc}")
 
         print(f"[chat_topic_clustering] total rows written: {total_rows}")
+
+        script_exit(script=__name__, started=started, rows_written=total_rows)
 
 
 if __name__ == "__main__":

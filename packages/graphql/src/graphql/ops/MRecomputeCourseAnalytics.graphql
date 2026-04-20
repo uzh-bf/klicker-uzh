@@ -1,0 +1,3 @@
+mutation RecomputeCourseAnalytics($courseId: String!, $mode: AnalyticsMode!) {
+  recomputeCourseAnalytics(courseId: $courseId, mode: $mode)
+}

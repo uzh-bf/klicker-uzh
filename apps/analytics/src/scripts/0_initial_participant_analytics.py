@@ -12,6 +12,7 @@ sys.path.append("../../")
 
 from src.db import SessionLocal
 from src.db_helpers import row_to_dict
+from src.log import script_entry, script_exit
 from src.models import Course
 from src.modules.participant_analytics.compute_participant_analytics import (
     compute_participant_analytics,
@@ -20,6 +21,7 @@ from src.modules.participant_analytics.compute_participant_course_analytics impo
     compute_participant_course_analytics,
 )
 from src.modules.utils import (
+    analytics_mode,
     analytics_window_since,
     apply_course_scope,
     scoped_course_ids,
@@ -41,8 +43,16 @@ def main() -> None:
     date_range_monthly = pd.date_range(start=start_date, end=end_date, freq="ME")
 
     windows_since = analytics_window_since()
+    mode = analytics_mode()
 
     with SessionLocal() as session:
+        scope = scoped_course_ids(session)
+        started = script_entry(
+            script=__name__,
+            mode=mode,
+            scope_size=len(scope) if scope is not None else None,
+            window_since=windows_since,
+        )
         if compute_daily:
             for curr_date in date_range_daily:
                 specific_date = curr_date.strftime("%Y-%m-%d")
@@ -89,7 +99,6 @@ def main() -> None:
 
         if compute_course:
             curr_date = datetime.now()
-            scope = scoped_course_ids(session)
 
             from sqlalchemy import select
 
@@ -116,6 +125,8 @@ def main() -> None:
                 print(
                     f"Found {courses_without_responses} courses without any responses"
                 )
+
+        script_exit(script=__name__, started=started, rows_written=None)
 
 
 if __name__ == "__main__":

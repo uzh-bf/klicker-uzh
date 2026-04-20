@@ -21,7 +21,7 @@ import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
-import { Course } from './course.js'
+import { AnalyticsMode, Course } from './course.js'
 import {
   Element,
   ElementInstance,
@@ -1422,6 +1422,31 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
             return await CourseService.toggleArchiveCourse(args, ctx)
+          }
+        ),
+      }),
+
+      recomputeCourseAnalytics: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: 'Boolean',
+        args: {
+          courseId: t.arg.string({ required: true }),
+          mode: t.arg({ type: AnalyticsMode, required: true }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await CourseService.recomputeCourseAnalytics(
+              {
+                courseId: args.courseId,
+                mode: args.mode.toLowerCase() as
+                  | 'incremental'
+                  | 'finalize'
+                  | 'full',
+              },
+              ctx
+            )
           }
         ),
       }),

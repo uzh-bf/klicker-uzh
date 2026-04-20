@@ -1,6 +1,7 @@
 {
   "$schema": "https://turborepo.org/schema.json",
   "globalEnv": [
+    "ANALYTICS_ALLOW_FULL",
     "ANALYTICS_COURSE_IDS",
     "ANALYTICS_CWD",
     "ANALYTICS_FINALIZE_GRACE_DAYS",
