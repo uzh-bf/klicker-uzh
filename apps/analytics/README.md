@@ -27,6 +27,8 @@ The following commands are available through PNPM:
 
 The `src/scripts/` directory contains numbered scripts that form the analytics pipeline. Run them in order via `./_initialize_analytics.sh <target>` (target = `dev` | `qa` | `prd`; defaults to `dev`).
 
+For per-table column-level documentation (purpose, grain, source data, computed columns) see [`ANALYTICS.md`](./ANALYTICS.md).
+
 | #   | Script                                    | Writes to                                                                           |
 | --- | ----------------------------------------- | ----------------------------------------------------------------------------------- |
 | 0   | `0_initial_participant_analytics`         | `ParticipantAnalytics`                                                              |
@@ -46,6 +48,71 @@ The `src/scripts/` directory contains numbered scripts that form the analytics p
 | 99  | `99_mark_analytics_valid`                 | Flips `Course.areAnalyticsValid`, `analyticsLastComputedAt`, `chatAnalyticsValidAt` |
 
 Script 12 (`CompetencyAnalytics` gap fill) is intentionally not present — the current schema has no `Element ↔ Competency` linkage, so there is nothing to aggregate. Adding it is an upstream schema decision.
+
+## Dry-run inspection
+
+The dry-run harness runs the full pipeline against a live Postgres database, captures every row each script would write, and emits the result as an `.xlsx` workbook — without persisting anything. Useful for inspecting prod outputs without touching prod data, or for sanity-checking an in-progress compute change.
+
+```bash
+pnpm --filter @klicker-uzh/analytics run dryrun:dev  -- --course-id <uuid>
+pnpm --filter @klicker-uzh/analytics run dryrun:qa   -- --course-id <uuid>
+pnpm --filter @klicker-uzh/analytics run dryrun:prod -- --course-id <uuid>
+```
+
+### Safety model
+
+Four defences must all hold before a stray write can land in prod:
+
+1. **Read-only Postgres role.** `DATABASE_URL_RO` (preferred) or `DATABASE_URL` for `dryrun:prod` / `dryrun:qa` must resolve to a role with SELECT-only grants (no INSERT/UPDATE/DELETE on any table). When `DATABASE_URL_RO` is set, the runner promotes it to `DATABASE_URL` at startup — so the RW connection string can coexist in the same Infisical env without leaking into the dry-run. This is the authoritative block — a write that slips past everything else is rejected by Postgres itself with `ERROR: permission denied for table "X"`.
+2. **`SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY`**, attached to the SQLAlchemy engine as a `connect` listener so every new connection the pipeline opens is read-only from the first statement.
+3. **Python interceptors.** `src/dryrun/interceptor.py` monkey-patches `db_helpers.bulk_upsert`, `Session.execute`, `Session.commit`, and `Session.flush`. `bulk_upsert` never reaches the DB — its rows are captured in memory. `Session.execute` rewrites `INSERT INTO <t> (<cols>) … ON CONFLICT …` to a bare `SELECT` (or `VALUES (…)`) that runs against the DB and yields the rows the INSERT would have written; `UPDATE` / `DELETE` are logged to a `_skipped_writes` sheet rather than executed.
+4. **Infisical-injected env.** The pnpm scripts wrap `_run_with_infisical.sh --env <env>`, so `DATABASE_URL` arrives from the Infisical environment matching the target — no `.env` files, no ambient credentials.
+
+Before running any script, the harness issues `SELECT has_table_privilege(current_user, '"Course"', 'INSERT')` and aborts if the role can write to `Course`. Use `--unsafe-allow-rw-role` to disable the probe for local dev runs against the seeded dev DB.
+
+### Schema drift handling
+
+Running against an environment whose migrations lag behind the current branch is a normal case (e.g. prd dryrun from a feature branch). The runner:
+
+1. Probes `pg_tables` at startup for every analytics table introduced on recent branches (see `_SCRIPT_REQUIRED_TABLES` in `src/dryrun/runner.py`) and logs which are absent.
+2. **Pre-skips** scripts whose required tables are missing — they never run, and the `_summary` sheet records `skipped: tables missing (…)`.
+3. At runtime, any `UndefinedTable` / `UndefinedColumn` surfacing from a script (column-level drift we didn't model) is caught and converted to `skipped: …` instead of a hard failure. The rest of the pipeline continues.
+
+Scope (`ANALYTICS_COURSE_IDS`) and window floor (`ANALYTICS_WINDOW_SINCE`, auto-set from the course's `startDate`) are applied before the first script runs — the pipeline doesn't iterate daily windows that pre-date the course.
+
+### Creating the read-only role (one-time, per env)
+
+Run as a DB admin (Azure: a user with `azure_pg_admin`):
+
+```sql
+CREATE ROLE klicker_readonly LOGIN PASSWORD '<strong-password>';
+GRANT CONNECT ON DATABASE "<db-name>" TO klicker_readonly;
+GRANT USAGE ON SCHEMA public TO klicker_readonly;
+GRANT SELECT ON ALL TABLES    IN SCHEMA public TO klicker_readonly;
+GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO klicker_readonly;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES    TO klicker_readonly;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON SEQUENCES TO klicker_readonly;
+```
+
+Then store the resulting connection string in Infisical as `DATABASE_URL_RO` in the `prd` (and/or `stg`) env — alongside the existing RW `DATABASE_URL`. The runner picks up `DATABASE_URL_RO` automatically.
+
+### Output layout
+
+| Sheet             | Contents                                                                                 |
+| ----------------- | ---------------------------------------------------------------------------------------- |
+| `_metadata`       | `course_id`, `run_at`, `db_host`, `db_role`, `git_sha`, counts                           |
+| `_summary`        | One row per script: `script`, `elapsed_s`, `rows_written`, `error`                       |
+| `<TableName>`     | Rows captured for each write target (e.g. `ParticipantAnalytics`, `AggregatedAnalytics`) |
+| `_skipped_writes` | Any `UPDATE` / `DELETE` statements the harness refused to execute (only when non-empty)  |
+
+Sheet names are truncated to Excel's 31-character limit; collisions get `_1`, `_2`, … suffixes.
+
+### CLI options
+
+- `--course-id <uuid>` (required) — scopes the run via `ANALYTICS_COURSE_IDS`; `ANALYTICS_MODE=incremental` is forced.
+- `--output <path>` — override the default `./analytics-dryrun-<courseId>-<YYYY-MM-DD>.xlsx`.
+- `--scripts <csv>` — optional whitelist, e.g. `src.scripts.0_initial_participant_analytics,src.scripts.1_initial_aggregated_analytics`. Use for faster iteration on a specific stage.
+- `--unsafe-allow-rw-role` — skip the read-only role probe. Local dev DBs only.
 
 ## Running from Hatchet
 
