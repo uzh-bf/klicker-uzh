@@ -310,3 +310,32 @@ Per-topic research links (filed for future reference; not load-bearing on the re
 - Postgres partitioning at scale — [Red Gate article](https://www.red-gate.com/simple-talk/databases/postgresql/postgresql-partitioning-the-most-useful-feature-you-may-never-have-used/)
 - BERTopic incremental / merge — [BERTopic online docs](https://maartengr.github.io/BERTopic/getting_started/online/online.html), [MergeBERT paper (arXiv 2025)](https://arxiv.org/html/2504.07711v1)
 - dbt incremental models — [dbt docs](https://docs.getdbt.com/docs/build/incremental-models)
+
+---
+
+## Addendum — SQLAlchemy migration (2026-04-20)
+
+`prisma-client-py` was archived upstream on 2025-04-15 and has received no
+releases since. The analytics app now runs on **SQLAlchemy 2.x + psycopg3**
+(sync); the previous per-row `db.<model>.upsert(...)` loops become single
+`INSERT ... ON CONFLICT DO UPDATE` statements via the shared `bulk_upsert`
+helper in `apps/analytics/src/db_helpers.py`.
+
+This supersedes the "unify on raw SQL with UPSERT" recommendation in §5.1 —
+the pandas scripts (0–7) now use the ORM for reads and `bulk_upsert` for
+writes instead of being rewritten as raw SQL. The `.sql` files for scripts
+8/9/11/13/14 are unchanged and still wrapped with `session.execute(text(...))`.
+
+Model definitions live in `apps/analytics/src/models.py` and are regenerated
+from the live dev DB via `sqlacodegen`:
+
+```bash
+pnpm run prisma:setup
+pnpm --filter @klicker-uzh/analytics run generate
+```
+
+Drop-out cleanup (the "A4 discussion" item) now lives inline in the
+`save_participant_course_analytics`, `save_participant_performance`, and
+`save_participant_activity_performance` modules — they `DELETE` stale
+`(course, participant)` pairs before the bulk upsert, wrapped in the same
+session transaction so an interruption leaves the table at its pre-run state.

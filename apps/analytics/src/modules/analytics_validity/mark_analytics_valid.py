@@ -1,5 +1,8 @@
 import os
 
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
 from src.modules.utils import (
     analytics_mode,
     load_sql,
@@ -17,15 +20,15 @@ _BYPASS_PLACEHOLDER = "/*COURSE_FINALIZE_BYPASS*/"
 def _render_sql(finalize: bool, course_ids: list[str] | None) -> str:
     set_clause = ""
     filter_clause = ""
-    # `false` keeps `quiz OR chat OR false` == `quiz OR chat` for normal runs;
-    # `true` in finalize mode lets the UPDATE touch courses with zero analytics
-    # rows (otherwise the scanner would re-emit courseEnded daily forever).
+    # ``false`` keeps ``quiz OR chat OR false`` == ``quiz OR chat`` for normal
+    # runs; ``true`` in finalize mode lets the UPDATE touch courses with zero
+    # analytics rows (otherwise the scanner would re-emit courseEnded daily
+    # forever).
     bypass_clause = "false"
-    if course_ids is not None:
-        filter_clause = render_uuid_in_clause("c.id", course_ids)
     if finalize:
         set_clause = '"analyticsFinalizedAt" = NOW(),'
-        filter_clause += ' AND c."analyticsFinalizedAt" IS NULL'
+        scoped = render_uuid_in_clause("c.id", course_ids or [])
+        filter_clause = f'{scoped} AND c."analyticsFinalizedAt" IS NULL'
         bypass_clause = "true"
     return (
         _SQL.replace(_SET_PLACEHOLDER, set_clause)
@@ -34,18 +37,19 @@ def _render_sql(finalize: bool, course_ids: list[str] | None) -> str:
     )
 
 
-def mark_analytics_valid(db, verbose: bool = False):
+def mark_analytics_valid(session: Session, verbose: bool = False):
     """Flip Course.areAnalyticsValid for every course that received analytics rows.
 
-    Also sets Course.chatAnalyticsValidAt on courses with ParticipantChatAnalytics rows.
-    Only courses actually covered by the run are touched (per §3.8 safeguard).
+    Also sets Course.chatAnalyticsValidAt on courses with ParticipantChatAnalytics
+    rows. Only courses actually covered by the run are touched (per §3.8
+    safeguard).
 
     When ``ANALYTICS_MODE=finalize`` and ``ANALYTICS_COURSE_IDS`` is set, the
     per-course terminal marker ``analyticsFinalizedAt`` is stamped NOW() for the
     scoped courses — the scanner's one-shot finalisation path.
     """
     mode = analytics_mode()
-    course_ids = scoped_course_ids(db)
+    course_ids = scoped_course_ids(session) if mode == "finalize" else None
     finalize = mode == "finalize" and bool(course_ids)
 
     if verbose:
@@ -53,7 +57,9 @@ def mark_analytics_valid(db, verbose: bool = False):
             f"[analytics_validity] mode={mode} finalize={finalize} "
             f"course_ids={len(course_ids) if course_ids else 0}"
         )
-    rows = db.execute_raw(_render_sql(finalize, course_ids))
+    result = session.execute(text(_render_sql(finalize, course_ids)))
+    session.commit()
+    rows = result.rowcount or 0
     if verbose:
         print(f"[analytics_validity] rows affected: {rows}")
     return rows

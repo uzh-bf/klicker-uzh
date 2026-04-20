@@ -1,51 +1,43 @@
 import os
-from datetime import timedelta
+
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from src.modules.utils import COURSE_TIMESTAMP, load_sql
 
 _SQL = load_sql(os.path.join(os.path.dirname(__file__), "participant_chat_analytics.sql"))
-_DELETE_SQL = """
-DELETE FROM "ParticipantChatAnalytics"
-WHERE "type" = $1::"AnalyticsType"
-  AND "timestamp" = $2::date
-"""
 
 __all__ = ["compute_participant_chat_analytics", "COURSE_TIMESTAMP"]
 
 
 def compute_participant_chat_analytics(
-    db,
+    session: Session,
     win_start: str,
     win_end: str,
     timestamp: str,
     analytics_type: str,
     verbose: bool = False,
 ):
-    """Run the participant-chat-analytics rollup for a single window.
-
-    Args:
-        db: connected Prisma client
-        win_start: ISO timestamp string (inclusive) — window start
-        win_end: ISO timestamp string (exclusive) — window end
-        timestamp: DATE string written into the "timestamp" column; for COURSE use COURSE_TIMESTAMP
-        analytics_type: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'COURSE'
-        verbose: log the SQL (truncated) before running
-    """
+    """Run the participant-chat-analytics rollup for a single window."""
     if analytics_type not in ("DAILY", "WEEKLY", "MONTHLY", "COURSE"):
         raise ValueError(f"Unknown analytics type: {analytics_type}")
 
     if verbose:
-        print(f"[chat_analytics] {analytics_type} {win_start}..{win_end} -> {timestamp}")
-
-    with db.tx(timeout=timedelta(minutes=30)) as transaction:
-        transaction.execute_raw(_DELETE_SQL, analytics_type, timestamp)
-        rows_written = transaction.execute_raw(
-            _SQL,
-            win_start,
-            win_end,
-            analytics_type,
-            timestamp,
+        print(
+            f"[chat_analytics] {analytics_type} {win_start}..{win_end} -> {timestamp}"
         )
+
+    result = session.execute(
+        text(_SQL),
+        {
+            "win_start": win_start,
+            "win_end": win_end,
+            "analytics_type": analytics_type,
+            "ts": timestamp,
+        },
+    )
+    session.commit()
+    rows_written = result.rowcount or 0
     if verbose:
         print(f"[chat_analytics] rows affected: {rows_written}")
     return rows_written

@@ -1,56 +1,54 @@
 # This script computes the initial participant performance analytics
 # ! This script is a copy of the corresponding notebook content and needs to be kept in sync with it
 
-from prisma import Prisma
-import pandas as pd
 import sys
 
-# set the python path correctly for module imports to work
+import pandas as pd
+from sqlalchemy import select
+
 sys.path.append("../../")
 
+from src.db import SessionLocal
+from src.db_helpers import row_to_dict
+from src.models import QuestionResponse
 from src.modules.participant_course_analytics.get_running_past_courses import (
     get_running_past_courses,
 )
-from src.modules.participant_performance.compute_response_error_rates import (
-    compute_response_error_rates,
-)
 from src.modules.participant_performance.compute_performance_levels import (
     compute_performance_levels,
+)
+from src.modules.participant_performance.compute_response_error_rates import (
+    compute_response_error_rates,
 )
 from src.modules.participant_performance.save_participant_performance import (
     save_participant_performance,
 )
 
-db = Prisma()
-db.connect()
 
-# Script settings
-verbose = False
+def main() -> None:
+    with SessionLocal() as session:
+        df_courses = get_running_past_courses(session)
 
+        for idx, course in df_courses.iterrows():
+            course_id = course["id"]
+            print(
+                f"Processing course", idx, "of", len(df_courses), "with id", course_id
+            )
 
-# Fetch all courses from the database
-df_courses = get_running_past_courses(db)
+            responses = session.execute(
+                select(QuestionResponse).where(QuestionResponse.courseId == course_id)
+            ).scalars().all()
+            df_responses = pd.DataFrame([row_to_dict(r) for r in responses])
 
-# Iterate over the course and fetch all question responses linked to it
-for idx, course in df_courses.iterrows():
-    course_id = course["id"]
-    print("Processing course", idx, "of", len(df_courses), "with id", course_id)
+            if df_responses.empty:
+                print("No responses linked to course", course_id)
+                continue
 
-    # fetch all question responses linked to this course
-    question_responses = db.questionresponse.find_many(where={"courseId": course_id})
-    df_responses = pd.DataFrame(list(map(lambda x: x.dict(), question_responses)))
+            df_performance = compute_response_error_rates(df_responses)
+            df_performance = compute_performance_levels(df_performance)
 
-    # if no responses are linked to the course, skip the iteration
-    if df_responses.empty:
-        print("No responses linked to course", course_id)
-        continue
-
-    df_performance = compute_response_error_rates(df_responses)
-    df_performance = compute_performance_levels(df_performance)
-
-    # store computed performance analytics in the corresponding database table
-    save_participant_performance(db, df_performance, course_id)
+            save_participant_performance(session, df_performance, course_id)
 
 
-# Disconnect from the database
-db.disconnect()
+if __name__ == "__main__":
+    main()

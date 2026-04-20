@@ -3,15 +3,17 @@
 # Must be the LAST script in the analytics pipeline.
 
 import sys
-from prisma import Prisma
 
 sys.path.append("../../")
 
+from src.db import SessionLocal
 from src.modules.analytics_validity.mark_analytics_valid import mark_analytics_valid
 
-db = Prisma()
-db.connect()
 
-mark_analytics_valid(db, verbose=True)
+def main() -> None:
+    with SessionLocal() as session:
+        mark_analytics_valid(session, verbose=True)
 
-db.disconnect()
+
+if __name__ == "__main__":
+    main()

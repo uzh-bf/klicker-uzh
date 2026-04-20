@@ -1,21 +1,19 @@
 -- ParticipantChatAnalytics rollup for a single (analytics_type, timestamp, [win_start, win_end)) window.
 -- Parameters:
---   $1 timestamptz — window start (inclusive)
---   $2 timestamptz — window end (exclusive)
---   $3 text        — AnalyticsType ('DAILY' | 'WEEKLY' | 'MONTHLY' | 'COURSE')
---   $4 date        — timestamp column value (for COURSE use the sentinel 1970-01-01)
--- Only participants who accepted the chatbot's current disclaimer are included (§3.9 privacy gate).
+--   :win_start       timestamptz — window start (inclusive)
+--   :win_end         timestamptz — window end (exclusive)
+--   :analytics_type  text        — AnalyticsType ('DAILY' | 'WEEKLY' | 'MONTHLY' | 'COURSE')
+--   :ts              date        — timestamp column value (for COURSE use the sentinel 1970-01-01)
+-- Only participants with acceptedDisclaimerId IS NOT NULL are included (§3.9 privacy gate).
 
 WITH params AS (
-  SELECT ($1::timestamptz AT TIME ZONE 'UTC') AS win_start,
-         ($2::timestamptz AT TIME ZONE 'UTC') AS win_end
+  SELECT :win_start::timestamptz AS win_start,
+         :win_end::timestamptz AS win_end
 ),
 eligible_pairs AS (
-  SELECT cuc."participantId", cuc."chatbotId"
-  FROM "ChatUsageCredits" cuc
-  JOIN "Chatbot" cb ON cb.id = cuc."chatbotId"
-  WHERE cuc."acceptedDisclaimerId" = cb."disclaimerId"
-    AND cuc."disclaimerDeclined" = false
+  SELECT "participantId", "chatbotId"
+  FROM "ChatUsageCredits"
+  WHERE "acceptedDisclaimerId" IS NOT NULL
 ),
 messages AS (
   SELECT
@@ -127,8 +125,8 @@ INSERT INTO "ParticipantChatAnalytics" (
   "createdAt", "updatedAt"
 )
 SELECT
-  $3::"AnalyticsType",
-  $4::date,
+  :analytics_type::"AnalyticsType",
+  :ts::date,
   ur."participantId",
   ur."chatbotId",
   ur."courseId",

@@ -1,38 +1,47 @@
 [project]
 name = "klicker-uzh-analytics"
 version = "0.0.1"
-description = "Learning analytics service for KlickerUZH."
+description = "KlickerUZH analytics pipeline"
 authors = [
-  { name = "Roland Schlaefli", email = "roland.schlaefli@df.uzh.ch" },
-  { name = "Julius Schlapbach", email = "julius.schlapbach@df.uzh.ch" },
+    { name = "Roland Schlaefli", email = "roland.schlaefli@df.uzh.ch" },
+    { name = "Julius Schlapbach", email = "julius.schlapbach@df.uzh.ch" },
 ]
-license = "AGPL-3.0"
+license = { text = "AGPL-3.0" }
 readme = "README.md"
-requires-python = ">=3.12,<4.0"
+requires-python = ">=3.12,<3.14"
 dependencies = [
-  "jinja2==3.1.6",
-  "pandas==2.2.2",
-  "prisma==0.15.0",
-  "xlsxwriter==3.2.0",
+    "pandas==2.2.2",
+    "sqlalchemy>=2.0,<3.0",
+    "psycopg[binary]>=3.2,<4.0",
+    "xlsxwriter==3.2.0",
+    # Topic-clustering (script 10) — NLP-only pipeline, no LLM. Embedding + dim reduction
+    # + density clustering + TF-IDF labeling. Heavy on first install but cached.
+    "sentence-transformers>=3.0,<4.0",
+    "umap-learn>=0.5.6,<0.6",
+    "hdbscan>=0.8.37,<0.9",
+    "scikit-learn>=1.5,<2.0",
 ]
 
 [dependency-groups]
 dev = [
-  "ipykernel==6.29.5",
-  "pyright==1.1.376",
-  "ruff>=0.15.18",
+    "ipykernel==6.29.5",
+    "poethepoet==0.27.0",
+    "pyright==1.1.376",
+    "sqlacodegen>=3.0,<4.0",
+    "pytest>=8.0,<9.0",
+    "pytest-postgresql>=6.0,<7.0",
 ]
 
-[tool.uv]
-package = false
-exclude-newer = "14d"
+[tool.poe.tasks]
+# Regenerate models.py from the live dev DB. Run after a Prisma migration lands.
+generate = "sqlacodegen --generator declarative $DATABASE_URL -o src/models.py"
+main = "../../util/_run_with_infisical.sh --env dev python -m src.main"
 
 [tool.pyright]
 typeCheckingMode = "strict"
 
-[tool.ruff]
-target-version = "py312"
-line-length = 120
-
-[tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401", "F403"]
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "integration: integration tests that require a seeded DATABASE_URL",
+]

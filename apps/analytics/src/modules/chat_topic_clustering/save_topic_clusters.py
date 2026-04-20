@@ -2,17 +2,16 @@
 
 from typing import Dict, List
 
-MIN_PARTICIPANTS_PER_CLUSTER = 5  # §3.9 privacy threshold
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
-# One row per (chatbotId, timestamp, clusterIndex). We write cluster 0..N-1
-# (compacted index, not HDBSCAN's raw id) plus optionally one "Other" bucket
-# at index -1.
+MIN_PARTICIPANTS_PER_CLUSTER = 5  # §3.9 privacy threshold
 
 DELETE_SQL = """
 DELETE FROM "ChatTopicCluster"
-WHERE "chatbotId" = $1::uuid
-  AND "type" = $2::"AnalyticsType"
-  AND "timestamp" = $3::date
+WHERE "chatbotId" = :chatbot_id::uuid
+  AND "type" = :analytics_type::"AnalyticsType"
+  AND "timestamp" = :ts::date
 """
 
 INSERT_SQL = """
@@ -23,9 +22,9 @@ INSERT INTO "ChatTopicCluster" (
   "representativeParaphrase", "embeddingCentroid",
   "createdAt"
 ) VALUES (
-  $1::"AnalyticsType", $2::date, $3::uuid,
-  $4::int, $5::text,
-  $6::int, $7::int,
+  :analytics_type::"AnalyticsType", :ts::date, :chatbot_id::uuid,
+  :cluster_index::int, :cluster_label::text,
+  :message_count::int, :participant_count::int,
   NULL, NULL,
   NOW()
 )
@@ -33,7 +32,7 @@ INSERT INTO "ChatTopicCluster" (
 
 
 def save_clusters(
-    db,
+    session: Session,
     chatbot_id: str,
     analytics_type: str,
     timestamp: str,
@@ -47,8 +46,6 @@ def save_clusters(
     Returns the number of rows written (including an "Other" bucket if any small
     clusters were collapsed into it).
     """
-    # Bucket messages and participants by cluster_id (ignore -1 noise for now —
-    # those get swept into "Other" below).
     message_counts: Dict[int, int] = {}
     participant_sets: Dict[int, set] = {}
     for cid, pid in zip(cluster_ids_per_message, participant_ids_per_message):
@@ -57,8 +54,7 @@ def save_clusters(
         message_counts[cid] = message_counts.get(cid, 0) + 1
         participant_sets.setdefault(cid, set()).add(pid)
 
-    # Build kept clusters (>= min participants) vs collapsed-to-Other.
-    kept: List[tuple] = []  # list of (label, msg_count, participant_count)
+    kept: List[tuple] = []
     other_msg = 0
     other_participants: set = set()
 
@@ -70,47 +66,54 @@ def save_clusters(
         else:
             kept.append((cluster_labels.get(cid, f"cluster-{cid}"), msg_count, p_count))
 
-    # Noise messages also fold into Other.
-    noise_messages = [(cid, pid) for cid, pid in zip(cluster_ids_per_message, participant_ids_per_message) if cid < 0]
+    noise_messages = [
+        (cid, pid)
+        for cid, pid in zip(cluster_ids_per_message, participant_ids_per_message)
+        if cid < 0
+    ]
     other_msg += len(noise_messages)
     for _, pid in noise_messages:
         other_participants.add(pid)
 
-    # Stable ordering — largest-first so clusterIndex 0 is the biggest topic.
     kept.sort(key=lambda t: t[1], reverse=True)
 
-    # Clear prior run rows for this (chatbot, type, timestamp) to guarantee
-    # idempotency without relying on a composite upsert here.
-    db.execute_raw(DELETE_SQL, chatbot_id, analytics_type, timestamp)
+    session.execute(
+        text(DELETE_SQL),
+        {"chatbot_id": chatbot_id, "analytics_type": analytics_type, "ts": timestamp},
+    )
 
     written = 0
     for idx, (label, msg_count, p_count) in enumerate(kept):
-        db.execute_raw(
-            INSERT_SQL,
-            analytics_type,
-            timestamp,
-            chatbot_id,
-            idx,
-            label,
-            msg_count,
-            p_count,
+        session.execute(
+            text(INSERT_SQL),
+            {
+                "analytics_type": analytics_type,
+                "ts": timestamp,
+                "chatbot_id": chatbot_id,
+                "cluster_index": idx,
+                "cluster_label": label,
+                "message_count": msg_count,
+                "participant_count": p_count,
+            },
         )
         written += 1
 
-    # Write "Other" only if it aggregates enough participants to meet k-anonymity
-    # itself — otherwise we drop it entirely to avoid a tiny-Other row.
     if len(other_participants) >= MIN_PARTICIPANTS_PER_CLUSTER:
-        db.execute_raw(
-            INSERT_SQL,
-            analytics_type,
-            timestamp,
-            chatbot_id,
-            len(kept),
-            "Other",
-            other_msg,
-            len(other_participants),
+        session.execute(
+            text(INSERT_SQL),
+            {
+                "analytics_type": analytics_type,
+                "ts": timestamp,
+                "chatbot_id": chatbot_id,
+                "cluster_index": len(kept),
+                "cluster_label": "Other",
+                "message_count": other_msg,
+                "participant_count": len(other_participants),
+            },
         )
         written += 1
+
+    session.commit()
 
     if verbose:
         print(

@@ -1,27 +1,28 @@
 import pandas as pd
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from src.db_helpers import row_to_dict
+from src.models import ParticipantAnalytics
 
 
-def convert_to_df(analytics):
-    # convert the database query result into a pandas dataframe
-    rows = []
-    for item in analytics:
-        rows.append(dict(item))
-
-    return pd.DataFrame(rows)
-
-
-def load_participant_analytics(db, timestamp, analytics_type, verbose=False):
-    participant_analytics = db.participantanalytics.find_many(
-        where={"timestamp": timestamp, "type": analytics_type},
-    )
+def load_participant_analytics(
+    session: Session, timestamp, analytics_type, verbose=False
+):
+    participant_analytics = session.execute(
+        select(ParticipantAnalytics).where(
+            ParticipantAnalytics.timestamp == timestamp,
+            ParticipantAnalytics.type == analytics_type,
+        )
+    ).scalars().all()
 
     if verbose:
-        # Print the first participant analytics
-        print("Found {} analytics for timestamp {}".format(len(participant_analytics), timestamp))
-        if len(participant_analytics) > 0:
-            print(participant_analytics[0])
+        print(
+            "Found {} analytics for timestamp={} type={}".format(
+                len(participant_analytics), timestamp, analytics_type
+            )
+        )
+        if participant_analytics:
+            print(row_to_dict(participant_analytics[0]))
 
-    # convert the analytics to a dataframe
-    df_loaded_analytics = convert_to_df(participant_analytics)
-
-    return df_loaded_analytics
+    return pd.DataFrame([row_to_dict(item) for item in participant_analytics])
