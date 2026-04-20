@@ -38,7 +38,7 @@ import './schema/subscription.js'
 //   })
 // }
 
-import { handleRecomputeLearningAnalytics } from './services/analyticsRecompute.js'
+import { handleRunAnalyticsScript } from './services/analyticsRecompute.js'
 import {
   handleEndExpiredGroupActivity,
   handleFinalRandomGroupAssignments,
@@ -83,5 +83,5 @@ export const handlers: HatchetHandlers = {
   handlePublishScheduledMicroLearning,
   handleStandardLiveQuizBlockClosureAggregation,
   handleAssessmentLiveQuizBlockClosureAggregation,
-  handleRecomputeLearningAnalytics,
+  handleRunAnalyticsScript,
 }

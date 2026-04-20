@@ -278,13 +278,11 @@ export async function testInitialization(
         return { success }
       },
     }),
-    recomputeLearningAnalytics: hatchet.task({
+    // Empty workflow stub — the real DAG spawns uv subprocesses and isn't
+    // exercised by unit tests. The tasks inside the workflow are never run
+    // from here, so we leave it without any sub-task declarations.
+    recomputeLearningAnalytics: hatchet.workflow({
       name: 'recompute-learning-analytics',
-      fn: async () => {
-        // Test stub — the real handler spawns uv subprocesses and isn't exercised
-        // by unit tests. Returning true lets resolvers that trigger this task pass.
-        return { success: true }
-      },
     }),
   }
 
