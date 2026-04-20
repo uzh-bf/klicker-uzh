@@ -2,6 +2,7 @@ import { Priority, type HatchetClient } from '@hatchet-dev/typescript-sdk'
 import { ConcurrencyLimitStrategy } from '@hatchet-dev/typescript-sdk/protoc/v1/workflows.js'
 import { prisma } from '@klicker-uzh/prisma'
 import {
+  ANALYTICS_SCRIPTS,
   HATCHET_EVENTS,
   type HatchetHandlers,
   type RecomputeLearningAnalyticsInput,
@@ -9,27 +10,6 @@ import {
 import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
-
-// Script module names — must match the Python modules under apps/analytics/src/scripts.
-// Kept here (not imported from @klicker-uzh/graphql) because this package sits
-// below graphql in the dep graph; the strings are short and stable.
-const ANALYTICS_SCRIPTS = {
-  s0_participant: 'src.scripts.0_initial_participant_analytics',
-  s1_aggregated: 'src.scripts.1_initial_aggregated_analytics',
-  s2_course_heatmap: 'src.scripts.2_initial_aggregated_course_analytics',
-  s3_instance_activity: 'src.scripts.3_initial_instance_activity_performance',
-  s4_participant_perf: 'src.scripts.4_initial_participant_performance',
-  s5_participant_course: 'src.scripts.5_initial_participant_course_analytics',
-  s6_activity_progress: 'src.scripts.6_initial_activity_progress',
-  s7_participant_activity: 'src.scripts.7_participant_activity_performance',
-  s8_chat: 'src.scripts.8_initial_chat_analytics',
-  s9_chatbot: 'src.scripts.9_initial_aggregated_chatbot_analytics',
-  s10_clustering: 'src.scripts.10_chat_topic_clustering',
-  s11_chat_quiz: 'src.scripts.11_chat_quiz_correlation',
-  s13_platform: 'src.scripts.13_platform_semester_analytics',
-  s14_live_quiz: 'src.scripts.14_live_quiz_assessment_analytics',
-  s99_validity: 'src.scripts.99_mark_analytics_valid',
-} as const
 
 export function prepareHatchetTasks({
   hatchet,
@@ -349,15 +329,19 @@ export function prepareHatchetTasks({
       },
     })
 
+  // Returns void on success; throws on any subprocess failure so Hatchet's
+  // `taskDefaults.retries` fire and child tasks that gate on `parents: [...]`
+  // correctly see an upstream failure. Wrapping the handler's result in
+  // `{ success: false }` used to make every failure look like a success to the
+  // DAG engine.
   const makeScriptTaskFn =
     (scriptModule: string) =>
     async (input: RecomputeLearningAnalyticsInput, ctx: any) => {
-      const success = await handlers.handleRunAnalyticsScript(
+      await handlers.handleRunAnalyticsScript(
         { ...(input ?? {}), scriptModule },
         globalContext,
         ctx
       )
-      return { success }
     }
 
   // Leaves of the DAG — no analytics-pipeline dependencies. Each reads raw
@@ -402,7 +386,7 @@ export function prepareHatchetTasks({
     executionTimeout: '60m', // window-iterating
     fn: makeScriptTaskFn(ANALYTICS_SCRIPTS.s9_chatbot),
   })
-  recomputeLearningAnalytics.task({
+  const taskS10 = recomputeLearningAnalytics.task({
     name: 's10-chat-topic-clustering',
     // Clustering is expensive and usually deterministically fails when it
     // fails (OOM, model load, etc.). Retries just prolong the pipeline.
@@ -410,11 +394,11 @@ export function prepareHatchetTasks({
     executionTimeout: '60m',
     fn: makeScriptTaskFn(ANALYTICS_SCRIPTS.s10_clustering),
   })
-  recomputeLearningAnalytics.task({
+  const taskS13 = recomputeLearningAnalytics.task({
     name: 's13-platform-semester-analytics',
     fn: makeScriptTaskFn(ANALYTICS_SCRIPTS.s13_platform),
   })
-  recomputeLearningAnalytics.task({
+  const taskS14 = recomputeLearningAnalytics.task({
     name: 's14-live-quiz-assessment-analytics',
     fn: makeScriptTaskFn(ANALYTICS_SCRIPTS.s14_live_quiz),
   })
@@ -431,9 +415,28 @@ export function prepareHatchetTasks({
     parents: [taskS4, taskS8],
     fn: makeScriptTaskFn(ANALYTICS_SCRIPTS.s11_chat_quiz),
   })
+  // Full fan-in: every analytics-pipeline task must succeed before s99 flips
+  // Course.areAnalyticsValid. "Valid" means "every script ran" — a leaf that
+  // threw (which now actually propagates, see handleRunAnalyticsScript) is an
+  // upstream failure and Hatchet will skip s99.
   recomputeLearningAnalytics.task({
     name: 's99-mark-analytics-valid',
-    parents: [taskS0, taskS8, taskS1, taskS11],
+    parents: [
+      taskS0,
+      taskS1,
+      taskS2,
+      taskS3,
+      taskS4,
+      taskS5,
+      taskS6,
+      taskS7,
+      taskS8,
+      taskS9,
+      taskS10,
+      taskS11,
+      taskS13,
+      taskS14,
+    ],
     fn: makeScriptTaskFn(ANALYTICS_SCRIPTS.s99_validity),
   })
 
@@ -467,12 +470,24 @@ export function prepareHatchetTasks({
         `[scanEndedCourses] graceDays=${effectiveGrace} cutoff=${cutoff.toISOString()} candidates=${candidates.length}`
       )
 
+      // Day-bucketed idempotency key — a scanner retry inside the same UTC
+      // day reuses the key and Hatchet de-duplicates the emission. Workflow
+      // concurrency still cancels an in-progress older run on a new key, but
+      // the common case (CI retry, manual re-trigger) no longer costs a
+      // scheduling round trip per duplicate.
+      const today = new Date().toISOString().slice(0, 10)
       await Promise.all(
         candidates.map(({ id }) =>
-          hatchet.events.push(HATCHET_EVENTS.courseEnded, {
-            mode: 'finalize',
-            courseId: id,
-          } satisfies RecomputeLearningAnalyticsInput)
+          hatchet.events.push(
+            HATCHET_EVENTS.courseEnded,
+            {
+              mode: 'finalize',
+              courseId: id,
+            } satisfies RecomputeLearningAnalyticsInput,
+            {
+              additionalMetadata: { idempotencyKey: `finalize-${id}-${today}` },
+            }
+          )
         )
       )
 

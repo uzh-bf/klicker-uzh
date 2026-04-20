@@ -339,3 +339,52 @@ Drop-out cleanup (the "A4 discussion" item) now lives inline in the
 `save_participant_activity_performance` modules — they `DELETE` stale
 `(course, participant)` pairs before the bulk upsert, wrapped in the same
 session transaction so an interruption leaves the table at its pre-run state.
+
+---
+
+## Addendum — Phase B.0 landed (2026-04-20)
+
+Hardened the Hatchet DAG and added the minimum GraphQL surface the manage
+UI needs to trigger and inspect analytics runs:
+
+- **Real retries.** `handleRunAnalyticsScript` throws on failure; the DAG fn
+  returns `void`. `taskDefaults.retries: 2` now actually fires. Leaves that
+  fail (which previously returned `{success: false}` and were seen as
+  successes by Hatchet) correctly gate downstream tasks.
+- **Full fan-in to `s99`.** Every one of the 15 analytics tasks is now a
+  parent of `s99-mark-analytics-valid`. "Analytics valid" means "every
+  script ran" — a partial run never flips the flag.
+- **Single `ANALYTICS_SCRIPTS` home.** Moved to `packages/types/src/hatchet.ts`;
+  the GraphQL handler and the Hatchet workflow both import from there.
+- **Full-mode guard.** Handler rejects `mode=full` unless the worker has
+  `ANALYTICS_ALLOW_FULL=1`. `adminRecomputeAnalytics` now dispatches with an
+  explicit mode — no silent default to `full`.
+- **Watchdog timeout.** Node-side `DEFAULT_SCRIPT_TIMEOUT_MS` is 65 min,
+  strictly greater than any Hatchet per-task `executionTimeout`. The Hatchet
+  fence fires first on normal timeouts; the Node watchdog only fires on
+  total Hatchet silence.
+- **Scanner day-bucket marker.** `scan-ended-courses` emits each
+  `courseEnded` event with `additionalMetadata.idempotencyKey` =
+  `finalize-<courseId>-<YYYY-MM-DD>`, so a retry inside the same UTC day is
+  identifiable in the Hatchet dashboard (the workflow's `CANCEL_IN_PROGRESS`
+  concurrency still handles the in-flight case).
+- **Structured telemetry.** New `apps/analytics/src/log.py` emits
+  `{phase, script, mode, scope_size, window_since, elapsed_s, rows_written}`
+  JSON lines to stdout at entry and exit of every script. No new SDK — the
+  Hatchet worker captures stdout verbatim.
+- **GraphQL surface.** New `recomputeCourseAnalytics(courseId, mode)`
+  mutation (ADMIN on course) and `Course.analyticsStatus` object field
+  exposing `areAnalyticsValid / analyticsLastComputedAt /
+  analyticsFinalizedAt / chatAnalyticsValidAt`. The manage UI can wire a
+  button + refetch — no subscription this iteration.
+
+**Still open:**
+
+- Phase B.1 — convert scripts 3, 6, 7 to raw SQL.
+- Phase B.2 — SQL conversion of scripts 0, 1.
+- Phase B.3 — materialized views for cross-script rollups.
+- Phase B.4 — per-course child workflow fan-out.
+- Phase C — pg_ivm, partitioning, incremental topic clustering, Python
+  Hatchet SDK worker.
+- OTel / Langfuse / Sentry exporters — structured stdout is the interim
+  observability surface; external exporters are a separate decision.

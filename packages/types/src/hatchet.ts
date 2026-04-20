@@ -95,8 +95,33 @@ export interface HatchetHandlers {
     input: RunAnalyticsScriptInput,
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
-  ) => Promise<boolean>
+  ) => Promise<void>
 }
+
+// Script module names — must match the Python modules under
+// apps/analytics/src/scripts. Kept here (the shared `@klicker-uzh/types`
+// package) so `@klicker-uzh/graphql` and `@klicker-uzh/hatchet` don't drift
+// their own copies. No user-supplied script names ever reach spawn() — the
+// Hatchet workflow references them by symbol.
+export const ANALYTICS_SCRIPTS = {
+  s0_participant: 'src.scripts.0_initial_participant_analytics',
+  s1_aggregated: 'src.scripts.1_initial_aggregated_analytics',
+  s2_course_heatmap: 'src.scripts.2_initial_aggregated_course_analytics',
+  s3_instance_activity: 'src.scripts.3_initial_instance_activity_performance',
+  s4_participant_perf: 'src.scripts.4_initial_participant_performance',
+  s5_participant_course: 'src.scripts.5_initial_participant_course_analytics',
+  s6_activity_progress: 'src.scripts.6_initial_activity_progress',
+  s7_participant_activity: 'src.scripts.7_participant_activity_performance',
+  s8_chat: 'src.scripts.8_initial_chat_analytics',
+  s9_chatbot: 'src.scripts.9_initial_aggregated_chatbot_analytics',
+  s10_clustering: 'src.scripts.10_chat_topic_clustering',
+  s11_chat_quiz: 'src.scripts.11_chat_quiz_correlation',
+  s13_platform: 'src.scripts.13_platform_semester_analytics',
+  s14_live_quiz: 'src.scripts.14_live_quiz_assessment_analytics',
+  s99_validity: 'src.scripts.99_mark_analytics_valid',
+} as const
+
+export type AnalyticsScriptKey = keyof typeof ANALYTICS_SCRIPTS
 
 // Input shape for the weekly learning-analytics recompute. `mode` defaults to
 // incremental; the scanner sends `courseId` alone and the workflow promotes it
