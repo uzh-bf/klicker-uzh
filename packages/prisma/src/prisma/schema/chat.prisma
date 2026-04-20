@@ -71,20 +71,21 @@ model ChatMessage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([threadId])
   @@index([parentId])
   // Used by analytics scripts 8/9/13 to scope rollups by date window.
   @@index([createdAt])
+  // Covers in-thread ordered message scans (script 10 clustering, chat UI history).
+  @@index([threadId, createdAt])
 }
 
 model ChatAttachment {
   id String @id @default(uuid()) @db.Uuid
 
-  type             ChatAttachmentType
-  position         Int
-  imageBase64      String?            @db.Text // base64 data URL for display 
-  imagePreviewBase64 String?          @db.Text // compact preview data URL for history rendering
-  imageDescription String?            @db.Text // AI-generated description for context injection
+  type               ChatAttachmentType
+  position           Int
+  imageBase64        String?            @db.Text // base64 data URL for display 
+  imagePreviewBase64 String?            @db.Text // compact preview data URL for history rendering
+  imageDescription   String?            @db.Text // AI-generated description for context injection
 
   messageId String      @db.Uuid
   message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -126,9 +127,9 @@ model Chatbot {
   disclaimerId String?            @db.Uuid
 
   // Relations
-  mcpConfigurations ChatbotMCPConfig[]
-  threads           ChatThread[]
-  usageCredits      ChatUsageCredits[]
+  mcpConfigurations          ChatbotMCPConfig[]
+  threads                    ChatThread[]
+  usageCredits               ChatUsageCredits[]
   participantChatAnalytics   ParticipantChatAnalytics[]
   aggregatedChatbotAnalytics AggregatedChatbotAnalytics[]
   topicClusters              ChatTopicCluster[]
