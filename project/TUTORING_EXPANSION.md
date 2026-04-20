@@ -418,3 +418,200 @@ Based on the Scite validation pass, the following claims in §5 / §9 have been 
 | Academic integrity concern with LLMs in HE | Sullivan 2023 (253 Smart Citations); Wiley 2024 survey | High |
 | Socratic prompt engineering produces measurable gains in real classrooms | Kao 2025 RCT, Tufino & Gregorcic 2025 design, Lai 2024 analysis | Moderate (mix of RCT + design/analysis) |
 | Bastani's GPT Tutor vs GPT Base divergence proves our design | — | Direct inference; strongest single empirical analogue for our architecture |
+
+---
+
+## 11. Integration plan — `apps/chat` consumes `apps/mcp`
+
+Status: design proposal, supersedes §7's high-level sketch. Ordered by dependency; each phase produces an independently mergeable PR. Every phase assumes `apps/mcp` iterations 1–10 have landed (see `apps/mcp/PLAN.md`).
+
+### 11.1 Design constraints
+
+Five constraints shape every phase below; any deviation needs explicit justification.
+
+| Constraint | Why |
+| --- | --- |
+| **Thin adapter principle holds.** No learning logic in `apps/mcp`; no backend logic in `apps/chat`. Tutor reasoning lives in the LLM + system prompt; data lives in Postgres; MCP is the transport. | Same principle that shaped `apps/mcp/PLAN.md`. Violating it produces duplicate analytics math or ungovernable business rules in the chat app. |
+| **Per-user authority at every tool call.** The backend's row-level guards (`asParticipant`, `asUserFullAccess`) stay authoritative. The chat app mints JWTs scoped to the signed-in participant/lecturer; the MCP forwards them unchanged. | A service-account shortcut breaks row-level isolation and the audit chain EU AI Act / Swiss nDSG require. |
+| **Solution-gating is a tool-layer invariant, not only a prompt rule.** Tools must not *return* solution content for items the viewer has not submitted. | §6: prompt rules are a second line; backend gates are the first. If the tool payload contains a correct-answer field, a prompt-injected tutor leaks it regardless of prompt. |
+| **Reads are labelled as reads.** Every read tool carries `readOnlyHint=true` and `destructiveHint=false`; every write tool declares its write shape explicitly (idempotent vs not). The chat consumer's tool-gating relies on these annotations. | LearnLM + Anthropic MCP guidance both assume clients can trust these hints. Today our tools carry none, so the consumer has to hardcode lists — a maintenance burden that rots the first time we add a tool. |
+| **Graceful degradation on MCP outage.** A failed MCP call yields a structured "unavailable" signal, not silent fallback. The tutor may lose a lever but must not lie. | §8 Q8. Silent failure masks the very correctness signal the design depends on. |
+
+### 11.2 Phased roadmap
+
+Roadmap covers the full tutor surface — wiring, tool hygiene, pedagogical prompting, the §4 gap list (promoted in scope), and the §6 compliance items. **Phases P0a through P1 form the MVP**; everything after is a feature unlock on top of a live consumer.
+
+| Phase | Scope | Depends on | Rough effort |
+| --- | --- | --- | --- |
+| **P0a — Auth wiring** | Per-participant JWT minting in `apps/chat`; new `authType` in the chatbot MCP-server registry; Testkurs tutor chatbot seeded with the KlickerUZH MCP attached | `apps/mcp` iter 10 (TLS/CSRF fixes landed) | ~1 day |
+| **P0b — MCP tool hygiene** | Annotations (`readOnlyHint` / `destructiveHint` / `idempotentHint` / `openWorldHint`), `title`, `_meta.audience` + `_meta.category` across all ~38 tools. Tool-layer solution gating verified. See §12 | none — can run in parallel with P0a | ~1 day |
+| **P0c — Consumer wiring** | `apps/chat` step loop actually invokes MCP tools in a streaming turn. Logs show tool calls + payload sizes. `agent-browser` confirms end-to-end against Testkurs | P0a + P0b | ~0.5 day |
+| **P1 — Tutor system prompt v1** | RTRI-structured prompt: role/domain boundary, Socratic default, anti-sycophancy grounding, solution-gating, hint-cascade placeholders (level-1 + level-2 only; level-3 deferred to P3), metacognitive cadence, adaptive intensity by `get_my_performance` tier, jailbreak resilience. Curated `allowedTools` per chatbot using P0b's `_meta.category` filter | P0a–P0c | ~1 week |
+| **P1.5 — Session-open snapshot** | Opening-turn parallel fan-out across `get_weak_topics` + `get_my_srs_state` + `get_my_recent_activity` + `get_my_performance`, compressed into a 3–5 line learner snapshot injected into the system prompt context. On-demand deepening after | P1 | ~1 day |
+| **P2 — In-session memory** | RAM-scoped dictionary keyed on (`participantId`, `courseId`, `threadId`) for turn-to-turn continuity within a streaming conversation. Cleared on thread close | P1 | ~1 day |
+| **P2.5 — Persisted session summaries** | New `TutorSessionSummary` table; session-close task emits a ≤300-token summary; session-open reads the last N summaries. Retention policy from day one | P2 + DPIA signoff | ~3 days |
+| **P3 — Solution explanations (gated)** | Gap #2. Nullable `explanation` field on `Element`; backend returns it only when the viewer has already submitted that instance. New tool `get_element_explanation`; payload empty + reason="not_yet_submitted" if ungated | P1 (so we can write the hint cascade against it) | ~2 days |
+| **P3.5 — Level-3 hint + worked-example fading** | Tutor prompt consumes P3 to power the final step of the hint cascade. Paired-item "fading" pattern: after failure on item X, tutor walks a solved similar item Y, then re-offers a variant of X | P3 | ~2 days |
+| **P4a — Cohort norming** | Gap #4. Aggregate per-tag percentile with hard k≥20 threshold; tool returns `{percentile, cohort_size, threshold_met}`. Fallback copy when below threshold | P0b (tool hygiene) + DPIA | ~3 days |
+| **P4b — Study goals** | Gap #5. `StudyGoal` table (tag + deadline + baseline accuracy); tool pair `set_study_goal` / `get_study_goals`; tutor surfaces progress at session open/close | P2 | ~2 days |
+| **P5a — Tutor-drafted items (lecturer-reviewed)** | Gap #8. Tutor writes via existing iter 3 `create_*_question(status=DRAFT)`; `createdVia='tutor_suggestion'` audit field (open-question 2 in `apps/mcp/PLAN.md`) disambiguates from lecturer drafts. Lecturer approval UI in `apps/frontend-manage` | open-question 2 resolved | ~3 days |
+| **P5b — SRS-due nudges** | Gap #9. Hatchet workflow reads `mySRSState` → composes email/push; one nudge per participant per 24h; opt-out surfaced at first send. | Hatchet infra already present | ~2 days |
+| **P6 — Compliance sweep** | DPIA; per-call audit log (tool + redacted variables + `participantId` + timestamp); consent UI copy in `apps/chat` + `apps/frontend-pwa`; retention policy docs; lawful-basis statement; human-review path for weak-topic / SRS automated decisions (GDPR Art. 22). See §6 | Continuous; must be done before a student-facing prod rollout regardless of which earlier phases land | variable, ≥1 week |
+| **P7 — Graceful degradation** | MCP unreachable: tool call returns a structured `{available: false, reason}` that the system prompt teaches the tutor to acknowledge ("I can't see your weak topics right now — let's start from what you'd like to work on"). Never silent fallback | P0c (so we know what "available" looks like) | ~1 day |
+
+### 11.3 Phase detail
+
+Only the non-trivial phases get their own subsection; the rest are fully described by the row above.
+
+#### 11.3.1 P0a — Auth wiring
+
+**Deliverables.** A new `authType` value (working name: `klicker-participant-jwt`) handled in `apps/chat/src/services/mcpClients.ts::createAuthHeaders`. A helper (colocated with `mcpClients.ts`) mints a short-lived HS256 JWT for the signed-in participant from `APP_SECRET`, matching the shape the backend `jwtMiddleware` already accepts (`sub`, `role`, `catalyst`, standard claims). Per-participant in-memory TTL cache so a streaming turn with ten tool calls mints once, not ten times. The chat route (`app/api/chatbots/[chatbotId]/chat/route.ts`) threads `participantId` into `getAggregatedMCPTools`. One seeded `MCPServer` row points at `https://mcp.klicker.com/mcp` with the new `authType`; one seeded `MCPConfiguration` binds it to the Testkurs tutor chatbot.
+
+**Why direct-mint and not OAuth.** The OAuth bridge (iter 5) exists for *external* clients — Claude Desktop, Cursor — that cannot share `APP_SECRET`. `apps/chat` runs on the trusted side of the same secret and already has the participant session. OAuth would add a browser redirect round-trip that doesn't fit the chat UX and buys nothing for isolation that JWT scoping doesn't already cover.
+
+**JWT TTL trade-off.** 5 min is enough for a full streaming turn plus retries; short enough to limit blast radius if the cache leaks. Mint-per-turn (not per-tool-call) so one long turn can't outlive its token; cache-per-participant so concurrent turns for the same user share.
+
+**Verification.** Unit: round-trip through the backend's actual JWT verifier (imported from `packages/graphql`, not a lookalike). Integration: streaming chat turn in dev calls at least one MCP tool end-to-end. Browser: `agent-browser` screenshots before/after a forced tool call in the Testkurs tutor chatbot.
+
+**Risks.** JWT payload-shape drift — mitigated by the round-trip test. Lecturer tutors need a lecturer-shape JWT; deferred until open-question 1 from `apps/mcp/PLAN.md` is resolved (`ACCOUNT_OWNER` vs `asUserFullAccess`).
+
+#### 11.3.2 P0b — MCP tool hygiene
+
+See §12 for the full specification. In short: every tool grows `annotations={readOnlyHint, destructiveHint, idempotentHint, openWorldHint}` + `title` + `_meta={audience, category}`. The verification that no read tool returns ungated solution content lands here as a test, not only as documented policy.
+
+#### 11.3.3 P1 — Tutor system prompt v1
+
+Prompt design follows the RTRI template from U Toronto CTSI (§5.1) and implements every lever in §3.2. Key structural choices:
+
+**Flat agent, not two-stage.** §3.3 recommendation holds: start with a single-LLM tool-use loop; move to diagnoser/tutor split only if log analysis shows context drift. One code path is easier to evaluate.
+
+**Curated `allowedTools` per chatbot.** The tutor chatbot gets reads + `submit_stack_response` + feedback/rating tools — not `create_*_question`, not `post_live_qa_question`, not `send_confusion_signal` (those are for a different tutor mode). The `_meta.category` from §12 drives the allowlist so it's declarative, not a magic list in the prompt.
+
+**Tool-cadence lever (≤5 opening calls).** Enforced in P1.5 by structure (parallel session-open fan-out is a fixed list) and by prompt (mid-turn retrieval only when the student references a specific item or topic).
+
+**Anti-sycophancy enforcement.** Prompt grounds correctness exclusively on `submit_stack_response` return payload. Never "Yes, that's right" before the grader has spoken. A targeted eval set is mandatory — a handful of adversarial "but I'm sure I'm right" student turns + sycophantic persona prompts from Sharma 2024 — before we consider the prompt shipped.
+
+**Solution-gating in both layers.** Backend already gates `get_practice_quiz` solutions (§6); the prompt reinforces; P0b adds a tool-layer test.
+
+#### 11.3.4 P1.5 — Session-open snapshot
+
+One parallel fan-out at turn 1 of each new thread: `get_weak_topics` + `get_my_srs_state` + `get_my_recent_activity` + `get_my_performance`. Failures degrade gracefully via P7 — an unavailable signal for one tool doesn't block the others. The snapshot is compressed into a 3–5 line prose block injected into the system prompt context; the raw payloads are *not* in-context (token budget + leakage).
+
+The snapshot is re-fetched only when (a) a new thread starts or (b) the student's message references a specific course, item, or topic the snapshot doesn't cover. Mid-dialogue refetch is explicitly forbidden by the tool-cadence lever.
+
+#### 11.3.5 P2 + P2.5 — Memory
+
+P2 is in-process: a `Map<threadId, SessionState>` in `apps/chat`'s chat route, holding the snapshot + a running structured digest of the conversation. Lost when the thread ends; no privacy concern beyond the chat message DB we already have.
+
+P2.5 adds cross-session continuity. A Hatchet task summarises each closed thread into ≤300 tokens of structured text ("covered derivative rules; confident on chain rule; struggling with implicit differentiation; SRS-due items at close: 7") and persists to a new `TutorSessionSummary` table keyed on (`participantId`, `courseId`). The tutor reads the most recent N summaries on session open; older summaries age out via a retention policy set at creation time. Retention-by-default is strict (e.g., 90 days); students can opt into longer retention. DPIA input is mandatory before this phase ships — the summary is a data category we don't collect today.
+
+#### 11.3.6 P3 / P3.5 — Solution explanations + hint cascade
+
+P3 adds `explanation` to `Element` (nullable, markdown). The backend returns it through a new query that also verifies the viewer has a `QuestionResponse` for that instance — server-side gating, not client. The MCP wrapper is `get_element_explanation(element_instance_id)` returning either `{available: true, explanation}` or `{available: false, reason: 'not_yet_submitted' | 'no_explanation_authored'}`.
+
+P3.5 rewrites the hint cascade prompt to use it: level-1 hint is a concept pointer ("Think about what the chain rule says about composite functions"), level-2 is a scaffolded step derived from the explanation ("Start by identifying the outer function"), level-3 is the explanation itself — offered only after two full exchanges on level-2. The worked-example fading pattern pairs item X (failed) with item Y (similar, solved in `explanation`) and then a fresh variant of X.
+
+Authoring question open: P5a (tutor-drafted) versus lecturer-authored. The pattern mirrors iter 3 — tutor writes `explanation` drafts; lecturer approves via a queue view in `apps/frontend-manage`.
+
+#### 11.3.7 P4a — Cohort norming
+
+Anonymised quartile per tag, k≥20 hard threshold. Below threshold, the tool returns `{threshold_met: false, cohort_size}` and the tutor is trained to acknowledge this honestly ("your course is small enough that I can't reliably compare you to peers on this topic"). Never falls back to a smaller-k aggregate.
+
+The aggregation itself is a backend service function (Category C pattern), with the tutor consuming only the top-level `{percentile, cohort_size, threshold_met}`. No individual cohort-member data ever crosses the MCP boundary.
+
+#### 11.3.8 P6 — Compliance sweep
+
+Not a one-shot phase — these tasks are threaded through everything above and sweep-checked here.
+
+| Compliance item | Where it binds | Ship-blocker for which phase |
+| --- | --- | --- |
+| DPIA | Legal/PO work; UZH DPO signoff required before prod rollout | P2.5 onward; P6 is the formal artefact |
+| Per-call audit log | MCP layer already logs; add structured `{tool, redacted_vars, participantId, timestamp}` to a dedicated audit table | P1 (first time we have tutor-driven calls to log) |
+| Consent UI | `apps/chat` disclaimer at first tutor session per user; link to data-usage policy | P1 (first participant-facing deployment) |
+| Lawful basis statement | GDPR Art. 6 + 9; document per tool category in §12 `_meta` | P0b |
+| GDPR Art. 22 human-review path | Weak-topic + SRS are automated decisions; add a lecturer override path | P4a |
+| Retention policy docs | Per data type (chat history, session summaries, audit log) | P2.5 (session summaries), P6 (full policy) |
+| Vendor due diligence | LLM provider choice (§8 Q2) — EDPS 2025 orientations apply | Before any prod rollout |
+| EU AI Act high-risk conformity assessment | Annex III 3(b); deadline Aug 2, 2026 (possibly Dec 2027 per Digital Omnibus) | Before prod rollout |
+
+---
+
+## 12. MCP tool hygiene conventions
+
+Specification for how every tool in `apps/mcp` declares its shape. Applies retroactively to the ~38 existing tools (lands in P0b) and prospectively to every new tool. Two goals: (a) let the chat consumer gate tools declaratively instead of by hand-maintained lists, (b) make the LLM side of the conversation safer by labelling side-effect shape explicitly.
+
+### 12.1 Standard annotations
+
+The MCP spec defines four tool annotations, all optional, all consumed by clients for safety gating and user-facing display. We set them on every tool.
+
+| Annotation | Meaning | Our rule |
+| --- | --- | --- |
+| **`readOnlyHint`** | Tool does not mutate server state | `true` for every `get_*` / `list_*` / `whoami`. `false` for every mutation |
+| **`destructiveHint`** | Tool performs irreversible / destructive updates | `false` everywhere today (we have no deletes). Reviewed every time a new write tool is added |
+| **`idempotentHint`** | Repeated calls with same arguments produce same effect | `true` for toggles that converge (`bookmark_stack` with explicit `on`, `rate_element`, `flag_element`). `false` for cumulative writes (`submit_stack_response`, `post_live_qa_question`, `upvote_live_qa`, `send_confusion_signal`, `create_*_question` — each call creates a new row) |
+| **`openWorldHint`** | Tool calls out to an open external world (web search, etc.) | `false` everywhere — we only touch the KlickerUZH backend |
+
+Annotations are hints, not contracts — clients may choose not to honour them. But a client *can* choose to require human approval for any `readOnlyHint=false` call, and the chat consumer's `allowedTools` pattern-match becomes trivially expressible over them.
+
+### 12.2 Title + structured metadata
+
+| Field | Purpose | Example |
+| --- | --- | --- |
+| **`title`** | Human-readable tool name for UI rendering (tool pickers, audit logs) | `"List my courses"`, `"Submit practice stack response"` |
+| **`_meta.audience`** | Which role may invoke this tool sensibly (the backend also enforces — this is a hint for client gating) | `"participant"`, `"lecturer"` |
+| **`_meta.category`** | Coarse grouping for `allowedTools` filters | `"discovery"`, `"practice-read"`, `"practice-write"`, `"feedback"`, `"analytics"`, `"live-session"`, `"authoring"`, `"gamification"` |
+| **`_meta.lawful_basis`** | GDPR Art. 6 lawful basis this tool relies on | `"legitimate_interest"`, `"consent"`, `"contract"` — surfaced in the compliance audit |
+| **`_meta.solution_exposure`** | Does this tool's payload contain correct-answer content gated by the backend? | `"none"`, `"submission_gated"`, `"post_submission_only"` (the P3 explanation tool is `"post_submission_only"`) |
+
+### 12.3 Structured output schemas
+
+FastMCP v3 supports typed return values via Pydantic. Today we return `dict[str, Any]` in several places; P0b tightens high-traffic tools (analytics, snapshot fan-out) to Pydantic response models so the LLM receives a schema and the chat consumer can validate before rendering. Low-traffic tools (one-shot creates) can stay loose; the cost/benefit doesn't flip until a tool is in the opening-snapshot fan-out or appears on the hot path of a hint cascade.
+
+### 12.4 Error taxonomy
+
+The chat consumer distinguishes four error classes and handles each differently:
+
+| Class | Example | Client behaviour |
+| --- | --- | --- |
+| **`auth`** | Missing / expired JWT | Invalidate cache; mint new token; retry once |
+| **`not_found`** | Course / quiz / element doesn't exist | Tutor acknowledges honestly; never invents data |
+| **`validation`** | Bad arguments (e.g., `course_id` not a UUID) | Log and surface to the LLM as a correction signal |
+| **`backend_unavailable`** | Upstream GraphQL 5xx / timeout | Mark the tool unavailable for the turn; P7 degradation path |
+
+`fastmcp.exceptions.ToolError` strings already carry backend details; P0b wraps each tool body in a translator that maps HTTP → class and emits a stable error-code field, so prompts can reason over the class instead of regex-matching strings.
+
+### 12.5 Sampling / elicitation (deferred)
+
+MCP v3 supports *sampling* (tool asks the LLM a follow-up) and *elicitation* (tool asks the user). Neither is needed for v1 but both are idiomatic for later phases — e.g., a tool-layer disambiguation when the student says "let's do some practice" and there are three eligible courses. Tracked as an open question rather than a phase.
+
+### 12.6 Observability
+
+Every tool invocation logs structured: `{tool, participantId, chatbotId, latency_ms, outcome}`. Tool payload **is not** logged — payload may contain per-element data covered by retention policy. Audit log lives on the MCP side, not the chat side, because the MCP is the per-user authority boundary.
+
+### 12.7 Rollout — retrofitting the existing tools
+
+Not a single PR. Batched in three passes:
+
+1. **Reads** (~26 tools): all `readOnlyHint=true`, `destructiveHint=false`, `openWorldHint=false`, `idempotentHint=true`. One PR; mechanical.
+2. **Writes — idempotent toggles + ratings** (~4 tools): same as reads but `readOnlyHint=false`, `idempotentHint=true`, `_meta.category='feedback'`.
+3. **Writes — cumulative** (~8 tools): `readOnlyHint=false`, `idempotentHint=false`, `destructiveHint=false`, category assigned per tool. Also the pass where we audit for accidental solution exposure and set `_meta.solution_exposure`.
+
+Pass 1 unblocks the chat consumer's `allowedTools` filter (P1). Passes 2 + 3 are low-urgency but land before any student-facing deployment — compliance needs the `_meta.lawful_basis` labels.
+
+---
+
+## 13. Updated open questions
+
+Extending §8. Questions here are specific to the `apps/chat` consumer work; the original §8 list (LLM choice, memory schema, k-anonymity, consent copy, audit retention, authoring, degradation, non-student users) still stands.
+
+| # | Question | Owner | Blocks |
+| --- | --- | --- | --- |
+| 10 | Should the chat-side JWT minter live in `@klicker-uzh/util` (shared) or inline in `apps/chat`? | arch | Not blocking; promote after the second caller |
+| 11 | How are tool annotations communicated to the LLM — model system prompt, tool description suffix, or rely on client framework? | prompt-eng | P1 |
+| 12 | Does the tutor chatbot need its own `Chatbot` row per course (scoped system prompt), or one row with course-aware prompts? | product | P1 |
+| 13 | Cohort k-threshold fallback when a course has <20 participants — no norming, coarser aggregation (instructor-year-wide), or opt-in instructor override? | product + DPO | P4a |
+| 14 | What is the tutor's behaviour when `submit_stack_response` returns `correctness=PARTIAL`? Affirm, re-ask, walk through the partial path? | prompt-eng + pedagogy | P1 |
+| 15 | Tutor-drafted items (P5a) — does `createdVia='tutor_suggestion'` need a separate lifecycle from lecturer `DRAFT`, or is a single queue sufficient? | backend + UX | P5a |
+| 16 | Streaming + tool use — do we emit intermediate "thinking" UI while the session-open fan-out is in flight, or stall the first token until it returns? | UX | P1.5 |
+| 17 | Does the audit log (§12.6) feed the GDPR Art. 22 human-review path (§6), or is that a separate surface? | compliance | P6 |
+| 18 | Where does evaluation live? Offline eval set for anti-sycophancy + solution-gating must exist before P1 ships; owner and location TBD | eval | P1 |
