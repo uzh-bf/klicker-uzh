@@ -103,7 +103,11 @@ class AsyncGraphQLClient:
             "extensions": {"persistedQuery": {"version": 1, "sha256Hash": sha}},
         }
 
-        headers = {"Content-Type": "application/json", "Accept": "application/json"}
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "x-graphql-yoga-csrf": "true",
+        }
         if bearer_token:
             headers["Authorization"] = f"Bearer {bearer_token}"
 

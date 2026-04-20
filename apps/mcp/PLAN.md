@@ -29,6 +29,7 @@ Python 3.12 · uv-managed project · FastMCP v3.2 · Streamable HTTP transport �
 | 7   | Backend Category C aggregation + MCP tools               | done   | `f64971a26` (backend), `4557252a5` (MCP) |
 | 8   | Deploy surface (Dockerfile, Traefik, Helm)               | done   | `f555aaec0`                              |
 | 9   | Participant-analytics MCP tools + shared test helpers    | done   | `4557252a5`                              |
+| 10  | E2E smoke script + TLS/CSRF plumbing fixes (first real run) | done |                                          |
 
 ## Iteration 1 — Skeleton + PLAN.md
 
@@ -143,7 +144,31 @@ Promote-to-ready and per-element-type option schema resources are deferred — t
 
 **Verification:** `uv run poe all` green — 81 tests total (19 new for the analytics tools + 1 auth-guard + 1 registration sanity). Pre-commit hook (prettier via lint-staged + turbo check + syncpack + eslint) also green.
 
-## Next steps — candidates for iteration 10
+## Iteration 10 — E2E smoke + TLS/CSRF plumbing fixes
+
+**Goal:** First end-to-end run of the MCP server against the deployed Traefik route (`https://mcp.klicker.com`) with a real participant + lecturer JWT. Flush out any gaps unit tests miss by design (they mock at the GraphQL boundary).
+
+**Deliverables:**
+
+- `apps/mcp/scripts/e2e_smoke.py` — 18-check script driving a `fastmcp.Client` against the running server, forwarding a locally-minted HS256 JWT (no OAuth round-trip). Covers `/health`, `list_tools`, participant whoami + discovery + response/bookmark/flag invariants, all 10 iter-9 analytics tools, plus a lecturer whoami + `list_my_questions` spot-check. Falls back to `http://localhost:7079/mcp` if Traefik is down. Exit 0 on all-green.
+- `apps/mcp/src/klicker_mcp/gql/client.py` — adds `x-graphql-yoga-csrf: true` header on every GraphQL request. Backend's `@graphql-yoga/plugin-csrf-prevention` (at `apps/backend-docker/src/app.ts:146`) rejected MCP calls with 403 because unit tests mock httpx and never hit the real CSRF guard. Matches the header Apollo clients in `frontend-pwa/manage/control` already send.
+- `apps/mcp/package.json` — `dev` script now prepends `env APP_ORIGIN_API=http://localhost:3000` after Infisical injection. Infisical's `dev` environment supplies `APP_ORIGIN_API=https://api.klicker.com` (the convention for Node.js apps, which trust the mkcert root CA via the macOS keychain). Python httpx uses certifi's bundle, which does not trust mkcert, so TLS handshake failed. The Node apps are unaffected; Docker Compose already uses `http://backend:3000` for the same reason.
+- `apps/mcp/tests/test_gql_client.py` — adds an assertion that the CSRF header is present alongside `Authorization`, to lock the invariant in.
+- `apps/mcp/README.md` — documents the smoke script (prereqs, env, fallback behaviour).
+
+**Verification (against `https://mcp.klicker.com`, real seeded DB):**
+
+```
+Summary: 17 passed, 1 failed, 0 skipped (18 checks total)
+Failures:
+  - 09 get_my_performance(Testkurs): assertion: missing expected perf keys; got []
+```
+
+The single failure is a seeded-data gap (no `ParticipantPerformance` rows for `testuser1` in `Testkurs`) and will be fixed by the learning-analytics PR, not by the MCP plumbing. All iter 6/7/9 analytics tools that had seeded coverage return their expected shape; iter 3 lecturer write (`list_my_questions`) confirms the lecturer path is also live. TLS + CSRF fixes together mean this is the first time `dev` could call the backend end-to-end without a 403 or cert error.
+
+**Follow-up still open:** step 3 below (ACCOUNT_OWNER scope vs `asUserFullAccess`) — the lecturer `whoami` returned `Self=null` (documented expected), but real lecturer writes (`create_*_question`) are untested end-to-end.
+
+## Next steps — candidates for iteration 11
 
 Sized by reference to `project/TUTORING_EXPANSION.md` §7.
 

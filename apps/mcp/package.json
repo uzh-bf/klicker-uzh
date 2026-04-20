@@ -7,7 +7,7 @@
   "scripts": {
     "build": "uv sync --frozen && uv run poe gen-ops",
     "check": "uv run poe check",
-    "dev": "../../util/_run_with_infisical.sh --env dev uv run poe dev",
+    "dev": "../../util/_run_with_infisical.sh --env dev env APP_ORIGIN_API=http://localhost:3000 uv run poe dev",
     "dev:raw": "uv run poe dev",
     "format": "uv run poe format",
     "format:check": "uv run poe format-check",

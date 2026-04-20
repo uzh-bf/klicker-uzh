@@ -39,6 +39,7 @@ async def test_execute_sends_persisted_query_shape(httpx_mock: HTTPXMock) -> Non
     request = httpx_mock.get_request()
     assert request is not None
     assert request.headers["Authorization"] == "Bearer abc"
+    assert request.headers["x-graphql-yoga-csrf"] == "true"
     body = json.loads(request.content)
     assert body["operationName"] == "Self"
     assert body["extensions"]["persistedQuery"]["version"] == 1

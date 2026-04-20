@@ -68,6 +68,27 @@ at `https://mcp.klicker.com` — the wildcard `*.klicker.com` cert covers this
 host already. Add `127.0.0.1 mcp.klicker.com` to `/etc/hosts` if you haven't
 already configured the full `*.klicker.com` set.
 
+## E2E smoke test
+
+`scripts/e2e_smoke.py` exercises the full path an MCP client takes — a
+`fastmcp.Client` speaking HTTP to the running server, which forwards the
+bearer token to the GraphQL backend hitting the seeded Prisma DB. Unit tests
+mock the backend at the GraphQL boundary, so none covers this wiring.
+
+Prereqs: local dev stack running (`./_run_app_dependencies.sh` + `pnpm run dev`),
+DB seeded (`testuser1` / `Testkurs` expected), MCP server running on
+`https://mcp.klicker.com` (or set `MCP_SMOKE_URL` to override). The script
+mints HS256 JWTs directly with `APP_SECRET` (default `abcd`) — no OAuth
+round-trip.
+
+```bash
+uv run python scripts/e2e_smoke.py
+```
+
+Exits 0 on all-green, nonzero on any failure. If the default
+`https://mcp.klicker.com/mcp` is unreachable (Traefik not up), the script
+auto-falls back to `http://localhost:7079/mcp` with a warning line.
+
 ## Status
 
 See `PLAN.md` for the iteration tracker.
