@@ -35,16 +35,16 @@ def main() -> None:
         )
 
         try:
-            assert_preconditions(session, verbose=True)
+            assert_preconditions(session, course_ids=scope, verbose=True)
         except AnalyticsNotReadyError as exc:
             print(f"ERROR: {exc}")
             sys.exit(1)
 
         print("Building ParticipantChatOutcome rows")
-        compute_participant_chat_outcomes(session, verbose=True)
+        compute_participant_chat_outcomes(session, course_ids=scope, verbose=True)
 
         print("Updating ParticipantCourseAnalytics.hasChatActivity")
-        update_has_chat_activity(session, verbose=True)
+        update_has_chat_activity(session, course_ids=scope, verbose=True)
 
         script_exit(script=__name__, started=started, rows_written=None)
 

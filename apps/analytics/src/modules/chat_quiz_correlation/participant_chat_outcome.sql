@@ -14,6 +14,7 @@ WITH chat_course AS (
   SELECT "courseId", "participantId", "userMessages" AS chat_messages
   FROM "ParticipantChatAnalytics"
   WHERE "type" = 'COURSE' AND "userMessages" > 0
+    /*CHAT_COURSE_FILTER*/
 ),
 cuts AS (
   SELECT
@@ -29,10 +30,14 @@ course_participants AS (
   SELECT DISTINCT "participantId", "courseId"
   FROM (
     SELECT "participantId", "courseId" FROM "Participation"
+    WHERE true
+      /*COURSE_PARTICIPATION_FILTER*/
     UNION
     SELECT "participantId", "courseId" FROM chat_course
     UNION
     SELECT "participantId", "courseId" FROM "ParticipantPerformance"
+    WHERE true
+      /*COURSE_PERFORMANCE_FILTER*/
   ) u
 )
 INSERT INTO "ParticipantChatOutcome" (

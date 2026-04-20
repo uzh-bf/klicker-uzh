@@ -10,9 +10,10 @@
   rows into pandas.
 """
 
+from datetime import date, datetime, time, timezone
 from typing import Iterable, Mapping, Sequence
 
-from sqlalchemy import Column
+from sqlalchemy import Column, inspect
 from sqlalchemy.dialects.postgresql import insert as postgres_insert
 from sqlalchemy.orm import DeclarativeBase, Session
 from sqlalchemy.sql import Select
@@ -54,6 +55,55 @@ def bulk_upsert(
     return result.rowcount or 0
 
 
+def coerce_date(value: object) -> date:
+    """Normalize ISO strings / datetimes / dates to ``datetime.date``.
+
+    The analytics models map timestamp-like fields such as ``timestamp`` and
+    ``computedAt`` to SQL ``DATE`` columns. Passing strings through SQLAlchemy
+    leaves them typed as VARCHAR bind params, which breaks on stricter Postgres
+    comparisons like ``date = character varying``.
+    """
+    if isinstance(value, date) and not isinstance(value, datetime):
+        return value
+    return coerce_timestamp(value).date()
+
+
+def coerce_timestamp(value: object) -> datetime:
+    """Normalize date-like inputs to a UTC-naive ``datetime``.
+
+    Accepted inputs include ISO date strings, full ISO timestamps with a
+    trailing ``Z``, Python ``date`` / ``datetime`` objects, and Pandas
+    ``Timestamp`` values. Timezone-aware inputs are converted to UTC and then
+    made naive so analytics comparisons and Excel output use one stable
+    convention.
+    """
+    try:
+        import pandas as pd
+    except Exception as exc:  # pragma: no cover - pandas is always available here
+        raise RuntimeError("pandas is required for timestamp coercion") from exc
+
+    if isinstance(value, pd.Timestamp):
+        ts = value
+    elif isinstance(value, datetime):
+        ts = pd.Timestamp(value)
+    elif isinstance(value, date):
+        ts = pd.Timestamp(datetime.combine(value, time.min))
+    elif isinstance(value, str):
+        try:
+            ts = pd.Timestamp(value)
+        except Exception as exc:
+            raise ValueError(f"invalid timestamp string: {value!r}") from exc
+    else:
+        raise TypeError(
+            f"expected ISO date string, timestamp string, date, or datetime; got {type(value)!r}"
+        )
+
+    if ts.tzinfo is not None:
+        ts = ts.tz_convert(timezone.utc).tz_localize(None)
+
+    return ts.to_pydatetime()
+
+
 def scope_by_course_ids(
     stmt: Select,
     course_column: Column | ColumnElement,
@@ -77,11 +127,18 @@ def row_to_dict(row: object) -> dict:
 
     Mirrors the old ``prisma_model.dict()`` call sites: pulls the mapped
     column values only, skipping relationships (those get expanded explicitly
-    by callers that want nested data).
+    by callers that want nested data). Unloaded/deferred columns stay omitted
+    so partial ORM loads do not trigger lazy SQL for schema-drifted fields.
     """
     mapper = getattr(row.__class__, "__mapper__", None)
     if mapper is None:
         # ``RowMapping`` from ``session.execute(select(...)).mappings()`` already
         # behaves like a dict — return a plain copy.
         return dict(row)  # type: ignore[arg-type]
-    return {col.key: getattr(row, col.key) for col in mapper.column_attrs}
+    state = inspect(row)
+    unloaded = set(state.unloaded)
+    return {
+        col.key: getattr(row, col.key)
+        for col in mapper.column_attrs
+        if col.key not in unloaded
+    }

@@ -8,8 +8,8 @@
 -- meaningful at WEEKLY granularity) — see aggregated_chatbot_analytics_weekly.sql.
 
 WITH params AS (
-  SELECT :win_start::timestamptz AS win_start,
-         :win_end::timestamptz AS win_end
+  SELECT CAST(:win_start AS timestamptz) AS win_start,
+         CAST(:win_end AS timestamptz) AS win_end
 ),
 messages AS (
   SELECT
@@ -21,6 +21,7 @@ messages AS (
   JOIN "Chatbot" cb   ON cb.id = ct."chatbotId"
   CROSS JOIN params
   WHERE m."createdAt" >= params.win_start AND m."createdAt" < params.win_end
+    /*COURSE_FILTER*/
 ),
 user_msgs AS (SELECT * FROM messages WHERE role = 'user'),
 rollup AS (
@@ -110,8 +111,8 @@ INSERT INTO "AggregatedChatbotAnalytics" (
   "createdAt", "updatedAt"
 )
 SELECT
-  :analytics_type::"AnalyticsType",
-  :ts::date,
+  CAST(:analytics_type AS "AnalyticsType"),
+  CAST(:ts AS date),
   r."chatbotId",
   r."courseId",
   r.active_participants,

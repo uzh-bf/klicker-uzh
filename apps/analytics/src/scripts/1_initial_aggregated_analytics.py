@@ -15,6 +15,7 @@ from src.modules.aggregated_analytics.compute_aggregated_analytics import (
     compute_aggregated_analytics,
 )
 from src.modules.utils import (
+    COURSE_TIMESTAMP,
     analytics_mode,
     analytics_window_since,
     scoped_course_ids,
@@ -57,7 +58,13 @@ def main() -> None:
                     f"Computing daily aggregated analytics (course) for {specific_date}"
                 )
                 compute_aggregated_analytics(
-                    session, day_start, day_end, day_start, "DAILY", verbose
+                    session,
+                    day_start,
+                    day_end,
+                    day_start,
+                    "DAILY",
+                    verbose,
+                    course_ids=scope,
                 )
 
         if compute_weekly:
@@ -74,7 +81,13 @@ def main() -> None:
                     f"{week_start} to {week_end}"
                 )
                 compute_aggregated_analytics(
-                    session, week_start, week_end, week_end, "WEEKLY", verbose
+                    session,
+                    week_start,
+                    week_end,
+                    week_end,
+                    "WEEKLY",
+                    verbose,
+                    course_ids=scope,
                 )
 
         if compute_monthly:
@@ -91,14 +104,26 @@ def main() -> None:
                     f"{month_start} to {month_end}"
                 )
                 compute_aggregated_analytics(
-                    session, month_start, month_end, month_end, "MONTHLY", verbose
+                    session,
+                    month_start,
+                    month_end,
+                    month_end,
+                    "MONTHLY",
+                    verbose,
+                    course_ids=scope,
                 )
 
         if compute_course:
             print("Computing course-wide aggregated analytics")
-            timestamp = "1970-01-01T00:00:00.000Z"
+            timestamp = COURSE_TIMESTAMP
             compute_aggregated_analytics(
-                session, timestamp, timestamp, timestamp, "COURSE", verbose
+                session,
+                timestamp,
+                timestamp,
+                timestamp,
+                "COURSE",
+                verbose,
+                course_ids=scope,
             )
 
         script_exit(script=__name__, started=started, rows_written=None)
