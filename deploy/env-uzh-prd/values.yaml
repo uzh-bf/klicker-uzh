@@ -206,6 +206,7 @@ chat:
       deploymentId: klickeruzh/azure/gpt-4.1
       name: GPT-4.1
       description: OpenAI model
+      supportsImageAttachments: true
       fallback: false
       cost:
         input: 2.0
@@ -214,6 +215,7 @@ chat:
       deploymentId: klickeruzh/azure/gpt-5.1
       name: GPT-5.1
       description: OpenAI reasoning model
+      supportsImageAttachments: true
       fallback: false
       cost:
         input: 1.25
@@ -222,6 +224,7 @@ chat:
       deploymentId: klickeruzh/azure/gpt-4.1-mini
       name: GPT-4.1 Mini
       description: Small OpenAI model
+      supportsImageAttachments: true
       fallback: true
       cost:
         input: 0.4
