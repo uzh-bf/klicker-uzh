@@ -496,8 +496,14 @@ def run_dryrun(
                     )
                     continue
 
+                # If upstream scripts in THIS run already landed rows for the
+                # required table in the CaptureBuffer, the buffer-backed read
+                # path will serve them — lets script 11 run against an
+                # unmigrated prod DB where ParticipantChatAnalytics is absent.
                 preflight_missing = sorted(
-                    set(_SCRIPT_REQUIRED_TABLES.get(module_name, ())) & missing_tables
+                    table
+                    for table in set(_SCRIPT_REQUIRED_TABLES.get(module_name, ())) & missing_tables
+                    if buffer.row_count(table) == 0
                 )
                 if preflight_missing:
                     skip_reason = f"skipped: tables missing ({', '.join(preflight_missing)})"

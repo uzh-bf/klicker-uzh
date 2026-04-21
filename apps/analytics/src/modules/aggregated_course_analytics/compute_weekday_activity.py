@@ -5,7 +5,8 @@ import pandas as pd
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from src.db_helpers import bulk_upsert, row_to_dict
+from src.db_helpers import bulk_upsert, coerce_date, row_to_dict
+from src.dryrun import buffer_registry
 from src.models import AggregatedCourseAnalytics, ParticipantAnalytics
 
 
@@ -15,13 +16,7 @@ def compute_weekday_activity(session: Session, course):
     course_end = course["endDate"].date() if hasattr(course["endDate"], "date") else pd.Timestamp(course["endDate"]).date()
     total_course_participants = len(course["participations"])
 
-    daily_analytics = session.execute(
-        select(ParticipantAnalytics).where(
-            ParticipantAnalytics.type == "DAILY",
-            ParticipantAnalytics.courseId == course_id,
-        )
-    ).scalars().all()
-    df_daily = pd.DataFrame([row_to_dict(daily) for daily in daily_analytics])
+    df_daily = _load_daily_participant_analytics(session, course_id)
 
     if df_daily.empty:
         return None
@@ -76,3 +71,39 @@ def single_weekday_activity(weekdays, df_daily):
         collector.append(len(df_weekday))
 
     return statistics.mean(collector) if len(collector) > 0 else 0
+
+
+def _load_daily_participant_analytics(session: Session, course_id: str) -> pd.DataFrame:
+    buffered_rows = buffer_registry.filter_rows(
+        "ParticipantAnalytics",
+        course_ids=[str(course_id)],
+        type_value="DAILY",
+    )
+    if buffered_rows is not None:
+        df = pd.DataFrame(buffered_rows)
+        if df.empty:
+            return df
+        # SQL path returns ``timestamp`` as tz-aware (UTC); the buffer stores
+        # plain dates. Re-normalise so ``single_weekday_activity`` comparisons
+        # stay uniform across both paths.
+        if "timestamp" in df.columns:
+            df["timestamp"] = df["timestamp"].apply(_to_utc_timestamp)
+        return df
+
+    daily_analytics = session.execute(
+        select(ParticipantAnalytics).where(
+            ParticipantAnalytics.type == "DAILY",
+            ParticipantAnalytics.courseId == course_id,
+        )
+    ).scalars().all()
+    return pd.DataFrame([row_to_dict(daily) for daily in daily_analytics])
+
+
+def _to_utc_timestamp(value):
+    if value is None:
+        return None
+    try:
+        row_date = coerce_date(value)
+    except (TypeError, ValueError):
+        return None
+    return pd.Timestamp(row_date).tz_localize("UTC")

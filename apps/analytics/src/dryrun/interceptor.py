@@ -318,11 +318,14 @@ def _stringify_stmt(stmt: Any) -> str:
 @contextlib.contextmanager
 def intercept_writes(buffer: CaptureBuffer) -> Iterator[CaptureBuffer]:
     from src import db_helpers
+    from src.dryrun import buffer_registry
 
     original_bulk = db_helpers.bulk_upsert
     original_execute = Session.execute
     original_commit = Session.commit
     original_flush = Session.flush
+
+    buffer_registry.set_active(buffer)
 
     def capturing_bulk_upsert(
         session: Session,
@@ -444,6 +447,7 @@ def intercept_writes(buffer: CaptureBuffer) -> Iterator[CaptureBuffer]:
         Session.execute = original_execute  # type: ignore[assignment]
         Session.commit = original_commit  # type: ignore[assignment]
         Session.flush = original_flush  # type: ignore[assignment]
+        buffer_registry.clear_active()
 
 
 def _safe_sheet(name: str, used_names: set[str]) -> str:
@@ -1180,23 +1184,31 @@ def _chat_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
                 f"{int(row.get('messageCount', 0) or 0)} messages from "
                 f"{int(row.get('participantCount', 0) or 0)} participants."
             )
+        topic_columns = [
+            column
+            for column in (
+                "chatbotName",
+                "clusterLabel",
+                "messageCount",
+                "participantCount",
+            )
+            if column in topics.columns
+        ]
+        topic_options: dict[str, Any] = {}
+        if "messageCount" in topic_columns and "clusterLabel" in topic_columns and len(topics) > 1:
+            topic_options = {
+                "chart": "bar",
+                "x": "clusterLabel",
+                "y": "messageCount",
+                "top_n": 10,
+                "sort_by": "messageCount",
+            }
         sections.append(
             (
                 topic_title,
                 topic_subtitle,
-                topics[
-                    [
-                        column
-                        for column in (
-                            "chatbotName",
-                            "clusterLabel",
-                            "messageCount",
-                            "participantCount",
-                        )
-                        if column in topics.columns
-                    ]
-                ],
-                {},
+                topics[topic_columns],
+                topic_options,
             )
         )
 
@@ -1253,25 +1265,31 @@ def _live_quiz_sections(buffer: CaptureBuffer, metadata: Mapping[str, Any]):
     if not aggregated.empty:
         aggregated = aggregated.copy()
         aggregated = _with_lookup(aggregated, "liveQuizId", quiz_lookup, "liveQuizName")
+        quiz_columns = [
+            column
+            for column in (
+                "liveQuizName",
+                "participantCount",
+                "responseCount",
+                "meanFirstCorrectness",
+                "meanLastCorrectness",
+                "lateSubmitterRate",
+            )
+            if column in aggregated.columns
+        ]
+        quiz_options: dict[str, Any] = {}
+        if "liveQuizName" in quiz_columns and "participantCount" in quiz_columns:
+            quiz_options = {
+                "chart": "column",
+                "x": "liveQuizName",
+                "y": "participantCount",
+            }
         sections.append(
             (
                 "Aggregated Live Quiz Metrics",
-                "Live quiz rollup at quiz level.",
-                aggregated[
-                    [
-                        column
-                        for column in (
-                            "liveQuizName",
-                            "participantCount",
-                            "responseCount",
-                            "meanFirstCorrectness",
-                            "meanLastCorrectness",
-                            "lateSubmitterRate",
-                        )
-                        if column in aggregated.columns
-                    ]
-                ],
-                {},
+                "Live quiz rollup at quiz level — participation and mean correctness per quiz.",
+                aggregated[quiz_columns],
+                quiz_options,
             )
         )
 
@@ -1460,6 +1478,8 @@ def _summary_sheet(
     sections: Sequence[tuple[str, str, Any, dict[str, Any]]],
     formats: Mapping[str, Any],
 ):
+    import pandas as pd
+
     worksheet.write(0, 0, title, formats["title"])
     worksheet.write(1, 0, intro, formats["subtitle"])
     worksheet.freeze_panes(2, 0)
@@ -1469,22 +1489,32 @@ def _summary_sheet(
 
     for section_title, section_subtitle, data, options in sections:
         before = row
+
+        render_data = data
+        sort_by = options.get("sort_by") if options.get("chart") else None
+        if sort_by and data is not None:
+            df_sort = data if isinstance(data, pd.DataFrame) else pd.DataFrame(data)
+            if sort_by in df_sort.columns:
+                render_data = df_sort.sort_values(
+                    sort_by, ascending=False
+                ).reset_index(drop=True)
+
         row = _write_table(
             workbook,
             worksheet,
-            data,
+            render_data,
             start_row=row,
             title=section_title,
             subtitle=section_subtitle,
             formats=formats,
             table_name=f"tbl_{worksheet.name}_{before}".replace(" ", "_"),
         )
-        if options.get("chart") and data is not None:
-            import pandas as pd
-
-            df = data if isinstance(data, pd.DataFrame) else pd.DataFrame(data)
+        if options.get("chart") and render_data is not None:
+            df = render_data if isinstance(render_data, pd.DataFrame) else pd.DataFrame(render_data)
             if not df.empty:
                 chart_slots_idx = min(chart_idx, len(chart_slots) - 1)
+                top_n = options.get("top_n")
+                chart_rows = min(top_n, len(df)) if top_n else len(df)
                 _add_chart(
                     workbook,
                     worksheet,
@@ -1492,7 +1522,7 @@ def _summary_sheet(
                     x_col=df.columns.get_loc(options["x"]),
                     y_col=df.columns.get_loc(options["y"]),
                     first_row=before + 3,
-                    last_row=before + 2 + len(df),
+                    last_row=before + 2 + chart_rows,
                     title=section_title,
                     position=chart_slots[chart_slots_idx],
                 )
