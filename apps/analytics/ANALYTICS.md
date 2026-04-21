@@ -139,10 +139,10 @@ Per-chatbot rollup for one window.
 
 ### `ChatTopicCluster` — script 10
 
-NLP-derived topic clusters over user-authored chat text. No LLM involved — sentence-transformers → UMAP → HDBSCAN → TF-IDF labels. Privacy guard (§3.9): clusters with <5 distinct participants collapse into an `Other` bucket.
+NLP-derived topic clusters over user-authored chat text. No LLM involved — sentence-transformers → UMAP → HDBSCAN → TF-IDF labels. Privacy guard (§3.9): clusters with <3 distinct participants collapse into an `Other` bucket.
 
 - **Grain**: `(type, chatbotId, timestamp, clusterIndex)` unique. `type` is `COURSE` today; `WEEKLY` possible later.
-- **Columns**: `clusterLabel` (short TF-IDF-derived label), `messageCount`, `participantCount` (≥5 enforced), `representativeParaphrase` (nullable — reserved for a future paraphrase stage; never verbatim), `embeddingCentroid` (nullable bytes — reserved for future similarity queries).
+- **Columns**: `clusterLabel` (short TF-IDF-derived label), `messageCount`, `participantCount` (≥3 enforced), `representativeParaphrase` (nullable — reserved for a future paraphrase stage; never verbatim), `embeddingCentroid` (nullable bytes — reserved for future similarity queries).
 
 ### `ParticipantChatOutcome` — script 11
 
