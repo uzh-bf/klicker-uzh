@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.db_helpers import row_to_dict
+from src.dryrun import buffer_registry
 from src.models import ParticipantAnalytics
 
 
@@ -12,17 +13,22 @@ def compute_participant_activity(
     course_duration = (course_end - course_start).days + 1
     week_end_dates = pd.date_range(start=course_start, end=course_end, freq="W")
 
+    daily_by_participant = _buffered_daily_by_participant(course_id)
+
     for idx, row in df_activity.iterrows():
         participant_id = row["participantId"]
 
-        daily_rows = session.execute(
-            select(ParticipantAnalytics).where(
-                ParticipantAnalytics.type == "DAILY",
-                ParticipantAnalytics.courseId == course_id,
-                ParticipantAnalytics.participantId == participant_id,
-            )
-        ).scalars().all()
-        daily_analytics = [row_to_dict(d) for d in daily_rows]
+        if daily_by_participant is not None:
+            daily_analytics = daily_by_participant.get(str(participant_id), [])
+        else:
+            daily_rows = session.execute(
+                select(ParticipantAnalytics).where(
+                    ParticipantAnalytics.type == "DAILY",
+                    ParticipantAnalytics.courseId == course_id,
+                    ParticipantAnalytics.participantId == participant_id,
+                )
+            ).scalars().all()
+            daily_analytics = [row_to_dict(d) for d in daily_rows]
 
         response_count = sum(d["responseCount"] for d in daily_analytics)
         df_activity.loc[idx, "meanElementsPerDay"] = response_count / course_duration
@@ -42,6 +48,21 @@ def compute_participant_activity(
         )
 
     return df_activity
+
+
+def _buffered_daily_by_participant(course_id) -> dict[str, list[dict]] | None:
+    rows = buffer_registry.filter_rows(
+        "ParticipantAnalytics",
+        course_ids=[str(course_id)],
+        type_value="DAILY",
+    )
+    if rows is None:
+        return None
+    grouped: dict[str, list[dict]] = {}
+    for row in rows:
+        participant_id = str(row.get("participantId"))
+        grouped.setdefault(participant_id, []).append(row)
+    return grouped
 
 
 def sum_active_days_per_week(week_end, daily_analytics):
