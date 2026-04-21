@@ -1,5 +1,7 @@
 """Top-level orchestrator for clustering a single chatbot."""
 
+from collections import Counter
+
 from sqlalchemy.orm import Session
 
 from .derive_cluster_labels import derive_labels
@@ -51,6 +53,14 @@ def cluster_chatbot(
 
     embeddings = embed_texts(texts)
     cluster_ids = cluster_embeddings(embeddings)
+    if verbose:
+        counts = Counter(cid for cid in cluster_ids if cid >= 0)
+        noise_count = sum(1 for cid in cluster_ids if cid < 0)
+        sizes_desc = sorted(counts.values(), reverse=True)
+        print(
+            f"[chat_topic_clustering] chatbot={chatbot_id} raw_clusters="
+            f"{len(counts)} raw_sizes={sizes_desc} noise={noise_count}"
+        )
     labels = derive_labels(cluster_ids, texts)
 
     return save_clusters(

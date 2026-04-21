@@ -53,9 +53,23 @@ def cluster_embeddings(embeddings: np.ndarray) -> List[int]:
         random_state=42,
     )
     reduced = reducer.fit_transform(embeddings)
+    # Decouple min_samples from min_cluster_size. When min_samples is left at its
+    # default it equals min_cluster_size (8 here), which makes mutual-reachability
+    # distances over-aggressive on homogeneous corpora (a single university
+    # course's tutoring chat, for example) and collapses sub-topics into one mega
+    # cluster with a long noise tail. BERTopic-style pipelines conventionally use
+    # min_samples in the 1..3 range; 3 is a conservative middle ground.
+    #
+    # cluster_selection_method="leaf" (vs. the default "eom") picks leaf clusters
+    # of the condensed tree instead of the most-massive branch. On topically
+    # homogeneous corpora EOM reliably collapses sub-topics into one mega cluster
+    # (verified against a 232-message MAT183 dry run: EOM + min_samples=3 still
+    # produced 222/232 messages in a single cluster). "leaf" preserves the finer
+    # sub-structure, which is what we actually want here.
     clusterer = hdbscan.HDBSCAN(
         min_cluster_size=MIN_CLUSTER_SIZE,
+        min_samples=3,
         metric="euclidean",
-        cluster_selection_method="eom",
+        cluster_selection_method="leaf",
     )
     return clusterer.fit_predict(reduced).tolist()
