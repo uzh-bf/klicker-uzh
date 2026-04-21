@@ -1,30 +1,19 @@
 """Derive short, TF-IDF-based labels for each cluster (no LLM)."""
 
+from functools import lru_cache
 from typing import Dict, List, Sequence
 
-_LABEL_STOP_WORDS = {
-    "and",
-    "das",
-    "der",
-    "die",
-    "ein",
-    "eine",
-    "for",
-    "ich",
-    "ist",
-    "mit",
-    "not",
-    "sich",
-    "that",
-    "the",
-    "this",
-    "und",
-    "was",
-    "wie",
-    "with",
-    "you",
-    "your",
-}
+
+@lru_cache(maxsize=1)
+def _label_stop_words() -> list[str]:
+    """Combined German + English stop-word list from stopwordsiso.
+
+    Chatbot messages are bilingual (UZH context), so both languages must be
+    filtered for TF-IDF labels to surface domain terms instead of fillers.
+    """
+    import stopwordsiso as sw
+
+    return sorted(sw.stopwords(["de", "en"]))
 
 
 def _top_terms_per_cluster(
@@ -44,7 +33,7 @@ def _top_terms_per_cluster(
         max_df=0.9,
         min_df=1,
         ngram_range=(1, 2),
-        stop_words=sorted(_LABEL_STOP_WORDS),
+        stop_words=_label_stop_words(),
         token_pattern=r"(?u)\b[^\W\d_][^\W\d_]{2,}\b",  # words of length >=3, no numbers
         lowercase=True,
     )
