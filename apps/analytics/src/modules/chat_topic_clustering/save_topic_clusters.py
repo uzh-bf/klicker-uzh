@@ -5,7 +5,7 @@ from typing import Dict, List
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-MIN_PARTICIPANTS_PER_CLUSTER = 5  # §3.9 privacy threshold
+MIN_PARTICIPANTS_PER_CLUSTER = 3  # §3.9 privacy threshold
 
 DELETE_SQL = """
 DELETE FROM "ChatTopicCluster"
@@ -57,12 +57,14 @@ def save_clusters(
     kept: List[tuple] = []
     other_msg = 0
     other_participants: set = set()
+    dropped_by_kanon: List[tuple] = []  # (msg_count, participant_count) per collapsed cluster
 
     for cid, msg_count in message_counts.items():
         p_count = len(participant_sets[cid])
         if p_count < MIN_PARTICIPANTS_PER_CLUSTER:
             other_msg += msg_count
             other_participants.update(participant_sets[cid])
+            dropped_by_kanon.append((msg_count, p_count))
         else:
             kept.append((cluster_labels.get(cid, f"cluster-{cid}"), msg_count, p_count))
 
@@ -116,8 +118,12 @@ def save_clusters(
     session.commit()
 
     if verbose:
+        dropped_sorted = sorted(dropped_by_kanon, key=lambda t: t[0], reverse=True)
+        dropped_msgs = sum(m for m, _ in dropped_sorted)
         print(
             f"[chat_topic_clustering] chatbot={chatbot_id} kept={len(kept)} "
-            f"other_participants={len(other_participants)} rows_written={written}"
+            f"other_participants={len(other_participants)} rows_written={written} "
+            f"dropped_by_kanon={dropped_sorted} dropped_msgs={dropped_msgs} "
+            f"noise_msgs={len(noise_messages)}"
         )
     return written

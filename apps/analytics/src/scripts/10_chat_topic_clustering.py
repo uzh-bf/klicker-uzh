@@ -1,7 +1,7 @@
 # Clusters user-role ChatMessage content per chatbot using an NLP-only pipeline
 # (sentence-transformers → UMAP → HDBSCAN → TF-IDF labels). No LLM involved — per §3.5,
 # labels come from TF-IDF top-k terms so no raw-text leaks can happen via an LLM prompt.
-# Clusters with fewer than 5 distinct participants collapse into an "Other" bucket.
+# Clusters with fewer than 3 distinct participants collapse into an "Other" bucket.
 
 import sys
 from datetime import datetime
