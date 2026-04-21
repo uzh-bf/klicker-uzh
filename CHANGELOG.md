@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.60](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.59...v3.4.0-alpha.60) (2026-04-21)
+
+
+### Features
+
+* **chat:** add image attachment support ([#5045](https://github.com/uzh-bf/klicker-uzh/issues/5045)) ([9e90bf0](https://github.com/uzh-bf/klicker-uzh/commit/9e90bf0d2d4ab75dc088d7d508df983158b816fb))
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** pin embedded PQ buttons with sticky positioning ([#5071](https://github.com/uzh-bf/klicker-uzh/issues/5071)) ([0cf06a4](https://github.com/uzh-bf/klicker-uzh/commit/0cf06a490a3a8f47567c537b21d00ff6ff474460))
+
 ## [3.4.0-alpha.59](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.58...v3.4.0-alpha.59) (2026-04-15)
 
 
