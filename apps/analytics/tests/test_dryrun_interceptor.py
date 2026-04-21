@@ -96,9 +96,9 @@ def test_rewrite_insert_to_select_strips_cols_and_on_conflict():
 
 def test_rewrite_insert_to_select_preserves_leading_cte():
     sql = (
-        'WITH cuts AS (SELECT 1 AS c)\n'
+        "WITH cuts AS (SELECT 1 AS c)\n"
         'INSERT INTO "ParticipantChatOutcome" ("participantId") SELECT c FROM cuts\n'
-        'ON CONFLICT DO NOTHING'
+        "ON CONFLICT DO NOTHING"
     )
     result = rewrite_insert_to_select(sql)
     assert result is not None
@@ -247,7 +247,11 @@ def test_intercept_writes_noops_commit_and_flush():
 @pytest.mark.parametrize("verb", ["UPDATE", "DELETE"])
 def test_skipped_writes_capture_verb_and_sql(verb):
     buffer = CaptureBuffer()
-    sql = f'{verb} FROM "Course" WHERE id = 1' if verb == "DELETE" else f'{verb} "Course" SET x = 1'
+    sql = (
+        f'{verb} FROM "Course" WHERE id = 1'
+        if verb == "DELETE"
+        else f'{verb} "Course" SET x = 1'
+    )
     buffer.skip(f"{verb}-TEXT", sql, {"x": 1})
     entry = buffer.skipped_writes[-1]
     assert entry["verb"] == f"{verb}-TEXT"
@@ -338,7 +342,10 @@ def test_write_excel_produces_xlsx_with_expected_sheets(tmp_path):
     assert table_parts.attrib.get("count") == "1"
 
     empty_sheet_values = _sheet_values(output, "90 Raw - AggregatedLiveQuizAnal")
-    assert "No rows captured for this table in the selected dry run." in empty_sheet_values.values()
+    assert (
+        "No rows captured for this table in the selected dry run."
+        in empty_sheet_values.values()
+    )
     assert "liveQuizId" in empty_sheet_values.values()
     assert "participantCount" in empty_sheet_values.values()
     assert _sheet_state(workbook, "13 Live Quiz") == "hidden"
@@ -569,8 +576,13 @@ def test_write_excel_formats_summary_and_raw_timestamp_cells_as_dates(tmp_path):
     write_excel(buffer, output, {"course_id": "test"})
 
     assert _cell_number_format(output, "12 Chat", "B7") == "yyyy-mm-dd"
-    assert _cell_number_format(output, "90 Raw - ChatTopicCluster", "B5") == "yyyy-mm-dd"
-    assert _cell_number_format(output, "90 Raw - ChatTopicCluster", "J5") == "yyyy-mm-dd hh:mm:ss"
+    assert (
+        _cell_number_format(output, "90 Raw - ChatTopicCluster", "B5") == "yyyy-mm-dd"
+    )
+    assert (
+        _cell_number_format(output, "90 Raw - ChatTopicCluster", "J5")
+        == "yyyy-mm-dd hh:mm:ss"
+    )
 
 
 def test_write_excel_degrades_activity_sheet_when_upstream_activity_data_is_partial(
@@ -633,7 +645,9 @@ def test_write_excel_degrades_activity_sheet_when_upstream_activity_data_is_part
 
     activity_values = _sheet_values(output, "10 Activity")
     assert "Activity Data Warning" in activity_values.values()
-    assert "Participant analytics script failed in this run." in activity_values.values()
+    assert (
+        "Participant analytics script failed in this run." in activity_values.values()
+    )
     assert "Participant Activity Table" not in activity_values.values()
     assert "Participant Activity Histogram" not in activity_values.values()
     assert _sheet_state(_workbook_xml(output), "11 Performance") is None
@@ -686,7 +700,9 @@ def test_write_excel_course_scope_omits_platform_sheet(tmp_path):
         {
             "course_id": "test",
             "scope_mode": "course",
-            "omitted_domains": {"Platform": "Intentionally omitted for course-scoped dry run."},
+            "omitted_domains": {
+                "Platform": "Intentionally omitted for course-scoped dry run."
+            },
         },
     )
 
@@ -743,7 +759,9 @@ def _sheet_xml(path, sheet_name):
         rid = None
         for sheet in workbook.findall("./main:sheets/main:sheet", _NS):
             if sheet.attrib["name"] == sheet_name:
-                rid = sheet.attrib["{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"]
+                rid = sheet.attrib[
+                    "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
+                ]
                 break
         assert rid is not None, f"sheet {sheet_name} not found"
 
@@ -782,9 +800,7 @@ def _sheet_values(path, sheet_name):
             idx = int(cell.findtext("./main:v", default="0", namespaces=_NS))
             values[ref] = shared[idx]
         elif cell_type == "inlineStr":
-            values[ref] = "".join(
-                t.text or "" for t in cell.findall(".//main:t", _NS)
-            )
+            values[ref] = "".join(t.text or "" for t in cell.findall(".//main:t", _NS))
         else:
             values[ref] = cell.findtext("./main:v", default="", namespaces=_NS)
     return values

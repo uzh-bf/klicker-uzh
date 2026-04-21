@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.db_helpers import coerce_date, row_to_dict
+from src.dryrun import buffer_registry
 from src.models import ParticipantAnalytics
 
 
@@ -23,6 +24,22 @@ def load_participant_analytics(
         return pd.DataFrame()
 
     timestamp_value = coerce_date(timestamp)
+
+    buffered_rows = buffer_registry.filter_rows(
+        "ParticipantAnalytics",
+        course_ids=course_ids,
+        type_value=analytics_type,
+    )
+    if buffered_rows is not None:
+        df = _filter_buffered_rows_by_timestamp(buffered_rows, timestamp_value)
+        if verbose:
+            print(
+                "Found {} analytics for timestamp={} type={} (buffer)".format(
+                    len(df), timestamp_value, analytics_type
+                )
+            )
+        return df
+
     stmt = select(ParticipantAnalytics).where(
         ParticipantAnalytics.timestamp == timestamp_value,
         ParticipantAnalytics.type == analytics_type,
@@ -42,3 +59,20 @@ def load_participant_analytics(
             print(row_to_dict(participant_analytics[0]))
 
     return pd.DataFrame([row_to_dict(item) for item in participant_analytics])
+
+
+def _filter_buffered_rows_by_timestamp(
+    rows: list[dict], timestamp_value
+) -> pd.DataFrame:
+    matches: list[dict] = []
+    for row in rows:
+        row_ts = row.get("timestamp")
+        if row_ts is None:
+            continue
+        try:
+            row_date = coerce_date(row_ts)
+        except (TypeError, ValueError):
+            continue
+        if row_date == timestamp_value:
+            matches.append(row)
+    return pd.DataFrame(matches)

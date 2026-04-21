@@ -35,7 +35,9 @@ def _selection_correctness(response, options):
         return None
 
     deduped = list(dict.fromkeys(selected))
-    valid_responses = [answer_id for answer_id in deduped if answer_id in correct_answers]
+    valid_responses = [
+        answer_id for answer_id in deduped if answer_id in correct_answers
+    ]
     correctness = len(valid_responses) / number_of_inputs
 
     if correctness == 1:
@@ -104,7 +106,11 @@ def _case_study_correctness(response, options):
     if not isinstance(cases, list) or not cases:
         return None
 
-    if any(not case_item.get("solutions") for case_item in cases if isinstance(case_item, dict)):
+    if any(
+        not case_item.get("solutions")
+        for case_item in cases
+        if isinstance(case_item, dict)
+    ):
         return None
 
     response_map = _case_study_response_map(assessment)
@@ -123,7 +129,9 @@ def _case_study_correctness(response, options):
                 if not isinstance(criterion_solution, dict):
                     continue
                 criterion_id = str(criterion_solution.get("criterionId"))
-                response_value = response_map.get(case_id, {}).get(item_id, {}).get(criterion_id)
+                response_value = (
+                    response_map.get(case_id, {}).get(item_id, {}).get(criterion_id)
+                )
                 total_assessment_cases += 1
 
                 if response_value is None:
@@ -136,7 +144,10 @@ def _case_study_correctness(response, options):
                 except (KeyError, TypeError, ValueError):
                     continue
 
-                if submitted_value >= min_value - _EPSILON and submitted_value <= max_value + _EPSILON:
+                if (
+                    submitted_value >= min_value - _EPSILON
+                    and submitted_value <= max_value + _EPSILON
+                ):
                     total_correct_cases += 1
 
     correctness = (

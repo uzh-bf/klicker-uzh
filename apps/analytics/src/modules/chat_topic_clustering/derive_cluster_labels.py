@@ -99,9 +99,7 @@ def _top_terms_per_cluster(
             continue
         top_indices = row_arr.argsort()[::-1][:candidate_pool]
         ranked = [
-            (feature_names[i], float(row_arr[i]))
-            for i in top_indices
-            if row_arr[i] > 0
+            (feature_names[i], float(row_arr[i])) for i in top_indices if row_arr[i] > 0
         ]
         picked = _select_non_overlapping(ranked, k=top_k)
         if not picked:

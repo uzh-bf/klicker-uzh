@@ -67,11 +67,17 @@ _SCRIPT_OUTPUT_TABLES: dict[str, tuple[str, ...]] = {
         "ActivityPerformance",
     ),
     "src.scripts.4_initial_participant_performance": ("ParticipantPerformance",),
-    "src.scripts.5_initial_participant_course_analytics": ("ParticipantCourseAnalytics",),
+    "src.scripts.5_initial_participant_course_analytics": (
+        "ParticipantCourseAnalytics",
+    ),
     "src.scripts.6_initial_activity_progress": ("ActivityProgress",),
-    "src.scripts.7_participant_activity_performance": ("ParticipantActivityPerformance",),
+    "src.scripts.7_participant_activity_performance": (
+        "ParticipantActivityPerformance",
+    ),
     "src.scripts.8_initial_chat_analytics": ("ParticipantChatAnalytics",),
-    "src.scripts.9_initial_aggregated_chatbot_analytics": ("AggregatedChatbotAnalytics",),
+    "src.scripts.9_initial_aggregated_chatbot_analytics": (
+        "AggregatedChatbotAnalytics",
+    ),
     "src.scripts.10_chat_topic_clustering": ("ChatTopicCluster",),
     "src.scripts.11_chat_quiz_correlation": (
         "ParticipantChatOutcome",
@@ -135,7 +141,11 @@ def _detect_missing_tables(connection: Connection, names: set[str]) -> set[str]:
 
 def _is_missing_schema_error(error: str) -> bool:
     lower = error.lower()
-    return "does not exist" in lower or "undefinedtable" in lower or "undefinedcolumn" in lower
+    return (
+        "does not exist" in lower
+        or "undefinedtable" in lower
+        or "undefinedcolumn" in lower
+    )
 
 
 def _validate_uuid(value: str) -> None:
@@ -263,9 +273,7 @@ def _collect_reference_lookups(
     participants = {}
     if participant_ids:
         rows = connection.execute(
-            text(
-                'SELECT id, username, email FROM "Participant" WHERE id = ANY(:ids)'
-            ),
+            text('SELECT id, username, email FROM "Participant" WHERE id = ANY(:ids)'),
             {"ids": list(participant_ids)},
         ).all()
         participants = {
@@ -305,9 +313,7 @@ def _collect_reference_lookups(
             ),
             {"ids": list(instance_ids)},
         ).all()
-        element_instances = {
-            str(row[0]): _extract_element_name(row[1]) for row in rows
-        }
+        element_instances = {str(row[0]): _extract_element_name(row[1]) for row in rows}
 
     return {
         "course_name": courses.get(course_id, ""),
@@ -378,7 +384,9 @@ def _auto_scope_window(connection: Connection, course_id: str) -> None:
     if row is None or row[0] is None:
         return
     start = row[0]
-    iso_date = start.strftime("%Y-%m-%d") if hasattr(start, "strftime") else str(start)[:10]
+    iso_date = (
+        start.strftime("%Y-%m-%d") if hasattr(start, "strftime") else str(start)[:10]
+    )
     os.environ["ANALYTICS_WINDOW_SINCE"] = iso_date
 
 
@@ -396,8 +404,8 @@ def _assert_read_only_role(
     """
     row = connection.execute(
         text(
-            'SELECT current_user AS u, '
-            'has_table_privilege(current_user, \'"Course"\', \'INSERT\') AS can_insert'
+            "SELECT current_user AS u, "
+            "has_table_privilege(current_user, '\"Course\"', 'INSERT') AS can_insert"
         )
     ).one()
     current_user = row.u
@@ -442,7 +450,9 @@ def run_dryrun(
 
     from src.db import engine
 
-    all_required_tables = {t for tables in _SCRIPT_REQUIRED_TABLES.values() for t in tables}
+    all_required_tables = {
+        t for tables in _SCRIPT_REQUIRED_TABLES.values() for t in tables
+    }
     missing_tables: set[str] = set()
 
     listener = _install_read_only_hook(engine)
@@ -486,7 +496,10 @@ def run_dryrun(
                     scope_mode=scope_mode,
                 )
                 if intentional_skip:
-                    print(f"[dryrun] ({idx}/{total}) {short} {intentional_skip}", flush=True)
+                    print(
+                        f"[dryrun] ({idx}/{total}) {short} {intentional_skip}",
+                        flush=True,
+                    )
                     buffer.record_script(
                         module_name,
                         0.0,
@@ -496,11 +509,20 @@ def run_dryrun(
                     )
                     continue
 
+                # If upstream scripts in THIS run already landed rows for the
+                # required table in the CaptureBuffer, the buffer-backed read
+                # path will serve them — lets script 11 run against an
+                # unmigrated prod DB where ParticipantChatAnalytics is absent.
                 preflight_missing = sorted(
-                    set(_SCRIPT_REQUIRED_TABLES.get(module_name, ())) & missing_tables
+                    table
+                    for table in set(_SCRIPT_REQUIRED_TABLES.get(module_name, ()))
+                    & missing_tables
+                    if buffer.row_count(table) == 0
                 )
                 if preflight_missing:
-                    skip_reason = f"skipped: tables missing ({', '.join(preflight_missing)})"
+                    skip_reason = (
+                        f"skipped: tables missing ({', '.join(preflight_missing)})"
+                    )
                     print(f"[dryrun] ({idx}/{total}) {short} {skip_reason}", flush=True)
                     _mark_expected_tables(
                         buffer,
@@ -555,12 +577,11 @@ def run_dryrun(
                         flush=True,
                     )
                     rows_written = _rows_written_since(
-                        buffer, before_counts, _SCRIPT_OUTPUT_TABLES.get(module_name, ())
+                        buffer,
+                        before_counts,
+                        _SCRIPT_OUTPUT_TABLES.get(module_name, ()),
                     )
-                    if (
-                        _SCRIPT_OUTPUT_TABLES.get(module_name)
-                        and rows_written == 0
-                    ):
+                    if _SCRIPT_OUTPUT_TABLES.get(module_name) and rows_written == 0:
                         status = "empty"
                         _mark_expected_tables(
                             buffer,
@@ -611,7 +632,11 @@ def run_dryrun(
         "git_sha": _git_sha() or "",
         "scripts_run": len(buffer.scripts),
         "tables_captured": len(
-            [table for table, status in buffer.table_status.items() if status in {"produced", "empty"}]
+            [
+                table
+                for table, status in buffer.table_status.items()
+                if status in {"produced", "empty"}
+            ]
         ),
         "skipped_writes": len(buffer.skipped_writes),
         "missing_tables": ", ".join(sorted(missing_tables)),

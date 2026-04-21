@@ -57,7 +57,9 @@ def save_clusters(
     kept: List[tuple] = []
     other_msg = 0
     other_participants: set = set()
-    dropped_by_kanon: List[tuple] = []  # (msg_count, participant_count) per collapsed cluster
+    dropped_by_kanon: List[
+        tuple
+    ] = []  # (msg_count, participant_count) per collapsed cluster
 
     for cid, msg_count in message_counts.items():
         p_count = len(participant_sets[cid])

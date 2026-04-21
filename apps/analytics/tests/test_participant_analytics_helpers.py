@@ -254,9 +254,7 @@ def test_case_study_correctness_without_sample_solution_is_treated_as_correct():
         ),
     ],
 )
-def test_case_study_correctness_matches_existing_product_grading(
-    assessment, expected
-):
+def test_case_study_correctness_matches_existing_product_grading(assessment, expected):
     module = importlib.import_module(
         "src.modules.participant_analytics.compute_correctness"
     )

@@ -74,7 +74,9 @@ def main() -> None:
     output = (
         Path(args.output)
         if args.output
-        else Path(f"./analytics-dryrun-{args.course_id}-{date.today().isoformat()}.xlsx")
+        else Path(
+            f"./analytics-dryrun-{args.course_id}-{date.today().isoformat()}.xlsx"
+        )
     )
     script_whitelist: list[str] | None = None
     if args.scripts:
