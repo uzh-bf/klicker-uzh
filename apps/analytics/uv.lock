@@ -489,6 +489,7 @@ dependencies = [
     { name = "scikit-learn" },
     { name = "sentence-transformers" },
     { name = "sqlalchemy" },
+    { name = "stopwordsiso" },
     { name = "umap-learn" },
     { name = "xlsxwriter" },
 ]
@@ -511,6 +512,7 @@ requires-dist = [
     { name = "scikit-learn", specifier = ">=1.5,<2.0" },
     { name = "sentence-transformers", specifier = ">=3.0,<4.0" },
     { name = "sqlalchemy", specifier = ">=2.0,<3.0" },
+    { name = "stopwordsiso", specifier = ">=0.6,<1.0" },
     { name = "umap-learn", specifier = ">=0.5.6,<0.6" },
     { name = "xlsxwriter", specifier = "==3.2.0" },
 ]
@@ -1523,6 +1525,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/28/e3/55dcc2cfbc3ca9c29519eb6884dd1415ecb53b0e934862d3559ddcb7e20b/stack_data-0.6.3.tar.gz", hash = "sha256:836a778de4fec4dcd1dcd89ed8abff8a221f58308462e1c4aa2a3cf30148f0b9", size = 44707, upload-time = "2023-09-30T13:58:05.479Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f1/7b/ce1eafaf1a76852e2ec9b22edecf1daa58175c090266e9f6c64afcd81d91/stack_data-0.6.3-py3-none-any.whl", hash = "sha256:d5558e0c25a4cb0853cddad3d77da9891a08cb85dd9f9f91b9f8cd66e511e695", size = 24521, upload-time = "2023-09-30T13:58:03.53Z" },
+]
+
+[[package]]
+name = "stopwordsiso"
+version = "0.6.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b8/7a/d61b449f4193c6286ae11fead5eb1411e6e7d9362c0ff341bd18442825c4/stopwordsiso-0.6.1.tar.gz", hash = "sha256:5be2b4f25afc296fca4f626710b98168949057f81a655e2dbdf670ddfce2af50", size = 75592, upload-time = "2020-09-02T23:32:24.658Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3e/03/4c5f24b654bb9459f81aa5c1b60b094b804286b99dca9f2e116c9eb01ac8/stopwordsiso-0.6.1-py3-none-any.whl", hash = "sha256:c9bff4ed5fdddbfb56998c99d5b11460c2fea0134403e0c4104f63b7c665fffc", size = 73486, upload-time = "2020-09-02T23:32:23.049Z" },
 ]
 
 [[package]]
