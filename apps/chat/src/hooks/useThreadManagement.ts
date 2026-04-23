@@ -159,9 +159,9 @@ export function useThreadManagement(
       const editedMessageId =
         typeof message === 'object' &&
         message !== null &&
-        'id' in message &&
-        typeof message.id === 'string'
-          ? message.id
+        'sourceId' in message &&
+        typeof message.sourceId === 'string'
+          ? message.sourceId
           : null
 
       // create edited message with new ID
