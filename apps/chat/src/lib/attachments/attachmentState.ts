@@ -36,10 +36,26 @@ type HistoryAttachmentInput = {
   imageDescription?: string | null
 }
 
+type AttachmentIdentityInput = {
+  id?: string
+  position?: number
+}
+
 export function sortAttachmentsByPosition<T extends { position: number }>(
   attachments: T[]
 ): T[] {
   return [...attachments].sort((a, b) => a.position - b.position)
+}
+
+export function getImageAttachmentKey(
+  attachment: AttachmentIdentityInput,
+  index: number
+): string {
+  if (attachment.id) {
+    return `id:${attachment.id}`
+  }
+
+  return `pos:${attachment.position ?? index}`
 }
 
 export function hasAllImageAttachmentsHydrated<

@@ -1,12 +1,16 @@
 import { type AppendMessage } from '@assistant-ui/react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
-import { getEditedMessageSource } from '../lib/attachments/attachmentState'
+import {
+  getEditedMessageSource,
+  getImageAttachmentKey,
+} from '../lib/attachments/attachmentState'
 import { generateId } from '../lib/utils/chatUtils'
 import {
   useChatStore,
   type ExtendedThreadMessageLike,
 } from '../stores/chatStore'
+import { useComposerStore } from '../stores/composerStore'
 import { useSettingsStore } from '../stores/settingsStore'
 
 /**
@@ -189,18 +193,36 @@ export function useThreadManagement(
             messages: activeThread.messages,
           })
         : undefined
+      const removedAttachmentKeysByMessageId =
+        useComposerStore.getState().editRemovedAttachmentKeysByMessageId
+      const removedAttachmentKeys = new Set(
+        editedMessageId
+          ? (removedAttachmentKeysByMessageId[editedMessageId] ?? [])
+          : []
+      )
       if (
         originalMessage?.imageAttachments &&
         originalMessage.imageAttachments.length > 0
       ) {
-        editedMessage.imageAttachments = originalMessage.imageAttachments.map(
-          (attachment) => ({ ...attachment })
-        )
+        editedMessage.imageAttachments = originalMessage.imageAttachments
+          .filter(
+            (attachment, index) =>
+              !removedAttachmentKeys.has(
+                getImageAttachmentKey(attachment, index)
+              )
+          )
+          .map((attachment) => ({ ...attachment }))
       }
       editedMessage.attachmentSourceMessageId =
         originalMessage?.attachmentSourceMessageId ??
         originalMessage?.id ??
         null
+
+      if (editedMessageId) {
+        useComposerStore
+          .getState()
+          .clearEditRemovedAttachmentKeys(editedMessageId)
+      }
 
       const newCurrentPath =
         parentIndex >= 0 && activeThread

@@ -8,6 +8,9 @@ interface ComposerStore {
   setAttachmentError: (error: string | null) => void
   attachmentCount: number
   setAttachmentCount: (count: number) => void
+  editRemovedAttachmentKeysByMessageId: Record<string, string[]>
+  addEditRemovedAttachmentKey: (messageId: string, key: string) => void
+  clearEditRemovedAttachmentKeys: (messageId: string) => void
 }
 
 export const useComposerStore = create<ComposerStore>((set) => ({
@@ -15,4 +18,28 @@ export const useComposerStore = create<ComposerStore>((set) => ({
   setAttachmentError: (error) => set({ attachmentError: error }),
   attachmentCount: 0,
   setAttachmentCount: (count) => set({ attachmentCount: count }),
+  editRemovedAttachmentKeysByMessageId: {},
+  addEditRemovedAttachmentKey: (messageId, key) =>
+    set((state) => {
+      const existing =
+        state.editRemovedAttachmentKeysByMessageId[messageId] ?? []
+      if (existing.includes(key)) {
+        return state
+      }
+
+      return {
+        editRemovedAttachmentKeysByMessageId: {
+          ...state.editRemovedAttachmentKeysByMessageId,
+          [messageId]: [...existing, key],
+        },
+      }
+    }),
+  clearEditRemovedAttachmentKeys: (messageId) =>
+    set((state) => {
+      const rest = { ...state.editRemovedAttachmentKeysByMessageId }
+      delete rest[messageId]
+      return {
+        editRemovedAttachmentKeysByMessageId: rest,
+      }
+    }),
 }))

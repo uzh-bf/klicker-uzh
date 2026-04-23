@@ -26,7 +26,11 @@ import {
 import { type FC, type PropsWithChildren, useState } from 'react'
 
 import { Button } from '@uzh-bf/design-system'
-import { hasAnyImageAttachmentData } from '../lib/attachments/attachmentState'
+import {
+  getImageAttachmentKey,
+  hasAnyImageAttachmentData,
+} from '../lib/attachments/attachmentState'
+import { getAttachmentPreviewSrc } from '../lib/attachments/attachmentUi'
 import {
   MAX_IMAGE_ATTACHMENTS,
   useComposerStore,
@@ -44,6 +48,7 @@ import Image from 'next/image'
 import { twMerge } from 'tailwind-merge'
 
 type ThreadProps = { chatbotAvatar: string }
+const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
 
 const formatCredits = (value: number) => {
   if (!Number.isFinite(value)) return '0'
@@ -573,25 +578,72 @@ const EditComposer: FC = () => {
   const { showMessageActions } = useChatUi()
   const message = useMessage() as MessageWithCustomMetadata
   const attachments = getMessageAttachments(message)
+  const removedAttachmentKeys = useComposerStore(
+    (state) =>
+      state.editRemovedAttachmentKeysByMessageId[message.id] ??
+      EMPTY_REMOVED_ATTACHMENT_KEYS
+  )
+  const addEditRemovedAttachmentKey = useComposerStore(
+    (state) => state.addEditRemovedAttachmentKey
+  )
+  const clearEditRemovedAttachmentKeys = useComposerStore(
+    (state) => state.clearEditRemovedAttachmentKeys
+  )
 
   if (!showMessageActions) return null
 
+  const removedAttachmentKeySet = new Set(removedAttachmentKeys)
+  const attachmentEntries = attachments.map((attachment, index) => ({
+    attachment,
+    key: getImageAttachmentKey(attachment, index),
+  }))
+  const visibleAttachmentEntries = attachmentEntries.filter(
+    ({ key }) => !removedAttachmentKeySet.has(key)
+  )
+
   return (
     <ComposerPrimitive.Root className="bg-muted my-4 flex w-full max-w-[var(--thread-max-width)] flex-col gap-2 rounded-2xl">
-      {attachments.length > 0 && (
-        <MessageAttachments
-          attachments={attachments}
-          messageId={message.id}
-          hydrationSourceMessageId={message.attachmentSourceMessageId}
-          variant="edit"
-          className="ml-4 mt-3"
-        />
+      {visibleAttachmentEntries.length > 0 && (
+        <div className="ml-4 mt-3 flex flex-wrap gap-2">
+          {visibleAttachmentEntries.map(({ attachment, key }) => {
+            const previewSrc = getAttachmentPreviewSrc(attachment, 'edit')
+
+            return (
+              <div
+                key={key}
+                className="relative size-16 overflow-hidden rounded-md border sm:size-20"
+              >
+                {previewSrc ? (
+                  <img
+                    src={previewSrc}
+                    alt={attachment.imageDescription?.trim() || 'Attachment'}
+                    className="size-full object-cover"
+                  />
+                ) : (
+                  <div className="text-muted-foreground bg-muted flex size-full items-center justify-center text-[10px]">
+                    Image
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => addEditRemovedAttachmentKey(message.id, key)}
+                  className="bg-background text-muted-foreground hover:text-foreground absolute right-1 top-1 inline-flex size-5 items-center justify-center rounded-full border"
+                  aria-label="Remove attachment"
+                >
+                  ×
+                </button>
+              </div>
+            )
+          })}
+        </div>
       )}
       <ComposerPrimitive.Input className="text-foreground flex min-h-[2.5rem] w-full resize-none bg-transparent px-4 py-3 outline-none" />
 
       <div className="mx-3 mb-2 flex items-center justify-center gap-2 self-end">
         <ComposerPrimitive.Cancel asChild>
           <Button
+            onClick={() => clearEditRemovedAttachmentKeys(message.id)}
             style={{
               backgroundColor: '#000000',
               color: '#ffffff',
