@@ -128,24 +128,30 @@ export const useChatStore = create<ChatState>((set, get) => {
     message: ExtendedThreadMessageLike,
     hydratedAttachments: ApiHydratedImageAttachment[]
   ): ExtendedThreadMessageLike => {
-    const currentAttachments = sortAttachmentsByPosition(
-      (message.imageAttachments ?? []).filter(
+    const allAttachments = message.imageAttachments ?? []
+    const persistedAttachments = sortAttachmentsByPosition(
+      allAttachments.filter(
         (attachment): attachment is ApiImageAttachment =>
           typeof attachment.id === 'string' &&
           typeof attachment.position === 'number'
       )
     )
+    const localOnlyAttachments = allAttachments.filter(
+      (attachment) =>
+        typeof attachment.id !== 'string' ||
+        typeof attachment.position !== 'number'
+    )
 
-    if (currentAttachments.length === 0) {
+    if (persistedAttachments.length === 0) {
       return message
     }
 
     return {
       ...message,
-      imageAttachments: mergeHydratedAttachments(
-        currentAttachments,
-        hydratedAttachments
-      ),
+      imageAttachments: [
+        ...mergeHydratedAttachments(persistedAttachments, hydratedAttachments),
+        ...localOnlyAttachments,
+      ],
     }
   }
 

@@ -6,6 +6,7 @@ import {
   type ReasoningMessagePartProps,
   ThreadPrimitive,
   useComposer,
+  useEditComposerAttachment,
   useMessage,
   useThreadComposerAttachment,
 } from '@assistant-ui/react'
@@ -310,83 +311,159 @@ const Composer: FC = () => {
   )
 }
 
-const ComposerAttachments: FC = () => {
+const ThreadComposerImageAttachment: FC = () => {
+  const imageSrc = useThreadComposerAttachment(selectAttachmentImageSrc)
+  const attachmentName = useThreadComposerAttachment(selectAttachmentName)
+  return (
+    <ComposerAttachmentView
+      imageSrc={imageSrc}
+      attachmentName={attachmentName}
+    />
+  )
+}
+
+const EditComposerImageAttachment: FC = () => {
+  const imageSrc = useEditComposerAttachment(selectAttachmentImageSrc)
+  const attachmentName = useEditComposerAttachment(selectAttachmentName)
+  return (
+    <ComposerAttachmentView
+      imageSrc={imageSrc}
+      attachmentName={attachmentName}
+      variant="edit"
+    />
+  )
+}
+
+const ComposerAttachments: FC<{
+  source?: 'thread' | 'edit'
+  inline?: boolean
+}> = ({ source = 'thread', inline = false }) => {
+  const Component =
+    source === 'edit'
+      ? EditComposerImageAttachment
+      : ThreadComposerImageAttachment
+  const primitive = (
+    <ComposerPrimitive.Attachments
+      components={{
+        Image: Component,
+        Document: Component,
+        File: Component,
+        Attachment: Component,
+      }}
+    />
+  )
+
+  if (inline) {
+    return <>{primitive}</>
+  }
+
   return (
     <div className="flex w-full flex-wrap gap-2 py-2 empty:hidden">
-      <ComposerPrimitive.Attachments
-        components={{
-          Image: ComposerImageAttachment,
-          Document: ComposerImageAttachment,
-          File: ComposerImageAttachment,
-          Attachment: ComposerImageAttachment,
-        }}
-      />
+      {primitive}
     </div>
   )
 }
 
-const ComposerImageAttachment: FC = () => {
-  const { embedded } = useChatUi()
-  const imageSrc = useThreadComposerAttachment((attachment) => {
-    const imagePart = attachment.content?.find(
-      (
-        part
-      ): part is {
-        type: 'image'
-        image: string
-      } =>
-        typeof part === 'object' &&
-        part !== null &&
-        'type' in part &&
-        part.type === 'image' &&
-        'image' in part &&
-        typeof part.image === 'string'
-    )
+type AttachmentImagePart = {
+  type: 'image'
+  image: string
+}
 
-    return imagePart?.image ?? null
-  })
-  const attachmentName = useThreadComposerAttachment(
-    (attachment) => attachment.name
-  )
+const isAttachmentImagePart = (part: unknown): part is AttachmentImagePart =>
+  typeof part === 'object' &&
+  part !== null &&
+  'type' in part &&
+  (part as { type: unknown }).type === 'image' &&
+  'image' in part &&
+  typeof (part as { image: unknown }).image === 'string'
+
+type ComposerAttachmentLike = {
+  name: string
+  content?: readonly unknown[]
+}
+
+const selectAttachmentImageSrc = (
+  attachment: ComposerAttachmentLike
+): string | null => {
+  const imagePart = attachment.content?.find(isAttachmentImagePart)
+  return imagePart?.image ?? null
+}
+
+const selectAttachmentName = (attachment: ComposerAttachmentLike): string =>
+  attachment.name
+
+const AttachmentTile: FC<{
+  imageSrc: string | null
+  label: string
+  sizeClasses: string
+  children: React.ReactNode
+}> = ({ imageSrc, label, sizeClasses, children }) => (
+  <>
+    {imageSrc ? (
+      <img
+        src={imageSrc}
+        alt={label || 'Attachment preview'}
+        className={twMerge('rounded-md border object-cover', sizeClasses)}
+      />
+    ) : (
+      <div
+        className={twMerge(
+          'text-muted-foreground bg-muted flex items-center justify-center rounded-md border px-2 text-[10px]',
+          sizeClasses
+        )}
+      >
+        {label}
+      </div>
+    )}
+    {children}
+  </>
+)
+
+const AttachmentRemoveButton: FC<{ onClick?: () => void }> = ({ onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="bg-background text-muted-foreground hover:text-foreground absolute right-1 top-1 inline-flex size-5 items-center justify-center rounded-full border"
+    aria-label="Remove attachment"
+  >
+    ×
+  </button>
+)
+
+const ComposerAttachmentView: FC<{
+  imageSrc: string | null
+  attachmentName: string
+  variant?: 'thread' | 'edit'
+}> = ({ imageSrc, attachmentName, variant = 'thread' }) => {
+  const { embedded } = useChatUi()
+
+  const sizeClasses =
+    variant === 'edit'
+      ? 'size-16 sm:size-20'
+      : twMerge('size-14', embedded ? 'max-h-20 max-w-20' : 'max-h-28 max-w-28')
 
   return (
     <AttachmentPrimitive.Root className="relative">
-      {imageSrc ? (
-        <img
-          src={imageSrc}
-          alt={attachmentName || 'Attachment preview'}
-          className={twMerge(
-            'size-14 rounded-md border object-cover',
-            embedded ? 'max-h-20 max-w-20' : 'max-h-28 max-w-28'
-          )}
-        />
-      ) : (
-        <div
-          className={twMerge(
-            'text-muted-foreground bg-muted flex size-14 items-center justify-center rounded-md border px-2 text-[10px]',
-            embedded ? 'max-h-20 max-w-20' : 'max-h-28 max-w-28'
-          )}
-        >
-          {attachmentName}
-        </div>
-      )}
-      <AttachmentPrimitive.Remove asChild>
-        <button
-          type="button"
-          className="bg-background text-muted-foreground hover:text-foreground absolute right-1 top-1 inline-flex size-5 items-center justify-center rounded-full border"
-          aria-label="Remove attachment"
-        >
-          ×
-        </button>
-      </AttachmentPrimitive.Remove>
+      <AttachmentTile
+        imageSrc={imageSrc}
+        label={attachmentName}
+        sizeClasses={sizeClasses}
+      >
+        <AttachmentPrimitive.Remove asChild>
+          <AttachmentRemoveButton />
+        </AttachmentPrimitive.Remove>
+      </AttachmentTile>
     </AttachmentPrimitive.Root>
   )
 }
 
-const ComposerAttachButton: FC = () => {
+const ComposerAttachButton: FC<{ currentCount?: number }> = ({
+  currentCount,
+}) => {
   const { embedded } = useChatUi()
   const { selectedModel, modelOptions } = useSettingsStore()
-  const attachmentCount = useComposerStore((s) => s.attachmentCount)
+  const storeAttachmentCount = useComposerStore((s) => s.attachmentCount)
+  const attachmentCount = currentCount ?? storeAttachmentCount
   const supportsImages =
     modelOptions.find((m) => m.id === selectedModel)
       ?.supportsImageAttachments !== false
@@ -589,6 +666,7 @@ const EditComposer: FC = () => {
   const clearEditRemovedAttachmentKeys = useComposerStore(
     (state) => state.clearEditRemovedAttachmentKeys
   )
+  const pendingAttachmentCount = useComposer((s) => s.attachments?.length ?? 0)
 
   if (!showMessageActions) return null
 
@@ -600,74 +678,67 @@ const EditComposer: FC = () => {
   const visibleAttachmentEntries = attachmentEntries.filter(
     ({ key }) => !removedAttachmentKeySet.has(key)
   )
+  const totalAttachmentCount =
+    visibleAttachmentEntries.length + pendingAttachmentCount
 
   return (
     <ComposerPrimitive.Root className="bg-muted my-4 flex w-full max-w-[var(--thread-max-width)] flex-col gap-2 rounded-2xl">
-      {visibleAttachmentEntries.length > 0 && (
+      {(visibleAttachmentEntries.length > 0 || pendingAttachmentCount > 0) && (
         <div className="ml-4 mt-3 flex flex-wrap gap-2">
           {visibleAttachmentEntries.map(({ attachment, key }) => {
             const previewSrc = getAttachmentPreviewSrc(attachment, 'edit')
+            const label = attachment.imageDescription?.trim() || 'Attachment'
 
             return (
-              <div
-                key={key}
-                className="relative size-16 overflow-hidden rounded-md border sm:size-20"
-              >
-                {previewSrc ? (
-                  <img
-                    src={previewSrc}
-                    alt={attachment.imageDescription?.trim() || 'Attachment'}
-                    className="size-full object-cover"
-                  />
-                ) : (
-                  <div className="text-muted-foreground bg-muted flex size-full items-center justify-center text-[10px]">
-                    Image
-                  </div>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => addEditRemovedAttachmentKey(message.id, key)}
-                  className="bg-background text-muted-foreground hover:text-foreground absolute right-1 top-1 inline-flex size-5 items-center justify-center rounded-full border"
-                  aria-label="Remove attachment"
+              <div key={key} className="relative">
+                <AttachmentTile
+                  imageSrc={previewSrc ?? null}
+                  label={label}
+                  sizeClasses="size-16 sm:size-20"
                 >
-                  ×
-                </button>
+                  <AttachmentRemoveButton
+                    onClick={() => addEditRemovedAttachmentKey(message.id, key)}
+                  />
+                </AttachmentTile>
               </div>
             )
           })}
+          <ComposerAttachments source="edit" inline />
         </div>
       )}
       <ComposerPrimitive.Input className="text-foreground flex min-h-[2.5rem] w-full resize-none bg-transparent px-4 py-3 outline-none" />
 
-      <div className="mx-3 mb-2 flex items-center justify-center gap-2 self-end">
-        <ComposerPrimitive.Cancel asChild>
-          <Button
-            onClick={() => clearEditRemovedAttachmentKeys(message.id)}
-            style={{
-              backgroundColor: '#000000',
-              color: '#ffffff',
-            }}
-            className={{
-              root: 'hover:!bg-gray-800',
-            }}
-          >
-            <Button.Label>Cancel</Button.Label>
-          </Button>
-        </ComposerPrimitive.Cancel>
-        <ComposerPrimitive.Send asChild>
-          <Button
-            style={{
-              backgroundColor: '#ffffff',
-              color: '#000000',
-            }}
-            className={{
-              root: 'hover:!bg-gray-100',
-            }}
-          >
-            <Button.Label>Send</Button.Label>
-          </Button>
-        </ComposerPrimitive.Send>
+      <div className="mx-3 mb-2 flex items-center justify-between gap-2">
+        <ComposerAttachButton currentCount={totalAttachmentCount} />
+        <div className="flex items-center justify-center gap-2">
+          <ComposerPrimitive.Cancel asChild>
+            <Button
+              onClick={() => clearEditRemovedAttachmentKeys(message.id)}
+              style={{
+                backgroundColor: '#000000',
+                color: '#ffffff',
+              }}
+              className={{
+                root: 'hover:!bg-gray-800',
+              }}
+            >
+              <Button.Label>Cancel</Button.Label>
+            </Button>
+          </ComposerPrimitive.Cancel>
+          <ComposerPrimitive.Send asChild>
+            <Button
+              style={{
+                backgroundColor: '#ffffff',
+                color: '#000000',
+              }}
+              className={{
+                root: 'hover:!bg-gray-100',
+              }}
+            >
+              <Button.Label>Send</Button.Label>
+            </Button>
+          </ComposerPrimitive.Send>
+        </div>
       </div>
     </ComposerPrimitive.Root>
   )

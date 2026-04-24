@@ -10,7 +10,10 @@ import {
   useChatStore,
   type ExtendedThreadMessageLike,
 } from '../stores/chatStore'
-import { useComposerStore } from '../stores/composerStore'
+import {
+  MAX_IMAGE_ATTACHMENTS,
+  useComposerStore,
+} from '../stores/composerStore'
 import { useSettingsStore } from '../stores/settingsStore'
 
 /**
@@ -200,18 +203,53 @@ export function useThreadManagement(
           ? (removedAttachmentKeysByMessageId[editedMessageId] ?? [])
           : []
       )
-      if (
+      const keptAttachments =
         originalMessage?.imageAttachments &&
         originalMessage.imageAttachments.length > 0
-      ) {
-        editedMessage.imageAttachments = originalMessage.imageAttachments
-          .filter(
-            (attachment, index) =>
-              !removedAttachmentKeys.has(
-                getImageAttachmentKey(attachment, index)
+          ? originalMessage.imageAttachments
+              .filter(
+                (attachment, index) =>
+                  !removedAttachmentKeys.has(
+                    getImageAttachmentKey(attachment, index)
+                  )
               )
-          )
-          .map((attachment) => ({ ...attachment }))
+              .map((attachment) => ({ ...attachment }))
+          : []
+
+      const newImageAttachments = (message.attachments ?? [])
+        .flatMap((attachment) => attachment.content ?? [])
+        .filter(
+          (
+            part
+          ): part is {
+            type: 'image'
+            image: string
+            imagePreview?: string
+          } =>
+            typeof part === 'object' &&
+            part !== null &&
+            'type' in part &&
+            part.type === 'image' &&
+            'image' in part &&
+            typeof part.image === 'string'
+        )
+        .map((part) => ({
+          type: 'image' as const,
+          imageBase64: part.image,
+          imagePreviewBase64:
+            'imagePreview' in part && typeof part.imagePreview === 'string'
+              ? part.imagePreview
+              : part.image,
+          imageDescription: null,
+        }))
+
+      const mergedAttachments = [
+        ...keptAttachments,
+        ...newImageAttachments,
+      ].slice(0, MAX_IMAGE_ATTACHMENTS)
+
+      if (mergedAttachments.length > 0) {
+        editedMessage.imageAttachments = mergedAttachments
       }
       editedMessage.attachmentSourceMessageId =
         originalMessage?.attachmentSourceMessageId ??
