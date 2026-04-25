@@ -756,23 +756,24 @@ const EditComposer: FC = () => {
       )}
       <ComposerPrimitive.Input className="text-foreground flex min-h-[2.5rem] w-full resize-none bg-transparent px-4 py-3 outline-none" />
 
-      <div className="mx-3 mb-2 flex items-center gap-2 py-2">
+      <div className="mx-4 mb-2 flex items-center gap-2 py-2">
         <ComposerAttachButton currentCount={totalAttachmentCount} />
         <div className="ml-auto flex items-center justify-center gap-2">
-          <ComposerPrimitive.Cancel asChild>
-            <Button
-              onClick={() => clearEditRemovedAttachmentKeys(message.id)}
-              style={{
-                backgroundColor: '#000000',
-                color: '#ffffff',
-              }}
-              className={{
-                root: 'hover:!bg-gray-800',
-              }}
-            >
-              <Button.Label>Cancel</Button.Label>
-            </Button>
-          </ComposerPrimitive.Cancel>
+          <Button
+            onClick={() => {
+              clearEditRemovedAttachmentKeys(message.id)
+              messageRuntime.composer.cancel()
+            }}
+            style={{
+              backgroundColor: '#000000',
+              color: '#ffffff',
+            }}
+            className={{
+              root: 'rounded-full font-semibold hover:!bg-gray-800',
+            }}
+          >
+            <Button.Label>Cancel</Button.Label>
+          </Button>
           <Button
             onClick={handleSend}
             disabled={!canSubmit}
@@ -781,7 +782,7 @@ const EditComposer: FC = () => {
               color: '#000000',
             }}
             className={{
-              root: 'hover:!bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50',
+              root: 'rounded-full font-semibold hover:!bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50',
             }}
           >
             <Button.Label>Send</Button.Label>
