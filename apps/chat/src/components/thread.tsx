@@ -307,7 +307,12 @@ const Composer: FC = () => {
         </div>
       )}
 
-      <div className="flex w-full items-center">
+      <div
+        className={twMerge(
+          'flex w-full items-center',
+          embedded ? 'p-1' : 'p-2'
+        )}
+      >
         <ComposerAttachButton />
         <ComposerPrimitive.Input
           rows={1}
@@ -489,7 +494,7 @@ const ComposerAttachButton: FC<{ currentCount?: number }> = ({
         type="button"
         className={twMerge(
           'text-muted-foreground hover:text-foreground inline-flex items-center justify-center rounded-md',
-          embedded ? 'm-1 size-7' : 'm-2 size-9'
+          embedded ? 'size-7' : 'size-9'
         )}
         aria-label="Attach image"
       >
@@ -751,7 +756,7 @@ const EditComposer: FC = () => {
       )}
       <ComposerPrimitive.Input className="text-foreground flex min-h-[2.5rem] w-full resize-none bg-transparent px-4 py-3 outline-none" />
 
-      <div className="mx-3 mb-2 flex items-center gap-2">
+      <div className="mx-3 mb-2 flex items-center gap-2 py-2">
         <ComposerAttachButton currentCount={totalAttachmentCount} />
         <div className="ml-auto flex items-center justify-center gap-2">
           <ComposerPrimitive.Cancel asChild>
