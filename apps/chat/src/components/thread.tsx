@@ -6,9 +6,12 @@ import {
   type ReasoningMessagePartProps,
   ThreadPrimitive,
   useComposer,
+  useEditComposer,
   useEditComposerAttachment,
   useMessage,
+  useMessageRuntime,
   useThreadComposerAttachment,
+  useThreadRuntime,
 } from '@assistant-ui/react'
 import {
   ArrowDownIcon,
@@ -81,6 +84,8 @@ type ImageAttachment = {
 
 type MessageWithCustomMetadata = {
   id: string
+  parentId?: string | null
+  content?: readonly { type: string; text?: string }[]
   attachmentSourceMessageId?: string | null
   imageAttachments?: ImageAttachment[]
   metadata?: {
@@ -91,6 +96,14 @@ type MessageWithCustomMetadata = {
       | null
   } | null
 }
+
+const extractMessageText = (message: {
+  content?: readonly { type: string; text?: string }[]
+}): string =>
+  (message.content ?? [])
+    .filter((part) => part.type === 'text' && typeof part.text === 'string')
+    .map((part) => part.text ?? '')
+    .join('')
 
 const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   includeCredits = false,
@@ -667,6 +680,10 @@ const EditComposer: FC = () => {
     (state) => state.clearEditRemovedAttachmentKeys
   )
   const pendingAttachmentCount = useComposer((s) => s.attachments?.length ?? 0)
+  const composerText = useEditComposer((s) => s.text)
+  const originalText = extractMessageText(message)
+  const threadRuntime = useThreadRuntime()
+  const messageRuntime = useMessageRuntime()
 
   if (!showMessageActions) return null
 
@@ -680,6 +697,32 @@ const EditComposer: FC = () => {
   )
   const totalAttachmentCount =
     visibleAttachmentEntries.length + pendingAttachmentCount
+
+  // require text or attachment change to enable send
+  const textChanged = composerText !== originalText
+  const attachmentsChanged =
+    pendingAttachmentCount > 0 ||
+    attachmentEntries.length !== visibleAttachmentEntries.length
+  const canSubmit =
+    composerText.trim().length + totalAttachmentCount > 0 &&
+    (textChanged || attachmentsChanged)
+
+  const handleSend = () => {
+    if (!canSubmit) return
+    const editComposer = messageRuntime.composer
+    const state = editComposer.getState()
+    const completeAttachments = state.attachments.filter(
+      (a) => a.status?.type === 'complete'
+    )
+    threadRuntime.append({
+      role: 'user',
+      content: [{ type: 'text', text: composerText }],
+      attachments: completeAttachments as never,
+      parentId: message.parentId ?? undefined,
+      sourceId: message.id,
+    })
+    editComposer.cancel()
+  }
 
   return (
     <ComposerPrimitive.Root className="bg-muted my-4 flex w-full max-w-[var(--thread-max-width)] flex-col gap-2 rounded-2xl">
@@ -725,19 +768,19 @@ const EditComposer: FC = () => {
               <Button.Label>Cancel</Button.Label>
             </Button>
           </ComposerPrimitive.Cancel>
-          <ComposerPrimitive.Send asChild>
-            <Button
-              style={{
-                backgroundColor: '#ffffff',
-                color: '#000000',
-              }}
-              className={{
-                root: 'hover:!bg-gray-100',
-              }}
-            >
-              <Button.Label>Send</Button.Label>
-            </Button>
-          </ComposerPrimitive.Send>
+          <Button
+            onClick={handleSend}
+            disabled={!canSubmit}
+            style={{
+              backgroundColor: '#ffffff',
+              color: '#000000',
+            }}
+            className={{
+              root: 'hover:!bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50',
+            }}
+          >
+            <Button.Label>Send</Button.Label>
+          </Button>
         </div>
       </div>
     </ComposerPrimitive.Root>
