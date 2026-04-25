@@ -237,7 +237,7 @@ const ThreadScrollToBottom: FC = () => {
     <Tooltip>
       <TooltipTrigger asChild>
         <ThreadPrimitive.ScrollToBottom asChild>
-          <button className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring absolute bottom-full mb-2 inline-flex h-9 w-9 items-center justify-center whitespace-nowrap rounded-full border text-sm font-medium shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-50">
+          <button className="absolute bottom-full mb-4 inline-flex h-9 w-9 items-center justify-center whitespace-nowrap rounded-full border border-gray-200 bg-gray-100/80 text-sm font-medium shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-colors ease-in hover:border-gray-300 hover:bg-gray-200/80 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:invisible disabled:opacity-50">
             <ArrowDownIcon />
             <span className="sr-only">Scroll to bottom</span>
           </button>
@@ -307,12 +307,7 @@ const Composer: FC = () => {
         </div>
       )}
 
-      <div
-        className={twMerge(
-          'flex w-full items-center',
-          embedded ? 'p-1' : 'p-2'
-        )}
-      >
+      <div className="flex w-full items-center">
         <ComposerAttachButton />
         <ComposerPrimitive.Input
           rows={1}
