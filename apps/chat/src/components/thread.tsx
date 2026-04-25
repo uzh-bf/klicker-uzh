@@ -730,7 +730,7 @@ const EditComposer: FC = () => {
   }
 
   return (
-    <ComposerPrimitive.Root className="bg-muted my-4 flex w-full max-w-[var(--thread-max-width)] flex-col gap-2 rounded-2xl">
+    <ComposerPrimitive.Root className="bg-muted my-4 flex w-full max-w-[var(--thread-max-width)] flex-col gap-2 rounded-2xl border-none outline-none focus-within:outline-none focus-within:ring-0">
       {(visibleAttachmentEntries.length > 0 || pendingAttachmentCount > 0) && (
         <div className="ml-4 mt-3 flex flex-wrap gap-2">
           {visibleAttachmentEntries.map(({ attachment, key }) => {
@@ -754,7 +754,10 @@ const EditComposer: FC = () => {
           <ComposerAttachments source="edit" inline />
         </div>
       )}
-      <ComposerPrimitive.Input className="text-foreground flex min-h-[2.5rem] w-full resize-none bg-transparent px-4 py-3 outline-none" />
+      <ComposerPrimitive.Input
+        autoFocus
+        className="text-foreground flex min-h-[2.5rem] w-full resize-none border-0 bg-transparent px-4 py-3 outline-none focus:border-0 focus:shadow-none focus:outline-none focus:ring-0"
+      />
 
       <div className="mx-4 mb-2 flex items-center gap-2 py-2">
         <ComposerAttachButton currentCount={totalAttachmentCount} />
