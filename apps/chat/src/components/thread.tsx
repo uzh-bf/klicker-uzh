@@ -756,10 +756,10 @@ const EditComposer: FC = () => {
       )}
       <ComposerPrimitive.Input
         autoFocus
-        className="text-foreground flex min-h-[2.5rem] w-full resize-none border-0 bg-transparent px-4 py-3 outline-none focus:border-0 focus:shadow-none focus:outline-none focus:ring-0"
+        className="text-foreground flex min-h-[2.5rem] w-full resize-none border-0 bg-transparent px-4 pt-4 outline-none focus:border-0 focus:shadow-none focus:outline-none focus:ring-0"
       />
 
-      <div className="mx-4 mb-2 flex items-center gap-2 py-2">
+      <div className="mx-4 mb-2 flex items-center gap-2 pb-2">
         <ComposerAttachButton currentCount={totalAttachmentCount} />
         <div className="ml-auto flex items-center justify-center gap-2">
           <Button
