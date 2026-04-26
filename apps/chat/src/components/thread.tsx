@@ -475,8 +475,8 @@ const ComposerAttachButton: FC<{ currentCount?: number }> = ({
 }) => {
   const { embedded } = useChatUi()
   const { selectedModel, modelOptions } = useSettingsStore()
-  const storeAttachmentCount = useComposerStore((s) => s.attachmentCount)
-  const attachmentCount = currentCount ?? storeAttachmentCount
+  const composerAttachmentCount = useComposer((s) => s.attachments?.length ?? 0)
+  const attachmentCount = currentCount ?? composerAttachmentCount
   const supportsImages =
     modelOptions.find((m) => m.id === selectedModel)
       ?.supportsImageAttachments !== false

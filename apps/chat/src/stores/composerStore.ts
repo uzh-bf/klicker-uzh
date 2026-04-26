@@ -6,8 +6,6 @@ export const MAX_IMAGE_ATTACHMENTS = 3
 interface ComposerStore {
   attachmentError: string | null
   setAttachmentError: (error: string | null) => void
-  attachmentCount: number
-  setAttachmentCount: (count: number) => void
   editRemovedAttachmentKeysByMessageId: Record<string, string[]>
   addEditRemovedAttachmentKey: (messageId: string, key: string) => void
   clearEditRemovedAttachmentKeys: (messageId: string) => void
@@ -16,8 +14,6 @@ interface ComposerStore {
 export const useComposerStore = create<ComposerStore>((set) => ({
   attachmentError: null,
   setAttachmentError: (error) => set({ attachmentError: error }),
-  attachmentCount: 0,
-  setAttachmentCount: (count) => set({ attachmentCount: count }),
   editRemovedAttachmentKeysByMessageId: {},
   addEditRemovedAttachmentKey: (messageId, key) =>
     set((state) => {

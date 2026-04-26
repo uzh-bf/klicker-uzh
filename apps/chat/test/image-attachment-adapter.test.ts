@@ -15,7 +15,7 @@ class MockFileReader {
 
 describe('imageAttachmentAdapter', () => {
   beforeEach(() => {
-    useComposerStore.setState({ attachmentCount: 0, attachmentError: null })
+    useComposerStore.setState({ attachmentError: null })
     vi.stubGlobal('FileReader', MockFileReader as any)
     vi.stubGlobal('crypto', {
       randomUUID: () => 'attachment-1',

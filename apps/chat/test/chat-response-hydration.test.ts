@@ -69,7 +69,7 @@ function createStreamingResponse(lines: string[]) {
 
 describe('useChatResponse attachment hydration', () => {
   beforeEach(() => {
-    useComposerStore.setState({ attachmentError: null, attachmentCount: 0 })
+    useComposerStore.setState({ attachmentError: null })
     vi.restoreAllMocks()
 
     storeState = {
