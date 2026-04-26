@@ -1,10 +1,13 @@
 node_modules/
+.prettierignore
+**/.gitignore
 .next/
 .turbo/
 .vercel/
 dist/
 out/
 build/
+**/storybook-static/
 email/
 .claude/
 .serena/
