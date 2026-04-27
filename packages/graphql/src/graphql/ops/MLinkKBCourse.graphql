@@ -1,0 +1,5 @@
+mutation LinkKBCourse($kbId: String!, $courseId: String!) {
+  linkKBCourse(kbId: $kbId, courseId: $courseId) {
+    ...KBData
+  }
+}

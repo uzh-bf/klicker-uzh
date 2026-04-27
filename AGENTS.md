@@ -231,6 +231,8 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 - **Chat model reasoning effort changes**: Adding a reasoning effort requires updating chat validation, the GraphQL enum/schema, generated GraphQL artifacts, and the manage chatbot settings effort order; model-specific availability belongs in the chat and GraphQL model registries. (`apps/chat/src/lib/config/reasoning.ts`, `packages/graphql/src/schema/resource.ts`, `apps/frontend-manage/src/components/resources/chatbots/ChatbotDetails.tsx`)
 - **Edge-safe util imports**: Next middleware and other edge-bundled code must import narrow util subpaths (for example `@klicker-uzh/util/auth`), not the util package root, because the root bundle includes Prisma/Node dependencies that break edge builds. (`packages/util/package.json`, `apps/chat/src/middleware.ts`)
 - **PWA CHIPS with nookies**: `nookies@2.5.2` uses an older cookie serializer that does not emit `Partitioned`; when setting CHIPS cookies in PWA SSR code, append the attribute to the generated `Set-Cookie` header after `nookies.set`. (`apps/frontend-pwa/src/lib/getParticipantToken.ts`)
+- **KB package consumer styling**: Apps embedding `@klicker-uzh/kb-management` must scan `packages/kb-management/src` in Tailwind and provide KB color/font theme variables; local `@fontsource/source-sans-3` avoids `next/font` network fetches for this standalone app. (`apps/frontend-kb/src/globals.css`)
+- **KB webhook split**: KB resource CRUD emits ingestion webhooks, but graph-policy-only changes must emit only catalog events to the graph webhook. Keep these paths separate in `dispatchResourceEvent` to avoid unnecessary reprocessing. (`packages/graphql/src/services/knowledge.ts`)
 
 ## Factory Skills (AI Assistance)
 

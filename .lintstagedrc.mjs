@@ -1,3 +1,3 @@
 export default {
-  '*': ['prettier --config .prettierrc.mjs --check'],
+  '*': ['prettier --config .prettierrc.mjs --ignore-unknown --check'],
 }

@@ -1,4 +1,3 @@
-import { Button } from '@uzh-bf/design-system'
 import { Boxes, FileText, Network, Settings } from 'lucide-react'
 import type { CSSProperties, ReactNode } from 'react'
 import { useMemo, useState } from 'react'
@@ -230,14 +229,6 @@ export function KnowledgeBaseManager({
             <div className="mt-3 font-bold text-slate-950">
               No knowledge bases yet
             </div>
-            <Button
-              onClick={() => openAddResourceDialog()}
-              className={{
-                root: 'bg-primary-100 hover:bg-primary-100/90 mt-4 h-9 text-white',
-              }}
-            >
-              Add first resource
-            </Button>
           </div>
         )}
       </div>

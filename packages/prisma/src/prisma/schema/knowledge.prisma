@@ -1,0 +1,404 @@
+// ----- KNOWLEDGE BASES -----
+// #region
+
+enum KBStatus {
+  READY
+  INDEXING
+  CRAWLING
+  QUEUED
+  STALE
+  ERROR
+  DISABLED
+}
+
+enum KBResourceStatus {
+  READY
+  INDEXING
+  CRAWLING
+  QUEUED
+  STALE
+  ERROR
+  DISABLED
+}
+
+enum KBResourceKind {
+  DOCUMENT
+  WEBSITE
+  SNIPPET
+  KLICKER_OBJECT
+}
+
+enum KBWebsiteStrategy {
+  SCRAPE_SUBSITES
+  INDEX_PAGE
+  REFERENCE_ONLY
+}
+
+enum KBRefreshMode {
+  INHERIT
+  MANUAL
+  INTERVAL
+  CRON
+  DISABLED
+}
+
+enum KBRefreshScope {
+  ALL
+  WEBSITES
+  REFRESHABLE
+}
+
+enum KBMetadataProfile {
+  COURSE_KB
+  AI_BUDDY
+  AI_INFRA
+}
+
+enum KBIngestionTrigger {
+  MANUAL
+  SCHEDULED
+  RESOURCE_CREATED
+  RESOURCE_UPDATED
+  REFRESH_POLICY
+  WEBHOOK
+}
+
+enum KBIngestionStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  SKIPPED
+}
+
+enum KBGraphInclusionMode {
+  INHERIT
+  INCLUDE
+  EXCLUDE
+}
+
+enum KBWebhookDirection {
+  OUTGOING
+  INCOMING
+}
+
+enum KBWebhookStatus {
+  PENDING
+  DELIVERED
+  FAILED
+  IGNORED
+}
+
+enum KBWebhookDestination {
+  INGESTION
+  GRAPH
+}
+
+model KB {
+  id String @id @default(uuid()) @db.Uuid
+
+  name          String
+  description   String?
+  status        KBStatus @default(READY)
+  statusMessage String?
+
+  metadataProfile KBMetadataProfile @default(COURSE_KB)
+  /// [PrismaKBMetadata]
+  metadata        Json?
+  /// [PrismaKBSettings]
+  settings        Json?
+
+  externalNamespaceId   String?
+  externalVectorStoreId String?
+  externalGraphId       String?
+
+  graphEnabled       Boolean          @default(false)
+  graphResourceKinds KBResourceKind[] @default([])
+
+  resourceCount Int     @default(0)
+  chunkCount    Int     @default(0)
+  entityCount   Int     @default(0)
+  sizeBytes     BigInt?
+
+  refreshMode            KBRefreshMode  @default(MANUAL)
+  refreshScope           KBRefreshScope @default(REFRESHABLE)
+  refreshIntervalMinutes Int?
+  refreshCron            String?
+  changeMonitoring       Boolean        @default(false)
+
+  lastIndexedAt        DateTime?
+  lastCheckedAt        DateTime?
+  lastContentChangedAt DateTime?
+  nextRefreshAt        DateTime?
+
+  resources     KBResource[]
+  ingestionRuns KBIngestionRun[]
+  webhookEvents KBWebhookEvent[]
+  courses       KBCourse[]
+  chatbots      KBChatbot[]
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId, status])
+  @@index([ownerId, metadataProfile])
+  @@index([status])
+  @@index([metadataProfile])
+  @@index([nextRefreshAt])
+  @@index([graphEnabled])
+}
+
+model KBResource {
+  id String @id @default(uuid()) @db.Uuid
+
+  title        String
+  description  String?
+  kind         KBResourceKind
+  status       KBResourceStatus @default(QUEUED)
+  statusLabel  String?
+  statusDetail String?
+  progress     Int?
+
+  originLabel  String?
+  originDetail String?
+
+  sizeBytes   BigInt?
+  chunkCount  Int?
+  entityCount Int?
+
+  externalResourceId String?
+  externalIndexId    String?
+  sourceHash         String?
+  contentHash        String?
+  graphInclusion     KBGraphInclusionMode @default(INHERIT)
+
+  /// [PrismaKBResourceMetadata]
+  metadata Json?
+
+  lastIndexedAt        DateTime?
+  lastCheckedAt        DateTime?
+  lastRemoteModifiedAt DateTime?
+  lastContentChangedAt DateTime?
+  nextRefreshAt        DateTime?
+  changeStatus         String?
+
+  refreshMode            KBRefreshMode   @default(INHERIT)
+  refreshScope           KBRefreshScope?
+  refreshIntervalMinutes Int?
+  refreshCron            String?
+  changeMonitoring       Boolean?
+
+  documentFileName  String?
+  documentMimeType  String?
+  documentPageCount Int?
+  documentLanguage  String?
+
+  websiteUrl       String?
+  websiteStrategy  KBWebsiteStrategy?
+  sitemapFound     Boolean?
+  sitemapPageCount Int?
+  scrapedPageCount Int?
+  crawlDepth       Int?
+
+  snippetText           String? @db.Text
+  snippetCharacterCount Int?
+  snippetLanguage       String?
+  snippetAuthor         String?
+  snippetNote           String?
+
+  subresources  KBWebsiteSubresource[]
+  ingestionRuns KBIngestionRun[]
+  webhookEvents KBWebhookEvent[]
+
+  kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  kbId String @db.Uuid
+
+  element   Element? @relation(fields: [elementId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  elementId Int?
+
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  practiceQuizId String?       @db.Uuid
+
+  liveQuiz   LiveQuiz? @relation(fields: [liveQuizId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  liveQuizId String?   @db.Uuid
+
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  microLearningId String?        @db.Uuid
+
+  groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  groupActivityId String?        @db.Uuid
+
+  answerCollection   AnswerCollection? @relation(fields: [answerCollectionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  answerCollectionId Int?
+
+  mediaFile   MediaFile? @relation(fields: [mediaFileId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  mediaFileId String?    @db.Uuid
+
+  deletedAt DateTime?
+  deletedBy   User?   @relation("KBResourceDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  deletedById String? @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([kbId, status])
+  @@index([kbId, kind])
+  @@index([kind, status])
+  @@index([graphInclusion])
+  @@index([nextRefreshAt])
+  @@index([deletedAt])
+  @@index([websiteUrl])
+  @@index([elementId])
+  @@index([practiceQuizId])
+  @@index([liveQuizId])
+  @@index([microLearningId])
+  @@index([groupActivityId])
+  @@index([answerCollectionId])
+  @@index([mediaFileId])
+  @@index([deletedById])
+}
+
+model KBWebsiteSubresource {
+  id String @id @default(uuid()) @db.Uuid
+
+  url          String
+  title        String?
+  status       KBResourceStatus @default(QUEUED)
+  statusDetail String?
+  chunkCount   Int?
+  sourceHash   String?
+  contentHash  String?
+
+  lastCheckedAt        DateTime?
+  lastRemoteModifiedAt DateTime?
+  lastContentChangedAt DateTime?
+
+  resource   KBResource @relation(fields: [resourceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  resourceId String     @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([resourceId, url])
+  @@index([resourceId, status])
+  @@index([url])
+}
+
+model KBIngestionRun {
+  id String @id @default(uuid()) @db.Uuid
+
+  trigger KBIngestionTrigger
+  status  KBIngestionStatus  @default(QUEUED)
+
+  hatchetTaskId String?
+  externalRunId String?
+
+  startedAt  DateTime?
+  finishedAt DateTime?
+
+  /// [PrismaKBIngestionStats]
+  stats Json?
+
+  errorMessage String? @db.Text
+  errorDetails String? @db.Text
+
+  kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  kbId String @db.Uuid
+
+  resource   KBResource? @relation(fields: [resourceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  resourceId String?     @db.Uuid
+
+  webhookEvents KBWebhookEvent[]
+
+  requestedBy   User?   @relation(fields: [requestedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  requestedById String? @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([kbId, status])
+  @@index([resourceId, status])
+  @@index([status, createdAt])
+  @@index([hatchetTaskId])
+  @@index([externalRunId])
+  @@index([requestedById])
+}
+
+model KBWebhookEvent {
+  id String @id @default(uuid()) @db.Uuid
+
+  eventId     String               @unique
+  direction   KBWebhookDirection
+  eventType   String
+  status      KBWebhookStatus
+  destination KBWebhookDestination
+
+  /// [PrismaKBWebhookPayload]
+  payload Json
+
+  attempts      Int       @default(0)
+  lastError     String?   @db.Text
+  lastAttemptAt DateTime?
+  deliveredAt   DateTime?
+
+  kb   KB?     @relation(fields: [kbId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  kbId String? @db.Uuid
+
+  resource   KBResource? @relation(fields: [resourceId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  resourceId String?     @db.Uuid
+
+  ingestionRun   KBIngestionRun? @relation(fields: [ingestionRunId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  ingestionRunId String?         @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([kbId, status])
+  @@index([resourceId, status])
+  @@index([ingestionRunId])
+  @@index([direction, destination, status])
+  @@index([eventType])
+  @@index([lastAttemptAt])
+}
+
+model KBCourse {
+  id String @id @default(uuid()) @db.Uuid
+
+  kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  kbId String @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([kbId, courseId])
+  @@index([courseId])
+}
+
+model KBChatbot {
+  id String @id @default(uuid()) @db.Uuid
+
+  priority  Int     @default(0)
+  isEnabled Boolean @default(true)
+
+  kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  kbId String @db.Uuid
+
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chatbotId String  @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([kbId, chatbotId])
+  @@index([chatbotId])
+  @@index([isEnabled, priority])
+}
+
+// #endregion

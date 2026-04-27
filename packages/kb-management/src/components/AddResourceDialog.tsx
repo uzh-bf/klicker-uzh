@@ -59,19 +59,34 @@ export function AddResourceDialog({
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    onAddResource?.(type)
 
     if (type === 'document') {
-      onUploadResources?.(Array.from(fileInputRef.current?.files ?? []))
+      if (onUploadResources) {
+        onUploadResources(Array.from(fileInputRef.current?.files ?? []))
+      } else {
+        onAddResource?.(type)
+      }
     } else if (type === 'website') {
-      onAddWebsite?.(url)
+      if (onAddWebsite) {
+        onAddWebsite(url)
+      } else {
+        onAddResource?.(type)
+      }
     } else if (type === 'snippet') {
-      onAddSnippet?.({ title: title || 'Untitled snippet', content })
+      if (onAddSnippet) {
+        onAddSnippet({ title: title || 'Untitled snippet', content })
+      } else {
+        onAddResource?.(type)
+      }
     } else {
-      onAddInternalResource?.({
-        title: title || 'Internal resource',
-        originLabel: content || 'Host library',
-      })
+      if (onAddInternalResource) {
+        onAddInternalResource({
+          title: title || 'Internal resource',
+          originLabel: content || 'Host library',
+        })
+      } else {
+        onAddResource?.(type)
+      }
     }
 
     setUrl('')
@@ -142,6 +157,7 @@ export function AddResourceDialog({
               <input
                 ref={fileInputRef}
                 type="file"
+                required
                 multiple
                 className="mt-2 block w-full rounded-md border border-slate-300 text-sm file:mr-4 file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-semibold"
               />

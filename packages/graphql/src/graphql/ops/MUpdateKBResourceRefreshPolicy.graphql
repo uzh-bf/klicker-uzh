@@ -1,0 +1,8 @@
+mutation UpdateKBResourceRefreshPolicy(
+  $resourceId: String!
+  $input: KBResourceRefreshPolicyInput!
+) {
+  updateKBResourceRefreshPolicy(resourceId: $resourceId, input: $input) {
+    ...KBResourceData
+  }
+}

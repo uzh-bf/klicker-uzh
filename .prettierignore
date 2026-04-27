@@ -1,6 +1,4 @@
 node_modules/
-.prettierignore
-**/.gitignore
 .next/
 .turbo/
 .vercel/

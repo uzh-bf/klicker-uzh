@@ -43,6 +43,7 @@ model Element {
   tags Tag[]
 
   elementInstances ElementInstance[]
+  kbResources      KBResource[]
   feedbacks        ElementFeedback[]
 
   answerCollectionItems AnswerCollectionEntry[] @relation("ElementAnswerCollectionUsedItems")

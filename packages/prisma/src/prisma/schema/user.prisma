@@ -126,6 +126,9 @@ model User {
   answerCollections  AnswerCollection[]
   chatbots           Chatbot[]
   chatbotDisclaimers ChatbotDisclaimer[]
+  kbs                KB[]
+  kbIngestionRuns    KBIngestionRun[]
+  deletedKBResources KBResource[] @relation("KBResourceDeletedBy")
 
   userGroups                UserGroup[]         @relation("UserGroupMembers")
   adminUserGroups           UserGroup[]         @relation("UserGroupAdmins")

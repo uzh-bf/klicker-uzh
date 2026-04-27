@@ -1,0 +1,15 @@
+mutation LinkKBChatbot(
+  $kbId: String!
+  $chatbotId: String!
+  $isEnabled: Boolean
+  $priority: Int
+) {
+  linkKBChatbot(
+    kbId: $kbId
+    chatbotId: $chatbotId
+    isEnabled: $isEnabled
+    priority: $priority
+  ) {
+    ...KBData
+  }
+}

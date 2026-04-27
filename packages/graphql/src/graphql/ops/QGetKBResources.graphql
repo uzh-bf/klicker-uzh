@@ -1,0 +1,5 @@
+query GetKBResources($kbId: String!, $filter: KBResourceFilterInput) {
+  getKBResources(kbId: $kbId, filter: $filter) {
+    ...KBResourceData
+  }
+}

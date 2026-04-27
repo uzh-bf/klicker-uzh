@@ -3,7 +3,11 @@ import { EnvelopArmor } from '@escape.tech/graphql-armor'
 import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
 import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
 // import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
-import { enhanceContext, schema } from '@klicker-uzh/graphql'
+import {
+  enhanceContext,
+  handleKBIngestionWebhook,
+  schema,
+} from '@klicker-uzh/graphql'
 import { verifyJWT } from '@klicker-uzh/util'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
@@ -190,6 +194,27 @@ function prepareApp({
   app.use('/healthz', function (req, res) {
     res.send('OK')
   })
+
+  app.post(
+    '/api/webhooks/kb-ingestion',
+    express.raw({ type: 'application/json', limit: '2mb' }),
+    async (req, res) => {
+      try {
+        const rawBody = Buffer.isBuffer(req.body)
+          ? req.body.toString('utf8')
+          : String(req.body ?? '')
+        const result = await handleKBIngestionWebhook({
+          prisma,
+          rawBody,
+          headers: req.headers,
+        })
+        res.status(result.statusCode).json(result.body)
+      } catch (error) {
+        console.error('KB ingestion webhook failed:', error)
+        res.status(500).json({ ok: false, error: 'Unexpected webhook error' })
+      }
+    }
+  )
 
   app.use('/api/graphql', yogaApp as any)
 
