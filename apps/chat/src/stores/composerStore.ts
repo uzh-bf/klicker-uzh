@@ -4,16 +4,12 @@ import { create } from 'zustand'
 export const MAX_IMAGE_ATTACHMENTS = 3
 
 interface ComposerStore {
-  attachmentError: string | null
-  setAttachmentError: (error: string | null) => void
   editRemovedAttachmentKeysByMessageId: Record<string, string[]>
   addEditRemovedAttachmentKey: (messageId: string, key: string) => void
   clearEditRemovedAttachmentKeys: (messageId: string) => void
 }
 
 export const useComposerStore = create<ComposerStore>((set) => ({
-  attachmentError: null,
-  setAttachmentError: (error) => set({ attachmentError: error }),
   editRemovedAttachmentKeysByMessageId: {},
   addEditRemovedAttachmentKey: (messageId, key) =>
     set((state) => {

@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { imageAttachmentAdapter } from '../src/lib/attachments/imageAttachmentAdapter'
-import { useComposerStore } from '../src/stores/composerStore'
 
 class MockFileReader {
   result: string | ArrayBuffer | null = null
@@ -15,7 +14,6 @@ class MockFileReader {
 
 describe('imageAttachmentAdapter', () => {
   beforeEach(() => {
-    useComposerStore.setState({ attachmentError: null })
     vi.stubGlobal('FileReader', MockFileReader as any)
     vi.stubGlobal('crypto', {
       randomUUID: () => 'attachment-1',

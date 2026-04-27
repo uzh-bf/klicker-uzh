@@ -6,6 +6,7 @@ import {
   type ReasoningMessagePartProps,
   ThreadPrimitive,
   useComposer,
+  useComposerRuntime,
   useEditComposer,
   useEditComposerAttachment,
   useMessage,
@@ -27,7 +28,8 @@ import {
   SquareIcon,
   XIcon,
 } from 'lucide-react'
-import { type FC, type PropsWithChildren, useState } from 'react'
+import { type FC, type PropsWithChildren, useRef, useState } from 'react'
+import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
 
 import { Button } from '@uzh-bf/design-system'
 import {
@@ -53,6 +55,8 @@ import { twMerge } from 'tailwind-merge'
 
 type ThreadProps = { chatbotAvatar: string }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
+const attachmentLimitErrorMessage = () =>
+  `You can only attach up to ${MAX_IMAGE_ATTACHMENTS} images.`
 
 const formatCredits = (value: number) => {
   if (!Number.isFinite(value)) return '0'
@@ -282,33 +286,45 @@ const ThreadWelcome: FC = () => {
 //   )
 // }
 
+const AttachmentErrorBanner: FC<{
+  error: string | null
+  onDismiss: () => void
+  className?: string
+}> = ({ error, onDismiss, className }) => {
+  if (!error) return null
+  return (
+    <div className={className}>
+      <div className="inline-flex items-center gap-1.5 rounded-md bg-red-50 px-2 py-1 text-xs text-red-600">
+        <span>{error}</span>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="rounded hover:bg-red-100"
+          aria-label="Dismiss error"
+        >
+          <XIcon className="size-3" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 const Composer: FC = () => {
   const { embedded } = useChatUi()
-  const attachmentError = useComposerStore((s) => s.attachmentError)
-  const setAttachmentError = useComposerStore((s) => s.setAttachmentError)
+  const [attachmentError, setAttachmentError] = useState<string | null>(null)
 
   return (
     <ComposerPrimitive.Root className="flex w-full max-w-3xl flex-col rounded-3xl border border-gray-200 bg-gray-100/80 px-2.5 shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-colors ease-in focus-within:border-gray-300">
       <ComposerAttachments />
 
-      {attachmentError && (
-        <div className="px-2 pt-2">
-          <div className="inline-flex items-center gap-1.5 rounded-md bg-red-50 px-2 py-1 text-xs text-red-600">
-            <span>{attachmentError}</span>
-            <button
-              type="button"
-              onClick={() => setAttachmentError(null)}
-              className="rounded hover:bg-red-100"
-              aria-label="Dismiss error"
-            >
-              <XIcon className="size-3" />
-            </button>
-          </div>
-        </div>
-      )}
+      <AttachmentErrorBanner
+        error={attachmentError}
+        onDismiss={() => setAttachmentError(null)}
+        className="px-2 pt-2"
+      />
 
       <div className="flex w-full items-center">
-        <ComposerAttachButton />
+        <ComposerAttachButton setError={setAttachmentError} />
         <ComposerPrimitive.Input
           rows={1}
           autoFocus
@@ -470,23 +486,64 @@ const ComposerAttachmentView: FC<{
   )
 }
 
-const ComposerAttachButton: FC<{ currentCount?: number }> = ({
-  currentCount,
-}) => {
+const ComposerAttachButton: FC<{
+  setError: (msg: string | null) => void
+  currentCount?: number
+}> = ({ setError, currentCount }) => {
   const { embedded } = useChatUi()
   const { selectedModel, modelOptions } = useSettingsStore()
+  const composerRuntime = useComposerRuntime()
   const composerAttachmentCount = useComposer((s) => s.attachments?.length ?? 0)
   const attachmentCount = currentCount ?? composerAttachmentCount
+  const inputRef = useRef<HTMLInputElement | null>(null)
   const supportsImages =
     modelOptions.find((m) => m.id === selectedModel)
       ?.supportsImageAttachments !== false
 
   if (!supportsImages || attachmentCount >= MAX_IMAGE_ATTACHMENTS) return null
 
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return
+    const remaining = Math.max(0, MAX_IMAGE_ATTACHMENTS - attachmentCount)
+    const accepted = Array.from(files).slice(0, remaining)
+    const rejectedCount = files.length - accepted.length
+
+    setError(null)
+
+    let lastAdapterError: string | null = null
+    for (const file of accepted) {
+      try {
+        await composerRuntime.addAttachment(file)
+      } catch (e) {
+        lastAdapterError = e instanceof Error ? e.message : String(e)
+      }
+    }
+
+    if (rejectedCount > 0) {
+      setError(attachmentLimitErrorMessage())
+    } else if (lastAdapterError) {
+      setError(lastAdapterError)
+    }
+  }
+
   return (
-    <ComposerPrimitive.AddAttachment asChild>
+    <>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={imageAttachmentAdapter.accept}
+        multiple
+        className="hidden"
+        onChange={(event) => {
+          const files = event.target.files
+          void handleFiles(files)
+          // reset so selecting the same file twice still triggers change
+          event.target.value = ''
+        }}
+      />
       <button
         type="button"
+        onClick={() => inputRef.current?.click()}
         className={twMerge(
           'text-muted-foreground hover:text-foreground inline-flex items-center justify-center rounded-md',
           embedded ? 'size-7' : 'size-9'
@@ -495,7 +552,7 @@ const ComposerAttachButton: FC<{ currentCount?: number }> = ({
       >
         <ImagePlusIcon className={embedded ? 'size-4' : 'size-5'} />
       </button>
-    </ComposerPrimitive.AddAttachment>
+    </>
   )
 }
 
@@ -667,6 +724,7 @@ const UserActionBar: FC = () => {
 const EditComposer: FC = () => {
   const { showMessageActions } = useChatUi()
   const message = useMessage() as MessageWithCustomMetadata
+  const [attachmentError, setAttachmentError] = useState<string | null>(null)
   const attachments = getMessageAttachments(message)
   const removedAttachmentKeys = useComposerStore(
     (state) =>
@@ -731,6 +789,12 @@ const EditComposer: FC = () => {
         className="text-foreground flex min-h-[2.5rem] w-full resize-none border-0 bg-transparent px-4 pt-4 outline-none focus:border-0 focus:shadow-none focus:outline-none focus:ring-0"
       />
 
+      <AttachmentErrorBanner
+        error={attachmentError}
+        onDismiss={() => setAttachmentError(null)}
+        className="px-4"
+      />
+
       <div className="mx-4 mb-2 flex items-end gap-2 pb-2">
         {(visibleAttachmentEntries.length > 0 ||
           pendingAttachmentCount > 0) && (
@@ -758,7 +822,10 @@ const EditComposer: FC = () => {
             <ComposerAttachments source="edit" inline />
           </div>
         )}
-        <ComposerAttachButton currentCount={totalAttachmentCount} />
+        <ComposerAttachButton
+          setError={setAttachmentError}
+          currentCount={totalAttachmentCount}
+        />
         <div className="ml-auto flex items-center justify-center gap-2">
           <Button
             onClick={() => {

@@ -4,8 +4,6 @@ import type {
   PendingAttachment,
 } from '@assistant-ui/react'
 
-import { useComposerStore } from '../../stores/composerStore'
-
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
 const IMAGE_PREVIEW_MAX_DIMENSION = 256
 const HEIC_TYPES = new Set(['image/heic', 'image/heif'])
@@ -123,13 +121,11 @@ export const imageAttachmentAdapter: AttachmentAdapter = {
   accept: [...ACCEPTED_TYPES, ...HEIC_TYPES].join(','),
 
   async add({ file }) {
-    const { setAttachmentError } = useComposerStore.getState()
-
     // validate MIME type
     if (!ACCEPTED_TYPES.includes(file.type) && !HEIC_TYPES.has(file.type)) {
-      const msg = `Unsupported image format "${file.type || file.name.split('.').pop()}". Please use JPEG, PNG, GIF, WebP, or HEIC.`
-      setAttachmentError(msg)
-      throw new Error(msg)
+      throw new Error(
+        `Unsupported image format "${file.type || file.name.split('.').pop()}". Please use JPEG, PNG, GIF, WebP, or HEIC.`
+      )
     }
 
     let blob: Blob = file
@@ -141,10 +137,9 @@ export const imageAttachmentAdapter: AttachmentAdapter = {
         blob = await convertHeic(file)
         contentType = 'image/jpeg'
       } catch {
-        const msg =
+        throw new Error(
           'Could not convert this HEIC image. Try saving it as JPEG first.'
-        setAttachmentError(msg)
-        throw new Error(msg)
+        )
       }
     }
 
@@ -152,25 +147,27 @@ export const imageAttachmentAdapter: AttachmentAdapter = {
     if (blob.size > MAX_IMAGE_SIZE_BYTES) {
       try {
         blob = await downscaleToFit(blob, MAX_IMAGE_SIZE_BYTES)
+        console.log(
+          'new size after downscaling:',
+          (blob.size / 1024 / 1024).toFixed(1),
+          'MB'
+        )
       } catch {
-        const msg = 'Image is too large and could not be resized automatically.'
-        setAttachmentError(msg)
-        throw new Error(msg)
+        throw new Error(
+          'Image is too large and could not be resized automatically.'
+        )
       }
     }
 
     // Final size guard
     if (blob.size > MAX_IMAGE_SIZE_BYTES) {
-      const msg = `Image must be smaller than 5 MB after conversion (got ${(blob.size / 1024 / 1024).toFixed(1)} MB).`
-      setAttachmentError(msg)
-      throw new Error(msg)
+      throw new Error(
+        `Image must be smaller than 5 MB after conversion (got ${(blob.size / 1024 / 1024).toFixed(1)} MB).`
+      )
     }
 
     const dataUrl = await readBlobAsDataUrl(blob)
     const previewDataUrl = await createPreviewDataUrl(blob)
-
-    // clear any prior error on success
-    setAttachmentError(null)
 
     return {
       id: crypto.randomUUID(),
