@@ -28,7 +28,13 @@ import {
   SquareIcon,
   XIcon,
 } from 'lucide-react'
-import { type FC, type PropsWithChildren, useRef, useState } from 'react'
+import {
+  type FC,
+  type PropsWithChildren,
+  type ReactNode,
+  useRef,
+  useState,
+} from 'react'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
 
 import { Button } from '@uzh-bf/design-system'
@@ -425,7 +431,7 @@ const AttachmentTile: FC<{
   imageSrc: string | null
   label: string
   sizeClasses: string
-  children: React.ReactNode
+  children: ReactNode
 }> = ({ imageSrc, label, sizeClasses, children }) => (
   <>
     {imageSrc ? (
@@ -765,21 +771,31 @@ const EditComposer: FC = () => {
     composerText.trim().length + totalAttachmentCount > 0 &&
     (textChanged || attachmentsChanged)
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!canSubmit) return
-    const editComposer = messageRuntime.composer
-    const state = editComposer.getState()
-    const completeAttachments = state.attachments.filter(
-      (a) => a.status?.type === 'complete'
-    )
-    threadRuntime.append({
-      role: 'user',
-      content: [{ type: 'text', text: composerText }],
-      attachments: completeAttachments as never,
-      parentId: message.parentId ?? undefined,
-      sourceId: message.id,
-    })
-    editComposer.cancel()
+
+    try {
+      const editComposer = messageRuntime.composer
+      const state = editComposer.getState()
+      const completeAttachments = await Promise.all(
+        state.attachments.map(async (attachment) =>
+          attachment.status?.type === 'complete'
+            ? attachment
+            : await imageAttachmentAdapter.send(attachment as never)
+        )
+      )
+
+      threadRuntime.append({
+        role: 'user',
+        content: [{ type: 'text', text: composerText }],
+        attachments: completeAttachments as never,
+        parentId: message.parentId ?? undefined,
+        sourceId: message.id,
+      })
+      editComposer.cancel()
+    } catch (error) {
+      setAttachmentError(error instanceof Error ? error.message : String(error))
+    }
   }
 
   return (
@@ -843,7 +859,7 @@ const EditComposer: FC = () => {
             <Button.Label>Cancel</Button.Label>
           </Button>
           <Button
-            onClick={handleSend}
+            onClick={() => void handleSend()}
             disabled={!canSubmit}
             style={{
               backgroundColor: '#ffffff',

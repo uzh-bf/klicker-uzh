@@ -2,6 +2,7 @@ import { type AppendMessage } from '@assistant-ui/react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 import {
+  extractLocalImageAttachments,
   getEditedMessageSource,
   getImageAttachmentKey,
 } from '../lib/attachments/attachmentState'
@@ -70,30 +71,7 @@ export function useThreadManagement(
         }
       }
 
-      const imageBase64List = (message.attachments ?? [])
-        .flatMap((attachment) => attachment.content ?? [])
-        .filter(
-          (
-            part
-          ): part is {
-            type: 'image'
-            image: string
-            imagePreview?: string
-          } =>
-            typeof part === 'object' &&
-            part !== null &&
-            'type' in part &&
-            part.type === 'image' &&
-            'image' in part &&
-            typeof part.image === 'string'
-        )
-        .map((part) => ({
-          imageBase64: part.image,
-          imagePreviewBase64:
-            'imagePreview' in part && typeof part.imagePreview === 'string'
-              ? part.imagePreview
-              : part.image,
-        }))
+      const imageAttachments = extractLocalImageAttachments(message.attachments)
 
       // create user message with unique ID and metadata
       const userMessage: ExtendedThreadMessageLike = {
@@ -105,12 +83,7 @@ export function useThreadManagement(
         chatMode: selectedMode,
         modelId: selectedModel,
         reasoningEffort: selectedReasoningEffort,
-        imageAttachments: imageBase64List.map((img) => ({
-          type: 'image' as const,
-          imageBase64: img.imageBase64,
-          imagePreviewBase64: img.imagePreviewBase64,
-          imageDescription: null,
-        })),
+        imageAttachments,
       }
 
       if (shouldReplaceUrl) {
@@ -163,13 +136,21 @@ export function useThreadManagement(
 
       const activeThread = threads.find((t) => t.id === threadId)
       const parentId = message.parentId
-      const editedMessageId =
+      const sourceId =
         typeof message === 'object' &&
         message !== null &&
         'sourceId' in message &&
         typeof message.sourceId === 'string'
           ? message.sourceId
           : null
+      const editedMessageId =
+        typeof message === 'object' &&
+        message !== null &&
+        'id' in message &&
+        typeof message.id === 'string'
+          ? message.id
+          : null
+      const sourceMessageId = sourceId ?? editedMessageId
 
       // create edited message with new ID
       const editedMessage: ExtendedThreadMessageLike = {
@@ -192,15 +173,15 @@ export function useThreadManagement(
       // carry over the attachments from the original message being edited
       const originalMessage = activeThread
         ? getEditedMessageSource({
-            editedMessageId,
+            editedMessageId: sourceMessageId,
             messages: activeThread.messages,
           })
         : undefined
       const removedAttachmentKeysByMessageId =
         useComposerStore.getState().editRemovedAttachmentKeysByMessageId
       const removedAttachmentKeys = new Set(
-        editedMessageId
-          ? (removedAttachmentKeysByMessageId[editedMessageId] ?? [])
+        sourceMessageId
+          ? (removedAttachmentKeysByMessageId[sourceMessageId] ?? [])
           : []
       )
       const keptAttachments =
@@ -216,32 +197,9 @@ export function useThreadManagement(
               .map((attachment) => ({ ...attachment }))
           : []
 
-      const newImageAttachments = (message.attachments ?? [])
-        .flatMap((attachment) => attachment.content ?? [])
-        .filter(
-          (
-            part
-          ): part is {
-            type: 'image'
-            image: string
-            imagePreview?: string
-          } =>
-            typeof part === 'object' &&
-            part !== null &&
-            'type' in part &&
-            part.type === 'image' &&
-            'image' in part &&
-            typeof part.image === 'string'
-        )
-        .map((part) => ({
-          type: 'image' as const,
-          imageBase64: part.image,
-          imagePreviewBase64:
-            'imagePreview' in part && typeof part.imagePreview === 'string'
-              ? part.imagePreview
-              : part.image,
-          imageDescription: null,
-        }))
+      const newImageAttachments = extractLocalImageAttachments(
+        message.attachments
+      )
 
       const mergedAttachments = [
         ...keptAttachments,
@@ -256,10 +214,10 @@ export function useThreadManagement(
         originalMessage?.id ??
         null
 
-      if (editedMessageId) {
+      if (sourceMessageId) {
         useComposerStore
           .getState()
-          .clearEditRemovedAttachmentKeys(editedMessageId)
+          .clearEditRemovedAttachmentKeys(sourceMessageId)
       }
 
       const newCurrentPath =
