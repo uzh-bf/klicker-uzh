@@ -4,6 +4,24 @@ interface NoLoginPageProps {
   searchParams?: Promise<{ redirectTo?: string | string[] }>
 }
 
+function getChatRedirectUrl(redirectTo: string | undefined) {
+  if (!redirectTo) return undefined
+
+  const chatBaseUrl = process.env.NEXT_PUBLIC_CHAT_URL
+    ? process.env.NEXT_PUBLIC_CHAT_URL.replace(/\/$/, '')
+    : 'https://chat.klicker.uzh.ch'
+
+  try {
+    const chatUrl = new URL(chatBaseUrl)
+    const redirectUrl = new URL(redirectTo, chatUrl)
+
+    if (redirectUrl.origin !== chatUrl.origin) return undefined
+    return redirectUrl.toString()
+  } catch {
+    return undefined
+  }
+}
+
 export default async function Page({ searchParams }: NoLoginPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {}
   const redirectToParam = resolvedSearchParams.redirectTo
@@ -14,9 +32,10 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
   const loginBaseUrl = process.env.NEXT_PUBLIC_PWA_URL
     ? process.env.NEXT_PUBLIC_PWA_URL.replace(/\/$/, '')
     : 'https://pwa.klicker.uzh.ch'
+  const redirectUrl = getChatRedirectUrl(redirectTo)
 
-  const loginHref = redirectTo
-    ? `${loginBaseUrl}/login?redirect_to=${encodeURIComponent(redirectTo)}`
+  const loginHref = redirectUrl
+    ? `${loginBaseUrl}/login?redirect_to=${encodeURIComponent(redirectUrl)}`
     : `${loginBaseUrl}/login`
 
   return (

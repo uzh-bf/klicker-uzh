@@ -32,6 +32,7 @@ import {
   type FC,
   type PropsWithChildren,
   type ReactNode,
+  useEffect,
   useRef,
   useState,
 } from 'react'
@@ -114,6 +115,15 @@ const extractMessageText = (message: {
     .filter((part) => part.type === 'text' && typeof part.text === 'string')
     .map((part) => part.text ?? '')
     .join('')
+
+const useSupportsImageAttachments = () => {
+  const { selectedModel, modelOptions } = useSettingsStore()
+
+  return (
+    modelOptions.find((model) => model.id === selectedModel)
+      ?.supportsImageAttachments !== false
+  )
+}
 
 const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   includeCredits = false,
@@ -320,31 +330,115 @@ const Composer: FC = () => {
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
 
   return (
-    <ComposerPrimitive.Root className="flex w-full max-w-3xl flex-col rounded-3xl border border-gray-200 bg-gray-100/80 px-2.5 shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-colors ease-in focus-within:border-gray-300">
-      <ComposerAttachments />
+    <ComposerDropzone
+      setError={setAttachmentError}
+      className="w-full max-w-3xl"
+      roundedClass="rounded-3xl"
+    >
+      <ComposerPrimitive.Root className="flex w-full flex-col rounded-3xl border border-gray-200 bg-gray-100/80 px-2.5 shadow-[0_0_12px_rgba(0,0,0,0.06)] backdrop-blur-md transition-colors ease-in focus-within:border-gray-300">
+        <ComposerAttachments />
 
-      <AttachmentErrorBanner
-        error={attachmentError}
-        onDismiss={() => setAttachmentError(null)}
-        className="px-2 pt-2"
-      />
-
-      <div className="flex w-full items-center">
-        <ComposerAttachButton setError={setAttachmentError} />
-        <ComposerPrimitive.Input
-          rows={1}
-          autoFocus
-          placeholder="Write a message..."
-          className={twMerge(
-            'placeholder:text-muted-foreground text-md flex-grow resize-none border-none bg-transparent px-2 outline-none focus:ring-0 disabled:cursor-not-allowed',
-            embedded ? 'max-h-20 py-2' : 'max-h-40 py-4'
-          )}
+        <AttachmentErrorBanner
+          error={attachmentError}
+          onDismiss={() => setAttachmentError(null)}
+          className="px-2 pt-2"
         />
-        <ComposerAction />
-      </div>
-    </ComposerPrimitive.Root>
+
+        <div className="flex w-full items-center">
+          <ComposerAttachButton setError={setAttachmentError} />
+          <ComposerPrimitive.Input
+            rows={1}
+            autoFocus
+            placeholder="Write a message..."
+            className={twMerge(
+              'placeholder:text-muted-foreground text-md flex-grow resize-none border-none bg-transparent px-2 outline-none focus:ring-0 disabled:cursor-not-allowed',
+              embedded ? 'max-h-20 py-2' : 'max-h-40 py-4'
+            )}
+          />
+          <ComposerAction />
+        </div>
+      </ComposerPrimitive.Root>
+    </ComposerDropzone>
   )
 }
+
+const useComposerAttachmentLimit = ({
+  setError,
+  currentCount,
+}: {
+  setError: (msg: string | null) => void
+  currentCount?: number
+}) => {
+  const composerRuntime = useComposerRuntime()
+  const attachments = useComposer((s) => s.attachments ?? [])
+  const composerAttachmentCount = attachments.length
+  const existingAttachmentCount =
+    currentCount == null
+      ? 0
+      : Math.max(0, currentCount - composerAttachmentCount)
+  const maxComposerAttachmentCount = Math.max(
+    0,
+    MAX_IMAGE_ATTACHMENTS - existingAttachmentCount
+  )
+
+  useEffect(() => {
+    if (attachments.length <= maxComposerAttachmentCount) return
+
+    setError(attachmentLimitErrorMessage())
+
+    const overflowAttachmentIndexes = attachments
+      .map((_, index) => index)
+      .slice(maxComposerAttachmentCount)
+      .reverse()
+
+    void Promise.all(
+      overflowAttachmentIndexes.map((index) =>
+        composerRuntime.getAttachmentByIndex(index).remove()
+      )
+    )
+  }, [attachments, composerRuntime, maxComposerAttachmentCount, setError])
+}
+
+const ComposerDropzone: FC<
+  PropsWithChildren<{
+    setError: (msg: string | null) => void
+    currentCount?: number
+    className?: string
+    roundedClass: string
+  }>
+> = ({ setError, currentCount, className, roundedClass, children }) => {
+  const supportsImages = useSupportsImageAttachments()
+
+  useComposerAttachmentLimit({ setError, currentCount })
+
+  return (
+    <ComposerPrimitive.AttachmentDropzone
+      data-testid="composer-dropzone"
+      disabled={!supportsImages}
+      className={twMerge(
+        'group relative transition-colors data-[dragging]:ring-2 data-[dragging]:ring-slate-500',
+        roundedClass,
+        className
+      )}
+    >
+      {children}
+      {supportsImages && <ComposerDropOverlay roundedClass={roundedClass} />}
+    </ComposerPrimitive.AttachmentDropzone>
+  )
+}
+
+const ComposerDropOverlay: FC<{ roundedClass: string }> = ({
+  roundedClass,
+}) => (
+  <div
+    className={twMerge(
+      'pointer-events-none absolute inset-0 z-10 hidden items-center justify-center border-2 border-dashed border-slate-500 bg-white/80 px-4 text-center text-sm font-medium text-slate-900 shadow-inner backdrop-blur-sm group-data-[dragging]:flex',
+      roundedClass
+    )}
+  >
+    Drop images to attach
+  </div>
+)
 
 const ThreadComposerImageAttachment: FC = () => {
   const imageSrc = useThreadComposerAttachment(selectAttachmentImageSrc)
@@ -497,14 +591,11 @@ const ComposerAttachButton: FC<{
   currentCount?: number
 }> = ({ setError, currentCount }) => {
   const { embedded } = useChatUi()
-  const { selectedModel, modelOptions } = useSettingsStore()
   const composerRuntime = useComposerRuntime()
   const composerAttachmentCount = useComposer((s) => s.attachments?.length ?? 0)
   const attachmentCount = currentCount ?? composerAttachmentCount
   const inputRef = useRef<HTMLInputElement | null>(null)
-  const supportsImages =
-    modelOptions.find((m) => m.id === selectedModel)
-      ?.supportsImageAttachments !== false
+  const supportsImages = useSupportsImageAttachments()
 
   if (!supportsImages || attachmentCount >= MAX_IMAGE_ATTACHMENTS) return null
 
@@ -660,17 +751,13 @@ const UserMessage: FC = () => {
 
 const UserActionBar: FC = () => {
   const { showMessageActions } = useChatUi()
-  const { selectedModel, modelOptions } = useSettingsStore()
   const message = useMessage() as MessageWithCustomMetadata
+  const supportsImages = useSupportsImageAttachments()
 
   if (!showMessageActions) return null
 
   const attachments = getMessageAttachments(message)
   const hasImages = hasAnyImageAttachmentData(attachments)
-
-  const supportsImages =
-    modelOptions.find((m) => m.id === selectedModel)
-      ?.supportsImageAttachments !== false
   const editDisabled = hasImages && !supportsImages
 
   return (
@@ -799,81 +886,89 @@ const EditComposer: FC = () => {
   }
 
   return (
-    <ComposerPrimitive.Root className="bg-muted my-4 flex w-full max-w-[var(--thread-max-width)] flex-col gap-2 rounded-2xl border-none outline-none focus-within:outline-none focus-within:ring-0">
-      <ComposerPrimitive.Input
-        autoFocus
-        className="text-foreground flex min-h-[2.5rem] w-full resize-none border-0 bg-transparent px-4 pt-4 outline-none focus:border-0 focus:shadow-none focus:outline-none focus:ring-0"
-      />
-
-      <AttachmentErrorBanner
-        error={attachmentError}
-        onDismiss={() => setAttachmentError(null)}
-        className="px-4"
-      />
-
-      <div className="mx-4 mb-2 flex items-end gap-2 pb-2">
-        {(visibleAttachmentEntries.length > 0 ||
-          pendingAttachmentCount > 0) && (
-          <div className="flex flex-wrap gap-2">
-            {visibleAttachmentEntries.map(({ attachment, key }) => {
-              const previewSrc = getAttachmentPreviewSrc(attachment, 'edit')
-              const label = attachment.imageDescription?.trim() || 'Attachment'
-
-              return (
-                <div key={key} className="relative">
-                  <AttachmentTile
-                    imageSrc={previewSrc ?? null}
-                    label={label}
-                    sizeClasses="size-16 sm:size-20"
-                  >
-                    <AttachmentRemoveButton
-                      onClick={() =>
-                        addEditRemovedAttachmentKey(message.id, key)
-                      }
-                    />
-                  </AttachmentTile>
-                </div>
-              )
-            })}
-            <ComposerAttachments source="edit" inline />
-          </div>
-        )}
-        <ComposerAttachButton
-          setError={setAttachmentError}
-          currentCount={totalAttachmentCount}
+    <ComposerDropzone
+      setError={setAttachmentError}
+      currentCount={totalAttachmentCount}
+      className="my-4 w-full max-w-[var(--thread-max-width)]"
+      roundedClass="rounded-2xl"
+    >
+      <ComposerPrimitive.Root className="bg-muted flex w-full flex-col gap-2 rounded-2xl border-none outline-none focus-within:outline-none focus-within:ring-0">
+        <ComposerPrimitive.Input
+          autoFocus
+          className="text-foreground flex min-h-[2.5rem] w-full resize-none border-0 bg-transparent px-4 pt-4 outline-none focus:border-0 focus:shadow-none focus:outline-none focus:ring-0"
         />
-        <div className="ml-auto flex items-center justify-center gap-2">
-          <Button
-            onClick={() => {
-              clearEditRemovedAttachmentKeys(message.id)
-              messageRuntime.composer.cancel()
-            }}
-            style={{
-              backgroundColor: '#000000',
-              color: '#ffffff',
-            }}
-            className={{
-              root: 'rounded-full font-semibold hover:!bg-gray-800',
-            }}
-          >
-            <Button.Label>Cancel</Button.Label>
-          </Button>
-          <Button
-            onClick={() => void handleSend()}
-            disabled={!canSubmit}
-            style={{
-              backgroundColor: '#ffffff',
-              color: '#000000',
-            }}
-            className={{
-              root: 'rounded-full font-semibold hover:!bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50',
-            }}
-          >
-            <Button.Label>Send</Button.Label>
-          </Button>
+
+        <AttachmentErrorBanner
+          error={attachmentError}
+          onDismiss={() => setAttachmentError(null)}
+          className="px-4"
+        />
+
+        <div className="mx-4 mb-2 flex items-end gap-2 pb-2">
+          {(visibleAttachmentEntries.length > 0 ||
+            pendingAttachmentCount > 0) && (
+            <div className="flex flex-wrap gap-2">
+              {visibleAttachmentEntries.map(({ attachment, key }) => {
+                const previewSrc = getAttachmentPreviewSrc(attachment, 'edit')
+                const label =
+                  attachment.imageDescription?.trim() || 'Attachment'
+
+                return (
+                  <div key={key} className="relative">
+                    <AttachmentTile
+                      imageSrc={previewSrc ?? null}
+                      label={label}
+                      sizeClasses="size-16 sm:size-20"
+                    >
+                      <AttachmentRemoveButton
+                        onClick={() =>
+                          addEditRemovedAttachmentKey(message.id, key)
+                        }
+                      />
+                    </AttachmentTile>
+                  </div>
+                )
+              })}
+              <ComposerAttachments source="edit" inline />
+            </div>
+          )}
+          <ComposerAttachButton
+            setError={setAttachmentError}
+            currentCount={totalAttachmentCount}
+          />
+          <div className="ml-auto flex items-center justify-center gap-2">
+            <Button
+              onClick={() => {
+                clearEditRemovedAttachmentKeys(message.id)
+                messageRuntime.composer.cancel()
+              }}
+              style={{
+                backgroundColor: '#000000',
+                color: '#ffffff',
+              }}
+              className={{
+                root: 'rounded-full font-semibold hover:!bg-gray-800',
+              }}
+            >
+              <Button.Label>Cancel</Button.Label>
+            </Button>
+            <Button
+              onClick={() => void handleSend()}
+              disabled={!canSubmit}
+              style={{
+                backgroundColor: '#ffffff',
+                color: '#000000',
+              }}
+              className={{
+                root: 'rounded-full font-semibold hover:!bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50',
+              }}
+            >
+              <Button.Label>Send</Button.Label>
+            </Button>
+          </div>
         </div>
-      </div>
-    </ComposerPrimitive.Root>
+      </ComposerPrimitive.Root>
+    </ComposerDropzone>
   )
 }
 
