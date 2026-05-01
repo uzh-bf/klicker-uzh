@@ -330,3 +330,16 @@ agent-browser close
 ```
 
 These credentials are intended for local seeded dev environments only.
+
+## Agentic Sandboxing (Sandcastle)
+
+[Sandcastle](https://github.com/mattpocock/sandcastle) (`@ai-hero/sandcastle`) wraps Claude Code in an isolated Docker sandbox so we can dispatch hands-off batch tasks (codemods, doc sweeps, refactors) against a copy of this repo without touching the developer's working tree. Use it alongside, not in place of, the IDE Claude Code workflow and the GitHub `@claude` mention workflow.
+
+- **Config**: `.sandcastle/Dockerfile`, `.sandcastle/prompt.md`, `.sandcastle/README.md`
+- **Runner**: `util/sandcastle/run.ts` (TypeScript, executed via `tsx`)
+- **Scripts**:
+  - `pnpm sandcastle --task "<description>"` -- run the agent inside the sandbox; needs `ANTHROPIC_API_KEY` in env or `.sandcastle/.env`.
+  - `pnpm sandcastle:exec --with-services --task "..."` -- wraps Infisical and forwards DB / Redis / Hatchet / OpenAI env vars; the local `klicker` compose stack must already be up.
+- Default branch strategy is `merge-to-head` (HEAD stays untouched until success). Override with `--branch <name>` or `--head`.
+
+Build the sandbox image once: `docker build -t klicker-sandcastle:local .sandcastle`. See `.sandcastle/README.md` for the full reference.

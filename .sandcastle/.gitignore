@@ -1,0 +1,4 @@
+# Local sandcastle config (do not commit these)
+.env
+.env.local
+logs/
