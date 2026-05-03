@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.61](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.60...v3.4.0-alpha.61) (2026-05-03)
+
+
+### Bug Fixes
+
+* **apps/chat:** stabilize image attachments and login redirects ([#5079](https://github.com/uzh-bf/klicker-uzh/issues/5079)) ([76c36ff](https://github.com/uzh-bf/klicker-uzh/commit/76c36ff6a63ab30bd8e6ab57d000b4807e063962))
+* **deploy:** enable chat image attachments in model registry ([bc31b07](https://github.com/uzh-bf/klicker-uzh/commit/bc31b079c9941a6a783dd3ace43a638a007e6018))
+
 ## [3.4.0-alpha.60](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.59...v3.4.0-alpha.60) (2026-04-21)
 
 
