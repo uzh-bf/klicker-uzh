@@ -28,7 +28,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: Always
-        tag: v3-embedded-pq
+        tag: v3
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -48,7 +48,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3-embedded-pq
+        tag: v3
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -68,7 +68,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3-embedded-pq
+        tag: v3
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -119,7 +119,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: Always
-    tag: v3-embedded-pq
+    tag: v3
 
   ingress:
     annotations:
@@ -261,7 +261,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: Always
-    tag: v3-embedded-pq
+    tag: v3
 
   ingress:
     className: haproxy
@@ -312,7 +312,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: Always
-    tag: v3-embedded-pq
+    tag: v3
 
   ingress:
     className: haproxy
@@ -348,7 +348,7 @@ frontendControl:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: Always
-    tag: v3-embedded-pq
+    tag: v3
 
   autoscaling:
     enabled: false
@@ -415,7 +415,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: Always
-    tag: v3-embedded-pq
+    tag: v3
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -466,7 +466,7 @@ olatApi:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: Always
-    tag: v3-embedded-pq
+    tag: v3
 
   autoscaling:
     enabled: false
@@ -537,7 +537,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: Always
-    tag: v3-embedded-pq
+    tag: v3
 
   ingress:
     className: haproxy
@@ -562,7 +562,7 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3-embedded-pq
+    tag: v3
     pullPolicy: Always
 
   autoscaling:
@@ -642,7 +642,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: Always
-      tag: v3-embedded-pq
+      tag: v3
 
     ingress:
       className: haproxy
@@ -704,7 +704,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: Always
-      tag: v3-embedded-pq
+      tag: v3
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -781,7 +781,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: Always
-      tag: v3-embedded-pq
+      tag: v3
 
     ingress:
       className: haproxy
