@@ -1,3 +1,4 @@
+import { imageAttachmentAdapter } from '@/src/lib/attachments/imageAttachmentAdapter'
 import {
   ActionBarPrimitive,
   AttachmentPrimitive,
@@ -36,19 +37,18 @@ import {
   useRef,
   useState,
 } from 'react'
-import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
 
-import { Button } from '@uzh-bf/design-system'
 import {
   getImageAttachmentKey,
   hasAnyImageAttachmentData,
-} from '../lib/attachments/attachmentState'
-import { getAttachmentPreviewSrc } from '../lib/attachments/attachmentUi'
+} from '@/src/lib/attachments/attachmentState'
+import { getAttachmentPreviewSrc } from '@/src/lib/attachments/attachmentUi'
 import {
   MAX_IMAGE_ATTACHMENTS,
   useComposerStore,
-} from '../stores/composerStore'
-import { useSettingsStore } from '../stores/settingsStore'
+} from '@/src/stores/composerStore'
+import { useSettingsStore } from '@/src/stores/settingsStore'
+import { Button } from '@uzh-bf/design-system'
 import { BranchPicker } from './branch-picker'
 import { useChatUi } from './chat-ui-context'
 import { MarkdownText } from './markdown-text'
@@ -496,6 +496,7 @@ const ComposerAttachments: FC<{
 type AttachmentImagePart = {
   type: 'image'
   image: string
+  imagePreview?: string
 }
 
 const isAttachmentImagePart = (part: unknown): part is AttachmentImagePart =>
@@ -515,7 +516,7 @@ const selectAttachmentImageSrc = (
   attachment: ComposerAttachmentLike
 ): string | null => {
   const imagePart = attachment.content?.find(isAttachmentImagePart)
-  return imagePart?.image ?? null
+  return imagePart?.imagePreview ?? imagePart?.image ?? null
 }
 
 const selectAttachmentName = (attachment: ComposerAttachmentLike): string =>
@@ -835,6 +836,12 @@ const EditComposer: FC = () => {
   const originalText = extractMessageText(message)
   const threadRuntime = useThreadRuntime()
   const messageRuntime = useMessageRuntime()
+
+  useEffect(() => {
+    return () => {
+      clearEditRemovedAttachmentKeys(message.id)
+    }
+  }, [clearEditRemovedAttachmentKeys, message.id])
 
   if (!showMessageActions) return null
 

@@ -1,12 +1,12 @@
 'use client'
 
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
-import { useCallback, useMemo } from 'react'
-import { getBranches } from '../lib/api/utils'
+import { getBranches } from '@/src/lib/api/utils'
 import {
   type ExtendedThreadMessageLike,
   useChatStore,
-} from '../stores/chatStore'
+} from '@/src/stores/chatStore'
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
+import { useCallback, useMemo } from 'react'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []

@@ -48,10 +48,10 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
           You need to create a KlickerUZH account or log in before you can
           access this chatbot.
         </p>
-        {redirectTo && (
+        {redirectUrl && (
           <p className="text-muted-foreground mt-2 text-sm">
             After logging in, return to{' '}
-            <span className="font-medium">{redirectTo}</span> to continue your
+            <span className="font-medium">{redirectUrl}</span> to continue your
             conversation.
           </p>
         )}

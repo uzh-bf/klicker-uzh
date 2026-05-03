@@ -1,21 +1,21 @@
-import { type AppendMessage } from '@assistant-ui/react'
-import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import { useCallback } from 'react'
 import {
   extractLocalImageAttachments,
   getEditedMessageSource,
   getImageAttachmentKey,
-} from '../lib/attachments/attachmentState'
-import { generateId } from '../lib/utils/chatUtils'
+} from '@/src/lib/attachments/attachmentState'
+import { generateId } from '@/src/lib/utils/chatUtils'
 import {
-  useChatStore,
   type ExtendedThreadMessageLike,
-} from '../stores/chatStore'
+  useChatStore,
+} from '@/src/stores/chatStore'
 import {
   MAX_IMAGE_ATTACHMENTS,
   useComposerStore,
-} from '../stores/composerStore'
-import { useSettingsStore } from '../stores/settingsStore'
+} from '@/src/stores/composerStore'
+import { useSettingsStore } from '@/src/stores/settingsStore'
+import { type AppendMessage } from '@assistant-ui/react'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import { useCallback } from 'react'
 
 /**
  * Hook for managing chat thread operations.
@@ -71,7 +71,9 @@ export function useThreadManagement(
         }
       }
 
-      const imageAttachments = extractLocalImageAttachments(message.attachments)
+      const imageAttachments = extractLocalImageAttachments(
+        message.attachments
+      ).slice(0, MAX_IMAGE_ATTACHMENTS)
 
       // create user message with unique ID and metadata
       const userMessage: ExtendedThreadMessageLike = {
