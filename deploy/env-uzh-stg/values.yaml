@@ -208,7 +208,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: Always
-    tag: v3-embedded-pq
+    tag: v3
 
   ingress:
     annotations:
