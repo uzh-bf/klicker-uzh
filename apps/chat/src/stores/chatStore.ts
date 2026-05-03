@@ -15,7 +15,6 @@ import {
   extractThreadTitle,
   findBranchLeaf,
   findLeafMessages,
-  getBranches,
   getPathToLeaf,
 } from '../lib/api/utils'
 import {
@@ -92,7 +91,6 @@ interface ChatState {
 
   // tree navigation actions
   switchToBranch: (leafId: string) => void
-  getMessageBranches: (messageId: string) => ExtendedThreadMessageLike[]
 }
 
 /**
@@ -130,24 +128,30 @@ export const useChatStore = create<ChatState>((set, get) => {
     message: ExtendedThreadMessageLike,
     hydratedAttachments: ApiHydratedImageAttachment[]
   ): ExtendedThreadMessageLike => {
-    const currentAttachments = sortAttachmentsByPosition(
-      (message.imageAttachments ?? []).filter(
+    const allAttachments = message.imageAttachments ?? []
+    const persistedAttachments = sortAttachmentsByPosition(
+      allAttachments.filter(
         (attachment): attachment is ApiImageAttachment =>
           typeof attachment.id === 'string' &&
           typeof attachment.position === 'number'
       )
     )
+    const localOnlyAttachments = allAttachments.filter(
+      (attachment) =>
+        typeof attachment.id !== 'string' ||
+        typeof attachment.position !== 'number'
+    )
 
-    if (currentAttachments.length === 0) {
+    if (persistedAttachments.length === 0) {
       return message
     }
 
     return {
       ...message,
-      imageAttachments: mergeHydratedAttachments(
-        currentAttachments,
-        hydratedAttachments
-      ),
+      imageAttachments: [
+        ...mergeHydratedAttachments(persistedAttachments, hydratedAttachments),
+        ...localOnlyAttachments,
+      ],
     }
   }
 
@@ -826,24 +830,6 @@ export const useChatStore = create<ChatState>((set, get) => {
             : thread
         ),
       }))
-    },
-
-    /**
-     * Gets all alternative responses (branches) for a specific message
-     * Used to show users different response options at any point in the conversation
-     *
-     * @param messageId - The ID of the message to find alternatives for
-     * @returns Array of alternative messages (including the original)
-     */
-    getMessageBranches: (messageId) => {
-      const state = get()
-      const activeThread = state.threads.find(
-        (t) => t.id === state.activeThreadId
-      )
-
-      if (!activeThread) return []
-
-      return getBranches(activeThread.allMessages, messageId)
     },
   }
 })

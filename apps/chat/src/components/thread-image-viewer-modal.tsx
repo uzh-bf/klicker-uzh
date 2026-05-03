@@ -1,5 +1,6 @@
 'use client'
 
+import { Markdown } from '@klicker-uzh/markdown'
 import { Button, Modal } from '@uzh-bf/design-system'
 
 type MessageImageAttachment = {
@@ -47,7 +48,8 @@ export function ThreadImageViewerModal({
 
   const previewSrc =
     attachment.imageBase64 ?? attachment.imagePreviewBase64 ?? null
-  const title = attachment.imageDescription?.trim() || 'Image attachment'
+  const description = attachment.imageDescription?.trim() || null
+  const title = 'Image attachment'
 
   return (
     <Modal
@@ -63,12 +65,22 @@ export function ThreadImageViewerModal({
         {previewSrc ? (
           <img
             src={previewSrc}
-            alt={title}
+            alt={description || title}
             className="max-h-[70vh] w-full rounded-lg border object-contain"
           />
         ) : (
           <AttachmentPlaceholder />
         )}
+
+        {description ? (
+          <Markdown
+            content={description}
+            withProse
+            className={{
+              root: 'prose prose-sm text-foreground max-w-none',
+            }}
+          />
+        ) : null}
 
         {isLoading ? (
           <p className="text-muted-foreground text-sm">Loading full image...</p>
