@@ -127,6 +127,11 @@ auth:
 
   replicaCount: 1
 
+  redisCache:
+    host: redis-cache-master
+    port: 6379
+    tls: false
+
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth
     pullPolicy: Always

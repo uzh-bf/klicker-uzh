@@ -14,7 +14,7 @@
 import crypto from 'crypto'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { MCP_ACCESS_TOKEN_TTL_SECONDS } from './_constants'
-import { popCode } from './_store'
+import { popCode, type CodeRecord } from './_store'
 
 export default async function handler(
   req: NextApiRequest,
@@ -52,7 +52,14 @@ export default async function handler(
     return
   }
 
-  const record = popCode(code)
+  let record: CodeRecord | null
+  try {
+    record = await popCode(code)
+  } catch (error) {
+    console.error('Failed to retrieve MCP OAuth authorization code', error)
+    res.status(503).json({ error: 'temporarily_unavailable' })
+    return
+  }
   if (!record) {
     res
       .status(400)

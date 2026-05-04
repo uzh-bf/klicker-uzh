@@ -8,14 +8,12 @@
 //    cookie). If not, bounce through the existing NextAuth sign-in flow
 //    with a callbackUrl back here so the flow resumes after login.
 // 2. Mint a one-time authorization code, bind it to the PKCE challenge the
-//    caller sent, and stash the KlickerUZH JWT to be returned by /token.
+//    caller sent, and store the KlickerUZH JWT in Redis for /token.
 // 3. Redirect to the caller's `redirect_uri` with `code` and the original
 //    `state`.
 //
 // Production hardening (not required for the POC):
-// - replace the in-process store with Redis
-// - move to a signed authorization-code JWT so this can be stateless
-// - show a branded consent page instead of relying on FastMCP's
+// - show a branded consent page instead of relying on FastMCP's default UX.
 
 import { MANAGER_COOKIE_NAME, PARTICIPANT_COOKIE_NAME } from '@/lib/constants'
 import { decode } from '@/lib/helpers'
@@ -111,13 +109,19 @@ export default async function handler(
   )
 
   const code = crypto.randomBytes(32).toString('base64url')
-  putCode(code, {
-    jwt: accessToken,
-    codeChallenge: params.code_challenge as string,
-    codeChallengeMethod: 'S256',
-    redirectUri: params.redirect_uri as string,
-    clientId: params.client_id as string,
-  })
+  try {
+    await putCode(code, {
+      jwt: accessToken,
+      codeChallenge: params.code_challenge as string,
+      codeChallengeMethod: 'S256',
+      redirectUri: params.redirect_uri as string,
+      clientId: params.client_id as string,
+    })
+  } catch (error) {
+    console.error('Failed to store MCP OAuth authorization code', error)
+    res.status(503).json({ error: 'temporarily_unavailable' })
+    return
+  }
 
   const redirectUrl = new URL(params.redirect_uri as string)
   redirectUrl.searchParams.set('code', code)

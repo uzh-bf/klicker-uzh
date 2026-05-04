@@ -1,12 +1,6 @@
-// In-process store for short-lived OAuth authorization codes issued to the
-// MCP proxy. A POC-grade implementation: one-minute TTL, non-distributed.
-// Production will swap this for a Redis-backed adapter keyed the same way.
-//
-// Each code binds the PKCE challenge the MCP client sent on /authorize to
-// the KlickerUZH JWT we'll return from /token. The JWT itself is never
-// persisted beyond the single exchange.
+import Redis from 'ioredis'
 
-type CodeRecord = {
+export type CodeRecord = {
   jwt: string
   codeChallenge: string
   codeChallengeMethod: string
@@ -15,32 +9,55 @@ type CodeRecord = {
   createdAt: number
 }
 
-const CODE_TTL_MS = 60_000
-const SWEEP_INTERVAL_MS = 60_000
-const store = new Map<string, CodeRecord>()
+const CODE_TTL_SECONDS = 60
+const CODE_KEY_PREFIX = 'mcp:oauth:code:'
 
-// Periodically drop expired codes so abandoned flows don't accumulate in
-// memory. `popCode` already checks TTL at redemption, but codes that are
-// never redeemed would otherwise live forever.
-if (typeof setInterval !== 'undefined') {
-  const handle = setInterval(() => {
-    const cutoff = Date.now() - CODE_TTL_MS
-    for (const [code, record] of store) {
-      if (record.createdAt < cutoff) store.delete(code)
-    }
-  }, SWEEP_INTERVAL_MS)
-  // Don't keep the Node process alive for this.
-  if (typeof handle.unref === 'function') handle.unref()
+let redisClient: Redis | null = null
+
+function getRedisClient(): Redis {
+  if (redisClient) return redisClient
+
+  const host = process.env.REDIS_CACHE_HOST
+  const port = Number(process.env.REDIS_CACHE_PORT ?? 6379)
+
+  if (!host) {
+    throw new Error('REDIS_CACHE_HOST is required for MCP OAuth code storage')
+  }
+  if (!Number.isInteger(port) || port <= 0) {
+    throw new Error('REDIS_CACHE_PORT must be a positive integer')
+  }
+
+  redisClient = new Redis({
+    host,
+    port,
+    password: process.env.REDIS_CACHE_PASS || undefined,
+    tls: process.env.REDIS_CACHE_TLS === 'true' ? {} : undefined,
+    lazyConnect: true,
+  })
+
+  return redisClient
 }
 
-export function putCode(code: string, record: Omit<CodeRecord, 'createdAt'>) {
-  store.set(code, { ...record, createdAt: Date.now() })
+export async function putCode(
+  code: string,
+  record: Omit<CodeRecord, 'createdAt'>
+): Promise<void> {
+  const result = await getRedisClient().set(
+    `${CODE_KEY_PREFIX}${code}`,
+    JSON.stringify({ ...record, createdAt: Date.now() }),
+    'EX',
+    CODE_TTL_SECONDS,
+    'NX'
+  )
+
+  if (result !== 'OK') {
+    throw new Error('Could not store MCP OAuth code')
+  }
 }
 
-export function popCode(code: string): CodeRecord | null {
-  const record = store.get(code)
-  if (!record) return null
-  store.delete(code)
-  if (Date.now() - record.createdAt > CODE_TTL_MS) return null
-  return record
+export async function popCode(code: string): Promise<CodeRecord | null> {
+  const value = await getRedisClient().getdel(`${CODE_KEY_PREFIX}${code}`)
+  if (!value) return null
+
+  return JSON.parse(value) as CodeRecord
 }

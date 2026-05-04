@@ -6,3 +6,6 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  REDIS_CACHE_HOST: {{ .Values.auth.redisCache.host | quote }}
+  REDIS_CACHE_PORT: {{ .Values.auth.redisCache.port | quote }}
+  REDIS_CACHE_TLS: {{ .Values.auth.redisCache.tls | quote }}
