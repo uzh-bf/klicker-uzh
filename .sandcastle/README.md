@@ -1,6 +1,6 @@
 # Sandcastle (agentic sandboxing)
 
-[Sandcastle](https://github.com/mattpocock/sandcastle) (`@ai-hero/sandcastle`) wraps Claude Code in an isolated Docker sandbox so we can dispatch agentic tasks against a copy of this repo without touching the developer's working tree.
+[Sandcastle](https://github.com/mattpocock/sandcastle) (`@ai-hero/sandcastle`) wraps an AI coding agent in an isolated Docker sandbox so we can dispatch agentic tasks against a copy of this repo without touching the developer's working tree. The default agent is [opencode](https://opencode.ai) routed through [OpenRouter](https://openrouter.ai), so any model on OpenRouter is selectable per run.
 
 ## When to use it
 
@@ -13,7 +13,7 @@
 ## Quickstart
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
+export OPENROUTER_API_KEY=sk-or-v1-...
 pnpm sandcastle --task "Add a JSDoc header to packages/util/src/index.ts."
 ```
 
@@ -25,16 +25,18 @@ docker build -t klicker-sandcastle:local .sandcastle
 
 ## Flags
 
-| Flag                     | Effect                                                                                                                           |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| `--task <text>` / `-t`   | Inline task; substituted into `{{TASK}}` of `prompt.md`. Defaults to `SANDCASTLE_TASK` env or smoke test text.                   |
-| `--prompt <file>` / `-p` | Use a different prompt file (defaults to `.sandcastle/prompt.md`).                                                               |
-| `--branch <name>`        | Commit on a named branch (`branchStrategy: { type: 'branch', branch: '...' }`).                                                  |
-| `--head`                 | Write directly to HEAD (faster, less safe).                                                                                      |
-| `--with-services`        | Attach the sandbox to the local docker-compose `klicker-uzh_klicker` network and forward DB / Redis / Hatchet / OpenAI env vars. |
-| `--reuse`                | (Reserved) Future hook for `createSandbox()` reuse across multiple runs.                                                         |
+| Flag                     | Effect                                                                                                                                                         |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--task <text>` / `-t`   | Inline task; substituted into `{{TASK}}` of `prompt.md`. Defaults to `SANDCASTLE_TASK` env or smoke test text.                                                 |
+| `--prompt <file>` / `-p` | Use a different prompt file (defaults to `.sandcastle/prompt.md`).                                                                                             |
+| `--model <id>` / `-m`    | OpenRouter model id (default `openrouter/anthropic/claude-opus-4`, overridable via `SANDCASTLE_MODEL`). See [OpenRouter models](https://openrouter.ai/models). |
+| `--branch <name>`        | Commit on a named branch (`branchStrategy: { type: 'branch', branch: '...' }`).                                                                                |
+| `--head`                 | Write directly to HEAD (faster, less safe).                                                                                                                    |
+| `--with-services`        | Attach the sandbox to the local docker-compose `klicker-uzh_klicker` network and forward DB / Redis / Hatchet / OpenAI env vars.                               |
 
 Default branch strategy is `merge-to-head`: agent commits land on a temp branch and merge back into HEAD only on success.
+
+opencode model strings follow the format `<providerId>/<modelId>`. For OpenRouter Anthropic models that's `openrouter/anthropic/claude-opus-4`, `openrouter/anthropic/claude-sonnet-4-5`, etc. Any provider available on OpenRouter (Google, OpenAI, Meta, etc.) can be selected the same way: `openrouter/google/gemini-2.5-pro`, `openrouter/openai/gpt-4.1`, ...
 
 ## Services mode
 
@@ -49,7 +51,7 @@ pnpm sandcastle:exec --with-services --task "Connect to DATABASE_URL and print t
 
 ## Secrets
 
-- Most agent tasks need only `ANTHROPIC_API_KEY`. Set it in your shell or in `.sandcastle/.env` (gitignored).
+- Most agent tasks need only `OPENROUTER_API_KEY`. Set it in your shell or in `.sandcastle/.env` (gitignored).
 - Never commit `.sandcastle/.env` or `.sandcastle/.env.local`.
 - `--with-services` mode forwards an explicit allowlist of klicker env vars; nothing else from the host environment leaks into the sandbox.
 

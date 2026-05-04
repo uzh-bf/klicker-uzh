@@ -1,17 +1,21 @@
 #!/usr/bin/env node
-import { claudeCode, run, type BranchStrategy } from '@ai-hero/sandcastle'
+import { opencode, run, type BranchStrategy } from '@ai-hero/sandcastle'
 import { docker } from '@ai-hero/sandcastle/sandboxes/docker'
 import { resolve } from 'node:path'
+
+const DEFAULT_MODEL = 'openrouter/anthropic/claude-opus-4'
 
 interface CliOptions {
   promptFile?: string
   task?: string
+  model: string
   branchStrategy: BranchStrategy
   attachKlickerNetwork: boolean
 }
 
 function parseArgs(argv: string[]): CliOptions {
   const opts: CliOptions = {
+    model: process.env.SANDCASTLE_MODEL ?? DEFAULT_MODEL,
     branchStrategy: { type: 'merge-to-head' },
     attachKlickerNetwork: false,
   }
@@ -19,6 +23,7 @@ function parseArgs(argv: string[]): CliOptions {
     const a = argv[i]
     if (a === '--prompt' || a === '-p') opts.promptFile = argv[++i]
     else if (a === '--task' || a === '-t') opts.task = argv[++i]
+    else if (a === '--model' || a === '-m') opts.model = argv[++i]
     else if (a === '--branch')
       opts.branchStrategy = { type: 'branch', branch: argv[++i] }
     else if (a === '--head') opts.branchStrategy = { type: 'head' }
@@ -50,7 +55,7 @@ async function main() {
     'List the top-level directories of the repo and report Node + pnpm versions.'
 
   const forwardedEnv: Record<string, string> = {
-    ANTHROPIC_API_KEY: requireEnv('ANTHROPIC_API_KEY'),
+    OPENROUTER_API_KEY: requireEnv('OPENROUTER_API_KEY'),
   }
   if (opts.attachKlickerNetwork) {
     for (const key of [
@@ -81,7 +86,7 @@ async function main() {
     network: opts.attachKlickerNetwork ? 'klicker-uzh_klicker' : undefined,
   })
 
-  const agent = claudeCode('claude-opus-4-7')
+  const agent = opencode(opts.model)
 
   await run({
     agent,
