@@ -335,12 +335,13 @@ These credentials are intended for local seeded dev environments only.
 
 [Sandcastle](https://github.com/mattpocock/sandcastle) (`@ai-hero/sandcastle`) wraps an AI coding agent in an isolated Docker sandbox so we can dispatch hands-off batch tasks (codemods, doc sweeps, refactors) against a copy of this repo without touching the developer's working tree. The default agent is [opencode](https://opencode.ai) routed through [OpenRouter](https://openrouter.ai), which lets us select any OpenRouter-supported model per run. Use it alongside, not in place of, the IDE Claude Code workflow and the GitHub `@claude` mention workflow.
 
-- **Config**: `.sandcastle/Dockerfile`, `.sandcastle/prompt.md`, `.sandcastle/README.md`
+- **Config**: `.sandcastle/Dockerfile`, `.sandcastle/prompt.md`, `.sandcastle/issue-prompt.md`, `.sandcastle/README.md`
 - **Runner**: `util/sandcastle/run.ts` (TypeScript, executed via `tsx`)
 - **Scripts**:
   - `pnpm sandcastle --task "<description>"` -- run the agent inside the sandbox; needs `OPENROUTER_API_KEY` in env or `.sandcastle/.env`.
+  - `pnpm sandcastle --issue 123 --base-branch v3` -- load a GitHub issue via `gh` and work on `sandcastle/issue-123`; also needs `GH_TOKEN` or `GITHUB_TOKEN`.
   - `pnpm sandcastle:exec --with-services --task "..."` -- wraps Infisical and forwards DB / Redis / Hatchet / OpenAI env vars; the local `klicker` compose stack must already be up.
 - **Model selection**: defaults to `openrouter/anthropic/claude-opus-4`; override per run with `--model openrouter/<provider>/<id>` (or set `SANDCASTLE_MODEL`).
-- Default branch strategy is `merge-to-head` (HEAD stays untouched until success). Override with `--branch <name>` or `--head`.
+- Default branch strategy is `merge-to-head` for `--task` (HEAD stays untouched until success). `--issue` defaults to `sandcastle/issue-<number>`; override with `--branch <name>` or `--head`.
 
 Build the sandbox image once: `docker build -t klicker-sandcastle:local .sandcastle`. See `.sandcastle/README.md` for the full reference.
