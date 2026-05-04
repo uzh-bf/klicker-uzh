@@ -1,14 +1,14 @@
 # Sandcastle (agentic sandboxing)
 
-[Sandcastle](https://github.com/mattpocock/sandcastle) (`@ai-hero/sandcastle`) wraps an AI coding agent in an isolated Docker sandbox so we can dispatch agentic tasks against a copy of this repo without touching the developer's working tree. The default agent is [opencode](https://opencode.ai) routed through [OpenRouter](https://openrouter.ai), so any model on OpenRouter is selectable per run.
+[Sandcastle](https://github.com/mattpocock/sandcastle) (`@ai-hero/sandcastle`) wraps an AI coding agent in an isolated Docker sandbox so we can dispatch agentic tasks against a copy of this repo without touching the developer's working tree. The agent here is **[opencode](https://opencode.ai) talking to [OpenRouter](https://openrouter.ai)** — Sandcastle does not use Claude Code. Any model on OpenRouter is selectable per run (Anthropic, OpenAI, Google, Meta, ...).
 
 ## When to use it
 
-| Tool                                                        | Use for                                                                           |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| IDE Claude Code (`.claude/skills/`, `.factory/skills/`)     | Interactive edits with full host access.                                          |
-| GitHub `@claude` mention (`.github/workflows/claude.yml`)   | PR-driven Claude tasks triggered from issues / PR comments.                       |
-| **Sandcastle** (`pnpm sandcastle` / `pnpm sandcastle:exec`) | Hands-off batch tasks (renames, codemods, doc sweeps) where HEAD must stay clean. |
+| Tool                                                        | Agent                         | Use for                                                                               |
+| ----------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------- |
+| IDE Claude Code (`.claude/skills/`, `.factory/skills/`)     | Claude Code on the host       | Interactive edits with full host access.                                              |
+| GitHub `@claude` mention (`.github/workflows/claude.yml`)   | Claude Code in GitHub Actions | PR-driven tasks triggered from issues / PR comments.                                  |
+| **Sandcastle** (`pnpm sandcastle` / `pnpm sandcastle:exec`) | **opencode + OpenRouter**     | Hands-off batch tasks (renames, codemods, doc sweeps) in a sandbox; HEAD stays clean. |
 
 ## Quickstart
 
@@ -61,4 +61,4 @@ The runner bind-mounts the host pnpm store (`$PNPM_STORE_PATH` or `~/.local/shar
 
 ## CI
 
-Intentionally not wired up yet. The existing `.github/workflows/claude.yml` covers PR-driven Claude tasks; a future workflow can call `pnpm sandcastle` for scheduled or batch automation.
+Intentionally not wired up yet. The existing `.github/workflows/claude.yml` already handles PR-driven `@claude` requests with Claude Code; a future workflow can call `pnpm sandcastle` (opencode + OpenRouter) for scheduled or batch automation that should run in a sandbox.
