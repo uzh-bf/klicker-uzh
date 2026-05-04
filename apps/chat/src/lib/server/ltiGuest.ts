@@ -15,27 +15,20 @@ export type LtiScope = 'LTI1.1' | 'LTI1.3'
 export type AuthMode = 'account' | 'anonymous'
 
 // ---------------------------------------------------------------------------
-// Secret resolution + boot-time assertion
+// Secret resolution — fail fast on first use in production rather than at
+// module load (Next.js evaluates route modules at build time, which would
+// otherwise blow up `next build` in environments without these secrets).
 // ---------------------------------------------------------------------------
 
-if (process.env.NODE_ENV === 'production') {
-  if (!process.env.APP_CHAT_GUEST_SECRET) {
-    throw new Error(
-      'APP_CHAT_GUEST_SECRET is required in production. Falling back to ' +
-        'APP_SECRET-derived value would let APP_SECRET-knowers forge guest tokens.'
-    )
-  }
-  if (!process.env.CHAT_GUEST_SEED) {
+function getChatGuestSeed(): string {
+  if (process.env.CHAT_GUEST_SEED) return process.env.CHAT_GUEST_SEED
+  if (process.env.NODE_ENV === 'production') {
     throw new Error(
       'CHAT_GUEST_SEED is required in production. Falling back to ' +
         'APP_SECRET-derived value would link guest persona derivation to ' +
         'APP_SECRET, which is a separate trust domain.'
     )
   }
-}
-
-function getChatGuestSeed(): string {
-  if (process.env.CHAT_GUEST_SEED) return process.env.CHAT_GUEST_SEED
   const appSecret = process.env.APP_SECRET
   if (!appSecret) throw new Error('APP_SECRET is required')
   return createHmac('sha256', appSecret).update('chat-guest-seed').digest('hex')
@@ -44,6 +37,12 @@ function getChatGuestSeed(): string {
 function getChatGuestSecret(): string {
   if (process.env.APP_CHAT_GUEST_SECRET)
     return process.env.APP_CHAT_GUEST_SECRET
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'APP_CHAT_GUEST_SECRET is required in production. Falling back to ' +
+        'APP_SECRET-derived value would let APP_SECRET-knowers forge guest tokens.'
+    )
+  }
   const appSecret = process.env.APP_SECRET
   if (!appSecret) throw new Error('APP_SECRET is required')
   return createHmac('sha256', appSecret)
