@@ -1,10 +1,7 @@
 import { useParams } from 'next/navigation'
 import { useCallback, useRef } from 'react'
 import { hasAllImageAttachmentsHydrated } from '../lib/attachments/attachmentState'
-import {
-  REASONING_EFFORT_OPTIONS,
-  type ReasoningEffort,
-} from '../lib/config/reasoning'
+import { type ReasoningEffort } from '../lib/config/reasoning'
 import { generateId } from '../lib/utils/chatUtils'
 import {
   useChatStore,
@@ -473,10 +470,8 @@ export function useChatResponse(
                     >
                     const reasoningEffort =
                       typeof metadata.reasoningEffort === 'string' &&
-                      REASONING_EFFORT_OPTIONS.includes(
-                        metadata.reasoningEffort as ReasoningEffort
-                      )
-                        ? (metadata.reasoningEffort as ReasoningEffort)
+                      metadata.reasoningEffort.length > 0
+                        ? metadata.reasoningEffort
                         : null
 
                     messageMetadata = {
