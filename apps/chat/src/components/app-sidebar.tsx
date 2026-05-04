@@ -15,6 +15,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import * as React from 'react'
 import { useChatStore } from '../stores/chatStore'
+import { useSettingsStore } from '../stores/settingsStore'
 import { SettingsPanel } from './settings-panel'
 import { ThreadList } from './thread-list'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -26,6 +27,7 @@ export function AppSidebar({
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
   const { createThread, participationRequired } = useChatStore()
+  const authMode = useSettingsStore((s) => s.authMode)
 
   const handleNewThread = async () => {
     if (participationRequired) return
@@ -45,6 +47,18 @@ export function AppSidebar({
             <div className="flex items-center py-1.5 pl-3">
               {chatbotName && (
                 <span className="min-w-0 truncate text-sm">{chatbotName}</span>
+              )}
+              {authMode === 'anonymous' && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="ml-2 inline-flex shrink-0 items-center rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
+                      Guest
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Signed in via LTI. Chats stay separate from any account.
+                  </TooltipContent>
+                </Tooltip>
               )}
               <Tooltip>
                 <TooltipTrigger asChild>

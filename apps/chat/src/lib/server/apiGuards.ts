@@ -3,10 +3,35 @@ import { Prisma } from '@klicker-uzh/prisma/client'
 import { jwtVerify } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { type AuthMode, verifyChatGuestToken } from './ltiGuest'
 
+export type { AuthMode }
+
+type ParticipantIdentity = {
+  participantId: string
+  authMode: AuthMode
+}
+
+// Token order: chat_participant_token first, then participant_token.
+// Forward-compat: Phase C "switch to anonymous" only sets the guest cookie;
+// account cookie stays. Guest-first ordering means the switch takes effect
+// without clearing the account cookie or changing this code.
 export async function getParticipantId(
   req: NextRequest
-): Promise<{ participantId: string } | { response: NextResponse }> {
+): Promise<ParticipantIdentity | { response: NextResponse }> {
+  const chatGuestToken = req.cookies.get('chat_participant_token')?.value
+  if (chatGuestToken) {
+    try {
+      const payload = await verifyChatGuestToken(chatGuestToken)
+      if (payload.sub) {
+        return { participantId: payload.sub, authMode: 'anonymous' }
+      }
+    } catch (error) {
+      console.error('Chat guest token verification failed:', error)
+      // Fall through to participant_token below.
+    }
+  }
+
   const participantToken = req.cookies.get('participant_token')?.value
 
   if (!participantToken) {
@@ -37,7 +62,7 @@ export async function getParticipantId(
       }
     }
 
-    return { participantId }
+    return { participantId, authMode: 'account' }
   } catch (error) {
     console.error('JWT verification failed:', error)
     return {
@@ -87,14 +112,14 @@ export async function withChatbotAuth(
   req: NextRequest,
   chatbotId: string
 ): Promise<
-  | { participantId: string; chatbot: { courseId: string } }
+  | { participantId: string; authMode: AuthMode; chatbot: { courseId: string } }
   | { response: NextResponse }
 > {
   const participantResult = await getParticipantId(req)
   if ('response' in participantResult) {
     return participantResult
   }
-  const { participantId } = participantResult
+  const { participantId, authMode } = participantResult
 
   const chatbotResult = await getChatbotOr404(chatbotId, { courseId: true })
   if ('response' in chatbotResult) {
@@ -109,7 +134,7 @@ export async function withChatbotAuth(
     return participationResult
   }
 
-  return { participantId, chatbot: chatbotResult.chatbot }
+  return { participantId, authMode, chatbot: chatbotResult.chatbot }
 }
 
 export async function requireParticipation(

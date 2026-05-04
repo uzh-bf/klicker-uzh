@@ -631,7 +631,7 @@ export async function POST(
   if ('response' in authResult) {
     return authResult.response
   }
-  const { participantId } = authResult
+  const { participantId, authMode } = authResult
 
   // check disclaimer acceptance
   try {
@@ -909,6 +909,28 @@ export async function POST(
           { status: 400 }
         )
       }
+    }
+  }
+
+  // Phase A: anonymous (LTI guest) users are locked to fallback models.
+  // This is the FINAL model override — runs after all account-mode model
+  // resolution branches so it cannot be silently overwritten by the
+  // `!chatbot.modelSelection` branch (the bug from the original branch).
+  // Phase B replaces this with reasoning-effort tier gating.
+  if (authMode === 'anonymous' && !selectedModelConfig.fallback) {
+    userCredits =
+      userCredits ??
+      (await CreditsService.getUserCredits(participantId, chatbotId))
+    selectedModel = getAutomaticModelId(
+      userCredits,
+      chatbot.allowedModelIds as string[]
+    )
+    selectedModelConfig = modelRegistry.find((m) => m.id === selectedModel)
+    if (!selectedModelConfig?.fallback) {
+      return NextResponse.json(
+        { error: 'No fallback model available for guest access' },
+        { status: 503 }
+      )
     }
   }
 
