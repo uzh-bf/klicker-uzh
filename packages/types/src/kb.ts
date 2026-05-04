@@ -81,21 +81,6 @@ export interface KBSettings {
   }
 }
 
-export interface KBIngestionStats {
-  resourcesDiscovered?: number | null
-  resourcesCreated?: number | null
-  resourcesUpdated?: number | null
-  pagesDiscovered?: number | null
-  pagesScraped?: number | null
-  chunksCreated?: number | null
-  chunksDeleted?: number | null
-  entitiesExtracted?: number | null
-  bytesProcessed?: number | null
-  durationMs?: number | null
-  warnings?: string[]
-  external?: Record<string, KBJsonValue>
-}
-
 export interface KBWebhookPayload {
   eventId?: string
   eventType?: string
@@ -104,7 +89,6 @@ export interface KBWebhookPayload {
   resource?: Record<string, unknown>
   ingestionRun?: Record<string, unknown>
   graph?: Record<string, unknown>
-  stats?: KBIngestionStats
   error?: Record<string, unknown>
   subresources?: Array<Record<string, unknown>>
   external?: Record<string, unknown>

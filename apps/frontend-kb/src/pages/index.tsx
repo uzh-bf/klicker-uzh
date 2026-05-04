@@ -25,12 +25,7 @@ import { toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useEffect, useMemo, useState } from 'react'
 import { KbLayout } from '../components/KbLayout'
-import {
-  toKbRefreshMode,
-  toKbRefreshScope,
-  toKnowledgeBaseSummary,
-  toKnowledgeResource,
-} from '../lib/kbMapping'
+import { toKnowledgeBaseSummary, toKnowledgeResource } from '../lib/kbMapping'
 
 const DEFAULT_FILTER_STATE: KnowledgeResourceFilterState = {
   query: '',
@@ -145,12 +140,12 @@ function KbHomePage() {
         emptyState="No knowledge bases are available yet."
         onActiveViewChange={setActiveView}
         onFilterStateChange={setFilterState}
-        onSelectKnowledgeBase={(knowledgeBaseId) => {
+        onSelectKnowledgeBase={(knowledgeBaseId: string) => {
           setSelectedKnowledgeBaseId(knowledgeBaseId)
           setSelectedResourceId(undefined)
         }}
         onSelectResource={setSelectedResourceId}
-        onUploadResources={(files) => {
+        onUploadResources={(files: File[]) => {
           const kbId = selectedKnowledgeBaseSummary?.id
           if (!kbId) return
 
@@ -163,10 +158,7 @@ function KbHomePage() {
                     input: {
                       title: file.name,
                       kind: KbResourceKind.Document,
-                      originLabel: 'Upload',
                       externalResourceId: `local-upload:${file.name}:${file.lastModified}`,
-                      documentFileName: file.name,
-                      documentMimeType: file.type || null,
                     },
                   },
                 })
@@ -175,7 +167,7 @@ function KbHomePage() {
             'Document resource queued.'
           )
         }}
-        onAddWebsite={(url) => {
+        onAddWebsite={(url: string) => {
           const kbId = selectedKnowledgeBaseSummary?.id
           if (!kbId) return
 
@@ -186,8 +178,6 @@ function KbHomePage() {
                 input: {
                   title: url.replace(/^https?:\/\//, ''),
                   kind: KbResourceKind.Website,
-                  originLabel: 'URL',
-                  originDetail: url,
                   websiteUrl: url,
                   websiteStrategy: KbWebsiteStrategy.IndexPage,
                 },
@@ -207,7 +197,6 @@ function KbHomePage() {
                 input: {
                   title: input.title,
                   kind: KbResourceKind.Snippet,
-                  originLabel: 'Snippet',
                   snippetText: input.content,
                 },
               },
@@ -222,7 +211,7 @@ function KbHomePage() {
           notifyNotConnected('Knowledge base reindex')
         }
         onReindexResource={() => notifyNotConnected('Resource reindex')}
-        onDeleteResources={(resourceIds) => {
+        onDeleteResources={(resourceIds: string[]) => {
           void runMutation(
             deleteKBResources({ variables: { resourceIds } }),
             'Resources removed.',
@@ -238,9 +227,7 @@ function KbHomePage() {
               variables: {
                 kbId: knowledgeBaseId,
                 input: {
-                  refreshMode: toKbRefreshMode(policy.mode),
-                  refreshScope: toKbRefreshScope(policy.scope),
-                  changeMonitoring: policy.changeMonitoring,
+                  refreshIntervalMinutes: policy.intervalMinutes ?? null,
                 },
               },
             })
@@ -252,9 +239,7 @@ function KbHomePage() {
               variables: {
                 resourceId,
                 input: {
-                  refreshMode: toKbRefreshMode(policy.mode),
-                  refreshScope: toKbRefreshScope(policy.scope),
-                  changeMonitoring: policy.changeMonitoring,
+                  refreshIntervalMinutes: policy.intervalMinutes ?? null,
                 },
               },
             })

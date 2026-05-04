@@ -98,6 +98,7 @@ export interface KnowledgeRefreshPolicy {
   mode: KnowledgeRefreshMode
   label?: string
   intervalLabel?: string
+  intervalMinutes?: number | null
   cronLabel?: string
   scope?: KnowledgeRefreshScope
   changeMonitoring?: boolean

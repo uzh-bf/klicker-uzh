@@ -5,41 +5,16 @@ fragment KBResourceData on KBResource {
   description
   kind
   status
-  statusLabel
   statusDetail
-  progress
-  originLabel
-  originDetail
-  sizeBytes
-  chunkCount
-  entityCount
   metadata
   graphInclusion
-  lastIndexedAt
-  lastCheckedAt
-  lastRemoteModifiedAt
-  lastContentChangedAt
-  nextRefreshAt
-  changeStatus
-  refreshMode
-  refreshScope
   refreshIntervalMinutes
-  refreshCron
-  changeMonitoring
-  documentFileName
-  documentMimeType
-  documentPageCount
-  documentLanguage
+  lastIndexedAt
+  nextRefreshAt
+  externalResourceId
   websiteUrl
   websiteStrategy
-  sitemapFound
-  sitemapPageCount
-  scrapedPageCount
-  crawlDepth
-  snippetCharacterCount
-  snippetLanguage
-  snippetAuthor
-  snippetNote
+  snippetText
   elementId
   practiceQuizId
   liveQuizId
@@ -47,19 +22,8 @@ fragment KBResourceData on KBResource {
   groupActivityId
   answerCollectionId
   mediaFileId
-  subresources {
-    id
-    url
-    title
-    status
-    statusDetail
-    chunkCount
-    lastCheckedAt
-    lastContentChangedAt
-  }
   ingestionRuns {
     id
-    trigger
     status
     startedAt
     finishedAt

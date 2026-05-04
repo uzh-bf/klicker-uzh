@@ -1009,7 +1009,6 @@ type CourseSummary {
 }
 
 input CreateKBInput {
-  changeMonitoring: Boolean
   description: String
   externalGraphId: String
   externalNamespaceId: String
@@ -1019,22 +1018,13 @@ input CreateKBInput {
   metadata: Json
   metadataProfile: KBMetadataProfile
   name: String!
-  refreshCron: String
   refreshIntervalMinutes: Int
-  refreshMode: KBRefreshMode
-  refreshScope: KBRefreshScope
   settings: Json
 }
 
 input CreateKBResourceInput {
   answerCollectionId: Int
-  changeMonitoring: Boolean
-  crawlDepth: Int
   description: String
-  documentFileName: String
-  documentLanguage: String
-  documentMimeType: String
-  documentPageCount: Int
   elementId: Int
   externalResourceId: String
   graphInclusion: KBGraphInclusionMode
@@ -1044,16 +1034,8 @@ input CreateKBResourceInput {
   mediaFileId: String
   metadata: Json
   microLearningId: String
-  originDetail: String
-  originLabel: String
   practiceQuizId: String
-  refreshCron: String
   refreshIntervalMinutes: Int
-  refreshMode: KBRefreshMode
-  refreshScope: KBRefreshScope
-  snippetAuthor: String
-  snippetLanguage: String
-  snippetNote: String
   snippetText: String
   title: String!
   websiteStrategy: KBWebsiteStrategy
@@ -1653,13 +1635,11 @@ The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://
 scalar Json
 
 type KB {
-  changeMonitoring: Boolean!
   chatbots: [KBChatbot!]!
   chunkCount: Int!
   courses: [KBCourse!]!
   createdAt: Date!
   description: String
-  entityCount: Int!
   externalGraphId: String
   externalNamespaceId: String
   externalVectorStoreId: String
@@ -1667,18 +1647,13 @@ type KB {
   graphResourceKinds: [KBResourceKind!]!
   id: ID!
   ingestionRuns: [KBIngestionRun!]!
-  lastCheckedAt: Date
-  lastContentChangedAt: Date
   lastIndexedAt: Date
   metadata: Json
   metadataProfile: KBMetadataProfile!
   name: String!
   nextRefreshAt: Date
   ownerId: ID!
-  refreshCron: String
   refreshIntervalMinutes: Int
-  refreshMode: KBRefreshMode!
-  refreshScope: KBRefreshScope!
   resourceCount: Int!
   resources: [KBResource!]!
   settings: Json
@@ -1717,38 +1692,20 @@ enum KBGraphInclusionMode {
 
 type KBIngestionRun {
   createdAt: Date!
-  errorDetails: String
   errorMessage: String
-  externalRunId: String
   finishedAt: Date
-  hatchetTaskId: String
   id: ID!
   kbId: ID!
-  requestedById: ID
   resourceId: ID
   startedAt: Date
-  stats: Json
   status: KBIngestionStatus!
-  trigger: KBIngestionTrigger!
-  updatedAt: Date!
 }
 
 enum KBIngestionStatus {
-  CANCELLED
   FAILED
   QUEUED
   RUNNING
-  SKIPPED
   SUCCEEDED
-}
-
-enum KBIngestionTrigger {
-  MANUAL
-  REFRESH_POLICY
-  RESOURCE_CREATED
-  RESOURCE_UPDATED
-  SCHEDULED
-  WEBHOOK
 }
 
 enum KBMetadataProfile {
@@ -1757,46 +1714,17 @@ enum KBMetadataProfile {
   COURSE_KB
 }
 
-enum KBRefreshMode {
-  CRON
-  DISABLED
-  INHERIT
-  INTERVAL
-  MANUAL
-}
-
 input KBRefreshPolicyInput {
-  changeMonitoring: Boolean
-  refreshCron: String
   refreshIntervalMinutes: Int
-  refreshMode: KBRefreshMode!
-  refreshScope: KBRefreshScope
-}
-
-enum KBRefreshScope {
-  ALL
-  REFRESHABLE
-  WEBSITES
 }
 
 type KBResource {
   answerCollectionId: Int
-  changeMonitoring: Boolean
-  changeStatus: String
-  chunkCount: Int
-  contentHash: String
-  crawlDepth: Int
   createdAt: Date!
   deletedAt: Date
   deletedById: ID
   description: String
-  documentFileName: String
-  documentLanguage: String
-  documentMimeType: String
-  documentPageCount: Int
   elementId: Int
-  entityCount: Int
-  externalIndexId: String
   externalResourceId: String
   graphInclusion: KBGraphInclusionMode!
   groupActivityId: ID
@@ -1804,37 +1732,17 @@ type KBResource {
   ingestionRuns: [KBIngestionRun!]!
   kbId: ID!
   kind: KBResourceKind!
-  lastCheckedAt: Date
-  lastContentChangedAt: Date
   lastIndexedAt: Date
-  lastRemoteModifiedAt: Date
   liveQuizId: ID
   mediaFileId: ID
   metadata: Json
   microLearningId: ID
   nextRefreshAt: Date
-  originDetail: String
-  originLabel: String
   practiceQuizId: ID
-  progress: Int
-  refreshCron: String
   refreshIntervalMinutes: Int
-  refreshMode: KBRefreshMode!
-  refreshScope: KBRefreshScope
-  scrapedPageCount: Int
-  sitemapFound: Boolean
-  sitemapPageCount: Int
-  sizeBytes: String
-  snippetAuthor: String
-  snippetCharacterCount: Int
-  snippetLanguage: String
-  snippetNote: String
   snippetText: String
-  sourceHash: String
-  status: KBResourceStatus!
+  status: KBStatus!
   statusDetail: String
-  statusLabel: String
-  subresources: [KBWebsiteSubresource!]!
   title: String!
   updatedAt: Date!
   websiteStrategy: KBWebsiteStrategy
@@ -1846,7 +1754,7 @@ input KBResourceFilterInput {
   includeDeleted: Boolean
   kinds: [KBResourceKind!]
   query: String
-  statuses: [KBResourceStatus!]
+  statuses: [KBStatus!]
 }
 
 enum KBResourceKind {
@@ -1857,90 +1765,22 @@ enum KBResourceKind {
 }
 
 input KBResourceRefreshPolicyInput {
-  changeMonitoring: Boolean
-  refreshCron: String
   refreshIntervalMinutes: Int
-  refreshMode: KBRefreshMode!
-  refreshScope: KBRefreshScope
-}
-
-enum KBResourceStatus {
-  CRAWLING
-  DISABLED
-  ERROR
-  INDEXING
-  QUEUED
-  READY
-  STALE
 }
 
 enum KBStatus {
-  CRAWLING
   DISABLED
   ERROR
   INDEXING
   QUEUED
   READY
   STALE
-}
-
-enum KBWebhookDestination {
-  GRAPH
-  INGESTION
-}
-
-enum KBWebhookDirection {
-  INCOMING
-  OUTGOING
-}
-
-type KBWebhookEvent {
-  attempts: Int!
-  createdAt: Date!
-  deliveredAt: Date
-  destination: KBWebhookDestination!
-  direction: KBWebhookDirection!
-  eventId: String!
-  eventType: String!
-  id: ID!
-  ingestionRunId: ID
-  kbId: ID
-  lastAttemptAt: Date
-  lastError: String
-  payload: Json!
-  resourceId: ID
-  status: KBWebhookStatus!
-  updatedAt: Date!
-}
-
-enum KBWebhookStatus {
-  DELIVERED
-  FAILED
-  IGNORED
-  PENDING
 }
 
 enum KBWebsiteStrategy {
   INDEX_PAGE
   REFERENCE_ONLY
   SCRAPE_SUBSITES
-}
-
-type KBWebsiteSubresource {
-  chunkCount: Int
-  contentHash: String
-  createdAt: Date!
-  id: ID!
-  lastCheckedAt: Date
-  lastContentChangedAt: Date
-  lastRemoteModifiedAt: Date
-  resourceId: ID!
-  sourceHash: String
-  status: KBResourceStatus!
-  statusDetail: String
-  title: String
-  updatedAt: Date!
-  url: String!
 }
 
 type LeaderboardEntry {
@@ -2730,7 +2570,6 @@ type Query {
   getKB(id: String!): KB
   getKBIngestionRuns(kbId: String!, limit: Int, resourceId: String): [KBIngestionRun!]!
   getKBResources(filter: KBResourceFilterInput, kbId: String!): [KBResource!]!
-  getKBWebhookEvents(kbId: String!, limit: Int, resourceId: String): [KBWebhookEvent!]!
   getKBs: [KB!]!
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
   getLiveQuizEmbeddingInfo(id: String!): LiveQuizEmbeddingInfo
@@ -3206,7 +3045,6 @@ type Title {
 }
 
 input UpdateKBInput {
-  changeMonitoring: Boolean
   description: String
   externalGraphId: String
   externalNamespaceId: String
@@ -3216,10 +3054,7 @@ input UpdateKBInput {
   metadata: Json
   metadataProfile: KBMetadataProfile
   name: String
-  refreshCron: String
   refreshIntervalMinutes: Int
-  refreshMode: KBRefreshMode
-  refreshScope: KBRefreshScope
   settings: Json
   status: KBStatus
   statusMessage: String
@@ -3227,13 +3062,7 @@ input UpdateKBInput {
 
 input UpdateKBResourceInput {
   answerCollectionId: Int
-  changeMonitoring: Boolean
-  crawlDepth: Int
   description: String
-  documentFileName: String
-  documentLanguage: String
-  documentMimeType: String
-  documentPageCount: Int
   elementId: Int
   externalResourceId: String
   graphInclusion: KBGraphInclusionMode
@@ -3243,19 +3072,10 @@ input UpdateKBResourceInput {
   mediaFileId: String
   metadata: Json
   microLearningId: String
-  originDetail: String
-  originLabel: String
   practiceQuizId: String
-  refreshCron: String
   refreshIntervalMinutes: Int
-  refreshMode: KBRefreshMode
-  refreshScope: KBRefreshScope
-  snippetAuthor: String
-  snippetLanguage: String
-  snippetNote: String
   snippetText: String
   statusDetail: String
-  statusLabel: String
   title: String
   websiteStrategy: KBWebsiteStrategy
   websiteUrl: String

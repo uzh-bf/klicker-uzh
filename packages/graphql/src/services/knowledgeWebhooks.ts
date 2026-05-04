@@ -1,14 +1,13 @@
 import {
   KBIngestionStatus,
-  KBResourceStatus,
-  KBWebhookDestination,
-  KBWebhookDirection,
-  KBWebhookStatus,
+  KBStatus,
   Prisma,
   PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import type { KBWebhookPayload } from '@klicker-uzh/types'
 import crypto from 'node:crypto'
+
+export type KBWebhookDestination = 'INGESTION' | 'GRAPH'
 
 export type KBWebhookEventType =
   | 'resource.created'
@@ -76,7 +75,7 @@ function getWebhookSignatureToleranceSeconds() {
 }
 
 function getDestinationConfig(destination: KBWebhookDestination) {
-  if (destination === KBWebhookDestination.INGESTION) {
+  if (destination === 'INGESTION') {
     return {
       url: process.env.KB_INGESTION_WEBHOOK_URL,
       secret: process.env.KB_INGESTION_WEBHOOK_SECRET,
@@ -89,25 +88,29 @@ function getDestinationConfig(destination: KBWebhookDestination) {
   }
 }
 
+function shouldPersistPayload() {
+  const env = process.env.NODE_ENV ?? 'development'
+  return env !== 'production'
+}
+
 export interface DispatchKBWebhookInput {
-  prisma: PrismaClient | Prisma.TransactionClient
   destination: KBWebhookDestination
   eventType: KBWebhookEventType
   payload: KBWebhookPayload
-  kbId?: string | null
-  resourceId?: string | null
-  ingestionRunId?: string | null
+}
+
+export interface DispatchKBWebhookResult {
+  ok: boolean
+  eventId: string
+  statusCode?: number
+  error?: string
 }
 
 export async function dispatchKBWebhook({
-  prisma,
   destination,
   eventType,
   payload,
-  kbId,
-  resourceId,
-  ingestionRunId,
-}: DispatchKBWebhookInput) {
+}: DispatchKBWebhookInput): Promise<DispatchKBWebhookResult> {
   const eventId = crypto.randomUUID()
   const payloadWithEvent: KBWebhookPayload = {
     ...payload,
@@ -116,29 +119,13 @@ export async function dispatchKBWebhook({
     occurredAt: new Date().toISOString(),
   }
 
-  const event = await prisma.kBWebhookEvent.create({
-    data: {
-      eventId,
-      direction: KBWebhookDirection.OUTGOING,
-      eventType,
-      status: KBWebhookStatus.PENDING,
-      destination,
-      payload: payloadWithEvent as Prisma.InputJsonObject,
-      kbId: kbId ?? null,
-      resourceId: resourceId ?? null,
-      ingestionRunId: ingestionRunId ?? null,
-    },
-  })
-
   const { url, secret } = getDestinationConfig(destination)
   if (!url || !secret) {
-    return await prisma.kBWebhookEvent.update({
-      where: { id: event.id },
-      data: {
-        status: KBWebhookStatus.IGNORED,
-        lastError: 'Webhook destination is not configured',
-      },
-    })
+    return {
+      ok: false,
+      eventId,
+      error: 'Webhook destination is not configured',
+    }
   }
 
   const rawBody = JSON.stringify(payloadWithEvent)
@@ -162,29 +149,18 @@ export async function dispatchKBWebhook({
     })
 
     if (!response.ok) {
-      throw new Error(`Webhook responded with HTTP ${response.status}`)
+      return {
+        ok: false,
+        eventId,
+        statusCode: response.status,
+        error: `Webhook responded with HTTP ${response.status}`,
+      }
     }
 
-    return await prisma.kBWebhookEvent.update({
-      where: { id: event.id },
-      data: {
-        status: KBWebhookStatus.DELIVERED,
-        attempts: { increment: 1 },
-        lastAttemptAt: new Date(),
-        deliveredAt: new Date(),
-      },
-    })
+    return { ok: true, eventId, statusCode: response.status }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    return await prisma.kBWebhookEvent.update({
-      where: { id: event.id },
-      data: {
-        status: KBWebhookStatus.FAILED,
-        attempts: { increment: 1 },
-        lastAttemptAt: new Date(),
-        lastError: message,
-      },
-    })
+    return { ok: false, eventId, error: message }
   } finally {
     clearTimeout(timeout)
   }
@@ -194,24 +170,18 @@ type IncomingKBWebhookPayload = KBWebhookPayload & {
   kbId?: string
   resourceId?: string
   ingestionRunId?: string
-  progress?: number
   statusDetail?: string
   externalResourceId?: string
-  externalIndexId?: string
-  externalRunId?: string
-  sourceHash?: string
-  contentHash?: string
   chunkCount?: number
-  entityCount?: number
   sizeBytes?: number
 }
 
-const INCOMING_RESOURCE_STATUS: Record<string, KBResourceStatus | undefined> = {
-  'resource.processing_started': KBResourceStatus.INDEXING,
-  'resource.processing_progress': KBResourceStatus.INDEXING,
-  'resource.processing_succeeded': KBResourceStatus.READY,
-  'resource.processing_failed': KBResourceStatus.ERROR,
-  'resource.subresources_updated': KBResourceStatus.READY,
+const INCOMING_RESOURCE_STATUS: Record<string, KBStatus | undefined> = {
+  'resource.processing_started': KBStatus.INDEXING,
+  'resource.processing_progress': KBStatus.INDEXING,
+  'resource.processing_succeeded': KBStatus.READY,
+  'resource.processing_failed': KBStatus.ERROR,
+  'resource.subresources_updated': KBStatus.READY,
 }
 
 const INCOMING_RUN_STATUS: Record<string, KBIngestionStatus | undefined> = {
@@ -296,7 +266,7 @@ export async function handleKBIngestionWebhook({
     return { statusCode: 401, body: { ok: false, error: 'Invalid signature' } }
   }
 
-  const existingEvent = await prisma.kBWebhookEvent.findUnique({
+  const existingEvent = await prisma.kBWebhookInbox.findUnique({
     where: { eventId },
   })
   if (existingEvent) {
@@ -323,7 +293,7 @@ export async function handleKBIngestionWebhook({
   const resource = resourceId
     ? await prisma.kBResource.findUnique({
         where: { id: resourceId },
-        select: { id: true, kbId: true },
+        select: { id: true, kbId: true, metadata: true },
       })
     : null
 
@@ -366,55 +336,34 @@ export async function handleKBIngestionWebhook({
     }
   }
 
+  const persistPayload = shouldPersistPayload()
+
   await prisma.$transaction(async (tx) => {
-    await tx.kBWebhookEvent.create({
+    await tx.kBWebhookInbox.create({
       data: {
         eventId,
-        direction: KBWebhookDirection.INCOMING,
         eventType,
-        status: KBWebhookStatus.DELIVERED,
-        destination: KBWebhookDestination.INGESTION,
-        payload: payload as Prisma.InputJsonObject,
-        kbId: resolvedKbId,
-        resourceId: resource?.id ?? null,
-        ingestionRunId,
-        deliveredAt: new Date(),
+        payload: persistPayload
+          ? (payload as Prisma.InputJsonObject)
+          : Prisma.DbNull,
       },
     })
 
     if (resource) {
       const status = INCOMING_RESOURCE_STATUS[eventType]
+      const nextMetadata = mergeResourceMetadata(resource.metadata, payload)
+
       await tx.kBResource.update({
         where: { id: resource.id },
         data: {
           ...(status ? { status } : {}),
-          progress:
-            typeof payload.progress === 'number'
-              ? Math.max(0, Math.min(100, payload.progress))
-              : undefined,
           statusDetail: payload.statusDetail ?? undefined,
           externalResourceId: payload.externalResourceId ?? undefined,
-          externalIndexId: payload.externalIndexId ?? undefined,
-          sourceHash: payload.sourceHash ?? undefined,
-          contentHash: payload.contentHash ?? undefined,
-          chunkCount:
-            typeof payload.chunkCount === 'number'
-              ? payload.chunkCount
-              : undefined,
-          entityCount:
-            typeof payload.entityCount === 'number'
-              ? payload.entityCount
-              : undefined,
-          sizeBytes:
-            typeof payload.sizeBytes === 'number'
-              ? BigInt(payload.sizeBytes)
+          metadata:
+            nextMetadata != null
+              ? (nextMetadata as Prisma.InputJsonObject)
               : undefined,
           lastIndexedAt:
-            eventType === 'resource.processing_succeeded'
-              ? new Date()
-              : undefined,
-          lastCheckedAt: new Date(),
-          lastContentChangedAt:
             eventType === 'resource.processing_succeeded'
               ? new Date()
               : undefined,
@@ -428,7 +377,6 @@ export async function handleKBIngestionWebhook({
         where: { id: ingestionRunId },
         data: {
           status: runStatus,
-          externalRunId: payload.externalRunId ?? undefined,
           startedAt:
             runStatus === KBIngestionStatus.RUNNING ? new Date() : undefined,
           finishedAt:
@@ -436,7 +384,6 @@ export async function handleKBIngestionWebhook({
             runStatus === KBIngestionStatus.FAILED
               ? new Date()
               : undefined,
-          stats: payload.stats as Prisma.InputJsonObject,
           errorMessage:
             eventType === 'resource.processing_failed'
               ? String(payload.error?.message ?? payload.statusDetail ?? '')
@@ -445,92 +392,44 @@ export async function handleKBIngestionWebhook({
       })
     }
 
-    if (eventType === 'resource.subresources_updated' && resource) {
-      const subresources = Array.isArray(payload.subresources)
-        ? payload.subresources
-        : []
-
-      for (const subresource of subresources) {
-        const url = subresource.url
-        if (typeof url !== 'string' || url.length === 0) continue
-
-        await tx.kBWebsiteSubresource.upsert({
-          where: {
-            resourceId_url: {
-              resourceId: resource.id,
-              url,
-            },
-          },
-          create: {
-            resourceId: resource.id,
-            url,
-            title:
-              typeof subresource.title === 'string' ? subresource.title : null,
-            status: KBResourceStatus.READY,
-            chunkCount:
-              typeof subresource.chunkCount === 'number'
-                ? subresource.chunkCount
-                : null,
-            sourceHash:
-              typeof subresource.sourceHash === 'string'
-                ? subresource.sourceHash
-                : null,
-            contentHash:
-              typeof subresource.contentHash === 'string'
-                ? subresource.contentHash
-                : null,
-            lastCheckedAt: new Date(),
-          },
-          update: {
-            title:
-              typeof subresource.title === 'string'
-                ? subresource.title
-                : undefined,
-            status: KBResourceStatus.READY,
-            chunkCount:
-              typeof subresource.chunkCount === 'number'
-                ? subresource.chunkCount
-                : undefined,
-            sourceHash:
-              typeof subresource.sourceHash === 'string'
-                ? subresource.sourceHash
-                : undefined,
-            contentHash:
-              typeof subresource.contentHash === 'string'
-                ? subresource.contentHash
-                : undefined,
-            lastCheckedAt: new Date(),
-          },
-        })
-      }
-    }
-
     if (eventType === 'kb.metrics_updated') {
       await tx.kB.update({
         where: { id: resolvedKbId },
         data: {
-          resourceCount:
-            typeof payload.kb?.resourceCount === 'number'
-              ? payload.kb.resourceCount
-              : undefined,
           chunkCount:
             typeof payload.kb?.chunkCount === 'number'
               ? payload.kb.chunkCount
-              : undefined,
-          entityCount:
-            typeof payload.kb?.entityCount === 'number'
-              ? payload.kb.entityCount
               : undefined,
           sizeBytes:
             typeof payload.kb?.sizeBytes === 'number'
               ? BigInt(payload.kb.sizeBytes)
               : undefined,
           lastIndexedAt: new Date(),
-          lastCheckedAt: new Date(),
         },
       })
     }
   })
 
   return { statusCode: 200, body: { ok: true } }
+}
+
+function mergeResourceMetadata(
+  existing: unknown,
+  payload: IncomingKBWebhookPayload
+) {
+  const isPlainObject =
+    existing != null && typeof existing === 'object' && !Array.isArray(existing)
+  const base = isPlainObject ? { ...(existing as Record<string, unknown>) } : {}
+
+  if (typeof payload.chunkCount === 'number') {
+    base.chunkCount = payload.chunkCount
+  }
+  if (typeof payload.sizeBytes === 'number') {
+    base.sizeBytes = payload.sizeBytes
+  }
+  if (Array.isArray(payload.subresources)) {
+    base.subresources = payload.subresources
+  }
+
+  return Object.keys(base).length > 0 ? base : null
 }

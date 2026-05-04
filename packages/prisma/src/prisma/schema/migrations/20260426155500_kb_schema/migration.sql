@@ -1,8 +1,5 @@
 -- CreateEnum
-CREATE TYPE "public"."KBStatus" AS ENUM ('READY', 'INDEXING', 'CRAWLING', 'QUEUED', 'STALE', 'ERROR', 'DISABLED');
-
--- CreateEnum
-CREATE TYPE "public"."KBResourceStatus" AS ENUM ('READY', 'INDEXING', 'CRAWLING', 'QUEUED', 'STALE', 'ERROR', 'DISABLED');
+CREATE TYPE "public"."KBStatus" AS ENUM ('READY', 'INDEXING', 'QUEUED', 'STALE', 'ERROR', 'DISABLED');
 
 -- CreateEnum
 CREATE TYPE "public"."KBResourceKind" AS ENUM ('DOCUMENT', 'WEBSITE', 'SNIPPET', 'KLICKER_OBJECT');
@@ -11,31 +8,13 @@ CREATE TYPE "public"."KBResourceKind" AS ENUM ('DOCUMENT', 'WEBSITE', 'SNIPPET',
 CREATE TYPE "public"."KBWebsiteStrategy" AS ENUM ('SCRAPE_SUBSITES', 'INDEX_PAGE', 'REFERENCE_ONLY');
 
 -- CreateEnum
-CREATE TYPE "public"."KBRefreshMode" AS ENUM ('INHERIT', 'MANUAL', 'INTERVAL', 'CRON', 'DISABLED');
-
--- CreateEnum
-CREATE TYPE "public"."KBRefreshScope" AS ENUM ('ALL', 'WEBSITES', 'REFRESHABLE');
-
--- CreateEnum
 CREATE TYPE "public"."KBMetadataProfile" AS ENUM ('COURSE_KB', 'AI_BUDDY', 'AI_INFRA');
-
--- CreateEnum
-CREATE TYPE "public"."KBIngestionTrigger" AS ENUM ('MANUAL', 'SCHEDULED', 'RESOURCE_CREATED', 'RESOURCE_UPDATED', 'REFRESH_POLICY', 'WEBHOOK');
-
--- CreateEnum
-CREATE TYPE "public"."KBIngestionStatus" AS ENUM ('QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED', 'CANCELLED', 'SKIPPED');
 
 -- CreateEnum
 CREATE TYPE "public"."KBGraphInclusionMode" AS ENUM ('INHERIT', 'INCLUDE', 'EXCLUDE');
 
 -- CreateEnum
-CREATE TYPE "public"."KBWebhookDirection" AS ENUM ('OUTGOING', 'INCOMING');
-
--- CreateEnum
-CREATE TYPE "public"."KBWebhookStatus" AS ENUM ('PENDING', 'DELIVERED', 'FAILED', 'IGNORED');
-
--- CreateEnum
-CREATE TYPE "public"."KBWebhookDestination" AS ENUM ('INGESTION', 'GRAPH');
+CREATE TYPE "public"."KBIngestionStatus" AS ENUM ('QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED');
 
 -- CreateTable
 CREATE TABLE "public"."KB" (
@@ -54,16 +33,9 @@ CREATE TABLE "public"."KB" (
     "graphResourceKinds" "public"."KBResourceKind"[] DEFAULT ARRAY[]::"public"."KBResourceKind"[],
     "resourceCount" INTEGER NOT NULL DEFAULT 0,
     "chunkCount" INTEGER NOT NULL DEFAULT 0,
-    "entityCount" INTEGER NOT NULL DEFAULT 0,
     "sizeBytes" BIGINT,
-    "refreshMode" "public"."KBRefreshMode" NOT NULL DEFAULT 'MANUAL',
-    "refreshScope" "public"."KBRefreshScope" NOT NULL DEFAULT 'REFRESHABLE',
     "refreshIntervalMinutes" INTEGER,
-    "refreshCron" TEXT,
-    "changeMonitoring" BOOLEAN NOT NULL DEFAULT false,
     "lastIndexedAt" TIMESTAMP(3),
-    "lastCheckedAt" TIMESTAMP(3),
-    "lastContentChangedAt" TIMESTAMP(3),
     "nextRefreshAt" TIMESTAMP(3),
     "ownerId" UUID NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -78,47 +50,17 @@ CREATE TABLE "public"."KBResource" (
     "title" TEXT NOT NULL,
     "description" TEXT,
     "kind" "public"."KBResourceKind" NOT NULL,
-    "status" "public"."KBResourceStatus" NOT NULL DEFAULT 'QUEUED',
-    "statusLabel" TEXT,
+    "status" "public"."KBStatus" NOT NULL DEFAULT 'QUEUED',
     "statusDetail" TEXT,
-    "progress" INTEGER,
-    "originLabel" TEXT,
-    "originDetail" TEXT,
-    "sizeBytes" BIGINT,
-    "chunkCount" INTEGER,
-    "entityCount" INTEGER,
-    "externalResourceId" TEXT,
-    "externalIndexId" TEXT,
-    "sourceHash" TEXT,
-    "contentHash" TEXT,
     "graphInclusion" "public"."KBGraphInclusionMode" NOT NULL DEFAULT 'INHERIT',
     "metadata" JSONB,
-    "lastIndexedAt" TIMESTAMP(3),
-    "lastCheckedAt" TIMESTAMP(3),
-    "lastRemoteModifiedAt" TIMESTAMP(3),
-    "lastContentChangedAt" TIMESTAMP(3),
-    "nextRefreshAt" TIMESTAMP(3),
-    "changeStatus" TEXT,
-    "refreshMode" "public"."KBRefreshMode" NOT NULL DEFAULT 'INHERIT',
-    "refreshScope" "public"."KBRefreshScope",
     "refreshIntervalMinutes" INTEGER,
-    "refreshCron" TEXT,
-    "changeMonitoring" BOOLEAN,
-    "documentFileName" TEXT,
-    "documentMimeType" TEXT,
-    "documentPageCount" INTEGER,
-    "documentLanguage" TEXT,
+    "lastIndexedAt" TIMESTAMP(3),
+    "nextRefreshAt" TIMESTAMP(3),
+    "externalResourceId" TEXT,
     "websiteUrl" TEXT,
     "websiteStrategy" "public"."KBWebsiteStrategy",
-    "sitemapFound" BOOLEAN,
-    "sitemapPageCount" INTEGER,
-    "scrapedPageCount" INTEGER,
-    "crawlDepth" INTEGER,
     "snippetText" TEXT,
-    "snippetCharacterCount" INTEGER,
-    "snippetLanguage" TEXT,
-    "snippetAuthor" TEXT,
-    "snippetNote" TEXT,
     "kbId" UUID NOT NULL,
     "elementId" INTEGER,
     "practiceQuizId" UUID,
@@ -136,66 +78,27 @@ CREATE TABLE "public"."KBResource" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."KBWebsiteSubresource" (
-    "id" UUID NOT NULL,
-    "url" TEXT NOT NULL,
-    "title" TEXT,
-    "status" "public"."KBResourceStatus" NOT NULL DEFAULT 'QUEUED',
-    "statusDetail" TEXT,
-    "chunkCount" INTEGER,
-    "sourceHash" TEXT,
-    "contentHash" TEXT,
-    "lastCheckedAt" TIMESTAMP(3),
-    "lastRemoteModifiedAt" TIMESTAMP(3),
-    "lastContentChangedAt" TIMESTAMP(3),
-    "resourceId" UUID NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "KBWebsiteSubresource_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "public"."KBIngestionRun" (
     "id" UUID NOT NULL,
-    "trigger" "public"."KBIngestionTrigger" NOT NULL,
     "status" "public"."KBIngestionStatus" NOT NULL DEFAULT 'QUEUED',
-    "hatchetTaskId" TEXT,
-    "externalRunId" TEXT,
     "startedAt" TIMESTAMP(3),
     "finishedAt" TIMESTAMP(3),
-    "stats" JSONB,
     "errorMessage" TEXT,
-    "errorDetails" TEXT,
     "kbId" UUID NOT NULL,
     "resourceId" UUID,
-    "requestedById" UUID,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "KBIngestionRun_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "public"."KBWebhookEvent" (
-    "id" UUID NOT NULL,
+CREATE TABLE "public"."KBWebhookInbox" (
     "eventId" TEXT NOT NULL,
-    "direction" "public"."KBWebhookDirection" NOT NULL,
     "eventType" TEXT NOT NULL,
-    "status" "public"."KBWebhookStatus" NOT NULL,
-    "destination" "public"."KBWebhookDestination" NOT NULL,
-    "payload" JSONB NOT NULL,
-    "attempts" INTEGER NOT NULL DEFAULT 0,
-    "lastError" TEXT,
-    "lastAttemptAt" TIMESTAMP(3),
-    "deliveredAt" TIMESTAMP(3),
-    "kbId" UUID,
-    "resourceId" UUID,
-    "ingestionRunId" UUID,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "receivedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "payload" JSONB,
 
-    CONSTRAINT "KBWebhookEvent_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "KBWebhookInbox_pkey" PRIMARY KEY ("eventId")
 );
 
 -- CreateTable
@@ -229,12 +132,6 @@ CREATE INDEX "KB_ownerId_status_idx" ON "public"."KB"("ownerId", "status");
 CREATE INDEX "KB_ownerId_metadataProfile_idx" ON "public"."KB"("ownerId", "metadataProfile");
 
 -- CreateIndex
-CREATE INDEX "KB_status_idx" ON "public"."KB"("status");
-
--- CreateIndex
-CREATE INDEX "KB_metadataProfile_idx" ON "public"."KB"("metadataProfile");
-
--- CreateIndex
 CREATE INDEX "KB_nextRefreshAt_idx" ON "public"."KB"("nextRefreshAt");
 
 -- CreateIndex
@@ -247,9 +144,6 @@ CREATE INDEX "KBResource_kbId_status_idx" ON "public"."KBResource"("kbId", "stat
 CREATE INDEX "KBResource_kbId_kind_idx" ON "public"."KBResource"("kbId", "kind");
 
 -- CreateIndex
-CREATE INDEX "KBResource_kind_status_idx" ON "public"."KBResource"("kind", "status");
-
--- CreateIndex
 CREATE INDEX "KBResource_graphInclusion_idx" ON "public"."KBResource"("graphInclusion");
 
 -- CreateIndex
@@ -257,9 +151,6 @@ CREATE INDEX "KBResource_nextRefreshAt_idx" ON "public"."KBResource"("nextRefres
 
 -- CreateIndex
 CREATE INDEX "KBResource_deletedAt_idx" ON "public"."KBResource"("deletedAt");
-
--- CreateIndex
-CREATE INDEX "KBResource_websiteUrl_idx" ON "public"."KBResource"("websiteUrl");
 
 -- CreateIndex
 CREATE INDEX "KBResource_elementId_idx" ON "public"."KBResource"("elementId");
@@ -286,52 +177,19 @@ CREATE INDEX "KBResource_mediaFileId_idx" ON "public"."KBResource"("mediaFileId"
 CREATE INDEX "KBResource_deletedById_idx" ON "public"."KBResource"("deletedById");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "KBWebsiteSubresource_resourceId_url_key" ON "public"."KBWebsiteSubresource"("resourceId", "url");
+CREATE INDEX "KBIngestionRun_kbId_createdAt_idx" ON "public"."KBIngestionRun"("kbId", "createdAt" DESC);
 
 -- CreateIndex
-CREATE INDEX "KBWebsiteSubresource_resourceId_status_idx" ON "public"."KBWebsiteSubresource"("resourceId", "status");
+CREATE INDEX "KBIngestionRun_resourceId_createdAt_idx" ON "public"."KBIngestionRun"("resourceId", "createdAt" DESC);
 
 -- CreateIndex
-CREATE INDEX "KBWebsiteSubresource_url_idx" ON "public"."KBWebsiteSubresource"("url");
+CREATE INDEX "KBIngestionRun_status_idx" ON "public"."KBIngestionRun"("status");
 
 -- CreateIndex
-CREATE INDEX "KBIngestionRun_kbId_status_idx" ON "public"."KBIngestionRun"("kbId", "status");
+CREATE INDEX "KBWebhookInbox_receivedAt_idx" ON "public"."KBWebhookInbox"("receivedAt");
 
 -- CreateIndex
-CREATE INDEX "KBIngestionRun_resourceId_status_idx" ON "public"."KBIngestionRun"("resourceId", "status");
-
--- CreateIndex
-CREATE INDEX "KBIngestionRun_status_createdAt_idx" ON "public"."KBIngestionRun"("status", "createdAt");
-
--- CreateIndex
-CREATE INDEX "KBIngestionRun_hatchetTaskId_idx" ON "public"."KBIngestionRun"("hatchetTaskId");
-
--- CreateIndex
-CREATE INDEX "KBIngestionRun_externalRunId_idx" ON "public"."KBIngestionRun"("externalRunId");
-
--- CreateIndex
-CREATE INDEX "KBIngestionRun_requestedById_idx" ON "public"."KBIngestionRun"("requestedById");
-
--- CreateIndex
-CREATE UNIQUE INDEX "KBWebhookEvent_eventId_key" ON "public"."KBWebhookEvent"("eventId");
-
--- CreateIndex
-CREATE INDEX "KBWebhookEvent_kbId_status_idx" ON "public"."KBWebhookEvent"("kbId", "status");
-
--- CreateIndex
-CREATE INDEX "KBWebhookEvent_resourceId_status_idx" ON "public"."KBWebhookEvent"("resourceId", "status");
-
--- CreateIndex
-CREATE INDEX "KBWebhookEvent_ingestionRunId_idx" ON "public"."KBWebhookEvent"("ingestionRunId");
-
--- CreateIndex
-CREATE INDEX "KBWebhookEvent_direction_destination_status_idx" ON "public"."KBWebhookEvent"("direction", "destination", "status");
-
--- CreateIndex
-CREATE INDEX "KBWebhookEvent_eventType_idx" ON "public"."KBWebhookEvent"("eventType");
-
--- CreateIndex
-CREATE INDEX "KBWebhookEvent_lastAttemptAt_idx" ON "public"."KBWebhookEvent"("lastAttemptAt");
+CREATE INDEX "KBWebhookInbox_eventType_idx" ON "public"."KBWebhookInbox"("eventType");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "KBCourse_kbId_courseId_key" ON "public"."KBCourse"("kbId", "courseId");
@@ -379,25 +237,10 @@ ALTER TABLE "public"."KBResource" ADD CONSTRAINT "KBResource_mediaFileId_fkey" F
 ALTER TABLE "public"."KBResource" ADD CONSTRAINT "KBResource_deletedById_fkey" FOREIGN KEY ("deletedById") REFERENCES "public"."User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."KBWebsiteSubresource" ADD CONSTRAINT "KBWebsiteSubresource_resourceId_fkey" FOREIGN KEY ("resourceId") REFERENCES "public"."KBResource"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "public"."KBIngestionRun" ADD CONSTRAINT "KBIngestionRun_kbId_fkey" FOREIGN KEY ("kbId") REFERENCES "public"."KB"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."KBIngestionRun" ADD CONSTRAINT "KBIngestionRun_resourceId_fkey" FOREIGN KEY ("resourceId") REFERENCES "public"."KBResource"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "public"."KBIngestionRun" ADD CONSTRAINT "KBIngestionRun_requestedById_fkey" FOREIGN KEY ("requestedById") REFERENCES "public"."User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "public"."KBWebhookEvent" ADD CONSTRAINT "KBWebhookEvent_kbId_fkey" FOREIGN KEY ("kbId") REFERENCES "public"."KB"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "public"."KBWebhookEvent" ADD CONSTRAINT "KBWebhookEvent_resourceId_fkey" FOREIGN KEY ("resourceId") REFERENCES "public"."KBResource"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "public"."KBWebhookEvent" ADD CONSTRAINT "KBWebhookEvent_ingestionRunId_fkey" FOREIGN KEY ("ingestionRunId") REFERENCES "public"."KBIngestionRun"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."KBCourse" ADD CONSTRAINT "KBCourse_kbId_fkey" FOREIGN KEY ("kbId") REFERENCES "public"."KB"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -4,17 +4,6 @@
 enum KBStatus {
   READY
   INDEXING
-  CRAWLING
-  QUEUED
-  STALE
-  ERROR
-  DISABLED
-}
-
-enum KBResourceStatus {
-  READY
-  INDEXING
-  CRAWLING
   QUEUED
   STALE
   ERROR
@@ -34,42 +23,10 @@ enum KBWebsiteStrategy {
   REFERENCE_ONLY
 }
 
-enum KBRefreshMode {
-  INHERIT
-  MANUAL
-  INTERVAL
-  CRON
-  DISABLED
-}
-
-enum KBRefreshScope {
-  ALL
-  WEBSITES
-  REFRESHABLE
-}
-
 enum KBMetadataProfile {
   COURSE_KB
   AI_BUDDY
   AI_INFRA
-}
-
-enum KBIngestionTrigger {
-  MANUAL
-  SCHEDULED
-  RESOURCE_CREATED
-  RESOURCE_UPDATED
-  REFRESH_POLICY
-  WEBHOOK
-}
-
-enum KBIngestionStatus {
-  QUEUED
-  RUNNING
-  SUCCEEDED
-  FAILED
-  CANCELLED
-  SKIPPED
 }
 
 enum KBGraphInclusionMode {
@@ -78,21 +35,11 @@ enum KBGraphInclusionMode {
   EXCLUDE
 }
 
-enum KBWebhookDirection {
-  OUTGOING
-  INCOMING
-}
-
-enum KBWebhookStatus {
-  PENDING
-  DELIVERED
+enum KBIngestionStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
   FAILED
-  IGNORED
-}
-
-enum KBWebhookDestination {
-  INGESTION
-  GRAPH
 }
 
 model KB {
@@ -118,23 +65,15 @@ model KB {
 
   resourceCount Int     @default(0)
   chunkCount    Int     @default(0)
-  entityCount   Int     @default(0)
   sizeBytes     BigInt?
 
-  refreshMode            KBRefreshMode  @default(MANUAL)
-  refreshScope           KBRefreshScope @default(REFRESHABLE)
   refreshIntervalMinutes Int?
-  refreshCron            String?
-  changeMonitoring       Boolean        @default(false)
 
-  lastIndexedAt        DateTime?
-  lastCheckedAt        DateTime?
-  lastContentChangedAt DateTime?
-  nextRefreshAt        DateTime?
+  lastIndexedAt DateTime?
+  nextRefreshAt DateTime?
 
   resources     KBResource[]
   ingestionRuns KBIngestionRun[]
-  webhookEvents KBWebhookEvent[]
   courses       KBCourse[]
   chatbots      KBChatbot[]
 
@@ -146,8 +85,6 @@ model KB {
 
   @@index([ownerId, status])
   @@index([ownerId, metadataProfile])
-  @@index([status])
-  @@index([metadataProfile])
   @@index([nextRefreshAt])
   @@index([graphEnabled])
 }
@@ -158,61 +95,27 @@ model KBResource {
   title        String
   description  String?
   kind         KBResourceKind
-  status       KBResourceStatus @default(QUEUED)
-  statusLabel  String?
+  status       KBStatus       @default(QUEUED)
   statusDetail String?
-  progress     Int?
 
-  originLabel  String?
-  originDetail String?
-
-  sizeBytes   BigInt?
-  chunkCount  Int?
-  entityCount Int?
-
-  externalResourceId String?
-  externalIndexId    String?
-  sourceHash         String?
-  contentHash        String?
-  graphInclusion     KBGraphInclusionMode @default(INHERIT)
+  graphInclusion KBGraphInclusionMode @default(INHERIT)
 
   /// [PrismaKBResourceMetadata]
   metadata Json?
 
-  lastIndexedAt        DateTime?
-  lastCheckedAt        DateTime?
-  lastRemoteModifiedAt DateTime?
-  lastContentChangedAt DateTime?
-  nextRefreshAt        DateTime?
-  changeStatus         String?
-
-  refreshMode            KBRefreshMode   @default(INHERIT)
-  refreshScope           KBRefreshScope?
   refreshIntervalMinutes Int?
-  refreshCron            String?
-  changeMonitoring       Boolean?
 
-  documentFileName  String?
-  documentMimeType  String?
-  documentPageCount Int?
-  documentLanguage  String?
+  lastIndexedAt DateTime?
+  nextRefreshAt DateTime?
 
-  websiteUrl       String?
-  websiteStrategy  KBWebsiteStrategy?
-  sitemapFound     Boolean?
-  sitemapPageCount Int?
-  scrapedPageCount Int?
-  crawlDepth       Int?
+  externalResourceId String?
 
-  snippetText           String? @db.Text
-  snippetCharacterCount Int?
-  snippetLanguage       String?
-  snippetAuthor         String?
-  snippetNote           String?
+  websiteUrl      String?
+  websiteStrategy KBWebsiteStrategy?
 
-  subresources  KBWebsiteSubresource[]
+  snippetText String? @db.Text
+
   ingestionRuns KBIngestionRun[]
-  webhookEvents KBWebhookEvent[]
 
   kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   kbId String @db.Uuid
@@ -238,20 +141,18 @@ model KBResource {
   mediaFile   MediaFile? @relation(fields: [mediaFileId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   mediaFileId String?    @db.Uuid
 
-  deletedAt DateTime?
-  deletedBy   User?   @relation("KBResourceDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  deletedById String? @db.Uuid
+  deletedAt   DateTime?
+  deletedBy   User?     @relation("KBResourceDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  deletedById String?   @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([kbId, status])
   @@index([kbId, kind])
-  @@index([kind, status])
   @@index([graphInclusion])
   @@index([nextRefreshAt])
   @@index([deletedAt])
-  @@index([websiteUrl])
   @@index([elementId])
   @@index([practiceQuizId])
   @@index([liveQuizId])
@@ -262,49 +163,14 @@ model KBResource {
   @@index([deletedById])
 }
 
-model KBWebsiteSubresource {
-  id String @id @default(uuid()) @db.Uuid
-
-  url          String
-  title        String?
-  status       KBResourceStatus @default(QUEUED)
-  statusDetail String?
-  chunkCount   Int?
-  sourceHash   String?
-  contentHash  String?
-
-  lastCheckedAt        DateTime?
-  lastRemoteModifiedAt DateTime?
-  lastContentChangedAt DateTime?
-
-  resource   KBResource @relation(fields: [resourceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  resourceId String     @db.Uuid
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([resourceId, url])
-  @@index([resourceId, status])
-  @@index([url])
-}
-
 model KBIngestionRun {
   id String @id @default(uuid()) @db.Uuid
 
-  trigger KBIngestionTrigger
-  status  KBIngestionStatus  @default(QUEUED)
+  status KBIngestionStatus @default(QUEUED)
 
-  hatchetTaskId String?
-  externalRunId String?
-
-  startedAt  DateTime?
-  finishedAt DateTime?
-
-  /// [PrismaKBIngestionStats]
-  stats Json?
-
-  errorMessage String? @db.Text
-  errorDetails String? @db.Text
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  errorMessage String?   @db.Text
 
   kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   kbId String @db.Uuid
@@ -312,57 +178,22 @@ model KBIngestionRun {
   resource   KBResource? @relation(fields: [resourceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   resourceId String?     @db.Uuid
 
-  webhookEvents KBWebhookEvent[]
-
-  requestedBy   User?   @relation(fields: [requestedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  requestedById String? @db.Uuid
-
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
-  @@index([kbId, status])
-  @@index([resourceId, status])
-  @@index([status, createdAt])
-  @@index([hatchetTaskId])
-  @@index([externalRunId])
-  @@index([requestedById])
+  @@index([kbId, createdAt(sort: Desc)])
+  @@index([resourceId, createdAt(sort: Desc)])
+  @@index([status])
 }
 
-model KBWebhookEvent {
-  id String @id @default(uuid()) @db.Uuid
-
-  eventId     String               @unique
-  direction   KBWebhookDirection
-  eventType   String
-  status      KBWebhookStatus
-  destination KBWebhookDestination
-
+model KBWebhookInbox {
+  eventId    String   @id
+  eventType  String
+  receivedAt DateTime @default(now())
   /// [PrismaKBWebhookPayload]
-  payload Json
+  payload    Json?
 
-  attempts      Int       @default(0)
-  lastError     String?   @db.Text
-  lastAttemptAt DateTime?
-  deliveredAt   DateTime?
-
-  kb   KB?     @relation(fields: [kbId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  kbId String? @db.Uuid
-
-  resource   KBResource? @relation(fields: [resourceId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  resourceId String?     @db.Uuid
-
-  ingestionRun   KBIngestionRun? @relation(fields: [ingestionRunId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  ingestionRunId String?         @db.Uuid
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([kbId, status])
-  @@index([resourceId, status])
-  @@index([ingestionRunId])
-  @@index([direction, destination, status])
+  @@index([receivedAt])
   @@index([eventType])
-  @@index([lastAttemptAt])
 }
 
 model KBCourse {

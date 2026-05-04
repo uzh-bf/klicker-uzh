@@ -6,7 +6,6 @@ query GetKB($id: String!) {
     }
     ingestionRuns {
       id
-      trigger
       status
       startedAt
       finishedAt

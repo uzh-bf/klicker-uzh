@@ -1,15 +1,9 @@
 import {
   KBGraphInclusionMode,
   KBIngestionStatus,
-  KBIngestionTrigger,
   KBMetadataProfile,
-  KBRefreshMode,
-  KBRefreshScope,
   KBResourceKind,
-  KBResourceStatus,
   KBStatus,
-  KBWebhookDestination,
-  KBWebhookStatus,
   KBWebsiteStrategy,
   Prisma,
 } from '@klicker-uzh/prisma/client'
@@ -20,7 +14,6 @@ import {
   validateKBMetadata,
   validateKBRefreshPolicy,
   validateKBResourceMetadata,
-  validateKBResourceRefreshPolicy,
   validateKBResourceSource,
   validateKBSettings,
 } from './knowledgeMetadata.js'
@@ -30,7 +23,6 @@ const KB_INCLUDE = {
   resources: {
     where: { deletedAt: null },
     include: {
-      subresources: { orderBy: { updatedAt: 'desc' as const } },
       ingestionRuns: {
         orderBy: { createdAt: 'desc' as const },
         take: 5,
@@ -70,24 +62,15 @@ const KB_INCLUDE = {
 
 const RESOURCE_INCLUDE = {
   kb: true,
-  subresources: { orderBy: { updatedAt: 'desc' as const } },
   ingestionRuns: { orderBy: { createdAt: 'desc' as const }, take: 5 },
 } as const satisfies Prisma.KBResourceInclude
 
 const SOURCE_FIELD_KEYS = [
   'externalResourceId',
   'mediaFileId',
-  'documentFileName',
-  'documentMimeType',
-  'documentPageCount',
-  'documentLanguage',
   'websiteUrl',
   'websiteStrategy',
-  'crawlDepth',
   'snippetText',
-  'snippetLanguage',
-  'snippetAuthor',
-  'snippetNote',
   'elementId',
   'practiceQuizId',
   'liveQuizId',
@@ -112,11 +95,7 @@ export interface CreateKBInput {
   externalGraphId?: string | null
   graphEnabled?: boolean | null
   graphResourceKinds?: KBResourceKind[] | null
-  refreshMode?: KBRefreshMode | null
-  refreshScope?: KBRefreshScope | null
   refreshIntervalMinutes?: number | null
-  refreshCron?: string | null
-  changeMonitoring?: boolean | null
 }
 
 export interface UpdateKBInput extends Omit<Partial<CreateKBInput>, 'name'> {
@@ -129,28 +108,14 @@ export interface CreateKBResourceInput {
   title: string
   description?: string | null
   kind: KBResourceKind
-  originLabel?: string | null
-  originDetail?: string | null
   metadata?: unknown
   graphInclusion?: KBGraphInclusionMode | null
-  refreshMode?: KBRefreshMode | null
-  refreshScope?: KBRefreshScope | null
   refreshIntervalMinutes?: number | null
-  refreshCron?: string | null
-  changeMonitoring?: boolean | null
   externalResourceId?: string | null
   mediaFileId?: string | null
-  documentFileName?: string | null
-  documentMimeType?: string | null
-  documentPageCount?: number | null
-  documentLanguage?: string | null
   websiteUrl?: string | null
   websiteStrategy?: KBWebsiteStrategy | null
-  crawlDepth?: number | null
   snippetText?: string | null
-  snippetLanguage?: string | null
-  snippetAuthor?: string | null
-  snippetNote?: string | null
   elementId?: number | null
   practiceQuizId?: string | null
   liveQuizId?: string | null
@@ -163,22 +128,17 @@ export interface UpdateKBResourceInput
   extends Omit<Partial<CreateKBResourceInput>, 'title' | 'kind'> {
   title?: string | null
   kind?: KBResourceKind | null
-  statusLabel?: string | null
   statusDetail?: string | null
 }
 
 export interface UpdateKBRefreshPolicyInput {
-  refreshMode: KBRefreshMode
-  refreshScope?: KBRefreshScope | null
   refreshIntervalMinutes?: number | null
-  refreshCron?: string | null
-  changeMonitoring?: boolean | null
 }
 
 export interface KBResourceFilterInput {
   query?: string | null
   kinds?: KBResourceKind[] | null
-  statuses?: KBResourceStatus[] | null
+  statuses?: KBStatus[] | null
   graphInclusion?: KBGraphInclusionMode | null
   includeDeleted?: boolean | null
 }
@@ -187,6 +147,25 @@ function assertTitle(title: string | null | undefined) {
   const trimmed = title?.trim()
   if (!trimmed) throw new Error('Title is required')
   return trimmed
+}
+
+const KB_LIGHT_SELECT = {
+  id: true,
+  metadataProfile: true,
+  graphEnabled: true,
+  graphResourceKinds: true,
+  externalGraphId: true,
+  externalNamespaceId: true,
+  externalVectorStoreId: true,
+} as const satisfies Prisma.KBSelect
+
+async function assertOwnedKB(id: string, ctx: ContextWithUser) {
+  const kb = await ctx.prisma.kB.findFirst({
+    where: { id, ownerId: ctx.user.sub },
+    select: KB_LIGHT_SELECT,
+  })
+  if (!kb) throw new Error('Knowledge base not found')
+  return kb
 }
 
 async function getOwnedKBOrThrow(id: string, ctx: ContextWithUser) {
@@ -222,46 +201,6 @@ function toNullableJson<T>(value: T | null | undefined) {
   return value == null ? undefined : value
 }
 
-function refreshPolicyData(input: {
-  refreshMode?: KBRefreshMode | null
-  refreshScope?: KBRefreshScope | null
-  refreshIntervalMinutes?: number | null
-  refreshCron?: string | null
-  changeMonitoring?: boolean | null
-}) {
-  if (!input.refreshMode) return {}
-
-  const policy = validateKBRefreshPolicy({
-    refreshMode: input.refreshMode,
-    refreshScope: input.refreshScope,
-    refreshIntervalMinutes: input.refreshIntervalMinutes,
-    refreshCron: input.refreshCron,
-    changeMonitoring: input.changeMonitoring,
-  })
-
-  return policy
-}
-
-function resourceRefreshPolicyData(input: {
-  refreshMode?: KBRefreshMode | null
-  refreshScope?: KBRefreshScope | null
-  refreshIntervalMinutes?: number | null
-  refreshCron?: string | null
-  changeMonitoring?: boolean | null
-}) {
-  if (!input.refreshMode) return {}
-
-  const policy = validateKBResourceRefreshPolicy({
-    refreshMode: input.refreshMode,
-    refreshScope: input.refreshScope,
-    refreshIntervalMinutes: input.refreshIntervalMinutes,
-    refreshCron: input.refreshCron,
-    changeMonitoring: input.changeMonitoring,
-  })
-
-  return policy
-}
-
 function sourceData(input: CreateKBResourceInput | UpdateKBResourceInput) {
   if (!input.kind) return {}
 
@@ -269,17 +208,9 @@ function sourceData(input: CreateKBResourceInput | UpdateKBResourceInput) {
     kind: input.kind,
     externalResourceId: input.externalResourceId,
     mediaFileId: input.mediaFileId,
-    documentFileName: input.documentFileName,
-    documentMimeType: input.documentMimeType,
-    documentPageCount: input.documentPageCount,
-    documentLanguage: input.documentLanguage,
     websiteUrl: input.websiteUrl,
     websiteStrategy: input.websiteStrategy,
-    crawlDepth: input.crawlDepth,
     snippetText: input.snippetText,
-    snippetLanguage: input.snippetLanguage,
-    snippetAuthor: input.snippetAuthor,
-    snippetNote: input.snippetNote,
     elementId: input.elementId,
     practiceQuizId: input.practiceQuizId,
     liveQuizId: input.liveQuizId,
@@ -291,18 +222,9 @@ function sourceData(input: CreateKBResourceInput | UpdateKBResourceInput) {
   const nullSourceFields = {
     externalResourceId: null,
     mediaFileId: null,
-    documentFileName: null,
-    documentMimeType: null,
-    documentPageCount: null,
-    documentLanguage: null,
     websiteUrl: null,
     websiteStrategy: null,
-    crawlDepth: null,
     snippetText: null,
-    snippetCharacterCount: null,
-    snippetLanguage: null,
-    snippetAuthor: null,
-    snippetNote: null,
     elementId: null,
     practiceQuizId: null,
     liveQuizId: null,
@@ -323,80 +245,62 @@ function hasProcessingRelevantResourceChanges(input: UpdateKBResourceInput) {
   )
 }
 
-async function validateKlickerObjectAccess(
-  input: CreateKBResourceInput | UpdateKBResourceInput,
-  ctx: ContextWithUser
-) {
-  if (input.kind !== KBResourceKind.KLICKER_OBJECT) return
-
-  if (input.elementId != null) {
-    const element = await ctx.prisma.element.findFirst({
-      where: { id: input.elementId, ownerId: ctx.user.sub },
-      select: { id: true },
-    })
-    if (!element) throw new Error('Invalid resource source for kind')
-  }
-
-  if (input.practiceQuizId) {
-    const practiceQuiz = await ctx.prisma.practiceQuiz.findFirst({
-      where: { id: input.practiceQuizId, ownerId: ctx.user.sub },
-      select: { id: true },
-    })
-    if (!practiceQuiz) throw new Error('Invalid resource source for kind')
-  }
-
-  if (input.liveQuizId) {
-    const liveQuiz = await ctx.prisma.liveQuiz.findFirst({
-      where: { id: input.liveQuizId, ownerId: ctx.user.sub },
-      select: { id: true },
-    })
-    if (!liveQuiz) throw new Error('Invalid resource source for kind')
-  }
-
-  if (input.microLearningId) {
-    const microLearning = await ctx.prisma.microLearning.findFirst({
-      where: { id: input.microLearningId, ownerId: ctx.user.sub },
-      select: { id: true },
-    })
-    if (!microLearning) throw new Error('Invalid resource source for kind')
-  }
-
-  if (input.groupActivityId) {
-    const groupActivity = await ctx.prisma.groupActivity.findFirst({
-      where: { id: input.groupActivityId, ownerId: ctx.user.sub },
-      select: { id: true },
-    })
-    if (!groupActivity) throw new Error('Invalid resource source for kind')
-  }
-
-  if (input.answerCollectionId != null) {
-    const answerCollection = await ctx.prisma.answerCollection.findFirst({
-      where: { id: input.answerCollectionId, ownerId: ctx.user.sub },
-      select: { id: true },
-    })
-    if (!answerCollection) throw new Error('Invalid resource source for kind')
-  }
-
-  if (input.mediaFileId) {
-    const mediaFile = await ctx.prisma.mediaFile.findFirst({
-      where: { id: input.mediaFileId, ownerId: ctx.user.sub },
-      select: { id: true },
-    })
-    if (!mediaFile) throw new Error('Invalid resource source for kind')
-  }
+type OwnedFkSpec = {
+  id: number | string | null | undefined
+  table:
+    | 'element'
+    | 'practiceQuiz'
+    | 'liveQuiz'
+    | 'microLearning'
+    | 'groupActivity'
+    | 'answerCollection'
+    | 'mediaFile'
 }
 
-async function validateDocumentAccess(
+async function assertOwnedReferences(
+  refs: OwnedFkSpec[],
+  ctx: ContextWithUser
+) {
+  const checks = refs
+    .filter((ref) => ref.id != null)
+    .map(async ({ id, table }) => {
+      const found = await (
+        ctx.prisma[table] as { findFirst: Function }
+      ).findFirst({
+        where: { id, ownerId: ctx.user.sub },
+        select: { id: true },
+      })
+      if (!found) throw new Error('Invalid resource source for kind')
+    })
+  await Promise.all(checks)
+}
+
+async function validateResourceReferenceAccess(
   input: CreateKBResourceInput | UpdateKBResourceInput,
   ctx: ContextWithUser
 ) {
-  if (input.kind !== KBResourceKind.DOCUMENT || !input.mediaFileId) return
+  if (input.kind === KBResourceKind.KLICKER_OBJECT) {
+    await assertOwnedReferences(
+      [
+        { id: input.elementId, table: 'element' },
+        { id: input.practiceQuizId, table: 'practiceQuiz' },
+        { id: input.liveQuizId, table: 'liveQuiz' },
+        { id: input.microLearningId, table: 'microLearning' },
+        { id: input.groupActivityId, table: 'groupActivity' },
+        { id: input.answerCollectionId, table: 'answerCollection' },
+        { id: input.mediaFileId, table: 'mediaFile' },
+      ],
+      ctx
+    )
+    return
+  }
 
-  const mediaFile = await ctx.prisma.mediaFile.findFirst({
-    where: { id: input.mediaFileId, ownerId: ctx.user.sub },
-    select: { id: true },
-  })
-  if (!mediaFile) throw new Error('Invalid resource source for kind')
+  if (input.kind === KBResourceKind.DOCUMENT && input.mediaFileId) {
+    await assertOwnedReferences(
+      [{ id: input.mediaFileId, table: 'mediaFile' }],
+      ctx
+    )
+  }
 }
 
 function resourceSourcePayload(resource: KBResourceWithInclude) {
@@ -404,14 +308,12 @@ function resourceSourcePayload(resource: KBResourceWithInclude) {
     return {
       url: resource.websiteUrl,
       strategy: resource.websiteStrategy,
-      crawlDepth: resource.crawlDepth,
     }
   }
 
   if (resource.kind === KBResourceKind.SNIPPET) {
     return {
       text: resource.snippetText,
-      language: resource.snippetLanguage,
     }
   }
 
@@ -419,8 +321,6 @@ function resourceSourcePayload(resource: KBResourceWithInclude) {
     return {
       mediaFileId: resource.mediaFileId,
       externalResourceId: resource.externalResourceId,
-      fileName: resource.documentFileName,
-      mimeType: resource.documentMimeType,
     }
   }
 
@@ -452,7 +352,7 @@ function webhookPayload({
 }: {
   kb: KBWithInclude | KBResourceWithInclude['kb']
   resource: KBResourceWithInclude
-  ingestionRun?: { id: string; trigger: KBIngestionTrigger } | null
+  ingestionRun?: { id: string } | null
 }): KBWebhookPayload {
   return {
     kb: {
@@ -468,18 +368,13 @@ function webhookPayload({
       title: resource.title,
       metadata: resource.metadata,
       refreshPolicy: {
-        mode: resource.refreshMode,
-        scope: resource.refreshScope,
         intervalMinutes: resource.refreshIntervalMinutes,
-        cron: resource.refreshCron,
-        changeMonitoring: resource.changeMonitoring,
       },
       source: resourceSourcePayload(resource),
     },
     ingestionRun: ingestionRun
       ? {
           id: ingestionRun.id,
-          trigger: ingestionRun.trigger,
         }
       : undefined,
   }
@@ -510,7 +405,7 @@ async function dispatchResourceEvent({
   ctx: ContextWithUser
   resource: KBResourceWithInclude
   eventType: 'resource.created' | 'resource.updated' | 'resource.deleted'
-  ingestionRun?: { id: string; trigger: KBIngestionTrigger } | null
+  ingestionRun?: { id: string } | null
   graphWasIncluded?: boolean
   dispatchIngestion?: boolean
 }) {
@@ -521,23 +416,19 @@ async function dispatchResourceEvent({
   })
 
   if (dispatchIngestion) {
-    const ingestionEvent = await dispatchKBWebhook({
-      prisma: ctx.prisma,
-      destination: KBWebhookDestination.INGESTION,
+    const result = await dispatchKBWebhook({
+      destination: 'INGESTION',
       eventType,
       payload,
-      kbId: resource.kbId,
-      resourceId: resource.id,
-      ingestionRunId: ingestionRun?.id,
     })
 
-    if (ingestionRun?.id && ingestionEvent.status === KBWebhookStatus.FAILED) {
+    if (ingestionRun?.id && !result.ok) {
       await ctx.prisma.kBIngestionRun.update({
         where: { id: ingestionRun.id },
         data: {
           status: KBIngestionStatus.FAILED,
           finishedAt: new Date(),
-          errorMessage: ingestionEvent.lastError,
+          errorMessage: result.error ?? 'Webhook dispatch failed',
         },
       })
     }
@@ -551,13 +442,9 @@ async function dispatchResourceEvent({
 
   if (graphIncluded || graphWasIncluded) {
     await dispatchKBWebhook({
-      prisma: ctx.prisma,
-      destination: KBWebhookDestination.GRAPH,
+      destination: 'GRAPH',
       eventType: graphEventType,
       payload: graphPayload(payload, resource),
-      kbId: resource.kbId,
-      resourceId: resource.id,
-      ingestionRunId: ingestionRun?.id,
     })
   }
 }
@@ -577,19 +464,15 @@ async function createResourceRun({
   ctx,
   kbId,
   resourceId,
-  trigger,
 }: {
   ctx: ContextWithUser
   kbId: string
   resourceId: string
-  trigger: KBIngestionTrigger
 }) {
   return await ctx.prisma.kBIngestionRun.create({
     data: {
       kbId,
       resourceId,
-      requestedById: ctx.user.sub,
-      trigger,
       status: KBIngestionStatus.QUEUED,
     },
   })
@@ -605,7 +488,7 @@ async function softDeleteResource(
     data: {
       deletedAt: new Date(),
       deletedById: ctx.user.sub,
-      status: KBResourceStatus.DISABLED,
+      status: KBStatus.DISABLED,
     },
     include: RESOURCE_INCLUDE,
   })
@@ -613,7 +496,6 @@ async function softDeleteResource(
     ctx,
     kbId: resource.kbId,
     resourceId: resource.id,
-    trigger: KBIngestionTrigger.RESOURCE_UPDATED,
   })
 
   await dispatchResourceEvent({
@@ -683,33 +565,12 @@ export async function getKBIngestionRuns(
   })
 }
 
-export async function getKBWebhookEvents(
-  {
-    kbId,
-    resourceId,
-    limit,
-  }: { kbId: string; resourceId?: string | null; limit?: number | null },
-  ctx: ContextWithUser
-) {
-  await getOwnedKBOrThrow(kbId, ctx)
-
-  return await ctx.prisma.kBWebhookEvent.findMany({
-    where: { kbId, resourceId: resourceId ?? undefined },
-    orderBy: { createdAt: 'desc' },
-    take: Math.min(Math.max(limit ?? 20, 1), 100),
-  })
-}
-
 export async function createKB(input: CreateKBInput, ctx: ContextWithUser) {
   const metadataProfile = input.metadataProfile ?? KBMetadataProfile.COURSE_KB
   const metadata = validateKBMetadata(metadataProfile, input.metadata)
   const settings = validateKBSettings(input.settings)
-  const refresh = refreshPolicyData({
-    refreshMode: input.refreshMode ?? KBRefreshMode.MANUAL,
-    refreshScope: input.refreshScope ?? KBRefreshScope.REFRESHABLE,
+  const refresh = validateKBRefreshPolicy({
     refreshIntervalMinutes: input.refreshIntervalMinutes,
-    refreshCron: input.refreshCron,
-    changeMonitoring: input.changeMonitoring,
   })
 
   return await ctx.prisma.kB.create({
@@ -724,7 +585,7 @@ export async function createKB(input: CreateKBInput, ctx: ContextWithUser) {
       externalGraphId: input.externalGraphId ?? null,
       graphEnabled: input.graphEnabled ?? false,
       graphResourceKinds: input.graphResourceKinds ?? [],
-      ...refresh,
+      refreshIntervalMinutes: refresh.refreshIntervalMinutes,
       ownerId: ctx.user.sub,
     },
     include: KB_INCLUDE,
@@ -750,6 +611,13 @@ export async function updateKB(
     input.graphResourceKinds !== undefined ||
     input.externalGraphId !== undefined
 
+  const refreshPolicy =
+    input.refreshIntervalMinutes !== undefined
+      ? validateKBRefreshPolicy({
+          refreshIntervalMinutes: input.refreshIntervalMinutes,
+        })
+      : null
+
   const updated = await ctx.prisma.kB.update({
     where: { id },
     data: {
@@ -770,7 +638,8 @@ export async function updateKB(
       externalGraphId: input.externalGraphId ?? undefined,
       graphEnabled: input.graphEnabled ?? undefined,
       graphResourceKinds: input.graphResourceKinds ?? undefined,
-      ...refreshPolicyData(input),
+      refreshIntervalMinutes:
+        refreshPolicy?.refreshIntervalMinutes ?? undefined,
     },
     include: KB_INCLUDE,
   })
@@ -781,19 +650,20 @@ export async function updateKB(
       include: RESOURCE_INCLUDE,
     })
 
-    for (const resource of resources) {
-      const wasIncluded = isResourceIncludedInGraph(current, resource)
-      const isIncluded = isResourceIncludedInGraph(updated, resource)
-      if (wasIncluded || isIncluded) {
-        await dispatchResourceEvent({
+    await Promise.all(
+      resources.map((resource) => {
+        const wasIncluded = isResourceIncludedInGraph(current, resource)
+        const isIncluded = isResourceIncludedInGraph(updated, resource)
+        if (!wasIncluded && !isIncluded) return undefined
+        return dispatchResourceEvent({
           ctx,
           resource,
           eventType: 'resource.updated',
           graphWasIncluded: wasIncluded,
           dispatchIngestion: false,
         })
-      }
-    }
+      })
+    )
   }
 
   return updated
@@ -806,9 +676,9 @@ export async function deleteKB({ id }: { id: string }, ctx: ContextWithUser) {
     include: RESOURCE_INCLUDE,
   })
 
-  for (const resource of activeResources) {
-    await softDeleteResource(resource, ctx)
-  }
+  await Promise.all(
+    activeResources.map((resource) => softDeleteResource(resource, ctx))
+  )
 
   await ctx.prisma.kB.update({
     where: { id },
@@ -822,31 +692,25 @@ export async function createKBResource(
   { kbId, input }: { kbId: string; input: CreateKBResourceInput },
   ctx: ContextWithUser
 ) {
-  const kb = await getOwnedKBOrThrow(kbId, ctx)
-  await validateKlickerObjectAccess(input, ctx)
-  await validateDocumentAccess(input, ctx)
+  const kb = await assertOwnedKB(kbId, ctx)
+  await validateResourceReferenceAccess(input, ctx)
 
   const metadata = validateKBResourceMetadata(
     kb.metadataProfile,
     input.metadata
   )
+  const refresh = validateKBRefreshPolicy({
+    refreshIntervalMinutes: input.refreshIntervalMinutes,
+  })
   const created = await ctx.prisma.kBResource.create({
     data: {
       title: assertTitle(input.title),
       description: input.description?.trim() || null,
-      status: KBResourceStatus.QUEUED,
+      status: KBStatus.QUEUED,
       kind: input.kind,
-      originLabel: input.originLabel?.trim() || null,
-      originDetail: input.originDetail?.trim() || null,
       metadata: toNullableJson(metadata),
       graphInclusion: input.graphInclusion ?? KBGraphInclusionMode.INHERIT,
-      ...resourceRefreshPolicyData({
-        refreshMode: input.refreshMode ?? KBRefreshMode.INHERIT,
-        refreshScope: input.refreshScope,
-        refreshIntervalMinutes: input.refreshIntervalMinutes,
-        refreshCron: input.refreshCron,
-        changeMonitoring: input.changeMonitoring,
-      }),
+      refreshIntervalMinutes: refresh.refreshIntervalMinutes,
       ...sourceData(input),
       kbId,
     },
@@ -857,18 +721,19 @@ export async function createKBResource(
     ctx,
     kbId,
     resourceId: created.id,
-    trigger: KBIngestionTrigger.RESOURCE_CREATED,
   })
 
-  await recalculateKBResourceCount(kbId, ctx)
-  await dispatchResourceEvent({
-    ctx,
-    resource: created,
-    eventType: 'resource.created',
-    ingestionRun: run,
-  })
+  await Promise.all([
+    recalculateKBResourceCount(kbId, ctx),
+    dispatchResourceEvent({
+      ctx,
+      resource: created,
+      eventType: 'resource.created',
+      ingestionRun: run,
+    }),
+  ])
 
-  return await getOwnedResourceOrThrow(created.id, ctx)
+  return created
 }
 
 export async function updateKBResource(
@@ -879,17 +744,9 @@ export async function updateKBResource(
   const effectiveInput = {
     externalResourceId: current.externalResourceId,
     mediaFileId: current.mediaFileId,
-    documentFileName: current.documentFileName,
-    documentMimeType: current.documentMimeType,
-    documentPageCount: current.documentPageCount,
-    documentLanguage: current.documentLanguage,
     websiteUrl: current.websiteUrl,
     websiteStrategy: current.websiteStrategy,
-    crawlDepth: current.crawlDepth,
     snippetText: current.snippetText,
-    snippetLanguage: current.snippetLanguage,
-    snippetAuthor: current.snippetAuthor,
-    snippetNote: current.snippetNote,
     elementId: current.elementId,
     practiceQuizId: current.practiceQuizId,
     liveQuizId: current.liveQuizId,
@@ -899,8 +756,7 @@ export async function updateKBResource(
     ...input,
     kind: input.kind ?? current.kind,
   }
-  await validateKlickerObjectAccess(effectiveInput, ctx)
-  await validateDocumentAccess(effectiveInput, ctx)
+  await validateResourceReferenceAccess(effectiveInput, ctx)
 
   const metadata =
     input.metadata === undefined
@@ -908,6 +764,12 @@ export async function updateKBResource(
       : validateKBResourceMetadata(current.kb.metadataProfile, input.metadata)
   const graphWasIncluded = isResourceIncludedInGraph(current.kb, current)
   const processingRelevant = hasProcessingRelevantResourceChanges(input)
+  const refreshPolicy =
+    input.refreshIntervalMinutes !== undefined
+      ? validateKBRefreshPolicy({
+          refreshIntervalMinutes: input.refreshIntervalMinutes,
+        })
+      : null
 
   const updated = await ctx.prisma.kBResource.update({
     where: { id: resourceId },
@@ -917,21 +779,13 @@ export async function updateKBResource(
         input.description !== undefined
           ? input.description?.trim() || null
           : undefined,
-      statusLabel: input.statusLabel ?? undefined,
       statusDetail: input.statusDetail ?? undefined,
       kind: input.kind ?? undefined,
-      originLabel:
-        input.originLabel !== undefined
-          ? input.originLabel?.trim() || null
-          : undefined,
-      originDetail:
-        input.originDetail !== undefined
-          ? input.originDetail?.trim() || null
-          : undefined,
       metadata:
         input.metadata === undefined ? undefined : toNullableJson(metadata),
       graphInclusion: input.graphInclusion ?? undefined,
-      ...resourceRefreshPolicyData(input),
+      refreshIntervalMinutes:
+        refreshPolicy?.refreshIntervalMinutes ?? undefined,
       ...(input.kind ||
       SOURCE_FIELD_KEYS.some((key) => input[key] !== undefined)
         ? sourceData(effectiveInput)
@@ -942,13 +796,12 @@ export async function updateKBResource(
 
   const graphIncluded = isResourceIncludedInGraph(updated.kb, updated)
   const graphChanged = graphWasIncluded !== graphIncluded
-  let run: { id: string; trigger: KBIngestionTrigger } | null = null
+  let run: { id: string } | null = null
   if (processingRelevant) {
     run = await createResourceRun({
       ctx,
       kbId: updated.kbId,
       resourceId: updated.id,
-      trigger: KBIngestionTrigger.RESOURCE_UPDATED,
     })
   }
 
@@ -963,7 +816,7 @@ export async function updateKBResource(
     })
   }
 
-  return await getOwnedResourceOrThrow(resourceId, ctx)
+  return updated
 }
 
 export async function deleteKBResources(
@@ -979,15 +832,14 @@ export async function deleteKBResources(
     throw new Error('Resource not found')
   }
 
-  const affectedKBIds = new Set<string>()
-  for (const resource of resources) {
-    await softDeleteResource(resource, ctx)
-    affectedKBIds.add(resource.kbId)
-  }
+  await Promise.all(
+    resources.map((resource) => softDeleteResource(resource, ctx))
+  )
 
-  for (const kbId of affectedKBIds) {
-    await recalculateKBResourceCount(kbId, ctx)
-  }
+  const affectedKBIds = new Set(resources.map((r) => r.kbId))
+  await Promise.all(
+    [...affectedKBIds].map((kbId) => recalculateKBResourceCount(kbId, ctx))
+  )
 
   return true
 }
@@ -997,9 +849,10 @@ export async function updateKBRefreshPolicy(
   ctx: ContextWithUser
 ) {
   await getOwnedKBOrThrow(kbId, ctx)
+  const policy = validateKBRefreshPolicy(input)
   return await ctx.prisma.kB.update({
     where: { id: kbId },
-    data: refreshPolicyData(input),
+    data: { refreshIntervalMinutes: policy.refreshIntervalMinutes },
     include: KB_INCLUDE,
   })
 }
@@ -1012,9 +865,10 @@ export async function updateKBResourceRefreshPolicy(
   ctx: ContextWithUser
 ) {
   await getOwnedResourceOrThrow(resourceId, ctx)
+  const policy = validateKBRefreshPolicy(input)
   return await ctx.prisma.kBResource.update({
     where: { id: resourceId },
-    data: resourceRefreshPolicyData(input),
+    data: { refreshIntervalMinutes: policy.refreshIntervalMinutes },
     include: RESOURCE_INCLUDE,
   })
 }

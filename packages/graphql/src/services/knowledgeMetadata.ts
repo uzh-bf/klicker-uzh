@@ -1,8 +1,6 @@
 import {
   KBGraphInclusionMode,
   KBMetadataProfile,
-  KBRefreshMode,
-  KBRefreshScope,
   KBResourceKind,
   KBWebsiteStrategy,
 } from '@klicker-uzh/prisma/client'
@@ -188,91 +186,32 @@ export function validateKBSettings(settings: unknown) {
 }
 
 export interface KBRefreshPolicyInput {
-  refreshMode: keyof typeof KBRefreshMode | `${KBRefreshMode}`
-  refreshScope?: keyof typeof KBRefreshScope | `${KBRefreshScope}` | null
   refreshIntervalMinutes?: number | null
-  refreshCron?: string | null
-  changeMonitoring?: boolean | null
 }
 
 export function validateKBRefreshPolicy(input: KBRefreshPolicyInput) {
-  const refreshMode = input.refreshMode as KBRefreshMode
-  if (!Object.values(KBRefreshMode).includes(refreshMode)) {
-    throw new Error('Invalid refreshMode')
-  }
-
-  const refreshScope = (input.refreshScope ??
-    KBRefreshScope.REFRESHABLE) as KBRefreshScope
-  if (!Object.values(KBRefreshScope).includes(refreshScope)) {
-    throw new Error('Invalid refreshScope')
-  }
-
   if (
-    refreshMode === KBRefreshMode.INTERVAL &&
-    (!input.refreshIntervalMinutes || input.refreshIntervalMinutes <= 0)
+    input.refreshIntervalMinutes != null &&
+    input.refreshIntervalMinutes <= 0
   ) {
     throw new Error('refreshIntervalMinutes must be greater than 0')
   }
 
-  if (refreshMode === KBRefreshMode.CRON && !input.refreshCron?.trim()) {
-    throw new Error('refreshCron is required for CRON refresh mode')
-  }
-
   return {
-    refreshMode,
-    refreshScope,
-    refreshIntervalMinutes:
-      refreshMode === KBRefreshMode.INTERVAL
-        ? input.refreshIntervalMinutes
-        : null,
-    refreshCron:
-      refreshMode === KBRefreshMode.CRON ? input.refreshCron?.trim() : null,
-    changeMonitoring: input.changeMonitoring ?? false,
+    refreshIntervalMinutes: input.refreshIntervalMinutes ?? null,
   }
-}
-
-export interface KBResourceRefreshPolicyInput {
-  refreshMode: keyof typeof KBRefreshMode | `${KBRefreshMode}`
-  refreshScope?: keyof typeof KBRefreshScope | `${KBRefreshScope}` | null
-  refreshIntervalMinutes?: number | null
-  refreshCron?: string | null
-  changeMonitoring?: boolean | null
-}
-
-export function validateKBResourceRefreshPolicy(
-  input: KBResourceRefreshPolicyInput
-) {
-  if (input.refreshMode === KBRefreshMode.INHERIT) {
-    return {
-      refreshMode: KBRefreshMode.INHERIT,
-      refreshScope: null,
-      refreshIntervalMinutes: null,
-      refreshCron: null,
-      changeMonitoring: input.changeMonitoring ?? null,
-    }
-  }
-
-  return validateKBRefreshPolicy(input)
 }
 
 export interface KBResourceSourceInput {
   kind: keyof typeof KBResourceKind | `${KBResourceKind}`
   externalResourceId?: string | null
   mediaFileId?: string | null
-  documentFileName?: string | null
-  documentMimeType?: string | null
-  documentPageCount?: number | null
-  documentLanguage?: string | null
   websiteUrl?: string | null
   websiteStrategy?:
     | keyof typeof KBWebsiteStrategy
     | `${KBWebsiteStrategy}`
     | null
-  crawlDepth?: number | null
   snippetText?: string | null
-  snippetLanguage?: string | null
-  snippetAuthor?: string | null
-  snippetNote?: string | null
   elementId?: number | null
   practiceQuizId?: string | null
   liveQuizId?: string | null
@@ -308,10 +247,6 @@ export function validateKBResourceSource(input: KBResourceSourceInput) {
       kind,
       externalResourceId: input.externalResourceId ?? null,
       mediaFileId: input.mediaFileId ?? null,
-      documentFileName: input.documentFileName?.trim() || null,
-      documentMimeType: input.documentMimeType?.trim() || null,
-      documentPageCount: input.documentPageCount ?? null,
-      documentLanguage: input.documentLanguage?.trim() || null,
     }
   }
 
@@ -339,7 +274,6 @@ export function validateKBResourceSource(input: KBResourceSourceInput) {
       kind,
       websiteUrl: input.websiteUrl.trim(),
       websiteStrategy,
-      crawlDepth: input.crawlDepth ?? null,
     }
   }
 
@@ -354,10 +288,6 @@ export function validateKBResourceSource(input: KBResourceSourceInput) {
     return {
       kind,
       snippetText,
-      snippetCharacterCount: snippetText.length,
-      snippetLanguage: input.snippetLanguage?.trim() || null,
-      snippetAuthor: input.snippetAuthor?.trim() || null,
-      snippetNote: input.snippetNote?.trim() || null,
     }
   }
 

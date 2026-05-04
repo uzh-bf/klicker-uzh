@@ -8,7 +8,6 @@ import type {
   ElementOptions,
   GroupActivityDecisions,
   GroupActivityResults,
-  KBIngestionStats,
   KBMetadata,
   KBResourceMetadata,
   KBSettings,
@@ -49,7 +48,6 @@ declare global {
     type PrismaKBMetadata = KBMetadata
     type PrismaKBResourceMetadata = KBResourceMetadata
     type PrismaKBSettings = KBSettings
-    type PrismaKBIngestionStats = KBIngestionStats
     type PrismaKBWebhookPayload = KBWebhookPayload
   }
 }

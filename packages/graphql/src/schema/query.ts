@@ -75,7 +75,6 @@ import {
   KBIngestionRunRef,
   KBResourceFilterInputRef,
   KBResourceRef,
-  KBWebhookEventRef,
 } from './knowledge.js'
 import {
   Feedback,
@@ -265,26 +264,6 @@ export const Query = builder.queryType({
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.getKBIngestionRuns(
-            {
-              kbId: args.kbId,
-              resourceId: args.resourceId,
-              limit: args.limit,
-            },
-            ctx
-          )
-        },
-      }),
-
-      getKBWebhookEvents: t.withAuth(asUser).field({
-        nullable: false,
-        type: [KBWebhookEventRef],
-        args: {
-          kbId: t.arg.string({ required: true }),
-          resourceId: t.arg.string({ required: false }),
-          limit: t.arg.int({ required: false }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await KnowledgeService.getKBWebhookEvents(
             {
               kbId: args.kbId,
               resourceId: args.resourceId,

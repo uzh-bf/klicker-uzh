@@ -1,10 +1,8 @@
 import {
   KbDataFragment,
-  KbRefreshMode,
-  KbRefreshScope,
   KbResourceDataFragment,
   KbResourceKind,
-  KbResourceStatus,
+  KbStatus,
   KbWebsiteStrategy,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -13,14 +11,13 @@ import {
   KnowledgeResource,
 } from '@klicker-uzh/kb-management'
 
-const STATUS_MAP: Record<KbResourceStatus, KnowledgeResource['status']> = {
-  [KbResourceStatus.Ready]: 'ready',
-  [KbResourceStatus.Indexing]: 'indexing',
-  [KbResourceStatus.Crawling]: 'crawling',
-  [KbResourceStatus.Queued]: 'queued',
-  [KbResourceStatus.Stale]: 'stale',
-  [KbResourceStatus.Error]: 'error',
-  [KbResourceStatus.Disabled]: 'disabled',
+const STATUS_MAP: Record<KbStatus, KnowledgeResource['status']> = {
+  [KbStatus.Ready]: 'ready',
+  [KbStatus.Indexing]: 'indexing',
+  [KbStatus.Queued]: 'queued',
+  [KbStatus.Stale]: 'stale',
+  [KbStatus.Error]: 'error',
+  [KbStatus.Disabled]: 'disabled',
 }
 
 const KIND_MAP: Record<KbResourceKind, KnowledgeResource['type']> = {
@@ -28,6 +25,13 @@ const KIND_MAP: Record<KbResourceKind, KnowledgeResource['type']> = {
   [KbResourceKind.Website]: 'website',
   [KbResourceKind.Snippet]: 'text',
   [KbResourceKind.KlickerObject]: 'internal',
+}
+
+const RUN_STATUS_MAP: Record<string, KnowledgeResource['status']> = {
+  SUCCEEDED: 'ready',
+  FAILED: 'error',
+  RUNNING: 'indexing',
+  QUEUED: 'queued',
 }
 
 const STRATEGY_MAP = {
@@ -54,50 +58,24 @@ function formatDate(value?: string | null) {
   }).format(new Date(value))
 }
 
-function bytesLabel(value?: string | null) {
-  if (!value) return undefined
+function bytesLabel(value?: string | number | null) {
+  if (value == null) return undefined
 
-  const bytes = Number(value)
+  const bytes = typeof value === 'number' ? value : Number(value)
   if (!Number.isFinite(bytes)) return undefined
   if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`
   if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`
   return `${bytes} B`
 }
 
-function toRefreshPolicy({
-  mode,
-  scope,
-  intervalMinutes,
-  cron,
-  changeMonitoring,
-}: {
-  mode: KbRefreshMode
-  scope?: KbRefreshScope | null
+function toRefreshPolicy(
   intervalMinutes?: number | null
-  cron?: string | null
-  changeMonitoring?: boolean | null
-}): KnowledgeRefreshPolicy {
+): KnowledgeRefreshPolicy {
   return {
-    mode: mode.toLowerCase() as KnowledgeRefreshPolicy['mode'],
-    scope: scope?.toLowerCase() as KnowledgeRefreshPolicy['scope'],
+    mode: intervalMinutes ? 'interval' : 'manual',
+    intervalMinutes: intervalMinutes ?? null,
     intervalLabel: intervalMinutes ? `Every ${intervalMinutes} min` : undefined,
-    cronLabel: cron ?? undefined,
-    changeMonitoring: changeMonitoring ?? undefined,
   }
-}
-
-export function toKbRefreshMode(mode: KnowledgeRefreshPolicy['mode']) {
-  if (mode === 'inherit') return KbRefreshMode.Inherit
-  if (mode === 'interval') return KbRefreshMode.Interval
-  if (mode === 'cron') return KbRefreshMode.Cron
-  if (mode === 'disabled') return KbRefreshMode.Disabled
-  return KbRefreshMode.Manual
-}
-
-export function toKbRefreshScope(scope?: KnowledgeRefreshPolicy['scope']) {
-  if (scope === 'all') return KbRefreshScope.All
-  if (scope === 'websites') return KbRefreshScope.Websites
-  return KbRefreshScope.Refreshable
 }
 
 export function toKnowledgeBaseSummary(
@@ -111,20 +89,13 @@ export function toKnowledgeBaseSummary(
     status: STATUS_MAP[kb.status],
     statusLabel: kb.status,
     updatedAtLabel: formatDate(kb.updatedAt),
-    metadata: kb.metadata ?? undefined,
+    metadata: (kb.metadata as KnowledgeBaseSummary['metadata']) ?? undefined,
     metrics: [
       { id: 'resources', label: 'Resources', value: kb.resourceCount },
       { id: 'chunks', label: 'Chunks', value: kb.chunkCount },
       { id: 'size', label: 'Size', value: bytesLabel(kb.sizeBytes) ?? '-' },
-      { id: 'entities', label: 'Entities', value: kb.entityCount },
     ],
-    refreshPolicy: toRefreshPolicy({
-      mode: kb.refreshMode,
-      scope: kb.refreshScope,
-      intervalMinutes: kb.refreshIntervalMinutes,
-      cron: kb.refreshCron,
-      changeMonitoring: kb.changeMonitoring,
-    }),
+    refreshPolicy: toRefreshPolicy(kb.refreshIntervalMinutes),
   }
 }
 
@@ -135,60 +106,55 @@ export function toKnowledgeResource(
     ? STRATEGY_MAP[resource.websiteStrategy]
     : undefined
 
+  const metadata =
+    (resource.metadata as Record<string, unknown> | null | undefined) ?? null
+  const metadataChunkCount =
+    typeof metadata?.chunkCount === 'number' ? metadata.chunkCount : undefined
+  const metadataSizeBytes =
+    typeof metadata?.sizeBytes === 'number' ? metadata.sizeBytes : undefined
+  const subsites = Array.isArray(metadata?.subresources)
+    ? (metadata.subresources as Array<Record<string, unknown>>)
+    : []
+
   return {
     id: resource.id,
     knowledgeBaseId: resource.kbId,
     title: resource.title,
     type: KIND_MAP[resource.kind],
-    originLabel: resource.originLabel ?? resource.kind,
-    originDetail: resource.originDetail ?? resource.websiteUrl ?? undefined,
-    sizeLabel: bytesLabel(resource.sizeBytes),
-    chunkCount: resource.chunkCount ?? undefined,
+    originLabel: resource.kind,
+    originDetail: resource.websiteUrl ?? undefined,
+    sizeLabel: bytesLabel(metadataSizeBytes),
+    chunkCount: metadataChunkCount,
     updatedAtLabel: formatDate(resource.updatedAt),
     status: STATUS_MAP[resource.status],
-    statusLabel: resource.statusLabel ?? resource.status,
+    statusLabel: resource.status,
     statusMessage: resource.statusDetail ?? undefined,
-    progress: resource.progress ?? undefined,
-    metadata: resource.metadata ?? undefined,
-    documentMetadata:
-      resource.kind === KbResourceKind.Document
-        ? {
-            pageCount: resource.documentPageCount ?? undefined,
-            fileSizeLabel: bytesLabel(resource.sizeBytes),
-            mimeType: resource.documentMimeType ?? undefined,
-            language: resource.documentLanguage ?? undefined,
-          }
-        : undefined,
+    metadata:
+      (metadata as KnowledgeResource['metadata'] | undefined) ?? undefined,
     websiteMetadata:
       resource.kind === KbResourceKind.Website
         ? {
             strategy: strategy?.strategy ?? 'I',
             strategyLabel: strategy?.label,
-            sitemapFound: resource.sitemapFound ?? undefined,
-            sitemapPageCount: resource.sitemapPageCount ?? undefined,
-            scrapedPageCount: resource.scrapedPageCount ?? undefined,
-            depthLabel:
-              resource.crawlDepth != null
-                ? `depth ${resource.crawlDepth}`
-                : undefined,
-            subsites: resource.subresources.map((subresource) => ({
-              id: subresource.id,
-              title: subresource.title ?? subresource.url,
-              url: subresource.url,
-              status: STATUS_MAP[subresource.status],
-              chunkCount: subresource.chunkCount ?? undefined,
-              lastCheckedAtLabel: formatDate(subresource.lastCheckedAt),
-              lastChangedAtLabel: formatDate(subresource.lastContentChangedAt),
+            subsites: subsites.map((sub, index) => ({
+              id: typeof sub.id === 'string' ? sub.id : `sub-${index}`,
+              title:
+                typeof sub.title === 'string'
+                  ? sub.title
+                  : typeof sub.url === 'string'
+                    ? sub.url
+                    : '',
+              url: typeof sub.url === 'string' ? sub.url : '',
+              status: STATUS_MAP[KbStatus.Ready],
+              chunkCount:
+                typeof sub.chunkCount === 'number' ? sub.chunkCount : undefined,
             })),
           }
         : undefined,
     snippetMetadata:
       resource.kind === KbResourceKind.Snippet
         ? {
-            characterCount: resource.snippetCharacterCount ?? undefined,
-            language: resource.snippetLanguage ?? undefined,
-            author: resource.snippetAuthor ?? undefined,
-            note: resource.snippetNote ?? undefined,
+            characterCount: resource.snippetText?.length,
           }
         : undefined,
     internalMetadata:
@@ -200,33 +166,16 @@ export function toKnowledgeResource(
         : undefined,
     freshness: {
       lastIndexedAtLabel: formatDate(resource.lastIndexedAt),
-      lastCheckedAtLabel: formatDate(resource.lastCheckedAt),
-      lastRemoteModifiedAtLabel: formatDate(resource.lastRemoteModifiedAt),
-      lastContentChangedAtLabel: formatDate(resource.lastContentChangedAt),
       nextCheckAtLabel: formatDate(resource.nextRefreshAt),
       changeStatus: 'unknown',
-      changeStatusLabel: resource.changeStatus ?? 'Unknown',
-      refreshPolicy: toRefreshPolicy({
-        mode: resource.refreshMode,
-        scope: resource.refreshScope,
-        intervalMinutes: resource.refreshIntervalMinutes,
-        cron: resource.refreshCron,
-        changeMonitoring: resource.changeMonitoring,
-      }),
-      inheritedFromKnowledgeBase:
-        resource.refreshMode === KbRefreshMode.Inherit,
+      changeStatusLabel: 'Unknown',
+      refreshPolicy: toRefreshPolicy(resource.refreshIntervalMinutes),
+      inheritedFromKnowledgeBase: resource.refreshIntervalMinutes == null,
     },
     ingestionRuns: resource.ingestionRuns.map((run) => ({
       id: run.id,
-      label: run.trigger,
-      status:
-        run.status === 'SUCCEEDED'
-          ? 'ready'
-          : run.status === 'FAILED'
-            ? 'error'
-            : run.status === 'RUNNING'
-              ? 'indexing'
-              : 'queued',
+      label: run.status,
+      status: RUN_STATUS_MAP[run.status] ?? 'queued',
     })),
   }
 }

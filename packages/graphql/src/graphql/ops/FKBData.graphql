@@ -14,16 +14,9 @@ fragment KBData on KB {
   graphResourceKinds
   resourceCount
   chunkCount
-  entityCount
   sizeBytes
-  refreshMode
-  refreshScope
   refreshIntervalMinutes
-  refreshCron
-  changeMonitoring
   lastIndexedAt
-  lastCheckedAt
-  lastContentChangedAt
   nextRefreshAt
   courses {
     id

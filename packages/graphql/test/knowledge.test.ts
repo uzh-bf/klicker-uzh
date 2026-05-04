@@ -56,7 +56,6 @@ describe('KB service helpers', () => {
       })
     ).toMatchObject({
       snippetText: 'A short source text.',
-      snippetCharacterCount: 20,
     })
 
     expect(() =>
@@ -71,18 +70,15 @@ describe('KB service helpers', () => {
   it('validates refresh policies and graph inclusion', () => {
     expect(
       validateKBRefreshPolicy({
-        refreshMode: 'INTERVAL',
-        refreshScope: 'WEBSITES',
         refreshIntervalMinutes: 60,
       })
-    ).toMatchObject({
-      refreshMode: 'INTERVAL',
+    ).toEqual({
       refreshIntervalMinutes: 60,
     })
 
     expect(() =>
-      validateKBRefreshPolicy({ refreshMode: 'CRON', refreshScope: 'ALL' })
-    ).toThrow('refreshCron')
+      validateKBRefreshPolicy({ refreshIntervalMinutes: 0 })
+    ).toThrow('refreshIntervalMinutes must be greater than 0')
 
     expect(
       isResourceIncludedInGraph(
