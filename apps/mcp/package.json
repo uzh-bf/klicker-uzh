@@ -6,16 +6,10 @@
   "license": "AGPL-3.0",
   "scripts": {
     "build": "uv sync --frozen && uv run poe gen-ops",
-    "check": "uv run poe check",
     "dev": "../../util/_run_with_infisical.sh --env dev env APP_ORIGIN_API=http://localhost:3000 uv run poe dev",
     "dev:raw": "uv run poe dev",
-    "format": "uv run poe format",
-    "format:check": "uv run poe format-check",
     "gen:ops": "uv run poe gen-ops",
-    "lint": "uv run poe lint",
-    "start": "uv run python -m klicker_mcp.main",
-    "test": "uv run poe test",
-    "test:run": "uv run poe test"
+    "start": "uv run python -m klicker_mcp.main"
   },
   "engines": {
     "node": "=20"

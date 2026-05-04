@@ -35,21 +35,21 @@ pnpm --filter @klicker-uzh/mcp dev
 
 ## Env vars
 
-| Var | Default | Purpose |
-| --- | --- | --- |
-| `MCP_HOST` | `0.0.0.0` | Bind host |
-| `MCP_PORT` | `7079` | Bind port |
-| `MCP_PATH` | `/mcp` | HTTP mount path |
-| `LOG_LEVEL` | `INFO` | Log level |
-| `APP_ORIGIN_API` | `http://localhost:3000` | KlickerUZH GraphQL endpoint origin |
-| `APP_SECRET` | — | HS256 secret used for JWT verification (must match backend) |
-| `MCP_ORIGIN` | _(unset)_ | Public URL of this server; required for OAuth mode |
-| `MCP_UPSTREAM_CLIENT_ID` | _(unset)_ | Pre-registered client id for the `apps/auth` bridge |
-| `MCP_UPSTREAM_CLIENT_SECRET` | _(unset)_ | Secret paired with the client id |
-| `MCP_UPSTREAM_AUTHORIZE_URL` | _(unset)_ | Typically `${APP_ORIGIN_AUTH}/api/mcp/authorize` |
-| `MCP_UPSTREAM_TOKEN_URL` | _(unset)_ | Typically `${APP_ORIGIN_AUTH}/api/mcp/token` |
-| `MCP_UPSTREAM_ISSUER` | _(unset)_ | Optional JWT `iss` claim to require |
-| `MCP_STORAGE_URL` | _(unset)_ | Redis URL for OAuth code/refresh-token storage (empty = in-memory) |
+| Var                          | Default                 | Purpose                                                            |
+| ---------------------------- | ----------------------- | ------------------------------------------------------------------ |
+| `MCP_HOST`                   | `0.0.0.0`               | Bind host                                                          |
+| `MCP_PORT`                   | `7079`                  | Bind port                                                          |
+| `MCP_PATH`                   | `/mcp`                  | HTTP mount path                                                    |
+| `LOG_LEVEL`                  | `INFO`                  | Log level                                                          |
+| `APP_ORIGIN_API`             | `http://localhost:3000` | KlickerUZH GraphQL endpoint origin                                 |
+| `APP_SECRET`                 | —                       | HS256 secret used for JWT verification (must match backend)        |
+| `MCP_ORIGIN`                 | _(unset)_               | Public URL of this server; required for OAuth mode                 |
+| `MCP_UPSTREAM_CLIENT_ID`     | _(unset)_               | Pre-registered client id for the `apps/auth` bridge                |
+| `MCP_UPSTREAM_CLIENT_SECRET` | _(unset)_               | Secret paired with the client id                                   |
+| `MCP_UPSTREAM_AUTHORIZE_URL` | _(unset)_               | Typically `${APP_ORIGIN_AUTH}/api/mcp/authorize`                   |
+| `MCP_UPSTREAM_TOKEN_URL`     | _(unset)_               | Typically `${APP_ORIGIN_AUTH}/api/mcp/token`                       |
+| `MCP_UPSTREAM_ISSUER`        | _(unset)_               | Optional JWT `iss` claim to require                                |
+| `MCP_STORAGE_URL`            | _(unset)_               | Redis URL for OAuth code/refresh-token storage (empty = in-memory) |
 
 When all `MCP_UPSTREAM_*` vars are unset, the server starts in pass-through
 mode: MCP clients send a raw `Authorization: Bearer <jwt>` header themselves,

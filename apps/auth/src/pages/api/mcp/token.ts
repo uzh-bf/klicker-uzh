@@ -54,7 +54,9 @@ export default async function handler(
 
   const record = popCode(code)
   if (!record) {
-    res.status(400).json({ error: 'invalid_grant', reason: 'code expired or unknown' })
+    res
+      .status(400)
+      .json({ error: 'invalid_grant', reason: 'code expired or unknown' })
     return
   }
   if (record.redirectUri !== redirectUri || record.clientId !== clientId) {

@@ -18,18 +18,18 @@ Python 3.12 · uv-managed project · FastMCP v3.2 · Streamable HTTP transport �
 
 ## Iteration status
 
-| #   | Title                                                    | Status | Hash                                     |
-| --- | -------------------------------------------------------- | ------ | ---------------------------------------- |
-| 1   | Skeleton + PLAN.md                                       | done   | `d419d767a`                              |
-| 2   | GraphQL client + persisted-ops codegen + poe tasks       | done   | `496d0b191`                              |
-| 3   | Category A lecturer tools (question authoring as drafts) | done   | `a00e38c70`                              |
-| 4   | Category A participant tools (quiz discovery + response) | done   | `ab03aad1e`                              |
-| 5   | OAuth bridge (MCP auth server + apps/auth routes)        | done   | `01916b826`                              |
-| 6   | Backend Category B exposure queries + MCP tools          | done   | `d520532b5` (backend), `4557252a5` (MCP) |
-| 7   | Backend Category C aggregation + MCP tools               | done   | `f64971a26` (backend), `4557252a5` (MCP) |
-| 8   | Deploy surface (Dockerfile, Traefik, Helm)               | done   | `f555aaec0`                              |
-| 9   | Participant-analytics MCP tools + shared test helpers    | done   | `4557252a5`                              |
-| 10  | E2E smoke script + TLS/CSRF plumbing fixes (first real run) | done |                                          |
+| #   | Title                                                       | Status | Hash                                     |
+| --- | ----------------------------------------------------------- | ------ | ---------------------------------------- |
+| 1   | Skeleton + PLAN.md                                          | done   | `d419d767a`                              |
+| 2   | GraphQL client + persisted-ops codegen + poe tasks          | done   | `496d0b191`                              |
+| 3   | Category A lecturer tools (question authoring as drafts)    | done   | `a00e38c70`                              |
+| 4   | Category A participant tools (quiz discovery + response)    | done   | `ab03aad1e`                              |
+| 5   | OAuth bridge (MCP auth server + apps/auth routes)           | done   | `01916b826`                              |
+| 6   | Backend Category B exposure queries + MCP tools             | done   | `d520532b5` (backend), `4557252a5` (MCP) |
+| 7   | Backend Category C aggregation + MCP tools                  | done   | `f64971a26` (backend), `4557252a5` (MCP) |
+| 8   | Deploy surface (Dockerfile, Traefik, Helm)                  | done   | `f555aaec0`                              |
+| 9   | Participant-analytics MCP tools + shared test helpers       | done   | `4557252a5`                              |
+| 10  | E2E smoke script + TLS/CSRF plumbing fixes (first real run) | done   |                                          |
 
 ## Iteration 1 — Skeleton + PLAN.md
 
@@ -166,7 +166,7 @@ Failures:
 
 The single failure is a seeded-data gap (no `ParticipantPerformance` rows for `testuser1` in `Testkurs`) and will be fixed by the learning-analytics PR, not by the MCP plumbing. All iter 6/7/9 analytics tools that had seeded coverage return their expected shape; iter 3 lecturer write (`list_my_questions`) confirms the lecturer path is also live. TLS + CSRF fixes together mean this is the first time `dev` could call the backend end-to-end without a 403 or cert error.
 
-**Follow-up still open:** step 3 below (ACCOUNT_OWNER scope vs `asUserFullAccess`) — the lecturer `whoami` returned `Self=null` (documented expected), but real lecturer writes (`create_*_question`) are untested end-to-end.
+**Follow-up still open:** step 3 below (ACCOUNT*OWNER scope vs `asUserFullAccess`) — the lecturer `whoami` returned `Self=null` (documented expected), but real lecturer writes (`create*\*\_question`) are untested end-to-end.
 
 ## Next steps — candidates for iteration 11
 

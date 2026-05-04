@@ -39,7 +39,6 @@ import {
   QuizAnalytics,
   WeeklyCourseActivities,
 } from './analytics.js'
-import { ResponseCorrectness } from './evaluation.js'
 import {
   ActivityStudentPerformance,
   AssessmentResultsCourse,
@@ -71,7 +70,7 @@ import {
   UserElementList,
 } from './element.js'
 import { ElementStatus, ElementType } from './elementData.js'
-import { ActivityEvaluation } from './evaluation.js'
+import { ActivityEvaluation, ResponseCorrectness } from './evaluation.js'
 import {
   GroupActivity,
   GroupActivityDetails,
@@ -500,10 +499,7 @@ export const Query = builder.queryType({
         type: ParticipantPerformance,
         args: { courseId: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
-          return await AnalyticsService.getParticipantPerformanceSelf(
-            args,
-            ctx
-          )
+          return await AnalyticsService.getParticipantPerformanceSelf(args, ctx)
         },
       }),
 

@@ -51,7 +51,9 @@ export default async function handler(
     }
   }
   if (params.code_challenge_method !== 'S256') {
-    res.status(400).json({ error: 'invalid_request', reason: 'only S256 PKCE supported' })
+    res
+      .status(400)
+      .json({ error: 'invalid_request', reason: 'only S256 PKCE supported' })
     return
   }
 
@@ -100,7 +102,8 @@ export default async function handler(
       role: session.role as string | undefined,
       scope: session.scope as string | undefined,
       email: session.email ?? undefined,
-      catalystInstitutional: (session.catalystInstitutional as boolean) ?? false,
+      catalystInstitutional:
+        (session.catalystInstitutional as boolean) ?? false,
       catalystIndividual: (session.catalystIndividual as boolean) ?? false,
     },
     process.env.APP_SECRET as string,
