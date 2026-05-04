@@ -510,6 +510,54 @@ responseApi:
 heartbeats:
   dailyGroupScores:
 
+mcp:
+  priorityClassName: production-workload
+
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/mcp
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 7079
+
+  ingress:
+    enabled: true
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt
+
+  config:
+    host: 0.0.0.0
+    port: '7079'
+    path: /mcp
+    origin: ''
+    upstreamAuthorizeUrl: ''
+    upstreamTokenUrl: ''
+    upstreamIssuer: ''
+    logLevel: INFO
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
 assessment:
   frontendPWA:
     priorityClassName: production-workload

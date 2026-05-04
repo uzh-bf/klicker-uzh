@@ -1,0 +1,18 @@
+query ParticipantCourseAnalytics($courseId: String!) {
+  participantCourseAnalytics(courseId: $courseId) {
+    id
+    type
+    timestamp
+    computedAt
+    trialsCount
+    responseCount
+    totalScore
+    totalPoints
+    totalXp
+    meanCorrectCount
+    meanPartialCorrectCount
+    meanWrongCount
+    firstCorrectCount
+    lastCorrectCount
+  }
+}

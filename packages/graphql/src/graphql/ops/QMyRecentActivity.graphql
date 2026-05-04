@@ -1,0 +1,8 @@
+query MyRecentActivity($limit: Int!) {
+  myRecentActivity(limit: $limit) {
+    type
+    timestamp
+    summary
+    targetId
+  }
+}

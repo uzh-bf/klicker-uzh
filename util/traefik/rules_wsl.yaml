@@ -78,6 +78,13 @@ http:
         - 'websecure'
       service: 'response-api'
 
+    mcp:
+      rule: 'Host(`mcp.klicker.com`)'
+      entrypoints:
+        - 'web'
+        - 'websecure'
+      service: 'mcp'
+
   middlewares:
     csp-frame-ancestors:
       headers:
@@ -119,6 +126,11 @@ http:
       loadBalancer:
         servers:
           - url: 'http://172.25.8.0:7078'
+
+    mcp:
+      loadBalancer:
+        servers:
+          - url: 'http://172.25.8.0:7079'
 
 tls:
   certificates:

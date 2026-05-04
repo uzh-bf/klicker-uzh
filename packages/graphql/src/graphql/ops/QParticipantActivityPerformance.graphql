@@ -1,0 +1,8 @@
+query ParticipantActivityPerformance($courseId: String!) {
+  participantActivityPerformance(courseId: $courseId) {
+    id
+    activityId
+    totalScore
+    completion
+  }
+}

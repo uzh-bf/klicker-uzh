@@ -25,9 +25,17 @@ import {
 } from './activities.js'
 import {
   ActivityType,
+  BookmarkedStacksByCourse,
   CourseActivityAnalytics,
   CoursePerformanceAnalytics,
   ElementFeedback,
+  MyActivityEntry,
+  MyResponseHistoryPage,
+  MySRSEntry,
+  ParticipantActivityPerformance,
+  ParticipantAnalytics,
+  ParticipantPerformance,
+  ParticipantTopicAccuracy,
   QuizAnalytics,
   WeeklyCourseActivities,
 } from './analytics.js'
@@ -62,7 +70,7 @@ import {
   UserElementList,
 } from './element.js'
 import { ElementStatus, ElementType } from './elementData.js'
-import { ActivityEvaluation } from './evaluation.js'
+import { ActivityEvaluation, ResponseCorrectness } from './evaluation.js'
 import {
   GroupActivity,
   GroupActivityDetails,
@@ -468,6 +476,90 @@ export const Query = builder.queryType({
         type: [Course],
         resolve: async (_, __, ctx) => {
           return await CourseService.getParticipantCourses(ctx)
+        },
+      }),
+
+      // --- Category B: participant self-analytics --------------------------
+      // Each query is scoped to `participantId = ctx.user.sub` in the
+      // service. Rows belonging to other participants are never returned.
+
+      participantCourseAnalytics: t.withAuth(asParticipant).field({
+        type: [ParticipantAnalytics],
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await AnalyticsService.getParticipantCourseAnalyticsSelf(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      participantPerformance: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ParticipantPerformance,
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await AnalyticsService.getParticipantPerformanceSelf(args, ctx)
+        },
+      }),
+
+      participantActivityPerformance: t.withAuth(asParticipant).field({
+        type: [ParticipantActivityPerformance],
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await AnalyticsService.getParticipantActivityPerformanceSelf(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      myResponseHistory: t.withAuth(asParticipant).field({
+        type: MyResponseHistoryPage,
+        args: {
+          courseId: t.arg.string({ required: false }),
+          correctnessIn: t.arg({
+            type: [ResponseCorrectness],
+            required: false,
+          }),
+          limit: t.arg.int({ required: true, defaultValue: 20 }),
+          offset: t.arg.int({ required: true, defaultValue: 0 }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ParticipantService.getMyResponseHistory(args, ctx)
+        },
+      }),
+
+      mySRSState: t.withAuth(asParticipant).field({
+        type: [MySRSEntry],
+        args: { practiceQuizId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await ParticipantService.getMySRSStateSelf(args, ctx)
+        },
+      }),
+
+      // --- Category C: aggregation over existing tables -----------------
+
+      participantTopicAccuracy: t.withAuth(asParticipant).field({
+        type: [ParticipantTopicAccuracy],
+        args: { courseId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await AnalyticsService.getParticipantTopicAccuracy(args, ctx)
+        },
+      }),
+
+      myRecentActivity: t.withAuth(asParticipant).field({
+        type: [MyActivityEntry],
+        args: { limit: t.arg.int({ required: true, defaultValue: 20 }) },
+        resolve: async (_, args, ctx) => {
+          return await ParticipantService.getMyRecentActivity(args, ctx)
+        },
+      }),
+
+      myBookmarksAcrossCourses: t.withAuth(asParticipant).field({
+        type: [BookmarkedStacksByCourse],
+        resolve: async (_, __, ctx) => {
+          return await ParticipantService.getMyBookmarksAcrossCourses({}, ctx)
         },
       }),
 

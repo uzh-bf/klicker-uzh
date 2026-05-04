@@ -1,0 +1,12 @@
+query MyBookmarksAcrossCourses {
+  myBookmarksAcrossCourses {
+    courseId
+    courseName
+    stacks {
+      id
+      displayName
+      description
+      order
+    }
+  }
+}

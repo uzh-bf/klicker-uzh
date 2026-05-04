@@ -695,3 +695,135 @@ export async function getActivityAnalytics(
     instanceQuizAnalytics,
   }
 }
+
+// --- Category B: participant self-analytics --------------------------------
+//
+// These helpers return already-computed analytics rows scoped to the calling
+// participant (`participantId = ctx.user.sub`). They are pure reads over
+// existing tables populated by the Python pipeline; no new computation lives
+// here.
+
+export async function getParticipantCourseAnalyticsSelf(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  if (!ctx.user?.sub) return []
+  return await ctx.prisma.participantAnalytics.findMany({
+    where: { participantId: ctx.user.sub, courseId },
+    orderBy: [{ type: 'asc' }, { timestamp: 'asc' }],
+  })
+}
+
+export async function getParticipantPerformanceSelf(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  if (!ctx.user?.sub) return null
+  const row = await ctx.prisma.participantPerformance.findUnique({
+    where: {
+      participantId_courseId: { participantId: ctx.user.sub, courseId },
+    },
+  })
+  return row
+}
+
+export async function getParticipantActivityPerformanceSelf(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  if (!ctx.user?.sub) return []
+  // ParticipantActivityPerformance has no direct courseId; filter by the
+  // practiceQuiz / microLearning linked to the course. Surface whichever
+  // activity id is set as the Pothos-exposed `activityId`.
+  const rows = await ctx.prisma.participantActivityPerformance.findMany({
+    where: {
+      participantId: ctx.user.sub,
+      OR: [{ practiceQuiz: { courseId } }, { microLearning: { courseId } }],
+    },
+  })
+  return rows.map((row) => ({
+    ...row,
+    activityId: row.practiceQuizId ?? row.microLearningId ?? '',
+  }))
+}
+
+// --- Category C: per-tag accuracy aggregation -----------------------------
+
+export async function getParticipantTopicAccuracy(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  if (!ctx.user?.sub) return []
+
+  // Fetch all of the participant's responses in the course along with the
+  // element's tags. Aggregation happens in-memory: tag counts per course
+  // are small (sub-1000 even for the biggest seeded courses).
+  const rows = await ctx.prisma.questionResponse.findMany({
+    where: { participantId: ctx.user.sub, courseId },
+    select: {
+      correctCount: true,
+      partialCorrectCount: true,
+      wrongCount: true,
+      lastAnsweredAt: true,
+      elementInstance: {
+        select: { element: { select: { tags: true } } },
+      },
+    },
+  })
+
+  type Accumulator = {
+    tagId: number
+    tagName: string
+    totalCount: number
+    correctCount: number
+    partialCount: number
+    wrongCount: number
+    lastAnsweredAt: Date | null
+  }
+
+  const byTag = new Map<number, Accumulator>()
+
+  for (const row of rows) {
+    const tags = row.elementInstance.element.tags
+    for (const tag of tags) {
+      const existing = byTag.get(tag.id)
+      const correct = row.correctCount
+      const partial = row.partialCorrectCount
+      const wrong = row.wrongCount
+      const total = correct + partial + wrong
+      if (existing) {
+        existing.totalCount += total
+        existing.correctCount += correct
+        existing.partialCount += partial
+        existing.wrongCount += wrong
+        if (
+          row.lastAnsweredAt &&
+          (!existing.lastAnsweredAt ||
+            row.lastAnsweredAt > existing.lastAnsweredAt)
+        ) {
+          existing.lastAnsweredAt = row.lastAnsweredAt
+        }
+      } else {
+        byTag.set(tag.id, {
+          tagId: tag.id,
+          tagName: tag.name,
+          totalCount: total,
+          correctCount: correct,
+          partialCount: partial,
+          wrongCount: wrong,
+          lastAnsweredAt: row.lastAnsweredAt,
+        })
+      }
+    }
+  }
+
+  // Sort by descending error rate (weakest topics first). Ties broken by
+  // sample size, then alphabetically for stability.
+  return Array.from(byTag.values()).sort((a, b) => {
+    const errA = a.totalCount === 0 ? 0 : 1 - a.correctCount / a.totalCount
+    const errB = b.totalCount === 0 ? 0 : 1 - b.correctCount / b.totalCount
+    if (errB !== errA) return errB - errA
+    if (b.totalCount !== a.totalCount) return b.totalCount - a.totalCount
+    return a.tagName.localeCompare(b.tagName)
+  })
+}

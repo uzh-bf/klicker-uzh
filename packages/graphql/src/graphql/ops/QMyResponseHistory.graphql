@@ -1,0 +1,26 @@
+query MyResponseHistory(
+  $courseId: String
+  $correctnessIn: [ResponseCorrectness!]
+  $limit: Int!
+  $offset: Int!
+) {
+  myResponseHistory(
+    courseId: $courseId
+    correctnessIn: $correctnessIn
+    limit: $limit
+    offset: $offset
+  ) {
+    total
+    items {
+      instanceId
+      elementId
+      elementType
+      elementName
+      firstResponseCorrectness
+      lastResponseCorrectness
+      trialsCount
+      averageTimeSpent
+      lastAnsweredAt
+    }
+  }
+}

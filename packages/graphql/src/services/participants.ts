@@ -1307,3 +1307,166 @@ export async function getCourseStudentTimelines(ctx: ContextWithUser) {
   const sortedCourses = sortBy(courses, [prop('courseEnd'), 'desc'])
   return sortedCourses
 }
+
+// --- Category B: participant self-history ---------------------------------
+
+export async function getMyResponseHistory(
+  {
+    courseId,
+    correctnessIn,
+    limit,
+    offset,
+  }: {
+    courseId?: string | null
+    correctnessIn?: DB.ResponseCorrectness[] | null
+    limit: number
+    offset: number
+  },
+  ctx: ContextWithUser
+) {
+  if (!ctx.user?.sub) return { total: 0, items: [] }
+
+  const where: DB.Prisma.QuestionResponseWhereInput = {
+    participantId: ctx.user.sub,
+    ...(courseId ? { courseId } : {}),
+    ...(correctnessIn && correctnessIn.length > 0
+      ? { lastResponseCorrectness: { in: correctnessIn } }
+      : {}),
+  }
+
+  const [total, rows] = await Promise.all([
+    ctx.prisma.questionResponse.count({ where }),
+    ctx.prisma.questionResponse.findMany({
+      where,
+      orderBy: [{ lastAnsweredAt: 'desc' }, { updatedAt: 'desc' }],
+      take: limit,
+      skip: offset,
+      include: {
+        elementInstance: { include: { element: true } },
+      },
+    }),
+  ])
+
+  const items = rows.map((row) => ({
+    instanceId: row.elementInstanceId,
+    elementId: row.elementInstance.element.id,
+    elementType: row.elementInstance.element.type,
+    elementName: row.elementInstance.element.name,
+    firstResponseCorrectness: row.firstResponseCorrectness,
+    lastResponseCorrectness: row.lastResponseCorrectness,
+    trialsCount: row.trialsCount,
+    averageTimeSpent: row.averageTimeSpent,
+    lastAnsweredAt: row.lastAnsweredAt,
+  }))
+
+  return { total, items }
+}
+
+export async function getMySRSStateSelf(
+  { practiceQuizId }: { practiceQuizId: string },
+  ctx: ContextWithUser
+) {
+  if (!ctx.user?.sub) return []
+  const rows = await ctx.prisma.questionResponse.findMany({
+    where: { participantId: ctx.user.sub, practiceQuizId },
+    orderBy: [{ nextDueAt: 'asc' }],
+    include: { elementInstance: { include: { element: true } } },
+  })
+  return rows.map((row) => ({
+    instanceId: row.elementInstanceId,
+    elementId: row.elementInstance.element.id,
+    eFactor: row.eFactor,
+    interval: row.interval,
+    nextDueAt: row.nextDueAt,
+    correctCountStreak: row.correctCountStreak,
+    lastResponseCorrectness: row.lastResponseCorrectness,
+  }))
+}
+
+// --- Category C: recent activity feed -------------------------------------
+//
+// Unifies the participant's response-detail and achievement-unlock rows
+// into a single chronological feed. Leaderboard-rank deltas are not tracked
+// historically in Prisma today, so that signal is omitted from the POC.
+
+export async function getMyRecentActivity(
+  { limit }: { limit: number },
+  ctx: ContextWithUser
+) {
+  if (!ctx.user?.sub) return []
+
+  const [responses, achievements] = await Promise.all([
+    ctx.prisma.questionResponseDetail.findMany({
+      where: { participantId: ctx.user.sub },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      include: { elementInstance: { include: { element: true } } },
+    }),
+    ctx.prisma.participantAchievementInstance.findMany({
+      where: { participantId: ctx.user.sub },
+      orderBy: { achievedAt: 'desc' },
+      take: limit,
+      include: { achievement: true },
+    }),
+  ])
+
+  const entries: {
+    type: 'RESPONSE' | 'ACHIEVEMENT'
+    timestamp: Date
+    summary: string
+    targetId: string
+  }[] = []
+
+  for (const row of responses) {
+    entries.push({
+      type: 'RESPONSE',
+      timestamp: row.createdAt,
+      summary: `${row.elementInstance.element.name} · ${row.score.toFixed(1)} pts`,
+      targetId: String(row.elementInstanceId),
+    })
+  }
+  for (const row of achievements) {
+    entries.push({
+      type: 'ACHIEVEMENT',
+      timestamp: row.achievedAt ?? row.createdAt,
+      summary:
+        row.achievement.nameEN ?? row.achievement.nameDE ?? 'Achievement',
+      targetId: String(row.achievementId),
+    })
+  }
+
+  entries.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+  return entries.slice(0, limit)
+}
+
+// --- Category C: cross-course bookmarks -----------------------------------
+
+export async function getMyBookmarksAcrossCourses(
+  _args: object,
+  ctx: ContextWithUser
+) {
+  if (!ctx.user?.sub) return []
+  // participations.bookmarkedQuestions lives on Participation; we collect
+  // all active participations and map each to a {courseId, courseName,
+  // stacks[]} row.
+  const participations = await ctx.prisma.participation.findMany({
+    where: { participantId: ctx.user.sub, isActive: true },
+    include: {
+      course: { select: { id: true, displayName: true } },
+      bookmarkedElementStacks: true,
+    },
+  })
+
+  return participations
+    .filter((p) => p.bookmarkedElementStacks.length > 0)
+    .map((p) => ({
+      courseId: p.course.id,
+      courseName: p.course.displayName,
+      stacks: p.bookmarkedElementStacks.map((s) => ({
+        id: s.id,
+        displayName: s.displayName,
+        description: s.description,
+        order: s.order,
+      })),
+    }))
+}

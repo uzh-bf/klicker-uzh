@@ -5,13 +5,14 @@ import { CHATBOT_ID_TEST } from './seedChatbots.js'
 enum MCP_SERVER_NAMES {
   Context7 = 'Context7',
   KB = 'KB',
+  Klicker = 'Klicker',
 }
 
 interface MCPServerSeed {
   name: MCP_SERVER_NAMES
   description: string
   url: string
-  authType: 'bearer' | 'basic' | 'none' | 'custom'
+  authType: 'bearer' | 'basic' | 'none' | 'custom' | 'klicker-participant-jwt'
   authSecret?: string
   parameters?: any
   isActive?: boolean
@@ -37,6 +38,18 @@ const MCP_SERVERS: MCPServerSeed[] = [
     authType: 'none',
     isActive: true,
     passChatbotId: true,
+  },
+  {
+    name: MCP_SERVER_NAMES.Klicker,
+    description:
+      'Klicker MCP server: per-participant tutor tools (analytics, activity, profile). Each request carries a short-lived HS256 JWT minted by the chat route for the signed-in participant.',
+    // APP_ORIGIN_MCP is read at seed time only; runtime chat code
+    // reads the URL from the DB row. Dev machines without Infisical
+    // fall back to the local MCP server port.
+    url: process.env.APP_ORIGIN_MCP ?? 'http://localhost:7079/mcp',
+    authType: 'klicker-participant-jwt',
+    isActive: true,
+    passChatbotId: false,
   },
 ]
 
@@ -74,6 +87,16 @@ const EXAMPLE_CONFIGURATIONS: ChatbotMCPConfigSeed[] = [
     chatMode: 'tutor',
     allowedTools: ['resolve-library-id', 'get-library-docs'],
     priority: 10,
+    isEnabled: true,
+  },
+  {
+    chatbotId: CHATBOT_ID_TEST,
+    mcpServerName: MCP_SERVER_NAMES.Klicker,
+    chatMode: 'tutor',
+    // Empty = all tools allowed. P1 curates via `_meta.category` once
+    // the tutor prompt surfaces a concrete tool subset.
+    allowedTools: [],
+    priority: 5,
     isEnabled: true,
   },
 ]
@@ -151,7 +174,13 @@ function validateServerConfig(serverConfig: MCPServerSeed): boolean {
   }
 
   // Validate auth type
-  const validAuthTypes = ['bearer', 'basic', 'none', 'custom']
+  const validAuthTypes = [
+    'bearer',
+    'basic',
+    'none',
+    'custom',
+    'klicker-participant-jwt',
+  ]
   if (!validAuthTypes.includes(serverConfig.authType)) {
     console.error(
       `Invalid auth type for ${serverConfig.name}: ${serverConfig.authType}`

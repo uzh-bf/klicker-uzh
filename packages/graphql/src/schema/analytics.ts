@@ -14,6 +14,7 @@ import {
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
 import { ElementType } from './elementData.js'
+import { ResponseCorrectness } from './evaluation.js'
 
 export const ActivityLevel = builder.enumType('ActivityLevel', {
   values: Object.values(DB.ActivityLevel),
@@ -26,6 +27,211 @@ export const ActivityType = builder.enumType('ActivityType', {
 export const PerformanceLevel = builder.enumType('PerformanceLevel', {
   values: Object.values(DB.PerformanceLevel),
 })
+
+export const AnalyticsType = builder.enumType('AnalyticsType', {
+  values: Object.values(DB.AnalyticsType),
+})
+
+// Participant-scoped analytics row, exposed to the owning participant only
+// via `asParticipant`-gated queries. Field allowlist is explicit; internal
+// join fields (participantId, courseId, competencyAnalytics) are NOT exposed.
+export const ParticipantAnalyticsRef =
+  builder.objectRef<DB.ParticipantAnalytics>('ParticipantAnalytics')
+export const ParticipantAnalytics = builder.objectType(
+  ParticipantAnalyticsRef,
+  {
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      type: t.expose('type', { type: AnalyticsType }),
+      timestamp: t.expose('timestamp', { type: 'Date' }),
+      computedAt: t.expose('computedAt', { type: 'Date' }),
+      trialsCount: t.exposeInt('trialsCount'),
+      responseCount: t.exposeInt('responseCount'),
+      totalScore: t.exposeInt('totalScore'),
+      totalPoints: t.exposeInt('totalPoints'),
+      totalXp: t.exposeInt('totalXp'),
+      meanCorrectCount: t.exposeFloat('meanCorrectCount'),
+      meanPartialCorrectCount: t.exposeFloat('meanPartialCorrectCount'),
+      meanWrongCount: t.exposeFloat('meanWrongCount'),
+      firstCorrectCount: t.exposeFloat('firstCorrectCount', { nullable: true }),
+      lastCorrectCount: t.exposeFloat('lastCorrectCount', { nullable: true }),
+    }),
+  }
+)
+
+// Condensed response-history row for the authenticated participant.
+// Powers "recent mistakes" / "what did I answer" UIs.
+interface IMyResponse {
+  instanceId: number
+  elementId: number
+  elementType: DB.ElementType
+  elementName: string
+  firstResponseCorrectness: DB.ResponseCorrectness
+  lastResponseCorrectness: DB.ResponseCorrectness
+  trialsCount: number
+  averageTimeSpent: number
+  lastAnsweredAt: Date | null
+}
+export const MyResponseRef = builder.objectRef<IMyResponse>('MyResponse')
+export const MyResponse = builder.objectType(MyResponseRef, {
+  fields: (t) => ({
+    instanceId: t.exposeInt('instanceId'),
+    elementId: t.exposeInt('elementId'),
+    elementType: t.expose('elementType', { type: ElementType }),
+    elementName: t.exposeString('elementName'),
+    firstResponseCorrectness: t.expose('firstResponseCorrectness', {
+      type: ResponseCorrectness,
+    }),
+    lastResponseCorrectness: t.expose('lastResponseCorrectness', {
+      type: ResponseCorrectness,
+    }),
+    trialsCount: t.exposeInt('trialsCount'),
+    averageTimeSpent: t.exposeFloat('averageTimeSpent'),
+    lastAnsweredAt: t.expose('lastAnsweredAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+  }),
+})
+
+interface IMyResponseHistoryPage {
+  total: number
+  items: IMyResponse[]
+}
+export const MyResponseHistoryPageRef =
+  builder.objectRef<IMyResponseHistoryPage>('MyResponseHistoryPage')
+export const MyResponseHistoryPage = builder.objectType(
+  MyResponseHistoryPageRef,
+  {
+    fields: (t) => ({
+      total: t.exposeInt('total'),
+      items: t.expose('items', { type: [MyResponse] }),
+    }),
+  }
+)
+
+// SM-2-derived spaced-repetition scheduling for the participant's responses
+// in a given practice quiz. Drives "when should I study next" UIs.
+interface IMySRSEntry {
+  instanceId: number
+  elementId: number
+  eFactor: number
+  interval: number
+  nextDueAt: Date | null
+  correctCountStreak: number
+  lastResponseCorrectness: DB.ResponseCorrectness
+}
+export const MySRSEntryRef = builder.objectRef<IMySRSEntry>('MySRSEntry')
+export const MySRSEntry = builder.objectType(MySRSEntryRef, {
+  fields: (t) => ({
+    instanceId: t.exposeInt('instanceId'),
+    elementId: t.exposeInt('elementId'),
+    eFactor: t.exposeFloat('eFactor'),
+    interval: t.exposeInt('interval'),
+    nextDueAt: t.expose('nextDueAt', { type: 'Date', nullable: true }),
+    correctCountStreak: t.exposeInt('correctCountStreak'),
+    lastResponseCorrectness: t.expose('lastResponseCorrectness', {
+      type: ResponseCorrectness,
+    }),
+  }),
+})
+
+// --- Category C: per-tag accuracy + activity feed aggregation --------------
+
+// Per-tag accuracy for the authenticated participant. Drives "weak topics"
+// and "mastery map" UIs. Aggregated from QuestionResponse via Element.tags;
+// no new table, no new pipeline.
+interface IParticipantTopicAccuracy {
+  tagId: number
+  tagName: string
+  totalCount: number
+  correctCount: number
+  partialCount: number
+  wrongCount: number
+  lastAnsweredAt: Date | null
+}
+export const ParticipantTopicAccuracyRef =
+  builder.objectRef<IParticipantTopicAccuracy>('ParticipantTopicAccuracy')
+export const ParticipantTopicAccuracy = builder.objectType(
+  ParticipantTopicAccuracyRef,
+  {
+    fields: (t) => ({
+      tagId: t.exposeInt('tagId'),
+      tagName: t.exposeString('tagName'),
+      totalCount: t.exposeInt('totalCount'),
+      correctCount: t.exposeInt('correctCount'),
+      partialCount: t.exposeInt('partialCount'),
+      wrongCount: t.exposeInt('wrongCount'),
+      lastAnsweredAt: t.expose('lastAnsweredAt', {
+        type: 'Date',
+        nullable: true,
+      }),
+    }),
+  }
+)
+
+// Condensed recent-activity feed for the authenticated participant.
+// A chronological merge of achievement unlocks + response detail rows.
+export const MyActivityKind = builder.enumType('MyActivityKind', {
+  values: ['RESPONSE', 'ACHIEVEMENT'] as const,
+})
+
+interface IMyActivityEntry {
+  type: 'RESPONSE' | 'ACHIEVEMENT'
+  timestamp: Date
+  summary: string
+  targetId: string
+}
+export const MyActivityEntryRef =
+  builder.objectRef<IMyActivityEntry>('MyActivityEntry')
+export const MyActivityEntry = builder.objectType(MyActivityEntryRef, {
+  fields: (t) => ({
+    type: t.expose('type', { type: MyActivityKind }),
+    timestamp: t.expose('timestamp', { type: 'Date' }),
+    summary: t.exposeString('summary'),
+    targetId: t.exposeString('targetId'),
+  }),
+})
+
+// Condensed bookmarked-stack row for the cross-course listing. Avoids
+// including the full element tree so the response stays compact — callers
+// that need elements should hit `getBookmarkedElementStacks(courseId)`.
+interface IBookmarkedStackSummary {
+  id: number
+  displayName: string | null
+  description: string | null
+  order: number
+}
+interface IBookmarkedStacksByCourse {
+  courseId: string
+  courseName: string
+  stacks: IBookmarkedStackSummary[]
+}
+export const BookmarkedStackSummaryRef =
+  builder.objectRef<IBookmarkedStackSummary>('BookmarkedStackSummary')
+export const BookmarkedStackSummary = builder.objectType(
+  BookmarkedStackSummaryRef,
+  {
+    fields: (t) => ({
+      id: t.exposeInt('id'),
+      displayName: t.exposeString('displayName', { nullable: true }),
+      description: t.exposeString('description', { nullable: true }),
+      order: t.exposeInt('order'),
+    }),
+  }
+)
+export const BookmarkedStacksByCourseRef =
+  builder.objectRef<IBookmarkedStacksByCourse>('BookmarkedStacksByCourse')
+export const BookmarkedStacksByCourse = builder.objectType(
+  BookmarkedStacksByCourseRef,
+  {
+    fields: (t) => ({
+      courseId: t.exposeString('courseId'),
+      courseName: t.exposeString('courseName'),
+      stacks: t.expose('stacks', { type: [BookmarkedStackSummary] }),
+    }),
+  }
+)
 
 // ------ Activity Analytics ------
 // #region
