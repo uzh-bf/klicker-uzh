@@ -176,7 +176,9 @@ auth:
 
   strategy:
     type: RollingUpdate
-    # type: Recreate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
 
   resources:
     requests:
@@ -303,7 +305,9 @@ chat:
 
   strategy:
     type: RollingUpdate
-    # type: Recreate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
 
   resources:
     requests:
@@ -354,7 +358,10 @@ frontendPWA:
           - pwa.klicker.uzh.ch
 
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
 
   resources:
     requests:
@@ -404,7 +411,10 @@ frontendManage:
           - manage.klicker.uzh.ch
 
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
 
   resources:
     requests:
@@ -455,7 +465,10 @@ frontendControl:
           - control.klicker.uzh.ch
 
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
 
   resources:
     requests:
@@ -521,7 +534,10 @@ backendGraphql:
           # - backend-sls.klicker.uzh.ch
 
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
 
   resources:
     requests:
@@ -571,7 +587,10 @@ olatApi:
           - olat-api.klicker.uzh.ch
 
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
 
   resources:
     requests:
@@ -667,7 +686,10 @@ responseApi:
           - response-api.klicker.uzh.ch
 
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
 
   resources:
     requests:
@@ -742,7 +764,10 @@ assessment:
             - assessment.klicker.uzh.ch
 
     strategy:
-      type: Recreate
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 1
+        maxSurge: 1
 
     resources:
       requests:
@@ -827,7 +852,10 @@ assessment:
             - assessment-api.klicker.uzh.ch
 
     strategy:
-      type: Recreate
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 1
+        maxSurge: 1
 
     resources:
       requests:
@@ -892,7 +920,10 @@ assessment:
             - assessment-response-api.klicker.uzh.ch
 
     strategy:
-      type: Recreate
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 1
+        maxSurge: 1
 
     resources:
       requests:
