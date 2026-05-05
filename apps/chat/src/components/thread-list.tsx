@@ -7,7 +7,6 @@ import { useState } from 'react'
 import { TextField } from '@uzh-bf/design-system'
 import { useParams, useRouter } from 'next/navigation'
 import { useChatStore, type Thread } from '../stores/chatStore'
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 export const ThreadList: FC = () => {
   return (
@@ -26,7 +25,7 @@ const ThreadListItems: FC = () => {
   const { threads, deleteThread } = useChatStore()
 
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex flex-col gap-0.5 p-1">
       {threads.map((thread) => (
         <ThreadListItem
           key={thread.id}
@@ -60,6 +59,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
 }) => {
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const [isEditing, setIsEditing] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
   const [editTitle, setEditTitle] = useState('')
   const { updateThreadTitle } = useChatStore()
 
@@ -108,7 +108,9 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
 
   return (
     <div
-      className={`hover:bg-accent focus-visible:bg-muted focus-visible:ring-ring flex items-center gap-1 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 ${isActive ? 'bg-primary/15' : ''}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className={`focus-visible:bg-muted focus-visible:ring-ring flex items-center gap-1 rounded-lg p-1 transition-all focus-visible:outline-none focus-visible:ring-2 ${isActive ? 'bg-primary/15' : 'hover:bg-accent'}`}
     >
       {isEditing ? (
         <>
@@ -116,63 +118,56 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             value={editTitle}
             onChange={setEditTitle}
             onKeyDown={handleKeyDown}
-            className={{ input: 'mx-2 h-8 flex-grow text-sm' }}
+            className={{ input: 'mx-2 h-8 flex-grow bg-white text-sm' }}
             autoFocus
           />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={handleEditSave}
-                className="text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring mr-1 inline-flex size-4 items-center justify-center whitespace-nowrap rounded-md p-0 text-sm font-medium transition-colors hover:text-green-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
-              >
-                <CheckIcon />
-                <span className="sr-only">Save</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>Save</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={handleEditCancel}
-                className="text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring mr-2 inline-flex size-4 items-center justify-center whitespace-nowrap rounded-md p-0 text-sm font-medium transition-colors hover:text-red-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
-              >
-                <XIcon />
-                <span className="sr-only">Cancel</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>Cancel</TooltipContent>
-          </Tooltip>
+          <button
+            onClick={handleEditSave}
+            aria-label="Save"
+            className="text-foreground focus-visible:ring-ring mr-1 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors hover:text-green-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
+          >
+            <CheckIcon />
+            <span className="sr-only">Save</span>
+          </button>
+          <button
+            onClick={handleEditCancel}
+            aria-label="Cancel"
+            className="text-foreground focus-visible:ring-ring mr-2 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors hover:text-red-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
+          >
+            <XIcon />
+            <span className="sr-only">Cancel</span>
+          </button>
         </>
       ) : (
         <>
-          <button onClick={onSelect} className="flex-grow px-3 py-1 text-start">
-            <p className="line-clamp-2 text-sm">{getThreadTitle()}</p>
+          <button
+            onClick={onSelect}
+            className="min-w-0 flex-grow px-3 py-1 text-start"
+          >
+            <p className="truncate text-sm">{getThreadTitle()}</p>
           </button>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={handleEditStart}
-                className="hover:text-primary text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring mr-1 inline-flex size-4 items-center justify-center whitespace-nowrap rounded-md p-0 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
-              >
-                <EditIcon />
-                <span className="sr-only">Edit name</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>Edit name</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={onDelete}
-                className="hover:text-destructive text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring mr-2 inline-flex size-4 items-center justify-center whitespace-nowrap rounded-md p-0 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
-              >
-                <Trash2 />
-                <span className="sr-only">Delete chat</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>Delete chat</TooltipContent>
-          </Tooltip>
+          <button
+            onClick={handleEditStart}
+            aria-label="Edit name"
+            style={{
+              display: isHovered || isActive ? 'inline-flex' : 'none',
+            }}
+            className="text-foreground hover:text-primary focus-visible:ring-ring mr-1 size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
+          >
+            <EditIcon />
+            <span className="sr-only">Edit name</span>
+          </button>
+          <button
+            onClick={onDelete}
+            aria-label="Delete chat"
+            style={{
+              display: isHovered || isActive ? 'inline-flex' : 'none',
+            }}
+            className="text-foreground hover:text-destructive focus-visible:ring-ring mr-2 size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
+          >
+            <Trash2 />
+            <span className="sr-only">Delete chat</span>
+          </button>
         </>
       )}
     </div>
