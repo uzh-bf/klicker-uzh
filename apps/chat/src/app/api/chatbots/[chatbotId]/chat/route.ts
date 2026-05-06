@@ -5,6 +5,7 @@ import {
   getChatModelRegistry,
 } from '@/src/lib/server/chatModelRegistry'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
+import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
@@ -1232,7 +1233,7 @@ export async function POST(
     experimental_telemetry: { isEnabled: true },
     providerOptions: {
       openai: {
-        store: false,
+        store: getOpenAIResponsesStore(),
         ...(providerReasoningEffort && {
           reasoningEffort: providerReasoningEffort,
           reasoningSummary: 'auto',
