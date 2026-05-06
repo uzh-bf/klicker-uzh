@@ -66,25 +66,25 @@ const groupThreadsByDate = (threads: Thread[]) => {
   }
 
   const sortedThreads = [...threads].sort((a, b) => {
-    const aTime = new Date(a.createdAt).getTime()
-    const bTime = new Date(b.createdAt).getTime()
+    const aTime = new Date(a.updatedAt).getTime()
+    const bTime = new Date(b.updatedAt).getTime()
     return bTime - aTime
   })
 
   sortedThreads.forEach((thread) => {
-    const createdAt = startOfDay(new Date(thread.createdAt))
+    const updatedAt = startOfDay(new Date(thread.updatedAt))
 
-    if (createdAt >= todayStart) {
+    if (updatedAt >= todayStart) {
       groups.Today.push(thread)
       return
     }
 
-    if (createdAt >= yesterdayStart) {
+    if (updatedAt >= yesterdayStart) {
       groups.Yesterday.push(thread)
       return
     }
 
-    if (createdAt >= weekStart) {
+    if (updatedAt >= weekStart) {
       groups['This Week'].push(thread)
       return
     }
