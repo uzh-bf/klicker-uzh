@@ -24,24 +24,92 @@ const ThreadListItems: FC = () => {
   const router = useRouter()
   const { threads, deleteThread } = useChatStore()
 
+  const groupedThreads = groupThreadsByDate(threads)
+
   return (
-    <div className="flex flex-col gap-0.5 p-1">
-      {threads.map((thread) => (
-        <ThreadListItem
-          key={thread.id}
-          thread={thread}
-          isActive={thread.id === threadId}
-          onSelect={() => router.push(`/${chatbotId}/threads/${thread.id}`)}
-          onDelete={async () => {
-            const deleted = await deleteThread(chatbotId, thread.id)
-            if (deleted && thread.id === threadId) {
-              router.replace(`/${chatbotId}`)
-            }
-          }}
-        />
+    <div className="flex flex-col gap-2 p-1">
+      {groupedThreads.map(({ label, items }) => (
+        <div key={label} className="flex flex-col gap-0.5">
+          <p className="text-muted-foreground px-2 text-xs font-semibold uppercase">
+            {label}
+          </p>
+          {items.map((thread) => (
+            <ThreadListItem
+              key={thread.id}
+              thread={thread}
+              isActive={thread.id === threadId}
+              onSelect={() => router.push(`/${chatbotId}/threads/${thread.id}`)}
+              onDelete={async () => {
+                const deleted = await deleteThread(chatbotId, thread.id)
+                if (deleted && thread.id === threadId) {
+                  router.replace(`/${chatbotId}`)
+                }
+              }}
+            />
+          ))}
+        </div>
       ))}
     </div>
   )
+}
+
+const groupThreadsByDate = (threads: Thread[]) => {
+  const todayStart = startOfDay(new Date())
+  const yesterdayStart = addDays(todayStart, -1)
+  const weekStart = startOfWeek(todayStart)
+
+  const groups: Record<string, Thread[]> = {
+    Today: [],
+    Yesterday: [],
+    'This Week': [],
+    Earlier: [],
+  }
+
+  const sortedThreads = [...threads].sort((a, b) => {
+    const aTime = new Date(a.createdAt).getTime()
+    const bTime = new Date(b.createdAt).getTime()
+    return bTime - aTime
+  })
+
+  sortedThreads.forEach((thread) => {
+    const createdAt = startOfDay(new Date(thread.createdAt))
+
+    if (createdAt >= todayStart) {
+      groups.Today.push(thread)
+      return
+    }
+
+    if (createdAt >= yesterdayStart) {
+      groups.Yesterday.push(thread)
+      return
+    }
+
+    if (createdAt >= weekStart) {
+      groups['This Week'].push(thread)
+      return
+    }
+
+    groups.Earlier.push(thread)
+  })
+
+  return Object.entries(groups)
+    .filter(([, items]) => items.length > 0)
+    .map(([label, items]) => ({ label, items }))
+}
+
+const startOfDay = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate())
+
+const addDays = (date: Date, days: number) => {
+  const next = new Date(date)
+  next.setDate(next.getDate() + days)
+  return next
+}
+
+const startOfWeek = (date: Date) => {
+  const day = date.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  return startOfDay(addDays(date, diff))
 }
 
 interface ThreadListItemProps {
