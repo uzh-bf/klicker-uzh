@@ -270,11 +270,18 @@ const ThreadScrollToBottom: FC = () => {
 const ThreadWelcome: FC = () => {
   return (
     <ThreadPrimitive.Empty>
-      <div className="flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col">
-        <div className="flex w-full flex-grow flex-col items-center justify-center">
-          <p className="mt-4 font-medium">How can I help you today?</p>
+      <div className="aui-thread-welcome-root mx-auto my-auto flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col">
+        <div className="aui-thread-welcome-center flex w-full flex-grow flex-col items-center justify-center">
+          <div className="aui-thread-welcome-message flex size-full flex-col items-center justify-center px-8 text-center">
+            <div className="aui-thread-welcome-message-motion-1 text-2xl font-semibold">
+              Hello there!
+            </div>
+            <div className="aui-thread-welcome-message-motion-2 text-muted-foreground/65 text-2xl">
+              How can I help you?
+            </div>
+          </div>
         </div>
-        {/* <ThreadWelcomeSuggestions /> */}
+        {/* <ThreadWelcomeSuggestions />  */}
       </div>
     </ThreadPrimitive.Empty>
   )
