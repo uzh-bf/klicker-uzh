@@ -358,7 +358,7 @@ const Composer: FC = () => {
             autoFocus
             placeholder="Write a message..."
             className={twMerge(
-              'placeholder:text-muted-foreground text-md flex-grow resize-none border-none bg-transparent px-2 outline-none focus:ring-0 disabled:cursor-not-allowed',
+              'placeholder:text-muted-foreground text-md flex-grow cursor-text resize-none border-none bg-transparent px-2 outline-none focus:ring-0 disabled:cursor-not-allowed',
               embedded ? 'max-h-20 py-2' : 'max-h-40 py-4'
             )}
           />
