@@ -1,7 +1,7 @@
 'use client'
 
-import { Markdown } from '@klicker-uzh/markdown'
 import { Button, Modal } from '@uzh-bf/design-system'
+import { StaticMarkdownText } from './markdown-text'
 
 type MessageImageAttachment = {
   id?: string
@@ -73,12 +73,9 @@ export function ThreadImageViewerModal({
         )}
 
         {description ? (
-          <Markdown
-            content={description}
-            withProse
-            className={{
-              root: 'prose prose-sm text-foreground max-w-none',
-            }}
+          <StaticMarkdownText
+            text={description}
+            className="text-foreground text-sm"
           />
         ) : null}
 

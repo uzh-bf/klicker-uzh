@@ -59,6 +59,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 import Image from 'next/image'
 
 import { twMerge } from 'tailwind-merge'
+import { StaticMarkdownText } from './markdown-text'
 
 type ThreadProps = { chatbotAvatar: string }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
@@ -199,9 +200,9 @@ const AssistantReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
       </button>
 
       {isOpen ? (
-        <pre className="text-muted-foreground mt-1 whitespace-pre-wrap border-l-2 border-slate-200 pl-3 text-xs leading-5">
-          {text}
-        </pre>
+        <div className="text-muted-foreground mb-2 border-l-2 border-slate-200 pl-3 text-sm">
+          <StaticMarkdownText text={text} />
+        </div>
       ) : null}
     </div>
   )
