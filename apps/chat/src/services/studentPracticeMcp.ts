@@ -1,0 +1,343 @@
+import { createMCPClient, type MCPServerConfig } from './mcpClients'
+
+const DEFAULT_LOOKUP_LIMIT = 3
+const MAX_LOOKUP_SUMMARY_MESSAGES = 6
+const MAX_LOOKUP_SUMMARY_CHARS = 1200
+
+function normalizedPath(value: string | undefined): string {
+  if (!value) return '/mcp'
+  return value.startsWith('/') ? value : `/${value}`
+}
+
+export const STUDENT_PRACTICE_QUIZ_TOOL_NAME = 'start_student_practice_quiz'
+
+export function toPracticeCandidateId(index: number): string {
+  return `practice_${index + 1}`
+}
+
+export type SupportedElementType =
+  | 'SC'
+  | 'MC'
+  | 'KPRIM'
+  | 'NUMERICAL'
+  | 'FREE_TEXT'
+  | 'FLASHCARD'
+
+export type ChatPracticeMessage = {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export type PracticeLookupContext = {
+  conversationSummary?: string
+  lastUserMessage: string
+}
+
+export type PracticeCandidate = {
+  questionRef: string
+  stackTitle: string
+  sourcePracticeQuizTitle: string
+  courseId: string
+  tags: string[]
+  supportedElementTypes: SupportedElementType[]
+  shortQuestionPreview: string
+  relevanceScore: number
+  srsScore: number
+  reason: string
+}
+
+export type LookupRelevantPracticeStacksOutput = {
+  candidates: PracticeCandidate[]
+}
+
+export type SafeStackRenderPayload = {
+  stackId: number
+  stackTitle: string
+  description?: string
+  elements: SafeElement[]
+}
+
+export type SafeElement = {
+  instanceId: number
+  elementType: SupportedElementType
+  name: string
+  content: string
+  options?: Record<string, unknown>
+}
+
+export type GetPracticeStackForQuizOutput = {
+  chatbotId: string
+  courseId: string
+  questionRef: string
+  stack: SafeStackRenderPayload
+}
+
+export type StackResponseInput = {
+  instanceId: number
+  type: SupportedElementType
+  choicesResponse?: Array<{ ix: number; selected: boolean }>
+  flashcardResponse?: 'CORRECT' | 'PARTIAL' | 'INCORRECT'
+  freeTextResponse?: string
+  numericalResponse?: number
+}
+
+export type SubmitPracticeStackAnswerOutput = {
+  chatbotId: string
+  courseId: string
+  result: unknown
+  stackId: number
+}
+
+type ExecutableMcpTool = {
+  execute: (args: unknown, options?: unknown) => Promise<unknown> | unknown
+}
+
+type ExecuteWithTools<T> = (
+  tools: Record<string, ExecutableMcpTool>
+) => Promise<T>
+
+export function getStudentPracticeMcpUrl(
+  env: NodeJS.ProcessEnv = process.env
+): string | null {
+  if (env.MCP_STUDENT_URL) {
+    return env.MCP_STUDENT_URL
+  }
+
+  if (env.NODE_ENV === 'development') {
+    return `http://localhost:${env.MCP_STUDENT_PORT ?? '7080'}${normalizedPath(
+      env.MCP_STUDENT_PATH
+    )}`
+  }
+
+  return null
+}
+
+export function buildPracticeLookupContext(
+  messages: ChatPracticeMessage[]
+): PracticeLookupContext | null {
+  const latestUserIndex = messages.findLastIndex(
+    (message) => message.role === 'user' && message.content.trim().length > 0
+  )
+
+  if (latestUserIndex === -1) {
+    return null
+  }
+
+  const priorMessages = messages
+    .slice(0, latestUserIndex)
+    .filter((message) => message.content.trim().length > 0)
+    .slice(-MAX_LOOKUP_SUMMARY_MESSAGES)
+
+  const conversationSummary = priorMessages
+    .map((message) => `${message.role}: ${message.content.trim()}`)
+    .join('\n')
+    .slice(0, MAX_LOOKUP_SUMMARY_CHARS)
+
+  return {
+    ...(conversationSummary ? { conversationSummary } : {}),
+    lastUserMessage: messages[latestUserIndex].content.trim(),
+  }
+}
+
+export function parseMcpJsonToolResult<T = unknown>(result: unknown): T {
+  if (typeof result === 'string') {
+    return JSON.parse(result) as T
+  }
+
+  if (result && typeof result === 'object') {
+    const record = result as Record<string, unknown>
+    if ('toolResult' in record) {
+      return parseMcpJsonToolResult<T>(record.toolResult)
+    }
+
+    if (Array.isArray(record.content)) {
+      const textContent = record.content.find((part) => {
+        if (!part || typeof part !== 'object') return false
+        const contentPart = part as Record<string, unknown>
+        return (
+          contentPart.type === 'text' && typeof contentPart.text === 'string'
+        )
+      }) as { text: string } | undefined
+
+      if (textContent) {
+        return JSON.parse(textContent.text) as T
+      }
+
+      throw new Error('MCP tool result did not contain JSON text content')
+    }
+
+    return result as T
+  }
+
+  throw new Error('MCP tool result did not contain JSON text content')
+}
+
+export function formatPracticeCandidatesForPrompt(
+  candidates: PracticeCandidate[]
+): string {
+  if (candidates.length === 0) return ''
+
+  const formattedCandidates = candidates
+    .map((candidate, index) =>
+      [
+        `${index + 1}. ${candidate.stackTitle}`,
+        `candidateId: ${toPracticeCandidateId(index)}`,
+        `source: ${candidate.sourcePracticeQuizTitle}`,
+        `types: ${candidate.supportedElementTypes.join(', ')}`,
+        `preview: ${candidate.shortQuestionPreview}`,
+        `scores: relevance ${candidate.relevanceScore}, srs ${candidate.srsScore}`,
+        `reason: ${candidate.reason}`,
+      ].join('\n')
+    )
+    .join('\n\n')
+
+  return [
+    'Relevant practice candidates from this course. These are answer-safe and omit solution details.',
+    'Only call start_student_practice_quiz with one of these candidateId values when a quiz would help the student.',
+    'Do not quote or expose candidate ids to the student and do not render quiz content yourself.',
+    formattedCandidates,
+  ].join('\n\n')
+}
+
+async function withStudentPracticeMcp<T>({
+  chatbotId,
+  participantId,
+  execute,
+}: {
+  chatbotId: string
+  participantId: string
+  execute: ExecuteWithTools<T>
+}): Promise<T | null> {
+  const url = getStudentPracticeMcpUrl()
+  if (!url) {
+    return null
+  }
+
+  const server: MCPServerConfig = {
+    authType: 'klicker-participant-jwt',
+    id: 'student-practice',
+    name: 'Student_Practice',
+    url,
+  }
+
+  const client = await createMCPClient(server, chatbotId, participantId)
+
+  try {
+    const tools = (await client.tools()) as unknown as Record<
+      string,
+      ExecutableMcpTool
+    >
+    return await execute(tools)
+  } finally {
+    await client.close().catch((error: unknown) => {
+      console.warn('Failed to close student practice MCP client:', error)
+    })
+  }
+}
+
+function getExecutableTool(
+  tools: Record<string, ExecutableMcpTool>,
+  name: string
+): ExecutableMcpTool {
+  const tool = tools[name]
+  if (!tool || typeof tool.execute !== 'function') {
+    throw new Error(`Student MCP tool ${name} is not available`)
+  }
+  return tool
+}
+
+async function executeStudentPracticeTool<T>({
+  chatbotId,
+  participantId,
+  toolName,
+  args,
+}: {
+  chatbotId: string
+  participantId: string
+  toolName: string
+  args: Record<string, unknown>
+}): Promise<T | null> {
+  return withStudentPracticeMcp({
+    chatbotId,
+    participantId,
+    execute: async (tools) => {
+      const tool = getExecutableTool(tools, toolName)
+      const result = await tool.execute(args)
+      return parseMcpJsonToolResult<T>(result)
+    },
+  })
+}
+
+export async function lookupRelevantPracticeStacks({
+  chatbotId,
+  courseId,
+  limit = DEFAULT_LOOKUP_LIMIT,
+  messages,
+  participantId,
+}: {
+  chatbotId: string
+  courseId: string
+  limit?: number
+  messages: ChatPracticeMessage[]
+  participantId: string
+}): Promise<LookupRelevantPracticeStacksOutput | null> {
+  const context = buildPracticeLookupContext(messages)
+  if (!context) {
+    return { candidates: [] }
+  }
+
+  return executeStudentPracticeTool<LookupRelevantPracticeStacksOutput>({
+    args: {
+      chatbotId,
+      courseId,
+      conversationSummary: context.conversationSummary,
+      lastUserMessage: context.lastUserMessage,
+      limit,
+    },
+    chatbotId,
+    participantId,
+    toolName: 'lookup_relevant_practice_stacks',
+  })
+}
+
+export async function getPracticeStackForQuiz({
+  chatbotId,
+  participantId,
+  questionRef,
+}: {
+  chatbotId: string
+  participantId: string
+  questionRef: string
+}): Promise<GetPracticeStackForQuizOutput | null> {
+  return executeStudentPracticeTool<GetPracticeStackForQuizOutput>({
+    args: { questionRef },
+    chatbotId,
+    participantId,
+    toolName: 'get_practice_stack_for_quiz',
+  })
+}
+
+export async function submitPracticeStackAnswer({
+  chatbotId,
+  participantId,
+  questionRef,
+  responses,
+  stackAnswerTimeSeconds,
+}: {
+  chatbotId: string
+  participantId: string
+  questionRef: string
+  responses: StackResponseInput[]
+  stackAnswerTimeSeconds: number
+}): Promise<SubmitPracticeStackAnswerOutput | null> {
+  return executeStudentPracticeTool<SubmitPracticeStackAnswerOutput>({
+    args: {
+      questionRef,
+      responses,
+      stackAnswerTimeSeconds,
+    },
+    chatbotId,
+    participantId,
+    toolName: 'submit_practice_stack_answer',
+  })
+}

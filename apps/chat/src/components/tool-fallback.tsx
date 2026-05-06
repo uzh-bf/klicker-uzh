@@ -5,6 +5,7 @@ import {
   MoveRightIcon,
 } from 'lucide-react'
 import { useState, type FC } from 'react'
+import { StudentPracticeQuizCard } from './student-practice-quiz-card'
 
 const MAX_PREVIEW_LINES = 10
 
@@ -70,6 +71,10 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(true)
   const { server, tool } = formatToolName(toolName)
+
+  if (toolName === 'start_student_practice_quiz') {
+    return <StudentPracticeQuizCard result={result} status={status} />
+  }
 
   const resultText =
     result === undefined

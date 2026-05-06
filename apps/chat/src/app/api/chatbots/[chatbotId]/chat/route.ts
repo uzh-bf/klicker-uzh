@@ -17,6 +17,7 @@ import {
   generateText,
   stepCountIs,
   streamText,
+  tool,
   type ModelMessage,
   type StepResult,
 } from 'ai'
@@ -29,6 +30,13 @@ import {
 } from 'src/lib/config/reasoning'
 import { CreditsService } from 'src/services/credits'
 import { DisclaimersService } from 'src/services/disclaimers'
+import {
+  formatPracticeCandidatesForPrompt,
+  getPracticeStackForQuiz,
+  lookupRelevantPracticeStacks,
+  STUDENT_PRACTICE_QUIZ_TOOL_NAME,
+  toPracticeCandidateId,
+} from 'src/services/studentPracticeMcp'
 import { ThreadService } from 'src/services/threads'
 import { z } from 'zod'
 
@@ -631,7 +639,7 @@ export async function POST(
   if ('response' in authResult) {
     return authResult.response
   }
-  const { participantId } = authResult
+  const { participantId, chatbot: authChatbot } = authResult
 
   // check disclaimer acceptance
   try {
@@ -850,11 +858,99 @@ export async function POST(
     chatbotId,
     participantId
   )
-  const toolNames = Object.keys(mcpTools || {})
 
   if (!chatbot) {
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
   }
+
+  let practiceCandidatePrompt = ''
+  let practiceCandidateCount = 0
+  const practiceCandidateRefs = new Map<string, string>()
+
+  if (selectedMode === 'tutor') {
+    try {
+      const lookupResult = await lookupRelevantPracticeStacks({
+        chatbotId,
+        courseId: authChatbot.courseId,
+        messages,
+        participantId,
+      })
+      const candidates = lookupResult?.candidates ?? []
+      practiceCandidateCount = candidates.length
+      candidates.forEach((candidate, index) => {
+        practiceCandidateRefs.set(
+          toPracticeCandidateId(index),
+          candidate.questionRef
+        )
+      })
+      practiceCandidatePrompt = formatPracticeCandidatesForPrompt(candidates)
+
+      logChatDev('studentPractice.lookup', {
+        requestId,
+        chatbotId,
+        participantId,
+        candidateCount: practiceCandidateCount,
+      })
+    } catch (error) {
+      console.warn(
+        'Student practice lookup failed; continuing without quiz candidates',
+        {
+          requestId,
+          chatbotId,
+          error,
+        }
+      )
+    }
+  }
+
+  const studentPracticeTools: Record<string, any> = {}
+  if (practiceCandidatePrompt) {
+    studentPracticeTools[STUDENT_PRACTICE_QUIZ_TOOL_NAME] = tool({
+      description:
+        'Show a selected answer-safe practice quiz question to the student. Use only candidateId values from the current relevant practice candidate context.',
+      inputSchema: z.object({
+        candidateId: z
+          .string()
+          .min(1)
+          .describe('Candidate id from the current practice candidate context'),
+      }),
+      execute: async ({ candidateId }) => {
+        const questionRef = practiceCandidateRefs.get(candidateId)
+        if (!questionRef) {
+          throw new Error('Unknown practice candidate id')
+        }
+
+        const payload = await getPracticeStackForQuiz({
+          chatbotId,
+          participantId,
+          questionRef,
+        })
+
+        if (!payload) {
+          throw new Error('Student practice MCP is not configured')
+        }
+
+        return {
+          kind: 'student-practice-quiz',
+          ...payload,
+        }
+      },
+      toModelOutput: () => ({
+        type: 'text' as const,
+        value:
+          'A practice quiz was shown to the student. Wait for the student answer or submission result before giving feedback.',
+      }),
+    })
+  }
+
+  const chatTools: Record<string, any> = {
+    ...(mcpTools || {}),
+    ...studentPracticeTools,
+  }
+  const toolNames = Object.keys(chatTools)
+  const effectiveSystemPrompt = practiceCandidatePrompt
+    ? `${systemPrompt}\n\n${practiceCandidatePrompt}`
+    : systemPrompt
 
   const modelRegistry = getChatModelRegistry()
   const allowedIds =
@@ -1038,6 +1134,7 @@ export async function POST(
     maxOutputTokens: maxOutputTokens ?? null,
     toolCount: toolNames.length,
     toolNames,
+    practiceCandidateCount,
     systemPromptLength: systemPrompt.length,
     systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
     userPromptLengthTotal: userPrompt.length,
@@ -1250,10 +1347,10 @@ export async function POST(
       },
     },
     messages: modelMessages as ModelMessage[],
-    tools: mcpTools,
+    tools: chatTools,
     toolChoice: 'auto',
     stopWhen: stepCountIs(5),
-    system: systemPrompt,
+    system: effectiveSystemPrompt,
 
     abortSignal: req.signal,
 
