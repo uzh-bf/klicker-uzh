@@ -193,6 +193,7 @@ chat:
 
   openai:
     baseUrl: 'http://litellm.prd-litellm.svc.cluster.local:4000/v1'
+    storeResponses: true
 
   replicaCount: 1
 
@@ -287,7 +288,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: Always
-    tag: v3.4.0-alpha.62
+    tag: v3.4.0-alpha.63
 
   ingress:
     annotations:
