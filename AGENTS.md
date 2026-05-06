@@ -213,6 +213,7 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 - **Edited chat image hydration needs a stable source id**: Edited branch messages in `apps/chat` get fresh local message ids, so image hydration must distinguish the local target message id from the persisted source message id (`attachmentSourceMessageId`) when fetching and merging attachments. (`apps/chat/src/hooks/useThreadManagement.ts`, `apps/chat/src/stores/chatStore.ts`)
 - **Embedded PWA messaging trust boundary**: For embedded PWA pages, use a parent-initiated `postMessage` handshake to capture `event.origin` and avoid `'*'` target origins; do not add a second per-platform messaging allowlist in page code. Embedding permission remains enforced separately by ingress `frame-ancestors`. (`apps/frontend-pwa/src/pages/course/[courseId]/practiceQuizzes/[id].tsx`, `deploy/charts/klicker-uzh-v3/templates/ingress-frontend-pwa.yaml`)
 - **Local embed harness target**: `util/embed-harness/` is for local verification only and should target the branch-local PWA (`http://127.0.0.1:3101/...`), not `https://pwa.klicker.com/...`, because production CSP / `frame-ancestors` blocks localhost embedding. (`util/embed-harness/`)
+- **mcp-student build**: The TypeScript student MCP app uses plain `tsc -p tsconfig.build.json`; Rollup emitted `dist` but kept the process alive during initial setup, so keep this service unbundled unless there is a concrete reason to revisit. (`apps/mcp-student/`)
 
 ## Factory Skills (AI Assistance)
 
