@@ -1228,6 +1228,18 @@ export const Query = builder.queryType({
         },
       }),
 
+      studentMcpCoursePracticeQuiz: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: PracticeQuiz,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await CourseService.getStudentMcpCoursePracticeQuiz(args, ctx)
+        },
+      }),
+
       getBookmarksPracticeQuiz: t.withAuth(asParticipant).field({
         nullable: true,
         type: ['Int'],

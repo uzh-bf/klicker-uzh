@@ -91,6 +91,7 @@ interface StudentElementBaseProps {
   disabledInput?: boolean
   sequential?: boolean
   preview?: boolean
+  compact?: boolean
 }
 
 interface StudentElementStackProps extends StudentElementBaseProps {
@@ -123,6 +124,7 @@ function StudentElement({
   disabledInput = false,
   sequential = false, // chose cases of case study element sequentially to student
   preview = false,
+  compact = false,
 }: StudentElementStackProps | StudentElementSingleProps) {
   const evaluation = stackStorage?.[element.id]?.evaluation
 
@@ -176,6 +178,7 @@ function StudentElement({
           !element.elementData.options.hasSampleSolution
         }
         disabled={disabledInput}
+        compact={compact}
       />
     )
   } else if (element.elementData.__typename === 'NumericalElementData') {
@@ -229,6 +232,7 @@ function StudentElement({
           !element.elementData.options.hasSampleSolution
         }
         disabled={disabledInput}
+        compact={compact}
       />
     )
   } else if (element.elementData.__typename === 'FreeTextElementData') {
@@ -282,6 +286,7 @@ function StudentElement({
           !element.elementData.options.hasSampleSolution
         }
         disabled={disabledInput}
+        compact={compact}
       />
     )
   } else if (element.elementData.__typename === 'SelectionElementData') {

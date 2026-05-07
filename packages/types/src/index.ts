@@ -1048,3 +1048,5 @@ export enum PointCorrectionType {
   MULTIPLE = 'MULTIPLE',
 }
 // #endregion
+
+export * from './studentMcp.js'
