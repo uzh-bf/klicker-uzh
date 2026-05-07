@@ -13,7 +13,7 @@
     "@klicker-uzh/util": "workspace:*",
     "@next-auth/prisma-adapter": "1.0.7",
     "@uzh-bf/design-system": "4.1.6",
-    "axios": "1.7.9",
+    "axios": "1.15.2",
     "bcryptjs": "2.4.3",
     "js-cookie": "3.0.5",
     "localforage": "1.10.0",
