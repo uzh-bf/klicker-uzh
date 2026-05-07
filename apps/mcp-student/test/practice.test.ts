@@ -110,16 +110,25 @@ describe('answer-safe render payloads', () => {
 
     expect(serialized).not.toContain('correct')
     expect(serialized).not.toContain('feedback')
-    expect(serialized).not.toContain('explanation')
     expect(serialized).not.toContain('exactSolutions')
     expect(serialized).not.toContain('solutionRanges')
     expect(serialized).not.toContain('sample answer')
-    expect(safe.elements[0]?.options).toEqual({
-      displayMode: 'LIST',
-      choices: [
-        { ix: 0, value: 'A' },
-        { ix: 1, value: 'B' },
-      ],
+    expect(safe.elements[0]).toMatchObject({
+      id: 10,
+      elementType: 'SC',
+      elementData: {
+        __typename: 'ChoicesElementData',
+        content: 'Choose one option.',
+        explanation: 'This is the hidden explanation.',
+        options: {
+          hasSampleSolution: true,
+          displayMode: 'LIST',
+          choices: [
+            { ix: 0, value: 'A' },
+            { ix: 1, value: 'B' },
+          ],
+        },
+      },
     })
   })
 })

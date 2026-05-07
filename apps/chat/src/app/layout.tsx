@@ -4,19 +4,23 @@ import {
 } from '@klicker-uzh/shared-components/src/font'
 import 'katex/dist/katex.min.css'
 import type { Metadata } from 'next'
+import { NextIntlClientProvider } from 'next-intl'
+import { getLocale } from 'next-intl/server'
 import './globals.css'
 
 export const metadata: Metadata = {
   title: 'KlickerUZH Chat',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const locale = await getLocale()
+
   return (
-    <html lang="en">
+    <html lang={locale}>
       <head>
         <style>{`
           :root {
@@ -29,7 +33,7 @@ export default function RootLayout({
       <body
         className={`${sourceSansPro.variable} ${monoSpaceFont.variable} font-sans antialiased`}
       >
-        {children}
+        <NextIntlClientProvider>{children}</NextIntlClientProvider>
       </body>
     </html>
   )

@@ -54,15 +54,27 @@ export type SafeStackRenderPayload = {
   stackId: number
   stackTitle: string
   description?: string
-  elements: SafeElement[]
+  elements: SafeElementInstance[]
 }
 
-export type SafeElement = {
-  instanceId: number
-  elementType: SupportedElementType
+export type SafeElementData = {
+  __typename: string
+  id: string
+  elementId?: number
   name: string
+  type: SupportedElementType
   content: string
-  options?: Record<string, unknown>
+  explanation?: string | null
+  basePoints?: boolean
+  pointsMultiplier?: number
+  options?: Record<string, unknown> | null
+}
+
+export type SafeElementInstance = {
+  id: number
+  type: string
+  elementType: SupportedElementType
+  elementData: SafeElementData
 }
 
 export type GetPracticeStackForQuizOutput = {

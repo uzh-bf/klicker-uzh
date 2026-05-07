@@ -1,43 +1,39 @@
 'use client'
 
+import type {
+  ElementInstance,
+  ElementStack,
+  InstanceEvaluation,
+} from '@klicker-uzh/graphql/dist/ops'
+import { ElementType } from '@klicker-uzh/graphql/dist/ops'
+import StudentElement, {
+  type ChoicesStudentResponseType,
+  type StackStudentResponseType,
+} from '@klicker-uzh/shared-components/src/StudentElement'
+import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
+import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
 import {
   CheckCircle2Icon,
-  CheckIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   LoaderCircleIcon,
   XCircleIcon,
 } from 'lucide-react'
 import { useParams } from 'next/navigation'
-import { FormEvent, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type {
   GetPracticeStackForQuizOutput,
-  SafeElement,
   StackResponseInput,
-  SupportedElementType,
 } from '../services/studentPracticeMcp'
 
 type PracticeQuizToolResult = GetPracticeStackForQuizOutput & {
   kind: 'student-practice-quiz'
 }
 
-type Choice = {
-  ix: number
-  value: string
-}
-
-type Evaluation = {
-  instanceId?: number
-  explanation?: string | null
-  score?: number | null
-  correctness?: number | null
-  pointsAwarded?: number | null
-  xpAwarded?: number | null
-  feedbacks?: Array<{
-    correct?: boolean | null
-    feedback?: string | null
-    ix?: number | null
-    value?: string | null
-  }> | null
-}
+const EMPTY_STACK = {
+  id: 0,
+  elements: [],
+} as unknown as ElementStack
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object') return null
@@ -49,24 +45,29 @@ function asQuizResult(value: unknown): PracticeQuizToolResult | null {
   const stack = asRecord(record?.stack)
   if (record?.kind !== 'student-practice-quiz' || !stack) return null
   if (!Array.isArray(stack.elements)) return null
+  if (stack.elements.length === 0) return null
   if (typeof record.questionRef !== 'string') return null
+
+  const hasRenderableElements = stack.elements.every((element) => {
+    const elementRecord = asRecord(element)
+    return (
+      typeof elementRecord?.id === 'number' &&
+      typeof elementRecord.elementType === 'string' &&
+      !!asRecord(elementRecord.elementData)
+    )
+  })
+  if (!hasRenderableElements) return null
 
   return record as PracticeQuizToolResult
 }
 
-function getChoices(element: SafeElement): Choice[] {
-  const choices = element.options?.choices
-  if (!Array.isArray(choices)) return []
-
-  return choices.flatMap((choice) => {
-    const record = asRecord(choice)
-    if (!record) return []
-
-    const ix = Number(record.ix)
-    if (!Number.isInteger(ix)) return []
-
-    return [{ ix, value: String(record.value ?? '') }]
-  })
+function toElementStack(quiz: PracticeQuizToolResult): ElementStack {
+  return {
+    id: quiz.stack.stackId,
+    displayName: quiz.stack.stackTitle,
+    description: quiz.stack.description ?? null,
+    elements: quiz.stack.elements as unknown as ElementInstance[],
+  } as ElementStack
 }
 
 function getGradingPayload(
@@ -76,263 +77,96 @@ function getGradingPayload(
   return asRecord(record?.result) ?? record
 }
 
-function getEvaluations(submission: unknown): Evaluation[] {
+function getEvaluations(submission: unknown): InstanceEvaluation[] {
   const grading = getGradingPayload(submission)
   if (!Array.isArray(grading?.evaluations)) return []
-  return grading.evaluations.filter(Boolean) as Evaluation[]
+  return grading.evaluations.filter(Boolean) as InstanceEvaluation[]
 }
 
-function formatScore(value: unknown): string | null {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return null
-  return Number.isInteger(value) ? String(value) : value.toFixed(2)
+function createStackStorage(
+  studentResponse: StackStudentResponseType,
+  submission: unknown
+): StackStudentResponseType {
+  const evaluations = getEvaluations(submission)
+
+  return Object.entries(studentResponse).reduce<StackStudentResponseType>(
+    (acc, [instanceId, value]) => {
+      const parsedInstanceId = parseInt(instanceId, 10)
+      acc[parsedInstanceId] = {
+        ...value,
+        evaluation: evaluations.find(
+          (evaluation) => evaluation.instanceId === parsedInstanceId
+        ),
+      }
+      return acc
+    },
+    {}
+  )
 }
 
-function labelForType(type: SupportedElementType): string {
-  switch (type) {
-    case 'SC':
-      return 'Single choice'
-    case 'MC':
-      return 'Multiple choice'
-    case 'KPRIM':
-      return 'Kprim'
-    case 'NUMERICAL':
-      return 'Numerical'
-    case 'FREE_TEXT':
-      return 'Free text'
-    case 'FLASHCARD':
-      return 'Flashcard'
-  }
-}
-
-function buildChoicesResponse(
-  element: SafeElement,
-  selectedChoices: Record<number, boolean> | undefined
-) {
-  return getChoices(element).map((choice) => ({
-    ix: choice.ix,
-    selected: Boolean(selectedChoices?.[choice.ix]),
-  }))
+function choicesResponse(
+  response: ChoicesStudentResponseType | undefined
+): Array<{ ix: number; selected: boolean }> {
+  return Object.entries(response ?? {})
+    .filter(([, selected]) => selected)
+    .map(([ix, selected]) => ({
+      ix: parseInt(ix, 10),
+      selected: selected ?? false,
+    }))
 }
 
 function buildResponses({
-  choicesByInstanceId,
   elements,
-  flashcardsByInstanceId,
-  freeTextByInstanceId,
-  numericalByInstanceId,
+  studentResponse,
 }: {
-  choicesByInstanceId: Record<number, Record<number, boolean>>
-  elements: SafeElement[]
-  flashcardsByInstanceId: Record<number, 'CORRECT' | 'PARTIAL' | 'INCORRECT'>
-  freeTextByInstanceId: Record<number, string>
-  numericalByInstanceId: Record<number, string>
+  elements: ElementInstance[]
+  studentResponse: StackStudentResponseType
 }): { error?: string; responses?: StackResponseInput[] } {
   const responses: StackResponseInput[] = []
 
   for (const element of elements) {
-    if (['SC', 'MC', 'KPRIM'].includes(element.elementType)) {
-      const choices = choicesByInstanceId[element.instanceId]
-      if (
-        element.elementType === 'SC' &&
-        !Object.values(choices ?? {}).some(Boolean)
-      ) {
-        return { error: 'Select an answer for each single-choice question.' }
-      }
-
-      responses.push({
-        choicesResponse: buildChoicesResponse(element, choices),
-        instanceId: element.instanceId,
-        type: element.elementType,
-      })
-      continue
+    const value = studentResponse[element.id]
+    if (!value?.valid) {
+      return { error: 'Complete the practice question before submitting.' }
     }
 
-    if (element.elementType === 'NUMERICAL') {
-      const rawValue = numericalByInstanceId[element.instanceId]?.trim()
-      const numericalResponse = Number(rawValue)
-      if (!rawValue || !Number.isFinite(numericalResponse)) {
-        return { error: 'Enter a number for each numerical question.' }
-      }
-
+    if (
+      value.type === ElementType.Sc ||
+      value.type === ElementType.Mc ||
+      value.type === ElementType.Kprim
+    ) {
       responses.push({
-        instanceId: element.instanceId,
-        numericalResponse,
-        type: element.elementType,
+        choicesResponse: choicesResponse(
+          value.response as ChoicesStudentResponseType
+        ),
+        instanceId: element.id,
+        type: value.type,
       })
-      continue
-    }
-
-    if (element.elementType === 'FREE_TEXT') {
+    } else if (value.type === ElementType.Numerical) {
       responses.push({
-        freeTextResponse: freeTextByInstanceId[element.instanceId] ?? '',
-        instanceId: element.instanceId,
-        type: element.elementType,
+        instanceId: element.id,
+        numericalResponse: parseFloat(value.response as string),
+        type: value.type,
       })
-      continue
-    }
-
-    if (element.elementType === 'FLASHCARD') {
-      const flashcardResponse = flashcardsByInstanceId[element.instanceId]
-      if (!flashcardResponse) {
-        return { error: 'Select a flashcard self-assessment.' }
-      }
-
+    } else if (value.type === ElementType.FreeText) {
       responses.push({
-        flashcardResponse,
-        instanceId: element.instanceId,
-        type: element.elementType,
+        freeTextResponse: value.response as string,
+        instanceId: element.id,
+        type: value.type,
       })
+    } else if (value.type === ElementType.Flashcard) {
+      responses.push({
+        flashcardResponse:
+          value.response as StackResponseInput['flashcardResponse'],
+        instanceId: element.id,
+        type: value.type,
+      })
+    } else {
+      return { error: 'This practice question type is not supported in chat.' }
     }
   }
 
   return { responses }
-}
-
-function FeedbackSummary({ submission }: { submission: unknown }) {
-  const grading = getGradingPayload(submission)
-  if (!grading) return null
-
-  const score = formatScore(grading.score)
-  const status = typeof grading.status === 'string' ? grading.status : null
-  const evaluations = getEvaluations(submission)
-
-  return (
-    <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">
-      <div className="flex items-center gap-2 font-medium">
-        <CheckCircle2Icon className="size-4" />
-        <span>{status ? `Submitted (${status})` : 'Submitted'}</span>
-        {score ? <span className="text-emerald-800">Score {score}</span> : null}
-      </div>
-
-      {evaluations.length > 0 ? (
-        <div className="mt-2 space-y-2">
-          {evaluations.map((evaluation, index) => {
-            const evaluationScore = formatScore(evaluation.score)
-            const correctness = formatScore(evaluation.correctness)
-            return (
-              <div
-                key={`${evaluation.instanceId ?? index}`}
-                className="text-xs leading-5"
-              >
-                <div className="flex flex-wrap gap-x-3 gap-y-1 font-medium">
-                  {evaluationScore ? (
-                    <span>Score {evaluationScore}</span>
-                  ) : null}
-                  {correctness ? <span>Correctness {correctness}</span> : null}
-                  {typeof evaluation.pointsAwarded === 'number' ? (
-                    <span>Points {formatScore(evaluation.pointsAwarded)}</span>
-                  ) : null}
-                  {typeof evaluation.xpAwarded === 'number' ? (
-                    <span>XP {formatScore(evaluation.xpAwarded)}</span>
-                  ) : null}
-                </div>
-                {evaluation.explanation ? (
-                  <p className="mt-1 whitespace-pre-wrap">
-                    {evaluation.explanation}
-                  </p>
-                ) : null}
-                {evaluation.feedbacks?.length ? (
-                  <ul className="mt-1 space-y-1">
-                    {evaluation.feedbacks.map((feedback, feedbackIndex) => (
-                      <li key={feedbackIndex}>
-                        {typeof feedback.correct === 'boolean'
-                          ? feedback.correct
-                            ? 'Correct: '
-                            : 'Incorrect: '
-                          : null}
-                        {feedback.feedback || feedback.value || ''}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-              </div>
-            )
-          })}
-        </div>
-      ) : null}
-    </div>
-  )
-}
-
-function ChoiceInputs({
-  disabled,
-  element,
-  selectedChoices,
-  setSelectedChoices,
-}: {
-  disabled: boolean
-  element: SafeElement
-  selectedChoices: Record<number, boolean> | undefined
-  setSelectedChoices: (next: Record<number, boolean>) => void
-}) {
-  const choices = getChoices(element)
-  const isSingleChoice = element.elementType === 'SC'
-
-  return (
-    <div className="mt-3 space-y-2">
-      {choices.map((choice) => (
-        <label
-          key={choice.ix}
-          className="flex cursor-pointer items-start gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm leading-5 hover:bg-slate-50"
-        >
-          <input
-            checked={Boolean(selectedChoices?.[choice.ix])}
-            className="mt-1"
-            disabled={disabled}
-            name={`practice-${element.instanceId}`}
-            onChange={(event) => {
-              if (isSingleChoice) {
-                setSelectedChoices({ [choice.ix]: event.target.checked })
-              } else {
-                setSelectedChoices({
-                  ...(selectedChoices ?? {}),
-                  [choice.ix]: event.target.checked,
-                })
-              }
-            }}
-            type={isSingleChoice ? 'radio' : 'checkbox'}
-          />
-          <span>{choice.value}</span>
-        </label>
-      ))}
-    </div>
-  )
-}
-
-function FlashcardButtons({
-  disabled,
-  selected,
-  setSelected,
-}: {
-  disabled: boolean
-  selected: 'CORRECT' | 'PARTIAL' | 'INCORRECT' | undefined
-  setSelected: (next: 'CORRECT' | 'PARTIAL' | 'INCORRECT') => void
-}) {
-  const options = [
-    { label: 'I knew it', value: 'CORRECT' as const },
-    { label: 'Partially', value: 'PARTIAL' as const },
-    { label: 'Not yet', value: 'INCORRECT' as const },
-  ]
-
-  return (
-    <div className="mt-3 flex flex-wrap gap-2">
-      {options.map((option) => (
-        <button
-          key={option.value}
-          className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
-            selected === option.value
-              ? 'border-slate-900 bg-slate-900 text-white'
-              : 'border-slate-200 bg-white hover:bg-slate-50'
-          }`}
-          disabled={disabled}
-          onClick={() => setSelected(option.value)}
-          type="button"
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
-  )
 }
 
 export function StudentPracticeQuizCard({
@@ -344,27 +178,32 @@ export function StudentPracticeQuizCard({
 }) {
   const params = useParams<{ chatbotId?: string }>()
   const quiz = asQuizResult(result)
+  const stack = useMemo(
+    () => (quiz ? toElementStack(quiz) : EMPTY_STACK),
+    [quiz]
+  )
   const startedAtMs = useRef(Date.now())
-  const [choicesByInstanceId, setChoicesByInstanceId] = useState<
-    Record<number, Record<number, boolean>>
-  >({})
-  const [freeTextByInstanceId, setFreeTextByInstanceId] = useState<
-    Record<number, string>
-  >({})
-  const [numericalByInstanceId, setNumericalByInstanceId] = useState<
-    Record<number, string>
-  >({})
-  const [flashcardsByInstanceId, setFlashcardsByInstanceId] = useState<
-    Record<number, 'CORRECT' | 'PARTIAL' | 'INCORRECT'>
-  >({})
+  const [activeElementIx, setActiveElementIx] = useState(0)
+  const [studentResponse, setStudentResponse] =
+    useState<StackStudentResponseType>({})
+  const [stackStorage, setStackStorage] = useState<
+    StackStudentResponseType | undefined
+  >(undefined)
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submission, setSubmission] = useState<unknown>(null)
 
-  const chatbotId = params.chatbotId
-  const isDisabled = isSubmitting || Boolean(submission)
-  const elementCount = quiz?.stack.elements.length ?? 0
-  const title = quiz?.stack.stackTitle ?? 'Practice question'
+  useStudentResponse({
+    currentStep: 1,
+    setStudentResponse,
+    stack,
+  })
+
+  useEffect(() => {
+    startedAtMs.current = Date.now()
+    setActiveElementIx(0)
+    setError(null)
+    setStackStorage(undefined)
+  }, [quiz?.questionRef])
 
   if (status.type === 'running' && !quiz) {
     return (
@@ -383,11 +222,26 @@ export function StudentPracticeQuizCard({
       </div>
     )
   }
-  const activeQuiz = quiz
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  const activeQuiz = quiz
+  const chatbotId = params.chatbotId
+  const elements = (stack.elements ?? []) as ElementInstance[]
+  const elementCount = elements.length
+  const displayedElementIx = Math.min(activeElementIx, elementCount - 1)
+  const activeElement = elements[displayedElementIx]
+  const activeResponse = activeElement
+    ? studentResponse[activeElement.id]
+    : undefined
+  const isSubmitted = typeof stackStorage !== 'undefined'
+  const allResponsesValid = elements.every(
+    (element) => studentResponse[element.id]?.valid === true
+  )
+  const canMoveForward = isSubmitted || activeResponse?.valid === true
+
+  async function handleSubmit() {
     setError(null)
+
+    if (isSubmitted) return
 
     if (!chatbotId) {
       setError('Chatbot route is missing.')
@@ -395,11 +249,8 @@ export function StudentPracticeQuizCard({
     }
 
     const built = buildResponses({
-      choicesByInstanceId,
-      elements: activeQuiz.stack.elements,
-      flashcardsByInstanceId,
-      freeTextByInstanceId,
-      numericalByInstanceId,
+      elements,
+      studentResponse,
     })
 
     if (built.error || !built.responses) {
@@ -433,7 +284,9 @@ export function StudentPracticeQuizCard({
         )
       }
 
-      setSubmission(await response.json())
+      const submission = await response.json()
+      setStackStorage(createStackStorage(studentResponse, submission))
+      setActiveElementIx(0)
     } catch (submitError) {
       console.error('Failed to submit practice answer:', submitError)
       setError('Could not submit the practice answer.')
@@ -443,129 +296,90 @@ export function StudentPracticeQuizCard({
   }
 
   return (
-    <form
-      className="my-3 w-full rounded-md border border-slate-200 bg-slate-50 p-4 text-slate-950 shadow-sm"
-      onSubmit={handleSubmit}
-    >
+    <div className="my-3 w-full rounded-md border border-slate-200 bg-white p-4 text-slate-950 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <div className="text-xs font-medium uppercase text-slate-500">
-            Practice question{elementCount > 1 ? ` (${elementCount})` : ''}
+            Practice question
           </div>
-          <h3 className="mt-1 text-base font-semibold leading-6">{title}</h3>
+          <h3 className="mt-1 text-base font-semibold leading-6">
+            {activeQuiz.stack.stackTitle}
+          </h3>
         </div>
-        {submission ? (
+        {isSubmitted ? (
           <CheckCircle2Icon className="size-5 text-emerald-600" />
         ) : null}
       </div>
 
-      {quiz.stack.description ? (
-        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
-          {quiz.stack.description}
-        </p>
+      {activeQuiz.stack.description ? (
+        <div className="mt-2 text-sm leading-6 text-slate-700">
+          <DynamicMarkdown content={activeQuiz.stack.description} withProse />
+        </div>
       ) : null}
 
-      <div className="mt-4 space-y-4">
-        {quiz.stack.elements.map((element, index) => (
-          <section
-            key={element.instanceId}
-            className="rounded-md border border-slate-200 bg-white p-3"
-          >
-            <div className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase text-slate-500">
-              <span>{labelForType(element.elementType)}</span>
-              {elementCount > 1 ? (
-                <span>
-                  {index + 1}/{elementCount}
-                </span>
-              ) : null}
-            </div>
-            {element.name ? (
-              <h4 className="mt-1 text-sm font-semibold leading-6 text-slate-950">
-                {element.name}
-              </h4>
-            ) : null}
-            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-800">
-              {element.content}
-            </p>
+      <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-3">
+        {elementCount > 1 ? (
+          <div className="mb-3 text-xs font-medium uppercase text-slate-500">
+            Question {displayedElementIx + 1}/{elementCount}
+          </div>
+        ) : null}
 
-            {['SC', 'MC', 'KPRIM'].includes(element.elementType) ? (
-              <ChoiceInputs
-                disabled={isDisabled}
-                element={element}
-                selectedChoices={choicesByInstanceId[element.instanceId]}
-                setSelectedChoices={(next) =>
-                  setChoicesByInstanceId((current) => ({
-                    ...current,
-                    [element.instanceId]: next,
-                  }))
-                }
-              />
-            ) : null}
-
-            {element.elementType === 'NUMERICAL' ? (
-              <input
-                className="mt-3 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400"
-                disabled={isDisabled}
-                inputMode="decimal"
-                onChange={(event) =>
-                  setNumericalByInstanceId((current) => ({
-                    ...current,
-                    [element.instanceId]: event.target.value,
-                  }))
-                }
-                placeholder={String(element.options?.placeholder ?? '')}
-                type="number"
-                value={numericalByInstanceId[element.instanceId] ?? ''}
-              />
-            ) : null}
-
-            {element.elementType === 'FREE_TEXT' ? (
-              <textarea
-                className="mt-3 min-h-24 w-full resize-y rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-400"
-                disabled={isDisabled}
-                onChange={(event) =>
-                  setFreeTextByInstanceId((current) => ({
-                    ...current,
-                    [element.instanceId]: event.target.value,
-                  }))
-                }
-                value={freeTextByInstanceId[element.instanceId] ?? ''}
-              />
-            ) : null}
-
-            {element.elementType === 'FLASHCARD' ? (
-              <FlashcardButtons
-                disabled={isDisabled}
-                selected={flashcardsByInstanceId[element.instanceId]}
-                setSelected={(next) =>
-                  setFlashcardsByInstanceId((current) => ({
-                    ...current,
-                    [element.instanceId]: next,
-                  }))
-                }
-              />
-            ) : null}
-          </section>
-        ))}
+        {activeElement ? (
+          <StudentElement
+            compact
+            disabledInput={isSubmitted}
+            element={activeElement}
+            elementIx={displayedElementIx}
+            setStudentResponse={setStudentResponse}
+            stackStorage={stackStorage}
+            studentResponse={studentResponse}
+          />
+        ) : null}
       </div>
 
       {error ? <p className="mt-3 text-sm text-red-700">{error}</p> : null}
-      {submission ? <FeedbackSummary submission={submission} /> : null}
 
-      <div className="mt-4 flex justify-end">
-        <button
-          className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={isDisabled}
-          type="submit"
-        >
-          {isSubmitting ? (
-            <LoaderCircleIcon className="size-4 animate-spin" />
-          ) : (
-            <CheckIcon className="size-4" />
-          )}
-          Submit
-        </button>
+      <div className="mt-4 flex flex-wrap justify-end gap-2">
+        {elementCount > 1 && displayedElementIx > 0 ? (
+          <button
+            className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isSubmitting}
+            onClick={() => setActiveElementIx((ix) => Math.max(0, ix - 1))}
+            type="button"
+          >
+            <ChevronLeftIcon className="size-4" />
+            Back
+          </button>
+        ) : null}
+
+        {elementCount > 1 && displayedElementIx < elementCount - 1 ? (
+          <button
+            className="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isSubmitting || !canMoveForward}
+            onClick={() =>
+              setActiveElementIx((ix) => Math.min(elementCount - 1, ix + 1))
+            }
+            type="button"
+          >
+            Next
+            <ChevronRightIcon className="size-4" />
+          </button>
+        ) : (
+          <button
+            className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isSubmitting || isSubmitted || !allResponsesValid}
+            onClick={handleSubmit}
+            type="button"
+          >
+            {isSubmitting ? (
+              <LoaderCircleIcon className="size-4 animate-spin" />
+            ) : (
+              <CheckCircle2Icon className="size-4" />
+            )}
+            Submit
+          </button>
+        )}
       </div>
-    </form>
+    </div>
   )
 }

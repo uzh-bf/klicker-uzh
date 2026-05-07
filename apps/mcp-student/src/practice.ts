@@ -1,5 +1,6 @@
 import type {
   Candidate,
+  PracticeElement,
   PracticeQuiz,
   PracticeStack,
   QuestionRefPayload,
@@ -236,6 +237,31 @@ function copyNumberOption(
   }
 }
 
+function copyBooleanOption(
+  source: Record<string, unknown>,
+  key: string,
+  target: Record<string, unknown>
+): void {
+  if (typeof source[key] === 'boolean') {
+    target[key] = source[key]
+  }
+}
+
+function elementDataTypename(elementType: SupportedElementType): string {
+  switch (elementType) {
+    case 'SC':
+    case 'MC':
+    case 'KPRIM':
+      return 'ChoicesElementData'
+    case 'NUMERICAL':
+      return 'NumericalElementData'
+    case 'FREE_TEXT':
+      return 'FreeTextElementData'
+    case 'FLASHCARD':
+      return 'FlashcardElementData'
+  }
+}
+
 function safeOptionsForElement(
   elementType: SupportedElementType,
   options: Record<string, unknown> | null | undefined
@@ -244,6 +270,7 @@ function safeOptionsForElement(
 
   if (['SC', 'MC', 'KPRIM'].includes(elementType)) {
     const safe: Record<string, unknown> = {}
+    copyBooleanOption(options, 'hasSampleSolution', safe)
     copyStringOption(options, 'displayMode', safe)
 
     if (Array.isArray(options.choices)) {
@@ -263,6 +290,7 @@ function safeOptionsForElement(
 
   if (elementType === 'NUMERICAL') {
     const safe: Record<string, unknown> = {}
+    copyBooleanOption(options, 'hasSampleSolution', safe)
     copyNumberOption(options, 'accuracy', safe)
     copyStringOption(options, 'placeholder', safe)
     copyStringOption(options, 'unit', safe)
@@ -280,6 +308,7 @@ function safeOptionsForElement(
 
   if (elementType === 'FREE_TEXT') {
     const safe: Record<string, unknown> = {}
+    copyBooleanOption(options, 'hasSampleSolution', safe)
     if (options.restrictions && typeof options.restrictions === 'object') {
       const restrictions = options.restrictions as Record<string, unknown>
       safe.restrictions = {
@@ -293,6 +322,41 @@ function safeOptionsForElement(
   }
 
   return undefined
+}
+
+function safeElementId(element: PracticeElement): string {
+  const id = element.elementData.id
+  if (typeof id === 'string') return id
+  if (typeof element.elementData.elementId === 'number') {
+    return String(element.elementData.elementId)
+  }
+  return String(element.id)
+}
+
+function safeElementData(element: PracticeElement) {
+  const elementType = element.elementType as SupportedElementType
+
+  return {
+    __typename: elementDataTypename(elementType),
+    id: safeElementId(element),
+    elementId:
+      typeof element.elementData.elementId === 'number'
+        ? element.elementData.elementId
+        : undefined,
+    name: element.elementData.name,
+    type: elementType,
+    content: element.elementData.content,
+    explanation: element.elementData.explanation ?? null,
+    basePoints:
+      typeof element.elementData.basePoints === 'boolean'
+        ? element.elementData.basePoints
+        : true,
+    pointsMultiplier:
+      typeof element.elementData.pointsMultiplier === 'number'
+        ? element.elementData.pointsMultiplier
+        : 1,
+    options: safeOptionsForElement(elementType, element.elementData.options),
+  }
 }
 
 export function toSafeStackRenderPayload(
@@ -309,14 +373,10 @@ export function toSafeStackRenderPayload(
     elements: orderedElements(stack).map((element) => {
       const elementType = element.elementType as SupportedElementType
       return {
-        instanceId: element.id,
+        id: element.id,
+        type: element.type ?? 'PRACTICE_QUIZ',
         elementType,
-        name: element.elementData.name,
-        content: element.elementData.content,
-        options: safeOptionsForElement(
-          elementType,
-          element.elementData.options
-        ),
+        elementData: safeElementData(element),
       }
     }),
   }

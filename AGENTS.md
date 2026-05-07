@@ -215,6 +215,8 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 - **Local embed harness target**: `util/embed-harness/` is for local verification only and should target the branch-local PWA (`http://127.0.0.1:3101/...`), not `https://pwa.klicker.com/...`, because production CSP / `frame-ancestors` blocks localhost embedding. (`util/embed-harness/`)
 - **mcp-student build**: The TypeScript student MCP app uses plain `tsc -p tsconfig.build.json`; Rollup emitted `dist` but kept the process alive during initial setup, so keep this service unbundled unless there is a concrete reason to revisit. (`apps/mcp-student/`)
 - **Student practice MCP chat boundary**: `apps/chat` calls `apps/mcp-student` server-side via `MCP_STUDENT_URL`; only the answer-safe `start_student_practice_quiz` tool is exposed to the model, while answer submission stays behind the authenticated chat API route. (`apps/chat/src/services/studentPracticeMcp.ts`, `apps/chat/src/app/api/chatbots/[chatbotId]/practice/submit/route.ts`)
+- **Shared practice renderer in chat**: Do not wrap `StudentElement` in a chat-owned `<form>`; shared answer option buttons are regular buttons and can behave like implicit submit controls inside forms. Use an explicit chat submit button instead. (`apps/chat/src/components/student-practice-quiz-card.tsx`, `packages/shared-components/src/questions/`)
+- **Chat shared-component i18n**: Shared practice components use `next-intl` hooks, so `apps/chat` must wrap its App Router tree in `NextIntlClientProvider` before rendering them. (`apps/chat/src/app/layout.tsx`, `packages/shared-components/src/StudentElement.tsx`)
 
 ## Factory Skills (AI Assistance)
 
