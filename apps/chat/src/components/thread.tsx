@@ -58,8 +58,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 import Image from 'next/image'
 
+import { Markdown } from '@klicker-uzh/markdown'
 import { twMerge } from 'tailwind-merge'
-import { StaticMarkdownText } from './markdown-text'
+import { normalizeCustomMathTags } from './markdown-text'
 
 type ThreadProps = { chatbotAvatar: string }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
@@ -207,7 +208,11 @@ const AssistantReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
 
       {isOpen ? (
         <div className="text-muted-foreground mb-2 border-l-2 border-slate-200 pl-3 text-sm">
-          <StaticMarkdownText text={normalizedText} />
+          <Markdown
+            content={normalizeCustomMathTags(normalizedText)}
+            withProse
+            singleDollarTextMath
+          />
         </div>
       ) : null}
     </div>

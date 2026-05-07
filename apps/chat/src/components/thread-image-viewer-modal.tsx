@@ -1,7 +1,8 @@
 'use client'
 
+import { Markdown } from '@klicker-uzh/markdown'
 import { Button, Modal } from '@uzh-bf/design-system'
-import { StaticMarkdownText } from './markdown-text'
+import { normalizeCustomMathTags } from './markdown-text'
 
 type MessageImageAttachment = {
   id?: string
@@ -73,9 +74,13 @@ export function ThreadImageViewerModal({
         )}
 
         {description ? (
-          <StaticMarkdownText
-            text={description}
-            className="text-foreground text-sm"
+          <Markdown
+            content={normalizeCustomMathTags(description)}
+            withProse
+            singleDollarTextMath
+            className={{
+              root: 'prose prose-sm text-foreground max-w-none',
+            }}
           />
         ) : null}
 

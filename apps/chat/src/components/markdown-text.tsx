@@ -12,20 +12,16 @@ import {
 } from '@assistant-ui/react-markdown'
 import { CheckIcon, CopyIcon } from 'lucide-react'
 import { FC, memo, useState } from 'react'
-import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
 import { cn } from '../lib/utils/ui'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
-const remarkPlugins = [remarkGfm, remarkMath]
-const rehypePlugins = [rehypeKatex]
-
 const MarkdownTextImpl = () => {
   return (
     <MarkdownTextPrimitive
-      remarkPlugins={remarkPlugins}
-      rehypePlugins={rehypePlugins}
+      remarkPlugins={[remarkGfm, remarkMath]}
+      rehypePlugins={[rehypeKatex]}
       preprocess={normalizeCustomMathTags}
       className="aui-md"
       components={defaultComponents}
@@ -34,28 +30,6 @@ const MarkdownTextImpl = () => {
 }
 
 export const MarkdownText = memo(MarkdownTextImpl)
-
-type StaticMarkdownTextProps = {
-  text: string
-  className?: string
-}
-
-const StaticMarkdownTextImpl: FC<StaticMarkdownTextProps> = ({
-  text,
-  className,
-}) => (
-  <div className={cn('aui-md', className)}>
-    <ReactMarkdown
-      remarkPlugins={remarkPlugins}
-      rehypePlugins={rehypePlugins}
-      components={defaultComponents}
-    >
-      {normalizeCustomMathTags(text)}
-    </ReactMarkdown>
-  </div>
-)
-
-export const StaticMarkdownText = memo(StaticMarkdownTextImpl)
 
 const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
   const { isCopied, copyToClipboard } = useCopyToClipboard()
