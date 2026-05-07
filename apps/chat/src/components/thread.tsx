@@ -178,7 +178,13 @@ const AssistantReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
   const reasoningEffort =
     typeof custom.reasoningEffort === 'string' ? custom.reasoningEffort : null
 
-  if (!text || text.trim().length === 0) {
+  // insert a paragraph break before any title (**Title**\n)
+  const normalizedText = text?.replace(
+    /([^\n])(\s*\*\*[^*\n]+\*\*\n)/g,
+    '$1\n\n$2'
+  )
+
+  if (!normalizedText || normalizedText.trim().length === 0) {
     return null
   }
 
@@ -201,7 +207,7 @@ const AssistantReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
 
       {isOpen ? (
         <div className="text-muted-foreground mb-2 border-l-2 border-slate-200 pl-3 text-sm">
-          <StaticMarkdownText text={text} />
+          <StaticMarkdownText text={normalizedText} />
         </div>
       ) : null}
     </div>
