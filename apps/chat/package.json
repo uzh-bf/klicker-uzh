@@ -36,7 +36,7 @@
     "katex": "0.16.22",
     "lucide-react": "0.522.0",
     "next": "15.3.8",
-    "next-intl": "4.3.4",
+    "next-intl": "4.9.2",
     "nookies": "2.5.2",
     "pg": "8.16.3",
     "react": "19.1.2",
