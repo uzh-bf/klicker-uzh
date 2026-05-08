@@ -2,7 +2,7 @@
 
 import { CheckIcon, EditIcon, Trash2, XIcon } from 'lucide-react'
 import type { FC } from 'react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { TextField } from '@uzh-bf/design-system'
 import { useParams, useRouter } from 'next/navigation'
@@ -24,7 +24,7 @@ const ThreadListItems: FC = () => {
   const router = useRouter()
   const { threads, deleteThread } = useChatStore()
 
-  const groupedThreads = groupThreadsByDate(threads)
+  const groupedThreads = useMemo(() => groupThreadsByDate(threads), [threads])
 
   return (
     <div className="flex flex-col gap-2 p-1">
