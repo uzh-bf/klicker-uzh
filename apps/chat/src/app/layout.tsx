@@ -5,7 +5,7 @@ import {
 import 'katex/dist/katex.min.css'
 import type { Metadata } from 'next'
 import { NextIntlClientProvider } from 'next-intl'
-import { getLocale } from 'next-intl/server'
+import { getLocale, getMessages } from 'next-intl/server'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -18,6 +18,7 @@ export default async function RootLayout({
   children: React.ReactNode
 }>) {
   const locale = await getLocale()
+  const messages = await getMessages()
 
   return (
     <html lang={locale}>
@@ -33,7 +34,9 @@ export default async function RootLayout({
       <body
         className={`${sourceSansPro.variable} ${monoSpaceFont.variable} font-sans antialiased`}
       >
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          {children}
+        </NextIntlClientProvider>
       </body>
     </html>
   )

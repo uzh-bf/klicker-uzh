@@ -121,7 +121,6 @@ describe('answer-safe render payloads', () => {
       elementData: {
         __typename: 'ChoicesElementData',
         content: 'Choose one option.',
-        explanation: 'This is the hidden explanation.',
         options: {
           hasSampleSolution: true,
           displayMode: 'LIST',
@@ -132,6 +131,19 @@ describe('answer-safe render payloads', () => {
         },
       },
     })
+    expect(safe.elements[0]?.elementData).not.toHaveProperty('explanation')
+  })
+
+  it('preserves backend element order in multi-element stacks', () => {
+    const first = stack(1, 'First question', 'SC').elements![0]!
+    const second = stack(2, 'Second question', 'NUMERICAL').elements![0]!
+    const safe = toSafeStackRenderPayload({
+      id: 1,
+      displayName: 'Ordered',
+      elements: [second, first],
+    })
+
+    expect(safe.elements.map((element) => element.id)).toEqual([20, 10])
   })
 })
 

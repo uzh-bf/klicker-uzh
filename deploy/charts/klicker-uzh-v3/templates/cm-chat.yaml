@@ -20,5 +20,6 @@ data:
   ALLOWED_FRAME_ANCESTORS: {{ .Values.chat.allowedFrameAncestors | quote }}
   {{- end }}
   {{- if .Values.mcpStudent.enabled }}
-  MCP_STUDENT_URL: {{ printf "http://%s-mcp-student:%v%s" $fullName .Values.mcpStudent.service.port .Values.mcpStudent.path | quote }}
+  {{- $mcpStudentPath := printf "/%s" (trimPrefix "/" .Values.mcpStudent.path) }}
+  MCP_STUDENT_URL: {{ printf "http://%s-mcp-student:%v%s" $fullName .Values.mcpStudent.service.port $mcpStudentPath | quote }}
   {{- end }}

@@ -76,7 +76,6 @@ export async function POST(
     return NextResponse.json(result)
   } catch (error) {
     console.error('Failed to submit student practice answer:', {
-      chatbotId,
       error,
     })
 

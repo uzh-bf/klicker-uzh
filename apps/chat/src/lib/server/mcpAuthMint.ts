@@ -45,6 +45,12 @@ export async function mintParticipantMcpJwt(
   }
 
   const now = Date.now()
+  for (const [cachedParticipantId, entry] of cache) {
+    if (now - entry.mintedAtMs > CACHE_TTL_MS) {
+      cache.delete(cachedParticipantId)
+    }
+  }
+
   const cached = cache.get(participantId)
   if (cached && now - cached.mintedAtMs <= CACHE_TTL_MS) {
     return cached.jwt

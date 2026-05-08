@@ -64,8 +64,10 @@ export class PersistedGraphQLClient {
     })
 
     if (!response.ok) {
+      const body = await response.text().catch(() => '')
+      const details = body ? `: ${body.slice(0, 500)}` : ''
       throw new Error(
-        `GraphQL ${operationName} failed with HTTP ${response.status}`
+        `GraphQL ${operationName} failed with HTTP ${response.status}${details}`
       )
     }
 

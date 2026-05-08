@@ -2,7 +2,7 @@ export type RuntimeSettings = {
   appSecret: string
   apiGraphqlEndpoint: string
   host: string
-  jwtIssuer?: string
+  jwtIssuer: string
   mcpEndpoint: `/${string}`
   port: number
   questionRefSecret: string
@@ -32,14 +32,22 @@ export function getRuntimeSettings(
     /\/+$/,
     ''
   )
-  const appSecret = env.APP_SECRET ?? 'abcd'
+  const appSecret = env.APP_SECRET
+  if (!appSecret) {
+    throw new Error('APP_SECRET is required')
+  }
+
+  const jwtIssuer = env.APP_ORIGIN_AUTH
+  if (!jwtIssuer) {
+    throw new Error('APP_ORIGIN_AUTH is required')
+  }
 
   return {
     appSecret,
     apiGraphqlEndpoint:
       env.MCP_STUDENT_GRAPHQL_ENDPOINT ?? `${apiOrigin}/api/graphql`,
     host: env.MCP_STUDENT_HOST ?? '0.0.0.0',
-    jwtIssuer: env.APP_ORIGIN_AUTH,
+    jwtIssuer,
     mcpEndpoint: endpointPath(env.MCP_STUDENT_PATH),
     port: intFromEnv(env, 'MCP_STUDENT_PORT', 7080),
     questionRefSecret: env.MCP_STUDENT_QUESTION_REF_SECRET ?? appSecret,

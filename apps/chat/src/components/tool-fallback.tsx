@@ -1,3 +1,4 @@
+import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/services/studentPracticeMcp'
 import {
   ChevronDownIcon,
   ChevronRightIcon,
@@ -72,7 +73,7 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
   const [isCollapsed, setIsCollapsed] = useState(true)
   const { server, tool } = formatToolName(toolName)
 
-  if (toolName === 'start_student_practice_quiz') {
+  if (toolName === STUDENT_PRACTICE_QUIZ_TOOL_NAME) {
     return <StudentPracticeQuizCard result={result} status={status} />
   }
 

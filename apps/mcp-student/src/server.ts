@@ -72,7 +72,10 @@ function errorMessage(error: unknown): string {
 }
 
 function errorCode(message: string): StudentMcpToolErrorCode {
-  if (message === 'Missing authenticated participant session') {
+  if (
+    message === 'Missing authenticated participant session' ||
+    message === 'Missing Authorization bearer token'
+  ) {
     return 'UNAUTHENTICATED'
   }
   if (/questionRef has expired/i.test(message)) {

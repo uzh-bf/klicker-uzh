@@ -1,4 +1,10 @@
-import type { ElementData, StackResponseInput } from './index.js'
+import type {
+  Choice,
+  ElementData,
+  FreeTextRestrictions,
+  NumericalRestrictions,
+  StackResponseInput,
+} from './index.js'
 
 export const STUDENT_MCP_SUPPORTED_ELEMENT_TYPES = [
   'SC',
@@ -68,6 +74,27 @@ export type StudentMcpSafeStackRenderPayload = {
   elements: StudentMcpSafeElementInstance[]
 }
 
+export type StudentMcpSafeChoice = Pick<Choice, 'ix' | 'value'>
+
+export type StudentMcpSafeElementOptions =
+  | {
+      hasSampleSolution?: boolean
+      displayMode?: string
+      choices?: StudentMcpSafeChoice[]
+    }
+  | {
+      hasSampleSolution?: boolean
+      accuracy?: number | null
+      placeholder?: string | null
+      unit?: string | null
+      restrictions?: NumericalRestrictions | null
+    }
+  | {
+      hasSampleSolution?: boolean
+      restrictions?: FreeTextRestrictions | null
+    }
+  | Record<string, never>
+
 export type StudentMcpSafeElementData = {
   __typename: string
   id: string
@@ -75,10 +102,9 @@ export type StudentMcpSafeElementData = {
   name: string
   type: StudentMcpSupportedElementType
   content: string
-  explanation?: string | null
   basePoints?: boolean
   pointsMultiplier?: number
-  options?: Record<string, unknown> | null
+  options?: StudentMcpSafeElementOptions | null
 }
 
 export type StudentMcpSafeElementInstance = {

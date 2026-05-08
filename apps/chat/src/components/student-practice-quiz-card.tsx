@@ -162,9 +162,14 @@ function buildResponses({
         type: value.type,
       })
     } else if (value.type === ElementType.Numerical) {
+      const numericalResponse = parseFloat(value.response as string)
+      if (!Number.isFinite(numericalResponse)) {
+        throw new Error('Please enter a valid number before submitting.')
+      }
+
       responses.push({
         instanceId: element.id,
-        numericalResponse: parseFloat(value.response as string),
+        numericalResponse,
         type: value.type,
       })
     } else if (value.type === ElementType.FreeText) {

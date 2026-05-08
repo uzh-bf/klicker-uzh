@@ -5,6 +5,7 @@ import {
   type StudentMcpPracticeQuiz as PracticeQuiz,
   type StudentMcpPracticeStack as PracticeStack,
   type StudentMcpQuestionRefPayload as QuestionRefPayload,
+  type StudentMcpSafeElementOptions as SafeElementOptions,
   type StudentMcpSafeStackRenderPayload as SafeStackRenderPayload,
   type StudentMcpStackResponseInput as StackResponseInput,
   type StudentMcpSupportedElementType as SupportedElementType,
@@ -28,7 +29,7 @@ function isSupportedElementType(type: string): type is SupportedElementType {
 }
 
 function orderedElements(stack: PracticeStack) {
-  return [...(stack.elements ?? [])].sort((a, b) => a.id - b.id)
+  return [...(stack.elements ?? [])]
 }
 
 export function toSupportedElementTypes(
@@ -92,7 +93,21 @@ export function assertQuestionRefMatchesStack(
     stack,
   })
 
-  if (JSON.stringify(current) !== JSON.stringify(ref)) {
+  const matches =
+    current.participantId === ref.participantId &&
+    current.chatbotId === ref.chatbotId &&
+    current.courseId === ref.courseId &&
+    current.stackId === ref.stackId &&
+    current.orderedElements.length === ref.orderedElements.length &&
+    current.orderedElements.every((element, index) => {
+      const expected = ref.orderedElements[index]
+      return (
+        element.instanceId === expected?.instanceId &&
+        element.type === expected?.type
+      )
+    })
+
+  if (!matches) {
     throw new Error('questionRef no longer matches the practice stack')
   }
 }
@@ -270,11 +285,11 @@ function elementDataTypename(elementType: SupportedElementType): string {
 function safeOptionsForElement(
   elementType: SupportedElementType,
   options: Record<string, unknown> | null | undefined
-): Record<string, unknown> | undefined {
+): SafeElementOptions | undefined {
   if (!options) return undefined
 
   if (['SC', 'MC', 'KPRIM'].includes(elementType)) {
-    const safe: Record<string, unknown> = {}
+    const safe: Extract<SafeElementOptions, { choices?: unknown }> = {}
     copyBooleanOption(options, 'hasSampleSolution', safe)
     copyStringOption(options, 'displayMode', safe)
 
@@ -283,8 +298,9 @@ function safeOptionsForElement(
         .filter((choice) => choice && typeof choice === 'object')
         .map((choice) => {
           const record = choice as Record<string, unknown>
+          const ix = Number(record.ix)
           return {
-            ix: Number(record.ix),
+            ix: Number.isFinite(ix) ? ix : 0,
             value: String(record.value ?? ''),
           }
         })
@@ -294,7 +310,7 @@ function safeOptionsForElement(
   }
 
   if (elementType === 'NUMERICAL') {
-    const safe: Record<string, unknown> = {}
+    const safe: Extract<SafeElementOptions, { accuracy?: unknown }> = {}
     copyBooleanOption(options, 'hasSampleSolution', safe)
     copyNumberOption(options, 'accuracy', safe)
     copyStringOption(options, 'placeholder', safe)
@@ -312,7 +328,7 @@ function safeOptionsForElement(
   }
 
   if (elementType === 'FREE_TEXT') {
-    const safe: Record<string, unknown> = {}
+    const safe: Extract<SafeElementOptions, { restrictions?: unknown }> = {}
     copyBooleanOption(options, 'hasSampleSolution', safe)
     if (options.restrictions && typeof options.restrictions === 'object') {
       const restrictions = options.restrictions as Record<string, unknown>
@@ -351,7 +367,6 @@ function safeElementData(element: PracticeElement) {
     name: element.elementData.name,
     type: elementType,
     content: element.elementData.content,
-    explanation: element.elementData.explanation ?? null,
     basePoints:
       typeof element.elementData.basePoints === 'boolean'
         ? element.elementData.basePoints
