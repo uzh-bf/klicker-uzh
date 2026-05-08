@@ -127,7 +127,6 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
 }) => {
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const [isEditing, setIsEditing] = useState(false)
-  const [isHovered, setIsHovered] = useState(false)
   const [editTitle, setEditTitle] = useState('')
   const { updateThreadTitle } = useChatStore()
 
@@ -176,9 +175,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
 
   return (
     <div
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      className={`focus-visible:bg-muted focus-visible:ring-ring flex items-center gap-1 rounded-lg p-1 transition-all focus-visible:outline-none focus-visible:ring-2 ${isActive ? 'bg-primary/15' : 'hover:bg-accent'}`}
+      className={`group/thread focus-visible:bg-muted focus-visible:ring-ring flex items-center gap-1 rounded-lg p-1 transition-all focus-visible:outline-none focus-visible:ring-2 ${isActive ? 'bg-primary/15' : 'hover:bg-accent'}`}
     >
       {isEditing ? (
         <>
@@ -217,10 +214,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
           <button
             onClick={handleEditStart}
             aria-label="Edit name"
-            style={{
-              display: isHovered || isActive ? 'inline-flex' : 'none',
-            }}
-            className="text-foreground hover:text-primary focus-visible:ring-ring mr-1 size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
+            className={`text-foreground hover:text-primary focus-visible:ring-ring mr-1 size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4 ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}
           >
             <EditIcon />
             <span className="sr-only">Edit name</span>
@@ -228,10 +222,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
           <button
             onClick={onDelete}
             aria-label="Delete chat"
-            style={{
-              display: isHovered || isActive ? 'inline-flex' : 'none',
-            }}
-            className="text-foreground hover:text-destructive focus-visible:ring-ring mr-2 size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
+            className={`text-foreground hover:text-destructive focus-visible:ring-ring mr-2 size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4 ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}
           >
             <Trash2 />
             <span className="sr-only">Delete chat</span>
