@@ -64,6 +64,11 @@ export function createQuestionRefSync(
   return `${signingInput}.${sign(signingInput, options.secret)}`
 }
 
+export function getQuestionRefExpiresAt(token: string): string {
+  const payload = decodePayload(token)
+  return new Date(payload.exp * 1000).toISOString()
+}
+
 export async function verifyQuestionRef(
   token: string,
   expected: Partial<

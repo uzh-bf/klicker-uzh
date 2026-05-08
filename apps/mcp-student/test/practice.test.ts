@@ -56,6 +56,7 @@ describe('practice stack ranking', () => {
         refs.push(payload)
         return `ref-${payload.stackId}`
       },
+      getQuestionRefExpiresAt: () => '2026-05-08T18:00:00.000Z',
       limit: 2,
       participantId: 'participant-1',
       practiceQuiz,

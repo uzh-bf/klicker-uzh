@@ -1,5 +1,9 @@
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
-import { submitPracticeStackAnswer } from '@/src/services/studentPracticeMcp'
+import {
+  StudentPracticeMcpToolError,
+  statusForStudentPracticeMcpError,
+  submitPracticeStackAnswer,
+} from '@/src/services/studentPracticeMcp'
 import {
   FlashcardCorrectness,
   STUDENT_MCP_SUPPORTED_ELEMENT_TYPES,
@@ -75,6 +79,14 @@ export async function POST(
       chatbotId,
       error,
     })
+
+    if (error instanceof StudentPracticeMcpToolError) {
+      return NextResponse.json(
+        { code: error.code, error: error.message },
+        { status: statusForStudentPracticeMcpError(error) }
+      )
+    }
+
     return NextResponse.json(
       { error: 'Failed to submit practice answer' },
       { status: 500 }

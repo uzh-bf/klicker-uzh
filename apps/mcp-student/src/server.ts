@@ -1,6 +1,8 @@
 import {
   FlashcardCorrectness,
   STUDENT_MCP_SUPPORTED_ELEMENT_TYPES,
+  type StudentMcpToolErrorCode,
+  type StudentMcpToolErrorOutput,
 } from '@klicker-uzh/types'
 import { FastMCP, UserError } from 'fastmcp'
 import type { IncomingMessage } from 'node:http'
@@ -54,7 +56,7 @@ const submitSchema = z.object({
 })
 
 function json(value: unknown): string {
-  return JSON.stringify(value, null, 2)
+  return JSON.stringify(value ?? null, null, 2)
 }
 
 function requireSession(session: StudentMcpSession | undefined) {
@@ -64,10 +66,52 @@ function requireSession(session: StudentMcpSession | undefined) {
   return session
 }
 
-function toUserError(error: unknown): UserError {
-  if (error instanceof UserError) return error
-  if (error instanceof Error) return new UserError(error.message)
-  return new UserError('Student MCP tool call failed')
+function errorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  return String(error)
+}
+
+function errorCode(message: string): StudentMcpToolErrorCode {
+  if (message === 'Missing authenticated participant session') {
+    return 'UNAUTHENTICATED'
+  }
+  if (/questionRef has expired/i.test(message)) {
+    return 'QUESTION_REF_EXPIRED'
+  }
+  if (/Invalid questionRef|questionRef signature/i.test(message)) {
+    return 'QUESTION_REF_INVALID'
+  }
+  if (
+    /no longer eligible|no longer matches|does not match request context/i.test(
+      message
+    )
+  ) {
+    return 'QUESTION_REF_STALE'
+  }
+  if (
+    /Submission must answer|Duplicate response|Response type mismatch/i.test(
+      message
+    )
+  ) {
+    return 'SUBMISSION_INVALID'
+  }
+  if (/No practice pool is available/i.test(message)) {
+    return 'PRACTICE_POOL_UNAVAILABLE'
+  }
+  return 'UNKNOWN'
+}
+
+function safeToolError(error: unknown): StudentMcpToolErrorOutput {
+  const message = errorMessage(error)
+  const code = errorCode(message)
+
+  return {
+    error: {
+      code,
+      message:
+        code === 'UNKNOWN' ? 'Student practice tool call failed' : message,
+    },
+  }
 }
 
 async function runTool(
@@ -77,7 +121,7 @@ async function runTool(
   try {
     return json(await execute(requireSession(session)))
   } catch (error) {
-    throw toUserError(error)
+    return json(safeToolError(error))
   }
 }
 

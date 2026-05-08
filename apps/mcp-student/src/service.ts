@@ -16,6 +16,7 @@ import {
 } from './practice.js'
 import {
   createQuestionRefSync,
+  getQuestionRefExpiresAt,
   verifyQuestionRef,
   type QuestionRefCodecOptions,
 } from './questionRef.js'
@@ -55,6 +56,7 @@ export type GetPracticeStackForQuizInput = {
 export type GetPracticeStackForQuizOutput = {
   chatbotId: string
   courseId: string
+  expiresAt: string
   questionRef: string
   stack: SafeStackRenderPayload
 }
@@ -98,6 +100,7 @@ export class StudentPracticeService {
         courseId: input.courseId,
         createQuestionRef: (payload) =>
           createQuestionRefSync(payload, this.questionRefOptions),
+        getQuestionRefExpiresAt,
         limit,
         participantId: session.participantId,
         practiceQuiz,
@@ -118,6 +121,7 @@ export class StudentPracticeService {
     return {
       chatbotId: ref.chatbotId,
       courseId: ref.courseId,
+      expiresAt: getQuestionRefExpiresAt(input.questionRef),
       questionRef: input.questionRef,
       stack: toSafeStackRenderPayload(stack),
     }

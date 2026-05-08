@@ -4,6 +4,7 @@ import type {
   StudentMcpCandidate as PracticeCandidate,
   StudentMcpStackResponseInput as StackResponseInput,
   StudentMcpSubmitPracticeStackAnswerOutput as SubmitPracticeStackAnswerOutput,
+  StudentMcpToolErrorCode as ToolErrorCode,
 } from '@klicker-uzh/types'
 import { createMCPClient, type MCPServerConfig } from './mcpClients'
 
@@ -44,6 +45,37 @@ type ExecutableMcpTool = {
 type ExecuteWithTools<T> = (
   tools: Record<string, ExecutableMcpTool>
 ) => Promise<T>
+
+export class StudentPracticeMcpToolError extends Error {
+  constructor(
+    readonly code: ToolErrorCode,
+    message: string
+  ) {
+    super(message)
+    this.name = 'StudentPracticeMcpToolError'
+  }
+}
+
+export function statusForStudentPracticeMcpError(
+  error: StudentPracticeMcpToolError
+): number {
+  switch (error.code) {
+    case 'QUESTION_REF_EXPIRED':
+    case 'QUESTION_REF_STALE':
+      return 410
+    case 'QUESTION_REF_INVALID':
+    case 'SUBMISSION_INVALID':
+      return 400
+    case 'PRACTICE_POOL_UNAVAILABLE':
+      return 404
+    case 'UNAUTHENTICATED':
+      return 401
+    case 'UNKNOWN':
+      return 500
+    default:
+      return 500
+  }
+}
 
 export function getStudentPracticeMcpUrl(
   env: NodeJS.ProcessEnv = process.env
@@ -90,7 +122,7 @@ export function buildPracticeLookupContext(
 
 export function parseMcpJsonToolResult<T = unknown>(result: unknown): T {
   if (typeof result === 'string') {
-    return JSON.parse(result) as T
+    return parseMcpJsonText<T>(result)
   }
 
   if (result && typeof result === 'object') {
@@ -109,16 +141,54 @@ export function parseMcpJsonToolResult<T = unknown>(result: unknown): T {
       }) as { text: string } | undefined
 
       if (textContent) {
-        return JSON.parse(textContent.text) as T
+        return parseMcpJsonText<T>(textContent.text)
       }
 
       throw new Error('MCP tool result did not contain JSON text content')
+    }
+
+    if (isToolErrorOutput(result)) {
+      throw new StudentPracticeMcpToolError(
+        result.error.code,
+        result.error.message
+      )
     }
 
     return result as T
   }
 
   throw new Error('MCP tool result did not contain JSON text content')
+}
+
+function parseMcpJsonText<T>(text: string): T {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(text)
+  } catch {
+    throw new StudentPracticeMcpToolError(
+      'UNKNOWN',
+      text.trim() || 'Student practice MCP returned a non-JSON response'
+    )
+  }
+
+  if (isToolErrorOutput(parsed)) {
+    throw new StudentPracticeMcpToolError(
+      parsed.error.code,
+      parsed.error.message
+    )
+  }
+
+  return parsed as T
+}
+
+function isToolErrorOutput(
+  value: unknown
+): value is { error: { code: ToolErrorCode; message: string } } {
+  if (!value || typeof value !== 'object') return false
+  const error = (value as { error?: unknown }).error
+  if (!error || typeof error !== 'object') return false
+  const record = error as Record<string, unknown>
+  return typeof record.code === 'string' && typeof record.message === 'string'
 }
 
 export function formatPracticeCandidatesForPrompt(

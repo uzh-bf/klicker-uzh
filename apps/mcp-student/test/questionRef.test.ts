@@ -1,6 +1,10 @@
 import type { StudentMcpQuestionRefPayload as QuestionRefPayload } from '@klicker-uzh/types'
 import { describe, expect, it } from 'vitest'
-import { createQuestionRefSync, verifyQuestionRef } from '../src/questionRef.js'
+import {
+  createQuestionRefSync,
+  getQuestionRefExpiresAt,
+  verifyQuestionRef,
+} from '../src/questionRef.js'
 
 const payload: QuestionRefPayload = {
   participantId: 'participant-1',
@@ -28,6 +32,17 @@ describe('question refs', () => {
         { secret: 'test-secret' }
       )
     ).resolves.toEqual(payload)
+  })
+
+  it('exposes the expiry timestamp for UI archival state', () => {
+    const token = createQuestionRefSync(payload, {
+      secret: 'test-secret',
+      ttlSeconds: 60,
+    })
+
+    expect(Date.parse(getQuestionRefExpiresAt(token))).toBeGreaterThan(
+      Date.now()
+    )
   })
 
   it('rejects refs for a different chatbot context', async () => {

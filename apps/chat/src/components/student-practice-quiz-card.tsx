@@ -28,6 +28,7 @@ import type {
 
 type PracticeQuizToolResult = GetPracticeStackForQuizOutput & {
   kind: 'student-practice-quiz'
+  expiresAt?: string
 }
 
 const EMPTY_STACK = {
@@ -81,6 +82,24 @@ function getEvaluations(submission: unknown): InstanceEvaluation[] {
   const grading = getGradingPayload(submission)
   if (!Array.isArray(grading?.evaluations)) return []
   return grading.evaluations.filter(Boolean) as InstanceEvaluation[]
+}
+
+function isPracticeQuizExpired(
+  quiz: PracticeQuizToolResult,
+  nowMs: number
+): boolean {
+  if (!quiz.expiresAt) return true
+  const expiresAtMs = Date.parse(quiz.expiresAt)
+  return !Number.isFinite(expiresAtMs) || expiresAtMs <= nowMs
+}
+
+function isExpiredSubmission(payload: unknown, status: number): boolean {
+  if (status === 410) return true
+  const record = asRecord(payload)
+  return (
+    record?.code === 'QUESTION_REF_EXPIRED' ||
+    record?.code === 'QUESTION_REF_STALE'
+  )
 }
 
 function createStackStorage(
@@ -190,7 +209,10 @@ export function StudentPracticeQuizCard({
     StackStudentResponseType | undefined
   >(undefined)
   const [error, setError] = useState<string | null>(null)
+  const [isArchivedByServer, setIsArchivedByServer] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [nowMs, setNowMs] = useState(() => Date.now())
+  const [showArchivedQuestion, setShowArchivedQuestion] = useState(false)
 
   useStudentResponse({
     currentStep: 1,
@@ -202,8 +224,25 @@ export function StudentPracticeQuizCard({
     startedAtMs.current = Date.now()
     setActiveElementIx(0)
     setError(null)
+    setIsArchivedByServer(false)
     setStackStorage(undefined)
+    setShowArchivedQuestion(false)
+    setNowMs(Date.now())
   }, [quiz?.questionRef])
+
+  useEffect(() => {
+    if (!quiz?.expiresAt) return
+
+    const expiresAtMs = Date.parse(quiz.expiresAt)
+    if (!Number.isFinite(expiresAtMs)) return
+
+    const timer = window.setTimeout(
+      () => setNowMs(Date.now()),
+      Math.max(0, expiresAtMs - Date.now() + 1000)
+    )
+
+    return () => window.clearTimeout(timer)
+  }, [quiz?.expiresAt])
 
   if (status.type === 'running' && !quiz) {
     return (
@@ -225,6 +264,8 @@ export function StudentPracticeQuizCard({
 
   const activeQuiz = quiz
   const chatbotId = params.chatbotId
+  const isArchived =
+    isArchivedByServer || isPracticeQuizExpired(activeQuiz, nowMs)
   const elements = (stack.elements ?? []) as ElementInstance[]
   const elementCount = elements.length
   const displayedElementIx = Math.min(activeElementIx, elementCount - 1)
@@ -236,12 +277,15 @@ export function StudentPracticeQuizCard({
   const allResponsesValid = elements.every(
     (element) => studentResponse[element.id]?.valid === true
   )
-  const canMoveForward = isSubmitted || activeResponse?.valid === true
+  const canMoveForward =
+    isSubmitted || isArchived || activeResponse?.valid === true
+  const archivedMessage =
+    'This practice question is no longer active. Answers from chat history cannot be submitted; ask for a new practice question to continue.'
 
   async function handleSubmit() {
     setError(null)
 
-    if (isSubmitted) return
+    if (isSubmitted || isArchived) return
 
     if (!chatbotId) {
       setError('Chatbot route is missing.')
@@ -279,6 +323,13 @@ export function StudentPracticeQuizCard({
       )
 
       if (!response.ok) {
+        const payload = await response.json().catch(() => null)
+        if (isExpiredSubmission(payload, response.status)) {
+          setIsArchivedByServer(true)
+          setShowArchivedQuestion(false)
+          return
+        }
+
         throw new Error(
           `Practice submission failed with HTTP ${response.status}`
         )
@@ -295,12 +346,45 @@ export function StudentPracticeQuizCard({
     }
   }
 
+  if (isArchived && !showArchivedQuestion) {
+    return (
+      <div className="my-3 w-full rounded-md border border-slate-200 bg-white p-4 text-slate-950">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="text-xs font-medium uppercase text-slate-500">
+              Archived practice question
+            </div>
+            <h3 className="mt-1 text-base font-semibold leading-6">
+              {activeQuiz.stack.stackTitle}
+            </h3>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+              {archivedMessage}
+            </p>
+          </div>
+          <XCircleIcon className="mt-1 size-5 shrink-0 text-slate-400" />
+        </div>
+        <button
+          className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+          onClick={() => setShowArchivedQuestion(true)}
+          type="button"
+        >
+          Show archived question
+        </button>
+      </div>
+    )
+  }
+
   return (
-    <div className="my-3 w-full rounded-md border border-slate-200 bg-white p-4 text-slate-950 shadow-sm">
+    <div className="my-3 w-full rounded-md border border-slate-200 bg-white p-4 text-slate-950">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <div className="text-xs font-medium uppercase text-slate-500">
-            Practice question
+          <div className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase text-slate-500">
+            <span>Practice question</span>
+            {elementCount > 1 ? (
+              <span>
+                {displayedElementIx + 1}/{elementCount}
+              </span>
+            ) : null}
           </div>
           <h3 className="mt-1 text-base font-semibold leading-6">
             {activeQuiz.stack.stackTitle}
@@ -308,6 +392,10 @@ export function StudentPracticeQuizCard({
         </div>
         {isSubmitted ? (
           <CheckCircle2Icon className="size-5 text-emerald-600" />
+        ) : isArchived ? (
+          <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+            Archived
+          </span>
         ) : null}
       </div>
 
@@ -317,25 +405,25 @@ export function StudentPracticeQuizCard({
         </div>
       ) : null}
 
-      <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-3">
-        {elementCount > 1 ? (
-          <div className="mb-3 text-xs font-medium uppercase text-slate-500">
-            Question {displayedElementIx + 1}/{elementCount}
-          </div>
-        ) : null}
+      {isArchived ? (
+        <p className="mt-3 text-sm leading-6 text-slate-600">
+          {archivedMessage}
+        </p>
+      ) : null}
 
-        {activeElement ? (
+      {activeElement ? (
+        <div className={isArchived ? 'pointer-events-none mt-4' : 'mt-4'}>
           <StudentElement
             compact
-            disabledInput={isSubmitted}
+            disabledInput={isSubmitted || isArchived}
             element={activeElement}
             elementIx={displayedElementIx}
             setStudentResponse={setStudentResponse}
             stackStorage={stackStorage}
             studentResponse={studentResponse}
           />
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       {error ? <p className="mt-3 text-sm text-red-700">{error}</p> : null}
 
@@ -364,7 +452,7 @@ export function StudentPracticeQuizCard({
             Next
             <ChevronRightIcon className="size-4" />
           </button>
-        ) : (
+        ) : !isArchived ? (
           <button
             className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={isSubmitting || isSubmitted || !allResponsesValid}
@@ -378,7 +466,17 @@ export function StudentPracticeQuizCard({
             )}
             Submit
           </button>
-        )}
+        ) : null}
+
+        {isArchived ? (
+          <button
+            className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+            onClick={() => setShowArchivedQuestion(false)}
+            type="button"
+          >
+            Collapse
+          </button>
+        ) : null}
       </div>
     </div>
   )

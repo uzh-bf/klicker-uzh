@@ -4,6 +4,7 @@ import {
   formatPracticeCandidatesForPrompt,
   getStudentPracticeMcpUrl,
   parseMcpJsonToolResult,
+  StudentPracticeMcpToolError,
   toPracticeCandidateId,
 } from '../src/services/studentPracticeMcp'
 
@@ -47,10 +48,24 @@ describe('student practice MCP adapter', () => {
     })
   })
 
+  test('turns structured MCP tool errors into typed errors', () => {
+    expect(() =>
+      parseMcpJsonToolResult({
+        content: [
+          {
+            type: 'text',
+            text: '{"error":{"code":"QUESTION_REF_EXPIRED","message":"questionRef has expired"}}',
+          },
+        ],
+      })
+    ).toThrow(StudentPracticeMcpToolError)
+  })
+
   test('formats compact candidate context for the tutor model', () => {
     const prompt = formatPracticeCandidatesForPrompt([
       {
         questionRef: 'signed-ref',
+        questionRefExpiresAt: '2026-05-08T18:00:00.000Z',
         stackTitle: 'Posterior update',
         sourcePracticeQuizTitle: 'Week 2 practice',
         courseId: 'course-1',

@@ -18,6 +18,7 @@ export type RankPracticeStacksInput = {
   query: string
   limit: number
   createQuestionRef: (payload: QuestionRefPayload) => string
+  getQuestionRefExpiresAt: (questionRef: string) => string
 }
 
 const SUPPORTED_TYPE_SET = new Set<string>(STUDENT_MCP_SUPPORTED_ELEMENT_TYPES)
@@ -172,6 +173,7 @@ export function rankPracticeStacks({
   query,
   limit,
   createQuestionRef,
+  getQuestionRefExpiresAt,
 }: RankPracticeStacksInput): Candidate[] {
   const queryTokens = new Set(tokenize(query))
 
@@ -185,15 +187,18 @@ export function rankPracticeStacks({
       const supportedElementTypes = toSupportedElementTypes(stack)
       const srsScore = Number((1 / (index + 1)).toFixed(4))
 
+      const questionRef = createQuestionRef(
+        toQuestionRefPayload({
+          participantId,
+          chatbotId,
+          courseId,
+          stack,
+        })
+      )
+
       return {
-        questionRef: createQuestionRef(
-          toQuestionRefPayload({
-            participantId,
-            chatbotId,
-            courseId,
-            stack,
-          })
-        ),
+        questionRef,
+        questionRefExpiresAt: getQuestionRefExpiresAt(questionRef),
         stackTitle: stackTitle(stack),
         sourcePracticeQuizTitle: practiceQuiz.displayName,
         courseId,

@@ -49,6 +49,7 @@ export type StudentMcpPracticeQuiz = {
 
 export type StudentMcpCandidate = {
   questionRef: string
+  questionRefExpiresAt: string
   stackTitle: string
   sourcePracticeQuizTitle: string
   courseId: string
@@ -119,6 +120,7 @@ export type StudentMcpGetPracticeStackForQuizInput = {
 export type StudentMcpGetPracticeStackForQuizOutput = {
   chatbotId: string
   courseId: string
+  expiresAt: string
   questionRef: string
   stack: StudentMcpSafeStackRenderPayload
 }
@@ -134,4 +136,20 @@ export type StudentMcpSubmitPracticeStackAnswerOutput = {
   courseId: string
   result: unknown
   stackId: number
+}
+
+export type StudentMcpToolErrorCode =
+  | 'QUESTION_REF_EXPIRED'
+  | 'QUESTION_REF_INVALID'
+  | 'QUESTION_REF_STALE'
+  | 'SUBMISSION_INVALID'
+  | 'PRACTICE_POOL_UNAVAILABLE'
+  | 'UNAUTHENTICATED'
+  | 'UNKNOWN'
+
+export type StudentMcpToolErrorOutput = {
+  error: {
+    code: StudentMcpToolErrorCode
+    message: string
+  }
 }
