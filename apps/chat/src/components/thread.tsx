@@ -181,7 +181,7 @@ const AssistantReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
 
   // insert a paragraph break before any title (**Title**\n)
   const normalizedText = text?.replace(
-    /([^\n])(\s*\*\*[^*\n]+\*\*\n)/g,
+    /([^\n])(\*\*[^*\n]+\*\*\n)/g,
     '$1\n\n$2'
   )
 
