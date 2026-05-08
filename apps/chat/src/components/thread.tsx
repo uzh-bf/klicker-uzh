@@ -210,7 +210,6 @@ const AssistantReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
         <div className="text-muted-foreground mb-2 border-l-2 border-slate-200 pl-3 text-sm">
           <Markdown
             content={normalizeCustomMathTags(normalizedText)}
-            withProse
             singleDollarTextMath
           />
         </div>
