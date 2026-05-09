@@ -51,7 +51,7 @@
   },
   "scripts": {
     "build": "next build",
-    "build:test": "cross-env NODE_ENV=test next build --webpack",
+    "build:test": "cross-env NODE_ENV=test next build",
     "check": "tsc --noEmit",
     "dev": "next dev --port 3010",
     "dev:assessment": "pnpm run dev",
