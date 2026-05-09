@@ -5,29 +5,9 @@ function getNextBaseConfig({
   NEXT_PUBLIC_ENV,
 }) {
   const isStaging = process.env.NEXT_PUBLIC_ENV === 'staging'
-  const isProduction = process.env.NEXT_PUBLIC_ENV === 'production'
 
   return {
-    // not supported with turbopack -> do we need it?
-    // experimental: {
-    //   esmExternals: 'loose',
-    // },
     productionBrowserSourceMaps: isStaging,
-    webpack: (config, { isServer }) => {
-      if (!isServer && isStaging) {
-        config.devtool = 'cheap-module-source-map'
-      }
-      // Configure webpack to resolve conditional exports correctly
-      if (isServer) {
-        // For server builds: prioritize 'node' condition for packages like file-type
-        // that have Node.js-specific exports (e.g., PayloadCMS's file-type dependency)
-        config.resolve.conditionNames = ['node', 'development', '...']
-      } else {
-        // For client builds: use standard conditions plus 'development' for local packages
-        config.resolve.conditionNames = ['development', '...']
-      }
-      return config
-    },
     compress: true,
     output: NODE_ENV !== 'test' ? 'standalone' : undefined,
     reactStrictMode: true,
@@ -38,9 +18,6 @@ function getNextBaseConfig({
       '@klicker-uzh/prisma',
       '@uzh-bf/design-system',
     ],
-    eslint: {
-      ignoreDuringBuilds: true,
-    },
     typescript: {
       ignoreBuildErrors: true,
     },
@@ -54,13 +31,6 @@ function getNextBaseConfig({
       },
     },
     images: {
-      domains: [
-        '127.0.0.1',
-        'tc-klicker-prod.s3.amazonaws.com',
-        'klickeruzhdevimages.blob.core.windows.net',
-        'klickeruzhprodimages.blob.core.windows.net',
-        BLOB_STORAGE_ACCOUNT_URL ?? null,
-      ].filter(Boolean),
       remotePatterns: [
         {
           protocol: 'https',
@@ -80,7 +50,6 @@ function getNextBaseConfig({
           port: '443',
           pathname: '/**',
         },
-        ,
         BLOB_STORAGE_ACCOUNT_URL
           ? {
               protocol: 'https',
