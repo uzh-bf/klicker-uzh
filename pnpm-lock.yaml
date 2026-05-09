@@ -1430,6 +1430,9 @@ importers:
 
   apps/mcp-student:
     dependencies:
+      '@apollo/client':
+        specifier: 3.13.8
+        version: 3.13.8(@types/react@19.1.12)(graphql-ws@5.16.0(graphql@16.11.0))(graphql@16.11.0)(react-dom@19.1.2(react@19.1.2))(react@19.1.2)
       '@klicker-uzh/graphql':
         specifier: workspace:*
         version: link:../../packages/graphql
@@ -1442,6 +1445,9 @@ importers:
       fastmcp:
         specifier: 3.15.2
         version: 3.15.2(effect@3.17.9)
+      graphql:
+        specifier: 16.11.0
+        version: 16.11.0
       zod:
         specifier: 3.25.76
         version: 3.25.76

@@ -1,21 +1,29 @@
+import {
+  ApolloClient,
+  HttpLink,
+  InMemoryCache,
+  from,
+  type NormalizedCacheObject,
+  type OperationVariables,
+  type TypedDocumentNode,
+} from '@apollo/client/core'
+import { createPersistedQueryLink } from '@apollo/client/link/persisted-queries'
 import hashes from '@klicker-uzh/graphql/dist/client.json'
-import type {
-  GetCoursePracticeQuizWithoutSolutionsQuery,
-  GetCoursePracticeQuizWithoutSolutionsQueryVariables,
-  RespondToElementStackMutation,
-  RespondToElementStackMutationVariables,
+import {
+  GetCoursePracticeQuizWithoutSolutionsDocument,
+  RespondToElementStackDocument,
+  type GetCoursePracticeQuizWithoutSolutionsQuery,
+  type GetCoursePracticeQuizWithoutSolutionsQueryVariables,
+  type RespondToElementStackMutation,
+  type RespondToElementStackMutationVariables,
 } from '@klicker-uzh/graphql/dist/ops.js'
 import type {
   StudentMcpPracticeQuiz as PracticeQuiz,
   StudentMcpStackResponseInput as StackResponseInput,
 } from '@klicker-uzh/types'
+import type { DocumentNode, OperationDefinitionNode } from 'graphql'
 
 const PERSISTED_OPERATION_HASHES = hashes as Record<string, string>
-
-type GraphQLResponse<T> = {
-  data?: T
-  errors?: Array<{ message?: string }>
-}
 
 export type SubmitStackAnswerInput = {
   courseId: string
@@ -32,70 +40,127 @@ function operationHash(operationName: string): string {
   return hash
 }
 
-export class PersistedGraphQLClient {
-  constructor(
-    private readonly endpoint: string,
-    private readonly fetchImpl: typeof fetch = fetch
-  ) {}
+function documentOperationName(document: DocumentNode): string {
+  const definition = document.definitions.find(
+    (value): value is OperationDefinitionNode =>
+      value.kind === 'OperationDefinition'
+  )
 
-  async execute<TData, TVariables extends Record<string, unknown>>(
-    operationName: string,
+  if (!definition?.name?.value) {
+    throw new Error('GraphQL document is missing an operation name')
+  }
+
+  return definition.name.value
+}
+
+export class PersistedGraphQLClient {
+  private readonly client: ApolloClient<NormalizedCacheObject>
+
+  constructor(endpoint: string, fetchImpl: typeof fetch = fetch) {
+    this.client = new ApolloClient({
+      cache: new InMemoryCache(),
+      link: from([
+        createPersistedQueryLink({
+          generateHash: (document) =>
+            operationHash(documentOperationName(document)),
+          retry: () => false,
+        }),
+        new HttpLink({
+          fetch: fetchImpl,
+          headers: {
+            Accept: 'application/json',
+            'x-graphql-yoga-csrf': 'true',
+          },
+          uri: endpoint,
+        }),
+      ]),
+    })
+  }
+
+  private authContext(bearerToken: string) {
+    return {
+      headers: {
+        Authorization: `Bearer ${bearerToken}`,
+      },
+    }
+  }
+
+  private async query<
+    TData,
+    TVariables extends OperationVariables = OperationVariables,
+  >(
+    query: TypedDocumentNode<TData, TVariables>,
     variables: TVariables,
     bearerToken: string
   ): Promise<TData> {
-    const response = await this.fetchImpl(this.endpoint, {
-      body: JSON.stringify({
-        operationName,
+    const operationName = documentOperationName(query)
+    const result = await this.withOperationError(
+      operationName,
+      this.client.query<TData, TVariables>({
+        context: this.authContext(bearerToken),
+        fetchPolicy: 'no-cache',
+        query,
         variables,
-        extensions: {
-          persistedQuery: {
-            version: 1,
-            sha256Hash: operationHash(operationName),
-          },
-        },
-      }),
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${bearerToken}`,
-        'Content-Type': 'application/json',
-        'x-graphql-yoga-csrf': 'true',
-      },
-      method: 'POST',
-    })
+      })
+    )
 
-    if (!response.ok) {
-      const body = await response.text().catch(() => '')
-      const details = body ? `: ${body.slice(0, 500)}` : ''
-      throw new Error(
-        `GraphQL ${operationName} failed with HTTP ${response.status}${details}`
-      )
+    return this.requireData(operationName, result)
+  }
+
+  private async mutate<
+    TData,
+    TVariables extends OperationVariables = OperationVariables,
+  >(
+    mutation: TypedDocumentNode<TData, TVariables>,
+    variables: TVariables,
+    bearerToken: string
+  ): Promise<TData> {
+    const operationName = documentOperationName(mutation)
+    const result = await this.withOperationError(
+      operationName,
+      this.client.mutate<TData, TVariables>({
+        context: this.authContext(bearerToken),
+        fetchPolicy: 'no-cache',
+        mutation,
+        variables,
+      })
+    )
+
+    return this.requireData(operationName, result)
+  }
+
+  private async withOperationError<T>(
+    operationName: string,
+    operation: Promise<T>
+  ): Promise<T> {
+    try {
+      return await operation
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      throw new Error(`GraphQL ${operationName} failed: ${message}`)
     }
+  }
 
-    const payload = (await response.json()) as GraphQLResponse<TData>
-    if (payload.errors?.length) {
-      throw new Error(
-        payload.errors
-          .map((error) => error.message ?? 'Unknown GraphQL error')
-          .join('; ')
-      )
-    }
-
-    if (!payload.data) {
+  private requireData<TData>(
+    operationName: string,
+    result: { data?: TData | null }
+  ): TData {
+    if (!result.data) {
       throw new Error(`GraphQL ${operationName} returned no data`)
     }
 
-    return payload.data
+    return result.data
   }
 
   async getCoursePracticeQuiz(
     input: { chatbotId: string; courseId: string },
     bearerToken: string
   ): Promise<PracticeQuiz | null> {
-    const data = await this.execute<
+    const data = await this.query<
       GetCoursePracticeQuizWithoutSolutionsQuery,
       GetCoursePracticeQuizWithoutSolutionsQueryVariables
     >(
-      'GetCoursePracticeQuizWithoutSolutions',
+      GetCoursePracticeQuizWithoutSolutionsDocument,
       {
         chatbotId: input.chatbotId,
         courseId: input.courseId,
@@ -113,11 +178,11 @@ export class PersistedGraphQLClient {
     input: SubmitStackAnswerInput,
     bearerToken: string
   ): Promise<unknown> {
-    const data = await this.execute<
+    const data = await this.mutate<
       RespondToElementStackMutation,
       RespondToElementStackMutationVariables
     >(
-      'RespondToElementStack',
+      RespondToElementStackDocument,
       {
         courseId: input.courseId,
         isOwner: false,

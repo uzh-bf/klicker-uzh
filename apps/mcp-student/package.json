@@ -6,10 +6,12 @@
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "dependencies": {
+    "@apollo/client": "3.13.8",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
     "fastmcp": "3.15.2",
+    "graphql": "16.11.0",
     "zod": "3.25.76"
   },
   "devDependencies": {
