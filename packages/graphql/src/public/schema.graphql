@@ -2419,6 +2419,7 @@ type Query {
   studentAssessmentResults(courseId: String!): StudentAssessmentResults
   studentCourseResults(courseId: String!, participantId: String!): [ActivityStudentPerformance!]
   studentLiveQuiz(id: String!): LiveQuiz
+  studentMcpCoursePracticeQuiz(chatbotId: String!, courseId: String!): PracticeQuiz
   unassignedLiveQuizzes: [LiveQuiz!]
   userActivities(activityTypeFilter: ActivityType, courseId: String, isAssessmentEnabled: Boolean, isGamificationEnabled: Boolean, isPinProtected: Boolean, multiplier: Int, numEntries: Int, offset: Int, reviewStatus: ReviewStatus, searchString: String, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, sortByAsc: Boolean!, sortByType: SortByType!, statusFilter: [PublicationStatus!], withoutCourse: Boolean): UserActivityList
   userCourses: [Course!]
@@ -2453,6 +2454,7 @@ enum ReasoningEffort {
   medium
   minimal
   none
+  xhigh
 }
 
 type ReducedActivityInfo {
