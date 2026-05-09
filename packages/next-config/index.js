@@ -8,6 +8,18 @@ function getNextBaseConfig({
 
   return {
     productionBrowserSourceMaps: isStaging,
+    webpack: (config, { isServer }) => {
+      // Needed for webpack server builds to resolve conditional exports correctly
+      // (e.g. embla-carousel-react from @uzh-bf/design-system). Without this,
+      // the server bundle resolves the browser variant and fails with
+      // "useEmblaCarousel is not defined" during page data collection.
+      if (isServer) {
+        config.resolve.conditionNames = ['node', 'development', '...']
+      } else {
+        config.resolve.conditionNames = ['development', '...']
+      }
+      return config
+    },
     compress: true,
     output: NODE_ENV !== 'test' ? 'standalone' : undefined,
     reactStrictMode: true,
