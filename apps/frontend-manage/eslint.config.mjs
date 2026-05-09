@@ -16,13 +16,4 @@ const newReactHooksRulesAsWarn = {
   'react-hooks/set-state-in-render': 'warn',
 }
 
-export default [
-  ...coreWebVitals,
-  { rules: newReactHooksRulesAsWarn },
-  {
-    files: ['**/*.ts', '**/*.tsx'],
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-    },
-  },
-]
+export default [...coreWebVitals, { rules: newReactHooksRulesAsWarn }]
