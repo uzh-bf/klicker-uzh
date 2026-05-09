@@ -4267,7 +4267,8 @@ export enum ReasoningEffort {
   Low = 'low',
   Medium = 'medium',
   Minimal = 'minimal',
-  None = 'none'
+  None = 'none',
+  Xhigh = 'xhigh'
 }
 
 export type ReducedActivityInfo = {

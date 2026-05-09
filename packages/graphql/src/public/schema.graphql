@@ -2454,6 +2454,7 @@ enum ReasoningEffort {
   medium
   minimal
   none
+  xhigh
 }
 
 type ReducedActivityInfo {

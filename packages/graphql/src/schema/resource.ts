@@ -94,18 +94,28 @@ export const CreditResetPeriod = builder.enumType('CreditResetPeriod', {
   values: Object.values(DB.CreditResetPeriod),
 })
 
+const REASONING_EFFORT_VALUES = [
+  'none',
+  'minimal',
+  'low',
+  'medium',
+  'high',
+  'xhigh',
+] as const
+type ReasoningEffortValue = (typeof REASONING_EFFORT_VALUES)[number]
+
 export const ReasoningEffort = builder.enumType('ReasoningEffort', {
-  values: ['none', 'minimal', 'low', 'medium', 'high'] as const,
+  values: REASONING_EFFORT_VALUES,
 })
 
 export interface IChatbotReasoningConfig {
   modelId: string
-  efforts: Array<'none' | 'minimal' | 'low' | 'medium' | 'high'>
+  efforts: ReasoningEffortValue[]
 }
 
 export type ChatbotReasoningConfigInputType = {
   modelId: string
-  efforts: Array<'none' | 'minimal' | 'low' | 'medium' | 'high'>
+  efforts: ReasoningEffortValue[]
 }
 
 export const ChatbotReasoningConfigInputRef =
@@ -138,9 +148,7 @@ export interface IChatModelCapability {
   description: string
   fallback: boolean
   supportsReasoning: boolean
-  supportedReasoningEfforts: Array<
-    'none' | 'minimal' | 'low' | 'medium' | 'high'
-  >
+  supportedReasoningEfforts: ReasoningEffortValue[]
 }
 
 export const ChatModelCapabilityRef = builder.objectRef<IChatModelCapability>(

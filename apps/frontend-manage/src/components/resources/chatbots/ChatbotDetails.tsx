@@ -32,6 +32,7 @@ const REASONING_EFFORT_ORDER: ReasoningEffort[] = [
   ReasoningEffort.Low,
   ReasoningEffort.Medium,
   ReasoningEffort.High,
+  ReasoningEffort.Xhigh,
 ]
 
 const normalizeReasoningEfforts = (

@@ -63,12 +63,19 @@ export type ChatModelConfig = Omit<
   supportedReasoningEfforts: ReasoningEffort[]
 }
 
-const ALL_REASONING_EFFORTS: ReasoningEffort[] = [
+const BASE_REASONING_EFFORTS: ReasoningEffort[] = [
   'none',
   'minimal',
   'low',
   'medium',
   'high',
+]
+const FRONTIER_REASONING_EFFORTS: ReasoningEffort[] = [
+  'none',
+  'low',
+  'medium',
+  'high',
+  'xhigh',
 ]
 const GPT5_REASONING_EFFORTS: ReasoningEffort[] = [
   'minimal',
@@ -92,13 +99,19 @@ function getDefaultReasoningEffortsForModel(
   modelId: string
 ): ReasoningEffort[] {
   const normalizedId = modelId.toLowerCase()
+  if (
+    normalizedId.startsWith('gpt-5.5') ||
+    normalizedId.startsWith('gpt-5.4')
+  ) {
+    return [...FRONTIER_REASONING_EFFORTS]
+  }
   if (normalizedId.startsWith('gpt-5.1')) {
-    return [...ALL_REASONING_EFFORTS]
+    return [...BASE_REASONING_EFFORTS]
   }
   if (normalizedId.startsWith('gpt-5')) {
     return [...GPT5_REASONING_EFFORTS]
   }
-  return [...ALL_REASONING_EFFORTS]
+  return [...BASE_REASONING_EFFORTS]
 }
 
 function normalizeChatModelConfig(model: RawChatModelConfig): ChatModelConfig {
@@ -129,15 +142,28 @@ function parseRegistryValue(value: unknown): ChatModelConfig[] {
 
 const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
   {
-    id: 'gpt-4.1',
-    deploymentId: 'gpt-4.1',
-    name: 'GPT-4.1',
-    description: 'OpenAI model',
+    id: 'gpt-5.5',
+    deploymentId: 'gpt-5.5',
+    name: 'GPT-5.5',
+    description: 'OpenAI frontier reasoning model',
     fallback: false,
-    supportsReasoning: false,
+    supportsReasoning: true,
     supportsImageAttachments: true,
-    supportedReasoningEfforts: [],
-    cost: { input: 2.0, output: 8.0 },
+    supportedReasoningEfforts: [...FRONTIER_REASONING_EFFORTS],
+    maxOutputTokens: 2048,
+    cost: { input: 5.0, output: 30.0 },
+  },
+  {
+    id: 'gpt-5.4',
+    deploymentId: 'gpt-5.4',
+    name: 'GPT-5.4',
+    description: 'OpenAI frontier reasoning model',
+    fallback: false,
+    supportsReasoning: true,
+    supportsImageAttachments: true,
+    supportedReasoningEfforts: [...FRONTIER_REASONING_EFFORTS],
+    maxOutputTokens: 2048,
+    cost: { input: 2.5, output: 15.0 },
   },
   {
     id: 'gpt-5.1',
@@ -147,9 +173,20 @@ const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     fallback: false,
     supportsReasoning: true,
     supportsImageAttachments: true,
-    supportedReasoningEfforts: [...ALL_REASONING_EFFORTS],
+    supportedReasoningEfforts: [...BASE_REASONING_EFFORTS],
     maxOutputTokens: 2048,
     cost: { input: 1.25, output: 10.0 },
+  },
+  {
+    id: 'gpt-4.1',
+    deploymentId: 'gpt-4.1',
+    name: 'GPT-4.1',
+    description: 'OpenAI model',
+    fallback: false,
+    supportsReasoning: false,
+    supportsImageAttachments: true,
+    supportedReasoningEfforts: [],
+    cost: { input: 2.0, output: 8.0 },
   },
   {
     id: 'gpt-4.1-mini',

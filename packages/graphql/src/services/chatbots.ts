@@ -8,6 +8,7 @@ const REASONING_EFFORT_OPTIONS = [
   'low',
   'medium',
   'high',
+  'xhigh',
 ] as const
 type ReasoningEffort = (typeof REASONING_EFFORT_OPTIONS)[number]
 
@@ -41,12 +42,19 @@ type ChatbotReasoningConfigEntry = {
   efforts: ReasoningEffort[]
 }
 
-const ALL_REASONING_EFFORTS: ReasoningEffort[] = [
+const BASE_REASONING_EFFORTS: ReasoningEffort[] = [
   'none',
   'minimal',
   'low',
   'medium',
   'high',
+]
+const FRONTIER_REASONING_EFFORTS: ReasoningEffort[] = [
+  'none',
+  'low',
+  'medium',
+  'high',
+  'xhigh',
 ]
 const GPT5_REASONING_EFFORTS: ReasoningEffort[] = [
   'minimal',
@@ -57,6 +65,42 @@ const GPT5_REASONING_EFFORTS: ReasoningEffort[] = [
 
 const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
   {
+    id: 'gpt-5.5',
+    deploymentId: 'gpt-5.5',
+    name: 'GPT-5.5',
+    description: 'OpenAI frontier reasoning model',
+    fallback: false,
+    supportsReasoning: true,
+    supportedReasoningEfforts: [...FRONTIER_REASONING_EFFORTS],
+    maxOutputTokens: 2048,
+    apiVersion: 'preview',
+    cost: { input: 5.0, output: 30.0 },
+  },
+  {
+    id: 'gpt-5.4',
+    deploymentId: 'gpt-5.4',
+    name: 'GPT-5.4',
+    description: 'OpenAI frontier reasoning model',
+    fallback: false,
+    supportsReasoning: true,
+    supportedReasoningEfforts: [...FRONTIER_REASONING_EFFORTS],
+    maxOutputTokens: 2048,
+    apiVersion: 'preview',
+    cost: { input: 2.5, output: 15.0 },
+  },
+  {
+    id: 'gpt-5.1',
+    deploymentId: 'gpt-5.1',
+    name: 'GPT-5.1',
+    description: 'OpenAI reasoning model',
+    fallback: false,
+    supportsReasoning: true,
+    supportedReasoningEfforts: [...BASE_REASONING_EFFORTS],
+    maxOutputTokens: 2048,
+    apiVersion: 'preview',
+    cost: { input: 1.25, output: 10.0 },
+  },
+  {
     id: 'gpt-4.1',
     deploymentId: 'gpt-4.1',
     name: 'GPT-4.1',
@@ -66,18 +110,6 @@ const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
     supportedReasoningEfforts: [],
     apiVersion: 'preview',
     cost: { input: 2.0, output: 8.0 },
-  },
-  {
-    id: 'gpt-5.1',
-    deploymentId: 'gpt-5.1',
-    name: 'GPT-5.1',
-    description: 'OpenAI reasoning model',
-    fallback: false,
-    supportsReasoning: true,
-    supportedReasoningEfforts: [...ALL_REASONING_EFFORTS],
-    maxOutputTokens: 2048,
-    apiVersion: 'preview',
-    cost: { input: 1.25, output: 10.0 },
   },
   {
     id: 'gpt-4.1-mini',
@@ -114,13 +146,19 @@ function getDefaultReasoningEffortsForModel(
   modelId: string
 ): ReasoningEffort[] {
   const normalizedId = modelId.toLowerCase()
+  if (
+    normalizedId.startsWith('gpt-5.5') ||
+    normalizedId.startsWith('gpt-5.4')
+  ) {
+    return [...FRONTIER_REASONING_EFFORTS]
+  }
   if (normalizedId.startsWith('gpt-5.1')) {
-    return [...ALL_REASONING_EFFORTS]
+    return [...BASE_REASONING_EFFORTS]
   }
   if (normalizedId.startsWith('gpt-5')) {
     return [...GPT5_REASONING_EFFORTS]
   }
-  return [...ALL_REASONING_EFFORTS]
+  return [...BASE_REASONING_EFFORTS]
 }
 
 function normalizeChatModel(model: RawChatModelConfig): ChatModelCapability {
