@@ -319,6 +319,85 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: {{ include "chart.fullname" . }}-frontend-kb
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend-kb
+spec:
+  revisionHistoryLimit: 5
+  {{- with .Values.frontendKb.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if not .Values.frontendKb.autoscaling.enabled }}
+  replicas: {{ .Values.frontendKb.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: frontend-kb
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/cm-frontend-kb.yaml") . | sha256sum }}
+        release: {{ .Chart.AppVersion }}
+      {{- with .Values.frontendKb.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: frontend-kb
+    spec:
+      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.frontendKb.priorityClassName }}
+      {{- with .Values.frontendKb.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.frontendKb.podSecurityContext | nindent 8 }}
+      containers:
+        - name: frontend-kb
+          securityContext:
+            {{- toYaml .Values.frontendKb.securityContext | nindent 12 }}
+          image: "{{ .Values.frontendKb.image.repository }}:{{ .Values.frontendKb.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.frontendKb.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-global
+            - configMapRef:
+                name: {{ include "chart.fullname" . }}-config-frontend-kb
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-frontend-kb
+          livenessProbe:
+            httpGet:
+              path: /login
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: http
+          resources:
+            {{- toYaml .Values.frontendKb.resources | nindent 12 }}
+      {{- with .Values.frontendKb.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.frontendKb.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.frontendKb.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: {{ include "chart.fullname" . }}-backend-graphql
   labels:
     {{- include "chart.labels" . | nindent 4 }}

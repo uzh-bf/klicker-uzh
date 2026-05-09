@@ -416,6 +416,57 @@ frontendManage:
       cpu: 200m
       memory: 200Mi
 
+frontendKb:
+  priorityClassName: staging-workload
+
+  replicaCount: 1
+
+  autoscaling:
+    enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - frontend-kb
+            topologyKey: kubernetes.io/hostname
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/frontend-kb-arm
+    pullPolicy: Always
+    tag: v3
+
+  ingress:
+    className: haproxy
+    annotations:
+      cert-manager.io/cluster-issuer: k8s-crt-mgr-iss-stg-apps-default
+    hosts:
+      - host: kb.klicker.stg.df-app.ch
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: klicker-frontend-kb-tls
+        hosts:
+          - kb.klicker.stg.df-app.ch
+
+  strategy:
+    type: Recreate
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
+
 frontendControl:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
