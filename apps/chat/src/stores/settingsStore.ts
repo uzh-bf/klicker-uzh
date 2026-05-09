@@ -73,7 +73,7 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       // initial state
-      selectedModel: 'gpt-4.1',
+      selectedModel: 'gpt-5.5',
       selectedMode: 'tutor',
       selectedReasoningEffort: 'none',
       credits: {
