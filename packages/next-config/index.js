@@ -4,7 +4,7 @@ function getNextBaseConfig({
   NODE_ENV,
   NEXT_PUBLIC_ENV,
 }) {
-  const isStaging = process.env.NEXT_PUBLIC_ENV === 'staging'
+  const isStaging = NEXT_PUBLIC_ENV === 'staging'
 
   return {
     productionBrowserSourceMaps: isStaging,
