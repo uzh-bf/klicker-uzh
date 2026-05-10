@@ -923,19 +923,38 @@ export async function linkKBChatbot(
   })
   if (!chatbot) throw new Error('Chatbot not found')
 
-  await ctx.prisma.kBChatbot.upsert({
-    where: { kbId_chatbotId: { kbId, chatbotId } },
-    create: {
-      kbId,
-      chatbotId,
-      isEnabled: isEnabled ?? true,
-      priority: priority ?? 0,
-    },
-    update: {
-      isEnabled: isEnabled ?? undefined,
-      priority: priority ?? undefined,
-    },
-  })
+  // Enforce KB_PLAN.md decision #7: max one enabled KB per chatbot. When
+  // enabling this link (default on create, explicit `true` on update), demote
+  // every other enabled link for the same chatbot in the same transaction so
+  // there is never a window with two active KBs.
+  const willEnable = isEnabled !== false
+  await ctx.prisma.$transaction([
+    ...(willEnable
+      ? [
+          ctx.prisma.kBChatbot.updateMany({
+            where: {
+              chatbotId,
+              isEnabled: true,
+              kbId: { not: kbId },
+            },
+            data: { isEnabled: false },
+          }),
+        ]
+      : []),
+    ctx.prisma.kBChatbot.upsert({
+      where: { kbId_chatbotId: { kbId, chatbotId } },
+      create: {
+        kbId,
+        chatbotId,
+        isEnabled: isEnabled ?? true,
+        priority: priority ?? 0,
+      },
+      update: {
+        isEnabled: isEnabled ?? undefined,
+        priority: priority ?? undefined,
+      },
+    }),
+  ])
 
   return await getOwnedKBOrThrow(kbId, ctx)
 }

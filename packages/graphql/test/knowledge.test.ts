@@ -3,7 +3,12 @@ import {
   KBResourceKind,
 } from '@klicker-uzh/prisma/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { deleteKB, getKB, updateKB } from '../src/services/knowledge.js'
+import {
+  deleteKB,
+  getKB,
+  linkKBChatbot,
+  updateKB,
+} from '../src/services/knowledge.js'
 import {
   isResourceIncludedInGraph,
   validateKBMetadata,
@@ -215,6 +220,74 @@ describe('KB owner-only authorization', () => {
       'Knowledge base not found'
     )
     expect(deleteMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('KB chatbot linking', () => {
+  function buildLinkCtx({
+    chatbotFound = true,
+  }: { chatbotFound?: boolean } = {}) {
+    const updateMany = vi.fn().mockResolvedValue({ count: 0 })
+    const upsert = vi.fn().mockResolvedValue({})
+    const transactionCalls: unknown[][] = []
+    const $transaction = vi.fn(async (ops: unknown[]) => {
+      transactionCalls.push(ops)
+      return ops
+    })
+
+    const ctx = buildOwnerCtx({
+      kB: {
+        findFirst: vi
+          .fn()
+          .mockResolvedValue({ id: 'kb-1', metadataProfile: 'COURSE_KB' }),
+      },
+      chatbot: {
+        findFirst: vi
+          .fn()
+          .mockResolvedValue(chatbotFound ? { id: 'cb-1' } : null),
+      },
+      kBChatbot: { updateMany, upsert },
+      $transaction,
+    })
+
+    return { ctx, updateMany, upsert, $transaction, transactionCalls }
+  }
+
+  it('disables other enabled KB links when enabling a new link', async () => {
+    const { ctx, updateMany, $transaction } = buildLinkCtx()
+
+    await linkKBChatbot({ kbId: 'kb-1', chatbotId: 'cb-1' }, ctx)
+
+    expect($transaction).toHaveBeenCalledTimes(1)
+    expect(updateMany).toHaveBeenCalledWith({
+      where: {
+        chatbotId: 'cb-1',
+        isEnabled: true,
+        kbId: { not: 'kb-1' },
+      },
+      data: { isEnabled: false },
+    })
+  })
+
+  it('skips the disable step when explicitly creating a disabled link', async () => {
+    const { ctx, updateMany } = buildLinkCtx()
+
+    await linkKBChatbot(
+      { kbId: 'kb-1', chatbotId: 'cb-1', isEnabled: false },
+      ctx
+    )
+
+    expect(updateMany).not.toHaveBeenCalled()
+  })
+
+  it('refuses to link a chatbot owned by another user', async () => {
+    const { ctx, updateMany, upsert } = buildLinkCtx({ chatbotFound: false })
+
+    await expect(
+      linkKBChatbot({ kbId: 'kb-1', chatbotId: 'cb-other' }, ctx)
+    ).rejects.toThrow('Chatbot not found')
+    expect(updateMany).not.toHaveBeenCalled()
+    expect(upsert).not.toHaveBeenCalled()
   })
 })
 
