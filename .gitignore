@@ -1,3 +1,4 @@
+.pnpm-store/
 **/__pycache__/
 **/node_modules/
 coverage/
@@ -54,3 +55,4 @@ dumps/**/*.dump.gpg
 /apps/docs/docs/.obsidian/
 
 .claude/worktrees
+.claude/scheduled_tasks.lock
