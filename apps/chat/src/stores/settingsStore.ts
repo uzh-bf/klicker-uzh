@@ -47,6 +47,16 @@ const resolveReasoningEffortForModel = (
   return allowedReasoningEfforts[0]
 }
 
+const getCreditsFallbackState = (state: SettingsState) => ({
+  credits: { current: 0, total: 0 },
+  modelOptions: [],
+  selectedReasoningEffort: resolveReasoningEffortForModel(
+    state.selectedReasoningEffort,
+    undefined
+  ),
+  authMode: 'account' as AuthMode,
+})
+
 interface SettingsState {
   // Current selections
   selectedModel: ModelID
@@ -199,6 +209,7 @@ export const useSettingsStore = create<SettingsState>()(
           )
           if (!response.ok) {
             console.error('Failed to load credits:', response.statusText)
+            set(getCreditsFallbackState)
             return
           }
 
@@ -246,6 +257,7 @@ export const useSettingsStore = create<SettingsState>()(
           })
         } catch (error) {
           console.error('Error loading credits:', error)
+          set(getCreditsFallbackState)
         }
       },
 

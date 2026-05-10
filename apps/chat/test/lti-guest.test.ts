@@ -129,11 +129,9 @@ describe('ltiGuest', () => {
     await expect(mod.verifyLtiToken(ltiJwt)).rejects.toBeDefined()
   })
 
-  it('verifyLtiToken throws in production when APP_ORIGIN_LTI is unset', async () => {
+  it('verifyLtiToken throws when APP_ORIGIN_LTI is unset', async () => {
     const env = process.env as Record<string, string | undefined>
-    const savedNodeEnv = env.NODE_ENV
     const savedOrigin = env.APP_ORIGIN_LTI
-    env.NODE_ENV = 'production'
     delete env.APP_ORIGIN_LTI
     try {
       const mod = await import('@/src/lib/server/ltiGuest')
@@ -144,10 +142,9 @@ describe('ltiGuest', () => {
         { algorithm: 'HS256', expiresIn: '5m' }
       )
       await expect(mod.verifyLtiToken(ltiJwt)).rejects.toThrow(
-        /APP_ORIGIN_LTI is required in production/
+        /APP_ORIGIN_LTI is required/
       )
     } finally {
-      env.NODE_ENV = savedNodeEnv
       if (savedOrigin === undefined) delete env.APP_ORIGIN_LTI
       else env.APP_ORIGIN_LTI = savedOrigin
     }

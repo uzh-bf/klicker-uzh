@@ -44,18 +44,10 @@ export async function GET(
       availableModels = availableModels.filter((m) => m.fallback)
     }
 
-    const allowedIdsForAuto =
-      authMode === 'anonymous'
-        ? availableModels.map((m) => m.id)
-        : chatbotResult.chatbot.allowedModelIds
-
-    // When anonymous and no fallback is available for this chatbot, the
-    // computed `automaticModelId` would otherwise come from the global
-    // registry and contradict the empty `availableModels` list.
     const automaticModelId =
-      authMode === 'anonymous' && availableModels.length === 0
-        ? null
-        : getAutomaticModelId(credits, allowedIdsForAuto)
+      authMode === 'anonymous'
+        ? (availableModels[0]?.id ?? null)
+        : getAutomaticModelId(credits, chatbotResult.chatbot.allowedModelIds)
 
     return NextResponse.json({
       ...credits,

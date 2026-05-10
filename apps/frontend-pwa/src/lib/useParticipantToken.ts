@@ -44,15 +44,11 @@ export default function useParticipantToken({
           if (!storedParams) return
 
           if (redirectTo) {
-            router.push(
-              `${redirectTo}?${PARTICIPANT_QUERY_KEY}=${participantToken}`,
-              {
-                query: {
-                  ...router.query,
-                  [PARTICIPANT_QUERY_KEY]: participantToken,
-                },
-              }
-            )
+            const separator = redirectTo.includes('?') ? '&' : '?'
+            const searchParams = new URLSearchParams([
+              [PARTICIPANT_QUERY_KEY, participantToken],
+            ])
+            router.push(`${redirectTo}${separator}${searchParams.toString()}`)
           } else {
             callback?.()
           }

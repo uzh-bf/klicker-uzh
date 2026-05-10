@@ -1021,9 +1021,7 @@ export async function POST(
     // Pick a fallback directly. `getAutomaticModelId` returns the *primary*
     // when credits>0 even when called with `chatbot.allowedModelIds`, which
     // would re-trip this branch and 503 anonymous users that have credits.
-    const guestFallback = modelRegistry.find(
-      (m) => m.fallback && (allowedIds === null || allowedIds.has(m.id))
-    )
+    const guestFallback = modelRegistry.find((m) => m.fallback)
     if (!guestFallback) {
       return NextResponse.json(
         { error: 'No fallback model available for guest access' },

@@ -155,9 +155,11 @@ export async function GET(req: NextRequest) {
     // guest-first middleware order (verify chat-guest before participant) does
     // not keep forcing `authMode='anonymous'` after this redirect.
     const accountResponse = NextResponse.redirect(chatbotUrl)
-    accountResponse.cookies.delete({
-      name: 'chat_participant_token',
+    accountResponse.cookies.set('chat_participant_token', '', {
+      httpOnly: true,
+      ...cookieSecurityOptions({ isProduction }),
       path: '/',
+      maxAge: 0,
     })
     return accountResponse
   }

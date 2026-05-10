@@ -1,10 +1,10 @@
+import { type AuthMode, verifyChatGuestToken } from '@/src/lib/server/ltiGuest'
 import { prisma } from '@klicker-uzh/prisma'
 import { Prisma } from '@klicker-uzh/prisma/client'
 import { extractBearerToken } from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { type AuthMode, verifyChatGuestToken } from './ltiGuest'
 
 export type { AuthMode }
 

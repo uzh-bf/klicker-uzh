@@ -118,11 +118,9 @@ export async function middleware(request: NextRequest) {
     // Invalid guest token → fall through to participant_token.
   }
 
-  // 2. participant_token (account). Cookie first; same Authorization-header
-  // fallback so account users in cookieless contexts still authenticate.
-  const participantToken =
-    request.cookies.get('participant_token')?.value ||
-    extractBearerToken(request.headers.get('authorization'))
+  // 2. participant_token (account). Account-mode header fallback is not
+  // supported by API guards yet, so keep middleware behavior consistent.
+  const participantToken = request.cookies.get('participant_token')?.value
 
   if (!participantToken) {
     return redirectToNoLogin(request, hadGuestToken)

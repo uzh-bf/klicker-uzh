@@ -1,6 +1,7 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { Prisma } from '@klicker-uzh/prisma/client'
 import { signJWT, verifyJWT } from '@klicker-uzh/util'
+import bcrypt from 'bcryptjs'
 import { createHmac, randomBytes } from 'crypto'
 
 // Stable, exported across phases: Phase C will recompute these to match guest
@@ -74,6 +75,16 @@ export interface GuestPersona {
   isNew: boolean
 }
 
+function isUniqueViolationOn(
+  error: Prisma.PrismaClientKnownRequestError,
+  fieldName: string
+): boolean {
+  const target = error.meta?.target
+  if (Array.isArray(target)) return target.includes(fieldName)
+  if (typeof target === 'string') return target.includes(fieldName)
+  return true
+}
+
 export async function findOrCreateGuestPersona(
   ltiSub: string,
   ltiScope: LtiScope,
@@ -104,13 +115,13 @@ export async function findOrCreateGuestPersona(
   }
 
   const randomSuffix = randomBytes(8).toString('hex')
-  const randomPassword = randomBytes(16).toString('hex')
+  const hashedPassword = await bcrypt.hash(randomBytes(16).toString('hex'), 12)
 
   try {
     const created = await prisma.participant.create({
       data: {
         username: `guest_${randomSuffix}`,
-        password: randomPassword,
+        password: hashedPassword,
         email: null,
         isEmailValid: false,
         isSSOAccount: true,
@@ -135,7 +146,8 @@ export async function findOrCreateGuestPersona(
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2002'
+      error.code === 'P2002' &&
+      isUniqueViolationOn(error, 'ssoId')
     ) {
       const racedExisting = await prisma.participantAccount.findUnique({
         where: { ssoId: guestSsoId },
@@ -206,11 +218,7 @@ export async function verifyLtiToken(token: string): Promise<LtiTokenPayload> {
   if (!appSecret) throw new Error('APP_SECRET is required')
 
   const issuer = process.env.APP_ORIGIN_LTI
-  // Fail closed in production: jose silently skips `iss` check when issuer is
-  // undefined, which would let any `APP_SECRET`-signed token be accepted.
-  if (!issuer && process.env.NODE_ENV === 'production') {
-    throw new Error('APP_ORIGIN_LTI is required in production')
-  }
+  if (!issuer) throw new Error('APP_ORIGIN_LTI is required')
 
   const payload = await verifyJWT(token, appSecret, { issuer })
 

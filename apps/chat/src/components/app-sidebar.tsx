@@ -1,3 +1,5 @@
+import { useChatStore } from '@/src/stores/chatStore'
+import { useSettingsStore } from '@/src/stores/settingsStore'
 import {
   Sidebar,
   SidebarContent,
@@ -14,8 +16,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import * as React from 'react'
-import { useChatStore } from '../stores/chatStore'
-import { useSettingsStore } from '../stores/settingsStore'
 import { SettingsPanel } from './settings-panel'
 import { ThreadList } from './thread-list'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'

@@ -451,6 +451,9 @@ importers:
       ai:
         specifier: 6.0.91
         version: 6.0.91(zod@3.25.76)
+      bcryptjs:
+        specifier: 2.4.3
+        version: 2.4.3
       class-variance-authority:
         specifier: 0.7.1
         version: 0.7.1
@@ -530,6 +533,9 @@ importers:
       '@tailwindcss/typography':
         specifier: ~0.5.16
         version: 0.5.16(tailwindcss@4.1.12)
+      '@types/bcryptjs':
+        specifier: ^2.4.6
+        version: 2.4.6
       '@types/node':
         specifier: ^20.19.11
         version: 20.19.11

@@ -53,9 +53,28 @@ export function extractProviderFromAffiliationId(
 
 export function extractBearerToken(headerValue: string | null): string | null {
   if (!headerValue) return null
-  const match = headerValue.trim().match(/^Bearer\s+(.+)$/i)
-  const token = match?.[1]
-  return token ? token.trim() : null
+  const trimmed = headerValue.trim()
+  let separatorIndex = -1
+
+  for (let index = 0; index < trimmed.length; index++) {
+    const char = trimmed[index]
+    if (
+      char === ' ' ||
+      char === '\t' ||
+      char === '\n' ||
+      char === '\r' ||
+      char === '\f'
+    ) {
+      separatorIndex = index
+      break
+    }
+  }
+
+  if (separatorIndex === -1) return null
+  if (trimmed.slice(0, separatorIndex).toLowerCase() !== 'bearer') return null
+
+  const token = trimmed.slice(separatorIndex).trim()
+  return token.length > 0 ? token : null
 }
 
 export const LTI_PROBE_COOKIE_NAME = 'lti-token'
