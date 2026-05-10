@@ -216,6 +216,19 @@ export function filterKnowledgeResources(
   })
 }
 
+export function safePrompt(
+  message: string,
+  defaultValue?: string
+): string | null {
+  if (typeof window === 'undefined') return null
+  return window.prompt(message, defaultValue)
+}
+
+export function safeConfirm(message: string): boolean {
+  if (typeof window === 'undefined') return false
+  return window.confirm(message)
+}
+
 export function getRefreshPolicyLabel(policy?: KnowledgeRefreshPolicy) {
   if (!policy) return 'Manual'
   if (policy.label) return policy.label

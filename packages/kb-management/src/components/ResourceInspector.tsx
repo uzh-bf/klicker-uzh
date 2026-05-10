@@ -13,6 +13,7 @@ import {
   DEFAULT_RESOURCE_TYPES,
   getRefreshPolicyLabel,
   getResourceTypeDefinition,
+  safePrompt,
 } from '../utils.js'
 import { ActivityPanels } from './ActivityPanels.js'
 import { MetadataChips } from './MetadataChips.js'
@@ -60,10 +61,7 @@ export function ResourceInspector({
 }: ResourceInspectorProps) {
   const handleRename = () => {
     if (!resource || !onUpdateResource) return
-    const title =
-      typeof window === 'undefined'
-        ? null
-        : window.prompt('Resource title', resource.title)
+    const title = safePrompt('Resource title', resource.title)
     if (!title || title === resource.title) return
     onUpdateResource(resource.id, { title })
   }

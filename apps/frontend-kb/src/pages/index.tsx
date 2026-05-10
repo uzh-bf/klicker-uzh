@@ -95,10 +95,12 @@ function KbHomePage() {
   }, [kbListQuery.data?.getKBs, selectedKnowledgeBaseId])
 
   const refetchKBs = async () => {
-    await kbListQuery.refetch()
-    if (selectedKnowledgeBaseId) {
-      await selectedKbQuery.refetch({ id: selectedKnowledgeBaseId })
-    }
+    await Promise.all([
+      kbListQuery.refetch(),
+      selectedKnowledgeBaseId
+        ? selectedKbQuery.refetch({ id: selectedKnowledgeBaseId })
+        : Promise.resolve(),
+    ])
   }
 
   const selectedKnowledgeBaseSummary =

@@ -526,7 +526,7 @@ export async function getKBResources(
   { kbId, filter }: { kbId: string; filter?: KBResourceFilterInput | null },
   ctx: ContextWithUser
 ) {
-  await getOwnedKBOrThrow(kbId, ctx)
+  await assertOwnedKB(kbId, ctx)
 
   return await ctx.prisma.kBResource.findMany({
     where: {
@@ -556,7 +556,7 @@ export async function getKBIngestionRuns(
   }: { kbId: string; resourceId?: string | null; limit?: number | null },
   ctx: ContextWithUser
 ) {
-  await getOwnedKBOrThrow(kbId, ctx)
+  await assertOwnedKB(kbId, ctx)
 
   return await ctx.prisma.kBIngestionRun.findMany({
     where: { kbId, resourceId: resourceId ?? undefined },
@@ -670,7 +670,7 @@ export async function updateKB(
 }
 
 export async function deleteKB({ id }: { id: string }, ctx: ContextWithUser) {
-  await getOwnedKBOrThrow(id, ctx)
+  await assertOwnedKB(id, ctx)
   const activeResources = await ctx.prisma.kBResource.findMany({
     where: { kbId: id, deletedAt: null },
     include: RESOURCE_INCLUDE,
@@ -848,7 +848,7 @@ export async function updateKBRefreshPolicy(
   { kbId, input }: { kbId: string; input: UpdateKBRefreshPolicyInput },
   ctx: ContextWithUser
 ) {
-  await getOwnedKBOrThrow(kbId, ctx)
+  await assertOwnedKB(kbId, ctx)
   const policy = validateKBRefreshPolicy(input)
   return await ctx.prisma.kB.update({
     where: { id: kbId },
@@ -877,7 +877,7 @@ export async function linkKBCourse(
   { kbId, courseId }: { kbId: string; courseId: string },
   ctx: ContextWithUser
 ) {
-  await getOwnedKBOrThrow(kbId, ctx)
+  await assertOwnedKB(kbId, ctx)
   const course = await ctx.prisma.course.findFirst({
     where: { id: courseId, ownerId: ctx.user.sub },
     select: { id: true },
@@ -897,7 +897,7 @@ export async function unlinkKBCourse(
   { kbId, courseId }: { kbId: string; courseId: string },
   ctx: ContextWithUser
 ) {
-  await getOwnedKBOrThrow(kbId, ctx)
+  await assertOwnedKB(kbId, ctx)
   await ctx.prisma.kBCourse.deleteMany({ where: { kbId, courseId } })
   return await getOwnedKBOrThrow(kbId, ctx)
 }
@@ -916,17 +916,15 @@ export async function linkKBChatbot(
   },
   ctx: ContextWithUser
 ) {
-  await getOwnedKBOrThrow(kbId, ctx)
+  await assertOwnedKB(kbId, ctx)
   const chatbot = await ctx.prisma.chatbot.findFirst({
     where: { id: chatbotId, ownerId: ctx.user.sub },
     select: { id: true },
   })
   if (!chatbot) throw new Error('Chatbot not found')
 
-  // Enforce KB_PLAN.md decision #7: max one enabled KB per chatbot. When
-  // enabling this link (default on create, explicit `true` on update), demote
-  // every other enabled link for the same chatbot in the same transaction so
-  // there is never a window with two active KBs.
+  // KB_PLAN.md decision #7: at most one enabled KB per chatbot. No DB-level
+  // partial unique index, so demote any other enabled rows in the same txn.
   const willEnable = isEnabled !== false
   await ctx.prisma.$transaction([
     ...(willEnable
@@ -963,7 +961,7 @@ export async function unlinkKBChatbot(
   { kbId, chatbotId }: { kbId: string; chatbotId: string },
   ctx: ContextWithUser
 ) {
-  await getOwnedKBOrThrow(kbId, ctx)
+  await assertOwnedKB(kbId, ctx)
   await ctx.prisma.kBChatbot.deleteMany({ where: { kbId, chatbotId } })
   return await getOwnedKBOrThrow(kbId, ctx)
 }

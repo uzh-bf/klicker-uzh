@@ -11,7 +11,7 @@ import type {
   LinkedConsumer,
   UpdateKnowledgeBaseInput,
 } from '../types.js'
-import { getRefreshPolicyLabel } from '../utils.js'
+import { getRefreshPolicyLabel, safePrompt } from '../utils.js'
 
 interface KnowledgeBaseSettingsViewProps {
   knowledgeBase?: KnowledgeBaseSummary
@@ -242,51 +242,35 @@ export function KnowledgeBaseSettingsView({
           </Panel>
         )}
 
-        {(onLinkCourse || onUnlinkCourse) && (
-          <Panel
-            title="Linked courses"
-            description="Courses that use this knowledge base"
-          >
-            <LinkedConsumerList
-              items={knowledgeBase.linkedCourses}
-              promptLabel="Course ID"
-              addLabel="Link course"
-              onLink={
-                onLinkCourse
-                  ? (courseId) => onLinkCourse(knowledgeBase.id, courseId)
-                  : undefined
-              }
-              onUnlink={
-                onUnlinkCourse
-                  ? (courseId) => onUnlinkCourse(knowledgeBase.id, courseId)
-                  : undefined
-              }
-            />
-          </Panel>
-        )}
+        {LINKED_CONSUMER_PANELS.map((panel) => {
+          const link = panel.kind === 'course' ? onLinkCourse : onLinkChatbot
+          const unlink =
+            panel.kind === 'course' ? onUnlinkCourse : onUnlinkChatbot
+          if (!link && !unlink) return null
 
-        {(onLinkChatbot || onUnlinkChatbot) && (
-          <Panel
-            title="Linked chatbots"
-            description="Chatbots that consume this knowledge base"
-          >
-            <LinkedConsumerList
-              items={knowledgeBase.linkedChatbots}
-              promptLabel="Chatbot ID"
-              addLabel="Link chatbot"
-              onLink={
-                onLinkChatbot
-                  ? (chatbotId) => onLinkChatbot(knowledgeBase.id, chatbotId)
-                  : undefined
-              }
-              onUnlink={
-                onUnlinkChatbot
-                  ? (chatbotId) => onUnlinkChatbot(knowledgeBase.id, chatbotId)
-                  : undefined
-              }
-            />
-          </Panel>
-        )}
+          const items =
+            panel.kind === 'course'
+              ? knowledgeBase.linkedCourses
+              : knowledgeBase.linkedChatbots
+
+          return (
+            <Panel
+              key={panel.kind}
+              title={panel.title}
+              description={panel.description}
+            >
+              <LinkedConsumerList
+                items={items}
+                promptLabel={panel.promptLabel}
+                addLabel={panel.addLabel}
+                onLink={link ? (id) => link(knowledgeBase.id, id) : undefined}
+                onUnlink={
+                  unlink ? (id) => unlink(knowledgeBase.id, id) : undefined
+                }
+              />
+            </Panel>
+          )
+        })}
       </div>
     </div>
   )
@@ -352,6 +336,23 @@ function KnowledgeBaseDetailsForm({
   )
 }
 
+const LINKED_CONSUMER_PANELS = [
+  {
+    kind: 'course' as const,
+    title: 'Linked courses',
+    description: 'Courses that use this knowledge base',
+    promptLabel: 'Course ID',
+    addLabel: 'Link course',
+  },
+  {
+    kind: 'chatbot' as const,
+    title: 'Linked chatbots',
+    description: 'Chatbots that consume this knowledge base',
+    promptLabel: 'Chatbot ID',
+    addLabel: 'Link chatbot',
+  },
+]
+
 function LinkedConsumerList({
   items,
   promptLabel,
@@ -365,19 +366,18 @@ function LinkedConsumerList({
   onLink?: (id: string) => void
   onUnlink?: (id: string) => void
 }) {
+  const list = items ?? []
   const handleAdd = () => {
     if (!onLink) return
-    const id = typeof window === 'undefined' ? null : window.prompt(promptLabel)
+    const id = safePrompt(promptLabel)
     if (!id) return
     onLink(id)
   }
 
   return (
     <div className="space-y-2">
-      {(items ?? []).length === 0 && (
-        <EmptySetting>None linked yet.</EmptySetting>
-      )}
-      {(items ?? []).map((item) => (
+      {list.length === 0 && <EmptySetting>None linked yet.</EmptySetting>}
+      {list.map((item) => (
         <div
           key={item.id}
           className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white p-2 text-sm"

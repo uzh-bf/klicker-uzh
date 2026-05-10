@@ -7,6 +7,7 @@ import type {
   KnowledgeMetadataFieldDefinition,
   UpdateKnowledgeBaseInput,
 } from '../types.js'
+import { safeConfirm, safePrompt } from '../utils.js'
 import { MetadataChips } from './MetadataChips.js'
 import { StatusBadge } from './StatusBadge.js'
 
@@ -36,32 +37,21 @@ export function KnowledgeBaseSidebar({
 }: KnowledgeBaseSidebarProps) {
   const handleCreate = () => {
     if (!onCreateKnowledgeBase) return
-    const name =
-      typeof window === 'undefined'
-        ? null
-        : window.prompt('Knowledge base name')
+    const name = safePrompt('Knowledge base name')
     if (!name) return
     onCreateKnowledgeBase({ name })
   }
 
   const handleRename = (kb: KnowledgeBaseSummary) => {
     if (!onUpdateKnowledgeBase) return
-    const name =
-      typeof window === 'undefined'
-        ? null
-        : window.prompt('Rename knowledge base', kb.name)
+    const name = safePrompt('Rename knowledge base', kb.name)
     if (!name || name === kb.name) return
     onUpdateKnowledgeBase(kb.id, { name })
   }
 
   const handleDelete = (kb: KnowledgeBaseSummary) => {
     if (!onDeleteKnowledgeBase) return
-    if (
-      typeof window !== 'undefined' &&
-      !window.confirm(`Delete "${kb.name}"? This cannot be undone.`)
-    ) {
-      return
-    }
+    if (!safeConfirm(`Delete "${kb.name}"? This cannot be undone.`)) return
     onDeleteKnowledgeBase(kb.id)
   }
   return (
