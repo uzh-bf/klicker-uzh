@@ -79,7 +79,9 @@ import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
 import { useEffect, useState } from 'react'
-import Layout from '../../../../components/Layout'
+import Layout, {
+  LAYOUT_SCROLL_CONTAINER_ID,
+} from '../../../../components/Layout'
 import Footer from '../../../../components/common/Footer'
 import PracticeQuiz from '../../../../components/practiceQuiz/PracticeQuiz'
 
@@ -240,7 +242,7 @@ function PracticeQuizPage({
   }
 
   const handleNextQuestion = () => {
-    scrollTo(0, 0)
+    document.getElementById(LAYOUT_SCROLL_CONTAINER_ID)?.scrollTo({ top: 0 })
     setCurrentIx((ix) => ix + 1)
   }
 

@@ -36,10 +36,43 @@ type HistoryAttachmentInput = {
   imageDescription?: string | null
 }
 
+type AttachmentIdentityInput = {
+  id?: string
+  position?: number
+}
+
+type ComposerImageContentPart = {
+  type: 'image'
+  image: string
+  imagePreview?: string
+}
+
+type ComposerAttachmentInput = {
+  content?: readonly unknown[]
+}
+
+export type LocalImageAttachment = {
+  type: 'image'
+  imageBase64: string
+  imagePreviewBase64: string
+  imageDescription: null
+}
+
 export function sortAttachmentsByPosition<T extends { position: number }>(
   attachments: T[]
 ): T[] {
   return [...attachments].sort((a, b) => a.position - b.position)
+}
+
+export function getImageAttachmentKey(
+  attachment: AttachmentIdentityInput,
+  index: number
+): string {
+  if (attachment.id) {
+    return `id:${attachment.id}`
+  }
+
+  return `pos:${attachment.position ?? index}`
 }
 
 export function hasAllImageAttachmentsHydrated<
@@ -57,6 +90,34 @@ export function hasAnyImageAttachmentData<T extends ImageAttachmentPayload>(
     (attachment) =>
       attachment.imageBase64 != null || attachment.imagePreviewBase64 != null
   )
+}
+
+function isComposerImageContentPart(
+  part: unknown
+): part is ComposerImageContentPart {
+  return (
+    typeof part === 'object' &&
+    part !== null &&
+    'type' in part &&
+    part.type === 'image' &&
+    'image' in part &&
+    typeof part.image === 'string'
+  )
+}
+
+export function extractLocalImageAttachments(
+  attachments?: readonly ComposerAttachmentInput[]
+): LocalImageAttachment[] {
+  return (attachments ?? [])
+    .flatMap((attachment) => attachment.content ?? [])
+    .filter(isComposerImageContentPart)
+    .map((part) => ({
+      type: 'image' as const,
+      imageBase64: part.image,
+      imagePreviewBase64:
+        typeof part.imagePreview === 'string' ? part.imagePreview : part.image,
+      imageDescription: null,
+    }))
 }
 
 export function mergeHydratedAttachments(

@@ -8,7 +8,6 @@ import {
   getAttachmentPreviewSrc,
 } from '../lib/attachments/attachmentUi'
 import { useChatStore } from '../stores/chatStore'
-import { useComposerStore } from '../stores/composerStore'
 import {
   AttachmentPlaceholder,
   ThreadImageViewerModal,
@@ -47,10 +46,6 @@ export function MessageAttachments({
   const ensureFullImageAttachments = useChatStore(
     (state) => state.ensureFullImageAttachments
   )
-  const setAttachmentError = useComposerStore(
-    (state) => state.setAttachmentError
-  )
-
   const [viewerAttachmentIndex, setViewerAttachmentIndex] = useState<
     number | null
   >(null)
@@ -73,8 +68,6 @@ export function MessageAttachments({
       return
     }
 
-    setAttachmentError(null)
-
     if (hasAllImageAttachmentsHydrated(attachments)) {
       return
     }
@@ -92,7 +85,6 @@ export function MessageAttachments({
       const hydratedAttachments = hydratedMessage?.imageAttachments ?? []
 
       if (!hasAllImageAttachmentsHydrated(hydratedAttachments)) {
-        setAttachmentError(HYDRATION_ERROR_MESSAGE)
         setViewerError(HYDRATION_ERROR_MESSAGE)
       }
     } finally {
@@ -115,7 +107,6 @@ export function MessageAttachments({
 
     setViewerAttachmentIndex(index)
     setViewerError(null)
-    setAttachmentError(null)
 
     if (openState.shouldHydrate) {
       await hydrateMessageAttachments()

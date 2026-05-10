@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.62](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.61...v3.4.0-alpha.62) (2026-05-05)
+
+
+### Features
+
+* **chat:** make reasoning effort registry config-driven ([bb52d44](https://github.com/uzh-bf/klicker-uzh/commit/bb52d4449fe21fa828b38aa7410982e77d0eced0))
+
+## [3.4.0-alpha.61](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.60...v3.4.0-alpha.61) (2026-05-03)
+
+
+### Bug Fixes
+
+* **apps/chat:** stabilize image attachments and login redirects ([#5079](https://github.com/uzh-bf/klicker-uzh/issues/5079)) ([76c36ff](https://github.com/uzh-bf/klicker-uzh/commit/76c36ff6a63ab30bd8e6ab57d000b4807e063962))
+* **deploy:** enable chat image attachments in model registry ([bc31b07](https://github.com/uzh-bf/klicker-uzh/commit/bc31b079c9941a6a783dd3ace43a638a007e6018))
+
+## [3.4.0-alpha.60](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.59...v3.4.0-alpha.60) (2026-04-21)
+
+
+### Features
+
+* **chat:** add image attachment support ([#5045](https://github.com/uzh-bf/klicker-uzh/issues/5045)) ([9e90bf0](https://github.com/uzh-bf/klicker-uzh/commit/9e90bf0d2d4ab75dc088d7d508df983158b816fb))
+
+
+### Bug Fixes
+
+* **apps/frontend-pwa:** pin embedded PQ buttons with sticky positioning ([#5071](https://github.com/uzh-bf/klicker-uzh/issues/5071)) ([0cf06a4](https://github.com/uzh-bf/klicker-uzh/commit/0cf06a490a3a8f47567c537b21d00ff6ff474460))
+
 ## [3.4.0-alpha.59](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.58...v3.4.0-alpha.59) (2026-04-15)
 
 

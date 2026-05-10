@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useChatResponse } from '../src/hooks/useChatResponse'
-import { useComposerStore } from '../src/stores/composerStore'
 
 const { mockUseChatStore } = vi.hoisted(() => ({
   mockUseChatStore: Object.assign(vi.fn(), {
@@ -69,7 +68,6 @@ function createStreamingResponse(lines: string[]) {
 
 describe('useChatResponse attachment hydration', () => {
   beforeEach(() => {
-    useComposerStore.setState({ attachmentError: null, attachmentCount: 0 })
     vi.restoreAllMocks()
 
     storeState = {
@@ -236,7 +234,6 @@ describe('useChatResponse attachment hydration', () => {
         },
       ],
     })
-    expect(useComposerStore.getState().attachmentError).toBeNull()
   })
 
   test('hydrates edited messages using their persisted attachment source id', async () => {
@@ -352,7 +349,7 @@ describe('useChatResponse attachment hydration', () => {
     })
   })
 
-  test('failed hydration keeps attachments intact and exposes a recoverable error instead of submitting', async () => {
+  test('failed hydration keeps attachments intact and aborts instead of submitting', async () => {
     storeState.ensureFullImageAttachments.mockResolvedValue({
       id: 'message-1',
       role: 'user',
@@ -370,6 +367,9 @@ describe('useChatResponse attachment hydration', () => {
       ],
     })
 
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
     const fetchSpy = vi.fn()
     vi.stubGlobal('fetch', fetchSpy)
 
@@ -416,8 +416,8 @@ describe('useChatResponse attachment hydration', () => {
         hasFullImage: false,
       },
     ])
-    expect(useComposerStore.getState().attachmentError).toContain(
-      'could not be loaded'
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('could not be loaded')
     )
   })
 })
