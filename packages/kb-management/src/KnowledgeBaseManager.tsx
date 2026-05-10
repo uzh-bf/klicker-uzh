@@ -53,6 +53,14 @@ export function KnowledgeBaseManager({
   onOpenSettings,
   onUpdateKnowledgeBaseRefreshPolicy,
   onUpdateResourceRefreshPolicy,
+  onCreateKnowledgeBase,
+  onUpdateKnowledgeBase,
+  onDeleteKnowledgeBase,
+  onUpdateResource,
+  onLinkCourse,
+  onUnlinkCourse,
+  onLinkChatbot,
+  onUnlinkChatbot,
 }: KnowledgeBaseManagerProps) {
   const [internalKnowledgeBaseId, setInternalKnowledgeBaseId] = useState(
     knowledgeBases[0]?.id
@@ -259,6 +267,9 @@ export function KnowledgeBaseManager({
         metadataSchema={metadataSchemas?.knowledgeBase}
         className={className?.sidebar}
         onSelectKnowledgeBase={selectKnowledgeBase}
+        onCreateKnowledgeBase={onCreateKnowledgeBase}
+        onDeleteKnowledgeBase={onDeleteKnowledgeBase}
+        onUpdateKnowledgeBase={onUpdateKnowledgeBase}
       />
 
       <main
@@ -342,6 +353,11 @@ export function KnowledgeBaseManager({
             onUpdateKnowledgeBaseRefreshPolicy={
               onUpdateKnowledgeBaseRefreshPolicy
             }
+            onUpdateKnowledgeBase={onUpdateKnowledgeBase}
+            onLinkCourse={onLinkCourse}
+            onUnlinkCourse={onUnlinkCourse}
+            onLinkChatbot={onLinkChatbot}
+            onUnlinkChatbot={onUnlinkChatbot}
           />
         )}
       </main>
@@ -355,6 +371,7 @@ export function KnowledgeBaseManager({
           className={twMerge('hidden xl:flex', className?.inspector)}
           onReindexResource={onReindexResource}
           onUpdateResourceRefreshPolicy={onUpdateResourceRefreshPolicy}
+          onUpdateResource={onUpdateResource}
         />
       )}
 

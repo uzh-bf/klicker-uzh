@@ -1,5 +1,6 @@
-import { CalendarDays, CheckCircle2, Circle } from 'lucide-react'
+import { CalendarDays, CheckCircle2, Circle, X } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type {
   KnowledgeBaseSettingsData,
@@ -7,6 +8,8 @@ import type {
   KnowledgeMetadataFieldDefinition,
   KnowledgeRefreshMode,
   KnowledgeRefreshPolicy,
+  LinkedConsumer,
+  UpdateKnowledgeBaseInput,
 } from '../types.js'
 import { getRefreshPolicyLabel } from '../utils.js'
 
@@ -20,6 +23,14 @@ interface KnowledgeBaseSettingsViewProps {
     knowledgeBaseId: string,
     policy: KnowledgeRefreshPolicy
   ) => void
+  onUpdateKnowledgeBase?: (
+    knowledgeBaseId: string,
+    input: UpdateKnowledgeBaseInput
+  ) => void
+  onLinkCourse?: (knowledgeBaseId: string, courseId: string) => void
+  onUnlinkCourse?: (knowledgeBaseId: string, courseId: string) => void
+  onLinkChatbot?: (knowledgeBaseId: string, chatbotId: string) => void
+  onUnlinkChatbot?: (knowledgeBaseId: string, chatbotId: string) => void
 }
 
 const KNOWLEDGE_BASE_REFRESH_OPTIONS: {
@@ -41,6 +52,11 @@ export function KnowledgeBaseSettingsView({
   resourceMetadataSchema = [],
   className,
   onUpdateKnowledgeBaseRefreshPolicy,
+  onUpdateKnowledgeBase,
+  onLinkCourse,
+  onUnlinkCourse,
+  onLinkChatbot,
+  onUnlinkChatbot,
 }: KnowledgeBaseSettingsViewProps) {
   if (!knowledgeBase) {
     return null
@@ -211,7 +227,190 @@ export function KnowledgeBaseSettingsView({
             />
           </div>
         </Panel>
+
+        {onUpdateKnowledgeBase && (
+          <Panel
+            title="General"
+            description="Knowledge base name and description"
+          >
+            <KnowledgeBaseDetailsForm
+              knowledgeBase={knowledgeBase}
+              onSubmit={(input) =>
+                onUpdateKnowledgeBase(knowledgeBase.id, input)
+              }
+            />
+          </Panel>
+        )}
+
+        {(onLinkCourse || onUnlinkCourse) && (
+          <Panel
+            title="Linked courses"
+            description="Courses that use this knowledge base"
+          >
+            <LinkedConsumerList
+              items={knowledgeBase.linkedCourses}
+              promptLabel="Course ID"
+              addLabel="Link course"
+              onLink={
+                onLinkCourse
+                  ? (courseId) => onLinkCourse(knowledgeBase.id, courseId)
+                  : undefined
+              }
+              onUnlink={
+                onUnlinkCourse
+                  ? (courseId) => onUnlinkCourse(knowledgeBase.id, courseId)
+                  : undefined
+              }
+            />
+          </Panel>
+        )}
+
+        {(onLinkChatbot || onUnlinkChatbot) && (
+          <Panel
+            title="Linked chatbots"
+            description="Chatbots that consume this knowledge base"
+          >
+            <LinkedConsumerList
+              items={knowledgeBase.linkedChatbots}
+              promptLabel="Chatbot ID"
+              addLabel="Link chatbot"
+              onLink={
+                onLinkChatbot
+                  ? (chatbotId) => onLinkChatbot(knowledgeBase.id, chatbotId)
+                  : undefined
+              }
+              onUnlink={
+                onUnlinkChatbot
+                  ? (chatbotId) => onUnlinkChatbot(knowledgeBase.id, chatbotId)
+                  : undefined
+              }
+            />
+          </Panel>
+        )}
       </div>
+    </div>
+  )
+}
+
+function KnowledgeBaseDetailsForm({
+  knowledgeBase,
+  onSubmit,
+}: {
+  knowledgeBase: KnowledgeBaseSummary
+  onSubmit: (input: UpdateKnowledgeBaseInput) => void
+}) {
+  const [name, setName] = useState(knowledgeBase.name)
+  const [description, setDescription] = useState(
+    knowledgeBase.description ?? ''
+  )
+  const dirty =
+    name.trim().length > 0 &&
+    (name !== knowledgeBase.name ||
+      description !== (knowledgeBase.description ?? ''))
+
+  return (
+    <form
+      className="space-y-3"
+      onSubmit={(event) => {
+        event.preventDefault()
+        if (!dirty) return
+        onSubmit({
+          name,
+          description: description.length > 0 ? description : null,
+        })
+      }}
+    >
+      <label className="block">
+        <span className="mb-1 block text-xs font-semibold text-slate-600">
+          Name
+        </span>
+        <input
+          value={name}
+          onChange={(event) => setName(event.currentTarget.value)}
+          className="focus:border-primary-100 focus:ring-primary-20 h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm outline-none focus:ring-2"
+        />
+      </label>
+      <label className="block">
+        <span className="mb-1 block text-xs font-semibold text-slate-600">
+          Description
+        </span>
+        <textarea
+          rows={3}
+          value={description}
+          onChange={(event) => setDescription(event.currentTarget.value)}
+          className="focus:border-primary-100 focus:ring-primary-20 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm outline-none focus:ring-2"
+        />
+      </label>
+      <button
+        type="submit"
+        disabled={!dirty}
+        className="text-primary-100 text-xs font-semibold hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Save changes
+      </button>
+    </form>
+  )
+}
+
+function LinkedConsumerList({
+  items,
+  promptLabel,
+  addLabel,
+  onLink,
+  onUnlink,
+}: {
+  items?: LinkedConsumer[]
+  promptLabel: string
+  addLabel: string
+  onLink?: (id: string) => void
+  onUnlink?: (id: string) => void
+}) {
+  const handleAdd = () => {
+    if (!onLink) return
+    const id = typeof window === 'undefined' ? null : window.prompt(promptLabel)
+    if (!id) return
+    onLink(id)
+  }
+
+  return (
+    <div className="space-y-2">
+      {(items ?? []).length === 0 && (
+        <EmptySetting>None linked yet.</EmptySetting>
+      )}
+      {(items ?? []).map((item) => (
+        <div
+          key={item.id}
+          className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white p-2 text-sm"
+        >
+          <div className="min-w-0">
+            <div className="truncate font-bold text-slate-950">{item.name}</div>
+            {item.description && (
+              <div className="truncate text-xs text-slate-500">
+                {item.description}
+              </div>
+            )}
+          </div>
+          {onUnlink && (
+            <button
+              type="button"
+              aria-label="Unlink"
+              className="rounded p-1 text-slate-500 hover:bg-red-50 hover:text-red-700"
+              onClick={() => onUnlink(item.id)}
+            >
+              <X className="size-3.5" />
+            </button>
+          )}
+        </div>
+      ))}
+      {onLink && (
+        <button
+          type="button"
+          onClick={handleAdd}
+          className="text-primary-100 text-xs font-semibold hover:underline"
+        >
+          + {addLabel}
+        </button>
+      )}
     </div>
   )
 }

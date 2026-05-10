@@ -137,6 +137,8 @@ export interface KnowledgeBaseSummary {
   resourceMetadataSchema?: KnowledgeMetadataFieldDefinition[]
   resourceTypes?: KnowledgeResourceTypeDefinition[]
   refreshPolicy?: KnowledgeRefreshPolicy
+  linkedCourses?: LinkedConsumer[]
+  linkedChatbots?: LinkedConsumer[]
 }
 
 export interface KnowledgeChunkPreview {
@@ -317,6 +319,25 @@ export interface AddInternalResourceInput {
   originLabel: string
 }
 
+export interface CreateKnowledgeBaseInput {
+  name: string
+  description?: string | null
+  metadataProfile?: string
+  metadata?: Record<string, KnowledgeMetadataValue>
+}
+
+export interface UpdateKnowledgeBaseInput {
+  name?: string
+  description?: string | null
+  metadata?: Record<string, KnowledgeMetadataValue>
+}
+
+export interface UpdateKnowledgeResourceInput {
+  title?: string
+  description?: string | null
+  metadata?: Record<string, KnowledgeMetadataValue>
+}
+
 export interface KnowledgeBaseManagerProps {
   knowledgeBases: KnowledgeBaseSummary[]
   resources: KnowledgeResource[]
@@ -356,4 +377,18 @@ export interface KnowledgeBaseManagerProps {
     resourceId: string,
     policy: KnowledgeRefreshPolicy
   ) => void
+  onCreateKnowledgeBase?: (input: CreateKnowledgeBaseInput) => void
+  onUpdateKnowledgeBase?: (
+    knowledgeBaseId: string,
+    input: UpdateKnowledgeBaseInput
+  ) => void
+  onDeleteKnowledgeBase?: (knowledgeBaseId: string) => void
+  onUpdateResource?: (
+    resourceId: string,
+    input: UpdateKnowledgeResourceInput
+  ) => void
+  onLinkCourse?: (knowledgeBaseId: string, courseId: string) => void
+  onUnlinkCourse?: (knowledgeBaseId: string, courseId: string) => void
+  onLinkChatbot?: (knowledgeBaseId: string, chatbotId: string) => void
+  onUnlinkChatbot?: (knowledgeBaseId: string, chatbotId: string) => void
 }

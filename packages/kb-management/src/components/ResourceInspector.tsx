@@ -1,5 +1,5 @@
 import { Button } from '@uzh-bf/design-system'
-import { Eye, RefreshCw } from 'lucide-react'
+import { Eye, Pencil, RefreshCw } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
 import type {
   KnowledgeMetadataFieldDefinition,
@@ -7,6 +7,7 @@ import type {
   KnowledgeRefreshPolicy,
   KnowledgeResource,
   KnowledgeResourceTypeDefinition,
+  UpdateKnowledgeResourceInput,
 } from '../types.js'
 import {
   DEFAULT_RESOURCE_TYPES,
@@ -28,6 +29,10 @@ interface ResourceInspectorProps {
   onUpdateResourceRefreshPolicy?: (
     resourceId: string,
     policy: KnowledgeRefreshPolicy
+  ) => void
+  onUpdateResource?: (
+    resourceId: string,
+    input: UpdateKnowledgeResourceInput
   ) => void
 }
 
@@ -51,7 +56,17 @@ export function ResourceInspector({
   className,
   onReindexResource,
   onUpdateResourceRefreshPolicy,
+  onUpdateResource,
 }: ResourceInspectorProps) {
+  const handleRename = () => {
+    if (!resource || !onUpdateResource) return
+    const title =
+      typeof window === 'undefined'
+        ? null
+        : window.prompt('Resource title', resource.title)
+    if (!title || title === resource.title) return
+    onUpdateResource(resource.id, { title })
+  }
   if (!resource) {
     return (
       <aside
@@ -85,9 +100,21 @@ export function ResourceInspector({
         <div className="flex items-start gap-3">
           <ResourceTypeIcon definition={typeDefinition} className="size-8" />
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-sm font-bold text-slate-950">
-              {resource.title}
-            </h2>
+            <div className="flex items-start gap-2">
+              <h2 className="min-w-0 flex-1 truncate text-sm font-bold text-slate-950">
+                {resource.title}
+              </h2>
+              {onUpdateResource && (
+                <button
+                  type="button"
+                  aria-label="Rename resource"
+                  className="shrink-0 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                  onClick={handleRename}
+                >
+                  <Pencil className="size-3.5" />
+                </button>
+              )}
+            </div>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
               <span>{resource.originLabel}</span>
               {resource.chunkCount && <span>{resource.chunkCount} chunks</span>}

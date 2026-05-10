@@ -96,6 +96,15 @@ export function toKnowledgeBaseSummary(
       { id: 'size', label: 'Size', value: bytesLabel(kb.sizeBytes) ?? '-' },
     ],
     refreshPolicy: toRefreshPolicy(kb.refreshIntervalMinutes),
+    linkedCourses: (kb.courses ?? []).map((link) => ({
+      id: link.courseId,
+      name: link.courseName ?? link.courseId,
+    })),
+    linkedChatbots: (kb.chatbots ?? []).map((link) => ({
+      id: link.chatbotId,
+      name: link.chatbotName ?? link.chatbotId,
+      description: link.chatbotDescription ?? undefined,
+    })),
   }
 }
 

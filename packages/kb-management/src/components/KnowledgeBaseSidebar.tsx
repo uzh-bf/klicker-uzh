@@ -1,9 +1,11 @@
 import { Button } from '@uzh-bf/design-system'
-import { Database, Plus } from 'lucide-react'
+import { Database, Pencil, Plus, Trash2 } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
 import type {
+  CreateKnowledgeBaseInput,
   KnowledgeBaseSummary,
   KnowledgeMetadataFieldDefinition,
+  UpdateKnowledgeBaseInput,
 } from '../types.js'
 import { MetadataChips } from './MetadataChips.js'
 import { StatusBadge } from './StatusBadge.js'
@@ -14,6 +16,12 @@ interface KnowledgeBaseSidebarProps {
   metadataSchema?: KnowledgeMetadataFieldDefinition[]
   className?: string
   onSelectKnowledgeBase?: (knowledgeBaseId: string) => void
+  onCreateKnowledgeBase?: (input: CreateKnowledgeBaseInput) => void
+  onUpdateKnowledgeBase?: (
+    knowledgeBaseId: string,
+    input: UpdateKnowledgeBaseInput
+  ) => void
+  onDeleteKnowledgeBase?: (knowledgeBaseId: string) => void
 }
 
 export function KnowledgeBaseSidebar({
@@ -22,7 +30,40 @@ export function KnowledgeBaseSidebar({
   metadataSchema = [],
   className,
   onSelectKnowledgeBase,
+  onCreateKnowledgeBase,
+  onUpdateKnowledgeBase,
+  onDeleteKnowledgeBase,
 }: KnowledgeBaseSidebarProps) {
+  const handleCreate = () => {
+    if (!onCreateKnowledgeBase) return
+    const name =
+      typeof window === 'undefined'
+        ? null
+        : window.prompt('Knowledge base name')
+    if (!name) return
+    onCreateKnowledgeBase({ name })
+  }
+
+  const handleRename = (kb: KnowledgeBaseSummary) => {
+    if (!onUpdateKnowledgeBase) return
+    const name =
+      typeof window === 'undefined'
+        ? null
+        : window.prompt('Rename knowledge base', kb.name)
+    if (!name || name === kb.name) return
+    onUpdateKnowledgeBase(kb.id, { name })
+  }
+
+  const handleDelete = (kb: KnowledgeBaseSummary) => {
+    if (!onDeleteKnowledgeBase) return
+    if (
+      typeof window !== 'undefined' &&
+      !window.confirm(`Delete "${kb.name}"? This cannot be undone.`)
+    ) {
+      return
+    }
+    onDeleteKnowledgeBase(kb.id)
+  }
   return (
     <aside
       className={twMerge(
@@ -36,6 +77,8 @@ export function KnowledgeBaseSidebar({
         <Button
           aria-label="Create knowledge base"
           className={{ root: 'size-8 rounded-md border-0 bg-transparent p-0' }}
+          disabled={!onCreateKnowledgeBase}
+          onClick={handleCreate}
         >
           <Plus className="size-4" />
         </Button>
@@ -50,7 +93,7 @@ export function KnowledgeBaseSidebar({
               key={knowledgeBase.id}
               type="button"
               className={twMerge(
-                'w-full rounded-lg border-l-4 border-transparent px-3 py-2 text-left transition hover:bg-white hover:shadow-sm',
+                'group w-full rounded-lg border-l-4 border-transparent px-3 py-2 text-left transition hover:bg-white hover:shadow-sm',
                 selected && 'border-primary-100 bg-white shadow-sm'
               )}
               onClick={() => onSelectKnowledgeBase?.(knowledgeBase.id)}
@@ -88,6 +131,36 @@ export function KnowledgeBaseSidebar({
                     </div>
                   )}
                 </div>
+                {(onUpdateKnowledgeBase || onDeleteKnowledgeBase) && (
+                  <div className="-mr-1 flex shrink-0 flex-col gap-1 opacity-0 transition group-hover:opacity-100">
+                    {onUpdateKnowledgeBase && (
+                      <button
+                        type="button"
+                        aria-label="Rename knowledge base"
+                        className="rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRename(knowledgeBase)
+                        }}
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
+                    )}
+                    {onDeleteKnowledgeBase && (
+                      <button
+                        type="button"
+                        aria-label="Delete knowledge base"
+                        className="rounded p-1 text-slate-500 hover:bg-red-50 hover:text-red-700"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDelete(knowledgeBase)
+                        }}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </button>
           )

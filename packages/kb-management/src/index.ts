@@ -27,6 +27,7 @@ export {
 export type {
   AddInternalResourceInput,
   AddSnippetResourceInput,
+  CreateKnowledgeBaseInput,
   DocumentResourceMetadata,
   IngestionRunSummary,
   InternalResourceMetadata,
@@ -61,6 +62,8 @@ export type {
   LinkedConsumer,
   ReindexSchedule,
   SnippetResourceMetadata,
+  UpdateKnowledgeBaseInput,
+  UpdateKnowledgeResourceInput,
   WebsiteResourceMetadata,
   WebsiteResourceStrategy,
   WebsiteSubsiteSummary,

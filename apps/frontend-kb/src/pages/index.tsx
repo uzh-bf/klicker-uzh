@@ -1,12 +1,20 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
+  CreateKbDocument,
   CreateKbResourceDocument,
+  DeleteKbDocument,
   DeleteKbResourcesDocument,
   GetKbDocument,
   GetKBsDocument,
   KbResourceKind,
   KbWebsiteStrategy,
+  LinkKbChatbotDocument,
+  LinkKbCourseDocument,
+  UnlinkKbChatbotDocument,
+  UnlinkKbCourseDocument,
+  UpdateKbDocument,
   UpdateKbRefreshPolicyDocument,
+  UpdateKbResourceDocument,
   UpdateKbResourceRefreshPolicyDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -54,12 +62,20 @@ function KbHomePage() {
     fetchPolicy: 'cache-and-network',
   })
 
+  const [createKB] = useMutation(CreateKbDocument)
+  const [updateKB] = useMutation(UpdateKbDocument)
+  const [deleteKB] = useMutation(DeleteKbDocument)
   const [createKBResource] = useMutation(CreateKbResourceDocument)
+  const [updateKBResource] = useMutation(UpdateKbResourceDocument)
   const [deleteKBResources] = useMutation(DeleteKbResourcesDocument)
   const [updateKBRefreshPolicy] = useMutation(UpdateKbRefreshPolicyDocument)
   const [updateKBResourceRefreshPolicy] = useMutation(
     UpdateKbResourceRefreshPolicyDocument
   )
+  const [linkKBCourse] = useMutation(LinkKbCourseDocument)
+  const [unlinkKBCourse] = useMutation(UnlinkKbCourseDocument)
+  const [linkKBChatbot] = useMutation(LinkKbChatbotDocument)
+  const [unlinkKBChatbot] = useMutation(UnlinkKbChatbotDocument)
 
   const knowledgeBases = useMemo(
     () => (kbListQuery.data?.getKBs ?? []).map(toKnowledgeBaseSummary),
@@ -243,6 +259,85 @@ function KbHomePage() {
                 },
               },
             })
+          )
+        }}
+        onCreateKnowledgeBase={(input) => {
+          void runMutation(
+            createKB({
+              variables: {
+                input: {
+                  name: input.name,
+                  description: input.description ?? null,
+                },
+              },
+            }).then((result) => {
+              const newId = result.data?.createKB?.id
+              if (newId) setSelectedKnowledgeBaseId(newId)
+            }),
+            'Knowledge base created.'
+          )
+        }}
+        onUpdateKnowledgeBase={(kbId, input) => {
+          void runMutation(
+            updateKB({
+              variables: {
+                id: kbId,
+                input: {
+                  name: input.name,
+                  description: input.description ?? null,
+                },
+              },
+            }),
+            'Knowledge base updated.'
+          )
+        }}
+        onDeleteKnowledgeBase={(kbId) => {
+          void runMutation(
+            deleteKB({ variables: { id: kbId } }),
+            'Knowledge base deleted.',
+            () => {
+              if (selectedKnowledgeBaseId === kbId) {
+                setSelectedKnowledgeBaseId(undefined)
+              }
+            }
+          )
+        }}
+        onUpdateResource={(resourceId, input) => {
+          void runMutation(
+            updateKBResource({
+              variables: {
+                resourceId,
+                input: {
+                  title: input.title,
+                  description: input.description ?? null,
+                },
+              },
+            }),
+            'Resource updated.'
+          )
+        }}
+        onLinkCourse={(kbId, courseId) => {
+          void runMutation(
+            linkKBCourse({ variables: { kbId, courseId } }),
+            'Course linked.'
+          )
+        }}
+        onUnlinkCourse={(kbId, courseId) => {
+          void runMutation(
+            unlinkKBCourse({ variables: { kbId, courseId } }),
+            'Course unlinked.'
+          )
+        }}
+        onLinkChatbot={(kbId, chatbotId) => {
+          void runMutation(
+            linkKBChatbot({ variables: { kbId, chatbotId } }),
+            'Chatbot linked.'
+          )
+        }}
+        onUnlinkChatbot={(kbId, chatbotId) => {
+          void runMutation(
+            unlinkKBChatbot({ variables: { kbId, chatbotId } }),
+            'Chatbot unlinked.'
           )
         }}
         className={{
