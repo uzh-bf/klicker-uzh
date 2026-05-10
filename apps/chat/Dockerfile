@@ -34,25 +34,7 @@ ARG NODE_ENV="production"
 COPY --from=builder /app/out/full/ .
 
 ARG BLOB_STORAGE_ACCOUNT_URL
-# DEBUG: capture full output of failing build so CI logs reveal which task failed
-RUN set -e; \
-    echo "=== node/pnpm/turbo versions ==="; \
-    node --version; pnpm --version; turbo --version; \
-    echo "=== free memory & disk ==="; \
-    free -m 2>/dev/null || true; df -h /app 2>/dev/null || true; \
-    echo "=== running pnpm run build --filter=@klicker-uzh/chat ==="; \
-    pnpm run build --filter=@klicker-uzh/chat 2>&1 | tee /tmp/build.log; \
-    BUILD_STATUS=$?; \
-    echo "=== build exit status: $BUILD_STATUS ==="; \
-    if [ "$BUILD_STATUS" -ne 0 ]; then \
-      echo "=== last 200 lines of build log ==="; \
-      tail -200 /tmp/build.log; \
-      echo "=== individual task logs (turbo .turbo/turbo-*.log) ==="; \
-      find . -name "turbo-*.log" -path "*/.turbo/*" -exec sh -c 'echo "===> $1"; cat "$1"' _ {} \; 2>/dev/null || true; \
-      echo "=== state of apps/chat/.next ==="; \
-      ls -la apps/chat/.next 2>&1 || echo "no .next dir"; \
-      exit $BUILD_STATUS; \
-    fi
+RUN pnpm run build --filter=@klicker-uzh/chat
 
 
 FROM base AS runner

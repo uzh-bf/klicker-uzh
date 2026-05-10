@@ -66,7 +66,7 @@
     "vitest": "~3.2.4"
   },
   "scripts": {
-    "build": "next build",
+    "build": "next build --webpack",
     "check": "tsc --noEmit",
     "dev": "cross-env NODE_ENV=development next dev --port 3004",
     "lint": "eslint .",
