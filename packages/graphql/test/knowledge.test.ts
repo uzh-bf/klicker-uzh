@@ -2,7 +2,8 @@ import {
   KBGraphInclusionMode,
   KBResourceKind,
 } from '@klicker-uzh/prisma/client'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { deleteKB, getKB, updateKB } from '../src/services/knowledge.js'
 import {
   isResourceIncludedInGraph,
   validateKBMetadata,
@@ -11,6 +12,7 @@ import {
   validateKBResourceSource,
 } from '../src/services/knowledgeMetadata.js'
 import {
+  dispatchKBWebhook,
   resolveIncomingKBWebhookIds,
   signKBWebhookPayload,
   verifyKBWebhookSignature,
@@ -165,5 +167,126 @@ describe('KB service helpers', () => {
       resourceId: 'resource-1',
       ingestionRunId: 'run-1',
     })
+  })
+})
+
+function buildOwnerCtx(prismaMock: Record<string, unknown>) {
+  return {
+    user: { sub: 'user-1' },
+    prisma: prismaMock,
+  } as unknown as Parameters<typeof getKB>[1]
+}
+
+describe('KB owner-only authorization', () => {
+  it('refuses to read a KB owned by a different user', async () => {
+    const findFirst = vi.fn().mockResolvedValue(null)
+    const ctx = buildOwnerCtx({ kB: { findFirst } })
+
+    await expect(getKB({ id: 'kb-other' }, ctx)).rejects.toThrow(
+      'Knowledge base not found'
+    )
+    expect(findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: 'kb-other',
+          ownerId: 'user-1',
+        }),
+      })
+    )
+  })
+
+  it('refuses to update a KB owned by a different user before mutating state', async () => {
+    const findFirst = vi.fn().mockResolvedValue(null)
+    const update = vi.fn()
+    const ctx = buildOwnerCtx({ kB: { findFirst, update } })
+
+    await expect(
+      updateKB({ id: 'kb-other', input: { name: 'hijack' } }, ctx)
+    ).rejects.toThrow('Knowledge base not found')
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  it('refuses to delete a KB owned by a different user before deleting', async () => {
+    const findFirst = vi.fn().mockResolvedValue(null)
+    const deleteMock = vi.fn()
+    const ctx = buildOwnerCtx({ kB: { findFirst, delete: deleteMock } })
+
+    await expect(deleteKB({ id: 'kb-other' }, ctx)).rejects.toThrow(
+      'Knowledge base not found'
+    )
+    expect(deleteMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('dispatchKBWebhook', () => {
+  const ORIGINAL_ENV = { ...process.env }
+
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    process.env = { ...ORIGINAL_ENV }
+  })
+
+  afterEach(() => {
+    process.env = { ...ORIGINAL_ENV }
+  })
+
+  it('returns a non-ok result when the destination is not configured', async () => {
+    delete process.env.KB_INGESTION_WEBHOOK_URL
+    delete process.env.KB_INGESTION_WEBHOOK_SECRET
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+
+    const result = await dispatchKBWebhook({
+      destination: 'INGESTION',
+      eventType: 'resource.created',
+      payload: {},
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.error).toMatch(/not configured/i)
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('signs and posts the configured destination URL on success', async () => {
+    process.env.KB_INGESTION_WEBHOOK_URL = 'https://ingest.example/hook'
+    process.env.KB_INGESTION_WEBHOOK_SECRET = 'shh'
+
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('ok', { status: 200 }))
+
+    const result = await dispatchKBWebhook({
+      destination: 'INGESTION',
+      eventType: 'resource.created',
+      payload: { kb: { id: 'kb-1' } },
+    })
+
+    expect(result.ok).toBe(true)
+    expect(result.statusCode).toBe(200)
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    const [url, init] = fetchSpy.mock.calls[0]!
+    expect(url).toBe('https://ingest.example/hook')
+    const headers = (init as RequestInit).headers as Record<string, string>
+    expect(headers['X-Klicker-Event-Type']).toBe('resource.created')
+    expect(headers['X-Klicker-Signature']).toMatch(/^[0-9a-f]{64}$/)
+    expect(headers['X-Klicker-Event-Id']).toEqual(result.eventId)
+  })
+
+  it('reports HTTP errors without throwing', async () => {
+    process.env.KB_GRAPH_WEBHOOK_URL = 'https://graph.example/hook'
+    process.env.KB_GRAPH_WEBHOOK_SECRET = 'shh'
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('boom', { status: 502 })
+    )
+
+    const result = await dispatchKBWebhook({
+      destination: 'GRAPH',
+      eventType: 'catalog.resource.updated',
+      payload: {},
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.statusCode).toBe(502)
+    expect(result.error).toMatch(/502/)
   })
 })
