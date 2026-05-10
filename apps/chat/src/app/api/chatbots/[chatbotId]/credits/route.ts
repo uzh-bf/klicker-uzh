@@ -49,6 +49,14 @@ export async function GET(
         ? availableModels.map((m) => m.id)
         : chatbotResult.chatbot.allowedModelIds
 
+    // When anonymous and no fallback is available for this chatbot, the
+    // computed `automaticModelId` would otherwise come from the global
+    // registry and contradict the empty `availableModels` list.
+    const automaticModelId =
+      authMode === 'anonymous' && availableModels.length === 0
+        ? null
+        : getAutomaticModelId(credits, allowedIdsForAuto)
+
     return NextResponse.json({
       ...credits,
       availableModels: availableModels.map(
@@ -70,7 +78,7 @@ export async function GET(
           allowedReasoningEfforts: supportedReasoningEfforts,
         })
       ),
-      automaticModelId: getAutomaticModelId(credits, allowedIdsForAuto),
+      automaticModelId,
       authMode,
     })
   } catch (error) {

@@ -205,9 +205,14 @@ export async function verifyLtiToken(token: string): Promise<LtiTokenPayload> {
   const appSecret = process.env.APP_SECRET
   if (!appSecret) throw new Error('APP_SECRET is required')
 
-  const payload = await verifyJWT(token, appSecret, {
-    issuer: process.env.APP_ORIGIN_LTI,
-  })
+  const issuer = process.env.APP_ORIGIN_LTI
+  // Fail closed in production: jose silently skips `iss` check when issuer is
+  // undefined, which would let any `APP_SECRET`-signed token be accepted.
+  if (!issuer && process.env.NODE_ENV === 'production') {
+    throw new Error('APP_ORIGIN_LTI is required in production')
+  }
+
+  const payload = await verifyJWT(token, appSecret, { issuer })
 
   if (
     !payload.sub ||
@@ -231,7 +236,11 @@ export interface ResolveLtiAuthInput {
   ltiSub: string
   ltiScope: LtiScope
   courseId: string
-  hasValidParticipantToken: boolean
+  // Verified `sub` from the request's `participant_token` cookie, or null if
+  // absent/invalid. The account branch only fires when this matches the real
+  // account participant id — a stale token for a different participant on a
+  // shared browser must not select the account branch.
+  participantTokenSub: string | null
 }
 
 export type ResolveLtiAuthDecision =
@@ -244,14 +253,14 @@ export type ResolveLtiAuthDecision =
 export async function resolveLtiAuthDecision(
   input: ResolveLtiAuthInput
 ): Promise<ResolveLtiAuthDecision> {
-  const { ltiSub, ltiScope, courseId, hasValidParticipantToken } = input
+  const { ltiSub, ltiScope, courseId, participantTokenSub } = input
 
   const realAccount = await prisma.participantAccount.findFirst({
     where: { ssoId: ltiSub, NOT: { type: GUEST_ACCOUNT_TYPE } },
     select: { participantId: true },
   })
 
-  if (realAccount && hasValidParticipantToken) {
+  if (realAccount && participantTokenSub === realAccount.participantId) {
     await prisma.participation.upsert({
       where: {
         courseId_participantId: {

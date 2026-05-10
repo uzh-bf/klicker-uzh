@@ -1018,20 +1018,20 @@ export async function POST(
   // `!chatbot.modelSelection` branch (the bug from the original branch).
   // Phase B replaces this with reasoning-effort tier gating.
   if (authMode === 'anonymous' && !selectedModelConfig.fallback) {
-    userCredits =
-      userCredits ??
-      (await CreditsService.getUserCredits(participantId, chatbotId))
-    selectedModel = getAutomaticModelId(
-      userCredits,
-      chatbot.allowedModelIds as string[]
+    // Pick a fallback directly. `getAutomaticModelId` returns the *primary*
+    // when credits>0 even when called with `chatbot.allowedModelIds`, which
+    // would re-trip this branch and 503 anonymous users that have credits.
+    const guestFallback = modelRegistry.find(
+      (m) => m.fallback && (allowedIds === null || allowedIds.has(m.id))
     )
-    selectedModelConfig = modelRegistry.find((m) => m.id === selectedModel)
-    if (!selectedModelConfig?.fallback) {
+    if (!guestFallback) {
       return NextResponse.json(
         { error: 'No fallback model available for guest access' },
         { status: 503 }
       )
     }
+    selectedModel = guestFallback.id
+    selectedModelConfig = guestFallback
   }
 
   const allowedReasoningEfforts = getAllowedReasoningEffortsForModel(

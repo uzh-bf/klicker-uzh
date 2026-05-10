@@ -16,18 +16,21 @@ const querySchema = z.object({
   chatbotId: z.string().uuid(),
 })
 
-async function hasValidParticipantToken(req: NextRequest): Promise<boolean> {
+async function getParticipantTokenSub(
+  req: NextRequest
+): Promise<string | null> {
   const token = req.cookies.get('participant_token')?.value
-  if (!token) return false
+  if (!token) return null
   const appSecret = process.env.APP_SECRET
-  if (!appSecret) return false
+  if (!appSecret) return null
   try {
     const result = await jwtVerify(token, new TextEncoder().encode(appSecret))
-    return (
-      typeof result.payload.sub === 'string' && result.payload.sub.length > 0
-    )
+    return typeof result.payload.sub === 'string' &&
+      result.payload.sub.length > 0
+      ? result.payload.sub
+      : null
   } catch {
-    return false
+    return null
   }
 }
 
@@ -101,7 +104,7 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  const participantTokenValid = await hasValidParticipantToken(req)
+  const participantTokenSub = await getParticipantTokenSub(req)
 
   let decision
   try {
@@ -109,7 +112,7 @@ export async function GET(req: NextRequest) {
       ltiSub: ltiPayload.sub,
       ltiScope: ltiPayload.scope,
       courseId,
-      hasValidParticipantToken: participantTokenValid,
+      participantTokenSub,
     })
   } catch (error) {
     console.error(LOG_PREFIX, 'resolveLtiAuthDecision failed:', error)
@@ -130,8 +133,15 @@ export async function GET(req: NextRequest) {
   chatbotUrl.search = ''
 
   if (decision.mode === 'account') {
-    // Account user with valid participant_token. Don't touch cookies.
-    return NextResponse.redirect(chatbotUrl)
+    // Account branch: clear any stale `chat_participant_token` so the
+    // guest-first middleware order (verify chat-guest before participant) does
+    // not keep forcing `authMode='anonymous'` after this redirect.
+    const accountResponse = NextResponse.redirect(chatbotUrl)
+    accountResponse.cookies.delete({
+      name: 'chat_participant_token',
+      path: '/',
+    })
+    return accountResponse
   }
 
   // Guest path. Issue chat_participant_token; never override participant_token.

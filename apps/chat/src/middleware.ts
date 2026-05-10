@@ -22,6 +22,13 @@ async function getChatGuestSecretForMiddleware(): Promise<string | null> {
     return process.env.APP_CHAT_GUEST_SECRET
   }
 
+  // Mirror `getChatGuestSecret()` in `lib/server/ltiGuest.ts`: in production,
+  // refuse the APP_SECRET-derived fallback. Otherwise the middleware would
+  // accept guest tokens the server signer will not produce (and vice versa).
+  if (process.env.NODE_ENV === 'production') {
+    return null
+  }
+
   if (cachedDerivedSecret) return cachedDerivedSecret
 
   const appSecret = process.env.APP_SECRET
@@ -111,11 +118,15 @@ export async function middleware(request: NextRequest) {
     return redirectToNoLogin(request, hadGuestToken)
   }
 
+  // Fail closed when APP_SECRET is missing — the previous `|| ''` fallback
+  // would have used an empty signing key, which is not a meaningful gate.
+  const appSecret = process.env.APP_SECRET
+  if (!appSecret) {
+    return redirectToNoLogin(request, hadGuestToken)
+  }
+
   try {
-    await jwtVerify(
-      participantToken,
-      new TextEncoder().encode(process.env.APP_SECRET || '')
-    )
+    await jwtVerify(participantToken, new TextEncoder().encode(appSecret))
   } catch (error) {
     console.error('Invalid participant token:', error)
     return redirectToNoLogin(request, hadGuestToken)
