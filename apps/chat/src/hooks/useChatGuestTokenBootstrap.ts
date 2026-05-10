@@ -1,5 +1,6 @@
 'use client'
 
+import { bootstrapTokenFromUrl } from '@klicker-uzh/util/client-auth'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 
@@ -24,20 +25,15 @@ export function useChatGuestTokenBootstrap(): void {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const queryToken = searchParams.get(CHAT_GUEST_QUERY_KEY)
-    if (!queryToken) return
+    const next = bootstrapTokenFromUrl(
+      new URLSearchParams(searchParams.toString()),
+      {
+        storageKey: CHAT_GUEST_SESSION_STORAGE_KEY,
+        queryKey: CHAT_GUEST_QUERY_KEY,
+      }
+    )
+    if (!next) return
 
-    try {
-      window.sessionStorage.setItem(CHAT_GUEST_SESSION_STORAGE_KEY, queryToken)
-    } catch {
-      // sessionStorage may be unavailable in some embedded contexts; without
-      // it we cannot keep the token alive across reloads. Leave the URL token
-      // in place so the in-memory request still authenticates.
-      return
-    }
-
-    const next = new URLSearchParams(searchParams.toString())
-    next.delete(CHAT_GUEST_QUERY_KEY)
     const qs = next.toString()
     router.replace(qs ? `${pathname}?${qs}` : pathname)
   }, [searchParams, pathname, router])
