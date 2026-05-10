@@ -4,6 +4,11 @@ import {
   verifyLtiToken,
 } from '@/src/lib/server/ltiGuest'
 import { prisma } from '@klicker-uzh/prisma'
+import {
+  LTI_PROBE_COOKIE_NAME,
+  cookieSecurityOptions,
+  cookiesAvailableViaLtiProbe,
+} from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -133,7 +138,9 @@ export async function GET(req: NextRequest) {
   // browsers blocking 3p cookies (Safari ITP, Brave, Firefox total cookie protection
   // pre-141, Chrome with Tracking Protection) strip it before this request lands.
   // Mirrors the PWA pattern in `getParticipantToken.ts`.
-  const cookiesAvailable = !!req.cookies.get('lti-token')?.value
+  const cookiesAvailable = cookiesAvailableViaLtiProbe({
+    [LTI_PROBE_COOKIE_NAME]: req.cookies.get(LTI_PROBE_COOKIE_NAME)?.value,
+  })
 
   const chatbotUrl = req.nextUrl.clone()
   chatbotUrl.pathname = `/${chatbotId}`
@@ -183,9 +190,7 @@ export async function GET(req: NextRequest) {
   // iframe contexts (Chrome 114+, Edge 114+, Firefox 141+, Safari 26.2+).
   response.cookies.set('chat_participant_token', chatGuestToken, {
     httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? 'none' : 'lax',
-    partitioned: isProduction,
+    ...cookieSecurityOptions({ isProduction }),
     path: '/',
     maxAge: 60 * 60 * 24 * 14,
   })

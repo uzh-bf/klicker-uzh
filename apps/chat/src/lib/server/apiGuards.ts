@@ -1,5 +1,6 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { Prisma } from '@klicker-uzh/prisma/client'
+import { extractBearerToken } from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -10,12 +11,6 @@ export type { AuthMode }
 type ParticipantIdentity = {
   participantId: string
   authMode: AuthMode
-}
-
-function extractBearerToken(headerValue: string | null): string | null {
-  if (!headerValue) return null
-  const match = headerValue.trim().match(/^Bearer\s+(.+)$/i)
-  return match ? match[1].trim() : null
 }
 
 // Token order: chat_participant_token first, then participant_token.

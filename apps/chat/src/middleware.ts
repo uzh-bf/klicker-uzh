@@ -1,3 +1,4 @@
+import { extractBearerToken } from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
@@ -67,12 +68,6 @@ async function verifyChatGuestTokenInMiddleware(
   } catch {
     return false
   }
-}
-
-function extractBearerToken(headerValue: string | null): string | null {
-  if (!headerValue) return null
-  const match = headerValue.trim().match(/^Bearer\s+(.+)$/i)
-  return match ? match[1].trim() : null
 }
 
 function redirectToNoLogin(request: NextRequest, ltiContext: boolean) {

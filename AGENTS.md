@@ -227,6 +227,7 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 - **Shared practice renderer in chat**: Do not wrap `StudentElement` in a chat-owned `<form>`; shared answer option buttons are regular buttons and can behave like implicit submit controls inside forms. Use an explicit chat submit button instead. (`apps/chat/src/components/student-practice-quiz-card.tsx`, `packages/shared-components/src/questions/`)
 - **Chat shared-component i18n**: Shared practice components use `next-intl` hooks, so `apps/chat` must wrap its App Router tree in `NextIntlClientProvider` before rendering them. (`apps/chat/src/app/layout.tsx`, `packages/shared-components/src/StudentElement.tsx`)
 - **Chat model reasoning effort changes**: Adding a reasoning effort requires updating chat validation, the GraphQL enum/schema, generated GraphQL artifacts, and the manage chatbot settings effort order; model-specific availability belongs in the chat and GraphQL model registries. (`apps/chat/src/lib/config/reasoning.ts`, `packages/graphql/src/schema/resource.ts`, `apps/frontend-manage/src/components/resources/chatbots/ChatbotDetails.tsx`)
+- **Edge-safe util imports**: Next middleware and other edge-bundled code must import narrow util subpaths (for example `@klicker-uzh/util/auth`), not the util package root, because the root bundle includes Prisma/Node dependencies that break edge builds. (`packages/util/package.json`, `apps/chat/src/middleware.ts`)
 
 ## Factory Skills (AI Assistance)
 

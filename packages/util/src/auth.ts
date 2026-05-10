@@ -51,6 +51,37 @@ export function extractProviderFromAffiliationId(
   }
 }
 
+export function extractBearerToken(headerValue: string | null): string | null {
+  if (!headerValue) return null
+  const match = headerValue.trim().match(/^Bearer\s+(.+)$/i)
+  const token = match?.[1]
+  return token ? token.trim() : null
+}
+
+export const LTI_PROBE_COOKIE_NAME = 'lti-token'
+
+export function cookiesAvailableViaLtiProbe(
+  cookies: Record<string, string | undefined>
+): boolean {
+  return !!cookies[LTI_PROBE_COOKIE_NAME]
+}
+
+export function cookieSecurityOptions({
+  isProduction,
+}: {
+  isProduction: boolean
+}): {
+  secure: boolean
+  sameSite: 'lax' | 'none'
+  partitioned: boolean
+} {
+  return {
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    partitioned: isProduction,
+  }
+}
+
 /**
  * Reduce over affiliation strings to determine whether the Catalyst flag should be set.
  * Returns true if any affiliation domain contains 'uzh.ch' or 'usz.ch'.
