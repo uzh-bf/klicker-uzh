@@ -1,6 +1,7 @@
 'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { authedFetch } from '../lib/client/authedFetch'
 import { type ModelID, type ModelOption } from '../lib/config/models'
 import { DEFAULT_PROMPT } from '../lib/config/prompts'
 import { type ReasoningEffort } from '../lib/config/reasoning'
@@ -121,7 +122,7 @@ export const useSettingsStore = create<SettingsState>()(
 
       loadModeOptions: async (chatbotId: string) => {
         try {
-          const response = await fetch(`/api/chatbots/${chatbotId}`)
+          const response = await authedFetch(`/api/chatbots/${chatbotId}`)
           const responseData = await response.json()
           if (!response.ok) {
             console.warn(
@@ -193,7 +194,9 @@ export const useSettingsStore = create<SettingsState>()(
 
       loadCredits: async (chatbotId: string) => {
         try {
-          const response = await fetch(`/api/chatbots/${chatbotId}/credits`)
+          const response = await authedFetch(
+            `/api/chatbots/${chatbotId}/credits`
+          )
           if (!response.ok) {
             console.error('Failed to load credits:', response.statusText)
             return

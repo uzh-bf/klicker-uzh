@@ -69,6 +69,12 @@ async function verifyChatGuestTokenInMiddleware(
   }
 }
 
+function extractBearerToken(headerValue: string | null): string | null {
+  if (!headerValue) return null
+  const match = headerValue.trim().match(/^Bearer\s+(.+)$/i)
+  return match ? match[1].trim() : null
+}
+
 function redirectToNoLogin(request: NextRequest, ltiContext: boolean) {
   const noLoginUrl = request.nextUrl.clone()
   noLoginUrl.pathname = '/noLogin'
@@ -101,7 +107,13 @@ export async function middleware(request: NextRequest) {
 
   // 1. chat_participant_token (anonymous LTI guest) — checked first so a
   // future "switch to anonymous" flow only needs to set this cookie.
-  const chatGuestToken = request.cookies.get('chat_participant_token')?.value
+  // Falls back to `?_t=` query and `Authorization: Bearer` header for the
+  // CHIPS-unsupported-browser code path (sessionStorage-driven; see
+  // `useChatGuestTokenBootstrap`).
+  const chatGuestToken =
+    request.cookies.get('chat_participant_token')?.value ||
+    request.nextUrl.searchParams.get('_t') ||
+    extractBearerToken(request.headers.get('authorization'))
   let hadGuestToken = false
   if (chatGuestToken) {
     hadGuestToken = true
@@ -111,8 +123,11 @@ export async function middleware(request: NextRequest) {
     // Invalid guest token → fall through to participant_token.
   }
 
-  // 2. participant_token (account)
-  const participantToken = request.cookies.get('participant_token')?.value
+  // 2. participant_token (account). Cookie first; same Authorization-header
+  // fallback so account users in cookieless contexts still authenticate.
+  const participantToken =
+    request.cookies.get('participant_token')?.value ||
+    extractBearerToken(request.headers.get('authorization'))
 
   if (!participantToken) {
     return redirectToNoLogin(request, hadGuestToken)

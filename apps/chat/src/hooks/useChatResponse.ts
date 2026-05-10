@@ -1,6 +1,7 @@
 import { useParams } from 'next/navigation'
 import { useCallback, useRef } from 'react'
 import { hasAllImageAttachmentsHydrated } from '../lib/attachments/attachmentState'
+import { authedFetch } from '../lib/client/authedFetch'
 import {
   REASONING_EFFORT_OPTIONS,
   type ReasoningEffort,
@@ -163,7 +164,7 @@ export function useChatResponse(
         }
 
         // send request to API with streaming enabled
-        const response = await fetch(`/api/chatbots/${chatbotId}/chat`, {
+        const response = await authedFetch(`/api/chatbots/${chatbotId}/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: abortController.signal,

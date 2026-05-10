@@ -1,3 +1,4 @@
+import { NoLoginSelfHeal } from '@/src/components/NoLoginSelfHeal'
 import Link from 'next/link'
 
 interface NoLoginPageProps {
@@ -46,6 +47,7 @@ export default async function Page({ searchParams }: NoLoginPageProps) {
 
   return (
     <div className="bg-muted flex min-h-screen w-full items-center justify-center px-4">
+      <NoLoginSelfHeal redirectTo={redirectTo} />
       <div className="bg-card w-full max-w-lg rounded-lg border p-8 text-center shadow-sm">
         <h1 className="text-foreground text-2xl font-semibold">
           Login Required

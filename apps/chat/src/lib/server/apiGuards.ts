@@ -12,14 +12,29 @@ type ParticipantIdentity = {
   authMode: AuthMode
 }
 
+function extractBearerToken(headerValue: string | null): string | null {
+  if (!headerValue) return null
+  const match = headerValue.trim().match(/^Bearer\s+(.+)$/i)
+  return match ? match[1].trim() : null
+}
+
 // Token order: chat_participant_token first, then participant_token.
 // Forward-compat: Phase C "switch to anonymous" only sets the guest cookie;
 // account cookie stays. Guest-first ordering means the switch takes effect
 // without clearing the account cookie or changing this code.
+//
+// Authorization header fallback (`Bearer <token>`) supports the
+// CHIPS-unsupported-browser path: client-side `authedFetch` reads the token
+// from sessionStorage and attaches it to API calls. The header carries a
+// chat-guest token (verified with the chat-guest secret); account-mode users
+// in cookieless contexts are not yet supported here (would need a separate
+// header handoff in PWA flow first).
 export async function getParticipantId(
   req: NextRequest
 ): Promise<ParticipantIdentity | { response: NextResponse }> {
-  const chatGuestToken = req.cookies.get('chat_participant_token')?.value
+  const headerToken = extractBearerToken(req.headers.get('authorization'))
+  const chatGuestToken =
+    req.cookies.get('chat_participant_token')?.value ?? headerToken
   if (chatGuestToken) {
     try {
       const payload = await verifyChatGuestToken(chatGuestToken)
@@ -43,10 +58,20 @@ export async function getParticipantId(
     }
   }
 
+  const appSecret = process.env.APP_SECRET
+  if (!appSecret) {
+    return {
+      response: NextResponse.json(
+        { error: 'Server misconfigured' },
+        { status: 500 }
+      ),
+    }
+  }
+
   try {
     const jwtPayload = await jwtVerify(
       participantToken,
-      new TextEncoder().encode(process.env.APP_SECRET || '')
+      new TextEncoder().encode(appSecret)
     )
     const participantId =
       typeof jwtPayload.payload.sub === 'string' && jwtPayload.payload.sub

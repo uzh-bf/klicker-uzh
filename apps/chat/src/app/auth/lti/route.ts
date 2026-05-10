@@ -128,9 +128,20 @@ export async function GET(req: NextRequest) {
     courseId,
   })
 
+  // Probe whether third-party cookies survived the LMS iframe context.
+  // `apps/lti` sets `lti-token` with `secure; sameSite=none; domain=COOKIE_DOMAIN`;
+  // browsers blocking 3p cookies (Safari ITP, Brave, Firefox total cookie protection
+  // pre-141, Chrome with Tracking Protection) strip it before this request lands.
+  // Mirrors the PWA pattern in `getParticipantToken.ts`.
+  const cookiesAvailable = !!req.cookies.get('lti-token')?.value
+
   const chatbotUrl = req.nextUrl.clone()
   chatbotUrl.pathname = `/${chatbotId}`
   chatbotUrl.search = ''
+
+  const isProduction =
+    process.env.NODE_ENV === 'production' &&
+    process.env.COOKIE_DOMAIN !== '127.0.0.1'
 
   if (decision.mode === 'account') {
     // Account branch: clear any stale `chat_participant_token` so the
@@ -156,18 +167,25 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  const response = NextResponse.redirect(chatbotUrl)
+  // sessionStorage fallback for browsers where CHIPS is not yet supported
+  // (pre-Safari 26.2, Firefox <141). Hand the token off via `?_t=` query so
+  // the client bootstrap (`useChatGuestTokenBootstrap`) can stuff it into
+  // sessionStorage and strip the URL parameter via `router.replace`.
+  if (!cookiesAvailable) {
+    chatbotUrl.searchParams.set('_t', chatGuestToken)
+  }
 
-  const isProduction =
-    process.env.NODE_ENV === 'production' &&
-    process.env.COOKIE_DOMAIN !== '127.0.0.1'
+  const response = NextResponse.redirect(chatbotUrl)
 
   // Host-only cookie: no `domain` set → cookie never leaves the chat subdomain.
   // Backend GraphQL on api.<domain> never sees this token even if leaked.
+  // `Partitioned` (CHIPS) lets modern browsers keep the cookie in third-party
+  // iframe contexts (Chrome 114+, Edge 114+, Firefox 141+, Safari 26.2+).
   response.cookies.set('chat_participant_token', chatGuestToken, {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'lax',
+    sameSite: isProduction ? 'none' : 'lax',
+    partitioned: isProduction,
     path: '/',
     maxAge: 60 * 60 * 24 * 14,
   })
