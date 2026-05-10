@@ -19,11 +19,22 @@ Ancillary tables that reference `Participant.id` directly (FK constraints): `Par
 | Path | File | Behavior today | Produces duplicate? |
 | --- | --- | --- | --- |
 | Manual signup (no LTI data) | `packages/graphql/src/services/accounts.ts` (`createParticipantAccount`, no-LTI branch) | Rejects if any participant with that normalized email already exists, regardless of `isSSOAccount`. | No |
-| Manual signup with embedded LTI data | `accounts.ts` (`createParticipantAccount`, LTI branch) → `resolveOrCreateParticipantForLti(allowCreate=true)` | If exactly one participant matches by email, links via `ParticipantAccount` and reuses the existing row. If two match, fails closed. | No |
+| Manual signup with embedded LTI data | `accounts.ts` (`createParticipantAccount`, LTI branch) → `resolveOrCreateParticipantForLti(allowCreate=true)` | If exactly one participant matches by email, links via `ParticipantAccount` and reuses the existing row. If two match, fails closed. New rows get `isSSOAccount = true` but with a **user-supplied password**, so the participant can later log in via the regular email/password form too. | No |
 | LTI-driven login (no create) | `accounts.ts` (`loginParticipantWithLti` → `resolveOrCreateParticipantForLti(allowCreate=false)`) | Same matching logic, never creates. | No |
-| Edu-ID / OIDC participant flow | `apps/auth/src/lib/helpers.ts` (`createOrLinkParticipant`) | Looks up `email_isSSOAccount = (email, true)` and verified affiliations only. If a manual `(email, false)` row exists, it is invisible — a brand new SSO row gets created. | **Yes, primary source today** |
+| Edu-ID / OIDC participant flow | `apps/auth/src/lib/helpers.ts` (`createOrLinkParticipant`) | Looks up `email_isSSOAccount = (email, true)` and verified affiliations only. If a manual `(email, false)` row exists, it is invisible — a brand new SSO row gets created. The new row stores a `crypto.randomBytes(32)` hash that the user does not know, so this row cannot ever be used for email/password login. | **Yes, primary source today** |
 
 The Edu-ID flow is the only path that still allows the cross-mode duplicate. This matches the pattern in CLAUDE.md ("Participant email uniqueness across auth modes" learning) — the GraphQL service layer was tightened, the OIDC flow was not.
+
+### Two flavours of "SSO row"
+
+The `isSSOAccount = true` flag does not on its own tell you whether the row has a usable password. Two distinct creation paths produce SSO rows:
+
+| Path | `Participant.password` | Email/password login works? |
+| --- | --- | --- |
+| LTI account creation (`createParticipantAccount` LTI branch) | bcrypt hash of the password the user typed in the signup form | Yes |
+| Edu-ID / OIDC creation (`createOrLinkParticipant`) | bcrypt hash of `crypto.randomBytes(32)` — discarded immediately | No (the user does not know the input) |
+
+The Phase 1 login fix bcrypt-tests against every candidate row. Both flavours are handled correctly: LTI-created SSO rows authenticate when the user types the password they originally set; Edu-ID rows reject every input that is not the random hex that no one ever saw. This is also why the duplicate problem is more than a rare edge case — when an Edu-ID-created SSO row exists alongside the manual row the user actually uses, the user has no way to consolidate without help, and any future password-reset feature has to pick which row to reset.
 
 ### Test coverage
 
@@ -92,6 +103,7 @@ Decisions the function takes as inputs (not hard-coded):
 | --- | --- |
 | Which row is canonical | The one with the more recent `lastLoginAt`. Ties go to the row with a linked `ParticipantAccount`. |
 | `email`, `username`, `avatar`, `avatarSettings`, `locale`, `isProfilePublic`, `isActive` | Take from canonical; victim's username is freed by the delete. |
+| `password` | Take from canonical. If the canonical is an Edu-ID row (random hash) and the victim is a manual or LTI row with a user-set password, prefer the victim's `password` so the merged participant retains a working email/password login. Detect "random hash" pragmatically: any participant row that has a linked `ParticipantAccount` of type `EDUID` and was created in the same transaction as that account is treated as having a random password unless we know otherwise. |
 | `xp`, `LeaderboardEntry.score` | Sum across both rows. Already-aggregated leaderboard rows for the same `(type, courseId)` or `(type, liveQuizId)` get their scores added; only one row survives per unique constraint. |
 | `Participation` for the same course | Merge into one. If both have `courseLeaderboardId`, sum scores; keep the canonical's id. Concatenate `completedMicroLearnings` and `bookmarkedElementStacks` arrays with dedup. |
 | `ParticipantGroup` membership | Union. If both rows are in the same group, the duplicate membership is dropped silently. |
@@ -136,7 +148,7 @@ The Phase 1 login code already iterates over all candidates, so it transparently
 ## Risks and open questions
 
 - **What is the canonical row when both rows have activity in the same course?** The merge service's "sum scores" rule is the safe default but loses ranking history. Acceptable for a one-time migration; not acceptable as ongoing behavior. The right answer is to make the migration rare via step 1 and to escalate large activity gaps for manual review.
-- **What about users who never had a manual account but expect their email/password to "just work" because they reset their password somewhere outside this codebase?** None today; password reset is not yet implemented (the branch name suggests it's the next feature). Step 1's `ParticipantAccount`-as-source-of-truth approach is compatible with any future password-reset feature: a reset writes to the participant row and the bcrypt loop in `loginParticipant` finds it.
+- **What about users who never had a manual account but expect their email/password to "just work" because they reset their password somewhere outside this codebase?** Two existing entry points already give SSO rows a usable password: the LTI account-creation form, which captures one at signup time, and (eventually) password reset, which the branch name signals is the next feature. Both write directly to `Participant.password`; the Phase 1 bcrypt loop in `loginParticipant` finds whichever row holds the matching hash. The only rows that remain "password-locked" are Edu-ID-created rows that were never linked to anything else — Phase 2 step 1 stops creating those when a manual or LTI row already exists, and step 2's merge consolidates the legacy ones onto the row with the working password.
 - **Locale and email-validity flags differ across rows.** The merge takes canonical's values. If the SSO row is canonical (more recent login), we get `isEmailValid = true` for free; if the manual row is canonical, we trust its existing flag.
 - **Cypress coverage.** The dual-account scenario does not currently have a Cypress flow. The audit query and merge service should at minimum get a unit test in `packages/graphql/test/`. A manual end-to-end check on staging covers the rest.
 - **Anonymous / temporary participants.** Out of scope. They never carry a real email and are not affected by the uniqueness change.

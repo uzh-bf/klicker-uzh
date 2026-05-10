@@ -19,7 +19,8 @@ const emailFor = (label: string) => `${TEST_PREFIX}-${label}@example.com`
 const usernameFor = (label: string) => `${TEST_PREFIX}-${label}`.slice(0, 48)
 
 const MANUAL_PASSWORD = 'manual-password-123'
-const SSO_RANDOM_PASSWORD = 'sso-random-unguessable'
+const LTI_USER_SET_PASSWORD = 'lti-user-set-password'
+const EDUID_RANDOM_PASSWORD = 'eduid-random-unknown-to-user'
 
 let prisma: PrismaClient
 
@@ -158,6 +159,27 @@ describe('loginParticipant email/username login', () => {
     expect(result).toBeNull()
   })
 
+  it('logs in an LTI-created participant by email with the password they chose at signup', async () => {
+    const lti = await prisma.participant.create({
+      data: {
+        email: emailFor('lti-only'),
+        username: usernameFor('lti-only'),
+        password: await bcrypt.hash(LTI_USER_SET_PASSWORD, 10),
+        isSSOAccount: true,
+      },
+    })
+
+    const result = await loginParticipant(
+      {
+        usernameOrEmail: emailFor('lti-only'),
+        password: LTI_USER_SET_PASSWORD,
+      },
+      createCtx()
+    )
+
+    expect(result).toBe(lti.id)
+  })
+
   it('logs in the manual row when both manual and SSO participants share the same email', async () => {
     const manual = await prisma.participant.create({
       data: {
@@ -171,7 +193,7 @@ describe('loginParticipant email/username login', () => {
       data: {
         email: emailFor('dual'),
         username: usernameFor('dual-sso'),
-        password: await bcrypt.hash(SSO_RANDOM_PASSWORD, 10),
+        password: await bcrypt.hash(EDUID_RANDOM_PASSWORD, 10),
         isSSOAccount: true,
       },
     })
@@ -187,48 +209,48 @@ describe('loginParticipant email/username login', () => {
     expect(result).toBe(manual.id)
   })
 
-  it('logs in the SSO row when its password hash matches and only an SSO+manual pair exists', async () => {
+  it('logs in the SSO row when the LTI signup password matches and a manual row also exists', async () => {
     await prisma.participant.create({
       data: {
-        email: emailFor('dual-sso-pw'),
-        username: usernameFor('dual-sso-pw-manual'),
+        email: emailFor('dual-lti'),
+        username: usernameFor('dual-lti-manual'),
         password: await bcrypt.hash(MANUAL_PASSWORD, 10),
         isSSOAccount: false,
       },
     })
-    const sso = await prisma.participant.create({
+    const lti = await prisma.participant.create({
       data: {
-        email: emailFor('dual-sso-pw'),
-        username: usernameFor('dual-sso-pw-sso'),
-        password: await bcrypt.hash(SSO_RANDOM_PASSWORD, 10),
+        email: emailFor('dual-lti'),
+        username: usernameFor('dual-lti-sso'),
+        password: await bcrypt.hash(LTI_USER_SET_PASSWORD, 10),
         isSSOAccount: true,
       },
     })
 
     const result = await loginParticipant(
       {
-        usernameOrEmail: emailFor('dual-sso-pw'),
-        password: SSO_RANDOM_PASSWORD,
+        usernameOrEmail: emailFor('dual-lti'),
+        password: LTI_USER_SET_PASSWORD,
       },
       createCtx()
     )
 
-    expect(result).toBe(sso.id)
+    expect(result).toBe(lti.id)
   })
 
-  it('rejects email login for an SSO-only account whose hashed password is unknown', async () => {
+  it('rejects email login for an Edu-ID-style SSO row whose hashed password is unguessable', async () => {
     await prisma.participant.create({
       data: {
-        email: emailFor('sso-only'),
-        username: usernameFor('sso-only'),
-        password: await bcrypt.hash(SSO_RANDOM_PASSWORD, 10),
+        email: emailFor('eduid-only'),
+        username: usernameFor('eduid-only'),
+        password: await bcrypt.hash(EDUID_RANDOM_PASSWORD, 10),
         isSSOAccount: true,
       },
     })
 
     const result = await loginParticipant(
       {
-        usernameOrEmail: emailFor('sso-only'),
+        usernameOrEmail: emailFor('eduid-only'),
         password: 'guessed-password',
       },
       createCtx()
