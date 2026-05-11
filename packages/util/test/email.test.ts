@@ -4,6 +4,7 @@ import {
   collectAllEmails,
   collectInvitationEmails,
   normalizeEmail,
+  normalizeMatriculationNumber,
 } from '../src/email.js'
 
 describe('Email utilities', () => {
@@ -63,6 +64,32 @@ describe('Email utilities', () => {
       expect(new Set(result)).toEqual(
         new Set(['user@df.uzh.ch', 'user@uzh.ch'])
       )
+    })
+  })
+
+  describe('normalizeMatriculationNumber', () => {
+    it('returns null for null and undefined', () => {
+      expect(normalizeMatriculationNumber(null)).toBeNull()
+      expect(normalizeMatriculationNumber(undefined)).toBeNull()
+    })
+
+    it('returns null for empty or whitespace-only strings', () => {
+      expect(normalizeMatriculationNumber('')).toBeNull()
+      expect(normalizeMatriculationNumber('   ')).toBeNull()
+      expect(normalizeMatriculationNumber('\t\n')).toBeNull()
+    })
+
+    it('trims whitespace from valid values', () => {
+      expect(normalizeMatriculationNumber('  12345678  ')).toBe('12345678')
+    })
+
+    it('preserves case (unlike email normalization)', () => {
+      expect(normalizeMatriculationNumber('AB-12345')).toBe('AB-12345')
+    })
+
+    it('returns valid matriculation numbers as-is', () => {
+      expect(normalizeMatriculationNumber('12345678')).toBe('12345678')
+      expect(normalizeMatriculationNumber('00-123-456')).toBe('00-123-456')
     })
   })
 

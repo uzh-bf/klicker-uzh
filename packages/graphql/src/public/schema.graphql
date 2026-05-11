@@ -604,6 +604,76 @@ type CatalogSelectionObject {
   name: String!
 }
 
+type ChatModelCapability {
+  description: String!
+  fallback: Boolean!
+  id: String!
+  name: String!
+  supportedReasoningEfforts: [String!]!
+  supportsReasoning: Boolean!
+}
+
+type Chatbot {
+  allowedModelIds: [String!]!
+  allowedReasoningEffortsByModel: [ChatbotReasoningConfig!]!
+  avatar: String
+  courses: [CourseListEntry!]!
+  createdAt: Date
+  creditInitialCredits: Int!
+  creditMaxCredits: Int!
+  creditResetAmount: Int!
+  creditResetPeriod: CreditResetPeriod!
+  description: String
+  disclaimerSummary: ChatbotDisclaimerSummary
+  id: ID!
+  mcpConfigurations: [ChatbotMcpConfigurationSummary!]!
+  modelSelection: Boolean!
+  name: String!
+  updatedAt: Date
+  usageSummary: ChatbotUsageSummary
+}
+
+type ChatbotDisclaimerSummary {
+  acceptedCount: Int!
+  declinedCount: Int!
+  id: ID!
+  name: String!
+  pendingCount: Int!
+  title: String!
+}
+
+type ChatbotMcpConfigurationSummary {
+  allowedToolsCount: Int
+  chatMode: String!
+  isEnabled: Boolean!
+  priority: Int!
+  serverDescription: String
+  serverId: ID!
+  serverIsActive: Boolean!
+  serverName: String!
+}
+
+type ChatbotReasoningConfig {
+  efforts: [String!]!
+  modelId: String!
+}
+
+input ChatbotReasoningConfigInput {
+  efforts: [String!]!
+  modelId: String!
+}
+
+type ChatbotUsageSummary {
+  currentCredits: Float
+  lastActivityAt: Date
+  lastResetAt: Date
+  messageCount: Int!
+  participantCount: Int!
+  threadCount: Int!
+  totalCredits: Float
+  totalResets: Int
+}
+
 type Choice {
   correct: Boolean
   feedback: String
@@ -936,6 +1006,14 @@ type CourseSummary {
   numOfParticipantGroups: Int!
   numOfParticipations: Int!
   numOfPracticeQuizzes: Int!
+}
+
+enum CreditResetPeriod {
+  BIWEEKLY
+  DAILY
+  MONTHLY
+  NONE
+  WEEKLY
 }
 
 """
@@ -1821,6 +1899,7 @@ type Mutation {
   unpublishMicroLearning(id: String!): MicroLearning
   unpublishPracticeQuiz(id: String!): PracticeQuiz
   unsubscribeFromPush(courseId: String!, endpoint: String!): Boolean
+  updateChatbotModelSettings(allowedModelIds: [String!]!, allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!], chatbotId: String!, modelSelection: Boolean!): Chatbot
   updateCourseSettings(color: String, description: String, displayName: String, endDate: Date, groupDeadlineDate: Date, id: String!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean, language: LocaleType!, name: String, notificationEmail: String, startDate: Date): Course
   updateElementInstances(elementId: Int!, includeTemplates: Boolean!): [ElementInstance!]
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
@@ -2272,6 +2351,8 @@ type Query {
   getCatalogLiveQuizTemplates: [CatalogSelectionObject!]
   getCatalogObjects(catalogCollectionId: String): [CatalogObject!]
   getCatalogSharingRequests: [ObjectSharingRequest!]
+  getChatModelRegistry: [ChatModelCapability!]!
+  getChatbotsInfo: [Chatbot!]
   getCourseActivities(courseId: String!): Course
   getCourseActivityAnalytics(courseId: String!): CourseActivityAnalytics
   getCourseActivityIds(courseId: String): CourseActivityList
@@ -2771,6 +2852,7 @@ type User {
   id: ID!
   locale: LocaleType!
   mediaFiles: [MediaFile!]
+  numChatbots: Int!
   privatePreview: Boolean!
   publicPreview: Boolean!
   role: UserRole!

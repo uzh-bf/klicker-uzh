@@ -13,6 +13,10 @@ RUN echo '#!/bin/bash\n\
   \n\
   cd /usr/src/app\n\
   \n\
+  # Install dependencies in-container (linux)\n\
+  echo "Installing dependencies..."\n\
+  pnpm install --frozen-lockfile\n\
+  \n\
   # Ensure PostgreSQL is ready\n\
   echo "Waiting for PostgreSQL to be ready..."\n\
   for i in {1..10}; do\n\

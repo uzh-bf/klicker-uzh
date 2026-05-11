@@ -6,6 +6,10 @@ enum CreditResetPeriod {
   NONE
 }
 
+enum ChatAttachmentType {
+  IMAGE
+}
+
 model ChatUsageCredits {
   total   Decimal @default(0) @db.Decimal(18, 6)
   current Decimal @default(0) @db.Decimal(18, 6)
@@ -49,11 +53,18 @@ model ChatThread {
 }
 
 model ChatMessage {
-  id       String  @id @default(uuid()) @db.Uuid
-  threadId String  @db.Uuid
-  parentId String? @db.Uuid
-  role     String // 'user' | 'assistant'
-  content  Json // Array<{ type: string; text: string }>
+  id               String   @id @default(uuid()) @db.Uuid
+  threadId         String   @db.Uuid
+  parentId         String?  @db.Uuid
+  role             String // 'user' | 'assistant'
+  content          Json // Array<{ type: string; text: string }>
+  chatMode         String?
+  modelId          String?
+  reasoningEffort  String?
+  reasoningContent String?  @db.Text
+  creditsUsed      Decimal? @db.Decimal(18, 6)
+
+  attachments ChatAttachment[]
 
   thread ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
@@ -62,6 +73,24 @@ model ChatMessage {
 
   @@index([threadId])
   @@index([parentId])
+}
+
+model ChatAttachment {
+  id String @id @default(uuid()) @db.Uuid
+
+  type             ChatAttachmentType
+  position         Int
+  imageBase64      String?            @db.Text // base64 data URL for display 
+  imagePreviewBase64 String?          @db.Text // compact preview data URL for history rendering
+  imageDescription String?            @db.Text // AI-generated description for context injection
+
+  messageId String      @db.Uuid
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([messageId, position])
 }
 
 model Chatbot {
@@ -82,11 +111,13 @@ model Chatbot {
   creditMaxCredits     Int               @default(1)
 
   // Model selection control
-  modelSelection Boolean @default(false) // Whether users can select models (false = automatic selection)
+  modelSelection                 Boolean  @default(false) // Whether users can select models (false = automatic selection)
+  allowedModelIds                String[] @default([]) // Restrict to these registry model IDs (empty = all models)
+  allowedReasoningEffortsByModel Json? // { [modelId: string]: ReasoningEffort[] } where missing key = all supported efforts
 
-  // Azure OpenAI Configuration
-  azureOpenAIKey      String? @db.Text // Encrypted API key using APP_SECRET
-  azureOpenAIEndpoint String? // Optional custom endpoint (defaults to model config)
+  // OpenAI-compatible Configuration
+  openaiApiKey  String? @db.Text // Encrypted API key using APP_SECRET
+  openaiBaseUrl String? // Optional custom endpoint (defaults to model config)
 
   // Disclaimer configuration
   disclaimer   ChatbotDisclaimer? @relation(fields: [disclaimerId], references: [id], onDelete: SetNull, onUpdate: Cascade)

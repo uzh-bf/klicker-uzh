@@ -2,13 +2,17 @@
 
 import { prisma } from '@klicker-uzh/prisma'
 import { InvitationStatus } from '@klicker-uzh/prisma/client'
-import { InvitationEmailMode } from '@klicker-uzh/util'
+import {
+  InvitationEmailMode,
+  normalizeMatriculationNumber,
+} from '@klicker-uzh/util'
 import { parse } from 'csv-parse/sync'
 import { readFileSync } from 'fs'
 import * as R from 'remeda'
 import * as z from 'zod'
 import type {
   CreateInvitationsResponse,
+  CreateParticipantInvitationInput,
   InvitationResult,
 } from '../services/participantInvitations.js'
 import { createParticipantInvitations } from '../services/participantInvitations.js'
@@ -22,10 +26,12 @@ const csvRowSchema = z
   .object({
     email: z.string(),
     courseId: z.string(),
+    matriculationNumber: z.string().optional().nullable(),
   })
   .transform((row) => ({
     email: row.email.trim(),
     courseId: row.courseId.trim(),
+    matriculationNumber: normalizeMatriculationNumber(row.matriculationNumber),
   }))
   .refine((row) => row.email.length > 0, {
     message: 'email is required',
@@ -41,6 +47,7 @@ type CsvRow = z.infer<typeof csvRowSchema>
 type ExistingInvitationInfo = {
   id: number
   email: string
+  matriculationNumber: string | null
   status: InvitationStatus
   participantId: string | null
   acceptedAt: Date | null
@@ -101,10 +108,13 @@ async function run() {
       normalizedRecords,
       (record) => record.courseId
     )
-    const courseGroups = new Map(
+    const courseGroups = new Map<string, CreateParticipantInvitationInput[]>(
       Object.entries(groupedByCourse).map(([courseId, records]) => [
         courseId,
-        records.map((record) => record.email),
+        records.map((record) => ({
+          email: record.email,
+          matriculationNumber: record.matriculationNumber,
+        })),
       ])
     )
 
@@ -115,16 +125,19 @@ async function run() {
     let totalCreated = 0
     let totalAutoAccepted = 0
     let totalDuplicates = 0
+    let totalMatriculationUpdates = 0
     let totalErrors = 0
     let totalProcessed = 0
 
-    for (const [courseId, emails] of courseGroups.entries()) {
+    for (const [courseId, invitations] of courseGroups.entries()) {
       console.log(`=== Processing Course: ${courseId} ===`)
-      console.log(`Emails to process: ${emails.length}`)
+      console.log(`Emails to process: ${invitations.length}`)
 
       try {
         const normalizedUniqueEmails = Array.from(
-          new Set(emails.map((email) => email.toLowerCase()))
+          new Set(
+            invitations.map((invitation) => invitation.email.toLowerCase())
+          )
         )
 
         const existingInvitations: ExistingInvitationInfo[] =
@@ -136,6 +149,7 @@ async function run() {
             select: {
               id: true,
               email: true,
+              matriculationNumber: true,
               status: true,
               participantId: true,
               acceptedAt: true,
@@ -148,6 +162,18 @@ async function run() {
             invitation.email.toLowerCase()
           )
         )
+        const latestMatriculationByEmail = new Map<string, string>()
+
+        for (const invitation of invitations) {
+          const normalizedEmail = invitation.email.toLowerCase()
+
+          if (invitation.matriculationNumber) {
+            latestMatriculationByEmail.set(
+              normalizedEmail,
+              invitation.matriculationNumber
+            )
+          }
+        }
 
         const brokenInvitations = existingInvitations.filter(
           (invitation) =>
@@ -169,23 +195,37 @@ async function run() {
           }
         }
 
-        const filteredEmails = emails.filter(
-          (email) => !existingEmailSet.has(email.toLowerCase())
+        const updatedExistingMatriculationCount =
+          await updateExistingInvitationMatriculationNumbers(
+            existingInvitations,
+            latestMatriculationByEmail,
+            DRY_RUN
+          )
+
+        if (updatedExistingMatriculationCount > 0) {
+          console.log(
+            `${DRY_RUN ? 'Would update' : 'Updated'} ${updatedExistingMatriculationCount} existing invitation(s) with matriculation number.`
+          )
+        }
+
+        const filteredInvitations = invitations.filter(
+          (invitation) => !existingEmailSet.has(invitation.email.toLowerCase())
         )
-        const skippedExistingCount = emails.length - filteredEmails.length
+        const skippedExistingCount =
+          invitations.length - filteredInvitations.length
 
         if (skippedExistingCount > 0) {
           console.log(
-            `Skipping ${skippedExistingCount} already existing invitation(s).`
+            `Found ${skippedExistingCount} already existing invitation(s).`
           )
         }
 
         const manualResults: InvitationResult[] = []
-        const remainingEmails: string[] = []
+        const remainingInvitations: CreateParticipantInvitationInput[] = []
 
-        for (const email of filteredEmails) {
+        for (const invitation of filteredInvitations) {
           const manualResult = await resolveParticipantWithoutInvitation(
-            email,
+            invitation,
             courseId,
             emailMode,
             DRY_RUN
@@ -194,7 +234,7 @@ async function run() {
           if (manualResult) {
             manualResults.push(manualResult)
           } else {
-            remainingEmails.push(email)
+            remainingInvitations.push(invitation)
           }
         }
 
@@ -209,10 +249,10 @@ async function run() {
           results: [],
         }
 
-        if (remainingEmails.length > 0) {
+        if (remainingInvitations.length > 0) {
           if (DRY_RUN) {
-            const normalizedFiltered = remainingEmails.map((email) =>
-              email.toLowerCase()
+            const normalizedFiltered = remainingInvitations.map((invitation) =>
+              invitation.email.toLowerCase()
             )
 
             const autoAcceptCandidates =
@@ -240,13 +280,13 @@ async function run() {
             let autoAccepted = 0
             let duplicates = 0
 
-            const results = remainingEmails.map((email) => {
-              const normalized = email.toLowerCase()
+            const results = remainingInvitations.map((invitation) => {
+              const normalized = invitation.email.toLowerCase()
 
               if (seen.has(normalized)) {
                 duplicates += 1
                 return {
-                  email,
+                  email: invitation.email,
                   status: 'duplicate' as const,
                 }
               }
@@ -256,14 +296,14 @@ async function run() {
               if (autoAcceptSet.has(normalized)) {
                 autoAccepted += 1
                 return {
-                  email,
+                  email: invitation.email,
                   status: 'auto_accepted' as const,
                 }
               }
 
               created += 1
               return {
-                email,
+                email: invitation.email,
                 status: 'created' as const,
               }
             })
@@ -273,7 +313,7 @@ async function run() {
               autoAccepted,
               duplicates,
               errors: 0,
-              totalProcessed: remainingEmails.length,
+              totalProcessed: remainingInvitations.length,
               results,
             }
 
@@ -283,7 +323,7 @@ async function run() {
           } else {
             result = await createParticipantInvitations(
               courseId,
-              remainingEmails,
+              remainingInvitations,
               {
                 emailMode,
               }
@@ -306,6 +346,9 @@ async function run() {
         )
         console.log(
           `Skipped (duplicates): ${combinedResult.duplicates + skippedExistingCount}`
+        )
+        console.log(
+          `Updated existing (matriculation number): ${updatedExistingMatriculationCount}`
         )
         console.log(`Errors: ${combinedResult.errors}`)
 
@@ -337,12 +380,13 @@ async function run() {
         totalCreated += combinedResult.created
         totalAutoAccepted += combinedResult.autoAccepted
         totalDuplicates += combinedResult.duplicates + skippedExistingCount
+        totalMatriculationUpdates += updatedExistingMatriculationCount
         totalErrors += combinedResult.errors
-        totalProcessed += emails.length
+        totalProcessed += invitations.length
       } catch (error: any) {
         console.error(`Failed to process course ${courseId}: ${error.message}`)
-        totalErrors += emails.length
-        totalProcessed += emails.length
+        totalErrors += invitations.length
+        totalProcessed += invitations.length
       }
 
       console.log()
@@ -355,12 +399,19 @@ async function run() {
     console.log(`Total created (PENDING): ${totalCreated}`)
     console.log(`Total auto-accepted: ${totalAutoAccepted}`)
     console.log(`Total duplicates: ${totalDuplicates}`)
+    console.log(
+      `Total updated existing (matriculation number): ${totalMatriculationUpdates}`
+    )
     console.log(`Total errors: ${totalErrors}`)
 
-    if (totalCreated > 0 || totalAutoAccepted > 0) {
+    if (
+      totalCreated > 0 ||
+      totalAutoAccepted > 0 ||
+      totalMatriculationUpdates > 0
+    ) {
       console.log()
       console.log(
-        `Import completed! ${totalCreated} pending invitations created, ${totalAutoAccepted} users auto-enrolled across ${courseGroups.size} course(s).`
+        `Import completed! ${totalCreated} pending invitations created, ${totalAutoAccepted} users auto-enrolled, and ${totalMatriculationUpdates} existing invitations updated across ${courseGroups.size} course(s).`
       )
       console.log(
         'Pending participants will be automatically enrolled when they log in via eduID.'
@@ -379,6 +430,47 @@ async function run() {
   }
 }
 
+async function updateExistingInvitationMatriculationNumbers(
+  existingInvitations: ExistingInvitationInfo[],
+  latestMatriculationByEmail: Map<string, string>,
+  dryRun: boolean
+): Promise<number> {
+  let updatedCount = 0
+
+  for (const existingInvitation of existingInvitations) {
+    const incomingMatriculationNumber = latestMatriculationByEmail.get(
+      existingInvitation.email.toLowerCase()
+    )
+
+    if (
+      !incomingMatriculationNumber ||
+      existingInvitation.matriculationNumber === incomingMatriculationNumber
+    ) {
+      continue
+    }
+
+    if (dryRun) {
+      console.log(
+        `  Dry run: would update invitation ${existingInvitation.id} (${existingInvitation.email.toLowerCase()}) matriculation number to "${incomingMatriculationNumber}".`
+      )
+    } else {
+      await prisma.participantInvitation.update({
+        where: { id: existingInvitation.id },
+        data: {
+          matriculationNumber: incomingMatriculationNumber,
+        },
+      })
+      console.log(
+        `  Updated invitation ${existingInvitation.id} (${existingInvitation.email.toLowerCase()}) matriculation number to "${incomingMatriculationNumber}".`
+      )
+    }
+
+    updatedCount += 1
+  }
+
+  return updatedCount
+}
+
 function summarizeInvitationResults(results: InvitationResult[]) {
   return results.reduce(
     (summary, result) => {
@@ -392,6 +484,7 @@ function summarizeInvitationResults(results: InvitationResult[]) {
           summary.autoAccepted += 1
           break
         case 'duplicate':
+        case 'duplicate_updated':
           summary.duplicates += 1
           break
         case 'error':
@@ -412,12 +505,13 @@ function summarizeInvitationResults(results: InvitationResult[]) {
 }
 
 async function resolveParticipantWithoutInvitation(
-  email: string,
+  invitation: CreateParticipantInvitationInput,
   courseId: string,
   emailMode: InvitationEmailMode,
   dryRun: boolean
 ): Promise<InvitationResult | null> {
-  const normalizedEmail = email.toLowerCase()
+  const normalizedEmail = invitation.email.toLowerCase()
+  const matriculationNumber = invitation.matriculationNumber ?? null
 
   const participantAccount = await prisma.participantAccount.findFirst({
     where: {
@@ -449,12 +543,15 @@ async function resolveParticipantWithoutInvitation(
   const hadParticipation = Boolean(existingParticipation)
 
   if (dryRun) {
+    const matriculationSuffix = matriculationNumber
+      ? ` and set matriculation number "${matriculationNumber}"`
+      : ''
     console.log(
-      `  Dry run: would create ACCEPTED invitation for ${normalizedEmail} and ${existingParticipation ? 'activate existing participation' : 'create participation'} for participant ${participantId}.`
+      `  Dry run: would create ACCEPTED invitation for ${normalizedEmail}${matriculationSuffix} and ${existingParticipation ? 'activate existing participation' : 'create participation'} for participant ${participantId}.`
     )
 
     return {
-      email,
+      email: invitation.email,
       status: 'auto_accepted',
       participantId,
     }
@@ -468,6 +565,7 @@ async function resolveParticipantWithoutInvitation(
         status: InvitationStatus.ACCEPTED,
         participantId,
         acceptedAt: new Date(),
+        matriculationNumber,
       },
     })
 
@@ -496,7 +594,7 @@ async function resolveParticipantWithoutInvitation(
   )
 
   return {
-    email,
+    email: invitation.email,
     status: 'auto_accepted',
     invitationId: result,
     participantId,

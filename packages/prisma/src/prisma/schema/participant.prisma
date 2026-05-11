@@ -6,8 +6,9 @@ enum InvitationStatus {
 model ParticipantInvitation {
   id Int @id @default(autoincrement())
 
-  email  String
-  status InvitationStatus @default(PENDING)
+  email               String
+  matriculationNumber String?
+  status              InvitationStatus @default(PENDING)
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid

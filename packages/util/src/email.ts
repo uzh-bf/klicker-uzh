@@ -82,3 +82,17 @@ export function collectAllEmails(
 ): string[] {
   return collectInvitationEmails(primaryEmail, affiliationEmails).allEmails
 }
+
+/**
+ * Normalize a matriculation number: trim whitespace, return null if empty or not a string.
+ */
+export function normalizeMatriculationNumber(
+  matriculationNumber?: string | null
+): string | null {
+  if (typeof matriculationNumber !== 'string') {
+    return null
+  }
+
+  const trimmed = matriculationNumber.trim()
+  return trimmed.length > 0 ? trimmed : null
+}

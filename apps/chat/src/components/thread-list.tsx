@@ -1,64 +1,44 @@
 'use client'
 
-import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import { CheckIcon, EditIcon, Trash2, XIcon } from 'lucide-react'
 import type { FC } from 'react'
 import { useState } from 'react'
 
-import { Button, TextField } from '@uzh-bf/design-system'
-import { useParams } from 'next/navigation'
+import { TextField } from '@uzh-bf/design-system'
+import { useParams, useRouter } from 'next/navigation'
 import { useChatStore, type Thread } from '../stores/chatStore'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 export const ThreadList: FC = () => {
   return (
-    <div className="flex flex-col items-stretch gap-1.5">
-      <ThreadListNew />
+    <div className="flex flex-col items-stretch gap-1">
       <ThreadListItems />
     </div>
   )
 }
 
-const ThreadListNew: FC = () => {
-  const { chatbotId } = useParams<{ chatbotId: string }>()
-  const { createThread, participationRequired } = useChatStore()
-
-  const handleNewThread = () => {
-    if (participationRequired) return
-    void createThread(chatbotId).catch(() => {
-      /* handled centrally */
-    })
-  }
-
-  return (
-    <Button
-      onClick={handleNewThread}
-      basic
-      disabled={participationRequired}
-      className={{
-        root: 'hover:bg-muted border-1 mx-6 my-2 flex items-center rounded-lg px-2.5 py-1 shadow-sm',
-      }}
-    >
-      <Button.Icon icon={faPlus} />
-      <Button.Label>New Chat</Button.Label>
-    </Button>
-  )
-}
-
 const ThreadListItems: FC = () => {
-  const { chatbotId } = useParams<{ chatbotId: string }>()
-  const { threads, activeThreadId, switchToThread, deleteThread } =
-    useChatStore()
+  const { chatbotId, threadId } = useParams<{
+    chatbotId: string
+    threadId?: string
+  }>()
+  const router = useRouter()
+  const { threads, deleteThread } = useChatStore()
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-0.5">
       {threads.map((thread) => (
         <ThreadListItem
           key={thread.id}
           thread={thread}
-          isActive={thread.id === activeThreadId}
-          onSelect={() => switchToThread(chatbotId, thread.id)}
-          onDelete={() => deleteThread(chatbotId, thread.id)}
+          isActive={thread.id === threadId}
+          onSelect={() => router.push(`/${chatbotId}/threads/${thread.id}`)}
+          onDelete={async () => {
+            const deleted = await deleteThread(chatbotId, thread.id)
+            if (deleted && thread.id === threadId) {
+              router.replace(`/${chatbotId}`)
+            }
+          }}
         />
       ))}
     </div>
@@ -128,7 +108,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
 
   return (
     <div
-      className={`hover:bg-muted focus-visible:bg-muted focus-visible:ring-ring flex items-center gap-2 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 ${isActive ? 'bg-muted' : ''}`}
+      className={`hover:bg-accent focus-visible:bg-muted focus-visible:ring-ring flex items-center gap-1 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 ${isActive ? 'bg-primary/15' : ''}`}
     >
       {isEditing ? (
         <>
@@ -155,7 +135,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             <TooltipTrigger asChild>
               <button
                 onClick={handleEditCancel}
-                className="text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring mr-3 inline-flex size-4 items-center justify-center whitespace-nowrap rounded-md p-0 text-sm font-medium transition-colors hover:text-red-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
+                className="text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring mr-2 inline-flex size-4 items-center justify-center whitespace-nowrap rounded-md p-0 text-sm font-medium transition-colors hover:text-red-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
               >
                 <XIcon />
                 <span className="sr-only">Cancel</span>
@@ -166,8 +146,8 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
         </>
       ) : (
         <>
-          <button onClick={onSelect} className="flex-grow px-3 py-2 text-start">
-            <p className="text-sm">{getThreadTitle()}</p>
+          <button onClick={onSelect} className="flex-grow px-3 py-1 text-start">
+            <p className="line-clamp-2 text-sm">{getThreadTitle()}</p>
           </button>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -185,7 +165,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             <TooltipTrigger asChild>
               <button
                 onClick={onDelete}
-                className="hover:text-destructive text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring mr-3 inline-flex size-4 items-center justify-center whitespace-nowrap rounded-md p-0 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
+                className="hover:text-destructive text-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring mr-2 inline-flex size-4 items-center justify-center whitespace-nowrap rounded-md p-0 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
               >
                 <Trash2 />
                 <span className="sr-only">Delete chat</span>

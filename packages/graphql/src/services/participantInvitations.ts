@@ -4,12 +4,18 @@ import {
   InvitationEmailMode,
   InvitationEmailMode as InvitationEmailModeValue,
   normalizeEmail,
+  normalizeMatriculationNumber,
 } from '@klicker-uzh/util'
 import * as R from 'remeda'
 
 export interface InvitationResult {
   email: string
-  status: 'created' | 'auto_accepted' | 'duplicate' | 'error'
+  status:
+    | 'created'
+    | 'auto_accepted'
+    | 'duplicate'
+    | 'duplicate_updated'
+    | 'error'
   invitationId?: number
   participantId?: string
   error?: string
@@ -24,6 +30,11 @@ export interface CreateInvitationsResponse {
   results: InvitationResult[]
 }
 
+export interface CreateParticipantInvitationInput {
+  email: string
+  matriculationNumber?: string | null
+}
+
 /**
  * Creates participant invitations and automatically accepts them for existing verified users
  * Only uses ParticipantAccount SSO IDs for matching (not participant.email which is unvalidated)
@@ -34,7 +45,7 @@ export interface CreateInvitationsOptions {
 
 export async function createParticipantInvitations(
   courseId: string,
-  emails: string[],
+  invitations: CreateParticipantInvitationInput[],
   options: CreateInvitationsOptions = {}
 ): Promise<CreateInvitationsResponse> {
   const results: InvitationResult[] = []
@@ -56,9 +67,13 @@ export async function createParticipantInvitations(
     )
   }
 
-  // Process all emails
-  for (const rawEmail of emails) {
+  // Process all invitations
+  for (const invitationInput of invitations) {
+    const rawEmail = invitationInput.email
     const normalizedEmail = normalizeEmail(rawEmail)
+    const normalizedMatriculationNumber = normalizeMatriculationNumber(
+      invitationInput.matriculationNumber
+    )
 
     if (!normalizedEmail) {
       results.push({
@@ -81,9 +96,23 @@ export async function createParticipantInvitations(
       })
 
       if (existingInvitation) {
+        const matriculationUpdated =
+          normalizedMatriculationNumber != null &&
+          existingInvitation.matriculationNumber !==
+            normalizedMatriculationNumber
+
+        if (matriculationUpdated) {
+          await prisma.participantInvitation.update({
+            where: { id: existingInvitation.id },
+            data: {
+              matriculationNumber: normalizedMatriculationNumber,
+            },
+          })
+        }
+
         results.push({
           email: normalizedEmail,
-          status: 'duplicate',
+          status: matriculationUpdated ? 'duplicate_updated' : 'duplicate',
           invitationId: existingInvitation.id,
         })
         continue
@@ -108,7 +137,8 @@ export async function createParticipantInvitations(
         const result = await autoAcceptInvitation(
           normalizedEmail,
           courseId,
-          participantAccount.participant.id
+          participantAccount.participant.id,
+          normalizedMatriculationNumber
         )
 
         results.push({
@@ -124,6 +154,7 @@ export async function createParticipantInvitations(
             email: normalizedEmail,
             courseId,
             status: InvitationStatus.PENDING,
+            matriculationNumber: normalizedMatriculationNumber,
           },
         })
 
@@ -150,10 +181,11 @@ export async function createParticipantInvitations(
   )
 
   return {
-    totalProcessed: emails.length,
+    totalProcessed: invitations.length,
     created: statusCounts.created || 0,
     autoAccepted: statusCounts.auto_accepted || 0,
-    duplicates: statusCounts.duplicate || 0,
+    duplicates:
+      (statusCounts.duplicate || 0) + (statusCounts.duplicate_updated || 0),
     errors: statusCounts.error || 0,
     results,
   }
@@ -162,7 +194,8 @@ export async function createParticipantInvitations(
 async function autoAcceptInvitation(
   email: string,
   courseId: string,
-  participantId: string
+  participantId: string,
+  matriculationNumber: string | null
 ): Promise<{ invitationId: number; participationId: number }> {
   // Use transaction to ensure data consistency
   const result = await prisma.$transaction(async (tx) => {
@@ -174,6 +207,7 @@ async function autoAcceptInvitation(
         status: InvitationStatus.ACCEPTED,
         participantId,
         acceptedAt: new Date(),
+        matriculationNumber,
       },
     })
 

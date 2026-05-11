@@ -1,5 +1,9 @@
+import { getChatbotOr404, withChatbotAuth } from '@/src/lib/server/apiGuards'
+import {
+  getAutomaticModelId,
+  getModelsForChatbot,
+} from '@/src/lib/server/chatModelRegistry'
 import { CreditsService } from '@/src/services/credits'
-import { JWTPayload, jwtVerify } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
 
 /**
@@ -10,39 +14,19 @@ export async function GET(
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {
   const { chatbotId } = await params
-  const participantToken = req.cookies.get('participant_token')?.value
-
-  if (!participantToken) {
-    return NextResponse.json(
-      { error: 'No authentication token found' },
-      { status: 401 }
-    )
+  const authResult = await withChatbotAuth(req, chatbotId)
+  if ('response' in authResult) {
+    return authResult.response
   }
+  const { participantId } = authResult
 
-  let participantData: JWTPayload
-  let participantId: string | null = null
-  try {
-    const jwtPayload = await jwtVerify(
-      participantToken,
-      new TextEncoder().encode(process.env.APP_SECRET || '')
-    )
-    participantData = jwtPayload.payload
-    participantId =
-      typeof participantData.sub === 'string' && participantData.sub
-        ? participantData.sub
-        : null
-    if (!participantId) {
-      return NextResponse.json(
-        { error: 'Invalid authentication token' },
-        { status: 401 }
-      )
-    }
-  } catch (error) {
-    console.error('JWT verification failed:', error)
-    return NextResponse.json(
-      { error: 'Invalid authentication token' },
-      { status: 401 }
-    )
+  const chatbotResult = await getChatbotOr404(chatbotId, {
+    courseId: true,
+    allowedModelIds: true,
+    allowedReasoningEffortsByModel: true,
+  })
+  if ('response' in chatbotResult) {
+    return chatbotResult.response
   }
 
   try {
@@ -51,7 +35,37 @@ export async function GET(
       chatbotId
     )
 
-    return NextResponse.json(credits)
+    const availableModels = getModelsForChatbot(
+      chatbotResult.chatbot,
+      credits
+    ).map(
+      ({
+        id,
+        name,
+        description,
+        fallback,
+        supportsReasoning,
+        supportsImageAttachments,
+        supportedReasoningEfforts,
+      }) => ({
+        id,
+        name,
+        description,
+        fallback,
+        supportsReasoning,
+        supportsImageAttachments,
+        allowedReasoningEfforts: supportedReasoningEfforts,
+      })
+    )
+
+    return NextResponse.json({
+      ...credits,
+      availableModels,
+      automaticModelId: getAutomaticModelId(
+        credits,
+        chatbotResult.chatbot.allowedModelIds
+      ),
+    })
   } catch (error) {
     console.error('Failed to fetch credits:', error)
     return NextResponse.json(

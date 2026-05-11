@@ -1,0 +1,9 @@
+{
+  "name": "klicker-embed-harness",
+  "private": true,
+  "scripts": {
+    "dev": "node server.mjs",
+    "mock-api": "node mock-api.mjs",
+    "start": "node server.mjs"
+  }
+}
