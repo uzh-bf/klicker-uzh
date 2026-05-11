@@ -8,7 +8,7 @@ const baseURL =
 
 export default defineConfig({
   testDir: './tests',
-  testMatch: '*.spec.ts',
+  testMatch: '**/*.spec.ts',
   fullyParallel: false,
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,
