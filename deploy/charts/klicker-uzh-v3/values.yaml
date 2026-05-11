@@ -168,6 +168,7 @@ chat:
 
   openai:
     baseUrl: ''
+    storeResponses: false
 
   mcp:
     key: ''

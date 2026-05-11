@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.62](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.61...v3.4.0-alpha.62) (2026-05-05)
+
+
+### Features
+
+* **chat:** make reasoning effort registry config-driven ([bb52d44](https://github.com/uzh-bf/klicker-uzh/commit/bb52d4449fe21fa828b38aa7410982e77d0eced0))
+
 ## [3.4.0-alpha.61](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.60...v3.4.0-alpha.61) (2026-05-03)
 
 

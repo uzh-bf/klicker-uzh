@@ -5,6 +5,7 @@ import {
   getChatModelRegistry,
 } from '@/src/lib/server/chatModelRegistry'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
+import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
@@ -24,10 +25,7 @@ import {
 import { createHash, randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { DEFAULT_PROMPT } from 'src/lib/config/prompts'
-import {
-  REASONING_EFFORT_OPTIONS,
-  type ReasoningEffort,
-} from 'src/lib/config/reasoning'
+import { type ReasoningEffort } from 'src/lib/config/reasoning'
 import { CreditsService } from 'src/services/credits'
 import { DisclaimersService } from 'src/services/disclaimers'
 import {
@@ -687,10 +685,7 @@ export async function POST(
       .optional()
       .transform((val) => val?.toLowerCase())
       .default('tutor'),
-    reasoningEffort: z
-      .enum(REASONING_EFFORT_OPTIONS)
-      .optional()
-      .default('none'),
+    reasoningEffort: z.string().min(1).optional().default('none'),
     parentId: z.string().min(1).nullable().optional(),
     assistantMessageId: z.string().min(1),
     images: z
@@ -1359,7 +1354,7 @@ export async function POST(
     experimental_telemetry: { isEnabled: true },
     providerOptions: {
       openai: {
-        store: false,
+        store: getOpenAIResponsesStore(),
         ...(providerReasoningEffort && {
           reasoningEffort: providerReasoningEffort,
           reasoningSummary: 'auto',

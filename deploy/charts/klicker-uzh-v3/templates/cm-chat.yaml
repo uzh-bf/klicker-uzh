@@ -7,6 +7,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
 data:
   OPENAI_BASE_URL: {{ .Values.chat.openai.baseUrl | quote }}
+  CHAT_OPENAI_STORE_RESPONSES: {{ .Values.chat.openai.storeResponses | default false | quote }}
   {{- if .Values.chat.modelRegistry }}
   CHAT_MODEL_REGISTRY_JSON: {{ .Values.chat.modelRegistry | toJson | quote }}
   {{- end }}

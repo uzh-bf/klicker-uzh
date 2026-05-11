@@ -609,7 +609,7 @@ type ChatModelCapability {
   fallback: Boolean!
   id: String!
   name: String!
-  supportedReasoningEfforts: [ReasoningEffort!]!
+  supportedReasoningEfforts: [String!]!
   supportsReasoning: Boolean!
 }
 
@@ -654,12 +654,12 @@ type ChatbotMcpConfigurationSummary {
 }
 
 type ChatbotReasoningConfig {
-  efforts: [ReasoningEffort!]!
+  efforts: [String!]!
   modelId: String!
 }
 
 input ChatbotReasoningConfigInput {
-  efforts: [ReasoningEffort!]!
+  efforts: [String!]!
   modelId: String!
 }
 
@@ -2446,15 +2446,6 @@ type QuizAnalytics {
   activityType: ActivityType!
   courseParticipants: Int!
   instanceQuizAnalytics: [InstanceQuizAnalytics!]!
-}
-
-enum ReasoningEffort {
-  high
-  low
-  medium
-  minimal
-  none
-  xhigh
 }
 
 type ReducedActivityInfo {

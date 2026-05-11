@@ -153,6 +153,7 @@ chat:
 
   openai:
     baseUrl: 'http://litellm.stg-litellm.svc.cluster.local:4000/v1'
+    storeResponses: true
 
   automaticModels:
     primaryId: gpt-5.1
@@ -173,6 +174,45 @@ chat:
       name: GPT-5.1
       description: OpenAI reasoning model
       supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - none
+        - minimal
+        - low
+        - medium
+        - high
+      fallback: false
+      cost:
+        input: 1.25
+        output: 10.0
+    - id: gpt-5.4
+      deploymentId: klickeruzh/azure/gpt-5.4
+      name: GPT-5.4
+      description: OpenAI reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - minimal
+        - low
+        - medium
+        - high
+        - xhigh
+      fallback: false
+      cost:
+        input: 1.25
+        output: 10.0
+    - id: gpt-5.5
+      deploymentId: klickeruzh/azure/gpt-5.5
+      name: GPT-5.5
+      description: OpenAI reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - minimal
+        - low
+        - medium
+        - high
+        - xhigh
       fallback: false
       cost:
         input: 1.25

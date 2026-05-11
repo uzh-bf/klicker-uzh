@@ -678,7 +678,7 @@ export type ChatModelCapability = {
   fallback: Scalars['Boolean']['output'];
   id: Scalars['String']['output'];
   name: Scalars['String']['output'];
-  supportedReasoningEfforts: Array<ReasoningEffort>;
+  supportedReasoningEfforts: Array<Scalars['String']['output']>;
   supportsReasoning: Scalars['Boolean']['output'];
 };
 
@@ -727,12 +727,12 @@ export type ChatbotMcpConfigurationSummary = {
 
 export type ChatbotReasoningConfig = {
   __typename?: 'ChatbotReasoningConfig';
-  efforts: Array<ReasoningEffort>;
+  efforts: Array<Scalars['String']['output']>;
   modelId: Scalars['String']['output'];
 };
 
 export type ChatbotReasoningConfigInput = {
-  efforts: Array<ReasoningEffort>;
+  efforts: Array<Scalars['String']['input']>;
   modelId: Scalars['String']['input'];
 };
 
@@ -4262,15 +4262,6 @@ export type QuizAnalytics = {
   instanceQuizAnalytics: Array<InstanceQuizAnalytics>;
 };
 
-export enum ReasoningEffort {
-  High = 'high',
-  Low = 'low',
-  Medium = 'medium',
-  Minimal = 'minimal',
-  None = 'none',
-  Xhigh = 'xhigh'
-}
-
 export type ReducedActivityInfo = {
   __typename?: 'ReducedActivityInfo';
   automaticPublicationAt?: Maybe<Scalars['Date']['output']>;
@@ -6219,7 +6210,7 @@ export type UpdateChatbotModelSettingsMutationVariables = Exact<{
 }>;
 
 
-export type UpdateChatbotModelSettingsMutation = { __typename?: 'Mutation', updateChatbotModelSettings?: { __typename?: 'Chatbot', id: string, modelSelection: boolean, allowedModelIds: Array<string>, updatedAt?: any | null, allowedReasoningEffortsByModel: Array<{ __typename?: 'ChatbotReasoningConfig', modelId: string, efforts: Array<ReasoningEffort> }> } | null };
+export type UpdateChatbotModelSettingsMutation = { __typename?: 'Mutation', updateChatbotModelSettings?: { __typename?: 'Chatbot', id: string, modelSelection: boolean, allowedModelIds: Array<string>, updatedAt?: any | null, allowedReasoningEffortsByModel: Array<{ __typename?: 'ChatbotReasoningConfig', modelId: string, efforts: Array<string> }> } | null };
 
 export type UpdateCourseSettingsMutationVariables = Exact<{
   id: Scalars['String']['input'];
@@ -6503,12 +6494,12 @@ export type GetCatalogSharingRequestsQuery = { __typename?: 'Query', getCatalogS
 export type GetChatModelRegistryQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetChatModelRegistryQuery = { __typename?: 'Query', getChatModelRegistry: Array<{ __typename?: 'ChatModelCapability', id: string, name: string, description: string, fallback: boolean, supportsReasoning: boolean, supportedReasoningEfforts: Array<ReasoningEffort> }> };
+export type GetChatModelRegistryQuery = { __typename?: 'Query', getChatModelRegistry: Array<{ __typename?: 'ChatModelCapability', id: string, name: string, description: string, fallback: boolean, supportsReasoning: boolean, supportedReasoningEfforts: Array<string> }> };
 
 export type GetChatbotsInfoQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetChatbotsInfoQuery = { __typename?: 'Query', getChatbotsInfo?: Array<{ __typename?: 'Chatbot', id: string, name: string, description?: string | null, avatar?: string | null, modelSelection: boolean, allowedModelIds: Array<string>, creditInitialCredits: number, creditResetPeriod: CreditResetPeriod, creditResetAmount: number, creditMaxCredits: number, createdAt?: any | null, updatedAt?: any | null, allowedReasoningEffortsByModel: Array<{ __typename?: 'ChatbotReasoningConfig', modelId: string, efforts: Array<ReasoningEffort> }>, courses: Array<{ __typename?: 'CourseListEntry', id: string, name: string }>, usageSummary?: { __typename?: 'ChatbotUsageSummary', threadCount: number, messageCount: number, participantCount: number, lastActivityAt?: any | null, totalCredits?: number | null, currentCredits?: number | null, totalResets?: number | null, lastResetAt?: any | null } | null, disclaimerSummary?: { __typename?: 'ChatbotDisclaimerSummary', id: string, name: string, title: string, acceptedCount: number, declinedCount: number, pendingCount: number } | null, mcpConfigurations: Array<{ __typename?: 'ChatbotMcpConfigurationSummary', serverId: string, serverName: string, serverDescription?: string | null, serverIsActive: boolean, chatMode: string, isEnabled: boolean, priority: number, allowedToolsCount?: number | null }> }> | null };
+export type GetChatbotsInfoQuery = { __typename?: 'Query', getChatbotsInfo?: Array<{ __typename?: 'Chatbot', id: string, name: string, description?: string | null, avatar?: string | null, modelSelection: boolean, allowedModelIds: Array<string>, creditInitialCredits: number, creditResetPeriod: CreditResetPeriod, creditResetAmount: number, creditMaxCredits: number, createdAt?: any | null, updatedAt?: any | null, allowedReasoningEffortsByModel: Array<{ __typename?: 'ChatbotReasoningConfig', modelId: string, efforts: Array<string> }>, courses: Array<{ __typename?: 'CourseListEntry', id: string, name: string }>, usageSummary?: { __typename?: 'ChatbotUsageSummary', threadCount: number, messageCount: number, participantCount: number, lastActivityAt?: any | null, totalCredits?: number | null, currentCredits?: number | null, totalResets?: number | null, lastResetAt?: any | null } | null, disclaimerSummary?: { __typename?: 'ChatbotDisclaimerSummary', id: string, name: string, title: string, acceptedCount: number, declinedCount: number, pendingCount: number } | null, mcpConfigurations: Array<{ __typename?: 'ChatbotMcpConfigurationSummary', serverId: string, serverName: string, serverDescription?: string | null, serverIsActive: boolean, chatMode: string, isEnabled: boolean, priority: number, allowedToolsCount?: number | null }> }> | null };
 
 export type GetCockpitQuizQueryVariables = Exact<{
   id: Scalars['String']['input'];
