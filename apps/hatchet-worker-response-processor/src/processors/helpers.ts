@@ -15,13 +15,16 @@ import type {
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
-import type { ChainableCommander } from 'ioredis'
 import {
   DEFAULT_CORRECT_POINTS,
   DEFAULT_POINTS,
   MAX_BONUS_POINTS,
   TIME_TO_ZERO_BONUS,
 } from '../constants.js'
+
+type RedisLeaderboardOperations = {
+  hincrby(key: string, field: string, increment: number): unknown
+}
 
 export function updateLeaderboards({
   redisMulti,
@@ -32,7 +35,7 @@ export function updateLeaderboards({
   pointsAwarded,
   xpAwarded,
 }: {
-  redisMulti: ChainableCommander
+  redisMulti: RedisLeaderboardOperations
   participantId: string
   participantRole: string
   liveQuizKey: string

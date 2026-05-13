@@ -53,6 +53,9 @@ end
 
 redis.call('HSET', KEYS[1], ARGV[1], ARGV[2])
 
+-- Replay the increment operations after validation. Base ARGV slots 1-3 are
+-- participantResponseField, markerValue, and incrementCount, so increments
+-- start at slot 4.
 index = 4
 for _ = 1, incrementCount do
   local keyIndex = tonumber(ARGV[index])
@@ -97,7 +100,22 @@ function getParticipantResponseField(participantData: JWTPayload) {
     : participantData.sub
 }
 
-function createRedisOperationCollector(operations: RedisHashOperation[]) {
+type RedisOperationCollector = {
+  hincrby(
+    key: string,
+    field: string,
+    increment: number
+  ): RedisOperationCollector
+  hset(key: string, field: string, value: unknown): RedisOperationCollector
+  hsetnx(key: string, field: string, value: unknown): RedisOperationCollector
+  discard(): RedisOperationCollector
+}
+
+type RedisResponseOperations = ChainableCommander | RedisOperationCollector
+
+function createRedisOperationCollector(
+  operations: RedisHashOperation[]
+): RedisOperationCollector {
   const collector = {
     hincrby(key: string, field: string, increment: number) {
       operations.push({ type: 'hincrby', key, field, increment })
@@ -129,7 +147,7 @@ function createRedisOperationCollector(operations: RedisHashOperation[]) {
     },
   }
 
-  return collector as unknown as ChainableCommander
+  return collector
 }
 
 export async function processResponseMessage(
@@ -163,7 +181,7 @@ export async function processResponseMessage(
     return { status: 200 }
   }
 
-  let redisMulti!: ChainableCommander
+  let redisMulti!: RedisResponseOperations
   const redisOperations: RedisHashOperation[] = []
   let participantResponseKey: string | undefined
   let participantResponseField: string | undefined
@@ -841,24 +859,27 @@ export async function processResponseMessage(
           operation.mode,
         ])
       )
+
+      if (Number(execResult) === -1) {
+        throw new Error('Invalid existing Redis counter value')
+      }
+
+      if (Number(execResult) === 0) {
+        ctx.logger.info(
+          'Participant has already responded to this question instance',
+          {
+            messageId: message.messageId,
+            sessionId: message.sessionId,
+            instanceId: message.instanceId,
+          }
+        )
+        return { status: 200 }
+      }
     } else {
-      execResult = await redisMulti.exec()
-    }
-
-    if (Number(execResult) === -1) {
-      throw new Error('Invalid existing Redis counter value')
-    }
-
-    if (Number(execResult) === 0) {
-      ctx.logger.info(
-        'Participant has already responded to this question instance',
-        {
-          messageId: message.messageId,
-          sessionId: message.sessionId,
-          instanceId: message.instanceId,
-        }
-      )
-      return { status: 200 }
+      if (!('exec' in redisMulti)) {
+        throw new Error('Missing Redis pipeline executor')
+      }
+      await redisMulti.exec()
     }
     ctx.logger.info("Successfully processed participant's response", {
       messageId: message.messageId,
