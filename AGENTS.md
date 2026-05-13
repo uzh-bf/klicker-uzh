@@ -219,6 +219,7 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 - **Local embed harness target**: `util/embed-harness/` is for local verification only and should target the branch-local PWA (`http://127.0.0.1:3101/...`), not `https://pwa.klicker.com/...`, because production CSP / `frame-ancestors` blocks localhost embedding. (`util/embed-harness/`)
 - **Chat PWA login redirects**: `apps/chat/src/app/noLogin/page.tsx` must pass an absolute chat URL to the PWA login `redirect_to`; a relative chatbot path makes the PWA redirect to its own domain and 404. Local chat dev also needs ignored local env values for the backend `APP_SECRET` and `DATABASE_URL` so participant cookies verify and Prisma can load chatbot data.
 - **Chat Vitest alias resolution**: `apps/chat/vitest.config.ts` mirrors the app `@/*` alias from `apps/chat/tsconfig.json`; keep this in sync when adding client tests for modules that import from `@/src/...`.
+- **Live quiz response idempotency**: Standard authenticated live quiz response aggregation in `apps/hatchet-worker-response-processor/src/processors/processor.ts` must keep the participant response marker and result increments in one atomic Redis write path; the preflight `hexists` check is only an optimization. Anonymous responses still have no stable server-side dedupe key.
 
 ## Factory Skills (AI Assistance)
 
