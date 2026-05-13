@@ -187,6 +187,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             autoFocus
           />
           <button
+            type="button"
             onClick={handleEditSave}
             aria-label="Save"
             className="text-foreground focus-visible:ring-ring mr-1 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors hover:text-green-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
@@ -195,6 +196,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             <span className="sr-only">Save</span>
           </button>
           <button
+            type="button"
             onClick={handleEditCancel}
             aria-label="Cancel"
             className="text-foreground focus-visible:ring-ring mr-2 inline-flex size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium transition-colors hover:text-red-600 focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4"
@@ -206,12 +208,14 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
       ) : (
         <>
           <button
+            type="button"
             onClick={onSelect}
             className="min-w-0 flex-grow px-3 py-1 text-start"
           >
             <p className="truncate text-sm">{getThreadTitle()}</p>
           </button>
           <button
+            type="button"
             onClick={handleEditStart}
             aria-label="Edit name"
             className={`text-foreground hover:text-primary focus-visible:ring-ring mr-1 size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4 ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}
@@ -220,6 +224,7 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
             <span className="sr-only">Edit name</span>
           </button>
           <button
+            type="button"
             onClick={onDelete}
             aria-label="Delete chat"
             className={`text-foreground hover:text-destructive focus-visible:ring-ring mr-2 size-6 shrink-0 items-center justify-center whitespace-nowrap rounded-md p-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4 ${isActive ? 'inline-flex' : 'hidden group-focus-within/thread:inline-flex group-hover/thread:inline-flex'}`}
