@@ -31,6 +31,129 @@ import {
 
 const redisExec = getRedis() // use standard redis instance for regular response processor
 
+const ADD_AUTHENTICATED_RESPONSE_SCRIPT = `
+if redis.call('HEXISTS', KEYS[1], ARGV[1]) == 1 then
+  return 0
+end
+
+local index = 3
+local incrementCount = tonumber(ARGV[index])
+index = index + 1
+for _ = 1, incrementCount do
+  local keyIndex = tonumber(ARGV[index])
+  local currentValue = redis.call('HGET', KEYS[keyIndex], ARGV[index + 1])
+  if currentValue and not string.match(currentValue, '^-?%d+$') then
+    return -1
+  end
+  if not string.match(ARGV[index + 2], '^-?%d+$') then
+    return -1
+  end
+  index = index + 3
+end
+
+redis.call('HSET', KEYS[1], ARGV[1], ARGV[2])
+
+-- Replay the increment operations after validation. Base ARGV slots 1-3 are
+-- participantResponseField, markerValue, and incrementCount, so increments
+-- start at slot 4.
+index = 4
+for _ = 1, incrementCount do
+  local keyIndex = tonumber(ARGV[index])
+  redis.call('HINCRBY', KEYS[keyIndex], ARGV[index + 1], tonumber(ARGV[index + 2]))
+  index = index + 3
+end
+
+local hsetCount = tonumber(ARGV[index])
+index = index + 1
+for _ = 1, hsetCount do
+  local keyIndex = tonumber(ARGV[index])
+  local mode = ARGV[index + 3]
+  if mode == 'setnx' then
+    redis.call('HSETNX', KEYS[keyIndex], ARGV[index + 1], ARGV[index + 2])
+  else
+    redis.call('HSET', KEYS[keyIndex], ARGV[index + 1], ARGV[index + 2])
+  end
+  index = index + 4
+end
+
+return 1
+`
+
+type RedisHashOperation =
+  | {
+      type: 'hincrby'
+      key: string
+      field: string
+      increment: number
+    }
+  | {
+      type: 'hset'
+      key: string
+      field: string
+      value: string
+      mode: 'set' | 'setnx'
+    }
+
+function getParticipantResponseField(participantData: JWTPayload) {
+  return participantData.role === 'TEMPORARY_PARTICIPANT'
+    ? `temporary-${participantData.sub}`
+    : participantData.sub
+}
+
+function getAnonymousResponseField(submissionId: string) {
+  return `anonymous-${createHash('sha256').update(submissionId).digest('hex')}`
+}
+
+type RedisOperationCollector = {
+  hincrby(
+    key: string,
+    field: string,
+    increment: number
+  ): RedisOperationCollector
+  hset(key: string, field: string, value: unknown): RedisOperationCollector
+  hsetnx(key: string, field: string, value: unknown): RedisOperationCollector
+  discard(): RedisOperationCollector
+}
+
+type RedisResponseOperations = ChainableCommander | RedisOperationCollector
+
+function createRedisOperationCollector(
+  operations: RedisHashOperation[]
+): RedisOperationCollector {
+  const collector = {
+    hincrby(key: string, field: string, increment: number) {
+      operations.push({ type: 'hincrby', key, field, increment })
+      return collector
+    },
+    hset(key: string, field: string, value: unknown) {
+      operations.push({
+        type: 'hset',
+        key,
+        field,
+        value: String(value),
+        mode: 'set',
+      })
+      return collector
+    },
+    hsetnx(key: string, field: string, value: unknown) {
+      operations.push({
+        type: 'hset',
+        key,
+        field,
+        value: String(value),
+        mode: 'setnx',
+      })
+      return collector
+    },
+    discard() {
+      operations.length = 0
+      return collector
+    },
+  }
+
+  return collector
+}
+
 export async function processResponseMessage(
   message: {
     messageId: string
@@ -39,6 +162,7 @@ export async function processResponseMessage(
     response: LiveQuizResponseInput
     cookie?: string
     responseTimestamp: number
+    submissionId?: string
   },
   ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
 ) {
@@ -62,9 +186,10 @@ export async function processResponseMessage(
     return { status: 200 }
   }
 
-  let redisMulti: ChainableCommander
-  // redisMulti = redisExec.multi() -> transaction
-  redisMulti = redisExec.pipeline() // -> pipeline (not atomic)
+  let redisMulti!: RedisResponseOperations
+  const redisOperations: RedisHashOperation[] = []
+  let participantResponseKey: string | undefined
+  let participantResponseField: string | undefined
 
   try {
     const liveQuizKey = `lq:${message.sessionId}`
@@ -122,22 +247,26 @@ export async function processResponseMessage(
       } catch (e) {
         ctx.logger.error(`JWT verification failed: ${String(e)}`)
       }
+    }
 
-      // if the participant has already responded to the question instance, return instantly
-      if (
-        participantData &&
-        (await redisExec.hexists(
-          `${instanceKey}:responses`,
-          participantData.role === 'TEMPORARY_PARTICIPANT'
-            ? `temporary-${participantData.sub}`
-            : participantData.sub
-        ))
-      ) {
-        ctx.logger.info(
-          'Participant has already responded to this question instance'
-        )
-        return { status: 200 }
-      }
+    participantResponseKey = `${instanceKey}:responses`
+    participantResponseField = participantData
+      ? getParticipantResponseField(participantData)
+      : typeof message.submissionId === 'string' && message.submissionId
+        ? getAnonymousResponseField(message.submissionId)
+        : undefined
+
+    if (
+      participantResponseField &&
+      (await redisExec.hexists(
+        participantResponseKey,
+        participantResponseField
+      ))
+    ) {
+      ctx.logger.info(
+        'Participant has already responded to this question instance'
+      )
+      return { status: 200 }
     }
 
     const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
@@ -224,6 +353,19 @@ export async function processResponseMessage(
 
     let pointsAwarded: number | string = 0
     let xpAwarded: number = 0
+    if (participantResponseField) {
+      redisMulti = createRedisOperationCollector(redisOperations)
+    } else {
+      redisMulti = redisExec.pipeline()
+    }
+
+    if (!participantData && participantResponseField) {
+      redisMulti.hset(
+        participantResponseKey,
+        participantResponseField,
+        message.messageId
+      )
+    }
 
     switch (type) {
       case 'SC':
@@ -254,10 +396,8 @@ export async function processResponseMessage(
         if (participantData) {
           // add the participant's response to the corresponding redis hash
           redisMulti.hset(
-            `${instanceKey}:responses`,
-            participantData.role === 'TEMPORARY_PARTICIPANT'
-              ? `temporary-${participantData.sub}`
-              : participantData.sub,
+            participantResponseKey,
+            participantResponseField!,
             JSON.stringify(response.choices)
           )
 
@@ -286,7 +426,7 @@ export async function processResponseMessage(
           ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            redisMulti.hsetnx(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -337,10 +477,8 @@ export async function processResponseMessage(
         if (participantData) {
           // add the participant's response to the corresponding redis hash
           redisMulti.hset(
-            `${instanceKey}:responses`,
-            participantData.role === 'TEMPORARY_PARTICIPANT'
-              ? `temporary-${participantData.sub}`
-              : participantData.sub,
+            participantResponseKey,
+            participantResponseField!,
             String(response.value)
           )
 
@@ -363,7 +501,7 @@ export async function processResponseMessage(
           if (parsedSolutions && pointsPercentage && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            redisMulti.hsetnx(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -415,10 +553,8 @@ export async function processResponseMessage(
         if (participantData) {
           // add the participant's response to the corresponding redis hash
           redisMulti.hset(
-            `${instanceKey}:responses`,
-            participantData.role === 'TEMPORARY_PARTICIPANT'
-              ? `temporary-${participantData.sub}`
-              : participantData.sub,
+            participantResponseKey,
+            participantResponseField!,
             cleanResponseValue
           )
 
@@ -441,7 +577,7 @@ export async function processResponseMessage(
           if (pointsPercentage && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            redisMulti.hsetnx(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -494,10 +630,8 @@ export async function processResponseMessage(
         if (participantData) {
           // add the participant's response to the corresponding redis hash
           redisMulti.hset(
-            `${instanceKey}:responses`,
-            participantData.role === 'TEMPORARY_PARTICIPANT'
-              ? `temporary-${participantData.sub}`
-              : participantData.sub,
+            participantResponseKey,
+            participantResponseField!,
             `[${String(response.selection.filter((r: number) => r !== -1 && typeof r !== 'undefined' && r !== null))}]` // filter out skipped response fields
           )
 
@@ -524,7 +658,7 @@ export async function processResponseMessage(
           ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            redisMulti.hsetnx(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -595,10 +729,8 @@ export async function processResponseMessage(
         if (participantData) {
           // add the participant's response to the corresponding redis hash
           redisMulti.hset(
-            `${instanceKey}:responses`,
-            participantData.role === 'TEMPORARY_PARTICIPANT'
-              ? `temporary-${participantData.sub}`
-              : participantData.sub,
+            participantResponseKey,
+            participantResponseField!,
             JSON.stringify(response.assessment)
           )
 
@@ -625,7 +757,7 @@ export async function processResponseMessage(
           ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            redisMulti.hsetnx(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -649,6 +781,13 @@ export async function processResponseMessage(
       case 'CONTENT': {
         // increase number of participants on element (do not award points / ... for content elements)
         redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
+        if (participantData) {
+          redisMulti.hset(
+            participantResponseKey,
+            participantResponseField!,
+            JSON.stringify(response)
+          )
+        }
         break
       }
     }
@@ -666,7 +805,97 @@ export async function processResponseMessage(
   }
 
   try {
-    await redisMulti.exec()
+    let execResult: unknown
+
+    if (participantResponseKey && participantResponseField) {
+      const markerOperation = redisOperations.find(
+        (operation) =>
+          operation.type === 'hset' &&
+          operation.key === participantResponseKey &&
+          operation.field === participantResponseField
+      )
+
+      if (!markerOperation || markerOperation.type !== 'hset') {
+        throw new Error('Missing authenticated participant response marker')
+      }
+
+      const incrementOperations = redisOperations.filter(
+        (
+          operation
+        ): operation is Extract<RedisHashOperation, { type: 'hincrby' }> =>
+          operation.type === 'hincrby'
+      )
+      const invalidIncrementOperation = incrementOperations.find(
+        (operation) => !Number.isInteger(Number(operation.increment))
+      )
+      if (invalidIncrementOperation) {
+        throw new Error(
+          `Invalid Redis integer increment ${invalidIncrementOperation.increment} for ${invalidIncrementOperation.key}:${invalidIncrementOperation.field}`
+        )
+      }
+
+      const hsetOperations = redisOperations.filter(
+        (
+          operation
+        ): operation is Extract<RedisHashOperation, { type: 'hset' }> =>
+          operation.type === 'hset' &&
+          (operation.key !== participantResponseKey ||
+            operation.field !== participantResponseField)
+      )
+      const scriptKeys = [
+        participantResponseKey,
+        ...new Set(
+          [...incrementOperations, ...hsetOperations]
+            .map((operation) => operation.key)
+            .filter((key) => key !== participantResponseKey)
+        ),
+      ]
+      const keyIndexByKey = new Map(
+        scriptKeys.map((key, index) => [key, index + 1])
+      )
+
+      execResult = await redisExec.eval(
+        ADD_AUTHENTICATED_RESPONSE_SCRIPT,
+        scriptKeys.length,
+        ...scriptKeys,
+        participantResponseField,
+        markerOperation.value,
+        String(incrementOperations.length),
+        ...incrementOperations.flatMap((operation) => [
+          String(keyIndexByKey.get(operation.key)!),
+          operation.field,
+          String(operation.increment),
+        ]),
+        String(hsetOperations.length),
+        ...hsetOperations.flatMap((operation) => [
+          String(keyIndexByKey.get(operation.key)!),
+          operation.field,
+          operation.value,
+          operation.mode,
+        ])
+      )
+
+      if (Number(execResult) === -1) {
+        throw new Error('Invalid existing Redis counter value')
+      }
+
+      if (Number(execResult) === 0) {
+        ctx.logger.info(
+          'Participant has already responded to this question instance',
+          {
+            messageId: message.messageId,
+            sessionId: message.sessionId,
+            instanceId: message.instanceId,
+          }
+        )
+        return { status: 200 }
+      }
+    } else {
+      if (!('exec' in redisMulti)) {
+        throw new Error('Missing Redis pipeline executor')
+      }
+      await redisMulti.exec()
+    }
     ctx.logger.info("Successfully processed participant's response", {
       messageId: message.messageId,
       sessionId: message.sessionId,

@@ -50,12 +50,14 @@ async function handleNewResponse({
   type,
   answer,
   correlationKey,
+  submissionId,
 }: {
   liveQuizId: string
   instanceId: number
   type: ElementType
   answer: any
   correlationKey?: string | null
+  submissionId?: string
 }): // statusCode: 0 = client-side invalid input / general error; otherwise HTTP status codes 200, 208, 400, 401, 404, 500
 Promise<{ statusCode: number; responseTimestamp?: number }> {
   let requestOptions: RequestInit = {
@@ -71,6 +73,7 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
         instanceId,
         liveQuizId,
         response: { choices: answer },
+        submissionId,
       }),
     }
   } else if (
@@ -84,6 +87,7 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
         instanceId,
         liveQuizId,
         response: { value: answer },
+        submissionId,
       }),
     }
   } else if (type === ElementType.Selection) {
@@ -94,6 +98,7 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
         instanceId,
         liveQuizId,
         response: { selection: answer },
+        submissionId,
       }),
     }
   } else if (type === ElementType.CaseStudy) {
@@ -104,6 +109,7 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
         instanceId,
         liveQuizId,
         response: { assessment: answer },
+        submissionId,
       }),
     }
   } else if (type === ElementType.Content) {
@@ -114,6 +120,7 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
         instanceId,
         liveQuizId,
         response: { viewed: true },
+        submissionId,
       }),
     }
   } else {
