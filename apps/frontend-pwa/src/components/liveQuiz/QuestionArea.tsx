@@ -21,6 +21,20 @@ const ConfettiExplosion = dynamic(() => import('react-confetti-explosion'), {
   ssr: false,
 })
 
+function getClientSubmissionId(storageKey: string) {
+  const clientIdKey = 'klicker-live-quiz-client-id'
+  let clientId = window.localStorage.getItem(clientIdKey)
+
+  if (!clientId) {
+    clientId =
+      globalThis.crypto?.randomUUID?.() ??
+      `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    window.localStorage.setItem(clientIdKey, clientId)
+  }
+
+  return `${clientId}:${storageKey}`
+}
+
 interface QuestionAreaProps {
   isBlockActive?: boolean
   gamificationEnabled: boolean
@@ -32,12 +46,14 @@ interface QuestionAreaProps {
     type,
     answer,
     correlationKey,
+    submissionId,
   }: {
     liveQuizId: string
     instanceId: number
     type: ElementType
     answer: any
     correlationKey?: string | null
+    submissionId?: string
   }) => Promise<{ statusCode: number; responseTimestamp?: number }>
   quizId: string
   execution: number
@@ -66,6 +82,7 @@ function QuestionArea({
   const [submittedAt, setSubmittedAt] = useState<number | null>(null)
   const [activeInstance, setActiveInstance] = useState<number>(0)
   const currentInstance = instances[activeInstance]
+  const submittingRef = useRef(false)
 
   // initialize student response with default state (FT question) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
@@ -157,48 +174,56 @@ function QuestionArea({
   })
 
   const onSubmit = async (): Promise<void> => {
+    if (submittingRef.current) return
+    submittingRef.current = true
+
     // lock the submission button temporarily to avoid double submissions
     setSubmitting(true)
 
-    const {
-      id: instanceId,
-      elementType,
-      correlationKey,
-    } = instances[activeInstance]
+    try {
+      const {
+        id: instanceId,
+        elementType,
+        correlationKey,
+      } = instances[activeInstance]
 
-    // if the question has been answered, add a response
-    const success = await answerQuestion({
-      instanceId,
-      type: elementType,
-      input: studentResponse,
-      correlationKey,
-    })
+      // if the question has been answered, add a response
+      const success = await answerQuestion({
+        instanceId,
+        type: elementType,
+        input: studentResponse,
+        correlationKey,
+      })
 
-    // relese the submission lock on the submission button
-    setSubmitting(false)
+      // if the submission was not successful, do not block another submission attempt
+      if (!success) return
 
-    // if the submission was not successful, do not block another submission attempt
-    if (!success) return
+      // update the stored responses
+      await updateStoredResponses(instanceId, quizId, execution)
 
-    // update the stored responses
-    await updateStoredResponses(instanceId, quizId, execution)
+      // calculate the new indices of remaining questions
+      const newRemaining = (remainingQuestions ?? []).filter(
+        (question) => !isDeepEqual(activeInstance, question)
+      )
 
-    // calculate the new indices of remaining questions
-    const newRemaining = (remainingQuestions ?? []).filter(
-      (question) => !isDeepEqual(activeInstance, question)
-    )
+      // update the active instance and the remaining questions
+      setActiveInstance(newRemaining[0] ?? instances.length - 1)
+      setRemainingQuestions(newRemaining)
 
-    // update the active instance and the remaining questions
-    setActiveInstance(newRemaining[0] ?? instances.length - 1)
-    setRemainingQuestions(newRemaining)
-
-    // if this was the last question of the block and gamification is enabled, show confetti
-    if (newRemaining.length === 0 && gamificationEnabled) {
-      setShowConfetti(true)
+      // if this was the last question of the block and gamification is enabled, show confetti
+      if (newRemaining.length === 0 && gamificationEnabled) {
+        setShowConfetti(true)
+      }
+    } finally {
+      // release the submission lock on the submission button
+      submittingRef.current = false
+      setSubmitting(false)
     }
   }
 
   const onExpire = async (): Promise<void> => {
+    const isSubmitting = submittingRef.current
+
     const {
       id: instanceId,
       elementType,
@@ -206,13 +231,18 @@ function QuestionArea({
     } = instances[activeInstance]
 
     // save the response, if one was given before the time expired
-    if (studentResponse.valid) {
-      answerQuestion({
-        instanceId,
-        type: elementType,
-        input: studentResponse,
-        correlationKey,
-      })
+    if (studentResponse.valid && !isSubmitting) {
+      submittingRef.current = true
+      try {
+        await answerQuestion({
+          instanceId,
+          type: elementType,
+          input: studentResponse,
+          correlationKey,
+        })
+      } finally {
+        submittingRef.current = false
+      }
     }
 
     const remainingQuestionIds = (remainingQuestions ?? []).map(
@@ -291,6 +321,7 @@ function QuestionArea({
     correlationKey?: string | null
   }): Promise<boolean> {
     const storageKey = `lq-${quizId}-ex-${execution}-i-${instanceId}`
+    const submissionId = getClientSubmissionId(storageKey)
 
     if (!input.valid) {
       toast({
@@ -314,6 +345,7 @@ function QuestionArea({
           selected: typeof value === 'boolean' ? value : false,
         })),
         correlationKey,
+        submissionId,
       })
 
       // --> show toast based on status code
@@ -344,6 +376,7 @@ function QuestionArea({
         type,
         answer: input.response,
         correlationKey,
+        submissionId,
       })
 
       // --> show toast based on status code
@@ -372,6 +405,7 @@ function QuestionArea({
         type,
         answer: String(parseFloat(input.response)),
         correlationKey,
+        submissionId,
       })
 
       // --> show toast based on status code
@@ -402,6 +436,7 @@ function QuestionArea({
           typeof entry === 'undefined' || entry === null ? -1 : entry
         ),
         correlationKey,
+        submissionId,
       })
 
       // --> show toast based on status code
@@ -430,6 +465,7 @@ function QuestionArea({
         type,
         answer: input.response,
         correlationKey,
+        submissionId,
       })
 
       // --> show toast based on status code
@@ -454,6 +490,7 @@ function QuestionArea({
         type,
         answer: true,
         correlationKey,
+        submissionId,
       })
 
       // --> show toast based on status code

@@ -100,6 +100,10 @@ function getParticipantResponseField(participantData: JWTPayload) {
     : participantData.sub
 }
 
+function getAnonymousResponseField(submissionId: string) {
+  return `anonymous-${createHash('sha256').update(submissionId).digest('hex')}`
+}
+
 type RedisOperationCollector = {
   hincrby(
     key: string,
@@ -158,6 +162,7 @@ export async function processResponseMessage(
     response: LiveQuizResponseInput
     cookie?: string
     responseTimestamp: number
+    submissionId?: string
   },
   ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
 ) {
@@ -247,7 +252,9 @@ export async function processResponseMessage(
     participantResponseKey = `${instanceKey}:responses`
     participantResponseField = participantData
       ? getParticipantResponseField(participantData)
-      : undefined
+      : typeof message.submissionId === 'string' && message.submissionId
+        ? getAnonymousResponseField(message.submissionId)
+        : undefined
 
     if (
       participantResponseField &&
@@ -350,6 +357,14 @@ export async function processResponseMessage(
       redisMulti = createRedisOperationCollector(redisOperations)
     } else {
       redisMulti = redisExec.pipeline()
+    }
+
+    if (!participantData && participantResponseField) {
+      redisMulti.hset(
+        participantResponseKey,
+        participantResponseField,
+        message.messageId
+      )
     }
 
     switch (type) {

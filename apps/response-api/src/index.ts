@@ -138,6 +138,10 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     response, // pass through as-is; worker validates
     cookie,
     responseTimestamp,
+    submissionId:
+      typeof payload.submissionId === 'string' && payload.submissionId
+        ? payload.submissionId
+        : undefined,
   }
 
   // determine if the participant is logged in with a valid student cookie (temporary or standard)
