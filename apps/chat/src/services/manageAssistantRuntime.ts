@@ -1,4 +1,5 @@
 import type { ChatModelConfig } from '../lib/server/chatModelRegistry'
+import { buildManageAssistantSkillsPrompt } from './manageAssistantSkills'
 import {
   formatManageContextForPrompt,
   type ManageAssistantContext,
@@ -23,8 +24,9 @@ export function buildManageAssistantSystemPrompt(
   const toolPrompt = toolsAvailable
     ? 'Lecturer MCP read tools are available for authorized course and question-pool lookups; draft-only question, answer-choice, feedback, and signed proposal tools are available for content scaffolding.'
     : 'Lecturer MCP tools are currently unavailable. Be transparent that live Klicker data cannot be queried in this response.'
+  const skillsPrompt = buildManageAssistantSkillsPrompt()
 
-  return [BASE_MANAGE_ASSISTANT_PROMPT, toolPrompt, contextPrompt]
+  return [BASE_MANAGE_ASSISTANT_PROMPT, toolPrompt, skillsPrompt, contextPrompt]
     .filter(Boolean)
     .join('\n\n')
 }

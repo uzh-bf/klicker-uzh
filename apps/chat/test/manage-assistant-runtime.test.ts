@@ -22,6 +22,7 @@ describe('Manage assistant runtime helpers', () => {
 
     expect(prompt).toContain('Current KlickerUZH Manage context')
     expect(prompt).toContain('Course ID: course-1')
+    expect(prompt).toContain('Manage assistant skills')
     expect(prompt).toContain('does not grant permissions')
     expect(prompt).toContain('Do not persist')
     expect(prompt).toContain('signed proposal card')
