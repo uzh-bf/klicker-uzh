@@ -30,6 +30,7 @@ import {
   XIcon,
 } from 'lucide-react'
 import {
+  type ComponentType,
   type FC,
   type PropsWithChildren,
   type ReactNode,
@@ -61,6 +62,7 @@ import { twMerge } from 'tailwind-merge'
 
 type ThreadProps = {
   chatbotAvatar: string
+  chatbotFallbackIcon?: ComponentType<{ className?: string }>
   chatbotName: string
   contextLabel?: string | null
   suggestionMode?: 'student' | 'manage'
@@ -213,6 +215,7 @@ const AssistantReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
 
 export const Thread: FC<ThreadProps> = ({
   chatbotAvatar,
+  chatbotFallbackIcon,
   chatbotName,
   contextLabel,
   suggestionMode = 'student',
@@ -236,6 +239,7 @@ export const Thread: FC<ThreadProps> = ({
       >
         <ThreadWelcome
           chatbotAvatar={chatbotAvatar}
+          chatbotFallbackIcon={chatbotFallbackIcon}
           chatbotName={chatbotName}
           contextLabel={contextLabel}
           suggestionMode={suggestionMode}
@@ -246,7 +250,11 @@ export const Thread: FC<ThreadProps> = ({
             UserMessage: UserMessage,
             EditComposer: EditComposer,
             AssistantMessage: (props) => (
-              <AssistantMessage {...props} chatbotAvatar={chatbotAvatar} />
+              <AssistantMessage
+                {...props}
+                chatbotAvatar={chatbotAvatar}
+                chatbotFallbackIcon={chatbotFallbackIcon}
+              />
             ),
           }}
         />
@@ -283,10 +291,17 @@ const ThreadScrollToBottom: FC = () => {
 
 const ThreadWelcome: FC<{
   chatbotAvatar: string
+  chatbotFallbackIcon?: ComponentType<{ className?: string }>
   chatbotName: string
   contextLabel?: string | null
   suggestionMode: 'student' | 'manage'
-}> = ({ chatbotAvatar, chatbotName, contextLabel, suggestionMode }) => {
+}> = ({
+  chatbotAvatar,
+  chatbotFallbackIcon,
+  chatbotName,
+  contextLabel,
+  suggestionMode,
+}) => {
   const { embedded } = useChatUi()
 
   return (
@@ -300,6 +315,7 @@ const ThreadWelcome: FC<{
         <div className="flex w-full flex-grow flex-col items-center justify-center py-8 text-center">
           <ChatbotAvatar
             avatar={chatbotAvatar}
+            fallbackIcon={chatbotFallbackIcon}
             className={twMerge(
               'text-uzh-blue border border-gray-200 bg-gray-50 shadow-sm',
               embedded ? 'size-14' : 'size-16'
@@ -1181,7 +1197,8 @@ const PartGroup: FC<
 
 const AssistantMessage: FC<{
   chatbotAvatar: string
-}> = ({ chatbotAvatar }) => {
+  chatbotFallbackIcon?: ComponentType<{ className?: string }>
+}> = ({ chatbotAvatar, chatbotFallbackIcon }) => {
   const { embedded } = useChatUi()
 
   return (
@@ -1199,6 +1216,7 @@ const AssistantMessage: FC<{
       >
         <ChatbotAvatar
           avatar={chatbotAvatar}
+          fallbackIcon={chatbotFallbackIcon}
           className={twMerge(
             'text-uzh-blue border border-gray-200 bg-white',
             embedded ? 'size-7' : 'size-6 sm:size-9'

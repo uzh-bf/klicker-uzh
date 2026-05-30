@@ -57,6 +57,7 @@ function ManageAssistantInner() {
         )}
         <Thread
           chatbotAvatar=""
+          chatbotFallbackIcon={WandSparkles}
           chatbotName={MANAGE_ASSISTANT_NAME}
           contextLabel={contextLabel}
           suggestionMode="manage"

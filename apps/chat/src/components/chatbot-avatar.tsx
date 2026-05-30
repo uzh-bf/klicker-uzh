@@ -2,13 +2,14 @@
 
 import { BotIcon } from 'lucide-react'
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { type ComponentType, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 type ChatbotAvatarProps = {
   avatar?: string | null
   alt?: string
   className?: string
+  fallbackIcon?: ComponentType<{ className?: string }>
   iconClassName?: string
 }
 
@@ -16,6 +17,7 @@ export function ChatbotAvatar({
   avatar,
   alt = '',
   className,
+  fallbackIcon: FallbackIcon = BotIcon,
   iconClassName,
 }: ChatbotAvatarProps) {
   const [failed, setFailed] = useState(false)
@@ -43,7 +45,7 @@ export function ChatbotAvatar({
           onError={() => setFailed(true)}
         />
       ) : (
-        <BotIcon className={twMerge('size-4', iconClassName)} />
+        <FallbackIcon className={twMerge('size-4', iconClassName)} />
       )}
     </span>
   )
