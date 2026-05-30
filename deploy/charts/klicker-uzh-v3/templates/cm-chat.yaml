@@ -24,3 +24,7 @@ data:
   {{- $mcpStudentPath := printf "/%s" (trimPrefix "/" .Values.mcpStudent.path) }}
   MCP_STUDENT_URL: {{ printf "http://%s-mcp-student:%v%s" $fullName .Values.mcpStudent.service.port $mcpStudentPath | quote }}
   {{- end }}
+  {{- if .Values.mcpLecturer.enabled }}
+  {{- $mcpLecturerPath := printf "/%s" (trimPrefix "/" .Values.mcpLecturer.path) }}
+  MCP_LECTURER_URL: {{ printf "http://%s-mcp-lecturer:%v%s" $fullName .Values.mcpLecturer.service.port $mcpLecturerPath | quote }}
+  {{- end }}

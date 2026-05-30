@@ -42,7 +42,6 @@ RUN adduser --system --uid 1001 nodejs
 
 COPY --from=builder /app/apps/mcp-lecturer/dist/ /app/apps/mcp-lecturer/dist/
 COPY --from=builder /app/packages/prisma/dist/ /app/packages/prisma/dist/
-COPY --from=builder /app/packages/util/dist/ /app/packages/util/dist/
 
 USER nodejs
 
@@ -52,4 +51,4 @@ ENV NODE_ENV=production \
 
 EXPOSE 7081
 
-CMD node /app/apps/mcp-lecturer/dist/index.js
+CMD ["node", "/app/apps/mcp-lecturer/dist/index.js"]

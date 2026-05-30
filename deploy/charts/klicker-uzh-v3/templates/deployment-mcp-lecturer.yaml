@@ -1,0 +1,97 @@
+{{- if .Values.mcpLecturer.enabled -}}
+{{- $fullName := include "chart.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}-mcp-lecturer
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mcp-lecturer
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  revisionHistoryLimit: 5
+  {{- with .Values.mcpLecturer.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if not .Values.mcpLecturer.autoscaling.enabled }}
+  replicas: {{ .Values.mcpLecturer.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: mcp-lecturer
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/cm-mcp-lecturer.yaml") . | sha256sum }}
+        release: {{ .Chart.AppVersion }}
+      {{- with .Values.mcpLecturer.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: mcp-lecturer
+    spec:
+      priorityClassName: {{ $fullName }}-{{ .Values.mcpLecturer.priorityClassName }}
+      automountServiceAccountToken: false
+      {{- with .Values.mcpLecturer.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.mcpLecturer.podSecurityContext | nindent 8 }}
+      containers:
+        - name: mcp-lecturer
+          securityContext:
+            {{- toYaml .Values.mcpLecturer.securityContext | nindent 12 }}
+          image: "{{ .Values.mcpLecturer.image.repository }}:{{ .Values.mcpLecturer.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.mcpLecturer.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.mcpLecturer.service.port }}
+              protocol: TCP
+          env:
+            - name: APP_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mcpLecturer.secret.appSecretName | default (printf "%s-secret-chat" $fullName) }}
+                  key: {{ .Values.mcpLecturer.secret.appSecretKey }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mcpLecturer.secret.databaseName | default (printf "%s-secret-backend-graphql" $fullName) }}
+                  key: {{ .Values.mcpLecturer.secret.databaseUrlKey }}
+          envFrom:
+            - configMapRef:
+                name: {{ $fullName }}-config-global
+            - configMapRef:
+                name: {{ $fullName }}-config-mcp-lecturer
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          resources:
+            {{- toYaml .Values.mcpLecturer.resources | nindent 12 }}
+      {{- with .Values.mcpLecturer.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mcpLecturer.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mcpLecturer.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mcpLecturer.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

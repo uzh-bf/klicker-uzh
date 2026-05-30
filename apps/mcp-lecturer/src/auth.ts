@@ -1,6 +1,6 @@
-import { verifyJWT } from '@klicker-uzh/util'
 import type { IncomingHttpHeaders } from 'node:http'
 import type { RuntimeSettings } from './config.js'
+import { verifyLecturerJwt } from './jwt.js'
 
 export type LecturerMcpScope = 'manage:read' | 'manage:draft'
 
@@ -46,7 +46,7 @@ export async function verifyLecturerSession(
   settings: Pick<RuntimeSettings, 'jwtIssuer' | 'jwtSecret'>,
   requiredScopes: LecturerMcpScope[] = ['manage:read']
 ): Promise<LecturerMcpSession> {
-  const payload = await verifyJWT(token, settings.jwtSecret, {
+  const payload = await verifyLecturerJwt(token, settings.jwtSecret, {
     issuer: settings.jwtIssuer,
   }).catch(() => {
     throw new LecturerMcpAuthError(

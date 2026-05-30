@@ -1,10 +1,10 @@
-import { signJWT } from '@klicker-uzh/util'
 import { describe, expect, it } from 'vitest'
 import {
   LecturerMcpAuthError,
   bearerTokenFromHeaders,
   verifyLecturerSession,
 } from '../src/auth.js'
+import { signLecturerJwt } from '../src/jwt.js'
 
 const TEST_SECRET = 'lecturer-mcp-secret'
 const TEST_ISSUER = 'https://auth.klicker.test'
@@ -17,7 +17,7 @@ const settings = {
 async function signLecturerToken(
   payload: Record<string, unknown> = {}
 ): Promise<string> {
-  return signJWT(
+  return signLecturerJwt(
     {
       sub: 'lecturer-a',
       role: 'USER',
@@ -27,7 +27,6 @@ async function signLecturerToken(
     },
     TEST_SECRET,
     {
-      algorithm: 'HS256',
       expiresIn: '300s',
       issuer: TEST_ISSUER,
     }

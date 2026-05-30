@@ -1,4 +1,3 @@
-import { signJWT } from '@klicker-uzh/util'
 import { FastMCP, UserError } from 'fastmcp'
 import type { IncomingMessage } from 'node:http'
 import { z } from 'zod'
@@ -9,6 +8,7 @@ import {
   type LecturerMcpSession,
 } from './auth.js'
 import type { RuntimeSettings } from './config.js'
+import { signLecturerJwt } from './jwt.js'
 import {
   choicesDraftSchema,
   courseGetSchema,
@@ -129,7 +129,7 @@ async function signProposalToken(
     summary?: string
   }
 ) {
-  return signJWT(
+  return signLecturerJwt(
     {
       kind: proposal.kind,
       payload: proposal.payload,
@@ -139,7 +139,6 @@ async function signProposalToken(
     },
     settings.jwtSecret,
     {
-      algorithm: 'HS256',
       expiresIn: '15m',
       issuer: settings.jwtIssuer,
     }
