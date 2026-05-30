@@ -1,18 +1,16 @@
 'use client'
 
+import { AssistantRuntimeProvider } from '@assistant-ui/react'
 import {
-  AssistantRuntimeProvider,
-  useExternalStoreRuntime,
-  type AppendMessage,
-  type ThreadMessageLike,
-} from '@assistant-ui/react'
+  AssistantChatTransport,
+  useChatRuntime,
+} from '@assistant-ui/react-ai-sdk'
 import { WandSparkles } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useEmbeddedManageContext } from '../hooks/useEmbeddedManageContext'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
 import {
-  formatManageContextForPrompt,
   getManageContextLabel,
   type ManageAssistantContext,
 } from '../services/manageContext'
@@ -69,59 +67,19 @@ function ManageAssistantRuntimeProvider({
   children: React.ReactNode
   context: ManageAssistantContext | null
 }) {
-  const [messages, setMessagesState] = useState<ThreadMessageLike[]>([])
-
-  const setMessages = useCallback(
-    (nextMessages: readonly ThreadMessageLike[]) => {
-      setMessagesState([...nextMessages])
-    },
-    []
-  )
-
-  const onNew = useCallback(
-    async (message: AppendMessage) => {
-      const userMessage: ThreadMessageLike = {
-        ...message,
-        id: createLocalMessageId(),
-        createdAt: new Date(),
-        metadata: {
-          ...message.metadata,
-          custom: {
-            ...(message.metadata?.custom ?? {}),
-            assistantKind: 'manage',
-          },
+  const transport = useMemo(
+    () =>
+      new AssistantChatTransport({
+        api: '/api/manage/chat',
+        body: {
+          manageContext: context ?? undefined,
         },
-      }
-      const assistantMessage: ThreadMessageLike = {
-        id: createLocalMessageId(),
-        role: 'assistant',
-        createdAt: new Date(),
-        content: [
-          {
-            type: 'text',
-            text: buildPlaceholderReply(context),
-          },
-        ],
-        status: { type: 'complete', reason: 'stop' },
-        metadata: {
-          custom: {
-            assistantKind: 'manage',
-            hasManageContext: Boolean(context),
-          },
-        },
-      }
-
-      setMessagesState((current) => [...current, userMessage, assistantMessage])
-    },
+      }),
     [context]
   )
 
-  const runtime = useExternalStoreRuntime({
-    messages,
-    isRunning: false,
-    setMessages,
-    onNew,
-    convertMessage: (message) => message,
+  const runtime = useChatRuntime({
+    transport,
     adapters: {
       attachments: imageAttachmentAdapter,
     },
@@ -132,25 +90,6 @@ function ManageAssistantRuntimeProvider({
       {children}
     </AssistantRuntimeProvider>
   )
-}
-
-function buildPlaceholderReply(context: ManageAssistantContext | null) {
-  const contextPrompt = formatManageContextForPrompt(context)
-
-  return [
-    contextPrompt
-      ? `I can see this Manage context:\n\n${contextPrompt}`
-      : 'I am ready in the Manage workspace.',
-    'The dedicated lecturer assistant route is connected. Tool-backed drafting and confirmed writes will be added in the next slices.',
-  ].join('\n\n')
-}
-
-function createLocalMessageId() {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID()
-  }
-
-  return `manage-${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
 function ManageAssistantAvatar({ className }: { className?: string }) {

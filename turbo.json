@@ -99,7 +99,8 @@
     "MCP_LECTURER_HOST",
     "MCP_LECTURER_JWT_SECRET",
     "MCP_LECTURER_PATH",
-    "MCP_LECTURER_PORT"
+    "MCP_LECTURER_PORT",
+    "MCP_LECTURER_URL"
   ],
   "tasks": {
     "lint": {
