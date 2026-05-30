@@ -30,6 +30,9 @@ describe('Manage assistant runtime helpers', () => {
     expect(prompt).toContain(
       'draft-only question, answer-choice, feedback, and signed proposal tools'
     )
+    expect(prompt).toContain(
+      'omit status and type filters unless the lecturer explicitly asks'
+    )
     expect(prompt).not.toContain('secret')
   })
 

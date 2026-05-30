@@ -388,7 +388,7 @@ function getThreadSuggestions(contextual: boolean, mode: 'student' | 'manage') {
           id: 'find-related',
           text: 'Find related questions',
           prompt:
-            'Help me identify related questions or reusable material for this context.',
+            'Search my question pool for related or reusable questions for this context. Include all statuses and question types unless I explicitly ask for a filter.',
         },
         {
           id: 'improve-feedback',
@@ -401,19 +401,22 @@ function getThreadSuggestions(contextual: boolean, mode: 'student' | 'manage') {
 
     return [
       {
-        id: 'draft-mc-question',
-        text: 'Draft MC question',
-        prompt: 'Draft a multiple-choice question for my course.',
+        id: 'draft-question',
+        text: 'Draft question',
+        prompt:
+          'Draft a question for my course. Ask me for the topic and question type if needed.',
       },
       {
-        id: 'create-feedback',
-        text: 'Create feedback',
-        prompt: 'Create answer-specific feedback for a question.',
+        id: 'find-questions',
+        text: 'Find questions',
+        prompt:
+          'Search my question pool for reusable questions. Ask for a topic if needed, and include all statuses and question types unless I explicitly ask for a filter.',
       },
       {
-        id: 'plan-practice',
-        text: 'Plan practice quiz',
-        prompt: 'Suggest a short practice quiz structure for a course topic.',
+        id: 'improve-feedback',
+        text: 'Improve feedback',
+        prompt:
+          'Create concise answer-specific feedback for a question. Ask me for the question details if needed.',
       },
     ]
   }
