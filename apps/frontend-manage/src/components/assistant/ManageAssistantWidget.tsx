@@ -168,7 +168,7 @@ export function ManageAssistantWidget() {
         <aside
           role="dialog"
           aria-label={t('manage.assistant.title')}
-          className="fixed inset-x-0 bottom-0 z-40 flex h-[min(85dvh,44rem)] min-h-[28rem] flex-col overflow-hidden border-t border-gray-200 bg-white shadow-2xl md:inset-x-auto md:bottom-6 md:right-6 md:h-[min(42rem,calc(100dvh-3rem))] md:w-[28rem] md:rounded-md md:border"
+          className="fixed bottom-0 left-0 right-0 z-40 flex h-[min(85dvh,44rem)] min-h-[28rem] w-screen flex-col overflow-hidden border-t border-gray-200 bg-white shadow-2xl md:inset-x-auto md:bottom-6 md:left-auto md:right-6 md:h-[min(42rem,calc(100dvh-3rem))] md:w-[28rem] md:rounded-md md:border"
           data-cy="manage-assistant-drawer"
         >
           <div className="flex shrink-0 items-start gap-3 border-b bg-white px-3 py-3">
