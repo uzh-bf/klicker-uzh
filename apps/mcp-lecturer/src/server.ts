@@ -1,3 +1,4 @@
+import { signJWT } from '@klicker-uzh/util'
 import { FastMCP, UserError } from 'fastmcp'
 import type { IncomingMessage } from 'node:http'
 import { z } from 'zod'
@@ -12,6 +13,7 @@ import {
   choicesDraftSchema,
   courseGetSchema,
   courseListSchema,
+  elementCreateDraftProposalSchema,
   elementGetSchema,
   elementSearchSchema,
   feedbackDraftSchema,
@@ -28,6 +30,7 @@ export const LECTURER_MCP_TOOL_NAMES = [
   'klicker_lecturer_question_draft',
   'klicker_lecturer_choices_draft',
   'klicker_lecturer_feedback_draft',
+  'klicker_lecturer_element_create_draft_proposal',
 ] as const
 
 export type LecturerMcpToolName = (typeof LECTURER_MCP_TOOL_NAMES)[number]
@@ -117,6 +120,32 @@ async function runDraftTool(
   }
 }
 
+async function signProposalToken(
+  settings: RuntimeSettings,
+  session: LecturerMcpSession,
+  proposal: {
+    kind: string
+    payload: unknown
+    summary?: string
+  }
+) {
+  return signJWT(
+    {
+      kind: proposal.kind,
+      payload: proposal.payload,
+      purpose: 'manage-assistant-proposal',
+      summary: proposal.summary,
+      sub: session.userId,
+    },
+    settings.jwtSecret,
+    {
+      algorithm: 'HS256',
+      expiresIn: '15m',
+      issuer: settings.jwtIssuer,
+    }
+  )
+}
+
 export function getLecturerCapabilities(
   settings: Pick<RuntimeSettings, 'mcpEndpoint'>
 ): LecturerMcpCapabilities {
@@ -174,6 +203,12 @@ export function getLecturerCapabilities(
         name: 'klicker_lecturer_feedback_draft',
         description:
           'Create validated non-persisted answer-feedback draft scaffolding.',
+        readOnly: true,
+      },
+      {
+        name: 'klicker_lecturer_element_create_draft_proposal',
+        description:
+          'Create a signed confirmation proposal for a DRAFT question. This never persists data until the lecturer confirms it in Manage assistant UI.',
         readOnly: true,
       },
     ],
@@ -341,6 +376,29 @@ export function createLecturerMcpServer(
     name: 'klicker_lecturer_feedback_draft',
     parameters: feedbackDraftSchema,
     timeoutMs: 5_000,
+  })
+
+  server.addTool({
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+      readOnlyHint: true,
+      title: 'Propose Draft Question Creation',
+    },
+    description:
+      'Create a signed proposal for a DRAFT SC, MC, or FREE_TEXT question. This does not persist data; the lecturer must explicitly confirm the proposal in the Manage assistant UI.',
+    execute: (args, context) =>
+      runDraftTool(context.session, async (session) => {
+        const proposal = service.createElementDraftProposal(args, session)
+        return {
+          ...proposal,
+          proposalToken: await signProposalToken(settings, session, proposal),
+        }
+      }),
+    name: 'klicker_lecturer_element_create_draft_proposal',
+    parameters: elementCreateDraftProposalSchema,
+    timeoutMs: 10_000,
   })
 
   return server

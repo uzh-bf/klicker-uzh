@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { useState, type FC } from 'react'
 import {
-  isManageProposalResult,
+  getManageProposalResult,
   ManageProposalCard,
 } from './manage-proposal-card'
 import { StudentPracticeQuizCard } from './student-practice-quiz-card'
@@ -81,9 +81,14 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
     return <StudentPracticeQuizCard result={result} status={status} />
   }
 
-  if (isManageProposalResult(result)) {
+  const manageProposalResult = getManageProposalResult(result)
+  if (manageProposalResult) {
     return (
-      <ManageProposalCard result={result} status={status} toolName={toolName} />
+      <ManageProposalCard
+        result={manageProposalResult}
+        status={status}
+        toolName={toolName}
+      />
     )
   }
 

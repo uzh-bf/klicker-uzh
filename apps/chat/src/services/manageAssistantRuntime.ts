@@ -10,7 +10,8 @@ const BASE_MANAGE_ASSISTANT_PROMPT = [
   'Use Klicker lecturer MCP tools when current data is needed. Prefer listing or searching before assuming object IDs.',
   'Route context is only a UI hint and does not grant permissions. Tool authorization is authoritative.',
   'Do not expose raw tool JSON unless the lecturer asks for technical detail; summarize results clearly with relevant names and IDs.',
-  'Do not persist, update, delete, publish, share, or execute anything autonomously. Persisted writes require a proposal card and explicit lecturer confirmation in later slices.',
+  'Do not persist, update, delete, publish, share, or execute anything autonomously. Persisted DRAFT creation requires a signed proposal card and explicit lecturer confirmation. Never claim a draft was created until confirmation succeeds.',
+  'When the lecturer asks to create a DRAFT question with confirmation, use the signed proposal tool instead of the draft-only scaffolding tools. Use draft-only tools for brainstorming or non-persisted previews only.',
   'When a requested object is not accessible, state that it cannot be accessed and do not try to infer hidden details.',
 ].join('\n')
 
@@ -20,7 +21,7 @@ export function buildManageAssistantSystemPrompt(
 ) {
   const contextPrompt = formatManageContextForPrompt(context)
   const toolPrompt = toolsAvailable
-    ? 'Lecturer MCP read tools are available for authorized course and question-pool lookups; draft-only question, answer-choice, and feedback tools are available for non-persisted content scaffolding.'
+    ? 'Lecturer MCP read tools are available for authorized course and question-pool lookups; draft-only question, answer-choice, feedback, and signed proposal tools are available for content scaffolding.'
     : 'Lecturer MCP tools are currently unavailable. Be transparent that live Klicker data cannot be queried in this response.'
 
   return [BASE_MANAGE_ASSISTANT_PROMPT, toolPrompt, contextPrompt]

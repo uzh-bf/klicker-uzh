@@ -125,6 +125,51 @@ export const feedbackDraftSchema = z.object({
     .describe('Question text that needs answer feedback.'),
 })
 
+const proposalChoiceSchema = z.object({
+  correct: z.boolean(),
+  feedback: z.string().trim().min(1).max(500).optional(),
+  value: z.string().trim().min(1).max(240),
+})
+
+export const elementCreateDraftProposalSchema = z
+  .object({
+    choices: z.array(proposalChoiceSchema).min(2).max(8).optional(),
+    content: z.string().trim().min(1).max(4000),
+    explanation: z.string().trim().min(1).max(2000).optional(),
+    name: z.string().trim().min(1).max(160),
+    tags: z.array(z.string().trim().min(1).max(60)).max(8).default([]),
+    type: z.enum(['SC', 'MC', 'FREE_TEXT']),
+  })
+  .superRefine((value, ctx) => {
+    if (value.type === 'FREE_TEXT') return
+
+    const choices = value.choices ?? []
+    if (choices.length < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'SC and MC proposals require at least two choices',
+        path: ['choices'],
+      })
+      return
+    }
+
+    const correctCount = choices.filter((choice) => choice.correct).length
+    if (value.type === 'SC' && correctCount !== 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'SC proposals require exactly one correct choice',
+        path: ['choices'],
+      })
+    }
+    if (value.type === 'MC' && correctCount < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'MC proposals require at least one correct choice',
+        path: ['choices'],
+      })
+    }
+  })
+
 type CourseListInput = z.infer<typeof courseListSchema>
 type CourseGetInput = z.infer<typeof courseGetSchema>
 type ElementSearchInput = z.infer<typeof elementSearchSchema>
@@ -132,6 +177,9 @@ type ElementGetInput = z.infer<typeof elementGetSchema>
 type QuestionDraftInput = z.infer<typeof questionDraftSchema>
 type ChoicesDraftInput = z.infer<typeof choicesDraftSchema>
 type FeedbackDraftInput = z.infer<typeof feedbackDraftSchema>
+type ElementCreateDraftProposalInput = z.infer<
+  typeof elementCreateDraftProposalSchema
+>
 
 type DateValue = Date | string | null | undefined
 
@@ -206,6 +254,10 @@ export type LecturerPrisma = {
 }
 
 export type LecturerReadService = {
+  createElementDraftProposal: (
+    input: unknown,
+    session: LecturerMcpSession
+  ) => ElementCreateDraftProposalOutput
   createChoicesDraft: (
     input: unknown,
     session: LecturerMcpSession
@@ -323,6 +375,23 @@ type FeedbackDraftOutput = {
       choice: string
       feedback: string
     }>
+  }
+}
+
+type ElementCreateDraftProposalOutput = {
+  kind: 'element.create.proposal'
+  requiresConfirmation: true
+  summary: string
+  payload: {
+    basePoints: true
+    content: string
+    explanation?: string
+    name: string
+    options: unknown
+    pointsMultiplier: 1
+    status: 'DRAFT'
+    tags: string[]
+    type: ElementCreateDraftProposalInput['type']
   }
 }
 
@@ -450,10 +519,56 @@ function formatQuestionType(type: QuestionDraftInput['type']) {
   return 'free-text'
 }
 
+function getProposalOptions(args: ElementCreateDraftProposalInput) {
+  if (args.type === 'FREE_TEXT') {
+    return {
+      hasSampleSolution: false,
+      restrictions: {},
+    }
+  }
+
+  const choices = args.choices ?? []
+  const hasAnswerFeedbacks = choices.some((choice) => Boolean(choice.feedback))
+
+  return {
+    choices: choices.map((choice, ix) => ({
+      ix,
+      correct: choice.correct,
+      feedback: choice.feedback,
+      value: choice.value,
+    })),
+    displayMode: 'LIST',
+    hasAnswerFeedbacks,
+    hasSampleSolution: true,
+  }
+}
+
 export function createLecturerReadService(
   prisma: LecturerPrisma
 ): LecturerReadService {
   const service: LecturerReadService = {
+    createElementDraftProposal(input) {
+      const args: ElementCreateDraftProposalInput =
+        elementCreateDraftProposalSchema.parse(input)
+
+      return {
+        kind: 'element.create.proposal',
+        payload: {
+          basePoints: true,
+          content: args.content,
+          ...(args.explanation ? { explanation: args.explanation } : {}),
+          name: args.name,
+          options: getProposalOptions(args),
+          pointsMultiplier: 1,
+          status: 'DRAFT',
+          tags: args.tags,
+          type: args.type,
+        },
+        requiresConfirmation: true,
+        summary: `Create DRAFT ${args.type} question "${args.name}"`,
+      }
+    },
+
     async createQuestionDraft(input, session) {
       const args: QuestionDraftInput = questionDraftSchema.parse(input)
       if (args.courseId) {

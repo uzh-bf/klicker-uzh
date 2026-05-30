@@ -24,8 +24,10 @@ describe('Manage assistant runtime helpers', () => {
     expect(prompt).toContain('Course ID: course-1')
     expect(prompt).toContain('does not grant permissions')
     expect(prompt).toContain('Do not persist')
+    expect(prompt).toContain('signed proposal card')
+    expect(prompt).toContain('use the signed proposal tool')
     expect(prompt).toContain(
-      'draft-only question, answer-choice, and feedback tools'
+      'draft-only question, answer-choice, feedback, and signed proposal tools'
     )
     expect(prompt).not.toContain('secret')
   })

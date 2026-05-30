@@ -23,6 +23,7 @@ describe('lecturer MCP capabilities', () => {
       'klicker_lecturer_question_draft',
       'klicker_lecturer_choices_draft',
       'klicker_lecturer_feedback_draft',
+      'klicker_lecturer_element_create_draft_proposal',
     ])
     expect(capabilities.tools.every((tool) => tool.readOnly)).toBe(true)
     expect(LECTURER_MCP_TOOL_NAMES).toEqual([
@@ -34,6 +35,7 @@ describe('lecturer MCP capabilities', () => {
       'klicker_lecturer_question_draft',
       'klicker_lecturer_choices_draft',
       'klicker_lecturer_feedback_draft',
+      'klicker_lecturer_element_create_draft_proposal',
     ])
   })
 })

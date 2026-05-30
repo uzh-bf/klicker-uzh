@@ -373,4 +373,52 @@ describe('lecturer MCP read service', () => {
     expect(prisma.derivedPermission.findMany).not.toHaveBeenCalled()
     expect(prisma.element.findFirst).not.toHaveBeenCalled()
   })
+
+  it('creates a signed-confirmation-ready draft element proposal without persisting it', () => {
+    const prisma = makePrisma()
+
+    const result = createLecturerReadService(prisma).createElementDraftProposal(
+      {
+        choices: [
+          {
+            correct: true,
+            feedback: 'Correct: standard deviation measures spread.',
+            value: 'Variation or dispersion in the data',
+          },
+          { correct: false, value: 'The average value' },
+          { correct: false, value: 'The most frequent value' },
+        ],
+        content: 'What does standard deviation measure?',
+        explanation: 'Standard deviation summarizes dispersion.',
+        name: 'Standard deviation interpretation',
+        tags: ['statistics'],
+        type: 'MC',
+      },
+      { ...session, scopes: ['manage:read', 'manage:draft'] }
+    )
+
+    expect(result).toMatchObject({
+      kind: 'element.create.proposal',
+      requiresConfirmation: true,
+      summary: 'Create DRAFT MC question "Standard deviation interpretation"',
+      payload: {
+        basePoints: true,
+        content: 'What does standard deviation measure?',
+        explanation: 'Standard deviation summarizes dispersion.',
+        name: 'Standard deviation interpretation',
+        pointsMultiplier: 1,
+        status: 'DRAFT',
+        tags: ['statistics'],
+        type: 'MC',
+      },
+    })
+    expect(result.payload.options).toMatchObject({
+      displayMode: 'LIST',
+      hasAnswerFeedbacks: true,
+      hasSampleSolution: true,
+    })
+    expect(prisma.course.findFirst).not.toHaveBeenCalled()
+    expect(prisma.derivedPermission.findMany).not.toHaveBeenCalled()
+    expect(prisma.element.findFirst).not.toHaveBeenCalled()
+  })
 })

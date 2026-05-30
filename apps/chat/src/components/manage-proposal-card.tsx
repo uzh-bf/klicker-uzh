@@ -10,10 +10,24 @@ import { useState, type FC } from 'react'
 
 export type ManageProposalResult = {
   kind: string
+  proposalToken?: string
   summary?: string
   requiresConfirmation: boolean
   payload: unknown
 }
+
+type ConfirmedElement = {
+  id: number
+  name: string
+  status: string
+  type: string
+}
+
+type ConfirmationState =
+  | { type: 'idle' }
+  | { type: 'loading' }
+  | { type: 'success'; element: ConfirmedElement }
+  | { type: 'error'; message: string }
 
 type ManageProposalCardProps = {
   result: ManageProposalResult
@@ -31,8 +45,35 @@ export function isManageProposalResult(
     typeof record.kind === 'string' &&
     typeof record.requiresConfirmation === 'boolean' &&
     'payload' in record &&
+    (record.proposalToken === undefined ||
+      typeof record.proposalToken === 'string') &&
     (record.summary === undefined || typeof record.summary === 'string')
   )
+}
+
+export function getManageProposalResult(
+  value: unknown
+): ManageProposalResult | null {
+  if (isManageProposalResult(value)) return value
+  if (!value || typeof value !== 'object') return null
+
+  const content = (value as { content?: unknown }).content
+  if (!Array.isArray(content)) return null
+
+  for (const item of content) {
+    if (!item || typeof item !== 'object') continue
+    const record = item as Record<string, unknown>
+    if (record.type !== 'text' || typeof record.text !== 'string') continue
+
+    try {
+      const parsed = JSON.parse(record.text)
+      if (isManageProposalResult(parsed)) return parsed
+    } catch {
+      // Ignore non-JSON MCP text payloads and keep looking.
+    }
+  }
+
+  return null
 }
 
 export const ManageProposalCard: FC<ManageProposalCardProps> = ({
@@ -40,9 +81,48 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
   status,
   toolName,
 }) => {
+  const [confirmation, setConfirmation] = useState<ConfirmationState>({
+    type: 'idle',
+  })
   const [showPreview, setShowPreview] = useState(false)
   const payloadText = JSON.stringify(result.payload, null, 2)
   const waiting = status.type === 'running'
+  const canConfirm =
+    result.requiresConfirmation &&
+    Boolean(result.proposalToken) &&
+    !waiting &&
+    confirmation.type !== 'loading' &&
+    confirmation.type !== 'success'
+
+  const confirmProposal = async () => {
+    if (!result.proposalToken || !canConfirm) return
+
+    setConfirmation({ type: 'loading' })
+    try {
+      const response = await fetch('/api/manage/proposals/confirm', {
+        body: JSON.stringify({ proposalToken: result.proposalToken }),
+        headers: { 'content-type': 'application/json' },
+        method: 'POST',
+      })
+      const data = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(
+          typeof data?.error === 'string' ? data.error : 'Draft creation failed'
+        )
+      }
+      if (!data?.element) {
+        throw new Error('Draft creation returned no element')
+      }
+
+      setConfirmation({ type: 'success', element: data.element })
+    } catch (error) {
+      setConfirmation({
+        message:
+          error instanceof Error ? error.message : 'Draft creation failed',
+        type: 'error',
+      })
+    }
+  }
 
   return (
     <div className="my-2 overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
@@ -86,12 +166,35 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
           </button>
           <button
             type="button"
-            disabled
-            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 text-xs font-semibold text-slate-400"
+            disabled={!canConfirm}
+            onClick={confirmProposal}
+            className={
+              canConfirm
+                ? 'inline-flex h-8 items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2'
+                : 'inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 text-xs font-semibold text-slate-400'
+            }
           >
-            <CheckIcon className="size-3.5" aria-hidden />
-            Create draft
+            {confirmation.type === 'loading' ? (
+              <LoaderCircleIcon className="size-3.5 animate-spin" aria-hidden />
+            ) : (
+              <CheckIcon className="size-3.5" aria-hidden />
+            )}
+            {confirmation.type === 'success' ? 'Draft created' : 'Create draft'}
           </button>
+        </div>
+
+        <div aria-live="polite">
+          {confirmation.type === 'success' && (
+            <div className="rounded border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-xs text-emerald-900">
+              Created DRAFT question: {confirmation.element.name} (#
+              {confirmation.element.id})
+            </div>
+          )}
+          {confirmation.type === 'error' && (
+            <div className="rounded border border-red-200 bg-red-50 px-2.5 py-2 text-xs text-red-800">
+              {confirmation.message}
+            </div>
+          )}
         </div>
 
         {showPreview && (
