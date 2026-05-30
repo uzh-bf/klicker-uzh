@@ -87,6 +87,8 @@ export async function middleware(request: NextRequest) {
 
   if (
     pathname === '/noLogin' ||
+    pathname === '/manage' ||
+    pathname.startsWith('/manage/') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
     pathname.startsWith('/favicon') ||

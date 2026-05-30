@@ -1,0 +1,124 @@
+import { z } from 'zod'
+
+const MAX_ROUTE_LENGTH = 512
+const MAX_QUERY_VALUE_LENGTH = 200
+const MAX_QUERY_VALUES_PER_KEY = 10
+const SENSITIVE_QUERY_KEY_PATTERN =
+  /(auth|code|password|secret|session|state|token)/i
+
+const manageSurfaceSchema = z.enum([
+  'question-pool',
+  'element-editor',
+  'course-dashboard',
+  'activity-creation',
+  'evaluation',
+  'general',
+])
+
+const queryValueSchema = z.union([
+  z.string().max(MAX_QUERY_VALUE_LENGTH),
+  z.array(z.string().max(MAX_QUERY_VALUE_LENGTH)).max(MAX_QUERY_VALUES_PER_KEY),
+])
+
+const manageContextSchema = z.object({
+  version: z.literal(1),
+  source: z.literal('manage'),
+  surface: manageSurfaceSchema,
+  locale: z.string().min(2).max(16),
+  route: z.object({
+    asPath: z.string().min(1).max(MAX_ROUTE_LENGTH),
+    pathname: z.string().min(1).max(MAX_ROUTE_LENGTH),
+  }),
+  ids: z
+    .object({
+      courseId: z.string().min(1).max(128).optional(),
+      elementId: z.string().min(1).max(128).optional(),
+      activityId: z.string().min(1).max(128).optional(),
+      instanceId: z.string().min(1).max(128).optional(),
+      quizId: z.string().min(1).max(128).optional(),
+      templateId: z.string().min(1).max(128).optional(),
+    })
+    .optional(),
+  query: z
+    .record(queryValueSchema)
+    .transform((query) =>
+      Object.fromEntries(
+        Object.entries(query).filter(
+          ([key]) => !SENSITIVE_QUERY_KEY_PATTERN.test(key)
+        )
+      )
+    )
+    .optional(),
+})
+
+export type ManageAssistantContext = z.infer<typeof manageContextSchema>
+
+export function sanitizeManageAssistantContext(
+  value: unknown
+): ManageAssistantContext | null {
+  const parsed = manageContextSchema.safeParse(value)
+  if (!parsed.success) return null
+  return parsed.data
+}
+
+export function getManageContextLabel(
+  context: ManageAssistantContext | null
+): string | null {
+  if (!context) return null
+
+  const surfaceLabel = getSurfaceLabel(context.surface)
+  if (context.ids?.courseId) {
+    return `${surfaceLabel} - Course ${context.ids.courseId}`
+  }
+
+  if (context.ids?.activityId) {
+    return `${surfaceLabel} - Activity ${context.ids.activityId}`
+  }
+
+  if (context.ids?.elementId) {
+    return `${surfaceLabel} - Question ${context.ids.elementId}`
+  }
+
+  return surfaceLabel
+}
+
+export function formatManageContextForPrompt(
+  context: ManageAssistantContext | null
+) {
+  if (!context) return ''
+
+  const lines = [
+    'Current KlickerUZH Manage context. This context contains only route metadata and sanitized identifiers.',
+    `Surface: ${context.surface}`,
+    `Route: ${context.route.pathname}`,
+  ]
+
+  if (context.ids?.courseId) {
+    lines.push(`Course ID: ${context.ids.courseId}`)
+  }
+  if (context.ids?.activityId) {
+    lines.push(`Activity ID: ${context.ids.activityId}`)
+  }
+  if (context.ids?.elementId) {
+    lines.push(`Question ID: ${context.ids.elementId}`)
+  }
+
+  return lines.join('\n')
+}
+
+function getSurfaceLabel(surface: ManageAssistantContext['surface']) {
+  switch (surface) {
+    case 'question-pool':
+      return 'Question pool'
+    case 'element-editor':
+      return 'Question editor'
+    case 'course-dashboard':
+      return 'Course dashboard'
+    case 'activity-creation':
+      return 'Activity setup'
+    case 'evaluation':
+      return 'Evaluation'
+    case 'general':
+      return 'Manage'
+  }
+}

@@ -63,6 +63,7 @@ type ThreadProps = {
   chatbotAvatar: string
   chatbotName: string
   contextLabel?: string | null
+  suggestionMode?: 'student' | 'manage'
 }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
 const attachmentLimitErrorMessage = () =>
@@ -214,6 +215,7 @@ export const Thread: FC<ThreadProps> = ({
   chatbotAvatar,
   chatbotName,
   contextLabel,
+  suggestionMode = 'student',
 }) => {
   const { embedded } = useChatUi()
 
@@ -236,6 +238,7 @@ export const Thread: FC<ThreadProps> = ({
           chatbotAvatar={chatbotAvatar}
           chatbotName={chatbotName}
           contextLabel={contextLabel}
+          suggestionMode={suggestionMode}
         />
 
         <ThreadPrimitive.Messages
@@ -282,7 +285,8 @@ const ThreadWelcome: FC<{
   chatbotAvatar: string
   chatbotName: string
   contextLabel?: string | null
-}> = ({ chatbotAvatar, chatbotName, contextLabel }) => {
+  suggestionMode: 'student' | 'manage'
+}> = ({ chatbotAvatar, chatbotName, contextLabel, suggestionMode }) => {
   const { embedded } = useChatUi()
 
   return (
@@ -315,18 +319,22 @@ const ThreadWelcome: FC<{
               {contextLabel}
             </p>
           )}
-          <ThreadWelcomeSuggestions contextual={Boolean(contextLabel)} />
+          <ThreadWelcomeSuggestions
+            contextual={Boolean(contextLabel)}
+            mode={suggestionMode}
+          />
         </div>
       </div>
     </ThreadPrimitive.Empty>
   )
 }
 
-const ThreadWelcomeSuggestions: FC<{ contextual: boolean }> = ({
-  contextual,
-}) => {
+const ThreadWelcomeSuggestions: FC<{
+  contextual: boolean
+  mode: 'student' | 'manage'
+}> = ({ contextual, mode }) => {
   const { embedded } = useChatUi()
-  const suggestions = getThreadSuggestions(contextual)
+  const suggestions = getThreadSuggestions(contextual, mode)
 
   return (
     <div
@@ -350,7 +358,50 @@ const ThreadWelcomeSuggestions: FC<{ contextual: boolean }> = ({
   )
 }
 
-function getThreadSuggestions(contextual: boolean) {
+function getThreadSuggestions(contextual: boolean, mode: 'student' | 'manage') {
+  if (mode === 'manage') {
+    if (contextual) {
+      return [
+        {
+          id: 'draft-from-page',
+          text: 'Draft from this page',
+          prompt:
+            'Draft a question idea based on the current Manage page context.',
+        },
+        {
+          id: 'find-related',
+          text: 'Find related questions',
+          prompt:
+            'Help me identify related questions or reusable material for this context.',
+        },
+        {
+          id: 'improve-feedback',
+          text: 'Improve feedback',
+          prompt:
+            'Suggest concise feedback that would help students learn from this question.',
+        },
+      ]
+    }
+
+    return [
+      {
+        id: 'draft-mc-question',
+        text: 'Draft MC question',
+        prompt: 'Draft a multiple-choice question for my course.',
+      },
+      {
+        id: 'create-feedback',
+        text: 'Create feedback',
+        prompt: 'Create answer-specific feedback for a question.',
+      },
+      {
+        id: 'plan-practice',
+        text: 'Plan practice quiz',
+        prompt: 'Suggest a short practice quiz structure for a course topic.',
+      },
+    ]
+  }
+
   if (contextual) {
     return [
       {
