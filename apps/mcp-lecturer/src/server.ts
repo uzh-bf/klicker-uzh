@@ -4,14 +4,18 @@ import { z } from 'zod'
 import {
   bearerTokenFromHeaders,
   verifyLecturerSession,
+  type LecturerMcpScope,
   type LecturerMcpSession,
 } from './auth.js'
 import type { RuntimeSettings } from './config.js'
 import {
+  choicesDraftSchema,
   courseGetSchema,
   courseListSchema,
   elementGetSchema,
   elementSearchSchema,
+  feedbackDraftSchema,
+  questionDraftSchema,
   type LecturerReadService,
 } from './service.js'
 
@@ -21,6 +25,9 @@ export const LECTURER_MCP_TOOL_NAMES = [
   'klicker_lecturer_course_get',
   'klicker_lecturer_element_search',
   'klicker_lecturer_element_get',
+  'klicker_lecturer_question_draft',
+  'klicker_lecturer_choices_draft',
+  'klicker_lecturer_feedback_draft',
 ] as const
 
 export type LecturerMcpToolName = (typeof LECTURER_MCP_TOOL_NAMES)[number]
@@ -56,7 +63,7 @@ function toolError(error: unknown) {
   }
 
   const message = error instanceof Error ? error.message : String(error)
-  if (/not found or not accessible|Forbidden/i.test(message)) {
+  if (/not found or not accessible|Forbidden|missing scope/i.test(message)) {
     return {
       error: {
         code: 'FORBIDDEN',
@@ -80,12 +87,31 @@ function requireSession(session: LecturerMcpSession | undefined) {
   return session
 }
 
+function requireScope(session: LecturerMcpSession, scope: LecturerMcpScope) {
+  if (!session.scopes.includes(scope)) {
+    throw new UserError(`Authentication failed: missing scope ${scope}`)
+  }
+}
+
 async function runReadTool(
   session: LecturerMcpSession | undefined,
   execute: (session: LecturerMcpSession) => Promise<unknown>
 ) {
   try {
     return json(await execute(requireSession(session)))
+  } catch (error) {
+    return json(toolError(error))
+  }
+}
+
+async function runDraftTool(
+  session: LecturerMcpSession | undefined,
+  execute: (session: LecturerMcpSession) => Promise<unknown> | unknown
+) {
+  try {
+    const validSession = requireSession(session)
+    requireScope(validSession, 'manage:draft')
+    return json(await execute(validSession))
   } catch (error) {
     return json(toolError(error))
   }
@@ -130,6 +156,24 @@ export function getLecturerCapabilities(
         name: 'klicker_lecturer_element_get',
         description:
           'Get one readable question element with capped sanitized details.',
+        readOnly: true,
+      },
+      {
+        name: 'klicker_lecturer_question_draft',
+        description:
+          'Create a validated non-persisted question draft payload for lecturer review.',
+        readOnly: true,
+      },
+      {
+        name: 'klicker_lecturer_choices_draft',
+        description:
+          'Create validated non-persisted answer-choice draft scaffolding.',
+        readOnly: true,
+      },
+      {
+        name: 'klicker_lecturer_feedback_draft',
+        description:
+          'Create validated non-persisted answer-feedback draft scaffolding.',
         readOnly: true,
       },
     ],
@@ -240,6 +284,63 @@ export function createLecturerMcpServer(
     name: 'klicker_lecturer_element_get',
     parameters: elementGetSchema,
     timeoutMs: 10_000,
+  })
+
+  server.addTool({
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+      readOnlyHint: true,
+      title: 'Draft Lecturer Question',
+    },
+    description:
+      'Create a validated draft-only question payload for SC, MC, or FREE_TEXT questions. This never persists data. If courseId is provided, the course must be readable by the authenticated lecturer.',
+    execute: (args, context) =>
+      runDraftTool(context.session, (session) =>
+        service.createQuestionDraft(args, session)
+      ),
+    name: 'klicker_lecturer_question_draft',
+    parameters: questionDraftSchema,
+    timeoutMs: 10_000,
+  })
+
+  server.addTool({
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+      readOnlyHint: true,
+      title: 'Draft Lecturer Choices',
+    },
+    description:
+      'Create validated draft-only choice scaffolding for a question. This never persists data.',
+    execute: (args, context) =>
+      runDraftTool(context.session, (session) =>
+        service.createChoicesDraft(args, session)
+      ),
+    name: 'klicker_lecturer_choices_draft',
+    parameters: choicesDraftSchema,
+    timeoutMs: 5_000,
+  })
+
+  server.addTool({
+    annotations: {
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+      readOnlyHint: true,
+      title: 'Draft Lecturer Feedback',
+    },
+    description:
+      'Create validated draft-only answer feedback scaffolding for a question and its choices. This never persists data.',
+    execute: (args, context) =>
+      runDraftTool(context.session, (session) =>
+        service.createFeedbackDraft(args, session)
+      ),
+    name: 'klicker_lecturer_feedback_draft',
+    parameters: feedbackDraftSchema,
+    timeoutMs: 5_000,
   })
 
   return server

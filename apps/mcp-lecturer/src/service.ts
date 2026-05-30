@@ -57,10 +57,81 @@ export const elementGetSchema = z.object({
   elementId: z.number().int().positive(),
 })
 
+export const questionDraftSchema = z.object({
+  courseId: z
+    .string()
+    .uuid()
+    .optional()
+    .describe('Optional readable course id to associate with the draft.'),
+  difficulty: z
+    .enum(['introductory', 'intermediate', 'advanced'])
+    .optional()
+    .describe('Optional intended difficulty, e.g. intermediate.'),
+  learningObjective: z
+    .string()
+    .trim()
+    .min(1)
+    .max(240)
+    .optional()
+    .describe('Optional learning objective, e.g. Interpret a histogram.'),
+  topic: z
+    .string()
+    .trim()
+    .min(1)
+    .max(160)
+    .describe('Topic for the draft question, e.g. standard deviation.'),
+  type: z
+    .enum(['SC', 'MC', 'FREE_TEXT'])
+    .default('SC')
+    .describe('Question type to scaffold: SC, MC, or FREE_TEXT.'),
+})
+
+export const choicesDraftSchema = z.object({
+  correctAnswer: z
+    .string()
+    .trim()
+    .min(1)
+    .max(240)
+    .optional()
+    .describe('Optional correct answer, e.g. The spread around the mean.'),
+  distractorCount: z
+    .number()
+    .int()
+    .min(1)
+    .max(5)
+    .default(3)
+    .describe('Number of distractors to scaffold, between 1 and 5.'),
+  question: z
+    .string()
+    .trim()
+    .min(1)
+    .max(500)
+    .describe('Question text that needs answer choices.'),
+})
+
+export const feedbackDraftSchema = z.object({
+  choices: z
+    .array(z.string().trim().min(1).max(240))
+    .min(1)
+    .max(8)
+    .describe(
+      'Answer choices to scaffold feedback for; first is treated as correct.'
+    ),
+  question: z
+    .string()
+    .trim()
+    .min(1)
+    .max(500)
+    .describe('Question text that needs answer feedback.'),
+})
+
 type CourseListInput = z.infer<typeof courseListSchema>
 type CourseGetInput = z.infer<typeof courseGetSchema>
 type ElementSearchInput = z.infer<typeof elementSearchSchema>
 type ElementGetInput = z.infer<typeof elementGetSchema>
+type QuestionDraftInput = z.infer<typeof questionDraftSchema>
+type ChoicesDraftInput = z.infer<typeof choicesDraftSchema>
+type FeedbackDraftInput = z.infer<typeof feedbackDraftSchema>
 
 type DateValue = Date | string | null | undefined
 
@@ -135,6 +206,18 @@ export type LecturerPrisma = {
 }
 
 export type LecturerReadService = {
+  createChoicesDraft: (
+    input: unknown,
+    session: LecturerMcpSession
+  ) => ChoicesDraftOutput
+  createFeedbackDraft: (
+    input: unknown,
+    session: LecturerMcpSession
+  ) => FeedbackDraftOutput
+  createQuestionDraft: (
+    input: unknown,
+    session: LecturerMcpSession
+  ) => Promise<QuestionDraftOutput>
   getCourse: (
     input: unknown,
     session: LecturerMcpSession
@@ -203,6 +286,43 @@ type ElementGetOutput = {
     content: string
     explanation: string | null
     options: unknown
+  }
+}
+
+type QuestionDraftOutput = {
+  kind: 'question.draft'
+  requiresConfirmation: false
+  payload: {
+    courseId?: string
+    name: string
+    type: QuestionDraftInput['type']
+    status: 'DRAFT'
+    content: string
+    options: unknown
+  }
+}
+
+type ChoicesDraftOutput = {
+  kind: 'choices.draft'
+  requiresConfirmation: false
+  payload: {
+    question: string
+    choices: Array<{
+      correct: boolean
+      value: string
+    }>
+  }
+}
+
+type FeedbackDraftOutput = {
+  kind: 'feedback.draft'
+  requiresConfirmation: false
+  payload: {
+    question: string
+    feedback: Array<{
+      choice: string
+      feedback: string
+    }>
   }
 }
 
@@ -308,10 +428,103 @@ function inaccessible(): never {
   throw new LecturerMcpAuthorizationError('Object not found or not accessible')
 }
 
+function getDefaultQuestionOptions(type: QuestionDraftInput['type']) {
+  if (type === 'FREE_TEXT') {
+    return {
+      hasSampleSolution: false,
+      restrictions: {},
+    }
+  }
+
+  return {
+    choices: [],
+    displayMode: 'LIST',
+    hasAnswerFeedbacks: false,
+    hasSampleSolution: false,
+  }
+}
+
+function formatQuestionType(type: QuestionDraftInput['type']) {
+  if (type === 'SC') return 'single-choice'
+  if (type === 'MC') return 'multiple-choice'
+  return 'free-text'
+}
+
 export function createLecturerReadService(
   prisma: LecturerPrisma
 ): LecturerReadService {
-  return {
+  const service: LecturerReadService = {
+    async createQuestionDraft(input, session) {
+      const args: QuestionDraftInput = questionDraftSchema.parse(input)
+      if (args.courseId) {
+        await service.getCourse({ courseId: args.courseId }, session)
+      }
+
+      const objective = args.learningObjective
+        ? `\n\nLearning objective: ${args.learningObjective}`
+        : ''
+      const difficulty = args.difficulty
+        ? `\nDifficulty: ${args.difficulty}`
+        : ''
+
+      return {
+        kind: 'question.draft',
+        requiresConfirmation: false,
+        payload: {
+          ...(args.courseId ? { courseId: args.courseId } : {}),
+          content: `Draft a ${formatQuestionType(args.type)} question about ${args.topic}.${objective}${difficulty}`,
+          name: args.topic,
+          options: getDefaultQuestionOptions(args.type),
+          status: 'DRAFT',
+          type: args.type,
+        },
+      }
+    },
+
+    createChoicesDraft(input) {
+      const args: ChoicesDraftInput = choicesDraftSchema.parse(input)
+      const choices = [
+        {
+          correct: true,
+          value:
+            args.correctAnswer ??
+            'A concise answer that directly addresses the question.',
+        },
+        ...Array.from({ length: args.distractorCount }, (_, index) => ({
+          correct: false,
+          value: `Plausible distractor ${index + 1}`,
+        })),
+      ]
+
+      return {
+        kind: 'choices.draft',
+        requiresConfirmation: false,
+        payload: {
+          choices,
+          question: args.question,
+        },
+      }
+    },
+
+    createFeedbackDraft(input) {
+      const args: FeedbackDraftInput = feedbackDraftSchema.parse(input)
+
+      return {
+        kind: 'feedback.draft',
+        requiresConfirmation: false,
+        payload: {
+          feedback: args.choices.map((choice, index) => ({
+            choice,
+            feedback:
+              index === 0
+                ? 'Use this feedback to reinforce why this answer is correct.'
+                : 'Use this feedback to address the misconception behind this answer.',
+          })),
+          question: args.question,
+        },
+      }
+    },
+
     async listCourses(input, session) {
       const args: CourseListInput = courseListSchema.parse(input ?? {})
       const rows = (await prisma.derivedPermission.findMany({
@@ -534,4 +747,6 @@ export function createLecturerReadService(
       }
     },
   }
+
+  return service
 }

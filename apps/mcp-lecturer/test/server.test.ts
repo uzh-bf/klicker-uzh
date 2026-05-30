@@ -20,6 +20,9 @@ describe('lecturer MCP capabilities', () => {
       'klicker_lecturer_course_get',
       'klicker_lecturer_element_search',
       'klicker_lecturer_element_get',
+      'klicker_lecturer_question_draft',
+      'klicker_lecturer_choices_draft',
+      'klicker_lecturer_feedback_draft',
     ])
     expect(capabilities.tools.every((tool) => tool.readOnly)).toBe(true)
     expect(LECTURER_MCP_TOOL_NAMES).toEqual([
@@ -28,6 +31,9 @@ describe('lecturer MCP capabilities', () => {
       'klicker_lecturer_course_get',
       'klicker_lecturer_element_search',
       'klicker_lecturer_element_get',
+      'klicker_lecturer_question_draft',
+      'klicker_lecturer_choices_draft',
+      'klicker_lecturer_feedback_draft',
     ])
   })
 })

@@ -245,4 +245,132 @@ describe('lecturer MCP read service', () => {
       4300
     )
   })
+
+  it('creates a non-persisted question draft and checks optional course context', async () => {
+    const prisma = makePrisma()
+    vi.mocked(prisma.course.findFirst).mockResolvedValue({
+      color: '#123456',
+      description: 'Course details',
+      displayName: 'Accessible Course',
+      endDate: null,
+      id: COURSE_ID,
+      isArchived: false,
+      language: 'en',
+      name: 'course-access',
+      permissions: [
+        {
+          derived: true,
+          permissionLevel: 'READ',
+          userId: 'lecturer-a',
+        },
+      ],
+      startDate: null,
+      updatedAt: new Date('2026-03-01T12:00:00.000Z'),
+    })
+
+    const result = await createLecturerReadService(prisma).createQuestionDraft(
+      {
+        courseId: COURSE_ID,
+        difficulty: 'intermediate',
+        learningObjective: 'Interpret a standard deviation.',
+        topic: 'standard deviation',
+        type: 'SC',
+      },
+      { ...session, scopes: ['manage:read', 'manage:draft'] }
+    )
+
+    expect(prisma.course.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: COURSE_ID,
+          permissions: { some: { userId: 'lecturer-a' } },
+        }),
+      })
+    )
+    expect(result).toMatchObject({
+      kind: 'question.draft',
+      requiresConfirmation: false,
+      payload: {
+        courseId: COURSE_ID,
+        name: 'standard deviation',
+        status: 'DRAFT',
+        type: 'SC',
+      },
+    })
+    expect(prisma).not.toHaveProperty('element.create')
+  })
+
+  it('denies question drafts for inaccessible course context', async () => {
+    const prisma = makePrisma()
+    vi.mocked(prisma.course.findFirst).mockResolvedValue(null)
+
+    await expect(
+      createLecturerReadService(prisma).createQuestionDraft(
+        {
+          courseId: COURSE_ID,
+          topic: 'standard deviation',
+        },
+        { ...session, scopes: ['manage:read', 'manage:draft'] }
+      )
+    ).rejects.toBeInstanceOf(LecturerMcpAuthorizationError)
+  })
+
+  it('creates non-persisted choices and feedback drafts', () => {
+    const prisma = makePrisma()
+    const service = createLecturerReadService(prisma)
+
+    const choices = service.createChoicesDraft(
+      {
+        correctAnswer: 'Variance square root',
+        distractorCount: 2,
+        question: 'What is standard deviation?',
+      },
+      { ...session, scopes: ['manage:read', 'manage:draft'] }
+    )
+    const feedback = service.createFeedbackDraft(
+      {
+        choices: choices.payload.choices.map((choice) => choice.value),
+        question: 'What is standard deviation?',
+      },
+      { ...session, scopes: ['manage:read', 'manage:draft'] }
+    )
+
+    expect(choices).toMatchObject({
+      kind: 'choices.draft',
+      requiresConfirmation: false,
+      payload: {
+        choices: [
+          { correct: true, value: 'Variance square root' },
+          { correct: false, value: 'Plausible distractor 1' },
+          { correct: false, value: 'Plausible distractor 2' },
+        ],
+      },
+    })
+    expect(feedback).toMatchObject({
+      kind: 'feedback.draft',
+      requiresConfirmation: false,
+      payload: {
+        question: 'What is standard deviation?',
+      },
+    })
+    expect(feedback.payload.feedback).toEqual([
+      {
+        choice: 'Variance square root',
+        feedback: 'Use this feedback to reinforce why this answer is correct.',
+      },
+      {
+        choice: 'Plausible distractor 1',
+        feedback:
+          'Use this feedback to address the misconception behind this answer.',
+      },
+      {
+        choice: 'Plausible distractor 2',
+        feedback:
+          'Use this feedback to address the misconception behind this answer.',
+      },
+    ])
+    expect(prisma.course.findFirst).not.toHaveBeenCalled()
+    expect(prisma.derivedPermission.findMany).not.toHaveBeenCalled()
+    expect(prisma.element.findFirst).not.toHaveBeenCalled()
+  })
 })
