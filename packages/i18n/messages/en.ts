@@ -1128,9 +1128,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
   },
   manage: {
     assistant: {
-      open: 'AI assistant',
-      title: 'Klicker assistant',
-      subtitle: 'Lecturer workspace',
+      open: 'Assistant',
+      title: 'KlickerUZH Assistant',
+      subtitle: 'Manage',
       openInNewTab: 'Open assistant in a new tab',
     },
     general: {

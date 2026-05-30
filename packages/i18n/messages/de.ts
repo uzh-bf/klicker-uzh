@@ -1129,9 +1129,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
   },
   manage: {
     assistant: {
-      open: 'KI-Assistent',
-      title: 'Klicker-Assistent',
-      subtitle: 'Arbeitsbereich für Dozierende',
+      open: 'Assistant',
+      title: 'KlickerUZH Assistant',
+      subtitle: 'Manage',
       openInNewTab: 'Assistent in einem neuen Tab öffnen',
     },
     general: {

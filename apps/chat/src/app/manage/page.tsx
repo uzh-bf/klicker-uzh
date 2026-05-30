@@ -10,19 +10,24 @@ export default async function ManageAssistantPage({
   searchParams,
 }: ManageAssistantPageProps) {
   const userId = await getAuthenticatedManageUserId()
+
   if (!userId) {
     const resolvedSearchParams = (await searchParams) ?? {}
-    const embedParam = resolvedSearchParams.embed
-    const embedded =
-      embedParam === 'true' ||
-      embedParam === '1' ||
-      (Array.isArray(embedParam) &&
-        (embedParam[0] === 'true' || embedParam[0] === '1'))
+    const embedded = isEmbeddedParam(resolvedSearchParams.embed)
 
     return <ManageLoginRequired embedded={embedded} />
   }
 
   return <ManageAssistant />
+}
+
+function isEmbeddedParam(embedParam?: string | string[]) {
+  return (
+    embedParam === 'true' ||
+    embedParam === '1' ||
+    (Array.isArray(embedParam) &&
+      (embedParam[0] === 'true' || embedParam[0] === '1'))
+  )
 }
 
 function ManageLoginRequired({ embedded }: { embedded: boolean }) {

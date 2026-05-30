@@ -14,11 +14,11 @@ import {
   getManageContextLabel,
   type ManageAssistantContext,
 } from '../services/manageContext'
-import { ChatUiProvider } from './chat-ui-context'
+import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { EmbeddedSettings } from './embedded-settings'
 import { Thread } from './thread'
 
-const MANAGE_ASSISTANT_NAME = 'Klicker assistant'
+const MANAGE_ASSISTANT_NAME = 'KlickerUZH Assistant'
 
 export function ManageAssistant() {
   return (
@@ -29,26 +29,32 @@ export function ManageAssistant() {
 }
 
 function ManageAssistantInner() {
+  const { embedded } = useChatUi()
   const context = useEmbeddedManageContext()
   const contextLabel = getManageContextLabel(context)
 
   return (
     <ManageAssistantRuntimeProvider context={context}>
-      <div className="flex h-dvh w-full flex-col overflow-hidden">
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b bg-white px-3 py-2.5 sm:px-4">
-          <ManageAssistantAvatar className="size-9" />
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold">
-              {MANAGE_ASSISTANT_NAME}
-            </div>
-            {contextLabel && (
-              <div className="mt-1 inline-flex max-w-full items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium leading-tight text-blue-800">
-                <span className="truncate">{contextLabel}</span>
+      <div className="relative flex h-dvh w-full flex-col overflow-hidden">
+        {!embedded && (
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b bg-white px-3 py-2.5 sm:px-4">
+            <ManageAssistantAvatar className="size-9" />
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-semibold">
+                {MANAGE_ASSISTANT_NAME}
               </div>
-            )}
+              <div className="mt-1 inline-flex max-w-full items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium leading-tight text-blue-800">
+                <span className="truncate">{contextLabel ?? 'Manage'}</span>
+              </div>
+            </div>
+            <EmbeddedSettings />
           </div>
-          <EmbeddedSettings />
-        </div>
+        )}
+        {embedded && (
+          <div className="absolute right-3 top-3 z-10">
+            <EmbeddedSettings />
+          </div>
+        )}
         <Thread
           chatbotAvatar=""
           chatbotName={MANAGE_ASSISTANT_NAME}
