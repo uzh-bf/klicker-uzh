@@ -1127,6 +1127,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     },
   },
   manage: {
+    assistant: {
+      open: 'AI assistant',
+      title: 'Klicker assistant',
+      subtitle: 'Lecturer workspace',
+      openInNewTab: 'Open assistant in a new tab',
+    },
     general: {
       qrCode: 'QR Code',
       presentQrCode: 'Present QR code',

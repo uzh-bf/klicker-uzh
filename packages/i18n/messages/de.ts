@@ -1128,6 +1128,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
   },
   manage: {
+    assistant: {
+      open: 'KI-Assistent',
+      title: 'Klicker-Assistent',
+      subtitle: 'Arbeitsbereich für Dozierende',
+      openInNewTab: 'Assistent in einem neuen Tab öffnen',
+    },
     general: {
       qrCode: 'QR Code',
       presentQrCode: 'QR-Code präsentieren',
