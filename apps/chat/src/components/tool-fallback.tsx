@@ -6,6 +6,10 @@ import {
   MoveRightIcon,
 } from 'lucide-react'
 import { useState, type FC } from 'react'
+import {
+  isManageProposalResult,
+  ManageProposalCard,
+} from './manage-proposal-card'
 import { StudentPracticeQuizCard } from './student-practice-quiz-card'
 
 const MAX_PREVIEW_LINES = 10
@@ -75,6 +79,12 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
 
   if (toolName === STUDENT_PRACTICE_QUIZ_TOOL_NAME) {
     return <StudentPracticeQuizCard result={result} status={status} />
+  }
+
+  if (isManageProposalResult(result)) {
+    return (
+      <ManageProposalCard result={result} status={status} toolName={toolName} />
+    )
   }
 
   const resultText =
