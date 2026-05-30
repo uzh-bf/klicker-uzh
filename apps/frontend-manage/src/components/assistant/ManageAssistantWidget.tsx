@@ -13,13 +13,24 @@ import {
   buildManageAssistantUrl,
   isManageAssistantEnabled,
 } from './manageAssistantConfig'
+import {
+  buildManageAssistantContext,
+  type ManageAssistantContext,
+} from './manageAssistantContext'
+
+const MANAGE_CONTEXT_MESSAGE_TYPE = 'klicker:manage-context'
+const MANAGE_CONTEXT_ACK_MESSAGE_TYPE = 'klicker:manage-context-ack'
 
 export function ManageAssistantWidget() {
   const t = useTranslations()
   const router = useRouter()
+  const iframeRef = useRef<HTMLIFrameElement | null>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const shouldRestoreFocusRef = useRef(false)
+  const nextMessageIdRef = useRef(0)
+  const ackedMessageIdRef = useRef(0)
   const [open, setOpen] = useState(false)
+  const [frameLoaded, setFrameLoaded] = useState(false)
 
   const enabled = isManageAssistantEnabled(
     process.env.NEXT_PUBLIC_MANAGE_ASSISTANT_ENABLED
@@ -33,10 +44,26 @@ export function ManageAssistantWidget() {
       }),
     [router.asPath, router.locale]
   )
+  const assistantOrigin = useMemo(
+    () => getUrlOrigin(assistantUrl),
+    [assistantUrl]
+  )
+  const assistantContext = useMemo(
+    () =>
+      buildManageAssistantContext({
+        asPath: router.asPath,
+        locale: router.locale,
+        pathname: router.pathname,
+        query: router.query,
+      }),
+    [router.asPath, router.locale, router.pathname, router.query]
+  )
 
   const closeWidget = useCallback(() => {
     shouldRestoreFocusRef.current = true
     setOpen(false)
+    setFrameLoaded(false)
+    ackedMessageIdRef.current = 0
   }, [])
 
   useEffect(() => {
@@ -58,6 +85,59 @@ export function ManageAssistantWidget() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [closeWidget, open])
 
+  useEffect(() => {
+    if (!open || !assistantOrigin) return
+
+    function handleMessage(event: MessageEvent) {
+      if (event.origin !== assistantOrigin) return
+
+      const frameWindow = iframeRef.current?.contentWindow
+      if (frameWindow && event.source !== frameWindow) return
+
+      if (isManageContextAckMessage(event.data)) {
+        const messageId = event.data.payload.messageId
+        if (typeof messageId === 'number') {
+          ackedMessageIdRef.current = Math.max(
+            ackedMessageIdRef.current,
+            messageId
+          )
+        }
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [assistantOrigin, open])
+
+  useEffect(() => {
+    if (!open || !frameLoaded || !assistantOrigin || !iframeRef.current) return
+
+    const messageId = nextMessageIdRef.current + 1
+    nextMessageIdRef.current = messageId
+    postManageContext(
+      iframeRef.current,
+      assistantContext,
+      assistantOrigin,
+      messageId
+    )
+
+    const timeouts = [300, 1000, 2500].map((delay) =>
+      window.setTimeout(() => {
+        if (ackedMessageIdRef.current >= messageId) return
+        postManageContext(
+          iframeRef.current,
+          assistantContext,
+          assistantOrigin,
+          messageId
+        )
+      }, delay)
+    )
+
+    return () => {
+      timeouts.forEach((timeout) => window.clearTimeout(timeout))
+    }
+  }, [assistantContext, assistantOrigin, frameLoaded, open])
+
   if (!enabled || !assistantUrl) {
     return null
   }
@@ -69,7 +149,11 @@ export function ManageAssistantWidget() {
           ref={triggerRef}
           type="button"
           aria-label={t('manage.assistant.open')}
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            setFrameLoaded(false)
+            ackedMessageIdRef.current = 0
+            setOpen(true)
+          }}
           className="bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 z-30 inline-flex h-14 min-w-14 items-center justify-center gap-3 rounded-full px-3 text-white shadow-lg transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 md:bottom-6 md:right-6 md:px-4"
           data-cy="manage-assistant-open"
         >
@@ -120,16 +204,57 @@ export function ManageAssistantWidget() {
 
           <div className="min-h-0 flex-1 bg-white">
             <iframe
+              ref={iframeRef}
               src={assistantUrl}
               title={t('manage.assistant.title')}
               className="h-full min-h-[24rem] w-full border-0"
               data-cy="manage-assistant-frame"
+              onLoad={() => setFrameLoaded(true)}
             />
           </div>
         </aside>
       )}
     </>
   )
+}
+
+function postManageContext(
+  iframe: HTMLIFrameElement | null,
+  context: ManageAssistantContext,
+  assistantOrigin: string,
+  messageId: number
+) {
+  if (!iframe?.contentWindow) return
+
+  iframe.contentWindow.postMessage(
+    {
+      type: MANAGE_CONTEXT_MESSAGE_TYPE,
+      payload: context,
+      messageId,
+    },
+    assistantOrigin
+  )
+}
+
+function isManageContextAckMessage(data: unknown): data is {
+  type: typeof MANAGE_CONTEXT_ACK_MESSAGE_TYPE
+  payload: { messageId?: unknown }
+} {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    (data as { type?: unknown }).type === MANAGE_CONTEXT_ACK_MESSAGE_TYPE &&
+    typeof (data as { payload?: unknown }).payload === 'object' &&
+    (data as { payload?: unknown }).payload !== null
+  )
+}
+
+function getUrlOrigin(url: string | null) {
+  try {
+    return url ? new URL(url).origin : null
+  } catch {
+    return null
+  }
 }
 
 function AssistantAvatar({ className }: { className?: string }) {
