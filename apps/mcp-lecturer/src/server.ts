@@ -1,5 +1,11 @@
-import { FastMCP } from 'fastmcp'
+import { FastMCP, UserError } from 'fastmcp'
+import type { IncomingMessage } from 'node:http'
 import { z } from 'zod'
+import {
+  bearerTokenFromHeaders,
+  verifyLecturerSession,
+  type LecturerMcpSession,
+} from './auth.js'
 import type { RuntimeSettings } from './config.js'
 
 export const LECTURER_MCP_TOOL_NAMES = [
@@ -49,8 +55,19 @@ export function getLecturerCapabilities(
   }
 }
 
-export function createLecturerMcpServer(settings: RuntimeSettings): FastMCP {
-  const server = new FastMCP({
+export function createLecturerMcpServer(
+  settings: RuntimeSettings
+): FastMCP<LecturerMcpSession> {
+  const server = new FastMCP<LecturerMcpSession>({
+    authenticate: async (request: IncomingMessage) => {
+      const token = bearerTokenFromHeaders(request.headers)
+      if (!token) {
+        throw new UserError(
+          'Authentication failed: missing Authorization bearer token'
+        )
+      }
+      return verifyLecturerSession(token, settings)
+    },
     health: {
       enabled: true,
       message: 'healthy',

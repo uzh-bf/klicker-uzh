@@ -1439,6 +1439,9 @@ importers:
 
   apps/mcp-lecturer:
     dependencies:
+      '@klicker-uzh/util':
+        specifier: workspace:*
+        version: link:../../packages/util
       fastmcp:
         specifier: 3.15.2
         version: 3.15.2(effect@3.17.9)

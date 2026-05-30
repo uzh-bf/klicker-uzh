@@ -4,6 +4,7 @@ import { signJWT } from '@klicker-uzh/util'
 // can't expire mid-request.
 const JWT_TTL_SECONDS = 5 * 60
 const CACHE_TTL_MS = 4 * 60 * 1000
+const LECTURER_MCP_SCOPE = 'manage:read manage:draft'
 
 interface CacheEntry {
   jwt: string
@@ -11,6 +12,7 @@ interface CacheEntry {
 }
 
 const cache = new Map<string, CacheEntry>()
+const lecturerCache = new Map<string, CacheEntry>()
 
 export class McpAuthMintError extends Error {
   constructor(message: string) {
@@ -45,11 +47,7 @@ export async function mintParticipantMcpJwt(
   }
 
   const now = Date.now()
-  for (const [cachedParticipantId, entry] of cache) {
-    if (now - entry.mintedAtMs > CACHE_TTL_MS) {
-      cache.delete(cachedParticipantId)
-    }
-  }
+  pruneExpiredCacheEntries(cache, now)
 
   const cached = cache.get(participantId)
   if (cached && now - cached.mintedAtMs <= CACHE_TTL_MS) {
@@ -73,7 +71,73 @@ export async function mintParticipantMcpJwt(
   return jwt
 }
 
+function pruneExpiredCacheEntries(
+  entries: Map<string, CacheEntry>,
+  now: number
+): void {
+  for (const [key, entry] of entries) {
+    if (now - entry.mintedAtMs > CACHE_TTL_MS) {
+      entries.delete(key)
+    }
+  }
+}
+
+/**
+ * Mints a short-lived HS256 JWT identifying a Manage lecturer for the
+ * lecturer MCP server. The token is scoped to initial read/draft assistant
+ * workflows and cached per lecturer for less than its expiry.
+ */
+export async function mintLecturerMcpJwt(userId: string): Promise<string> {
+  const secret = process.env.MCP_LECTURER_JWT_SECRET ?? process.env.APP_SECRET
+  const issuer = process.env.APP_ORIGIN_AUTH
+
+  if (!secret) {
+    throw new McpAuthMintError(
+      'APP_SECRET or MCP_LECTURER_JWT_SECRET is not set; cannot mint lecturer MCP JWT'
+    )
+  }
+  if (!issuer) {
+    throw new McpAuthMintError(
+      'APP_ORIGIN_AUTH is not set; cannot mint lecturer MCP JWT'
+    )
+  }
+
+  const now = Date.now()
+  pruneExpiredCacheEntries(lecturerCache, now)
+
+  const cached = lecturerCache.get(userId)
+  if (cached && now - cached.mintedAtMs <= CACHE_TTL_MS) {
+    return cached.jwt
+  }
+  if (cached) {
+    lecturerCache.delete(userId)
+  }
+
+  const jwt = await signJWT(
+    {
+      sub: userId,
+      role: 'USER',
+      purpose: 'lecturer-mcp',
+      scope: LECTURER_MCP_SCOPE,
+    },
+    secret,
+    {
+      algorithm: 'HS256',
+      expiresIn: `${JWT_TTL_SECONDS}s`,
+      issuer,
+    }
+  )
+
+  lecturerCache.set(userId, { jwt, mintedAtMs: now })
+  return jwt
+}
+
 /** Test-only helper for clearing the in-process cache between cases. */
 export function __resetParticipantMcpJwtCacheForTests(): void {
   cache.clear()
+}
+
+/** Test-only helper for clearing the in-process cache between cases. */
+export function __resetLecturerMcpJwtCacheForTests(): void {
+  lecturerCache.clear()
 }

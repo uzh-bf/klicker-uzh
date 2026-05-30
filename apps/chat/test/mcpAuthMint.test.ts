@@ -2,7 +2,9 @@ import { verifyJWT } from '@klicker-uzh/util'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import {
   McpAuthMintError,
+  __resetLecturerMcpJwtCacheForTests,
   __resetParticipantMcpJwtCacheForTests,
+  mintLecturerMcpJwt,
   mintParticipantMcpJwt,
 } from '../src/lib/server/mcpAuthMint'
 
@@ -13,11 +15,13 @@ describe('mintParticipantMcpJwt', () => {
   beforeEach(() => {
     vi.stubEnv('APP_SECRET', TEST_SECRET)
     vi.stubEnv('APP_ORIGIN_AUTH', TEST_ISSUER)
+    __resetLecturerMcpJwtCacheForTests()
     __resetParticipantMcpJwtCacheForTests()
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
+    __resetLecturerMcpJwtCacheForTests()
     __resetParticipantMcpJwtCacheForTests()
   })
 
@@ -83,6 +87,62 @@ describe('mintParticipantMcpJwt', () => {
   test('missing APP_ORIGIN_AUTH throws McpAuthMintError', async () => {
     delete process.env.APP_ORIGIN_AUTH
     await expect(mintParticipantMcpJwt('participant-x')).rejects.toBeInstanceOf(
+      McpAuthMintError
+    )
+  })
+})
+
+describe('mintLecturerMcpJwt', () => {
+  beforeEach(() => {
+    vi.stubEnv('APP_SECRET', TEST_SECRET)
+    vi.stubEnv('APP_ORIGIN_AUTH', TEST_ISSUER)
+    __resetLecturerMcpJwtCacheForTests()
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    __resetLecturerMcpJwtCacheForTests()
+  })
+
+  test('minted token verifies and is scoped to lecturer MCP', async () => {
+    const jwt = await mintLecturerMcpJwt('lecturer-a')
+
+    const payload = await verifyJWT(jwt, TEST_SECRET, {
+      issuer: TEST_ISSUER,
+    })
+
+    expect(payload.sub).toBe('lecturer-a')
+    expect(payload.role).toBe('USER')
+    expect(payload.purpose).toBe('lecturer-mcp')
+    expect(payload.scope).toBe('manage:read manage:draft')
+    expect(payload.iss).toBe(TEST_ISSUER)
+    expect(typeof payload.exp).toBe('number')
+  })
+
+  test('uses a dedicated lecturer MCP secret when configured', async () => {
+    const lecturerSecret = 'dedicated-lecturer-secret'
+    vi.stubEnv('MCP_LECTURER_JWT_SECRET', lecturerSecret)
+
+    const jwt = await mintLecturerMcpJwt('lecturer-secret')
+    const payload = await verifyJWT(jwt, lecturerSecret, {
+      issuer: TEST_ISSUER,
+    })
+
+    expect(payload.sub).toBe('lecturer-secret')
+  })
+
+  test('cache is keyed per lecturer (no cross-lecturer leakage)', async () => {
+    const a = await mintLecturerMcpJwt('lecturer-a')
+    const b = await mintLecturerMcpJwt('lecturer-b')
+    expect(a).not.toBe(b)
+
+    const aAgain = await mintLecturerMcpJwt('lecturer-a')
+    expect(aAgain).toBe(a)
+  })
+
+  test('missing issuer throws McpAuthMintError', async () => {
+    delete process.env.APP_ORIGIN_AUTH
+    await expect(mintLecturerMcpJwt('lecturer-x')).rejects.toBeInstanceOf(
       McpAuthMintError
     )
   })
