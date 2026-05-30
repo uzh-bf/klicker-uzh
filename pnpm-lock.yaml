@@ -1439,6 +1439,9 @@ importers:
 
   apps/mcp-lecturer:
     dependencies:
+      '@klicker-uzh/prisma':
+        specifier: workspace:*
+        version: link:../../packages/prisma
       '@klicker-uzh/util':
         specifier: workspace:*
         version: link:../../packages/util

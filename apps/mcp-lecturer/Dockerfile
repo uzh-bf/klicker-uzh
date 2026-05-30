@@ -41,6 +41,7 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
 COPY --from=builder /app/apps/mcp-lecturer/dist/ /app/apps/mcp-lecturer/dist/
+COPY --from=builder /app/packages/prisma/dist/ /app/packages/prisma/dist/
 COPY --from=builder /app/packages/util/dist/ /app/packages/util/dist/
 
 USER nodejs

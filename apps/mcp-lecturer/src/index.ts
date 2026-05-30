@@ -1,8 +1,13 @@
+import prisma from '@klicker-uzh/prisma'
 import { getRuntimeSettings } from './config.js'
 import { createLecturerMcpServer } from './server.js'
+import { createLecturerReadService } from './service.js'
 
 const settings = getRuntimeSettings()
-const server = createLecturerMcpServer(settings)
+const server = createLecturerMcpServer(
+  settings,
+  createLecturerReadService(prisma)
+)
 
 await server.start({
   httpStream: {

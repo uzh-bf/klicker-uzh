@@ -16,8 +16,18 @@ describe('lecturer MCP capabilities', () => {
     })
     expect(capabilities.tools.map((tool) => tool.name)).toEqual([
       'klicker_lecturer_capabilities',
+      'klicker_lecturer_course_list',
+      'klicker_lecturer_course_get',
+      'klicker_lecturer_element_search',
+      'klicker_lecturer_element_get',
     ])
     expect(capabilities.tools.every((tool) => tool.readOnly)).toBe(true)
-    expect(LECTURER_MCP_TOOL_NAMES).toEqual(['klicker_lecturer_capabilities'])
+    expect(LECTURER_MCP_TOOL_NAMES).toEqual([
+      'klicker_lecturer_capabilities',
+      'klicker_lecturer_course_list',
+      'klicker_lecturer_course_get',
+      'klicker_lecturer_element_search',
+      'klicker_lecturer_element_get',
+    ])
   })
 })
