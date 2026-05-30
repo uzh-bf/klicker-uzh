@@ -1,11 +1,6 @@
 'use client'
 
-import {
-  CheckIcon,
-  EyeIcon,
-  FilePenLineIcon,
-  LoaderCircleIcon,
-} from 'lucide-react'
+import { CheckIcon, EyeIcon, LoaderCircleIcon } from 'lucide-react'
 import { useState, type FC } from 'react'
 
 export type ManageProposalResult = {
@@ -87,12 +82,13 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
   const [showPreview, setShowPreview] = useState(false)
   const payloadText = JSON.stringify(result.payload, null, 2)
   const waiting = status.type === 'running'
+  const created = confirmation.type === 'success'
   const canConfirm =
     result.requiresConfirmation &&
     Boolean(result.proposalToken) &&
     !waiting &&
     confirmation.type !== 'loading' &&
-    confirmation.type !== 'success'
+    !created
 
   const confirmProposal = async () => {
     if (!result.proposalToken || !canConfirm) return
@@ -135,7 +131,11 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
             />
           )}
           <span className="text-xs font-semibold uppercase text-slate-500">
-            {result.requiresConfirmation ? 'Confirmation required' : 'Draft'}
+            {created
+              ? 'Draft created'
+              : result.requiresConfirmation
+                ? 'Confirmation required'
+                : 'Draft'}
           </span>
           <span className="rounded bg-white px-1.5 py-0.5 text-[11px] text-slate-500">
             {result.kind}
@@ -156,38 +156,42 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
             <EyeIcon className="size-3.5" aria-hidden />
             Preview
           </button>
-          <button
-            type="button"
-            disabled
-            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 text-xs font-semibold text-slate-400"
-          >
-            <FilePenLineIcon className="size-3.5" aria-hidden />
-            Edit in form
-          </button>
-          <button
-            type="button"
-            disabled={!canConfirm}
-            onClick={confirmProposal}
-            className={
-              canConfirm
-                ? 'inline-flex h-8 items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2'
-                : 'inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 text-xs font-semibold text-slate-400'
-            }
-          >
-            {confirmation.type === 'loading' ? (
-              <LoaderCircleIcon className="size-3.5 animate-spin" aria-hidden />
-            ) : (
-              <CheckIcon className="size-3.5" aria-hidden />
-            )}
-            {confirmation.type === 'success' ? 'Draft created' : 'Create draft'}
-          </button>
+          {!created && (
+            <button
+              type="button"
+              disabled={!canConfirm}
+              onClick={confirmProposal}
+              className={
+                canConfirm
+                  ? 'inline-flex h-8 items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2'
+                  : 'inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 text-xs font-semibold text-slate-400'
+              }
+            >
+              {confirmation.type === 'loading' ? (
+                <LoaderCircleIcon
+                  className="size-3.5 animate-spin"
+                  aria-hidden
+                />
+              ) : (
+                <CheckIcon className="size-3.5" aria-hidden />
+              )}
+              Create draft
+            </button>
+          )}
         </div>
 
         <div aria-live="polite">
           {confirmation.type === 'success' && (
-            <div className="rounded border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-xs text-emerald-900">
-              Created DRAFT question: {confirmation.element.name} (#
-              {confirmation.element.id})
+            <div className="flex items-start gap-2 rounded border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-xs text-emerald-900">
+              <CheckIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+              <div>
+                <div className="font-semibold">
+                  Draft created in the question pool
+                </div>
+                <div className="mt-0.5">
+                  {confirmation.element.name} (#{confirmation.element.id})
+                </div>
+              </div>
             </div>
           )}
           {confirmation.type === 'error' && (
