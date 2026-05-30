@@ -562,6 +562,13 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
       participationRequiredMessage:
         'Ihre Kursteilnahme für diesen Chatbot konnte nicht eingerichtet werden. Öffnen Sie den Kurs in OLAT/KlickerUZH und treten Sie ihm bei, bevor Sie es erneut versuchen.',
       goToCourse: 'Kurs öffnen',
+      openCourseChat: 'KI-Tutor',
+      courseChat: 'Kurs-Chatbot',
+      selectChatbot: 'Chatbot auswählen',
+      openInNewTab: 'Chat in neuem Tab öffnen',
+      activeContext: 'Nutzt den aktuellen Seitenkontext',
+      questionContext: 'Frage {currentStep}/{totalSteps}',
+      noCourseChatbot: 'Für diesen Kurs ist noch kein Kurs-Chatbot verfügbar.',
     },
     insights: {
       noCourseDataAvailable:

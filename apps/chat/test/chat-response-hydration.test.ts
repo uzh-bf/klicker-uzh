@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useChatResponse } from '../src/hooks/useChatResponse'
 
-const { mockUseChatStore } = vi.hoisted(() => ({
+const { mockUseChatContextStore, mockUseChatStore } = vi.hoisted(() => ({
+  mockUseChatContextStore: vi.fn(),
   mockUseChatStore: Object.assign(vi.fn(), {
     getState: vi.fn(),
     setState: vi.fn(),
@@ -36,6 +37,10 @@ vi.mock('../src/stores/settingsStore', () => ({
 
 vi.mock('../src/stores/chatStore', () => ({
   useChatStore: mockUseChatStore,
+}))
+
+vi.mock('../src/stores/chatContextStore', () => ({
+  useChatContextStore: mockUseChatContextStore,
 }))
 
 type MockThread = {
@@ -81,6 +86,11 @@ describe('useChatResponse attachment hydration', () => {
       ],
       ensureFullImageAttachments: vi.fn(),
     }
+
+    mockUseChatContextStore.mockReset()
+    mockUseChatContextStore.mockImplementation((selector: any) =>
+      selector({ context: null })
+    )
 
     mockUseChatStore.mockReset()
     mockUseChatStore.mockReturnValue(undefined)
@@ -302,6 +312,61 @@ describe('useChatResponse attachment hydration', () => {
       'edited-message-id',
       'persisted-message-1'
     )
+  })
+
+  test('sends embedded chat context with the chat request', async () => {
+    const context = {
+      version: 1,
+      source: 'pwa',
+      surface: 'practice-quiz',
+      locale: 'en',
+      courseId: 'course-1',
+      activity: { type: 'practiceQuiz', id: 'quiz-1' },
+      question: {
+        stackId: '10',
+        elementInstanceId: 20,
+        type: 'SC',
+        contentPreview: 'What is opportunity cost?',
+        currentStep: 1,
+        totalSteps: 3,
+      },
+    }
+    mockUseChatContextStore.mockImplementation((selector: any) =>
+      selector({ context })
+    )
+
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValue(
+        createStreamingResponse([
+          'data: {"type":"text-delta","delta":"hello"}',
+          'data: {"type":"finish","messageMetadata":{"chatMode":"chat","modelId":"model-1","reasoningEffort":"medium"}}',
+          'data: [DONE]',
+        ])
+      )
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const { generateChatResponse } = useChatResponse(
+      'model-1',
+      'chat',
+      'medium'
+    )
+
+    await generateChatResponse(
+      [
+        {
+          id: 'message-1',
+          role: 'user',
+          content: [{ type: 'text', text: 'help me' }],
+          parentId: null,
+        },
+      ] as any,
+      'thread-1'
+    )
+
+    expect(JSON.parse(fetchSpy.mock.calls[0][1].body)).toMatchObject({
+      chatContext: context,
+    })
   })
 
   test('same-session local full images are sent directly without hydration', async () => {

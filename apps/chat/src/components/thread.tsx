@@ -51,16 +51,19 @@ import { useSettingsStore } from '@/src/stores/settingsStore'
 import { Button } from '@uzh-bf/design-system'
 import { BranchPicker } from './branch-picker'
 import { useChatUi } from './chat-ui-context'
+import { ChatbotAvatar } from './chatbot-avatar'
 import { MarkdownText } from './markdown-text'
 import { MessageAttachments } from './message-attachments'
 import { ToolFallback } from './tool-fallback'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
-import Image from 'next/image'
-
 import { twMerge } from 'tailwind-merge'
 
-type ThreadProps = { chatbotAvatar: string }
+type ThreadProps = {
+  chatbotAvatar: string
+  chatbotName: string
+  contextLabel?: string | null
+}
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
 const attachmentLimitErrorMessage = () =>
   `You can only attach up to ${MAX_IMAGE_ATTACHMENTS} images.`
@@ -207,7 +210,11 @@ const AssistantReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
   )
 }
 
-export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
+export const Thread: FC<ThreadProps> = ({
+  chatbotAvatar,
+  chatbotName,
+  contextLabel,
+}) => {
   const { embedded } = useChatUi()
 
   return (
@@ -225,7 +232,11 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar }) => {
             : 'overflow-y-scroll px-2 pb-28 pt-2 sm:px-4 sm:pt-8'
         )}
       >
-        <ThreadWelcome />
+        <ThreadWelcome
+          chatbotAvatar={chatbotAvatar}
+          chatbotName={chatbotName}
+          contextLabel={contextLabel}
+        />
 
         <ThreadPrimitive.Messages
           components={{
@@ -267,40 +278,119 @@ const ThreadScrollToBottom: FC = () => {
   )
 }
 
-const ThreadWelcome: FC = () => {
+const ThreadWelcome: FC<{
+  chatbotAvatar: string
+  chatbotName: string
+  contextLabel?: string | null
+}> = ({ chatbotAvatar, chatbotName, contextLabel }) => {
+  const { embedded } = useChatUi()
+
   return (
     <ThreadPrimitive.Empty>
-      <div className="flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col">
-        <div className="flex w-full flex-grow flex-col items-center justify-center">
-          <p className="mt-4 font-medium">How can I help you today?</p>
+      <div
+        className={twMerge(
+          'flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col',
+          embedded ? 'px-2' : ''
+        )}
+      >
+        <div className="flex w-full flex-grow flex-col items-center justify-center py-8 text-center">
+          <ChatbotAvatar
+            avatar={chatbotAvatar}
+            className={twMerge(
+              'text-uzh-blue border border-gray-200 bg-gray-50 shadow-sm',
+              embedded ? 'size-14' : 'size-16'
+            )}
+            iconClassName={embedded ? 'size-6' : 'size-7'}
+          />
+          <p
+            className={twMerge(
+              'mt-4 font-semibold text-slate-900',
+              embedded ? 'text-sm' : 'text-base'
+            )}
+          >
+            Ask {chatbotName}
+          </p>
+          {contextLabel && (
+            <p className="text-muted-foreground mt-1 max-w-xs text-xs">
+              {contextLabel}
+            </p>
+          )}
+          <ThreadWelcomeSuggestions contextual={Boolean(contextLabel)} />
         </div>
-        {/* <ThreadWelcomeSuggestions /> */}
       </div>
     </ThreadPrimitive.Empty>
   )
 }
 
-// const ThreadWelcomeSuggestions: FC = () => {
-//   const suggestions = getThreadSuggestions()
+const ThreadWelcomeSuggestions: FC<{ contextual: boolean }> = ({
+  contextual,
+}) => {
+  const { embedded } = useChatUi()
+  const suggestions = getThreadSuggestions(contextual)
 
-//   return (
-//     <div className="mt-3 flex w-full items-stretch justify-center gap-4">
-//       {suggestions.map((suggestion) => (
-//         <ThreadPrimitive.Suggestion
-//           key={suggestion.id}
-//           className="hover:bg-muted/80 flex max-w-sm grow basis-0 flex-col items-center justify-center rounded-lg border p-3 transition-colors ease-in"
-//           prompt={suggestion.prompt}
-//           method="replace"
-//           autoSend
-//         >
-//           <span className="line-clamp-2 text-ellipsis text-sm font-semibold">
-//             {suggestion.text}
-//           </span>
-//         </ThreadPrimitive.Suggestion>
-//       ))}
-//     </div>
-//   )
-// }
+  return (
+    <div
+      className={twMerge(
+        'mt-5 grid w-full gap-2',
+        embedded ? 'max-w-sm' : 'max-w-2xl sm:grid-cols-3'
+      )}
+    >
+      {suggestions.map((suggestion) => (
+        <ThreadPrimitive.Suggestion
+          key={suggestion.id}
+          className="hover:bg-muted/80 flex min-h-11 items-center justify-center rounded-md border bg-white px-3 py-2 text-center text-xs font-semibold text-slate-800 transition-colors ease-in focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          prompt={suggestion.prompt}
+          method="replace"
+          autoSend
+        >
+          {suggestion.text}
+        </ThreadPrimitive.Suggestion>
+      ))}
+    </div>
+  )
+}
+
+function getThreadSuggestions(contextual: boolean) {
+  if (contextual) {
+    return [
+      {
+        id: 'explain-question',
+        text: 'Explain this question',
+        prompt:
+          'Explain the current question in simpler terms without revealing the answer.',
+      },
+      {
+        id: 'small-hint',
+        text: 'Give me a hint',
+        prompt:
+          'Give me a small hint for the current question without giving away the answer.',
+      },
+      {
+        id: 'connect-concept',
+        text: 'Connect the concept',
+        prompt: 'How does the current question connect to the course material?',
+      },
+    ]
+  }
+
+  return [
+    {
+      id: 'explain-concept',
+      text: 'Explain a concept',
+      prompt: 'Explain a concept from this course.',
+    },
+    {
+      id: 'study-help',
+      text: 'Help me study',
+      prompt: 'Help me review the current course topic.',
+    },
+    {
+      id: 'practice-prompt',
+      text: 'Practice prompt',
+      prompt: 'Ask me a short practice question about the current topic.',
+    },
+  ]
+}
 
 const AttachmentErrorBanner: FC<{
   error: string | null
@@ -348,7 +438,7 @@ const Composer: FC = () => {
           <ComposerAttachButton setError={setAttachmentError} />
           <ComposerPrimitive.Input
             rows={1}
-            autoFocus
+            autoFocus={!embedded}
             placeholder="Write a message..."
             className={twMerge(
               'placeholder:text-muted-foreground text-md flex-grow resize-none border-none bg-transparent px-2 outline-none focus:ring-0 disabled:cursor-not-allowed',
@@ -644,7 +734,7 @@ const ComposerAttachButton: FC<{
         onClick={() => inputRef.current?.click()}
         className={twMerge(
           'text-muted-foreground hover:text-foreground inline-flex items-center justify-center rounded-md',
-          embedded ? 'size-7' : 'size-9'
+          embedded ? 'size-11' : 'size-9'
         )}
         aria-label="Attach image"
       >
@@ -657,7 +747,7 @@ const ComposerAttachButton: FC<{
 const ComposerAction: FC = () => {
   const { embedded } = useChatUi()
   const isEmpty = useComposer((s) => s.isEmpty)
-  const size = embedded ? '28px' : '36px'
+  const size = embedded ? '44px' : '36px'
 
   return (
     <>
@@ -677,7 +767,7 @@ const ComposerAction: FC = () => {
             className={{
               root: twMerge(
                 'flex items-center justify-center rounded-md transition-colors',
-                embedded ? 'm-1' : 'm-2',
+                embedded ? 'm-0' : 'm-2',
                 !isEmpty && 'hover:bg-accent'
               ),
             }}
@@ -702,7 +792,7 @@ const ComposerAction: FC = () => {
             className={{
               root: twMerge(
                 'hover:bg-accent flex items-center justify-center rounded-md transition-colors',
-                embedded ? 'm-1' : 'm-2'
+                embedded ? 'm-0' : 'm-2'
               ),
             }}
           >
@@ -1047,47 +1137,30 @@ const AssistantMessage: FC<{
     <MessagePrimitive.Root
       className={twMerge(
         'relative grid w-full max-w-[var(--thread-max-width)] grid-rows-[auto_1fr] py-2 sm:py-4',
-        embedded ? 'grid-cols-[auto_1fr]' : 'grid-cols-[auto_auto_1fr]'
+        embedded ? 'grid-cols-[auto_1fr] gap-x-2' : 'grid-cols-[auto_auto_1fr]'
       )}
     >
-      {!embedded && (
-        <div className="col-start-1 row-span-2 row-start-1 mr-2 mt-2 flex items-start pr-1 sm:mr-3 sm:mt-3 sm:pr-2">
-          <Image
-            src={
-              chatbotAvatar
-                ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbotAvatar}.svg`
-                : '../../public/user-solid.svg'
-            }
-            alt=""
-            width={chatbotAvatar ? '35' : '32'}
-            height="35"
-            className={twMerge(
-              'hover:bg-uzh-red-20 hidden cursor-pointer rounded-full bg-white sm:block',
-              chatbotAvatar ? '' : 'p-1'
-            )}
-          />
-          <Image
-            src={
-              chatbotAvatar
-                ? `${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbotAvatar}.svg`
-                : '../../public/user-solid.svg'
-            }
-            alt=""
-            width="24"
-            height="24"
-            className={twMerge(
-              'hover:bg-uzh-red-20 cursor-pointer rounded-full bg-white sm:hidden',
-              chatbotAvatar ? '' : 'p-1'
-            )}
-          />
-        </div>
-      )}
       <div
         className={twMerge(
-          'text-foreground col-span-2 row-start-1 my-1.5 break-words leading-7',
+          'col-start-1 row-span-2 row-start-1 flex items-start',
+          embedded ? 'mt-2' : 'mr-2 mt-2 pr-1 sm:mr-3 sm:mt-3 sm:pr-2'
+        )}
+      >
+        <ChatbotAvatar
+          avatar={chatbotAvatar}
+          className={twMerge(
+            'text-uzh-blue border border-gray-200 bg-white',
+            embedded ? 'size-7' : 'size-6 sm:size-9'
+          )}
+          iconClassName={embedded ? 'size-3.5' : 'size-4'}
+        />
+      </div>
+      <div
+        className={twMerge(
+          'text-foreground row-start-1 my-1.5 break-words leading-7',
           embedded
-            ? 'col-start-1 max-w-full'
-            : 'col-start-2 max-w-[calc(var(--thread-max-width)*0.8)]'
+            ? 'col-start-2 max-w-full text-sm leading-6'
+            : 'col-span-2 col-start-2 max-w-[calc(var(--thread-max-width)*0.8)]'
         )}
       >
         <MessagePrimitive.Unstable_PartsGrouped

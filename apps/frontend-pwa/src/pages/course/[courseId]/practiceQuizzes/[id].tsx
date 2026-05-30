@@ -67,9 +67,11 @@ import {
   GetPracticeQuizDocument,
   PublicationStatus,
   StackFeedbackStatus,
+  type GetPracticeQuizQuery,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
+import type { KlickerChatContext } from '@klicker-uzh/types'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
@@ -77,11 +79,13 @@ import { UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/router'
 import nookies from 'nookies'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Layout, {
   LAYOUT_SCROLL_CONTAINER_ID,
 } from '../../../../components/Layout'
+import { CourseChatDrawer } from '../../../../components/chatbot/CourseChatDrawer'
 import Footer from '../../../../components/common/Footer'
 import PracticeQuiz from '../../../../components/practiceQuiz/PracticeQuiz'
 
@@ -120,6 +124,7 @@ function PracticeQuizPage({
   embedded: boolean
 }) {
   const t = useTranslations()
+  const router = useRouter()
   const [currentIx, setCurrentIx] = useState(-1)
   const [parentOrigin, setParentOrigin] = useState<string | null>(null)
   const [isCompleted, setIsCompleted] = useState(false)
@@ -134,6 +139,17 @@ function PracticeQuizPage({
   })
 
   const totalSteps = data?.practiceQuiz?.stacks?.length ?? 0
+  const chatContext = useMemo(
+    () =>
+      buildPracticeQuizChatContext({
+        courseId,
+        currentIx,
+        locale: router.locale ?? 'en',
+        practiceQuiz: data?.practiceQuiz ?? null,
+        totalSteps,
+      }),
+    [courseId, currentIx, data?.practiceQuiz, router.locale, totalSteps]
+  )
 
   useEffect(() => {
     if (!embedded) return
@@ -273,9 +289,16 @@ function PracticeQuizPage({
         previewOnly={data.practiceQuiz.isOwner ?? undefined}
       />
       {!embedded && (
-        <Footer
-          browserLink={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/practiceQuizzes/${id}`}
-        />
+        <>
+          <CourseChatDrawer
+            courseId={courseId}
+            context={chatContext}
+            enabled={Boolean(participantToken)}
+          />
+          <Footer
+            browserLink={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/practiceQuizzes/${id}`}
+          />
+        </>
       )}
     </Layout>
   )
@@ -426,4 +449,67 @@ function readStoredCompletion(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
+}
+
+type PracticeQuizForChatContext = NonNullable<
+  GetPracticeQuizQuery['practiceQuiz']
+>
+
+function buildPracticeQuizChatContext({
+  courseId,
+  currentIx,
+  locale,
+  practiceQuiz,
+  totalSteps,
+}: {
+  courseId: string
+  currentIx: number
+  locale: string
+  practiceQuiz: PracticeQuizForChatContext | null
+  totalSteps: number
+}): KlickerChatContext {
+  const stack = currentIx >= 0 ? practiceQuiz?.stacks?.[currentIx] : undefined
+  const firstElement = stack?.elements?.[0]
+  const contentPreview = toContentPreview(firstElement?.elementData.content)
+
+  return {
+    version: 1,
+    source: 'pwa',
+    surface: 'practice-quiz',
+    locale,
+    courseId,
+    activity: practiceQuiz
+      ? {
+          type: 'practiceQuiz',
+          id: practiceQuiz.id,
+          displayName: practiceQuiz.displayName,
+        }
+      : undefined,
+    question: stack
+      ? {
+          stackId: String(stack.id),
+          elementInstanceId: firstElement?.id,
+          type: firstElement?.elementData.type ?? firstElement?.elementType,
+          contentPreview,
+          currentStep: currentIx + 1,
+          totalSteps,
+        }
+      : undefined,
+  }
+}
+
+function toContentPreview(
+  value: string | null | undefined
+): string | undefined {
+  if (!value) return undefined
+
+  const preview = value
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!preview) return undefined
+  return preview.length > 500 ? `${preview.slice(0, 497)}...` : preview
 }

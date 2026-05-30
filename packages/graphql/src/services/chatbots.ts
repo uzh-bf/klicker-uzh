@@ -1,4 +1,4 @@
-import { Prisma } from '@klicker-uzh/prisma/client'
+import { Prisma, UserRole } from '@klicker-uzh/prisma/client'
 import { z } from 'zod'
 import type { ContextWithUser } from '../lib/context.js'
 
@@ -43,6 +43,47 @@ type ChatModelCapability = Omit<
 type ChatbotReasoningConfigEntry = {
   modelId: string
   efforts: string[]
+}
+
+export async function getParticipantCourseChatbots(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  if (ctx.user.role !== UserRole.PARTICIPANT) {
+    return []
+  }
+
+  const participation = await ctx.prisma.participation.findUnique({
+    select: { id: true, isActive: true },
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: ctx.user.sub,
+      },
+    },
+  })
+
+  if (!participation?.isActive) {
+    return []
+  }
+
+  const chatbots = await ctx.prisma.chatbot.findMany({
+    orderBy: [{ name: 'asc' }, { createdAt: 'asc' }],
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      avatar: true,
+    },
+    where: { courseId },
+  })
+
+  return chatbots.map(({ id, name, description, avatar }) => ({
+    id,
+    name,
+    description,
+    avatar,
+  }))
 }
 
 const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [

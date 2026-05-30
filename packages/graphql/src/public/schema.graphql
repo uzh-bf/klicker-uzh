@@ -653,6 +653,13 @@ type ChatbotMcpConfigurationSummary {
   serverName: String!
 }
 
+type ChatbotPublic {
+  avatar: String
+  description: String
+  id: ID!
+  name: String!
+}
+
 type ChatbotReasoningConfig {
   efforts: [String!]!
   modelId: String!
@@ -2332,6 +2339,7 @@ type Query {
   controlLiveQuiz(id: String!): LiveQuiz
   countCatalogSharingRequests: Int!
   course(id: String!): Course
+  courseChatbots(courseId: String!): [ChatbotPublic!]!
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   element(id: Int!): Element
   endedLiveQuizzesCourse(courseId: String!): [LiveQuizSelectionItem!]

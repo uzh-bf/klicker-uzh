@@ -15,10 +15,14 @@ import { twMerge } from 'tailwind-merge'
 import { RuntimeProvider } from '../app/RuntimeProvider'
 import { useChatGuestTokenBootstrap } from '../hooks/useChatGuestTokenBootstrap'
 import { useEmbedded } from '../hooks/useEmbedded'
+import { useEmbeddedChatContext } from '../hooks/useEmbeddedChatContext'
 import { authedFetch } from '../lib/client/authedFetch'
+import { getKlickerChatContextLabel } from '../services/chatContext'
+import { useChatContextStore } from '../stores/chatContextStore'
 import { useChatStore } from '../stores/chatStore'
 import { AppSidebar } from './app-sidebar'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
+import { ChatbotAvatar } from './chatbot-avatar'
 import { DisclaimerModal } from './disclaimer-modal'
 import { EmbeddedSettings } from './embedded-settings'
 import { Thread } from './thread'
@@ -357,7 +361,10 @@ function SidebarMain({
               <Loader2 className="text-muted-foreground size-6 animate-spin" />
             </div>
           )}
-          <Thread chatbotAvatar={chatbot.avatar ?? ''} />
+          <Thread
+            chatbotAvatar={chatbot.avatar ?? ''}
+            chatbotName={chatbot.name}
+          />
         </div>
         {showFooter && <Footer />}
       </div>
@@ -371,6 +378,9 @@ function AssistantLayout({
   chatbot: { id: string; name: string; avatar?: string }
 }) {
   const { showSidebar, showFooter } = useChatUi()
+  useEmbeddedChatContext()
+  const context = useChatContextStore((state) => state.context)
+  const contextLabel = getKlickerChatContextLabel(context)
 
   if (showSidebar) {
     return (
@@ -383,14 +393,28 @@ function AssistantLayout({
 
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden">
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b bg-gray-50 px-2 py-1.5 sm:gap-4 sm:px-4 sm:py-3">
-        <div className="min-w-0 truncate text-xs font-semibold sm:text-sm">
-          {chatbot.name}
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b bg-white px-3 py-2.5 sm:px-4">
+        <ChatbotAvatar
+          avatar={chatbot.avatar}
+          className="text-uzh-blue size-9 border border-gray-200 bg-gray-50"
+          iconClassName="size-4"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-semibold">{chatbot.name}</div>
+          {contextLabel && (
+            <div className="mt-1 inline-flex max-w-full items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium leading-tight text-blue-800">
+              <span className="truncate">{contextLabel}</span>
+            </div>
+          )}
         </div>
         <EmbeddedSettings />
       </div>
       <div className="flex min-h-0 flex-1 flex-col">
-        <Thread chatbotAvatar={chatbot.avatar ?? ''} />
+        <Thread
+          chatbotAvatar={chatbot.avatar ?? ''}
+          chatbotName={chatbot.name}
+          contextLabel={contextLabel}
+        />
         {showFooter && <Footer />}
       </div>
     </div>

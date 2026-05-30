@@ -560,6 +560,13 @@ Other participants will only see your public **participant profile**, including 
       participationRequiredMessage:
         'We could not activate your participation for this course. Open the course in OLAT/KlickerUZH and ensure you have joined it before trying again.',
       goToCourse: 'Open course',
+      openCourseChat: 'AI tutor',
+      courseChat: 'Course chatbot',
+      selectChatbot: 'Select chatbot',
+      openInNewTab: 'Open chat in new tab',
+      activeContext: 'Using current page context',
+      questionContext: 'Question {currentStep}/{totalSteps}',
+      noCourseChatbot: 'No course chatbot is available for this course yet.',
     },
     insights: {
       noCourseDataAvailable:
