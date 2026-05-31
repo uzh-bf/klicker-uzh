@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getChatModelRegistry } from '../../../../lib/server/chatModelRegistry'
 import { getAuthenticatedManageUserId } from '../../../../lib/server/manageAuth'
+import { getOpenAIResponsesStore } from '../../../../lib/server/openaiResponsesOptions'
 import { loadLecturerMcpTools } from '../../../../services/lecturerMcp'
 import {
   buildManageAssistantSystemPrompt,
@@ -102,7 +103,7 @@ export async function POST(req: NextRequest) {
       model: createManageAssistantModel(selectedModel.deploymentId),
       providerOptions: {
         openai: {
-          store: false,
+          store: getOpenAIResponsesStore(),
         },
       },
       stopWhen: stepCountIs(5),

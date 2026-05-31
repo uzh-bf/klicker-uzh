@@ -40,9 +40,8 @@ export function ManageAssistantWidget() {
       buildManageAssistantUrl({
         chatUrl: process.env.NEXT_PUBLIC_CHAT_URL,
         locale: router.locale,
-        returnTo: router.asPath,
       }),
-    [router.asPath, router.locale]
+    [router.locale]
   )
   const assistantOrigin = useMemo(
     () => getUrlOrigin(assistantUrl),
