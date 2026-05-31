@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import {
   buildManageAssistantSystemPrompt,
+  getManageAssistantOpenAIProviderOptions,
   selectManageAssistantModel,
 } from '../src/services/manageAssistantRuntime'
 
@@ -79,5 +80,22 @@ describe('Manage assistant runtime helpers', () => {
         },
       ]).deploymentId
     ).toBe('fallback-deployment')
+  })
+
+  test('keeps Manage assistant responses stateless for OpenRouter-compatible providers', () => {
+    const previousValue = process.env.CHAT_OPENAI_STORE_RESPONSES
+    process.env.CHAT_OPENAI_STORE_RESPONSES = 'true'
+
+    try {
+      expect(getManageAssistantOpenAIProviderOptions()).toEqual({
+        store: false,
+      })
+    } finally {
+      if (previousValue === undefined) {
+        delete process.env.CHAT_OPENAI_STORE_RESPONSES
+      } else {
+        process.env.CHAT_OPENAI_STORE_RESPONSES = previousValue
+      }
+    }
   })
 })

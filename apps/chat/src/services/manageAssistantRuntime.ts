@@ -42,3 +42,11 @@ export function selectManageAssistantModel(
   }
   return primary ?? fallback
 }
+
+export function getManageAssistantOpenAIProviderOptions() {
+  return {
+    // OpenRouter's Responses endpoint only accepts store=false and is stateless;
+    // keep Manage compatible with OpenAI-compatible, non-native providers.
+    store: false,
+  } as const
+}
