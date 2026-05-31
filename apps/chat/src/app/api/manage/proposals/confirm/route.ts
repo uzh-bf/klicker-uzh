@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { getAuthenticatedManageUserId } from '../../../../../lib/server/manageAuth'
 import {
   confirmManageProposal,
+  getRequiredManageOrigin,
   verifyManageProposalToken,
 } from '../../../../../services/manageProposals'
 
@@ -16,10 +17,6 @@ const confirmProposalSchema = z.object({
 function getGraphqlEndpoint() {
   const origin = process.env.APP_ORIGIN_API?.replace(/\/$/, '')
   return `${origin ?? 'http://localhost:3000'}/api/graphql`
-}
-
-function getManageOrigin() {
-  return process.env.APP_ORIGIN_MANAGE ?? 'https://manage.klicker.com'
 }
 
 export async function POST(req: NextRequest) {
@@ -42,6 +39,16 @@ export async function POST(req: NextRequest) {
 
   const secret = process.env.MCP_LECTURER_JWT_SECRET ?? process.env.APP_SECRET
   const issuer = process.env.APP_ORIGIN_AUTH
+  let manageOrigin: string
+  try {
+    manageOrigin = getRequiredManageOrigin()
+  } catch {
+    return NextResponse.json(
+      { error: 'Proposal confirmation is not configured' },
+      { status: 500 }
+    )
+  }
+
   if (!secret || !issuer) {
     return NextResponse.json(
       { error: 'Proposal confirmation is not configured' },
@@ -59,7 +66,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       await confirmManageProposal({
         graphqlEndpoint: getGraphqlEndpoint(),
-        manageOrigin: getManageOrigin(),
+        manageOrigin,
         proposal,
         sessionToken,
       })

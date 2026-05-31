@@ -76,76 +76,6 @@ export type ManageElementCreateProposal = z.infer<
 
 type OperationName = 'ManipulateChoicesQuestion' | 'ManipulateFreeTextQuestion'
 
-const MANIPULATE_CHOICES_QUESTION = `
-mutation ManipulateChoicesQuestion(
-  $id: Int
-  $status: ElementStatus
-  $type: ElementType!
-  $name: String
-  $content: String
-  $explanation: String
-  $options: OptionsChoicesInput
-  $basePoints: Boolean
-  $pointsMultiplier: Int
-  $tags: [String!]
-) {
-  manipulateChoicesQuestion(
-    id: $id
-    status: $status
-    type: $type
-    name: $name
-    content: $content
-    explanation: $explanation
-    options: $options
-    basePoints: $basePoints
-    pointsMultiplier: $pointsMultiplier
-    tags: $tags
-  ) {
-    __typename
-    ... on ChoicesElement {
-      id
-      name
-      status
-      type
-    }
-  }
-}
-`
-
-const MANIPULATE_FREE_TEXT_QUESTION = `
-mutation ManipulateFreeTextQuestion(
-  $id: Int
-  $status: ElementStatus
-  $name: String
-  $content: String
-  $explanation: String
-  $options: OptionsFreeTextInput
-  $basePoints: Boolean
-  $pointsMultiplier: Int
-  $tags: [String!]
-) {
-  manipulateFreeTextQuestion(
-    id: $id
-    status: $status
-    name: $name
-    content: $content
-    explanation: $explanation
-    options: $options
-    basePoints: $basePoints
-    pointsMultiplier: $pointsMultiplier
-    tags: $tags
-  ) {
-    __typename
-    ... on FreeTextElement {
-      id
-      name
-      status
-      type
-    }
-  }
-}
-`
-
 function getPersistedHash(operationName: OperationName): string {
   const hash = (hashes as Record<string, string>)[operationName]
   if (!hash) {
@@ -165,10 +95,6 @@ export function buildManageProposalGraphqlRequest(value: unknown) {
     payload.type === 'FREE_TEXT'
       ? 'ManipulateFreeTextQuestion'
       : 'ManipulateChoicesQuestion'
-  const query =
-    operationName === 'ManipulateFreeTextQuestion'
-      ? MANIPULATE_FREE_TEXT_QUESTION
-      : MANIPULATE_CHOICES_QUESTION
 
   const variables =
     payload.type === 'FREE_TEXT'
@@ -208,9 +134,18 @@ export function buildManageProposalGraphqlRequest(value: unknown) {
       },
     },
     operationName,
-    query,
     variables,
   }
+}
+
+export function getRequiredManageOrigin(
+  env: Record<string, string | undefined> = process.env
+) {
+  const origin = env.APP_ORIGIN_MANAGE?.replace(/\/$/, '')
+  if (!origin) {
+    throw new Error('APP_ORIGIN_MANAGE is required')
+  }
+  return origin
 }
 
 export async function verifyManageProposalToken(

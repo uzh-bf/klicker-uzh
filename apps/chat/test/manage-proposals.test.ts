@@ -3,6 +3,7 @@ import { describe, expect, test, vi } from 'vitest'
 import {
   buildManageProposalGraphqlRequest,
   confirmManageProposal,
+  getRequiredManageOrigin,
   verifyManageProposalToken,
   type ManageElementCreateProposal,
 } from '../src/services/manageProposals'
@@ -66,6 +67,16 @@ describe('Manage proposal confirmation helpers', () => {
     expect(request.extensions.persistedQuery.sha256Hash).toMatch(
       /^[a-f0-9]{64}$/
     )
+    expect(request).not.toHaveProperty('query')
+  })
+
+  test('requires an explicit Manage origin for proposal confirmation', () => {
+    expect(() => getRequiredManageOrigin({})).toThrow(
+      'APP_ORIGIN_MANAGE is required'
+    )
+    expect(
+      getRequiredManageOrigin({ APP_ORIGIN_MANAGE: 'https://manage.test/' })
+    ).toBe('https://manage.test')
   })
 
   test('rejects non-DRAFT proposal payloads', () => {

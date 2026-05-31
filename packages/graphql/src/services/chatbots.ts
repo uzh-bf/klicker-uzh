@@ -1,4 +1,4 @@
-import { Prisma, UserRole } from '@klicker-uzh/prisma/client'
+import { Prisma } from '@klicker-uzh/prisma/client'
 import { z } from 'zod'
 import type { ContextWithUser } from '../lib/context.js'
 
@@ -49,10 +49,6 @@ export async function getParticipantCourseChatbots(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
-  if (ctx.user.role !== UserRole.PARTICIPANT) {
-    return []
-  }
-
   const participation = await ctx.prisma.participation.findUnique({
     select: { id: true, isActive: true },
     where: {
