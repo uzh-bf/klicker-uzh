@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 import {
   buildManageAssistantSkillsPrompt,
   selectManageAssistantSkills,
+  STATIC_MANAGE_ASSISTANT_SKILLS,
   type ManageAssistantSkill,
 } from '../src/services/manageAssistantSkills'
 
@@ -61,5 +62,19 @@ describe('Manage assistant skills', () => {
 
     expect(prompt.length).toBeLessThanOrEqual(120)
     expect(prompt).toContain('[trimmed]')
+  })
+
+  test('default skills include documentation and media guidance', () => {
+    const prompt = buildManageAssistantSkillsPrompt(
+      STATIC_MANAGE_ASSISTANT_SKILLS
+    )
+
+    expect(prompt).toContain('Klicker Documentation Navigator')
+    expect(prompt).toContain('https://www.klicker.uzh.ch/tutorials/live_quiz/')
+    expect(prompt).toContain(
+      'https://www.klicker.uzh.ch/use_cases/chatbot_tutoring/'
+    )
+    expect(prompt).toContain('entryId/0_ugtkafd3')
+    expect(prompt).not.toContain('[trimmed]')
   })
 })
