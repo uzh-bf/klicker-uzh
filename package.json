@@ -44,7 +44,7 @@
   "scripts": {
     "build": "turbo run build",
     "build:test": "cross-env NODE_ENV=test turbo run build:test --cache-dir=.turbo",
-    "check": "turbo run check --parallel --continue",
+    "check": "turbo run check --continue",
     "check:all": "run-p check check:format check:lint check:syncpack",
     "check:format": "lint-staged",
     "check:lint": "turbo run lint --parallel --continue",
