@@ -4,6 +4,31 @@ packages:
   - cypress
   - playwright
 
+# Delay automated dependency resolution for newly published packages by 14 days
+# to reduce exposure to compromised releases. Manual emergency exceptions should
+# be exact package/version selectors reviewed with the matching package.json bump.
+minimumReleaseAge: 20160
+minimumReleaseAgeStrict: true
+minimumReleaseAgeIgnoreMissingTime: false
+minimumReleaseAgeExclude: []
+
+overrides:
+  '@babel/plugin-transform-modules-systemjs@>=7.12.0 <=7.29.3': 7.29.4
+  '@xmldom/xmldom@<0.8.13': 0.8.13
+  'axios@<=0.31.1': 0.32.0
+  'fast-xml-parser@>=4.1.3 <4.5.4': 4.5.4
+  'fast-xml-parser@>=5.0.0 <5.3.5': 5.3.5
+  'glob@>=10.2.0 <10.5.0': 10.5.0
+  'handlebars@<=4.7.8': 4.7.9
+  'mysql2@<3.9.8': 3.9.8
+  'next@>=15.0.0 <15.5.16': 15.5.18
+  'node-forge@<1.3.2': 1.3.2
+  'path-to-regexp@<0.1.12': 0.1.12
+  'protobufjs@<=7.5.5': 7.5.6
+  'systeminformation@>=4.17.0 <=5.31.5': 5.31.6
+  'tar-fs@>=2.0.0 <2.1.4': 2.1.4
+  'tar-fs@>=3.0.0 <3.1.1': 3.1.1
+
 ignoredBuiltDependencies:
   - '@microsoft/teamsapp-cli'
   - keytar
@@ -24,3 +49,22 @@ onlyBuiltDependencies:
   - protobufjs
   - sharp
   - unrs-resolver
+
+allowBuilds:
+  '@apollo/protobufjs': true
+  '@hatchet-dev/typescript-sdk': true
+  '@microsoft/teamsapp-cli': false
+  '@prisma/client': true
+  '@prisma/engines': true
+  '@swc/core': true
+  '@tailwindcss/oxide': true
+  azure-functions-core-tools: true
+  core-js: true
+  core-js-pure: true
+  cypress: true
+  esbuild: true
+  keytar: false
+  prisma: true
+  protobufjs: true
+  sharp: true
+  unrs-resolver: true

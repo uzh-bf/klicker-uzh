@@ -1,5 +1,7 @@
 **/__pycache__/
+**/.venv/
 **/node_modules/
+.pnpm-store/
 coverage/
 .nyc_output/
 .turbo/
