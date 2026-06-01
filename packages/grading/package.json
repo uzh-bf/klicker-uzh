@@ -21,7 +21,7 @@
     "rollup": "~4.34.9",
     "ts-node": "~10.9.2",
     "typescript": "~5.6.3",
-    "vitest": "~3.2.4"
+    "vitest": "~4.1.0"
   },
   "scripts": {
     "build": "run-s build:ts",
