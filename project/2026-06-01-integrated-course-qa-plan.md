@@ -32,7 +32,8 @@
 - 2026-06-01: Slice 1 done. Extracted `CourseDiscussionPanel`; `/qa` route is wrapper. Checks: `pnpm --filter @klicker-uzh/frontend-pwa check` passed, `git diff --check` clean, browser screenshot `/private/tmp/course-qa-integrated-screenshots/01-slice1-qa-route-refactored.png`.
 - 2026-06-01: Slice 2 done. Mounted stack-scoped `CourseDiscussionPanel` as sticky desktop rail in `ElementStack`; kept stack action controls in the content column and mobile discussion link fallback. Checks: `pnpm --filter @klicker-uzh/frontend-pwa check` passed, `git diff --check` clean, screenshots `/private/tmp/course-qa-integrated-screenshots/02-slice2-practice-stack-desktop-rail.png` and `/private/tmp/course-qa-integrated-screenshots/04-slice2-practice-stack-mobile-link.png`.
 - 2026-06-01: Slice 3 done. Replaced course overview Q&A button with integrated course-scoped `CourseDiscussionPanel`; desktop uses right rail, mobile stacks below selected tab content. Checks: `pnpm --filter @klicker-uzh/frontend-pwa check` passed, screenshots `/private/tmp/course-qa-integrated-screenshots/05-slice3-course-overview-desktop-panel.png` and `/private/tmp/course-qa-integrated-screenshots/06-slice3-course-overview-mobile-panel.png`.
-- 2026-06-01: Next: Slice 4 microlearning evaluation context.
+- 2026-06-01: Slice 4 done. Replaced microlearning evaluation stack discussion links with in-page stack selector and contextual `CourseDiscussionPanel`; desktop uses right rail, mobile stacks below evaluation. Checks: `pnpm --filter @klicker-uzh/frontend-pwa check` passed, screenshots `/private/tmp/course-qa-integrated-screenshots/07-slice4-microlearning-evaluation-desktop-panel.png`, `/private/tmp/course-qa-integrated-screenshots/08-slice4-microlearning-evaluation-selected-stack.png`, and `/private/tmp/course-qa-integrated-screenshots/09-slice4-microlearning-evaluation-mobile-panel.png`.
+- 2026-06-01: Next: Slice 5 Manage triage polish.
 
 ## Slices
 
