@@ -239,7 +239,10 @@ function CourseOverview({
                               t('shared.generic.leaderboard')
                             ) : (
                               <div className="flex flex-row items-center gap-2">
-                                <FontAwesomeIcon icon={faLock} />
+                                <FontAwesomeIcon
+                                  icon={faLock}
+                                  aria-hidden="true"
+                                />
                                 <span>{t('shared.generic.leaderboard')}</span>
                               </div>
                             ),
@@ -293,7 +296,10 @@ function CourseOverview({
                               t('pwa.courses.createJoinGroup')
                             ) : (
                               <div className="flex flex-row items-center gap-2">
-                                <FontAwesomeIcon icon={faLock} />
+                                <FontAwesomeIcon
+                                  icon={faLock}
+                                  aria-hidden="true"
+                                />
                                 <span>{t('pwa.courses.createJoinGroup')}</span>
                               </div>
                             ),

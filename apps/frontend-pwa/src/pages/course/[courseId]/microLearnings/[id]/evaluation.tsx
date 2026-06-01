@@ -85,8 +85,9 @@ function MicrolearningEvaluation() {
             icon={faCheckCircle}
             className="text-green-700"
             size="3x"
+            aria-hidden="true"
           />
-          <div>
+          <div className="min-w-0">
             <H3>{t('shared.generic.congrats')}</H3>
             <p>
               {t.rich('pwa.microLearning.solvedMicrolearning', {
@@ -123,8 +124,8 @@ function MicrolearningEvaluation() {
                       className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between"
                       key={stack.id}
                     >
-                      <div className="flex flex-col gap-1">
-                        <div>
+                      <div className="flex min-w-0 flex-col gap-1">
+                        <div className="break-words">
                           {stack.displayName ||
                             t('pwa.microLearning.questionSetN', {
                               number: ix + 1,
@@ -153,7 +154,7 @@ function MicrolearningEvaluation() {
                           </Button>
                         )}
                       </div>
-                      <div>
+                      <div className="shrink-0">
                         {typeof aggregatedResults.evaluation[stack.id]
                           ?.pointsAwarded !== 'undefined' &&
                           aggregatedResults.evaluation[stack.id]

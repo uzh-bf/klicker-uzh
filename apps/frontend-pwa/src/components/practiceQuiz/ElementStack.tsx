@@ -338,7 +338,9 @@ function ElementStack({
 
           {!previewOnly && !hideBookmark ? (
             <div className="flex flex-row items-center justify-between">
-              <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
+              <div className="min-w-0 break-words">
+                {stack.displayName && <H2>{stack.displayName}</H2>}
+              </div>
               <Bookmark
                 bookmarks={bookmarks}
                 quizId={parentId === 'bookmarks' ? undefined : parentId}
@@ -346,7 +348,9 @@ function ElementStack({
               />
             </div>
           ) : (
-            <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
+            <div className="min-w-0 break-words">
+              {stack.displayName && <H2>{stack.displayName}</H2>}
+            </div>
           )}
 
           {stack.description && (

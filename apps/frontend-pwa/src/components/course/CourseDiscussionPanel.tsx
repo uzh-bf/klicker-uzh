@@ -11,8 +11,7 @@ import {
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { parseScopeKeyToInput } from '@klicker-uzh/shared-components/src/discussionUtils'
 import { Button, H2, UserNotification, toast } from '@uzh-bf/design-system'
-import dayjs from 'dayjs'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -52,6 +51,7 @@ function CourseDiscussionPanel({
   idPrefix = 'course-qa',
 }: CourseDiscussionPanelProps) {
   const t = useTranslations()
+  const formatter = useFormatter()
 
   const [threadDraft, setThreadDraft] = useState('')
   const [postThreadAnonymous, setPostThreadAnonymous] = useState(false)
@@ -321,6 +321,11 @@ function CourseDiscussionPanel({
   }
 
   const threadInputId = `${idPrefix}-thread-content`
+  const formatDateTime = (value: string) =>
+    formatter.dateTime(new Date(value), {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    })
 
   return (
     <div
@@ -349,10 +354,12 @@ function CourseDiscussionPanel({
           </label>
           <textarea
             id={threadInputId}
+            name={threadInputId}
             rows={3}
             maxLength={4000}
             value={threadDraft}
             onChange={(event) => setThreadDraft(event.target.value)}
+            autoComplete="off"
             placeholder={t('pwa.courseQA.threadPlaceholder')}
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
             aria-label={t('pwa.courseQA.newThread')}
@@ -362,6 +369,7 @@ function CourseDiscussionPanel({
           {embedToken && canPostAnonymously && (
             <label className="inline-flex items-center gap-2 text-sm text-gray-700">
               <input
+                name={`${idPrefix}-thread-anonymous`}
                 type="checkbox"
                 checked={postThreadAnonymous}
                 onChange={(event) =>
@@ -411,20 +419,18 @@ function CourseDiscussionPanel({
             >
               <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-gray-600">
                 {thread.sourceLabel && (
-                  <span className="rounded-full bg-gray-100 px-2 py-0.5">
+                  <span className="max-w-full break-words rounded-full bg-gray-100 px-2 py-0.5">
                     {thread.sourceLabel}
                   </span>
                 )}
-                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">
+                <span className="max-w-full break-words rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">
                   {thread.scope?.scopeLabel ?? thread.scope?.scopeKey}
                 </span>
-                <span>
-                  {dayjs(thread.createdAt).format('DD.MM.YYYY HH:mm')}
-                </span>
+                <span>{formatDateTime(thread.createdAt)}</span>
               </div>
 
               <div
-                className="whitespace-pre-wrap text-sm"
+                className="whitespace-pre-wrap break-words text-sm"
                 data-cy={`course-qa-thread-content-${thread.id}`}
               >
                 {thread.content}
@@ -437,7 +443,7 @@ function CourseDiscussionPanel({
                   }
                   active={!!thread.hasUpvoted}
                   className={{
-                    root: 'h-8 transform transition hover:scale-105',
+                    root: 'h-8 motion-safe:transition-transform motion-safe:hover:scale-105',
                   }}
                   data={{ cy: `course-qa-thread-upvote-${thread.id}` }}
                   aria-label={`Upvote, ${thread.upvotes} current upvotes`}
@@ -458,14 +464,14 @@ function CourseDiscussionPanel({
                     data-cy={`course-qa-reply-${reply.id}`}
                   >
                     <div
-                      className="mb-1 whitespace-pre-wrap text-sm"
+                      className="mb-1 whitespace-pre-wrap break-words text-sm"
                       data-cy={`course-qa-reply-content-${reply.id}`}
                     >
                       {reply.content}
                     </div>
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs text-gray-500">
-                        {dayjs(reply.createdAt).format('DD.MM.YYYY HH:mm')}
+                        {formatDateTime(reply.createdAt)}
                       </span>
                       <Button
                         onClick={() =>
@@ -473,7 +479,7 @@ function CourseDiscussionPanel({
                         }
                         active={!!reply.hasUpvoted}
                         className={{
-                          root: 'h-7 transform transition hover:scale-105',
+                          root: 'h-7 motion-safe:transition-transform motion-safe:hover:scale-105',
                         }}
                         data={{ cy: `course-qa-reply-upvote-${reply.id}` }}
                         aria-label={`Upvote reply, ${reply.upvotes} current upvotes`}
@@ -490,6 +496,7 @@ function CourseDiscussionPanel({
 
                 <div className="mt-1 rounded-md border border-gray-200 p-2">
                   <textarea
+                    name={`${idPrefix}-reply-content-${thread.id}`}
                     rows={2}
                     maxLength={4000}
                     value={replyDrafts[thread.id] ?? ''}
@@ -499,6 +506,7 @@ function CourseDiscussionPanel({
                         [thread.id]: event.target.value,
                       }))
                     }
+                    autoComplete="off"
                     placeholder={t('pwa.courseQA.replyPlaceholder')}
                     className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
                     aria-label={t('pwa.courseQA.replyPlaceholder')}
@@ -508,6 +516,7 @@ function CourseDiscussionPanel({
                   {embedToken && canPostAnonymously && (
                     <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-700">
                       <input
+                        name={`${idPrefix}-reply-anonymous-${thread.id}`}
                         type="checkbox"
                         checked={postReplyAnonymous[thread.id] ?? false}
                         onChange={(event) =>

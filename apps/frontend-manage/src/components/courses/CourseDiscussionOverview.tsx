@@ -8,8 +8,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3, UserNotification, toast } from '@uzh-bf/design-system'
-import dayjs from 'dayjs'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 
 function CourseDiscussionOverview({
@@ -22,6 +21,7 @@ function CourseDiscussionOverview({
   isCourseQAAnonymousEnabled: boolean
 }) {
   const t = useTranslations()
+  const formatter = useFormatter()
   const [externalSource, setExternalSource] = useState('')
   const [externalRef, setExternalRef] = useState('')
   const [allowAnonymous, setAllowAnonymous] = useState(false)
@@ -97,9 +97,18 @@ function CourseDiscussionOverview({
   }
 
   const groups = overviewData?.courseDiscussionOverview?.groups ?? []
-  const embedExpired = generatedEmbedInfo
-    ? dayjs(generatedEmbedInfo.expiresAt).isBefore(dayjs())
-    : false
+  const formatDateTime = (value: string) =>
+    formatter.dateTime(new Date(value), {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    })
+  const embedExpiryTimestamp = generatedEmbedInfo
+    ? new Date(generatedEmbedInfo.expiresAt).getTime()
+    : null
+  const embedExpired =
+    embedExpiryTimestamp !== null &&
+    Number.isFinite(embedExpiryTimestamp) &&
+    embedExpiryTimestamp < Date.now()
 
   return (
     <div className="flex flex-col gap-4 px-1 py-2">
@@ -146,18 +155,15 @@ function CourseDiscussionOverview({
                       data-cy={`course-qa-overview-thread-${thread.id}`}
                     >
                       <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-gray-600">
-                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">
+                        <span className="max-w-full break-words rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">
                           {thread.scope?.scopeLabel ?? thread.scope?.scopeKey}
                         </span>
-                        <span>
-                          {dayjs(thread.lastActivityAt).format(
-                            'DD.MM.YYYY HH:mm'
-                          )}
-                        </span>
+                        <span>{formatDateTime(thread.lastActivityAt)}</span>
                         <span className="flex items-center gap-1">
                           <FontAwesomeIcon
                             icon={faThumbsUp}
                             className="text-gray-500"
+                            aria-hidden="true"
                           />
                           {thread.upvotes}
                         </span>
@@ -167,7 +173,7 @@ function CourseDiscussionOverview({
                           })}
                         </span>
                       </div>
-                      <div className="line-clamp-2 whitespace-pre-wrap text-sm">
+                      <div className="line-clamp-2 whitespace-pre-wrap break-words text-sm">
                         {thread.content}
                       </div>
                     </div>
@@ -180,8 +186,8 @@ function CourseDiscussionOverview({
       </div>
 
       <details className="group rounded-lg border border-gray-200 bg-white p-4">
-        <summary className="flex cursor-pointer list-none items-start justify-between gap-4">
-          <div>
+        <summary className="focus-visible:outline-primary-100 flex cursor-pointer list-none items-start justify-between gap-4 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
+          <div className="min-w-0">
             <H3 className={{ root: 'm-0' }}>
               {t('manage.course.embedLinkGenerator')}
             </H3>
@@ -191,7 +197,8 @@ function CourseDiscussionOverview({
           </div>
           <FontAwesomeIcon
             icon={faChevronDown}
-            className="mt-1 text-gray-500 transition-transform group-open:rotate-180"
+            className="mt-1 shrink-0 text-gray-500 group-open:rotate-180 motion-safe:transition-transform"
+            aria-hidden="true"
           />
         </summary>
 
@@ -205,9 +212,11 @@ function CourseDiscussionOverview({
             </label>
             <input
               id="embed-external-source"
+              name="embed-external-source"
               type="text"
               value={externalSource}
               onChange={(event) => setExternalSource(event.target.value)}
+              autoComplete="off"
               className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
               placeholder={t('manage.course.embedExternalSourcePlaceholder')}
               data-cy="course-qa-external-source"
@@ -223,9 +232,11 @@ function CourseDiscussionOverview({
             </label>
             <input
               id="embed-external-ref"
+              name="embed-external-ref"
               type="text"
               value={externalRef}
               onChange={(event) => setExternalRef(event.target.value)}
+              autoComplete="off"
               className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
               placeholder={t('manage.course.embedExternalRefPlaceholder')}
               data-cy="course-qa-external-ref"
@@ -241,10 +252,13 @@ function CourseDiscussionOverview({
             </label>
             <input
               id="embed-token-lifetime"
+              name="embed-token-lifetime"
               type="number"
               min={1}
               max={336}
               value={expiresInHours}
+              inputMode="numeric"
+              autoComplete="off"
               onChange={(event) =>
                 setExpiresInHours(
                   Math.max(
@@ -268,6 +282,7 @@ function CourseDiscussionOverview({
             >
               <input
                 id="embed-allow-anonymous"
+                name="embed-allow-anonymous"
                 type="checkbox"
                 checked={effectiveAllowAnonymous}
                 disabled={!isCourseQAAnonymousEnabled}
@@ -371,9 +386,7 @@ function CourseDiscussionOverview({
             )}
             <div className="mt-1 text-gray-600">
               {t('manage.course.expiresAt', {
-                date: dayjs(generatedEmbedInfo.expiresAt).format(
-                  'DD.MM.YYYY HH:mm'
-                ),
+                date: formatDateTime(generatedEmbedInfo.expiresAt),
               })}
             </div>
             {embedExpired && (
