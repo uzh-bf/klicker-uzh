@@ -340,7 +340,7 @@ These credentials are intended for local seeded dev environments only.
 - **Scripts**:
   - `pnpm sandcastle --task "<description>"` -- run the agent inside the sandbox; needs `OPENROUTER_API_KEY` in env or `.sandcastle/.env`.
   - `pnpm sandcastle --issue 123 --base-branch v3` -- load a GitHub issue via `gh` and work on `sandcastle/issue-123`; also needs `GH_TOKEN` or `GITHUB_TOKEN`.
-  - `pnpm sandcastle:exec --with-services --task "..."` -- wraps Infisical and forwards DB / Redis / Hatchet / OpenAI env vars; the local `klicker` compose stack must already be up.
+  - `pnpm sandcastle:exec --with-services --task "..."` -- wraps Infisical and forwards DB / Redis / Hatchet / OpenAI env vars; the local `klicker` compose stack must already be up. Override the Docker network with `SANDCASTLE_DOCKER_NETWORK` if the checkout's compose project name is not `klicker-uzh`.
 - **Model selection**: defaults to `openrouter/anthropic/claude-opus-4`; override per run with `--model openrouter/<provider>/<id>` (or set `SANDCASTLE_MODEL`).
 - Default branch strategy is `merge-to-head` for `--task` (HEAD stays untouched until success). `--issue` defaults to `sandcastle/issue-<number>`; override with `--branch <name>` or `--head`.
 

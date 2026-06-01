@@ -25,7 +25,8 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
 # pnpm pinned to klicker-uzh's packageManager + opencode CLI (sandcastle's opencode agent shells out to it).
 # opencode-ai is the npm package (binary `opencode`); it talks to OpenRouter via OPENROUTER_API_KEY.
 ENV PNPM_VERSION=10.15.0
-RUN npm install -g pnpm@${PNPM_VERSION} opencode-ai
+ENV OPENCODE_AI_VERSION=1.15.13
+RUN npm install -g pnpm@${PNPM_VERSION} opencode-ai@${OPENCODE_AI_VERSION}
 
 # Non-root user that sandcastle expects ("agent")
 RUN useradd --create-home --shell /bin/bash agent \

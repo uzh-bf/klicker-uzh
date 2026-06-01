@@ -42,7 +42,7 @@ docker build -t klicker-sandcastle:local .sandcastle
 | `--base-branch <ref>`    | Base a named branch on a specific ref when Sandcastle creates it. Useful with `--issue 123 --base-branch v3`.                                                  |
 | `--head`                 | Write directly to HEAD (faster, less safe).                                                                                                                    |
 | `--max-iterations <n>`   | Allow repeated agent iterations before stopping. Defaults to Sandcastle's default.                                                                             |
-| `--with-services`        | Attach the sandbox to the local docker-compose `klicker-uzh_klicker` network and forward DB / Redis / Hatchet / OpenAI env vars.                               |
+| `--with-services`        | Attach the sandbox to the local docker-compose network and forward DB / Redis / Hatchet / OpenAI env vars. Defaults to `klicker-uzh_klicker`.                  |
 
 Default branch strategy for `--task` is `merge-to-head`: agent commits land on a temp branch and merge back into HEAD only on success. Default branch strategy for `--issue` is a named branch (`sandcastle/issue-<number>`) so issue work stays reviewable and separable.
 
@@ -59,10 +59,16 @@ pnpm sandcastle:exec --with-services --task "Connect to DATABASE_URL and print t
 
 `pnpm sandcastle:exec` wraps `pnpm sandcastle` with `./util/_run_with_infisical.sh --env dev`, so the runner sees real Infisical-injected secrets to forward into the sandbox.
 
+If your checkout uses a different Docker Compose project name, override the network:
+
+```bash
+SANDCASTLE_DOCKER_NETWORK=sandcastle_klicker pnpm sandcastle:exec --with-services --task "List reachable services."
+```
+
 ## Secrets
 
 - Most agent tasks need only `OPENROUTER_API_KEY`. Set it in your shell or in `.sandcastle/.env` (gitignored).
-- `--issue` also needs `GH_TOKEN` (or `GITHUB_TOKEN`) so the GitHub CLI inside the sandbox can read issue details. Prefer a least-privilege token.
+- `--issue` also needs `GH_TOKEN` (or `GITHUB_TOKEN`) in your shell or `.sandcastle/.env` so the GitHub CLI inside the sandbox can read issue details. Prefer a least-privilege token.
 - Never commit `.sandcastle/.env` or `.sandcastle/.env.local`.
 - `--with-services` mode forwards an explicit allowlist of klicker env vars; nothing else from the host environment leaks into the sandbox.
 

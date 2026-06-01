@@ -3,6 +3,7 @@ import type { BranchStrategy } from '@ai-hero/sandcastle'
 import { resolve } from 'node:path'
 
 const DEFAULT_MODEL = 'openrouter/anthropic/claude-opus-4'
+const DEFAULT_KLICKER_NETWORK = 'klicker-uzh_klicker'
 
 interface CliOptions {
   promptFile?: string
@@ -94,15 +95,6 @@ function getBranchStrategy(opts: CliOptions): BranchStrategy {
   return { type: 'merge-to-head' }
 }
 
-function requireEnv(key: string): string {
-  const v = process.env[key]
-  if (!v) {
-    console.error(`Missing required env var: ${key}`)
-    process.exit(1)
-  }
-  return v
-}
-
 async function main() {
   const [{ opencode, run }, { docker }] = await Promise.all([
     import('@ai-hero/sandcastle'),
@@ -126,17 +118,15 @@ async function main() {
     process.env.SANDCASTLE_TASK ??
     'List the top-level directories of the repo and report Node + pnpm versions.'
 
-  const forwardedEnv: Record<string, string> = {
-    OPENROUTER_API_KEY: requireEnv('OPENROUTER_API_KEY'),
+  const forwardedEnv: Record<string, string> = {}
+
+  if (process.env.OPENROUTER_API_KEY) {
+    forwardedEnv.OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY
   }
 
   if (issueNumber) {
     const ghToken = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN
-    if (!ghToken) {
-      console.error('Missing required env var for --issue: GH_TOKEN')
-      process.exit(1)
-    }
-    forwardedEnv.GH_TOKEN = ghToken
+    if (ghToken) forwardedEnv.GH_TOKEN = ghToken
   }
 
   if (opts.attachKlickerNetwork) {
@@ -165,7 +155,9 @@ async function main() {
       },
     ],
     env: forwardedEnv,
-    network: opts.attachKlickerNetwork ? 'klicker-uzh_klicker' : undefined,
+    network: opts.attachKlickerNetwork
+      ? (process.env.SANDCASTLE_DOCKER_NETWORK ?? DEFAULT_KLICKER_NETWORK)
+      : undefined,
   })
 
   const agent = opencode(opts.model)
@@ -188,10 +180,6 @@ async function main() {
           { command: 'pnpm install --frozen-lockfile', timeoutMs: 15 * 60_000 },
           {
             command: 'pnpm --filter @klicker-uzh/prisma generate',
-            timeoutMs: 5 * 60_000,
-          },
-          {
-            command: 'pnpm --filter @klicker-uzh/graphql generate',
             timeoutMs: 5 * 60_000,
           },
         ],
