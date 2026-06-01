@@ -1,5 +1,12 @@
 import { expect, Page } from '@playwright/test'
-import { URL_MANAGE, URL_STUDENT_LOGIN, viewPorts } from '../constants.js'
+import { setSessionCookieForUrl } from '../authSession.js'
+import {
+  LECTURER_EMAIL,
+  URL_MANAGE,
+  URL_STUDENT_LOGIN,
+  USER_ID_TEST,
+  viewPorts,
+} from '../constants.js'
 
 export type UseStudentContextOptions = {
   usernameOrEmail: string
@@ -18,37 +25,24 @@ export async function useLecturerContextFixture(
   page: Page,
   options: UseLecturerContextOptions
 ) {
+  void options
+  const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
   await page.context().clearCookies()
-
-  // Navigate to the Manage app first so localStorage is accessible on the
-  // correct origin before we clear it (evaluating on about:blank or a
-  // cross-origin page throws SecurityError).
-  await page.goto(URL_MANAGE)
-  await page.evaluate(() => {
-    try {
-      localStorage.clear()
-      sessionStorage.clear()
-    } catch {
-      // cross-origin or sandboxed — nothing to clear
-    }
+  await setSessionCookieForUrl({
+    context: page.context(),
+    targetUrl: manageUrl,
+    tokenData: {
+      email: LECTURER_EMAIL,
+      sub: USER_ID_TEST,
+      role: 'ADMIN',
+      scope: 'ACCOUNT_OWNER',
+      catalystInstitutional: true,
+      catalystIndividual: true,
+    },
   })
-  await page.waitForTimeout(1000)
-
-  // Fill delegated login form (possibly on a different origin)
-  // Enable delegated access if the button is disabled (Terms checkbox)
-  const delegatedBtn = page.getByTestId('delegated-login-button')
-  if (await delegatedBtn.isDisabled()) {
-    await page.getByTestId('tos-checkbox').click()
-  }
-  await expect(delegatedBtn).toBeEnabled()
-  await delegatedBtn.click()
-
-  await page.getByTestId('identifier-field').fill(options.usernameOrEmail)
-  await page.getByTestId('password-field').fill(options.password)
-  await page.locator('form > button[type=submit]').click()
-
-  await expect(page).toHaveURL(new RegExp(URL_MANAGE))
+  await page.goto(manageUrl)
   await expect(page.getByTestId('homepage')).toBeVisible()
+  await expect(page).toHaveURL(new RegExp(manageUrl.replaceAll('.', '\\.')))
   await page.getByTestId('user-menu').click()
 }
 

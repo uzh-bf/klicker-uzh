@@ -6,6 +6,7 @@
  * for Numerical (NR) element type.
  */
 
+import { cleanupTest } from '../util/cleanup.js'
 import { NR_DATA as NR } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import {
@@ -20,6 +21,8 @@ import {
   verifyNumericalFields,
 } from '../util/fixtures/elements.js'
 import { elementTypeLabels, statusLabels } from '../util/messages.js'
+
+test('CLEANUP', cleanupTest)
 
 test.describe('Test creation and editing functionalities for Numerical elements', () => {
   test.beforeEach(async ({ loginLecturer }) => {

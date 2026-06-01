@@ -1,5 +1,5 @@
 import { test as base, BrowserContext, Page } from '@playwright/test'
-import * as jose from 'jose'
+import { disableAnimations, setSessionCookieForUrl } from './authSession.js'
 import {
   LECTURER_EMAIL,
   LECTURER_IND_EMAIL,
@@ -35,24 +35,6 @@ import {
 import { TokenData } from './types.js'
 
 // ---------------------------------------------------------------------------
-// Helper: disable CSS animations in a page (mirrors cypress support/e2e.ts)
-// ---------------------------------------------------------------------------
-async function disableAnimations(page: Page) {
-  await page.addStyleTag({
-    content: `
-      *, *::before, *::after {
-        animation-duration: 0s !important;
-        animation-delay: 0s !important;
-        transition-duration: 0s !important;
-        transition-delay: 0s !important;
-        animation-iteration-count: 1 !important;
-        transition-property: none !important;
-      }
-    `,
-  })
-}
-
-// ---------------------------------------------------------------------------
 // Helper: set a JWT session cookie, mirrors cy.loginFactory()
 // ---------------------------------------------------------------------------
 async function setSessionCookie(
@@ -64,30 +46,13 @@ async function setSessionCookie(
 ) {
   await context.clearCookies()
 
-  const appSecret = process.env.APP_SECRET ?? 'abcd'
-  const secret = new TextEncoder().encode(appSecret)
-  const alg = 'HS256'
-
-  const token = await new jose.SignJWT(tokenData as unknown as jose.JWTPayload)
-    .setProtectedHeader({ alg })
-    .setIssuedAt()
-    .setExpirationTime('2h')
-    .setIssuer(process.env.APP_ORIGIN_AUTH ?? 'http://127.0.0.1:3010')
-    .sign(secret)
-
-  await context.addCookies([
-    {
-      name: cookieName,
-      value: token,
-      domain: '127.0.0.1',
-      path: '/',
-      httpOnly: true,
-      sameSite: 'Lax',
-      secure: false,
-    },
-  ])
-
   const target = redirectUrl ?? process.env.URL_MANAGE ?? URL_MANAGE
+  await setSessionCookieForUrl({
+    context,
+    cookieName,
+    targetUrl: target,
+    tokenData,
+  })
   await page.goto(target)
   // Clear storage after navigating so we are on the same origin (avoids
   // SecurityError on about:blank or cross-origin pages).

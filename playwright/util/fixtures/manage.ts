@@ -185,13 +185,24 @@ export async function createLiveQuiz({
   elementNames: string[]
 }) {
   const prisma = await getPrisma()
-  const { PermissionLevel: PL } = await import('@klicker-uzh/prisma/client')
+  const { ElementInstanceType, PermissionLevel: PL } = await import(
+    '@klicker-uzh/prisma/client'
+  )
 
   try {
     // Resolve element IDs by name
     const elements = await prisma.element.findMany({
       where: { name: { in: elementNames }, ownerId },
-      select: { id: true, name: true },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        content: true,
+        explanation: true,
+        options: true,
+        basePoints: true,
+        pointsMultiplier: true,
+      },
     })
 
     const liveQuiz = await prisma.liveQuiz.create({
@@ -204,12 +215,29 @@ export async function createLiveQuiz({
           create: [
             {
               order: 0,
-              instances: {
+              elements: {
                 create: elements.map((el, ix) => ({
                   order: ix,
-                  elementId: el.id,
-                  elementType: 'SC',
-                  ownerId,
+                  type: ElementInstanceType.LIVE_QUIZ,
+                  elementType: el.type,
+                  elementData: {
+                    id: el.id,
+                    name: el.name,
+                    type: el.type,
+                    content: el.content,
+                    explanation: el.explanation,
+                    options: el.options,
+                    basePoints: el.basePoints,
+                    pointsMultiplier: el.pointsMultiplier,
+                  },
+                  options: {
+                    basePoints: el.basePoints,
+                    pointsMultiplier: el.pointsMultiplier,
+                  },
+                  results: {},
+                  anonymousResults: {},
+                  element: { connect: { id: el.id } },
+                  owner: { connect: { id: ownerId } },
                 })),
               },
             },

@@ -2594,12 +2594,27 @@ importers:
 
   playwright:
     devDependencies:
+      '@klicker-uzh/prisma':
+        specifier: workspace:*
+        version: link:../packages/prisma
+      '@klicker-uzh/types':
+        specifier: workspace:*
+        version: link:../packages/types
       '@playwright/test':
         specifier: ~1.58.0
         version: 1.58.2
+      '@types/bcryptjs':
+        specifier: ^2.4.6
+        version: 2.4.6
       '@types/node':
         specifier: ^24.10.1
         version: 24.12.4
+      bcryptjs:
+        specifier: ~2.4.3
+        version: 2.4.3
+      jose:
+        specifier: ~5.9.4
+        version: 5.9.4
       typescript:
         specifier: ~5.6.3
         version: 5.6.3

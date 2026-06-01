@@ -6,15 +6,13 @@
  * running it from the control app, and cleaning up.
  */
 
-import globalSetup from '../global-setup.js'
+import { cleanupTest } from '../util/cleanup.js'
 import { CONTROL_DATA, LECTURER_ID, viewPorts } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import { createQuestionSC } from '../util/fixtures/elements.js'
 import { removeSoftDeletedLiveQuiz } from '../util/fixtures/manage.js'
 
-test.beforeAll(async ({}) => {
-  await globalSetup()
-})
+test('CLEANUP', cleanupTest)
 
 test.describe('Test functionalities of frontend-control application', () => {
   test('Create a live quiz with a new SC question to test execution from control app', async ({
@@ -80,7 +78,7 @@ test.describe('Test functionalities of frontend-control application', () => {
     ).not.toBeVisible()
   })
 
-  test('Cleanup: Delete the created and completed live quiz via UI', async ({
+  test('Cleanup: Delete the created and completed live quiz', async ({
     page,
     loginLecturer,
   }) => {

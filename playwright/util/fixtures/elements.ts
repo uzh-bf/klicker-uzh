@@ -232,7 +232,7 @@ export async function validateElement(
   await page.getByTestId('elements-search-input').clear()
   await page.getByTestId('elements-search-input').fill(elementName)
   await page.keyboard.press('Enter')
-  const el = page.getByTestId(`element-item-${elementName}`)
+  const el = page.getByTestId(`element-item-${elementName}`).first()
   await expect(el).toBeVisible()
   for (const text of contains) {
     await expect(el).toContainText(text)
@@ -250,7 +250,27 @@ export async function deleteElement(page: Page, elementName: string) {
   await expect(page.getByTestId(`element-item-${elementName}`)).toBeVisible()
   await page.getByTestId(`actions-element-${elementName}`).click()
   await page.getByTestId(`delete-element-${elementName}`).click()
-  await page.getByTestId('confirm-deletion-final').click()
+  for (let attempt = 0; attempt < 5; attempt++) {
+    for (const confirmation of [
+      'confirm-deletion-final',
+      'confirm-other-users-access',
+      'confirm-derived-access',
+      'confirm-dependency-access',
+    ]) {
+      const button = page.getByTestId(confirmation)
+      if (
+        (await button.count()) > 0 &&
+        (await button.isVisible()) &&
+        (await button.isEnabled())
+      ) {
+        await button.click()
+        await page.waitForTimeout(100)
+      }
+    }
+
+    if (await page.getByTestId('confirmation-modal-confirm').isEnabled()) break
+  }
+  await expect(page.getByTestId('confirmation-modal-confirm')).toBeEnabled()
   await page.getByTestId('confirmation-modal-confirm').click()
   await expect(
     page.getByTestId(`element-item-${elementName}`)
@@ -416,4 +436,312 @@ export async function createQuestionSC({
   } catch (error) {
     throw error
   }
+}
+
+export async function createQuestionMC({
+  name,
+  content,
+  explanation,
+  choices,
+  multiplier,
+  isArchived = false,
+  userId,
+}: {
+  name: string
+  content: string
+  explanation?: string
+  choices: { value: string; correct?: boolean; feedback?: string }[]
+  multiplier?: number
+  isArchived?: boolean
+  userId: string
+}) {
+  const prisma = await getPrisma()
+  const { ElementType, PermissionLevel: PL } = await import(
+    '@klicker-uzh/prisma/client'
+  )
+
+  if (choices.length < 2) {
+    throw new Error('MC questions require at least 2 choices')
+  }
+
+  const hasSampleSolution = choices.some(
+    (c) => typeof c.correct !== 'undefined'
+  )
+  const hasAnswerFeedbacks = choices.every(
+    (c) => typeof c.feedback !== 'undefined'
+  )
+
+  try {
+    const question = await prisma.element.create({
+      data: {
+        type: ElementType.MC,
+        name,
+        content,
+        explanation: explanation ?? undefined,
+        basePoints: true,
+        pointsMultiplier: multiplier,
+        isArchived,
+        options: {
+          hasSampleSolution,
+          hasAnswerFeedbacks,
+          displayMode: 'LIST',
+          choices: choices.map((choice, ix) => ({
+            ix,
+            value: choice.value,
+            correct: hasSampleSolution ? (choice.correct ?? false) : undefined,
+            feedback: hasAnswerFeedbacks ? choice.feedback : undefined,
+          })),
+        },
+        owner: { connect: { id: userId } },
+      },
+    })
+
+    await prisma.derivedPermission.upsert({
+      where: { elementId_userId: { elementId: question.id, userId } },
+      create: {
+        permissionLevel: PL.OWNER,
+        element: { connect: { id: question.id } },
+        user: { connect: { id: userId } },
+      },
+      update: { permissionLevel: PL.OWNER },
+    })
+
+    return true
+  } catch (error) {
+    throw error
+  }
+}
+
+export async function createQuestionKPRIM({
+  name,
+  content,
+  explanation,
+  choices,
+  multiplier,
+  isArchived = false,
+  userId,
+}: {
+  name: string
+  content: string
+  explanation?: string
+  choices: { value: string; correct?: boolean; feedback?: string }[]
+  multiplier?: number
+  isArchived?: boolean
+  userId: string
+}) {
+  const prisma = await getPrisma()
+  const { ElementType, PermissionLevel: PL } = await import(
+    '@klicker-uzh/prisma/client'
+  )
+
+  if (choices.length !== 4) {
+    throw new Error('KPRIM questions require exactly 4 choices')
+  }
+
+  const hasSampleSolution = choices.some(
+    (c) => typeof c.correct !== 'undefined'
+  )
+  const hasAnswerFeedbacks = choices.every(
+    (c) => typeof c.feedback !== 'undefined'
+  )
+
+  try {
+    const question = await prisma.element.create({
+      data: {
+        type: ElementType.KPRIM,
+        name,
+        content,
+        explanation: explanation ?? undefined,
+        basePoints: true,
+        pointsMultiplier: multiplier,
+        isArchived,
+        options: {
+          hasSampleSolution,
+          hasAnswerFeedbacks,
+          displayMode: 'LIST',
+          choices: choices.map((choice, ix) => ({
+            ix,
+            value: choice.value,
+            correct: hasSampleSolution ? (choice.correct ?? false) : undefined,
+            feedback: hasAnswerFeedbacks ? choice.feedback : undefined,
+          })),
+        },
+        owner: { connect: { id: userId } },
+      },
+    })
+
+    await prisma.derivedPermission.upsert({
+      where: { elementId_userId: { elementId: question.id, userId } },
+      create: {
+        permissionLevel: PL.OWNER,
+        element: { connect: { id: question.id } },
+        user: { connect: { id: userId } },
+      },
+      update: { permissionLevel: PL.OWNER },
+    })
+
+    return true
+  } catch (error) {
+    throw error
+  }
+}
+
+export async function createAnswerCollection({
+  name,
+  description,
+  entries,
+  userId,
+}: {
+  name: string
+  description: string
+  entries: string[]
+  userId: string
+}) {
+  const prisma = await getPrisma()
+  const { PermissionLevel: PL } = await import('@klicker-uzh/prisma/client')
+
+  const answerCollection = await prisma.answerCollection.create({
+    data: {
+      name,
+      description,
+      entries: {
+        create: entries.map((entry) => ({
+          value: entry,
+        })),
+      },
+      owner: { connect: { id: userId } },
+    },
+  })
+
+  await prisma.derivedPermission.upsert({
+    where: {
+      answerCollectionId_userId: {
+        answerCollectionId: answerCollection.id,
+        userId,
+      },
+    },
+    create: {
+      permissionLevel: PL.OWNER,
+      answerCollection: { connect: { id: answerCollection.id } },
+      user: { connect: { id: userId } },
+    },
+    update: { permissionLevel: PL.OWNER },
+  })
+
+  return true
+}
+
+export async function createQuestionSE({
+  name,
+  content,
+  explanation,
+  multiplier,
+  collectionName,
+  numberOfInputs,
+  correctAnswers,
+  isArchived = false,
+  userId,
+}: {
+  name: string
+  content: string
+  explanation?: string
+  multiplier?: number
+  collectionName: string
+  numberOfInputs: number
+  correctAnswers?: string[]
+  isArchived?: boolean
+  userId: string
+}) {
+  const prisma = await getPrisma()
+  const { ElementType, PermissionLevel: PL } = await import(
+    '@klicker-uzh/prisma/client'
+  )
+
+  const dbAnswerCollection = await prisma.answerCollection.findFirst({
+    where: {
+      name: collectionName,
+      isDeleted: false,
+      permissions: { some: { userId } },
+    },
+  })
+
+  if (!dbAnswerCollection) {
+    throw new Error(`Answer collection ${collectionName} not found`)
+  }
+
+  const hasSampleSolution = Boolean(correctAnswers?.length)
+  const dbAnswerCollectionItems = hasSampleSolution
+    ? await prisma.answerCollectionEntry.findMany({
+        where: {
+          collectionId: dbAnswerCollection.id,
+          value: { in: correctAnswers },
+        },
+      })
+    : []
+
+  if (
+    hasSampleSolution &&
+    correctAnswers!.length !== dbAnswerCollectionItems.length
+  ) {
+    throw new Error(
+      `Answer collection ${collectionName} does not contain all correct answers`
+    )
+  }
+
+  const selectionQuestion = await prisma.element.create({
+    data: {
+      type: ElementType.SELECTION,
+      name,
+      content,
+      explanation,
+      pointsMultiplier: multiplier,
+      isArchived,
+      options: {
+        hasSampleSolution,
+        numberOfInputs,
+      },
+      answerCollection: { connect: { id: dbAnswerCollection.id } },
+      answerCollectionItems: hasSampleSolution
+        ? {
+            connect: dbAnswerCollectionItems.map((item) => ({
+              id: item.id,
+            })),
+          }
+        : undefined,
+      owner: { connect: { id: userId } },
+    },
+  })
+
+  await prisma.derivedPermission.upsert({
+    where: {
+      elementId_userId: {
+        elementId: selectionQuestion.id,
+        userId,
+      },
+    },
+    create: {
+      permissionLevel: PL.OWNER,
+      element: { connect: { id: selectionQuestion.id } },
+      user: { connect: { id: userId } },
+    },
+    update: { permissionLevel: PL.OWNER },
+  })
+
+  await prisma.derivedPermission.upsert({
+    where: {
+      answerCollectionId_userId: {
+        answerCollectionId: dbAnswerCollection.id,
+        userId,
+      },
+    },
+    create: {
+      permissionLevel: PL.READ,
+      derived: true,
+      answerCollection: { connect: { id: dbAnswerCollection.id } },
+      user: { connect: { id: userId } },
+    },
+    update: {},
+  })
+
+  return true
 }

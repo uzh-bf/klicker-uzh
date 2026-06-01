@@ -17,6 +17,7 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import bcrypt from 'bcryptjs'
+import fs from 'node:fs'
 import {
   COURSE_ID_TEST,
   COURSE_ID_TEST2,
@@ -41,6 +42,32 @@ import {
 export async function getPrisma() {
   const { prisma } = await import('@klicker-uzh/prisma')
   return prisma
+}
+
+export async function ensureDatabaseViews() {
+  const prisma = await getPrisma()
+  const [{ exists }] = await prisma.$queryRawUnsafe<{ exists: boolean }[]>(
+    `SELECT to_regclass('"UserActivities"') IS NOT NULL AS exists`
+  )
+
+  if (exists) return
+
+  const migrationSql = fs.readFileSync(
+    new URL(
+      '../packages/prisma/src/prisma/schema/migrations/20250904201500_add_pin_to_user_activities_view/migration.sql',
+      import.meta.url
+    ),
+    'utf8'
+  )
+  const createViewStatement = migrationSql.match(
+    /CREATE VIEW "UserActivities" AS[\s\S]*$/m
+  )?.[0]
+
+  if (!createViewStatement) {
+    throw new Error('Could not load UserActivities view definition')
+  }
+
+  await prisma.$executeRawUnsafe(createViewStatement)
 }
 
 // ---------------------------------------------------------------------------
@@ -544,6 +571,8 @@ export async function seedActivities() {
 // Default export consumed by playwright.config.ts globalSetup
 // ---------------------------------------------------------------------------
 export default async function globalSetup() {
+  console.log('[global-setup] Ensuring database views...')
+  await ensureDatabaseViews()
   console.log('[global-setup] Cleaning up database...')
   await cleanupDatabase()
   console.log('[global-setup] Seeding database...')

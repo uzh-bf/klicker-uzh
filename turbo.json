@@ -153,6 +153,7 @@
       "persistent": true
     },
     "dev:test": {
+      "cache": false,
       "outputs": ["dist/**", ".next/**", "build/**", "out/**"],
       "persistent": true
     },

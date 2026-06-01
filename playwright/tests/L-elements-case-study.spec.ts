@@ -9,6 +9,8 @@
  * have the cy.task() mechanism used by Cypress.
  */
 
+import { Page } from '@playwright/test'
+import { cleanupTest } from '../util/cleanup.js'
 import { expect, test } from '../util/fixtures.js'
 import {
   deleteElement,
@@ -220,6 +222,8 @@ const CS_INLINE = {
 
 const MSG_SELECT_COLLECTION = 'Select collection'
 const MSG_ANSWER_OPTION_USED = 'Answer options marked with the warning symbol'
+
+test('CLEANUP', cleanupTest)
 
 async function fillCriterion(page: Page, ix: number, criterion: CriterionData) {
   await page.getByTestId(`criterion-${ix}-name`).click()
@@ -704,6 +708,265 @@ test.describe('Test creation and editing functionalities for Case Study elements
     await verifySolutions(page, CS.solutionsWithAdditionalCriterion)
 
     await page.getByTestId('close-element-modal').click()
+  })
+
+  test('Verify that the case study validation logic covers all required cases and block submission of invalid element edit modals', async ({
+    page,
+  }) => {
+    await searchAndEdit(page, CS.title)
+    const rangeCriterion = CS.criteria[0] as RangeCriterion
+
+    await page.getByTestId('insert-question-title').click()
+    await page.getByTestId('insert-question-title').clear()
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page.getByTestId('insert-question-title').fill(CS.title)
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+
+    await page.getByTestId('insert-question-text').click()
+    await page.getByTestId('insert-question-text').clear()
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page.getByTestId('insert-question-text').pressSequentially(CS.content)
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+
+    await page.getByTestId('insert-question-explanation').click()
+    await page.getByTestId('insert-question-explanation').clear()
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+    await page
+      .getByTestId('insert-question-explanation')
+      .pressSequentially(CS.explanation)
+
+    await page.getByTestId('configure-sample-solution').click()
+    await page.getByTestId('criterion-0-name').clear()
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page.getByTestId('criterion-0-name').fill(rangeCriterion.name)
+
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+    await page.getByTestId('criterion-0-min').clear()
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page.getByTestId('criterion-0-min').fill(String(rangeCriterion.min))
+
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+    await page.getByTestId('criterion-0-max').clear()
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page.getByTestId('criterion-0-max').fill(String(rangeCriterion.max))
+
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+    await page.getByTestId('criterion-0-step').clear()
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page.getByTestId('criterion-0-step').fill(String(rangeCriterion.step))
+    await page.getByTestId('configure-sample-solution').click()
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+
+    await page.getByTestId('configure-sample-solution').click()
+    await page.getByTestId('criterion-2-name').clear()
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page.getByTestId('criterion-2-name').fill(CS.removedCriterion.name)
+
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+    await page.getByTestId('criterion-2-min-label').clear()
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page
+      .getByTestId('criterion-2-min-label')
+      .fill(CS.removedCriterion.labels.min)
+
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+    await page.getByTestId('criterion-2-mid-label').clear()
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+    await page
+      .getByTestId('criterion-2-mid-label')
+      .fill(CS.removedCriterion.labels.mid!)
+
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+    await page.getByTestId('criterion-2-max-label').clear()
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page
+      .getByTestId('criterion-2-max-label')
+      .fill(CS.removedCriterion.labels.max)
+
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+    await page.getByTestId('criterion-2-steps').clear()
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page.getByTestId('criterion-2-steps').fill('0')
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page.getByTestId('criterion-2-steps').clear()
+    await page.getByTestId('criterion-2-steps').fill('1')
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page.getByTestId('criterion-2-steps').clear()
+    await page.getByTestId('criterion-2-steps').fill('2')
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+    await page.getByTestId('criterion-2-steps').clear()
+    await page
+      .getByTestId('criterion-2-steps')
+      .fill(String(CS.removedCriterion.steps))
+    await page.getByTestId('configure-sample-solution').click()
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+
+    await page.getByTestId('configure-sample-solution').click()
+    await page.getByTestId('criterion-0-min').clear()
+    await page
+      .getByTestId('criterion-0-min')
+      .fill(String(rangeCriterion.max + rangeCriterion.step + 1))
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page.getByTestId('criterion-0-min').clear()
+    await page
+      .getByTestId('criterion-0-min')
+      .fill(String(rangeCriterion.max - 2 * rangeCriterion.step + 1))
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page.getByTestId('criterion-0-min').clear()
+    await page
+      .getByTestId('criterion-0-min')
+      .fill(String(rangeCriterion.max - 2 * rangeCriterion.step - 1))
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+    await page.getByTestId('criterion-0-min').clear()
+    await page.getByTestId('criterion-0-min').fill(String(rangeCriterion.min))
+    await page.getByTestId('configure-sample-solution').click()
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+
+    await page.getByTestId('case-solution-1-3-0-lower').clear()
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page
+      .getByTestId('case-solution-1-3-0-lower')
+      .fill(String(CS.solutions[1][3][0].lower))
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+
+    await page.getByTestId('case-solution-1-3-0-upper').clear()
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page
+      .getByTestId('case-solution-1-3-0-upper')
+      .fill(String(CS.solutions[1][3][0].upper))
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+
+    await page.getByTestId('case-solution-1-3-0-lower').clear()
+    await page
+      .getByTestId('case-solution-1-3-0-lower')
+      .fill(String(CS.solutions[1][3][0].upper + 1))
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page.getByTestId('case-solution-1-3-0-lower').clear()
+    await page
+      .getByTestId('case-solution-1-3-0-lower')
+      .fill(String(CS.solutions[1][3][0].lower))
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+
+    await page.getByTestId('case-solution-1-3-0-lower').clear()
+    await page
+      .getByTestId('case-solution-1-3-0-lower')
+      .fill(String(rangeCriterion.min - 1))
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page.getByTestId('case-solution-1-3-0-lower').clear()
+    await page
+      .getByTestId('case-solution-1-3-0-lower')
+      .fill(String(rangeCriterion.min))
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+    await page.getByTestId('case-solution-1-3-0-lower').clear()
+    await page
+      .getByTestId('case-solution-1-3-0-lower')
+      .fill(String(rangeCriterion.min + 1))
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+    await page.getByTestId('case-solution-1-3-0-lower').clear()
+    await page
+      .getByTestId('case-solution-1-3-0-lower')
+      .fill(String(CS.solutions[1][3][0].lower))
+
+    await page.getByTestId('case-solution-1-3-0-upper').clear()
+    await page
+      .getByTestId('case-solution-1-3-0-upper')
+      .fill(String(rangeCriterion.max + 1))
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page.getByTestId('case-solution-1-3-0-upper').clear()
+    await page
+      .getByTestId('case-solution-1-3-0-upper')
+      .fill(String(rangeCriterion.max))
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+    await page.getByTestId('case-solution-1-3-0-upper').clear()
+    await page
+      .getByTestId('case-solution-1-3-0-upper')
+      .fill(String(rangeCriterion.max - 1))
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+    await page.getByTestId('case-solution-1-3-0-upper').clear()
+    await page
+      .getByTestId('case-solution-1-3-0-upper')
+      .fill(String(CS.solutions[1][3][0].upper))
+
+    await page.getByTestId('case-solution-1-3-0-lower').clear()
+    await page
+      .getByTestId('case-solution-1-3-0-lower')
+      .fill(String(CS.solutions[1][3][0].upper - rangeCriterion.step + 1))
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page.getByTestId('case-solution-1-3-0-lower').clear()
+    await page
+      .getByTestId('case-solution-1-3-0-lower')
+      .fill(String(CS.solutions[1][3][0].upper - rangeCriterion.step))
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+    await page.getByTestId('case-solution-1-3-0-lower').clear()
+    await page
+      .getByTestId('case-solution-1-3-0-lower')
+      .fill(String(CS.solutions[1][3][0].upper - rangeCriterion.step - 1))
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+    await page.getByTestId('case-solution-1-3-0-lower').clear()
+    await page
+      .getByTestId('case-solution-1-3-0-lower')
+      .fill(String(CS.solutions[1][3][0].lower))
+
+    await page.getByTestId('case-solution-1-3-2-lower').clear()
+    await page.getByTestId('case-solution-1-3-2-lower').fill('1')
+    await page.getByTestId('case-solution-1-3-2-upper').clear()
+    await page.getByTestId('case-solution-1-3-2-upper').fill('1')
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+
+    await page.getByTestId('case-solution-1-3-2-lower').clear()
+    await page
+      .getByTestId('case-solution-1-3-2-lower')
+      .fill(String(CS.removedCriterion.steps))
+    await page.getByTestId('case-solution-1-3-2-upper').clear()
+    await page
+      .getByTestId('case-solution-1-3-2-upper')
+      .fill(String(CS.removedCriterion.steps))
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+
+    await page.getByTestId('case-solution-1-3-2-lower').clear()
+    await page
+      .getByTestId('case-solution-1-3-2-lower')
+      .fill(String(CS.removedCriterion.steps))
+    await page.getByTestId('case-solution-1-3-2-upper').clear()
+    await page.getByTestId('case-solution-1-3-2-upper').fill('1')
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+
+    await page.getByTestId('case-solution-1-3-2-lower').clear()
+    await page
+      .getByTestId('case-solution-1-3-2-lower')
+      .fill(String(CS.solutionsWithAdditionalCriterion[1][3][2].lower))
+    await page.getByTestId('case-solution-1-3-2-upper').clear()
+    await page
+      .getByTestId('case-solution-1-3-2-upper')
+      .fill(String(CS.solutionsWithAdditionalCriterion[1][3][2].upper))
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
+
+    await page.getByTestId('case-solution-1-3-2-lower').clear()
+    await page
+      .getByTestId('case-solution-1-3-2-lower')
+      .fill(String(CS.removedCriterion.steps + 1))
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page.getByTestId('case-solution-1-3-2-lower').clear()
+    await page.getByTestId('case-solution-1-3-2-lower').fill('0')
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page.getByTestId('case-solution-1-3-2-lower').clear()
+    await page
+      .getByTestId('case-solution-1-3-2-lower')
+      .fill(String(CS.solutionsWithAdditionalCriterion[1][3][2].lower))
+
+    await page.getByTestId('case-solution-1-3-2-upper').clear()
+    await page
+      .getByTestId('case-solution-1-3-2-upper')
+      .fill(String(CS.removedCriterion.steps + 1))
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page.getByTestId('case-solution-1-3-2-upper').clear()
+    await page.getByTestId('case-solution-1-3-2-upper').fill('0')
+    await expect(page.getByTestId('save-new-question')).toBeDisabled()
+    await page.getByTestId('case-solution-1-3-2-upper').clear()
+    await page
+      .getByTestId('case-solution-1-3-2-upper')
+      .fill(String(CS.solutionsWithAdditionalCriterion[1][3][2].upper))
+    await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
   })
 
   // -------------------------------------------------------------------------

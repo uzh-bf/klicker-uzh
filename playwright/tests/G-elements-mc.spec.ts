@@ -6,10 +6,12 @@
  * for Multiple Choice (MC) element type.
  */
 
+import { cleanupTest } from '../util/cleanup.js'
 import { MC_DATA as MC } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import {
   addAnswerChoices,
+  deleteElement,
   fillAnswerField,
   fillEditorField,
   fillFeedbackField,
@@ -22,6 +24,8 @@ import {
   verifyEditorField,
 } from '../util/fixtures/elements.js'
 import { elementTypeLabels, statusLabels } from '../util/messages.js'
+
+test('CLEANUP', cleanupTest)
 
 test.describe('Test creation and editing functionalities for Multiple Choice elements', () => {
   test.beforeEach(async ({ loginLecturer }) => {
@@ -229,5 +233,9 @@ test.describe('Test creation and editing functionalities for Multiple Choice ele
     )
 
     await page.getByTestId('close-element-modal').click()
+  })
+
+  test('Cleanup: Delete the multiple choice question', async ({ page }) => {
+    await deleteElement(page, MC.titleEdited)
   })
 })

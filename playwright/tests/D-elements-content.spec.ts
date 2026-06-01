@@ -5,6 +5,7 @@
  * Tests creation, persistence, and editing of Content element type.
  */
 
+import { cleanupTest } from '../util/cleanup.js'
 import { CONTENT_DATA as CT } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import {
@@ -17,6 +18,8 @@ import {
   verifyEditorField,
 } from '../util/fixtures/elements.js'
 import { elementTypeLabels, statusLabels } from '../util/messages.js'
+
+test('CLEANUP', cleanupTest)
 
 test.describe('Test creation and editing functionalities for Content elements', () => {
   test.beforeEach(async ({ loginLecturer }) => {

@@ -1,12 +1,10 @@
-import globalSetup from '../global-setup.js'
+import { cleanupTest } from '../util/cleanup.js'
 import { expect, test } from '../util/fixtures.js'
 import { statusLabels } from '../util/messages.js'
 
 const LABEL_DRAFT = statusLabels.draft
 
-test.beforeAll(async ({}) => {
-  await globalSetup()
-})
+test('CLEANUP', cleanupTest)
 
 test.describe('Test fundamental UI interactions and baseline operations', () => {
   test.beforeEach(async ({ loginLecturer }) => {
@@ -19,7 +17,7 @@ test.describe('Test fundamental UI interactions and baseline operations', () => 
   // -------------------------------------------------------------------------
   // Dropdown / select
   // -------------------------------------------------------------------------
-  test('Test dropdown and select operations', async ({
+  test('Test dropdown and select operations using selectOption command', async ({
     page,
     createElement,
   }) => {

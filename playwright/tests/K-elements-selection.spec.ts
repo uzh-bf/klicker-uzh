@@ -10,6 +10,7 @@
  */
 
 import { Page } from '@playwright/test'
+import { cleanupTest } from '../util/cleanup.js'
 import { expect, test } from '../util/fixtures.js'
 import {
   deleteElement,
@@ -54,6 +55,8 @@ const SE_INLINE = {
 
 const MSG_SELECT_COLLECTION = 'Select collection'
 const MSG_ANSWER_OPTION_USED = 'Answer options marked with the warning symbol'
+
+test('CLEANUP', cleanupTest)
 
 async function createAnswerCollectionViaUI(
   page: Page,

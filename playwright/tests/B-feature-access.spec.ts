@@ -1,10 +1,9 @@
-import globalSetup, { seedActivities } from '../global-setup.js'
+import { seedActivities } from '../global-setup.js'
+import { cleanupTest } from '../util/cleanup.js'
 import { expect, test } from '../util/fixtures.js'
 import { updateLecturerPreviewFlags } from '../util/fixtures/manage.js'
 
-test.beforeAll(async ({}) => {
-  await globalSetup()
-})
+test('CLEANUP', cleanupTest)
 
 test.describe('Tests the availability of certain functionalities to catalyst users only', () => {
   test.beforeAll(async () => {
@@ -39,7 +38,7 @@ test.describe('Tests the availability of certain functionalities to catalyst use
     await expect(page.getByTestId('homepage')).toBeVisible()
   })
 
-  test('Test that creation buttons for practice quizzes and microlearnings are only available to catalyst users', async ({
+  test('Test that the creation buttons for practice quizzes and microlearnings are only available to catalyst users', async ({
     page,
     loginLecturer,
     loginFreeUser,
@@ -75,7 +74,7 @@ test.describe('Tests the availability of certain functionalities to catalyst use
     })
   })
 
-  test('Verify that only public preview features are available if the corresponding flag is set', async ({
+  test('Verify that only the public preview features are available if the corresponding flag is set', async ({
     page,
     loginLecturer,
     validateFeatureAvailability,

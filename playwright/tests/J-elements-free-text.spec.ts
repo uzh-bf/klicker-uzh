@@ -6,6 +6,7 @@
  * for Free Text (FT) element type.
  */
 
+import { cleanupTest } from '../util/cleanup.js'
 import { expect, test } from '../util/fixtures.js'
 import { searchAndEdit, validateElement } from '../util/fixtures/elements.js'
 import { elementTypeLabels, statusLabels } from '../util/messages.js'
@@ -24,6 +25,8 @@ const FT = {
     'Sample Solution 3',
   ],
 }
+
+test('CLEANUP', cleanupTest)
 
 test.describe('Test creation and editing functionalities for Free Text elements', () => {
   test.beforeEach(async ({ loginLecturer }) => {

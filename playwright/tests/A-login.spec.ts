@@ -1,4 +1,4 @@
-import globalSetup from '../global-setup.js'
+import { cleanupTest } from '../util/cleanup.js'
 import {
   LECTURER_PASSWORD,
   LECTURER_SHORTNAME,
@@ -9,9 +9,7 @@ import {
 } from '../util/constants.js'
 import { test } from '../util/fixtures.js'
 
-test.beforeAll(async ({}) => {
-  await globalSetup()
-})
+test('CLEANUP', cleanupTest)
 
 test.describe('Login / Logout workflows for lecturer and students', () => {
   // -------------------------------------------------------------------------
