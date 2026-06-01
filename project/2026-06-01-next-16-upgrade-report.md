@@ -152,11 +152,11 @@ Passed:
 
 Browser smoke screenshots against built Next apps:
 
-- Auth: `/tmp/klicker-next16-auth.png`
-- PWA: `/tmp/klicker-next16-pwa.png`
-- Manage: `/tmp/klicker-next16-manage.png`
-- Control: `/tmp/klicker-next16-control.png`
-- Chat: `/tmp/klicker-next16-chat.png`
+- Auth: `project/2026-06-01-next-16-screenshots/klicker-next16-auth.png`
+- PWA: `project/2026-06-01-next-16-screenshots/klicker-next16-pwa.png`
+- Manage: `project/2026-06-01-next-16-screenshots/klicker-next16-manage.png`
+- Control: `project/2026-06-01-next-16-screenshots/klicker-next16-control.png`
+- Chat: `project/2026-06-01-next-16-screenshots/klicker-next16-chat.png`
 
 Blocked or pending:
 
