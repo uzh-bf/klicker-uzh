@@ -22,6 +22,8 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
+import CourseDiscussionPanel from '../course/CourseDiscussionPanel'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import Bookmark from './Bookmark'
@@ -307,342 +309,375 @@ function ElementStack({
     stack.type === 'PRACTICE_QUIZ' &&
     isCourseQARolloutEnabled &&
     isCourseQAEnabled
+  const stackDiscussionScopeKey = useMemo(() => `stack:${stack.id}`, [stack.id])
+  const showInlineDiscussion =
+    !previewOnly && !isEmbeddedFlow && supportsStackDiscussion
   const discussionHref = useMemo(
     () =>
-      `/course/${courseId}/qa?scopeKey=${encodeURIComponent(`stack:${stack.id}`)}`,
-    [courseId, stack.id]
+      `/course/${courseId}/qa?scopeKey=${encodeURIComponent(stackDiscussionScopeKey)}`,
+    [courseId, stackDiscussionScopeKey]
   )
 
   return (
     <div className="pb-12">
-      <div className="w-full">
-        {activityExpired && activityExpiredMessage && (
-          <UserNotification
-            type="error"
-            message={activityExpiredMessage}
-            className={{ root: 'mb-2' }}
-          />
+      <div
+        className={twMerge(
+          'w-full',
+          showInlineDiscussion &&
+            'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(20rem,24rem)] lg:items-start lg:gap-6 xl:grid-cols-[minmax(0,1fr)_26rem]'
         )}
+      >
+        <div className="min-w-0">
+          {activityExpired && activityExpiredMessage && (
+            <UserNotification
+              type="error"
+              message={activityExpiredMessage}
+              className={{ root: 'mb-2' }}
+            />
+          )}
 
-        {!previewOnly && !hideBookmark ? (
-          <div className="flex flex-row items-center justify-between">
+          {!previewOnly && !hideBookmark ? (
+            <div className="flex flex-row items-center justify-between">
+              <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
+              <Bookmark
+                bookmarks={bookmarks}
+                quizId={parentId === 'bookmarks' ? undefined : parentId}
+                stackId={stack.id}
+              />
+            </div>
+          ) : (
             <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
-            <Bookmark
-              bookmarks={bookmarks}
-              quizId={parentId === 'bookmarks' ? undefined : parentId}
-              stackId={stack.id}
-            />
+          )}
+
+          {stack.description && (
+            <div className="mb-4">
+              <DynamicMarkdown
+                content={stack.description}
+                data={{ cy: 'element-stack-description' }}
+                withProse
+              />
+            </div>
+          )}
+
+          <div className="flex flex-col gap-8 md:gap-12">
+            {stack.elements &&
+              stack.elements.length > 0 &&
+              stack.elements.map((element, elementIx) => {
+                return (
+                  <div key={`${element.id}-student`}>
+                    <InstanceHeader
+                      index={elementIx}
+                      instanceId={element.id}
+                      elementId={parseInt(element.elementData.id)}
+                      name={element.elementData.name}
+                      withParticipant={withParticipant}
+                      previousElementFeedback={
+                        withParticipant
+                          ? elementFeedbacks[element.id]
+                          : undefined
+                      }
+                      stackInstanceIds={
+                        stack.elements?.map((element) => element.id) ?? []
+                      }
+                      showSeparator={
+                        element.elementType === ElementType.Flashcard
+                      }
+                    />
+                    <StudentElement
+                      element={element}
+                      elementIx={elementIx}
+                      studentResponse={studentResponse}
+                      setStudentResponse={setStudentResponse}
+                      stackStorage={stackStorage}
+                    />
+                  </div>
+                )
+              })}
           </div>
-        ) : (
-          <div>{stack.displayName && <H2>{stack.displayName}</H2>}</div>
-        )}
+          {/* display continue button if question was already answered */}
+          {typeof stackStorage !== 'undefined' && !showMarkAsRead ? (
+            <div className="mt-4 flex items-center justify-between gap-3">
+              {showInlineDiscussion && (
+                <Link
+                  href={discussionHref}
+                  className="text-sm font-medium text-blue-700 hover:underline lg:hidden"
+                  data-cy="student-stack-discussion-link"
+                >
+                  {t('pwa.courseQA.openStackDiscussion')}
+                </Link>
+              )}
 
-        {stack.description && (
-          <div className="mb-4">
-            <DynamicMarkdown
-              content={stack.description}
-              data={{ cy: 'element-stack-description' }}
-              withProse
-            />
-          </div>
-        )}
+              <Button
+                onClick={() => {
+                  setStudentResponse({})
 
-        <div className="flex flex-col gap-8 md:gap-12">
-          {stack.elements &&
-            stack.elements.length > 0 &&
-            stack.elements.map((element, elementIx) => {
-              return (
-                <div key={`${element.id}-student`}>
-                  <InstanceHeader
-                    index={elementIx}
-                    instanceId={element.id}
-                    elementId={parseInt(element.elementData.id)}
-                    name={element.elementData.name}
-                    withParticipant={withParticipant}
-                    previousElementFeedback={
-                      withParticipant ? elementFeedbacks[element.id] : undefined
-                    }
-                    stackInstanceIds={
-                      stack.elements?.map((element) => element.id) ?? []
-                    }
-                    showSeparator={
-                      element.elementType === ElementType.Flashcard
-                    }
-                  />
-                  <StudentElement
-                    element={element}
-                    elementIx={elementIx}
-                    studentResponse={studentResponse}
-                    setStudentResponse={setStudentResponse}
-                    stackStorage={stackStorage}
-                  />
-                </div>
-              )
-            })}
-        </div>
-      </div>
+                  if (currentStep === totalSteps) {
+                    onAllStacksCompletion()
+                  } else {
+                    handleNextElement()
+                  }
+                }}
+                className={{ root: 'ml-auto' }}
+                data={{ cy: 'student-stack-continue' }}
+              >
+                <Button.Label>
+                  {currentStep === totalSteps
+                    ? t('shared.generic.finish')
+                    : t('shared.generic.continue')}
+                </Button.Label>
+              </Button>
+            </div>
+          ) : null}
 
-      {/* display continue button if question was already answered */}
-      {typeof stackStorage !== 'undefined' && !showMarkAsRead ? (
-        <div className="mt-4 flex items-center justify-between gap-3">
-          {!previewOnly && !isEmbeddedFlow && supportsStackDiscussion && (
-            <Link
-              href={discussionHref}
-              className="text-sm font-medium text-blue-700 hover:underline"
-              data-cy="student-stack-discussion-link"
+          {/* display mark all as read button, if only content elements have not been answered yet */}
+          {typeof stackStorage === 'undefined' && showMarkAsRead && (
+            <Button
+              className={{ root: 'float-right mt-4' }}
+              disabled={Object.values(studentResponse).some(
+                (response) => !response.valid
+              )}
+              onClick={() => {
+                // update the read status of all content elements in studentResponse to true
+                setStudentResponse((currentResponses) =>
+                  Object.entries(
+                    currentResponses
+                  ).reduce<StackStudentResponseType>(
+                    (acc, [instanceId, value]) => {
+                      if (value.type === ElementType.Content) {
+                        return {
+                          ...acc,
+                          [instanceId]: {
+                            ...value,
+                            response: true,
+                          },
+                        }
+                      } else {
+                        return { ...acc, [instanceId]: value }
+                      }
+                    },
+                    {}
+                  )
+                )
+              }}
+              data={{ cy: 'practice-quiz-mark-all-as-read' }}
             >
-              {t('pwa.courseQA.openStackDiscussion')}
-            </Link>
+              <Button.Label>{t('pwa.practiceQuiz.markAllAsRead')}</Button.Label>
+            </Button>
           )}
 
-          <Button
-            onClick={() => {
-              setStudentResponse({})
-
-              if (currentStep === totalSteps) {
-                onAllStacksCompletion()
-              } else {
-                handleNextElement()
+          {typeof stackStorage === 'undefined' && !showMarkAsRead && (
+            <Button
+              primary
+              loading={submittingResponse}
+              disabled={
+                (!previewOnly && activityExpired) ||
+                Object.values(studentResponse).some(
+                  (response) => !response.valid
+                )
               }
-            }}
-            className={{ root: 'ml-auto' }}
-            data={{ cy: 'student-stack-continue' }}
-          >
-            <Button.Label>
-              {currentStep === totalSteps
-                ? t('shared.generic.finish')
-                : t('shared.generic.continue')}
-            </Button.Label>
-          </Button>
-        </div>
-      ) : null}
+              className={{ root: 'float-right mt-4' }}
+              onClick={async () => {
+                const result = await respondToElementStack({
+                  variables: {
+                    isOwner: previewOnly,
+                    stackId: stack.id,
+                    courseId: courseId,
+                    stackAnswerTime: timeRef.current,
+                    responses: Object.entries(studentResponse).map(
+                      ([instanceId, value]) => {
+                        if (value.type === ElementType.Flashcard) {
+                          let responseValue: FlashcardCorrectnessType
+                          if (value.response === FlashcardCorrectness.Correct) {
+                            responseValue = FlashcardCorrectnessType.Correct
+                          } else if (
+                            value.response === FlashcardCorrectness.Partial
+                          ) {
+                            responseValue = FlashcardCorrectnessType.Partial
+                          } else {
+                            responseValue = FlashcardCorrectnessType.Incorrect
+                          }
 
-      {/* display mark all as read button, if only content elements have not been answered yet */}
-      {typeof stackStorage === 'undefined' && showMarkAsRead && (
-        <Button
-          className={{ root: 'float-right mt-4' }}
-          disabled={Object.values(studentResponse).some(
-            (response) => !response.valid
-          )}
-          onClick={() => {
-            // update the read status of all content elements in studentResponse to true
-            setStudentResponse((currentResponses) =>
-              Object.entries(currentResponses).reduce<StackStudentResponseType>(
-                (acc, [instanceId, value]) => {
-                  if (value.type === ElementType.Content) {
+                          return {
+                            instanceId: parseInt(instanceId),
+                            type: ElementType.Flashcard,
+                            flashcardResponse: responseValue,
+                          }
+                        } else if (value.type === ElementType.Content) {
+                          return {
+                            instanceId: parseInt(instanceId),
+                            type: ElementType.Content,
+                            contentReponse: value.response,
+                          }
+                        } else if (
+                          value.type === ElementType.Sc ||
+                          value.type === ElementType.Mc ||
+                          value.type === ElementType.Kprim
+                        ) {
+                          // convert the solution objects into integer lists
+                          const responseList: ChoicesResponse[] =
+                            Object.entries(value.response!)
+                              .filter(([, value]) => value)
+                              .map(([key, value]) => ({
+                                ix: parseInt(key),
+                                selected: value ?? false,
+                              }))
+
+                          return {
+                            instanceId: parseInt(instanceId),
+                            type: value.type,
+                            choicesResponse: responseList,
+                          }
+                        }
+                        // submission logic for numerical questions
+                        else if (value.type === ElementType.Numerical) {
+                          return {
+                            instanceId: parseInt(instanceId),
+                            type: ElementType.Numerical,
+                            numericalResponse: parseFloat(value.response!),
+                          }
+                        } else if (value.type === ElementType.FreeText) {
+                          return {
+                            instanceId: parseInt(instanceId),
+                            type: ElementType.FreeText,
+                            freeTextResponse: value.response,
+                          }
+                        } else if (value.type === ElementType.Selection) {
+                          return {
+                            instanceId: parseInt(instanceId),
+                            type: ElementType.Selection,
+                            selectionResponse: Object.values(
+                              value.response!
+                            ).map((entry) =>
+                              typeof entry === 'undefined' || entry === null
+                                ? -1
+                                : entry
+                            ),
+                          }
+                        } else if (value.type === ElementType.CaseStudy) {
+                          const caseStudyResponse: CaseStudyCaseResponse[] =
+                            Object.entries(value.response!).map(
+                              ([caseId, caseResponse]) => {
+                                return {
+                                  caseId,
+                                  itemResponses: Object.entries(
+                                    caseResponse
+                                  ).map(([itemId, itemResponse]) => {
+                                    return {
+                                      itemId: parseInt(itemId),
+                                      criterionResponses: Object.entries(
+                                        itemResponse
+                                      ).flatMap(
+                                        ([criterionId, criterionResponse]) => {
+                                          if (
+                                            typeof criterionResponse ===
+                                            'undefined'
+                                          ) {
+                                            return []
+                                          }
+
+                                          return {
+                                            criterionId: criterionId,
+                                            response: criterionResponse,
+                                          }
+                                        }
+                                      ),
+                                    }
+                                  }),
+                                }
+                              }
+                            )
+
+                          return {
+                            instanceId: parseInt(instanceId),
+                            type: value.type,
+                            caseStudyResponse,
+                          }
+                        } else {
+                          return {
+                            instanceId: parseInt(instanceId),
+                            type: value.type,
+                            response: value.response,
+                          }
+                        }
+                      }
+                    ),
+                  },
+                })
+
+                if (!result.data || !result.data?.respondToElementStack) {
+                  console.error('Error submitting response')
+                  return
+                }
+
+                setStackStorage(
+                  Object.entries(
+                    studentResponse
+                  ).reduce<StackStudentResponseType>((acc, [key, value]) => {
                     return {
                       ...acc,
-                      [instanceId]: {
+                      [key]: {
                         ...value,
-                        response: true,
+                        evaluation:
+                          result.data!.respondToElementStack!.evaluations?.find(
+                            (evaluation) =>
+                              evaluation.instanceId === parseInt(key)
+                          ),
                       },
                     }
+                  }, {})
+                )
+
+                // set status and score according to returned correctness
+                const grading = result.data?.respondToElementStack
+                setStudentResponse({})
+
+                if (typeof setStepStatus !== 'undefined') {
+                  setStepStatus({
+                    status: grading.status,
+                    score: grading.score,
+                  })
+                }
+
+                // continue if stack only included content elements and/or flashcards, otherwise show evaluation
+                if (
+                  Object.values(studentResponse).every(
+                    (response) =>
+                      response.type === ElementType.Content ||
+                      response.type === ElementType.Flashcard
+                  )
+                ) {
+                  if (currentStep === totalSteps) {
+                    onAllStacksCompletion()
                   } else {
-                    return { ...acc, [instanceId]: value }
+                    handleNextElement()
                   }
-                },
-                {}
-              )
-            )
-          }}
-          data={{ cy: 'practice-quiz-mark-all-as-read' }}
-        >
-          <Button.Label>{t('pwa.practiceQuiz.markAllAsRead')}</Button.Label>
-        </Button>
-      )}
+                }
+              }}
+              data={{ cy: 'student-stack-submit' }}
+            >
+              <Button.Label>{t('shared.generic.submit')}</Button.Label>
+            </Button>
+          )}
+        </div>
 
-      {typeof stackStorage === 'undefined' && !showMarkAsRead && (
-        <Button
-          primary
-          loading={submittingResponse}
-          disabled={
-            (!previewOnly && activityExpired) ||
-            Object.values(studentResponse).some((response) => !response.valid)
-          }
-          className={{ root: 'float-right mt-4' }}
-          onClick={async () => {
-            const result = await respondToElementStack({
-              variables: {
-                isOwner: previewOnly,
-                stackId: stack.id,
-                courseId: courseId,
-                stackAnswerTime: timeRef.current,
-                responses: Object.entries(studentResponse).map(
-                  ([instanceId, value]) => {
-                    if (value.type === ElementType.Flashcard) {
-                      let responseValue: FlashcardCorrectnessType
-                      if (value.response === FlashcardCorrectness.Correct) {
-                        responseValue = FlashcardCorrectnessType.Correct
-                      } else if (
-                        value.response === FlashcardCorrectness.Partial
-                      ) {
-                        responseValue = FlashcardCorrectnessType.Partial
-                      } else {
-                        responseValue = FlashcardCorrectnessType.Incorrect
-                      }
-
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: ElementType.Flashcard,
-                        flashcardResponse: responseValue,
-                      }
-                    } else if (value.type === ElementType.Content) {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: ElementType.Content,
-                        contentReponse: value.response,
-                      }
-                    } else if (
-                      value.type === ElementType.Sc ||
-                      value.type === ElementType.Mc ||
-                      value.type === ElementType.Kprim
-                    ) {
-                      // convert the solution objects into integer lists
-                      const responseList: ChoicesResponse[] = Object.entries(
-                        value.response!
-                      )
-                        .filter(([, value]) => value)
-                        .map(([key, value]) => ({
-                          ix: parseInt(key),
-                          selected: value ?? false,
-                        }))
-
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: value.type,
-                        choicesResponse: responseList,
-                      }
-                    }
-                    // submission logic for numerical questions
-                    else if (value.type === ElementType.Numerical) {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: ElementType.Numerical,
-                        numericalResponse: parseFloat(value.response!),
-                      }
-                    } else if (value.type === ElementType.FreeText) {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: ElementType.FreeText,
-                        freeTextResponse: value.response,
-                      }
-                    } else if (value.type === ElementType.Selection) {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: ElementType.Selection,
-                        selectionResponse: Object.values(value.response!).map(
-                          (entry) =>
-                            typeof entry === 'undefined' || entry === null
-                              ? -1
-                              : entry
-                        ),
-                      }
-                    } else if (value.type === ElementType.CaseStudy) {
-                      const caseStudyResponse: CaseStudyCaseResponse[] =
-                        Object.entries(value.response!).map(
-                          ([caseId, caseResponse]) => {
-                            return {
-                              caseId,
-                              itemResponses: Object.entries(caseResponse).map(
-                                ([itemId, itemResponse]) => {
-                                  return {
-                                    itemId: parseInt(itemId),
-                                    criterionResponses: Object.entries(
-                                      itemResponse
-                                    ).flatMap(
-                                      ([criterionId, criterionResponse]) => {
-                                        if (
-                                          typeof criterionResponse ===
-                                          'undefined'
-                                        ) {
-                                          return []
-                                        }
-
-                                        return {
-                                          criterionId: criterionId,
-                                          response: criterionResponse,
-                                        }
-                                      }
-                                    ),
-                                  }
-                                }
-                              ),
-                            }
-                          }
-                        )
-
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: value.type,
-                        caseStudyResponse,
-                      }
-                    } else {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: value.type,
-                        response: value.response,
-                      }
-                    }
-                  }
-                ),
-              },
-            })
-
-            if (!result.data || !result.data?.respondToElementStack) {
-              console.error('Error submitting response')
-              return
-            }
-
-            setStackStorage(
-              Object.entries(studentResponse).reduce<StackStudentResponseType>(
-                (acc, [key, value]) => {
-                  return {
-                    ...acc,
-                    [key]: {
-                      ...value,
-                      evaluation:
-                        result.data!.respondToElementStack!.evaluations?.find(
-                          (evaluation) =>
-                            evaluation.instanceId === parseInt(key)
-                        ),
-                    },
-                  }
-                },
-                {}
-              )
-            )
-
-            // set status and score according to returned correctness
-            const grading = result.data?.respondToElementStack
-            setStudentResponse({})
-
-            if (typeof setStepStatus !== 'undefined') {
-              setStepStatus({
-                status: grading.status,
-                score: grading.score,
-              })
-            }
-
-            // continue if stack only included content elements and/or flashcards, otherwise show evaluation
-            if (
-              Object.values(studentResponse).every(
-                (response) =>
-                  response.type === ElementType.Content ||
-                  response.type === ElementType.Flashcard
-              )
-            ) {
-              if (currentStep === totalSteps) {
-                onAllStacksCompletion()
-              } else {
-                handleNextElement()
-              }
-            }
-          }}
-          data={{ cy: 'student-stack-submit' }}
-        >
-          <Button.Label>{t('shared.generic.submit')}</Button.Label>
-        </Button>
-      )}
+        {showInlineDiscussion && (
+          <aside
+            aria-label={t('pwa.courseQA.title')}
+            className="hidden min-w-0 lg:block"
+            data-cy="student-stack-discussion-rail"
+          >
+            <div className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+              <CourseDiscussionPanel
+                courseId={courseId}
+                scopeKey={stackDiscussionScopeKey}
+                compact
+                className="mx-0 max-w-none"
+                idPrefix={`course-qa-stack-${stack.id}`}
+              />
+            </div>
+          </aside>
+        )}
+      </div>
     </div>
   )
 }
