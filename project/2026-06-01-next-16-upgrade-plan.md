@@ -39,6 +39,7 @@ Upgrade KlickerUZH from Next.js 15.5.x to Next.js 16 as the first major dependen
 - `next@16.2.6` requires Node >=20.9.0 and peers React/React DOM ^18.2.0 or ^19.0.0. The baseline branch pins Node 24.16.0, so runtime is compatible.
 - `next-intl@4.12.0` peers `next` through `^16.0.0` and React through `^19.0.0`; it is the correct policy-compliant bridge.
 - `@ducanh2912/next-pwa@10.2.9` peers `next >=14.0.0` and `webpack >=5.9.0`, but its docs/package notes remain webpack/Workbox-oriented. Use webpack fallback in this PR and leave Turbopack/PWA modernization as follow-up.
+- `react-email@3.0.7` pulled `next@15.1.2` transitively. `react-email@5.2.11` and `@react-email/components@1.0.12` are policy-compliant and remove the embedded Next dependency without taking the React Email 6 import migration.
 
 ## Local Findings
 
@@ -115,7 +116,11 @@ Upgrade KlickerUZH from Next.js 15.5.x to Next.js 16 as the first major dependen
 ## Progress
 
 - 2026-06-01: Research complete. Target versions selected under 14-day policy. Current branch is `codex/next-16-upgrade`, stacked on `codex/dependency-refresh-lts`.
-- 2026-06-01: Active slice is Slice 0. Next step: commit this plan file by itself.
+- 2026-06-01: Slice 0 complete. Plan file committed as `bf5d081b0`.
+- 2026-06-01: Slice 1 implementation complete locally. Updated Next ecosystem versions, proxy entrypoints, direct ESLint configs/scripts, shared image config, webpack fallback scripts, React Email 5 cleanup, and PWA plugin version.
+- 2026-06-01: Slice 1 verification evidence: `pnpm install`, `pnpm run check:syncpack`, targeted lint for auth/chat/control/manage/pwa, `pnpm --filter @klicker-uzh/transactional build`, `build:test` for auth/control/manage/pwa, `build` for chat/control/manage/pwa. PWA production builds generated service workers and custom workers through webpack.
+- 2026-06-01: Remaining known warnings for later slices/report: Pages Router apps still print next-intl `i18n` guidance warnings, build output has existing large-page-data / missing-message warnings, and `pnpm peers check` still reports pre-existing peer debt plus React 19/TypeScript follow-up items.
+- 2026-06-01: Active slice is Slice 2. Next step: run repo-wide check/lint/build/audit, fix only Next 16 regressions, and document residual compatibility debt.
 
 ## Follow-Up PRs
 

@@ -64,7 +64,7 @@ export async function encode({ token, secret }: JWTEncodeParams) {
 }
 
 // Context detection: prefer explicit URL params and paths; fall back to
-// referer and an ephemeral redirect cookie set by middleware on signin.
+// referer and an ephemeral redirect cookie set by proxy on signin.
 
 export function getStudentHosts(): string[] {
   const env = parseCsvHosts(process.env.AUTH_STUDENT_ALLOWED_HOSTS)

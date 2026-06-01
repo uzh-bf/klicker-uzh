@@ -18,7 +18,7 @@
     // Language Features
     "target": "ES2017",
     "lib": ["dom", "dom.iterable", "esnext"],
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "isolatedModules": true,
     // Path Mapping
     "baseUrl": ".",

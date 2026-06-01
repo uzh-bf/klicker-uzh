@@ -55,10 +55,10 @@ function getHostFromHeaderUrl(h?: string | null): string | null {
   }
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
-  console.log('MIDDLEWARE RUNNING:', {
+  console.log('PROXY RUNNING:', {
     pathname,
     fullUrl: request.url,
     referer: request.headers.get('referer'),
@@ -197,7 +197,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Set/refresh the redirect cookie so it's available on callback even if
-    // NextAuth posts the callbackUrl in the body (not readable in middleware)
+    // NextAuth posts the callbackUrl in the body (not readable in proxy)
     const response = NextResponse.next()
     // Set student-specific cookie, scoped to auth host
     response.cookies.set(STUDENT_REDIRECT_COOKIE_NAME, redirectTo, {

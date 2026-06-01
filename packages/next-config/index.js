@@ -1,11 +1,13 @@
 /** @type {import('next').NextConfig} */
 function getNextBaseConfig({
   BLOB_STORAGE_ACCOUNT_URL,
+  includeI18n = true,
   NODE_ENV,
   NEXT_PUBLIC_ENV,
 }) {
   const isStaging = process.env.NEXT_PUBLIC_ENV === 'staging'
   const isProduction = process.env.NEXT_PUBLIC_ENV === 'production'
+  const blobStorageHostname = getHostname(BLOB_STORAGE_ACCOUNT_URL)
 
   return {
     // not supported with turbopack -> do we need it?
@@ -38,30 +40,31 @@ function getNextBaseConfig({
       '@klicker-uzh/prisma',
       '@uzh-bf/design-system',
     ],
-    eslint: {
-      ignoreDuringBuilds: true,
-    },
     typescript: {
       ignoreBuildErrors: true,
     },
-    i18n: {
-      locales: ['en', 'de'],
-      defaultLocale: 'en',
-    },
+    ...(includeI18n
+      ? {
+          i18n: {
+            locales: ['en', 'de'],
+            defaultLocale: 'en',
+          },
+        }
+      : {}),
     modularizeImports: {
       lodash: {
         transform: 'lodash/{{member}}',
       },
     },
     images: {
-      domains: [
-        '127.0.0.1',
-        'tc-klicker-prod.s3.amazonaws.com',
-        'klickeruzhdevimages.blob.core.windows.net',
-        'klickeruzhprodimages.blob.core.windows.net',
-        BLOB_STORAGE_ACCOUNT_URL ?? null,
-      ].filter(Boolean),
+      qualities: [75],
+      dangerouslyAllowLocalIP: !isProduction,
       remotePatterns: [
+        {
+          protocol: 'http',
+          hostname: '127.0.0.1',
+          pathname: '/**',
+        },
         {
           protocol: 'https',
           hostname: 'tc-klicker-prod.s3.amazonaws.com',
@@ -80,17 +83,26 @@ function getNextBaseConfig({
           port: '443',
           pathname: '/**',
         },
-        ,
-        BLOB_STORAGE_ACCOUNT_URL
+        blobStorageHostname
           ? {
               protocol: 'https',
-              hostname: BLOB_STORAGE_ACCOUNT_URL,
+              hostname: blobStorageHostname,
               port: '443',
               pathname: '/**',
             }
           : null,
       ].filter(Boolean),
     },
+  }
+}
+
+function getHostname(value) {
+  if (!value) return null
+
+  try {
+    return new URL(value).hostname
+  } catch {
+    return value
   }
 }
 
