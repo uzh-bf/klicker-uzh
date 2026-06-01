@@ -1,5 +1,6 @@
 import { useLazyQuery, useQuery } from '@apollo/client'
 import { faThumbsUp } from '@fortawesome/free-regular-svg-icons'
+import { faChevronDown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetCourseDiscussionEmbeddingInfoDocument,
@@ -103,15 +104,98 @@ function CourseDiscussionOverview({
   return (
     <div className="flex flex-col gap-4 px-1 py-2">
       <div className="rounded-lg border border-gray-200 bg-white p-4">
-        <H3 className={{ root: 'mb-2 mt-0' }}>
-          {t('manage.course.embedLinkGenerator')}
-        </H3>
-
-        <div className="mb-2 text-sm text-gray-600">
-          {t('manage.course.embedExternalBlockHelp')}
+        <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <H3 className={{ root: 'm-0' }}>
+            {t('manage.course.discussionOverview')}
+          </H3>
+          <Button
+            onClick={async () => {
+              await refetchOverview()
+            }}
+            data={{ cy: 'course-qa-refresh-overview' }}
+          >
+            <Button.Label>{t('manage.course.refreshOverview')}</Button.Label>
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {groups.length === 0 ? (
+          <UserNotification
+            type="info"
+            message={t('manage.course.noThreadsYet')}
+            data={{ cy: 'course-qa-overview-empty' }}
+          />
+        ) : (
+          <div
+            className="flex flex-col gap-3"
+            data-cy="course-qa-overview-groups"
+          >
+            {groups.map((group) => (
+              <div
+                key={group.sourceKey}
+                className="rounded-md border border-gray-200"
+                data-cy={`course-qa-overview-group-${group.sourceKey}`}
+              >
+                <div className="border-b border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold">
+                  {group.sourceLabel}
+                </div>
+                <div className="flex flex-col gap-2 p-3">
+                  {group.threads.map((thread) => (
+                    <div
+                      key={thread.id}
+                      className="rounded-md border border-gray-100 p-2"
+                      data-cy={`course-qa-overview-thread-${thread.id}`}
+                    >
+                      <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">
+                          {thread.scope?.scopeLabel ?? thread.scope?.scopeKey}
+                        </span>
+                        <span>
+                          {dayjs(thread.lastActivityAt).format(
+                            'DD.MM.YYYY HH:mm'
+                          )}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <FontAwesomeIcon
+                            icon={faThumbsUp}
+                            className="text-gray-500"
+                          />
+                          {thread.upvotes}
+                        </span>
+                        <span>
+                          {t('pwa.courseQA.nReply', {
+                            count: thread.replyCount,
+                          })}
+                        </span>
+                      </div>
+                      <div className="line-clamp-2 whitespace-pre-wrap text-sm">
+                        {thread.content}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <details className="group rounded-lg border border-gray-200 bg-white p-4">
+        <summary className="flex cursor-pointer list-none items-start justify-between gap-4">
+          <div>
+            <H3 className={{ root: 'm-0' }}>
+              {t('manage.course.embedLinkGenerator')}
+            </H3>
+            <div className="mt-2 text-sm text-gray-600">
+              {t('manage.course.embedExternalBlockHelp')}
+            </div>
+          </div>
+          <FontAwesomeIcon
+            icon={faChevronDown}
+            className="mt-1 text-gray-500 transition-transform group-open:rotate-180"
+          />
+        </summary>
+
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
           <div>
             <label
               className="mb-1 block text-xs font-semibold text-gray-700"
@@ -270,15 +354,6 @@ function CourseDiscussionOverview({
           >
             <Button.Label>{t('manage.course.copyUrl')}</Button.Label>
           </Button>
-
-          <Button
-            onClick={async () => {
-              await refetchOverview()
-            }}
-            data={{ cy: 'course-qa-refresh-overview' }}
-          >
-            <Button.Label>{t('manage.course.refreshOverview')}</Button.Label>
-          </Button>
         </div>
 
         {generatedEmbedInfo?.embedUrl && (
@@ -308,73 +383,7 @@ function CourseDiscussionOverview({
             )}
           </div>
         )}
-      </div>
-
-      <div className="rounded-lg border border-gray-200 bg-white p-4">
-        <H3 className={{ root: 'mb-2 mt-0' }}>
-          {t('manage.course.discussionOverview')}
-        </H3>
-
-        {groups.length === 0 ? (
-          <UserNotification
-            type="info"
-            message={t('manage.course.noThreadsYet')}
-            data={{ cy: 'course-qa-overview-empty' }}
-          />
-        ) : (
-          <div
-            className="flex flex-col gap-3"
-            data-cy="course-qa-overview-groups"
-          >
-            {groups.map((group) => (
-              <div
-                key={group.sourceKey}
-                className="rounded-md border border-gray-200"
-                data-cy={`course-qa-overview-group-${group.sourceKey}`}
-              >
-                <div className="border-b border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold">
-                  {group.sourceLabel}
-                </div>
-                <div className="flex flex-col gap-2 p-3">
-                  {group.threads.map((thread) => (
-                    <div
-                      key={thread.id}
-                      className="rounded-md border border-gray-100 p-2"
-                      data-cy={`course-qa-overview-thread-${thread.id}`}
-                    >
-                      <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-gray-600">
-                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">
-                          {thread.scope?.scopeLabel ?? thread.scope?.scopeKey}
-                        </span>
-                        <span>
-                          {dayjs(thread.lastActivityAt).format(
-                            'DD.MM.YYYY HH:mm'
-                          )}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <FontAwesomeIcon
-                            icon={faThumbsUp}
-                            className="text-gray-500"
-                          />
-                          {thread.upvotes}
-                        </span>
-                        <span>
-                          {t('pwa.courseQA.nReply', {
-                            count: thread.replyCount,
-                          })}
-                        </span>
-                      </div>
-                      <div className="line-clamp-2 whitespace-pre-wrap text-sm">
-                        {thread.content}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      </details>
     </div>
   )
 }
