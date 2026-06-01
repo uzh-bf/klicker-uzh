@@ -18,6 +18,7 @@ schema.graphql
 nexus-typegen.ts
 client.json
 server.json
+**/next-env.d.ts
 
 *.sql
 *.prisma

@@ -9,11 +9,7 @@ export default defineConfig({
     silent: false,
     reporters: ['verbose'],
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        singleFork: true,
-      },
-    },
+    maxWorkers: 1,
   },
   resolve: {
     alias: [
