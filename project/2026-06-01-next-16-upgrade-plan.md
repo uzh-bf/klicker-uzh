@@ -130,6 +130,7 @@ Upgrade KlickerUZH from Next.js 15.5.x to Next.js 16 as the first major dependen
 - 2026-06-01: Slice 2 review found that `apps/office-addin` `preview` must not use `--forceExit` because it is a long-running serve/livereload command. Removed `--forceExit` from `preview`; `pnpm --filter @klicker-uzh/office-addin build:office` passes. Preview smoke is environment-blocked at macOS Keychain trust installation for Office dev certificates.
 - 2026-06-01: `pnpm audit --audit-level high` is pending explicit user approval because npm audit sends the dependency inventory to npm's external advisory API. Sandbox network run failed with `ENOTFOUND`; escalation was rejected until the disclosure is explicitly approved.
 - 2026-06-01: Full Cypress/Playwright E2E is pending explicit user approval to stop or move unrelated local services. Current blockers: `catalog-firecrawl-api-1` reserves `127.0.0.1:3002`, and `doc-processing-hatchet-lite-hatchet-lite-1` reserves `7078`; OLAT API Docker test also failed because the existing Klicker Postgres container reserves `5432`.
+- 2026-06-01: Final local security review found one config risk in the shared Next image optimizer settings: `dangerouslyAllowLocalIP` was enabled for every non-production environment, including staging. It is now restricted to `NODE_ENV=development` or `NODE_ENV=test`; staging follows the production-safe default.
 
 ## Follow-Up PRs
 

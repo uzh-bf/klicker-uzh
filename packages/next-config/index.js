@@ -7,6 +7,8 @@ function getNextBaseConfig({
 }) {
   const isStaging = process.env.NEXT_PUBLIC_ENV === 'staging'
   const isProduction = process.env.NEXT_PUBLIC_ENV === 'production'
+  const allowLocalImageOptimization =
+    NODE_ENV === 'development' || NODE_ENV === 'test'
   const blobStorageHostname = getHostname(BLOB_STORAGE_ACCOUNT_URL)
 
   return {
@@ -58,7 +60,7 @@ function getNextBaseConfig({
     },
     images: {
       qualities: [75],
-      dangerouslyAllowLocalIP: !isProduction,
+      dangerouslyAllowLocalIP: allowLocalImageOptimization,
       remotePatterns: [
         {
           protocol: 'http',
