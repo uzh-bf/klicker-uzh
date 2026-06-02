@@ -1,16 +1,15 @@
-import { useQuery } from '@apollo/client'
 import { faBookOpenReader } from '@fortawesome/free-solid-svg-icons'
-import { GetPracticeCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
 import LinkButton from '../components/common/LinkButton'
 import { resetPracticeQuizLocalStorage } from '../components/practiceQuiz/PracticeQuiz'
+import { trpc } from '../lib/trpc'
 
 function Practice() {
   const t = useTranslations()
-  const { data } = useQuery(GetPracticeCoursesDocument)
+  const { data } = trpc.participant.practiceCourses.useQuery()
 
   return (
     <Layout
@@ -21,7 +20,7 @@ function Practice() {
         <H1 className={{ root: 'text-xl' }}>
           {t('shared.generic.practiceTitle')}
         </H1>
-        {data?.getPracticeCourses?.map((course) => {
+        {data?.practiceCourses?.map((course) => {
           return (
             <LinkButton
               key={course.id}
@@ -39,8 +38,7 @@ function Practice() {
           )
         })}
 
-        {(!data?.getPracticeCourses ||
-          data.getPracticeCourses.length === 0) && (
+        {(!data?.practiceCourses || data.practiceCourses.length === 0) && (
           <UserNotification
             type="info"
             message={t('pwa.practiceQuiz.noRepetition')}

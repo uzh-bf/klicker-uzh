@@ -91,6 +91,9 @@ function requireScope(requiredScope: UserLoginScope) {
 }
 
 export const authenticatedProcedure = publicProcedure.use(requireAuthenticated)
+export const participantProcedure = authenticatedProcedure.use(
+  requireRole(UserRole.PARTICIPANT)
+)
 export const userProcedure = authenticatedProcedure.use(
   requireRole(UserRole.USER)
 )

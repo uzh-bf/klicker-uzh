@@ -276,13 +276,25 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
-### 2026-06-03 Current
+### 2026-06-03 Completed: S04E1 PWA Participant Identity and Low-Risk Course Reads
 
-Status: control app has completed its GraphQL-to-tRPC migration and Apollo cleanup. PWA and manage remain mixed Apollo/tRPC. GraphQL backend remains intentionally live.
+Status: complete for the scoped slice. Control app has completed its GraphQL-to-tRPC migration and Apollo cleanup. PWA now uses tRPC for participant shell identity plus the bookmarks/practice course landing reads migrated in this slice. PWA and manage remain mixed Apollo/tRPC. GraphQL backend remains intentionally live.
 
-Next active slice: S04E PWA participant shell and course reads.
+Goal: add participant read procedures and migrate the smallest PWA read consumers while keeping PWA Apollo mounted for login, join, push, activity, and realtime flows.
 
-S04E suggested first sub-slice:
+Write scope:
+
+- `packages/api/src/trpc/procedures.ts`
+- `packages/api/src/trpc/root.ts`
+- `packages/api/src/trpc/routers/participant.ts`
+- `packages/api/src/trpc/schemas/participant.ts`
+- `packages/api/src/trpc/dto/participant.ts`
+- `packages/api/src/trpc/__tests__/participant-read.test.ts`
+- `apps/frontend-pwa/src/components/Layout.tsx`
+- `apps/frontend-pwa/src/components/common/Header.tsx` only for the prop boundary if needed
+- `apps/frontend-pwa/src/pages/bookmarks.tsx`
+- `apps/frontend-pwa/src/pages/practice.tsx`
+- `apps/frontend-pwa/src/pages/index.tsx` only for the locale-only `SelfDocument` read if it stays small
 
 ```text
 Slice: S04E1 PWA participant identity and low-risk course reads
@@ -292,14 +304,103 @@ Behavior source: ParticipantService.getSelf, CourseService.getParticipantCourses
 tRPC router.procedure: participant.self, participant.courses, participant.practiceCourses
 Input schema: optional liveQuizId for self
 Output DTO: self participant DTO, course list DTO, practice course DTO
-Active frontend consumers: Layout, bookmarks page, practice landing page, index locale redirect if kept small
+Active frontend consumers: Layout, bookmarks page, practice landing page, optional index locale redirect
 Apollo cache/refetch/subscription behavior: read-only hooks; keep PWA Apollo mounted for unmigrated flows
 React Query replacement: tRPC useQuery with enabled guards and normal query invalidation
 Browser verification path: participant login, course list/bookmarks/practice pages
 Cleanup blocked until: all PWA reads, mutations, realtime, and app Apollo gates complete
 ```
 
-Known verification caveat from S04D: `npx agent-browser` previously opened the branch-local control app but landed on `chrome-error://chromewebdata/` while HTTP requests from the dev server succeeded. Browser verification should be retried for PWA/manage slices; if it fails, record exact screenshots/URLs/logs and do not claim visual verification.
+Implementation notes:
+
+- `participant.self` should be public and return `{ self: null }` when no authenticated user exists, matching GraphQL.
+- `participant.self` must preserve the `PARTICIPANT` and `TEMPORARY_PARTICIPANT` branches, including `liveQuizId` handling.
+- `participant.courses` and `participant.practiceCourses` should require `PARTICIPANT`.
+- The PWA bundle must not import Prisma runtime enums; use router output types or literal role strings.
+- Header mutations and `SelfDocument` refetches stay GraphQL-backed until S04G.
+
+Planned checks:
+
+```bash
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build
+rg -n "SelfDocument|GetParticipantCoursesDocument|GetPracticeCoursesDocument" apps/frontend-pwa/src
+```
+
+Implementation result:
+
+- Added `participantProcedure` and mounted `participantRouter` under `participant`.
+- Added DTO helpers for self, temporary self, participant course, and practice course outputs.
+- Added `participant.self`, `participant.courses`, and `participant.practiceCourses` in `packages/api`.
+- Migrated PWA `Layout`, `bookmarks`, `practice`, and the locale-only `index` self read to tRPC.
+- Kept PWA Apollo mounted and left header mutations, login, join, push, activity, and realtime flows on GraphQL for later S04 slices.
+- Added focused API tests for anonymous self, participant self, temporary participant self, participant courses, practice-course filtering/sorting, and participant role guarding.
+
+Review / simplification:
+
+- Local diff review performed for router, DTO, tests, and migrated PWA consumers. Dedicated subagent review was not run because the available multi-agent tool contract only permits spawning when the user explicitly asks for delegation.
+- Simplified `participant.practiceCourses` sorting to compare `endDate.getTime()` values directly, preserving stable equality behavior instead of returning `1` for equal dates.
+
+Verification evidence:
+
+```bash
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --write <S04E1 files>
+# pass
+
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test
+# pass: 4 files, 23 tests
+
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check
+# pass
+
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build
+# pass
+
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check
+# pass
+
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build
+# pass; existing warnings: next-config MODULE_TYPELESS_PACKAGE_JSON, next-intl App Router migration warning, PWA disabled logs, Browserslist old data, large page-data warnings
+
+rg -n "SelfDocument|GetParticipantCoursesDocument|GetPracticeCoursesDocument" apps/frontend-pwa/src/components/Layout.tsx apps/frontend-pwa/src/pages/bookmarks.tsx apps/frontend-pwa/src/pages/practice.tsx apps/frontend-pwa/src/pages/index.tsx
+# pass: no matches in migrated files
+
+rg -n "GetParticipantCoursesDocument|GetPracticeCoursesDocument" apps/frontend-pwa/src
+# pass: no matches
+
+git diff --check
+# pass
+
+rg -n "@klicker-uzh/api|@klicker-uzh/prisma/client|packages/api/src|packages/prisma" apps/frontend-pwa/src
+# pass: only type-only `@klicker-uzh/api` import remains in `apps/frontend-pwa/src/lib/trpc.tsx`
+```
+
+Runtime/browser evidence:
+
+- Branch backend on `http://127.0.0.1:3100` served `GET /api/trpc/system.health` with `api: trpc`, `status: ok`.
+- Unauthenticated `participant.self` returned `{ self: null }` via tRPC.
+- Authenticated seeded participant smoke used local participant `testuser1` with a sessionStorage token generated from the same local JWT shape as `createParticipantToken`; token was not printed. Direct tRPC runtime check returned `selfUser: testuser1`, `courses: 1`, `practiceCourses: 0`.
+- Branch PWA ran on `http://127.0.0.1:3102` against `NEXT_PUBLIC_API_URL=http://127.0.0.1:3100/api/graphql`, with the tRPC client deriving `/api/trpc`.
+- `npx agent-browser --session pwa-s04e1` opened and screenshot `/login`, `/bookmarks`, and `/practice`.
+- Screenshots reviewed:
+  - `/tmp/klicker-pwa-s04e1-login.png`
+  - `/tmp/klicker-pwa-s04e1-login-after-submit.png`
+  - `/tmp/klicker-pwa-s04e1-bookmarks.png`
+  - `/tmp/klicker-pwa-s04e1-practice.png`
+- `/bookmarks` rendered `My Bookmarks` with course `Testkurs`; browser errors output empty.
+- `/practice` rendered `Practice Pool` empty state; browser errors output empty.
+- Local GraphQL password-login attempt stayed on `/login`; a direct ad-hoc GraphQL login mutation returned `PersistedQueryOnly`. This is an unmigrated GraphQL auth-path caveat, not part of the migrated S04E1 read procedures. S04G must handle auth/login migration and verify password login normally.
+
+Coexistence audit:
+
+- `rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|/api/graphql|graphql-yoga|graphql-ws" apps/frontend-pwa apps/frontend-manage apps/backend-docker packages/graphql package.json pnpm-lock.yaml` still reports PWA/manage/backend/packages/graphql/lockfile hits by design. GraphQL/Apollo remain live until later S04/S05 consumers migrate and S06 cleanup gates pass.
+
+Residual risk / next step:
+
+- S04E1 intentionally did not migrate `ParticipationsDocument`, login/auth, joins, push registration, activity/account mutations, bookmark mutations, practice quiz detail/attempt flows, or realtime. Next slice: S04F PWA home, participations, and course landing reads.
 
 ## Remaining Implementation Plan
 

@@ -1,18 +1,17 @@
-import { useQuery } from '@apollo/client'
 import { faBookmark } from '@fortawesome/free-regular-svg-icons'
-import { GetParticipantCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H1, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
 import LinkButton from '../components/common/LinkButton'
+import { trpc } from '../lib/trpc'
 
 function Bookmarks() {
   const t = useTranslations()
-  const { data, loading } = useQuery(GetParticipantCoursesDocument)
+  const { data, isLoading } = trpc.participant.courses.useQuery()
 
-  if (loading && !data) {
+  if (isLoading && !data) {
     return (
       <Layout
         course={{ displayName: 'KlickerUZH' }}

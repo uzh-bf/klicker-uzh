@@ -11,7 +11,6 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import {
   ParticipationsDocument,
-  SelfDocument,
   SubscribeToPushDocument,
   UnsubscribeFromPushDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -29,6 +28,7 @@ import Layout from '../components/Layout'
 import LinkButton from '../components/common/LinkButton'
 import MicroLearningListSubscriber from '../components/microLearning/MicroLearningListSubscriber'
 import useStudentOverviewSplit from '../lib/hooks/useStudentOverviewSplit'
+import { trpc } from '../lib/trpc'
 
 function Index() {
   const router = useRouter()
@@ -38,9 +38,7 @@ function Index() {
     useStickyState('showAssessmentHint', 'true')
 
   // fetch user info for locale
-  const { data: selfData } = useQuery(SelfDocument, {
-    fetchPolicy: 'cache-and-network',
-  })
+  const { data: selfData } = trpc.participant.self.useQuery()
 
   // if the user is not part of the required assessment course, show an error toast
   useEffect(() => {

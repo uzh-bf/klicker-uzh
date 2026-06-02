@@ -1,10 +1,5 @@
-import { useQuery } from '@apollo/client'
-import {
-  Course,
-  SelfDocument,
-  StudentCourse,
-  UserRole,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { Course, StudentCourse } from '@klicker-uzh/graphql/dist/ops'
+import { trpc } from '@lib/trpc'
 import Head from 'next/head'
 import React, { Dispatch, SetStateAction } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -46,11 +41,10 @@ function Layout({
   liveQuizId,
   className,
 }: LayoutProps) {
-  const { data: dataParticipant } = useQuery(SelfDocument, {
-    variables: { liveQuizId },
-    fetchPolicy: 'cache-and-network',
-    skip: embedded,
-  })
+  const { data: dataParticipant } = trpc.participant.self.useQuery(
+    { liveQuizId },
+    { enabled: !embedded }
+  )
 
   const pageInFrame =
     global?.window &&
@@ -80,7 +74,7 @@ function Layout({
           <Header
             participant={
               dataParticipant?.self &&
-              (dataParticipant.self.role === UserRole.Participant || liveQuizId)
+              (dataParticipant.self.role === 'PARTICIPANT' || liveQuizId)
                 ? dataParticipant.self
                 : undefined
             }
@@ -110,7 +104,7 @@ function Layout({
             onClick={(value) => setActiveMobilePage?.(value as any)}
             participantMissing={
               !dataParticipant?.self ||
-              dataParticipant.self.role === UserRole.TemporaryParticipant
+              dataParticipant.self.role === 'TEMPORARY_PARTICIPANT'
             }
           />
         </div>

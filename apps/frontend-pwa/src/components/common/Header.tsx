@@ -13,7 +13,6 @@ import {
   LocaleType,
   LogoutParticipantDocument,
   LogoutTemporaryParticipantDocument,
-  Participant,
   SelfDocument,
   StudentCourse,
   UserRole,
@@ -27,8 +26,17 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import AvatarWithLevel from './AvatarWithLevel'
 
+type HeaderParticipant = {
+  avatar?: string | null
+  email?: string | null
+  institutionalEmail?: string | null
+  level?: number | null
+  role?: 'PARTICIPANT' | 'TEMPORARY_PARTICIPANT' | UserRole | null
+  username?: string | null
+}
+
 interface HeaderProps {
-  participant?: Partial<Participant>
+  participant?: HeaderParticipant
   title?: string
   course?:
     | Partial<Course>
