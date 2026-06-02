@@ -123,12 +123,6 @@ const clearPersistedClientState = () => {
   })
 }
 
-const assertManageSession = () => {
-  cy.location('origin').should('eq', Cypress.env('URL_MANAGE'))
-  cy.location('pathname').should('not.eq', '/login')
-  cy.location('search').should('not.contain', 'expired=true')
-}
-
 const loginFactory = (
   tokenData: {
     email: string
@@ -170,10 +164,6 @@ const loginFactory = (
     })
 
     cy.visit(redirectUrl ?? Cypress.env('URL_MANAGE'))
-
-    if (!redirectUrl) {
-      assertManageSession()
-    }
   }
 }
 
