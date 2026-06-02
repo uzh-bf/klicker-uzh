@@ -27,7 +27,8 @@ Current status:
 - Backend mounts `/api/trpc` beside `/api/graphql`.
 - Frontend tRPC providers exist beside Apollo in manage, PWA, and control.
 - S04A control read pilot is committed and runtime-verified.
-- S04B control read migration may have uncommitted work. Check `git status` first and continue it without overwriting.
+- S04B control read migration is committed in `a274ab4b6` and verified with focused checks plus direct tRPC runtime evidence.
+- The next slice is S04C: migrate the remaining frontend-control mutations (`logoutUser`, `startLiveQuiz`, `activateLiveQuizBlock`, `deactivateLiveQuizBlock`, `endLiveQuiz`) to tRPC.
 - GraphQL must remain live until S06 cleanup readiness is clean and explicitly approved.
 
 Hard constraints:
@@ -37,6 +38,8 @@ Hard constraints:
 - Use existing GraphQL services/resolvers as behavior source. Extract shared service logic only when needed to remove transport coupling.
 - Use Zod inputs, SuperJSON serialization, narrow DTO outputs, and type-only router imports in browser code.
 - Do not import server runtime modules into browser bundles.
+- Do not duplicate complex GraphQL resolver/service internals in tRPC. Prefer extracting transport-neutral server services into `packages/api/src/services/**` and making GraphQL delegate to them while it still exists.
+- Do not enter S06 while `packages/api` has runtime imports from `@klicker-uzh/graphql`; use the S04O gate in the plan.
 - Migrate one user workflow slice at a time.
 - Preserve unrelated user changes in the worktree.
 - Keep lockfiles in sync with package manifest changes.
@@ -64,6 +67,7 @@ Final cleanup requirements:
 
 - Complete all S04 app/workflow migrations.
 - Complete all S05 realtime migrations with GraphQL subscriptions kept active until app subscribers are gone.
+- Complete S04O so the tRPC API package has no runtime dependency on `@klicker-uzh/graphql`.
 - Do not start S06 until all cleanup audits are clean or every remaining hit is documented as intentionally retained, and the user has approved final GraphQL removal.
 - During S06, remove backend GraphQL runtime, `packages/graphql`, codegen, generated/persisted artifacts, GraphQL dependencies, docs/deploy residue, and lockfile residue in separate reviewable commits.
 - Run full final checks:

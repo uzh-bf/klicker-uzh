@@ -59,6 +59,7 @@ Done:
 - S02 backend mounts `/api/trpc` beside `/api/graphql`.
 - S03 frontend tRPC providers exist beside Apollo in control, PWA, and manage.
 - S04A control app read pilot is runtime-verified and committed.
+- S04B control app live-quiz read migration is focused-check verified, direct-runtime verified, and committed.
 
 Committed markers:
 
@@ -68,10 +69,12 @@ Committed markers:
 - `c6be4df9c feat(api): port dual-stack control pilot`
 - `9fd2c326c docs(project): add end-to-end trpc migration plan`
 - `4d28f1d87 docs(project): record control trpc runtime verification`
+- `df2d8f16e docs(project): refine trpc migration plan`
+- `a274ab4b6 feat(api): migrate control read screens to trpc`
 
-Active work at plan rewrite time:
+Active work:
 
-- S04B control read migration has uncommitted code in progress.
+- S04C frontend-control mutations are next.
 - GraphQL remains intentionally live.
 - Frontend-control still has Apollo mutations and app-level Apollo wiring.
 - PWA and manage still depend heavily on Apollo/generated operations.
@@ -210,7 +213,7 @@ Cleanup blocked until:
 
 ### 2026-06-02 Done: S04B Finish Frontend-Control Reads
 
-Status: implemented, focused-check verified, direct runtime verified, and ready for slice commit.
+Status: implemented, focused-check verified, direct runtime verified, reviewed/simplified, and committed in `a274ab4b6`.
 
 Write scope:
 
@@ -270,8 +273,56 @@ Review:
 
 Next:
 
-- Commit: `feat(api): migrate control read screens to trpc`.
-- Start S04C: migrate frontend-control mutations and React Query invalidation.
+- S04C active: migrate frontend-control logout/start/session mutations and React Query invalidation.
+
+### 2026-06-02 Planned: S04C Frontend-Control Mutations
+
+Status: next implementation slice.
+
+Write scope:
+
+- `packages/api/src/trpc/routers/user.ts`
+- `packages/api/src/trpc/routers/liveQuiz.ts`
+- `packages/api/src/trpc/procedures.ts`
+- `packages/api/src/trpc/permissions.ts` or an equivalent shared permission helper
+- `packages/api/src/trpc/dto/liveQuiz.ts`
+- `packages/api/src/trpc/schemas/liveQuiz.ts`
+- `packages/api/src/trpc/__tests__/**`
+- Existing GraphQL service modules only if needed to extract transport-neutral live-quiz mutation logic
+- `apps/frontend-control/src/components/layout/Header.tsx`
+- `apps/frontend-control/src/components/liveQuizzes/StartModal.tsx`
+- `apps/frontend-control/src/pages/session/[id].tsx`
+
+Operation mapping:
+
+```text
+Slice: S04C Frontend-Control Mutations
+GraphQL operation(s): MLogoutUser, MStartLiveQuiz, MActivateSessionBlock, MDeactivateLiveQuizBlock, MEndLiveQuiz
+GraphQL resolver(s): logoutUser, startLiveQuiz, activateLiveQuizBlock, deactivateLiveQuizBlock, endLiveQuiz
+Service/helper behavior source: AccountService.logoutUser and LiveQuizService start/activate/deactivate/end behavior
+tRPC router.procedure: user.logout, liveQuiz.start, liveQuiz.activateBlock, liveQuiz.deactivateBlock, liveQuiz.end
+Input schema: id string input for start/end; quizId string + blockId int input for block activation/deactivation
+Output DTO: logout user id/string; live quiz id/name/status; activated live quiz id/status/blocks; boolean for deactivation
+Active frontend consumers: control Header, StartModal, session page mutation actions
+Apollo cache/refetch/subscription behavior: start refetches unassigned live quizzes and redirects; session mutations rely on polling/read refresh
+React Query replacement: invalidate liveQuiz.unassigned, liveQuiz.control, and affected course/control queries through trpc.useUtils()
+Browser verification path: control unassigned start flow; running session activate/deactivate/end flow when seeded/manual live quiz data exists
+Cleanup blocked until: S04D control Apollo removal gate
+```
+
+Service-boundary decision:
+
+- Do not duplicate complex live-quiz mutation internals in tRPC.
+- Preferred path: extract transport-neutral server logic into `packages/api/src/services/**` and have both tRPC procedures and the existing GraphQL resolver/service layer delegate to it.
+- Simple transport-shaped behavior, such as logout cookie expiry, may be implemented directly in the tRPC router if it is cheaper and behaviorally identical.
+- If a temporary tRPC-to-GraphQL service wrapper is unavoidable for one sub-slice, record it in `Progress`, add an explicit S04O cleanup item, and do not enter S06 while `packages/api` has runtime imports from `@klicker-uzh/graphql`.
+
+Next:
+
+- Implement shared live-quiz permission helper with READ/EXECUTE accepted-level parity.
+- Add a USER + SESSION_EXEC procedure/middleware for live-quiz execution mutations.
+- Migrate the three remaining control mutation consumers.
+- Run focused API/control checks and update this section with evidence.
 
 ### 2026-06-02 Done: S04A Runtime Verify Current Control Pilot
 
@@ -320,7 +371,7 @@ Review:
 
 ## Remaining Slice Plan
 
-### S04B Finish Frontend-Control Reads
+### S04B Finish Frontend-Control Reads (Completed)
 
 Goal: Complete the control app read-only migration.
 
@@ -354,33 +405,45 @@ Commit: `feat(api): migrate control read screens to trpc`
 
 Goal: Move control app mutations to tRPC with React Query invalidation.
 
-Likely operations:
+Remaining operations from the current control audit:
 
-- Logout user mutation from layout/header.
-- Start live quiz.
-- End live quiz.
-- Cancel scheduled live quiz.
-- Activate/deactivate live quiz block.
-- Modify live quiz settings used by control.
+- `LogoutUserDocument` in `Header.tsx`.
+- `StartLiveQuizDocument` in `StartModal.tsx`.
+- `ActivateLiveQuizBlockDocument` in `session/[id].tsx`.
+- `DeactivateLiveQuizBlockDocument` in `session/[id].tsx`.
+- `EndLiveQuizDocument` in `session/[id].tsx`.
 
 Do:
 
-1. Audit remaining `useMutation`, Apollo cache writes, and `refetchQueries` in `apps/frontend-control/src`.
-2. Add mutation input schemas and procedure tests for permission/error cases.
-3. Reuse GraphQL service logic; extract service helpers only if resolver logic is transport-coupled.
-4. Replace Apollo mutations one flow at a time.
-5. Replace cache writes/refetches with `trpc.useUtils()` invalidation.
-6. Preserve button disabled/loading/error behavior.
-7. Browser verify start/end/block flows with seeded or manually created live quiz.
+1. Re-audit remaining `useMutation`, Apollo cache writes, and `refetchQueries` in `apps/frontend-control/src`.
+2. Add shared API permission helper with GraphQL parity for `PermissionLevel.EXECUTE`.
+3. Add or reuse a USER + SESSION_EXEC tRPC procedure for live-quiz execution mutations.
+4. Add mutation input schemas:
+   - `{ id: string }` for start/end.
+   - `{ quizId: string, blockId: number }` for block activation/deactivation.
+5. Reuse GraphQL behavior source without duplicating complex mutation internals:
+   - Preferred: extract transport-neutral live-quiz service logic to `packages/api/src/services/**` and make GraphQL delegate to it.
+   - Accept temporary wrappers only when recorded and blocked by S04O.
+6. Implement `user.logout` with the same cookie expiry semantics as GraphQL logout.
+7. Implement `liveQuiz.start`, `liveQuiz.activateBlock`, `liveQuiz.deactivateBlock`, and `liveQuiz.end` with narrow DTO outputs.
+8. Add focused API tests for auth/scope, permission denial, and success DTO mapping where service behavior can be mocked cheaply.
+9. Replace Apollo mutations in Header, StartModal, and session page.
+10. Replace Apollo refetch/cache writes with `trpc.useUtils()` invalidation:
+    - `liveQuiz.unassigned`
+    - `liveQuiz.control`
+    - affected control course queries where start/end changes list membership.
+11. Preserve button disabled/loading/error behavior and existing redirects.
+12. Browser verify start/end/block flows with seeded or manually created live quiz; record data gaps if local seed only has ended quizzes.
 
 Check:
 
 ```bash
 volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test
 volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build
 volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-control check
 volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-control build
-rg -n "@apollo/client|@klicker-uzh/graphql|useMutation|refetchQueries|cache\\.modify|cache\\.write" apps/frontend-control/src
+rg -n "@apollo/client|@klicker-uzh/graphql|useMutation|refetchQueries|cache\\.modify|cache\\.write|LogoutUserDocument|StartLiveQuizDocument|ActivateLiveQuizBlockDocument|DeactivateLiveQuizBlockDocument|EndLiveQuizDocument" apps/frontend-control/src
 ```
 
 Commit: `feat(api): migrate control mutations to trpc`
@@ -723,6 +786,36 @@ volta run --node 20.19.4 --pnpm 10.15.0 pnpm run check
 ```
 
 Commit: `chore(types): replace generated graphql type leaks`
+
+### S04O API No-GraphQL Runtime Dependency Gate
+
+Goal: Ensure the new API package can survive final GraphQL deletion.
+
+Why: During coexistence it can be tempting to call `@klicker-uzh/graphql` services from tRPC. That can be acceptable only as a temporary bridge, but final cleanup cannot remove GraphQL while the future API package depends on it.
+
+Gate:
+
+```bash
+rg -n "@klicker-uzh/graphql|packages/graphql|graphql/dist" packages/api apps/*/src
+```
+
+Do:
+
+1. Audit every API/app import from `@klicker-uzh/graphql`.
+2. For type-only generated imports in mixed shared components, replace with `RouterOutputs`, local structural types, or domain enums from a non-GraphQL package.
+3. For runtime service imports, extract the needed transport-neutral service into `packages/api/src/services/**` or another server-only package and update GraphQL to delegate while it still exists.
+4. Confirm `packages/api` has no runtime dependency on `@klicker-uzh/graphql`.
+5. Keep this gate blocking S06.
+
+Check:
+
+```bash
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build
+rg -n "@klicker-uzh/graphql|packages/graphql|graphql/dist" packages/api apps/*/src
+```
+
+Commit: `chore(api): remove graphql runtime dependency from trpc api`
 
 ### S05A Realtime Audit and Transport-Neutral Event Bridge
 
