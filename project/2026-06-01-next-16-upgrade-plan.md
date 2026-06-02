@@ -132,6 +132,7 @@ Upgrade KlickerUZH from Next.js 15.5.x to Next.js 16 as the first major dependen
 - 2026-06-01: Full Cypress/Playwright E2E is pending explicit user approval to stop or move unrelated local services. Current blockers: `catalog-firecrawl-api-1` reserves `127.0.0.1:3002`, and `doc-processing-hatchet-lite-hatchet-lite-1` reserves `7078`; OLAT API Docker test also failed because the existing Klicker Postgres container reserves `5432`.
 - 2026-06-01: Final local security review found one config risk in the shared Next image optimizer settings: `dangerouslyAllowLocalIP` was enabled for every non-production environment, including staging. It is now restricted to `NODE_ENV=development` or `NODE_ENV=test`; staging follows the production-safe default.
 - 2026-06-01: Branch-wide upgrade report and implementation goal prompt added in `project/2026-06-01-next-16-upgrade-report.md`. Browser smoke screenshots were copied to `project/2026-06-01-next-16-screenshots/` for PR evidence. Draft PR creation is next; full E2E and audit remain explicit-approval blockers.
+- 2026-06-02: User-approved stops cleared the original `3002` and `7078` conflicts; current `lsof` output shows no listener on either port. Full E2E remains blocked by unrelated `data-ingestion-hatchet-lite-1` owning Klicker Hatchet ports `7077` and `8888`, and by the need for explicit approval before destructively resetting the local Klicker PostgreSQL database for E2E schema/seed setup.
 
 ## Follow-Up PRs
 

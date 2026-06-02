@@ -163,7 +163,9 @@ Blocked or pending:
 - `pnpm audit --audit-level high`: pending explicit approval to submit dependency inventory to npm's advisory endpoint.
 - `pnpm --filter @klicker-uzh/cypress test:run`: pending a full local E2E stack with required ports free.
 - `PLAYWRIGHT_BASE_URL=http://127.0.0.1:3001 pnpm --filter @klicker-uzh/playwright test:run`: pending a full local E2E stack with required ports free.
-- Current local blockers: `catalog-firecrawl-api-1` uses `127.0.0.1:3002`, `doc-processing-hatchet-lite-hatchet-lite-1` uses `7078`, and the existing Klicker Postgres container uses `5432` for OLAT API Docker tests.
+- Current local blocker: unrelated `data-ingestion-hatchet-lite-1` owns Hatchet ports `7077` and `8888`, preventing the stopped `klicker-uzh-hatchet-1` container from starting for the Klicker E2E stack.
+- The local Klicker PostgreSQL database needs an explicit destructive-reset approval before the Cypress/Playwright E2E schema and seed setup can be completed.
+- Previously approved stops cleared the earlier `3002` and `7078` conflicts; `lsof` currently shows no listener on either port.
 
 ## Follow-Up Upgrade Plan
 
@@ -197,7 +199,8 @@ Required process:
 2. Verify the branch status and avoid staging unrelated files.
 3. Clear the local E2E blockers:
    - Get explicit user approval before stopping unrelated containers.
-   - Free ports 3002 and 7078, currently held by catalog-firecrawl-api-1 and doc-processing-hatchet-lite-hatchet-lite-1.
+   - Free Hatchet ports 7077 and 8888, currently held by data-ingestion-hatchet-lite-1.
+   - Get explicit user approval before resetting the local Klicker PostgreSQL database for E2E schema/seed setup.
 4. Get explicit user approval before running pnpm audit because npm audit submits dependency inventory to the configured registry.
 5. Run:
    - pnpm install --frozen-lockfile
