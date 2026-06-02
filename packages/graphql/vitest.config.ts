@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
@@ -12,6 +13,9 @@ export default defineConfig({
     maxWorkers: 1,
   },
   resolve: {
+    alias: {
+      src: fileURLToPath(new URL('./src', import.meta.url)),
+    },
     // Let Node handle workspace packages naturally with proper conditions
     conditions: ['node', 'import', 'default'],
   },

@@ -116,6 +116,7 @@ Rollup workspaces: `apps/backend-docker`, `apps/hatchet-worker-general`, `apps/h
 - Updated `tsconfig.json` JSX mode for Next 16/React 19.2 expectations.
 - Added `.prettierignore` entry for generated `next-env.d.ts` files because Next 16 rewrites them with framework formatting.
 - Migrated Vitest 4 config away from removed `poolOptions.forks.singleFork`; this branch keeps test-file isolation on and uses `maxWorkers: 1` where required.
+- Added a package-local `src` alias in `packages/graphql/vitest.config.ts` after CI showed Vitest 4 no longer resolved the GraphQL package's base-url test imports automatically.
 - Added Rollup `--forceExit` only to non-watch Rollup build scripts after local evidence showed TypeScript plugin filesystem watchers kept the process alive after successful builds. Long-running dev/watch/preview scripts do not use it.
 
 ## Compatibility Notes
@@ -149,6 +150,7 @@ Passed:
 - `pnpm --filter @klicker-uzh/grading test` -> 10 tests passed
 - `pnpm --filter @klicker-uzh/chat test:run` -> 40 tests passed
 - `pnpm --filter @klicker-uzh/office-addin build:office`
+- Focused GraphQL CI-fix smoke: `pnpm --filter @klicker-uzh/graphql exec vitest run test/liveQuizPointCorrections.test.ts` no longer fails with `Cannot find package 'src/...'`; local execution now stops at the expected missing `HATCHET_CLIENT_TOKEN` prerequisite.
 
 Browser smoke screenshots against built Next apps:
 

@@ -133,6 +133,7 @@ Upgrade KlickerUZH from Next.js 15.5.x to Next.js 16 as the first major dependen
 - 2026-06-01: Final local security review found one config risk in the shared Next image optimizer settings: `dangerouslyAllowLocalIP` was enabled for every non-production environment, including staging. It is now restricted to `NODE_ENV=development` or `NODE_ENV=test`; staging follows the production-safe default.
 - 2026-06-01: Branch-wide upgrade report and implementation goal prompt added in `project/2026-06-01-next-16-upgrade-report.md`. Browser smoke screenshots were copied to `project/2026-06-01-next-16-screenshots/` for PR evidence. Draft PR creation is next; full E2E and audit remain explicit-approval blockers.
 - 2026-06-02: User-approved stops cleared the original `3002` and `7078` conflicts; current `lsof` output shows no listener on either port. Full E2E remains blocked by unrelated `data-ingestion-hatchet-lite-1` owning Klicker Hatchet ports `7077` and `8888`, and by the need for explicit approval before destructively resetting the local Klicker PostgreSQL database for E2E schema/seed setup.
+- 2026-06-02: CI GraphQL package test failed after the Vitest 4 migration because package-local `src/...` base-url imports were no longer resolved by Vitest. Added an explicit `src` alias in `packages/graphql/vitest.config.ts`; local focused rerun now reaches Hatchet token setup instead of the previous module-resolution failure.
 
 ## Follow-Up PRs
 
