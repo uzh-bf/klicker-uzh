@@ -99,17 +99,63 @@ rg -n "/api/graphql|graphqlEndpoint|GraphQL API" apps packages deploy util docs 
 
 ## Progress
 
+### 2026-06-02 Done: S04A Runtime Verify Current Control Pilot
+
+Write scope:
+
+- `apps/backend-docker/src/index.ts`: allow `PORT` override so the tRPC worktree can run beside another local Klicker branch that already owns port 3000.
+- `apps/backend-docker/.env.example`: document the default backend port.
+- No pilot route/component behavior changes were needed.
+
+Operation mapping:
+
+```text
+Slice: S04A Runtime Verify Current Control Pilot
+GraphQL operation(s): QGetUserProfile, QGetControlCourses, QGetControlCourse
+GraphQL resolver(s): userProfile/self-style user lookup, controlCourses, controlCourse
+Service/helper behavior source: Prisma user/course/derivedPermission queries already mirrored in packages/api control read routers
+tRPC router.procedure: user.profile, course.controlCourses, course.controlCourse
+Input schema: course.controlCourse uses { courseId: string }
+Output DTO: user profile DTO, control course list item DTO, control course detail DTO
+Active frontend consumers: apps/frontend-control Layout, index page, course detail page
+Apollo cache/refetch/subscription behavior: read-only hooks, no cache writes
+React Query replacement: tRPC useQuery hooks through TrpcProvider
+Browser verification path: frontend-control course list and course detail against a locally running tRPC worktree backend
+Cleanup blocked until: control mutations, unassigned reads, live quiz reads, embedding modal, and session flows migrate
+```
+
+Evidence:
+
+- Checks passed: `pnpm --filter @klicker-uzh/api test` (5 tests).
+- Checks passed: `pnpm --filter @klicker-uzh/api build`.
+- Checks passed: `pnpm --filter @klicker-uzh/backend-docker check`.
+- Checks passed: `pnpm --filter @klicker-uzh/backend-docker build`.
+- Checks passed: `pnpm --filter @klicker-uzh/frontend-control check`.
+- Runtime: tRPC worktree backend started on `127.0.0.1:3100`; `GET /healthz` returned `OK`.
+- Runtime: `GET /api/trpc/system.health` returned `{ api: "trpc", status: "ok" }`.
+- Browser: `npx agent-browser` rendered course list at `http://127.0.0.1:3103/`; screenshot `/tmp/klicker-control-trpc-s04a-list.png`.
+- Browser: `npx agent-browser` rendered course detail at `http://127.0.0.1:3103/course/b8b1305e-bfe8-458b-bf26-9082fdca953f`; screenshot `/tmp/klicker-control-trpc-s04a-detail.png`.
+- Browser: resource log included `/api/trpc/user.profile,course.controlCourses`.
+- Browser: resource log included `/api/trpc/user.profile,course.controlCourse`.
+- Coexistence audit: GraphQL/Apollo/Yoga references still intentionally present in 511 files.
+- Coexistence audit: tRPC references present in 17 files.
+
+Review:
+
+- Review subagent: `DONE_WITH_CONCERNS`; concerns were missing runtime proof and wrong smoke ports, both addressed in this progress update.
+- Simplification subagent: `DONE_WITH_CONCERNS`; accepted the configurable S04A check commands and kept the minimal `PORT` override without extra validation.
+
 ### 2026-06-02 Done
 
 - S01/S02 foundation committed.
 - S03 provider shells committed.
 - S04A frontend-control read pilot committed.
-- Current runtime gap: browser smoke for the pilot still needs a running Klicker dev stack.
+- S04A runtime verification completed against tRPC worktree backend/control alternate ports.
 
 ### Next
 
-- Run S04A runtime verification against the local stack.
-- Then migrate one remaining frontend-control workflow slice.
+- Start S04B: finish frontend-control read-only screens (`course/unassigned`, session read query portions, embedding modal reads if still read-only).
+- Keep GraphQL/Apollo mounted for remaining control mutations and unmigrated apps.
 
 ## Remaining Surface Summary
 
@@ -190,8 +236,10 @@ Do:
 Check:
 
 ```bash
-curl -sS http://localhost:3000/healthz
-npx agent-browser open http://localhost:3003
+PORT=${PORT:-3000}
+CONTROL_ORIGIN=${CONTROL_ORIGIN:-http://localhost:3003}
+curl -sS "http://localhost:${PORT}/healthz"
+npx agent-browser open "$CONTROL_ORIGIN"
 npx agent-browser screenshot /tmp/klicker-control-trpc-course-list.png --full
 volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test
 volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-control check

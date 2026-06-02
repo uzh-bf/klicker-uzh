@@ -134,8 +134,11 @@ migrate(prisma).then(() => {
     process.exit(1)
   }
 
-  const server = app.listen(3000, () => {
-    console.log(`GraphQL API located at 0.0.0.0:3000${yogaApp.graphqlEndpoint}`)
+  const port = Number(process.env.PORT ?? 3000)
+  const server = app.listen(port, () => {
+    console.log(
+      `GraphQL API located at 0.0.0.0:${port}${yogaApp.graphqlEndpoint}`
+    )
 
     const wsServer = new WebSocket.WebSocketServer({
       server,
