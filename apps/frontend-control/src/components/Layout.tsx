@@ -1,6 +1,5 @@
-import { useQuery } from '@apollo/client'
-import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { trpc } from '@lib/trpc'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
@@ -17,10 +16,10 @@ interface LayoutProps {
 function Layout({ title, children, quizId, className }: LayoutProps) {
   const router = useRouter()
   const {
-    loading: loadingUser,
+    isLoading: loadingUser,
     error: errorUser,
     data: dataUser,
-  } = useQuery(UserProfileDocument)
+  } = trpc.user.profile.useQuery()
 
   if ((!dataUser && !loadingUser) || errorUser) {
     router.push('/login')

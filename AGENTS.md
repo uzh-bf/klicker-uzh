@@ -221,6 +221,7 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 - **Chat PWA login redirects**: `apps/chat/src/app/noLogin/page.tsx` must pass an absolute chat URL to the PWA login `redirect_to`; a relative chatbot path makes the PWA redirect to its own domain and 404. Local chat dev also needs ignored local env values for the backend `APP_SECRET` and `DATABASE_URL` so participant cookies verify and Prisma can load chatbot data.
 - **Chat Vitest alias resolution**: `apps/chat/vitest.config.ts` mirrors the app `@/*` alias from `apps/chat/tsconfig.json`; keep this in sync when adding client tests for modules that import from `@/src/...`.
 - **Dual API migration dependency pin**: On the current `v3` TypeScript 5.6 branch, use tRPC `10.45.2` for the parallel `packages/api` stack; tRPC 11 declares a TypeScript `>=5.7.2` peer and should wait for a dedicated TypeScript upgrade. (`packages/api/package.json`)
+- **tRPC API dist before app-local checks**: After changing `packages/api/src/trpc/*`, rebuild `@klicker-uzh/api` before app-local frontend `check` commands, because the apps consume package `dist` declarations when run outside Turbo's root dependency graph. Root `pnpm run check` handles ordering via `^build`. (`packages/api`, `apps/frontend-*`)
 
 ## Factory Skills (AI Assistance)
 

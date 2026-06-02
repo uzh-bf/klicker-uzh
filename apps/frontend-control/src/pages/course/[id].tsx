@@ -1,9 +1,5 @@
-import { useQuery } from '@apollo/client'
-import {
-  GetControlCourseDocument,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { trpc } from '@lib/trpc'
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -12,14 +8,26 @@ import { useEffect } from 'react'
 import Layout from '../../components/Layout'
 import LiveQuizLists from '../../components/liveQuizzes/LiveQuizLists'
 
+const publicationStatus = {
+  draft: 'DRAFT',
+  published: 'PUBLISHED',
+  scheduled: 'SCHEDULED',
+} as const
+
 function Course() {
   const t = useTranslations()
   const router = useRouter()
+  const courseId = router.query.id
+  const validCourseId = typeof courseId === 'string' ? courseId : undefined
 
-  const { loading, error, data } = useQuery(GetControlCourseDocument, {
-    variables: { courseId: router.query.id as string },
-    skip: !router.query.id,
-  })
+  const {
+    isLoading: loading,
+    error,
+    data,
+  } = trpc.course.controlCourse.useQuery(
+    { courseId: validCourseId ?? '' },
+    { enabled: typeof validCourseId !== 'undefined' }
+  )
 
   useEffect(() => {
     if (data && !data.controlCourse) {
@@ -50,12 +58,12 @@ function Course() {
   const { controlCourse } = data
 
   const runningQuizzes = controlCourse.liveQuizzes?.filter(
-    (quiz) => quiz.status === PublicationStatus.Published
+    (quiz) => quiz.status === publicationStatus.published
   )
   const plannedQuizzes = controlCourse.liveQuizzes?.filter(
     (quiz) =>
-      quiz.status === PublicationStatus.Draft ||
-      quiz.status === PublicationStatus.Scheduled
+      quiz.status === publicationStatus.draft ||
+      quiz.status === publicationStatus.scheduled
   )
 
   return (

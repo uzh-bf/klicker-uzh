@@ -8,6 +8,7 @@
     "dist"
   ],
   "dependencies": {
+    "@klicker-uzh/prisma": "workspace:*",
     "@trpc/server": "10.45.2",
     "superjson": "2.2.6",
     "zod": "3.25.76"

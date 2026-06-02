@@ -1,7 +1,6 @@
-import { useQuery } from '@apollo/client'
 import { faList, faPeopleGroup } from '@fortawesome/free-solid-svg-icons'
-import { GetControlCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { trpc } from '@lib/trpc'
 import { H4, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -11,10 +10,10 @@ import ListButton from '../components/common/ListButton'
 function Index() {
   const t = useTranslations()
   const {
-    loading: loadingCourses,
+    isLoading: loadingCourses,
     error: errorCourses,
     data: dataCourses,
-  } = useQuery(GetControlCoursesDocument)
+  } = trpc.course.controlCourses.useQuery()
 
   if (loadingCourses) {
     return (

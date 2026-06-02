@@ -24,6 +24,49 @@ Start with low-risk read-heavy workflows before mutations and realtime:
 
 The exact order should be adjusted after S00 audit results.
 
+## Current Vertical Progress
+
+### 2026-06-02 Control Read Pilot
+
+Status: implemented, typechecked, and unit-tested. Runtime browser smoke remains gated on a running local Klicker dev stack.
+
+GraphQL operation:
+
+- `UserProfileDocument`
+- `GetControlCoursesDocument`
+- `GetControlCourseDocument`
+
+tRPC router/procedure:
+
+- `user.profile`
+- `course.controlCourses`
+- `course.controlCourse`
+
+Input schema:
+
+- `controlCourseInput`: `{ courseId: string }`
+
+Output DTO:
+
+- `toUserProfile`
+- `toControlCourseListItem`
+- `toControlCourse`
+
+Active frontend consumers migrated:
+
+- `apps/frontend-control/src/components/Layout.tsx`
+- `apps/frontend-control/src/pages/index.tsx`
+- `apps/frontend-control/src/pages/course/[id].tsx`
+
+Evidence:
+
+- `pnpm --filter @klicker-uzh/api test` passed.
+- `pnpm --filter @klicker-uzh/api check` passed.
+- `pnpm --filter @klicker-uzh/api build` passed.
+- `pnpm --filter @klicker-uzh/frontend-control check` passed.
+- `pnpm run check` passed.
+- GraphQL coexistence audit still finds `/api/graphql`, `@klicker-uzh/graphql`, GraphQL Yoga, GraphQL WS, and Apollo clients.
+
 ## Write Scope Per Vertical
 
 - `packages/api/src/trpc/routers/<domain>.ts`

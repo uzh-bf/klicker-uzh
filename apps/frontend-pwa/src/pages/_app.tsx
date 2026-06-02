@@ -11,6 +11,7 @@ import '@fortawesome/fontawesome-svg-core/styles.css'
 import { getMessageFallback, onError, routing } from '@klicker-uzh/i18n'
 import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
 import { useApollo } from '@lib/apollo'
+import { TrpcProvider } from '@lib/trpc'
 import { init } from '@socialgouv/matomo-next'
 import { Toaster } from '@uzh-bf/design-system'
 import { Locale, NextIntlClientProvider } from 'next-intl'
@@ -96,8 +97,10 @@ function App({ Component, pageProps }: AppProps) {
         getMessageFallback={getMessageFallback}
       >
         <ApolloProvider client={apolloClient}>
-          <Toaster closeButton position="top-right" />
-          <Component {...pageProps} />
+          <TrpcProvider>
+            <Toaster closeButton position="top-right" />
+            <Component {...pageProps} />
+          </TrpcProvider>
         </ApolloProvider>
       </NextIntlClientProvider>
       <style jsx global>{`

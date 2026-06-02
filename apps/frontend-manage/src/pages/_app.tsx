@@ -16,6 +16,7 @@ import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import '../globals.css'
 import { useApollo } from '../lib/apollo'
+import { TrpcProvider } from '../lib/trpc'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -47,18 +48,20 @@ function App({ Component, pageProps }: AppProps) {
       className={`flex h-full min-h-full flex-col bg-white ${sourceSansPro.variable} font-sans`}
     >
       <ApolloProvider client={apolloClient}>
-        <NextIntlClientProvider
-          timeZone="Europe/Zurich"
-          messages={pageProps.messages}
-          locale={validLocale}
-          onError={onError}
-          getMessageFallback={getMessageFallback}
-        >
-          <DndProvider backend={HTML5Backend}>
-            <Toaster closeButton position="top-right" />
-            <Component {...pageProps} />
-          </DndProvider>
-        </NextIntlClientProvider>
+        <TrpcProvider>
+          <NextIntlClientProvider
+            timeZone="Europe/Zurich"
+            messages={pageProps.messages}
+            locale={validLocale}
+            onError={onError}
+            getMessageFallback={getMessageFallback}
+          >
+            <DndProvider backend={HTML5Backend}>
+              <Toaster closeButton position="top-right" />
+              <Component {...pageProps} />
+            </DndProvider>
+          </NextIntlClientProvider>
+        </TrpcProvider>
       </ApolloProvider>
 
       <style jsx global>{`

@@ -39,6 +39,25 @@ Add opt-in tRPC client helpers and providers beside Apollo in frontend apps. Thi
 - Apollo imports/providers still exist.
 - No page behavior changes are intended.
 
+## Progress
+
+### 2026-06-02 Done
+
+- Added app-local tRPC helpers and `TrpcProvider` wrappers in `apps/frontend-control`, `apps/frontend-manage`, and `apps/frontend-pwa`.
+- Kept Apollo providers mounted in all three apps.
+- Added pinned client dependencies: `@trpc/client@10.45.2`, `@trpc/react-query@10.45.2`, `@tanstack/react-query@4.42.0`, `superjson@2.2.6`.
+- tRPC client URL derives from the existing GraphQL API URL and rewrites `/api/graphql` to `/api/trpc`.
+- PWA helper forwards the participant bearer token from `sessionStorage`; manage/control helpers preserve cookie credentials.
+
+Evidence:
+
+- `pnpm --filter @klicker-uzh/frontend-control check` passed.
+- `pnpm --filter @klicker-uzh/frontend-manage check` passed.
+- `pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- Apollo coexistence audit still finds `@apollo/client` and `ApolloProvider`.
+- tRPC audit finds `@trpc`, `createTRPCReact`, `TrpcProvider`, and `/api/trpc`.
+- Browser smoke not run: local Klicker backend/control frontend were not listening on `localhost:3000` or `localhost:3003`; full dev stack was not started implicitly.
+
 ## Verification
 
 ```bash
