@@ -1,9 +1,4 @@
-import { useMutation } from '@apollo/client'
-import {
-  GetUnassignedLiveQuizzesDocument,
-  PublicationStatus,
-  StartLiveQuizDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { trpc } from '@lib/trpc'
 import { H3, Modal, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -19,43 +14,13 @@ function StartModal({
 }) {
   const t = useTranslations()
   const router = useRouter()
-  const [startLiveQuiz, { loading: startingLiveQuiz }] = useMutation(
-    StartLiveQuizDocument,
-    {
-      optimisticResponse: {
-        startLiveQuiz: {
-          __typename: 'LiveQuizMeta',
-          id: quizId,
-          name: quizName,
-          status: PublicationStatus.Published,
-        },
-      },
-      update(cache, { data: res }) {
-        // check if the request was successful
-        const success = !!res?.startLiveQuiz?.id
-        if (!success) return
-
-        // update the cache with the updated state for the started live quiz
-        cache.updateQuery(
-          { query: GetUnassignedLiveQuizzesDocument },
-          (data) => {
-            if (!data?.unassignedLiveQuizzes) return
-
-            return {
-              unassignedLiveQuizzes: data.unassignedLiveQuizzes.map((quiz) =>
-                quiz.id === quizId
-                  ? {
-                      ...quiz,
-                      status: PublicationStatus.Published,
-                    }
-                  : quiz
-              ),
-            }
-          }
-        )
-      },
-    }
-  )
+  const utils = trpc.useUtils()
+  const startLiveQuiz = trpc.liveQuiz.start.useMutation({
+    onSuccess: async () => {
+      await utils.liveQuiz.unassigned.invalidate()
+      await utils.course.controlCourses.invalidate()
+    },
+  })
 
   return (
     <Modal
@@ -64,7 +29,8 @@ function StartModal({
       primaryLabel={t('shared.generic.start')}
       onPrimaryAction={async () => {
         try {
-          await startLiveQuiz({ variables: { id: quizId } })
+          const response = await startLiveQuiz.mutateAsync({ id: quizId })
+          if (!response.liveQuiz?.id) throw new Error('Live quiz not started')
           router.push(`/session/${quizId}`)
         } catch (error) {
           onClose()
@@ -75,7 +41,7 @@ function StartModal({
           })
         }
       }}
-      primaryLoading={startingLiveQuiz}
+      primaryLoading={startLiveQuiz.isLoading}
       dataPrimaryAction={{ cy: 'confirm-start-live-quiz' }}
       secondaryLabel={t('shared.generic.cancel')}
       onSecondaryAction={onClose}

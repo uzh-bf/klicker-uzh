@@ -3,6 +3,14 @@ import { createHmac } from 'node:crypto'
 
 type ControlLiveQuizListItem = Pick<DB.LiveQuiz, 'id' | 'name' | 'status'>
 
+type LiveQuizMetaSource = Pick<DB.LiveQuiz, 'id' | 'name' | 'status'>
+
+type LiveQuizStatusSource = Pick<DB.LiveQuiz, 'id' | 'status'>
+
+type ActivatedLiveQuizSource = Pick<DB.LiveQuiz, 'id' | 'status'> & {
+  blocks?: Pick<DB.ElementBlock, 'id' | 'status'>[] | null
+}
+
 type ControlLiveQuizBlockSource = Pick<
   DB.ElementBlock,
   | 'execution'
@@ -46,6 +54,39 @@ export function toControlLiveQuizListItem(quiz: ControlLiveQuizListItem) {
     id: quiz.id,
     name: quiz.name,
     status: quiz.status,
+  }
+}
+
+export function toLiveQuizMeta(quiz: LiveQuizMetaSource | null) {
+  if (!quiz) return null
+
+  return {
+    id: quiz.id,
+    name: quiz.name,
+    status: quiz.status,
+  }
+}
+
+export function toLiveQuizStatus(quiz: LiveQuizStatusSource | null) {
+  if (!quiz) return null
+
+  return {
+    id: quiz.id,
+    status: quiz.status,
+  }
+}
+
+export function toActivatedLiveQuiz(quiz: ActivatedLiveQuizSource | null) {
+  if (!quiz) return null
+
+  return {
+    id: quiz.id,
+    status: quiz.status,
+    blocks:
+      quiz.blocks?.map((block) => ({
+        id: block.id,
+        status: block.status,
+      })) ?? [],
   }
 }
 

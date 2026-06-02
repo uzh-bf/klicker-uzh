@@ -275,20 +275,23 @@ Next:
 
 - S04C active: migrate frontend-control logout/start/session mutations and React Query invalidation.
 
-### 2026-06-02 Planned: S04C Frontend-Control Mutations
+### 2026-06-02 Done: S04C Frontend-Control Mutations
 
-Status: next implementation slice.
+Status: implemented, focused-check verified, coexistence-audited, reviewed/simplified, and ready to commit.
 
 Write scope:
 
+- `packages/api/package.json`
+- `pnpm-lock.yaml`
+- `packages/api/src/services/liveQuizExecution.ts`
 - `packages/api/src/trpc/routers/user.ts`
 - `packages/api/src/trpc/routers/liveQuiz.ts`
 - `packages/api/src/trpc/procedures.ts`
-- `packages/api/src/trpc/permissions.ts` or an equivalent shared permission helper
+- `packages/api/src/trpc/permissions.ts`
 - `packages/api/src/trpc/dto/liveQuiz.ts`
 - `packages/api/src/trpc/schemas/liveQuiz.ts`
 - `packages/api/src/trpc/__tests__/**`
-- Existing GraphQL service modules only if needed to extract transport-neutral live-quiz mutation logic
+- `packages/graphql/src/services/liveQuizzes.ts`
 - `apps/frontend-control/src/components/layout/Header.tsx`
 - `apps/frontend-control/src/components/liveQuizzes/StartModal.tsx`
 - `apps/frontend-control/src/pages/session/[id].tsx`
@@ -313,16 +316,50 @@ Cleanup blocked until: S04D control Apollo removal gate
 Service-boundary decision:
 
 - Do not duplicate complex live-quiz mutation internals in tRPC.
-- Preferred path: extract transport-neutral server logic into `packages/api/src/services/**` and have both tRPC procedures and the existing GraphQL resolver/service layer delegate to it.
+- Extract transport-neutral live-quiz execution logic into `packages/api/src/services/liveQuizExecution.ts` and have both tRPC procedures and the existing GraphQL resolver/service layer delegate to it.
 - Simple transport-shaped behavior, such as logout cookie expiry, may be implemented directly in the tRPC router if it is cheaper and behaviorally identical.
-- If a temporary tRPC-to-GraphQL service wrapper is unavoidable for one sub-slice, record it in `Progress`, add an explicit S04O cleanup item, and do not enter S06 while `packages/api` has runtime imports from `@klicker-uzh/graphql`.
+- Avoid a `packages/api` runtime import from `@klicker-uzh/graphql`; S04O remains a hard cleanup gate.
+
+Mapping evidence:
+
+- GraphQL resolvers use `asUserSessionExec` plus `PermissionLevel.EXECUTE` for start/end/activate/deactivate.
+- Logout uses `asUser` and expires `next-auth.session-token` with the same cookie settings as login, but `maxAge: 0`.
+- `startLiveQuiz`, `activateLiveQuizBlock`, `deactivateLiveQuizBlock`, and `endLiveQuiz` use Redis, Hatchet/scheduled jobs, pubSub, invalidation emitter, Teams notifications, and leaderboard/timeline updates. They must be reused/extracted, not copied into router handlers.
 
 Next:
 
-- Implement shared live-quiz permission helper with READ/EXECUTE accepted-level parity.
-- Add a USER + SESSION_EXEC procedure/middleware for live-quiz execution mutations.
-- Migrate the three remaining control mutation consumers.
-- Run focused API/control checks and update this section with evidence.
+- S04D active: remove Apollo provider/helper/package residue from frontend-control after confirming no control GraphQL consumers remain.
+
+Evidence:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm install --config.confirmModulesPurge=false`: passed after package dependency updates.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test`: passed, 17 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-control check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-control build`: passed with existing Next/PWA/Browserslist/page-data warnings only.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/graphql check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/graphql build`: passed with existing Rollup/plugin TypeScript and circular-dependency warnings only.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/backend-docker check`: passed.
+- `git diff --check`: passed.
+
+Audit:
+
+- Control mutation audit: no `LogoutUserDocument`, `StartLiveQuizDocument`, `ActivateLiveQuizBlockDocument`, `DeactivateLiveQuizBlockDocument`, or `EndLiveQuizDocument` references remain in `apps/frontend-control/src`.
+- Control Apollo audit: remaining hits are the app Apollo provider/helper/SSELink/package dependencies plus tRPC hook names; this is S04D scope.
+- API dependency audit: no `packages/api` runtime import from `@klicker-uzh/graphql`; GraphQL now temporarily imports `@klicker-uzh/api` for the shared live-quiz execution service during coexistence.
+
+Review:
+
+- Correctness review: `user.logout` preserves GraphQL cookie expiry semantics; live-quiz start/activate/deactivate/end require USER + SESSION_EXEC scope and `PermissionLevel.EXECUTE` parity before calling the shared execution service.
+- Service-boundary review: moved the complex Redis/Hatchet/pubSub/live-quiz side effects into `packages/api/src/services/liveQuizExecution.ts` and made GraphQL delegate to it, avoiding duplicated mutation internals and avoiding an API-to-GraphQL runtime dependency.
+- Simplification review: kept S04C limited to remaining control mutations and targeted React Query invalidation; deferred Apollo provider/helper/package removal to S04D.
+- Subagent note: no review/simplification subagents were spawned because the currently available tool set does not expose the multi-agent tool.
+
+Residual risk:
+
+- Browser runtime verification was not completed in this slice because the local stack/data was not exercised after the focused checks; S04D must include control smoke verification once the control app no longer has Apollo wiring.
+- The service extraction is a large transport-neutral move from GraphQL into API; focused API tests mock the service boundary, while build/check coverage verifies both callers compile.
 
 ### 2026-06-02 Done: S04A Runtime Verify Current Control Pilot
 

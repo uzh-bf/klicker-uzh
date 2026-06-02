@@ -1,7 +1,6 @@
-import { useMutation } from '@apollo/client'
 import { faRightFromBracket } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { LogoutUserDocument } from '@klicker-uzh/graphql/dist/ops'
+import { trpc } from '@lib/trpc'
 import { Button, Select } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 
@@ -12,7 +11,7 @@ interface HeaderProps {
 function Header({ title }: HeaderProps) {
   const router = useRouter()
   const { pathname, asPath, query } = router
-  const [logoutUser, { loading: loggingOut }] = useMutation(LogoutUserDocument)
+  const logoutUser = trpc.user.logout.useMutation()
 
   return (
     <div className="fixed top-0 flex h-11 w-full flex-row items-center justify-between bg-slate-800 px-2 text-white md:px-4">
@@ -37,10 +36,10 @@ function Header({ title }: HeaderProps) {
         />
         <Button
           basic
-          disabled={loggingOut}
+          disabled={logoutUser.isLoading}
           onClick={async () => {
-            const userIdLogout = await logoutUser()
-            userIdLogout.data?.logoutUser
+            const userIdLogout = await logoutUser.mutateAsync()
+            userIdLogout
               ? router.push('https://www.klicker.uzh.ch')
               : console.log('Logout failed')
           }}

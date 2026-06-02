@@ -1,11 +1,5 @@
-import { useMutation } from '@apollo/client'
 import { faArrowDown, faEllipsis } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ActivateLiveQuizBlockDocument,
-  DeactivateLiveQuizBlockDocument,
-  EndLiveQuizDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { trpc } from '@lib/trpc'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
@@ -28,17 +22,23 @@ function RunningLiveQuiz() {
   const [currentBlockOrder, setCurrentBlockOrder] = useState<
     number | undefined
   >(undefined)
-
-  const [activateLiveQuizBlock, { loading: activatingBlock }] = useMutation(
-    ActivateLiveQuizBlockDocument
-  )
-  const [deactivateLiveQuizBlock, { loading: deactivatingBlock }] = useMutation(
-    DeactivateLiveQuizBlockDocument
-  )
-  const [endLiveQuiz, { loading: endingLiveQuiz }] =
-    useMutation(EndLiveQuizDocument)
   const quizId = router.query.id
   const validQuizId = typeof quizId === 'string' ? quizId : undefined
+  const utils = trpc.useUtils()
+  const invalidateCurrentLiveQuiz = async () => {
+    if (validQuizId) {
+      await utils.liveQuiz.control.invalidate({ id: validQuizId })
+    }
+  }
+  const activateLiveQuizBlock = trpc.liveQuiz.activateBlock.useMutation({
+    onSuccess: invalidateCurrentLiveQuiz,
+  })
+  const deactivateLiveQuizBlock = trpc.liveQuiz.deactivateBlock.useMutation({
+    onSuccess: invalidateCurrentLiveQuiz,
+  })
+  const endLiveQuiz = trpc.liveQuiz.end.useMutation({
+    onSuccess: invalidateCurrentLiveQuiz,
+  })
 
   const {
     isLoading: quizLoading,
@@ -134,15 +134,16 @@ function RunningLiveQuiz() {
                 </div>
               )}
             <Button
-              loading={deactivatingBlock}
+              loading={deactivateLiveQuizBlock.isLoading}
               onClick={async () => {
-                await deactivateLiveQuizBlock({
-                  variables: {
-                    quizId: id,
-                    blockId:
-                      blocks.find((block) => block.order === currentBlockOrder)
-                        ?.id || -1,
-                  },
+                const blockId = blocks.find(
+                  (block) => block.order === currentBlockOrder
+                )?.id
+                if (typeof blockId === 'undefined') return
+
+                await deactivateLiveQuizBlock.mutateAsync({
+                  quizId: id,
+                  blockId,
                 })
                 setCurrentBlockOrder(undefined)
               }}
@@ -175,20 +176,19 @@ function RunningLiveQuiz() {
               />
             )}
             <Button
-              loading={activatingBlock}
+              loading={activateLiveQuizBlock.isLoading}
               onClick={async () => {
-                {
-                  await activateLiveQuizBlock({
-                    variables: {
-                      quizId: id,
-                      blockId:
-                        blocks.find((block) => block.order === nextBlockOrder)
-                          ?.id || -1,
-                    },
-                  })
-                  setCurrentBlockOrder(nextBlockOrder)
-                  setNextBlockOrder(nextBlockOrder + 1)
-                }
+                const blockId = blocks.find(
+                  (block) => block.order === nextBlockOrder
+                )?.id
+                if (typeof blockId === 'undefined') return
+
+                await activateLiveQuizBlock.mutateAsync({
+                  quizId: id,
+                  blockId,
+                })
+                setCurrentBlockOrder(nextBlockOrder)
+                setNextBlockOrder(nextBlockOrder + 1)
               }}
               className={{
                 root: 'bg-primary-80 float-right text-white',
@@ -210,9 +210,16 @@ function RunningLiveQuiz() {
               className={{ root: 'mb-2' }}
             />
             <Button
-              loading={endingLiveQuiz}
+              loading={endLiveQuiz.isLoading}
               onClick={async () => {
-                await endLiveQuiz({ variables: { id: id } })
+                await endLiveQuiz.mutateAsync({ id })
+                if (course) {
+                  await utils.course.controlCourse.invalidate({
+                    courseId: course.id,
+                  })
+                } else {
+                  await utils.liveQuiz.unassigned.invalidate()
+                }
                 router.push(
                   course ? `/course/${course?.id}` : '/course/unassigned'
                 )

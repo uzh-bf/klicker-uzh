@@ -80,7 +80,20 @@ function requireRole(requiredRole: UserRole) {
   })
 }
 
+function requireScope(requiredScope: UserLoginScope) {
+  return middleware(({ ctx, next }) => {
+    if (!ctx.user?.scope || !hasUserScope(ctx.user.scope, requiredScope)) {
+      throwForbidden()
+    }
+
+    return next()
+  })
+}
+
 export const authenticatedProcedure = publicProcedure.use(requireAuthenticated)
 export const userProcedure = authenticatedProcedure.use(
   requireRole(UserRole.USER)
+)
+export const userSessionExecProcedure = userProcedure.use(
+  requireScope(UserLoginScope.SESSION_EXEC)
 )

@@ -1,38 +1,45 @@
 import { PermissionLevel, PublicationStatus } from '@klicker-uzh/prisma/client'
-import { getPrisma, type TRPCContext } from '../context.js'
+import { TRPCError } from '@trpc/server'
 import {
+  activateLiveQuizBlock,
+  deactivateLiveQuizBlock,
+  endLiveQuiz,
+  startLiveQuiz,
+  type LiveQuizExecutionContext,
+} from '../../services/liveQuizExecution.js'
+import { getPrisma, type TRPCContextWithUser } from '../context.js'
+import {
+  toActivatedLiveQuiz,
   toControlLiveQuiz,
   toControlLiveQuizListItem,
   toLiveQuizEmbeddingInfo,
+  toLiveQuizMeta,
+  toLiveQuizStatus,
 } from '../dto/liveQuiz.js'
 import { router } from '../init.js'
-import { userProcedure } from '../procedures.js'
-import { liveQuizIdInput } from '../schemas/liveQuiz.js'
+import {
+  hasLiveQuizPermission,
+  requireLiveQuizPermission,
+} from '../permissions.js'
+import { userProcedure, userSessionExecProcedure } from '../procedures.js'
+import { liveQuizBlockInput, liveQuizIdInput } from '../schemas/liveQuiz.js'
 
-const liveQuizReadPermissionLevels = [
-  PermissionLevel.READ,
-  PermissionLevel.EXECUTE,
-  PermissionLevel.WRITE,
-  PermissionLevel.ADMIN,
-  PermissionLevel.OWNER,
-]
+function getExecutionContext(ctx: TRPCContextWithUser) {
+  if (
+    !ctx.redisExec ||
+    !ctx.redisAssessmentExec ||
+    !ctx.pubSub ||
+    !ctx.emitter ||
+    !ctx.hatchet ||
+    !ctx.tasks
+  ) {
+    throw new TRPCError({
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Live quiz execution context unavailable',
+    })
+  }
 
-async function hasLiveQuizReadPermission(
-  ctx: TRPCContext & { user: { sub: string } },
-  liveQuizId: string
-) {
-  const prisma = getPrisma(ctx)
-  const permission = await prisma.derivedPermission.findFirst({
-    where: {
-      liveQuizId,
-      userId: ctx.user.sub,
-      permissionLevel: {
-        in: liveQuizReadPermissionLevels,
-      },
-    },
-  })
-
-  return Boolean(permission)
+  return ctx as unknown as LiveQuizExecutionContext
 }
 
 export const liveQuizRouter = router({
@@ -72,7 +79,13 @@ export const liveQuizRouter = router({
   control: userProcedure
     .input(liveQuizIdInput)
     .query(async ({ ctx, input }) => {
-      if (!(await hasLiveQuizReadPermission(ctx, input.id))) {
+      if (
+        !(await hasLiveQuizPermission(
+          ctx as TRPCContextWithUser,
+          input.id,
+          PermissionLevel.READ
+        ))
+      ) {
         return { controlLiveQuiz: null }
       }
 
@@ -119,7 +132,13 @@ export const liveQuizRouter = router({
   embeddingInfo: userProcedure
     .input(liveQuizIdInput)
     .query(async ({ ctx, input }) => {
-      if (!(await hasLiveQuizReadPermission(ctx, input.id))) {
+      if (
+        !(await hasLiveQuizPermission(
+          ctx as TRPCContextWithUser,
+          input.id,
+          PermissionLevel.READ
+        ))
+      ) {
         return { embeddingInfo: null }
       }
 
@@ -154,5 +173,73 @@ export const liveQuizRouter = router({
           process.env.APP_SECRET as string
         ),
       }
+    }),
+
+  start: userSessionExecProcedure
+    .input(liveQuizIdInput)
+    .mutation(async ({ ctx, input }) => {
+      await requireLiveQuizPermission(
+        ctx as TRPCContextWithUser,
+        input.id,
+        PermissionLevel.EXECUTE
+      )
+
+      const quiz = await startLiveQuiz(
+        input,
+        getExecutionContext(ctx as TRPCContextWithUser)
+      )
+
+      return { liveQuiz: toLiveQuizMeta(quiz) }
+    }),
+
+  activateBlock: userSessionExecProcedure
+    .input(liveQuizBlockInput)
+    .mutation(async ({ ctx, input }) => {
+      await requireLiveQuizPermission(
+        ctx as TRPCContextWithUser,
+        input.quizId,
+        PermissionLevel.EXECUTE
+      )
+
+      const quiz = await activateLiveQuizBlock(
+        input,
+        getExecutionContext(ctx as TRPCContextWithUser)
+      )
+
+      return { liveQuiz: toActivatedLiveQuiz(quiz) }
+    }),
+
+  deactivateBlock: userSessionExecProcedure
+    .input(liveQuizBlockInput)
+    .mutation(async ({ ctx, input }) => {
+      await requireLiveQuizPermission(
+        ctx as TRPCContextWithUser,
+        input.quizId,
+        PermissionLevel.EXECUTE
+      )
+
+      const deactivated = await deactivateLiveQuizBlock(
+        input,
+        getExecutionContext(ctx as TRPCContextWithUser)
+      )
+
+      return { deactivated }
+    }),
+
+  end: userSessionExecProcedure
+    .input(liveQuizIdInput)
+    .mutation(async ({ ctx, input }) => {
+      await requireLiveQuizPermission(
+        ctx as TRPCContextWithUser,
+        input.id,
+        PermissionLevel.EXECUTE
+      )
+
+      const quiz = await endLiveQuiz(
+        input,
+        getExecutionContext(ctx as TRPCContextWithUser)
+      )
+
+      return { liveQuiz: toLiveQuizStatus(quiz) }
     }),
 })
