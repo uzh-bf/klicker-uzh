@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 const MAX_ROUTE_LENGTH = 512
+const MAX_QUERY_KEYS = 20
 const MAX_QUERY_VALUE_LENGTH = 200
 const MAX_QUERY_VALUES_PER_KEY = 10
 const SENSITIVE_QUERY_KEY_PATTERN =
@@ -19,6 +20,24 @@ const queryValueSchema = z.union([
   z.string().max(MAX_QUERY_VALUE_LENGTH),
   z.array(z.string().max(MAX_QUERY_VALUE_LENGTH)).max(MAX_QUERY_VALUES_PER_KEY),
 ])
+
+const querySchema = z.preprocess((value) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return value
+  }
+
+  const query = value as Record<string, unknown>
+  const entries: [string, unknown][] = []
+  for (const key in query) {
+    if (!Object.prototype.hasOwnProperty.call(query, key)) continue
+    if (SENSITIVE_QUERY_KEY_PATTERN.test(key)) continue
+
+    entries.push([key, query[key]])
+    if (entries.length >= MAX_QUERY_KEYS) break
+  }
+
+  return Object.fromEntries(entries)
+}, z.record(queryValueSchema))
 
 const manageContextSchema = z.object({
   version: z.literal(1),
@@ -39,16 +58,7 @@ const manageContextSchema = z.object({
       templateId: z.string().min(1).max(128).optional(),
     })
     .optional(),
-  query: z
-    .record(queryValueSchema)
-    .transform((query) =>
-      Object.fromEntries(
-        Object.entries(query).filter(
-          ([key]) => !SENSITIVE_QUERY_KEY_PATTERN.test(key)
-        )
-      )
-    )
-    .optional(),
+  query: querySchema.optional(),
 })
 
 export type ManageAssistantContext = z.infer<typeof manageContextSchema>

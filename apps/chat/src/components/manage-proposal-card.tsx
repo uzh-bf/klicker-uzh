@@ -2,6 +2,7 @@
 
 import { CheckIcon, EyeIcon, LoaderCircleIcon } from 'lucide-react'
 import { useState, type FC } from 'react'
+import { formatToolName } from './tool-labels'
 
 export type ManageProposalResult = {
   kind: string
@@ -83,6 +84,7 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
   const payloadText = JSON.stringify(result.payload, null, 2)
   const waiting = status.type === 'running'
   const created = confirmation.type === 'success'
+  const { tool } = formatToolName(toolName)
   const canConfirm =
     result.requiresConfirmation &&
     Boolean(result.proposalToken) &&
@@ -142,7 +144,7 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
           </span>
         </div>
         <div className="mt-1 text-sm font-semibold text-slate-900">
-          {result.summary ?? formatToolName(toolName)}
+          {result.summary ?? tool}
         </div>
       </div>
 
@@ -209,8 +211,4 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
       </div>
     </div>
   )
-}
-
-function formatToolName(raw: string) {
-  return raw.replace(/_/g, ' ')
 }

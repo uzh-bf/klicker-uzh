@@ -13,6 +13,19 @@ type ChatbotPageProps = {
   courseLink?: string
 }
 
+function getChatBaseUrl() {
+  const chatUrl =
+    process.env.NEXT_PUBLIC_CHAT_URL ?? process.env.APP_ORIGIN_CHAT
+
+  if (!chatUrl) return null
+
+  try {
+    return new URL(chatUrl)
+  } catch {
+    return null
+  }
+}
+
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   try {
     if (
@@ -85,9 +98,21 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
+    const chatBaseUrl = getChatBaseUrl()
+    if (!chatBaseUrl) {
+      console.error('Missing or invalid chat URL for chatbot redirect')
+
+      return {
+        redirect: {
+          destination: '/error',
+          permanent: false,
+        },
+      }
+    }
+
     const chatDestination = new URL(
-      encodeURIComponent(chatbotId),
-      process.env.NEXT_PUBLIC_CHAT_URL
+      `/${encodeURIComponent(chatbotId)}`,
+      chatBaseUrl
     )
     if (embedded) {
       chatDestination.searchParams.set('embed', 'true')

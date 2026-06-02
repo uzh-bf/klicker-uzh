@@ -62,4 +62,30 @@ describe('Manage assistant context', () => {
       })
     ).toBe('Evaluation - Course 12')
   })
+
+  test('caps sanitized query keys', () => {
+    const query = Object.fromEntries(
+      Array.from({ length: 30 }, (_, index) => [`key${index}`, `${index}`])
+    )
+    const context = sanitizeManageAssistantContext({
+      version: 1,
+      source: 'manage',
+      surface: 'question-pool',
+      locale: 'en',
+      route: {
+        asPath: '/resources/catalog',
+        pathname: '/resources/catalog',
+      },
+      query: {
+        token: 'secret',
+        ...query,
+      },
+    })
+
+    expect(Object.keys(context?.query ?? {})).toHaveLength(20)
+    expect(context?.query).not.toHaveProperty('token')
+    expect(context?.query).toHaveProperty('key0', '0')
+    expect(context?.query).toHaveProperty('key19', '19')
+    expect(context?.query).not.toHaveProperty('key20')
+  })
 })
