@@ -1,9 +1,7 @@
-import { ApolloProvider } from '@apollo/client'
 import { config } from '@fortawesome/fontawesome-svg-core'
 import '@fortawesome/fontawesome-svg-core/styles.css'
 import { getMessageFallback, onError, routing } from '@klicker-uzh/i18n'
 import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
-import { useApollo } from '@lib/apollo'
 import { TrpcProvider } from '@lib/trpc'
 import { init } from '@socialgouv/matomo-next'
 import { Toaster } from '@uzh-bf/design-system'
@@ -21,8 +19,6 @@ const MATOMO_SITE_ID = process.env.NEXT_PUBLIC_MATOMO_SITE_ID
 
 function App({ Component, pageProps }: AppProps) {
   const { locale } = useRouter()
-
-  const apolloClient = useApollo(pageProps)
 
   useEffect(() => {
     if (MATOMO_URL && MATOMO_SITE_ID) {
@@ -47,12 +43,10 @@ function App({ Component, pageProps }: AppProps) {
         getMessageFallback={getMessageFallback}
         onError={onError}
       >
-        <ApolloProvider client={apolloClient}>
-          <TrpcProvider>
-            <Toaster closeButton position="top-right" />
-            <Component {...pageProps} />
-          </TrpcProvider>
-        </ApolloProvider>
+        <TrpcProvider>
+          <Toaster closeButton position="top-right" />
+          <Component {...pageProps} />
+        </TrpcProvider>
       </NextIntlClientProvider>
       <style jsx global>{`
         :root {

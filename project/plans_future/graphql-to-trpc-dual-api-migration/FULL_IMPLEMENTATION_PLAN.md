@@ -60,6 +60,8 @@ Done:
 - S03 frontend tRPC providers exist beside Apollo in control, PWA, and manage.
 - S04A control app read pilot is runtime-verified and committed.
 - S04B control app live-quiz read migration is focused-check verified, direct-runtime verified, and committed.
+- S04C control app mutation migration is focused-check verified and committed.
+- S04D frontend-control Apollo removal is focused-check verified, direct-runtime verified at the tRPC HTTP layer, and ready to commit.
 
 Committed markers:
 
@@ -71,12 +73,13 @@ Committed markers:
 - `4d28f1d87 docs(project): record control trpc runtime verification`
 - `df2d8f16e docs(project): refine trpc migration plan`
 - `a274ab4b6 feat(api): migrate control read screens to trpc`
+- `d53406154 feat(api): migrate control mutations to trpc`
 
 Active work:
 
-- S04C frontend-control mutations are next.
+- S04E PWA participant shell and course reads are next.
 - GraphQL remains intentionally live.
-- Frontend-control still has Apollo mutations and app-level Apollo wiring.
+- Frontend-control no longer has active GraphQL/Apollo consumers or package dependencies.
 - PWA and manage still depend heavily on Apollo/generated operations.
 - GraphQL realtime remains active through Yoga/pubSub/GraphQL WS.
 
@@ -210,6 +213,78 @@ Cleanup blocked until:
 ```
 
 ## Progress
+
+### 2026-06-03 Done: S04D Frontend-Control Apollo Removal Gate
+
+Status: implemented, focused-check verified, coexistence-audited, direct-runtime verified at the tRPC HTTP layer, reviewed/simplified, and ready to commit.
+
+Write scope:
+
+- `apps/frontend-control/src/pages/_app.tsx`
+- `apps/frontend-control/src/lib/apollo.ts`
+- `apps/frontend-control/src/lib/SSELink.ts`
+- `apps/frontend-control/package.json`
+- `pnpm-lock.yaml`
+- `project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md`
+
+Operation mapping:
+
+```text
+Slice: S04D Frontend-Control Apollo Removal Gate
+GraphQL operation(s): none remaining in frontend-control after S04B/S04C
+GraphQL resolver(s): none
+Service/helper behavior source: existing TrpcProvider and migrated tRPC hooks
+tRPC router.procedure: no new procedure; existing user/course/liveQuiz control procedures
+Input schema: no new schema
+Output DTO: no new DTO
+Active frontend consumers: frontend-control app shell, control course list/detail, unassigned, session, logout
+Apollo cache/refetch/subscription behavior: remove unused Apollo provider, helper, persisted-query, GraphQL WS, and SSELink setup
+React Query replacement: existing TrpcProvider stays as the sole API client provider in frontend-control
+Browser verification path: control login/course list/unassigned/session/logout smoke, or record local stack gap
+Cleanup blocked until: PWA/manage/shared/realtime migrations still require GraphQL; do not touch backend GraphQL or other apps
+```
+
+Gate evidence before edits:
+
+- Per-app Apollo audit finds no frontend-control GraphQL operation imports or Apollo hook consumers.
+- Remaining frontend-control GraphQL/Apollo hits are `apps/frontend-control/src/pages/_app.tsx`, `apps/frontend-control/src/lib/apollo.ts`, `apps/frontend-control/src/lib/SSELink.ts`, and `apps/frontend-control/package.json`.
+- Apollo helper exports are not consumed outside frontend-control `_app.tsx`; PWA/manage have separate Apollo helpers and remain intentionally untouched.
+
+Next:
+
+- S04E active: migrate PWA participant shell and course reads while keeping PWA Apollo live for unmigrated flows.
+
+Evidence:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm install --lockfile-only --config.confirmModulesPurge=false`: passed; incidental lockfile normalization was manually trimmed back to the frontend-control importer removals.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-control check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-control build`: passed with existing Next/PWA/Browserslist/page-data warnings only.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm run check:syncpack`: passed.
+- `git diff --check`: passed.
+- Branch-local backend started on `127.0.0.1:3100` with local cypress-style URL/cookie env and dummy local Hatchet config.
+- Runtime tRPC smoke: `GET /api/trpc/system.health` returned `{ api: "trpc", status: "ok" }`.
+- Runtime tRPC smoke: authenticated `GET /api/trpc/user.profile` returned seeded lecturer `lecturer@df.uzh.ch`.
+- Runtime tRPC smoke: authenticated `GET /api/trpc/course.controlCourses` returned seeded control courses.
+- Runtime tRPC smoke: authenticated `GET /api/trpc/liveQuiz.unassigned` returned `{ liveQuizzes: [] }`.
+- Branch-local control dev server started on `localhost:3103` with `NEXT_PUBLIC_API_URL` pointed at the branch backend.
+
+Audit:
+
+- Per-app Apollo gate: no `@apollo/client`, `ApolloProvider`, `useApollo`, `SSELink`, `GraphQLWsLink`, `graphql-ws`, `@klicker-uzh/graphql`, `useSubscription`, or `subscribeToMore` hits remain in `apps/frontend-control`.
+- Frontend-control dependency audit: no Apollo/GraphQL helper-only dependencies remain in `apps/frontend-control/package.json` or its lockfile importer.
+- Coexistence audit: GraphQL/Apollo/Yoga references intentionally remain in backend, PWA, manage, `packages/graphql`, and the lockfile for S04E+.
+
+Review:
+
+- Correctness review: `_app.tsx` now keeps `NextIntlClientProvider` and `TrpcProvider` intact while removing only the Apollo wrapper; no frontend-control page imports Apollo helpers after S04B/S04C.
+- Scope review: PWA/manage Apollo helpers and backend GraphQL runtime are untouched.
+- Simplification review: removed the now-dead frontend-control Apollo helper and SSELink files instead of leaving unused compatibility shims.
+- Subagent note: no review/simplification subagents were spawned because the currently available tool set does not expose the multi-agent tool.
+
+Residual risk:
+
+- Visual browser verification remains incomplete. `npx agent-browser` opened the branch-local app but landed on `chrome-error://chromewebdata/`; screenshots `/tmp/klicker-control-s04d-home.png` and `/tmp/klicker-control-s04d-localhost-home.png` are blank, while the branch dev server logged successful `GET /` responses. Playwright was not installed in this workspace, so no alternate screenshot tool was available without adding dependencies.
+- The tRPC HTTP runtime smoke proves the branch backend and migrated control procedures are live, but it does not prove rendered browser interaction after Apollo removal.
 
 ### 2026-06-02 Done: S04B Finish Frontend-Control Reads
 
