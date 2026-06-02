@@ -1,15 +1,13 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import { faArrowDown, faEllipsis } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ActivateLiveQuizBlockDocument,
   DeactivateLiveQuizBlockDocument,
-  ElementBlockStatus,
   EndLiveQuizDocument,
-  GetControlLiveQuizDocument,
-  GetUnassignedLiveQuizzesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { trpc } from '@lib/trpc'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -18,6 +16,10 @@ import { useEffect, useState } from 'react'
 import { sort } from 'remeda'
 import Layout from '../../components/Layout'
 import LiveQuizBlock from '../../components/liveQuizzes/LiveQuizBlock'
+
+const elementBlockStatus = {
+  scheduled: 'SCHEDULED',
+} as const
 
 function RunningLiveQuiz() {
   const t = useTranslations()
@@ -33,41 +35,19 @@ function RunningLiveQuiz() {
   const [deactivateLiveQuizBlock, { loading: deactivatingBlock }] = useMutation(
     DeactivateLiveQuizBlockDocument
   )
-  const [endLiveQuiz, { loading: endingLiveQuiz }] = useMutation(
-    EndLiveQuizDocument,
-    {
-      update(cache, { data }) {
-        // verify that the quiz has been ended successfully
-        if (!data?.endLiveQuiz) return
-
-        // remove the ended live quiz from the unassigned list in control application (not shown here)
-        cache.updateQuery(
-          { query: GetUnassignedLiveQuizzesDocument },
-          (qData) => {
-            if (!qData?.unassignedLiveQuizzes) return qData
-
-            return {
-              unassignedLiveQuizzes: qData.unassignedLiveQuizzes.filter(
-                (q) => q.id !== data.endLiveQuiz!.id
-              ),
-            }
-          }
-        )
-      },
-    }
-  )
+  const [endLiveQuiz, { loading: endingLiveQuiz }] =
+    useMutation(EndLiveQuizDocument)
+  const quizId = router.query.id
+  const validQuizId = typeof quizId === 'string' ? quizId : undefined
 
   const {
-    loading: quizLoading,
+    isLoading: quizLoading,
     error: quizError,
     data: quizData,
-  } = useQuery(GetControlLiveQuizDocument, {
-    variables: {
-      id: router.query.id as string,
-    },
-    pollInterval: 1000,
-    skip: !router.query.id,
-  })
+  } = trpc.liveQuiz.control.useQuery(
+    { id: validQuizId ?? '' },
+    { enabled: typeof validQuizId !== 'undefined', refetchInterval: 1000 }
+  )
 
   useEffect(() => {
     setCurrentBlockOrder(quizData?.controlLiveQuiz?.activeBlock?.order)
@@ -83,7 +63,7 @@ function RunningLiveQuiz() {
 
     if (!sortedBlocks) return
     const scheduledNext = sortedBlocks.find(
-      (block) => block.status === ElementBlockStatus.Scheduled
+      (block) => block.status === elementBlockStatus.scheduled
     )
     setNextBlockOrder(
       typeof scheduledNext === 'undefined' ? -1 : scheduledNext.order

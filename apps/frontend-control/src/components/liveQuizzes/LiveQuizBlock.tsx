@@ -1,24 +1,24 @@
 import { faClock, faPlay } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ElementBlock,
-  ElementBlockStatus,
-  ElementInstance,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { RouterOutputs } from '@lib/trpc'
 import { CycleCountdown, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+const elementBlockStatus = {
+  active: 'ACTIVE',
+  executed: 'EXECUTED',
+  scheduled: 'SCHEDULED',
+} as const
+
+type ControlLiveQuizBlock = NonNullable<
+  RouterOutputs['liveQuiz']['control']['controlLiveQuiz']
+>['blocks'][number]
+
 interface LiveQuizBlockProps {
-  block?: Omit<ElementBlock, 'elements'> & {
-    elements?:
-      | (Omit<ElementInstance, 'elementData' | 'type' | 'elementType'> & {
-          elementData?: { name: string } | null
-        })[]
-      | null
-  }
+  block?: ControlLiveQuizBlock
   active?: boolean
 }
 
@@ -28,7 +28,7 @@ function LiveQuizBlock({ block, active = false }: LiveQuizBlockProps) {
   // compute the time until expiration in seconds + 20 seconds buffer from now
   const untilExpiration = useMemo(() => {
     if (!block) return -1
-    if (block.status === ElementBlockStatus.Executed) {
+    if (block.status === elementBlockStatus.executed) {
       return -1
     }
     return block.expiresAt
@@ -73,12 +73,12 @@ function LiveQuizBlock({ block, active = false }: LiveQuizBlockProps) {
               key={`${block.expiresAt}-${block.status}`}
               overrideSize={15}
               isStatic={
-                !block.expiresAt || block.status === ElementBlockStatus.Executed
+                !block.expiresAt || block.status === elementBlockStatus.executed
               }
               expiresAt={expirationTime}
               strokeWidthRem={0.2}
               totalDuration={
-                block.status !== ElementBlockStatus.Executed
+                block.status !== elementBlockStatus.executed
                   ? untilExpiration
                   : 0
               }
@@ -88,10 +88,10 @@ function LiveQuizBlock({ block, active = false }: LiveQuizBlockProps) {
               }}
             />
           )}
-          {block.status === ElementBlockStatus.Scheduled && (
+          {block.status === elementBlockStatus.scheduled && (
             <FontAwesomeIcon icon={faClock} />
           )}
-          {block.status === ElementBlockStatus.Active && (
+          {block.status === elementBlockStatus.active && (
             <FontAwesomeIcon icon={faPlay} />
           )}
         </div>

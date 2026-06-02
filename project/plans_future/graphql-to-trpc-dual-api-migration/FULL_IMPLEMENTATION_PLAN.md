@@ -208,9 +208,9 @@ Cleanup blocked until:
 
 ## Progress
 
-### 2026-06-02 Active: S04B Finish Frontend-Control Reads
+### 2026-06-02 Done: S04B Finish Frontend-Control Reads
 
-Status: in progress, uncommitted.
+Status: implemented, focused-check verified, direct runtime verified, and ready for slice commit.
 
 Write scope:
 
@@ -241,23 +241,37 @@ Browser verification path: control unassigned page; session/embedding pages if l
 Cleanup blocked until: S04C control mutations and S04D control Apollo removal gate
 ```
 
-Checks already run during S04B draft:
+Evidence:
 
-- `pnpm --filter @klicker-uzh/api test`: passed.
-- `pnpm --filter @klicker-uzh/api check`: passed after context typing fix.
+- `pnpm --filter @klicker-uzh/api test`: passed, 10 tests after adding embedding permission-denial coverage.
+- `pnpm --filter @klicker-uzh/api check`: passed.
 - `pnpm --filter @klicker-uzh/api build`: passed.
 - `pnpm --filter @klicker-uzh/frontend-control check`: passed.
+- `pnpm --filter @klicker-uzh/frontend-control build`: passed with existing Next/PWA/Browserslist/page-data warnings only.
 - `pnpm --filter @klicker-uzh/backend-docker check`: passed.
 - `git diff --check`: passed.
-- `pnpm --filter @klicker-uzh/frontend-control build`: passed with existing warnings only.
+- `pnpm run check:all`: passed during docs-only plan commit hook while S04B code was present in the worktree.
+- Runtime backend: branch-local backend started on `127.0.0.1:3100`; `/healthz` returned `OK`.
+- Runtime tRPC smoke: `GET /api/trpc/system.health` returned healthy tRPC response.
+- Runtime S04B HTTP: authenticated `GET /api/trpc/user.profile,liveQuiz.unassigned` with a valid local lecturer JWT returned the seeded lecturer profile and `{ liveQuizzes: [] }`.
+- Browser request evidence: `agent-browser` page load attempted `GET http://127.0.0.1:3100/api/trpc/user.profile,liveQuiz.unassigned?...`, proving the migrated unassigned page calls tRPC.
+- Browser visual evidence gap: `agent-browser screenshot`, `snapshot`, and auth-page `open` hung repeatedly in isolated sessions; manual cookie/header auth also redirected because browser tooling did not apply auth reliably to the cross-origin tRPC fetch. Do not treat S04B as visually verified.
+- Seeded-data gap: local lecturer `76047345-3801-4628-ae7b-adbebcfe8821` has only one `ENDED` live quiz, so running session and embedding modal states were not reachable naturally.
+- Coexistence audit: GraphQL/Apollo/Yoga references intentionally remain in 508 files.
+- Coexistence audit: tRPC references remain in 17 files.
+- Control audit: remaining Apollo/generated usage is `_app` provider, Apollo helper/SSELink, Header logout mutation, StartModal start mutation/refetch, and session page mutations; these are S04C/S04D scope.
+- Migrated-file audit: no `GetUnassignedLiveQuizzesDocument`, `GetControlLiveQuizDocument`, `GetLiveQuizEmbeddingInfoDocument`, `GetSingleLiveQuizDocument`, `ElementBlockStatus`, or `PublicationStatus` references remain in the S04B migrated files.
 
-Next for this slice:
+Review:
 
-- Finish browser verification for unassigned page against the S04B backend/control dev servers.
-- Record seeded-data gap if no local live quizzes are available for session/embedding screens.
-- Run control app Apollo audit and coexistence audit.
-- Run review and simplification.
+- Correctness review: compared S04B procedures against `LiveQuizService.getUnassignedLiveQuizzes`, `getControlLiveQuiz`, and `getLiveQuizEmbeddingInfo`; behavior and permission level are aligned for the read consumers.
+- Simplification review: kept the DTOs narrow, kept session mutations on Apollo for S04C, and avoided extracting shared services before mutation migration needs them.
+- Subagent note: no review/simplification subagents were spawned because the current `multi_agent_v1` tool contract only permits spawning when the user explicitly asks for subagents.
+
+Next:
+
 - Commit: `feat(api): migrate control read screens to trpc`.
+- Start S04C: migrate frontend-control mutations and React Query invalidation.
 
 ### 2026-06-02 Done: S04A Runtime Verify Current Control Pilot
 
@@ -1098,6 +1112,6 @@ Stop within a slice if:
 
 Current next action:
 
-1. Finish S04B browser verification, review, simplification, and commit.
-2. Start S04C control mutations.
-3. Remove Apollo from control only after S04C audit is clean.
+1. Start S04C control mutations.
+2. Remove Apollo from control only after S04C audit is clean.
+3. Continue PWA/manage vertical migrations while keeping GraphQL live.

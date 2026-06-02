@@ -1,9 +1,5 @@
-import { useQuery } from '@apollo/client'
-import {
-  GetUnassignedLiveQuizzesDocument,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { trpc } from '@lib/trpc'
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -11,21 +7,31 @@ import { useMemo } from 'react'
 import Layout from '../../components/Layout'
 import LiveQuizLists from '../../components/liveQuizzes/LiveQuizLists'
 
+const publicationStatus = {
+  draft: 'DRAFT',
+  published: 'PUBLISHED',
+  scheduled: 'SCHEDULED',
+} as const
+
 function UnassignedLiveQuizzes() {
   const t = useTranslations()
-  const { data, loading, error } = useQuery(GetUnassignedLiveQuizzesDocument)
+  const {
+    data,
+    isLoading: loading,
+    error,
+  } = trpc.liveQuiz.unassigned.useQuery()
 
   const runningQuizzes = useMemo(() => {
-    return data?.unassignedLiveQuizzes?.filter(
-      (quiz) => quiz.status === PublicationStatus.Published
+    return data?.liveQuizzes.filter(
+      (quiz) => quiz.status === publicationStatus.published
     )
   }, [data])
 
   const plannedQuizzes = useMemo(() => {
-    return data?.unassignedLiveQuizzes?.filter(
+    return data?.liveQuizzes.filter(
       (quiz) =>
-        quiz.status === PublicationStatus.Scheduled ||
-        quiz.status === PublicationStatus.Draft
+        quiz.status === publicationStatus.scheduled ||
+        quiz.status === publicationStatus.draft
     )
   }, [data])
 
