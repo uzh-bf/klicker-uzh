@@ -276,6 +276,122 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-03 Completed: S04F1 PWA Home Participations Read
+
+Status: complete for the scoped slice. S04F was split because the planned course landing work spans `GetCourseOverviewDataDocument`, student leaderboard reads, group activity reads/subscriptions, and leaderboard mutations. This commit kept the next migration vertical narrow: PWA home participations read plus the home microlearning-ended refresh path.
+
+Goal: migrate `ParticipationsDocument` on the PWA home page to `participant.participations` while keeping GraphQL push mutations and GraphQL subscriptions live until later slices.
+
+Write scope:
+
+- `packages/api/src/trpc/schemas/participant.ts`
+- `packages/api/src/trpc/dto/participant.ts`
+- `packages/api/src/trpc/routers/participant.ts`
+- `packages/api/src/trpc/__tests__/participant-read.test.ts`
+- `apps/frontend-pwa/src/pages/index.tsx`
+- `apps/frontend-pwa/src/components/microLearning/MicroLearningListSubscriber.tsx`
+- `apps/frontend-pwa/src/lib/hooks/useStudentOverviewSplit.tsx` only if generated GraphQL types need replacing with structural/tRPC output types
+- `apps/frontend-pwa/src/components/CourseElement.tsx` only to accept tRPC `Date` outputs for course dates
+- This plan file
+
+```text
+Slice: S04F1 PWA home participations read
+GraphQL operation(s): ParticipationsDocument
+GraphQL resolver(s): participations
+Behavior source: ParticipantService.getParticipations
+tRPC router.procedure: participant.participations
+Input schema: optional endpoint and assessmentOnly
+Output DTO: participation id, completedMicroLearnings, endpoint-filtered subscriptions, course id/displayName/startDate/endDate/description/isGamificationEnabled, active published microLearnings, published liveQuizzes
+Active frontend consumers: PWA home page, useStudentOverviewSplit, MicroLearningListSubscriber
+Apollo cache/refetch/subscription behavior: push mutations stay GraphQL; after push mutation, invalidate tRPC participations; microlearning-ended subscription stays GraphQL but invalidates the tRPC query instead of updating Apollo participation cache
+React Query replacement: participant.participations useQuery with endpoint/assessmentOnly input and invalidation through trpc.useUtils()
+Browser verification path: authenticated PWA home page on seeded participant; assessment variant if local env can be started cheaply
+Cleanup blocked until: S04F2 course landing reads, S04G push/auth mutations, and S05 subscription migration
+```
+
+Implementation notes:
+
+- Preserve `assessmentOnly` filtering by assessment-enabled courses.
+- Preserve endpoint-filtered subscriptions for `isSubscribed` on home course entries.
+- Preserve active microlearning filter: started, not ended, published, not deleted.
+- Preserve published live quiz filter: published and not deleted.
+- Keep `SubscribeToPushDocument` / `UnsubscribeFromPushDocument` on GraphQL for S04G; only replace their `refetchQueries` with tRPC invalidation.
+- Keep GraphQL `MicroLearningEndedDocument` active for now; S05 owns replacing realtime transport.
+
+Planned checks:
+
+```bash
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build
+rg -n "ParticipationsDocument" apps/frontend-pwa/src/pages/index.tsx
+rg -n "@klicker-uzh/prisma/client|packages/api/src|packages/prisma" apps/frontend-pwa/src
+```
+
+Implementation result:
+
+- Added `participant.participations` with optional `endpoint` and `assessmentOnly` input.
+- Added a narrow participation DTO preserving `completedMicroLearnings`, endpoint-filtered subscriptions, course dates, course gamification flag, active published microlearnings, and published live quizzes.
+- Migrated PWA home from `useQuery(ParticipationsDocument)` to `trpc.participant.participations.useQuery`.
+- Kept push subscribe/unsubscribe mutations on GraphQL for S04G, but replaced `refetchQueries` with `utils.participant.participations.invalidate(...)`.
+- Kept the microlearning-ended subscription on GraphQL for S05, but changed the home subscriber to invalidate the tRPC query instead of updating Apollo participation cache.
+- Removed generated GraphQL type imports from `useStudentOverviewSplit` and used narrow structural types that accept `Date | string` values.
+
+Review / simplification:
+
+- Local diff review performed for router, DTO, tests, and migrated PWA home/subscriber/helper components. Dedicated subagent review was not run because the available multi-agent tool contract only permits spawning when the user explicitly asks for delegation.
+- Course landing reads were deliberately left for S04F2 to avoid mixing home read migration with leaderboard/group activity surfaces and adjacent mutations.
+
+Verification evidence:
+
+```bash
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --write <S04F1 files>
+# pass
+
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test
+# pass: 4 files, 24 tests
+
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check
+# pass
+
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build
+# pass
+
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check
+# pass
+
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build
+# pass; existing warnings: next-config MODULE_TYPELESS_PACKAGE_JSON, next-intl App Router migration warning, PWA disabled logs, Browserslist old data, large page-data warnings
+
+rg -n "ParticipationsDocument" apps/frontend-pwa/src
+# pass: no matches
+
+rg -n "@klicker-uzh/prisma/client|packages/api/src|packages/prisma" apps/frontend-pwa/src/pages/index.tsx apps/frontend-pwa/src/components/microLearning/MicroLearningListSubscriber.tsx apps/frontend-pwa/src/lib/hooks/useStudentOverviewSplit.tsx apps/frontend-pwa/src/components/CourseElement.tsx
+# pass: no matches
+
+git diff --check
+# pass
+```
+
+Runtime/browser evidence:
+
+- Branch backend on `http://127.0.0.1:3100` served `GET /api/trpc/system.health` with `api: trpc`, `status: ok`.
+- Authenticated seeded participant smoke for `participant.participations` returned `status: 200`, `participations: 1`, `courses: ["Testkurs"]`.
+- Branch PWA ran on `http://127.0.0.1:3102` against `NEXT_PUBLIC_API_URL=http://127.0.0.1:3100/api/graphql`, with the tRPC client deriving `/api/trpc`.
+- `npx agent-browser --session pwa-s04f1` opened `/` with a local seeded participant token in `sessionStorage`; token was not printed.
+- Screenshot reviewed: `/tmp/klicker-pwa-s04f1-home.png`.
+- Home rendered `Practice Activities`, `My Courses`, `Testkurs`, `Join Course`, and `Insights`; browser errors output empty.
+
+Coexistence audit:
+
+- `rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|/api/graphql|graphql-yoga|graphql-ws" apps/frontend-pwa apps/frontend-manage apps/backend-docker packages/graphql package.json pnpm-lock.yaml` still reports PWA/manage/backend/packages/graphql/lockfile hits by design. GraphQL/Apollo remain live until later S04/S05 consumers migrate and S06 cleanup gates pass.
+
+Residual risk / next step:
+
+- S04F1 intentionally did not migrate `GetCourseOverviewDataDocument`, `GetStudentCourseLeaderboardDocument`, `GetCourseGroupActivitiesDocument`, course landing subscriptions, or leaderboard mutations. Next slice: S04F2 PWA course landing reads and adjacent leaderboard/group read surfaces.
+
 ### 2026-06-03 Completed: S04E1 PWA Participant Identity and Low-Risk Course Reads
 
 Status: complete for the scoped slice. Control app has completed its GraphQL-to-tRPC migration and Apollo cleanup. PWA now uses tRPC for participant shell identity plus the bookmarks/practice course landing reads migrated in this slice. PWA and manage remain mixed Apollo/tRPC. GraphQL backend remains intentionally live.

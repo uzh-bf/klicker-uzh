@@ -49,6 +49,28 @@ type ParticipantCourseSource = Pick<
 
 type PracticeCourseSource = Pick<DB.Course, 'displayName' | 'id'>
 
+type ParticipantParticipationSource = Pick<
+  DB.Participation,
+  'completedMicroLearnings' | 'id'
+> & {
+  subscriptions: Pick<DB.PushSubscription, 'endpoint' | 'id'>[]
+  course: Pick<
+    DB.Course,
+    | 'description'
+    | 'displayName'
+    | 'endDate'
+    | 'id'
+    | 'isGamificationEnabled'
+    | 'startDate'
+  > & {
+    microLearnings: Pick<
+      DB.MicroLearning,
+      'displayName' | 'id' | 'scheduledEndAt' | 'scheduledStartAt'
+    >[]
+    liveQuizzes: Pick<DB.LiveQuiz, 'displayName' | 'id'>[]
+  }
+}
+
 function toAvatarSettings(settings: Prisma.JsonValue | null) {
   return settings as AvatarSettings | null
 }
@@ -145,5 +167,38 @@ export function toPracticeCourse(course: PracticeCourseSource) {
   return {
     id: course.id,
     displayName: course.displayName,
+  }
+}
+
+export function toParticipantParticipation(
+  participation: ParticipantParticipationSource
+) {
+  return {
+    id: participation.id,
+    completedMicroLearnings: participation.completedMicroLearnings,
+    subscriptions: participation.subscriptions.map((subscription) => ({
+      id: subscription.id,
+      endpoint: subscription.endpoint,
+    })),
+    course: {
+      id: participation.course.id,
+      displayName: participation.course.displayName,
+      startDate: participation.course.startDate,
+      endDate: participation.course.endDate,
+      description: participation.course.description,
+      isGamificationEnabled: participation.course.isGamificationEnabled,
+      microLearnings: participation.course.microLearnings.map(
+        (microLearning) => ({
+          id: microLearning.id,
+          displayName: microLearning.displayName,
+          scheduledStartAt: microLearning.scheduledStartAt,
+          scheduledEndAt: microLearning.scheduledEndAt,
+        })
+      ),
+      liveQuizzes: participation.course.liveQuizzes.map((liveQuiz) => ({
+        id: liveQuiz.id,
+        displayName: liveQuiz.displayName,
+      })),
+    },
   }
 }

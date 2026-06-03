@@ -1,15 +1,23 @@
-import { UserRole, type PrismaClient } from '@klicker-uzh/prisma/client'
+import {
+  PublicationStatus,
+  UserRole,
+  type PrismaClient,
+} from '@klicker-uzh/prisma/client'
 import { levelFromXp } from '@klicker-uzh/util'
 import { getPrisma } from '../context.js'
 import {
   toParticipantCourse,
+  toParticipantParticipation,
   toParticipantSelf,
   toPracticeCourse,
   toTemporaryParticipantSelf,
 } from '../dto/participant.js'
 import { publicProcedure, router } from '../init.js'
 import { participantProcedure } from '../procedures.js'
-import { participantSelfInput } from '../schemas/participant.js'
+import {
+  participantParticipationsInput,
+  participantSelfInput,
+} from '../schemas/participant.js'
 
 async function getLevelData(prisma: PrismaClient, xp: number | null) {
   return await prisma.level.findUnique({
@@ -134,6 +142,76 @@ export const participantRouter = router({
         ) ?? [],
     }
   }),
+
+  participations: participantProcedure
+    .input(participantParticipationsInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const now = new Date()
+      const endpoint = input?.endpoint ?? undefined
+      const assessmentOnly = input?.assessmentOnly ?? false
+
+      const participant = await prisma.participant.findUnique({
+        where: { id: ctx.user.sub },
+        select: {
+          participations: {
+            where: assessmentOnly
+              ? { course: { isAssessmentEnabled: true } }
+              : undefined,
+            select: {
+              id: true,
+              completedMicroLearnings: true,
+              subscriptions: endpoint
+                ? {
+                    where: { endpoint },
+                    select: { id: true, endpoint: true },
+                  }
+                : { select: { id: true, endpoint: true } },
+              course: {
+                select: {
+                  id: true,
+                  displayName: true,
+                  startDate: true,
+                  endDate: true,
+                  description: true,
+                  isGamificationEnabled: true,
+                  microLearnings: {
+                    where: {
+                      scheduledStartAt: { lt: now },
+                      scheduledEndAt: { gt: now },
+                      status: PublicationStatus.PUBLISHED,
+                      isDeleted: false,
+                    },
+                    select: {
+                      id: true,
+                      displayName: true,
+                      scheduledStartAt: true,
+                      scheduledEndAt: true,
+                    },
+                  },
+                  liveQuizzes: {
+                    where: {
+                      status: PublicationStatus.PUBLISHED,
+                      isDeleted: false,
+                    },
+                    select: {
+                      id: true,
+                      displayName: true,
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: { course: { displayName: 'asc' } },
+          },
+        },
+      })
+
+      return {
+        participations:
+          participant?.participations.map(toParticipantParticipation) ?? [],
+      }
+    }),
 
   practiceCourses: participantProcedure.query(async ({ ctx }) => {
     const prisma = getPrisma(ctx)

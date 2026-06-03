@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import { faBookmark } from '@fortawesome/free-regular-svg-icons'
 import {
   faBookOpenReader,
@@ -10,7 +10,6 @@ import {
   faRepeat,
 } from '@fortawesome/free-solid-svg-icons'
 import {
-  ParticipationsDocument,
   SubscribeToPushDocument,
   UnsubscribeFromPushDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -22,7 +21,7 @@ import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import CourseElement from '../components/CourseElement'
 import Layout from '../components/Layout'
 import LinkButton from '../components/common/LinkButton'
@@ -33,6 +32,8 @@ import { trpc } from '../lib/trpc'
 function Index() {
   const router = useRouter()
   const t = useTranslations()
+  const utils = trpc.useUtils()
+  const assessmentOnly = process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
 
   const { value: showAssessmentHint, setValue: setShowAssessmentHint } =
     useStickyState('showAssessmentHint', 'true')
@@ -100,15 +101,11 @@ function Index() {
         },
         courseId,
       },
-      refetchQueries: [
-        {
-          query: ParticipationsDocument,
-          variables: {
-            endpoint: subscriptionObject.endpoint,
-            assessmentOnly: process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
-          },
-        },
-      ],
+    })
+
+    await utils.participant.participations.invalidate({
+      endpoint: subscriptionObject.endpoint,
+      assessmentOnly,
     })
   }
 
@@ -121,15 +118,11 @@ function Index() {
         courseId,
         endpoint: subscriptionObject.endpoint,
       },
-      refetchQueries: [
-        {
-          query: ParticipationsDocument,
-          variables: {
-            endpoint: subscriptionObject.endpoint,
-            assessmentOnly: process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
-          },
-        },
-      ],
+    })
+
+    await utils.participant.participations.invalidate({
+      endpoint: subscriptionObject.endpoint,
+      assessmentOnly,
     })
   }
 
@@ -144,18 +137,17 @@ function Index() {
     unsubscribeFromPush: unsubscribeUser,
   })
 
-  const { data, loading, subscribeToMore } = useQuery(ParticipationsDocument, {
-    variables: {
-      endpoint: subscription?.endpoint,
-      assessmentOnly: process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
-    },
-    fetchPolicy: 'network-only',
-  })
+  const participationsInput = useMemo(
+    () => ({ endpoint: subscription?.endpoint, assessmentOnly }),
+    [assessmentOnly, subscription?.endpoint]
+  )
+  const { data, isLoading } =
+    trpc.participant.participations.useQuery(participationsInput)
 
   const { courses, oldCourses, activeLiveQuizzes, activeMicrolearning } =
     useStudentOverviewSplit({ participations: data?.participations ?? [] })
 
-  if (loading || !data) {
+  if (isLoading || !data) {
     return (
       <Layout key="loading-layout" displayName={t('shared.generic.title')}>
         <Loader />
@@ -323,7 +315,11 @@ function Index() {
                 >
                   <MicroLearningListSubscriber
                     activityId={micro.id}
-                    subscribeToMore={subscribeToMore}
+                    onEnded={() =>
+                      utils.participant.participations.invalidate(
+                        participationsInput
+                      )
+                    }
                   />
                   <div>{micro.displayName}</div>
                   <div className="flex flex-row items-end justify-between text-xs">

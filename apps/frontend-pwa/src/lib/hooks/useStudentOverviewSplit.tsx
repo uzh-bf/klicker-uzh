@@ -1,62 +1,60 @@
-import {
-  ActivityInfo,
-  Course,
-  LiveQuiz,
-  MicroLearning,
-  Participation,
-} from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import { useMemo } from 'react'
+
+type DateLike = Date | string
 
 type LocalCourseType = {
   id: string
   displayName: string
   description?: string
   isSubscribed: boolean
-  startDate: string
-  endDate: string
+  startDate: DateLike
+  endDate: DateLike
   isGamificationEnabled: boolean
 }
 
-type LocalLiveQuizType = Pick<LiveQuiz, 'id' | 'displayName'> & {
+type LocalLiveQuizType = {
+  id: string
+  displayName: string
   courseName: string
 }
 
-type LocalMicroLearningType = Pick<
-  MicroLearning,
-  'id' | 'displayName' | 'scheduledStartAt' | 'scheduledEndAt'
-> & {
+type LocalMicroLearningType = {
+  id: string
+  displayName: string
+  scheduledStartAt: DateLike
+  scheduledEndAt: DateLike
   courseId: string
   courseName: string
   isCompleted: boolean
 }
 
+type StudentOverviewParticipation = {
+  id: number
+  completedMicroLearnings: string[]
+  subscriptions?: { id: number; endpoint: string }[] | null
+  course?: {
+    id: string
+    displayName: string
+    startDate: DateLike
+    endDate: DateLike
+    isGamificationEnabled: boolean
+    liveQuizzes?: { id: string; displayName: string }[] | null
+    microLearnings?:
+      | {
+          id: string
+          displayName: string
+          scheduledStartAt: DateLike
+          scheduledEndAt: DateLike
+        }[]
+      | null
+  } | null
+}
+
 function useStudentOverviewSplit({
   participations,
 }: {
-  participations: (Pick<
-    Participation,
-    'id' | 'completedMicroLearnings' | 'subscriptions'
-  > & {
-    course?:
-      | (Pick<
-          Course,
-          | 'id'
-          | 'displayName'
-          | 'startDate'
-          | 'endDate'
-          | 'isGamificationEnabled'
-        > & {
-          liveQuizzes?: Pick<ActivityInfo, 'id' | 'displayName'>[] | null
-          microLearnings?:
-            | Pick<
-                ActivityInfo,
-                'id' | 'displayName' | 'scheduledStartAt' | 'scheduledEndAt'
-              >[]
-            | null
-        })
-      | null
-  })[]
+  participations: StudentOverviewParticipation[]
 }) {
   return useMemo((): {
     courses: LocalCourseType[]

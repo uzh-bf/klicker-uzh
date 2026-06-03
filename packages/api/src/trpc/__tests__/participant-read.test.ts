@@ -189,6 +189,102 @@ describe('participant read routers', () => {
     })
   })
 
+  test('returns participations for the participant home page', async () => {
+    const startDate = new Date('2025-01-01T00:00:00.000Z')
+    const endDate = new Date('2026-01-01T00:00:00.000Z')
+    const scheduledStartAt = new Date('2025-06-01T00:00:00.000Z')
+    const scheduledEndAt = new Date('2025-06-15T00:00:00.000Z')
+    const findUnique = vi.fn().mockResolvedValue({
+      participations: [
+        {
+          id: 1,
+          completedMicroLearnings: ['micro-completed'],
+          subscriptions: [{ id: 3, endpoint: 'endpoint-1' }],
+          course: {
+            id: 'course-1',
+            displayName: 'Course One',
+            startDate,
+            endDate,
+            description: 'Description',
+            isGamificationEnabled: true,
+            microLearnings: [
+              {
+                id: 'micro-active',
+                displayName: 'Active Microlearning',
+                scheduledStartAt,
+                scheduledEndAt,
+              },
+            ],
+            liveQuizzes: [
+              {
+                id: 'live-quiz-1',
+                displayName: 'Live Quiz One',
+              },
+            ],
+          },
+        },
+      ],
+    })
+    const prisma = {
+      participant: {
+        findUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.participations({
+        endpoint: 'endpoint-1',
+        assessmentOnly: true,
+      })
+    ).resolves.toEqual({
+      participations: [
+        {
+          id: 1,
+          completedMicroLearnings: ['micro-completed'],
+          subscriptions: [{ id: 3, endpoint: 'endpoint-1' }],
+          course: {
+            id: 'course-1',
+            displayName: 'Course One',
+            startDate,
+            endDate,
+            description: 'Description',
+            isGamificationEnabled: true,
+            microLearnings: [
+              {
+                id: 'micro-active',
+                displayName: 'Active Microlearning',
+                scheduledStartAt,
+                scheduledEndAt,
+              },
+            ],
+            liveQuizzes: [
+              {
+                id: 'live-quiz-1',
+                displayName: 'Live Quiz One',
+              },
+            ],
+          },
+        },
+      ],
+    })
+
+    expect(findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          participations: expect.objectContaining({
+            where: { course: { isAssessmentEnabled: true } },
+            orderBy: { course: { displayName: 'asc' } },
+          }),
+        }),
+      })
+    )
+    expect(
+      findUnique.mock.calls[0]?.[0].select.participations.select.subscriptions
+        .where
+    ).toEqual({ endpoint: 'endpoint-1' })
+  })
+
   test('returns practice courses with element stacks ordered by end date', async () => {
     const prisma = {
       participation: {
@@ -236,6 +332,9 @@ describe('participant read routers', () => {
     )
 
     await expect(caller.participant.courses()).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    })
+    await expect(caller.participant.participations()).rejects.toMatchObject({
       code: 'FORBIDDEN',
     })
   })

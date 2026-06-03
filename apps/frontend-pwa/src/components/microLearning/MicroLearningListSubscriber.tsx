@@ -1,79 +1,46 @@
-import { SubscribeToMoreOptions } from '@apollo/client'
-import {
-  Course,
-  MicroLearning,
-  MicroLearningEndedDocument,
-  Participation,
-} from '@klicker-uzh/graphql/dist/ops'
+import { useSubscription } from '@apollo/client'
+import { MicroLearningEndedDocument } from '@klicker-uzh/graphql/dist/ops'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 function MicroLearningListSubscriber({
   activityId,
-  subscribeToMore,
+  onEnded,
 }: {
   activityId: string
-  subscribeToMore: (doc: SubscribeToMoreOptions) => any
+  onEnded?: () => void | Promise<void>
 }) {
   const t = useTranslations()
+  const onEndedRef = useRef(onEnded)
+  const handledActivityIdRef = useRef<string | null>(null)
 
   useEffect(() => {
-    subscribeToMore({
-      document: MicroLearningEndedDocument,
-      variables: { activityId },
-      updateQuery: (
-        prev: { participations: Participation[] },
-        {
-          subscriptionData,
-        }: {
-          subscriptionData: {
-            data: { microLearningEnded: MicroLearning }
-          }
-        }
-      ): { participations: Participation[] } => {
-        if (!subscriptionData.data) return prev
+    onEndedRef.current = onEnded
+  }, [onEnded])
 
-        // trigger toast for ended microlearning
-        toast({
-          type: 'success',
-          message: t('pwa.courses.microLearningEndedToast', {
-            activityName: subscriptionData.data.microLearningEnded.displayName,
-          }),
-          options: { duration: 10000 },
-        })
+  const { data } = useSubscription(MicroLearningEndedDocument, {
+    variables: { activityId },
+  })
 
-        // update the values returned by the course overview data query
-        const updatedParticipations: Participation[] = prev.participations.map(
-          (participation) => {
-            const microLearningIds = participation.course?.microLearnings?.map(
-              (ml) => ml.id
-            )
-            if (microLearningIds?.includes(activityId)) {
-              return {
-                ...participation,
-                course: {
-                  ...participation.course,
-                  microLearnings:
-                    participation.course?.microLearnings
-                      ?.map((ml) => {
-                        if (ml.id === activityId) {
-                          return undefined
-                        }
-                        return ml
-                      })
-                      .filter((ml) => typeof ml !== 'undefined') ?? [],
-                } as Course,
-              }
-            }
-            return participation
-          }
-        )
+  useEffect(() => {
+    const microLearning = data?.microLearningEnded
+    if (!microLearning || handledActivityIdRef.current === microLearning.id) {
+      return
+    }
 
-        return { participations: updatedParticipations }
-      },
+    handledActivityIdRef.current = microLearning.id
+
+    toast({
+      type: 'success',
+      message: t('pwa.courses.microLearningEndedToast', {
+        activityName: microLearning.displayName,
+      }),
+      options: { duration: 10000 },
     })
-  }, [activityId, subscribeToMore])
+
+    void onEndedRef.current?.()
+  }, [data?.microLearningEnded, t])
 
   return null
 }
