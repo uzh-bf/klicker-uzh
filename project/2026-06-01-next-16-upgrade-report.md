@@ -181,7 +181,7 @@ Browser smoke screenshots against built Next apps:
 Blocked or pending:
 
 - `pnpm audit --audit-level high`: pending explicit approval to submit dependency inventory to npm's advisory endpoint.
-- Full configured Playwright cross-browser run: Chromium passed, but Firefox and WebKit failed before app execution because their Playwright browser binaries were missing locally. Two `playwright install firefox webkit` attempts downloaded Firefox to 100% and then stalled in the browser downloader with only a partial cache; the second attempt used `PLAYWRIGHT_BROWSERS_PATH=/private/tmp/klicker-next16-pw-browsers`, remained at 892 KB, and was terminated. This is local browser-cache/tooling state, not an observed Klicker app failure.
+- Full configured Playwright cross-browser run: Chromium passed, but Firefox and WebKit failed before app execution because their Playwright browser binaries were missing locally. Two `playwright install firefox webkit` attempts downloaded Firefox to 100% and then stalled in the browser downloader with only a partial cache; the second attempt used `PLAYWRIGHT_BROWSERS_PATH=/private/tmp/klicker-next16-pw-browsers`, remained at 892 KB, and was terminated. A follow-up manual extraction attempt downloaded the official Firefox and WebKit archives from the Playwright dry-run URLs, extracted them with both `unzip` and macOS `ditto`, added Playwright completion markers, cleared extended attributes, and ad-hoc signed the app bundles. Minimal launch checks still failed before app code: Firefox exited with `SIGABRT`, and WebKit exited through `pw_run.sh` with `Abort trap: 6`. This is local browser installation/runtime state, not an observed Klicker app failure.
 
 Real local test-stack browser verification with `npx agent-browser`:
 
@@ -221,7 +221,7 @@ Context:
 Required process:
 1. Re-read project/2026-06-01-next-16-upgrade-plan.md and this report before updating the PR.
 2. Get explicit user approval before running pnpm audit because npm audit submits dependency inventory to the configured registry.
-3. Repair or reinstall the missing local Playwright Firefox/WebKit browser binaries; two `playwright install firefox webkit` attempts stalled in the downloader after Firefox reached 100%, including a temp-cache retry at `/private/tmp/klicker-next16-pw-browsers`.
+3. Repair or reinstall the missing local Playwright Firefox/WebKit browser binaries; two `playwright install firefox webkit` attempts stalled in the downloader after Firefox reached 100%, including a temp-cache retry at `/private/tmp/klicker-next16-pw-browsers`. Manual archive extraction with `unzip` and `ditto` made the browser executables discoverable, but minimal Playwright launch checks still aborted before loading app code.
 4. Run:
    - `pnpm audit --audit-level high`
    - `PLAYWRIGHT_BASE_URL=http://127.0.0.1:3001 pnpm --filter @klicker-uzh/playwright test:run`
