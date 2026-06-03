@@ -1,8 +1,10 @@
 import {
   AwardType,
+  ElementType,
   Locale,
   PublicationStatus,
   TimelineEntryType,
+  UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import { describe, expect, test, vi } from 'vitest'
@@ -12,10 +14,12 @@ import { appRouter } from '../root.js'
 function createContext({
   prisma,
   role = UserRole.PARTICIPANT,
+  scope,
   sub = 'participant-1',
 }: {
   prisma?: TRPCContext['prisma']
   role?: UserRole
+  scope?: UserLoginScope
   sub?: string
 } = {}): TRPCContext {
   return {
@@ -23,6 +27,7 @@ function createContext({
     user: {
       sub,
       role,
+      scope,
     },
   }
 }
@@ -472,6 +477,159 @@ describe('participant read routers', () => {
       })
     }
   )
+
+  test('returns student assessment results with deduplicated corrections', async () => {
+    const finishedAt = new Date('2026-01-15T10:00:00.000Z')
+    const correctionDate = new Date('2026-01-16T10:00:00.000Z')
+    const courseFindUnique = vi.fn().mockResolvedValue({
+      liveQuizzes: [
+        {
+          id: 'quiz-1',
+          displayName: 'Assessment Quiz',
+          finishedAt,
+          pointsMultiplier: 2,
+          defaultPoints: 2,
+          defaultCorrectPoints: 3,
+          maxBonusPoints: 1,
+          blocks: [
+            {
+              elements: [
+                {
+                  elementType: ElementType.FREE_TEXT,
+                  elementData: { options: { hasSampleSolution: true } },
+                  options: { basePoints: true, pointsMultiplier: 2 },
+                  liveQuizResponses: [
+                    {
+                      basePoints: 2,
+                      correctnessPoints: 6,
+                      bonusPoints: 2,
+                      appliedCorrections: [
+                        {
+                          pointCorrectionId: 7,
+                          awardedBasePoints: 1,
+                          awardedCorrectnessPoints: 0,
+                          awardedBonusPoints: 0,
+                          deductedBasePoints: 0,
+                          deductedCorrectnessPoints: 0,
+                          deductedBonusPoints: 0,
+                          pointCorrection: {
+                            createdAt: correctionDate,
+                            reason: 'Lecturer reason',
+                            studentReason: 'Student reason',
+                          },
+                        },
+                        {
+                          pointCorrectionId: 7,
+                          awardedBasePoints: 0,
+                          awardedCorrectnessPoints: 2,
+                          awardedBonusPoints: 0,
+                          deductedBasePoints: 0,
+                          deductedCorrectnessPoints: 0,
+                          deductedBonusPoints: 1,
+                          pointCorrection: {
+                            createdAt: correctionDate,
+                            reason: 'Lecturer reason',
+                            studentReason: 'Student reason',
+                          },
+                        },
+                      ],
+                    },
+                  ],
+                },
+                {
+                  elementType: ElementType.CONTENT,
+                  elementData: { options: {} },
+                  options: { basePoints: true, pointsMultiplier: 3 },
+                  liveQuizResponses: [],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+    const prisma = {
+      derivedPermission: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+      participation: {
+        findUnique: vi.fn().mockResolvedValue({ id: 1 }),
+      },
+      course: {
+        findUnique: courseFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext({ prisma, scope: UserLoginScope.EDUID })
+    )
+
+    await expect(
+      caller.participant.studentAssessmentResults({ courseId: 'course-1' })
+    ).resolves.toEqual({
+      studentAssessmentResults: {
+        liveQuizzes: [
+          {
+            id: 'quiz-1',
+            activityId: 'quiz-1',
+            displayName: 'Assessment Quiz',
+            finishedAt,
+            multiplier: 2,
+            basePoints: 2,
+            availableBasePoints: 2,
+            correctnessPoints: 6,
+            availableCorrectnessPoints: 6,
+            bonusPoints: 2,
+            availableBonusPoints: 2,
+            corrections: [
+              {
+                id: 7,
+                lecturerReason: 'Lecturer reason',
+                studentReason: 'Student reason',
+                awardedBasePoints: 1,
+                awardedCorrectnessPoints: 2,
+                awardedBonusPoints: 0,
+                deductedBasePoints: 0,
+                deductedCorrectnessPoints: 0,
+                deductedBonusPoints: 1,
+              },
+            ],
+          },
+        ],
+        practiceQuizzes: [],
+        microLearnings: [],
+        groupActivities: [],
+      },
+    })
+
+    expect(courseFindUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'course-1', isAssessmentEnabled: true },
+      })
+    )
+    expect(
+      courseFindUnique.mock.calls[0]?.[0].include.liveQuizzes.include.blocks
+        .include.elements.include.liveQuizResponses.where
+    ).toEqual({ participantId: 'participant-1' })
+  })
+
+  test('rejects student assessment results for non-assessment participants', async () => {
+    const prisma = {
+      derivedPermission: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext({ prisma, scope: UserLoginScope.FULL_ACCESS })
+    )
+
+    await expect(
+      caller.participant.studentAssessmentResults({ courseId: 'course-1' })
+    ).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+      message:
+        'Only logged in assessment participants can access assessment results',
+    })
+  })
 
   test('returns course overview data for the course landing page', async () => {
     const groupDeadlineDate = new Date('2027-01-01T00:00:00.000Z')

@@ -9,6 +9,7 @@ import {
 } from '@klicker-uzh/prisma/client'
 import { levelFromXp } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
+import { getStudentAssessmentResults as getStudentAssessmentResultsService } from '../../services/participantAssessmentResults.js'
 import {
   activateParticipantAccount,
   changeParticipantLocale,
@@ -83,6 +84,7 @@ import {
   toPublishedMicroLearning,
   toPublishedPracticeQuiz,
   toShortnameLiveQuiz,
+  toStudentAssessmentResults,
   toTemporaryParticipantSelf,
 } from '../dto/participant.js'
 import { publicProcedure, router } from '../init.js'
@@ -1330,6 +1332,26 @@ export const participantRouter = router({
 
     return { courseStudentTimelines }
   }),
+
+  studentAssessmentResults: participantProcedure
+    .input(participantCourseInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const studentAssessmentResults = await getStudentAssessmentResultsService(
+        {
+          courseId: input.courseId,
+          participantId: ctx.user.sub,
+          prisma,
+          user: ctx.user,
+        }
+      )
+
+      return {
+        studentAssessmentResults: toStudentAssessmentResults(
+          studentAssessmentResults
+        ),
+      }
+    }),
 
   courseOverview: publicProcedure
     .input(participantCourseInput)

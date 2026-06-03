@@ -1,18 +1,21 @@
-import { useSuspenseQuery } from '@apollo/client'
-import { GetStudentAssessmentResultsDocument } from '@klicker-uzh/graphql/dist/ops'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { ActivityType } from '@klicker-uzh/types'
 import { H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { trpc } from '../../../lib/trpc'
 import AssessmentResultsList from './AssessmentResultsList'
 
 function SuspendedAssessmentResults({ courseId }: { courseId: string }) {
   const t = useTranslations()
-  const { data } = useSuspenseQuery(GetStudentAssessmentResultsDocument, {
-    variables: { courseId },
-    fetchPolicy: 'network-only',
-  })
+  const { data, error, isLoading } =
+    trpc.participant.studentAssessmentResults.useQuery(
+      { courseId },
+      { retry: false }
+    )
 
-  if (!data.studentAssessmentResults) {
+  if (isLoading) return <Loader />
+
+  if (error || !data?.studentAssessmentResults) {
     return (
       <UserNotification
         type="error"

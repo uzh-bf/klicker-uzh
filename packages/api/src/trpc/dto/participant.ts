@@ -1,5 +1,9 @@
 import type * as DB from '@klicker-uzh/prisma/client'
 import { UserRole, type Prisma } from '@klicker-uzh/prisma/client'
+import type {
+  ActivityStudentPerformance,
+  StudentPointCorrection,
+} from '@klicker-uzh/types'
 import { levelFromXp } from '@klicker-uzh/util'
 
 type AvatarSettings = {
@@ -149,6 +153,20 @@ type CourseStudentTimelineSource = {
     totalPoints?: number | null
     totalXp: number
   }[]
+}
+
+type AssessmentActivityPerformanceSource = Omit<
+  ActivityStudentPerformance,
+  'corrections'
+> & {
+  corrections: (StudentPointCorrection & { createdAt?: Date })[]
+}
+
+type StudentAssessmentResultsSource = {
+  liveQuizzes: AssessmentActivityPerformanceSource[]
+  practiceQuizzes: AssessmentActivityPerformanceSource[]
+  microLearnings: AssessmentActivityPerformanceSource[]
+  groupActivities: AssessmentActivityPerformanceSource[]
 }
 
 type CourseAwardSource = Pick<
@@ -506,6 +524,56 @@ export function toCourseStudentTimeline(timeline: CourseStudentTimelineSource) {
       totalPoints: entry.totalPoints ?? null,
       totalXp: entry.totalXp,
     })),
+  }
+}
+
+function toStudentPointCorrection(correction: StudentPointCorrection) {
+  return {
+    id: correction.id,
+    lecturerReason: correction.lecturerReason ?? null,
+    studentReason: correction.studentReason,
+    awardedBasePoints: correction.awardedBasePoints,
+    awardedCorrectnessPoints: correction.awardedCorrectnessPoints,
+    awardedBonusPoints: correction.awardedBonusPoints,
+    deductedBasePoints: correction.deductedBasePoints,
+    deductedCorrectnessPoints: correction.deductedCorrectnessPoints,
+    deductedBonusPoints: correction.deductedBonusPoints,
+  }
+}
+
+function toAssessmentActivityPerformance(
+  result: AssessmentActivityPerformanceSource
+) {
+  return {
+    id: result.id,
+    activityId: result.activityId,
+    displayName: result.displayName,
+    finishedAt: result.finishedAt,
+    multiplier: result.multiplier,
+    basePoints: result.basePoints,
+    availableBasePoints: result.availableBasePoints,
+    correctnessPoints: result.correctnessPoints,
+    availableCorrectnessPoints: result.availableCorrectnessPoints,
+    bonusPoints: result.bonusPoints,
+    availableBonusPoints: result.availableBonusPoints,
+    corrections: result.corrections.map(toStudentPointCorrection),
+  }
+}
+
+export function toStudentAssessmentResults(
+  results: StudentAssessmentResultsSource | null
+) {
+  if (!results) return null
+
+  return {
+    liveQuizzes: results.liveQuizzes.map(toAssessmentActivityPerformance),
+    practiceQuizzes: results.practiceQuizzes.map(
+      toAssessmentActivityPerformance
+    ),
+    microLearnings: results.microLearnings.map(toAssessmentActivityPerformance),
+    groupActivities: results.groupActivities.map(
+      toAssessmentActivityPerformance
+    ),
   }
 }
 

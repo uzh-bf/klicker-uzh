@@ -276,6 +276,63 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-03 Completed: S04H17 PWA Assessment Results Read
+
+Status: complete for the scoped slice. This slice migrated the PWA course overview assessment-results tab from Apollo `GetStudentAssessmentResultsDocument` to tRPC. It intentionally did not touch live/session flows, subscriptions, Apollo providers, generated operations, course-practice synthetic quiz data, or manage-app assessment result reads.
+
+Scope:
+
+- `apps/frontend-pwa/src/components/insights/assessmentResults/SuspendedAssessmentResults.tsx`
+- `packages/api/src/services/participantAssessmentResults.ts`
+- `packages/api/src/trpc/dto/participant.ts`
+- `packages/api/src/trpc/routers/participant.ts`
+- `packages/api/src/trpc/__tests__/participant-read.test.ts`
+- This plan file
+
+Operation mapping:
+
+- GraphQL `GetStudentAssessmentResultsDocument` -> new `trpc.participant.studentAssessmentResults.useQuery({ courseId })`.
+- GraphQL resolver: `Query.studentAssessmentResults` with participant auth.
+- Behavior source: `packages/graphql/src/services/courses.ts getStudentAssessmentResults`.
+- tRPC router/procedure: `participant.studentAssessmentResults` as an authenticated participant read.
+- Input schema: existing `{ courseId: string }` participant course input.
+- Output DTO: `{ studentAssessmentResults: { liveQuizzes, practiceQuizzes, microLearnings, groupActivities } }`, with `ActivityStudentPerformance` fields and correction timestamps stripped from internal service data.
+- Active frontend consumer: `apps/frontend-pwa/src/components/insights/assessmentResults/SuspendedAssessmentResults.tsx` inside the course overview assessment-results tab.
+
+Implementation notes:
+
+- Added `packages/api/src/services/participantAssessmentResults.ts` to mirror the existing GraphQL participant assessment behavior: assessment-course admin shortcut, `EDUID` scope requirement for participants, course participation check, finished live-quiz result lookup, per-instance available point calculation, latest participant response selection, and point-correction aggregation by correction id.
+- Added `toStudentAssessmentResults` and narrow assessment performance DTO mapping in `packages/api/src/trpc/dto/participant.ts`; this keeps service-only correction `createdAt` values out of the tRPC output.
+- Migrated `SuspendedAssessmentResults` from Apollo `useSuspenseQuery(GetStudentAssessmentResultsDocument)` to `trpc.participant.studentAssessmentResults.useQuery({ courseId }, { retry: false })`, preserving the existing failed-load notification for non-assessment participant tokens without repeated retry calls.
+
+Verification results:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- participant-read`: passed; Vitest ran 17 files / 154 tests, including the new assessment result DTO/correction aggregation and non-`EDUID` rejection coverage.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build`: passed; existing warnings were limited to next-config module type, next-intl config, PWA worker output, stale Browserslist data, deprecated image domains / cross-origin dev warning, and known large page-data warnings.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --check <touched files>`: passed.
+- `git diff --check`: passed.
+- Scoped assessment-results audit passed: no `GetStudentAssessmentResultsDocument`, `useSuspenseQuery`, `@apollo/client`, or `@klicker-uzh/graphql` imports remain in `apps/frontend-pwa/src/components/insights/assessmentResults` or the touched API tRPC/service files.
+
+Browser verification:
+
+- Local stack: Docker PostgreSQL/Redis/Hatchet services were already running. Backend ran on `http://127.0.0.1:3103`; PWA ran on `http://127.0.0.1:3102`.
+- Browser login used seeded participant `testuser1` / `abcdabcd` via `/login?redirect_to=%2F`.
+- The seeded DB had no assessment-enabled course, so verification temporarily toggled seeded `Testkurs` (`b8b1305e-bfe8-458b-bf26-9082fdca953f`) to `authType = SSO`, `pinCode = null`, `isAssessmentEnabled = true`; after screenshots, it was restored and confirmed as `authType = PIN`, `pinCode = 123456789`, `isAssessmentEnabled = false`.
+- Screenshots: `/tmp/klicker-pwa-s04h17-login.png`, `/tmp/klicker-pwa-s04h17-assessment-final.png`.
+- `/course/b8b1305e-bfe8-458b-bf26-9082fdca953f` rendered the `Assessment Results` tab selected and the existing failed-load notification for a password-login participant token, without visible overlap.
+- Final browser resource evidence included one batched `participant.studentAssessmentResults` request, with no standalone repeated retry calls after adding `retry: false`.
+- Cleanup closed `agent-browser`, stopped temporary `3102` / `3103` verification processes, removed temporary local `.env` files, and confirmed ports `3102` / `3103` had no listeners.
+
+Review:
+
+- Self-review used because no separate subagent spawn tooling was available in this continuation.
+- Kept the procedure participant-only to match `Query.studentAssessmentResults`; manage-app/user assessment result reads remain on GraphQL for later migration.
+
+Next: continue residual PWA non-realtime Apollo cleanup, with likely candidates `course/[courseId]/practice`, `course/[courseId]/join`, `course/[courseId]/chatbot/[chatbotId]`, or course live-quiz overview reads. Keep live/session flows and subscriptions for S05.
+
 ### 2026-06-03 Completed: S04H16 PWA Timeline Insights Read
 
 Status: complete for the scoped slice. This slice migrated the PWA `/insights/timeline` student timeline read from Apollo to tRPC and removed the generated GraphQL timeline type imports from the timeline components. It intentionally did not touch live/session flows, GraphQL subscriptions, Apollo providers, generated operations, or manage app callers.
