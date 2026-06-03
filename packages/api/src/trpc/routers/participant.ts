@@ -71,6 +71,7 @@ import {
   toCourseGroupActivity,
   toCourseLeaderboard,
   toCourseOverview,
+  toCourseRunningLiveQuiz,
   toCourseStudentTimeline,
   toGroupActivityInstance,
   toParticipantCourse,
@@ -99,6 +100,7 @@ import {
   participantCheckNameAvailableInput,
   participantCourseInput,
   participantCourseLeaderboardInput,
+  participantCourseLiveQuizInput,
   participantCoursePinInput,
   participantCreateAccountInput,
   participantCreateGroupInput,
@@ -1351,6 +1353,53 @@ export const participantRouter = router({
           studentAssessmentResults
         ),
       }
+    }),
+
+  courseRunningLiveQuizzes: publicProcedure
+    .input(participantCourseInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const course = await prisma.course.findUnique({
+        where: { id: input.courseId },
+        select: {
+          liveQuizzes: {
+            where: {
+              status: PublicationStatus.PUBLISHED,
+            },
+            select: {
+              id: true,
+              name: true,
+              displayName: true,
+              course: {
+                select: {
+                  id: true,
+                  displayName: true,
+                },
+              },
+            },
+          },
+        },
+      })
+
+      return {
+        liveQuizzes: course?.liveQuizzes.map(toCourseRunningLiveQuiz) ?? [],
+      }
+    }),
+
+  validateAvailableLiveQuiz: publicProcedure
+    .input(participantCourseLiveQuizInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const liveQuiz = await prisma.liveQuiz.findUnique({
+        where: {
+          id: input.quizId,
+          status: PublicationStatus.PUBLISHED,
+          courseId: input.courseId,
+        },
+        select: { id: true },
+      })
+
+      return { isAvailable: !!liveQuiz }
     }),
 
   courseOverview: publicProcedure

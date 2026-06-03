@@ -1,9 +1,7 @@
-import { useQuery } from '@apollo/client'
 import { faChalkboardUser } from '@fortawesome/free-solid-svg-icons'
-import { GetCourseRunningLiveQuizzesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
+import { createTRPCSSRClient, trpc, type RouterOutputs } from '@lib/trpc'
 import useParticipantToken from '@lib/useParticipantToken'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
@@ -12,14 +10,19 @@ import nookies from 'nookies'
 import Layout from '../../../../components/Layout'
 import LinkButton from '../../../../components/common/LinkButton'
 
+type LiveQuizOverviewData =
+  RouterOutputs['participant']['courseRunningLiveQuizzes']
+
 function LiveQuizOverview({
   isInactive,
   courseId,
+  initialLiveQuizData,
   participantToken,
   cookiesAvailable,
 }: {
   isInactive: boolean
   courseId: string
+  initialLiveQuizData?: LiveQuizOverviewData
   participantToken?: string
   cookiesAvailable?: boolean
 }) {
@@ -30,12 +33,16 @@ function LiveQuizOverview({
     cookiesAvailable,
   })
 
-  const { data, loading } = useQuery(GetCourseRunningLiveQuizzesDocument, {
-    variables: { courseId: courseId },
-    skip: isInactive,
-  })
+  const { data, isLoading } =
+    trpc.participant.courseRunningLiveQuizzes.useQuery(
+      { courseId },
+      {
+        enabled: !isInactive,
+        initialData: initialLiveQuizData,
+      }
+    )
 
-  if (loading) {
+  if (!isInactive && isLoading) {
     return (
       <Layout>
         <Loader />
@@ -43,13 +50,9 @@ function LiveQuizOverview({
     )
   }
 
-  if (
-    isInactive ||
-    !data ||
-    !data.getCourseRunningLiveQuizzes?.length ||
-    data.getCourseRunningLiveQuizzes.length === 0 ||
-    !data.getCourseRunningLiveQuizzes[0]?.course
-  ) {
+  const liveQuizzes = data?.liveQuizzes ?? []
+  const course = liveQuizzes[0]?.course
+  if (isInactive || liveQuizzes.length === 0 || !course) {
     return (
       <Layout>
         <div className="flex flex-col gap-3 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
@@ -65,15 +68,15 @@ function LiveQuizOverview({
   }
 
   return (
-    <Layout course={data.getCourseRunningLiveQuizzes[0].course}>
+    <Layout course={course}>
       <div className="flex flex-col gap-2 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
         <H2>
           {t('pwa.general.activeLiveQuizzesInCourse', {
-            name: data.getCourseRunningLiveQuizzes[0].course.displayName,
+            name: course.displayName,
           })}
         </H2>
         <div className="flex flex-col gap-1.5">
-          {data.getCourseRunningLiveQuizzes.map((quiz) => (
+          {liveQuizzes.map((quiz) => (
             <LinkButton
               key={quiz.id}
               icon={faChalkboardUser}
@@ -101,19 +104,17 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const apolloClient = initializeApollo()
-    const result = await apolloClient.query({
-      query: GetCourseRunningLiveQuizzesDocument,
-      variables: {
-        courseId: ctx.params.courseId,
-      },
+    const trpcClient = createTRPCSSRClient(ctx)
+    const result = await trpcClient.participant.courseRunningLiveQuizzes.query({
+      courseId: ctx.params.courseId,
     })
 
     // if there is no result (e.g., the shortname is not valid)
-    if (!result?.data?.getCourseRunningLiveQuizzes) {
+    if (!result?.liveQuizzes) {
       return {
         props: {
           isInactive: true,
+          courseId: ctx.params.courseId,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
         },
@@ -122,17 +123,16 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     // if only a single live quiz is running, redirect directly to the corresponding quiz page
     // or if linkTo is set, redirect to the specified link
-    if (result.data.getCourseRunningLiveQuizzes.length === 1) {
+    if (result.liveQuizzes.length === 1) {
       return {
         redirect: {
-          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/session/${result.data.getCourseRunningLiveQuizzes[0].id}`,
+          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/session/${result.liveQuizzes[0].id}`,
           permanent: false,
         },
       }
     }
 
     const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
       courseId: ctx.params.courseId,
       ctx,
     })
@@ -143,19 +143,21 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           participantToken,
           cookiesAvailable,
           courseId: ctx.params.courseId,
+          initialLiveQuizData: result,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
         },
       }
     }
 
-    return addApolloState(apolloClient, {
+    return {
       props: {
         courseId: ctx.params.courseId,
+        initialLiveQuizData: result,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
-    })
+    }
   } catch (error) {
     console.error('Error in getServerSideProps on live quiz overview:', error)
 

@@ -118,6 +118,13 @@ type ShortnameLiveQuizSource = Pick<
   course?: Pick<DB.Course, 'displayName' | 'id'> | null
 }
 
+type CourseRunningLiveQuizSource = Pick<
+  DB.LiveQuiz,
+  'displayName' | 'id' | 'name'
+> & {
+  course?: Pick<DB.Course, 'displayName' | 'id'> | null
+}
+
 type ParticipantParticipationSource = Pick<
   DB.Participation,
   'completedMicroLearnings' | 'id'
@@ -468,6 +475,20 @@ export function toShortnameLiveQuiz(quiz: ShortnameLiveQuizSource) {
     isGamificationEnabled: quiz.isGamificationEnabled,
     isAssessmentEnabled: quiz.isAssessmentEnabled,
     isPinProtected: !!quiz.pinCode,
+    course: quiz.course
+      ? {
+          id: quiz.course.id,
+          displayName: quiz.course.displayName,
+        }
+      : null,
+  }
+}
+
+export function toCourseRunningLiveQuiz(quiz: CourseRunningLiveQuizSource) {
+  return {
+    id: quiz.id,
+    name: quiz.name,
+    displayName: quiz.displayName,
     course: quiz.course
       ? {
           id: quiz.course.id,

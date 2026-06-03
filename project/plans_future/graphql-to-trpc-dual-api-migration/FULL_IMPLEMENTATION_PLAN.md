@@ -276,6 +276,58 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-03 Completed: S04H18 PWA Course Live Quiz Availability Reads
+
+Status: complete for the scoped slice. This slice migrated the PWA course live-quiz overview and direct live-quiz redirect validation from Apollo / GraphQL SSR reads to tRPC. It intentionally did not touch `/session/[id]`, live quiz subscriptions, feedback mutations, Apollo providers, generated operations, or live execution behavior reserved for S05.
+
+Scope:
+
+- `apps/frontend-pwa/src/pages/course/[courseId]/liveQuizzes/overview.tsx`
+- `apps/frontend-pwa/src/pages/course/[courseId]/liveQuizzes/[id].tsx`
+- `packages/api/src/trpc/dto/participant.ts`
+- `packages/api/src/trpc/schemas/participant.ts`
+- `packages/api/src/trpc/routers/participant.ts`
+- `packages/api/src/trpc/__tests__/participant-read.test.ts`
+- This plan file
+
+Operation mapping:
+
+- GraphQL `GetCourseRunningLiveQuizzesDocument` -> new `trpc.participant.courseRunningLiveQuizzes`.
+- GraphQL resolver: `Query.getCourseRunningLiveQuizzes`.
+- Behavior source: `packages/graphql/src/services/liveQuizzes.ts getCourseRunningLiveQuizzes`.
+- GraphQL `ValidateAvailableLiveQuizDocument` -> new `trpc.participant.validateAvailableLiveQuiz`.
+- GraphQL resolver: `Query.validateAvailableLiveQuiz`.
+- Behavior source: `packages/graphql/src/services/liveQuizzes.ts validateAvailableLiveQuiz`.
+- Active frontend consumers: PWA `course/[courseId]/liveQuizzes/overview` and `course/[courseId]/liveQuizzes/[id]`.
+
+Implementation notes:
+
+- Added `participant.courseRunningLiveQuizzes` and `participant.validateAvailableLiveQuiz` tRPC reads with narrow DTOs and Zod input validation.
+- Migrated `course/[courseId]/liveQuizzes/overview` SSR and client refetching from Apollo to tRPC with SSR initial data.
+- Migrated `course/[courseId]/liveQuizzes/[id]` SSR validation to tRPC and added a local UUID guard so malformed direct URLs redirect to 404 before Prisma UUID lookup.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- participant-read` passed after adding focused coverage for published course live-quiz lists, missing/empty lists, valid/invalid quiz validation, and malformed-id rejection before querying.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build` passed, with existing Next.js warnings about `next-config` module type, next-intl Pages Router migration, browserslist age, and large page data.
+- Scoped residual import audit passed for `GetCourseRunningLiveQuizzesDocument`, `ValidateAvailableLiveQuizDocument`, Apollo, GraphQL ops, `initializeApollo`, and `addApolloState` in the migrated live-quiz course pages/API paths.
+- Browser verification used local backend `127.0.0.1:3103`, PWA `127.0.0.1:3102`, and seeded participant `testuser1`. Screenshots: `/tmp/klicker-pwa-s04h18-live-overview-login.png`, `/tmp/klicker-pwa-s04h18-live-overview.png`, `/tmp/klicker-pwa-s04h18-live-invalid-redirect-fixed.png`.
+- Browser resource evidence included `/api/trpc/participant.self,participant.courseRunningLiveQuizzes`, confirming the overview reads through tRPC. The seeded course currently has no running live quizzes, so the verified rendered state was "No live quizzes active."
+- Direct malformed live-quiz URL `/course/b8b1305e-bfe8-458b-bf26-9082fdca953f/liveQuizzes/not-a-live-quiz` redirected to `/en/404` after the UUID guard.
+
+Cleanup:
+
+- Closed `agent-browser`.
+- Stopped local PWA/backend servers on ports 3102/3103.
+- Removed temporary local `.env` files generated for backend/worker/response-api verification.
+
+Next candidates:
+
+- Continue residual PWA non-realtime Apollo cleanup in `course/[courseId]/practice`, `course/[courseId]/join`, `course/[courseId]/chatbot/[chatbotId]`, or home/timeline reads.
+
 ### 2026-06-03 Completed: S04H17 PWA Assessment Results Read
 
 Status: complete for the scoped slice. This slice migrated the PWA course overview assessment-results tab from Apollo `GetStudentAssessmentResultsDocument` to tRPC. It intentionally did not touch live/session flows, subscriptions, Apollo providers, generated operations, course-practice synthetic quiz data, or manage-app assessment result reads.

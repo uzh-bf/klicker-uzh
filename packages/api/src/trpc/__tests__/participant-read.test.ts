@@ -631,6 +631,143 @@ describe('participant read routers', () => {
     })
   })
 
+  test('returns running live quizzes for a course', async () => {
+    const courseFindUnique = vi.fn().mockResolvedValue({
+      liveQuizzes: [
+        {
+          id: 'quiz-1',
+          name: 'quiz-one',
+          displayName: 'Quiz One',
+          course: {
+            id: 'course-1',
+            displayName: 'Course One',
+          },
+        },
+      ],
+    })
+    const prisma = {
+      course: {
+        findUnique: courseFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.courseRunningLiveQuizzes({ courseId: 'course-1' })
+    ).resolves.toEqual({
+      liveQuizzes: [
+        {
+          id: 'quiz-1',
+          name: 'quiz-one',
+          displayName: 'Quiz One',
+          course: {
+            id: 'course-1',
+            displayName: 'Course One',
+          },
+        },
+      ],
+    })
+
+    expect(courseFindUnique).toHaveBeenCalledWith({
+      where: { id: 'course-1' },
+      select: {
+        liveQuizzes: {
+          where: {
+            status: PublicationStatus.PUBLISHED,
+          },
+          select: {
+            id: true,
+            name: true,
+            displayName: true,
+            course: {
+              select: {
+                id: true,
+                displayName: true,
+              },
+            },
+          },
+        },
+      },
+    })
+  })
+
+  test.each([
+    { label: 'missing course', course: null },
+    { label: 'no running live quizzes', course: { liveQuizzes: [] } },
+  ])('returns no running live quizzes for $label', async ({ course }) => {
+    const prisma = {
+      course: {
+        findUnique: vi.fn().mockResolvedValue(course),
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.courseRunningLiveQuizzes({ courseId: 'course-1' })
+    ).resolves.toEqual({
+      liveQuizzes: [],
+    })
+  })
+
+  test.each([
+    {
+      label: 'valid',
+      liveQuiz: { id: '550e8400-e29b-41d4-a716-446655440001' },
+      isAvailable: true,
+    },
+    { label: 'invalid', liveQuiz: null, isAvailable: false },
+  ])(
+    'returns $isAvailable for $label available live quiz validation',
+    async ({ isAvailable, liveQuiz }) => {
+      const liveQuizFindUnique = vi.fn().mockResolvedValue(liveQuiz)
+      const prisma = {
+        liveQuiz: {
+          findUnique: liveQuizFindUnique,
+        },
+      } as unknown as TRPCContext['prisma']
+      const caller = appRouter.createCaller(createContext({ prisma }))
+
+      await expect(
+        caller.participant.validateAvailableLiveQuiz({
+          courseId: '550e8400-e29b-41d4-a716-446655440000',
+          quizId: '550e8400-e29b-41d4-a716-446655440001',
+        })
+      ).resolves.toEqual({
+        isAvailable,
+      })
+
+      expect(liveQuizFindUnique).toHaveBeenCalledWith({
+        where: {
+          id: '550e8400-e29b-41d4-a716-446655440001',
+          status: PublicationStatus.PUBLISHED,
+          courseId: '550e8400-e29b-41d4-a716-446655440000',
+        },
+        select: { id: true },
+      })
+    }
+  )
+
+  test('rejects malformed live quiz validation input before querying', async () => {
+    const liveQuizFindUnique = vi.fn()
+    const prisma = {
+      liveQuiz: {
+        findUnique: liveQuizFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.validateAvailableLiveQuiz({
+        courseId: '550e8400-e29b-41d4-a716-446655440000',
+        quizId: 'not-a-live-quiz',
+      })
+    ).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+    })
+
+    expect(liveQuizFindUnique).not.toHaveBeenCalled()
+  })
+
   test('returns course overview data for the course landing page', async () => {
     const groupDeadlineDate = new Date('2027-01-01T00:00:00.000Z')
     const messageDate = new Date('2025-06-01T00:00:00.000Z')

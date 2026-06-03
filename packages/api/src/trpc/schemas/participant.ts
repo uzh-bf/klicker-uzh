@@ -19,6 +19,11 @@ export const participantCourseInput = z.object({
   courseId: z.string(),
 })
 
+export const participantCourseLiveQuizInput = z.object({
+  courseId: z.string().uuid(),
+  quizId: z.string().uuid(),
+})
+
 export const participantCreateGroupInput = z.object({
   courseId: z.string(),
   name: z.string(),
