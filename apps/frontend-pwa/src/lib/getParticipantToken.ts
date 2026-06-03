@@ -8,7 +8,6 @@ export default async function getParticipantToken({
   courseId,
   ctx,
 }: {
-  apolloClient?: unknown
   courseId?: string
   ctx: GetServerSidePropsContext
 }) {

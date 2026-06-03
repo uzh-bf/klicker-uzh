@@ -276,6 +276,56 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-03 Completed: S04H23 PWA Course Overview SSR Apollo Cleanup
+
+Status: complete for the scoped slice. This slice removed stale Apollo SSR state plumbing from the PWA course overview page after the course overview, leaderboard, group activity, participation token, and related course-page mutations had already moved to tRPC. It intentionally did not touch live/session flows, GraphQL subscriptions, Apollo providers, generated GraphQL artifacts, manage app callers, or final GraphQL cleanup.
+
+Scope:
+
+- `apps/frontend-pwa/src/pages/course/[courseId]/index.tsx`
+- `apps/frontend-pwa/src/lib/getParticipantToken.ts`
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation(s): none still used by the course overview page.
+- GraphQL resolver(s): none still used by the course overview page.
+- Behavior source: existing `trpc.participant.courseOverview`, `trpc.participant.courseLeaderboard`, `trpc.participant.courseGroupActivities`, and `getParticipantToken` backed by `createTRPCSSRClient`.
+- tRPC router.procedure: existing participant course overview/leaderboard/group activity/token procedures; no new procedure.
+- Input schema: existing participant course schemas; no new schema.
+- Output DTO: unchanged page props and existing course overview/leaderboard/group activity DTOs.
+- Active frontend consumer: PWA `/course/[courseId]`.
+- Apollo behavior: `initializeApollo()` only created an SSR Apollo cache, `addApolloState(...)` wrapped unauthenticated SSR props, and the obsolete Apollo client argument was passed into `getParticipantToken`.
+- React Query/tRPC replacement: plain SSR props plus existing tRPC-backed token helper and client-side tRPC queries.
+- Browser verification path: open a seeded course overview URL through the local PWA/backend stack and confirm the page renders with `/api/trpc/participant.courseOverview` network evidence.
+
+Implementation notes:
+
+- Removed the unused `initializeApollo()` SSR cache setup from `apps/frontend-pwa/src/pages/course/[courseId]/index.tsx`.
+- Removed the `addApolloState(...)` wrapper from the unauthenticated course overview SSR branch and returned plain props instead.
+- Stopped passing the obsolete Apollo client argument into `getParticipantToken`.
+- Removed the obsolete optional `apolloClient` parameter from `getParticipantToken`.
+- Kept GraphQL mounted and all generated artifacts intact for remaining PWA/manage/realtime consumers.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build` passed, with existing Next.js warnings about `next-config` module type, next-intl Pages Router migration, browserslist age, image domains, cross-origin dev origins, and large page data.
+- Scoped residual import audit found no Apollo/GraphQL imports or SSR helpers in `course/[courseId]/index.tsx` or `getParticipantToken.ts`; the only matches were expected tRPC hooks on the course overview page.
+- Stale token-helper argument audit found no remaining `apolloClient` references in `getParticipantToken` callers.
+- Browser verification used local backend `127.0.0.1:3103`, PWA `127.0.0.1:3102`, and seeded course `b8b1305e-bfe8-458b-bf26-9082fdca953f`.
+- Browser screenshot: `/tmp/klicker-pwa-s04h23-course-overview.png`.
+- Browser resource evidence showed `/api/trpc/participant.self,participant.courseOverview,participant.courseLeaderboard` after opening `/course/b8b1305e-bfe8-458b-bf26-9082fdca953f`.
+
+Review and cleanup:
+
+- Dedicated subagent tooling was not exposed in this session; performed explicit self-review for SSR props parity, token helper callers, residual Apollo imports, and GraphQL coexistence.
+- Context7 MCP was not exposed in this session; no new framework API patterns were introduced.
+- Closed `agent-browser`.
+- Stopped local PWA/backend servers on ports 3102/3103.
+- Removed temporary local verification `.env` files.
+- Next candidates: continue residual PWA non-realtime/generated-type cleanup, then remaining session/realtime/S05 slices.
+
 ### 2026-06-03 Completed: S04H22 PWA Create Account SSR Apollo Cleanup
 
 Status: complete for the scoped slice. This slice removed stale Apollo SSR state plumbing from the PWA create-account page after account creation, username availability, and participant-token handling had already moved to tRPC. It intentionally did not touch LTI token parsing, account creation service behavior, login redirects, Apollo providers, generated GraphQL artifacts, live/session flows, subscriptions, or manage app callers.
