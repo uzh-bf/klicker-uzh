@@ -18,6 +18,16 @@ export const participantCourseInput = z.object({
   courseId: z.string(),
 })
 
+export const participantCreateGroupInput = z.object({
+  courseId: z.string(),
+  name: z.string(),
+})
+
+export const participantJoinGroupInput = z.object({
+  courseId: z.string(),
+  code: z.number().int(),
+})
+
 export const participantPublicProfileInput = z.object({
   participantId: z.string(),
 })

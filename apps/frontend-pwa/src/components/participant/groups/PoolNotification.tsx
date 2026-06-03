@@ -1,7 +1,6 @@
-import { useMutation } from '@apollo/client'
-import { LeaveRandomCourseGroupPoolDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { trpc } from '../../../lib/trpc'
 
 function PoolNotification({
   courseId,
@@ -11,9 +10,8 @@ function PoolNotification({
   onCourseOverviewChanged?: () => void | Promise<void>
 }) {
   const t = useTranslations()
-  const [leaveRandomCourseGroupPool, { loading }] = useMutation(
-    LeaveRandomCourseGroupPoolDocument
-  )
+  const leaveRandomCourseGroupPool =
+    trpc.participant.leaveRandomCourseGroupPool.useMutation()
 
   return (
     <div className="flex flex-col items-end gap-2">
@@ -24,12 +22,12 @@ function PoolNotification({
       />
       <Button
         destructive
-        disabled={loading}
+        disabled={leaveRandomCourseGroupPool.isLoading}
         onClick={async () => {
-          const result = await leaveRandomCourseGroupPool({
-            variables: { courseId },
+          const result = await leaveRandomCourseGroupPool.mutateAsync({
+            courseId,
           })
-          if (result.data?.leaveRandomCourseGroupPool) {
+          if (result) {
             await onCourseOverviewChanged?.()
           }
         }}

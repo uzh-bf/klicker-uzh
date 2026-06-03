@@ -25,6 +25,12 @@ import {
   joinCourseWithPin,
 } from '../../services/participantCourseJoin.js'
 import {
+  createParticipantGroup as createParticipantGroupService,
+  joinParticipantGroup as joinParticipantGroupService,
+  joinRandomCourseGroupPool as joinRandomCourseGroupPoolService,
+  leaveRandomCourseGroupPool as leaveRandomCourseGroupPoolService,
+} from '../../services/participantGroups.js'
+import {
   checkParticipantNameAvailable,
   updateParticipantAvatar,
   updateParticipantProfile,
@@ -56,7 +62,9 @@ import {
   participantCourseLeaderboardInput,
   participantCoursePinInput,
   participantCreateAccountInput,
+  participantCreateGroupInput,
   participantGroupActivityInstancesInput,
+  participantJoinGroupInput,
   participantLoginInput,
   participantLoginTemporaryInput,
   participantLoginWithLtiInput,
@@ -541,6 +549,57 @@ export const participantRouter = router({
           participation,
         },
       }
+    }),
+
+  createParticipantGroup: participantProcedure
+    .input(participantCreateGroupInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return createParticipantGroupService({
+        courseId: input.courseId,
+        emitter: ctx.emitter,
+        name: input.name,
+        participantId: ctx.user.sub,
+        prisma,
+      })
+    }),
+
+  joinParticipantGroup: participantProcedure
+    .input(participantJoinGroupInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return joinParticipantGroupService({
+        code: input.code,
+        courseId: input.courseId,
+        participantId: ctx.user.sub,
+        prisma,
+      })
+    }),
+
+  joinRandomCourseGroupPool: participantProcedure
+    .input(participantCourseInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return joinRandomCourseGroupPoolService({
+        courseId: input.courseId,
+        participantId: ctx.user.sub,
+        prisma,
+      })
+    }),
+
+  leaveRandomCourseGroupPool: participantProcedure
+    .input(participantCourseInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return leaveRandomCourseGroupPoolService({
+        courseId: input.courseId,
+        participantId: ctx.user.sub,
+        prisma,
+      })
     }),
 
   updateProfile: participantProcedure

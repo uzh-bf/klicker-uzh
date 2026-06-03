@@ -1,8 +1,7 @@
-import { useMutation } from '@apollo/client'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
-import { CreateParticipantGroupDocument } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
+import { trpc } from '../../../lib/trpc'
 import GroupAction from './GroupAction'
 
 function GroupCreationBlock({
@@ -15,9 +14,8 @@ function GroupCreationBlock({
   onCourseOverviewChanged?: () => void | Promise<void>
 }) {
   const t = useTranslations()
-  const [createParticipantGroup, { loading }] = useMutation(
-    CreateParticipantGroupDocument
-  )
+  const createParticipantGroup =
+    trpc.participant.createParticipantGroup.useMutation()
 
   return (
     <GroupAction
@@ -32,16 +30,17 @@ function GroupCreationBlock({
           }),
       })}
       onSubmit={async (value) => {
-        const result = await createParticipantGroup({
-          variables: { courseId: courseId, name: value },
+        const result = await createParticipantGroup.mutateAsync({
+          courseId,
+          name: value,
         })
 
-        if (result.data?.createParticipantGroup?.id) {
+        if (result?.id) {
           await onCourseOverviewChanged?.()
-          setSelectedTab(result.data.createParticipantGroup.id)
+          setSelectedTab(result.id)
         }
       }}
-      loading={loading}
+      loading={createParticipantGroup.isLoading}
       placeholder={t('pwa.courses.groupName')}
       textSubmit={t('shared.generic.create')}
       inputData={{ cy: 'group-creation-name-input' }}

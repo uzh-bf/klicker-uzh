@@ -1,9 +1,8 @@
-import { useMutation } from '@apollo/client'
 import { faPeopleGroup } from '@fortawesome/free-solid-svg-icons'
-import { JoinParticipantGroupDocument } from '@klicker-uzh/graphql/dist/ops'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
+import { trpc } from '../../../lib/trpc'
 import GroupAction from './GroupAction'
 
 function GroupJoinBlock({
@@ -16,9 +15,8 @@ function GroupJoinBlock({
   onCourseOverviewChanged?: () => void | Promise<void>
 }) {
   const t = useTranslations()
-  const [joinParticipantGroup, { loading }] = useMutation(
-    JoinParticipantGroupDocument
-  )
+  const joinParticipantGroup =
+    trpc.participant.joinParticipantGroup.useMutation()
 
   return (
     <div className="h-full w-full">
@@ -34,23 +32,18 @@ function GroupJoinBlock({
             }),
         })}
         onSubmit={async (value) => {
-          const result = await joinParticipantGroup({
-            variables: {
-              courseId: courseId,
-              code: Number(value) >> 0,
-            },
+          const result = await joinParticipantGroup.mutateAsync({
+            courseId,
+            code: Number(value) >> 0,
           })
 
-          if (
-            !result.data?.joinParticipantGroup ||
-            result.data.joinParticipantGroup === 'FAILURE'
-          ) {
+          if (!result || result === 'FAILURE') {
             toast({
               type: 'error',
               message: t('pwa.courses.joinGroupError'),
               options: { duration: 6000 },
             })
-          } else if (result.data.joinParticipantGroup === 'FULL') {
+          } else if (result === 'FULL') {
             toast({
               type: 'warning',
               message: t('pwa.courses.joinGroupFull'),
@@ -58,10 +51,10 @@ function GroupJoinBlock({
             })
           } else {
             await onCourseOverviewChanged?.()
-            setSelectedTab(result.data.joinParticipantGroup)
+            setSelectedTab(result)
           }
         }}
-        loading={loading}
+        loading={joinParticipantGroup.isLoading}
         placeholder={t('pwa.courses.code')}
         textSubmit={t('shared.generic.join')}
         data={undefined}
