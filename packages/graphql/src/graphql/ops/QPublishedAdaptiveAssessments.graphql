@@ -1,0 +1,15 @@
+query QPublishedAdaptiveAssessments($courseId: String!) {
+  publishedAdaptiveAssessmentInfos(courseId: $courseId) {
+    id
+    courseName
+    displayName
+    description
+    thetaMin
+    thetaMax
+    standardErrorThreshold
+    levels {
+      label
+      order
+    }
+  }
+}

@@ -9,7 +9,7 @@ import {
 import { Badge, Button, Tooltip } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useState } from 'react'
+import { Dispatch, KeyboardEvent, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import AssessmentBadge from '../activities/overview/AssessmentBadge'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
@@ -73,19 +73,27 @@ function CourseListButton({
     : false
   const courseRunning = dayjs(course?.endDate).isAfter(dayjs())
   const [activityLogOpen, setActivityLogOpen] = useState(false)
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      onClick()
+    }
+  }
 
   return (
     <>
-      <Button
-        className={{
-          root: twMerge(
-            'flex w-full flex-row justify-between rounded-md border border-solid px-3 py-2 shadow-sm',
-            typeof course?.color !== 'undefined' && 'border-b-4!'
-          ),
-        }}
+      <div
+        role="button"
+        tabIndex={0}
+        className={twMerge(
+          'focus-visible:outline-primary-80 flex w-full cursor-pointer flex-row justify-between rounded-md border border-solid px-3 py-2 text-left shadow-sm transition-colors hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
+          typeof course?.color !== 'undefined' && 'border-b-4!'
+        )}
         style={{ borderBottomColor: course?.color }}
         onClick={onClick}
-        data={data}
+        onKeyDown={handleKeyDown}
+        data-cy={data?.cy}
+        data-test={data?.test}
       >
         <div>
           <div className="ml-1 flex flex-row items-center gap-3">
@@ -204,7 +212,7 @@ function CourseListButton({
             ) : null}
           </div>
         ) : null}
-      </Button>
+      </div>
 
       {course && activityLogOpen ? (
         <ActivityLogDialog

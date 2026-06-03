@@ -1,5 +1,5 @@
 import { useBackgroundQuery, useMutation, useQuery } from '@apollo/client'
-import { faLock } from '@fortawesome/free-solid-svg-icons'
+import { faBrain, faLock } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GetCourseGroupActivitiesDocument,
@@ -7,6 +7,7 @@ import {
   GetStudentCourseLeaderboardDocument,
   JoinCourseLeaderboardDocument,
   LeaveCourseLeaderboardDocument,
+  QPublishedAdaptiveAssessmentsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
@@ -37,6 +38,7 @@ import Rank3Img from 'public/rank3.svg'
 import { Suspense, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
+import LinkButton from '../../../components/common/LinkButton'
 import SuspendedGroupView from '../../../components/course/SuspendedGroupView'
 import SuspendedAssessmentResults from '../../../components/insights/assessmentResults/SuspendedAssessmentResults'
 import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
@@ -75,6 +77,16 @@ function CourseOverview({
   const { data, loading, error } = useQuery(GetCourseOverviewDataDocument, {
     variables: { courseId },
   })
+  const participation = data?.getCourseOverviewData?.participation
+  const { data: adaptiveData, loading: loadingAdaptiveAssessments } = useQuery(
+    QPublishedAdaptiveAssessmentsDocument,
+    {
+      variables: { courseId },
+    }
+  )
+  const adaptiveAssessments =
+    adaptiveData?.publishedAdaptiveAssessmentInfos ?? []
+  const hasAdaptiveLearning = adaptiveAssessments.length > 0
 
   const { data: dataLeaderboard, loading: loadingLeaderboard } = useQuery(
     GetStudentCourseLeaderboardDocument,
@@ -105,11 +117,17 @@ function CourseOverview({
   })
 
   useEffect(() => {
-    const participation = data?.getCourseOverviewData?.participation
-
     // if assessment is enabled, switch to the assessment results tab automatically
     if (data?.getCourseOverviewData?.course?.isAssessmentEnabled) {
       setSelectedTab('assessment-results')
+    }
+    // if adaptive learning is the only actionable course content, open it by default
+    else if (
+      hasAdaptiveLearning &&
+      !data?.getCourseOverviewData?.course?.isGamificationEnabled &&
+      !data?.getCourseOverviewData?.course?.description
+    ) {
+      setSelectedTab('adaptive-learning')
     }
     // if a course description is set but gamification is not enabled or the user is not participating in the course,
     // switch to the info tab automatically
@@ -121,7 +139,7 @@ function CourseOverview({
     ) {
       setSelectedTab('info')
     }
-  }, [data])
+  }, [data, hasAdaptiveLearning])
 
   if (
     !data?.getCourseOverviewData ||
@@ -142,7 +160,6 @@ function CourseOverview({
   const {
     course,
     participant,
-    participation,
     groupLeaderboard,
     groupLeaderboardStatistics,
     inRandomGroupPool,
@@ -195,7 +212,9 @@ function CourseOverview({
     >
       {course.isGamificationEnabled ||
       course.isAssessmentEnabled ||
-      course.description ? (
+      course.description ||
+      hasAdaptiveLearning ||
+      loadingAdaptiveAssessments ? (
         <>
           <div className="md:mx-auto md:w-full md:max-w-6xl">
             <Tabs
@@ -204,7 +223,9 @@ function CourseOverview({
                   ? 'assessment-results'
                   : course.isGamificationEnabled
                     ? 'global'
-                    : 'info'
+                    : hasAdaptiveLearning
+                      ? 'adaptive-learning'
+                      : 'info'
               }
               value={selectedTab}
               tabs={[
@@ -246,6 +267,16 @@ function CourseOverview({
                         value: 'assessment-results',
                         label: `${t('pwa.courses.assessmentResults')}`,
                         data: { cy: `assessment-results` },
+                      },
+                    ]
+                  : []),
+                ...(hasAdaptiveLearning
+                  ? [
+                      {
+                        id: 'adaptive-learning',
+                        value: 'adaptive-learning',
+                        label: 'Adaptive Learning',
+                        data: { cy: 'student-course-adaptive-learning-tab' },
                       },
                     ]
                   : []),
@@ -583,6 +614,52 @@ function CourseOverview({
                   <Suspense fallback={<Loader />}>
                     <SuspendedAssessmentResults courseId={course.id} />
                   </Suspense>
+                </TabContent>
+              ) : null}
+
+              {hasAdaptiveLearning && selectedTab === 'adaptive-learning' ? (
+                <TabContent
+                  key="adaptive-learning"
+                  value="adaptive-learning"
+                  className={{ root: 'md:px-4' }}
+                >
+                  <div className="flex max-w-xl flex-col gap-3">
+                    <H3 className={{ root: 'mb-1' }}>Adaptive Learning</H3>
+                    {adaptiveAssessments.map(
+                      (assessment: {
+                        id: string
+                        displayName: string
+                        description?: string | null
+                      }) => (
+                        <div
+                          key={assessment.id}
+                          className="rounded border border-slate-200 bg-white p-3"
+                        >
+                          <div className="font-semibold">
+                            {assessment.displayName}
+                          </div>
+                          {assessment.description && (
+                            <div className="mb-3 text-sm text-slate-600">
+                              {assessment.description}
+                            </div>
+                          )}
+                          <LinkButton
+                            icon={faBrain}
+                            href={`/course/${course.id}/adaptive-learning`}
+                            data={{
+                              cy: `open-adaptive-learning-${assessment.id}`,
+                            }}
+                            className={{
+                              root: 'mt-3 gap-1 text-base',
+                              icon: 'h-5 w-5',
+                            }}
+                          >
+                            Start adaptive learning
+                          </LinkButton>
+                        </div>
+                      )
+                    )}
+                  </div>
                 </TabContent>
               ) : null}
 

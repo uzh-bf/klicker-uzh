@@ -1,5 +1,6 @@
 import { useQuery } from '@apollo/client'
 import {
+  faBrain,
   faCrown,
   faList,
   faTriangleExclamation,
@@ -342,6 +343,12 @@ function CourseOverviewPage() {
                 tooltipDelay: 0,
                 data: { cy: 'tab-groupActivities' },
               },
+              {
+                id: 'tab-adaptiveLearning',
+                value: 'adaptiveLearning',
+                label: 'Adaptive Learning',
+                data: { cy: 'tab-adaptiveLearning' },
+              },
             ]}
             className={{ root: 'flex-1 basis-3/5' }}
           >
@@ -394,6 +401,33 @@ function CourseOverviewPage() {
                 openCalendarView={() => showCalendarView(true)}
                 highlightedActivity={highlightedActivity}
               />
+            </TabContent>
+            <TabContent
+              key="content-adaptiveLearning"
+              value="adaptiveLearning"
+              className={{ root: 'px-0 py-1' }}
+            >
+              <div className="flex flex-col gap-3 rounded border border-solid border-gray-200 bg-white p-4">
+                <div>
+                  <div className="font-bold">Adaptive Learning</div>
+                  <div className="text-sm text-gray-600">
+                    Create and manage adaptive assessments with lecturer-defined
+                    levels, competence coverage, adaptive settings, and result
+                    messages.
+                  </div>
+                </div>
+                <Button
+                  primary
+                  className={{ root: 'w-max' }}
+                  onClick={() =>
+                    router.push(`/courses/${course.id}/adaptive-learning`)
+                  }
+                  data={{ cy: 'open-adaptive-learning' }}
+                >
+                  <Button.Icon icon={faBrain} />
+                  <Button.Label>Open adaptive setup</Button.Label>
+                </Button>
+              </div>
             </TabContent>
           </Tabs>
         )}

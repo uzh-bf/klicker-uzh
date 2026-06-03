@@ -1,0 +1,5 @@
+query QAdaptiveAssessments($courseId: String!) {
+  adaptiveAssessments(courseId: $courseId) {
+    ...FAdaptiveAssessmentConfig
+  }
+}

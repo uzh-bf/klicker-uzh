@@ -1,0 +1,53 @@
+query QAdaptiveLearningElementCandidates(
+  $searchString: String
+  $numEntries: Int!
+  $offset: Int!
+) {
+  userElements(
+    status: READY
+    hasSampleSolution: true
+    hasAnswerFeedbacks: false
+    searchString: $searchString
+    showOwned: true
+    showShared: true
+    showDependencies: true
+    tagIds: []
+    showUntagged: false
+    sortByType: MODIFIED
+    sortByAsc: false
+    showArchived: false
+    numEntries: $numEntries
+    offset: $offset
+  ) {
+    elements {
+      __typename
+      ... on ChoicesElement {
+        id
+        name
+        type
+        options {
+          choices {
+            ix
+          }
+        }
+        createdAt
+        updatedAt
+        tags {
+          id
+          name
+        }
+      }
+      ... on FreeTextElement {
+        id
+        name
+        type
+        createdAt
+        updatedAt
+        tags {
+          id
+          name
+        }
+      }
+    }
+  }
+}

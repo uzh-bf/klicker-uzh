@@ -1,0 +1,5 @@
+mutation MUpsertAdaptiveAssessment($input: UpsertAdaptiveAssessmentInput!) {
+  upsertAdaptiveAssessment(input: $input) {
+    ...FAdaptiveAssessmentConfig
+  }
+}

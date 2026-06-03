@@ -1,0 +1,13 @@
+mutation MSubmitAdaptiveAssessmentAnswer(
+  $attemptId: String!
+  $adaptiveElementId: Int!
+  $response: AdaptiveAnswerInput!
+) {
+  submitAdaptiveAssessmentAnswer(
+    attemptId: $attemptId
+    adaptiveElementId: $adaptiveElementId
+    response: $response
+  ) {
+    ...FAdaptiveAttemptState
+  }
+}

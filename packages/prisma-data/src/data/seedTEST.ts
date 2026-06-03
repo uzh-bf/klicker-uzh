@@ -114,6 +114,1056 @@ export const PARTICIPANT_GROUP_IDS = [
   '11c06c89-0cb4-4d8e-b052-b711f327b8c4',
 ]
 
+const ADAPTIVE_ASSESSMENT_ID_TEST = 'f0186f1d-3ec8-48a4-bd58-5f968db52f48'
+
+const ADAPTIVE_STANDING_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+const ADAPTIVE_THETA_RANGE = { min: -3, max: 3 } as const
+const ADAPTIVE_INTERVAL_MESSAGES = [
+  'Your final estimate is in the A1 range. Keep practising everyday phrases and short guided reading.',
+  'Your final estimate is in the A2 range. Build confidence with familiar topics and short connected texts.',
+  'Your final estimate is in the B1 range. Focus on clearer paragraph structure and common grammar patterns.',
+  'Your final estimate is in the B2 range. Practise nuanced reading, argumentation, and editing tasks.',
+  'Your final estimate is in the C1 range. Target precision, register, and complex text interpretation.',
+  'Your final estimate is in the C2 range. Use demanding authentic material to maintain mastery.',
+]
+
+const ADAPTIVE_COMPETENCE_SEED = [
+  {
+    name: 'Reading',
+    weight: 34,
+    subCompetences: [
+      'Main idea',
+      'Detail retrieval',
+      'Inference',
+      'Vocabulary in context',
+      'Text structure',
+    ],
+  },
+  {
+    name: 'Writing',
+    weight: 33,
+    subCompetences: [
+      'Sentence construction',
+      'Paragraph coherence',
+      'Register and tone',
+      'Argument development',
+      'Editing and revision',
+    ],
+  },
+  {
+    name: 'Grammar',
+    weight: 33,
+    subCompetences: [
+      'Verb tenses',
+      'Modals and conditionals',
+      'Articles and determiners',
+      'Clauses and connectors',
+      'Word forms and agreement',
+    ],
+  },
+]
+
+type AdaptiveSeedElementSpec = {
+  originalId: string
+  name: string
+  type: Prisma.ElementType
+  content: string
+  explanation: string
+  choices?: { value: string; feedback?: string; correct?: boolean }[]
+  options: any
+  competenceName: string
+  subCompetenceName: string
+  levelLabel: string
+}
+
+async function seedTestkursAdaptiveElements(prisma: Prisma.PrismaClient) {
+  const elements: Prisma.Element[] = []
+
+  for (const spec of buildAdaptiveSeedElementSpecs()) {
+    const data = prepareQuestion({
+      originalId: spec.originalId,
+      name: spec.name,
+      type: spec.type,
+      ownerId: USER_ID_TEST,
+      content: spec.content,
+      explanation: spec.explanation,
+      choices: spec.choices,
+      options: spec.options,
+    })
+
+    const existingElement = await prisma.element.findFirst({
+      where: { originalId: spec.originalId },
+    })
+    const element = existingElement
+      ? await prisma.element.update({
+          where: { id: existingElement.id },
+          data: {
+            ...data,
+            status: Prisma.ElementStatus.READY,
+            isArchived: false,
+            isDeleted: false,
+          },
+        })
+      : await prisma.element.create({
+          data: {
+            ...data,
+            status: Prisma.ElementStatus.READY,
+          },
+        })
+
+    await recomputeDerivedPermissions(
+      { elementId: element.id, userId: USER_ID_TEST },
+      prisma
+    )
+    elements.push(element)
+  }
+
+  return elements
+}
+
+async function seedTestkursAdaptiveAssessment(
+  prisma: Prisma.PrismaClient,
+  elements: Prisma.Element[]
+) {
+  const elementByOriginalId = new Map(
+    elements.map((element) => [element.originalId, element])
+  )
+
+  await prisma.adaptiveAssessment.upsert({
+    where: { id: ADAPTIVE_ASSESSMENT_ID_TEST },
+    create: {
+      id: ADAPTIVE_ASSESSMENT_ID_TEST,
+      name: 'english-cefr-adaptive-learning',
+      displayName: 'English CEFR Adaptive Learning',
+      description:
+        'Seeded English CEFR adaptive learning setup for reading, writing, and grammar.',
+      status: Prisma.PublicationStatus.PUBLISHED,
+      thetaMin: ADAPTIVE_THETA_RANGE.min,
+      thetaMax: ADAPTIVE_THETA_RANGE.max,
+      discrimination: 1.2,
+      standardErrorThreshold: 0.3,
+      questionThreshold: 90,
+      topInformationRatio: 0.8,
+      showTimer: true,
+      showCompetenceNames: true,
+      showFinalResult: true,
+      showSolutions: true,
+      course: { connect: { id: COURSE_ID_TEST } },
+      owner: { connect: { id: USER_ID_TEST } },
+    },
+    update: {
+      name: 'english-cefr-adaptive-learning',
+      displayName: 'English CEFR Adaptive Learning',
+      description:
+        'Seeded English CEFR adaptive learning setup for reading, writing, and grammar.',
+      status: Prisma.PublicationStatus.PUBLISHED,
+      isDeleted: false,
+      thetaMin: ADAPTIVE_THETA_RANGE.min,
+      thetaMax: ADAPTIVE_THETA_RANGE.max,
+      discrimination: 1.2,
+      standardErrorThreshold: 0.3,
+      questionThreshold: 90,
+      topInformationRatio: 0.8,
+      showTimer: true,
+      showCompetenceNames: true,
+      showFinalResult: true,
+      showSolutions: true,
+    },
+  })
+
+  await prisma.adaptiveAssessmentAttempt.deleteMany({
+    where: { assessmentId: ADAPTIVE_ASSESSMENT_ID_TEST },
+  })
+  await prisma.adaptiveAssessmentElement.deleteMany({
+    where: { assessmentId: ADAPTIVE_ASSESSMENT_ID_TEST },
+  })
+  await prisma.adaptiveAssessmentResultMessage.deleteMany({
+    where: { assessmentId: ADAPTIVE_ASSESSMENT_ID_TEST },
+  })
+  await prisma.adaptiveAssessmentSubCompetence.deleteMany({
+    where: { assessmentId: ADAPTIVE_ASSESSMENT_ID_TEST },
+  })
+  await prisma.adaptiveAssessmentCompetence.deleteMany({
+    where: { assessmentId: ADAPTIVE_ASSESSMENT_ID_TEST },
+  })
+  await prisma.adaptiveAssessmentLevel.deleteMany({
+    where: { assessmentId: ADAPTIVE_ASSESSMENT_ID_TEST },
+  })
+
+  const levels = new Map<string, Prisma.AdaptiveAssessmentLevel>()
+  for (const [order, label] of ADAPTIVE_STANDING_LEVELS.entries()) {
+    const level = await prisma.adaptiveAssessmentLevel.create({
+      data: {
+        assessmentId: ADAPTIVE_ASSESSMENT_ID_TEST,
+        label,
+        order,
+      },
+    })
+    levels.set(label, level)
+  }
+
+  const competences = new Map<string, Prisma.AdaptiveAssessmentCompetence>()
+  const subCompetences = new Map<
+    string,
+    Prisma.AdaptiveAssessmentSubCompetence
+  >()
+
+  for (const [order, competenceSeed] of ADAPTIVE_COMPETENCE_SEED.entries()) {
+    const competence = await prisma.adaptiveAssessmentCompetence.create({
+      data: {
+        assessmentId: ADAPTIVE_ASSESSMENT_ID_TEST,
+        name: competenceSeed.name,
+        enabled: true,
+        order,
+        weight: competenceSeed.weight,
+      },
+    })
+    competences.set(competence.name, competence)
+
+    for (const [
+      subOrder,
+      subCompetenceName,
+    ] of competenceSeed.subCompetences.entries()) {
+      const subCompetence = await prisma.adaptiveAssessmentSubCompetence.create(
+        {
+          data: {
+            assessmentId: ADAPTIVE_ASSESSMENT_ID_TEST,
+            competenceId: competence.id,
+            name: subCompetenceName,
+            enabled: true,
+            order: subOrder,
+            questionThreshold: 6,
+            standardErrorThreshold: 0.55,
+          },
+        }
+      )
+      subCompetences.set(
+        `${competence.name}:${subCompetence.name}`,
+        subCompetence
+      )
+    }
+  }
+
+  for (const spec of buildAdaptiveSeedElementSpecs()) {
+    const element = elementByOriginalId.get(spec.originalId)
+    const competence = competences.get(spec.competenceName)
+    const subCompetence = subCompetences.get(
+      `${spec.competenceName}:${spec.subCompetenceName}`
+    )
+    const level = levels.get(spec.levelLabel)
+
+    if (!element || !competence || !subCompetence || !level) {
+      throw new Error(`Adaptive seed mapping failed for ${spec.originalId}`)
+    }
+
+    await prisma.adaptiveAssessmentElement.create({
+      data: {
+        assessmentId: ADAPTIVE_ASSESSMENT_ID_TEST,
+        elementId: element.id,
+        competenceId: competence.id,
+        subCompetenceId: subCompetence.id,
+        levelId: level.id,
+        enabled: true,
+      },
+    })
+  }
+
+  for (const [order, label] of ADAPTIVE_STANDING_LEVELS.entries()) {
+    await prisma.adaptiveAssessmentResultMessage.create({
+      data: {
+        assessmentId: ADAPTIVE_ASSESSMENT_ID_TEST,
+        order,
+        levelId: levels.get(label)!.id,
+        message: `You completed the English CEFR adaptive assessment at ${label} level.`,
+        isFallback: false,
+      },
+    })
+  }
+
+  for (const [
+    intervalIndex,
+    interval,
+  ] of buildAdaptiveIntervalMessages().entries()) {
+    await prisma.adaptiveAssessmentResultMessage.create({
+      data: {
+        assessmentId: ADAPTIVE_ASSESSMENT_ID_TEST,
+        order: ADAPTIVE_STANDING_LEVELS.length + intervalIndex,
+        minTheta: interval.minTheta,
+        maxTheta: interval.maxTheta,
+        message: interval.message,
+        isFallback: false,
+      },
+    })
+  }
+
+  await prisma.adaptiveAssessmentResultMessage.create({
+    data: {
+      assessmentId: ADAPTIVE_ASSESSMENT_ID_TEST,
+      order:
+        ADAPTIVE_STANDING_LEVELS.length + ADAPTIVE_INTERVAL_MESSAGES.length,
+      message: 'Thanks for completing the English CEFR adaptive assessment.',
+      isFallback: true,
+    },
+  })
+}
+
+function buildAdaptiveIntervalMessages() {
+  const width =
+    (ADAPTIVE_THETA_RANGE.max - ADAPTIVE_THETA_RANGE.min) /
+    ADAPTIVE_INTERVAL_MESSAGES.length
+
+  return ADAPTIVE_INTERVAL_MESSAGES.map((message, index) => ({
+    minTheta: roundAdaptiveTheta(ADAPTIVE_THETA_RANGE.min + width * index),
+    maxTheta: roundAdaptiveTheta(
+      index === ADAPTIVE_INTERVAL_MESSAGES.length - 1
+        ? ADAPTIVE_THETA_RANGE.max
+        : ADAPTIVE_THETA_RANGE.min + width * (index + 1)
+    ),
+    message,
+  }))
+}
+
+function roundAdaptiveTheta(value: number) {
+  return Number(value.toFixed(2))
+}
+
+function buildAdaptiveSeedElementSpecs(): AdaptiveSeedElementSpec[] {
+  const specs: AdaptiveSeedElementSpec[] = []
+
+  for (const [
+    competenceIndex,
+    competence,
+  ] of ADAPTIVE_COMPETENCE_SEED.entries()) {
+    for (const [
+      subCompetenceIndex,
+      subCompetenceName,
+    ] of competence.subCompetences.entries()) {
+      for (const [
+        levelIndex,
+        levelLabel,
+      ] of ADAPTIVE_STANDING_LEVELS.entries()) {
+        for (let itemIndex = 0; itemIndex < 4; itemIndex += 1) {
+          const type = adaptiveSeedElementType(
+            competenceIndex,
+            subCompetenceIndex,
+            levelIndex,
+            itemIndex
+          )
+          const originalId = [
+            'adaptive-testkurs',
+            competenceIndex + 1,
+            subCompetenceIndex + 1,
+            levelIndex + 1,
+            itemIndex + 1,
+          ].join('-')
+
+          specs.push({
+            originalId,
+            name: `English CEFR ${competence.name} ${subCompetenceName} ${levelLabel} ${itemIndex + 1}`,
+            type,
+            content: adaptiveElementContent({
+              competenceName: competence.name,
+              subCompetenceName,
+              levelLabel,
+              itemIndex,
+              type,
+            }),
+            explanation: adaptiveElementExplanation({
+              competenceName: competence.name,
+              subCompetenceName,
+              levelLabel,
+            }),
+            choices: adaptiveSeedChoices({
+              type,
+              competenceName: competence.name,
+              subCompetenceName,
+              levelLabel,
+            }),
+            options: adaptiveSeedOptions(type),
+            competenceName: competence.name,
+            subCompetenceName,
+            levelLabel,
+          })
+        }
+      }
+    }
+  }
+
+  return specs
+}
+
+function adaptiveSeedElementType(
+  _competenceIndex: number,
+  _subCompetenceIndex: number,
+  _levelIndex: number,
+  itemIndex: number
+) {
+  if (itemIndex === 0) return Prisma.ElementType.SC
+  if (itemIndex === 1) return Prisma.ElementType.MC
+  if (itemIndex === 2) return Prisma.ElementType.KPRIM
+  return Prisma.ElementType.FREE_TEXT
+}
+
+function adaptiveElementContent({
+  competenceName,
+  subCompetenceName,
+  levelLabel,
+  itemIndex,
+  type,
+}: {
+  competenceName: string
+  subCompetenceName: string
+  levelLabel: string
+  itemIndex: number
+  type: Prisma.ElementType
+}) {
+  const task = adaptiveEnglishTask({
+    competenceName,
+    subCompetenceName,
+    levelLabel,
+    itemIndex,
+  })
+  const responseInstruction =
+    type === Prisma.ElementType.SC
+      ? 'Choose the best answer.'
+      : type === Prisma.ElementType.MC
+        ? 'Select all answers that are appropriate.'
+        : type === Prisma.ElementType.KPRIM
+          ? 'Mark each statement that is true.'
+          : 'Write the requested word or short phrase.'
+
+  return `## ${competenceName} - ${subCompetenceName} (${levelLabel})
+
+${task}
+
+${responseInstruction}`
+}
+
+function adaptiveEnglishTask({
+  competenceName,
+  subCompetenceName,
+  levelLabel,
+  itemIndex,
+}: {
+  competenceName: string
+  subCompetenceName: string
+  levelLabel: string
+  itemIndex: number
+}) {
+  if (competenceName === 'Reading') {
+    const text = cefrReadingText(levelLabel, subCompetenceName)
+    return `Read the text.
+
+> ${text}
+
+Question ${itemIndex + 1}: What does the task mainly test in this text?`
+  }
+
+  if (competenceName === 'Writing') {
+    return `Improve this ${levelLabel} learner sentence for ${subCompetenceName.toLowerCase()}:
+
+> ${cefrWritingSentence(levelLabel, subCompetenceName)}
+
+Question ${itemIndex + 1}: Which response best improves the writing?`
+  }
+
+  return `Complete or judge the sentence for ${subCompetenceName.toLowerCase()}:
+
+> ${cefrGrammarSentence(levelLabel, subCompetenceName)}
+
+Question ${itemIndex + 1}: Which form is grammatically appropriate?`
+}
+
+function adaptiveElementExplanation({
+  competenceName,
+  subCompetenceName,
+  levelLabel,
+}: {
+  competenceName: string
+  subCompetenceName: string
+  levelLabel: string
+}) {
+  return `${levelLabel} ${competenceName.toLowerCase()} item focused on ${subCompetenceName.toLowerCase()}. The correct answer matches the CEFR-aligned language feature described in the prompt.`
+}
+
+function adaptiveSeedChoices({
+  type,
+  competenceName,
+  subCompetenceName,
+  levelLabel,
+}: {
+  type: Prisma.ElementType
+  competenceName: string
+  subCompetenceName: string
+  levelLabel: string
+}) {
+  if (type === Prisma.ElementType.FREE_TEXT) return undefined
+
+  if (type === Prisma.ElementType.MC) {
+    return [
+      {
+        value: adaptiveCorrectChoice(competenceName, subCompetenceName),
+        correct: true,
+        feedback: 'Correct.',
+      },
+      {
+        value: adaptiveDistractorChoice(competenceName, levelLabel, 0),
+        feedback: 'This answer does not match the prompt closely enough.',
+      },
+      {
+        value: adaptiveSecondCorrectChoice(competenceName, subCompetenceName),
+        correct: true,
+        feedback: 'Correct.',
+      },
+      {
+        value: adaptiveDistractorChoice(competenceName, levelLabel, 1),
+        feedback: 'This choice changes the meaning or register.',
+      },
+    ]
+  }
+
+  if (type === Prisma.ElementType.KPRIM) {
+    return [
+      {
+        value: adaptiveCorrectChoice(competenceName, subCompetenceName),
+        correct: true,
+        feedback: 'True.',
+      },
+      {
+        value: adaptiveDistractorChoice(competenceName, levelLabel, 0),
+        feedback: 'False.',
+      },
+      {
+        value: adaptiveSecondCorrectChoice(competenceName, subCompetenceName),
+        correct: true,
+        feedback: 'True.',
+      },
+      {
+        value: adaptiveDistractorChoice(competenceName, levelLabel, 1),
+        feedback: 'False.',
+      },
+    ]
+  }
+
+  return [
+    {
+      value: adaptiveCorrectChoice(competenceName, subCompetenceName),
+      correct: true,
+      feedback: 'Correct.',
+    },
+    {
+      value: adaptiveDistractorChoice(competenceName, levelLabel, 0),
+      feedback: 'This answer does not fit the task.',
+    },
+    {
+      value: adaptiveDistractorChoice(competenceName, levelLabel, 1),
+      feedback: 'This answer is too vague or inaccurate.',
+    },
+    {
+      value: adaptiveDistractorChoice(competenceName, levelLabel, 2),
+      feedback: 'This changes the intended meaning.',
+    },
+  ]
+}
+
+function adaptiveSeedOptions(type: Prisma.ElementType) {
+  if (type === Prisma.ElementType.FREE_TEXT) {
+    return {
+      hasSampleSolution: true,
+      restrictions: { maxLength: 160 },
+      solutions: ['because', 'however', 'clear conclusion', 'main idea'],
+    }
+  }
+
+  return {
+    hasSampleSolution: true,
+    hasAnswerFeedbacks: true,
+    displayMode: 'LIST',
+  }
+}
+
+type AdaptiveSeedAssessmentElement = Prisma.AdaptiveAssessmentElement & {
+  element: Prisma.Element
+  competence: Prisma.AdaptiveAssessmentCompetence
+  subCompetence: Prisma.AdaptiveAssessmentSubCompetence
+  level: Prisma.AdaptiveAssessmentLevel
+}
+
+async function seedTestkursAdaptiveAssessmentAttempts(
+  prisma: Prisma.PrismaClient
+) {
+  const assessment = await prisma.adaptiveAssessment.findUnique({
+    where: { id: ADAPTIVE_ASSESSMENT_ID_TEST },
+    include: {
+      levels: { orderBy: { order: 'asc' } },
+      competences: {
+        orderBy: { order: 'asc' },
+        include: {
+          subCompetences: { orderBy: { order: 'asc' } },
+        },
+      },
+      elements: {
+        include: {
+          element: true,
+          competence: true,
+          subCompetence: true,
+          level: true,
+        },
+      },
+    },
+  })
+
+  if (!assessment) {
+    throw new Error('Adaptive CEFR assessment not found for seeded attempts.')
+  }
+
+  await prisma.adaptiveAssessmentResponse.deleteMany({
+    where: { attempt: { assessmentId: ADAPTIVE_ASSESSMENT_ID_TEST } },
+  })
+  await prisma.adaptiveAssessmentAttempt.deleteMany({
+    where: { assessmentId: ADAPTIVE_ASSESSMENT_ID_TEST },
+  })
+
+  const exposureCounts = new Map<number, number>()
+
+  for (const [participantIndex, participantId] of PARTICIPANT_IDS.entries()) {
+    const participation = await prisma.participation.findUnique({
+      where: {
+        courseId_participantId: {
+          courseId: COURSE_ID_TEST,
+          participantId,
+        },
+      },
+    })
+
+    if (!participation) {
+      throw new Error(
+        `Participation missing for adaptive seed participant ${participantId}`
+      )
+    }
+
+    const attemptCount = (participantIndex % 5) + 1
+
+    for (let attemptIndex = 0; attemptIndex < attemptCount; attemptIndex += 1) {
+      const levelIndex = seededAdaptiveAttemptLevelIndex({
+        participantIndex,
+        attemptIndex,
+        attemptCount,
+      })
+      const levelLabel = ADAPTIVE_STANDING_LEVELS[levelIndex]!
+      const seedIndex = participantIndex * 11 + attemptIndex
+      const finalTheta = seededAdaptiveFinalTheta(levelIndex, seedIndex)
+      const finalStandardError = roundAdaptiveTheta(
+        0.18 + ((participantIndex + attemptIndex) % 5) * 0.025
+      )
+      const elapsedSeconds = 900 + participantIndex * 17 + attemptIndex * 73
+      const startedAt = new Date(
+        Date.UTC(2026, 4, 14, 8, 0, 0) +
+          participantIndex * 60_000 +
+          attemptIndex * 24 * 60 * 60_000
+      )
+      const completedAt = new Date(startedAt.getTime() + elapsedSeconds * 1000)
+      const responseRows = buildSeededAdaptiveResponseRows({
+        assessment,
+        participantIndex: seedIndex,
+        expectedLevelIndex: levelIndex,
+        finalTheta,
+        finalStandardError,
+        exposureCounts,
+      })
+
+      const attempt = await prisma.adaptiveAssessmentAttempt.create({
+        data: {
+          assessmentId: ADAPTIVE_ASSESSMENT_ID_TEST,
+          participantId,
+          participationId: participation.id,
+          status: Prisma.AdaptiveAssessmentAttemptStatus.COMPLETED,
+          currentTheta: finalTheta,
+          currentStandardError: finalStandardError,
+          finalTheta,
+          finalStandardError,
+          finalLevelLabel: levelLabel,
+          elapsedSeconds,
+          startedAt,
+          completedAt,
+          thetaHistory: [
+            0,
+            ...responseRows.map((response) => response.thetaAfter),
+          ] as Prisma.Prisma.InputJsonValue,
+          standardErrorHistory: responseRows.map(
+            (response) => response.standardErrorAfter
+          ) as Prisma.Prisma.InputJsonValue,
+        },
+      })
+
+      await prisma.adaptiveAssessmentResponse.createMany({
+        data: responseRows.map((response) => ({
+          ...response,
+          attemptId: attempt.id,
+        })),
+      })
+    }
+  }
+
+  await Promise.all(
+    Array.from(exposureCounts.entries()).map(([id, exposure]) =>
+      prisma.adaptiveAssessmentElement.update({
+        where: { id },
+        data: { exposure },
+      })
+    )
+  )
+}
+
+function seededAdaptiveAttemptLevelIndex({
+  participantIndex,
+  attemptIndex,
+  attemptCount,
+}: {
+  participantIndex: number
+  attemptIndex: number
+  attemptCount: number
+}) {
+  const baseLevelIndex = participantIndex % ADAPTIVE_STANDING_LEVELS.length
+  const isRetake = attemptCount > 1
+  const improvesAcrossRetakes = isRetake && participantIndex % 2 === 0
+  const finalAttempt = attemptIndex === attemptCount - 1
+  const initialShift = isRetake ? -1 : 0
+  const progressionShift =
+    isRetake && finalAttempt ? (improvesAcrossRetakes ? 1 : -1) : initialShift
+
+  return Math.min(
+    ADAPTIVE_STANDING_LEVELS.length - 1,
+    Math.max(0, baseLevelIndex + progressionShift)
+  )
+}
+
+function buildSeededAdaptiveResponseRows({
+  assessment,
+  participantIndex,
+  expectedLevelIndex,
+  finalTheta,
+  finalStandardError,
+  exposureCounts,
+}: {
+  assessment: {
+    levels: Prisma.AdaptiveAssessmentLevel[]
+    competences: Array<
+      Prisma.AdaptiveAssessmentCompetence & {
+        subCompetences: Prisma.AdaptiveAssessmentSubCompetence[]
+      }
+    >
+    elements: AdaptiveSeedAssessmentElement[]
+  }
+  participantIndex: number
+  expectedLevelIndex: number
+  finalTheta: number
+  finalStandardError: number
+  exposureCounts: Map<number, number>
+}) {
+  const rows: Array<{
+    adaptiveElementId: number
+    elementId: number
+    order: number
+    response: Prisma.Prisma.InputJsonValue
+    correct: boolean
+    thetaBefore: number
+    thetaAfter: number
+    standardErrorAfter: number
+    elapsedSeconds: number
+  }> = []
+  const sortedCompetences = assessment.competences
+    .slice()
+    .sort((a, b) => a.order - b.order)
+  const sortedLevels = assessment.levels
+    .slice()
+    .sort((a, b) => a.order - b.order)
+  const totalResponses =
+    sortedCompetences.reduce(
+      (sum, competence) => sum + competence.subCompetences.length,
+      0
+    ) * sortedLevels.length
+  let thetaBefore = 0
+
+  for (const competence of sortedCompetences) {
+    const sortedSubCompetences = competence.subCompetences
+      .slice()
+      .sort((a, b) => a.order - b.order)
+
+    for (const subCompetence of sortedSubCompetences) {
+      for (const level of sortedLevels) {
+        const candidates = assessment.elements
+          .filter(
+            (element) =>
+              element.competenceId === competence.id &&
+              element.subCompetenceId === subCompetence.id &&
+              element.levelId === level.id
+          )
+          .sort(
+            (a, b) =>
+              adaptiveSeedElementItemIndex(a) - adaptiveSeedElementItemIndex(b)
+          )
+        const selectedElement =
+          candidates[
+            (participantIndex +
+              competence.order +
+              subCompetence.order +
+              level.order) %
+              candidates.length
+          ]
+
+        if (!selectedElement) {
+          throw new Error(
+            `No adaptive seed element for ${competence.name}/${subCompetence.name}/${level.label}`
+          )
+        }
+
+        const expectedCorrect = level.order <= expectedLevelIndex
+        const correct = seededAdaptiveCorrectness({
+          expectedCorrect,
+          participantIndex,
+          competenceOrder: competence.order,
+          subCompetenceOrder: subCompetence.order,
+          levelOrder: level.order,
+        })
+        const progress = (rows.length + 1) / totalResponses
+        const thetaAfter = seededAdaptiveThetaAfter({
+          finalTheta,
+          progress,
+          participantIndex,
+          levelOrder: level.order,
+        })
+        const standardErrorAfter = roundAdaptiveTheta(
+          finalStandardError + (1 - progress) * 1.05
+        )
+
+        exposureCounts.set(
+          selectedElement.id,
+          (exposureCounts.get(selectedElement.id) ?? 0) + 1
+        )
+        rows.push({
+          adaptiveElementId: selectedElement.id,
+          elementId: selectedElement.elementId,
+          order: rows.length,
+          response: adaptiveSeedResponsePayload(
+            selectedElement.element,
+            correct
+          ),
+          correct,
+          thetaBefore,
+          thetaAfter,
+          standardErrorAfter,
+          elapsedSeconds: Math.round(
+            20 + progress * 940 + participantIndex * 3
+          ),
+        })
+        thetaBefore = thetaAfter
+      }
+    }
+  }
+
+  return rows
+}
+
+function seededAdaptiveFinalTheta(
+  levelIndex: number,
+  participantIndex: number
+) {
+  const levelTheta = adaptiveLevelTheta(levelIndex)
+  const jitter = ((participantIndex % 5) - 2) * 0.08
+
+  return roundAdaptiveTheta(
+    Math.min(
+      ADAPTIVE_THETA_RANGE.max,
+      Math.max(ADAPTIVE_THETA_RANGE.min, levelTheta + jitter)
+    )
+  )
+}
+
+function adaptiveLevelTheta(levelIndex: number) {
+  const span = ADAPTIVE_THETA_RANGE.max - ADAPTIVE_THETA_RANGE.min
+  const denominator = Math.max(ADAPTIVE_STANDING_LEVELS.length - 1, 1)
+
+  return ADAPTIVE_THETA_RANGE.min + (span * levelIndex) / denominator
+}
+
+function seededAdaptiveCorrectness({
+  expectedCorrect,
+  participantIndex,
+  competenceOrder,
+  subCompetenceOrder,
+  levelOrder,
+}: {
+  expectedCorrect: boolean
+  participantIndex: number
+  competenceOrder: number
+  subCompetenceOrder: number
+  levelOrder: number
+}) {
+  const unexpected =
+    (participantIndex * 17 +
+      competenceOrder * 13 +
+      subCompetenceOrder * 7 +
+      levelOrder * 5) %
+      31 ===
+    0
+
+  return unexpected ? !expectedCorrect : expectedCorrect
+}
+
+function seededAdaptiveThetaAfter({
+  finalTheta,
+  progress,
+  participantIndex,
+  levelOrder,
+}: {
+  finalTheta: number
+  progress: number
+  participantIndex: number
+  levelOrder: number
+}) {
+  const easedProgress = 1 - Math.pow(1 - progress, 1.35)
+  const wobble = Math.sin((participantIndex + 1) * (levelOrder + 1)) * 0.025
+
+  return roundAdaptiveTheta(
+    finalTheta * easedProgress + wobble * (1 - progress)
+  )
+}
+
+function adaptiveSeedElementItemIndex(element: AdaptiveSeedAssessmentElement) {
+  const value = Number(element.element.originalId?.split('-').at(-1))
+
+  return Number.isFinite(value) ? value - 1 : 0
+}
+
+function adaptiveSeedResponsePayload(
+  element: Prisma.Element,
+  correct: boolean
+): Prisma.Prisma.InputJsonValue {
+  if (
+    element.type === Prisma.ElementType.SC ||
+    element.type === Prisma.ElementType.MC ||
+    element.type === Prisma.ElementType.KPRIM
+  ) {
+    const options = element.options as {
+      choices?: { ix: number; correct?: boolean }[]
+    }
+    const choices = options.choices ?? []
+    const firstIncorrect = choices.find((choice) => !choice.correct)
+
+    return {
+      choicesResponse: choices.map((choice) => ({
+        ix: choice.ix,
+        selected: correct
+          ? Boolean(choice.correct)
+          : element.type === Prisma.ElementType.KPRIM
+            ? choice.ix === choices[0]?.ix
+              ? !Boolean(choice.correct)
+              : Boolean(choice.correct)
+            : choice.ix === firstIncorrect?.ix,
+      })),
+    } as Prisma.Prisma.InputJsonValue
+  }
+
+  return {
+    freeTextResponse: correct ? 'clear conclusion' : 'unclear',
+  } as Prisma.Prisma.InputJsonValue
+}
+
+function cefrReadingText(levelLabel: string, subCompetenceName: string) {
+  const texts: Record<string, string> = {
+    A1: 'Mia is at the station. Her train leaves at nine. She buys a ticket and waits near platform two.',
+    A2: 'The college library closes early on Friday because the staff are preparing a weekend exhibition for new students.',
+    B1: 'Although the online course was convenient, Karim missed the informal discussions that helped him test his ideas.',
+    B2: 'The article argues that remote work can improve concentration, but only when teams deliberately protect informal communication.',
+    C1: "The reviewer praises the author's elegant style while questioning whether the central argument relies too heavily on anecdotal evidence.",
+    C2: 'The editorial uses irony to expose a contradiction: institutions celebrate innovation while quietly rewarding only familiar forms of success.',
+  }
+
+  return `${texts[levelLabel] ?? texts.B1} Focus: ${subCompetenceName.toLowerCase()}.`
+}
+
+function cefrWritingSentence(levelLabel: string, subCompetenceName: string) {
+  const sentences: Record<string, string> = {
+    A1: 'I go to class every Monday and I like my teacher.',
+    A2: 'Yesterday I visited the museum because I wanted to learn about local history.',
+    B1: 'The city should create more bike lanes because they are cheaper and healthier than car traffic.',
+    B2: 'While the proposal has clear benefits, it would require careful planning to avoid excluding smaller schools.',
+    C1: 'The policy is persuasive insofar as it links funding to evidence, yet its implementation risks widening regional inequality.',
+    C2: "What appears to be a minor stylistic choice subtly reframes the reader's moral judgement of the narrator.",
+  }
+
+  return `${sentences[levelLabel] ?? sentences.B1} Focus: ${subCompetenceName.toLowerCase()}.`
+}
+
+function cefrGrammarSentence(levelLabel: string, subCompetenceName: string) {
+  const sentences: Record<string, string> = {
+    A1: 'She ___ from Zurich and studies English in the morning.',
+    A2: 'We ___ dinner when the phone rang.',
+    B1: 'If I had more time, I ___ a longer report.',
+    B2: 'The article, ___ was published last week, has already been widely discussed.',
+    C1: 'Had the committee consulted students earlier, the transition ___ smoother.',
+    C2: 'Rarely ___ such a concise explanation changed the direction of a complex debate.',
+  }
+
+  return `${sentences[levelLabel] ?? sentences.B1} Focus: ${subCompetenceName.toLowerCase()}.`
+}
+
+function adaptiveCorrectChoice(
+  competenceName: string,
+  subCompetenceName: string
+) {
+  if (competenceName === 'Reading') {
+    return `It identifies the relevant ${subCompetenceName.toLowerCase()} evidence in the text.`
+  }
+  if (competenceName === 'Writing') {
+    return `It improves ${subCompetenceName.toLowerCase()} while keeping the meaning clear.`
+  }
+  return `It uses the correct form for ${subCompetenceName.toLowerCase()}.`
+}
+
+function adaptiveSecondCorrectChoice(
+  competenceName: string,
+  subCompetenceName: string
+) {
+  if (competenceName === 'Reading') {
+    return `It keeps the answer grounded in the wording of the passage.`
+  }
+  if (competenceName === 'Writing') {
+    return `It matches the expected register and links ideas logically.`
+  }
+  return `It fits both the grammar pattern and the sentence meaning.`
+}
+
+function adaptiveDistractorChoice(
+  competenceName: string,
+  levelLabel: string,
+  index: number
+) {
+  const distractors = {
+    Reading: [
+      `It adds information that is not stated in the ${levelLabel} text.`,
+      'It focuses on a minor word and misses the main point.',
+      'It contradicts the passage.',
+    ],
+    Writing: [
+      `It makes the ${levelLabel} sentence less precise.`,
+      'It changes the intended meaning.',
+      'It uses a register that does not fit the task.',
+    ],
+    Grammar: [
+      `It uses a form that is too simple for the ${levelLabel} sentence.`,
+      'It breaks the agreement or word order.',
+      'It does not fit the time reference.',
+    ],
+  } as const
+
+  return (
+    distractors[competenceName as keyof typeof distractors][index] ??
+    'It does not answer the question.'
+  )
+}
+
 async function seedTest(prisma: Prisma.PrismaClient) {
   if (process.env.ENV !== 'development') process.exit(1)
 
@@ -510,6 +1560,10 @@ async function seedTest(prisma: Prisma.PrismaClient) {
     questionsTest.push(newElement)
   }
 
+  const adaptiveSeedElements = await seedTestkursAdaptiveElements(prisma)
+  questionsTest.push(...adaptiveSeedElements)
+  await seedTestkursAdaptiveAssessment(prisma, adaptiveSeedElements)
+
   const answerCollectionItems = answerCollections.reduce<
     { id: number; name: string }[]
   >((acc, collection) => {
@@ -834,6 +1888,8 @@ async function seedTest(prisma: Prisma.PrismaClient) {
       })
     })
   )
+
+  await seedTestkursAdaptiveAssessmentAttempts(prisma)
 
   // add participants 30 to 35 to single groups
   const PARTICIPANT_GROUP_IDS_SINGLE = [

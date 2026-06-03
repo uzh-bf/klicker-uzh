@@ -4,6 +4,7 @@ import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
+import * as AdaptiveLearningService from '../services/adaptiveLearning.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
@@ -19,6 +20,12 @@ import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
+import {
+  AdaptiveAnswerInput,
+  AdaptiveAssessment,
+  AdaptiveAttemptState,
+  UpsertAdaptiveAssessmentInput,
+} from './adaptiveLearning.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
 import { Course } from './course.js'
@@ -214,6 +221,78 @@ export const Mutation = builder.mutationType({
         args: { token: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await AccountService.activateParticipantAccount(args, ctx)
+        },
+      }),
+
+      upsertAdaptiveAssessment: t.withAuth(asUser).field({
+        nullable: true,
+        type: AdaptiveAssessment,
+        args: {
+          input: t.arg({ type: UpsertAdaptiveAssessmentInput, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await AdaptiveLearningService.upsertAdaptiveAssessment(
+            args.input,
+            ctx
+          )
+        },
+      }),
+
+      publishAdaptiveAssessment: t.withAuth(asUser).field({
+        nullable: true,
+        type: AdaptiveAssessment,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await AdaptiveLearningService.publishAdaptiveAssessment(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      archiveAdaptiveAssessment: t.withAuth(asUser).field({
+        nullable: true,
+        type: AdaptiveAssessment,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await AdaptiveLearningService.archiveAdaptiveAssessment(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      startAdaptiveAssessmentAttempt: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: AdaptiveAttemptState,
+        args: {
+          assessmentId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await AdaptiveLearningService.startAdaptiveAssessmentAttempt(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      submitAdaptiveAssessmentAnswer: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: AdaptiveAttemptState,
+        args: {
+          attemptId: t.arg.string({ required: true }),
+          adaptiveElementId: t.arg.int({ required: true }),
+          response: t.arg({ type: AdaptiveAnswerInput, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await AdaptiveLearningService.submitAdaptiveAssessmentAnswer(
+            args,
+            ctx
+          )
         },
       }),
 

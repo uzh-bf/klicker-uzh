@@ -93,6 +93,7 @@ model Participant {
   invitations                     ParticipantInvitation[]
   pointCorrections                PointCorrection[]
   individualPointCorrections      PointCorrection[]                @relation("PointCorrectionParticipants")
+  adaptiveAssessmentAttempts      AdaptiveAssessmentAttempt[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -160,11 +161,12 @@ model Participation {
   sessionLeaderboards LeaderboardEntry[] @relation("SessionLeaderboards")
   timelineEntries     TimelineEntry[]
 
-  responses               QuestionResponse[]
-  detailResponses         QuestionResponseDetail[]
-  subscriptions           PushSubscription[]
-  completedMicroLearnings String[]
-  bookmarkedElementStacks ElementStack[]
+  responses                  QuestionResponse[]
+  detailResponses            QuestionResponseDetail[]
+  subscriptions              PushSubscription[]
+  completedMicroLearnings    String[]
+  bookmarkedElementStacks    ElementStack[]
+  adaptiveAssessmentAttempts AdaptiveAssessmentAttempt[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

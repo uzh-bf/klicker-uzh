@@ -55,6 +55,7 @@ model Course {
   timelineEntries            TimelineEntry[]
   chatbots                   Chatbot[]
   participantInvitations     ParticipantInvitation[]
+  adaptiveAssessments        AdaptiveAssessment[]
 
   directPermissions  Permission[]
   permissions        DerivedPermission[]

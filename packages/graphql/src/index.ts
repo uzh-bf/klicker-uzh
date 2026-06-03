@@ -6,6 +6,7 @@ import builder from './builder.js'
 
 import './schema/achievement.js'
 import './schema/activities.js'
+import './schema/adaptiveLearning.js'
 import './schema/assessment.js'
 import './schema/course.js'
 import './schema/element.js'
