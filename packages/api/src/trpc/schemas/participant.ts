@@ -134,6 +134,10 @@ export const participantPracticeQuizBookmarksInput = z.object({
   quizId: z.string().nullish(),
 })
 
+export const participantPracticeQuizInput = z.object({
+  id: z.string(),
+})
+
 export const participantBookmarkElementStackInput = z.object({
   courseId: z.string(),
   stackId: z.number().int(),

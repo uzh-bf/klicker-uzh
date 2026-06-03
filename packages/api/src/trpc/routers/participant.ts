@@ -38,6 +38,7 @@ import {
   leaveRandomCourseGroupPool as leaveRandomCourseGroupPoolService,
   renameParticipantGroup as renameParticipantGroupService,
 } from '../../services/participantGroups.js'
+import { getPracticeQuizDetail } from '../../services/participantPracticeQuizzes.js'
 import {
   checkParticipantNameAvailable,
   updateParticipantAvatar,
@@ -84,6 +85,7 @@ import {
   participantLogoutTemporaryInput,
   participantParticipationsInput,
   participantPracticeQuizBookmarksInput,
+  participantPracticeQuizInput,
   participantPublicProfileInput,
   participantRenameGroupInput,
   participantSelfInput,
@@ -588,6 +590,18 @@ export const participantRouter = router({
         courseId: input.courseId,
         participantId: ctx.user.sub,
         prisma,
+      })
+    }),
+
+  practiceQuiz: publicProcedure
+    .input(participantPracticeQuizInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return getPracticeQuizDetail({
+        id: input.id,
+        prisma,
+        user: ctx.user,
       })
     }),
 
