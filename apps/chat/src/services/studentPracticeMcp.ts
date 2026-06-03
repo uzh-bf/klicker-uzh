@@ -7,6 +7,7 @@ import type {
   StudentMcpToolErrorCode as ToolErrorCode,
 } from '@klicker-uzh/types'
 import { createMCPClient, type MCPServerConfig } from './mcpClients'
+import { buildMcpServiceUrl } from './mcpUrl'
 
 export type {
   StudentMcpGetPracticeStackForQuizOutput as GetPracticeStackForQuizOutput,
@@ -16,11 +17,6 @@ export type {
 const DEFAULT_LOOKUP_LIMIT = 3
 const MAX_LOOKUP_SUMMARY_MESSAGES = 6
 const MAX_LOOKUP_SUMMARY_CHARS = 1200
-
-function normalizedPath(value: string | undefined): string {
-  if (!value) return '/mcp'
-  return value.startsWith('/') ? value : `/${value}`
-}
 
 export const STUDENT_PRACTICE_QUIZ_TOOL_NAME = 'start_student_practice_quiz'
 
@@ -80,25 +76,17 @@ export function statusForStudentPracticeMcpError(
 export function getStudentPracticeMcpUrl(
   env: NodeJS.ProcessEnv = process.env
 ): string | null {
-  if (env.MCP_STUDENT_URL) {
-    return env.MCP_STUDENT_URL
-  }
-
-  if (env.MCP_STUDENT_HOST) {
-    const scheme = env.MCP_STUDENT_SCHEME ?? 'http'
-    const port = env.MCP_STUDENT_PORT ? `:${env.MCP_STUDENT_PORT}` : ''
-    return `${scheme}://${env.MCP_STUDENT_HOST}${port}${normalizedPath(
-      env.MCP_STUDENT_PATH
-    )}`
-  }
-
-  if (env.NODE_ENV === 'development') {
-    return `http://localhost:${env.MCP_STUDENT_PORT ?? '7080'}${normalizedPath(
-      env.MCP_STUDENT_PATH
-    )}`
-  }
-
-  return null
+  return buildMcpServiceUrl({
+    defaultDevelopmentPort: '7080',
+    env,
+    names: {
+      host: 'MCP_STUDENT_HOST',
+      path: 'MCP_STUDENT_PATH',
+      port: 'MCP_STUDENT_PORT',
+      scheme: 'MCP_STUDENT_SCHEME',
+      url: 'MCP_STUDENT_URL',
+    },
+  })
 }
 
 export function buildPracticeLookupContext(
