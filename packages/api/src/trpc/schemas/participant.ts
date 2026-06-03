@@ -148,6 +148,12 @@ export const participantStackElementFeedbacksInput = z.object({
   instanceIds: z.array(z.number().int()),
 })
 
+export const participantFlagElementInput = z.object({
+  elementInstanceId: z.number().int(),
+  elementId: z.number().int(),
+  content: z.string(),
+})
+
 export const participantRateElementInput = z.object({
   elementInstanceId: z.number().int(),
   elementId: z.number().int(),

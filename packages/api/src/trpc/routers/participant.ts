@@ -30,6 +30,7 @@ import {
   joinCourseWithPin,
 } from '../../services/participantCourseJoin.js'
 import {
+  flagElement,
   getStackElementFeedbacks,
   rateElement,
 } from '../../services/participantElementFeedbacks.js'
@@ -78,6 +79,7 @@ import {
   participantCoursePinInput,
   participantCreateAccountInput,
   participantCreateGroupInput,
+  participantFlagElementInput,
   participantGroupActivityInstancesInput,
   participantGroupMessageInput,
   participantJoinGroupInput,
@@ -594,6 +596,20 @@ export const participantRouter = router({
 
       return getStackElementFeedbacks({
         instanceIds: input.instanceIds,
+        participantId: ctx.user.sub,
+        prisma,
+      })
+    }),
+
+  flagElement: participantProcedure
+    .input(participantFlagElementInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return flagElement({
+        content: input.content,
+        elementId: input.elementId,
+        elementInstanceId: input.elementInstanceId,
         participantId: ctx.user.sub,
         prisma,
       })

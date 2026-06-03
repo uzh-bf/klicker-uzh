@@ -45,6 +45,125 @@ export async function getStackElementFeedbacks({
   return elementFeedbacks.map(toElementFeedback)
 }
 
+export async function flagElement({
+  content,
+  elementId,
+  elementInstanceId,
+  notificationSecret = process.env.NOTIFICATION_SECRET,
+  notificationUrl = process.env.NOTIFICATION_URL,
+  participantId,
+  prisma,
+}: {
+  content: string
+  elementId: number
+  elementInstanceId: number
+  notificationSecret?: string
+  notificationUrl?: string
+  participantId: string
+  prisma: PrismaClient
+}) {
+  const elementInstance = await prisma.elementInstance.findUnique({
+    where: { id: elementInstanceId },
+    select: {
+      elementData: true,
+      elementId: true,
+      elementStack: {
+        select: {
+          microLearning: {
+            select: {
+              id: true,
+              name: true,
+              course: {
+                select: {
+                  notificationEmail: true,
+                },
+              },
+            },
+          },
+          practiceQuiz: {
+            select: {
+              id: true,
+              name: true,
+              course: {
+                select: {
+                  notificationEmail: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  const elementFeedback = await prisma.elementFeedback.upsert({
+    where: {
+      participantId_elementInstanceId: {
+        participantId,
+        elementInstanceId,
+      },
+    },
+    create: {
+      feedback: content,
+      element: {
+        connect: {
+          id: elementId,
+        },
+      },
+      elementInstance: {
+        connect: {
+          id: elementInstanceId,
+        },
+      },
+      participant: {
+        connect: {
+          id: participantId,
+        },
+      },
+    },
+    update: {
+      feedback: content,
+    },
+    select: elementFeedbackSelect,
+  })
+
+  const practiceQuiz = elementInstance?.elementStack?.practiceQuiz
+  const microLearning = elementInstance?.elementStack?.microLearning
+  const notificationEmail =
+    practiceQuiz?.course?.notificationEmail ??
+    microLearning?.course?.notificationEmail
+
+  if (!elementInstance || !notificationEmail || !notificationUrl) {
+    return toElementFeedback(elementFeedback)
+  }
+
+  await fetch(notificationUrl, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      elementType: practiceQuiz !== null ? 'Practice Quiz' : 'Micro-Learning',
+      elementId: practiceQuiz?.id || microLearning?.id,
+      elementName: practiceQuiz?.name || microLearning?.name,
+      questionId: elementInstance.elementId,
+      questionName:
+        typeof elementInstance.elementData === 'object' &&
+        elementInstance.elementData !== null &&
+        'name' in elementInstance.elementData
+          ? elementInstance.elementData.name
+          : undefined,
+      content,
+      participantId,
+      secret: notificationSecret,
+      notificationEmail,
+    }),
+  })
+
+  return toElementFeedback(elementFeedback)
+}
+
 export async function rateElement({
   elementId,
   elementInstanceId,

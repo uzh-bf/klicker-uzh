@@ -1,13 +1,8 @@
-import { useMutation } from '@apollo/client'
 import { faMessage } from '@fortawesome/free-regular-svg-icons'
 import {
   faEnvelope,
   faMessage as faMessageSolid,
 } from '@fortawesome/free-solid-svg-icons'
-import {
-  FlagElementDocument,
-  GetStackElementFeedbacksDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import ForwardRefButton from '@klicker-uzh/shared-components/src/ForwardRefButton'
 import {
   Button,
@@ -20,6 +15,7 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as Yup from 'yup'
+import { trpc } from '../../lib/trpc'
 
 interface FlagElementModalProps {
   index: number
@@ -40,7 +36,15 @@ function FlagElementModal({
 }: FlagElementModalProps) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
-  const [flagElement, { error }] = useMutation(FlagElementDocument)
+  const utils = trpc.useUtils()
+  const stackFeedbacksInput = { instanceIds: stackInstanceIds }
+  const flagElement = trpc.participant.flagElement.useMutation({
+    onSuccess: async () => {
+      await utils.participant.stackElementFeedbacks.invalidate(
+        stackFeedbacksInput
+      )
+    },
+  })
 
   const flagElementSchema = Yup.object().shape({
     description: Yup.string().test({
@@ -54,58 +58,42 @@ function FlagElementModal({
     setSubmitting: (isSubmitting: boolean) => void
   ) => {
     setSubmitting(true)
-    if (!content.match(/^(<br>(\n)*)$/g) && content !== '') {
-      const result = await flagElement({
-        variables: {
+    try {
+      if (!content.match(/^(<br>(\n)*)$/g) && content !== '') {
+        const result = await flagElement.mutateAsync({
           elementInstanceId: instanceId,
-          elementId: elementId,
+          elementId,
           content,
-        },
-        update(cache, { data }) {
-          // verify that the flagging operation was successful
-          if (!data?.flagElement) return
-
-          // add or replace the element feedback in the corresponding list
-          cache.updateQuery(
-            {
-              query: GetStackElementFeedbacksDocument,
-              variables: { instanceIds: stackInstanceIds },
-            },
-            (qData) => {
-              if (!qData?.getStackElementFeedbacks)
-                return { getStackElementFeedbacks: [data.flagElement!] }
-
-              return {
-                getStackElementFeedbacks: [
-                  ...qData.getStackElementFeedbacks.filter(
-                    (feedback) =>
-                      feedback.elementInstanceId !==
-                      data.flagElement!.elementInstanceId
-                  ),
-                  data.flagElement!,
-                ],
-              }
-            }
-          )
-        },
-      })
-      if (result.data?.flagElement?.id) {
-        toast({
-          type: 'success',
-          message: t('pwa.practiceQuiz.feedbackTransmitted'),
-          options: { duration: 5000 },
         })
-        setFeedbackValue(content)
-        setOpen(false)
-      } else {
-        toast({
-          type: 'error',
-          message: error?.message ?? t('shared.generic.systemError'),
-          options: { duration: 5000 },
-        })
+
+        if (result?.id) {
+          toast({
+            type: 'success',
+            message: t('pwa.practiceQuiz.feedbackTransmitted'),
+            options: { duration: 5000 },
+          })
+          setFeedbackValue(content)
+          setOpen(false)
+        } else {
+          toast({
+            type: 'error',
+            message: t('shared.generic.systemError'),
+            options: { duration: 5000 },
+          })
+        }
       }
+    } catch (error) {
+      toast({
+        type: 'error',
+        message:
+          error instanceof Error
+            ? error.message
+            : t('shared.generic.systemError'),
+        options: { duration: 5000 },
+      })
+    } finally {
+      setSubmitting(false)
     }
-    setSubmitting(false)
   }
 
   return (
