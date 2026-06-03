@@ -1,5 +1,4 @@
-import { useMutation } from '@apollo/client'
-import { JoinCourseWithPinDocument } from '@klicker-uzh/graphql/dist/ops'
+import { trpc } from '@lib/trpc'
 import {
   Button,
   FormikPinField,
@@ -17,7 +16,8 @@ import Layout from '../components/Layout'
 function JoinPage() {
   const t = useTranslations()
   const router = useRouter()
-  const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument)
+  const joinCourseWithPin = trpc.participant.joinCourseWithPin.useMutation()
+  const utils = trpc.useUtils()
   const [showError, setError] = useState<string | false>(false)
 
   const joinCourseWithPinSchema = Yup.object({
@@ -42,11 +42,12 @@ function JoinPage() {
           validationSchema={joinCourseWithPinSchema}
           onSubmit={async (values, { setSubmitting }) => {
             setSubmitting(true)
-            const participant = await joinCourseWithPin({
-              variables: { pin: Number(values.pin.replace(/\s/g, '')) },
+            const participant = await joinCourseWithPin.mutateAsync({
+              pin: Number(values.pin.replace(/\s/g, '')),
             })
 
-            if (participant?.data?.joinCourseWithPin) {
+            if (participant) {
+              await utils.participant.participations.invalidate()
               router.push('/')
             } else {
               setError(t('pwa.joinCourse.invalidPin'))

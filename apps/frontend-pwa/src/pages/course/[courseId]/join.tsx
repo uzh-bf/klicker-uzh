@@ -2,12 +2,12 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   CreateParticipantAccountDocument,
   GetBasicCourseInformationDocument,
-  JoinCourseWithPinDocument,
   SelfDocument,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { initializeApollo } from '@lib/apollo'
+import { trpc } from '@lib/trpc'
 import {
   Button,
   FormikPinField,
@@ -58,12 +58,13 @@ function JoinCourse({
 
   const { loading: loadingParticipant, data: dataParticipant } =
     useQuery(SelfDocument)
+  const joinCourseWithPin = trpc.participant.joinCourseWithPin.useMutation()
+  const utils = trpc.useUtils()
 
   const [createParticipantAccount] = useMutation(
     CreateParticipantAccountDocument,
     { refetchQueries: [{ query: SelfDocument }] }
   )
-  const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument)
 
   if (loadingParticipant || courseLoading) {
     return (
@@ -99,13 +100,15 @@ function JoinCourse({
               validationSchema={joinCourseWithPinSchema}
               onSubmit={async (values, { setSubmitting }) => {
                 setSubmitting(true)
-                const participant = await joinCourseWithPin({
-                  variables: {
-                    pin: Number(values.pin.replace(/\s/g, '')),
-                  },
+                const participant = await joinCourseWithPin.mutateAsync({
+                  pin: Number(values.pin.replace(/\s/g, '')),
                 })
 
-                if (participant?.data?.joinCourseWithPin) {
+                if (participant) {
+                  await Promise.all([
+                    utils.participant.self.invalidate(),
+                    utils.participant.participations.invalidate(),
+                  ])
                   router.push('/')
                 } else {
                   setError(true)

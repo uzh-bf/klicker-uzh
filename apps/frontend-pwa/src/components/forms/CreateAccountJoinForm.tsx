@@ -1,5 +1,4 @@
-import { useLazyQuery } from '@apollo/client'
-import { CheckValidCoursePinDocument } from '@klicker-uzh/graphql/dist/ops'
+import { trpc } from '@lib/trpc'
 import {
   Button,
   FormikPinField,
@@ -15,7 +14,7 @@ function CreateAccountJoinForm() {
   const t = useTranslations()
   const router = useRouter()
 
-  const [checkValidCoursePin] = useLazyQuery(CheckValidCoursePinDocument)
+  const utils = trpc.useUtils()
 
   return (
     <div className="mx-auto w-full py-4">
@@ -33,15 +32,13 @@ function CreateAccountJoinForm() {
         onSubmit={async (values, { setSubmitting, resetForm }) => {
           setSubmitting(true)
 
-          const { data } = await checkValidCoursePin({
-            variables: { pin: parseInt(values.pin.replace(/\s/g, '')) },
+          const courseId = await utils.participant.checkValidCoursePin.fetch({
+            pin: parseInt(values.pin.replace(/\s/g, '')),
           })
 
-          if (data?.checkValidCoursePin) {
+          if (courseId) {
             router.push(
-              `/course/${
-                data.checkValidCoursePin
-              }/join?pin=${values.pin.replace(/\s/g, '')}`
+              `/course/${courseId}/join?pin=${values.pin.replace(/\s/g, '')}`
             )
           } else {
             toast({

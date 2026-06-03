@@ -26,6 +26,10 @@ export const participantChangeLocaleInput = z.object({
   locale: z.nativeEnum(Locale),
 })
 
+export const participantCoursePinInput = z.object({
+  pin: z.number().int().min(0).max(999999999),
+})
+
 export const participantLoginInput = z.object({
   usernameOrEmail: z.string(),
   password: z.string(),

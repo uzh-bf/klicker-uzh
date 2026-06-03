@@ -17,6 +17,10 @@ import {
   logoutTemporaryParticipant,
   sendMagicLink,
 } from '../../services/participantAuth.js'
+import {
+  checkValidCoursePin,
+  joinCourseWithPin,
+} from '../../services/participantCourseJoin.js'
 import { getPrisma } from '../context.js'
 import {
   toCourseGroupActivity,
@@ -40,6 +44,7 @@ import {
   participantChangeLocaleInput,
   participantCourseInput,
   participantCourseLeaderboardInput,
+  participantCoursePinInput,
   participantGroupActivityInstancesInput,
   participantLoginInput,
   participantLoginTemporaryInput,
@@ -276,6 +281,17 @@ export const participantRouter = router({
       })
     }),
 
+  checkValidCoursePin: publicProcedure
+    .input(participantCoursePinInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return checkValidCoursePin({
+        pin: input.pin,
+        prisma,
+      })
+    }),
+
   loginTemporary: publicProcedure
     .input(participantLoginTemporaryInput)
     .mutation(async ({ ctx, input }) => {
@@ -307,6 +323,19 @@ export const participantRouter = router({
         participantId: ctx.user.sub,
         prisma,
         res: ctx.res,
+      })
+    }),
+
+  joinCourseWithPin: participantProcedure
+    .input(participantCoursePinInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return joinCourseWithPin({
+        emitter: ctx.emitter,
+        participantId: ctx.user.sub,
+        pin: input.pin,
+        prisma,
       })
     }),
 
