@@ -28,6 +28,8 @@ import {
   participantGroupActivityInstancesInput,
   participantParticipationsInput,
   participantSelfInput,
+  participantSubscribeToPushInput,
+  participantUnsubscribeFromPushInput,
 } from '../schemas/participant.js'
 
 async function getLevelData(prisma: PrismaClient, xp: number | null) {
@@ -847,6 +849,87 @@ export const participantRouter = router({
 
       return {
         groupActivityInstances: instances.map(toGroupActivityInstance),
+      }
+    }),
+
+  subscribeToPush: participantProcedure
+    .input(participantSubscribeToPushInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const participation = await prisma.participation.update({
+        where: {
+          courseId_participantId: {
+            courseId: input.courseId,
+            participantId: ctx.user.sub,
+          },
+        },
+        data: {
+          subscriptions: {
+            upsert: {
+              where: {
+                participantId_courseId_endpoint: {
+                  participantId: ctx.user.sub,
+                  courseId: input.courseId,
+                  endpoint: input.subscriptionObject.endpoint,
+                },
+              },
+              create: {
+                endpoint: input.subscriptionObject.endpoint,
+                expirationTime: input.subscriptionObject.expirationTime ?? null,
+                p256dh: input.subscriptionObject.keys.p256dh,
+                auth: input.subscriptionObject.keys.auth,
+                course: { connect: { id: input.courseId } },
+                participant: { connect: { id: ctx.user.sub } },
+              },
+              update: {},
+            },
+          },
+        },
+        select: {
+          id: true,
+          subscriptions: {
+            select: {
+              id: true,
+              endpoint: true,
+            },
+          },
+        },
+      })
+
+      return {
+        participation: {
+          id: participation.id,
+          subscriptions: participation.subscriptions.map((subscription) => ({
+            id: subscription.id,
+            endpoint: subscription.endpoint,
+          })),
+        },
+      }
+    }),
+
+  unsubscribeFromPush: participantProcedure
+    .input(participantUnsubscribeFromPushInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      try {
+        await prisma.pushSubscription.delete({
+          where: {
+            participantId_courseId_endpoint: {
+              participantId: ctx.user.sub,
+              courseId: input.courseId,
+              endpoint: input.endpoint,
+            },
+          },
+        })
+
+        return true
+      } catch (error) {
+        console.error(
+          'An error occured while trying to unsubscribe from push notifications: ',
+          error
+        )
+        return false
       }
     }),
 

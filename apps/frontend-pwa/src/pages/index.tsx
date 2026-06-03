@@ -1,4 +1,3 @@
-import { useMutation } from '@apollo/client'
 import { faBookmark } from '@fortawesome/free-regular-svg-icons'
 import {
   faBookOpenReader,
@@ -9,10 +8,6 @@ import {
   faGraduationCap,
   faRepeat,
 } from '@fortawesome/free-solid-svg-icons'
-import {
-  SubscribeToPushDocument,
-  UnsubscribeFromPushDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import usePushNotifications from '@klicker-uzh/shared-components/src/hooks/usePushNotifications'
 import useStickyState from '@klicker-uzh/shared-components/src/hooks/useStickyState'
@@ -82,25 +77,23 @@ function Index() {
   // const { stickyValue: hasSeenSurvey, setValue: setHasSeenSurvey } =
   //   useStickyState('hasSeenSurvey', 'false')
 
-  const [subscribeToPush] = useMutation(SubscribeToPushDocument)
-  const [unsubscribeFromPush] = useMutation(UnsubscribeFromPushDocument)
+  const subscribeToPush = trpc.participant.subscribeToPush.useMutation()
+  const unsubscribeFromPush = trpc.participant.unsubscribeFromPush.useMutation()
 
   async function subscribeUser(
     subscriptionObject: PushSubscription,
     courseId: string
   ) {
-    await subscribeToPush({
-      variables: {
-        subscriptionObject: {
-          endpoint: subscriptionObject.endpoint,
-          expirationTime: subscriptionObject.expirationTime,
-          keys: {
-            auth: subscriptionObject.toJSON().keys!.auth,
-            p256dh: subscriptionObject.toJSON().keys!.p256dh,
-          },
+    await subscribeToPush.mutateAsync({
+      subscriptionObject: {
+        endpoint: subscriptionObject.endpoint,
+        expirationTime: subscriptionObject.expirationTime,
+        keys: {
+          auth: subscriptionObject.toJSON().keys!.auth,
+          p256dh: subscriptionObject.toJSON().keys!.p256dh,
         },
-        courseId,
       },
+      courseId,
     })
 
     await utils.participant.participations.invalidate({
@@ -113,11 +106,9 @@ function Index() {
     subscriptionObject: PushSubscription,
     courseId: string
   ) {
-    await unsubscribeFromPush({
-      variables: {
-        courseId,
-        endpoint: subscriptionObject.endpoint,
-      },
+    await unsubscribeFromPush.mutateAsync({
+      courseId,
+      endpoint: subscriptionObject.endpoint,
     })
 
     await utils.participant.participations.invalidate({
