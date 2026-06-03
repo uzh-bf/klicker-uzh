@@ -1,4 +1,4 @@
-import { UserRole } from '@klicker-uzh/prisma/client'
+import { LeaderboardType, UserRole } from '@klicker-uzh/prisma/client'
 import { describe, expect, test, vi } from 'vitest'
 import type { TRPCContext } from '../context.js'
 import { appRouter } from '../root.js'
@@ -144,6 +144,158 @@ describe('participant join routers', () => {
     expect(prisma?.participant.update).not.toHaveBeenCalled()
   })
 
+  test('joins a participant to the course leaderboard', async () => {
+    const emit = vi.fn()
+    const participationUpsert = vi.fn().mockResolvedValue({
+      id: 3,
+      isActive: true,
+    })
+    const leaderboardUpsert = vi.fn().mockResolvedValue({ id: 7 })
+    const prisma = {
+      participation: {
+        upsert: participationUpsert,
+      },
+      leaderboardEntry: {
+        upsert: leaderboardUpsert,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext({
+        emitter: { emit } as unknown as TRPCContext['emitter'],
+        prisma,
+      })
+    )
+
+    await expect(
+      caller.participant.joinCourseLeaderboard({ courseId: 'course-1' })
+    ).resolves.toEqual({
+      learningData: {
+        id: 'course-1-participant-1',
+        participation: {
+          id: 3,
+          isActive: true,
+        },
+      },
+    })
+
+    expect(participationUpsert).toHaveBeenCalledWith({
+      where: {
+        courseId_participantId: {
+          courseId: 'course-1',
+          participantId: 'participant-1',
+        },
+      },
+      create: {
+        isActive: true,
+        course: { connect: { id: 'course-1' } },
+        participant: { connect: { id: 'participant-1' } },
+      },
+      update: { isActive: true },
+      select: {
+        id: true,
+        isActive: true,
+      },
+    })
+    expect(leaderboardUpsert).toHaveBeenCalledWith({
+      where: {
+        type_participantId_courseId: {
+          type: LeaderboardType.COURSE,
+          participantId: 'participant-1',
+          courseId: 'course-1',
+        },
+      },
+      create: {
+        type: LeaderboardType.COURSE,
+        participant: { connect: { id: 'participant-1' } },
+        course: { connect: { id: 'course-1' } },
+        participation: { connect: { id: 3 } },
+        score: 0,
+      },
+      update: {},
+      select: { id: true },
+    })
+    expect(emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'Participation',
+      id: 3,
+    })
+    expect(emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'LeaderboardEntry',
+      id: 7,
+    })
+  })
+
+  test('leaves a participant from the course leaderboard', async () => {
+    const update = vi.fn().mockResolvedValue({
+      id: 3,
+      isActive: false,
+    })
+    const deleteLeaderboardEntry = vi.fn().mockResolvedValue({ id: 7 })
+    const deleteMany = vi.fn().mockResolvedValue({ count: 2 })
+    const updateMany = vi.fn().mockResolvedValue({ count: 4 })
+    const prisma = {
+      participation: {
+        update,
+      },
+      leaderboardEntry: {
+        delete: deleteLeaderboardEntry,
+        deleteMany,
+      },
+      timelineEntry: {
+        updateMany,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.leaveCourseLeaderboard({ courseId: 'course-1' })
+    ).resolves.toEqual({
+      leaveCourseParticipation: {
+        id: 'course-1-participant-1',
+        participation: {
+          id: 3,
+          isActive: false,
+        },
+      },
+    })
+
+    expect(update).toHaveBeenCalledWith({
+      where: {
+        courseId_participantId: {
+          courseId: 'course-1',
+          participantId: 'participant-1',
+        },
+      },
+      data: {
+        isActive: false,
+      },
+      select: {
+        id: true,
+        isActive: true,
+      },
+    })
+    expect(deleteLeaderboardEntry).toHaveBeenCalledWith({
+      where: {
+        type_participantId_courseId: {
+          type: LeaderboardType.COURSE,
+          participantId: 'participant-1',
+          courseId: 'course-1',
+        },
+      },
+    })
+    expect(deleteMany).toHaveBeenCalledWith({
+      where: { participation: { id: 3 } },
+    })
+    expect(deleteMany).toHaveBeenCalledWith({
+      where: { sessionParticipationId: 3 },
+    })
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { participationId: 3 },
+      data: {
+        collectedPoints: 0,
+      },
+    })
+  })
+
   test('rejects course joining for non-participants', async () => {
     const caller = appRouter.createCaller(
       createContext({ role: UserRole.USER, sub: 'user-1' })
@@ -151,6 +303,12 @@ describe('participant join routers', () => {
 
     await expect(
       caller.participant.joinCourseWithPin({ pin: 123456789 })
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    await expect(
+      caller.participant.joinCourseLeaderboard({ courseId: 'course-1' })
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    await expect(
+      caller.participant.leaveCourseLeaderboard({ courseId: 'course-1' })
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
   })
 })

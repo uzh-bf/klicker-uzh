@@ -1,10 +1,5 @@
-import { useMutation } from '@apollo/client'
 import { faLock } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  JoinCourseLeaderboardDocument,
-  LeaveCourseLeaderboardDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -89,21 +84,29 @@ function CourseOverview({
         Boolean(data?.courseOverview?.participation),
     })
 
-  const [joinCourseLeaderboard] = useMutation(JoinCourseLeaderboardDocument, {
-    variables: { courseId },
-    onCompleted: () => {
-      void utils.participant.courseLeaderboard.invalidate(leaderboardInput)
-      void utils.participant.courseOverview.invalidate(courseInput)
-    },
-  })
+  const joinCourseLeaderboard =
+    trpc.participant.joinCourseLeaderboard.useMutation({
+      onSuccess: () => {
+        void utils.participant.courseLeaderboard.invalidate(leaderboardInput)
+        void utils.participant.courseOverview.invalidate(courseInput)
+      },
+    })
 
-  const [leaveCourseLeaderboard] = useMutation(LeaveCourseLeaderboardDocument, {
-    variables: { courseId },
-    onCompleted: () => {
-      void utils.participant.courseLeaderboard.invalidate(leaderboardInput)
-      void utils.participant.courseOverview.invalidate(courseInput)
-    },
-  })
+  const leaveCourseLeaderboard =
+    trpc.participant.leaveCourseLeaderboard.useMutation({
+      onSuccess: () => {
+        void utils.participant.courseLeaderboard.invalidate(leaderboardInput)
+        void utils.participant.courseOverview.invalidate(courseInput)
+      },
+    })
+
+  const onJoinCourseLeaderboard = () => {
+    joinCourseLeaderboard.mutate(courseInput)
+  }
+
+  const onLeaveCourseLeaderboard = () => {
+    leaveCourseLeaderboard.mutate(courseInput)
+  }
 
   useEffect(() => {
     const participation = data?.courseOverview?.participation
@@ -368,7 +371,7 @@ function CourseOverview({
                             {participant?.id && participation?.isActive && (
                               <Leaderboard
                                 leaderboard={dataLeaderboard.leaderboard ?? []}
-                                onJoin={() => joinCourseLeaderboard()}
+                                onJoin={onJoinCourseLeaderboard}
                                 onLeave={() =>
                                   setIsLeaveCourseLeaderboardModalOpen(true)
                                 }
@@ -400,7 +403,7 @@ function CourseOverview({
                                   <Button
                                     fluid
                                     primary
-                                    onClick={() => joinCourseLeaderboard()}
+                                    onClick={onJoinCourseLeaderboard}
                                     className={{ root: 'mt-3 h-max py-1' }}
                                     data={{
                                       cy: 'student-course-join-leaderboard',
@@ -636,7 +639,7 @@ function CourseOverview({
             <LeaveLeaderboardModal
               onClose={() => setIsLeaveCourseLeaderboardModalOpen(false)}
               onConfirm={() => {
-                leaveCourseLeaderboard()
+                onLeaveCourseLeaderboard()
                 setIsLeaveCourseLeaderboardModalOpen(false)
               }}
             />

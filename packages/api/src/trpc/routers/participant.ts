@@ -434,6 +434,115 @@ export const participantRouter = router({
       })
     }),
 
+  joinCourseLeaderboard: participantProcedure
+    .input(participantCourseInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const participation = await prisma.participation.upsert({
+        where: {
+          courseId_participantId: {
+            courseId: input.courseId,
+            participantId: ctx.user.sub,
+          },
+        },
+        create: {
+          isActive: true,
+          course: { connect: { id: input.courseId } },
+          participant: { connect: { id: ctx.user.sub } },
+        },
+        update: { isActive: true },
+        select: {
+          id: true,
+          isActive: true,
+        },
+      })
+
+      const leaderboardEntry = await prisma.leaderboardEntry.upsert({
+        where: {
+          type_participantId_courseId: {
+            type: LeaderboardType.COURSE,
+            participantId: ctx.user.sub,
+            courseId: input.courseId,
+          },
+        },
+        create: {
+          type: LeaderboardType.COURSE,
+          participant: { connect: { id: ctx.user.sub } },
+          course: { connect: { id: input.courseId } },
+          participation: { connect: { id: participation.id } },
+          score: 0,
+        },
+        update: {},
+        select: { id: true },
+      })
+
+      ctx.emitter?.emit('invalidate', {
+        typename: 'Participation',
+        id: participation.id,
+      })
+      ctx.emitter?.emit('invalidate', {
+        typename: 'LeaderboardEntry',
+        id: leaderboardEntry.id,
+      })
+
+      return {
+        learningData: {
+          id: `${input.courseId}-${ctx.user.sub}`,
+          participation,
+        },
+      }
+    }),
+
+  leaveCourseLeaderboard: participantProcedure
+    .input(participantCourseInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const participation = await prisma.participation.update({
+        where: {
+          courseId_participantId: {
+            courseId: input.courseId,
+            participantId: ctx.user.sub,
+          },
+        },
+        data: {
+          isActive: false,
+        },
+        select: {
+          id: true,
+          isActive: true,
+        },
+      })
+
+      await prisma.leaderboardEntry.delete({
+        where: {
+          type_participantId_courseId: {
+            type: LeaderboardType.COURSE,
+            participantId: ctx.user.sub,
+            courseId: input.courseId,
+          },
+        },
+      })
+      await prisma.leaderboardEntry.deleteMany({
+        where: { participation: { id: participation.id } },
+      })
+      await prisma.leaderboardEntry.deleteMany({
+        where: { sessionParticipationId: participation.id },
+      })
+      await prisma.timelineEntry.updateMany({
+        where: { participationId: participation.id },
+        data: {
+          collectedPoints: 0,
+        },
+      })
+
+      return {
+        leaveCourseParticipation: {
+          id: `${input.courseId}-${ctx.user.sub}`,
+          participation,
+        },
+      }
+    }),
+
   updateProfile: participantProcedure
     .input(participantUpdateProfileInput)
     .mutation(async ({ ctx, input }) => {
