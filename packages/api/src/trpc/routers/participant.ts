@@ -35,6 +35,7 @@ import {
   rateElement,
 } from '../../services/participantElementFeedbacks.js'
 import {
+  getGroupActivityDetails as getGroupActivityDetailsService,
   startGroupActivity as startGroupActivityService,
   submitGroupActivityDecisions as submitGroupActivityDecisionsService,
 } from '../../services/participantGroupActivities.js'
@@ -94,6 +95,7 @@ import {
   participantCreateAccountInput,
   participantCreateGroupInput,
   participantFlagElementInput,
+  participantGroupActivityDetailsInput,
   participantGroupActivityInstancesInput,
   participantGroupMessageInput,
   participantJoinGroupInput,
@@ -837,6 +839,19 @@ export const participantRouter = router({
       const prisma = getPrisma(ctx)
 
       return startGroupActivityService({
+        activityId: input.activityId,
+        groupId: input.groupId,
+        participantId: ctx.user.sub,
+        prisma,
+      })
+    }),
+
+  groupActivityDetails: participantProcedure
+    .input(participantGroupActivityDetailsInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return getGroupActivityDetailsService({
         activityId: input.activityId,
         groupId: input.groupId,
         participantId: ctx.user.sub,

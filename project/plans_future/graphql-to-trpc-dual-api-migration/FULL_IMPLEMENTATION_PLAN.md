@@ -276,6 +276,66 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-03 Completed: S04I3 PWA Group Activity Detail Read
+
+Status: complete for the scoped slice. This slice migrated only the PWA participant `GroupActivityDetailsDocument` detail query to `participant.groupActivityDetails`. The single group activity ended GraphQL subscription remains live until S05, but now refetches the tRPC detail query instead of writing Apollo query state through `subscribeToMore`.
+
+Write scope:
+
+- `packages/api/src/services/participantGroupActivities.ts`
+- `packages/api/src/trpc/schemas/participant.ts`
+- `packages/api/src/trpc/routers/participant.ts`
+- `packages/api/src/trpc/__tests__/participant-group-activities.test.ts`
+- `apps/frontend-pwa/src/pages/group/[groupId]/activity/[activityId].tsx`
+- `apps/frontend-pwa/src/components/groupActivity/GroupActivitySubscriber.tsx`
+- This plan file
+
+```text
+Slice: S04I3 PWA group activity detail read
+GraphQL operation(s): GroupActivityDetailsDocument
+GraphQL resolver(s): Query.groupActivityDetails
+Behavior source: packages/graphql/src/services/groups.ts getGroupActivityDetails
+tRPC router.procedure: participant.groupActivityDetails
+Input schema: participantGroupActivityDetailsInput { activityId, groupId }
+Output DTO: { groupActivityDetails: GroupActivityDetails | null }
+Active frontend consumers: apps/frontend-pwa/src/pages/group/[groupId]/activity/[activityId].tsx
+Apollo cache/refetch/subscription behavior: remove Apollo detail useQuery; keep GraphQL SingleGroupActivityEnded subscription as temporary S05 bridge and invalidate/refetch tRPC detail on ended events
+React Query replacement: participant.groupActivityDetails.useQuery with enabled route params and query refetch/invalidate after start/submit/subscription events
+Browser verification path: local participant group activity detail page before start, after start, and already-submitted/result states when available
+Cleanup blocked until: GroupActivityStack generated types, GroupActivitySubscriber subscription replacement in S05, and PWA Apollo removal gate
+```
+
+Implementation notes:
+
+- Added `participant.groupActivityDetails` with Zod `{ activityId, groupId }` input and a narrow nullable detail DTO.
+- Mirrored `packages/graphql/src/services/groups.ts getGroupActivityDetails`, including published/ended/graded and deleted guards, participant group membership guard, ordered clues/stacks/elements, `isSelf` participant marking, activity-instance lookup, decision JSON normalization, and clue-value masking for non-self clues until graded.
+- Reused `toElementDataWithoutSolutions` so group activity stack elements continue to omit sample-solution/correct-answer data.
+- Migrated `apps/frontend-pwa/src/pages/group/[groupId]/activity/[activityId].tsx` from Apollo `useQuery(GroupActivityDetailsDocument)` to `trpc.participant.groupActivityDetails.useQuery`; start/submit/subscription refresh now use the tRPC query `refetch`.
+- Replaced `subscribeToMore` in `GroupActivitySubscriber` with `useSubscription(SingleGroupActivityEndedDocument)` as the temporary S05 bridge.
+
+Verification results:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- participant-group-activities`: passed; Vitest ran 17 files / 145 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --check ...`: passed for all touched files and this plan.
+- `git diff --check`: passed.
+- Focused detail-page audit returned no matches for `GroupActivityDetailsDocument`, `subscribeToMore`, `@apollo/client`, or `@klicker-uzh/graphql` in `apps/frontend-pwa/src/pages/group/[groupId]/activity/[activityId].tsx`.
+- Subscription bridge audit showed only the intended `useSubscription(SingleGroupActivityEndedDocument)` GraphQL bridge in `GroupActivitySubscriber`, and `participant.groupActivityDetails.useQuery` in the detail page.
+- `rg -n "@klicker-uzh/graphql" packages/api/src packages/api/dist`: no matches.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build`: passed; existing warnings were limited to next-config module type, next-intl config, PWA worker output, stale Browserslist data, and known large page-data warnings. The changed `/group/[groupId]/activity/[activityId]` route built at 5.13 kB / 745 kB first-load JS.
+
+Browser verification:
+
+- Local stack: Docker PostgreSQL/Redis/Hatchet services were already running. A pre-existing backend listener occupied `3100`, so this run used a temporary branch backend on `http://127.0.0.1:3103` and a temporary PWA dev server on `http://127.0.0.1:3102`.
+- Fixture: group `8f8ce30b-c1d2-40cf-aacb-2071f880f4ef`, activity `8fd6f573-6bc7-43e8-9b7a-4b1582c6d8e3`, group activity instance `17`, seeded participant `testuser1` / `abcdabcd`, already submitted.
+- Screenshots: `/tmp/klicker-pwa-s04i3-login.png`, `/tmp/klicker-pwa-s04i3-detail.png`, `/tmp/klicker-pwa-s04i3-detail-mobile.png`, `/tmp/klicker-pwa-s04i3-detail-mobile-submitted.png`.
+- Browser flow: opened login with redirect to the group activity detail route, logged in as `testuser1`, reached the detail page, observed hints, disabled submitted choices, and already-submitted message.
+- Browser resource evidence included `http://127.0.0.1:3103/api/trpc/participant.self,participant.groupActivityDetails?...` and `participant.stackElementFeedbacks` tRPC calls for the rendered detail page.
+- Caveat: `npx agent-browser network requests` again reported `No requests captured`; performance resource entries were used for request evidence instead.
+- Cleanup: closed the browser, stopped only the temporary `3102` / `3103` verification processes, removed the temporary Hatchet token file, and verified those ports had no listeners. The pre-existing `3100` backend was left untouched.
+
 ### 2026-06-03 Completed: S04I2 PWA Group Activity Decision Submission Mutation
 
 Status: complete for the scoped slice. This slice migrated only the PWA participant `SubmitGroupActivityDecisionsDocument` mutation to tRPC. The group activity detail query and GraphQL subscription adapter remain live; after the tRPC mutation, the page still refetches the existing Apollo detail query until the read/subscription follow-up slices migrate them.

@@ -1,11 +1,5 @@
-import { useQuery } from '@apollo/client'
 import { faCheck, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GroupActivityDetailsDocument,
-  GroupActivityGrading,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
@@ -17,32 +11,54 @@ import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../../components/Layout'
 import GroupActivityClue from '../../../../components/groupActivity/GroupActivityClue'
 import GroupActivityStack from '../../../../components/groupActivity/GroupActivityStack'
 import GroupActivitySubscriber from '../../../../components/groupActivity/GroupActivitySubscriber'
 
+const GROUP_ACTIVITY_STATUS = {
+  ENDED: 'ENDED',
+  GRADED: 'GRADED',
+  PUBLISHED: 'PUBLISHED',
+} as const
+
+type GroupActivityClueProp = Parameters<typeof GroupActivityClue>[0]['clue']
+type GroupActivityStackProp = Parameters<typeof GroupActivityStack>[0]['stack']
+type GroupActivityStackDecisionsProp = Parameters<
+  typeof GroupActivityStack
+>[0]['decisions']
+type GroupActivityStackResultsProp = Parameters<
+  typeof GroupActivityStack
+>[0]['results']
+
 function GroupActivityDetails() {
   const t = useTranslations()
   const router = useRouter()
   const [activityEnded, setActivityEnded] = useState(false)
-  const groupId = router.query.groupId as string
-  const activityId = router.query.activityId as string
+  const groupId =
+    typeof router.query.groupId === 'string' ? router.query.groupId : ''
+  const activityId =
+    typeof router.query.activityId === 'string' ? router.query.activityId : ''
+  const routeParamsAvailable = groupId.length > 0 && activityId.length > 0
 
-  const { data, loading, error, refetch, subscribeToMore } = useQuery(
-    GroupActivityDetailsDocument,
-    {
-      variables: {
+  const { data, isLoading, error, refetch } =
+    trpc.participant.groupActivityDetails.useQuery(
+      {
         groupId,
         activityId,
       },
-    }
-  )
+      {
+        enabled: routeParamsAvailable,
+      }
+    )
+  const handleGroupActivityEnded = useCallback(async () => {
+    await refetch()
+  }, [refetch])
   const startGroupActivity = trpc.participant.startGroupActivity.useMutation()
 
-  if (!data || loading) {
+  if (!routeParamsAvailable || isLoading) {
     return (
       <Layout>
         <Loader />
@@ -50,22 +66,19 @@ function GroupActivityDetails() {
     )
   }
 
-  if (!data.groupActivityDetails) {
-    return <Layout>{t('pwa.groupActivity.activityNotYetActive')}</Layout>
-  }
-
   if (error) {
     return <Layout>{t('shared.generic.systemError')}</Layout>
   }
 
+  if (!data?.groupActivityDetails) {
+    return <Layout>{t('pwa.groupActivity.activityNotYetActive')}</Layout>
+  }
+
   const groupActivity = data.groupActivityDetails
   const instance = groupActivity.activityInstance
-  const maxTotalPoints = instance?.results?.grading.reduce(
-    (acc: number, grading: GroupActivityGrading) => {
-      return acc + grading.maxPoints
-    },
-    0
-  )
+  const maxTotalPoints = instance?.results?.grading.reduce((acc, grading) => {
+    return acc + grading.maxPoints
+  }, 0)
 
   return (
     <Layout
@@ -78,14 +91,14 @@ function GroupActivityDetails() {
       <GroupActivitySubscriber
         activityId={groupActivity.id}
         groupActivityName={groupActivity.displayName}
+        onEnded={handleGroupActivityEnded}
         setActivityEnded={setActivityEnded}
-        subscribeToMore={subscribeToMore}
       />
       <div className="mx-auto flex w-full max-w-[1800px] flex-col rounded border p-4 lg:flex-row lg:gap-12">
         <div className="lg:flex-1">
           <div>
-            {(groupActivity.status === PublicationStatus.Ended ||
-              groupActivity.status === PublicationStatus.Graded) && (
+            {(groupActivity.status === GROUP_ACTIVITY_STATUS.ENDED ||
+              groupActivity.status === GROUP_ACTIVITY_STATUS.GRADED) && (
               <UserNotification
                 type="warning"
                 message={t('pwa.groupActivity.groupActivityEnded')}
@@ -120,7 +133,12 @@ function GroupActivityDetails() {
                 })}
               {instance &&
                 instance.clues?.map((clue) => {
-                  return <GroupActivityClue clue={clue} key={clue.id} />
+                  return (
+                    <GroupActivityClue
+                      clue={clue as GroupActivityClueProp}
+                      key={clue.id}
+                    />
+                  )
                 })}
             </div>
             <div className="mt-4 rounded bg-slate-100 p-2 text-center text-sm text-slate-500">
@@ -157,7 +175,7 @@ function GroupActivityDetails() {
                 ))}
               </div>
 
-              {groupActivity.status === PublicationStatus.Published ? (
+              {groupActivity.status === GROUP_ACTIVITY_STATUS.PUBLISHED ? (
                 <>
                   <p className="prose mt-4 max-w-none">
                     {t('pwa.groupActivity.groupCompleteQuestion')}
@@ -238,11 +256,16 @@ function GroupActivityDetails() {
               <GroupActivityStack
                 key={`group-activity-stack-ended-${activityEnded}`}
                 activityId={instance.id}
-                activityEnded={groupActivity.status === PublicationStatus.Ended}
-                stack={groupActivity.stacks[0]}
-                decisions={instance.decisions}
+                activityEnded={
+                  activityEnded ||
+                  groupActivity.status === GROUP_ACTIVITY_STATUS.ENDED
+                }
+                stack={groupActivity.stacks[0] as GroupActivityStackProp}
+                decisions={
+                  instance.decisions as GroupActivityStackDecisionsProp
+                }
                 onSubmitted={refetch}
-                results={instance.results}
+                results={instance.results as GroupActivityStackResultsProp}
                 submittedAt={dayjs(instance.decisionsSubmittedAt).format(
                   'DD.MM.YYYY HH:mm:ss'
                 )}

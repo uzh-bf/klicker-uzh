@@ -2,8 +2,15 @@ import {
   ElementType,
   ParameterType,
   PublicationStatus,
+  type Course,
+  type ElementInstance,
+  type ElementStack,
   type GroupActivity,
+  type GroupActivityClue,
+  type GroupActivityClueInstance,
   type GroupActivityInstance,
+  type Participant,
+  type ParticipantGroup,
   type Prisma,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
@@ -14,10 +21,16 @@ import type {
   ElementResultsOpen,
   ElementResultsSelection,
   FreeTextElementData,
+  GroupActivityDecision,
+  GroupActivityResults,
   NumericalElementData,
   StackResponseInput,
 } from '@klicker-uzh/types'
 import dayjs from 'dayjs'
+import {
+  toElementDataWithoutSolutions,
+  type PracticeQuizElementDataWithoutSolutions,
+} from './participantPracticeQuizzes.js'
 import {
   updateCaseStudyResults,
   updateChoicesResults,
@@ -41,6 +54,73 @@ type StartGroupActivitySource = Pick<
   clues: GroupActivityClueSource[]
 }
 
+type GroupActivityDetailsElementSource = Pick<
+  ElementInstance,
+  'elementData' | 'elementType' | 'id' | 'type'
+>
+
+type GroupActivityDetailsStackSource = Pick<
+  ElementStack,
+  'description' | 'displayName' | 'id' | 'order' | 'type'
+> & {
+  elements?: GroupActivityDetailsElementSource[] | null
+}
+
+type GroupActivityDetailsSource = Pick<
+  GroupActivity,
+  | 'description'
+  | 'displayName'
+  | 'id'
+  | 'scheduledEndAt'
+  | 'scheduledStartAt'
+  | 'status'
+> & {
+  clues: Pick<GroupActivityClue, 'displayName' | 'id'>[]
+  course: Pick<Course, 'color' | 'displayName' | 'id'>
+  group: Pick<ParticipantGroup, 'id' | 'name'> & {
+    participants?: (Pick<Participant, 'avatar' | 'id' | 'username'> & {
+      isSelf: boolean
+    })[]
+  }
+  activityInstance: GroupActivityDetailsInstance | null
+  stacks: GroupActivityDetailsStackSource[]
+}
+
+type GroupActivityDetailsInstance = Pick<
+  GroupActivityInstance,
+  'decisionsSubmittedAt' | 'id' | 'resultsComputedAt'
+> & {
+  clues?: (Pick<
+    GroupActivityClueInstance,
+    'displayName' | 'id' | 'type' | 'unit'
+  > & {
+    participant: Pick<Participant, 'avatar' | 'id' | 'username'> & {
+      isSelf: boolean
+    }
+    value?: string | null
+  })[]
+  decisions?: GroupActivityDecision[] | null
+  results?: GroupActivityResults | null
+}
+
+export type GroupActivityDetails = Omit<
+  GroupActivityDetailsSource,
+  'stacks'
+> & {
+  stacks: (Pick<
+    ElementStack,
+    'description' | 'displayName' | 'id' | 'order' | 'type'
+  > & {
+    elements: (Pick<ElementInstance, 'elementType' | 'id' | 'type'> & {
+      elementData: PracticeQuizElementDataWithoutSolutions
+    })[]
+  })[]
+}
+
+export type GroupActivityDetailsOutput = {
+  groupActivityDetails: GroupActivityDetails | null
+}
+
 export type StartGroupActivityOutput = {
   groupActivity: {
     activityInstance: Pick<GroupActivityInstance, 'id'>
@@ -51,6 +131,45 @@ export type StartGroupActivityOutput = {
 
 export type SubmitGroupActivityDecisionsOutput = {
   groupActivityInstanceId: number | null
+}
+
+function toGroupActivityStack(stack: GroupActivityDetailsStackSource) {
+  return {
+    id: stack.id,
+    type: stack.type,
+    displayName: stack.displayName,
+    description: stack.description,
+    order: stack.order,
+    elements:
+      stack.elements?.map((element) => ({
+        id: element.id,
+        type: element.type,
+        elementType: element.elementType,
+        elementData: toElementDataWithoutSolutions(element.elementData),
+      })) ?? [],
+  }
+}
+
+function toGroupActivityDetails(
+  details: GroupActivityDetailsSource
+): GroupActivityDetails {
+  return {
+    ...details,
+    stacks: details.stacks.map(toGroupActivityStack),
+  }
+}
+
+function toGroupActivityDecision(decision: unknown): GroupActivityDecision {
+  const typedDecision = decision as GroupActivityDecision & {
+    contentReponse?: boolean | null
+  }
+  const { contentReponse, ...decisionWithoutTypo } = typedDecision
+
+  return {
+    ...decisionWithoutTypo,
+    contentResponse:
+      decisionWithoutTypo.contentResponse ?? contentReponse ?? null,
+  }
 }
 
 function shuffleItems<T>(items: T[]) {
@@ -205,6 +324,180 @@ export async function startGroupActivity({
   } catch (error) {
     console.error(error)
     return { groupActivity: null }
+  }
+}
+
+export async function getGroupActivityDetails({
+  activityId,
+  groupId,
+  participantId,
+  prisma,
+}: {
+  activityId: string
+  groupId: string
+  participantId: string
+  prisma: PrismaClient
+}): Promise<GroupActivityDetailsOutput> {
+  const groupActivity = await prisma.groupActivity.findUnique({
+    where: {
+      id: activityId,
+      status: {
+        in: [
+          PublicationStatus.PUBLISHED,
+          PublicationStatus.ENDED,
+          PublicationStatus.GRADED,
+        ],
+      },
+      isDeleted: false,
+    },
+    select: {
+      id: true,
+      displayName: true,
+      status: true,
+      description: true,
+      scheduledStartAt: true,
+      scheduledEndAt: true,
+      clues: {
+        orderBy: { displayName: 'asc' },
+        select: {
+          id: true,
+          displayName: true,
+        },
+      },
+      stacks: {
+        orderBy: { order: 'asc' },
+        select: {
+          id: true,
+          type: true,
+          displayName: true,
+          description: true,
+          order: true,
+          elements: {
+            orderBy: { order: 'asc' },
+            select: {
+              id: true,
+              type: true,
+              elementType: true,
+              elementData: true,
+            },
+          },
+        },
+      },
+      course: {
+        select: {
+          id: true,
+          displayName: true,
+          color: true,
+        },
+      },
+    },
+  })
+
+  const group = await prisma.participantGroup.findUnique({
+    where: { id: groupId },
+    select: {
+      id: true,
+      name: true,
+      participants: {
+        select: {
+          id: true,
+          username: true,
+          avatar: true,
+        },
+      },
+    },
+  })
+
+  if (!groupActivity || !group) return { groupActivityDetails: null }
+
+  if (
+    !group.participants.some((participant) => participant.id === participantId)
+  ) {
+    return { groupActivityDetails: null }
+  }
+
+  const activityInstance = await prisma.groupActivityInstance.findUnique({
+    where: {
+      groupActivityId_groupId: {
+        groupActivityId: activityId,
+        groupId,
+      },
+    },
+    select: {
+      id: true,
+      decisionsSubmittedAt: true,
+      decisions: true,
+      resultsComputedAt: true,
+      results: true,
+      clueInstanceAssignment: {
+        select: {
+          participantId: true,
+          groupActivityClueInstance: {
+            select: {
+              id: true,
+              displayName: true,
+              type: true,
+              unit: true,
+              value: true,
+            },
+          },
+          participant: {
+            select: {
+              id: true,
+              avatar: true,
+              username: true,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  const isGraded = groupActivity.status === PublicationStatus.GRADED
+
+  return {
+    groupActivityDetails: toGroupActivityDetails({
+      ...groupActivity,
+      group: {
+        id: group.id,
+        name: group.name,
+        participants: group.participants.map((participant) => ({
+          ...participant,
+          isSelf: participant.id === participantId,
+        })),
+      },
+      activityInstance: activityInstance
+        ? {
+            id: activityInstance.id,
+            decisionsSubmittedAt: activityInstance.decisionsSubmittedAt,
+            decisions:
+              Array.isArray(activityInstance.decisions) &&
+              activityInstance.decisions.length > 0
+                ? activityInstance.decisions.map(toGroupActivityDecision)
+                : null,
+            resultsComputedAt: activityInstance.resultsComputedAt,
+            results: activityInstance.results as GroupActivityResults | null,
+            clues: activityInstance.clueInstanceAssignment.map(
+              (clueAssignment) => {
+                const isSelf = clueAssignment.participantId === participantId
+                const clue = clueAssignment.groupActivityClueInstance
+
+                return {
+                  id: clue.id,
+                  displayName: clue.displayName,
+                  type: clue.type,
+                  unit: clue.unit,
+                  ...(isSelf || isGraded ? { value: clue.value } : {}),
+                  participant: {
+                    ...clueAssignment.participant,
+                    isSelf,
+                  },
+                }
+              }
+            ),
+          }
+        : null,
+    }),
   }
 }
 

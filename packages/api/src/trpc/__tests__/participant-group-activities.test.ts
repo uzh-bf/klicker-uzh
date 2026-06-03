@@ -1,4 +1,6 @@
 import {
+  ElementInstanceType,
+  ElementStackType,
   ElementType,
   ParameterType,
   PublicationStatus,
@@ -63,6 +65,119 @@ function createSubmittableActivityInstance() {
       scheduledStartAt: new Date(Date.now() - 60_000),
       scheduledEndAt: new Date(Date.now() + 60_000),
     },
+  }
+}
+
+function createDetailActivity() {
+  return {
+    id: 'activity-1',
+    displayName: 'Group Activity',
+    status: PublicationStatus.PUBLISHED,
+    description: 'Solve together.',
+    scheduledStartAt: new Date('2026-01-01T10:00:00.000Z'),
+    scheduledEndAt: new Date('2026-01-01T11:00:00.000Z'),
+    clues: [{ id: 1, displayName: 'Initial clue' }],
+    course: {
+      id: 'course-1',
+      displayName: 'Course',
+      color: '#335577',
+    },
+    stacks: [
+      {
+        id: 21,
+        type: ElementStackType.GROUP_ACTIVITY,
+        displayName: 'Stack',
+        description: 'Stack description',
+        order: 0,
+        elements: [
+          {
+            id: 101,
+            type: ElementInstanceType.GROUP_ACTIVITY,
+            elementType: ElementType.SC,
+            elementData: {
+              id: '383-v2',
+              elementId: 383,
+              name: 'Single Choice',
+              type: ElementType.SC,
+              content: 'Question content',
+              explanation: null,
+              basePoints: true,
+              pointsMultiplier: 1,
+              options: {
+                hasSampleSolution: true,
+                displayMode: 'LIST',
+                choices: [
+                  { ix: 0, value: '50%', correct: true },
+                  { ix: 1, value: '100%', correct: false },
+                ],
+              },
+            },
+          },
+        ],
+      },
+    ],
+  }
+}
+
+function createDetailGroup(
+  participantIds = ['participant-1', 'participant-2']
+) {
+  return {
+    id: 'group-1',
+    name: 'Group 1',
+    participants: participantIds.map((id) => ({
+      id,
+      username: id,
+      avatar: null,
+    })),
+  }
+}
+
+function createDetailActivityInstance() {
+  return {
+    id: 33,
+    decisionsSubmittedAt: null,
+    decisions: [
+      {
+        instanceId: 101,
+        type: ElementType.SC,
+        choicesResponse: [{ ix: 0, selected: true }],
+      },
+    ],
+    resultsComputedAt: null,
+    results: null,
+    clueInstanceAssignment: [
+      {
+        participantId: 'participant-1',
+        groupActivityClueInstance: {
+          id: 501,
+          displayName: 'Self clue',
+          type: ParameterType.STRING,
+          unit: null,
+          value: 'visible',
+        },
+        participant: {
+          id: 'participant-1',
+          username: 'participant-1',
+          avatar: null,
+        },
+      },
+      {
+        participantId: 'participant-2',
+        groupActivityClueInstance: {
+          id: 502,
+          displayName: 'Other clue',
+          type: ParameterType.STRING,
+          unit: null,
+          value: 'hidden',
+        },
+        participant: {
+          id: 'participant-2',
+          username: 'participant-2',
+          avatar: null,
+        },
+      },
+    ],
   }
 }
 
@@ -207,6 +322,114 @@ describe('participant group activity routers', () => {
     ).resolves.toEqual({ groupActivity: null })
 
     expect(transaction).not.toHaveBeenCalled()
+  })
+
+  test('returns group activity details for a group member and masks other clues', async () => {
+    const prisma = {
+      groupActivity: {
+        findUnique: vi.fn().mockResolvedValue(createDetailActivity()),
+      },
+      participantGroup: {
+        findUnique: vi.fn().mockResolvedValue(createDetailGroup()),
+      },
+      groupActivityInstance: {
+        findUnique: vi.fn().mockResolvedValue(createDetailActivityInstance()),
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    const result = await caller.participant.groupActivityDetails({
+      activityId: 'activity-1',
+      groupId: 'group-1',
+    })
+
+    expect(result).toMatchObject({
+      groupActivityDetails: {
+        id: 'activity-1',
+        displayName: 'Group Activity',
+        course: { id: 'course-1', displayName: 'Course' },
+        group: {
+          id: 'group-1',
+          participants: [
+            { id: 'participant-1', isSelf: true },
+            { id: 'participant-2', isSelf: false },
+          ],
+        },
+        activityInstance: {
+          id: 33,
+          decisions: [
+            {
+              instanceId: 101,
+              type: ElementType.SC,
+              choicesResponse: [{ ix: 0, selected: true }],
+              contentResponse: null,
+            },
+          ],
+          clues: [
+            {
+              id: 501,
+              displayName: 'Self clue',
+              value: 'visible',
+              participant: { id: 'participant-1', isSelf: true },
+            },
+            {
+              id: 502,
+              displayName: 'Other clue',
+              participant: { id: 'participant-2', isSelf: false },
+            },
+          ],
+        },
+        stacks: [
+          {
+            id: 21,
+            elements: [
+              {
+                id: 101,
+                elementData: {
+                  __typename: 'ChoicesElementData',
+                  options: {
+                    choices: [
+                      { ix: 0, value: '50%' },
+                      { ix: 1, value: '100%' },
+                    ],
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    })
+    expect(
+      result.groupActivityDetails?.activityInstance?.clues?.[1]
+    ).not.toHaveProperty('value')
+  })
+
+  test('returns null group activity details for a non-member group', async () => {
+    const activityInstanceFindUnique = vi.fn()
+    const prisma = {
+      groupActivity: {
+        findUnique: vi.fn().mockResolvedValue(createDetailActivity()),
+      },
+      participantGroup: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue(createDetailGroup(['participant-2'])),
+      },
+      groupActivityInstance: {
+        findUnique: activityInstanceFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.groupActivityDetails({
+        activityId: 'activity-1',
+        groupId: 'group-1',
+      })
+    ).resolves.toEqual({ groupActivityDetails: null })
+
+    expect(activityInstanceFindUnique).not.toHaveBeenCalled()
   })
 
   test('submits group activity decisions and updates aggregate instance results', async () => {
