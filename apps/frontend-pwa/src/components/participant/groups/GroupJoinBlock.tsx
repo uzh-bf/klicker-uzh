@@ -1,9 +1,6 @@
 import { useMutation } from '@apollo/client'
 import { faPeopleGroup } from '@fortawesome/free-solid-svg-icons'
-import {
-  GetParticipantGroupsDocument,
-  JoinParticipantGroupDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { JoinParticipantGroupDocument } from '@klicker-uzh/graphql/dist/ops'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import * as Yup from 'yup'
@@ -12,9 +9,11 @@ import GroupAction from './GroupAction'
 function GroupJoinBlock({
   courseId,
   setSelectedTab,
+  onCourseOverviewChanged,
 }: {
   courseId: string
   setSelectedTab: (value: string) => void
+  onCourseOverviewChanged?: () => void | Promise<void>
 }) {
   const t = useTranslations()
   const [joinParticipantGroup, { loading }] = useMutation(
@@ -40,12 +39,6 @@ function GroupJoinBlock({
               courseId: courseId,
               code: Number(value) >> 0,
             },
-            // refetch is more effective here to avoid code duplication for participant aggregation
-            // -> performance implications are not relevant here, short loading circle is acceptable
-            // participant groups query is joint between course and separate -> separate call sufficient
-            refetchQueries: [
-              { query: GetParticipantGroupsDocument, variables: { courseId } },
-            ],
           })
 
           if (
@@ -64,6 +57,7 @@ function GroupJoinBlock({
               options: { duration: 6000 },
             })
           } else {
+            await onCourseOverviewChanged?.()
             setSelectedTab(result.data.joinParticipantGroup)
           }
         }}

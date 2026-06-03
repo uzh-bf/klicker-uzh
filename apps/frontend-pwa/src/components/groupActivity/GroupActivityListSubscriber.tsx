@@ -1,96 +1,80 @@
-import { SubscribeToMoreOptions } from '@apollo/client'
+import { useSubscription } from '@apollo/client'
 import {
-  GroupActivity,
   GroupActivityEndedDocument,
   GroupActivityStartedDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 interface GroupActivityListSubscriberProps {
   courseId: string
-  subscribeToMore: (doc: SubscribeToMoreOptions) => any
+  onChanged?: () => void | Promise<void>
 }
 
 function GroupActivityListSubscriber({
   courseId,
-  subscribeToMore,
+  onChanged,
 }: GroupActivityListSubscriberProps) {
   const t = useTranslations()
+  const onChangedRef = useRef(onChanged)
+  const handledEndedActivityIdsRef = useRef<Set<string>>(new Set())
+  const handledStartedActivityIdsRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
-    subscribeToMore({
-      document: GroupActivityEndedDocument,
-      variables: { courseId },
-      updateQuery: (
-        prev: { groupActivities: GroupActivity[] },
-        {
-          subscriptionData,
-        }: {
-          subscriptionData: { data: { groupActivityEnded: GroupActivity } }
-        }
-      ): { groupActivities: GroupActivity[] } => {
-        if (!subscriptionData.data) return prev
+    onChangedRef.current = onChanged
+  }, [onChanged])
 
-        // trigger toast for ended group activity
-        const updatedActivity = subscriptionData.data.groupActivityEnded
-        toast({
-          type: 'warning',
-          message: t('pwa.courses.groupActivityEndedToast', {
-            activityName: updatedActivity.displayName,
-          }),
-          options: { duration: 10000 },
-        })
+  const { data: endedData } = useSubscription(GroupActivityEndedDocument, {
+    variables: { courseId },
+  })
+  const { data: startedData } = useSubscription(GroupActivityStartedDocument, {
+    variables: { courseId },
+  })
 
-        // update the values returned by the course group activity data query
-        const updatedQueryContent = prev.groupActivities.map((activity) =>
-          activity.id === updatedActivity.id ? updatedActivity : activity
-        )
+  useEffect(() => {
+    const updatedActivity = endedData?.groupActivityEnded
+    if (
+      !updatedActivity ||
+      handledEndedActivityIdsRef.current.has(updatedActivity.id)
+    ) {
+      return
+    }
 
-        return { groupActivities: updatedQueryContent }
-      },
+    handledEndedActivityIdsRef.current.add(updatedActivity.id)
+
+    toast({
+      type: 'warning',
+      message: t('pwa.courses.groupActivityEndedToast', {
+        activityName: updatedActivity.displayName,
+      }),
+      options: { duration: 10000 },
     })
 
-    subscribeToMore({
-      document: GroupActivityStartedDocument,
-      variables: { courseId },
-      updateQuery: (
-        prev: { groupActivities: GroupActivity[] },
-        {
-          subscriptionData,
-        }: {
-          subscriptionData: { data: { groupActivityStarted: GroupActivity } }
-        }
-      ): { groupActivities: GroupActivity[] } => {
-        if (!subscriptionData.data) return prev
+    void onChangedRef.current?.()
+  }, [endedData?.groupActivityEnded, t])
 
-        // required saveguard since the subscription is somehow triggered twice
-        if (
-          prev.groupActivities.some(
-            (activity) =>
-              activity.id === subscriptionData.data.groupActivityStarted.id
-          )
-        ) {
-          return prev
-        }
+  useEffect(() => {
+    const newActivity = startedData?.groupActivityStarted
+    if (
+      !newActivity ||
+      handledStartedActivityIdsRef.current.has(newActivity.id)
+    ) {
+      return
+    }
 
-        // trigger toast for ended group activity
-        const newActivity = subscriptionData.data.groupActivityStarted
-        toast({
-          type: 'success',
-          message: t('pwa.courses.groupActivityStartedToast', {
-            activityName: newActivity.displayName,
-          }),
-          options: { duration: 10000 },
-        })
+    handledStartedActivityIdsRef.current.add(newActivity.id)
 
-        // update the values returned by the course overview data query
-        const updatedQueryContent = [newActivity, ...prev.groupActivities]
-        return { groupActivities: updatedQueryContent }
-      },
+    toast({
+      type: 'success',
+      message: t('pwa.courses.groupActivityStartedToast', {
+        activityName: newActivity.displayName,
+      }),
+      options: { duration: 10000 },
     })
-  }, [courseId, subscribeToMore])
+
+    void onChangedRef.current?.()
+  }, [startedData?.groupActivityStarted, t])
 
   return null
 }

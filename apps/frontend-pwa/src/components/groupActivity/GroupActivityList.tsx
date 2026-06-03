@@ -12,19 +12,28 @@ import {
   faFileLines,
   faPlayCircle,
 } from '@fortawesome/free-regular-svg-icons'
-import {
-  GroupActivity,
-  GroupActivityInstance,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
+import type { RouterOutputs } from '../../lib/trpc'
 import ActivityInstanceLink from './ActivityInstanceLink'
+
+const PublicationStatus = {
+  Scheduled: 'SCHEDULED',
+  Published: 'PUBLISHED',
+  Ended: 'ENDED',
+  Graded: 'GRADED',
+} as const
+
+type GroupActivity =
+  RouterOutputs['participant']['courseGroupActivities']['groupActivities'][number]
+type GroupActivityInstance =
+  RouterOutputs['participant']['groupActivityInstances']['groupActivityInstances'][number]
+type GroupActivityResults = { passed?: boolean } | null
 
 interface GroupActivityListProps {
   groupId: string
-  groupActivities?: Omit<GroupActivity, 'name'>[] | null
+  groupActivities?: GroupActivity[] | null
   groupActivityInstances: Record<string, GroupActivityInstance>
 }
 
@@ -42,7 +51,8 @@ function GroupActivityList({
         {groupActivities?.map((activity) => {
           const existingSubmission =
             groupActivityInstances[activity.id]?.decisionsSubmittedAt
-          const existingResults = groupActivityInstances[activity.id]?.results
+          const existingResults = groupActivityInstances[activity.id]
+            ?.results as GroupActivityResults
 
           return (
             <div

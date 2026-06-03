@@ -1,4 +1,9 @@
-import { Locale, UserRole } from '@klicker-uzh/prisma/client'
+import {
+  AwardType,
+  Locale,
+  PublicationStatus,
+  UserRole,
+} from '@klicker-uzh/prisma/client'
 import { describe, expect, test, vi } from 'vitest'
 import type { TRPCContext } from '../context.js'
 import { appRouter } from '../root.js'
@@ -285,6 +290,321 @@ describe('participant read routers', () => {
     ).toEqual({ endpoint: 'endpoint-1' })
   })
 
+  test('returns course overview data for the course landing page', async () => {
+    const groupDeadlineDate = new Date('2027-01-01T00:00:00.000Z')
+    const messageDate = new Date('2025-06-01T00:00:00.000Z')
+    const participantFindUnique = vi.fn().mockResolvedValue({
+      participantGroups: [
+        {
+          id: 'group-1',
+          name: 'Group A',
+          code: 123456,
+          averageMemberScore: 10,
+          groupActivityScore: 5,
+          messages: [
+            {
+              id: 7,
+              content: 'Hello',
+              createdAt: messageDate,
+              updatedAt: messageDate,
+              participant: {
+                id: 'participant-1',
+                username: 'student1',
+                avatar: 'avatar.svg',
+              },
+            },
+          ],
+          participants: [
+            {
+              id: 'participant-1',
+              username: 'student1',
+              avatar: 'avatar.svg',
+              xp: 0,
+              leaderboards: [{ score: 9 }],
+            },
+          ],
+        },
+      ],
+    })
+    const prisma = {
+      participant: {
+        findUnique: participantFindUnique,
+      },
+      participation: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 11,
+          isActive: true,
+          course: {
+            id: 'course-1',
+            displayName: 'Course One',
+            color: '#123456',
+            description: 'Description',
+            isGamificationEnabled: true,
+            isAssessmentEnabled: false,
+            groupDeadlineDate,
+            isGroupCreationEnabled: true,
+            maxGroupSize: 5,
+            preferredGroupSize: 3,
+            participantGroups: [
+              {
+                id: 'group-1',
+                name: 'Group A',
+                averageMemberScore: 10,
+                groupActivityScore: 5,
+              },
+            ],
+            awards: [
+              {
+                id: 3,
+                order: 1,
+                type: AwardType.PARTICIPANT,
+                displayName: 'Winner',
+                description: 'Top participant',
+                participant: {
+                  id: 'participant-1',
+                  username: 'student1',
+                  avatar: 'avatar.svg',
+                },
+                participantGroup: null,
+              },
+            ],
+          },
+          participant: {
+            id: 'participant-1',
+            avatar: 'avatar.svg',
+            username: 'student1',
+            xp: 0,
+            participantGroups: [{ id: 'group-1' }],
+          },
+        }),
+      },
+      groupAssignmentPoolEntry: {
+        findUnique: vi.fn().mockResolvedValue({ id: 1 }),
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.courseOverview({ courseId: 'course-1' })
+    ).resolves.toMatchObject({
+      courseOverview: {
+        id: 'course-1-participant-1',
+        inRandomGroupPool: true,
+        participant: {
+          id: 'participant-1',
+          username: 'student1',
+          level: 1,
+          participantGroups: [{ id: 'group-1' }],
+        },
+        participation: { id: 11, isActive: true },
+        course: {
+          id: 'course-1',
+          displayName: 'Course One',
+          isGroupDeadlinePassed: false,
+          awards: [
+            {
+              id: 3,
+              type: AwardType.PARTICIPANT,
+              participant: {
+                id: 'participant-1',
+                username: 'student1',
+              },
+            },
+          ],
+        },
+        groupLeaderboard: [
+          {
+            id: 'group-1',
+            name: 'Group A',
+            score: 15,
+            rank: 1,
+            isMember: true,
+          },
+        ],
+        groupLeaderboardStatistics: {
+          participantCount: 1,
+          averageScore: 15,
+        },
+      },
+      participantGroups: [
+        {
+          id: 'group-1',
+          score: 15,
+          messages: [
+            {
+              id: 7,
+              content: 'Hello',
+              participant: {
+                id: 'participant-1',
+                username: 'student1',
+              },
+            },
+          ],
+          participants: [
+            {
+              id: 'participant-1',
+              username: 'student1',
+              score: 9,
+              rank: 1,
+              level: 1,
+              isSelf: true,
+            },
+          ],
+        },
+      ],
+    })
+  })
+
+  test('returns student course leaderboard entries', async () => {
+    const prisma = {
+      participation: {
+        findUnique: vi.fn().mockResolvedValue({
+          participant: { isProfilePublic: true },
+        }),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 1,
+            courseLeaderboard: { score: 10 },
+            participant: {
+              id: 'participant-1',
+              username: 'student1',
+              avatar: 'avatar.svg',
+              isProfilePublic: true,
+              xp: 0,
+            },
+          },
+          {
+            id: 2,
+            courseLeaderboard: { score: 20 },
+            participant: {
+              id: 'participant-2',
+              username: 'student2',
+              avatar: 'private.svg',
+              isProfilePublic: false,
+              xp: 0,
+            },
+          },
+        ]),
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.courseLeaderboard({
+        courseId: 'course-1',
+        mode: 'course',
+      })
+    ).resolves.toEqual({
+      leaderboard: [
+        {
+          id: 2,
+          participantId: 'participant-2',
+          username: 'Anonymous',
+          avatar: null,
+          score: 20,
+          isSelf: false,
+          rank: 1,
+          level: 1,
+        },
+        {
+          id: 1,
+          participantId: 'participant-1',
+          username: 'student1',
+          avatar: 'avatar.svg',
+          score: 10,
+          isSelf: true,
+          rank: 2,
+          level: 1,
+        },
+      ],
+      leaderboardStatistics: {
+        participantCount: 2,
+        averageScore: 15,
+      },
+    })
+  })
+
+  test('returns course group activities and group activity instances', async () => {
+    const scheduledStartAt = new Date('2025-06-01T00:00:00.000Z')
+    const scheduledEndAt = new Date('2025-06-15T00:00:00.000Z')
+    const decisionsSubmittedAt = new Date('2025-06-02T00:00:00.000Z')
+    const groupActivityInstanceFindMany = vi.fn().mockResolvedValue([
+      {
+        id: 5,
+        decisionsSubmittedAt,
+        resultsComputedAt: null,
+        results: { passed: true },
+        groupActivityId: 'activity-1',
+      },
+    ])
+    const prisma = {
+      course: {
+        findUnique: vi.fn().mockResolvedValue({
+          groupActivities: [
+            {
+              id: 'activity-1',
+              displayName: 'Activity One',
+              status: PublicationStatus.PUBLISHED,
+              description: 'Description',
+              scheduledStartAt,
+              scheduledEndAt,
+            },
+          ],
+        }),
+      },
+      groupActivityInstance: {
+        findMany: groupActivityInstanceFindMany,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.courseGroupActivities({ courseId: 'course-1' })
+    ).resolves.toEqual({
+      groupActivities: [
+        {
+          id: 'activity-1',
+          displayName: 'Activity One',
+          status: PublicationStatus.PUBLISHED,
+          description: 'Description',
+          scheduledStartAt,
+          scheduledEndAt,
+        },
+      ],
+    })
+    await expect(
+      caller.participant.groupActivityInstances({
+        courseId: 'course-1',
+        groupId: 'group-1',
+      })
+    ).resolves.toEqual({
+      groupActivityInstances: [
+        {
+          id: 5,
+          decisionsSubmittedAt,
+          resultsComputedAt: null,
+          results: { passed: true },
+          groupActivityId: 'activity-1',
+        },
+      ],
+    })
+    expect(groupActivityInstanceFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          group: {
+            id: 'group-1',
+            courseId: 'course-1',
+            participants: {
+              some: {
+                id: 'participant-1',
+              },
+            },
+          },
+        }),
+      })
+    )
+  })
+
   test('returns practice courses with element stacks ordered by end date', async () => {
     const prisma = {
       participation: {
@@ -335,6 +655,19 @@ describe('participant read routers', () => {
       code: 'FORBIDDEN',
     })
     await expect(caller.participant.participations()).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    })
+    await expect(
+      caller.participant.courseGroupActivities({ courseId: 'course-1' })
+    ).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    })
+    await expect(
+      caller.participant.groupActivityInstances({
+        courseId: 'course-1',
+        groupId: 'group-1',
+      })
+    ).rejects.toMatchObject({
       code: 'FORBIDDEN',
     })
   })

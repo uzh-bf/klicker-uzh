@@ -1,10 +1,7 @@
-import { useBackgroundQuery, useMutation, useQuery } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import { faLock } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  GetCourseGroupActivitiesDocument,
-  GetCourseOverviewDataDocument,
-  GetStudentCourseLeaderboardDocument,
   JoinCourseLeaderboardDocument,
   LeaveCourseLeaderboardDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -34,7 +31,7 @@ import nookies from 'nookies'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Layout from '../../../components/Layout'
 import SuspendedGroupView from '../../../components/course/SuspendedGroupView'
@@ -42,6 +39,7 @@ import SuspendedAssessmentResults from '../../../components/insights/assessmentR
 import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
 import GroupCreationActions from '../../../components/participant/groups/GroupCreationActions'
+import { trpc } from '../../../lib/trpc'
 
 interface Props {
   courseId: string
@@ -66,68 +64,67 @@ function CourseOverview({
   const [leaderboardType, setLeaderboardType] = useState<'course' | 'biweekly'>(
     'course'
   )
+  const utils = trpc.useUtils()
+  const courseInput = useMemo(() => ({ courseId }), [courseId])
 
   useParticipantToken({
     participantToken,
     cookiesAvailable,
   })
 
-  const { data, loading, error } = useQuery(GetCourseOverviewDataDocument, {
-    variables: { courseId },
-  })
+  const { data, isLoading, error } =
+    trpc.participant.courseOverview.useQuery(courseInput)
 
-  const { data: dataLeaderboard, loading: loadingLeaderboard } = useQuery(
-    GetStudentCourseLeaderboardDocument,
-    {
-      variables: { courseId, mode: leaderboardType },
-    }
+  const leaderboardInput = useMemo(
+    () => ({ courseId, mode: leaderboardType }),
+    [courseId, leaderboardType]
   )
+  const { data: dataLeaderboard, isLoading: loadingLeaderboard } =
+    trpc.participant.courseLeaderboard.useQuery(leaderboardInput)
 
-  const [groupActivityQueryRef, { subscribeToMore: subscribeActivityList }] =
-    useBackgroundQuery(GetCourseGroupActivitiesDocument, {
-      variables: { courseId },
+  const { data: groupActivitiesData } =
+    trpc.participant.courseGroupActivities.useQuery(courseInput, {
+      enabled:
+        Boolean(data?.courseOverview?.participant) &&
+        Boolean(data?.courseOverview?.participation),
     })
 
   const [joinCourseLeaderboard] = useMutation(JoinCourseLeaderboardDocument, {
     variables: { courseId },
-    // refetching the leaderboard here makes sense to ensure that the participant
-    // is placed correctly in the leaderboard
-    refetchQueries: [
-      {
-        query: GetStudentCourseLeaderboardDocument,
-        variables: { courseId, mode: leaderboardType },
-      },
-    ],
+    onCompleted: () => {
+      void utils.participant.courseLeaderboard.invalidate(leaderboardInput)
+      void utils.participant.courseOverview.invalidate(courseInput)
+    },
   })
 
   const [leaveCourseLeaderboard] = useMutation(LeaveCourseLeaderboardDocument, {
     variables: { courseId },
+    onCompleted: () => {
+      void utils.participant.courseLeaderboard.invalidate(leaderboardInput)
+      void utils.participant.courseOverview.invalidate(courseInput)
+    },
   })
 
   useEffect(() => {
-    const participation = data?.getCourseOverviewData?.participation
+    const participation = data?.courseOverview?.participation
 
     // if assessment is enabled, switch to the assessment results tab automatically
-    if (data?.getCourseOverviewData?.course?.isAssessmentEnabled) {
+    if (data?.courseOverview?.course?.isAssessmentEnabled) {
       setSelectedTab('assessment-results')
     }
     // if a course description is set but gamification is not enabled or the user is not participating in the course,
     // switch to the info tab automatically
     else if (
-      data?.getCourseOverviewData &&
+      data?.courseOverview &&
       (!participation ||
-        (!data.getCourseOverviewData?.course?.isGamificationEnabled &&
-          data.getCourseOverviewData?.course?.description))
+        (!data.courseOverview?.course?.isGamificationEnabled &&
+          data.courseOverview?.course?.description))
     ) {
       setSelectedTab('info')
     }
   }, [data])
 
-  if (
-    !data?.getCourseOverviewData ||
-    !data.getCourseOverviewData.course ||
-    loading
-  ) {
+  if (!data?.courseOverview || !data.courseOverview.course || isLoading) {
     return (
       <Layout displayName={t('shared.generic.leaderboard')}>
         <Loader />
@@ -146,17 +143,14 @@ function CourseOverview({
     groupLeaderboard,
     groupLeaderboardStatistics,
     inRandomGroupPool,
-  } = data.getCourseOverviewData
+  } = data.courseOverview
 
   const filteredGroupLeaderboard = groupLeaderboard?.filter(
     (group) => group.score > 0
   )
 
-  const top10Participants = dataLeaderboard?.getStudentCourseLeaderboard
-    ?.leaderboard
-    ? dataLeaderboard?.getStudentCourseLeaderboard?.leaderboard.map(
-        (entry) => entry.participantId
-      )
+  const top10Participants = dataLeaderboard?.leaderboard
+    ? dataLeaderboard.leaderboard.map((entry) => entry.participantId)
     : []
 
   const openProfileModal = (id: string, isSelf: boolean) => {
@@ -367,17 +361,13 @@ function CourseOverview({
                           )}
                         </div>
 
-                        {!dataLeaderboard?.getStudentCourseLeaderboard ||
-                        loadingLeaderboard ? (
+                        {!dataLeaderboard || loadingLeaderboard ? (
                           <Loader />
                         ) : (
                           <>
                             {participant?.id && participation?.isActive && (
                               <Leaderboard
-                                leaderboard={
-                                  dataLeaderboard?.getStudentCourseLeaderboard
-                                    ?.leaderboard ?? []
-                                }
+                                leaderboard={dataLeaderboard.leaderboard ?? []}
                                 onJoin={() => joinCourseLeaderboard()}
                                 onLeave={() =>
                                   setIsLeaveCourseLeaderboardModalOpen(true)
@@ -434,14 +424,14 @@ function CourseOverview({
                               <div>
                                 {t('shared.leaderboard.participantCount', {
                                   number:
-                                    dataLeaderboard?.getStudentCourseLeaderboard
-                                      ?.leaderboardStatistics?.participantCount,
+                                    dataLeaderboard.leaderboardStatistics
+                                      ?.participantCount,
                                 })}
                               </div>
                               <div>
                                 {t('shared.leaderboard.averagePoints', {
                                   number:
-                                    dataLeaderboard?.getStudentCourseLeaderboard?.leaderboardStatistics?.averageScore?.toFixed(
+                                    dataLeaderboard.leaderboardStatistics?.averageScore?.toFixed(
                                       2
                                     ),
                                 })}
@@ -601,9 +591,18 @@ function CourseOverview({
                       isGroupDeadlinePassed={
                         course.isGroupDeadlinePassed ?? false
                       }
-                      groupActivityQueryRef={groupActivityQueryRef}
+                      groupActivities={
+                        groupActivitiesData?.groupActivities ?? []
+                      }
                       setSelectedTab={setSelectedTab}
-                      subscribeActivityList={subscribeActivityList}
+                      onCourseOverviewChanged={() =>
+                        utils.participant.courseOverview.invalidate(courseInput)
+                      }
+                      onGroupActivitiesChanged={() =>
+                        utils.participant.courseGroupActivities.invalidate(
+                          courseInput
+                        )
+                      }
                     />
                   </Suspense>
                 ))}
@@ -618,6 +617,9 @@ function CourseOverview({
                     courseId={courseId}
                     setSelectedTab={setSelectedTab}
                     inRandomGroupPool={inRandomGroupPool ?? false}
+                    onCourseOverviewChanged={() =>
+                      utils.participant.courseOverview.invalidate(courseInput)
+                    }
                   />
                 </TabContent>
               )}

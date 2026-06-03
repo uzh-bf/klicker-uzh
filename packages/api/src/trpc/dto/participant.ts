@@ -71,6 +71,114 @@ type ParticipantParticipationSource = Pick<
   }
 }
 
+type CourseAwardSource = Pick<
+  DB.AwardEntry,
+  'description' | 'displayName' | 'id' | 'order' | 'type'
+> & {
+  participant: Pick<DB.Participant, 'avatar' | 'id' | 'username'> | null
+  participantGroup: Pick<DB.ParticipantGroup, 'id' | 'name'> | null
+}
+
+type CourseOverviewCourseSource = Pick<
+  DB.Course,
+  | 'color'
+  | 'description'
+  | 'displayName'
+  | 'groupDeadlineDate'
+  | 'id'
+  | 'isAssessmentEnabled'
+  | 'isGamificationEnabled'
+  | 'isGroupCreationEnabled'
+  | 'maxGroupSize'
+  | 'preferredGroupSize'
+> & {
+  awards?: CourseAwardSource[] | null
+}
+
+type CourseOverviewParticipantSource = Pick<
+  DB.Participant,
+  'avatar' | 'id' | 'username' | 'xp'
+> & {
+  participantGroups?: Pick<DB.ParticipantGroup, 'id'>[] | null
+}
+
+type CourseOverviewGroupLeaderboardSource = Pick<
+  DB.ParticipantGroup,
+  'id' | 'name'
+> & {
+  isMember?: boolean
+  rank: number
+  score: number
+}
+
+type LeaderboardStatisticsSource = {
+  averageScore: number
+  participantCount: number
+}
+
+type CourseOverviewSource = {
+  course: CourseOverviewCourseSource
+  groupLeaderboard?: CourseOverviewGroupLeaderboardSource[] | null
+  groupLeaderboardStatistics?: LeaderboardStatisticsSource | null
+  id: string
+  inRandomGroupPool?: boolean | null
+  participant: CourseOverviewParticipantSource | null
+  participation: Pick<DB.Participation, 'id' | 'isActive'> | null
+}
+
+type ParticipantGroupSource = Pick<
+  DB.ParticipantGroup,
+  'averageMemberScore' | 'code' | 'groupActivityScore' | 'id' | 'name'
+> & {
+  messages?: (Pick<
+    DB.GroupMessage,
+    'content' | 'createdAt' | 'id' | 'updatedAt'
+  > & {
+    participant: Pick<DB.Participant, 'avatar' | 'id' | 'username'>
+  })[]
+  participants?: (Pick<DB.Participant, 'avatar' | 'id' | 'username' | 'xp'> & {
+    isSelf: boolean
+    rank: number
+    score: number
+  })[]
+  score: number
+}
+
+type CourseLeaderboardEntrySource = {
+  avatar: string | null
+  id: number
+  isSelf?: boolean
+  level?: number
+  participantId: string
+  rank: number
+  score: number
+  username: string
+}
+
+type CourseLeaderboardSource = {
+  leaderboard: CourseLeaderboardEntrySource[]
+  leaderboardStatistics: LeaderboardStatisticsSource
+}
+
+type CourseGroupActivitySource = Pick<
+  DB.GroupActivity,
+  | 'description'
+  | 'displayName'
+  | 'id'
+  | 'scheduledEndAt'
+  | 'scheduledStartAt'
+  | 'status'
+>
+
+type GroupActivityInstanceSource = Pick<
+  DB.GroupActivityInstance,
+  | 'decisionsSubmittedAt'
+  | 'groupActivityId'
+  | 'id'
+  | 'results'
+  | 'resultsComputedAt'
+>
+
 function toAvatarSettings(settings: Prisma.JsonValue | null) {
   return settings as AvatarSettings | null
 }
@@ -200,5 +308,157 @@ export function toParticipantParticipation(
         displayName: liveQuiz.displayName,
       })),
     },
+  }
+}
+
+function toCourseAward(award: CourseAwardSource) {
+  return {
+    id: award.id,
+    order: award.order,
+    type: award.type,
+    displayName: award.displayName,
+    description: award.description,
+    participant: award.participant
+      ? {
+          id: award.participant.id,
+          username: award.participant.username,
+          avatar: award.participant.avatar,
+        }
+      : null,
+    participantGroup: award.participantGroup
+      ? {
+          id: award.participantGroup.id,
+          name: award.participantGroup.name,
+        }
+      : null,
+  }
+}
+
+function toCourseOverviewCourse(course: CourseOverviewCourseSource) {
+  return {
+    id: course.id,
+    displayName: course.displayName,
+    color: course.color,
+    description: course.description,
+    isGamificationEnabled: course.isGamificationEnabled,
+    isAssessmentEnabled: course.isAssessmentEnabled,
+    groupDeadlineDate: course.groupDeadlineDate,
+    isGroupDeadlinePassed: Date.now() > course.groupDeadlineDate.getTime(),
+    isGroupCreationEnabled: course.isGroupCreationEnabled,
+    maxGroupSize: course.maxGroupSize,
+    preferredGroupSize: course.preferredGroupSize,
+    awards: course.awards?.map(toCourseAward) ?? null,
+  }
+}
+
+function toCourseOverviewParticipant(
+  participant: CourseOverviewParticipantSource | null
+) {
+  if (!participant) return null
+
+  return {
+    id: participant.id,
+    avatar: participant.avatar,
+    username: participant.username,
+    xp: participant.xp,
+    level: levelFromXp(participant.xp),
+    participantGroups:
+      participant.participantGroups?.map((group) => ({ id: group.id })) ?? [],
+  }
+}
+
+export function toCourseOverview(overview: CourseOverviewSource | null) {
+  if (!overview) return null
+
+  return {
+    id: overview.id,
+    inRandomGroupPool: overview.inRandomGroupPool ?? null,
+    participant: toCourseOverviewParticipant(overview.participant),
+    participation: overview.participation
+      ? {
+          id: overview.participation.id,
+          isActive: overview.participation.isActive,
+        }
+      : null,
+    course: toCourseOverviewCourse(overview.course),
+    groupLeaderboard:
+      overview.groupLeaderboard?.map((group) => ({
+        id: group.id,
+        name: group.name,
+        score: group.score,
+        rank: group.rank,
+        isMember: group.isMember ?? false,
+      })) ?? null,
+    groupLeaderboardStatistics: overview.groupLeaderboardStatistics ?? null,
+  }
+}
+
+export function toParticipantGroup(group: ParticipantGroupSource) {
+  return {
+    id: group.id,
+    name: group.name,
+    code: group.code,
+    averageMemberScore: group.averageMemberScore,
+    groupActivityScore: group.groupActivityScore,
+    score: group.score,
+    messages:
+      group.messages?.map((message) => ({
+        id: message.id,
+        content: message.content,
+        createdAt: message.createdAt,
+        updatedAt: message.updatedAt,
+        participant: {
+          id: message.participant.id,
+          username: message.participant.username,
+          avatar: message.participant.avatar,
+        },
+      })) ?? [],
+    participants:
+      group.participants?.map((participant) => ({
+        id: participant.id,
+        username: participant.username,
+        avatar: participant.avatar,
+        score: participant.score,
+        isSelf: participant.isSelf,
+        level: levelFromXp(participant.xp),
+        rank: participant.rank,
+      })) ?? [],
+  }
+}
+
+export function toCourseLeaderboard(leaderboard: CourseLeaderboardSource) {
+  return {
+    leaderboard: leaderboard.leaderboard.map((entry) => ({
+      id: entry.id,
+      participantId: entry.participantId,
+      username: entry.username,
+      avatar: entry.avatar,
+      score: entry.score,
+      isSelf: entry.isSelf,
+      rank: entry.rank,
+      level: entry.level,
+    })),
+    leaderboardStatistics: leaderboard.leaderboardStatistics,
+  }
+}
+
+export function toCourseGroupActivity(activity: CourseGroupActivitySource) {
+  return {
+    id: activity.id,
+    displayName: activity.displayName,
+    status: activity.status,
+    description: activity.description,
+    scheduledStartAt: activity.scheduledStartAt,
+    scheduledEndAt: activity.scheduledEndAt,
+  }
+}
+
+export function toGroupActivityInstance(instance: GroupActivityInstanceSource) {
+  return {
+    id: instance.id,
+    decisionsSubmittedAt: instance.decisionsSubmittedAt,
+    resultsComputedAt: instance.resultsComputedAt,
+    results: instance.results,
+    groupActivityId: instance.groupActivityId,
   }
 }

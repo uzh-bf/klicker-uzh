@@ -1,38 +1,18 @@
 import { useMutation } from '@apollo/client'
-import {
-  GetCourseOverviewDataDocument,
-  LeaveRandomCourseGroupPoolDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { LeaveRandomCourseGroupPoolDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
-function PoolNotification({ courseId }: { courseId: string }) {
+function PoolNotification({
+  courseId,
+  onCourseOverviewChanged,
+}: {
+  courseId: string
+  onCourseOverviewChanged?: () => void | Promise<void>
+}) {
   const t = useTranslations()
   const [leaveRandomCourseGroupPool, { loading }] = useMutation(
-    LeaveRandomCourseGroupPoolDocument,
-    {
-      variables: { courseId },
-      update: (cache, { data }) => {
-        // verify that the pool was left successfully
-        if (!data?.leaveRandomCourseGroupPool) return
-
-        // update the course overview data accordingly
-        cache.updateQuery(
-          { query: GetCourseOverviewDataDocument, variables: { courseId } },
-          (qData) => {
-            if (!qData?.getCourseOverviewData) return qData
-
-            return {
-              ...qData,
-              getCourseOverviewData: {
-                ...qData.getCourseOverviewData,
-                inRandomGroupPool: false,
-              },
-            }
-          }
-        )
-      },
-    }
+    LeaveRandomCourseGroupPoolDocument
   )
 
   return (
@@ -45,7 +25,14 @@ function PoolNotification({ courseId }: { courseId: string }) {
       <Button
         destructive
         disabled={loading}
-        onClick={async () => await leaveRandomCourseGroupPool()}
+        onClick={async () => {
+          const result = await leaveRandomCourseGroupPool({
+            variables: { courseId },
+          })
+          if (result.data?.leaveRandomCourseGroupPool) {
+            await onCourseOverviewChanged?.()
+          }
+        }}
         data={{ cy: 'leave-random-group-pool' }}
       >
         {t('pwa.courses.leaveRandomGroupPool')}

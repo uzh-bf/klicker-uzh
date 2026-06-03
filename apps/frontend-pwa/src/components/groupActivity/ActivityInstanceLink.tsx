@@ -1,7 +1,10 @@
 import { faExternalLink } from '@fortawesome/free-solid-svg-icons'
-import { GroupActivity } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import Link from 'next/link'
+
+type LinkActivity = {
+  id: string
+}
 
 function ActivityInstanceLink({
   groupId,
@@ -10,7 +13,7 @@ function ActivityInstanceLink({
   data,
 }: {
   groupId: string
-  activity: Omit<GroupActivity, 'name' | 'status'>
+  activity: LinkActivity
   label: string
   data: { cy?: string; test?: string }
 }) {
