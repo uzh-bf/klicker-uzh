@@ -52,9 +52,10 @@ Use: review + simplification pass per slice where practical.
 
 ## Progress
 
-Current: Slice 3 ready to commit.
+Current: Slice 4 ready to commit.
 Status: Slice 0 committed as `3ebddb7a8`.
 Status: Slice 1/2 committed together as `39e6f164e`.
+Status: Slice 3 committed as `d0d14a998`.
 Evidence: pre-commit ran `check:all`; syncpack, lint-staged, turbo check/lint hook tasks passed.
 Evidence: bumped TS to `~6.0.3`, Node types to `^24.12.4`, Office TS-eslint tooling to TS 6-compatible versions.
 Evidence: `pnpm install --frozen-lockfile` passed; `pnpm run check:syncpack` passed.
@@ -70,10 +71,16 @@ Evidence: `pnpm --filter @klicker-uzh/frontend-manage build` passed with existin
 Evidence: `pnpm -w build` passed: 19/19 tasks successful.
 Evidence: `pnpm audit --audit-level high` passed; npm audit returned 48 low/moderate vulnerabilities and no high/critical findings.
 Evidence: `pnpm run lint` passed after Slice 3 import fixes.
+Evidence: Slice 3 commit hook passed `check`, staged-file Prettier, `lint`, and `syncpack`.
+Evidence: final `git diff --check 7320867dd..HEAD` passed.
+Evidence: local PWA/manage/Traefik routes were not running on ports 3001/3002 or `*.klicker.com`; browser verification was not rerun for the import-path-only asset fix. Existing branch browser screenshots remain in `project/2026-06-01-next-16-screenshots/`.
 Review: local review only; multi-agent spawning requires explicit user request. No scope creep found. Narrow override added for Prisma generator stale TS peer.
+Review: final local security pass found no secret-like strings in the new TS6 plan/patch files and no new runtime secret handling, auth, redirect, or network surfaces.
+Review: `patchPrismaNamespace.mjs` is limited to post-`prisma generate` type annotations for generated null sentinel exports and fails closed if Prisma output shape changes.
 Decision: Slice 1 and Slice 2 will be committed together because dependency-only TS 6 state did not typecheck.
 Decision: Slice 3 fixes only stale public asset import resolution exposed by the Next/TS build path; no GraphQL upgrades added.
-Next: run explicit Prettier check for edited files, then commit Slice 3.
+Decision: subagent review was not run because the available multi-agent tool requires an explicit user request for delegation; local review performed instead.
+Next: commit Slice 4 plan completion, push branch, update PR #5111 body/title with whole-branch TS6 coverage.
 
 ## Slices
 
