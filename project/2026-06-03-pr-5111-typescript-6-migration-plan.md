@@ -52,8 +52,9 @@ Use: review + simplification pass per slice where practical.
 
 ## Progress
 
-Current: Slice 2 ready to commit as one buildable migration slice.
+Current: Slice 3 ready to commit.
 Status: Slice 0 committed as `3ebddb7a8`.
+Status: Slice 1/2 committed together as `39e6f164e`.
 Evidence: pre-commit ran `check:all`; syncpack, lint-staged, turbo check/lint hook tasks passed.
 Evidence: bumped TS to `~6.0.3`, Node types to `^24.12.4`, Office TS-eslint tooling to TS 6-compatible versions.
 Evidence: `pnpm install --frozen-lockfile` passed; `pnpm run check:syncpack` passed.
@@ -62,9 +63,17 @@ Evidence: `pnpm peers check` still fails only on pre-existing non-TS peer mismat
 Evidence: `pnpm run check` passed after TS 6 config compatibility changes and after rebuilding Prisma declarations.
 Evidence: `pnpm --filter @klicker-uzh/prisma build` passed without TS4094 after post-generating public null-sentinel annotations for `internal/prismaNamespace.ts`.
 Evidence: `pnpm --filter @klicker-uzh/graphql check` and `pnpm --filter @klicker-uzh/backend-docker check` passed against rebuilt Prisma `dist` declarations.
+Evidence: `pnpm --filter @klicker-uzh/frontend-pwa check` passed after replacing stale bare `public/rank*.svg` imports with relative public asset imports.
+Evidence: `pnpm --filter @klicker-uzh/frontend-pwa build` passed with existing next-intl, Browserslist, and large page-data warnings.
+Evidence: `pnpm --filter @klicker-uzh/frontend-manage check` passed after replacing stale bare `public/img/rank*.svg` imports with relative public asset imports.
+Evidence: `pnpm --filter @klicker-uzh/frontend-manage build` passed with existing next-intl missing-message and large page-data warnings.
+Evidence: `pnpm -w build` passed: 19/19 tasks successful.
+Evidence: `pnpm audit --audit-level high` passed; npm audit returned 48 low/moderate vulnerabilities and no high/critical findings.
+Evidence: `pnpm run lint` passed after Slice 3 import fixes.
 Review: local review only; multi-agent spawning requires explicit user request. No scope creep found. Narrow override added for Prisma generator stale TS peer.
 Decision: Slice 1 and Slice 2 will be committed together because dependency-only TS 6 state did not typecheck.
-Next: rerun lint/format gates, then commit the combined dependency/config slice.
+Decision: Slice 3 fixes only stale public asset import resolution exposed by the Next/TS build path; no GraphQL upgrades added.
+Next: run explicit Prettier check for edited files, then commit Slice 3.
 
 ## Slices
 
