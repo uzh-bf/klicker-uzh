@@ -49,6 +49,7 @@ import {
   updateParticipantAvatar,
   updateParticipantProfile,
 } from '../../services/participantProfile.js'
+import { getPreviousStackEvaluation } from '../../services/participantStackEvaluations.js'
 import { getPrisma } from '../context.js'
 import {
   toCourseGroupActivity,
@@ -92,6 +93,7 @@ import {
   participantParticipationsInput,
   participantPracticeQuizBookmarksInput,
   participantPracticeQuizInput,
+  participantPreviousStackEvaluationInput,
   participantPublicProfileInput,
   participantRateElementInput,
   participantRenameGroupInput,
@@ -650,6 +652,18 @@ export const participantRouter = router({
         id: input.id,
         prisma,
         user: ctx.user,
+      })
+    }),
+
+  previousStackEvaluation: participantProcedure
+    .input(participantPreviousStackEvaluationInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return getPreviousStackEvaluation({
+        participantId: ctx.user.sub,
+        prisma,
+        stackId: input.stackId,
       })
     }),
 

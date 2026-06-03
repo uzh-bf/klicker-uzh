@@ -138,6 +138,10 @@ export const participantPracticeQuizInput = z.object({
   id: z.string(),
 })
 
+export const participantPreviousStackEvaluationInput = z.object({
+  stackId: z.number().int(),
+})
+
 export const participantBookmarkElementStackInput = z.object({
   courseId: z.string(),
   stackId: z.number().int(),

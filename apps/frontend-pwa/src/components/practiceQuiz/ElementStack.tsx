@@ -1,11 +1,10 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 import {
   CaseStudyCaseResponse,
   ElementStack as ElementStackType,
   ElementType,
   FlashcardCorrectness,
   FlashcardCorrectnessType,
-  GetPreviousStackEvaluationDocument,
   RespondToElementStackDocument,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -20,6 +19,7 @@ import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { trpc } from '../../lib/trpc'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import Bookmark from './Bookmark'
@@ -123,15 +123,15 @@ function ElementStack({
   })
 
   // if single submission is enabled, fetch the previous answer & evaluation and do not submit again
-  const { data: evaluationData } = useQuery(
-    GetPreviousStackEvaluationDocument,
-    {
-      skip: previewOnly || !singleSubmission || !!stackStorage,
-      variables: {
+  const { data: previousStackEvaluation } =
+    trpc.participant.previousStackEvaluation.useQuery(
+      {
         stackId: stack.id,
       },
-    }
-  )
+      {
+        enabled: !previewOnly && singleSubmission && !stackStorage,
+      }
+    )
 
   // if single submission is enabled, fetch the previous answer & evaluation from the database (if available)
   useEffect(() => {
@@ -139,11 +139,11 @@ function ElementStack({
       !previewOnly &&
       singleSubmission &&
       !stackStorage &&
-      evaluationData?.getPreviousStackEvaluation &&
-      evaluationData.getPreviousStackEvaluation.evaluations &&
-      evaluationData.getPreviousStackEvaluation.evaluations.length > 0
+      previousStackEvaluation &&
+      previousStackEvaluation.evaluations &&
+      previousStackEvaluation.evaluations.length > 0
     ) {
-      const evaluations = evaluationData.getPreviousStackEvaluation.evaluations
+      const evaluations = previousStackEvaluation.evaluations
 
       setStackStorage(
         evaluations.reduce<StackStudentResponseType>((acc, evaluation) => {
@@ -152,7 +152,8 @@ function ElementStack({
           )
           const commonAttributes = {
             valid: true,
-            evaluation,
+            evaluation:
+              evaluation as StackStudentResponseType[number]['evaluation'],
           }
 
           if (!foundElement || !evaluation.lastResponse) {
@@ -168,7 +169,9 @@ function ElementStack({
               acc[evaluation.instanceId] = {
                 ...commonAttributes,
                 type: elementType,
-                response: evaluation.lastResponse.correctness,
+                response: toGraphqlFlashcardCorrectness(
+                  evaluation.lastResponse.correctness
+                ),
               }
 
               return acc
@@ -286,8 +289,8 @@ function ElementStack({
       setStudentResponse({})
 
       // ? if used for practice quizzes, optionally set the step status here
-      // const score = evaluationData?.getPreviousStackEvaluation.score
-      // const status = evaluationData?.getPreviousStackEvaluation.status
+      // const score = previousStackEvaluation.score
+      // const status = previousStackEvaluation.status
       // if (typeof setStepStatus !== 'undefined') {
       //   setStepStatus({
       //     status,
@@ -296,7 +299,7 @@ function ElementStack({
       // }
     }
   }, [
-    evaluationData,
+    previousStackEvaluation,
     setStackStorage,
     singleSubmission,
     stack,
@@ -656,3 +659,16 @@ function ElementStack({
 }
 
 export default ElementStack
+
+function toGraphqlFlashcardCorrectness(
+  correctness: string
+): FlashcardCorrectness {
+  if (correctness === FlashcardCorrectness.Correct) {
+    return FlashcardCorrectness.Correct
+  }
+  if (correctness === FlashcardCorrectness.Partial) {
+    return FlashcardCorrectness.Partial
+  }
+
+  return FlashcardCorrectness.Incorrect
+}
