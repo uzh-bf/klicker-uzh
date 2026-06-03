@@ -276,6 +276,84 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-03 Completed: S04G5 PWA Regular Participant Locale/Logout Mutations
+
+Status: complete for the scoped slice. This slice migrates regular participant locale switching and logout from Apollo to tRPC across current PWA consumers. Temporary participant logout stays GraphQL until the dedicated temporary participant login/logout slice because it depends on live-quiz scoped temporary participant state and localStorage cleanup.
+
+Goal: replace `ChangeParticipantLocaleDocument` and `LogoutParticipantDocument` in PWA header/logout consumers with tRPC mutations while preserving locale cookie updates, participant locale persistence, regular participant logout cookie clearing, existing redirects/reloads, and GraphQL coexistence for all unrelated operations.
+
+Write scope:
+
+- `packages/api/src/services/participantAuth.ts`
+- `packages/api/src/trpc/schemas/participant.ts`
+- `packages/api/src/trpc/routers/participant.ts`
+- `packages/api/src/trpc/__tests__/participant-auth.test.ts`
+- `apps/frontend-pwa/src/components/common/Header.tsx`
+- `apps/frontend-pwa/src/components/common/LiveQuizLeaderboard.tsx`
+- `apps/frontend-pwa/src/components/forms/AccountDeletionForm.tsx`
+- `AGENTS.md`
+- This plan file
+
+```text
+Slice: S04G5 PWA regular participant locale/logout mutations
+GraphQL operation(s): ChangeParticipantLocaleDocument, LogoutParticipantDocument
+GraphQL resolver(s): changeParticipantLocale, logoutParticipant
+Behavior source: AccountService.changeParticipantLocale and AccountService.logoutParticipant cookie side effects
+tRPC router.procedure: participant.changeLocale, participant.logout
+Input schema: locale enum for changeLocale; none for logout
+Output DTO: changeLocale participant id/locale or null; logout participant id
+Active frontend consumers: PWA Header, LiveQuizLeaderboard regular logout links, AccountDeletionForm post-delete logout
+Apollo cache/refetch behavior: none for regular logout; locale mutation persists participant locale before Next locale navigation
+React Query replacement: tRPC mutations; invalidate participant.self on regular logout/locale where local state may be reused
+Browser verification path: local PWA login as seeded participant, switch locale through header, then regular logout through header
+Cleanup blocked until: temporary participant logout, account creation/update/delete, LTI token exchange, temporary login, join, leaderboard/group mutations, and S05 subscriptions
+```
+
+Implementation result:
+
+- Added API-local `changeParticipantLocale` and `logoutParticipant` service helpers that preserve the existing `NEXT_LOCALE`, `participant_token`, and `next-auth.participant-session-token` cookie side effects without importing GraphQL runtime code.
+- Added `participant.changeLocale` and `participant.logout` tRPC mutations with a Prisma-backed locale input schema.
+- Migrated regular participant locale/logout calls in `Header`, regular logout links in `LiveQuizLeaderboard`, and the post-delete logout in `AccountDeletionForm` from Apollo to tRPC.
+- Kept `LogoutTemporaryParticipantDocument` in `Header` and `DeleteParticipantAccountDocument` in `AccountDeletionForm` on GraphQL by design for later S04G slices.
+- Removed `sessionStorage.participant_token` after regular participant logout to avoid stale tRPC authorization headers in cookie-unavailable browser contexts.
+- Added focused API tests for locale persistence/cookie setting and regular participant cookie clearing.
+- Added an `AGENTS.md` learning for the PWA tRPC `sessionStorage` logout gotcha.
+
+Verification:
+
+```bash
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --write <S04G5 files>
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check
+volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build
+rg -n "ChangeParticipantLocaleDocument|LogoutParticipantDocument" apps/frontend-pwa/src
+rg -n "@klicker-uzh/prisma/client|packages/api/src|packages/prisma|bcryptjs|nodemailer|verifyJWT" apps/frontend-pwa/src/components/common/Header.tsx apps/frontend-pwa/src/components/common/LiveQuizLeaderboard.tsx apps/frontend-pwa/src/components/forms/AccountDeletionForm.tsx
+rg -n "from ['\"]@klicker-uzh/graphql|from ['\"].*packages/graphql|@klicker-uzh/graphql" packages/api/src
+git diff --check
+```
+
+- API tests passed: 6 files, 47 tests.
+- API check/build and PWA check/build exited 0. Expected warnings remained limited to existing Next config, next-intl, PWA, Browserslist, and large page data warnings.
+- Targeted migrated-operation audit returned no PWA matches for `ChangeParticipantLocaleDocument` or `LogoutParticipantDocument`. Runtime-boundary audits returned no forbidden frontend imports and no API imports from GraphQL.
+- Browser verification used branch backend on `http://127.0.0.1:3100` and branch PWA on `http://127.0.0.1:3102`. The local compose PostgreSQL/Redis services were started and seeded with raw local Prisma commands because the default setup wrapper required unavailable Infisical project access.
+- Direct tRPC password login for seeded `testuser1` returned participant id `6f45065c-667f-4259-818c-c6f6b477eb48`.
+- `npx agent-browser` verified login, header language switch to German, persisted DB locale `de`, header logout redirect to `/de/login`, empty browser errors, and browser-context `participant.self` returning `{ self: null }` after logout.
+- Screenshots reviewed:
+  - `/tmp/klicker-pwa-s04g5-login-filled.png`
+  - `/tmp/klicker-pwa-s04g5-home-authenticated.png`
+  - `/tmp/klicker-pwa-s04g5-header-menu-en.png`
+  - `/tmp/klicker-pwa-s04g5-home-german.png`
+  - `/tmp/klicker-pwa-s04g5-header-menu-de.png`
+  - `/tmp/klicker-pwa-s04g5-after-logout.png`
+- Verification servers were stopped, agent-browser was closed, compose services were stopped with `docker compose down`, and ports 3100/3102 were free afterward.
+
+Review / simplification:
+
+- Local review checked the API service/router/schema/test diffs, PWA consumer diffs, operation removal, runtime boundaries, and browser behavior. Dedicated subagent review was not run because the available multi-agent tool contract only permits spawning when the user explicitly asks for delegation.
+- Simplification kept this slice limited to regular participant locale/logout. Temporary participant logout, account deletion itself, and other account/join/group mutations remain separate because they require additional live-quiz/account workflows.
+
 ### 2026-06-03 Completed: S04G4 PWA Account Activation Mutation
 
 Status: complete for the scoped slice. This slice migrates only the `/activation` account-activation token page. Account creation/update/delete, LTI token exchange, temporary participant login, join-course, leaderboard, and group mutations stay GraphQL until later S04G sub-slices.

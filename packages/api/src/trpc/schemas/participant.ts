@@ -1,3 +1,4 @@
+import { Locale } from '@klicker-uzh/prisma/client'
 import { z } from 'zod'
 
 export const participantSelfInput = z
@@ -19,6 +20,10 @@ export const participantCourseInput = z.object({
 
 export const participantActivateAccountInput = z.object({
   token: z.string(),
+})
+
+export const participantChangeLocaleInput = z.object({
+  locale: z.nativeEnum(Locale),
 })
 
 export const participantLoginInput = z.object({

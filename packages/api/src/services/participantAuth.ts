@@ -439,3 +439,45 @@ export async function activateParticipantAccount({
 
   return participant.id
 }
+
+export async function changeParticipantLocale({
+  locale,
+  participantId,
+  prisma,
+  res,
+}: {
+  locale: Locale
+  participantId: string
+  prisma: PrismaClient
+  res: unknown
+}) {
+  const cookieResponse = getCookieResponse(res)
+  cookieResponse.cookie('NEXT_LOCALE', locale, COOKIE_SETTINGS)
+
+  return await prisma.participant.update({
+    where: { id: participantId },
+    data: { locale },
+    select: { id: true, locale: true },
+  })
+}
+
+export async function logoutParticipant({
+  participantId,
+  res,
+}: {
+  participantId: string
+  res: unknown
+}) {
+  const cookieResponse = getCookieResponse(res)
+
+  cookieResponse.cookie('participant_token', 'logoutString', {
+    ...COOKIE_SETTINGS,
+    maxAge: 0,
+  })
+  cookieResponse.cookie('next-auth.participant-session-token', 'logoutString', {
+    ...COOKIE_SETTINGS,
+    maxAge: 0,
+  })
+
+  return participantId
+}

@@ -225,6 +225,7 @@ Without Traefik, use `http://localhost:<port>` directly. The `*.klicker.com` dom
 - **tRPC API dist before app-local checks**: After changing `packages/api/src/trpc/*`, rebuild `@klicker-uzh/api` before app-local frontend `check` commands, because the apps consume package `dist` declarations when run outside Turbo's root dependency graph. Root `pnpm run check` handles ordering via `^build`. (`packages/api`, `apps/frontend-*`)
 - **PWA verification after production builds**: Running `next build` while `apps/frontend-pwa` dev server is active can leave the dev `.next` cache with missing vendor chunks. Restart `next dev` before browser verification, and pass explicit local API URLs when verifying branch-local tRPC calls. (`apps/frontend-pwa/`)
 - **Backend local dev env for tRPC browser checks**: Starting `apps/backend-docker` outside Docker needs explicit local `APP_ORIGIN_API`, DB/Redis env, and a JWT-shaped `HATCHET_CLIENT_TOKEN`; a plain dummy Hatchet token fails during SDK config parsing before the server binds. (`apps/backend-docker/`, `packages/hatchet/src/client.ts`)
+- **PWA tRPC logout and sessionStorage**: The PWA tRPC client sends `sessionStorage.participant_token` as an authorization header when cookies are unavailable. Regular participant logout handlers must remove this token after server logout, otherwise browser-context tRPC calls can remain authenticated despite cleared cookies. (`apps/frontend-pwa/src/lib/trpc.tsx`, `apps/frontend-pwa/src/components/common/Header.tsx`)
 
 ## Factory Skills (AI Assistance)
 

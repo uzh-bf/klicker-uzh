@@ -8,15 +8,13 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ChangeParticipantLocaleDocument,
   Course,
-  LocaleType,
-  LogoutParticipantDocument,
   LogoutTemporaryParticipantDocument,
   SelfDocument,
   StudentCourse,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
+import { trpc, type RouterInputs } from '@lib/trpc'
 import { Button, Dropdown, H1, H2, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
@@ -34,6 +32,8 @@ type HeaderParticipant = {
   role?: 'PARTICIPANT' | 'TEMPORARY_PARTICIPANT' | UserRole | null
   username?: string | null
 }
+
+type ParticipantLocale = RouterInputs['participant']['changeLocale']['locale']
 
 interface HeaderProps {
   participant?: HeaderParticipant
@@ -53,13 +53,10 @@ function Header({
   const router = useRouter()
   const { pathname, asPath, query } = router
   const t = useTranslations()
+  const utils = trpc.useUtils()
 
-  const [changeParticipantLocale, { loading: changingLocale }] = useMutation(
-    ChangeParticipantLocaleDocument
-  )
-  const [logoutParticipant, { loading: loggingOut }] = useMutation(
-    LogoutParticipantDocument
-  )
+  const changeParticipantLocale = trpc.participant.changeLocale.useMutation()
+  const logoutParticipant = trpc.participant.logout.useMutation()
   const [logoutTemporaryParticipant, { loading: loggingOutTemporary }] =
     useMutation(LogoutTemporaryParticipantDocument)
 
@@ -269,19 +266,19 @@ function Header({
               items: [
                 {
                   id: 'languageDE',
-                  value: LocaleType.De,
+                  value: 'de' as ParticipantLocale,
                   flag: '🇩🇪',
                   label: t('shared.generic.de'),
                 },
                 {
                   id: 'languageEN',
-                  value: LocaleType.En,
+                  value: 'en' as ParticipantLocale,
                   flag: '🇬🇧',
                   label: t('shared.generic.en'),
                 },
               ].map((language) => ({
                 id: language.id,
-                disabled: changingLocale,
+                disabled: changeParticipantLocale.isPending,
                 label: (
                   <>
                     <span className="mr-1 md:mr-2">{language.flag}</span>
@@ -294,9 +291,10 @@ function Header({
                     participant &&
                     participant.role === UserRole.Participant
                   ) {
-                    await changeParticipantLocale({
-                      variables: { locale: language.value },
+                    await changeParticipantLocale.mutateAsync({
+                      locale: language.value,
                     })
+                    await utils.participant.self.invalidate()
                   }
 
                   router.push({ pathname, query }, asPath, {
@@ -311,7 +309,7 @@ function Header({
                   {
                     id: 'logout',
                     type: 'standard' as 'standard',
-                    disabled: loggingOut,
+                    disabled: logoutParticipant.isPending,
                     label: (
                       <div className="text-red-600">
                         <FontAwesomeIcon
@@ -322,7 +320,9 @@ function Header({
                       </div>
                     ),
                     onClick: async () => {
-                      await logoutParticipant()
+                      await logoutParticipant.mutateAsync()
+                      sessionStorage.removeItem('participant_token')
+                      await utils.participant.self.invalidate()
                       router.push('/login')
                     },
                     data: { cy: 'logout' },

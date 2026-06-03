@@ -46,13 +46,16 @@ const { appRouter } = await import('../root.js')
 function createContext({
   prisma,
   res = { cookie: vi.fn() },
+  user,
 }: {
   prisma?: TRPCContext['prisma']
   res?: { cookie: ReturnType<typeof vi.fn> }
+  user?: TRPCContext['user']
 } = {}): TRPCContext {
   return {
     prisma,
     res,
+    user,
   }
 }
 
@@ -470,4 +473,73 @@ describe('participant auth routers', () => {
       expect(res.cookie).not.toHaveBeenCalled()
     }
   )
+
+  test('changes participant locale and updates the locale cookie', async () => {
+    const update = vi.fn().mockResolvedValue({
+      id: 'participant-1',
+      locale: Locale.de,
+    })
+    const prisma = {
+      participant: {
+        update,
+      },
+    } as unknown as TRPCContext['prisma']
+    const res = { cookie: vi.fn() }
+    const caller = appRouter.createCaller(
+      createContext({
+        prisma,
+        res,
+        user: {
+          sub: 'participant-1',
+          role: UserRole.PARTICIPANT,
+          scope: UserLoginScope.FULL_ACCESS,
+        },
+      })
+    )
+
+    await expect(
+      caller.participant.changeLocale({ locale: Locale.de })
+    ).resolves.toEqual({
+      id: 'participant-1',
+      locale: Locale.de,
+    })
+
+    expect(res.cookie).toHaveBeenCalledWith(
+      'NEXT_LOCALE',
+      Locale.de,
+      expect.objectContaining({ httpOnly: true, sameSite: 'lax' })
+    )
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 'participant-1' },
+      data: { locale: Locale.de },
+      select: { id: true, locale: true },
+    })
+  })
+
+  test('logs out a participant and clears participant cookies', async () => {
+    const res = { cookie: vi.fn() }
+    const caller = appRouter.createCaller(
+      createContext({
+        res,
+        user: {
+          sub: 'participant-1',
+          role: UserRole.PARTICIPANT,
+          scope: UserLoginScope.FULL_ACCESS,
+        },
+      })
+    )
+
+    await expect(caller.participant.logout()).resolves.toBe('participant-1')
+
+    expect(res.cookie).toHaveBeenCalledWith(
+      'participant_token',
+      'logoutString',
+      expect.objectContaining({ httpOnly: true, maxAge: 0, sameSite: 'lax' })
+    )
+    expect(res.cookie).toHaveBeenCalledWith(
+      'next-auth.participant-session-token',
+      'logoutString',
+      expect.objectContaining({ httpOnly: true, maxAge: 0, sameSite: 'lax' })
+    )
+  })
 })

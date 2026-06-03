@@ -1,10 +1,10 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useQuery } from '@apollo/client'
 import {
   GetLiveQuizLeaderboardDocument,
-  LogoutParticipantDocument,
   SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { trpc } from '@lib/trpc'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import localforage from 'localforage'
 import { useTranslations } from 'next-intl'
@@ -43,6 +43,7 @@ function LiveQuizLeaderboard({
   const t = useTranslations()
   const router = useRouter()
   const [blockDelta, setBlockDelta] = useState<BlockResult>(null)
+  const logoutParticipant = trpc.participant.logout.useMutation()
 
   const { data: selfData } = useQuery(SelfDocument, {
     variables: { liveQuizId: quizId },
@@ -56,9 +57,6 @@ function LiveQuizLeaderboard({
     // TODO: otherwise, this could overload the server if 1000 simultaneous users are on the leaderboard
     fetchPolicy: 'network-only',
   })
-
-  // logout mutation in case user decides not to participate in gamification
-  const [logoutParticipant] = useMutation(LogoutParticipantDocument)
 
   // save the current leaderboard to local storage
   useEffect(() => {
@@ -150,7 +148,8 @@ function LiveQuizLeaderboard({
                 logout: (text) => (
                   <span
                     onClick={async () => {
-                      await logoutParticipant()
+                      await logoutParticipant.mutateAsync()
+                      sessionStorage.removeItem('participant_token')
                       router.reload()
                     }}
                     className="cursor-pointer underline"
@@ -184,7 +183,8 @@ function LiveQuizLeaderboard({
                   logout: (text) => (
                     <span
                       onClick={async () => {
-                        await logoutParticipant()
+                        await logoutParticipant.mutateAsync()
+                        sessionStorage.removeItem('participant_token')
                         router.reload()
                       }}
                       className="cursor-pointer underline"
