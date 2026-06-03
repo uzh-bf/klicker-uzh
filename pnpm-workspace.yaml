@@ -40,6 +40,9 @@ overrides:
   'picomatch@<2.3.2': 2.3.2
   'picomatch@>=4.0.0 <4.0.4': 4.0.4
   'protobufjs@<=7.5.5': 7.5.6
+  # Prisma 6-compatible generator works under TS 6 locally, but its latest
+  # Prisma 6 line still declares a stale TS 5.9 peer range.
+  'prisma-json-types-generator@3.6.0>typescript': ^6.0.3
   'rollup@>=4.0.0 <4.59.0': 4.59.1
   'sequelize@<6.37.8': 6.37.8
   'serialize-javascript@<7.0.3': 7.0.3

@@ -14,13 +14,13 @@
     "@klicker-uzh/types": "workspace:*",
     "@rollup/plugin-node-resolve": "~15.3.1",
     "@rollup/plugin-typescript": "~12.3.0",
-    "@types/node": "^24.10.1",
+    "@types/node": "^24.12.4",
     "cross-env": "~7.0.3",
     "eslint": "~9.30.1",
     "npm-run-all": "~4.1.5",
     "rollup": "~4.59.1",
     "ts-node": "~10.9.2",
-    "typescript": "~5.6.3",
+    "typescript": "~6.0.3",
     "vitest": "~4.1.6"
   },
   "scripts": {

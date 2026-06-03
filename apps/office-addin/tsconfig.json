@@ -18,6 +18,7 @@
     // React Specific
     "jsx": "react-jsx",
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "types": ["office-js", "office-runtime"],
     // Build Output
     "sourceMap": true,
     "declaration": true,

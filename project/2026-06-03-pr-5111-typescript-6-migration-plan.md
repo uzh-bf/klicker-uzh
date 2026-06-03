@@ -52,9 +52,19 @@ Use: review + simplification pass per slice where practical.
 
 ## Progress
 
-Current: Slice 0 active.
-Status: plan approved by user.
-Next: commit plan file alone, then dependency/config tracer bullet.
+Current: Slice 2 ready to commit as one buildable migration slice.
+Status: Slice 0 committed as `3ebddb7a8`.
+Evidence: pre-commit ran `check:all`; syncpack, lint-staged, turbo check/lint hook tasks passed.
+Evidence: bumped TS to `~6.0.3`, Node types to `^24.12.4`, Office TS-eslint tooling to TS 6-compatible versions.
+Evidence: `pnpm install --frozen-lockfile` passed; `pnpm run check:syncpack` passed.
+Evidence: `pnpm --filter @klicker-uzh/prisma generate` passed with `prisma-json-types-generator@3.6.0` under TS 6.
+Evidence: `pnpm peers check` still fails only on pre-existing non-TS peer mismatches; TS-specific peer failures removed.
+Evidence: `pnpm run check` passed after TS 6 config compatibility changes and after rebuilding Prisma declarations.
+Evidence: `pnpm --filter @klicker-uzh/prisma build` passed without TS4094 after post-generating public null-sentinel annotations for `internal/prismaNamespace.ts`.
+Evidence: `pnpm --filter @klicker-uzh/graphql check` and `pnpm --filter @klicker-uzh/backend-docker check` passed against rebuilt Prisma `dist` declarations.
+Review: local review only; multi-agent spawning requires explicit user request. No scope creep found. Narrow override added for Prisma generator stale TS peer.
+Decision: Slice 1 and Slice 2 will be committed together because dependency-only TS 6 state did not typecheck.
+Next: rerun lint/format gates, then commit the combined dependency/config slice.
 
 ## Slices
 

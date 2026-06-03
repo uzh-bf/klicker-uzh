@@ -21,7 +21,6 @@
     "jsx": "react-jsx",
     "isolatedModules": true,
     // Path Mapping
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     },
