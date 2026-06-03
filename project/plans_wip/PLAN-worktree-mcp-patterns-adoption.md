@@ -88,6 +88,14 @@ architecture should stay with focused TypeScript MCP services:
   Local security review found no high-confidence issue in the adopted MCP
   policy/runner/error/smoke changes. Next: refresh PR description and monitor
   restarted CI on the new head.
+- 2026-06-03: Final check follow-up done. Current-head CI later found the same
+  readonly-scope mismatch in the lecturer runner test fixture. Fixed by typing
+  the fixture as the canonical `LecturerMcpSession` instead of using an
+  `as const` tuple. Evidence: focused lecturer MCP Vitest `9/9` passed,
+  Prettier passed, `git diff --check` passed, local lecturer MCP Docker builder
+  passed, and Docker `pnpm run check --filter=@klicker-uzh/mcp-lecturer`
+  passed the same package `tsc --noEmit` path that failed in CI. Next: push and
+  monitor restarted PR head CI.
 
 ## What To Take Over
 

@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { LecturerMcpSession } from '../src/auth.js'
 import { runLecturerDraftTool, runLecturerReadTool } from '../src/toolRunner.js'
 
-const lecturerSession = {
+const lecturerSession: LecturerMcpSession = {
   bearerToken: 'secret-lecturer-token',
-  scopes: ['manage:read', 'manage:draft'] as const,
+  scopes: ['manage:read', 'manage:draft'],
   userId: 'lecturer-1',
 }
 
