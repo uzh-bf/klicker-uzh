@@ -21,10 +21,12 @@ data:
   ALLOWED_FRAME_ANCESTORS: {{ .Values.chat.allowedFrameAncestors | quote }}
   {{- end }}
   {{- if .Values.mcpStudent.enabled }}
+  {{- $mcpStudentScheme := .Values.mcpStudent.service.scheme | default "http" }}
   {{- $mcpStudentPath := printf "/%s" (trimPrefix "/" .Values.mcpStudent.path) }}
-  MCP_STUDENT_URL: {{ printf "http://%s-mcp-student:%v%s" $fullName .Values.mcpStudent.service.port $mcpStudentPath | quote }}
+  MCP_STUDENT_URL: {{ printf "%s://%s-mcp-student:%v%s" $mcpStudentScheme $fullName .Values.mcpStudent.service.port $mcpStudentPath | quote }}
   {{- end }}
   {{- if .Values.mcpLecturer.enabled }}
+  {{- $mcpLecturerScheme := .Values.mcpLecturer.service.scheme | default "http" }}
   {{- $mcpLecturerPath := printf "/%s" (trimPrefix "/" .Values.mcpLecturer.path) }}
-  MCP_LECTURER_URL: {{ printf "http://%s-mcp-lecturer:%v%s" $fullName .Values.mcpLecturer.service.port $mcpLecturerPath | quote }}
+  MCP_LECTURER_URL: {{ printf "%s://%s-mcp-lecturer:%v%s" $mcpLecturerScheme $fullName .Values.mcpLecturer.service.port $mcpLecturerPath | quote }}
   {{- end }}

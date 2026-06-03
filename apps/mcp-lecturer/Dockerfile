@@ -7,7 +7,9 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN npm i -g --ignore-scripts pnpm@10.15.0 turbo@2.5.6
 
-COPY . .
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY apps/mcp-lecturer ./apps/mcp-lecturer
+COPY packages/prisma ./packages/prisma
 
 RUN turbo prune --scope=@klicker-uzh/mcp-lecturer --docker
 

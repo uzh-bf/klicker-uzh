@@ -402,7 +402,27 @@ function toIso(value: DateValue): string | null {
 }
 
 function stripHtml(value: string): string {
-  return value.replace(/<[^>]*>/g, ' ')
+  let output = ''
+  let insideTag = false
+
+  for (const char of value) {
+    if (char === '<') {
+      insideTag = true
+      output += ' '
+      continue
+    }
+
+    if (insideTag) {
+      if (char === '>') {
+        insideTag = false
+      }
+      continue
+    }
+
+    output += char
+  }
+
+  return output
 }
 
 function compactPlainText(value: string | null | undefined): string {

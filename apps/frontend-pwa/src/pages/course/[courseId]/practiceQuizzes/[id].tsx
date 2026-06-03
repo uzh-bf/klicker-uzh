@@ -503,13 +503,81 @@ function toContentPreview(
 ): string | undefined {
   if (!value) return undefined
 
-  const preview = value
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .replace(/<[^>]+>/g, ' ')
+  const preview = stripHtmlTags(stripMarkdownImagesAndLinks(value))
     .replace(/\s+/g, ' ')
     .trim()
 
   if (!preview) return undefined
   return preview.length > 500 ? `${preview.slice(0, 497)}...` : preview
+}
+
+function stripMarkdownImagesAndLinks(value: string): string {
+  let output = ''
+  let index = 0
+
+  while (index < value.length) {
+    const char = value.charAt(index)
+
+    if (char === '!' && value.charAt(index + 1) === '[') {
+      const bounds = getMarkdownLinkBounds(value, index + 2)
+
+      if (bounds) {
+        index = bounds.urlEnd + 1
+        continue
+      }
+    }
+
+    if (char === '[') {
+      const bounds = getMarkdownLinkBounds(value, index + 1)
+
+      if (bounds) {
+        output += value.slice(index + 1, bounds.labelEnd)
+        index = bounds.urlEnd + 1
+        continue
+      }
+    }
+
+    output += char
+    index += 1
+  }
+
+  return output
+}
+
+function getMarkdownLinkBounds(
+  value: string,
+  labelStart: number
+): { labelEnd: number; urlEnd: number } | null {
+  const labelEnd = value.indexOf(']', labelStart)
+
+  if (labelEnd < 0 || value.charAt(labelEnd + 1) !== '(') {
+    return null
+  }
+
+  const urlEnd = value.indexOf(')', labelEnd + 2)
+  return urlEnd >= 0 ? { labelEnd, urlEnd } : null
+}
+
+function stripHtmlTags(value: string): string {
+  let output = ''
+  let insideTag = false
+
+  for (const char of value) {
+    if (char === '<') {
+      insideTag = true
+      output += ' '
+      continue
+    }
+
+    if (insideTag) {
+      if (char === '>') {
+        insideTag = false
+      }
+      continue
+    }
+
+    output += char
+  }
+
+  return output
 }

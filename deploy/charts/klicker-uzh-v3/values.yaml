@@ -226,6 +226,7 @@ mcpStudent:
 
   service:
     type: ClusterIP
+    scheme: http
     port: 7080
 
   resources:
@@ -272,6 +273,7 @@ mcpLecturer:
 
   service:
     type: ClusterIP
+    scheme: http
     port: 7081
 
   resources:
