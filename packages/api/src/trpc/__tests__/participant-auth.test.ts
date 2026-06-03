@@ -1,4 +1,9 @@
-import { Locale, UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
+import {
+  Locale,
+  PublicationStatus,
+  UserLoginScope,
+  UserRole,
+} from '@klicker-uzh/prisma/client'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import type { TRPCContext } from '../context.js'
 
@@ -541,5 +546,181 @@ describe('participant auth routers', () => {
       'logoutString',
       expect.objectContaining({ httpOnly: true, maxAge: 0, sameSite: 'lax' })
     )
+  })
+
+  test('logs in a temporary participant and sets the temporary cookie', async () => {
+    process.env.APP_ORIGIN_API = 'http://api.localhost'
+    const create = vi.fn().mockImplementation(({ data }) => ({
+      id: data.id,
+    }))
+    const prisma = {
+      liveQuiz: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'live-quiz-1' }),
+      },
+      participant: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
+      temporaryLeaderboardEntry: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create,
+      },
+    } as unknown as TRPCContext['prisma']
+    const res = { cookie: vi.fn() }
+    const caller = appRouter.createCaller(createContext({ prisma, res }))
+
+    const token = await caller.participant.loginTemporary({
+      liveQuizId: 'live-quiz-1',
+      pseudonym: ' Temp Name ',
+      avatar: 'avatar-1',
+    })
+
+    expect(token).toMatch(/^jwt-.+-TEMPORARY_PARTICIPANT$/)
+    expect(prisma?.liveQuiz.findUnique).toHaveBeenCalledWith({
+      where: { id: 'live-quiz-1', status: PublicationStatus.PUBLISHED },
+    })
+    expect(prisma?.participant.findFirst).toHaveBeenCalledWith({
+      where: { username: 'Temp Name' },
+    })
+    expect(prisma?.temporaryLeaderboardEntry.findFirst).toHaveBeenCalledWith({
+      where: {
+        username: 'Temp Name',
+        quizId: 'live-quiz-1',
+      },
+    })
+    expect(create).toHaveBeenCalledWith({
+      data: {
+        id: expect.any(String),
+        username: 'Temp Name',
+        avatar: 'avatar-1',
+        score: 0,
+        quiz: {
+          connect: { id: 'live-quiz-1' },
+        },
+      },
+    })
+    expect(res.cookie).toHaveBeenCalledWith(
+      'temporary_participant_token',
+      token,
+      expect.objectContaining({ httpOnly: true, sameSite: 'lax' })
+    )
+  })
+
+  test.each([
+    {
+      label: 'missing live quiz',
+      liveQuiz: null,
+      participant: null,
+      temporaryParticipant: null,
+    },
+    {
+      label: 'existing participant pseudonym',
+      liveQuiz: { id: 'live-quiz-1' },
+      participant: { id: 'participant-1' },
+      temporaryParticipant: null,
+    },
+    {
+      label: 'existing temporary participant pseudonym',
+      liveQuiz: { id: 'live-quiz-1' },
+      participant: null,
+      temporaryParticipant: { id: 'temporary-1' },
+    },
+  ])(
+    'returns null for temporary participant login with $label',
+    async ({ liveQuiz, participant, temporaryParticipant }) => {
+      const prisma = {
+        liveQuiz: {
+          findUnique: vi.fn().mockResolvedValue(liveQuiz),
+        },
+        participant: {
+          findFirst: vi.fn().mockResolvedValue(participant),
+        },
+        temporaryLeaderboardEntry: {
+          findFirst: vi.fn().mockResolvedValue(temporaryParticipant),
+          create: vi.fn(),
+        },
+      } as unknown as TRPCContext['prisma']
+      const res = { cookie: vi.fn() }
+      const caller = appRouter.createCaller(createContext({ prisma, res }))
+
+      await expect(
+        caller.participant.loginTemporary({
+          liveQuizId: 'live-quiz-1',
+          pseudonym: 'Temp Name',
+        })
+      ).resolves.toBeNull()
+
+      expect(prisma?.temporaryLeaderboardEntry.create).not.toHaveBeenCalled()
+      expect(res.cookie).not.toHaveBeenCalled()
+    }
+  )
+
+  test('logs out a temporary participant and clears the temporary cookie', async () => {
+    const findUnique = vi.fn().mockResolvedValue({
+      id: 'temporary-1',
+      quizId: 'live-quiz-1',
+    })
+    const remove = vi.fn().mockResolvedValue({})
+    const prisma = {
+      temporaryLeaderboardEntry: {
+        findUnique,
+        delete: remove,
+      },
+    } as unknown as TRPCContext['prisma']
+    const res = { cookie: vi.fn() }
+    const caller = appRouter.createCaller(
+      createContext({
+        prisma,
+        res,
+        user: {
+          sub: 'temporary-1',
+          role: UserRole.TEMPORARY_PARTICIPANT,
+          scope: UserLoginScope.FULL_ACCESS,
+        },
+      })
+    )
+
+    await expect(
+      caller.participant.logoutTemporary({ liveQuizId: 'live-quiz-1' })
+    ).resolves.toBe(true)
+
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id_quizId: { id: 'temporary-1', quizId: 'live-quiz-1' } },
+    })
+    expect(remove).toHaveBeenCalledWith({
+      where: { id_quizId: { id: 'temporary-1', quizId: 'live-quiz-1' } },
+    })
+    expect(res.cookie).toHaveBeenCalledWith(
+      'temporary_participant_token',
+      'logoutString',
+      expect.objectContaining({ httpOnly: true, maxAge: 0, sameSite: 'lax' })
+    )
+  })
+
+  test('returns false when temporary participant logout has no quiz entry', async () => {
+    const prisma = {
+      temporaryLeaderboardEntry: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        delete: vi.fn(),
+      },
+    } as unknown as TRPCContext['prisma']
+    const res = { cookie: vi.fn() }
+    const caller = appRouter.createCaller(
+      createContext({
+        prisma,
+        res,
+        user: {
+          sub: 'temporary-1',
+          role: UserRole.TEMPORARY_PARTICIPANT,
+          scope: UserLoginScope.FULL_ACCESS,
+        },
+      })
+    )
+
+    await expect(
+      caller.participant.logoutTemporary({ liveQuizId: 'missing-quiz' })
+    ).resolves.toBe(false)
+
+    expect(prisma?.temporaryLeaderboardEntry.delete).not.toHaveBeenCalled()
+    expect(res.cookie).not.toHaveBeenCalled()
   })
 })

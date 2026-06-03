@@ -35,6 +35,16 @@ export const participantLoginWithMagicLinkInput = z.object({
   token: z.string(),
 })
 
+export const participantLoginTemporaryInput = z.object({
+  liveQuizId: z.string(),
+  pseudonym: z.string(),
+  avatar: z.string().nullish(),
+})
+
+export const participantLogoutTemporaryInput = z.object({
+  liveQuizId: z.string(),
+})
+
 export const participantSendMagicLinkInput = z.object({
   usernameOrEmail: z.string(),
 })

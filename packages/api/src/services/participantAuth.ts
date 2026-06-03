@@ -1,4 +1,5 @@
 import {
+  PublicationStatus,
   UserLoginScope,
   UserRole,
   type Locale,
@@ -7,6 +8,7 @@ import {
 import { signJWT, verifyJWT } from '@klicker-uzh/util'
 import { TRPCError } from '@trpc/server'
 import bcrypt from 'bcryptjs'
+import { randomUUID } from 'node:crypto'
 import nodemailer from 'nodemailer'
 
 type CookieResponse = {
@@ -56,6 +58,21 @@ async function createParticipantToken(participantId: string) {
     {
       sub: participantId,
       role: UserRole.PARTICIPANT,
+    },
+    process.env.APP_SECRET as string,
+    {
+      algorithm: 'HS256',
+      expiresIn: '2w',
+      issuer: process.env.APP_ORIGIN_API,
+    }
+  )
+}
+
+async function createTemporaryParticipantToken(participantId: string) {
+  return signJWT(
+    {
+      sub: participantId,
+      role: UserRole.TEMPORARY_PARTICIPANT,
     },
     process.env.APP_SECRET as string,
     {
@@ -480,4 +497,90 @@ export async function logoutParticipant({
   })
 
   return participantId
+}
+
+export async function loginTemporaryParticipant({
+  avatar,
+  liveQuizId,
+  prisma,
+  pseudonym,
+  res,
+}: {
+  avatar?: string | null
+  liveQuizId: string
+  prisma: PrismaClient
+  pseudonym: string
+  res: unknown
+}) {
+  const trimmedPseudonym = pseudonym.trim()
+  const liveQuiz = await prisma.liveQuiz.findUnique({
+    where: { id: liveQuizId, status: PublicationStatus.PUBLISHED },
+  })
+
+  if (!liveQuiz) return null
+
+  const existingParticipant = await prisma.participant.findFirst({
+    where: { username: trimmedPseudonym },
+  })
+
+  if (existingParticipant) return null
+
+  const existingTemporaryParticipant =
+    await prisma.temporaryLeaderboardEntry.findFirst({
+      where: {
+        username: trimmedPseudonym,
+        quizId: liveQuizId,
+      },
+    })
+
+  if (existingTemporaryParticipant) return null
+
+  const temporaryParticipant = await prisma.temporaryLeaderboardEntry.create({
+    data: {
+      id: randomUUID(),
+      username: trimmedPseudonym,
+      avatar: avatar ?? undefined,
+      score: 0,
+      quiz: {
+        connect: { id: liveQuizId },
+      },
+    },
+  })
+
+  const jwt = await createTemporaryParticipantToken(temporaryParticipant.id)
+  const cookieResponse = getCookieResponse(res)
+  cookieResponse.cookie('temporary_participant_token', jwt, COOKIE_SETTINGS)
+
+  return jwt
+}
+
+export async function logoutTemporaryParticipant({
+  liveQuizId,
+  participantId,
+  prisma,
+  res,
+}: {
+  liveQuizId: string
+  participantId: string
+  prisma: PrismaClient
+  res: unknown
+}) {
+  const temporaryLeaderboardEntry =
+    await prisma.temporaryLeaderboardEntry.findUnique({
+      where: { id_quizId: { id: participantId, quizId: liveQuizId } },
+    })
+
+  if (!temporaryLeaderboardEntry) return false
+
+  await prisma.temporaryLeaderboardEntry.delete({
+    where: { id_quizId: { id: participantId, quizId: liveQuizId } },
+  })
+
+  const cookieResponse = getCookieResponse(res)
+  cookieResponse.cookie('temporary_participant_token', 'logoutString', {
+    ...COOKIE_SETTINGS,
+    maxAge: 0,
+  })
+
+  return true
 }

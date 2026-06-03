@@ -11,8 +11,10 @@ import {
   activateParticipantAccount,
   changeParticipantLocale,
   loginParticipant,
+  loginTemporaryParticipant,
   loginWithMagicLink,
   logoutParticipant,
+  logoutTemporaryParticipant,
   sendMagicLink,
 } from '../../services/participantAuth.js'
 import { getPrisma } from '../context.js'
@@ -29,7 +31,10 @@ import {
   toTemporaryParticipantSelf,
 } from '../dto/participant.js'
 import { publicProcedure, router } from '../init.js'
-import { participantProcedure } from '../procedures.js'
+import {
+  participantProcedure,
+  temporaryParticipantProcedure,
+} from '../procedures.js'
 import {
   participantActivateAccountInput,
   participantChangeLocaleInput,
@@ -37,7 +42,9 @@ import {
   participantCourseLeaderboardInput,
   participantGroupActivityInstancesInput,
   participantLoginInput,
+  participantLoginTemporaryInput,
   participantLoginWithMagicLinkInput,
+  participantLogoutTemporaryInput,
   participantParticipationsInput,
   participantSelfInput,
   participantSendMagicLinkInput,
@@ -269,12 +276,39 @@ export const participantRouter = router({
       })
     }),
 
+  loginTemporary: publicProcedure
+    .input(participantLoginTemporaryInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return loginTemporaryParticipant({
+        avatar: input.avatar,
+        liveQuizId: input.liveQuizId,
+        prisma,
+        pseudonym: input.pseudonym,
+        res: ctx.res,
+      })
+    }),
+
   logout: participantProcedure.mutation(async ({ ctx }) => {
     return logoutParticipant({
       participantId: ctx.user.sub,
       res: ctx.res,
     })
   }),
+
+  logoutTemporary: temporaryParticipantProcedure
+    .input(participantLogoutTemporaryInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return logoutTemporaryParticipant({
+        liveQuizId: input.liveQuizId,
+        participantId: ctx.user.sub,
+        prisma,
+        res: ctx.res,
+      })
+    }),
 
   sendMagicLink: publicProcedure
     .input(participantSendMagicLinkInput)

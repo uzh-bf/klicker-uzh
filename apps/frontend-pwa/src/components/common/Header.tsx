@@ -1,4 +1,3 @@
-import { useMutation } from '@apollo/client'
 import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons'
 import {
   faExclamationCircle,
@@ -7,13 +6,7 @@ import {
   faUser,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  Course,
-  LogoutTemporaryParticipantDocument,
-  SelfDocument,
-  StudentCourse,
-  UserRole,
-} from '@klicker-uzh/graphql/dist/ops'
+import { Course, StudentCourse, UserRole } from '@klicker-uzh/graphql/dist/ops'
 import { trpc, type RouterInputs } from '@lib/trpc'
 import { Button, Dropdown, H1, H2, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -57,8 +50,8 @@ function Header({
 
   const changeParticipantLocale = trpc.participant.changeLocale.useMutation()
   const logoutParticipant = trpc.participant.logout.useMutation()
-  const [logoutTemporaryParticipant, { loading: loggingOutTemporary }] =
-    useMutation(LogoutTemporaryParticipantDocument)
+  const logoutTemporaryParticipant =
+    trpc.participant.logoutTemporary.useMutation()
 
   const pageInFrame =
     global?.window &&
@@ -335,7 +328,7 @@ function Header({
                   {
                     id: 'logout',
                     type: 'standard' as 'standard',
-                    disabled: loggingOutTemporary,
+                    disabled: logoutTemporaryParticipant.isPending,
                     label: (
                       <div className="text-red-600">
                         <FontAwesomeIcon
@@ -348,14 +341,12 @@ function Header({
                     onClick: async () => {
                       try {
                         // log out temporary participant for this live quiz
-                        const { data } = await logoutTemporaryParticipant({
-                          variables: { liveQuizId },
-                          refetchQueries: [
-                            { query: SelfDocument, variables: { liveQuizId } },
-                          ],
-                        })
+                        const loggedOut =
+                          await logoutTemporaryParticipant.mutateAsync({
+                            liveQuizId,
+                          })
 
-                        if (data?.logoutTemporaryParticipant) {
+                        if (loggedOut) {
                           // remove local storage entry for temporary participant
                           localStorage.removeItem(`login-state-${liveQuizId}`)
 

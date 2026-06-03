@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useQuery } from '@apollo/client'
 import { faKeyboard } from '@fortawesome/free-regular-svg-icons'
 import {
   faArrowLeft,
@@ -8,11 +8,8 @@ import {
   faUserTie,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  LoginTemporaryParticipantDocument,
-  SelfDocument,
-  UserRole,
-} from '@klicker-uzh/graphql/dist/ops'
+import { SelfDocument, UserRole } from '@klicker-uzh/graphql/dist/ops'
+import { trpc } from '@lib/trpc'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import {
   Button,
@@ -71,9 +68,9 @@ function AccountSelector({
   >(`login-state-${quizId}`, undefined)
   const [api, setApi] = useState<CarouselApi>()
 
-  const [loginTemporaryParticipant, { loading: loggingIn }] = useMutation(
-    LoginTemporaryParticipantDocument
-  )
+  const loginTemporaryParticipant =
+    trpc.participant.loginTemporary.useMutation()
+  const utils = trpc.useUtils()
 
   // check if the user is already logged in as a participant or temporary participant of this quiz
   const { data, loading, refetch } = useQuery(SelfDocument, {
@@ -189,17 +186,13 @@ function AccountSelector({
         })}
         onSubmit={async (values) => {
           try {
-            const { data } = await loginTemporaryParticipant({
-              variables: {
-                liveQuizId: quizId,
-                pseudonym: values.pseudonym,
-                avatar: values.avatar !== '' ? values.avatar : undefined,
-              },
-              // refetch is required here to ensure up-to-date data with temporary leaderboard entry
-              refetchQueries: [{ query: SelfDocument }],
+            const token = await loginTemporaryParticipant.mutateAsync({
+              liveQuizId: quizId,
+              pseudonym: values.pseudonym,
+              avatar: values.avatar !== '' ? values.avatar : undefined,
             })
 
-            if (data?.loginTemporaryParticipant) {
+            if (token) {
               setLoginState('temporary')
               setOpen(false)
 
@@ -215,7 +208,10 @@ function AccountSelector({
                 options: { duration: 5000 },
               })
 
-              await refetch() // refetch the self query to update the user data
+              await Promise.all([
+                refetch(), // refetch the self query to update page-local Apollo data
+                utils.participant.self.invalidate(),
+              ])
             } else {
               toast({
                 type: 'error',
@@ -363,7 +359,7 @@ function AccountSelector({
                 <Button
                   primary
                   type="submit"
-                  loading={loggingIn}
+                  loading={loginTemporaryParticipant.isPending}
                   className={{ root: 'mt-2 self-end' }}
                   data={{ cy: 'submit-pseudonym-and-avatar' }}
                 >
