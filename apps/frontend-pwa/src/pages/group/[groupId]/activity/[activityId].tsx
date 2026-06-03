@@ -1,15 +1,15 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useQuery } from '@apollo/client'
 import { faCheck, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   GroupActivityDetailsDocument,
   GroupActivityGrading,
   PublicationStatus,
-  StartGroupActivityDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
+import { trpc } from '@lib/trpc'
 import { Button, H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetStaticPropsContext } from 'next'
@@ -28,38 +28,19 @@ function GroupActivityDetails() {
   const t = useTranslations()
   const router = useRouter()
   const [activityEnded, setActivityEnded] = useState(false)
+  const groupId = router.query.groupId as string
+  const activityId = router.query.activityId as string
 
-  const { data, loading, error, subscribeToMore } = useQuery(
+  const { data, loading, error, refetch, subscribeToMore } = useQuery(
     GroupActivityDetailsDocument,
     {
       variables: {
-        groupId: router.query.groupId as string,
-        activityId: router.query.activityId as string,
+        groupId,
+        activityId,
       },
     }
   )
-
-  const [startGroupActivity, { loading: startLoading }] = useMutation(
-    StartGroupActivityDocument,
-    {
-      variables: {
-        groupId: router.query.groupId as string,
-        activityId: router.query.activityId as string,
-      },
-      // after activating the group activity, the details need to be loaded
-      // to avoid code duplication, it makes sense to simply use a refetch here
-      // -> no relevant performance implications
-      refetchQueries: [
-        {
-          query: GroupActivityDetailsDocument,
-          variables: {
-            groupId: router.query.groupId,
-            activityId: router.query.activityId,
-          },
-        },
-      ],
-    }
-  )
+  const startGroupActivity = trpc.participant.startGroupActivity.useMutation()
 
   if (!data || loading) {
     return (
@@ -184,9 +165,15 @@ function GroupActivityDetails() {
                   <Button
                     primary
                     disabled={groupActivity.group.participants?.length === 1}
-                    loading={startLoading}
+                    loading={startGroupActivity.isLoading}
                     className={{ root: 'mt-4 self-end text-lg font-bold' }}
-                    onClick={() => startGroupActivity()}
+                    onClick={async () => {
+                      await startGroupActivity.mutateAsync({
+                        activityId,
+                        groupId,
+                      })
+                      await refetch()
+                    }}
                     data={{ cy: 'start-group-activity' }}
                   >
                     <Button.Label>

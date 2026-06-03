@@ -219,6 +219,11 @@ export const participantGroupActivityInstancesInput = z.object({
   groupId: z.string(),
 })
 
+export const participantStartGroupActivityInput = z.object({
+  activityId: z.string(),
+  groupId: z.string(),
+})
+
 export const participantSubscribeToPushInput = z.object({
   courseId: z.string(),
   subscriptionObject: z.object({

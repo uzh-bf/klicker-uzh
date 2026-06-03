@@ -34,6 +34,7 @@ import {
   getStackElementFeedbacks,
   rateElement,
 } from '../../services/participantElementFeedbacks.js'
+import { startGroupActivity as startGroupActivityService } from '../../services/participantGroupActivities.js'
 import {
   addMessageToGroup as addMessageToGroupService,
   createParticipantGroup as createParticipantGroupService,
@@ -112,6 +113,7 @@ import {
   participantSelfInput,
   participantSendMagicLinkInput,
   participantStackElementFeedbacksInput,
+  participantStartGroupActivityInput,
   participantSubscribeToPushInput,
   participantUnsubscribeFromPushInput,
   participantUpdateAvatarInput,
@@ -819,6 +821,19 @@ export const participantRouter = router({
 
       return addMessageToGroupService({
         content: input.content,
+        groupId: input.groupId,
+        participantId: ctx.user.sub,
+        prisma,
+      })
+    }),
+
+  startGroupActivity: participantProcedure
+    .input(participantStartGroupActivityInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return startGroupActivityService({
+        activityId: input.activityId,
         groupId: input.groupId,
         participantId: ctx.user.sub,
         prisma,
