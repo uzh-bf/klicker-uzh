@@ -276,6 +276,63 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-03 Completed: S04H14 PWA Repetition Practice Quiz List
+
+Status: complete for the scoped slice. This slice migrated the PWA `/repetition` practice-quiz list read from Apollo to tRPC. It intentionally did not touch the course practice renderer, practice quiz detail page, live/session flows, subscriptions, Apollo providers, generated operations, or manage app callers.
+
+Scope:
+
+- `apps/frontend-pwa/src/pages/repetition.tsx`
+- `packages/api/src/trpc/dto/participant.ts`
+- `packages/api/src/trpc/routers/participant.ts`
+- `packages/api/src/trpc/__tests__/participant-read.test.ts`
+- This plan file
+
+Operation mapping:
+
+- GraphQL `GetPracticeQuizListDocument` on `/repetition` -> new `trpc.participant.practiceQuizList.useQuery()`.
+- Behavior source: `packages/graphql/src/services/participants.ts getPracticeQuizList`.
+- Existing tRPC `participant.practiceCourses` remains for the `/practice` course list and does not include nested practice quizzes.
+
+Verification plan:
+
+- Focused API read-router test for courses with published practice quizzes, no quizzes, and sort/filter behavior.
+- Rebuild `@klicker-uzh/api`, run PWA type/build checks, and audit `/repetition` for removed Apollo/GraphQL imports.
+- Browser-verify `/repetition` with seeded participant `testuser1` using `npx agent-browser` when the local PWA stack is available.
+
+Implementation notes:
+
+- Added `participant.practiceQuizList` with participant auth, preserving GraphQL `getPracticeQuizList` behavior: participant courses only, nested published/non-deleted practice quizzes, courses without quizzes filtered out, and courses sorted by descending `endDate`.
+- Added `toPracticeQuizListCourse` as the narrow DTO mapper for repetition list courses.
+- Migrated `/repetition` from `GetPracticeQuizListDocument` / Apollo `useQuery` to `trpc.participant.practiceQuizList.useQuery()`.
+
+Verification results:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- participant-read`: passed; Vitest ran 17 files / 147 tests, including the new practice quiz list grouping test.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build`: passed; existing warnings were limited to next-config module type, next-intl config, PWA worker output, stale Browserslist data, and known large page-data warnings.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --check <touched files>`: passed.
+- `git diff --check`: passed.
+- Scoped import audit passed for `/repetition` and `packages/api/src`: no `@apollo/client`, `GetPracticeQuizListDocument`, or `@klicker-uzh/graphql` matches.
+
+Browser verification:
+
+- Local stack: Docker PostgreSQL/Redis/Hatchet services were already running. Backend ran on `http://127.0.0.1:3103`; PWA ran on `http://127.0.0.1:3102`.
+- Browser login used seeded participant `testuser1` / `abcdabcd` via `/login?redirect_to=%2Frepetition`.
+- Screenshots: `/tmp/klicker-pwa-s04h14-login.png`, `/tmp/klicker-pwa-s04h14-repetition.png`.
+- `/repetition` rendered the local empty-state notification for repetition practice quizzes. API unit coverage covers non-empty grouping/sorting; the browser smoke confirmed the real page loads through the tRPC read.
+- Browser resource evidence included `http://127.0.0.1:3103/api/trpc/participant.self,participant.practiceQuizList?...`.
+- Cleanup closed `agent-browser`, stopped temporary `3102` / `3103` verification processes, removed temporary local `.env` files, and confirmed ports `3102` / `3103` had no listeners.
+
+Review:
+
+- Self-review used because no separate subagent tooling was available in this continuation.
+- Kept the slice scoped to the repetition list; the existing `/practice` course list remains on `participant.practiceCourses`, and course-practice renderer migration remains separate.
+
+Next: continue residual PWA non-realtime Apollo cleanup, with likely candidates `join/[shortname]`, `course/[courseId]/practice`, or `insights/timeline`.
+
 ### 2026-06-03 Completed: S04E2 PWA Profile Self Read Cleanup
 
 Status: complete for the scoped slice. This slice migrated the remaining low-risk PWA profile/self page reads from Apollo to tRPC participant procedures. It intentionally did not touch live-quiz/session `SelfDocument` consumers, GraphQL subscriptions, Apollo providers, generated operations, or manage app callers.

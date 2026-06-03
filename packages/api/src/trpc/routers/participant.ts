@@ -74,6 +74,7 @@ import {
   toParticipantParticipation,
   toParticipantSelf,
   toPracticeCourse,
+  toPracticeQuizListCourse,
   toPublicAchievement,
   toPublicParticipantProfile,
   toPublishedMicroLearning,
@@ -1755,6 +1756,42 @@ export const participantRouter = router({
       .map(toPracticeCourse)
 
     return { practiceCourses }
+  }),
+
+  practiceQuizList: participantProcedure.query(async ({ ctx }) => {
+    const prisma = getPrisma(ctx)
+    const participations = await prisma.participation.findMany({
+      where: {
+        participantId: ctx.user.sub,
+      },
+      select: {
+        course: {
+          select: {
+            id: true,
+            displayName: true,
+            endDate: true,
+            practiceQuizzes: {
+              where: {
+                status: PublicationStatus.PUBLISHED,
+                isDeleted: false,
+              },
+              select: {
+                id: true,
+                displayName: true,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    const practiceQuizList = participations
+      .map((participation) => participation.course)
+      .filter((course) => course.practiceQuizzes.length !== 0)
+      .sort((a, b) => b.endDate.getTime() - a.endDate.getTime())
+      .map(toPracticeQuizListCourse)
+
+    return { practiceQuizList }
   }),
 
   coursePublishedPracticeQuizzes: publicProcedure

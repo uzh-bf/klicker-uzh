@@ -646,6 +646,87 @@ describe('participant read routers', () => {
     })
   })
 
+  test('returns published practice quizzes grouped by participant courses', async () => {
+    const participationFindMany = vi.fn().mockResolvedValue([
+      {
+        course: {
+          id: 'course-old',
+          displayName: 'Old Course',
+          endDate: new Date('2024-01-01T00:00:00.000Z'),
+          practiceQuizzes: [{ id: 'quiz-old', displayName: 'Old Quiz' }],
+        },
+      },
+      {
+        course: {
+          id: 'course-empty',
+          displayName: 'Empty Course',
+          endDate: new Date('2026-01-01T00:00:00.000Z'),
+          practiceQuizzes: [],
+        },
+      },
+      {
+        course: {
+          id: 'course-new',
+          displayName: 'New Course',
+          endDate: new Date('2025-01-01T00:00:00.000Z'),
+          practiceQuizzes: [
+            { id: 'quiz-new-1', displayName: 'New Quiz 1' },
+            { id: 'quiz-new-2', displayName: 'New Quiz 2' },
+          ],
+        },
+      },
+    ])
+    const prisma = {
+      participation: {
+        findMany: participationFindMany,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(caller.participant.practiceQuizList()).resolves.toEqual({
+      practiceQuizList: [
+        {
+          id: 'course-new',
+          displayName: 'New Course',
+          practiceQuizzes: [
+            { id: 'quiz-new-1', displayName: 'New Quiz 1' },
+            { id: 'quiz-new-2', displayName: 'New Quiz 2' },
+          ],
+        },
+        {
+          id: 'course-old',
+          displayName: 'Old Course',
+          practiceQuizzes: [{ id: 'quiz-old', displayName: 'Old Quiz' }],
+        },
+      ],
+    })
+
+    expect(participationFindMany).toHaveBeenCalledWith({
+      where: {
+        participantId: 'participant-1',
+      },
+      select: {
+        course: {
+          select: {
+            id: true,
+            displayName: true,
+            endDate: true,
+            practiceQuizzes: {
+              where: {
+                status: PublicationStatus.PUBLISHED,
+                isDeleted: false,
+              },
+              select: {
+                id: true,
+                displayName: true,
+              },
+            },
+          },
+        },
+      },
+    })
+  })
+
   test('returns published practice quizzes for the course overview page', async () => {
     const courseFindUnique = vi.fn().mockResolvedValue({
       id: 'course-1',

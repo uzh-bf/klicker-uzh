@@ -1,17 +1,16 @@
-import { useQuery } from '@apollo/client'
-import { GetPracticeQuizListDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
 import CourseCollapsible from '../components/practiceQuiz/CourseCollapsible'
+import { trpc } from '../lib/trpc'
 
 function Repetition() {
   const t = useTranslations()
-  const { data, loading } = useQuery(GetPracticeQuizListDocument)
+  const { data, isLoading } = trpc.participant.practiceQuizList.useQuery()
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Layout
         course={{ displayName: 'KlickerUZH' }}
@@ -23,12 +22,12 @@ function Repetition() {
   }
 
   // reduce the data to a map of course names to a list of elements together with their corresponding type
-  const courses = data?.getPracticeQuizList?.map((course) => {
+  const courses = data?.practiceQuizList?.map((course) => {
     return {
       id: course.id,
       displayName: course.displayName,
       elements:
-        course.practiceQuizzes?.map((element) => {
+        course.practiceQuizzes.map((element) => {
           return {
             id: element.id,
             displayName: element.displayName,

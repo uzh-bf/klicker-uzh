@@ -84,6 +84,10 @@ type ParticipantCourseSource = Pick<
 
 type PracticeCourseSource = Pick<DB.Course, 'displayName' | 'id'>
 
+type PracticeQuizListCourseSource = Pick<DB.Course, 'displayName' | 'id'> & {
+  practiceQuizzes?: Pick<DB.PracticeQuiz, 'displayName' | 'id'>[] | null
+}
+
 type PublishedPracticeQuizSource = Pick<
   DB.PracticeQuiz,
   'displayName' | 'id' | 'name'
@@ -368,6 +372,18 @@ export function toPracticeCourse(course: PracticeCourseSource) {
   return {
     id: course.id,
     displayName: course.displayName,
+  }
+}
+
+export function toPracticeQuizListCourse(course: PracticeQuizListCourseSource) {
+  return {
+    id: course.id,
+    displayName: course.displayName,
+    practiceQuizzes:
+      course.practiceQuizzes?.map((quiz) => ({
+        id: quiz.id,
+        displayName: quiz.displayName,
+      })) ?? [],
   }
 }
 
