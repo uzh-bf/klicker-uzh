@@ -1,12 +1,5 @@
-import { useQuery } from '@apollo/client'
-import {
-  GetBasicCourseInformationDocument,
-  SelfDocument,
-  UserRole,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { initializeApollo } from '@lib/apollo'
-import { trpc } from '@lib/trpc'
+import { createTRPCSSRClient, trpc } from '@lib/trpc'
 import {
   Button,
   FormikPinField,
@@ -22,6 +15,8 @@ import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
 import Layout from '../../../components/Layout'
 import CreateAccountForm from '../../../components/forms/CreateAccountForm'
+
+const PARTICIPANT_ROLE = 'PARTICIPANT'
 
 function JoinCourse({
   courseId,
@@ -55,8 +50,8 @@ function JoinCourse({
     setInitialPin(pin || '')
   }, [router.query.pin])
 
-  const { loading: loadingParticipant, data: dataParticipant } =
-    useQuery(SelfDocument)
+  const { isLoading: loadingParticipant, data: dataParticipant } =
+    trpc.participant.self.useQuery()
   const joinCourseWithPin = trpc.participant.joinCourseWithPin.useMutation()
   const createParticipantAccount = trpc.participant.createAccount.useMutation()
   const utils = trpc.useUtils()
@@ -82,7 +77,7 @@ function JoinCourse({
 
         {/* if the participant is logged in, a simplified form will be displayed */}
         {dataParticipant?.self &&
-        dataParticipant.self.role === UserRole.Participant ? (
+        dataParticipant.self.role === PARTICIPANT_ROLE ? (
           <div>
             <div className="mb-3">
               {t('pwa.joinCourse.introLoggedIn', { name: displayName })}
@@ -190,23 +185,21 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
   }
 
-  const apolloClient = initializeApollo()
+  const trpcClient = createTRPCSSRClient(ctx)
 
   try {
-    const { data, loading } = await apolloClient.query({
-      query: GetBasicCourseInformationDocument,
-      variables: {
+    const { basicCourseInformation } =
+      await trpcClient.course.basicCourseInformation.query({
         courseId: ctx.params.courseId,
-      },
-    })
+      })
 
     return {
       props: {
         courseId: ctx.params.courseId,
-        displayName: data?.basicCourseInformation?.displayName,
-        color: data?.basicCourseInformation?.color,
-        description: data?.basicCourseInformation?.description,
-        courseLoading: loading,
+        displayName: basicCourseInformation?.displayName,
+        color: basicCourseInformation?.color,
+        description: basicCourseInformation?.description,
+        courseLoading: false,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },

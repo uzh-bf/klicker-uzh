@@ -9,6 +9,13 @@ type ControlCourseSource = Pick<DB.Course, 'id' | 'name'> & {
   liveQuizzes?: Pick<DB.LiveQuiz, 'id' | 'name' | 'status'>[] | null
 }
 
+type BasicCourseInformationSource = Pick<
+  DB.Course,
+  'color' | 'description' | 'displayName' | 'id'
+> & {
+  owner: Pick<DB.User, 'shortname'>
+}
+
 export function toControlCourseListItem(course: ControlCourseListItem) {
   return {
     id: course.id,
@@ -31,5 +38,21 @@ export function toControlCourse(course: ControlCourseSource | null) {
         name: quiz.name,
         status: quiz.status,
       })) ?? [],
+  }
+}
+
+export function toBasicCourseInformation(
+  course: BasicCourseInformationSource | null
+) {
+  if (!course) return null
+
+  return {
+    id: course.id,
+    displayName: course.displayName,
+    description: course.description,
+    color: course.color,
+    owner: {
+      shortname: course.owner.shortname,
+    },
   }
 }

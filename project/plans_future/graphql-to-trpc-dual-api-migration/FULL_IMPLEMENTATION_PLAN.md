@@ -276,6 +276,65 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-03 Completed: S04H20 PWA Course Join Page Reads
+
+Status: complete for the scoped slice. This slice migrated the PWA course join page's non-realtime reads from Apollo to tRPC. It intentionally did not touch the generic PIN join page, account creation page, live/session flows, subscriptions, Apollo providers, generated GraphQL artifacts, or manage app callers.
+
+Scope:
+
+- `apps/frontend-pwa/src/pages/course/[courseId]/join.tsx`
+- `packages/api/src/trpc/routers/course.ts`
+- `packages/api/src/trpc/schemas/course.ts`
+- `packages/api/src/trpc/dto/course.ts`
+- `packages/api/src/trpc/__tests__/control-read.test.ts`
+- This plan file
+
+Operation mapping:
+
+- GraphQL `SelfDocument` -> existing `trpc.participant.self`.
+- GraphQL `GetBasicCourseInformationDocument` -> new `trpc.course.basicCourseInformation`.
+- GraphQL resolvers: `Query.self`, `Query.basicCourseInformation`.
+- Behavior source: existing tRPC `participant.self` and `packages/graphql/src/services/courses.ts getBasicCourseInformation`.
+- Input schema: existing optional `participantSelfInput`; new `basicCourseInformationInput` `{ courseId: string }`.
+- Output DTO: `{ basicCourseInformation: { id, displayName, description, color, owner: { shortname } } | null }`.
+- Active frontend consumer: PWA `course/[courseId]/join`.
+- Apollo behavior: client `useQuery(SelfDocument)` and SSR `initializeApollo().query(GetBasicCourseInformationDocument)`.
+- React Query replacement: `trpc.participant.self.useQuery()` on the client and server-side `createTRPCSSRClient(ctx).course.basicCourseInformation.query({ courseId })`.
+- Browser verification path: open a seeded course join URL and verify the unauthenticated account creation view plus tRPC resource evidence for `participant.self`.
+
+Implementation notes:
+
+- Added `course.basicCourseInformation` as a public tRPC read with a narrow DTO matching `QGetBasicCourseInformation`.
+- Reused the existing `participant.self` procedure for the join page's logged-in vs new-account branch.
+- Removed Apollo `useQuery`, `initializeApollo`, and generated GraphQL operation imports from `course/[courseId]/join`.
+- Kept GraphQL mounted and all generated artifacts intact for remaining PWA/manage/realtime consumers.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- control-read` passed; Vitest ran 17 files / 164 tests including the new basic-course-information coverage.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build` passed, with existing Next.js warnings about `next-config` module type, next-intl Pages Router migration, browserslist age, image domains, cross-origin dev origins, and large page data.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --check ...` passed for touched files.
+- `git diff --check` passed.
+- Scoped residual import audit found no Apollo, generated GraphQL op, `SelfDocument`, `GetBasicCourseInformationDocument`, or `initializeApollo` references in the migrated join page/API files. The only `useQuery` match was the expected `trpc.participant.self.useQuery`.
+- Browser verification used local backend `127.0.0.1:3103`, PWA `127.0.0.1:3102`, and seeded course `b8b1305e-bfe8-458b-bf26-9082fdca953f`. Screenshot: `/tmp/klicker-pwa-s04h20-course-join.png`.
+- Browser resource evidence included `/api/trpc/participant.self` and `/api/trpc/participant.checkNameAvailable`, confirming the rendered join page's client reads use tRPC.
+- Direct local tRPC probe of `course.basicCourseInformation` returned the seeded Testkurs DTO used by the SSR page render.
+
+Review and cleanup:
+
+- Dedicated subagent tooling was not exposed in this session; performed explicit self-review for auth parity, null behavior, DTO scope, and residual GraphQL/Apollo imports.
+- Closed `agent-browser`.
+- Stopped local PWA/backend servers on ports 3102/3103.
+- Removed temporary local `.env` files generated for backend/worker/response-api verification.
+- Context7 MCP was not exposed by `tool_search`; used installed local tRPC/Zod patterns only and did not introduce new framework API patterns.
+
+Next candidates:
+
+- Continue residual PWA non-realtime Apollo cleanup in `course/[courseId]/chatbot/[chatbotId]`, `createAccount`, or course-index Apollo SSR state removal. Keep live/session/realtime paths for S05.
+
 ### 2026-06-03 Completed: S04H19 PWA Course Practice Pool Read
 
 Status: complete for the scoped slice. This slice migrated the PWA course practice pool page from Apollo `GetCoursePracticeQuizDocument` to tRPC. It intentionally did not touch standalone practice quizzes, practice response mutations, bookmarks, shared practice components, Apollo providers, generated GraphQL type imports in reusable practice components, or realtime/session flows.

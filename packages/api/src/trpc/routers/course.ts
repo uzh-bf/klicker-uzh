@@ -1,9 +1,16 @@
 import { PermissionLevel } from '@klicker-uzh/prisma/client'
 import { getPrisma } from '../context.js'
-import { toControlCourse, toControlCourseListItem } from '../dto/course.js'
-import { router } from '../init.js'
+import {
+  toBasicCourseInformation,
+  toControlCourse,
+  toControlCourseListItem,
+} from '../dto/course.js'
+import { publicProcedure, router } from '../init.js'
 import { userProcedure } from '../procedures.js'
-import { controlCourseInput } from '../schemas/course.js'
+import {
+  basicCourseInformationInput,
+  controlCourseInput,
+} from '../schemas/course.js'
 
 const courseExecutePermissionLevels = [
   PermissionLevel.EXECUTE,
@@ -13,6 +20,30 @@ const courseExecutePermissionLevels = [
 ]
 
 export const courseRouter = router({
+  basicCourseInformation: publicProcedure
+    .input(basicCourseInformationInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const course = await prisma.course.findUnique({
+        where: { id: input.courseId },
+        select: {
+          id: true,
+          displayName: true,
+          description: true,
+          color: true,
+          owner: {
+            select: {
+              shortname: true,
+            },
+          },
+        },
+      })
+
+      return {
+        basicCourseInformation: toBasicCourseInformation(course),
+      }
+    }),
+
   controlCourses: userProcedure.query(async ({ ctx }) => {
     const prisma = getPrisma(ctx)
     const user = await prisma.user.findUnique({

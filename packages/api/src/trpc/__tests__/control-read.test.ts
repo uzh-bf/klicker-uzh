@@ -98,6 +98,68 @@ describe('control read routers', () => {
     })
   })
 
+  test('returns public basic course information', async () => {
+    const findUnique = vi.fn().mockResolvedValue({
+      id: 'course-1',
+      displayName: 'Course One',
+      description: 'Description',
+      color: '#0028a5',
+      owner: {
+        shortname: 'lecturer',
+      },
+    })
+    const prisma = {
+      course: {
+        findUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller({ prisma })
+
+    await expect(
+      caller.course.basicCourseInformation({ courseId: 'course-1' })
+    ).resolves.toEqual({
+      basicCourseInformation: {
+        id: 'course-1',
+        displayName: 'Course One',
+        description: 'Description',
+        color: '#0028a5',
+        owner: {
+          shortname: 'lecturer',
+        },
+      },
+    })
+
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { id: 'course-1' },
+      select: {
+        id: true,
+        displayName: true,
+        description: true,
+        color: true,
+        owner: {
+          select: {
+            shortname: true,
+          },
+        },
+      },
+    })
+  })
+
+  test('returns null for missing public basic course information', async () => {
+    const prisma = {
+      course: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller({ prisma })
+
+    await expect(
+      caller.course.basicCourseInformation({ courseId: 'missing-course' })
+    ).resolves.toEqual({
+      basicCourseInformation: null,
+    })
+  })
+
   test('returns a control course when execute permission exists', async () => {
     const prisma = {
       derivedPermission: {
