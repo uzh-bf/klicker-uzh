@@ -276,6 +276,87 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-03 Completed: S04H10 PWA Practice Quiz Response Submission
+
+Status: complete for the scoped slice. This slice migrated the PWA practice quiz `ElementStack` response submission from Apollo/GraphQL to tRPC while keeping the GraphQL mutation, generated operation, and shared-component generated types live for coexistence.
+
+Done:
+
+- Added `participant.respondToElementStack` to `packages/api` with Zod input validation and a response-submission service adapted from the existing GraphQL stack behavior.
+- Kept owner-preview and anonymous paths compatible with the GraphQL caller by using a public procedure with optional participant tracking.
+- Switched only `apps/frontend-pwa/src/components/practiceQuiz/ElementStack.tsx` from `RespondToElementStackDocument`/Apollo mutation to the tRPC mutation.
+- Invalidates `participant.previousStackEvaluation` after a successful submit.
+- Added focused API tests for owner preview and microlearning duplicate-submit behavior.
+- Added the missing `@klicker-uzh/grading` workspace dependency to `packages/api` and synced `pnpm-lock.yaml`.
+
+Write scope:
+
+- `packages/api/src/services/participantStackEvaluations.ts`
+- `packages/api/src/trpc/schemas/participant.ts`
+- `packages/api/src/trpc/routers/participant.ts`
+- `packages/api/src/trpc/__tests__/participant-stack-evaluations.test.ts`
+- `apps/frontend-pwa/src/components/practiceQuiz/ElementStack.tsx`
+- `packages/api/package.json`
+- `pnpm-lock.yaml`
+- This plan file
+
+```text
+Slice: S04H10 PWA practice quiz response submission
+GraphQL operation(s): RespondToElementStackDocument remains generated and live; PWA ElementStack caller migrates off it
+GraphQL resolver(s): Mutation.respondToElementStack -> StacksService.respondToElementStack
+Behavior source: packages/graphql/src/services/stacks.ts respondToElementStack/respondToElement/respondToQuestion/respondToFlashcard/respondToContent
+tRPC router.procedure: participant.respondToElementStack
+Input schema: participantRespondToElementStackInput { stackId, courseId, responses, stackAnswerTime, isOwner? }
+Output DTO: StackFeedback-compatible DTO { id, status, score, evaluations }
+Active frontend consumers: apps/frontend-pwa/src/components/practiceQuiz/ElementStack.tsx
+Apollo cache/refetch/subscription behavior: no explicit cache updates; hook loading state only
+React Query replacement: tRPC mutation result; invalidate participant.previousStackEvaluation for the submitted stack when relevant
+Browser verification path: local seeded Testkurs practice quiz, start quiz, submit first stack, verify evaluation/result screen
+Cleanup blocked until: shared ElementStack generated type imports, generated feedback/evaluation fragments, microlearning/group activity submit paths, live/session flows, and S05 subscriptions
+```
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- --run participant-stack-evaluations` passed: 15 files, 130 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build` passed with existing Next/PWA warnings.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --check <touched files>` passed.
+- `git diff --check` passed.
+- Coexistence/import audits passed:
+  - No active `RespondToElementStackDocument` source references outside generated GraphQL files.
+  - `ElementStack.tsx` no longer imports Apollo or `RespondToElementStackDocument`; remaining `useMutation` is the tRPC hook.
+  - No server runtime imports in the touched PWA component.
+  - No `@klicker-uzh/graphql` imports in `packages/api/src`.
+
+Runtime:
+
+- Local broad `@klicker-uzh/prisma-data seed:raw` failed in existing derived-permission recomputation before practice quiz rows were created. For this slice, created a minimal local DB fixture with one published `Testkurs` practice quiz, one flashcard stack, one flashcard instance, and enrolled `testuser1`.
+- Restarted local backend on `http://127.0.0.1:3100` with explicit local auth settings and kept the PWA on `http://127.0.0.1:3102`.
+- Browser screenshots:
+  - `/tmp/klicker-pwa-s04h10-fixture-overview-auth.png`
+  - `/tmp/klicker-pwa-s04h10-fixture-before-submit.png`
+  - `/tmp/klicker-pwa-s04h10-fixture-after-flip.png`
+  - `/tmp/klicker-pwa-s04h10-fixture-selected.png`
+  - `/tmp/klicker-pwa-s04h10-fixture-after-submit.png`
+- Browser network evidence: resource entry for `http://127.0.0.1:3100/api/trpc/participant.respondToElementStack?batch=1`.
+- DB evidence after browser submit:
+  - `QuestionResponse`: participant `testuser1`, instance `33`, practice quiz `4214338b-c5af-4ff7-84f9-ae5a139d6e5b`, course `b8b1305e-bfe8-458b-bf26-9082fdca953f`, `trialsCount=1`, `lastResponseCorrectness=CORRECT`.
+  - `QuestionResponseDetail`: response `{"correctness": "CORRECT"}`.
+  - `InstanceStatistics`: `correctCount=1`, `lastCorrectCount=1`, `uniqueParticipantCount=1`.
+  - `ElementInstance.results`: `{"total": 1, "CORRECT": 1, "PARTIAL": 0, "INCORRECT": 0}`.
+
+Review:
+
+- Self-review used because no separate subagent tooling was available in this continuation.
+- Kept the `contentReponse` input spelling to preserve the existing GraphQL operation contract.
+- No simplification applied beyond narrow enum-boundary casts in the PWA; broader generated GraphQL type cleanup remains a later S04 cleanup task.
+
+Next:
+
+- Continue S04 generated shared-component/type cleanup for practice quiz stack feedback/evaluation fragments, then move to the remaining microlearning/group activity submit paths.
+
 ### 2026-06-03 Completed: S04H9 PWA Practice Quiz Renderer Type Cleanup
 
 Status: complete for the scoped slice. This slice removed the top-level PWA practice quiz renderer's generated GraphQL `PracticeQuiz`/`Course` prop types after the detail page already moved to the tRPC `participant.practiceQuiz` read. It intentionally leaves `RespondToElementStackDocument`, generated shared-component types, microlearning page data, group activity, live/session flows, and subscriptions on GraphQL.

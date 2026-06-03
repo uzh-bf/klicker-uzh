@@ -1,4 +1,5 @@
-import { Locale } from '@klicker-uzh/prisma/client'
+import { ElementType, Locale } from '@klicker-uzh/prisma/client'
+import { FlashcardCorrectness } from '@klicker-uzh/types'
 import { z } from 'zod'
 
 export const participantSelfInput = z
@@ -140,6 +141,46 @@ export const participantPracticeQuizInput = z.object({
 
 export const participantPreviousStackEvaluationInput = z.object({
   stackId: z.number().int(),
+})
+
+const participantChoicesResponseInput = z.object({
+  ix: z.number().int(),
+  selected: z.boolean(),
+})
+
+const participantCaseStudyCriterionResponseInput = z.object({
+  criterionId: z.string(),
+  response: z.number(),
+})
+
+const participantCaseStudyItemResponseInput = z.object({
+  itemId: z.number().int(),
+  criterionResponses: z.array(participantCaseStudyCriterionResponseInput),
+})
+
+const participantCaseStudyCaseResponseInput = z.object({
+  caseId: z.string(),
+  itemResponses: z.array(participantCaseStudyItemResponseInput),
+})
+
+const participantStackResponseInput = z.object({
+  instanceId: z.number().int(),
+  type: z.nativeEnum(ElementType),
+  flashcardResponse: z.nativeEnum(FlashcardCorrectness).nullish(),
+  contentReponse: z.boolean().nullish(),
+  choicesResponse: z.array(participantChoicesResponseInput).nullish(),
+  numericalResponse: z.number().nullish(),
+  freeTextResponse: z.string().nullish(),
+  selectionResponse: z.array(z.number().int()).nullish(),
+  caseStudyResponse: z.array(participantCaseStudyCaseResponseInput).nullish(),
+})
+
+export const participantRespondToElementStackInput = z.object({
+  stackId: z.number().int(),
+  courseId: z.string(),
+  responses: z.array(participantStackResponseInput),
+  stackAnswerTime: z.number().int(),
+  isOwner: z.boolean().nullish(),
 })
 
 export const participantBookmarkElementStackInput = z.object({

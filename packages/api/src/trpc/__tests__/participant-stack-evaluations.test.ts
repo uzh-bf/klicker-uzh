@@ -203,4 +203,77 @@ describe('participant stack evaluation routers', () => {
       code: 'FORBIDDEN',
     })
   })
+
+  test('allows owner preview submissions without participant tracking', async () => {
+    const caller = appRouter.createCaller(
+      createContext({
+        prisma: {} as TRPCContext['prisma'],
+        role: UserRole.USER,
+        sub: 'lecturer-1',
+      })
+    )
+
+    await expect(
+      caller.participant.respondToElementStack({
+        courseId: 'course-1',
+        stackId: 42,
+        stackAnswerTime: 30,
+        isOwner: true,
+        responses: [],
+      })
+    ).resolves.toEqual({
+      id: 42,
+      status: StackFeedbackStatus.UNANSWERED,
+      score: null,
+      evaluations: [],
+    })
+  })
+
+  test('returns null when a microlearning stack was already submitted', async () => {
+    const elementStackFindUnique = vi.fn().mockResolvedValue({
+      id: 42,
+      microLearning: {
+        scheduledEndAt: new Date(Date.now() + 60_000),
+      },
+      elements: [
+        {
+          responses: [{ id: 1 }],
+        },
+      ],
+    })
+    const transaction = vi.fn()
+    const prisma = {
+      elementStack: {
+        findUnique: elementStackFindUnique,
+      },
+      $transaction: transaction,
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.respondToElementStack({
+        courseId: 'course-1',
+        stackId: 42,
+        stackAnswerTime: 30,
+        responses: [],
+      })
+    ).resolves.toBeNull()
+
+    expect(elementStackFindUnique).toHaveBeenCalledWith({
+      where: { id: 42 },
+      include: {
+        microLearning: true,
+        elements: {
+          include: {
+            responses: {
+              where: {
+                participantId: 'participant-1',
+              },
+            },
+          },
+        },
+      },
+    })
+    expect(transaction).not.toHaveBeenCalled()
+  })
 })
