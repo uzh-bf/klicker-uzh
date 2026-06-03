@@ -1,11 +1,3 @@
-import { useQuery } from '@apollo/client'
-import {
-  ElementOrderType,
-  GetBasicCourseInformationDocument,
-  GetBookmarkedElementStacksDocument,
-  PracticeQuiz as PracticeQuizType,
-  PublicationStatus,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
@@ -14,37 +6,33 @@ import { useRouter } from 'next/router'
 import { useMemo, useState } from 'react'
 import Layout from '../../../components/Layout'
 import PracticeQuiz from '../../../components/practiceQuiz/PracticeQuiz'
+import { trpc } from '../../../lib/trpc'
+
+type BookmarksPracticeQuiz = Parameters<typeof PracticeQuiz>[0]['quiz']
 
 function Bookmarks() {
   const t = useTranslations()
   const router = useRouter()
   const [currentIx, setCurrentIx] = useState(-1)
+  const courseId =
+    typeof router.query.courseId === 'string' ? router.query.courseId : ''
 
   const handleNextQuestion = () => {
     scrollTo(0, 0)
     setCurrentIx((ix) => ix + 1)
   }
 
-  const { data: bookmarkedStacks, loading: loadingBookmarks } = useQuery(
-    GetBookmarkedElementStacksDocument,
-    {
-      variables: { courseId: router.query.courseId as string },
-      skip: !router.query.courseId,
-    }
-  )
-
-  const { data: courseData, loading: loadingCourse } = useQuery(
-    GetBasicCourseInformationDocument,
-    {
-      variables: { courseId: router.query.courseId as string },
-    }
-  )
+  const { data: bookmarksPageData, isLoading } =
+    trpc.participant.bookmarksPageData.useQuery(
+      { courseId },
+      { enabled: courseId !== '' }
+    )
 
   const name = t('pwa.courses.bookmarkedQuestionsTitle', {
-    courseName: courseData?.basicCourseInformation?.displayName ?? '',
+    courseName: bookmarksPageData?.course?.displayName ?? '',
   })
   const description = t('pwa.courses.bookmarkedQuestionsDesc', {
-    courseName: courseData?.basicCourseInformation?.displayName ?? '',
+    courseName: bookmarksPageData?.course?.displayName ?? '',
   })
 
   const quiz = useMemo(() => {
@@ -53,20 +41,15 @@ function Bookmarks() {
       displayName: name,
       description: description,
       id: 'bookmarks',
-      orderType: ElementOrderType.SpacedRepetition,
+      orderType: 'SPACED_REPETITION',
       pointsMultiplier: 1,
-      status: PublicationStatus.Published,
-      course: courseData?.basicCourseInformation,
-      stacks: bookmarkedStacks?.getBookmarkedElementStacks,
-    } as PracticeQuizType
-  }, [
-    name,
-    description,
-    courseData?.basicCourseInformation,
-    bookmarkedStacks?.getBookmarkedElementStacks,
-  ])
+      status: 'PUBLISHED',
+      course: bookmarksPageData?.course,
+      stacks: bookmarksPageData?.stacks,
+    } as unknown as BookmarksPracticeQuiz
+  }, [name, description, bookmarksPageData?.course, bookmarksPageData?.stacks])
 
-  if (loadingBookmarks || loadingCourse) {
+  if (courseId === '' || isLoading) {
     return (
       <Layout displayName={t('shared.generic.bookmarks')}>
         <Loader />
@@ -76,10 +59,10 @@ function Bookmarks() {
 
   return (
     <Layout
-      course={courseData?.basicCourseInformation ?? undefined}
+      course={bookmarksPageData?.course ?? undefined}
       displayName={t('shared.generic.bookmarks')}
     >
-      {quiz.stacks && quiz.stacks.length > 0 ? (
+      {quiz.course && quiz.stacks && quiz.stacks.length > 0 ? (
         <PracticeQuiz
           quiz={{ ...quiz, course: quiz.course! }}
           currentIx={currentIx}

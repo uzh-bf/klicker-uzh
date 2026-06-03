@@ -22,6 +22,7 @@ import {
 } from '../../services/participantAuth.js'
 import {
   bookmarkElementStack,
+  getBookmarksPageData,
   getPracticeQuizBookmarks,
 } from '../../services/participantBookmarks.js'
 import {
@@ -574,6 +575,18 @@ export const participantRouter = router({
         participantId: ctx.user.sub,
         prisma,
         stackId: input.stackId,
+      })
+    }),
+
+  bookmarksPageData: participantProcedure
+    .input(participantCourseInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return getBookmarksPageData({
+        courseId: input.courseId,
+        participantId: ctx.user.sub,
+        prisma,
       })
     }),
 
