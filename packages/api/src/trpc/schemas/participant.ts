@@ -139,6 +139,10 @@ export const participantPracticeQuizInput = z.object({
   id: z.string(),
 })
 
+export const participantMicroLearningInput = z.object({
+  id: z.string(),
+})
+
 export const participantPreviousStackEvaluationInput = z.object({
   stackId: z.number().int(),
 })

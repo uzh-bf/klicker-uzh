@@ -1,11 +1,5 @@
-import { useQuery } from '@apollo/client'
-import {
-  GetMicroLearningDocument,
-  PublicationStatus,
-  SelfDocument,
-  UserRole,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { trpc } from '@lib/trpc'
 import { Progress, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -16,24 +10,26 @@ import Layout from '../../../../../components/Layout'
 import MicroLearningSubscriber from '../../../../../components/microLearning/MicroLearningSubscriber'
 import ElementStack from '../../../../../components/practiceQuiz/ElementStack'
 
+const PUBLICATION_STATUS_ENDED = 'ENDED'
+const TEMPORARY_PARTICIPANT_ROLE = 'TEMPORARY_PARTICIPANT'
+type ElementStackProp = Parameters<typeof ElementStack>[0]['stack']
+
 function MicrolearningInstance() {
   const t = useTranslations()
   const router = useRouter()
   const ix = parseInt(router.query.ix as string)
   const id = router.query.id as string
 
-  const { loading, data, error, subscribeToMore } = useQuery(
-    GetMicroLearningDocument,
-    {
-      variables: { id },
-      skip: !id,
-    }
+  const utils = trpc.useUtils()
+  const { isLoading, data, error } = trpc.participant.microLearning.useQuery(
+    { id },
+    { enabled: !!id }
   )
-  const { data: selfData } = useQuery(SelfDocument, {
-    skip: data?.microLearning?.isOwner ?? false,
+  const { data: selfData } = trpc.participant.self.useQuery(undefined, {
+    enabled: !(data?.microLearning?.isOwner ?? false),
   })
 
-  if (loading) {
+  if (isLoading) {
     return <Loader />
   }
 
@@ -75,7 +71,18 @@ function MicrolearningInstance() {
       <MicroLearningSubscriber
         activityId={microLearning.id}
         microLearningName={microLearning.displayName}
-        subscribeToMore={subscribeToMore}
+        onEnded={(endedMicroLearning) =>
+          utils.participant.microLearning.setData({ id }, (previous) =>
+            previous?.microLearning
+              ? {
+                  microLearning: {
+                    ...previous.microLearning,
+                    ...endedMicroLearning,
+                  },
+                }
+              : previous
+          )
+        }
       />
       <div className="flex-1">
         <div
@@ -102,7 +109,7 @@ function MicrolearningInstance() {
             key={currentStack.id}
             parentId={microLearning.id}
             courseId={microLearning.course!.id}
-            stack={currentStack}
+            stack={currentStack as ElementStackProp}
             currentStep={ix + 1}
             totalSteps={microLearning.stacks?.length ?? 0}
             handleNextElement={() => {
@@ -114,9 +121,9 @@ function MicrolearningInstance() {
             }}
             withParticipant={
               !!selfData?.self &&
-              selfData.self.role !== UserRole.TemporaryParticipant
+              selfData.self.role !== TEMPORARY_PARTICIPANT_ROLE
             }
-            activityExpired={microLearning.status === PublicationStatus.Ended}
+            activityExpired={microLearning.status === PUBLICATION_STATUS_ENDED}
             activityExpiredMessage={t('pwa.microLearning.activityExpired')}
             previewOnly={previewMode}
           />

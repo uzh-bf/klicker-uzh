@@ -1,60 +1,55 @@
-import { SubscribeToMoreOptions } from '@apollo/client'
+import { useSubscription } from '@apollo/client'
 import {
-  MicroLearning,
   MicroLearningEndedDocument,
+  type MicroLearningEndedSubscription,
 } from '@klicker-uzh/graphql/dist/ops'
 import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+
+type EndedMicroLearning = MicroLearningEndedSubscription['microLearningEnded']
 
 interface MicroLearningSubscriberProps {
   activityId: string
   microLearningName: string
-  subscribeToMore: (doc: SubscribeToMoreOptions) => any
+  onEnded?: (microLearning: EndedMicroLearning) => void | Promise<void>
 }
 
 function MicroLearningSubscriber({
   activityId,
   microLearningName,
-  subscribeToMore,
+  onEnded,
 }: MicroLearningSubscriberProps) {
   const t = useTranslations()
+  const onEndedRef = useRef(onEnded)
+  const handledActivityIdRef = useRef<string | null>(null)
 
   useEffect(() => {
-    subscribeToMore({
-      document: MicroLearningEndedDocument,
-      variables: { activityId },
-      updateQuery: (
-        prev: { microLearning: MicroLearning },
-        {
-          subscriptionData,
-        }: {
-          subscriptionData: {
-            data: { microLearningEnded: MicroLearning }
-          }
-        }
-      ): { microLearning: MicroLearning } => {
-        if (!subscriptionData.data) return prev
+    onEndedRef.current = onEnded
+  }, [onEnded])
 
-        // trigger toast for ended microlearning
-        toast({
-          type: 'warning',
-          message: t('pwa.courses.microLearningEndedToast', {
-            activityName: microLearningName,
-          }),
-          options: { duration: 10000 },
-        })
+  const { data } = useSubscription(MicroLearningEndedDocument, {
+    variables: { activityId },
+  })
 
-        // update the values returned by the course overview data query
-        const updatedMicroLearning = {
-          ...prev.microLearning,
-          ...subscriptionData.data.microLearningEnded,
-        }
+  useEffect(() => {
+    const microLearning = data?.microLearningEnded
+    if (!microLearning || handledActivityIdRef.current === microLearning.id) {
+      return
+    }
 
-        return { microLearning: updatedMicroLearning }
-      },
+    handledActivityIdRef.current = microLearning.id
+
+    toast({
+      type: 'warning',
+      message: t('pwa.courses.microLearningEndedToast', {
+        activityName: microLearningName,
+      }),
+      options: { duration: 10000 },
     })
-  }, [activityId, subscribeToMore])
+
+    void onEndedRef.current?.(microLearning)
+  }, [data?.microLearningEnded, microLearningName, t])
 
   return null
 }

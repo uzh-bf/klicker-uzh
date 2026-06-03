@@ -1,19 +1,13 @@
-import { useQuery } from '@apollo/client'
 import {
   faClock,
   faQuestionCircle,
   faTimesCircle,
 } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetMicroLearningDocument,
-  SelfDocument,
-  UserRole,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
-import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
+import { trpc } from '@lib/trpc'
 import useParticipantToken from '@lib/useParticipantToken'
 import { Button, H3, Prose, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -25,6 +19,8 @@ import nookies from 'nookies'
 import Layout from '../../../../../components/Layout'
 import PreviewMessage from '../../../../../components/common/PreviewMessage'
 import MicroLearningSubscriber from '../../../../../components/microLearning/MicroLearningSubscriber'
+
+const PARTICIPANT_ROLE = 'PARTICIPANT'
 
 function MicrolearningIntroduction({
   id,
@@ -47,18 +43,16 @@ function MicrolearningIntroduction({
     cookiesAvailable,
   })
 
-  const { loading, error, data, subscribeToMore } = useQuery(
-    GetMicroLearningDocument,
-    {
-      variables: { id },
-      skip: !id,
-    }
+  const utils = trpc.useUtils()
+  const { isLoading, error, data } = trpc.participant.microLearning.useQuery(
+    { id },
+    { enabled: !!id }
   )
-  const { data: selfData } = useQuery(SelfDocument, {
-    skip: data?.microLearning?.isOwner ?? false,
+  const { data: selfData } = trpc.participant.self.useQuery(undefined, {
+    enabled: !(data?.microLearning?.isOwner ?? false),
   })
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Layout>
         <Loader />
@@ -94,10 +88,21 @@ function MicrolearningIntroduction({
       <MicroLearningSubscriber
         activityId={microLearning.id}
         microLearningName={microLearning.displayName}
-        subscribeToMore={subscribeToMore}
+        onEnded={(endedMicroLearning) =>
+          utils.participant.microLearning.setData({ id }, (previous) =>
+            previous?.microLearning
+              ? {
+                  microLearning: {
+                    ...previous.microLearning,
+                    ...endedMicroLearning,
+                  },
+                }
+              : previous
+          )
+        }
       />
       <div className="flex w-full flex-col md:mx-auto md:w-full md:max-w-6xl md:rounded md:border md:p-8 md:pt-6">
-        {(!selfData?.self || selfData.self.role !== UserRole.Participant) &&
+        {(!selfData?.self || selfData.self.role !== PARTICIPANT_ROLE) &&
           (microLearning.isOwner ? (
             <PreviewMessage
               activityType={t('shared.generic.microlearning')}
@@ -223,10 +228,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const apolloClient = initializeApollo()
-
     const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
       courseId: ctx.params.courseId,
       ctx,
     })
@@ -243,14 +245,14 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    return addApolloState(apolloClient, {
+    return {
       props: {
         id: ctx.params.id,
         courseId: ctx.params.courseId,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
-    })
+    }
   } catch (error) {
     console.error('Error in getServerSideProps on microlearning:', error)
 

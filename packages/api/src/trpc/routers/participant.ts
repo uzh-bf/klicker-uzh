@@ -43,6 +43,7 @@ import {
   leaveRandomCourseGroupPool as leaveRandomCourseGroupPoolService,
   renameParticipantGroup as renameParticipantGroupService,
 } from '../../services/participantGroups.js'
+import { getMicroLearningDetail } from '../../services/participantMicroLearnings.js'
 import { getPracticeQuizDetail } from '../../services/participantPracticeQuizzes.js'
 import {
   checkParticipantNameAvailable,
@@ -94,6 +95,7 @@ import {
   participantLoginWithLtiInput,
   participantLoginWithMagicLinkInput,
   participantLogoutTemporaryInput,
+  participantMicroLearningInput,
   participantParticipationsInput,
   participantPracticeQuizBookmarksInput,
   participantPracticeQuizInput,
@@ -654,6 +656,18 @@ export const participantRouter = router({
       const prisma = getPrisma(ctx)
 
       return getPracticeQuizDetail({
+        id: input.id,
+        prisma,
+        user: ctx.user,
+      })
+    }),
+
+  microLearning: publicProcedure
+    .input(participantMicroLearningInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return getMicroLearningDetail({
         id: input.id,
         prisma,
         user: ctx.user,

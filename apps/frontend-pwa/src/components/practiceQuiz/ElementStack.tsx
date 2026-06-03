@@ -129,7 +129,8 @@ function ElementStack({
         stackId: stack.id,
       },
       {
-        enabled: !previewOnly && singleSubmission && !stackStorage,
+        enabled:
+          withParticipant && !previewOnly && singleSubmission && !stackStorage,
       }
     )
 

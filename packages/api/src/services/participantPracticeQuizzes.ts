@@ -229,7 +229,7 @@ function toRestrictions(
   }
 }
 
-function toElementDataWithoutSolutions(
+export function toElementDataWithoutSolutions(
   elementData: unknown
 ): PracticeQuizElementDataWithoutSolutions {
   const data = elementData as ElementData
