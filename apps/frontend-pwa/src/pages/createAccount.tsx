@@ -11,7 +11,6 @@ import useParticipantToken from '@lib/useParticipantToken'
 import bodyParser from 'body-parser'
 import Layout from 'src/components/Layout'
 import CreateAccountForm from 'src/components/forms/CreateAccountForm'
-import { addApolloState, initializeApollo } from 'src/lib/apollo'
 import { trpc } from 'src/lib/trpc'
 
 interface Props {
@@ -107,9 +106,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   try {
     const { req, res, query } = ctx
-    const apolloClient = initializeApollo()
     const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
       ctx,
     })
 
@@ -197,7 +194,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
 
     if (!query?.disableLti && signedLtiData.token !== '') {
-      return addApolloState(apolloClient, {
+      return {
         props: {
           signedLtiData: signedLtiData.token,
           ssoId: signedLtiData.ssoId,
@@ -211,7 +208,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
         },
-      })
+      }
     }
 
     return {

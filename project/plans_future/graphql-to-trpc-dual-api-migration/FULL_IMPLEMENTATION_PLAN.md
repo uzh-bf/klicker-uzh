@@ -276,6 +276,55 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-03 Completed: S04H22 PWA Create Account SSR Apollo Cleanup
+
+Status: complete for the scoped slice. This slice removed stale Apollo SSR state plumbing from the PWA create-account page after account creation, username availability, and participant-token handling had already moved to tRPC. It intentionally did not touch LTI token parsing, account creation service behavior, login redirects, Apollo providers, generated GraphQL artifacts, live/session flows, subscriptions, or manage app callers.
+
+Scope:
+
+- `apps/frontend-pwa/src/pages/createAccount.tsx`
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation(s): none still used by the page.
+- GraphQL resolver(s): none still used by the page.
+- Behavior source: existing `trpc.participant.createAccount`, `trpc.participant.checkNameAvailable`, and `getParticipantToken` now backed by `createTRPCSSRClient`.
+- tRPC router.procedure: existing `participant.createAccount`, `participant.checkNameAvailable`, and participant login/LTI token procedures inside `getParticipantToken`.
+- Input schema: existing participant auth/account schemas; no new schema.
+- Output DTO: unchanged page props and existing participant account token DTOs.
+- Active frontend consumer: PWA `/createAccount`.
+- Apollo behavior: `initializeApollo()` only created an SSR Apollo cache and `addApolloState(...)` wrapped the LTI account-creation props; no active GraphQL operation remained.
+- React Query/tRPC replacement: plain SSR props plus existing tRPC-backed token/account helpers.
+- Browser verification path: open `/createAccount`, verify account-creation form renders, and trigger username availability through tRPC if available.
+
+Implementation notes:
+
+- Removed the unused `initializeApollo()` SSR cache setup from `apps/frontend-pwa/src/pages/createAccount.tsx`.
+- Removed the `addApolloState(...)` wrapper from the LTI create-account SSR branch and returned plain props instead.
+- Stopped passing the obsolete Apollo client argument into `getParticipantToken`.
+- Kept GraphQL mounted and all generated artifacts intact for remaining PWA/manage/realtime consumers.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build` passed, with existing Next.js warnings about `next-config` module type, next-intl Pages Router migration, browserslist age, image domains, cross-origin dev origins, and large page data.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --check apps/frontend-pwa/src/pages/createAccount.tsx project/plans_future/graphql-to-trpc-dual-api-migration/FULL_IMPLEMENTATION_PLAN.md` passed.
+- `git diff --check` passed.
+- Scoped residual import audit found no Apollo/GraphQL imports or SSR helpers in `createAccount.tsx`; the only match was the expected `trpc.participant.createAccount.useMutation()`.
+- Browser verification used local backend `127.0.0.1:3103` and PWA `127.0.0.1:3102`.
+- Browser screenshot: `/tmp/klicker-pwa-s04h22-create-account-after-1280x720.png`.
+- Browser resource evidence showed `/api/trpc/participant.checkNameAvailable,participant.self` after opening `/createAccount?disableLti=true`.
+
+Review and cleanup:
+
+- Dedicated subagent tooling was not exposed in this session; performed explicit self-review for SSR props parity, LTI branch behavior, residual Apollo imports, and GraphQL coexistence.
+- Context7 MCP was not exposed in this session; no new framework API patterns were introduced.
+- Closed `agent-browser`.
+- Stopped local PWA/backend servers on ports 3102/3103.
+- Removed temporary local verification `.env` files.
+- Next candidates: continue residual PWA non-realtime cleanup on course-index Apollo SSR state, then remaining session/realtime/S05 slices.
+
 ### 2026-06-03 Completed: S04H21 PWA Course Chatbot Participation Guard
 
 Status: complete for the scoped slice. This slice migrated the PWA course chatbot redirect page's SSR participation guard from Apollo/GraphQL to tRPC. It intentionally did not touch the chat app API, chatbot UI, account creation/login flows beyond token forwarding, live/session flows, subscriptions, Apollo providers, generated GraphQL artifacts, or manage app callers.
