@@ -22,15 +22,19 @@ describe('lecturer MCP adapter', () => {
   })
 
   test('derives the production MCP URL from lecturer MCP host env vars', () => {
-    expect(
+    const url = new URL(
       getLecturerMcpUrl({
         MCP_LECTURER_HOST: 'lecturer-mcp.internal',
         MCP_LECTURER_PATH: 'custom-mcp',
         MCP_LECTURER_PORT: '7091',
         MCP_LECTURER_SCHEME: 'http',
         NODE_ENV: 'production',
-      } as NodeJS.ProcessEnv)
-    ).toBe('http://lecturer-mcp.internal:7091/custom-mcp')
+      } as NodeJS.ProcessEnv) ?? ''
+    )
+
+    expect(url.protocol).toBe('http:')
+    expect(url.host).toBe('lecturer-mcp.internal:7091')
+    expect(url.pathname).toBe('/custom-mcp')
   })
 
   test('stays disabled in production without an explicit URL', () => {
