@@ -1,9 +1,13 @@
-import { useQuery } from '@apollo/client'
-import {
-  ElementFeedback,
-  GetStackElementFeedbacksDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { useMemo } from 'react'
+import { trpc } from '../../lib/trpc'
+
+export type StackElementFeedback = {
+  id: number
+  upvote: boolean
+  downvote: boolean
+  feedback?: string | null
+  elementInstanceId: number
+}
 
 function useStackElementFeedbacks({
   instanceIds,
@@ -12,31 +16,28 @@ function useStackElementFeedbacks({
   instanceIds: number[]
   withParticipant: boolean
 }) {
-  const { data: elementFeedbackData } = useQuery(
-    GetStackElementFeedbacksDocument,
-    {
-      variables: {
-        instanceIds: instanceIds,
+  const { data: elementFeedbackData } =
+    trpc.participant.stackElementFeedbacks.useQuery(
+      {
+        instanceIds,
       },
-      skip: !withParticipant,
-    }
-  )
+      {
+        enabled: withParticipant,
+      }
+    )
 
   const mappedElementFeedbacks = useMemo(() => {
-    if (
-      !withParticipant ||
-      !elementFeedbackData ||
-      !elementFeedbackData.getStackElementFeedbacks
-    ) {
+    if (!withParticipant || !elementFeedbackData) {
       return {}
     }
 
-    return elementFeedbackData.getStackElementFeedbacks.reduce<
-      Record<number, ElementFeedback>
-    >((acc, feedback) => {
-      acc[feedback.elementInstanceId] = feedback
-      return acc
-    }, {})
+    return elementFeedbackData.reduce<Record<number, StackElementFeedback>>(
+      (acc, feedback) => {
+        acc[feedback.elementInstanceId] = feedback
+        return acc
+      },
+      {}
+    )
   }, [elementFeedbackData, withParticipant])
 
   return mappedElementFeedbacks

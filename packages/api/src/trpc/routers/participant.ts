@@ -30,6 +30,10 @@ import {
   joinCourseWithPin,
 } from '../../services/participantCourseJoin.js'
 import {
+  getStackElementFeedbacks,
+  rateElement,
+} from '../../services/participantElementFeedbacks.js'
+import {
   addMessageToGroup as addMessageToGroupService,
   createParticipantGroup as createParticipantGroupService,
   joinParticipantGroup as joinParticipantGroupService,
@@ -87,9 +91,11 @@ import {
   participantPracticeQuizBookmarksInput,
   participantPracticeQuizInput,
   participantPublicProfileInput,
+  participantRateElementInput,
   participantRenameGroupInput,
   participantSelfInput,
   participantSendMagicLinkInput,
+  participantStackElementFeedbacksInput,
   participantSubscribeToPushInput,
   participantUnsubscribeFromPushInput,
   participantUpdateAvatarInput,
@@ -578,6 +584,32 @@ export const participantRouter = router({
         participantId: ctx.user.sub,
         prisma,
         stackId: input.stackId,
+      })
+    }),
+
+  stackElementFeedbacks: participantProcedure
+    .input(participantStackElementFeedbacksInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return getStackElementFeedbacks({
+        instanceIds: input.instanceIds,
+        participantId: ctx.user.sub,
+        prisma,
+      })
+    }),
+
+  rateElement: participantProcedure
+    .input(participantRateElementInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return rateElement({
+        elementId: input.elementId,
+        elementInstanceId: input.elementInstanceId,
+        participantId: ctx.user.sub,
+        prisma,
+        rating: input.rating,
       })
     }),
 

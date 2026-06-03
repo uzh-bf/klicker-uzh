@@ -1,4 +1,3 @@
-import { useMutation } from '@apollo/client'
 import { faThumbsDown, faThumbsUp } from '@fortawesome/free-regular-svg-icons'
 import {
   faChartBar,
@@ -9,17 +8,14 @@ import {
   faXmark,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ElementFeedback,
-  GetStackElementFeedbacksDocument,
-  RateElementDocument,
-  ResponseCorrectnessType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { ResponseCorrectnessType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { trpc } from '../../lib/trpc'
 import FlagElementModal from '../flags/FlagElementModal'
+import type { StackElementFeedback } from '../hooks/useStackElementFeedbacks'
 
 interface InstanceHeaderProps {
   index: number
@@ -28,7 +24,7 @@ interface InstanceHeaderProps {
   name: string
   withParticipant: boolean
   correctness?: ResponseCorrectnessType
-  previousElementFeedback?: ElementFeedback
+  previousElementFeedback?: StackElementFeedback
   stackInstanceIds: number[]
   showSeparator?: boolean
   className?: string
@@ -51,8 +47,15 @@ function InstanceHeader({
   onToggleEvaluation,
 }: InstanceHeaderProps) {
   const t = useTranslations()
-  const [rateElement, { loading: ratingLoading }] =
-    useMutation(RateElementDocument)
+  const utils = trpc.useUtils()
+  const stackFeedbacksInput = { instanceIds: stackInstanceIds }
+  const rateElement = trpc.participant.rateElement.useMutation({
+    onSuccess: async () => {
+      await utils.participant.stackElementFeedbacks.invalidate(
+        stackFeedbacksInput
+      )
+    },
+  })
 
   const [vote, setVote] = useState(
     previousElementFeedback?.upvote
@@ -77,56 +80,15 @@ function InstanceHeader({
   }, [previousElementFeedback])
 
   const handleVote = async (upvote: boolean) => {
-    const res = await rateElement({
-      variables: {
-        elementInstanceId: instanceId,
-        elementId,
-        rating: upvote ? 1 : -1,
-      },
-      optimisticResponse: {
-        __typename: 'Mutation',
-        rateElement: {
-          __typename: 'ElementFeedback',
-          id: 0,
-          elementInstanceId: instanceId,
-          upvote,
-          downvote: !upvote,
-          feedback: feedbackValue ?? null,
-        },
-      },
-      update(cache, { data }) {
-        // verify that the rating operation was successful
-        if (!data?.rateElement) return
-
-        // add or replace the element feedback in the corresponding list
-        cache.updateQuery(
-          {
-            query: GetStackElementFeedbacksDocument,
-            variables: { instanceIds: stackInstanceIds },
-          },
-          (qData) => {
-            if (!qData?.getStackElementFeedbacks) {
-              return { getStackElementFeedbacks: [data.rateElement!] }
-            }
-
-            return {
-              getStackElementFeedbacks: [
-                ...qData.getStackElementFeedbacks.filter(
-                  (feedback) =>
-                    feedback.elementInstanceId !==
-                    data.rateElement!.elementInstanceId
-                ),
-                data.rateElement!,
-              ],
-            }
-          }
-        )
-      },
+    const res = await rateElement.mutateAsync({
+      elementInstanceId: instanceId,
+      elementId,
+      rating: upvote ? 1 : -1,
     })
 
-    if (res.data?.rateElement?.upvote) {
+    if (res?.upvote) {
       setVote(1)
-    } else if (res.data?.rateElement?.downvote) {
+    } else if (res?.downvote) {
       setVote(-1)
     } else {
       toast({
@@ -184,7 +146,7 @@ function InstanceHeader({
             )}
             <Button
               basic
-              disabled={ratingLoading}
+              disabled={rateElement.isLoading}
               onClick={() => handleVote(true)}
               className={{
                 root: twMerge(
@@ -201,7 +163,7 @@ function InstanceHeader({
             </Button>
             <Button
               basic
-              disabled={ratingLoading}
+              disabled={rateElement.isLoading}
               onClick={() => handleVote(false)}
               className={{
                 root: twMerge(

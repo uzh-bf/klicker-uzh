@@ -83,7 +83,7 @@ Committed markers:
 
 Current next action:
 
-- Continue S04H: migrate the remaining PWA practice-quiz execution reads/mutations while keeping GraphQL live, starting with the smallest safe slice around `SelfDocument`, previous stack evaluation, or response submission.
+- Continue S04H: migrate the remaining PWA practice-quiz execution reads/mutations while keeping GraphQL live, starting with the smallest safe slice around previous stack evaluation, response submission, element flagging, or generated practice-quiz prop types.
 
 Still intentionally live:
 
@@ -275,6 +275,60 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-03 Completed: S04H6 PWA Practice Quiz Element Feedback Read And Rating
+
+Status: complete for the scoped slice. This slice migrated the participant element-feedback list read and rating mutation used by PWA practice quiz stack headers. It intentionally leaves element flagging, previous stack evaluation, answer submission, generated practice-quiz prop types, microlearning, group activity, live/session flows, and subscriptions on GraphQL.
+
+Goal: replace `GetStackElementFeedbacksDocument` in `useStackElementFeedbacks.ts` and `RateElementDocument` in `InstanceHeader.tsx` with tRPC procedures while preserving participant-only access, current vote state, feedback text preservation, instance statistics updates, rating error toast behavior, and cache refresh of the current stack's feedback list.
+
+Write scope:
+
+- `packages/api/src/services/participantElementFeedbacks.ts`
+- `packages/api/src/trpc/schemas/participant.ts`
+- `packages/api/src/trpc/routers/participant.ts`
+- `packages/api/src/trpc/__tests__/participant-element-feedbacks.test.ts`
+- `apps/frontend-pwa/src/components/hooks/useStackElementFeedbacks.ts`
+- `apps/frontend-pwa/src/components/practiceQuiz/InstanceHeader.tsx`
+- This plan file
+
+```text
+Slice: S04H6 PWA practice quiz element feedback read and rating
+GraphQL operation(s): GetStackElementFeedbacksDocument, RateElementDocument
+GraphQL resolver(s): getStackElementFeedbacks, rateElement
+Behavior source: ParticipantService.getStackElementFeedbacks and ParticipantService.rateElement
+tRPC router.procedure: participant.stackElementFeedbacks, participant.rateElement
+Input schema: participantStackElementFeedbacksInput { instanceIds }, participantRateElementInput { elementInstanceId, elementId, rating }
+Output DTO: { id, elementInstanceId, upvote, downvote, feedback }[] / single feedback or null
+Active frontend consumers: useStackElementFeedbacks feedback map and InstanceHeader upvote/downvote controls
+Apollo cache/refetch/subscription behavior: Apollo query skipped without participant; rate mutation optimisticResponse and cache.updateQuery replaced local UI state and Apollo query cache
+React Query replacement: tRPC query skipped without participant; rate mutation invalidates participant.stackElementFeedbacks for the current stack input and keeps local vote update from mutation result
+Browser verification path: local seeded Testkurs practice quiz detail; start first stack, click upvote, verify active upvote state with Bookmark/Submit still rendered
+Cleanup blocked until: FlagElementDocument, previous stack evaluation, response mutation, generated PracticeQuiz/StackFeedback/ElementFeedback types, microlearning, group activity, live/session flows, and S05 subscriptions
+```
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --write ...` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- participant-element-feedbacks.test.ts` passed. The package runner executed the current API test set: 14 files, 123 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build` passed with existing Next.js warnings for typeless package detection, next-intl i18n, old Browserslist data, and large page data.
+- Scoped audits passed for removed `GetStackElementFeedbacksDocument` / `RateElementDocument` in migrated files, browser-only imports, intentional remaining `FlagElementDocument` / stack evaluation / response GraphQL, and `git diff --check`.
+- Browser verification passed with `npx agent-browser` against the local seeded Testkurs practice quiz at `http://127.0.0.1:3102/course/7c12e44e-d083-4acf-845e-4c34aaff6b49/practiceQuizzes/4214338b-c5af-4ff7-84f9-ae5a139d6e5b?participantToken=...`: started the quiz, loaded `Flashcard Stack 1`, captured `/tmp/klicker-pwa-s04h6-feedback-before.png`, clicked `[data-cy="upvote-element-0-button"]`, and captured `/tmp/klicker-pwa-s04h6-feedback-upvoted.png`.
+- Browser DOM verification confirmed the upvote button gained `text-primary-100` while the downvote button stayed inactive.
+- Database verification confirmed the local `ElementFeedback` row for participant `88bfe576-5d29-4311-a699-e4f87bf82d7b` and element instance `239` had `upvote = t`, `downvote = f`; `InstanceStatistics` for element instance `239` had `upvoteCount = 1`, `downvoteCount = 0`.
+- Local verification cleanup completed: closed the `trpc-s04h6` browser session, stopped backend/PWA dev processes, verified ports `3100` and `3102` were closed, and ran `docker compose down`.
+
+Review and simplification:
+
+- No subagent tooling was available in this session, so review/simplification was local. The service keeps the DTO narrow, preserves feedback text through rating changes, rejects unsupported ratings before opening a transaction, and mirrors the previous-vote offset logic for instance statistics.
+- The remaining Apollo cache update in `FlagElementModal.tsx` is intentionally out of scope because `FlagElementDocument` stays on GraphQL in this slice; the modal still updates local feedback text via `setFeedbackValue(content)`.
+
+Notes:
+
+- Context7 MCP was requested by repo instructions, but no Context7 tools are exposed in this environment. Official tRPC v10 `useMutation`, `useUtils`, and validator docs are used as fallback for this procedure and client-cache migration.
 
 ### 2026-06-03 Completed: S04H5 PWA Practice Quiz Participant Self Read
 

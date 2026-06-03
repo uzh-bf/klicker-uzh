@@ -144,6 +144,16 @@ export const participantBookmarkElementStackInput = z.object({
   bookmarked: z.boolean(),
 })
 
+export const participantStackElementFeedbacksInput = z.object({
+  instanceIds: z.array(z.number().int()),
+})
+
+export const participantRateElementInput = z.object({
+  elementInstanceId: z.number().int(),
+  elementId: z.number().int(),
+  rating: z.number().int(),
+})
+
 export const participantGroupActivityInstancesInput = z.object({
   courseId: z.string(),
   groupId: z.string(),
