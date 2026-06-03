@@ -7,6 +7,10 @@ import {
 } from '@klicker-uzh/prisma/client'
 import { levelFromXp } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
+import {
+  loginParticipant,
+  sendMagicLink,
+} from '../../services/participantAuth.js'
 import { getPrisma } from '../context.js'
 import {
   toCourseGroupActivity,
@@ -26,8 +30,10 @@ import {
   participantCourseInput,
   participantCourseLeaderboardInput,
   participantGroupActivityInstancesInput,
+  participantLoginInput,
   participantParticipationsInput,
   participantSelfInput,
+  participantSendMagicLinkInput,
   participantSubscribeToPushInput,
   participantUnsubscribeFromPushInput,
 } from '../schemas/participant.js'
@@ -206,6 +212,30 @@ async function getRollingCourseLeaderboard({
 }
 
 export const participantRouter = router({
+  login: publicProcedure
+    .input(participantLoginInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return loginParticipant({
+        prisma,
+        res: ctx.res,
+        usernameOrEmail: input.usernameOrEmail,
+        password: input.password,
+      })
+    }),
+
+  sendMagicLink: publicProcedure
+    .input(participantSendMagicLinkInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return sendMagicLink({
+        prisma,
+        usernameOrEmail: input.usernameOrEmail,
+      })
+    }),
+
   self: publicProcedure
     .input(participantSelfInput)
     .query(async ({ ctx, input }) => {

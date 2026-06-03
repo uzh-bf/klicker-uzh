@@ -1,9 +1,4 @@
-import { FetchResult, useLazyQuery, useMutation } from '@apollo/client'
-import {
-  LoginParticipantDocument,
-  SelfDocument,
-  SendMagicLinkDocument,
-} from '@klicker-uzh/graphql/dist/ops'
+import { trpc } from '@lib/trpc'
 import { toast } from '@uzh-bf/design-system'
 import { Formik } from 'formik'
 import { GetServerSidePropsContext } from 'next'
@@ -17,12 +12,10 @@ import LoginForm from '../components/forms/LoginForm'
 function Login() {
   const t = useTranslations()
   const router = useRouter()
+  const utils = trpc.useUtils()
 
-  const [loginParticipant] = useMutation(LoginParticipantDocument)
-  const [sendMagicLink] = useMutation(SendMagicLinkDocument)
-  const [fetchSelf] = useLazyQuery(SelfDocument, {
-    fetchPolicy: 'network-only',
-  })
+  const loginParticipant = trpc.participant.login.useMutation()
+  const sendMagicLink = trpc.participant.sendMagicLink.useMutation()
   const [decodedRedirectPath, setDecodedRedirectPath] = useState('/')
   const [magicLinkLogin, setMagicLinkLogin] = useState(false)
 
@@ -56,14 +49,12 @@ function Login() {
     { setSubmitting, resetForm }: any
   ) => {
     try {
-      const result: FetchResult = await loginParticipant({
-        variables: {
-          usernameOrEmail: values.usernameOrEmail.trim(),
-          password: values.password.trim(),
-        },
+      const participantId = await loginParticipant.mutateAsync({
+        usernameOrEmail: values.usernameOrEmail.trim(),
+        password: values.password.trim(),
       })
 
-      if (!result.data?.loginParticipant) {
+      if (!participantId) {
         toast({
           type: 'error',
           message: t('shared.generic.studentLoginError'),
@@ -72,7 +63,7 @@ function Login() {
         setSubmitting(false)
         resetForm()
       } else {
-        await fetchSelf()
+        await utils.participant.self.fetch(undefined)
 
         // redirect to the specified redirect path (default: question pool)
         router.push(decodedRedirectPath)
@@ -91,14 +82,12 @@ function Login() {
 
   const sendMagicLinkEmail = async (values: any, { setSubmitting }: any) => {
     try {
-      const result = await sendMagicLink({
-        variables: {
-          usernameOrEmail: values.usernameOrEmail.trim(),
-        },
+      const result = await sendMagicLink.mutateAsync({
+        usernameOrEmail: values.usernameOrEmail.trim(),
       })
 
       // show success message on success
-      if (result.data?.sendMagicLink) {
+      if (result) {
         toast({
           type: 'success',
           message: t('pwa.general.magicLinkSent'),

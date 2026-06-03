@@ -17,6 +17,15 @@ export const participantCourseInput = z.object({
   courseId: z.string(),
 })
 
+export const participantLoginInput = z.object({
+  usernameOrEmail: z.string(),
+  password: z.string(),
+})
+
+export const participantSendMagicLinkInput = z.object({
+  usernameOrEmail: z.string(),
+})
+
 export const participantCourseLeaderboardInput = z.object({
   courseId: z.string(),
   mode: z.enum(['course', 'biweekly']),
