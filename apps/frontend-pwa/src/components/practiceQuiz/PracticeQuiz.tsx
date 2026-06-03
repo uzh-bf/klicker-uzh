@@ -1,4 +1,3 @@
-import { StackFeedbackStatus } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -11,6 +10,16 @@ import PracticeQuizOverview from './PracticeQuizOverview'
 
 const PARTICIPANT_ROLE = 'PARTICIPANT'
 const TEMPORARY_PARTICIPANT_ROLE = 'TEMPORARY_PARTICIPANT'
+const STACK_FEEDBACK_STATUS = {
+  Correct: 'correct',
+  Incorrect: 'incorrect',
+  ManuallyGraded: 'manuallyGraded',
+  Partial: 'partial',
+  Unanswered: 'unanswered',
+} as const
+
+type StackFeedbackStatus =
+  (typeof STACK_FEEDBACK_STATUS)[keyof typeof STACK_FEEDBACK_STATUS]
 
 type PracticeQuizType = NonNullable<
   RouterOutputs['participant']['practiceQuiz']['practiceQuiz']
@@ -36,11 +45,11 @@ export const FEEDBACK_STATUS_PROGRESS_MAP: Record<
   StackFeedbackStatus,
   'correct' | 'unanswered' | 'incorrect' | 'partial' | undefined
 > = {
-  [StackFeedbackStatus.Correct]: 'correct',
-  [StackFeedbackStatus.Incorrect]: 'incorrect',
-  [StackFeedbackStatus.Partial]: 'partial',
-  [StackFeedbackStatus.Unanswered]: 'unanswered',
-  [StackFeedbackStatus.ManuallyGraded]: 'unanswered',
+  [STACK_FEEDBACK_STATUS.Correct]: 'correct',
+  [STACK_FEEDBACK_STATUS.Incorrect]: 'incorrect',
+  [STACK_FEEDBACK_STATUS.Partial]: 'partial',
+  [STACK_FEEDBACK_STATUS.Unanswered]: 'unanswered',
+  [STACK_FEEDBACK_STATUS.ManuallyGraded]: 'unanswered',
 }
 
 export function resetPracticeQuizLocalStorage(id: string) {
@@ -146,7 +155,7 @@ function PracticeQuiz({
                     status:
                       FEEDBACK_STATUS_PROGRESS_MAP[
                         progressState?.[stack.id].status ??
-                          StackFeedbackStatus.Unanswered
+                          STACK_FEEDBACK_STATUS.Unanswered
                       ],
                     score: progressState?.[stack.id].score ?? null,
                   }
@@ -202,7 +211,10 @@ function PracticeQuiz({
             setStepStatus={(value) => {
               setProgressState((prev) => {
                 const next = { ...prev }
-                next[currentStack.id] = value
+                next[currentStack.id] = {
+                  status: value.status as StackFeedbackStatus,
+                  score: value.score,
+                }
                 return next
               })
             }}

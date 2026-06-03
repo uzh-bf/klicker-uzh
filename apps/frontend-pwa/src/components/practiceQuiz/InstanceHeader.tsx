@@ -8,7 +8,6 @@ import {
   faXmark,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ResponseCorrectnessType } from '@klicker-uzh/graphql/dist/ops'
 import { Button, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -16,6 +15,15 @@ import { twMerge } from 'tailwind-merge'
 import { trpc } from '../../lib/trpc'
 import FlagElementModal from '../flags/FlagElementModal'
 import type { StackElementFeedback } from '../hooks/useStackElementFeedbacks'
+
+const RESPONSE_CORRECTNESS_TYPE = {
+  Correct: 'CORRECT',
+  Incorrect: 'INCORRECT',
+  Partial: 'PARTIAL',
+} as const
+
+type ResponseCorrectnessType =
+  (typeof RESPONSE_CORRECTNESS_TYPE)[keyof typeof RESPONSE_CORRECTNESS_TYPE]
 
 interface InstanceHeaderProps {
   index: number
@@ -105,16 +113,16 @@ function InstanceHeader({
       <div className="flex flex-row justify-between">
         {typeof correctness !== 'undefined' ? (
           <div className="flex flex-row items-center gap-2">
-            {correctness === ResponseCorrectnessType.Correct && (
+            {correctness === RESPONSE_CORRECTNESS_TYPE.Correct && (
               <FontAwesomeIcon
                 icon={faCheckDouble}
                 className="text-green-700"
               />
             )}
-            {correctness === ResponseCorrectnessType.Partial && (
+            {correctness === RESPONSE_CORRECTNESS_TYPE.Partial && (
               <FontAwesomeIcon icon={faCheck} className="text-yellow-600" />
             )}
-            {correctness === ResponseCorrectnessType.Incorrect && (
+            {correctness === RESPONSE_CORRECTNESS_TYPE.Incorrect && (
               <FontAwesomeIcon icon={faXmark} className="text-red-600" />
             )}
             <div

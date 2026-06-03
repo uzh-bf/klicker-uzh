@@ -1,6 +1,9 @@
-import { ElementInstance } from '@klicker-uzh/graphql/dist/ops'
 import localForage from 'localforage'
 import { Dispatch, SetStateAction, useEffect } from 'react'
+
+type RemainingElementInstance = {
+  id: number
+}
 
 function useRemainingInstances({
   quizId,
@@ -11,7 +14,7 @@ function useRemainingInstances({
   setActiveInstance,
 }: {
   quizId: string
-  instances: ElementInstance[]
+  instances: RemainingElementInstance[]
   execution: number
   isBlockCompleted: boolean
   setRemainingQuestions: Dispatch<SetStateAction<number[] | null>>

@@ -276,6 +276,62 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-03 Completed: S04H25 PWA Practice Generated Type Cleanup
+
+Status: complete for the scoped slice. This slice removed small generated GraphQL type imports from PWA practice quiz display/local-state components that already receive tRPC-backed data or local structural props. It intentionally did not touch `ElementStack`'s larger generated stack shape, live/session flows, GraphQL subscriptions, Apollo providers, generated GraphQL artifacts, active Apollo hooks, manage app callers, or final GraphQL cleanup.
+
+Scope:
+
+- `apps/frontend-pwa/src/components/practiceQuiz/PracticeQuiz.tsx`
+- `apps/frontend-pwa/src/components/practiceQuiz/InstanceHeader.tsx`
+- `apps/frontend-pwa/src/components/common/StepProgressWithScoring.tsx`
+- `apps/frontend-pwa/src/components/hooks/useRemainingInstances.ts`
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation(s): none directly issued by the touched files.
+- GraphQL resolver(s): none directly called by the touched files.
+- Behavior source: existing tRPC-backed practice quiz data, existing `ElementStack` props, and local practice quiz progress storage.
+- tRPC router.procedure: existing participant practice quiz/self/bookmark/rating procedures; no new procedure.
+- Input schema: unchanged existing procedure schemas; no new schema.
+- Output DTO: unchanged practice quiz and stack DTO shapes; this slice only narrows local structural type dependencies.
+- Active frontend consumers: PWA practice quiz progress/header/local remaining-instance helpers.
+- Apollo behavior: generated imports provide enum/type constants only in the selected files; no Apollo operation is issued by those files.
+- React Query/tRPC replacement: local string-literal constants and local structural types matching the current generated enum values and tRPC DTO fields.
+- Browser verification path: open a seeded practice quiz URL through the local PWA/backend stack and confirm the practice page renders after the generated type cleanup.
+
+Implementation notes:
+
+- Replaced `PracticeQuiz`'s generated `StackFeedbackStatus` import with local status constants matching the generated lower-case runtime values.
+- Kept practice quiz progress storage values unchanged and narrowed the local progress status cast at the `ElementStack` callback boundary.
+- Replaced `StepProgressWithScoring`'s generated `StackFeedbackStatus` import with a local status union and icon map.
+- Replaced `InstanceHeader`'s generated `ResponseCorrectnessType` import with local correctness constants matching the generated upper-case runtime values.
+- Replaced `useRemainingInstances`'s generated `ElementInstance` import with a local `{ id: number }` structural type because the hook only reads instance ids.
+- Kept GraphQL mounted and all generated artifacts intact for remaining PWA/manage/realtime consumers.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --write ...` left touched files unchanged after formatting.
+- Scoped residual generated-import audit found no `@klicker-uzh/graphql`, Apollo, or generated GraphQL imports in the touched files.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build` passed, with existing Next.js warnings about `next-config` module type, next-intl Pages Router migration, browserslist age, image domains, cross-origin dev origins, and large page data.
+- Browser verification used local backend `127.0.0.1:3103`, PWA `127.0.0.1:3102`, and the local practice quiz row `7fca9104-7269-40a0-84e9-5a70644c1636` in course `b8b1305e-bfe8-458b-bf26-9082fdca953f`.
+- The source seed route `4214338b-c5af-4ff7-84f9-ae5a139d6e5b` rendered the shell but returned the expected not-available message in the current local database state, so browser verification temporarily published the existing local draft row and restored it to `DRAFT` afterward.
+- Browser screenshots: `/tmp/klicker-pwa-s04h25-practice-rendered.png` and `/tmp/klicker-pwa-s04h25-practice-active.png`.
+- Browser resource evidence showed `/api/trpc/participant.self,participant.practiceQuiz` and `/api/trpc/participant.self` after opening the practice quiz route.
+- Active-stack DOM evidence confirmed `practice-quiz-progress` was present and the page showed the practice title, progress buttons, question headers, answer buttons, and disabled submit state.
+
+Review and cleanup:
+
+- Context7 MCP was not exposed in this session; no new framework API patterns were introduced.
+- Dedicated subagent tooling was not exposed in this session; performed explicit self-review for enum string parity, local storage status values, structural hook compatibility, residual generated imports, and GraphQL coexistence.
+- Closed `agent-browser`.
+- Stopped local PWA/backend servers on ports 3102/3103.
+- Restored the temporary local practice quiz database row to `DRAFT`.
+- Removed temporary local verification `.env` files.
+- Next candidates: `ElementStack` generated stack/enum type cleanup as a larger follow-up, then remaining session/realtime/S05 slices.
+
 ### 2026-06-03 Completed: S04H24 PWA Shell Generated Type Cleanup
 
 Status: complete for the scoped slice. This slice removed generated GraphQL type imports from the PWA shell components that already consume tRPC participant data. It intentionally did not touch live/session flows, GraphQL subscriptions, Apollo providers, generated GraphQL artifacts, active Apollo hooks, manage app callers, or final GraphQL cleanup.
