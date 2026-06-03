@@ -298,18 +298,7 @@ Cypress.Commands.add(
   ({ username }: { username: string }) => {
     cy.clearAllCookies()
     cy.clearAllLocalStorage()
-    cy.visit(Cypress.env('URL_STUDENT_LOGIN'), {
-      onBeforeLoad: (win) => {
-        win.localStorage.clear()
-        win.sessionStorage.clear()
-        try {
-          win.indexedDB?.deleteDatabase('localforage')
-        } catch {
-          // Fall back to the regular localforage clear after load.
-        }
-      },
-    })
-    clearPersistedClientState()
+    cy.visit(Cypress.env('URL_STUDENT_LOGIN'))
     cy.get('[data-cy="username-field"]').click().type(username)
     cy.get('[data-cy="password-field"]')
       .click()
