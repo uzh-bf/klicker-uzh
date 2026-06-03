@@ -25,10 +25,13 @@ import {
   joinCourseWithPin,
 } from '../../services/participantCourseJoin.js'
 import {
+  addMessageToGroup as addMessageToGroupService,
   createParticipantGroup as createParticipantGroupService,
   joinParticipantGroup as joinParticipantGroupService,
   joinRandomCourseGroupPool as joinRandomCourseGroupPoolService,
+  leaveParticipantGroup as leaveParticipantGroupService,
   leaveRandomCourseGroupPool as leaveRandomCourseGroupPoolService,
+  renameParticipantGroup as renameParticipantGroupService,
 } from '../../services/participantGroups.js'
 import {
   checkParticipantNameAvailable,
@@ -64,7 +67,9 @@ import {
   participantCreateAccountInput,
   participantCreateGroupInput,
   participantGroupActivityInstancesInput,
+  participantGroupMessageInput,
   participantJoinGroupInput,
+  participantLeaveGroupInput,
   participantLoginInput,
   participantLoginTemporaryInput,
   participantLoginWithLtiInput,
@@ -72,6 +77,7 @@ import {
   participantLogoutTemporaryInput,
   participantParticipationsInput,
   participantPublicProfileInput,
+  participantRenameGroupInput,
   participantSelfInput,
   participantSendMagicLinkInput,
   participantSubscribeToPushInput,
@@ -597,6 +603,46 @@ export const participantRouter = router({
 
       return leaveRandomCourseGroupPoolService({
         courseId: input.courseId,
+        participantId: ctx.user.sub,
+        prisma,
+      })
+    }),
+
+  leaveParticipantGroup: participantProcedure
+    .input(participantLeaveGroupInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return leaveParticipantGroupService({
+        courseId: input.courseId,
+        emitter: ctx.emitter,
+        groupId: input.groupId,
+        participantId: ctx.user.sub,
+        prisma,
+      })
+    }),
+
+  renameParticipantGroup: participantProcedure
+    .input(participantRenameGroupInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return renameParticipantGroupService({
+        emitter: ctx.emitter,
+        groupId: input.groupId,
+        name: input.name,
+        prisma,
+      })
+    }),
+
+  addMessageToGroup: participantProcedure
+    .input(participantGroupMessageInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return addMessageToGroupService({
+        content: input.content,
+        groupId: input.groupId,
         participantId: ctx.user.sub,
         prisma,
       })

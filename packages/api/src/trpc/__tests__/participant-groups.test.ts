@@ -361,6 +361,335 @@ describe('participant group routers', () => {
     }
   )
 
+  test('leaves a singleton participant group by deleting it and emitting invalidation', async () => {
+    const emit = vi.fn()
+    const deleteGroup = vi.fn().mockResolvedValue({
+      id: 'group-1',
+      name: 'Team Alpha',
+      code: 123456,
+      participants: [{ id: 'participant-1', username: 'testuser1' }],
+    })
+    const prisma = {
+      participantGroup: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'group-1',
+          participants: [{ id: 'participant-1', leaderboards: [] }],
+        }),
+        delete: deleteGroup,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext({
+        emitter: { emit } as unknown as TRPCContext['emitter'],
+        prisma,
+      })
+    )
+
+    await expect(
+      caller.participant.leaveParticipantGroup({
+        courseId: 'course-1',
+        groupId: 'group-1',
+      })
+    ).resolves.toEqual({
+      id: 'group-1',
+      name: 'Team Alpha',
+      code: 123456,
+      participants: [{ id: 'participant-1', username: 'testuser1' }],
+    })
+
+    expect(prisma?.participantGroup.findUnique).toHaveBeenCalledWith({
+      where: { id: 'group-1' },
+      select: {
+        id: true,
+        participants: {
+          select: {
+            id: true,
+            leaderboards: {
+              where: {
+                courseId: 'course-1',
+                type: LeaderboardType.COURSE,
+              },
+              select: { score: true },
+            },
+          },
+        },
+      },
+    })
+    expect(deleteGroup).toHaveBeenCalledWith({
+      where: { id: 'group-1' },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        participants: {
+          select: {
+            id: true,
+            username: true,
+          },
+        },
+      },
+    })
+    expect(emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'ParticipantGroup',
+      id: 'group-1',
+    })
+  })
+
+  test('leaves a multi-member participant group and recomputes the average member score', async () => {
+    const update = vi.fn().mockResolvedValue({
+      id: 'group-1',
+      name: 'Team Alpha',
+      code: 123456,
+      participants: [{ id: 'participant-2', username: 'testuser2' }],
+    })
+    const prisma = {
+      participantGroup: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'group-1',
+          participants: [
+            { id: 'participant-1', leaderboards: [{ score: 500 }] },
+            { id: 'participant-2', leaderboards: [{ score: 200 }] },
+            { id: 'participant-3', leaderboards: [{ score: 100 }] },
+          ],
+        }),
+        update,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.leaveParticipantGroup({
+        courseId: 'course-1',
+        groupId: 'group-1',
+      })
+    ).resolves.toEqual({
+      id: 'group-1',
+      name: 'Team Alpha',
+      code: 123456,
+      participants: [{ id: 'participant-2', username: 'testuser2' }],
+    })
+
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 'group-1' },
+      data: {
+        participants: {
+          disconnect: { id: 'participant-1' },
+        },
+        averageMemberScore: 150,
+      },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        participants: {
+          select: {
+            id: true,
+            username: true,
+          },
+        },
+      },
+    })
+  })
+
+  test('returns null when leaving a missing participant group', async () => {
+    const update = vi.fn()
+    const deleteGroup = vi.fn()
+    const prisma = {
+      participantGroup: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        update,
+        delete: deleteGroup,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.leaveParticipantGroup({
+        courseId: 'course-1',
+        groupId: 'group-1',
+      })
+    ).resolves.toBeNull()
+
+    expect(update).not.toHaveBeenCalled()
+    expect(deleteGroup).not.toHaveBeenCalled()
+  })
+
+  test('renames a participant group with a trimmed name and emits invalidation', async () => {
+    const emit = vi.fn()
+    const update = vi.fn().mockResolvedValue({
+      id: 'group-1',
+      name: 'Team Beta',
+    })
+    const prisma = {
+      participantGroup: {
+        update,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext({
+        emitter: { emit } as unknown as TRPCContext['emitter'],
+        prisma,
+      })
+    )
+
+    await expect(
+      caller.participant.renameParticipantGroup({
+        groupId: 'group-1',
+        name: '  Team Beta  ',
+      })
+    ).resolves.toEqual({
+      id: 'group-1',
+      name: 'Team Beta',
+    })
+
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 'group-1' },
+      data: { name: 'Team Beta' },
+      select: {
+        id: true,
+        name: true,
+      },
+    })
+    expect(emit).toHaveBeenCalledWith('invalidate', {
+      typename: 'ParticipantGroup',
+      id: 'group-1',
+    })
+  })
+
+  test('returns null when renaming a participant group to a blank name', async () => {
+    const emit = vi.fn()
+    const update = vi.fn()
+    const prisma = {
+      participantGroup: {
+        update,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(
+      createContext({
+        emitter: { emit } as unknown as TRPCContext['emitter'],
+        prisma,
+      })
+    )
+
+    await expect(
+      caller.participant.renameParticipantGroup({
+        groupId: 'group-1',
+        name: '   ',
+      })
+    ).resolves.toBeNull()
+
+    expect(update).not.toHaveBeenCalled()
+    expect(emit).not.toHaveBeenCalled()
+  })
+
+  test('adds a message to a participant group when the participant is a member', async () => {
+    const createdAt = new Date('2026-06-03T10:00:00.000Z')
+    const updatedAt = new Date('2026-06-03T10:01:00.000Z')
+    const create = vi.fn().mockResolvedValue({
+      id: 1,
+      content: 'Hello team',
+      createdAt,
+      updatedAt,
+      participant: {
+        id: 'participant-1',
+        username: 'testuser1',
+        avatar: 'avatar-hash',
+      },
+    })
+    const prisma = {
+      participantGroup: {
+        findUnique: vi.fn().mockResolvedValue({
+          participants: [{ id: 'participant-1' }, { id: 'participant-2' }],
+        }),
+      },
+      groupMessage: {
+        create,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.addMessageToGroup({
+        groupId: 'group-1',
+        content: 'Hello team',
+      })
+    ).resolves.toEqual({
+      id: 1,
+      content: 'Hello team',
+      createdAt,
+      updatedAt,
+      participant: {
+        id: 'participant-1',
+        username: 'testuser1',
+        avatar: 'avatar-hash',
+      },
+    })
+
+    expect(prisma?.participantGroup.findUnique).toHaveBeenCalledWith({
+      where: { id: 'group-1' },
+      select: {
+        participants: {
+          select: { id: true },
+        },
+      },
+    })
+    expect(create).toHaveBeenCalledWith({
+      data: {
+        content: 'Hello team',
+        group: {
+          connect: { id: 'group-1' },
+        },
+        participant: {
+          connect: { id: 'participant-1' },
+        },
+      },
+      select: {
+        id: true,
+        content: true,
+        createdAt: true,
+        updatedAt: true,
+        participant: {
+          select: {
+            id: true,
+            username: true,
+            avatar: true,
+          },
+        },
+      },
+    })
+  })
+
+  test.each([
+    {
+      label: 'missing group',
+      group: null,
+    },
+    {
+      label: 'non-member participant',
+      group: { participants: [{ id: 'participant-2' }] },
+    },
+  ])('returns null when adding a message hits $label', async ({ group }) => {
+    const create = vi.fn()
+    const prisma = {
+      participantGroup: {
+        findUnique: vi.fn().mockResolvedValue(group),
+      },
+      groupMessage: {
+        create,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.addMessageToGroup({
+        groupId: 'group-1',
+        content: 'Hello team',
+      })
+    ).resolves.toBeNull()
+
+    expect(create).not.toHaveBeenCalled()
+  })
+
   test('rejects group mutations for non-participants', async () => {
     const caller = appRouter.createCaller(
       createContext({ role: UserRole.USER, sub: 'user-1' })
@@ -383,6 +712,24 @@ describe('participant group routers', () => {
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
     await expect(
       caller.participant.leaveRandomCourseGroupPool({ courseId: 'course-1' })
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    await expect(
+      caller.participant.leaveParticipantGroup({
+        courseId: 'course-1',
+        groupId: 'group-1',
+      })
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    await expect(
+      caller.participant.renameParticipantGroup({
+        groupId: 'group-1',
+        name: 'Team Beta',
+      })
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    await expect(
+      caller.participant.addMessageToGroup({
+        groupId: 'group-1',
+        content: 'Hello team',
+      })
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
   })
 })

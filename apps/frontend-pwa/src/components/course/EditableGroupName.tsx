@@ -1,23 +1,26 @@
-import { useMutation } from '@apollo/client'
 import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { RenameParticipantGroupDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H3, TextField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { trpc } from '../../lib/trpc'
 
 interface EditableGroupNameProps {
   groupId: string
   groupName: string
+  onChanged?: () => void | Promise<void>
 }
 
-function EditableGroupName({ groupId, groupName }: EditableGroupNameProps) {
+function EditableGroupName({
+  groupId,
+  groupName,
+  onChanged,
+}: EditableGroupNameProps) {
   const t = useTranslations()
   const [editMode, setEditMode] = useState(false)
   const [groupNameValue, setGroupNameValue] = useState(groupName)
-  const [renameParticipantGroup, { loading: submitting }] = useMutation(
-    RenameParticipantGroupDocument
-  )
+  const renameParticipantGroup =
+    trpc.participant.renameParticipantGroup.useMutation()
 
   if (!editMode) {
     return (
@@ -47,12 +50,16 @@ function EditableGroupName({ groupId, groupName }: EditableGroupNameProps) {
             return
           }
 
-          await renameParticipantGroup({
-            variables: { groupId, name: groupNameValue.trim() },
+          const result = await renameParticipantGroup.mutateAsync({
+            groupId,
+            name: groupNameValue.trim(),
           })
+          if (result) {
+            await onChanged?.()
+          }
           setEditMode(false)
         }}
-        loading={submitting}
+        loading={renameParticipantGroup.isLoading}
         className={{ root: 'h-7 py-0' }}
       >
         <Button.Label>{t('shared.generic.save')}</Button.Label>

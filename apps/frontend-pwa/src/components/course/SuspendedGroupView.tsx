@@ -1,9 +1,4 @@
-import { useMutation } from '@apollo/client'
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons'
-import {
-  AddMessageToGroupDocument,
-  LeaveParticipantGroupDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import {
   Button,
@@ -64,8 +59,9 @@ function SuspendedGroupView({
   onGroupActivitiesChanged,
 }: SuspendedGroupViewProps) {
   const t = useTranslations()
-  const [leaveParticipantGroup] = useMutation(LeaveParticipantGroupDocument)
-  const [addMessageToGroup] = useMutation(AddMessageToGroupDocument)
+  const leaveParticipantGroup =
+    trpc.participant.leaveParticipantGroup.useMutation()
+  const addMessageToGroup = trpc.participant.addMessageToGroup.useMutation()
 
   const { data: rawActivityInstances } =
     trpc.participant.groupActivityInstances.useQuery({
@@ -94,7 +90,11 @@ function SuspendedGroupView({
       <div className="flex flex-col gap-2">
         <div className="flex flex-row flex-wrap gap-4">
           <div className="flex flex-1 flex-col">
-            <EditableGroupName groupId={group.id} groupName={group.name} />
+            <EditableGroupName
+              groupId={group.id}
+              groupName={group.name}
+              onChanged={onCourseOverviewChanged}
+            />
             {(!participation.isActive ||
               group.participants!.length === 1 ||
               group.participants!.length === maxGroupSize) && (
@@ -149,11 +149,12 @@ function SuspendedGroupView({
                   ? undefined
                   : () => {
                       void (async () => {
-                        const result = await leaveParticipantGroup({
-                          variables: { courseId, groupId: group.id },
+                        const result = await leaveParticipantGroup.mutateAsync({
+                          courseId,
+                          groupId: group.id,
                         })
 
-                        if (!result.data?.leaveParticipantGroup) return
+                        if (!result) return
 
                         await onCourseOverviewChanged?.()
                         setSelectedTab('global')
@@ -286,10 +287,11 @@ function SuspendedGroupView({
               })}
               onSubmit={async (values, { resetForm, setSubmitting }) => {
                 setSubmitting(true)
-                const result = await addMessageToGroup({
-                  variables: { groupId: group.id, content: values.content },
+                const result = await addMessageToGroup.mutateAsync({
+                  groupId: group.id,
+                  content: values.content,
                 })
-                if (result.data?.addMessageToGroup) {
+                if (result) {
                   await onCourseOverviewChanged?.()
                 }
                 resetForm()

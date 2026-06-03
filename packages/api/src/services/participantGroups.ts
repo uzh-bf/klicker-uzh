@@ -181,3 +181,182 @@ export async function leaveRandomCourseGroupPool({
     return false
   }
 }
+
+export async function leaveParticipantGroup({
+  courseId,
+  emitter,
+  groupId,
+  participantId,
+  prisma,
+}: {
+  courseId: string
+  emitter?: EventEmitter
+  groupId: string
+  participantId: string
+  prisma: PrismaClient
+}) {
+  const participantGroup = await prisma.participantGroup.findUnique({
+    where: { id: groupId },
+    select: {
+      id: true,
+      participants: {
+        select: {
+          id: true,
+          leaderboards: {
+            where: {
+              courseId,
+              type: LeaderboardType.COURSE,
+            },
+            select: { score: true },
+          },
+        },
+      },
+    },
+  })
+
+  if (!participantGroup) return null
+
+  if (participantGroup.participants.length === 1) {
+    const deletedGroup = await prisma.participantGroup.delete({
+      where: { id: groupId },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        participants: {
+          select: {
+            id: true,
+            username: true,
+          },
+        },
+      },
+    })
+
+    emitter?.emit('invalidate', {
+      typename: 'ParticipantGroup',
+      id: groupId,
+    })
+
+    return deletedGroup
+  }
+
+  const aggregate = participantGroup.participants.reduce(
+    (acc, participant) => {
+      if (participant.id === participantId) return acc
+
+      return {
+        sum: acc.sum + (participant.leaderboards[0]?.score ?? 0),
+        count: acc.count + 1,
+      }
+    },
+    {
+      sum: 0,
+      count: 0,
+    }
+  )
+  const averageMemberScore = Math.round(aggregate.sum / aggregate.count)
+
+  return await prisma.participantGroup.update({
+    where: { id: groupId },
+    data: {
+      participants: {
+        disconnect: { id: participantId },
+      },
+      averageMemberScore,
+    },
+    select: {
+      id: true,
+      name: true,
+      code: true,
+      participants: {
+        select: {
+          id: true,
+          username: true,
+        },
+      },
+    },
+  })
+}
+
+export async function renameParticipantGroup({
+  emitter,
+  groupId,
+  name,
+  prisma,
+}: {
+  emitter?: EventEmitter
+  groupId: string
+  name: string
+  prisma: PrismaClient
+}) {
+  const trimmedName = name.trim()
+  if (trimmedName === '') {
+    return null
+  }
+
+  const updatedGroup = await prisma.participantGroup.update({
+    where: { id: groupId },
+    data: { name: trimmedName },
+    select: {
+      id: true,
+      name: true,
+    },
+  })
+
+  emitter?.emit('invalidate', { typename: 'ParticipantGroup', id: groupId })
+  return updatedGroup
+}
+
+export async function addMessageToGroup({
+  content,
+  groupId,
+  participantId,
+  prisma,
+}: {
+  content: string
+  groupId: string
+  participantId: string
+  prisma: PrismaClient
+}) {
+  const group = await prisma.participantGroup.findUnique({
+    where: { id: groupId },
+    select: {
+      participants: {
+        select: { id: true },
+      },
+    },
+  })
+
+  if (!group) return null
+
+  if (
+    !group.participants.some((participant) => participant.id === participantId)
+  ) {
+    return null
+  }
+
+  return await prisma.groupMessage.create({
+    data: {
+      content,
+      group: {
+        connect: { id: groupId },
+      },
+      participant: {
+        connect: { id: participantId },
+      },
+    },
+    select: {
+      id: true,
+      content: true,
+      createdAt: true,
+      updatedAt: true,
+      participant: {
+        select: {
+          id: true,
+          username: true,
+          avatar: true,
+        },
+      },
+    },
+  })
+}

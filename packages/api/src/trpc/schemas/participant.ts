@@ -28,6 +28,21 @@ export const participantJoinGroupInput = z.object({
   code: z.number().int(),
 })
 
+export const participantLeaveGroupInput = z.object({
+  courseId: z.string(),
+  groupId: z.string(),
+})
+
+export const participantRenameGroupInput = z.object({
+  groupId: z.string(),
+  name: z.string(),
+})
+
+export const participantGroupMessageInput = z.object({
+  groupId: z.string(),
+  content: z.string(),
+})
+
 export const participantPublicProfileInput = z.object({
   participantId: z.string(),
 })
