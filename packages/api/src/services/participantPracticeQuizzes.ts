@@ -570,3 +570,81 @@ export async function getPracticeQuizDetail({
     }),
   }
 }
+
+export async function getCoursePracticeQuizDetail({
+  courseId,
+  participantId,
+  prisma,
+}: {
+  courseId: string
+  participantId: string
+  prisma: PrismaClient
+}): Promise<PracticeQuizDetailOutput> {
+  const course = await prisma.course.findUnique({
+    where: { id: courseId },
+    select: {
+      id: true,
+      name: true,
+      displayName: true,
+      color: true,
+      ownerId: true,
+      elementStacks: {
+        orderBy: { order: 'asc' },
+        select: {
+          id: true,
+          type: true,
+          displayName: true,
+          description: true,
+          order: true,
+          elements: {
+            orderBy: { order: 'asc' },
+            select: {
+              id: true,
+              type: true,
+              elementType: true,
+              elementData: true,
+              responses: {
+                where: {
+                  participantId,
+                },
+                select: {
+                  correctCount: true,
+                  correctCountStreak: true,
+                  lastCorrectAt: true,
+                  nextDueAt: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!course) return { practiceQuiz: null }
+
+  return {
+    practiceQuiz: toPracticeQuizDetail({
+      isOwner: false,
+      quiz: {
+        id: courseId,
+        status: PublicationStatus.PUBLISHED,
+        name: course.name,
+        displayName: course.displayName,
+        description: null,
+        pointsMultiplier: 1,
+        resetTimeDays: 6,
+        availableFrom: null,
+        orderType: ElementOrderType.SPACED_REPETITION,
+        ownerId: course.ownerId,
+        course: {
+          id: course.id,
+          displayName: course.displayName,
+          color: course.color,
+        },
+        numOfStacks: 25,
+        stacks: orderPracticeQuizStacks(course.elementStacks).slice(0, 25),
+      },
+    }),
+  }
+}

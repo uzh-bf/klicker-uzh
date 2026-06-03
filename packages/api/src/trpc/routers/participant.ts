@@ -56,7 +56,10 @@ import {
   getParticipantCourseParticipation,
   markMicroLearningCompleted,
 } from '../../services/participantMicroLearnings.js'
-import { getPracticeQuizDetail } from '../../services/participantPracticeQuizzes.js'
+import {
+  getCoursePracticeQuizDetail,
+  getPracticeQuizDetail,
+} from '../../services/participantPracticeQuizzes.js'
 import {
   checkParticipantNameAvailable,
   updateParticipantAvatar,
@@ -746,6 +749,18 @@ export const participantRouter = router({
         id: input.id,
         prisma,
         user: ctx.user,
+      })
+    }),
+
+  coursePracticeQuiz: participantProcedure
+    .input(participantCourseInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return getCoursePracticeQuizDetail({
+        courseId: input.courseId,
+        participantId: ctx.user.sub,
+        prisma,
       })
     }),
 

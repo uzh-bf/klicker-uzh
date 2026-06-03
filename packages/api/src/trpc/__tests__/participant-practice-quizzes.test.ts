@@ -280,6 +280,189 @@ describe('participant practice quiz routers', () => {
     })
   })
 
+  test('returns course practice quiz detail with ordered course stacks and no solution fields', async () => {
+    const courseFindUnique = vi.fn().mockResolvedValue({
+      id: 'course-1',
+      name: 'course-one',
+      displayName: 'Course One',
+      color: '#0028a5',
+      ownerId: 'owner-1',
+      elementStacks: [
+        {
+          id: 1,
+          type: ElementStackType.PRACTICE_QUIZ,
+          displayName: 'Due later',
+          description: null,
+          order: 1,
+          elements: [
+            {
+              id: 11,
+              type: ElementInstanceType.PRACTICE_QUIZ,
+              elementType: ElementType.SC,
+              responses: [
+                {
+                  correctCount: 2,
+                  correctCountStreak: 2,
+                  lastCorrectAt: new Date('2026-01-01T00:00:00Z'),
+                  nextDueAt: new Date('2026-01-03T00:00:00Z'),
+                },
+              ],
+              elementData: {
+                id: 'choice-v1',
+                elementId: 101,
+                name: 'Choice',
+                type: ElementType.SC,
+                content: 'Choice content',
+                explanation: 'Choice explanation',
+                basePoints: true,
+                pointsMultiplier: 1,
+                options: {
+                  hasSampleSolution: true,
+                  displayMode: 'LIST',
+                  choices: [
+                    {
+                      ix: 0,
+                      value: 'A',
+                      correct: true,
+                      feedback: 'Correct feedback',
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+        {
+          id: 2,
+          type: ElementStackType.PRACTICE_QUIZ,
+          displayName: 'Unanswered',
+          description: null,
+          order: 2,
+          elements: [
+            {
+              id: 21,
+              type: ElementInstanceType.PRACTICE_QUIZ,
+              elementType: ElementType.NUMERICAL,
+              responses: [],
+              elementData: {
+                id: 'numerical-v1',
+                elementId: 102,
+                name: 'Numerical',
+                type: ElementType.NUMERICAL,
+                content: 'Numerical content',
+                explanation: null,
+                basePoints: true,
+                pointsMultiplier: 1,
+                options: {
+                  hasSampleSolution: true,
+                  accuracy: 2,
+                  placeholder: '42',
+                  unit: 'kg',
+                  restrictions: {
+                    min: 0,
+                    max: 100,
+                  },
+                  exactSolutions: [42],
+                  solutionRanges: [{ min: 40, max: 44 }],
+                },
+              },
+            },
+          ],
+        },
+      ],
+    })
+    const prisma = {
+      course: {
+        findUnique: courseFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    const result = await caller.participant.coursePracticeQuiz({
+      courseId: 'course-1',
+    })
+
+    expect(result.practiceQuiz).toMatchObject({
+      __typename: 'PracticeQuiz',
+      id: 'course-1',
+      status: PublicationStatus.PUBLISHED,
+      name: 'course-one',
+      displayName: 'Course One',
+      description: null,
+      pointsMultiplier: 1,
+      resetTimeDays: 6,
+      availableFrom: null,
+      orderType: ElementOrderType.SPACED_REPETITION,
+      numOfStacks: 25,
+      isOwner: false,
+      course: {
+        __typename: 'Course',
+        id: 'course-1',
+        displayName: 'Course One',
+        color: '#0028a5',
+      },
+    })
+    expect(result.practiceQuiz?.stacks.map((stack) => stack.id)).toEqual([2, 1])
+
+    const numerical = elementDataWithOptions(
+      result.practiceQuiz?.stacks[0]?.elements[0]?.elementData
+    )
+    expect(numerical.__typename).toBe('NumericalElementData')
+    expect(numerical.options).toMatchObject({
+      hasSampleSolution: true,
+      accuracy: 2,
+      placeholder: '42',
+      unit: 'kg',
+      restrictions: { min: 0, max: 100 },
+    })
+    expect(numerical.options.exactSolutions).toBeUndefined()
+    expect(numerical.options.solutionRanges).toBeUndefined()
+
+    const choices = elementDataWithOptions(
+      result.practiceQuiz?.stacks[1]?.elements[0]?.elementData
+    )
+    expect(choices.__typename).toBe('ChoicesElementData')
+    expect(choices.options.choices).toEqual([{ ix: 0, value: 'A' }])
+
+    expect(courseFindUnique).toHaveBeenCalledWith({
+      where: { id: 'course-1' },
+      select: expect.objectContaining({
+        elementStacks: expect.objectContaining({
+          orderBy: { order: 'asc' },
+          select: expect.objectContaining({
+            elements: expect.objectContaining({
+              orderBy: { order: 'asc' },
+              select: expect.objectContaining({
+                responses: {
+                  where: { participantId: 'participant-1' },
+                  select: {
+                    correctCount: true,
+                    correctCountStreak: true,
+                    lastCorrectAt: true,
+                    nextDueAt: true,
+                  },
+                },
+              }),
+            }),
+          }),
+        }),
+      }),
+    })
+  })
+
+  test('returns null when the course practice source course is missing', async () => {
+    const prisma = {
+      course: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.coursePracticeQuiz({ courseId: 'missing-course' })
+    ).resolves.toEqual({ practiceQuiz: null })
+  })
+
   test('hides scheduled quiz stacks from non-owners', async () => {
     const prisma = {
       practiceQuiz: {

@@ -276,6 +276,61 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-03 Completed: S04H19 PWA Course Practice Pool Read
+
+Status: complete for the scoped slice. This slice migrated the PWA course practice pool page from Apollo `GetCoursePracticeQuizDocument` to tRPC. It intentionally did not touch standalone practice quizzes, practice response mutations, bookmarks, shared practice components, Apollo providers, generated GraphQL type imports in reusable practice components, or realtime/session flows.
+
+Scope:
+
+- `apps/frontend-pwa/src/pages/course/[courseId]/practice.tsx`
+- `packages/api/src/services/participantPracticeQuizzes.ts`
+- `packages/api/src/trpc/routers/participant.ts`
+- `packages/api/src/trpc/__tests__/participant-practice-quizzes.test.ts`
+- This plan file
+
+Operation mapping:
+
+- GraphQL `GetCoursePracticeQuizDocument` -> new `trpc.participant.coursePracticeQuiz`.
+- GraphQL resolver: `Query.coursePracticeQuiz`.
+- Behavior source: `packages/graphql/src/services/courses.ts getCoursePracticeQuiz`, with existing no-solution tRPC practice-quiz DTO behavior from `packages/api/src/services/participantPracticeQuizzes.ts`.
+- Input schema: existing `participantCourseInput` `{ courseId: string }`.
+- Output DTO: `{ practiceQuiz: PracticeQuizDetail | null }`, shaped like the existing standalone `participant.practiceQuiz` output and backed by a synthetic course practice quiz.
+- Active frontend consumer: PWA `course/[courseId]/practice`.
+- Apollo behavior: page-level `useQuery(GetCoursePracticeQuizDocument)` and SSR Apollo state only for token hydration.
+- React Query replacement: `trpc.participant.coursePracticeQuiz.useQuery({ courseId })` with SSR-independent client read and `getParticipantToken` without Apollo.
+- Browser verification path: login as seeded participant `testuser1`, open `/course/b8b1305e-bfe8-458b-bf26-9082fdca953f/practice`, verify rendered course practice overview and tRPC resource evidence.
+
+Implementation notes:
+
+- Added `participant.coursePracticeQuiz` as a participant-authenticated tRPC read that mirrors the GraphQL course practice pool behavior: course lookup, participant response-aware stack ordering, synthetic practice quiz metadata, and first 25 stacks.
+- Reused the existing tRPC practice quiz DTO path so initial practice-pool payloads do not expose solution fields that the standalone migrated practice quiz already strips.
+- Removed Apollo `useQuery`, `initializeApollo`, and `addApolloState` from `course/[courseId]/practice`; SSR now only performs participant token hydration.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- participant-practice-quizzes` passed; Vitest ran 17 files / 162 tests, including new course practice coverage for ordered course stacks, no-solution DTO fields, and missing-course null output.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build` passed, with existing Next.js warnings about `next-config` module type, next-intl Pages Router migration, browserslist age, image domains, cross-origin dev origins, and large page data.
+- `git diff --check` passed.
+- Scoped residual import audit found no `GetCoursePracticeQuizDocument`, Apollo, GraphQL ops, `initializeApollo`, or `addApolloState` references in the migrated page/API files. The only `useQuery` match was the expected `trpc.participant.coursePracticeQuiz.useQuery`.
+- Browser verification used local backend `127.0.0.1:3103`, PWA `127.0.0.1:3102`, and seeded participant `testuser1`. Screenshots: `/tmp/klicker-pwa-s04h19-course-practice-login.png`, `/tmp/klicker-pwa-s04h19-course-practice.png`, `/tmp/klicker-pwa-s04h19-course-practice-first-stack.png`.
+- Browser resource evidence included `/api/trpc/participant.self,participant.coursePracticeQuiz`, confirming the course practice page reads through tRPC.
+- Browser interaction verified the Testkurs practice pool overview and first stack render without visible layout overlap.
+
+Review and cleanup:
+
+- Dedicated subagent tooling was not exposed in this session; performed explicit self-review for scope, auth parity, DTO shape, and solution-field leakage.
+- Closed `agent-browser`.
+- Stopped local PWA/backend servers on ports 3102/3103.
+- Removed temporary local `.env` files generated for backend/worker/response-api verification.
+- Context7 MCP was not exposed by `tool_search`; used installed local tRPC/Zod patterns only and did not introduce new framework API patterns.
+
+Next candidates:
+
+- Continue residual PWA non-realtime Apollo cleanup in `course/[courseId]/join`, `course/[courseId]/chatbot/[chatbotId]`, or `createAccount`; keep live/session/realtime paths for S05.
+
 ### 2026-06-03 Completed: S04H18 PWA Course Live Quiz Availability Reads
 
 Status: complete for the scoped slice. This slice migrated the PWA course live-quiz overview and direct live-quiz redirect validation from Apollo / GraphQL SSR reads to tRPC. It intentionally did not touch `/session/[id]`, live quiz subscriptions, feedback mutations, Apollo providers, generated operations, or live execution behavior reserved for S05.
