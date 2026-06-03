@@ -83,7 +83,7 @@ Committed markers:
 
 Current next action:
 
-- Continue S04I with the PWA group activity detail read and decision-submission follow-up slices, while keeping GraphQL subscriptions live until S05.
+- Continue residual PWA non-realtime Apollo cleanup, prioritizing pages such as join-shortname, course practice, repetition, and timeline reads. Keep live/session flows, GraphQL subscriptions, Apollo providers, generated operations, and manage app callers live until their dedicated slices.
 
 Still intentionally live:
 
@@ -275,6 +275,69 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-03 Completed: S04E2 PWA Profile Self Read Cleanup
+
+Status: complete for the scoped slice. This slice migrated the remaining low-risk PWA profile/self page reads from Apollo to tRPC participant procedures. It intentionally did not touch live-quiz/session `SelfDocument` consumers, GraphQL subscriptions, Apollo providers, generated operations, or manage app callers.
+
+Scope:
+
+- `apps/frontend-pwa/src/pages/editProfile.tsx`
+- `apps/frontend-pwa/src/pages/profile.tsx`
+- `apps/frontend-pwa/src/pages/404.tsx`
+- `packages/api/src/trpc/dto/participant.ts`
+- `packages/api/src/trpc/routers/participant.ts`
+- `packages/api/src/trpc/__tests__/participant-profile.test.ts`
+- This plan file
+
+Operation mapping:
+
+- GraphQL `SelfDocument` on `/editProfile` and `/404` -> `trpc.participant.self.useQuery()`.
+- GraphQL `SelfWithAchievementsDocument` on `/profile` -> new `trpc.participant.selfWithAchievements.useQuery()`, mirroring the GraphQL participant plus all-achievements payload.
+
+Verification plan:
+
+- Audit the touched pages for removed Apollo/GraphQL imports.
+- Run focused API router tests plus PWA type/build checks.
+- Browser-verify `/profile`, `/editProfile`, and an authenticated 404 page with `npx agent-browser` screenshots when the local PWA stack is available.
+
+Implementation notes:
+
+- Added `participant.selfWithAchievements` to `packages/api`, mirroring GraphQL `getParticipantWithAchievements`: current participant profile with earned achievement instances plus the global achievement list for unearned tiles.
+- Added `toPublicAchievement` for the narrow possible-achievement DTO.
+- Migrated `/profile` from `SelfWithAchievementsDocument` to `trpc.participant.selfWithAchievements.useQuery()`.
+- Migrated `/editProfile` and `/404` from `SelfDocument` to `trpc.participant.self.useQuery()`.
+- Removed the now-unused `initializeApollo` / `addApolloState` path from `/editProfile` server-side props.
+
+Verification results:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- participant-profile`: passed; Vitest ran 17 files / 146 tests, including the new `selfWithAchievements` profile test.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build`: passed; existing warnings were limited to next-config module type, next-intl config, PWA worker output, stale Browserslist data, and known large page-data warnings.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --check <touched files>`: passed.
+- `git diff --check`: passed.
+- Scoped Apollo/GraphQL audit passed for `/profile`, `/editProfile`, `/404`, and `packages/api/src`: no `@apollo/client`, `SelfDocument`, `SelfWithAchievementsDocument`, or `@klicker-uzh/graphql` matches.
+- Residual `SelfDocument` scan shows remaining active source references only in live/session or course-join contexts: `pages/session/[id].tsx`, `pages/course/[courseId]/join.tsx`, `components/liveQuiz/AccountSelector.tsx`, and `components/common/LiveQuizLeaderboard.tsx`.
+
+Browser verification:
+
+- Local stack: Docker PostgreSQL/Redis/Hatchet services were already running. A pre-existing/stale backend listener occupied `3100`, so this run used a temporary branch backend on `http://127.0.0.1:3103` and temporary PWA dev server on `http://127.0.0.1:3102`.
+- Backend health returned `{"api":"trpc","status":"ok"}`; anonymous `participant.selfWithAchievements` returned the expected unauthorized response.
+- Browser login used seeded participant `testuser1` / `abcdabcd` via `/login?redirect_to=%2Fprofile`.
+- Screenshots: `/tmp/klicker-pwa-s04e2-login.png`, `/tmp/klicker-pwa-s04e2-profile.png`, `/tmp/klicker-pwa-s04e2-edit-profile.png`, `/tmp/klicker-pwa-s04e2-404.png`.
+- `/profile` rendered `testuser1`, level/XP, and unearned achievement tiles. Resource evidence included `http://127.0.0.1:3103/api/trpc/participant.self,participant.selfWithAchievements?...`.
+- `/editProfile` rendered the account and avatar forms populated from `participant.self`. Resource evidence included `participant.self` and the existing `participant.checkNameAvailable` call.
+- Authenticated 404 rendered the overview link and used `participant.self` resource calls.
+- Cleanup closed `agent-browser`, stopped only the temporary `3102` / `3103` verification processes, removed temporary local `.env` files, and confirmed ports `3102` / `3103` had no listeners.
+
+Review:
+
+- Self-review used because no separate subagent tooling was available in this continuation.
+- Kept the API addition narrow because `publicProfile` did not include the global possible-achievement list needed by the self profile page.
+
+Next: continue residual PWA non-realtime Apollo cleanup, starting with a narrow read page such as join-shortname, course practice, repetition, or timeline. Keep live/session and subscriptions for S05.
 
 ### 2026-06-03 Completed: S04I3 PWA Group Activity Detail Read
 

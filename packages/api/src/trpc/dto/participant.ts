@@ -53,6 +53,17 @@ type PublicParticipantAchievementSource = Pick<
   >
 }
 
+type PublicAchievementSource = Pick<
+  DB.Achievement,
+  | 'descriptionDE'
+  | 'descriptionEN'
+  | 'icon'
+  | 'iconColor'
+  | 'id'
+  | 'nameDE'
+  | 'nameEN'
+>
+
 type PublicParticipantProfileSource = Pick<
   DB.Participant,
   'avatar' | 'avatarSettings' | 'id' | 'isProfilePublic' | 'username' | 'xp'
@@ -329,6 +340,18 @@ export function toPublicParticipantProfile(
           iconColor: instance.achievement.iconColor,
         },
       })) ?? [],
+  }
+}
+
+export function toPublicAchievement(achievement: PublicAchievementSource) {
+  return {
+    id: achievement.id,
+    nameDE: achievement.nameDE,
+    nameEN: achievement.nameEN,
+    descriptionDE: achievement.descriptionDE,
+    descriptionEN: achievement.descriptionEN,
+    icon: achievement.icon,
+    iconColor: achievement.iconColor,
   }
 }
 

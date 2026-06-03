@@ -76,6 +76,8 @@ const achievementInstance = {
   },
 }
 
+const achievement = achievementInstance.achievement
+
 function createParticipant(
   overrides: Partial<{
     avatar: string | null
@@ -350,6 +352,50 @@ describe('participant profile routers', () => {
     expect(findUnique).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 'participant-1' } })
     )
+    expect(levelFindUnique).toHaveBeenCalledWith({
+      where: { index: 1 },
+      include: { nextLevel: true },
+    })
+  })
+
+  test('returns the current participant with all possible achievements', async () => {
+    const findUnique = vi.fn().mockResolvedValue(createParticipant())
+    const achievementFindMany = vi.fn().mockResolvedValue([achievement])
+    const levelFindUnique = vi.fn().mockResolvedValue(levelData)
+    const prisma = {
+      participant: {
+        findUnique,
+      },
+      achievement: {
+        findMany: achievementFindMany,
+      },
+      level: {
+        findUnique: levelFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(caller.participant.selfWithAchievements()).resolves.toEqual({
+      selfWithAchievements: {
+        participant: expectedPublicProfile({ isSelf: true }),
+        achievements: [achievement],
+      },
+    })
+
+    expect(findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'participant-1' } })
+    )
+    expect(achievementFindMany).toHaveBeenCalledWith({
+      select: {
+        id: true,
+        nameDE: true,
+        nameEN: true,
+        descriptionDE: true,
+        descriptionEN: true,
+        icon: true,
+        iconColor: true,
+      },
+    })
     expect(levelFindUnique).toHaveBeenCalledWith({
       where: { index: 1 },
       include: { nextLevel: true },

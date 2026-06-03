@@ -1,8 +1,6 @@
-import { useQuery } from '@apollo/client'
-import { SelfDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
+import { trpc } from '@lib/trpc'
 import useParticipantToken from '@lib/useParticipantToken'
 import { toast } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
@@ -21,7 +19,7 @@ function EditProfile({
   cookiesAvailable?: boolean
 }) {
   const t = useTranslations()
-  const { data, loading, refetch } = useQuery(SelfDocument)
+  const { data, isLoading, refetch } = trpc.participant.self.useQuery()
 
   const onError = () =>
     toast({
@@ -43,10 +41,10 @@ function EditProfile({
   useParticipantToken({
     participantToken,
     cookiesAvailable,
-    callback: () => refetch(),
+    callback: () => void refetch(),
   })
 
-  if (loading || !data?.self) {
+  if (isLoading || !data?.self) {
     return (
       <Layout
         course={{ displayName: t('shared.generic.title') }}
@@ -89,9 +87,7 @@ function EditProfile({
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   try {
-    const apolloClient = initializeApollo()
     const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
       ctx,
     })
 
@@ -115,13 +111,13 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    return addApolloState(apolloClient, {
+    return {
       props: {
         cookiesAvailable,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
-    })
+    }
   } catch (error) {
     console.error('Error in getServerSideProps on editProfile:', error)
 

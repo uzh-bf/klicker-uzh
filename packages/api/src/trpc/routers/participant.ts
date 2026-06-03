@@ -74,6 +74,7 @@ import {
   toParticipantParticipation,
   toParticipantSelf,
   toPracticeCourse,
+  toPublicAchievement,
   toPublicParticipantProfile,
   toPublishedMicroLearning,
   toPublishedPracticeQuiz,
@@ -168,6 +169,16 @@ const publicParticipantProfileSelect = {
       },
     },
   },
+}
+
+const publicAchievementSelect = {
+  id: true,
+  nameDE: true,
+  nameEN: true,
+  descriptionDE: true,
+  descriptionEN: true,
+  icon: true,
+  iconColor: true,
 }
 
 async function getRollingCourseLeaderboard({
@@ -1039,6 +1050,31 @@ export const participantRouter = router({
         ),
       }
     }),
+
+  selfWithAchievements: participantProcedure.query(async ({ ctx }) => {
+    const prisma = getPrisma(ctx)
+    const participant = await prisma.participant.findUnique({
+      where: { id: ctx.user.sub },
+      select: publicParticipantProfileSelect,
+    })
+
+    if (!participant) return { selfWithAchievements: null }
+
+    const [levelData, achievements] = await Promise.all([
+      getLevelData(prisma, participant.xp),
+      prisma.achievement.findMany({ select: publicAchievementSelect }),
+    ])
+
+    return {
+      selfWithAchievements: {
+        participant: toPublicParticipantProfile(
+          { ...participant, isSelf: true },
+          { levelData }
+        ),
+        achievements: achievements.map(toPublicAchievement),
+      },
+    }
+  }),
 
   courses: participantProcedure.query(async ({ ctx }) => {
     const prisma = getPrisma(ctx)

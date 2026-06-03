@@ -1,6 +1,4 @@
-import { useQuery } from '@apollo/client'
 import { faPencil } from '@fortawesome/free-solid-svg-icons'
-import { SelfWithAchievementsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
@@ -9,13 +7,14 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import Layout from '../components/Layout'
 import ProfileData from '../components/participant/ProfileData'
+import { trpc } from '../lib/trpc'
 
 const Profile = () => {
   const t = useTranslations()
-  const { data, loading } = useQuery(SelfWithAchievementsDocument)
   const router = useRouter()
+  const { data, isLoading } = trpc.participant.selfWithAchievements.useQuery()
 
-  if (loading || !data?.selfWithAchievements)
+  if (isLoading || !data?.selfWithAchievements)
     return (
       <Layout
         course={{ displayName: 'KlickerUZH' }}
