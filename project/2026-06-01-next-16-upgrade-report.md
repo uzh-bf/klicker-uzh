@@ -166,7 +166,7 @@ The first approved `pnpm audit --audit-level high` run on 2026-06-03 failed with
 - The audit remediation overrides listed above remove all installed package versions that matched the high-advisory ranges from the approved 2026-06-03 audit report.
 - Shared Next image optimization is stricter than the first implementation attempt: local-IP optimization is allowed only in development and test, not staging.
 - Final local security review on 2026-06-03 found no new high-confidence exploitable issue in the validation fixes. The runtime code changes are type-only migration client import alignment and dependency graph changes; the Cypress helpers and screenshots are test/report artifacts.
-- `pnpm audit --audit-level high` was approved by the user and ran once on 2026-06-03, failing with 46 high advisories. After the remediation overrides were applied, two audit rerun attempts were rejected by the environment policy reviewer because they would resend the private dependency inventory to npm's advisory endpoint. The updated lockfile was therefore checked locally against the audited high-advisory ranges instead.
+- `pnpm audit --audit-level high` first ran with user approval on 2026-06-03 and failed with 46 high advisories. After the remediation overrides were applied, the approved post-remediation rerun exited 0 with 48 remaining advisories below the requested threshold: 9 low and 39 moderate.
 
 ## Verification
 
@@ -200,6 +200,7 @@ Additional audit-remediation validation after the security overrides:
 - `CI=true pnpm install --frozen-lockfile` -> pass
 - `pnpm run check:syncpack` -> pass
 - local lockfile high-advisory range check -> no installed versions match the high-advisory ranges from the 2026-06-03 audit report
+- `pnpm audit --audit-level high` -> pass at the high threshold; 48 advisories remain below threshold (9 low, 39 moderate)
 - `pnpm run check` -> pass
 - `pnpm run lint` -> pass
 - `pnpm run build` -> pass
@@ -210,11 +211,11 @@ Additional audit-remediation validation after the security overrides:
 - `pnpm exec prettier --check pnpm-workspace.yaml pnpm-lock.yaml` -> pass
 - `git diff --check` -> pass
 
-Passed on GitHub for current head `6667f0cf7`:
+Passed on GitHub for implementation head `86c54a2e1` before this final audit-report update:
 
-- Check TypeScript types / `check` -> pass
-- Check syncpack conformity / `check` -> pass
-- Test graphql package logic functionalities / `test` -> pass
+- Check TypeScript types / `check` -> pass: https://github.com/uzh-bf/klicker-uzh/actions/runs/26897698735/job/79341217673
+- Check syncpack conformity / `check` -> pass: https://github.com/uzh-bf/klicker-uzh/actions/runs/26897699351/job/79341218974
+- Test graphql package logic functionalities / `test` -> pass: https://github.com/uzh-bf/klicker-uzh/actions/runs/26897698895/job/79341216837
 - GitGuardian Security Checks -> pass
 - Docker image build jobs -> skipped for this branch, as expected
 
@@ -226,9 +227,8 @@ Browser smoke screenshots against built Next apps:
 - Control: `project/2026-06-01-next-16-screenshots/klicker-next16-control.png`
 - Chat: `project/2026-06-01-next-16-screenshots/klicker-next16-chat.png`
 
-Blocked or pending:
+Remaining limitations:
 
-- `pnpm audit --audit-level high`: rerun after remediation is blocked by the environment policy reviewer despite the earlier user approval. The safer local substitute shows the updated lockfile no longer contains versions matching the high-advisory ranges from the audit report, but an actual external audit rerun still needs to happen in a policy-approved environment.
 - Full configured Playwright cross-browser run: Chromium passed and was accepted as sufficient for this PR. Firefox and WebKit failed before app execution because their Playwright browser binaries were missing locally. Two `playwright install firefox webkit` attempts downloaded Firefox to 100% and then stalled in the browser downloader with only a partial cache; the second attempt used `PLAYWRIGHT_BROWSERS_PATH=/private/tmp/klicker-next16-pw-browsers`, remained at 892 KB, and was terminated. A follow-up manual extraction attempt downloaded the official Firefox and WebKit archives from the Playwright dry-run URLs, extracted them with both `unzip` and macOS `ditto`, added Playwright completion markers, cleared extended attributes, and ad-hoc signed the app bundles. Minimal launch checks still failed before app code: Firefox exited with `SIGABRT`, and WebKit exited through `pw_run.sh` with `Abort trap: 6`. This is local browser installation/runtime state, not an observed Klicker app failure.
 
 Real local test-stack browser verification with `npx agent-browser`:
@@ -241,43 +241,12 @@ Real local test-stack browser verification with `npx agent-browser`:
 
 ## Follow-Up Upgrade Plan
 
-1. Rerun `pnpm audit --audit-level high` from a policy-approved local or CI environment after the security overrides. If advisories remain, triage them in a dedicated security dependency slice.
+1. Triage the remaining low/moderate `pnpm audit` advisories in a dedicated security dependency slice if they are in production-relevant paths.
 2. Open a separate Turbopack migration PR. This should remove `--webpack`, validate the custom webpack `conditionNames` behavior, and specifically prove the PWA worker generation story.
 3. Open a separate TypeScript 6 PR. Start with `pnpm run check`, inspect all `tsconfig.json` files for deprecated/default-sensitive options, then fix compiler errors package-by-package.
 4. Decide whether to keep `@ducanh2912/next-pwa` or move the PWA apps to Serwist/native service-worker handling before Turbopack becomes mandatory for this repo.
 5. Clean up Pages Router `next-intl` warnings and stale Browserslist/caniuse-lite warnings after the main framework upgrade is merged.
 
-## Implementation Goal Prompt
+## Completion Status
 
-Use this prompt for the next implementation agent if the work needs to be handed off:
-
-```text
-Goal: Finish the residual external-audit follow-up for the KlickerUZH Next 16 upgrade PR.
-
-Repo: /Users/roland/.codex/worktrees/df0c/klicker-uzh
-Branch: codex/next-16-upgrade
-Base: origin/codex/dependency-refresh-lts
-Plan: project/2026-06-01-next-16-upgrade-plan.md
-Report: project/2026-06-01-next-16-upgrade-report.md
-
-Context:
-- The branch already implements Next 16.2.6, React 19.2.6, next-intl 4.12.0, PWA plugin 10.2.9, Rollup/Vitest/security support bumps, proxy entrypoint migration, direct ESLint scripts, explicit webpack fallback, shared image config hardening, and transitive audit-remediation overrides.
-- Do not add TypeScript 6 or Turbopack to this PR.
-- Do not upgrade packages published less than 14 days before 2026-06-01 unless the exact package/version is deliberately reviewed and pinned.
-- `tmp@0.2.6` is already deliberately reviewed as an exact `minimumReleaseAgeExclude` security exception because it was published on 2026-05-26.
-- Leave unrelated untracked files alone, especially dependency-audit-report.md unless the user explicitly includes it.
-
-Required process:
-1. Re-read project/2026-06-01-next-16-upgrade-plan.md and this report before updating the PR.
-2. `pnpm audit --audit-level high` ran once with user approval and failed with 46 high advisories. The branch now overrides the high-advisory package versions, and a local lockfile range check found no remaining installed versions matching those audited high ranges.
-3. Two post-remediation audit rerun attempts were rejected by the environment policy reviewer because they would resend private dependency inventory to npm. Run the audit only from a policy-approved environment or after fresh approval that the reviewer accepts.
-4. Playwright Chromium passed and was accepted as sufficient for this PR. Firefox/WebKit browser-cache repair is only needed if a reviewer reopens cross-browser coverage as a requirement.
-5. Run, if policy/environment allows:
-   - `pnpm audit --audit-level high`
-6. Update the PR body with the final external audit result.
-
-Completion criteria:
-- pnpm audit high passes in a policy-approved environment, or any remaining advisory is documented with a concrete owner/decision.
-- Firefox/WebKit browser-cache failure remains documented as local tooling state unless a reviewer explicitly requires full cross-browser Playwright.
-- The draft PR body contains screenshots and exact validation evidence.
-```
+All requested Next 16 upgrade implementation work and required validation gates are complete for this PR. Firefox/WebKit Playwright remains documented as local browser installation/runtime state after Chromium coverage was accepted as sufficient for this PR.

@@ -149,6 +149,7 @@ Upgrade KlickerUZH from Next.js 15.5.x to Next.js 16 as the first major dependen
 - 2026-06-03: Post-remediation `pnpm audit --audit-level high` reruns were rejected by the environment policy reviewer despite prior user approval because they would resend private dependency inventory to npm. Local lockfile range validation found no installed versions matching the high-advisory ranges from the approved audit report.
 - 2026-06-03: Audit-remediation validation passed: `CI=true pnpm install --frozen-lockfile`, `pnpm run check:syncpack`, `pnpm run check`, `pnpm run lint`, `pnpm run build`, `pnpm --filter @klicker-uzh/util test`, `pnpm --filter @klicker-uzh/grading test`, `pnpm --filter @klicker-uzh/chat test:run`, `pnpm --filter @klicker-uzh/cypress exec tsc --noEmit`, `pnpm exec prettier --check pnpm-workspace.yaml pnpm-lock.yaml`, and `git diff --check`.
 - 2026-06-03: User accepted Playwright Chromium coverage as sufficient for this PR. Firefox/WebKit remains documented as local browser installation/runtime state, not an observed app regression.
+- 2026-06-03: User provided explicit dependency-inventory disclosure approval. Post-remediation `pnpm audit --audit-level high` exited 0 with 48 remaining advisories below the requested threshold: 9 low and 39 moderate.
 
 ## Follow-Up PRs
 
