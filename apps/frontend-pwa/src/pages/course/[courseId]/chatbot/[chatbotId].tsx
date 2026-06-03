@@ -1,11 +1,10 @@
-import { EnsureParticipationDocument } from '@klicker-uzh/graphql/dist/ops'
 import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
+import { createTRPCSSRClient } from '@lib/trpc'
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import Layout from '../../../../components/Layout'
-import { initializeApollo } from '../../../../lib/apollo'
 import getParticipantToken from '../../../../lib/getParticipantToken'
 
 type ChatbotPageProps = {
@@ -27,13 +26,11 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const apolloClient = initializeApollo(undefined, ctx)
     const courseId = ctx.params.courseId as string
     const chatbotId = ctx.params.chatbotId as string
     const embedded = parseEmbedParam(ctx.query.embed)
 
     const { participantToken } = await getParticipantToken({
-      apolloClient,
       courseId,
       ctx,
     })
@@ -56,15 +53,13 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     let ensureSuccess = true
 
     try {
-      const result = await apolloClient.mutate({
-        mutation: EnsureParticipationDocument,
-        variables: { courseId },
-        context: {
-          headers: { authorization: `Bearer ${participantToken}` },
-        },
+      const trpcClient = createTRPCSSRClient(ctx, {
+        authorization: `Bearer ${participantToken}`,
       })
 
-      ensureSuccess = Boolean(result.data?.ensureParticipation)
+      ensureSuccess = await trpcClient.participant.ensureParticipation.mutate({
+        courseId,
+      })
     } catch (err) {
       ensureSuccess = false
       console.error('Failed to ensure participation before chatbot redirect', {

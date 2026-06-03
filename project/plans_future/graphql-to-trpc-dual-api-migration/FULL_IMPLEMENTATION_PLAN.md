@@ -276,6 +276,63 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-03 Completed: S04H21 PWA Course Chatbot Participation Guard
+
+Status: complete for the scoped slice. This slice migrated the PWA course chatbot redirect page's SSR participation guard from Apollo/GraphQL to tRPC. It intentionally did not touch the chat app API, chatbot UI, account creation/login flows beyond token forwarding, live/session flows, subscriptions, Apollo providers, generated GraphQL artifacts, or manage app callers.
+
+Scope:
+
+- `apps/frontend-pwa/src/pages/course/[courseId]/chatbot/[chatbotId].tsx`
+- `apps/frontend-pwa/src/lib/trpc.tsx`
+- `packages/api/src/trpc/routers/participant.ts`
+- `packages/api/src/trpc/__tests__/participant-join.test.ts`
+- This plan file
+
+Operation mapping:
+
+- GraphQL `EnsureParticipationDocument` -> new `trpc.participant.ensureParticipation`.
+- GraphQL resolver: `Mutation.ensureParticipation`.
+- Behavior source: `packages/graphql/src/services/courses.ts ensureParticipation`.
+- Input schema: existing `participantCourseInput` `{ courseId: string }`.
+- Output DTO: boolean.
+- Active frontend consumer: PWA `course/[courseId]/chatbot/[chatbotId]` SSR redirect page.
+- Apollo behavior: server-side `initializeApollo(...).mutate(EnsureParticipationDocument)` with an explicit `Authorization: Bearer <participantToken>` header.
+- React Query/tRPC replacement: server-side `createTRPCSSRClient(ctx, { authorization })` followed by `trpcClient.participant.ensureParticipation.mutate({ courseId })`.
+- Browser verification path: open the seeded chatbot redirect URL as unauthenticated and verify the login redirect, then use local tRPC probes for the authenticated participation guard if no seeded chatbot target is available.
+
+Implementation notes:
+
+- Added `participant.ensureParticipation` as a participant-authenticated tRPC mutation that preserves the GraphQL behavior: return `false` for a missing course, missing participation, or caught Prisma error; return `true` only for an existing participation.
+- Extended the PWA SSR tRPC proxy helper with optional extra headers so freshly resolved participant tokens can be forwarded without importing Apollo.
+- Removed `EnsureParticipationDocument` and `initializeApollo` from the chatbot redirect page.
+- Kept GraphQL mounted and all generated artifacts intact for remaining PWA/manage/realtime consumers.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- participant-join` passed; Vitest ran 17 files / 167 tests including new chatbot participation guard coverage.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build` passed, with existing Next.js warnings about `next-config` module type, next-intl Pages Router migration, browserslist age, image domains, cross-origin dev origins, and large page data.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --check ...` passed for touched files.
+- `git diff --check` passed.
+- Scoped residual import audit found no Apollo, generated GraphQL op, `EnsureParticipationDocument`, `initializeApollo`, `useQuery`, or `useMutation` references in the migrated chatbot page/helper/API files.
+- Browser verification used local backend `127.0.0.1:3103`, PWA `127.0.0.1:3102`, and seeded course `b8b1305e-bfe8-458b-bf26-9082fdca953f`. Screenshot: `/tmp/klicker-pwa-s04h21-chatbot-login-redirect.png`.
+- Browser URL evidence confirmed unauthenticated chatbot access redirects to `/en/login?redirect_to=%2Fen%2Fcourse%2Fb8b1305e-bfe8-458b-bf26-9082fdca953f%2Fchatbot%2Ftest-chatbot`.
+- Local tRPC runtime probe logged in seeded participant `testuser1` and called `participant.ensureParticipation` with the resulting JWT; it returned `true` for Testkurs.
+
+Review and cleanup:
+
+- Dedicated subagent tooling was not exposed in this session; performed explicit self-review for auth parity, token forwarding, null behavior, DTO scope, and residual GraphQL/Apollo imports.
+- Closed `agent-browser`.
+- Stopped local PWA/backend servers on ports 3102/3103.
+- Removed temporary local `.env` files generated for backend/worker/response-api verification.
+- Context7 MCP was not exposed by `tool_search`; used installed local tRPC/Zod patterns only and did not introduce new framework API patterns.
+
+Next candidates:
+
+- Continue residual PWA non-realtime Apollo cleanup in `createAccount` or course-index Apollo SSR state removal. Keep live/session/realtime paths for S05.
+
 ### 2026-06-03 Completed: S04H20 PWA Course Join Page Reads
 
 Status: complete for the scoped slice. This slice migrated the PWA course join page's non-realtime reads from Apollo to tRPC. It intentionally did not touch the generic PIN join page, account creation page, live/session flows, subscriptions, Apollo providers, generated GraphQL artifacts, or manage app callers.

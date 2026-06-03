@@ -45,7 +45,10 @@ export function getTRPCUrl() {
   return `${apiUrl.replace(/\/$/, '')}/api/trpc`
 }
 
-function getHeaders(ctx?: GetServerSidePropsContext) {
+function getHeaders(
+  ctx?: GetServerSidePropsContext,
+  extraHeaders?: Record<string, string>
+) {
   if (typeof window !== 'undefined') {
     const token = sessionStorage.getItem('participant_token')
 
@@ -54,7 +57,10 @@ function getHeaders(ctx?: GetServerSidePropsContext) {
 
   const cookie = ctx?.req?.headers.cookie
 
-  return typeof cookie === 'string' ? { cookie } : {}
+  return {
+    ...(typeof cookie === 'string' ? { cookie } : {}),
+    ...extraHeaders,
+  }
 }
 
 function handleTRPCError(error: unknown) {
@@ -105,13 +111,16 @@ export function createTRPCClient(ctx?: GetServerSidePropsContext) {
   })
 }
 
-export function createTRPCSSRClient(ctx?: GetServerSidePropsContext) {
+export function createTRPCSSRClient(
+  ctx?: GetServerSidePropsContext,
+  extraHeaders?: Record<string, string>
+) {
   return createTRPCProxyClient<AppRouter>({
     transformer: superjson,
     links: [
       httpBatchLink({
         url: getTRPCUrl(),
-        headers: () => getHeaders(ctx),
+        headers: () => getHeaders(ctx, extraHeaders),
         fetch(url, options) {
           return globalThis.fetch(url, {
             ...options,

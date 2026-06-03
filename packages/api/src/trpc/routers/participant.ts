@@ -565,6 +565,40 @@ export const participantRouter = router({
       })
     }),
 
+  ensureParticipation: participantProcedure
+    .input(participantCourseInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      try {
+        const course = await prisma.course.findUnique({
+          where: { id: input.courseId },
+          select: { id: true },
+        })
+
+        if (!course) return false
+
+        const participation = await prisma.participation.findUnique({
+          where: {
+            courseId_participantId: {
+              courseId: input.courseId,
+              participantId: ctx.user.sub,
+            },
+          },
+          select: { id: true },
+        })
+
+        return participation !== null
+      } catch (error) {
+        console.error('ensureParticipation failed', {
+          courseId: input.courseId,
+          participantId: ctx.user.sub,
+          error,
+        })
+        return false
+      }
+    }),
+
   joinCourseLeaderboard: participantProcedure
     .input(participantCourseInput)
     .mutation(async ({ ctx, input }) => {

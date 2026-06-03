@@ -350,6 +350,73 @@ describe('participant join routers', () => {
     })
   })
 
+  test('confirms existing course participation for chatbot redirect', async () => {
+    const courseFindUnique = vi.fn().mockResolvedValue({ id: 'course-1' })
+    const participationFindUnique = vi.fn().mockResolvedValue({ id: 3 })
+    const prisma = {
+      course: {
+        findUnique: courseFindUnique,
+      },
+      participation: {
+        findUnique: participationFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.ensureParticipation({ courseId: 'course-1' })
+    ).resolves.toBe(true)
+
+    expect(courseFindUnique).toHaveBeenCalledWith({
+      where: { id: 'course-1' },
+      select: { id: true },
+    })
+    expect(participationFindUnique).toHaveBeenCalledWith({
+      where: {
+        courseId_participantId: {
+          courseId: 'course-1',
+          participantId: 'participant-1',
+        },
+      },
+      select: { id: true },
+    })
+  })
+
+  test('rejects chatbot participation guard for missing course', async () => {
+    const participationFindUnique = vi.fn()
+    const prisma = {
+      course: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+      participation: {
+        findUnique: participationFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.ensureParticipation({ courseId: 'missing-course' })
+    ).resolves.toBe(false)
+
+    expect(participationFindUnique).not.toHaveBeenCalled()
+  })
+
+  test('rejects chatbot participation guard when participant is not enrolled', async () => {
+    const prisma = {
+      course: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'course-1' }),
+      },
+      participation: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.ensureParticipation({ courseId: 'course-1' })
+    ).resolves.toBe(false)
+  })
+
   test('leaves a participant from the course leaderboard', async () => {
     const update = vi.fn().mockResolvedValue({
       id: 3,
