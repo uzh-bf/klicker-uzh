@@ -21,6 +21,11 @@ import {
   checkValidCoursePin,
   joinCourseWithPin,
 } from '../../services/participantCourseJoin.js'
+import {
+  checkParticipantNameAvailable,
+  updateParticipantAvatar,
+  updateParticipantProfile,
+} from '../../services/participantProfile.js'
 import { getPrisma } from '../context.js'
 import {
   toCourseGroupActivity,
@@ -42,6 +47,7 @@ import {
 import {
   participantActivateAccountInput,
   participantChangeLocaleInput,
+  participantCheckNameAvailableInput,
   participantCourseInput,
   participantCourseLeaderboardInput,
   participantCoursePinInput,
@@ -55,6 +61,8 @@ import {
   participantSendMagicLinkInput,
   participantSubscribeToPushInput,
   participantUnsubscribeFromPushInput,
+  participantUpdateAvatarInput,
+  participantUpdateProfileInput,
 } from '../schemas/participant.js'
 
 async function getLevelData(prisma: PrismaClient, xp: number | null) {
@@ -292,6 +300,19 @@ export const participantRouter = router({
       })
     }),
 
+  checkNameAvailable: publicProcedure
+    .input(participantCheckNameAvailableInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return checkParticipantNameAvailable({
+        participantId:
+          ctx.user?.role === UserRole.PARTICIPANT ? ctx.user.sub : undefined,
+        prisma,
+        username: input.username,
+      })
+    }),
+
   loginTemporary: publicProcedure
     .input(participantLoginTemporaryInput)
     .mutation(async ({ ctx, input }) => {
@@ -335,6 +356,34 @@ export const participantRouter = router({
         emitter: ctx.emitter,
         participantId: ctx.user.sub,
         pin: input.pin,
+        prisma,
+      })
+    }),
+
+  updateProfile: participantProcedure
+    .input(participantUpdateProfileInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return updateParticipantProfile({
+        email: input.email,
+        isProfilePublic: input.isProfilePublic,
+        participantId: ctx.user.sub,
+        password: input.password,
+        prisma,
+        username: input.username,
+      })
+    }),
+
+  updateAvatar: participantProcedure
+    .input(participantUpdateAvatarInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return updateParticipantAvatar({
+        avatar: input.avatar,
+        avatarSettings: input.avatarSettings,
+        participantId: ctx.user.sub,
         prisma,
       })
     }),

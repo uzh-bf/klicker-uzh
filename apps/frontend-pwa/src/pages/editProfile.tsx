@@ -35,6 +35,10 @@ function EditProfile({
       message: t('pwa.profile.editProfileSuccess'),
       options: { duration: 3500 },
     })
+  const onProfileMutationSuccess = async () => {
+    await refetch()
+    onSuccess()
+  }
 
   useParticipantToken({
     participantToken,
@@ -64,14 +68,14 @@ function EditProfile({
             <UpdateAccountInfoForm
               user={data.self}
               onError={onError}
-              onSuccess={onSuccess}
+              onSuccess={onProfileMutationSuccess}
             />
           </div>
           <div className="w-full md:h-full md:w-1/2">
             <AvatarUpdateForm
               user={data.self}
               onError={onError}
-              onSuccess={onSuccess}
+              onSuccess={onProfileMutationSuccess}
             />
           </div>
         </div>

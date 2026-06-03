@@ -1,9 +1,8 @@
-import { useLazyQuery } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
-import { CheckParticipantNameAvailableDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
+import { trpc } from '@lib/trpc'
 import {
   Button,
   Checkbox,
@@ -32,9 +31,7 @@ function CreateAccountForm({
   handleSubmit,
 }: Props) {
   const t = useTranslations()
-  const [checkParticipantNameAvailable] = useLazyQuery(
-    CheckParticipantNameAvailableDocument
-  )
+  const utils = trpc.useUtils()
 
   const createAccountSchema = yup.object({
     email: yup
@@ -165,11 +162,9 @@ function CreateAccountForm({
                     await validateField('username')
                   }}
                   checkUsernameAvailable={async (name: string) => {
-                    const { data: result } =
-                      await checkParticipantNameAvailable({
-                        variables: { username: name },
-                      })
-                    return result?.checkParticipantNameAvailable ?? false
+                    return utils.participant.checkNameAvailable.fetch({
+                      username: name,
+                    })
                   }}
                   unavailableMessage={t('shared.generic.usernameAvailability')}
                   className={{ label: 'mt-0' }}

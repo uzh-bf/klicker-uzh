@@ -30,6 +30,34 @@ export const participantCoursePinInput = z.object({
   pin: z.number().int().min(0).max(999999999),
 })
 
+export const participantCheckNameAvailableInput = z.object({
+  username: z.string(),
+})
+
+export const participantUpdateProfileInput = z.object({
+  username: z.string(),
+  email: z.string(),
+  password: z.string().nullish(),
+  isProfilePublic: z.boolean().nullish(),
+})
+
+const participantAvatarSettingsInput = z.object({
+  skinTone: z.string(),
+  eyes: z.string(),
+  mouth: z.string(),
+  hair: z.string(),
+  facialHair: z.string(),
+  accessory: z.string(),
+  hairColor: z.string(),
+  clothing: z.string(),
+  clothingColor: z.string(),
+})
+
+export const participantUpdateAvatarInput = z.object({
+  avatar: z.string(),
+  avatarSettings: participantAvatarSettingsInput,
+})
+
 export const participantLoginInput = z.object({
   usernameOrEmail: z.string(),
   password: z.string(),
