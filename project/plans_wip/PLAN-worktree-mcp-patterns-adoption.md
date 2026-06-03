@@ -77,6 +77,17 @@ architecture should stay with focused TypeScript MCP services:
   in this sparse temp worktree by pnpm/corepack `fetch failed`, so validation
   used the compiled no-network path. Next: final whole-branch review/security
   pass and PR description refresh.
+- 2026-06-03: Final follow-up done. Current-head CI initially failed the
+  lecturer MCP Docker build because `toolRunner.ts` duplicated the lecturer
+  session type with readonly scopes while `server.ts` passed the canonical auth
+  session. Fixed by importing `LecturerMcpScope` and `LecturerMcpSession` from
+  `auth.ts`. Evidence: focused MCP Vitest `28/28` passed, Prettier passed,
+  `git diff --check` passed, and local `docker build -f
+  apps/mcp-lecturer/Dockerfile --target builder .` passed the same
+  `pnpm run build --filter=@klicker-uzh/mcp-lecturer` stage that failed in CI.
+  Local security review found no high-confidence issue in the adopted MCP
+  policy/runner/error/smoke changes. Next: refresh PR description and monitor
+  restarted CI on the new head.
 
 ## What To Take Over
 
