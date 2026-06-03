@@ -1,4 +1,5 @@
 export const STUDENT_MCP_TOOL_NAMES = [
+  'klicker_student_capabilities',
   'lookup_relevant_practice_stacks',
   'get_practice_stack_for_quiz',
   'submit_practice_stack_answer',
@@ -15,7 +16,7 @@ export type McpToolAnnotations = {
 }
 
 export type ToolAudience = 'student' | 'lecturer' | 'any'
-export type ToolCategory = 'practice-read' | 'practice-write'
+export type ToolCategory = 'meta' | 'practice-read' | 'practice-write'
 export type SolutionExposure = 'none' | 'submission-gated'
 
 export type ToolPolicy = {
@@ -54,6 +55,14 @@ export const STUDENT_MCP_TOOL_POLICIES: Record<StudentMcpToolName, ToolPolicy> =
       annotations: READ_ONLY,
       audience: 'student',
       category: 'practice-read',
+      rbacScope: ['student:practice:read'],
+      requiresHumanConfirmation: false,
+      solutionExposure: 'none',
+    },
+    klicker_student_capabilities: {
+      annotations: READ_ONLY,
+      audience: 'student',
+      category: 'meta',
       rbacScope: ['student:practice:read'],
       requiresHumanConfirmation: false,
       solutionExposure: 'none',

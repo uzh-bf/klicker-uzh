@@ -10,10 +10,16 @@ import {
   verifyParticipantSession,
   type StudentMcpSession,
 } from './auth.js'
+import {
+  getStudentCapabilities,
+  type StudentMcpCapabilities,
+} from './capabilities.js'
 import type { RuntimeSettings } from './config.js'
 import type { StudentPracticeService } from './service.js'
 import { toolDefinition } from './toolPolicy.js'
 import { runStudentTool } from './toolRunner.js'
+
+export { getStudentCapabilities, type StudentMcpCapabilities }
 
 const lookupSchema = z.object({
   chatbotId: z.string().min(1).describe('Chatbot assigned to the course'),
@@ -75,6 +81,23 @@ export function createStudentMcpServer(
     },
     name: 'KlickerUZH Student MCP',
     version: '0.1.0',
+  })
+
+  server.addTool({
+    ...toolDefinition(
+      'klicker_student_capabilities',
+      'Student MCP Capabilities'
+    ),
+    description:
+      'Return the current student MCP service capabilities and policy summary. This tool does not access course practice data.',
+    execute: (_args, context) =>
+      runStudentTool({
+        execute: async () => getStudentCapabilities(settings),
+        session: context.session,
+        toolName: 'klicker_student_capabilities',
+      }),
+    parameters: z.object({}),
+    timeoutMs: 5_000,
   })
 
   server.addTool({

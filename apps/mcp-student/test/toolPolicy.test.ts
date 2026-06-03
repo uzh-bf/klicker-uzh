@@ -24,6 +24,18 @@ describe('student MCP tool policy', () => {
     }
   })
 
+  it('marks the capability tool as read-only metadata', () => {
+    expect(
+      STUDENT_MCP_TOOL_POLICIES.klicker_student_capabilities
+    ).toMatchObject({
+      annotations: READ_ONLY,
+      category: 'meta',
+      rbacScope: ['student:practice:read'],
+      requiresHumanConfirmation: false,
+      solutionExposure: 'none',
+    })
+  })
+
   it('classifies answer submission as a confirmed cumulative write', () => {
     expect(
       STUDENT_MCP_TOOL_POLICIES.submit_practice_stack_answer

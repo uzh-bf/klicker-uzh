@@ -1,45 +1,45 @@
 import { describe, expect, it } from 'vitest'
-import { getLecturerCapabilities } from '../src/capabilities.js'
-import { LECTURER_MCP_TOOL_NAMES } from '../src/toolPolicy.js'
+import { getStudentCapabilities } from '../src/capabilities.js'
+import { STUDENT_MCP_TOOL_NAMES } from '../src/toolPolicy.js'
 
-describe('lecturer MCP capabilities', () => {
+describe('student MCP capabilities', () => {
   it('advertises service metadata and policy summaries for every tool', () => {
-    const capabilities = getLecturerCapabilities({ mcpEndpoint: '/mcp' })
+    const capabilities = getStudentCapabilities({ mcpEndpoint: '/mcp' })
 
     expect(capabilities).toMatchObject({
-      service: 'mcp-lecturer',
+      service: 'mcp-student',
       version: '0.1.0',
       transport: 'httpStream',
       endpoint: '/mcp',
       autonomousWrites: false,
-      proposalRequiredForWrites: true,
+      proposalRequiredForWrites: false,
       humanConfirmationRequiredForWrites: true,
     })
     expect(capabilities.tools.map((tool) => tool.name)).toEqual(
-      LECTURER_MCP_TOOL_NAMES
+      STUDENT_MCP_TOOL_NAMES
     )
-    expect(capabilities.tools.every((tool) => tool.readOnly)).toBe(true)
+
     expect(
       capabilities.tools.find(
-        (tool) => tool.name === 'klicker_lecturer_capabilities'
+        (tool) => tool.name === 'klicker_student_capabilities'
       )
     ).toMatchObject({
       annotations: { readOnlyHint: true },
       category: 'meta',
-      rbacScope: ['manage:read'],
+      rbacScope: ['student:practice:read'],
       requiresHumanConfirmation: false,
       solutionExposure: 'none',
     })
     expect(
       capabilities.tools.find(
-        (tool) => tool.name === 'klicker_lecturer_element_create_draft_proposal'
+        (tool) => tool.name === 'submit_practice_stack_answer'
       )
     ).toMatchObject({
-      annotations: { readOnlyHint: true },
-      category: 'proposal',
-      rbacScope: ['manage:draft'],
+      annotations: { readOnlyHint: false },
+      category: 'practice-write',
+      rbacScope: ['student:practice:submit'],
       requiresHumanConfirmation: true,
-      solutionExposure: 'lecturer-owned',
+      solutionExposure: 'submission-gated',
     })
   })
 })

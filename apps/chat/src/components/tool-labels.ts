@@ -1,4 +1,5 @@
 const TOOL_LABELS: Record<string, string> = {
+  klicker_student_capabilities: 'Checked practice capabilities',
   klicker_lecturer_capabilities: 'Checked assistant capabilities',
   klicker_lecturer_choices_draft: 'Drafted answer choices',
   klicker_lecturer_course_get: 'Opened course details',

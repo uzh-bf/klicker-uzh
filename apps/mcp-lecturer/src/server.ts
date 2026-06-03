@@ -6,6 +6,10 @@ import {
   verifyLecturerSession,
   type LecturerMcpSession,
 } from './auth.js'
+import {
+  getLecturerCapabilities,
+  type LecturerMcpCapabilities,
+} from './capabilities.js'
 import type { RuntimeSettings } from './config.js'
 import { signLecturerJwt } from './jwt.js'
 import {
@@ -26,22 +30,11 @@ import {
 } from './toolPolicy.js'
 import { runLecturerDraftTool, runLecturerReadTool } from './toolRunner.js'
 
-export { LECTURER_MCP_TOOL_NAMES, type LecturerMcpToolName }
-
-type LecturerToolCapability = {
-  name: LecturerMcpToolName
-  description: string
-  readOnly: boolean
-}
-
-export type LecturerMcpCapabilities = {
-  service: 'mcp-lecturer'
-  version: '0.1.0'
-  transport: 'httpStream'
-  endpoint: `/${string}`
-  autonomousWrites: false
-  proposalRequiredForWrites: true
-  tools: LecturerToolCapability[]
+export {
+  getLecturerCapabilities,
+  LECTURER_MCP_TOOL_NAMES,
+  type LecturerMcpCapabilities,
+  type LecturerMcpToolName,
 }
 
 async function signProposalToken(
@@ -67,75 +60,6 @@ async function signProposalToken(
       issuer: settings.jwtIssuer,
     }
   )
-}
-
-export function getLecturerCapabilities(
-  settings: Pick<RuntimeSettings, 'mcpEndpoint'>
-): LecturerMcpCapabilities {
-  return {
-    service: 'mcp-lecturer',
-    version: '0.1.0',
-    transport: 'httpStream',
-    endpoint: settings.mcpEndpoint,
-    autonomousWrites: false,
-    proposalRequiredForWrites: true,
-    tools: [
-      {
-        name: 'klicker_lecturer_capabilities',
-        description:
-          'Describe the lecturer MCP scaffold and currently available safe tools.',
-        readOnly: true,
-      },
-      {
-        name: 'klicker_lecturer_course_list',
-        description:
-          'List compact courses the authenticated lecturer can read.',
-        readOnly: true,
-      },
-      {
-        name: 'klicker_lecturer_course_get',
-        description:
-          'Get compact metadata and activity counts for one readable course.',
-        readOnly: true,
-      },
-      {
-        name: 'klicker_lecturer_element_search',
-        description:
-          'Search readable question elements with capped plain-text snippets.',
-        readOnly: true,
-      },
-      {
-        name: 'klicker_lecturer_element_get',
-        description:
-          'Get one readable question element with capped sanitized details.',
-        readOnly: true,
-      },
-      {
-        name: 'klicker_lecturer_question_draft',
-        description:
-          'Create a validated non-persisted question draft payload for lecturer review.',
-        readOnly: true,
-      },
-      {
-        name: 'klicker_lecturer_choices_draft',
-        description:
-          'Create validated non-persisted answer-choice draft scaffolding.',
-        readOnly: true,
-      },
-      {
-        name: 'klicker_lecturer_feedback_draft',
-        description:
-          'Create validated non-persisted answer-feedback draft scaffolding.',
-        readOnly: true,
-      },
-      {
-        name: 'klicker_lecturer_element_create_draft_proposal',
-        description:
-          'Create a signed confirmation proposal for a DRAFT question. This never persists data until the lecturer confirms it in Manage assistant UI.',
-        readOnly: true,
-      },
-    ],
-  }
 }
 
 export function createLecturerMcpServer(

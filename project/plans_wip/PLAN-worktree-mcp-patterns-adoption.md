@@ -53,6 +53,17 @@ architecture should stay with focused TypeScript MCP services:
   Local review/simplification kept classifiers local because student and
   lecturer taxonomies intentionally diverge. Next: Slice 4 capability manifest
   alignment.
+- 2026-06-03: Slice 4 done. Added a student capabilities tool and extracted
+  student/lecturer capability manifest builders into dependency-light
+  `capabilities.ts` modules. Both manifests now include service metadata,
+  endpoint, autonomous write policy, human confirmation/proposal policy, and
+  per-tool annotation/category/scope/solution-exposure summaries derived from
+  local tool policy metadata. Evidence: focused policy/runner/error/capability
+  and chat Vitest `36/36` passed, Prettier passed, `git diff --check` passed,
+  standalone strict TypeScript check for policy/error/runner/capability helpers
+  passed. Local review/simplification moved capability tests away from
+  `server.ts` imports so local validation does not depend on missing FastMCP
+  symlinks in the temp worktree. Next: Slice 5 local E2E smoke scripts.
 
 ## What To Take Over
 
