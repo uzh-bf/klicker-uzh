@@ -17,6 +17,7 @@ const signJWT = vi.hoisted(() =>
       `jwt-${payload.sub}-${payload.scope ?? payload.role}`
   )
 )
+const verifyJWT = vi.hoisted(() => vi.fn())
 
 vi.mock('bcryptjs', () => ({
   default: {
@@ -36,6 +37,7 @@ vi.mock('@klicker-uzh/util', async (importOriginal) => {
   return {
     ...actual,
     signJWT,
+    verifyJWT,
   }
 })
 
@@ -57,6 +59,7 @@ function createContext({
 describe('participant auth routers', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    delete process.env.APP_SECRET
     delete process.env.APP_ORIGIN_API
     delete process.env.APP_ORIGIN_PWA
   })
@@ -248,4 +251,113 @@ describe('participant auth routers', () => {
       })
     ).resolves.toBe(false)
   })
+
+  test('logs in a participant with a valid magic link token', async () => {
+    process.env.APP_SECRET = 'secret'
+    process.env.APP_ORIGIN_API = 'http://api.localhost'
+    verifyJWT.mockResolvedValue({
+      sub: 'participant-1',
+      scope: UserLoginScope.OTP,
+    })
+    const update = vi.fn().mockResolvedValue({})
+    const prisma = {
+      participant: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'participant-1',
+          locale: Locale.de,
+        }),
+        update,
+      },
+    } as unknown as TRPCContext['prisma']
+    const res = { cookie: vi.fn() }
+    const caller = appRouter.createCaller(createContext({ prisma, res }))
+
+    await expect(
+      caller.participant.loginWithMagicLink({
+        token: 'valid-token',
+      })
+    ).resolves.toBe('participant-1')
+
+    expect(verifyJWT).toHaveBeenCalledWith('valid-token', 'secret')
+    expect(prisma?.participant.findUnique).toHaveBeenCalledWith({
+      where: { id: 'participant-1' },
+    })
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 'participant-1' },
+      data: { lastLoginAt: expect.any(Date) },
+    })
+    expect(res.cookie).toHaveBeenCalledWith(
+      'participant_token',
+      `jwt-participant-1-${UserRole.PARTICIPANT}`,
+      expect.objectContaining({ httpOnly: true, sameSite: 'lax' })
+    )
+    expect(res.cookie).toHaveBeenCalledWith(
+      'NEXT_LOCALE',
+      Locale.de,
+      expect.objectContaining({ httpOnly: true, sameSite: 'lax' })
+    )
+  })
+
+  test.each([
+    {
+      label: 'wrong scope',
+      token: 'wrong-scope-token',
+      setupToken: () =>
+        verifyJWT.mockResolvedValue({
+          sub: 'participant-1',
+          scope: UserLoginScope.READ_ONLY,
+        }),
+    },
+    {
+      label: 'invalid token',
+      token: 'invalid-token',
+      setupToken: () => verifyJWT.mockRejectedValue(new Error('Invalid token')),
+    },
+    {
+      label: 'missing participant',
+      token: 'valid-token',
+      setupToken: () =>
+        verifyJWT.mockResolvedValue({
+          sub: 'missing-participant',
+          scope: UserLoginScope.OTP,
+        }),
+      expectedLookup: 'missing-participant',
+      findUniqueResult: null,
+    },
+  ])(
+    'returns null for magic link tokens with $label',
+    async ({ token, setupToken, expectedLookup, findUniqueResult }) => {
+      process.env.APP_SECRET = 'secret'
+      setupToken()
+      const findUnique = vi.fn()
+
+      if (findUniqueResult !== undefined) {
+        findUnique.mockResolvedValue(findUniqueResult)
+      }
+
+      const prisma = {
+        participant: {
+          findUnique,
+          update: vi.fn(),
+        },
+      } as unknown as TRPCContext['prisma']
+      const res = { cookie: vi.fn() }
+      const caller = appRouter.createCaller(createContext({ prisma, res }))
+
+      await expect(
+        caller.participant.loginWithMagicLink({ token })
+      ).resolves.toBeNull()
+
+      expect(verifyJWT).toHaveBeenCalledWith(token, 'secret')
+      if (expectedLookup) {
+        expect(prisma?.participant.findUnique).toHaveBeenCalledWith({
+          where: { id: expectedLookup },
+        })
+      } else {
+        expect(prisma?.participant.findUnique).not.toHaveBeenCalled()
+      }
+      expect(prisma?.participant.update).not.toHaveBeenCalled()
+      expect(res.cookie).not.toHaveBeenCalled()
+    }
+  )
 })

@@ -22,6 +22,10 @@ export const participantLoginInput = z.object({
   password: z.string(),
 })
 
+export const participantLoginWithMagicLinkInput = z.object({
+  token: z.string(),
+})
+
 export const participantSendMagicLinkInput = z.object({
   usernameOrEmail: z.string(),
 })

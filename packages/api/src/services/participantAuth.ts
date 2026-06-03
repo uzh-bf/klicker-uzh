@@ -4,7 +4,7 @@ import {
   type Locale,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
-import { signJWT } from '@klicker-uzh/util'
+import { signJWT, verifyJWT } from '@klicker-uzh/util'
 import { TRPCError } from '@trpc/server'
 import bcrypt from 'bcryptjs'
 import nodemailer from 'nodemailer'
@@ -337,4 +337,41 @@ export async function sendMagicLink({
   })
 
   return true
+}
+
+export async function loginWithMagicLink({
+  prisma,
+  res,
+  token,
+}: {
+  prisma: PrismaClient
+  res: unknown
+  token: string
+}) {
+  let tokenData: Awaited<ReturnType<typeof verifyJWT>>
+
+  try {
+    tokenData = await verifyJWT(token, process.env.APP_SECRET as string)
+  } catch {
+    return null
+  }
+
+  if (!tokenData.sub || tokenData.scope !== UserLoginScope.OTP) {
+    return null
+  }
+
+  const participant = await prisma.participant.findUnique({
+    where: { id: tokenData.sub },
+  })
+
+  if (!participant) return null
+
+  await doParticipantLogin({
+    participantId: participant.id,
+    participantLocale: participant.locale,
+    prisma,
+    res,
+  })
+
+  return participant.id
 }

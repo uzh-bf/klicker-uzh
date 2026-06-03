@@ -9,6 +9,7 @@ import { levelFromXp } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import {
   loginParticipant,
+  loginWithMagicLink,
   sendMagicLink,
 } from '../../services/participantAuth.js'
 import { getPrisma } from '../context.js'
@@ -31,6 +32,7 @@ import {
   participantCourseLeaderboardInput,
   participantGroupActivityInstancesInput,
   participantLoginInput,
+  participantLoginWithMagicLinkInput,
   participantParticipationsInput,
   participantSelfInput,
   participantSendMagicLinkInput,
@@ -222,6 +224,18 @@ export const participantRouter = router({
         res: ctx.res,
         usernameOrEmail: input.usernameOrEmail,
         password: input.password,
+      })
+    }),
+
+  loginWithMagicLink: publicProcedure
+    .input(participantLoginWithMagicLinkInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return loginWithMagicLink({
+        prisma,
+        res: ctx.res,
+        token: input.token,
       })
     }),
 
