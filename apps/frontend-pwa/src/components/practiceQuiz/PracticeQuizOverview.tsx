@@ -1,19 +1,17 @@
-import { useQuery } from '@apollo/client'
 import {
   faQuestionCircle,
   faTimesCircle,
 } from '@fortawesome/free-regular-svg-icons'
 import { faRepeat, faShuffle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  ElementOrderType,
-  SelfDocument,
-  UserRole,
-} from '@klicker-uzh/graphql/dist/ops'
+import type { ElementOrderType } from '@klicker-uzh/graphql/dist/ops'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { trpc } from '../../lib/trpc'
+
+const TEMPORARY_PARTICIPANT_ROLE = 'TEMPORARY_PARTICIPANT'
 
 interface PracticeQuizOverviewProps {
   displayName: string
@@ -42,7 +40,9 @@ function PracticeQuizOverview({
 }: PracticeQuizOverviewProps) {
   const t = useTranslations()
   const router = useRouter()
-  const { data } = useQuery(SelfDocument, { skip: previewOnly })
+  const { data } = trpc.participant.self.useQuery(undefined, {
+    enabled: !previewOnly,
+  })
 
   const pageInFrame =
     global?.window &&
@@ -51,7 +51,7 @@ function PracticeQuizOverview({
   return (
     <div className="flex flex-col space-y-4">
       {!previewOnly &&
-        (!data?.self || data.self.role === UserRole.TemporaryParticipant) && (
+        (!data?.self || data.self.role === TEMPORARY_PARTICIPANT_ROLE) && (
           <UserNotification type="warning">
             {pageInFrame
               ? t('pwa.general.userNotLoggedInFrame')

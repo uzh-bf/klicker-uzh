@@ -1,10 +1,7 @@
-import { useQuery } from '@apollo/client'
 import {
-  Course,
-  PracticeQuiz as PracticeQuizType,
-  SelfDocument,
   StackFeedbackStatus,
-  UserRole,
+  type Course,
+  type PracticeQuiz as PracticeQuizType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useTranslations } from 'next-intl'
@@ -15,6 +12,9 @@ import PreviewMessage from '../common/PreviewMessage'
 import StepProgressWithScoring from '../common/StepProgressWithScoring'
 import ElementStack from './ElementStack'
 import PracticeQuizOverview from './PracticeQuizOverview'
+
+const PARTICIPANT_ROLE = 'PARTICIPANT'
+const TEMPORARY_PARTICIPANT_ROLE = 'TEMPORARY_PARTICIPANT'
 
 export const FEEDBACK_STATUS_PROGRESS_MAP: Record<
   StackFeedbackStatus,
@@ -62,8 +62,8 @@ function PracticeQuiz({
   const currentStack = quiz.stacks?.[currentIx]
   const courseId =
     typeof router.query.courseId === 'string' ? router.query.courseId : ''
-  const { data: dataParticipant } = useQuery(SelfDocument, {
-    skip: previewOnly,
+  const { data: dataParticipant } = trpc.participant.self.useQuery(undefined, {
+    enabled: !previewOnly,
   })
 
   const handleAllStacksCompletion = () => {
@@ -110,7 +110,7 @@ function PracticeQuiz({
           !previewOnly &&
           courseId !== '' &&
           !!dataParticipant?.self &&
-          dataParticipant?.self.role === UserRole.Participant,
+          dataParticipant?.self.role === PARTICIPANT_ROLE,
       }
     )
 
@@ -193,7 +193,7 @@ function PracticeQuiz({
             handleNextElement={handleNextElement}
             withParticipant={
               !!dataParticipant?.self &&
-              dataParticipant.self.role !== UserRole.TemporaryParticipant
+              dataParticipant.self.role !== TEMPORARY_PARTICIPANT_ROLE
             }
             onAllStacksCompletion={handleAllStacksCompletion}
             bookmarks={bookmarksData}
