@@ -21,6 +21,18 @@ describe('lecturer MCP adapter', () => {
     ).toBe('http://localhost:7091/custom-mcp')
   })
 
+  test('derives the production MCP URL from lecturer MCP host env vars', () => {
+    expect(
+      getLecturerMcpUrl({
+        MCP_LECTURER_HOST: 'lecturer-mcp.internal',
+        MCP_LECTURER_PATH: 'custom-mcp',
+        MCP_LECTURER_PORT: '7091',
+        MCP_LECTURER_SCHEME: 'http',
+        NODE_ENV: 'production',
+      } as NodeJS.ProcessEnv)
+    ).toBe('http://lecturer-mcp.internal:7091/custom-mcp')
+  })
+
   test('stays disabled in production without an explicit URL', () => {
     expect(
       getLecturerMcpUrl({

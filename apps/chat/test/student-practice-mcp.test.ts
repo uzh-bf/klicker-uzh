@@ -96,4 +96,16 @@ describe('student practice MCP adapter', () => {
       } as NodeJS.ProcessEnv)
     ).toBe('http://localhost:7090/custom-mcp')
   })
+
+  test('derives the production MCP URL from student MCP host env vars', () => {
+    expect(
+      getStudentPracticeMcpUrl({
+        MCP_STUDENT_HOST: 'student-mcp.internal',
+        MCP_STUDENT_PATH: 'custom-mcp',
+        MCP_STUDENT_PORT: '7090',
+        MCP_STUDENT_SCHEME: 'http',
+        NODE_ENV: 'production',
+      } as NodeJS.ProcessEnv)
+    ).toBe('http://student-mcp.internal:7090/custom-mcp')
+  })
 })

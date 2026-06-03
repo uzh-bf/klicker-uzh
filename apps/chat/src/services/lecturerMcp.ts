@@ -22,6 +22,14 @@ export function getLecturerMcpUrl(
     return env.MCP_LECTURER_URL
   }
 
+  if (env.MCP_LECTURER_HOST) {
+    const scheme = env.MCP_LECTURER_SCHEME ?? 'http'
+    const port = env.MCP_LECTURER_PORT ? `:${env.MCP_LECTURER_PORT}` : ''
+    return `${scheme}://${env.MCP_LECTURER_HOST}${port}${normalizedPath(
+      env.MCP_LECTURER_PATH
+    )}`
+  }
+
   if (env.NODE_ENV === 'development') {
     return `http://localhost:${env.MCP_LECTURER_PORT ?? '7081'}${normalizedPath(
       env.MCP_LECTURER_PATH

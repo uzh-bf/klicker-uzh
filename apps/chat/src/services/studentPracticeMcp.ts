@@ -84,6 +84,14 @@ export function getStudentPracticeMcpUrl(
     return env.MCP_STUDENT_URL
   }
 
+  if (env.MCP_STUDENT_HOST) {
+    const scheme = env.MCP_STUDENT_SCHEME ?? 'http'
+    const port = env.MCP_STUDENT_PORT ? `:${env.MCP_STUDENT_PORT}` : ''
+    return `${scheme}://${env.MCP_STUDENT_HOST}${port}${normalizedPath(
+      env.MCP_STUDENT_PATH
+    )}`
+  }
+
   if (env.NODE_ENV === 'development') {
     return `http://localhost:${env.MCP_STUDENT_PORT ?? '7080'}${normalizedPath(
       env.MCP_STUDENT_PATH
