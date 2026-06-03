@@ -1,8 +1,7 @@
-import { useQuery } from '@apollo/client'
-import { GetPublicParticipantProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { trpc } from '../../lib/trpc'
 import ProfileData from './ProfileData'
 
 interface ParticipantProfileModalProps {
@@ -21,9 +20,10 @@ function ParticipantProfileModal({
   const [currentIndex, setCurrentIndex] = useState<number>(
     top10Participants.indexOf(participantId)
   )
-  const { data, loading } = useQuery(GetPublicParticipantProfileDocument, {
-    variables: { id: selectedParticipant },
-  })
+  const { data, isLoading } = trpc.participant.publicProfile.useQuery(
+    { participantId: selectedParticipant },
+    { enabled: Boolean(selectedParticipant) }
+  )
 
   const participant = data?.publicParticipantProfile
 
@@ -43,7 +43,7 @@ function ParticipantProfileModal({
   return (
     <Modal
       open
-      loading={loading || !participant}
+      loading={isLoading || !participant}
       onClose={onClose}
       className={{
         content: 'my-auto w-[500px]',

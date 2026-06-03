@@ -40,6 +40,7 @@ import {
   toParticipantParticipation,
   toParticipantSelf,
   toPracticeCourse,
+  toPublicParticipantProfile,
   toTemporaryParticipantSelf,
 } from '../dto/participant.js'
 import { publicProcedure, router } from '../init.js'
@@ -62,6 +63,7 @@ import {
   participantLoginWithMagicLinkInput,
   participantLogoutTemporaryInput,
   participantParticipationsInput,
+  participantPublicProfileInput,
   participantSelfInput,
   participantSendMagicLinkInput,
   participantSubscribeToPushInput,
@@ -85,6 +87,33 @@ function emptyCourseLeaderboard() {
       averageScore: 0,
     },
   }
+}
+
+const publicParticipantProfileSelect = {
+  id: true,
+  username: true,
+  avatar: true,
+  avatarSettings: true,
+  isProfilePublic: true,
+  xp: true,
+  achievements: {
+    select: {
+      id: true,
+      achievedAt: true,
+      achievedCount: true,
+      achievement: {
+        select: {
+          id: true,
+          nameDE: true,
+          nameEN: true,
+          descriptionDE: true,
+          descriptionEN: true,
+          icon: true,
+          iconColor: true,
+        },
+      },
+    },
+  },
 }
 
 async function getRollingCourseLeaderboard({
@@ -530,6 +559,47 @@ export const participantRouter = router({
       }
 
       return { self: null }
+    }),
+
+  publicProfile: participantProcedure
+    .input(participantPublicProfileInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const self = await prisma.participant.findUnique({
+        where: { id: ctx.user.sub },
+        select: publicParticipantProfileSelect,
+      })
+
+      if (self?.id === input.participantId) {
+        const levelData = await getLevelData(prisma, self.xp)
+
+        return {
+          publicParticipantProfile: toPublicParticipantProfile(
+            { ...self, isSelf: true },
+            { levelData }
+          ),
+        }
+      }
+
+      const participant = await prisma.participant.findUnique({
+        where: { id: input.participantId },
+        select: publicParticipantProfileSelect,
+      })
+
+      if (!participant) return { publicParticipantProfile: null }
+
+      const visible = participant.isProfilePublic && self?.isProfilePublic
+      const publicParticipantProfile = visible
+        ? participant
+        : { ...participant, username: 'Anonymous', avatar: null }
+      const levelData = await getLevelData(prisma, publicParticipantProfile.xp)
+
+      return {
+        publicParticipantProfile: toPublicParticipantProfile(
+          publicParticipantProfile,
+          { levelData }
+        ),
+      }
     }),
 
   courses: participantProcedure.query(async ({ ctx }) => {

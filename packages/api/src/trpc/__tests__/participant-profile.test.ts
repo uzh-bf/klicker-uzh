@@ -34,6 +34,90 @@ function createContext({
   }
 }
 
+const avatarSettings = {
+  skinTone: 'tone',
+  eyes: 'eyes',
+  mouth: 'mouth',
+  hair: 'hair',
+  facialHair: 'facialHair',
+  accessory: 'accessory',
+  hairColor: 'hairColor',
+  clothing: 'clothing',
+  clothingColor: 'clothingColor',
+}
+
+const levelData = {
+  id: 1,
+  index: 1,
+  name: 'Starter',
+  avatar: null,
+  requiredXp: 0,
+  nextLevel: {
+    id: 2,
+    index: 2,
+    name: 'Next',
+    avatar: 'next.svg',
+    requiredXp: 9000,
+  },
+}
+
+const achievementInstance = {
+  id: 11,
+  achievedAt: new Date('2026-01-01T00:00:00.000Z'),
+  achievedCount: 2,
+  achievement: {
+    id: 12,
+    nameDE: 'Erfolg',
+    nameEN: 'Achievement',
+    descriptionDE: 'Beschreibung',
+    descriptionEN: 'Description',
+    icon: '/achievement.svg',
+    iconColor: null,
+  },
+}
+
+function createParticipant(
+  overrides: Partial<{
+    avatar: string | null
+    id: string
+    isProfilePublic: boolean
+    username: string
+    xp: number
+  }> = {}
+) {
+  return {
+    id: 'participant-1',
+    username: 'student1',
+    avatar: 'avatar-1',
+    avatarSettings,
+    isProfilePublic: true,
+    xp: 0,
+    achievements: [achievementInstance],
+    ...overrides,
+  }
+}
+
+function expectedPublicProfile(
+  overrides: Partial<ReturnType<typeof createParticipant>> & {
+    isSelf?: boolean
+  } = {}
+) {
+  const participant = createParticipant(overrides)
+
+  return {
+    id: participant.id,
+    username: participant.username,
+    avatar: participant.avatar,
+    avatarSettings,
+    isProfilePublic: participant.isProfilePublic,
+    isSelf: overrides.isSelf ?? null,
+    level: 1,
+    levelData,
+    xp: participant.xp,
+    achievements: [achievementInstance],
+  }
+}
+
 describe('participant profile routers', () => {
   afterEach(() => {
     vi.clearAllMocks()
@@ -240,6 +324,144 @@ describe('participant profile routers', () => {
         username: 'student1',
         email: 'new@example.com',
       })
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+  })
+
+  test('returns the full public profile for the current participant', async () => {
+    const findUnique = vi.fn().mockResolvedValue(createParticipant())
+    const levelFindUnique = vi.fn().mockResolvedValue(levelData)
+    const prisma = {
+      participant: {
+        findUnique,
+      },
+      level: {
+        findUnique: levelFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.publicProfile({ participantId: 'participant-1' })
+    ).resolves.toEqual({
+      publicParticipantProfile: expectedPublicProfile({ isSelf: true }),
+    })
+
+    expect(findUnique).toHaveBeenCalledTimes(1)
+    expect(findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'participant-1' } })
+    )
+    expect(levelFindUnique).toHaveBeenCalledWith({
+      where: { index: 1 },
+      include: { nextLevel: true },
+    })
+  })
+
+  test('returns another participant profile when both profiles are public', async () => {
+    const target = createParticipant({
+      id: 'participant-2',
+      username: 'student2',
+      avatar: 'avatar-2',
+      isProfilePublic: true,
+    })
+    const findUnique = vi
+      .fn()
+      .mockResolvedValueOnce(createParticipant({ isProfilePublic: true }))
+      .mockResolvedValueOnce(target)
+    const prisma = {
+      participant: {
+        findUnique,
+      },
+      level: {
+        findUnique: vi.fn().mockResolvedValue(levelData),
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.publicProfile({ participantId: 'participant-2' })
+    ).resolves.toEqual({
+      publicParticipantProfile: expectedPublicProfile({
+        id: 'participant-2',
+        username: 'student2',
+        avatar: 'avatar-2',
+      }),
+    })
+
+    expect(findUnique).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ where: { id: 'participant-1' } })
+    )
+    expect(findUnique).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ where: { id: 'participant-2' } })
+    )
+  })
+
+  test('anonymizes another participant profile unless both profiles are public', async () => {
+    const findUnique = vi
+      .fn()
+      .mockResolvedValueOnce(createParticipant({ isProfilePublic: false }))
+      .mockResolvedValueOnce(
+        createParticipant({
+          id: 'participant-2',
+          username: 'student2',
+          avatar: 'avatar-2',
+          isProfilePublic: true,
+        })
+      )
+    const prisma = {
+      participant: {
+        findUnique,
+      },
+      level: {
+        findUnique: vi.fn().mockResolvedValue(levelData),
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.publicProfile({ participantId: 'participant-2' })
+    ).resolves.toEqual({
+      publicParticipantProfile: expectedPublicProfile({
+        id: 'participant-2',
+        username: 'Anonymous',
+        avatar: null,
+        isProfilePublic: true,
+      }),
+    })
+  })
+
+  test('returns null for a missing public participant profile', async () => {
+    const levelFindUnique = vi.fn()
+    const prisma = {
+      participant: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValueOnce(createParticipant())
+          .mockResolvedValueOnce(null),
+      },
+      level: {
+        findUnique: levelFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.publicProfile({ participantId: 'missing' })
+    ).resolves.toEqual({
+      publicParticipantProfile: null,
+    })
+
+    expect(levelFindUnique).not.toHaveBeenCalled()
+  })
+
+  test('rejects public profile queries for non-participants', async () => {
+    const caller = appRouter.createCaller(
+      createContext({ role: UserRole.USER, sub: 'user-1' })
+    )
+
+    await expect(
+      caller.participant.publicProfile({ participantId: 'participant-1' })
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
   })
 })

@@ -37,6 +37,30 @@ type ParticipantSelfSource = Pick<
   | 'xp'
 >
 
+type PublicParticipantAchievementSource = Pick<
+  DB.ParticipantAchievementInstance,
+  'achievedAt' | 'achievedCount' | 'id'
+> & {
+  achievement: Pick<
+    DB.Achievement,
+    | 'descriptionDE'
+    | 'descriptionEN'
+    | 'icon'
+    | 'iconColor'
+    | 'id'
+    | 'nameDE'
+    | 'nameEN'
+  >
+}
+
+type PublicParticipantProfileSource = Pick<
+  DB.Participant,
+  'avatar' | 'avatarSettings' | 'id' | 'isProfilePublic' | 'username' | 'xp'
+> & {
+  achievements?: PublicParticipantAchievementSource[] | null
+  isSelf?: boolean
+}
+
 type TemporaryParticipantSelfSource = Pick<
   DB.TemporaryLeaderboardEntry,
   'avatar' | 'quizId' | 'username'
@@ -259,6 +283,38 @@ export function toTemporaryParticipantSelf(
     xp: null,
     level: levelFromXp(0),
     levelData: toLevelData(levelData),
+  }
+}
+
+export function toPublicParticipantProfile(
+  participant: PublicParticipantProfileSource,
+  { levelData }: { levelData: LevelSource | null }
+) {
+  return {
+    id: participant.id,
+    username: participant.username,
+    avatar: participant.avatar,
+    avatarSettings: toAvatarSettings(participant.avatarSettings),
+    isProfilePublic: participant.isProfilePublic,
+    isSelf: participant.isSelf ?? null,
+    level: levelFromXp(participant.xp ?? 0),
+    levelData: toLevelData(levelData),
+    xp: participant.xp,
+    achievements:
+      participant.achievements?.map((instance) => ({
+        id: instance.id,
+        achievedAt: instance.achievedAt,
+        achievedCount: instance.achievedCount,
+        achievement: {
+          id: instance.achievement.id,
+          nameDE: instance.achievement.nameDE,
+          nameEN: instance.achievement.nameEN,
+          descriptionDE: instance.achievement.descriptionDE,
+          descriptionEN: instance.achievement.descriptionEN,
+          icon: instance.achievement.icon,
+          iconColor: instance.achievement.iconColor,
+        },
+      })) ?? [],
   }
 }
 

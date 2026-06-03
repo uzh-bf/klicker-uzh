@@ -18,6 +18,10 @@ export const participantCourseInput = z.object({
   courseId: z.string(),
 })
 
+export const participantPublicProfileInput = z.object({
+  participantId: z.string(),
+})
+
 export const participantActivateAccountInput = z.object({
   token: z.string(),
 })
