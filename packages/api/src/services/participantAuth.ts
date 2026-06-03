@@ -42,6 +42,15 @@ function getCookieResponse(res: unknown): CookieResponse {
   return res as CookieResponse
 }
 
+function isRecordNotFoundError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'P2025'
+  )
+}
+
 async function createParticipantToken(participantId: string) {
   return signJWT(
     {
@@ -79,6 +88,28 @@ async function doParticipantLogin({
   cookieResponse.cookie('NEXT_LOCALE', participantLocale, COOKIE_SETTINGS)
 
   return jwt
+}
+
+async function verifyParticipantLoginToken({
+  scope,
+  token,
+}: {
+  scope: UserLoginScope
+  token: string
+}) {
+  let tokenData: Awaited<ReturnType<typeof verifyJWT>>
+
+  try {
+    tokenData = await verifyJWT(token, process.env.APP_SECRET as string)
+  } catch {
+    return null
+  }
+
+  if (!tokenData.sub || tokenData.scope !== scope) {
+    return null
+  }
+
+  return tokenData.sub
 }
 
 async function createTransport() {
@@ -348,23 +379,56 @@ export async function loginWithMagicLink({
   res: unknown
   token: string
 }) {
-  let tokenData: Awaited<ReturnType<typeof verifyJWT>>
+  const participantId = await verifyParticipantLoginToken({
+    scope: UserLoginScope.OTP,
+    token,
+  })
 
-  try {
-    tokenData = await verifyJWT(token, process.env.APP_SECRET as string)
-  } catch {
-    return null
-  }
-
-  if (!tokenData.sub || tokenData.scope !== UserLoginScope.OTP) {
-    return null
-  }
+  if (!participantId) return null
 
   const participant = await prisma.participant.findUnique({
-    where: { id: tokenData.sub },
+    where: { id: participantId },
   })
 
   if (!participant) return null
+
+  await doParticipantLogin({
+    participantId: participant.id,
+    participantLocale: participant.locale,
+    prisma,
+    res,
+  })
+
+  return participant.id
+}
+
+export async function activateParticipantAccount({
+  prisma,
+  res,
+  token,
+}: {
+  prisma: PrismaClient
+  res: unknown
+  token: string
+}) {
+  const participantId = await verifyParticipantLoginToken({
+    scope: UserLoginScope.ACTIVATION,
+    token,
+  })
+
+  if (!participantId) return null
+
+  let participant
+
+  try {
+    participant = await prisma.participant.update({
+      where: { id: participantId },
+      data: { isEmailValid: true },
+    })
+  } catch (error) {
+    if (isRecordNotFoundError(error)) return null
+    throw error
+  }
 
   await doParticipantLogin({
     participantId: participant.id,

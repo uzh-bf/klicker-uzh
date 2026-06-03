@@ -8,6 +8,7 @@ import {
 import { levelFromXp } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import {
+  activateParticipantAccount,
   loginParticipant,
   loginWithMagicLink,
   sendMagicLink,
@@ -28,6 +29,7 @@ import {
 import { publicProcedure, router } from '../init.js'
 import { participantProcedure } from '../procedures.js'
 import {
+  participantActivateAccountInput,
   participantCourseInput,
   participantCourseLeaderboardInput,
   participantGroupActivityInstancesInput,
@@ -214,6 +216,18 @@ async function getRollingCourseLeaderboard({
 }
 
 export const participantRouter = router({
+  activateAccount: publicProcedure
+    .input(participantActivateAccountInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return activateParticipantAccount({
+        prisma,
+        res: ctx.res,
+        token: input.token,
+      })
+    }),
+
   login: publicProcedure
     .input(participantLoginInput)
     .mutation(async ({ ctx, input }) => {

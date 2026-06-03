@@ -1,9 +1,5 @@
-import { useLazyQuery, useMutation } from '@apollo/client'
-import {
-  ActivateParticipantAccountDocument,
-  SelfDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { trpc } from '@lib/trpc'
 import { H2, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -17,11 +13,9 @@ function Activation() {
   const loginTimeout = useRef<any>(null)
   const redirectionTimeout = useRef<any>(null)
   const { token } = router.query
+  const utils = trpc.useUtils()
 
-  const [activateAccount] = useMutation(ActivateParticipantAccountDocument)
-  const [fetchSelf] = useLazyQuery(SelfDocument, {
-    fetchPolicy: 'network-only',
-  })
+  const activateAccount = trpc.participant.activateAccount.useMutation()
 
   // set timeout of 2 seconds to show the loader and then login in timeout callback
   useEffect(() => {
@@ -29,16 +23,14 @@ function Activation() {
       clearTimeout(loginTimeout.current)
       clearTimeout(redirectionTimeout.current)
       loginTimeout.current = setTimeout(async () => {
-        const result = await activateAccount({
-          variables: {
-            token: token as string,
-          },
+        const result = await activateAccount.mutateAsync({
+          token: token as string,
         })
 
-        if (result?.data?.activateParticipantAccount) {
+        if (result) {
           clearTimeout(loginTimeout.current)
           clearTimeout(redirectionTimeout.current)
-          await fetchSelf()
+          await utils.participant.self.fetch(undefined)
           router.push('/')
         } else {
           toast({

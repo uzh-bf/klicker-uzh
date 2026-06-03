@@ -360,4 +360,114 @@ describe('participant auth routers', () => {
       expect(res.cookie).not.toHaveBeenCalled()
     }
   )
+
+  test('activates a participant account and logs the participant in', async () => {
+    process.env.APP_SECRET = 'secret'
+    process.env.APP_ORIGIN_API = 'http://api.localhost'
+    verifyJWT.mockResolvedValue({
+      sub: 'participant-1',
+      scope: UserLoginScope.ACTIVATION,
+    })
+    const update = vi
+      .fn()
+      .mockResolvedValueOnce({
+        id: 'participant-1',
+        locale: Locale.en,
+      })
+      .mockResolvedValueOnce({})
+    const prisma = {
+      participant: {
+        update,
+      },
+    } as unknown as TRPCContext['prisma']
+    const res = { cookie: vi.fn() }
+    const caller = appRouter.createCaller(createContext({ prisma, res }))
+
+    await expect(
+      caller.participant.activateAccount({
+        token: 'activation-token',
+      })
+    ).resolves.toBe('participant-1')
+
+    expect(verifyJWT).toHaveBeenCalledWith('activation-token', 'secret')
+    expect(update).toHaveBeenNthCalledWith(1, {
+      where: { id: 'participant-1' },
+      data: { isEmailValid: true },
+    })
+    expect(update).toHaveBeenNthCalledWith(2, {
+      where: { id: 'participant-1' },
+      data: { lastLoginAt: expect.any(Date) },
+    })
+    expect(res.cookie).toHaveBeenCalledWith(
+      'participant_token',
+      `jwt-participant-1-${UserRole.PARTICIPANT}`,
+      expect.objectContaining({ httpOnly: true, sameSite: 'lax' })
+    )
+    expect(res.cookie).toHaveBeenCalledWith(
+      'NEXT_LOCALE',
+      Locale.en,
+      expect.objectContaining({ httpOnly: true, sameSite: 'lax' })
+    )
+  })
+
+  test.each([
+    {
+      label: 'wrong scope',
+      token: 'wrong-scope-token',
+      setupToken: () =>
+        verifyJWT.mockResolvedValue({
+          sub: 'participant-1',
+          scope: UserLoginScope.OTP,
+        }),
+    },
+    {
+      label: 'invalid token',
+      token: 'invalid-token',
+      setupToken: () => verifyJWT.mockRejectedValue(new Error('Invalid token')),
+    },
+    {
+      label: 'missing participant',
+      token: 'valid-token',
+      setupToken: () =>
+        verifyJWT.mockResolvedValue({
+          sub: 'missing-participant',
+          scope: UserLoginScope.ACTIVATION,
+        }),
+      updateError: { code: 'P2025' },
+    },
+  ])(
+    'returns null for activation tokens with $label',
+    async ({ token, setupToken, updateError }) => {
+      process.env.APP_SECRET = 'secret'
+      setupToken()
+      const update = vi.fn()
+
+      if (updateError !== undefined) {
+        update.mockRejectedValue(updateError)
+      }
+
+      const prisma = {
+        participant: {
+          update,
+        },
+      } as unknown as TRPCContext['prisma']
+      const res = { cookie: vi.fn() }
+      const caller = appRouter.createCaller(createContext({ prisma, res }))
+
+      await expect(
+        caller.participant.activateAccount({ token })
+      ).resolves.toBeNull()
+
+      expect(verifyJWT).toHaveBeenCalledWith(token, 'secret')
+      if (updateError) {
+        expect(prisma?.participant.update).toHaveBeenCalledWith({
+          where: { id: 'missing-participant' },
+          data: { isEmailValid: true },
+        })
+      } else {
+        expect(prisma?.participant.update).not.toHaveBeenCalled()
+      }
+      expect(res.cookie).not.toHaveBeenCalled()
+    }
+  )
 })

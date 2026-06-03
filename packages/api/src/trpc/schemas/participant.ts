@@ -17,6 +17,10 @@ export const participantCourseInput = z.object({
   courseId: z.string(),
 })
 
+export const participantActivateAccountInput = z.object({
+  token: z.string(),
+})
+
 export const participantLoginInput = z.object({
   usernameOrEmail: z.string(),
   password: z.string(),
