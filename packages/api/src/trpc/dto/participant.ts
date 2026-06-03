@@ -80,6 +80,13 @@ type PublishedPracticeQuizSource = Pick<
   course: Pick<DB.Course, 'displayName' | 'id'>
 }
 
+type PublishedMicroLearningSource = Pick<
+  DB.MicroLearning,
+  'displayName' | 'id' | 'name' | 'scheduledEndAt' | 'scheduledStartAt'
+> & {
+  course: Pick<DB.Course, 'displayName' | 'id'>
+}
+
 type ParticipantParticipationSource = Pick<
   DB.Participation,
   'completedMicroLearnings' | 'id'
@@ -349,6 +356,22 @@ export function toPublishedPracticeQuiz(quiz: PublishedPracticeQuizSource) {
     course: {
       id: quiz.course.id,
       displayName: quiz.course.displayName,
+    },
+  }
+}
+
+export function toPublishedMicroLearning(
+  microLearning: PublishedMicroLearningSource
+) {
+  return {
+    id: microLearning.id,
+    name: microLearning.name,
+    displayName: microLearning.displayName,
+    scheduledStartAt: microLearning.scheduledStartAt.toISOString(),
+    scheduledEndAt: microLearning.scheduledEndAt.toISOString(),
+    course: {
+      id: microLearning.course.id,
+      displayName: microLearning.course.displayName,
     },
   }
 }

@@ -733,6 +733,87 @@ describe('participant read routers', () => {
     ).resolves.toEqual({ practiceQuizzes: [] })
   })
 
+  test('returns published microlearnings for the course overview page', async () => {
+    const scheduledStartAt = new Date('2026-06-03T08:00:00.000Z')
+    const scheduledEndAt = new Date('2026-06-03T09:00:00.000Z')
+    const courseFindUnique = vi.fn().mockResolvedValue({
+      id: 'course-1',
+      displayName: 'Course One',
+      microLearnings: [
+        {
+          id: 'microlearning-1',
+          name: 'microlearning-1',
+          displayName: 'Microlearning One',
+          scheduledStartAt,
+          scheduledEndAt,
+        },
+      ],
+    })
+    const prisma = {
+      course: {
+        findUnique: courseFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller({ prisma })
+
+    await expect(
+      caller.participant.coursePublishedMicroLearnings({
+        courseId: 'course-1',
+      })
+    ).resolves.toEqual({
+      microLearnings: [
+        {
+          id: 'microlearning-1',
+          name: 'microlearning-1',
+          displayName: 'Microlearning One',
+          scheduledStartAt: scheduledStartAt.toISOString(),
+          scheduledEndAt: scheduledEndAt.toISOString(),
+          course: {
+            id: 'course-1',
+            displayName: 'Course One',
+          },
+        },
+      ],
+    })
+
+    expect(courseFindUnique).toHaveBeenCalledWith({
+      where: { id: 'course-1' },
+      select: {
+        id: true,
+        displayName: true,
+        microLearnings: {
+          where: {
+            status: PublicationStatus.PUBLISHED,
+            isDeleted: false,
+          },
+          orderBy: { createdAt: 'asc' },
+          select: {
+            id: true,
+            name: true,
+            displayName: true,
+            scheduledStartAt: true,
+            scheduledEndAt: true,
+          },
+        },
+      },
+    })
+  })
+
+  test('returns no microlearnings when the course is missing', async () => {
+    const prisma = {
+      course: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller({ prisma })
+
+    await expect(
+      caller.participant.coursePublishedMicroLearnings({
+        courseId: 'missing-course',
+      })
+    ).resolves.toEqual({ microLearnings: [] })
+  })
+
   test('rejects participant course reads for lecturers', async () => {
     const caller = appRouter.createCaller(
       createContext({ role: UserRole.USER, sub: 'user-1' })
