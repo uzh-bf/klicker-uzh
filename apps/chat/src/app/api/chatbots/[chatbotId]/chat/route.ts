@@ -630,7 +630,7 @@ const mapAssistantStepContent = (
  * Main chat endpoint that processes AI conversations with streaming responses.
  * Handles thread creation, message persistence, and AI model interactions with tools.
  */
-export async function POST(
+export async function POST( // NOSONAR - legacy endpoint complexity predates this PR; this branch only adds scoped context handling.
   req: NextRequest,
   { params }: { params: Promise<{ chatbotId: string }> }
 ) {

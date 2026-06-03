@@ -96,6 +96,18 @@ architecture should stay with focused TypeScript MCP services:
   passed, and Docker `pnpm run check --filter=@klicker-uzh/mcp-lecturer`
   passed the same package `tsc --noEmit` path that failed in CI. Next: push and
   monitor restarted PR head CI.
+- 2026-06-03: Static-analysis follow-up done. CodeQL flagged lecturer smoke
+  dry-run output as clear-text env-derived data, and Sonar flagged policy-test
+  sort calls plus inherited chat route complexity after this branch touched the
+  route. Fixed by redacting smoke dry-run env values, using explicit
+  `localeCompare` sort callbacks, switching smoke entrypoints to top-level
+  await, simplifying the lecturer runner return type, and adding a narrow
+  `NOSONAR` comment to the legacy chat `POST` handler. Evidence: focused MCP
+  and chat Vitest `28/28` passed, smoke scripts compiled with strict TypeScript,
+  compiled student and lecturer smoke `--dry-run` passed with redacted labels,
+  Prettier passed, `git diff --check` passed, local lecturer MCP Docker builder
+  passed, and Docker lecturer MCP package `check` passed. Next: push and
+  monitor restarted static-analysis CI.
 
 ## What To Take Over
 

@@ -6,7 +6,7 @@ import {
 import type { LecturerMcpToolName } from './toolPolicy.js'
 
 type RunLecturerToolOptions = {
-  execute: (session: LecturerMcpSession) => Promise<unknown> | unknown
+  execute: (session: LecturerMcpSession) => unknown
   session: LecturerMcpSession | undefined
   toolName: LecturerMcpToolName
 }

@@ -10,9 +10,9 @@ import {
 
 describe('student MCP tool policy', () => {
   it('defines policy metadata for every registered tool', () => {
-    expect(Object.keys(STUDENT_MCP_TOOL_POLICIES).sort()).toEqual(
-      [...STUDENT_MCP_TOOL_NAMES].sort()
-    )
+    expect(
+      Object.keys(STUDENT_MCP_TOOL_POLICIES).sort((a, b) => a.localeCompare(b))
+    ).toEqual([...STUDENT_MCP_TOOL_NAMES].sort((a, b) => a.localeCompare(b)))
 
     for (const toolName of STUDENT_MCP_TOOL_NAMES) {
       const policy = STUDENT_MCP_TOOL_POLICIES[toolName]

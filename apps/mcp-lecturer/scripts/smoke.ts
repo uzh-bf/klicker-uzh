@@ -9,6 +9,7 @@ import {
 const DEFAULT_URL = 'http://localhost:7081/mcp'
 const DEFAULT_USER_ID = '76047345-3801-4628-ae7b-adbebcfe8821'
 const DEFAULT_COURSE_ID = '7c12e44e-d083-4acf-845e-4c34aaff6b49'
+const DEFAULT_SCOPE = 'manage:read manage:draft'
 const JWT_MODULE = '../src/jwt.js'
 const EXPECTED_TOOLS = [
   'klicker_lecturer_capabilities',
@@ -81,6 +82,10 @@ Options:
 `)
 }
 
+function envSource(name: string, defaultLabel: string) {
+  return process.env[name] ? 'custom' : defaultLabel
+}
+
 async function main() {
   if (process.argv.includes('--help')) {
     help()
@@ -90,14 +95,30 @@ async function main() {
   const url = process.env.MCP_LECTURER_SMOKE_URL ?? DEFAULT_URL
   const userId = process.env.MCP_LECTURER_SMOKE_USER_ID ?? DEFAULT_USER_ID
   const courseId = process.env.MCP_LECTURER_SMOKE_COURSE_ID ?? DEFAULT_COURSE_ID
-  const scope =
-    process.env.MCP_LECTURER_SMOKE_SCOPE ?? 'manage:read manage:draft'
+  const scope = process.env.MCP_LECTURER_SMOKE_SCOPE ?? DEFAULT_SCOPE
   const issuer = process.env.APP_ORIGIN_AUTH ?? 'http://localhost:3010'
   const secret =
     process.env.MCP_LECTURER_JWT_SECRET ?? process.env.APP_SECRET ?? 'abcd'
 
   if (process.argv.includes('--dry-run')) {
-    console.log(JSON.stringify({ courseId, scope, url, userId }, null, 2))
+    console.log(
+      JSON.stringify(
+        {
+          courseId: envSource(
+            'MCP_LECTURER_SMOKE_COURSE_ID',
+            'default seeded course'
+          ),
+          scope: envSource('MCP_LECTURER_SMOKE_SCOPE', DEFAULT_SCOPE),
+          url: envSource('MCP_LECTURER_SMOKE_URL', DEFAULT_URL),
+          userId: envSource(
+            'MCP_LECTURER_SMOKE_USER_ID',
+            'default seeded lecturer'
+          ),
+        },
+        null,
+        2
+      )
+    )
     return 0
   }
 
@@ -203,11 +224,9 @@ async function main() {
   return report.finish()
 }
 
-main()
-  .then((code) => {
-    process.exitCode = code
-  })
-  .catch((error) => {
-    console.error(error)
-    process.exitCode = 1
-  })
+try {
+  process.exitCode = await main()
+} catch (error) {
+  console.error(error)
+  process.exitCode = 1
+}

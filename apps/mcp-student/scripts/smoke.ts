@@ -85,6 +85,10 @@ Options:
 `)
 }
 
+function envSource(name: string, defaultLabel: string) {
+  return process.env[name] ? 'custom' : defaultLabel
+}
+
 function responseForElement(element: PracticeElement) {
   const instanceId = Number(element.id)
   const type = String(element.elementType)
@@ -137,7 +141,22 @@ async function main() {
   if (process.argv.includes('--dry-run')) {
     console.log(
       JSON.stringify(
-        { chatbotId, courseId, participantId, submit, url },
+        {
+          chatbotId: envSource(
+            'MCP_STUDENT_SMOKE_CHATBOT_ID',
+            'default seeded chatbot'
+          ),
+          courseId: envSource(
+            'MCP_STUDENT_SMOKE_COURSE_ID',
+            'default seeded course'
+          ),
+          participantId: envSource(
+            'MCP_STUDENT_SMOKE_PARTICIPANT_ID',
+            'default seeded participant'
+          ),
+          submit,
+          url: envSource('MCP_STUDENT_SMOKE_URL', DEFAULT_URL),
+        },
         null,
         2
       )
@@ -233,11 +252,9 @@ async function main() {
   return report.finish()
 }
 
-main()
-  .then((code) => {
-    process.exitCode = code
-  })
-  .catch((error) => {
-    console.error(error)
-    process.exitCode = 1
-  })
+try {
+  process.exitCode = await main()
+} catch (error) {
+  console.error(error)
+  process.exitCode = 1
+}
