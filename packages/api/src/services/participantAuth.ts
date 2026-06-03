@@ -3,6 +3,7 @@ import {
   UserLoginScope,
   UserRole,
   type Locale,
+  type Prisma,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import { signJWT, verifyJWT } from '@klicker-uzh/util'
@@ -497,6 +498,59 @@ export async function logoutParticipant({
   })
 
   return participantId
+}
+
+export async function deleteParticipantAccount({
+  participantId,
+  prisma,
+  res,
+}: {
+  participantId: string
+  prisma: PrismaClient
+  res: unknown
+}) {
+  const participant = await prisma.participant.findUnique({
+    where: { id: participantId },
+    select: {
+      participantGroups: {
+        select: {
+          id: true,
+          participants: {
+            select: { id: true },
+          },
+        },
+      },
+    },
+  })
+
+  if (!participant) return false
+
+  const cookieResponse = getCookieResponse(res)
+  cookieResponse.cookie('participant_token', 'logoutString', {
+    ...COOKIE_SETTINGS,
+    maxAge: 0,
+  })
+
+  const deletionPromises: Prisma.PrismaPromise<unknown>[] = []
+  for (const group of participant.participantGroups) {
+    if (group.participants.length === 1) {
+      deletionPromises.push(
+        prisma.participantGroup.delete({
+          where: { id: group.id },
+        })
+      )
+    }
+  }
+
+  deletionPromises.push(
+    prisma.participant.delete({
+      where: { id: participantId },
+    })
+  )
+
+  await prisma.$transaction(deletionPromises)
+
+  return true
 }
 
 export async function loginTemporaryParticipant({

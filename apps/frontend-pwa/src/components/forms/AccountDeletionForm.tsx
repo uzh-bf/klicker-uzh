@@ -1,5 +1,3 @@
-import { useMutation } from '@apollo/client'
-import { DeleteParticipantAccountDocument } from '@klicker-uzh/graphql/dist/ops'
 import { trpc } from '@lib/trpc'
 import { Button, H3, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -9,9 +7,7 @@ function AccountDeletionForm() {
   const t = useTranslations()
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
-  const [deleteParticipantAccount, { loading: deletingAccount }] = useMutation(
-    DeleteParticipantAccountDocument
-  )
+  const deleteParticipantAccount = trpc.participant.deleteAccount.useMutation()
   const logoutParticipant = trpc.participant.logout.useMutation()
 
   return (
@@ -42,9 +38,12 @@ function AccountDeletionForm() {
               onClose={(): void => setDeleteModalOpen(false)}
               primaryLabel={t('shared.generic.confirm')}
               primaryButtonStyle="destructive"
-              primaryLoading={deletingAccount || logoutParticipant.isPending}
+              primaryLoading={
+                deleteParticipantAccount.isPending ||
+                logoutParticipant.isPending
+              }
               onPrimaryAction={async () => {
-                await deleteParticipantAccount()
+                await deleteParticipantAccount.mutateAsync()
                 try {
                   await logoutParticipant.mutateAsync()
                   sessionStorage.removeItem('participant_token')

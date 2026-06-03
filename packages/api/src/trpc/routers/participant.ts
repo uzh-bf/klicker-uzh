@@ -10,6 +10,7 @@ import dayjs from 'dayjs'
 import {
   activateParticipantAccount,
   changeParticipantLocale,
+  deleteParticipantAccount,
   loginParticipant,
   loginTemporaryParticipant,
   loginWithMagicLink,
@@ -330,6 +331,16 @@ export const participantRouter = router({
   logout: participantProcedure.mutation(async ({ ctx }) => {
     return logoutParticipant({
       participantId: ctx.user.sub,
+      res: ctx.res,
+    })
+  }),
+
+  deleteAccount: participantProcedure.mutation(async ({ ctx }) => {
+    const prisma = getPrisma(ctx)
+
+    return deleteParticipantAccount({
+      participantId: ctx.user.sub,
+      prisma,
       res: ctx.res,
     })
   }),
