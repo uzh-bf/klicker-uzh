@@ -2,6 +2,7 @@ import {
   AwardType,
   Locale,
   PublicationStatus,
+  TimelineEntryType,
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import { describe, expect, test, vi } from 'vitest'
@@ -289,6 +290,188 @@ describe('participant read routers', () => {
         .where
     ).toEqual({ endpoint: 'endpoint-1' })
   })
+
+  test('returns accumulated course student timelines ordered by course end date', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-03T12:00:00.000Z'))
+
+    try {
+      const gamifiedStart = new Date('2026-01-01T00:00:00.000Z')
+      const gamifiedEnd = new Date('2026-12-31T00:00:00.000Z')
+      const nonGamifiedStart = new Date('2025-01-01T00:00:00.000Z')
+      const nonGamifiedEnd = new Date('2025-12-31T00:00:00.000Z')
+      const timelineFindUnique = vi.fn().mockResolvedValue({
+        participations: [
+          {
+            course: {
+              id: 'course-old',
+              displayName: 'Old Course',
+              isGamificationEnabled: false,
+              startDate: nonGamifiedStart,
+              endDate: nonGamifiedEnd,
+            },
+            timelineEntries: [
+              {
+                timestamp: new Date('2025-02-02T00:00:00.000Z'),
+                collectedPoints: 7,
+                collectedXp: 5,
+              },
+              {
+                timestamp: new Date('2025-02-01T00:00:00.000Z'),
+                collectedPoints: 3,
+                collectedXp: 10,
+              },
+            ],
+          },
+          {
+            course: {
+              id: 'course-new',
+              displayName: 'New Course',
+              isGamificationEnabled: true,
+              startDate: gamifiedStart,
+              endDate: gamifiedEnd,
+            },
+            timelineEntries: [
+              {
+                timestamp: new Date('2026-03-02T00:00:00.000Z'),
+                collectedPoints: 3,
+                collectedXp: 4,
+              },
+              {
+                timestamp: new Date('2026-03-01T00:00:00.000Z'),
+                collectedPoints: 2,
+                collectedXp: 10,
+              },
+            ],
+          },
+        ],
+      })
+      const prisma = {
+        participant: {
+          findUnique: timelineFindUnique,
+        },
+      } as unknown as TRPCContext['prisma']
+      const caller = appRouter.createCaller(createContext({ prisma }))
+
+      await expect(
+        caller.participant.courseStudentTimelines()
+      ).resolves.toEqual({
+        courseStudentTimelines: [
+          {
+            courseId: 'course-new',
+            courseName: 'New Course',
+            courseGamified: true,
+            courseStart: gamifiedStart,
+            courseEnd: gamifiedEnd,
+            timelineEntries: [
+              {
+                timestamp: new Date('2026-03-01T00:00:00.000Z'),
+                collectedPoints: 2,
+                collectedXp: 10,
+                totalPoints: 2,
+                totalXp: 10,
+              },
+              {
+                timestamp: new Date('2026-03-02T00:00:00.000Z'),
+                collectedPoints: 3,
+                collectedXp: 4,
+                totalPoints: 5,
+                totalXp: 14,
+              },
+            ],
+          },
+          {
+            courseId: 'course-old',
+            courseName: 'Old Course',
+            courseGamified: false,
+            courseStart: nonGamifiedStart,
+            courseEnd: nonGamifiedEnd,
+            timelineEntries: [
+              {
+                timestamp: new Date('2025-02-01T00:00:00.000Z'),
+                collectedPoints: null,
+                collectedXp: 10,
+                totalPoints: null,
+                totalXp: 10,
+              },
+              {
+                timestamp: new Date('2025-02-02T00:00:00.000Z'),
+                collectedPoints: null,
+                collectedXp: 5,
+                totalPoints: null,
+                totalXp: 15,
+              },
+            ],
+          },
+        ],
+      })
+
+      expect(timelineFindUnique).toHaveBeenCalledWith({
+        where: { id: 'participant-1' },
+        select: {
+          participations: {
+            select: {
+              timelineEntries: {
+                where: {
+                  OR: [
+                    {
+                      type: TimelineEntryType.WEEKLY,
+                      timestamp: {
+                        lt: new Date('2026-05-20T12:00:00.000Z'),
+                      },
+                    },
+                    {
+                      type: TimelineEntryType.DAILY,
+                      timestamp: {
+                        gte: new Date('2026-05-20T12:00:00.000Z'),
+                      },
+                    },
+                  ],
+                },
+                select: {
+                  timestamp: true,
+                  collectedPoints: true,
+                  collectedXp: true,
+                },
+              },
+              course: {
+                select: {
+                  id: true,
+                  displayName: true,
+                  isGamificationEnabled: true,
+                  startDate: true,
+                  endDate: true,
+                },
+              },
+            },
+          },
+        },
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  test.each([
+    { label: 'missing participant', participant: null },
+    { label: 'no participations', participant: { participations: [] } },
+  ])(
+    'returns no course student timelines for $label',
+    async ({ participant }) => {
+      const prisma = {
+        participant: {
+          findUnique: vi.fn().mockResolvedValue(participant),
+        },
+      } as unknown as TRPCContext['prisma']
+      const caller = appRouter.createCaller(createContext({ prisma }))
+
+      await expect(
+        caller.participant.courseStudentTimelines()
+      ).resolves.toEqual({
+        courseStudentTimelines: [],
+      })
+    }
+  )
 
   test('returns course overview data for the course landing page', async () => {
     const groupDeadlineDate = new Date('2027-01-01T00:00:00.000Z')
@@ -904,6 +1087,11 @@ describe('participant read routers', () => {
       code: 'FORBIDDEN',
     })
     await expect(caller.participant.participations()).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    })
+    await expect(
+      caller.participant.courseStudentTimelines()
+    ).rejects.toMatchObject({
       code: 'FORBIDDEN',
     })
     await expect(

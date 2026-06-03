@@ -1,4 +1,4 @@
-import { CourseStudentTimeline } from '@klicker-uzh/graphql/dist/ops'
+import type { RouterOutputs } from '@lib/trpc'
 import { useTranslations } from 'next-intl'
 import {
   Area,
@@ -9,6 +9,9 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+
+type CourseStudentTimeline =
+  RouterOutputs['participant']['courseStudentTimelines']['courseStudentTimelines'][number]
 
 function TimelineCourseChart({ course }: { course: CourseStudentTimeline }) {
   const t = useTranslations()
@@ -61,7 +64,7 @@ function TimelineCourseChart({ course }: { course: CourseStudentTimeline }) {
                   }
                 : { totalPoints: 0, totalXp: 0 }
             timelineData.push({
-              timestamp: new Date(now).toISOString(),
+              timestamp: new Date(now),
               timestampValue: now,
               collectedPoints: 0,
               collectedXp: 0,

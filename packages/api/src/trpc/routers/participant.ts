@@ -70,6 +70,7 @@ import {
   toCourseGroupActivity,
   toCourseLeaderboard,
   toCourseOverview,
+  toCourseStudentTimeline,
   toGroupActivityInstance,
   toParticipantCourse,
   toParticipantGroup,
@@ -1231,6 +1232,104 @@ export const participantRouter = router({
           participant?.participations.map(toParticipantParticipation) ?? [],
       }
     }),
+
+  courseStudentTimelines: participantProcedure.query(async ({ ctx }) => {
+    const prisma = getPrisma(ctx)
+    const timelineCutoff = dayjs().subtract(14, 'days').toDate()
+    const participant = await prisma.participant.findUnique({
+      where: { id: ctx.user.sub },
+      select: {
+        participations: {
+          select: {
+            timelineEntries: {
+              where: {
+                OR: [
+                  {
+                    type: TimelineEntryType.WEEKLY,
+                    timestamp: { lt: timelineCutoff },
+                  },
+                  {
+                    type: TimelineEntryType.DAILY,
+                    timestamp: { gte: timelineCutoff },
+                  },
+                ],
+              },
+              select: {
+                timestamp: true,
+                collectedPoints: true,
+                collectedXp: true,
+              },
+            },
+            course: {
+              select: {
+                id: true,
+                displayName: true,
+                isGamificationEnabled: true,
+                startDate: true,
+                endDate: true,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (!participant || participant.participations.length === 0) {
+      return { courseStudentTimelines: [] }
+    }
+
+    const courseStudentTimelines = participant.participations
+      .map((participation) => {
+        const course = participation.course
+        const sortedTimelineEntries = [...participation.timelineEntries].sort(
+          (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
+        )
+        const { timelineEntries } = sortedTimelineEntries.reduce<{
+          timelineEntries: {
+            timestamp: Date
+            collectedPoints: number | null
+            collectedXp: number
+            totalPoints: number | null
+            totalXp: number
+          }[]
+          totalPoints: number
+          totalXp: number
+        }>(
+          (acc, entry) => {
+            if (course.isGamificationEnabled) {
+              acc.totalPoints += entry.collectedPoints
+            }
+            acc.totalXp += entry.collectedXp
+            acc.timelineEntries.push({
+              timestamp: entry.timestamp,
+              collectedPoints: course.isGamificationEnabled
+                ? entry.collectedPoints
+                : null,
+              collectedXp: entry.collectedXp,
+              totalPoints: course.isGamificationEnabled
+                ? acc.totalPoints
+                : null,
+              totalXp: acc.totalXp,
+            })
+
+            return acc
+          },
+          { timelineEntries: [], totalPoints: 0, totalXp: 0 }
+        )
+
+        return toCourseStudentTimeline({
+          courseId: course.id,
+          courseName: course.displayName,
+          courseGamified: course.isGamificationEnabled,
+          courseStart: course.startDate,
+          courseEnd: course.endDate,
+          timelineEntries,
+        })
+      })
+      .sort((a, b) => b.courseEnd.getTime() - a.courseEnd.getTime())
+
+    return { courseStudentTimelines }
+  }),
 
   courseOverview: publicProcedure
     .input(participantCourseInput)

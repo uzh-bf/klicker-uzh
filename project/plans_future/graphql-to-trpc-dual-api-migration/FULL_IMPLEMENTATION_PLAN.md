@@ -276,6 +276,67 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-03 Completed: S04H16 PWA Timeline Insights Read
+
+Status: complete for the scoped slice. This slice migrated the PWA `/insights/timeline` student timeline read from Apollo to tRPC and removed the generated GraphQL timeline type imports from the timeline components. It intentionally did not touch live/session flows, GraphQL subscriptions, Apollo providers, generated operations, or manage app callers.
+
+Scope:
+
+- `apps/frontend-pwa/src/pages/insights/timeline.tsx`
+- `apps/frontend-pwa/src/components/insights/timeline/TimelineCourse.tsx`
+- `apps/frontend-pwa/src/components/insights/timeline/TimelineCourseChart.tsx`
+- `apps/frontend-pwa/src/components/insights/timeline/TimelineCourseInformation.tsx`
+- `packages/api/src/trpc/dto/participant.ts`
+- `packages/api/src/trpc/routers/participant.ts`
+- `packages/api/src/trpc/__tests__/participant-read.test.ts`
+- This plan file
+
+Operation mapping:
+
+- GraphQL `GetCourseStudentTimelinesDocument` on `/insights/timeline` -> new `trpc.participant.courseStudentTimelines.useQuery()`.
+- GraphQL resolver: `Query.getCourseStudentTimelines` with participant auth.
+- Behavior source: `packages/graphql/src/services/participants.ts getCourseStudentTimelines`.
+- tRPC router/procedure: `participant.courseStudentTimelines` as an authenticated participant read.
+- Input schema: none.
+- Output DTO: `{ courseStudentTimelines: Array<{ courseId, courseName, courseGamified, courseStart, courseEnd, timelineEntries }> }`, preserving `Date` values through SuperJSON.
+- Active frontend consumers: `apps/frontend-pwa/src/pages/insights/timeline.tsx` and timeline chart components.
+- React Query replacement: page hook with `isLoading`; component types switch to `RouterOutputs['participant']['courseStudentTimelines']['courseStudentTimelines'][number]`.
+
+Implementation notes:
+
+- Added `participant.courseStudentTimelines` with participant auth, preserving GraphQL `getCourseStudentTimelines` behavior: weekly entries older than 14 days, daily entries from the last 14 days, per-course timestamp ordering, cumulative XP, cumulative points only for gamified courses, and descending course end-date sorting.
+- Added `toCourseStudentTimeline` as the narrow DTO mapper while keeping `Date` values for SuperJSON transport.
+- Migrated `/insights/timeline` from `GetCourseStudentTimelinesDocument` / Apollo `useQuery` to `trpc.participant.courseStudentTimelines.useQuery()`.
+- Replaced generated GraphQL timeline type imports in `TimelineCourse` and `TimelineCourseChart` with type-only `RouterOutputs`; widened `TimelineCourseInformation` date props to accept `Date | string` for the tRPC Date transport.
+
+Verification results:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- participant-read`: passed after review integration; Vitest ran 17 files / 152 tests, including the new timeline accumulation, no-data, and lecturer-rejection coverage.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check`: passed after fixing typed `Date` handling in the timeline components.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build`: passed after final review integration; existing warnings were limited to next-config module type, next-intl config, PWA worker output, stale Browserslist data, and known large page-data warnings.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --check <touched files>`: passed.
+- `git diff --check`: passed.
+- Scoped timeline import audits passed: no `GetCourseStudentTimelinesDocument`, `@apollo/client`, or generated GraphQL timeline imports remain in `/insights/timeline`, the timeline components, or `packages/api/src/trpc`.
+- Scoped insights coexistence audit still shows `apps/frontend-pwa/src/components/insights/assessmentResults/SuspendedAssessmentResults.tsx` using Apollo/GraphQL; this is a separate residual PWA insights consumer for a later slice.
+
+Browser verification:
+
+- Local stack: Docker PostgreSQL/Redis/Hatchet services were already running. Backend ran on `http://127.0.0.1:3103`; PWA ran on `http://127.0.0.1:3102`.
+- Browser login used seeded participant `testuser1` / `abcdabcd` via `/login?redirect_to=%2Finsights%2Ftimeline`.
+- Screenshots: `/tmp/klicker-pwa-s04h16-login.png`, `/tmp/klicker-pwa-s04h16-timeline.png`.
+- `/insights/timeline` rendered the `Testkurs` gamified timeline card and chart without visible overlap.
+- Browser resource evidence included `http://127.0.0.1:3103/api/trpc/participant.self,participant.courseStudentTimelines?...`.
+- Cleanup closed `agent-browser`, stopped temporary `3102` / `3103` verification processes, removed temporary local `.env` files, and confirmed ports `3102` / `3103` had no listeners.
+
+Review:
+
+- Correctness review subagent: no critical or important findings. Minor findings for missing explicit auth/no-participant coverage and browser proof were handled.
+- Simplification review subagent: collapsed duplicated gamified/non-gamified timeline reducers into a single accumulator. Kept the narrow DTO helper as consistent with migration DTO convention and kept local component type aliases to avoid adding an extra shared type file for this small slice.
+
+Next: continue residual PWA non-realtime Apollo cleanup, with likely candidates `course/[courseId]/practice`, `components/insights/assessmentResults/SuspendedAssessmentResults`, or course live-quiz overview reads. Keep live/session flows and subscriptions for S05.
+
 ### 2026-06-03 Completed: S04H15 PWA Join Shortname Live Quiz List
 
 Status: complete for the scoped slice. This slice migrated the PWA `/join/[shortname]` live-quiz list read from Apollo to tRPC. It intentionally did not touch live/session flows, GraphQL subscriptions, Apollo providers, generated operations, or manage app callers.

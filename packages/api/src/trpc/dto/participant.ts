@@ -136,6 +136,21 @@ type ParticipantParticipationSource = Pick<
   }
 }
 
+type CourseStudentTimelineSource = {
+  courseId: string
+  courseName: string
+  courseGamified: boolean
+  courseStart: Date
+  courseEnd: Date
+  timelineEntries: {
+    timestamp: Date
+    collectedPoints?: number | null
+    collectedXp: number
+    totalPoints?: number | null
+    totalXp: number
+  }[]
+}
+
 type CourseAwardSource = Pick<
   DB.AwardEntry,
   'description' | 'displayName' | 'id' | 'order' | 'type'
@@ -474,6 +489,23 @@ export function toParticipantParticipation(
         displayName: liveQuiz.displayName,
       })),
     },
+  }
+}
+
+export function toCourseStudentTimeline(timeline: CourseStudentTimelineSource) {
+  return {
+    courseId: timeline.courseId,
+    courseName: timeline.courseName,
+    courseGamified: timeline.courseGamified,
+    courseStart: timeline.courseStart,
+    courseEnd: timeline.courseEnd,
+    timelineEntries: timeline.timelineEntries.map((entry) => ({
+      timestamp: entry.timestamp,
+      collectedPoints: entry.collectedPoints ?? null,
+      collectedXp: entry.collectedXp,
+      totalPoints: entry.totalPoints ?? null,
+      totalXp: entry.totalXp,
+    })),
   }
 }
 

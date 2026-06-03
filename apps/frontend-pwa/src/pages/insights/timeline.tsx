@@ -1,6 +1,5 @@
-import { useQuery } from '@apollo/client'
-import { GetCourseStudentTimelinesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { trpc } from '@lib/trpc'
 import { UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -9,9 +8,9 @@ import Layout from '../../components/Layout'
 
 function StudentTimelines() {
   const t = useTranslations()
-  const { data, loading } = useQuery(GetCourseStudentTimelinesDocument)
+  const { data, isLoading } = trpc.participant.courseStudentTimelines.useQuery()
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Layout
         course={{ displayName: 'KlickerUZH' }}
@@ -22,7 +21,7 @@ function StudentTimelines() {
     )
   }
 
-  const courses = data?.getCourseStudentTimelines
+  const courses = data?.courseStudentTimelines
 
   return (
     <Layout
