@@ -165,6 +165,10 @@ export type StudentMcpSubmitPracticeStackAnswerOutput = {
 }
 
 export type StudentMcpToolErrorCode =
+  | 'BACKEND_UNAVAILABLE'
+  | 'FORBIDDEN'
+  | 'INVALID_INPUT'
+  | 'NOT_FOUND'
   | 'QUESTION_REF_EXPIRED'
   | 'QUESTION_REF_INVALID'
   | 'QUESTION_REF_STALE'

@@ -40,6 +40,19 @@ architecture should stay with focused TypeScript MCP services:
   confirmed no production log entry includes tool inputs, outputs, tokens,
   cookies, question content, answer content, or proposal payloads. Next: Slice 3
   error taxonomy cleanup.
+- 2026-06-03: Slice 3 done. Extracted student and lecturer tool error
+  classifiers into local `toolErrors.ts` modules; runners now only handle
+  execution, JSON formatting, and sanitized logging. Student errors gained
+  common `FORBIDDEN`, `INVALID_INPUT`, `NOT_FOUND`, and `BACKEND_UNAVAILABLE`
+  codes, with chat status mapping updated. Lecturer errors gained explicit
+  `MISSING_SCOPE`, `PROPOSAL_EXPIRED`, `PROPOSAL_INVALID`,
+  `PERMISSION_LEVEL_INSUFFICIENT`, `UNAUTHENTICATED`, and backend/common
+  classes with safe public messages. Evidence: focused policy/runner/error/chat
+  Vitest `33/33` passed, Prettier passed, `git diff --check` passed,
+  standalone strict TypeScript check for policy/error/runner helpers passed.
+  Local review/simplification kept classifiers local because student and
+  lecturer taxonomies intentionally diverge. Next: Slice 4 capability manifest
+  alignment.
 
 ## What To Take Over
 

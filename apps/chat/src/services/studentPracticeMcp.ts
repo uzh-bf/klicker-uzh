@@ -59,13 +59,18 @@ export function statusForStudentPracticeMcpError(
     case 'QUESTION_REF_EXPIRED':
     case 'QUESTION_REF_STALE':
       return 410
+    case 'FORBIDDEN':
+      return 403
     case 'QUESTION_REF_INVALID':
     case 'SUBMISSION_INVALID':
+    case 'INVALID_INPUT':
       return 400
     case 'PRACTICE_POOL_UNAVAILABLE':
+    case 'NOT_FOUND':
       return 404
     case 'UNAUTHENTICATED':
       return 401
+    case 'BACKEND_UNAVAILABLE':
     case 'UNKNOWN':
       return 500
     default:

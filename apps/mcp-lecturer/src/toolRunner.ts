@@ -1,3 +1,7 @@
+import {
+  toLecturerToolError,
+  type LecturerToolErrorOutput,
+} from './toolErrors.js'
 import type { LecturerMcpToolName } from './toolPolicy.js'
 
 type LecturerMcpScope = 'manage:draft' | 'manage:read'
@@ -8,15 +12,6 @@ type LecturerMcpSession = {
   userId: string
 }
 
-type LecturerToolErrorCode = 'FORBIDDEN' | 'INVALID_INPUT' | 'UNKNOWN'
-
-type LecturerToolErrorOutput = {
-  error: {
-    code: LecturerToolErrorCode
-    message: string
-  }
-}
-
 type RunLecturerToolOptions = {
   execute: (session: LecturerMcpSession) => Promise<unknown> | unknown
   session: LecturerMcpSession | undefined
@@ -25,38 +20,6 @@ type RunLecturerToolOptions = {
 
 function json(value: unknown): string {
   return JSON.stringify(value ?? null, null, 2)
-}
-
-function isZodError(error: unknown) {
-  return error instanceof Error && error.name === 'ZodError'
-}
-
-function toolError(error: unknown): LecturerToolErrorOutput {
-  if (isZodError(error)) {
-    return {
-      error: {
-        code: 'INVALID_INPUT',
-        message: 'Invalid lecturer MCP tool input',
-      },
-    }
-  }
-
-  const message = error instanceof Error ? error.message : String(error)
-  if (/not found or not accessible|Forbidden|missing scope/i.test(message)) {
-    return {
-      error: {
-        code: 'FORBIDDEN',
-        message: 'Object not found or not accessible',
-      },
-    }
-  }
-
-  return {
-    error: {
-      code: 'UNKNOWN',
-      message: 'Lecturer MCP tool call failed',
-    },
-  }
 }
 
 function requireSession(session: LecturerMcpSession | undefined) {
@@ -109,7 +72,7 @@ export async function runLecturerReadTool({
     logToolCall(session, toolName, startedAt, 'ok')
     return output
   } catch (error) {
-    const safeError = toolError(error)
+    const safeError = toLecturerToolError(error)
     logToolCall(session, toolName, startedAt, 'error', safeError)
     return json(safeError)
   }
@@ -129,7 +92,7 @@ export async function runLecturerDraftTool({
     logToolCall(session, toolName, startedAt, 'ok')
     return output
   } catch (error) {
-    const safeError = toolError(error)
+    const safeError = toLecturerToolError(error)
     logToolCall(session, toolName, startedAt, 'error', safeError)
     return json(safeError)
   }

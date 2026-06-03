@@ -1,24 +1,12 @@
+import {
+  toStudentToolError,
+  type StudentMcpToolErrorOutput,
+} from './toolErrors.js'
 import type { StudentMcpToolName } from './toolPolicy.js'
 
 type StudentMcpSession = {
   bearerToken: string
   participantId: string
-}
-
-type StudentMcpToolErrorCode =
-  | 'PRACTICE_POOL_UNAVAILABLE'
-  | 'QUESTION_REF_EXPIRED'
-  | 'QUESTION_REF_INVALID'
-  | 'QUESTION_REF_STALE'
-  | 'SUBMISSION_INVALID'
-  | 'UNAUTHENTICATED'
-  | 'UNKNOWN'
-
-type StudentMcpToolErrorOutput = {
-  error: {
-    code: StudentMcpToolErrorCode
-    message: string
-  }
 }
 
 type RunStudentToolOptions = {
@@ -36,57 +24,6 @@ function requireSession(session: StudentMcpSession | undefined) {
     throw new Error('Missing authenticated participant session')
   }
   return session
-}
-
-function errorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message
-  return String(error)
-}
-
-function errorCode(message: string): StudentMcpToolErrorCode {
-  if (
-    message === 'Missing authenticated participant session' ||
-    message === 'Missing Authorization bearer token'
-  ) {
-    return 'UNAUTHENTICATED'
-  }
-  if (/questionRef has expired/i.test(message)) {
-    return 'QUESTION_REF_EXPIRED'
-  }
-  if (/Invalid questionRef|questionRef signature/i.test(message)) {
-    return 'QUESTION_REF_INVALID'
-  }
-  if (
-    /no longer eligible|no longer matches|does not match request context/i.test(
-      message
-    )
-  ) {
-    return 'QUESTION_REF_STALE'
-  }
-  if (
-    /Submission must answer|Duplicate response|Response type mismatch/i.test(
-      message
-    )
-  ) {
-    return 'SUBMISSION_INVALID'
-  }
-  if (/No practice pool is available/i.test(message)) {
-    return 'PRACTICE_POOL_UNAVAILABLE'
-  }
-  return 'UNKNOWN'
-}
-
-function safeToolError(error: unknown): StudentMcpToolErrorOutput {
-  const message = errorMessage(error)
-  const code = errorCode(message)
-
-  return {
-    error: {
-      code,
-      message:
-        code === 'UNKNOWN' ? 'Student practice tool call failed' : message,
-    },
-  }
 }
 
 function logToolCall(
@@ -126,7 +63,7 @@ export async function runStudentTool({
     logToolCall(session, toolName, startedAt, 'ok')
     return output
   } catch (error) {
-    const safeError = safeToolError(error)
+    const safeError = toStudentToolError(error)
     logToolCall(session, toolName, startedAt, 'error', safeError)
     return json(safeError)
   }

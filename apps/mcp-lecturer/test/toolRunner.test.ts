@@ -64,8 +64,8 @@ describe('lecturer MCP tool runner', () => {
 
     expect(JSON.parse(output)).toEqual({
       error: {
-        code: 'FORBIDDEN',
-        message: 'Object not found or not accessible',
+        code: 'MISSING_SCOPE',
+        message: 'Lecturer MCP token is missing the required scope',
       },
     })
     expect(execute).not.toHaveBeenCalled()
@@ -73,7 +73,7 @@ describe('lecturer MCP tool runner', () => {
     expect(warn).toHaveBeenCalledWith(
       'mcp_tool_call',
       expect.objectContaining({
-        errorCode: 'FORBIDDEN',
+        errorCode: 'MISSING_SCOPE',
         latencyMs: expect.any(Number),
         outcome: 'error',
         role: 'lecturer',

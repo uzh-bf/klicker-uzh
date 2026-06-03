@@ -4,6 +4,7 @@ import {
   formatPracticeCandidatesForPrompt,
   getStudentPracticeMcpUrl,
   parseMcpJsonToolResult,
+  statusForStudentPracticeMcpError,
   StudentPracticeMcpToolError,
   toPracticeCandidateId,
 } from '../src/services/studentPracticeMcp'
@@ -59,6 +60,24 @@ describe('student practice MCP adapter', () => {
         ],
       })
     ).toThrow(StudentPracticeMcpToolError)
+  })
+
+  test('maps stable MCP error codes to HTTP status codes', () => {
+    expect(
+      statusForStudentPracticeMcpError(
+        new StudentPracticeMcpToolError('FORBIDDEN', 'denied')
+      )
+    ).toBe(403)
+    expect(
+      statusForStudentPracticeMcpError(
+        new StudentPracticeMcpToolError('INVALID_INPUT', 'bad input')
+      )
+    ).toBe(400)
+    expect(
+      statusForStudentPracticeMcpError(
+        new StudentPracticeMcpToolError('BACKEND_UNAVAILABLE', 'down')
+      )
+    ).toBe(500)
   })
 
   test('formats compact candidate context for the tutor model', () => {
