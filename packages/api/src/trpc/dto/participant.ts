@@ -73,6 +73,13 @@ type ParticipantCourseSource = Pick<
 
 type PracticeCourseSource = Pick<DB.Course, 'displayName' | 'id'>
 
+type PublishedPracticeQuizSource = Pick<
+  DB.PracticeQuiz,
+  'displayName' | 'id' | 'name'
+> & {
+  course: Pick<DB.Course, 'displayName' | 'id'>
+}
+
 type ParticipantParticipationSource = Pick<
   DB.Participation,
   'completedMicroLearnings' | 'id'
@@ -331,6 +338,18 @@ export function toPracticeCourse(course: PracticeCourseSource) {
   return {
     id: course.id,
     displayName: course.displayName,
+  }
+}
+
+export function toPublishedPracticeQuiz(quiz: PublishedPracticeQuizSource) {
+  return {
+    id: quiz.id,
+    name: quiz.name,
+    displayName: quiz.displayName,
+    course: {
+      id: quiz.course.id,
+      displayName: quiz.course.displayName,
+    },
   }
 }
 

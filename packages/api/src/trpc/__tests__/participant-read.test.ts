@@ -646,6 +646,93 @@ describe('participant read routers', () => {
     })
   })
 
+  test('returns published practice quizzes for the course overview page', async () => {
+    const courseFindUnique = vi.fn().mockResolvedValue({
+      id: 'course-1',
+      displayName: 'Course One',
+      practiceQuizzes: [
+        {
+          id: 'quiz-1',
+          name: 'practice-quiz-1',
+          displayName: 'Practice Quiz One',
+        },
+        {
+          id: 'quiz-2',
+          name: 'practice-quiz-2',
+          displayName: 'Practice Quiz Two',
+        },
+      ],
+    })
+    const prisma = {
+      course: {
+        findUnique: courseFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller({ prisma })
+
+    await expect(
+      caller.participant.coursePublishedPracticeQuizzes({
+        courseId: 'course-1',
+      })
+    ).resolves.toEqual({
+      practiceQuizzes: [
+        {
+          id: 'quiz-1',
+          name: 'practice-quiz-1',
+          displayName: 'Practice Quiz One',
+          course: {
+            id: 'course-1',
+            displayName: 'Course One',
+          },
+        },
+        {
+          id: 'quiz-2',
+          name: 'practice-quiz-2',
+          displayName: 'Practice Quiz Two',
+          course: {
+            id: 'course-1',
+            displayName: 'Course One',
+          },
+        },
+      ],
+    })
+
+    expect(courseFindUnique).toHaveBeenCalledWith({
+      where: { id: 'course-1' },
+      select: {
+        id: true,
+        displayName: true,
+        practiceQuizzes: {
+          where: {
+            status: PublicationStatus.PUBLISHED,
+            isDeleted: false,
+          },
+          orderBy: { createdAt: 'asc' },
+          select: {
+            id: true,
+            name: true,
+            displayName: true,
+          },
+        },
+      },
+    })
+  })
+
+  test('returns no practice quizzes when the course is missing', async () => {
+    const prisma = {
+      course: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller({ prisma })
+
+    await expect(
+      caller.participant.coursePublishedPracticeQuizzes({
+        courseId: 'missing-course',
+      })
+    ).resolves.toEqual({ practiceQuizzes: [] })
+  })
+
   test('rejects participant course reads for lecturers', async () => {
     const caller = appRouter.createCaller(
       createContext({ role: UserRole.USER, sub: 'user-1' })

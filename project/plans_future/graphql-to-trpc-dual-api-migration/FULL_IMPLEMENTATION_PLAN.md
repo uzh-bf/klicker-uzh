@@ -83,7 +83,7 @@ Committed markers:
 
 Current next action:
 
-- Continue S04H: migrate the next PWA practice/microlearning activity flow while GraphQL remains live.
+- Continue S04H: migrate the next PWA practice-quiz detail/execution workflow while GraphQL remains live.
 
 Still intentionally live:
 
@@ -275,6 +275,74 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-03 Completed: S04H3 PWA Course Practice Quiz Overview
+
+Status: complete for the scoped slice. This slice migrated the PWA course practice-quiz overview list only. It intentionally did not migrate practice quiz execution detail reads, answer submissions, previous stack evaluations, element feedback/rating/flagging, microlearning pages, group activity pages, live quiz/session flows, or subscriptions.
+
+Goal: replace `GetCoursePublishedPracticeQuizzesDocument` in `/course/[courseId]/practiceQuizzes/overview` with a narrow tRPC read that preserves published/non-deleted filtering, creation-order sorting, inactive-course empty state, and the SSR single-quiz redirect behavior.
+
+Write scope:
+
+- `packages/api/src/trpc/dto/participant.ts`
+- `packages/api/src/trpc/routers/participant.ts`
+- `packages/api/src/trpc/__tests__/participant-read.test.ts`
+- `apps/frontend-pwa/src/pages/course/[courseId]/practiceQuizzes/overview.tsx`
+- This plan file
+
+```text
+Slice: S04H3 PWA course practice quiz overview
+GraphQL operation(s): GetCoursePublishedPracticeQuizzesDocument
+GraphQL resolver(s): getCoursePublishedPracticeQuizzes
+Behavior source: PracticeQuizService.getCoursePublishedPracticeQuizzes
+tRPC router.procedure: participant.coursePublishedPracticeQuizzes
+Input schema: participantCourseInput { courseId }
+Output DTO: { practiceQuizzes: [{ id, name, displayName, course: { id, displayName } }] }
+Active frontend consumers: PWA /course/[courseId]/practiceQuizzes/overview page, including SSR single-quiz redirect
+Apollo cache/refetch behavior: SSR Apollo query primes cache; client Apollo query skips when SSR marked inactive; no cache writes
+React Query replacement: SSR tRPC proxy query for redirect/inactive decision; client tRPC useQuery with inactive guard
+Browser verification path: local seeded PWA Testkurs practice quiz overview, verify multiple quiz links or direct single-quiz redirect depending seeded data
+Cleanup blocked until: practice quiz detail/execution, previous evaluation and response mutations, element feedback/rating/flagging, microlearning pages, group activity flows, live quiz/session mutations, and S05 subscriptions
+```
+
+Implementation:
+
+- Added `participant.coursePublishedPracticeQuizzes` as a public read procedure using `participantCourseInput`.
+- Added a narrow published-practice-quiz DTO containing only `id`, `name`, `displayName`, and course `id` / `displayName`.
+- Replaced the page's Apollo client query with a tRPC `useQuery` using SSR-provided `initialData`.
+- Replaced the page's SSR Apollo query/cache hydration with `createTRPCSSRClient`, preserving inactive empty-state handling and single-quiz redirect behavior.
+- Kept `getParticipantToken` LTI/session handling intact and left practice quiz detail/execution GraphQL consumers unchanged.
+- Added API tests for populated and missing-course overview results.
+
+Verification:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --write ...` passed on touched files and this plan.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test` passed, 114 tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build` passed with existing Next.js / package-module warnings, Browserslist warning, and existing large page-data warnings.
+- Scoped audit found no remaining `GetCoursePublishedPracticeQuizzesDocument` import in the migrated page or API package.
+- Scoped browser-import audit found no Apollo, GraphQL runtime, Prisma, package-source, or Node-only imports in the migrated page.
+- `git diff --check` passed.
+
+Browser verification:
+
+- Local stack: `docker compose up -d` hit the known reverse-proxy port-80 conflict, but direct Postgres/Redis/Hatchet services were available. Backend ran on `127.0.0.1:3100`; PWA ran on `127.0.0.1:3102`.
+- Seeded Testkurs had exactly one published, non-deleted practice quiz, so `/course/7c12e44e-d083-4acf-845e-4c34aaff6b49/practiceQuizzes/overview` correctly returned a `307` redirect to `/practiceQuizzes/4214338b-c5af-4ff7-84f9-ae5a139d6e5b`.
+- `/tmp/klicker-pwa-s04h3-practice-overview-redirect.png`: redirected quiz page rendered `Practice Quiz Demo Student Title`, `Number of question sets: 33`, and Start.
+- DOM assertion confirmed the final URL, Testkurs title, practice quiz title, Start button, and expected quiz body text.
+- Local participant token file was deleted; browser closed; compose services stopped; ports `3100` and `3102` were no longer listening.
+
+Review and simplification:
+
+- No subagent spawned because subagent tooling is unavailable in this thread; performed local review against public GraphQL auth parity, SSR redirect parity, browser-bundle import risk, and cleanup gates.
+- Simplification kept the DTO page-specific and avoided extracting a generic practice-quiz activity service until detail/execution and microlearning slices show shared needs.
+
+Notes:
+
+- Context7 MCP was requested by repo instructions, but no Context7 tools are exposed in this environment. Official tRPC v10 docs were checked as fallback because the installed stack is tRPC 10.45.x.
+- The official tRPC v10 `useQuery` docs confirm procedure hooks accept backend-inferred input and React Query options such as `enabled` and `initialData`.
 
 ### 2026-06-03 Completed: S04H2 PWA Bookmarked Stacks Page
 

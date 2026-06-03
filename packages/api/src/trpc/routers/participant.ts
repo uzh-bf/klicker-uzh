@@ -55,6 +55,7 @@ import {
   toParticipantSelf,
   toPracticeCourse,
   toPublicParticipantProfile,
+  toPublishedPracticeQuiz,
   toTemporaryParticipantSelf,
 } from '../dto/participant.js'
 import { publicProcedure, router } from '../init.js'
@@ -1529,4 +1530,45 @@ export const participantRouter = router({
 
     return { practiceCourses }
   }),
+
+  coursePublishedPracticeQuizzes: publicProcedure
+    .input(participantCourseInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const course = await prisma.course.findUnique({
+        where: { id: input.courseId },
+        select: {
+          id: true,
+          displayName: true,
+          practiceQuizzes: {
+            where: {
+              status: PublicationStatus.PUBLISHED,
+              isDeleted: false,
+            },
+            orderBy: { createdAt: 'asc' },
+            select: {
+              id: true,
+              name: true,
+              displayName: true,
+            },
+          },
+        },
+      })
+
+      if (!course) return { practiceQuizzes: [] }
+
+      const courseSummary = {
+        id: course.id,
+        displayName: course.displayName,
+      }
+
+      return {
+        practiceQuizzes: course.practiceQuizzes.map((quiz) =>
+          toPublishedPracticeQuiz({
+            ...quiz,
+            course: courseSummary,
+          })
+        ),
+      }
+    }),
 })

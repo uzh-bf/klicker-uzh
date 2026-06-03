@@ -1,9 +1,7 @@
-import { useQuery } from '@apollo/client'
 import { faBookOpenReader } from '@fortawesome/free-solid-svg-icons'
-import { GetCoursePublishedPracticeQuizzesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
+import { createTRPCSSRClient, trpc, type RouterOutputs } from '@lib/trpc'
 import useParticipantToken from '@lib/useParticipantToken'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
@@ -12,14 +10,19 @@ import nookies from 'nookies'
 import Layout from '../../../../components/Layout'
 import LinkButton from '../../../../components/common/LinkButton'
 
+type PracticeQuizOverviewData =
+  RouterOutputs['participant']['coursePublishedPracticeQuizzes']
+
 function PracticeQuizOverview({
   isInactive,
   courseId,
+  initialPracticeQuizData,
   participantToken,
   cookiesAvailable,
 }: {
   isInactive: boolean
   courseId: string
+  initialPracticeQuizData?: PracticeQuizOverviewData
   participantToken?: string
   cookiesAvailable?: boolean
 }) {
@@ -30,15 +33,16 @@ function PracticeQuizOverview({
     cookiesAvailable,
   })
 
-  const { data, loading } = useQuery(
-    GetCoursePublishedPracticeQuizzesDocument,
-    {
-      variables: { courseId: courseId },
-      skip: isInactive,
-    }
-  )
+  const { data, isLoading } =
+    trpc.participant.coursePublishedPracticeQuizzes.useQuery(
+      { courseId },
+      {
+        enabled: !isInactive,
+        initialData: initialPracticeQuizData,
+      }
+    )
 
-  if (loading) {
+  if (!isInactive && isLoading) {
     return (
       <Layout>
         <Loader />
@@ -46,7 +50,7 @@ function PracticeQuizOverview({
     )
   }
 
-  const quizzes = data?.getCoursePublishedPracticeQuizzes
+  const quizzes = data?.practiceQuizzes
   const course = quizzes?.[0]?.course
   if (
     isInactive ||
@@ -106,21 +110,20 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const apolloClient = initializeApollo()
-    const result = await apolloClient.query({
-      query: GetCoursePublishedPracticeQuizzesDocument,
-      variables: {
+    const trpcClient = createTRPCSSRClient(ctx)
+    const result =
+      await trpcClient.participant.coursePublishedPracticeQuizzes.query({
         courseId: ctx.params.courseId,
-      },
-    })
+      })
 
     // if there is no result (e.g., the shortname is not valid)
-    const quizzes = result.data.getCoursePublishedPracticeQuizzes
+    const quizzes = result.practiceQuizzes
     const course = quizzes?.[0]?.course
-    if (!result?.data?.getCoursePublishedPracticeQuizzes || !course) {
+    if (!quizzes || !course) {
       return {
         props: {
           isInactive: true,
+          courseId: ctx.params.courseId,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
         },
@@ -139,7 +142,6 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
 
     const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
       courseId: ctx.params.courseId,
       ctx,
     })
@@ -147,22 +149,26 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     if (participantToken) {
       return {
         props: {
+          isInactive: false,
           participantToken,
           cookiesAvailable,
           courseId: ctx.params.courseId,
+          initialPracticeQuizData: result,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
         },
       }
     }
 
-    return addApolloState(apolloClient, {
+    return {
       props: {
+        isInactive: false,
         courseId: ctx.params.courseId,
+        initialPracticeQuizData: result,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
-    })
+    }
   } catch (error) {
     console.error(
       'Error in getServerSideProps on practice quiz overview:',
