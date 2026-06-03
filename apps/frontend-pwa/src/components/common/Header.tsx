@@ -6,7 +6,6 @@ import {
   faUser,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { Course, StudentCourse, UserRole } from '@klicker-uzh/graphql/dist/ops'
 import { trpc, type RouterInputs } from '@lib/trpc'
 import { Button, Dropdown, H1, H2, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -17,12 +16,28 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import AvatarWithLevel from './AvatarWithLevel'
 
+const PARTICIPANT_ROLE = 'PARTICIPANT'
+const TEMPORARY_PARTICIPANT_ROLE = 'TEMPORARY_PARTICIPANT'
+
+type HeaderCourse = {
+  color?: string | null
+  displayName?: string | null
+  id?: string | null
+  name?: string | null
+}
+
+type HeaderParticipantRole =
+  | typeof PARTICIPANT_ROLE
+  | typeof TEMPORARY_PARTICIPANT_ROLE
+  | 'USER'
+  | 'ADMIN'
+
 type HeaderParticipant = {
   avatar?: string | null
   email?: string | null
   institutionalEmail?: string | null
   level?: number | null
-  role?: 'PARTICIPANT' | 'TEMPORARY_PARTICIPANT' | UserRole | null
+  role?: HeaderParticipantRole | null
   username?: string | null
 }
 
@@ -31,9 +46,7 @@ type ParticipantLocale = RouterInputs['participant']['changeLocale']['locale']
 interface HeaderProps {
   participant?: HeaderParticipant
   title?: string
-  course?:
-    | Partial<Course>
-    | (Omit<StudentCourse, 'owner'> & { owner: { shortname: string } })
+  course?: HeaderCourse
   liveQuizId?: string
 }
 
@@ -58,7 +71,7 @@ function Header({
     global?.window?.location !== global?.window?.parent.location
   const showProfileSetup =
     participant &&
-    participant.role === UserRole.Participant &&
+    participant.role === PARTICIPANT_ROLE &&
     process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
     (!participant?.avatar || !participant?.email)
 
@@ -110,7 +123,7 @@ function Header({
 
       <div className="flex flex-row items-center gap-2 sm:gap-4">
         {participant &&
-          participant.role === UserRole.Participant &&
+          participant.role === PARTICIPANT_ROLE &&
           router.pathname !== '/' &&
           (pageInFrame ? (
             <Button
@@ -167,7 +180,7 @@ function Header({
                           {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
                             ? (participant.institutionalEmail ??
                               participant.email)
-                            : `${participant?.username}${participant.role === UserRole.TemporaryParticipant ? ` (${t('pwa.profile.temporaryPseudonym')})` : ''}`}
+                            : `${participant?.username}${participant.role === TEMPORARY_PARTICIPANT_ROLE ? ` (${t('pwa.profile.temporaryPseudonym')})` : ''}`}
                         </div>
                       </div>
                     ),
@@ -203,7 +216,7 @@ function Header({
                 ]
               : []),
             ...((!router.pathname.includes('/session') ||
-              participant?.role !== UserRole.TemporaryParticipant) &&
+              participant?.role !== TEMPORARY_PARTICIPANT_ROLE) &&
             process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
             (participant || !pageInFrame)
               ? [
@@ -280,10 +293,7 @@ function Header({
                 ),
                 type: 'checkbox',
                 onClick: async () => {
-                  if (
-                    participant &&
-                    participant.role === UserRole.Participant
-                  ) {
+                  if (participant && participant.role === PARTICIPANT_ROLE) {
                     await changeParticipantLocale.mutateAsync({
                       locale: language.value,
                     })
@@ -297,7 +307,7 @@ function Header({
                 selected: router.locale === language.value,
               })),
             },
-            ...(participant?.role === UserRole.Participant && !pageInFrame
+            ...(participant?.role === PARTICIPANT_ROLE && !pageInFrame
               ? [
                   {
                     id: 'logout',
@@ -322,8 +332,7 @@ function Header({
                   },
                 ]
               : []),
-            ...(participant?.role === UserRole.TemporaryParticipant &&
-            liveQuizId
+            ...(participant?.role === TEMPORARY_PARTICIPANT_ROLE && liveQuizId
               ? [
                   {
                     id: 'logout',

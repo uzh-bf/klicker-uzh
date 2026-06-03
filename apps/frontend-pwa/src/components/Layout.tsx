@@ -1,4 +1,3 @@
-import type { Course, StudentCourse } from '@klicker-uzh/graphql/dist/ops'
 import { trpc } from '@lib/trpc'
 import Head from 'next/head'
 import React, { Dispatch, SetStateAction } from 'react'
@@ -9,13 +8,18 @@ import MobileMenuBar from './common/MobileMenuBar'
 
 export const LAYOUT_SCROLL_CONTAINER_ID = 'layout-scroll-container'
 
+type LayoutCourse = {
+  color?: string | null
+  displayName?: string | null
+  id?: string | null
+  name?: string | null
+}
+
 interface LayoutProps {
   children?: React.ReactNode
   displayName?: string
   embedded?: boolean
-  course?:
-    | Partial<Omit<Course, 'awards' | 'owner' | 'groupActivities'>>
-    | (Omit<StudentCourse, 'owner'> & { owner: { shortname: string } })
+  course?: LayoutCourse
   mobileMenuItems?: {
     icon: React.ReactElement
     label: string

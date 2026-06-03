@@ -276,6 +276,56 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-03 Completed: S04H24 PWA Shell Generated Type Cleanup
+
+Status: complete for the scoped slice. This slice removed generated GraphQL type imports from the PWA shell components that already consume tRPC participant data. It intentionally did not touch live/session flows, GraphQL subscriptions, Apollo providers, generated GraphQL artifacts, active Apollo hooks, manage app callers, or final GraphQL cleanup.
+
+Scope:
+
+- `apps/frontend-pwa/src/components/Layout.tsx`
+- `apps/frontend-pwa/src/components/common/Header.tsx`
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation(s): none used by `Layout` or `Header`.
+- GraphQL resolver(s): none used by `Layout` or `Header`.
+- Behavior source: existing `trpc.participant.self` output and existing course props passed by migrated PWA pages.
+- tRPC router.procedure: existing `participant.self`; no new procedure.
+- Input schema: existing optional participant self input; no new schema.
+- Output DTO: unchanged `participant.self` DTO and unchanged structural course prop fields.
+- Active frontend consumers: shared PWA shell `Layout` and `Header` across PWA pages.
+- Apollo behavior: generated `Course`, `StudentCourse`, and `UserRole` imports provided type/runtime constants only; no Apollo operation was issued by these files.
+- React Query/tRPC replacement: local structural course types plus local participant-role constants matching tRPC/Prisma role string values.
+- Browser verification path: open a seeded course overview URL through the local PWA/backend stack and confirm the header/course title still renders while `participant.self` goes through tRPC.
+
+Implementation notes:
+
+- Replaced `Layout`'s generated `Course` / `StudentCourse` prop type with a local structural course shell type.
+- Replaced `Header`'s generated `Course` / `StudentCourse` prop type with a local structural course shell type.
+- Replaced the generated `UserRole` runtime enum import in `Header` with local role string constants matching tRPC/Prisma DTO values.
+- Widened the structural shell course type to include existing object-literal props (`id`, `name`) after the first typecheck identified current callers that pass those fields.
+- Kept GraphQL mounted and all generated artifacts intact for remaining PWA/manage/realtime consumers.
+
+Verification:
+
+- Initial `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check` found the local structural course type was too narrow for existing `id` and `name` object-literal callers; widened the local type and reran.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check` passed after the type adjustment.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build` passed, with existing Next.js warnings about `next-config` module type, next-intl Pages Router migration, browserslist age, image domains, cross-origin dev origins, and large page data.
+- Scoped residual generated-import audit found no `@klicker-uzh/graphql` or generated GraphQL type imports in `Layout.tsx` or `Header.tsx`.
+- Browser verification used local backend `127.0.0.1:3103`, PWA `127.0.0.1:3102`, and seeded course `b8b1305e-bfe8-458b-bf26-9082fdca953f`.
+- Browser screenshot: `/tmp/klicker-pwa-s04h24-shell-header.png`.
+- Browser resource evidence showed `/api/trpc/participant.self,participant.courseOverview,participant.courseLeaderboard` after opening `/course/b8b1305e-bfe8-458b-bf26-9082fdca953f`.
+
+Review and cleanup:
+
+- Dedicated subagent tooling was not exposed in this session; performed explicit self-review for role string parity, shell course prop compatibility, residual generated imports, and GraphQL coexistence.
+- Context7 MCP was not exposed in this session; no new framework API patterns were introduced.
+- Closed `agent-browser`.
+- Stopped local PWA/backend servers on ports 3102/3103.
+- Removed temporary local verification `.env` files.
+- Next candidates: continue residual PWA generated-type cleanup in non-realtime practice/group components, then remaining session/realtime/S05 slices.
+
 ### 2026-06-03 Completed: S04H23 PWA Course Overview SSR Apollo Cleanup
 
 Status: complete for the scoped slice. This slice removed stale Apollo SSR state plumbing from the PWA course overview page after the course overview, leaderboard, group activity, participation token, and related course-page mutations had already moved to tRPC. It intentionally did not touch live/session flows, GraphQL subscriptions, Apollo providers, generated GraphQL artifacts, manage app callers, or final GraphQL cleanup.
