@@ -4,6 +4,7 @@ import {
   assertSmoke,
   assertTools,
   checkMcpHealth,
+  envSource,
 } from '../../../util/mcpSmokeClient.js'
 
 const DEFAULT_URL = 'http://localhost:7081/mcp'
@@ -80,10 +81,6 @@ Options:
   --dry-run                    print resolved config without network calls
   --help                       show this help
 `)
-}
-
-function envSource(name: string, defaultLabel: string) {
-  return process.env[name] ? 'custom' : defaultLabel
 }
 
 async function main() {

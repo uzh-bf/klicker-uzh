@@ -57,6 +57,10 @@ export function envFlag(name: string) {
   )
 }
 
+export function envSource(name: string, defaultLabel: string) {
+  return process.env[name] ? 'custom' : defaultLabel
+}
+
 export function mcpHealthUrl(url: string) {
   const parsed = new URL(url)
   const basePath = parsed.pathname.replace(/\/mcp\/?$/, '').replace(/\/$/, '')
