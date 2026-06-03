@@ -102,6 +102,18 @@ type PublishedMicroLearningSource = Pick<
   course: Pick<DB.Course, 'displayName' | 'id'>
 }
 
+type ShortnameLiveQuizSource = Pick<
+  DB.LiveQuiz,
+  | 'displayName'
+  | 'id'
+  | 'isAssessmentEnabled'
+  | 'isGamificationEnabled'
+  | 'name'
+  | 'pinCode'
+> & {
+  course?: Pick<DB.Course, 'displayName' | 'id'> | null
+}
+
 type ParticipantParticipationSource = Pick<
   DB.Participation,
   'completedMicroLearnings' | 'id'
@@ -412,6 +424,23 @@ export function toPublishedMicroLearning(
       id: microLearning.course.id,
       displayName: microLearning.course.displayName,
     },
+  }
+}
+
+export function toShortnameLiveQuiz(quiz: ShortnameLiveQuizSource) {
+  return {
+    id: quiz.id,
+    name: quiz.name,
+    displayName: quiz.displayName,
+    isGamificationEnabled: quiz.isGamificationEnabled,
+    isAssessmentEnabled: quiz.isAssessmentEnabled,
+    isPinProtected: !!quiz.pinCode,
+    course: quiz.course
+      ? {
+          id: quiz.course.id,
+          displayName: quiz.course.displayName,
+        }
+      : null,
   }
 }
 

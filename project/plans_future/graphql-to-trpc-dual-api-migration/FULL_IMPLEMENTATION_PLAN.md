@@ -276,6 +276,63 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-03 Completed: S04H15 PWA Join Shortname Live Quiz List
+
+Status: complete for the scoped slice. This slice migrated the PWA `/join/[shortname]` live-quiz list read from Apollo to tRPC. It intentionally did not touch live/session flows, GraphQL subscriptions, Apollo providers, generated operations, or manage app callers.
+
+Scope:
+
+- `apps/frontend-pwa/src/pages/join/[shortname].tsx`
+- `packages/api/src/trpc/dto/participant.ts`
+- `packages/api/src/trpc/schemas/participant.ts`
+- `packages/api/src/trpc/routers/participant.ts`
+- `packages/api/src/trpc/__tests__/participant-join.test.ts`
+- This plan file
+
+Operation mapping:
+
+- GraphQL `GetShortnameQuizzesDocument` on `/join/[shortname]` -> new `trpc.participant.shortnameQuizzes.useQuery({ shortname })`.
+- GraphQL resolver: `Query.shortnameQuizzes`.
+- Behavior source: `packages/graphql/src/services/liveQuizzes.ts getShortnameQuizzes`.
+- tRPC router/procedure: `participant.shortnameQuizzes` as a public read.
+- Input schema: `{ shortname: string }`, preserving service-level trim behavior.
+- Output DTO: `{ shortnameQuizzes: Array<{ id, name, displayName, isGamificationEnabled, isAssessmentEnabled, isPinProtected, course }> }`.
+- Active frontend consumer: `apps/frontend-pwa/src/pages/join/[shortname].tsx`.
+- React Query replacement: client hook with `enabled: !isInactive`; SSR tRPC proxy query preserves redirect when exactly one active quiz is returned.
+
+Implementation notes:
+
+- Added `participant.shortnameQuizzes` as a public tRPC read, preserving the GraphQL service filters for published public live quizzes and owner/admin/write/execute permissions on shared objects.
+- Added `toShortnameLiveQuiz` to expose only the fields rendered by the join page and derive `isPinProtected` from `pinCode`.
+- Migrated `/join/[shortname]` from Apollo SSR/client query state to `createTRPCSSRClient` plus `trpc.participant.shortnameQuizzes.useQuery` with SSR `initialData`; the single-active-quiz redirect is preserved.
+
+Verification results:
+
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test -- participant-join`: passed; Vitest ran 17 files / 149 tests, including the new public shortname lookup tests.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check`: passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build`: passed; existing warnings were limited to next-config module type, next-intl config, PWA worker output, stale Browserslist data, deprecated image domains, and known large page-data warnings.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm exec prettier --config .prettierrc.mjs --check <touched files>`: passed.
+- `git diff --check`: passed.
+- Scoped import audits passed for `/join/[shortname]` and `packages/api/src/trpc`: no `@apollo/client`, `GetShortnameQuizzesDocument`, `@lib/apollo`, or `@klicker-uzh/graphql` matches.
+
+Browser verification:
+
+- Local stack: Docker PostgreSQL/Redis/Hatchet services were already running. Backend ran on `http://127.0.0.1:3103`; PWA ran on `http://127.0.0.1:3102`.
+- Browser path: `http://127.0.0.1:3102/join/lecturer`.
+- Screenshot: `/tmp/klicker-pwa-s04h15-join-lecturer.png`.
+- Rendered the empty-state join card: `Active live quizzes by lecturer` and `No live quizzes active.` No live-quiz links were available in the seeded state for this shortname.
+- Browser resource evidence included `http://127.0.0.1:3103/api/trpc/participant.self,participant.shortnameQuizzes?...`.
+- Cleanup closed `agent-browser`, stopped temporary `3102` / `3103` verification processes, removed temporary local `.env` files, and confirmed ports `3102` / `3103` had no listeners.
+
+Review:
+
+- Self-review used because no separate subagent spawn tooling was available in this continuation.
+- Kept the procedure public to match the GraphQL query and join page behavior; no authenticated participant-only state was introduced.
+
+Next: continue residual PWA non-realtime Apollo cleanup, with likely candidates `course/[courseId]/practice` or `insights/timeline`. Keep live/session flows and subscriptions for S05.
+
 ### 2026-06-03 Completed: S04H14 PWA Repetition Practice Quiz List
 
 Status: complete for the scoped slice. This slice migrated the PWA `/repetition` practice-quiz list read from Apollo to tRPC. It intentionally did not touch the course practice renderer, practice quiz detail page, live/session flows, subscriptions, Apollo providers, generated operations, or manage app callers.

@@ -60,6 +60,10 @@ export const participantCoursePinInput = z.object({
   pin: z.number().int().min(0).max(999999999),
 })
 
+export const participantShortnameInput = z.object({
+  shortname: z.string(),
+})
+
 export const participantCheckNameAvailableInput = z.object({
   username: z.string(),
 })

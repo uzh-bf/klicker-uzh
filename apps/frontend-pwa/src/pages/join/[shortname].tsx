@@ -1,13 +1,11 @@
-import { useQuery } from '@apollo/client'
 import {
   faClipboardCheck,
   faCrown,
   faLock,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetShortnameQuizzesDocument } from '@klicker-uzh/graphql/dist/ops'
-import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
+import { createTRPCSSRClient, trpc, type RouterOutputs } from '@lib/trpc'
 import useParticipantToken from '@lib/useParticipantToken'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
@@ -19,11 +17,13 @@ import LinkButton from '../../components/common/LinkButton'
 function Join({
   isInactive,
   shortname,
+  initialShortnameQuizData,
   participantToken,
   cookiesAvailable,
 }: {
   isInactive: boolean
   shortname: string
+  initialShortnameQuizData?: RouterOutputs['participant']['shortnameQuizzes']
   participantToken?: string
   cookiesAvailable?: boolean
 }) {
@@ -34,17 +34,16 @@ function Join({
     cookiesAvailable,
   })
 
-  const { data } = useQuery(GetShortnameQuizzesDocument, {
-    variables: { shortname },
-    skip: isInactive,
-  })
+  const { data } = trpc.participant.shortnameQuizzes.useQuery(
+    { shortname },
+    {
+      enabled: !isInactive,
+      initialData: initialShortnameQuizData,
+    }
+  )
+  const shortnameQuizzes = data?.shortnameQuizzes ?? []
 
-  if (
-    isInactive ||
-    !data ||
-    !data.shortnameQuizzes?.length ||
-    data.shortnameQuizzes.length === 0
-  ) {
+  if (isInactive || shortnameQuizzes.length === 0) {
     return (
       <Layout>
         <div className="flex flex-col gap-3 md:mx-auto md:w-full md:max-w-xl md:rounded md:border md:p-8">
@@ -96,7 +95,7 @@ function Join({
           </span>
         </div>
         <div className="flex flex-col gap-1.5">
-          {data.shortnameQuizzes.map((quiz) => (
+          {shortnameQuizzes.map((quiz) => (
             <LinkButton
               key={quiz.id}
               href={`/session/${quiz.id}`}
@@ -166,19 +165,17 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const apolloClient = initializeApollo()
-    const result = await apolloClient.query({
-      query: GetShortnameQuizzesDocument,
-      variables: {
-        shortname: ctx.params.shortname,
-      },
+    const trpcClient = createTRPCSSRClient(ctx)
+    const result = await trpcClient.participant.shortnameQuizzes.query({
+      shortname: ctx.params.shortname,
     })
 
     // if there is no result (e.g., the shortname is not valid)
-    if (!result?.data?.shortnameQuizzes) {
+    if (!result?.shortnameQuizzes) {
       return {
         props: {
           isInactive: true,
+          shortname: ctx.params.shortname,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
         },
@@ -187,17 +184,16 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     // if only a single live quiz is running, redirect directly to the corresponding quiz page
     // or if linkTo is set, redirect to the specified link
-    if (result.data.shortnameQuizzes.length === 1) {
+    if (result.shortnameQuizzes.length === 1) {
       return {
         redirect: {
-          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/session/${result.data.shortnameQuizzes[0].id}`,
+          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/session/${result.shortnameQuizzes[0].id}`,
           permanent: false,
         },
       }
     }
 
     const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
       ctx,
     })
 
@@ -207,19 +203,21 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           participantToken,
           cookiesAvailable,
           shortname: ctx.params.shortname,
+          initialShortnameQuizData: result,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
         },
       }
     }
 
-    return addApolloState(apolloClient, {
+    return {
       props: {
         shortname: ctx.params.shortname,
+        initialShortnameQuizData: result,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
-    })
+    }
   } catch (error) {
     console.error('Error in getServerSideProps on join page:', error)
 

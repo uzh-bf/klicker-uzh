@@ -1,5 +1,7 @@
 import {
+  AccessMode,
   LeaderboardType,
+  PermissionLevel,
   PublicationStatus,
   TimelineEntryType,
   UserRole,
@@ -79,6 +81,7 @@ import {
   toPublicParticipantProfile,
   toPublishedMicroLearning,
   toPublishedPracticeQuiz,
+  toShortnameLiveQuiz,
   toTemporaryParticipantSelf,
 } from '../dto/participant.js'
 import { publicProcedure, router } from '../init.js'
@@ -119,6 +122,7 @@ import {
   participantRespondToElementStackInput,
   participantSelfInput,
   participantSendMagicLinkInput,
+  participantShortnameInput,
   participantStackElementFeedbacksInput,
   participantStartGroupActivityInput,
   participantSubmitGroupActivityDecisionsInput,
@@ -428,6 +432,59 @@ export const participantRouter = router({
         pin: input.pin,
         prisma,
       })
+    }),
+
+  shortnameQuizzes: publicProcedure
+    .input(participantShortnameInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+      const user = await prisma.user.findUnique({
+        where: { shortname: input.shortname.trim() },
+        select: {
+          objects: {
+            where: {
+              liveQuizId: { not: null },
+              liveQuiz: {
+                status: PublicationStatus.PUBLISHED,
+                accessMode: AccessMode.PUBLIC,
+              },
+              permissionLevel: {
+                in: [
+                  PermissionLevel.OWNER,
+                  PermissionLevel.ADMIN,
+                  PermissionLevel.WRITE,
+                  PermissionLevel.EXECUTE,
+                ],
+              },
+            },
+            select: {
+              liveQuiz: {
+                select: {
+                  id: true,
+                  name: true,
+                  displayName: true,
+                  isGamificationEnabled: true,
+                  isAssessmentEnabled: true,
+                  pinCode: true,
+                  course: {
+                    select: {
+                      id: true,
+                      displayName: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      })
+
+      return {
+        shortnameQuizzes:
+          user?.objects.flatMap((object) =>
+            object.liveQuiz ? [toShortnameLiveQuiz(object.liveQuiz)] : []
+          ) ?? [],
+      }
     }),
 
   checkNameAvailable: publicProcedure

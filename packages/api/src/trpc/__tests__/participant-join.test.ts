@@ -1,4 +1,10 @@
-import { LeaderboardType, UserRole } from '@klicker-uzh/prisma/client'
+import {
+  AccessMode,
+  LeaderboardType,
+  PermissionLevel,
+  PublicationStatus,
+  UserRole,
+} from '@klicker-uzh/prisma/client'
 import { describe, expect, test, vi } from 'vitest'
 import type { TRPCContext } from '../context.js'
 import { appRouter } from '../root.js'
@@ -25,6 +31,126 @@ function createContext({
 }
 
 describe('participant join routers', () => {
+  test('returns public live quizzes for a lecturer shortname', async () => {
+    const findUnique = vi.fn().mockResolvedValue({
+      objects: [
+        {
+          liveQuiz: {
+            id: 'live-quiz-1',
+            name: 'live-quiz-one',
+            displayName: 'Live Quiz One',
+            isGamificationEnabled: true,
+            isAssessmentEnabled: false,
+            pinCode: '123456',
+            course: {
+              id: 'course-1',
+              displayName: 'Course One',
+            },
+          },
+        },
+        {
+          liveQuiz: {
+            id: 'live-quiz-2',
+            name: 'live-quiz-two',
+            displayName: 'Live Quiz Two',
+            isGamificationEnabled: false,
+            isAssessmentEnabled: true,
+            pinCode: null,
+            course: null,
+          },
+        },
+      ],
+    })
+    const prisma = {
+      user: {
+        findUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller({ prisma })
+
+    await expect(
+      caller.participant.shortnameQuizzes({ shortname: ' lecturer ' })
+    ).resolves.toEqual({
+      shortnameQuizzes: [
+        {
+          id: 'live-quiz-1',
+          name: 'live-quiz-one',
+          displayName: 'Live Quiz One',
+          isGamificationEnabled: true,
+          isAssessmentEnabled: false,
+          isPinProtected: true,
+          course: {
+            id: 'course-1',
+            displayName: 'Course One',
+          },
+        },
+        {
+          id: 'live-quiz-2',
+          name: 'live-quiz-two',
+          displayName: 'Live Quiz Two',
+          isGamificationEnabled: false,
+          isAssessmentEnabled: true,
+          isPinProtected: false,
+          course: null,
+        },
+      ],
+    })
+
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { shortname: 'lecturer' },
+      select: {
+        objects: {
+          where: {
+            liveQuizId: { not: null },
+            liveQuiz: {
+              status: PublicationStatus.PUBLISHED,
+              accessMode: AccessMode.PUBLIC,
+            },
+            permissionLevel: {
+              in: [
+                PermissionLevel.OWNER,
+                PermissionLevel.ADMIN,
+                PermissionLevel.WRITE,
+                PermissionLevel.EXECUTE,
+              ],
+            },
+          },
+          select: {
+            liveQuiz: {
+              select: {
+                id: true,
+                name: true,
+                displayName: true,
+                isGamificationEnabled: true,
+                isAssessmentEnabled: true,
+                pinCode: true,
+                course: {
+                  select: {
+                    id: true,
+                    displayName: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+  })
+
+  test('returns an empty shortname quiz list for missing lecturers', async () => {
+    const prisma = {
+      user: {
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller({ prisma })
+
+    await expect(
+      caller.participant.shortnameQuizzes({ shortname: 'unknown' })
+    ).resolves.toEqual({ shortnameQuizzes: [] })
+  })
+
   test('checks whether a course PIN resolves to a course id', async () => {
     const findUnique = vi.fn().mockResolvedValue({
       id: 'course-1',
