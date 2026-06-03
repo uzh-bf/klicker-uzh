@@ -1,7 +1,6 @@
 import { useQuery } from '@apollo/client'
 import {
   Course,
-  GetBookmarksPracticeQuizDocument,
   PracticeQuiz as PracticeQuizType,
   SelfDocument,
   StackFeedbackStatus,
@@ -11,6 +10,7 @@ import { useLocalStorage } from '@uidotdev/usehooks'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
+import { trpc } from '../../lib/trpc'
 import PreviewMessage from '../common/PreviewMessage'
 import StepProgressWithScoring from '../common/StepProgressWithScoring'
 import ElementStack from './ElementStack'
@@ -60,6 +60,8 @@ function PracticeQuiz({
   const router = useRouter()
   const t = useTranslations()
   const currentStack = quiz.stacks?.[currentIx]
+  const courseId =
+    typeof router.query.courseId === 'string' ? router.query.courseId : ''
   const { data: dataParticipant } = useQuery(SelfDocument, {
     skip: previewOnly,
   })
@@ -96,17 +98,21 @@ function PracticeQuiz({
     )
   )
 
-  const { data: bookmarksData } = useQuery(GetBookmarksPracticeQuizDocument, {
-    variables: {
-      courseId: router.query.courseId as string,
-      quizId: quiz.id === 'bookmarks' ? undefined : quiz.id,
-    },
-    skip:
-      previewOnly ||
-      !router.query.courseId ||
-      !dataParticipant?.self ||
-      dataParticipant?.self.role !== UserRole.Participant,
-  })
+  const practiceQuizBookmarksInput = {
+    courseId,
+    quizId: quiz.id === 'bookmarks' ? undefined : quiz.id,
+  }
+  const { data: bookmarksData } =
+    trpc.participant.practiceQuizBookmarks.useQuery(
+      practiceQuizBookmarksInput,
+      {
+        enabled:
+          !previewOnly &&
+          courseId !== '' &&
+          !!dataParticipant?.self &&
+          dataParticipant?.self.role === UserRole.Participant,
+      }
+    )
 
   return (
     <div className="flex-1">
@@ -190,7 +196,7 @@ function PracticeQuiz({
               dataParticipant.self.role !== UserRole.TemporaryParticipant
             }
             onAllStacksCompletion={handleAllStacksCompletion}
-            bookmarks={bookmarksData?.getBookmarksPracticeQuiz}
+            bookmarks={bookmarksData}
             previewOnly={previewOnly}
           />
         )}

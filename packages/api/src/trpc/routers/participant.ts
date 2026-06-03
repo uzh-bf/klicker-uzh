@@ -21,6 +21,10 @@ import {
   sendMagicLink,
 } from '../../services/participantAuth.js'
 import {
+  bookmarkElementStack,
+  getPracticeQuizBookmarks,
+} from '../../services/participantBookmarks.js'
+import {
   checkValidCoursePin,
   joinCourseWithPin,
 } from '../../services/participantCourseJoin.js'
@@ -59,6 +63,7 @@ import {
 } from '../procedures.js'
 import {
   participantActivateAccountInput,
+  participantBookmarkElementStackInput,
   participantChangeLocaleInput,
   participantCheckNameAvailableInput,
   participantCourseInput,
@@ -76,6 +81,7 @@ import {
   participantLoginWithMagicLinkInput,
   participantLogoutTemporaryInput,
   participantParticipationsInput,
+  participantPracticeQuizBookmarksInput,
   participantPublicProfileInput,
   participantRenameGroupInput,
   participantSelfInput,
@@ -555,6 +561,20 @@ export const participantRouter = router({
           participation,
         },
       }
+    }),
+
+  bookmarkElementStack: participantProcedure
+    .input(participantBookmarkElementStackInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return bookmarkElementStack({
+        bookmarked: input.bookmarked,
+        courseId: input.courseId,
+        participantId: ctx.user.sub,
+        prisma,
+        stackId: input.stackId,
+      })
     }),
 
   createParticipantGroup: participantProcedure
@@ -1293,6 +1313,19 @@ export const participantRouter = router({
           averageScore:
             mappedEntries.length > 0 ? sum / mappedEntries.length : 0,
         },
+      })
+    }),
+
+  practiceQuizBookmarks: participantProcedure
+    .input(participantPracticeQuizBookmarksInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return getPracticeQuizBookmarks({
+        courseId: input.courseId,
+        participantId: ctx.user.sub,
+        prisma,
+        quizId: input.quizId,
       })
     }),
 

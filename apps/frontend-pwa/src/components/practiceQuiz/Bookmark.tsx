@@ -1,15 +1,11 @@
-import { useMutation } from '@apollo/client'
 import { faBookmark } from '@fortawesome/free-regular-svg-icons'
 import { faBookmark as faBookmarkFilled } from '@fortawesome/free-solid-svg-icons'
-import {
-  BookmarkElementStackDocument,
-  GetBookmarksPracticeQuizDocument,
-} from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { trpc } from '../../lib/trpc'
 
 interface BookmarkProps {
   bookmarks?: number[] | null
@@ -20,6 +16,45 @@ interface BookmarkProps {
 function Bookmark({ bookmarks, quizId, stackId }: BookmarkProps) {
   const router = useRouter()
   const t = useTranslations()
+  const utils = trpc.useUtils()
+  const courseId =
+    typeof router.query.courseId === 'string' ? router.query.courseId : ''
+  const bookmarkElementStack =
+    trpc.participant.bookmarkElementStack.useMutation({
+      onMutate: async (variables) => {
+        const bookmarkQueryInput = { courseId: variables.courseId, quizId }
+        await utils.participant.practiceQuizBookmarks.cancel(bookmarkQueryInput)
+
+        const previousBookmarks =
+          utils.participant.practiceQuizBookmarks.getData(bookmarkQueryInput)
+
+        utils.participant.practiceQuizBookmarks.setData(
+          bookmarkQueryInput,
+          (current) => {
+            const currentBookmarks = current ?? []
+            return variables.bookmarked
+              ? Array.from(new Set([...currentBookmarks, variables.stackId]))
+              : currentBookmarks.filter((entry) => entry !== variables.stackId)
+          }
+        )
+
+        return { bookmarkQueryInput, previousBookmarks }
+      },
+      onError: (_error, _variables, context) => {
+        if (!context) return
+
+        utils.participant.practiceQuizBookmarks.setData(
+          context.bookmarkQueryInput,
+          context.previousBookmarks
+        )
+      },
+      onSuccess: (result, variables) => {
+        utils.participant.practiceQuizBookmarks.setData(
+          { courseId: variables.courseId, quizId },
+          result
+        )
+      },
+    })
 
   const isBookmarked = useMemo(() => {
     if (!bookmarks) {
@@ -29,39 +64,18 @@ function Bookmark({ bookmarks, quizId, stackId }: BookmarkProps) {
     return bookmarks.includes(stackId)
   }, [bookmarks, stackId])
 
-  const [bookmarkElementStack, { loading: bookmarkingStack }] = useMutation(
-    BookmarkElementStackDocument,
-    {
-      variables: {
-        stackId: stackId,
-        courseId: router.query.courseId as string,
-        bookmarked: !isBookmarked,
-      },
-      update(cache, { data }) {
-        // verify that the bookmarking was successful
-        if (!data?.bookmarkElementStack) return
-
-        // update the cached bookmarks (mutation directly returns updated stack ids)
-        cache.updateQuery(
-          {
-            query: GetBookmarksPracticeQuizDocument,
-            variables: { courseId: router.query.courseId as string, quizId },
-          },
-          () => ({ getBookmarksPracticeQuiz: data.bookmarkElementStack! })
-        )
-      },
-      optimisticResponse: {
-        bookmarkElementStack: isBookmarked
-          ? (bookmarks || []).filter((entry) => entry !== stackId)
-          : [...(bookmarks || []), stackId],
-      },
-    }
-  )
-
   return (
     <Button
-      disabled={bookmarkingStack}
-      onClick={() => bookmarkElementStack()}
+      disabled={bookmarkElementStack.isLoading || courseId === ''}
+      onClick={() => {
+        if (courseId === '') return
+
+        bookmarkElementStack.mutate({
+          stackId,
+          courseId,
+          bookmarked: !isBookmarked,
+        })
+      }}
       data={{ cy: 'bookmark-element-stack' }}
       className={{
         root: twMerge(

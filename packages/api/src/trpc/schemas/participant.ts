@@ -129,6 +129,17 @@ export const participantCourseLeaderboardInput = z.object({
   mode: z.enum(['course', 'biweekly']),
 })
 
+export const participantPracticeQuizBookmarksInput = z.object({
+  courseId: z.string(),
+  quizId: z.string().nullish(),
+})
+
+export const participantBookmarkElementStackInput = z.object({
+  courseId: z.string(),
+  stackId: z.number().int(),
+  bookmarked: z.boolean(),
+})
+
 export const participantGroupActivityInstancesInput = z.object({
   courseId: z.string(),
   groupId: z.string(),

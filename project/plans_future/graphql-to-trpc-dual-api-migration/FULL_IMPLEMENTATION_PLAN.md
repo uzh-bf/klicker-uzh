@@ -276,6 +276,75 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-03 Completed: S04H1 PWA Practice Quiz Bookmark Toggle
+
+Status: complete for the scoped slice. This slice migrated only the in-practice bookmark IDs query and bookmark toggle mutation. The bookmarked-stacks course page remains GraphQL for a later S04H DTO slice because it needs full element-stack data filtering.
+
+Goal: replace `GetBookmarksPracticeQuizDocument` and `BookmarkElementStackDocument` in the PWA practice quiz bookmark controls while preserving participant-only authorization, optional quiz-specific bookmark filtering, bookmark connect/disconnect semantics, and the existing updated bookmark ID list used by `ElementStack`.
+
+Write scope:
+
+- `packages/api/src/services/participantBookmarks.ts`
+- `packages/api/src/trpc/schemas/participant.ts`
+- `packages/api/src/trpc/routers/participant.ts`
+- `packages/api/src/trpc/__tests__/participant-bookmarks.test.ts`
+- `apps/frontend-pwa/src/components/practiceQuiz/PracticeQuiz.tsx`
+- `apps/frontend-pwa/src/components/practiceQuiz/Bookmark.tsx`
+- `AGENTS.md`
+- This plan file
+
+```text
+Slice: S04H1 PWA practice quiz bookmark toggle
+GraphQL operation(s): GetBookmarksPracticeQuizDocument, BookmarkElementStackDocument
+GraphQL resolver(s): getBookmarksPracticeQuiz, bookmarkElementStack
+Behavior source: PracticeQuizService.getBookmarksPracticeQuiz and ParticipantService.bookmarkElementStack
+tRPC router.procedure: participant.practiceQuizBookmarks, participant.bookmarkElementStack
+Input schema: participantPracticeQuizBookmarksInput { courseId, quizId? }, participantBookmarkElementStackInput { courseId, stackId, bookmarked }
+Output DTO: bookmark stack id list or null
+Active frontend consumers: PracticeQuiz bookmark ID query, Bookmark button mutation inside ElementStack
+Apollo cache/refetch behavior: mutation returned updated stack IDs and updated GetBookmarksPracticeQuizDocument cache, with an optimistic response
+React Query replacement: tRPC query for bookmark IDs; mutation result writes updated IDs into participant.practiceQuizBookmarks cache for the same course/quiz input
+Browser verification path: local seeded PWA Testkurs practice quiz; login as seeded participant, open a practice quiz stack, toggle bookmark, verify icon/cache/DB, toggle back or clean local DB
+Cleanup blocked until: bookmarked-stacks page DTO, practice/microlearning execution flows, group activity detail flows, live quiz/session mutations, and S05 subscriptions
+```
+
+Implementation:
+
+- Added transport-neutral bookmark services for practice-quiz bookmark reads and element-stack bookmark connect/disconnect updates.
+- Added `participant.practiceQuizBookmarks` and `participant.bookmarkElementStack` with Zod inputs and participant-only guards.
+- Swapped the in-practice PWA bookmark query/mutation to tRPC, preserved optimistic bookmark cache updates with rollback, and reconciled the matching React Query cache entry with the returned stack ID list.
+- Preserved `SelfDocument` and Apollo in `PracticeQuiz.tsx` for the remaining unmigrated PWA surface.
+
+Verification passed:
+
+- Prettier on touched files and this plan.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api test`
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api check`
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/api build`
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check`
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build`
+- Scoped audits for removed GraphQL bookmark documents and server-only imports in migrated PWA files.
+- `git diff --check`
+- Browser verification against local seeded Testkurs on PWA port 3102:
+  - `/tmp/klicker-pwa-s04h1-final-overview.png`
+  - `/tmp/klicker-pwa-s04h1-final-before-bookmark.png`
+  - `/tmp/klicker-pwa-s04h1-final-after-bookmark.png`
+  - `/tmp/klicker-pwa-s04h1-final-after-unbookmark.png`
+- DB verification used participant `testuser35`, participation `39`, and stack `44`: the join row existed after bookmark and count returned `0` after the cleanup unbookmark toggle.
+- Local browser, token file, dev servers, and Docker Compose stack were cleaned up after verification.
+
+Self-review and simplification:
+
+- Confirmed `BookmarkElementStackDocument` and `GetBookmarksPracticeQuizDocument` no longer appear in the migrated practice-quiz component/API scope.
+- Confirmed migrated PWA files do not import server-only modules or the new API service directly.
+- Kept the slice narrow; full bookmarked-stack course-page data remains GraphQL until the dedicated DTO slice.
+- Added a concise `AGENTS.md` learning for the PWA dev-mode GraphQL persisted-operation gotcha encountered during browser verification.
+
+Notes:
+
+- Context7 MCP was requested by repo instructions, but no Context7 tools are exposed in this environment. Official tRPC v10 docs for `useQuery`, `useMutation`, and `useUtils` were checked because the installed stack is tRPC 10.45.x.
+- No subagent spawned because subagent tooling is unavailable in this thread; self-review and simplification were performed before commit.
+
 ### 2026-06-03 Completed: S04G14 PWA Active Group Mutations
 
 Status: complete for the scoped slice. This slice migrated only the PWA active group controls for leaving a group, renaming a group, and adding a group chat message. Group activity detail mutations and subscriptions stay GraphQL until later slices.
