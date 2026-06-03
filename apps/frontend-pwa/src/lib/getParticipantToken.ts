@@ -1,21 +1,20 @@
-import { ApolloClient, NormalizedCacheObject } from '@apollo/client'
-import { LoginParticipantWithLtiDocument } from '@klicker-uzh/graphql/dist/ops'
 import { signJWT, verifyJWT } from '@klicker-uzh/util'
 import bodyParser from 'body-parser'
 import { GetServerSidePropsContext } from 'next'
 import nookies from 'nookies'
+import { createTRPCSSRClient } from './trpc'
 
 export default async function getParticipantToken({
-  apolloClient,
   courseId,
   ctx,
 }: {
-  apolloClient: ApolloClient<NormalizedCacheObject>
+  apolloClient?: unknown
   courseId?: string
   ctx: GetServerSidePropsContext
 }) {
   const { req, res, query } = ctx
   const cookies = nookies.get(ctx)
+  const trpcClient = createTRPCSSRClient(ctx)
 
   // if the user already has a participant token, skip registration
   // fetch the relevant data directly
@@ -41,7 +40,13 @@ export default async function getParticipantToken({
   }
 
   try {
-    let result
+    let result:
+      | {
+          participant: { id: string } | null
+          participantToken: string | null
+        }
+      | null
+      | undefined
 
     const cookiesAvailable = !!cookies['lti-token']
 
@@ -63,12 +68,9 @@ export default async function getParticipantToken({
         )) as { sub: string; email: string; scope: string }
 
         if (signedLtiData.scope === 'LTI1.3') {
-          result = await apolloClient.mutate({
-            mutation: LoginParticipantWithLtiDocument,
-            variables: {
-              signedLtiData: token,
-              courseId,
-            },
+          result = await trpcClient.participant.loginWithLti.mutate({
+            signedLtiData: token,
+            courseId,
           })
         }
       } catch (e) {}
@@ -115,18 +117,14 @@ export default async function getParticipantToken({
           }
         )
 
-        result = await apolloClient.mutate({
-          mutation: LoginParticipantWithLtiDocument,
-          variables: {
-            signedLtiData,
-            courseId,
-          },
+        result = await trpcClient.participant.loginWithLti.mutate({
+          signedLtiData,
+          courseId,
         })
       }
     }
 
-    const ltiParticipantToken =
-      result?.data?.loginParticipantWithLti?.participantToken ?? null
+    const ltiParticipantToken = result?.participantToken ?? null
 
     if (ltiParticipantToken) {
       participantToken = ltiParticipantToken
@@ -159,7 +157,7 @@ export default async function getParticipantToken({
 
     return {
       participantToken,
-      participant: result?.data?.loginParticipantWithLti,
+      participant: result,
       cookiesAvailable,
     }
   } catch (e) {

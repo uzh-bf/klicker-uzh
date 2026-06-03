@@ -10,8 +10,10 @@ import dayjs from 'dayjs'
 import {
   activateParticipantAccount,
   changeParticipantLocale,
+  createParticipantAccount,
   deleteParticipantAccount,
   loginParticipant,
+  loginParticipantWithLti,
   loginTemporaryParticipant,
   loginWithMagicLink,
   logoutParticipant,
@@ -52,9 +54,11 @@ import {
   participantCourseInput,
   participantCourseLeaderboardInput,
   participantCoursePinInput,
+  participantCreateAccountInput,
   participantGroupActivityInstancesInput,
   participantLoginInput,
   participantLoginTemporaryInput,
+  participantLoginWithLtiInput,
   participantLoginWithMagicLinkInput,
   participantLogoutTemporaryInput,
   participantParticipationsInput,
@@ -265,6 +269,23 @@ export const participantRouter = router({
       })
     }),
 
+  createAccount: publicProcedure
+    .input(participantCreateAccountInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return createParticipantAccount({
+        courseId: input.courseId,
+        email: input.email,
+        isProfilePublic: input.isProfilePublic,
+        password: input.password,
+        prisma,
+        res: ctx.res,
+        signedLtiData: input.signedLtiData,
+        username: input.username,
+      })
+    }),
+
   changeLocale: participantProcedure
     .input(participantChangeLocaleInput)
     .mutation(async ({ ctx, input }) => {
@@ -275,6 +296,19 @@ export const participantRouter = router({
         participantId: ctx.user.sub,
         prisma,
         res: ctx.res,
+      })
+    }),
+
+  loginWithLti: publicProcedure
+    .input(participantLoginWithLtiInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return loginParticipantWithLti({
+        courseId: input.courseId,
+        prisma,
+        res: ctx.res,
+        signedLtiData: input.signedLtiData,
       })
     }),
 

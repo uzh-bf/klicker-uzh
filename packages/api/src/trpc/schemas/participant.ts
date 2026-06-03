@@ -58,9 +58,23 @@ export const participantUpdateAvatarInput = z.object({
   avatarSettings: participantAvatarSettingsInput,
 })
 
+export const participantCreateAccountInput = z.object({
+  email: z.string(),
+  username: z.string(),
+  password: z.string(),
+  isProfilePublic: z.boolean(),
+  courseId: z.string().nullish(),
+  signedLtiData: z.string().nullish(),
+})
+
 export const participantLoginInput = z.object({
   usernameOrEmail: z.string(),
   password: z.string(),
+})
+
+export const participantLoginWithLtiInput = z.object({
+  signedLtiData: z.string(),
+  courseId: z.string().nullish(),
 })
 
 export const participantLoginWithMagicLinkInput = z.object({

@@ -1,6 +1,5 @@
-import { useMutation, useQuery } from '@apollo/client'
+import { useQuery } from '@apollo/client'
 import {
-  CreateParticipantAccountDocument,
   GetBasicCourseInformationDocument,
   SelfDocument,
   UserRole,
@@ -59,12 +58,8 @@ function JoinCourse({
   const { loading: loadingParticipant, data: dataParticipant } =
     useQuery(SelfDocument)
   const joinCourseWithPin = trpc.participant.joinCourseWithPin.useMutation()
+  const createParticipantAccount = trpc.participant.createAccount.useMutation()
   const utils = trpc.useUtils()
-
-  const [createParticipantAccount] = useMutation(
-    CreateParticipantAccountDocument,
-    { refetchQueries: [{ query: SelfDocument }] }
-  )
 
   if (loadingParticipant || courseLoading) {
     return (
@@ -155,14 +150,12 @@ function JoinCourse({
                 numbers: true,
               })}
               handleSubmit={async (values) => {
-                await createParticipantAccount({
-                  variables: {
-                    email: values.email.trim().toLowerCase(),
-                    username: values.username.trim(),
-                    password: values.password.trim(),
-                    isProfilePublic: values.isProfilePublic,
-                    courseId,
-                  },
+                await createParticipantAccount.mutateAsync({
+                  email: values.email.trim().toLowerCase(),
+                  username: values.username.trim(),
+                  password: values.password.trim(),
+                  isProfilePublic: values.isProfilePublic,
+                  courseId,
                 })
 
                 await router.push({

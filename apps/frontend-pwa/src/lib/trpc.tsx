@@ -5,7 +5,11 @@ import {
   QueryClient,
   QueryClientProvider,
 } from '@tanstack/react-query'
-import { TRPCClientError, httpBatchLink } from '@trpc/client'
+import {
+  TRPCClientError,
+  createTRPCProxyClient,
+  httpBatchLink,
+} from '@trpc/client'
 import { createTRPCReact } from '@trpc/react-query'
 import type { GetServerSidePropsContext } from 'next'
 import Router from 'next/router'
@@ -85,6 +89,24 @@ export function createTRPCQueryClient() {
 
 export function createTRPCClient(ctx?: GetServerSidePropsContext) {
   return trpc.createClient({
+    transformer: superjson,
+    links: [
+      httpBatchLink({
+        url: getTRPCUrl(),
+        headers: () => getHeaders(ctx),
+        fetch(url, options) {
+          return globalThis.fetch(url, {
+            ...options,
+            credentials: 'include',
+          })
+        },
+      }),
+    ],
+  })
+}
+
+export function createTRPCSSRClient(ctx?: GetServerSidePropsContext) {
+  return createTRPCProxyClient<AppRouter>({
     transformer: superjson,
     links: [
       httpBatchLink({

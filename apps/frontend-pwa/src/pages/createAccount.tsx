@@ -6,14 +6,13 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import nookies from 'nookies'
 
-import { useMutation } from '@apollo/client'
-import { CreateParticipantAccountDocument } from '@klicker-uzh/graphql/dist/ops'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import bodyParser from 'body-parser'
 import Layout from 'src/components/Layout'
 import CreateAccountForm from 'src/components/forms/CreateAccountForm'
 import { addApolloState, initializeApollo } from 'src/lib/apollo'
+import { trpc } from 'src/lib/trpc'
 
 interface Props {
   signedLtiData?: string
@@ -33,9 +32,7 @@ function CreateAccount({
 }: Props) {
   const t = useTranslations()
   const router = useRouter()
-  const [createParticipantAccount] = useMutation(
-    CreateParticipantAccountDocument
-  )
+  const createParticipantAccount = trpc.participant.createAccount.useMutation()
 
   useParticipantToken({
     participantToken,
@@ -51,17 +48,14 @@ function CreateAccount({
         handleSubmit={async (values, { setSubmitting }) => {
           setSubmitting(true)
 
-          const login = await createParticipantAccount({
-            variables: {
-              email: values.email.trim().toLowerCase(),
-              username: values.username.trim(),
-              password: values.password.trim(),
-              isProfilePublic: values.isProfilePublic,
-              signedLtiData,
-            },
+          const createResult = await createParticipantAccount.mutateAsync({
+            email: values.email.trim().toLowerCase(),
+            username: values.username.trim(),
+            password: values.password.trim(),
+            isProfilePublic: values.isProfilePublic,
+            signedLtiData,
           })
 
-          const createResult = login.data?.createParticipantAccount
           const participantToken = createResult?.participantToken ?? null
 
           if (participantToken) {
