@@ -4,7 +4,6 @@ import { z } from 'zod'
 import {
   bearerTokenFromHeaders,
   verifyLecturerSession,
-  type LecturerMcpScope,
   type LecturerMcpSession,
 } from './auth.js'
 import type { RuntimeSettings } from './config.js'
@@ -25,6 +24,7 @@ import {
   toolDefinition,
   type LecturerMcpToolName,
 } from './toolPolicy.js'
+import { runLecturerDraftTool, runLecturerReadTool } from './toolRunner.js'
 
 export { LECTURER_MCP_TOOL_NAMES, type LecturerMcpToolName }
 
@@ -42,75 +42,6 @@ export type LecturerMcpCapabilities = {
   autonomousWrites: false
   proposalRequiredForWrites: true
   tools: LecturerToolCapability[]
-}
-
-function json(value: unknown): string {
-  return JSON.stringify(value ?? null, null, 2)
-}
-
-function toolError(error: unknown) {
-  if (error instanceof z.ZodError) {
-    return {
-      error: {
-        code: 'INVALID_INPUT',
-        message: 'Invalid lecturer MCP tool input',
-      },
-    }
-  }
-
-  const message = error instanceof Error ? error.message : String(error)
-  if (/not found or not accessible|Forbidden|missing scope/i.test(message)) {
-    return {
-      error: {
-        code: 'FORBIDDEN',
-        message: 'Object not found or not accessible',
-      },
-    }
-  }
-
-  return {
-    error: {
-      code: 'UNKNOWN',
-      message: 'Lecturer MCP tool call failed',
-    },
-  }
-}
-
-function requireSession(session: LecturerMcpSession | undefined) {
-  if (!session) {
-    throw new UserError('Authentication failed: missing lecturer session')
-  }
-  return session
-}
-
-function requireScope(session: LecturerMcpSession, scope: LecturerMcpScope) {
-  if (!session.scopes.includes(scope)) {
-    throw new UserError(`Authentication failed: missing scope ${scope}`)
-  }
-}
-
-async function runReadTool(
-  session: LecturerMcpSession | undefined,
-  execute: (session: LecturerMcpSession) => Promise<unknown>
-) {
-  try {
-    return json(await execute(requireSession(session)))
-  } catch (error) {
-    return json(toolError(error))
-  }
-}
-
-async function runDraftTool(
-  session: LecturerMcpSession | undefined,
-  execute: (session: LecturerMcpSession) => Promise<unknown> | unknown
-) {
-  try {
-    const validSession = requireSession(session)
-    requireScope(validSession, 'manage:draft')
-    return json(await execute(validSession))
-  } catch (error) {
-    return json(toolError(error))
-  }
 }
 
 async function signProposalToken(
@@ -238,7 +169,12 @@ export function createLecturerMcpServer(
     ),
     description:
       'Return the current lecturer MCP service capabilities. This scaffold tool does not access Klicker data.',
-    execute: async () => json(getLecturerCapabilities(settings)),
+    execute: (_args, context) =>
+      runLecturerReadTool({
+        execute: () => getLecturerCapabilities(settings),
+        session: context.session,
+        toolName: 'klicker_lecturer_capabilities',
+      }),
     parameters: z.object({}),
     timeoutMs: 5_000,
   })
@@ -248,9 +184,11 @@ export function createLecturerMcpServer(
     description:
       'List courses readable by the authenticated lecturer. Returns compact metadata only and never includes PIN codes.',
     execute: (args, context) =>
-      runReadTool(context.session, (session) =>
-        service.listCourses(args, session)
-      ),
+      runLecturerReadTool({
+        execute: (session) => service.listCourses(args, session),
+        session: context.session,
+        toolName: 'klicker_lecturer_course_list',
+      }),
     parameters: courseListSchema,
     timeoutMs: 10_000,
   })
@@ -260,9 +198,11 @@ export function createLecturerMcpServer(
     description:
       'Get compact metadata and activity counts for a course readable by the authenticated lecturer.',
     execute: (args, context) =>
-      runReadTool(context.session, (session) =>
-        service.getCourse(args, session)
-      ),
+      runLecturerReadTool({
+        execute: (session) => service.getCourse(args, session),
+        session: context.session,
+        toolName: 'klicker_lecturer_course_get',
+      }),
     parameters: courseGetSchema,
     timeoutMs: 10_000,
   })
@@ -275,9 +215,11 @@ export function createLecturerMcpServer(
     description:
       'Search question elements readable by the authenticated lecturer. Results are capped and include plain-text snippets only.',
     execute: (args, context) =>
-      runReadTool(context.session, (session) =>
-        service.searchElements(args, session)
-      ),
+      runLecturerReadTool({
+        execute: (session) => service.searchElements(args, session),
+        session: context.session,
+        toolName: 'klicker_lecturer_element_search',
+      }),
     parameters: elementSearchSchema,
     timeoutMs: 10_000,
   })
@@ -287,9 +229,11 @@ export function createLecturerMcpServer(
     description:
       'Get one question element readable by the authenticated lecturer. Text fields and options are capped.',
     execute: (args, context) =>
-      runReadTool(context.session, (session) =>
-        service.getElement(args, session)
-      ),
+      runLecturerReadTool({
+        execute: (session) => service.getElement(args, session),
+        session: context.session,
+        toolName: 'klicker_lecturer_element_get',
+      }),
     parameters: elementGetSchema,
     timeoutMs: 10_000,
   })
@@ -302,9 +246,11 @@ export function createLecturerMcpServer(
     description:
       'Create a validated draft-only question payload for SC, MC, or FREE_TEXT questions. This never persists data. If courseId is provided, the course must be readable by the authenticated lecturer.',
     execute: (args, context) =>
-      runDraftTool(context.session, (session) =>
-        service.createQuestionDraft(args, session)
-      ),
+      runLecturerDraftTool({
+        execute: (session) => service.createQuestionDraft(args, session),
+        session: context.session,
+        toolName: 'klicker_lecturer_question_draft',
+      }),
     parameters: questionDraftSchema,
     timeoutMs: 10_000,
   })
@@ -317,9 +263,11 @@ export function createLecturerMcpServer(
     description:
       'Create validated draft-only choice scaffolding for a question. This never persists data.',
     execute: (args, context) =>
-      runDraftTool(context.session, (session) =>
-        service.createChoicesDraft(args, session)
-      ),
+      runLecturerDraftTool({
+        execute: (session) => service.createChoicesDraft(args, session),
+        session: context.session,
+        toolName: 'klicker_lecturer_choices_draft',
+      }),
     parameters: choicesDraftSchema,
     timeoutMs: 5_000,
   })
@@ -332,9 +280,11 @@ export function createLecturerMcpServer(
     description:
       'Create validated draft-only answer feedback scaffolding for a question and its choices. This never persists data.',
     execute: (args, context) =>
-      runDraftTool(context.session, (session) =>
-        service.createFeedbackDraft(args, session)
-      ),
+      runLecturerDraftTool({
+        execute: (session) => service.createFeedbackDraft(args, session),
+        session: context.session,
+        toolName: 'klicker_lecturer_feedback_draft',
+      }),
     parameters: feedbackDraftSchema,
     timeoutMs: 5_000,
   })
@@ -347,12 +297,16 @@ export function createLecturerMcpServer(
     description:
       'Create a signed proposal for a DRAFT SC, MC, or FREE_TEXT question. This does not persist data; the lecturer must explicitly confirm the proposal in the Manage assistant UI.',
     execute: (args, context) =>
-      runDraftTool(context.session, async (session) => {
-        const proposal = service.createElementDraftProposal(args, session)
-        return {
-          ...proposal,
-          proposalToken: await signProposalToken(settings, session, proposal),
-        }
+      runLecturerDraftTool({
+        execute: async (session) => {
+          const proposal = service.createElementDraftProposal(args, session)
+          return {
+            ...proposal,
+            proposalToken: await signProposalToken(settings, session, proposal),
+          }
+        },
+        session: context.session,
+        toolName: 'klicker_lecturer_element_create_draft_proposal',
       }),
     parameters: elementCreateDraftProposalSchema,
     timeoutMs: 10_000,

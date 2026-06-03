@@ -30,6 +30,16 @@ architecture should stay with focused TypeScript MCP services:
   locally by missing package symlinks in this temp worktree (`fastmcp`, `zod`,
   `vitest`, `@apollo/client`, etc.); CI remains the authoritative package
   check. Next: Slice 2 instrumented tool runner.
+- 2026-06-03: Slice 2 done. Added local instrumented tool runners for student
+  and lecturer MCP services; server registration now passes tool name, session,
+  and execution callback through the runner while preserving current JSON
+  success/error contracts. Logs include service, tool, subject id, role/scopes,
+  latency, outcome, and error code only. Evidence: focused policy/runner Vitest
+  `16/16` passed, Prettier passed, `git diff --check` passed, standalone strict
+  TypeScript check for policy/runner helpers passed. Local review/simplification
+  confirmed no production log entry includes tool inputs, outputs, tokens,
+  cookies, question content, answer content, or proposal payloads. Next: Slice 3
+  error taxonomy cleanup.
 
 ## What To Take Over
 

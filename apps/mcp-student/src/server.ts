@@ -1,8 +1,6 @@
 import {
   FlashcardCorrectness,
   STUDENT_MCP_SUPPORTED_ELEMENT_TYPES,
-  type StudentMcpToolErrorCode,
-  type StudentMcpToolErrorOutput,
 } from '@klicker-uzh/types'
 import { FastMCP, UserError } from 'fastmcp'
 import type { IncomingMessage } from 'node:http'
@@ -15,6 +13,7 @@ import {
 import type { RuntimeSettings } from './config.js'
 import type { StudentPracticeService } from './service.js'
 import { toolDefinition } from './toolPolicy.js'
+import { runStudentTool } from './toolRunner.js'
 
 const lookupSchema = z.object({
   chatbotId: z.string().min(1).describe('Chatbot assigned to the course'),
@@ -56,79 +55,6 @@ const submitSchema = z.object({
   stackAnswerTimeSeconds: z.number().int().min(0),
 })
 
-function json(value: unknown): string {
-  return JSON.stringify(value ?? null, null, 2)
-}
-
-function requireSession(session: StudentMcpSession | undefined) {
-  if (!session) {
-    throw new UserError('Missing authenticated participant session')
-  }
-  return session
-}
-
-function errorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message
-  return String(error)
-}
-
-function errorCode(message: string): StudentMcpToolErrorCode {
-  if (
-    message === 'Missing authenticated participant session' ||
-    message === 'Missing Authorization bearer token'
-  ) {
-    return 'UNAUTHENTICATED'
-  }
-  if (/questionRef has expired/i.test(message)) {
-    return 'QUESTION_REF_EXPIRED'
-  }
-  if (/Invalid questionRef|questionRef signature/i.test(message)) {
-    return 'QUESTION_REF_INVALID'
-  }
-  if (
-    /no longer eligible|no longer matches|does not match request context/i.test(
-      message
-    )
-  ) {
-    return 'QUESTION_REF_STALE'
-  }
-  if (
-    /Submission must answer|Duplicate response|Response type mismatch/i.test(
-      message
-    )
-  ) {
-    return 'SUBMISSION_INVALID'
-  }
-  if (/No practice pool is available/i.test(message)) {
-    return 'PRACTICE_POOL_UNAVAILABLE'
-  }
-  return 'UNKNOWN'
-}
-
-function safeToolError(error: unknown): StudentMcpToolErrorOutput {
-  const message = errorMessage(error)
-  const code = errorCode(message)
-
-  return {
-    error: {
-      code,
-      message:
-        code === 'UNKNOWN' ? 'Student practice tool call failed' : message,
-    },
-  }
-}
-
-async function runTool(
-  session: StudentMcpSession | undefined,
-  execute: (session: StudentMcpSession) => Promise<unknown>
-): Promise<string> {
-  try {
-    return json(await execute(requireSession(session)))
-  } catch (error) {
-    return json(safeToolError(error))
-  }
-}
-
 export function createStudentMcpServer(
   settings: RuntimeSettings,
   service: StudentPracticeService
@@ -159,9 +85,12 @@ export function createStudentMcpServer(
     description:
       'Find answer-safe practice-stack candidates related to the current chat topic.',
     execute: (args, context) =>
-      runTool(context.session, (session) =>
-        service.lookupRelevantPracticeStacks(args, session)
-      ),
+      runStudentTool({
+        execute: (session) =>
+          service.lookupRelevantPracticeStacks(args, session),
+        session: context.session,
+        toolName: 'lookup_relevant_practice_stacks',
+      }),
     parameters: lookupSchema,
     timeoutMs: 10_000,
   })
@@ -174,9 +103,11 @@ export function createStudentMcpServer(
     description:
       'Fetch full answer-safe render data for a selected practice stack.',
     execute: (args, context) =>
-      runTool(context.session, (session) =>
-        service.getPracticeStackForQuiz(args, session)
-      ),
+      runStudentTool({
+        execute: (session) => service.getPracticeStackForQuiz(args, session),
+        session: context.session,
+        toolName: 'get_practice_stack_for_quiz',
+      }),
     parameters: getQuizStackSchema,
     timeoutMs: 10_000,
   })
@@ -189,9 +120,11 @@ export function createStudentMcpServer(
     description:
       'Submit a completed structured stack answer and return backend grading.',
     execute: (args, context) =>
-      runTool(context.session, (session) =>
-        service.submitPracticeStackAnswer(args, session)
-      ),
+      runStudentTool({
+        execute: (session) => service.submitPracticeStackAnswer(args, session),
+        session: context.session,
+        toolName: 'submit_practice_stack_answer',
+      }),
     parameters: submitSchema,
     timeoutMs: 30_000,
   })
