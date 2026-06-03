@@ -1,16 +1,9 @@
+import type { LecturerMcpScope, LecturerMcpSession } from './auth.js'
 import {
   toLecturerToolError,
   type LecturerToolErrorOutput,
 } from './toolErrors.js'
 import type { LecturerMcpToolName } from './toolPolicy.js'
-
-type LecturerMcpScope = 'manage:draft' | 'manage:read'
-
-type LecturerMcpSession = {
-  bearerToken: string
-  scopes: readonly LecturerMcpScope[]
-  userId: string
-}
 
 type RunLecturerToolOptions = {
   execute: (session: LecturerMcpSession) => Promise<unknown> | unknown
