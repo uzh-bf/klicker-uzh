@@ -276,6 +276,52 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 
 ## Progress
 
+### 2026-06-03 Completed: S04H26 PWA ElementStack Generated Type Cleanup
+
+Status: complete for the scoped slice. This slice removed the direct generated GraphQL import from the PWA `ElementStack` component while keeping `StudentElement` and `useStudentResponse` as the temporary shared-component compatibility boundary. It intentionally did not touch shared-component generated imports, live/session flows, GraphQL subscriptions, Apollo providers, generated GraphQL artifacts, active Apollo hooks, manage app callers, or final GraphQL cleanup.
+
+Scope:
+
+- `apps/frontend-pwa/src/components/practiceQuiz/ElementStack.tsx`
+- This plan file
+
+Operation mapping:
+
+- GraphQL operation(s): none directly issued by `ElementStack`.
+- GraphQL resolver(s): none directly called by `ElementStack`.
+- Behavior source: existing tRPC `participant.respondToElementStack` and `participant.previousStackEvaluation` procedures plus existing shared student element rendering behavior.
+- tRPC router.procedure: existing `participant.respondToElementStack` and `participant.previousStackEvaluation`; no new procedure.
+- Input schema: unchanged existing participant stack response schemas; no new schema.
+- Output DTO: unchanged practice quiz, microlearning stack, and previous stack evaluation DTOs.
+- Active frontend consumers: PWA practice quiz execution and microlearning execution pages.
+- Apollo behavior: the direct generated import in `ElementStack` provides enum/type constants only; no Apollo operation is issued by the file.
+- React Query/tRPC replacement: local enum-value constants, `RouterInputs`, transport-neutral response input types from `@klicker-uzh/types`, and type derivation from existing shared component props.
+- Browser verification path: open a local practice quiz execution stack through the local PWA/backend stack and confirm progress, question rendering, and submit state still render after the direct generated import cleanup.
+
+Implementation notes:
+
+- Removed the direct `@klicker-uzh/graphql/dist/ops` import from `ElementStack` and replaced it with local enum-value constants, `RouterInputs`, transport-neutral response fragments from `@klicker-uzh/types`, and a stack type derived from the existing `useStudentResponse` prop contract.
+- Kept `StudentElement` and `useStudentResponse` as the shared-component compatibility boundary for this slice. Local casts are limited to the places where local enum-value constants cross the existing shared-component student-response union.
+- Left the existing tRPC procedures, input schemas, output DTOs, and submission behavior unchanged.
+
+Verification:
+
+- `rg -n "@klicker-uzh/graphql|@apollo/client|Apollo" apps/frontend-pwa/src/components/practiceQuiz/ElementStack.tsx` returned no matches.
+- `rg -n "@klicker-uzh/graphql" apps/frontend-pwa/src/components/practiceQuiz 'apps/frontend-pwa/src/pages/course/[courseId]/practiceQuizzes' 'apps/frontend-pwa/src/pages/course/[courseId]/microLearnings' -g '*.ts' -g '*.tsx'` returned no matches.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check` passed.
+- `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build` passed. Existing warnings remained: `packages/next-config` has no module type, `next-intl` reports the Pages/App Router `i18n` config caveat, Browserslist data is stale, and several static pages exceed the 128 kB page-data threshold.
+- Browser verification used the branch-local backend/PWA stack on `http://127.0.0.1:3103` and `http://127.0.0.1:3102`. The seeded quiz `7fca9104-7269-40a0-84e9-5a70644c1636` was temporarily set to `PUBLISHED` and then restored to `DRAFT` with `availableFrom = null`.
+- Initial screenshot: `/tmp/klicker-pwa-s04h26-elementstack-rendered.png`.
+- Active stack screenshot: `/tmp/klicker-pwa-s04h26-elementstack-active.png`.
+- DOM assertion after `Start`: `SC Question Content 2`, `MC Question Content 2`, and `Reset answers` were present; `Submit` was disabled while unanswered.
+- Local backend/PWA listeners were stopped after verification, temporary generated `.env` files were removed, and ports `3102`/`3103` had no listeners.
+
+Review and cleanup:
+
+- Context7 MCP is not exposed in this session; no new framework API patterns are planned.
+- Dedicated subagent tooling is not exposed in this session; explicit self-review confirmed the diff is scoped to generated-import cleanup and plan evidence.
+- Shared components still import generated GraphQL types by design in this slice; migrate them only in a later structural shared-component slice.
+
 ### 2026-06-03 Completed: S04H25 PWA Practice Generated Type Cleanup
 
 Status: complete for the scoped slice. This slice removed small generated GraphQL type imports from PWA practice quiz display/local-state components that already receive tRPC-backed data or local structural props. It intentionally did not touch `ElementStack`'s larger generated stack shape, live/session flows, GraphQL subscriptions, Apollo providers, generated GraphQL artifacts, active Apollo hooks, manage app callers, or final GraphQL cleanup.

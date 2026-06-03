@@ -1,17 +1,10 @@
-import {
-  CaseStudyCaseResponse,
-  ElementStack as ElementStackType,
-  ElementType,
-  FlashcardCorrectness,
-  StackFeedbackStatus,
-} from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
   CaseStudyStudentResponseType,
   StackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
-import { ChoicesResponse } from '@klicker-uzh/types'
+import type { CaseStudyCaseResponse, ChoicesResponse } from '@klicker-uzh/types'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -24,6 +17,35 @@ import InstanceHeader from './InstanceHeader'
 
 type ElementStackResponseInput =
   RouterInputs['participant']['respondToElementStack']['responses'][number]
+type ElementStackType = Parameters<typeof useStudentResponse>[0]['stack']
+type ElementType = NonNullable<
+  ElementStackType['elements']
+>[number]['elementType']
+type FlashcardCorrectness = 'CORRECT' | 'INCORRECT' | 'PARTIAL'
+type StackFeedbackStatus =
+  | 'correct'
+  | 'incorrect'
+  | 'manuallyGraded'
+  | 'partial'
+  | 'unanswered'
+
+const ElementType = {
+  CaseStudy: 'CASE_STUDY' as ElementType,
+  Content: 'CONTENT' as ElementType,
+  Flashcard: 'FLASHCARD' as ElementType,
+  FreeText: 'FREE_TEXT' as ElementType,
+  Kprim: 'KPRIM' as ElementType,
+  Mc: 'MC' as ElementType,
+  Numerical: 'NUMERICAL' as ElementType,
+  Sc: 'SC' as ElementType,
+  Selection: 'SELECTION' as ElementType,
+}
+
+const FlashcardCorrectness = {
+  Correct: 'CORRECT' as FlashcardCorrectness,
+  Incorrect: 'INCORRECT' as FlashcardCorrectness,
+  Partial: 'PARTIAL' as FlashcardCorrectness,
+}
 
 interface ElementStackProps {
   parentId: string
@@ -173,7 +195,7 @@ function ElementStack({
                 response: toGraphqlFlashcardCorrectness(
                   evaluation.lastResponse.correctness
                 ),
-              }
+              } as StackStudentResponseType[number]
 
               return acc
             } else if (
@@ -184,7 +206,7 @@ function ElementStack({
                 ...commonAttributes,
                 type: elementType,
                 response: evaluation.lastResponse.viewed,
-              }
+              } as StackStudentResponseType[number]
 
               return acc
             } else if (
@@ -203,7 +225,7 @@ function ElementStack({
                   },
                   {}
                 ),
-              }
+              } as StackStudentResponseType[number]
 
               return acc
             } else if (
@@ -222,7 +244,7 @@ function ElementStack({
                   2: storedChoicesIxs.includes(2),
                   3: storedChoicesIxs.includes(3),
                 },
-              }
+              } as StackStudentResponseType[number]
 
               return acc
             } else if (
@@ -235,7 +257,7 @@ function ElementStack({
                 ...commonAttributes,
                 type: elementType,
                 response: evaluation.lastResponse.value,
-              }
+              } as StackStudentResponseType[number]
 
               return acc
             } else if (
@@ -246,7 +268,7 @@ function ElementStack({
                 ...commonAttributes,
                 type: elementType,
                 response: evaluation.lastResponse.selection,
-              }
+              } as StackStudentResponseType[number]
 
               return acc
             } else if (
@@ -276,7 +298,7 @@ function ElementStack({
                 ...commonAttributes,
                 type: elementType,
                 response: lastResponseObject,
-              }
+              } as StackStudentResponseType[number]
 
               return acc
             }
@@ -479,114 +501,114 @@ function ElementStack({
                 stackId: stack.id,
                 courseId: courseId,
                 stackAnswerTime: timeRef.current,
-                responses: Object.entries(studentResponse).map(
-                  ([instanceId, value]) => {
-                    if (value.type === ElementType.Flashcard) {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: toStackResponseElementType(ElementType.Flashcard),
-                        flashcardResponse: toStackResponseFlashcardCorrectness(
-                          value.response
-                        ),
-                      }
-                    } else if (value.type === ElementType.Content) {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: toStackResponseElementType(ElementType.Content),
-                        contentReponse: value.response,
-                      }
-                    } else if (
-                      value.type === ElementType.Sc ||
-                      value.type === ElementType.Mc ||
-                      value.type === ElementType.Kprim
-                    ) {
-                      // convert the solution objects into integer lists
-                      const responseList: ChoicesResponse[] = Object.entries(
-                        value.response!
-                      )
-                        .filter(([, value]) => value)
-                        .map(([key, value]) => ({
-                          ix: parseInt(key),
-                          selected: value ?? false,
-                        }))
-
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: toStackResponseElementType(value.type),
-                        choicesResponse: responseList,
-                      }
+                responses: Object.entries(
+                  studentResponse
+                ).map<ElementStackResponseInput>(([instanceId, value]) => {
+                  if (value.type === ElementType.Flashcard) {
+                    return {
+                      instanceId: parseInt(instanceId),
+                      type: toStackResponseElementType(ElementType.Flashcard),
+                      flashcardResponse: toStackResponseFlashcardCorrectness(
+                        value.response as string | undefined
+                      ),
                     }
-                    // submission logic for numerical questions
-                    else if (value.type === ElementType.Numerical) {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: toStackResponseElementType(ElementType.Numerical),
-                        numericalResponse: parseFloat(value.response!),
-                      }
-                    } else if (value.type === ElementType.FreeText) {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: toStackResponseElementType(ElementType.FreeText),
-                        freeTextResponse: value.response,
-                      }
-                    } else if (value.type === ElementType.Selection) {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: toStackResponseElementType(ElementType.Selection),
-                        selectionResponse: Object.values(value.response!).map(
-                          (entry) =>
-                            typeof entry === 'undefined' || entry === null
-                              ? -1
-                              : entry
-                        ),
-                      }
-                    } else if (value.type === ElementType.CaseStudy) {
-                      const caseStudyResponse: CaseStudyCaseResponse[] =
-                        Object.entries(value.response!).map(
-                          ([caseId, caseResponse]) => {
-                            return {
-                              caseId,
-                              itemResponses: Object.entries(caseResponse).map(
-                                ([itemId, itemResponse]) => {
-                                  return {
-                                    itemId: parseInt(itemId),
-                                    criterionResponses: Object.entries(
-                                      itemResponse
-                                    ).flatMap(
-                                      ([criterionId, criterionResponse]) => {
-                                        if (
-                                          typeof criterionResponse ===
-                                          'undefined'
-                                        ) {
-                                          return []
-                                        }
+                  } else if (value.type === ElementType.Content) {
+                    return {
+                      instanceId: parseInt(instanceId),
+                      type: toStackResponseElementType(ElementType.Content),
+                      contentReponse: value.response as boolean | undefined,
+                    }
+                  } else if (
+                    value.type === ElementType.Sc ||
+                    value.type === ElementType.Mc ||
+                    value.type === ElementType.Kprim
+                  ) {
+                    // convert the solution objects into integer lists
+                    const responseList: ChoicesResponse[] = Object.entries(
+                      value.response as Record<string, boolean | undefined>
+                    )
+                      .filter(([, value]) => value)
+                      .map(([key, value]) => ({
+                        ix: parseInt(key),
+                        selected: value ?? false,
+                      }))
 
-                                        return {
-                                          criterionId: criterionId,
-                                          response: criterionResponse,
-                                        }
-                                      }
-                                    ),
-                                  }
-                                }
-                              ),
-                            }
-                          }
-                        )
-
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: toStackResponseElementType(value.type),
-                        caseStudyResponse,
-                      }
-                    } else {
-                      return {
-                        instanceId: parseInt(instanceId),
-                        type: toStackResponseElementType(value.type),
-                      }
+                    return {
+                      instanceId: parseInt(instanceId),
+                      type: toStackResponseElementType(value.type),
+                      choicesResponse: responseList,
                     }
                   }
-                ),
+                  // submission logic for numerical questions
+                  else if (value.type === ElementType.Numerical) {
+                    return {
+                      instanceId: parseInt(instanceId),
+                      type: toStackResponseElementType(ElementType.Numerical),
+                      numericalResponse: parseFloat(value.response as string),
+                    }
+                  } else if (value.type === ElementType.FreeText) {
+                    return {
+                      instanceId: parseInt(instanceId),
+                      type: toStackResponseElementType(ElementType.FreeText),
+                      freeTextResponse: value.response as string | undefined,
+                    }
+                  } else if (value.type === ElementType.Selection) {
+                    return {
+                      instanceId: parseInt(instanceId),
+                      type: toStackResponseElementType(ElementType.Selection),
+                      selectionResponse: Object.values(
+                        value.response as Record<string, number | undefined>
+                      ).map((entry) =>
+                        typeof entry === 'undefined' || entry === null
+                          ? -1
+                          : entry
+                      ),
+                    }
+                  } else if (value.type === ElementType.CaseStudy) {
+                    const caseStudyResponse: CaseStudyCaseResponse[] =
+                      Object.entries(
+                        value.response as CaseStudyStudentResponseType
+                      ).map(([caseId, caseResponse]) => {
+                        return {
+                          caseId,
+                          itemResponses: Object.entries(caseResponse).map(
+                            ([itemId, itemResponse]) => {
+                              return {
+                                itemId: parseInt(itemId),
+                                criterionResponses: Object.entries(
+                                  itemResponse
+                                ).flatMap(
+                                  ([criterionId, criterionResponse]) => {
+                                    if (
+                                      typeof criterionResponse === 'undefined'
+                                    ) {
+                                      return []
+                                    }
+
+                                    return {
+                                      criterionId: criterionId,
+                                      response: criterionResponse,
+                                    }
+                                  }
+                                ),
+                              }
+                            }
+                          ),
+                        }
+                      })
+
+                    return {
+                      instanceId: parseInt(instanceId),
+                      type: toStackResponseElementType(value.type),
+                      caseStudyResponse,
+                    }
+                  } else {
+                    return {
+                      instanceId: parseInt(instanceId),
+                      type: toStackResponseElementType(value.type),
+                    }
+                  }
+                }),
               })
 
               if (!result) {
