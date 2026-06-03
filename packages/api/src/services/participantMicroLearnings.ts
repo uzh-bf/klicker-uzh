@@ -5,6 +5,7 @@ import {
   type ElementInstance,
   type ElementStack,
   type MicroLearning,
+  type Participation,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import {
@@ -73,6 +74,17 @@ export type MicroLearningDetail = Omit<
 
 export type MicroLearningDetailOutput = {
   microLearning: MicroLearningDetail | null
+}
+
+export type ParticipantCourseParticipationOutput = {
+  participation: Pick<Participation, 'id' | 'isActive'> | null
+}
+
+export type MarkMicroLearningCompletedOutput = {
+  participation: {
+    completedMicroLearnings: string[]
+    id: number
+  }
 }
 
 function toMicroLearningStack(stack: MicroLearningStackSource) {
@@ -199,4 +211,65 @@ export async function getMicroLearningDetail({
       microLearning,
     }),
   }
+}
+
+export async function getParticipantCourseParticipation({
+  courseId,
+  prisma,
+  user,
+}: {
+  courseId: string
+  prisma: PrismaClient
+  user?: MicroLearningUser
+}): Promise<ParticipantCourseParticipationOutput> {
+  if (!user?.sub || user.role !== UserRole.PARTICIPANT) {
+    return { participation: null }
+  }
+
+  const participation = await prisma.participation.findUnique({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId: user.sub,
+      },
+    },
+    select: {
+      id: true,
+      isActive: true,
+    },
+  })
+
+  return { participation }
+}
+
+export async function markMicroLearningCompleted({
+  courseId,
+  id,
+  participantId,
+  prisma,
+}: {
+  courseId: string
+  id: string
+  participantId: string
+  prisma: PrismaClient
+}): Promise<MarkMicroLearningCompletedOutput> {
+  const participation = await prisma.participation.update({
+    where: {
+      courseId_participantId: {
+        courseId,
+        participantId,
+      },
+    },
+    data: {
+      completedMicroLearnings: {
+        push: id,
+      },
+    },
+    select: {
+      id: true,
+      completedMicroLearnings: true,
+    },
+  })
+
+  return { participation }
 }

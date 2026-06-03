@@ -234,6 +234,106 @@ describe('participant microlearning routers', () => {
     })
   })
 
+  test('returns nullable course participation for the current participant', async () => {
+    const participationFindUnique = vi.fn().mockResolvedValue({
+      id: 3,
+      isActive: true,
+    })
+    const prisma = {
+      participation: {
+        findUnique: participationFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.participation({ courseId: 'course-1' })
+    ).resolves.toEqual({
+      participation: {
+        id: 3,
+        isActive: true,
+      },
+    })
+
+    expect(participationFindUnique).toHaveBeenCalledWith({
+      where: {
+        courseId_participantId: {
+          courseId: 'course-1',
+          participantId: 'participant-1',
+        },
+      },
+      select: {
+        id: true,
+        isActive: true,
+      },
+    })
+  })
+
+  test('returns null course participation for anonymous users and lecturers', async () => {
+    const participationFindUnique = vi.fn()
+    const prisma = {
+      participation: {
+        findUnique: participationFindUnique,
+      },
+    } as unknown as TRPCContext['prisma']
+
+    await expect(
+      appRouter
+        .createCaller({ prisma })
+        .participant.participation({ courseId: 'course-1' })
+    ).resolves.toEqual({ participation: null })
+    await expect(
+      appRouter
+        .createCaller(createContext({ prisma, role: UserRole.USER }))
+        .participant.participation({ courseId: 'course-1' })
+    ).resolves.toEqual({ participation: null })
+
+    expect(participationFindUnique).not.toHaveBeenCalled()
+  })
+
+  test('marks microlearning as completed on the course participation', async () => {
+    const participationUpdate = vi.fn().mockResolvedValue({
+      id: 3,
+      completedMicroLearnings: ['microlearning-1'],
+    })
+    const prisma = {
+      participation: {
+        update: participationUpdate,
+      },
+    } as unknown as TRPCContext['prisma']
+    const caller = appRouter.createCaller(createContext({ prisma }))
+
+    await expect(
+      caller.participant.markMicroLearningCompleted({
+        courseId: 'course-1',
+        id: 'microlearning-1',
+      })
+    ).resolves.toEqual({
+      participation: {
+        id: 3,
+        completedMicroLearnings: ['microlearning-1'],
+      },
+    })
+
+    expect(participationUpdate).toHaveBeenCalledWith({
+      where: {
+        courseId_participantId: {
+          courseId: 'course-1',
+          participantId: 'participant-1',
+        },
+      },
+      data: {
+        completedMicroLearnings: {
+          push: 'microlearning-1',
+        },
+      },
+      select: {
+        id: true,
+        completedMicroLearnings: true,
+      },
+    })
+  })
+
   test('returns null when the microlearning is not visible', async () => {
     const prisma = {
       microLearning: {

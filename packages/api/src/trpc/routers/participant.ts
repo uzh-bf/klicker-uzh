@@ -43,7 +43,11 @@ import {
   leaveRandomCourseGroupPool as leaveRandomCourseGroupPoolService,
   renameParticipantGroup as renameParticipantGroupService,
 } from '../../services/participantGroups.js'
-import { getMicroLearningDetail } from '../../services/participantMicroLearnings.js'
+import {
+  getMicroLearningDetail,
+  getParticipantCourseParticipation,
+  markMicroLearningCompleted,
+} from '../../services/participantMicroLearnings.js'
 import { getPracticeQuizDetail } from '../../services/participantPracticeQuizzes.js'
 import {
   checkParticipantNameAvailable,
@@ -95,6 +99,7 @@ import {
   participantLoginWithLtiInput,
   participantLoginWithMagicLinkInput,
   participantLogoutTemporaryInput,
+  participantMarkMicroLearningCompletedInput,
   participantMicroLearningInput,
   participantParticipationsInput,
   participantPracticeQuizBookmarksInput,
@@ -671,6 +676,31 @@ export const participantRouter = router({
         id: input.id,
         prisma,
         user: ctx.user,
+      })
+    }),
+
+  participation: publicProcedure
+    .input(participantCourseInput)
+    .query(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return getParticipantCourseParticipation({
+        courseId: input.courseId,
+        prisma,
+        user: ctx.user,
+      })
+    }),
+
+  markMicroLearningCompleted: participantProcedure
+    .input(participantMarkMicroLearningCompletedInput)
+    .mutation(async ({ ctx, input }) => {
+      const prisma = getPrisma(ctx)
+
+      return markMicroLearningCompleted({
+        courseId: input.courseId,
+        id: input.id,
+        participantId: ctx.user.sub,
+        prisma,
       })
     }),
 

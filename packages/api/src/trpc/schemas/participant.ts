@@ -143,6 +143,11 @@ export const participantMicroLearningInput = z.object({
   id: z.string(),
 })
 
+export const participantMarkMicroLearningCompletedInput = z.object({
+  courseId: z.string(),
+  id: z.string(),
+})
+
 export const participantPreviousStackEvaluationInput = z.object({
   stackId: z.number().int(),
 })

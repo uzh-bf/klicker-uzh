@@ -1,14 +1,7 @@
-import { useMutation, useQuery } from '@apollo/client'
 import { faCheckCircle } from '@fortawesome/free-regular-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  GetMicroLearningDocument,
-  GetParticipationDocument,
-  MarkMicroLearningCompletedDocument,
-  SelfDocument,
-  UserRole,
-} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { trpc } from '@lib/trpc'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -17,30 +10,33 @@ import PreviewMessage from '../../../../../components/common/PreviewMessage'
 import useStackEvaluationAggregation from '../../../../../components/hooks/useStackEvaluationAggregation'
 import Layout from '../../../../../components/Layout'
 
+const PARTICIPANT_ROLE = 'PARTICIPANT'
+
 function MicrolearningEvaluation() {
   const t = useTranslations()
   const router = useRouter()
   const id = router.query.id as string
 
-  const { loading, data } = useQuery(GetMicroLearningDocument, {
-    variables: { id },
-    skip: !id,
-  })
-  const { data: participant } = useQuery(SelfDocument)
-  const { data: participation } = useQuery(GetParticipationDocument, {
-    variables: { courseId: data?.microLearning?.course?.id ?? '' },
-    skip: !data?.microLearning?.course?.id,
-  })
-
-  const [markMicrolearningCompleted, { loading: markingAsCompleted }] =
-    useMutation(MarkMicroLearningCompletedDocument)
+  const utils = trpc.useUtils()
+  const { isLoading, data } = trpc.participant.microLearning.useQuery(
+    { id },
+    { enabled: !!id }
+  )
+  const { data: participant } = trpc.participant.self.useQuery()
+  const { data: participationData } = trpc.participant.participation.useQuery(
+    { courseId: data?.microLearning?.course?.id ?? '' },
+    { enabled: !!data?.microLearning?.course?.id }
+  )
+  const markMicrolearningCompleted =
+    trpc.participant.markMicroLearningCompleted.useMutation()
 
   const microlearning = data?.microLearning
+  const participation = participationData?.participation
   const aggregatedResults = useStackEvaluationAggregation({
     microlearning: microlearning,
   })
 
-  if (loading || !microlearning) {
+  if (isLoading || !microlearning) {
     return (
       <Layout>
         <Loader />
@@ -84,7 +80,7 @@ function MicrolearningEvaluation() {
               {t('shared.generic.evaluation')}
             </H3>
             <H3 className={{ root: 'self-end text-base md:text-lg' }}>
-              {participation?.getParticipation?.isActive
+              {participation?.isActive
                 ? t('pwa.practiceQuiz.pointsCollectedPossible')
                 : t('pwa.practiceQuiz.pointsComputedAvailable')}
             </H3>
@@ -92,7 +88,7 @@ function MicrolearningEvaluation() {
           <div>
             {aggregatedResults &&
               aggregatedResults.evaluation &&
-              data.microLearning?.stacks?.map((stack, ix) => (
+              microlearning.stacks?.map((stack, ix) => (
                 <div className="flex flex-row justify-between" key={stack.id}>
                   <div>
                     {stack.displayName ||
@@ -103,7 +99,7 @@ function MicrolearningEvaluation() {
                       ?.pointsAwarded !== 'undefined' &&
                       aggregatedResults.evaluation[stack.id]?.pointsAwarded !==
                         null &&
-                      participation?.getParticipation?.isActive &&
+                      participation?.isActive &&
                       `${
                         aggregatedResults.evaluation[stack.id]?.pointsAwarded
                       }/`}
@@ -114,7 +110,7 @@ function MicrolearningEvaluation() {
               ))}
           </div>
 
-          {participation?.getParticipation?.isActive && (
+          {participation?.isActive && (
             <H3 className={{ root: 'mt-4 text-right' }}>
               {t('pwa.practiceQuiz.totalPoints', {
                 points: aggregatedResults?.totalPointsAwarded ?? 0,
@@ -123,8 +119,8 @@ function MicrolearningEvaluation() {
           )}
         </div>
 
-        {typeof participation?.getParticipation?.isActive === 'boolean' &&
-          participation?.getParticipation?.isActive === false && (
+        {typeof participation?.isActive === 'boolean' &&
+          participation?.isActive === false && (
             <UserNotification type="info">
               {t.rich('pwa.microLearning.inactiveParticipation', {
                 it: (text) => <span className="italic">{text}</span>,
@@ -133,8 +129,8 @@ function MicrolearningEvaluation() {
             </UserNotification>
           )}
         {participant?.self &&
-          participant.self.role === UserRole.Participant &&
-          !participation?.getParticipation && (
+          participant.self.role === PARTICIPANT_ROLE &&
+          !participation && (
             <UserNotification className={{ root: 'mt-5' }} type="info">
               {t.rich('pwa.microLearning.missingParticipation', {
                 it: (text) => <span className="italic">{text}</span>,
@@ -142,15 +138,17 @@ function MicrolearningEvaluation() {
               })}
             </UserNotification>
           )}
-        {participation?.getParticipation && (
+        {participation && (
           <div className="text-right">
             <Button
               primary
-              loading={markingAsCompleted}
+              loading={markMicrolearningCompleted.isLoading}
               onClick={async () => {
-                await markMicrolearningCompleted({
-                  variables: { courseId: microlearning.course!.id, id },
+                await markMicrolearningCompleted.mutateAsync({
+                  courseId: microlearning.course!.id,
+                  id,
                 })
+                await utils.participant.participations.invalidate()
                 router.replace('/')
               }}
               data={{ cy: 'finish-microlearning' }}
