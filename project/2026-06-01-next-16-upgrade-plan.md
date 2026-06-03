@@ -139,7 +139,10 @@ Upgrade KlickerUZH from Next.js 15.5.x to Next.js 16 as the first major dependen
 - 2026-06-03: Playwright login smoke passed for Chromium on a clean reset/seeded database. The full configured Playwright run is still not complete because local Firefox/WebKit Playwright browser binaries are missing; `playwright install firefox webkit` stalled in the downloader after partially downloading Firefox and was terminated.
 - 2026-06-03: Real local test-stack browser screenshots were captured with `npx agent-browser` for PWA login/home, auth delegated-login, manage library, and control course selection. Evidence was added under `project/2026-06-01-next-16-screenshots/`.
 - 2026-06-03: Final local security review found no new high-confidence exploitable issue in the validation fixes. The latest runtime code change is type-only; test helper changes are Cypress-only.
-- 2026-06-03: Residual blockers are now limited to explicit approval for `pnpm audit --audit-level high` dependency-inventory disclosure and repairing the local Playwright Firefox/WebKit browser cache for the full cross-browser smoke.
+- 2026-06-03: Current-head GitHub checks for `6667f0cf7` passed: TypeScript/check, syncpack/check, GraphQL package test, and GitGuardian. Image build jobs remain skipped for this branch as expected.
+- 2026-06-03: `pnpm audit --audit-level high` remains blocked by policy until explicit user approval because it discloses private dependency inventory to npm's advisory endpoint. A renewed approval request was rejected for that reason.
+- 2026-06-03: Full Playwright cross-browser remains blocked by local browser installation state. A second `playwright install firefox webkit` attempt using `PLAYWRIGHT_BROWSERS_PATH=/private/tmp/klicker-next16-pw-browsers` again downloaded Firefox to 100%, then stalled with only a 892 KB partial cache and was terminated.
+- 2026-06-03: Residual blockers are now limited to explicit approval for `pnpm audit --audit-level high` dependency-inventory disclosure and repairing the local Playwright Firefox/WebKit browser installation for the full cross-browser smoke.
 
 ## Follow-Up PRs
 

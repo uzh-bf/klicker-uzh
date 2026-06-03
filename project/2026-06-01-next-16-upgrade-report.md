@@ -134,7 +134,7 @@ Rollup workspaces: `apps/backend-docker`, `apps/hatchet-worker-general`, `apps/h
 - The Rollup override in `pnpm-workspace.yaml` forces vulnerable `rollup@>=4.0.0 <4.59.0` ranges to `4.59.1`.
 - Shared Next image optimization is stricter than the first implementation attempt: local-IP optimization is allowed only in development and test, not staging.
 - Final local security review on 2026-06-03 found no new high-confidence exploitable issue in the validation fixes. The latest runtime code change is a type-only migration client import alignment; the Cypress helpers and screenshots are test/report artifacts.
-- `pnpm audit --audit-level high` is still not run because npm audit sends dependency inventory to the configured registry. This needs explicit approval before running against the public npm advisory endpoint.
+- `pnpm audit --audit-level high` is still not run because npm audit sends dependency inventory to the configured registry. A 2026-06-03 approval request was rejected by policy due private dependency-inventory disclosure risk; this still needs explicit user approval before running against the public npm advisory endpoint.
 
 ## Verification
 
@@ -162,6 +162,14 @@ Passed:
 - `pnpm --filter @klicker-uzh/office-addin build:office`
 - Focused GraphQL CI-fix smoke: `pnpm --filter @klicker-uzh/graphql exec vitest run test/liveQuizPointCorrections.test.ts` no longer fails with `Cannot find package 'src/...'`; local execution now stops at the expected missing `HATCHET_CLIENT_TOKEN` prerequisite.
 
+Passed on GitHub for current head `6667f0cf7`:
+
+- Check TypeScript types / `check` -> pass
+- Check syncpack conformity / `check` -> pass
+- Test graphql package logic functionalities / `test` -> pass
+- GitGuardian Security Checks -> pass
+- Docker image build jobs -> skipped for this branch, as expected
+
 Browser smoke screenshots against built Next apps:
 
 - Auth: `project/2026-06-01-next-16-screenshots/klicker-next16-auth.png`
@@ -173,7 +181,7 @@ Browser smoke screenshots against built Next apps:
 Blocked or pending:
 
 - `pnpm audit --audit-level high`: pending explicit approval to submit dependency inventory to npm's advisory endpoint.
-- Full configured Playwright cross-browser run: Chromium passed, but Firefox and WebKit failed before app execution because their Playwright browser binaries were missing locally. A `playwright install firefox webkit` attempt downloaded Firefox but then stalled in the browser downloader with only a partial cache, so it was terminated. This is local browser-cache/tooling state, not an observed Klicker app failure.
+- Full configured Playwright cross-browser run: Chromium passed, but Firefox and WebKit failed before app execution because their Playwright browser binaries were missing locally. Two `playwright install firefox webkit` attempts downloaded Firefox to 100% and then stalled in the browser downloader with only a partial cache; the second attempt used `PLAYWRIGHT_BROWSERS_PATH=/private/tmp/klicker-next16-pw-browsers`, remained at 892 KB, and was terminated. This is local browser-cache/tooling state, not an observed Klicker app failure.
 
 Real local test-stack browser verification with `npx agent-browser`:
 
@@ -213,7 +221,7 @@ Context:
 Required process:
 1. Re-read project/2026-06-01-next-16-upgrade-plan.md and this report before updating the PR.
 2. Get explicit user approval before running pnpm audit because npm audit submits dependency inventory to the configured registry.
-3. Repair or reinstall the missing local Playwright Firefox/WebKit browser binaries; the previous `playwright install firefox webkit` attempt stalled in the downloader after partially downloading Firefox.
+3. Repair or reinstall the missing local Playwright Firefox/WebKit browser binaries; two `playwright install firefox webkit` attempts stalled in the downloader after Firefox reached 100%, including a temp-cache retry at `/private/tmp/klicker-next16-pw-browsers`.
 4. Run:
    - `pnpm audit --audit-level high`
    - `PLAYWRIGHT_BASE_URL=http://127.0.0.1:3001 pnpm --filter @klicker-uzh/playwright test:run`
