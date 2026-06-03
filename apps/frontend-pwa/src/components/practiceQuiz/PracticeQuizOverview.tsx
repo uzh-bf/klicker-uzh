@@ -4,7 +4,6 @@ import {
 } from '@fortawesome/free-regular-svg-icons'
 import { faRepeat, faShuffle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import type { ElementOrderType } from '@klicker-uzh/graphql/dist/ops'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -12,12 +11,16 @@ import { useRouter } from 'next/router'
 import { trpc } from '../../lib/trpc'
 
 const TEMPORARY_PARTICIPANT_ROLE = 'TEMPORARY_PARTICIPANT'
+const ORDER_TYPE_TRANSLATION_KEYS = {
+  SEQUENTIAL: 'pwa.practiceQuiz.orderSEQUENTIAL',
+  SPACED_REPETITION: 'pwa.practiceQuiz.orderSPACED_REPETITION',
+} as const
 
 interface PracticeQuizOverviewProps {
   displayName: string
   description?: string
   numOfStacks?: number
-  orderType: ElementOrderType
+  orderType: string
   resetTimeDays?: number
   //   previouslyAnswered?: number
   //   stacksWithQuestions?: number
@@ -102,7 +105,7 @@ function PracticeQuizOverview({
           {typeof orderType !== 'undefined' && (
             <div className="flex flex-row items-center gap-2">
               <FontAwesomeIcon icon={faShuffle} />
-              <div>{t(`pwa.practiceQuiz.order${orderType}`)}</div>
+              <div>{t(toOrderTypeTranslationKey(orderType))}</div>
             </div>
           )}
         </div>
@@ -174,3 +177,9 @@ function PracticeQuizOverview({
 }
 
 export default PracticeQuizOverview
+
+function toOrderTypeTranslationKey(orderType: string) {
+  return orderType === 'SEQUENTIAL'
+    ? ORDER_TYPE_TRANSLATION_KEYS.SEQUENTIAL
+    : ORDER_TYPE_TRANSLATION_KEYS.SPACED_REPETITION
+}

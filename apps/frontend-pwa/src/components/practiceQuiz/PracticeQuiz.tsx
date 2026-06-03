@@ -1,13 +1,9 @@
-import {
-  StackFeedbackStatus,
-  type Course,
-  type PracticeQuiz as PracticeQuizType,
-} from '@klicker-uzh/graphql/dist/ops'
+import { StackFeedbackStatus } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
-import { trpc } from '../../lib/trpc'
+import { trpc, type RouterOutputs } from '../../lib/trpc'
 import PreviewMessage from '../common/PreviewMessage'
 import StepProgressWithScoring from '../common/StepProgressWithScoring'
 import ElementStack from './ElementStack'
@@ -15,6 +11,26 @@ import PracticeQuizOverview from './PracticeQuizOverview'
 
 const PARTICIPANT_ROLE = 'PARTICIPANT'
 const TEMPORARY_PARTICIPANT_ROLE = 'TEMPORARY_PARTICIPANT'
+
+type PracticeQuizType = NonNullable<
+  RouterOutputs['participant']['practiceQuiz']['practiceQuiz']
+>
+type ElementStackProp = Parameters<typeof ElementStack>[0]['stack']
+type PracticeQuizStack = PracticeQuizType['stacks'][number] | ElementStackProp
+type PracticeQuizRendererQuiz = Pick<
+  PracticeQuizType,
+  | 'description'
+  | 'displayName'
+  | 'id'
+  | 'name'
+  | 'numOfStacks'
+  | 'orderType'
+  | 'pointsMultiplier'
+  | 'resetTimeDays'
+> & {
+  course: Pick<PracticeQuizType['course'], 'id'>
+  stacks?: PracticeQuizStack[] | null
+}
 
 export const FEEDBACK_STATUS_PROGRESS_MAP: Record<
   StackFeedbackStatus,
@@ -37,7 +53,7 @@ export function resetPracticeQuizLocalStorage(id: string) {
 }
 
 interface PracticeQuizProps {
-  quiz: Omit<PracticeQuizType, 'course'> & { course: Pick<Course, 'id'> }
+  quiz: PracticeQuizRendererQuiz
   currentIx: number
   setCurrentIx: (ix: number) => void
   handleNextElement: () => void
@@ -180,7 +196,7 @@ function PracticeQuiz({
             parentId={quiz.id}
             courseId={quiz.course!.id}
             embedded={embedded}
-            stack={currentStack}
+            stack={currentStack as ElementStackProp}
             currentStep={currentIx + 1}
             totalSteps={quiz.stacks?.length ?? 0}
             setStepStatus={(value) => {

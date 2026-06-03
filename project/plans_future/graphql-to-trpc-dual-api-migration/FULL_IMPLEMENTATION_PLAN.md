@@ -83,7 +83,7 @@ Committed markers:
 
 Current next action:
 
-- Continue S04H: migrate the remaining PWA practice-quiz execution writes/types while keeping GraphQL live, starting with `RespondToElementStackDocument` response submission or the generated practice-quiz prop types that still couple the migrated renderer to GraphQL codegen.
+- Continue S04H: migrate the `RespondToElementStackDocument` response submission write path while keeping GraphQL live, then continue generated shared-component type cleanup.
 
 Still intentionally live:
 
@@ -275,6 +275,43 @@ rg -n "@apollo/client|ApolloProvider|@klicker-uzh/graphql|graphql-yoga|graphql-w
 ```
 
 ## Progress
+
+### 2026-06-03 Completed: S04H9 PWA Practice Quiz Renderer Type Cleanup
+
+Status: complete for the scoped slice. This slice removed the top-level PWA practice quiz renderer's generated GraphQL `PracticeQuiz`/`Course` prop types after the detail page already moved to the tRPC `participant.practiceQuiz` read. It intentionally leaves `RespondToElementStackDocument`, generated shared-component types, microlearning page data, group activity, live/session flows, and subscriptions on GraphQL.
+
+Goal: replace `PracticeQuiz.tsx`'s generated `PracticeQuiz`/`Course` prop typing with a `RouterOutputs['participant']['practiceQuiz']['practiceQuiz']` alias while preserving the rendered workflow and keeping lower shared component cleanup out of scope.
+
+Write scope:
+
+- `apps/frontend-pwa/src/components/practiceQuiz/PracticeQuiz.tsx`
+- `apps/frontend-pwa/src/components/practiceQuiz/PracticeQuizOverview.tsx`
+- This plan file
+
+```text
+Slice: S04H9 PWA practice quiz renderer type cleanup
+GraphQL operation(s): none removed; generated PracticeQuiz/Course type imports only
+GraphQL resolver(s): none
+Behavior source: packages/api participant.practiceQuiz DTO and existing PracticeQuiz renderer behavior
+tRPC router.procedure: participant.practiceQuiz
+Input schema: existing participantPracticeQuizInput { id }
+Output DTO: existing PracticeQuizDetailOutput
+Active frontend consumers: PracticeQuiz renderer props from the tRPC-backed practice quiz detail page
+Apollo cache/refetch/subscription behavior: none in this slice
+React Query replacement: already provided by the page-level participant.practiceQuiz query
+Browser verification path: local seeded Testkurs practice quiz detail; verify overview and first stack render unchanged
+Cleanup blocked until: RespondToElementStackDocument, ElementStack generated mutation/types, shared-components generated types, microlearning, group activity, live/session flows, and S05 subscriptions
+```
+
+Notes:
+
+- Context7 MCP was requested by repo instructions, but no Context7 tools are exposed in this environment. Official tRPC v10 docs confirmed `useMutation` hooks wrap TanStack mutations and `useUtils` provides query invalidation helpers for later mutation work; this slice only uses existing `RouterOutputs` types.
+- Verification:
+  - `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa check` passed after adding a structural renderer prop type and an explicit order-type translation-key mapper.
+  - `volta run --node 20.19.4 --pnpm 10.15.0 pnpm --filter @klicker-uzh/frontend-pwa build` passed with existing warnings only: typeless `packages/next-config`, `next-intl` App Router notice, outdated Browserslist data, and large page data warnings.
+  - Targeted audits passed: no generated `PracticeQuiz`/`Course` prop import remains in `PracticeQuiz.tsx`, no backend-only imports were added to the touched PWA files, and `git diff --check` was clean.
+  - Browser verification with `npx agent-browser`: `/tmp/klicker-pwa-s04h9-practice-quiz-overview.png` showed the seeded Testkurs "Practice Quiz Demo Student Title" overview and `/tmp/klicker-pwa-s04h9-practice-quiz-first-stack.png` showed the first stack rendered after Start.
+- Review/simplification: self-review only because no multi-agent tooling was available. The slice keeps a structural renderer boundary so both the tRPC detail page and older Apollo-backed practice/bookmarks callers remain compatible while direct generated `PracticeQuiz`/`Course` prop imports are removed.
 
 ### 2026-06-03 Completed: S04H8 PWA Previous Stack Evaluation Read
 
