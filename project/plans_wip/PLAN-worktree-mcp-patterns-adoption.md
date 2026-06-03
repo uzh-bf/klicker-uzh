@@ -19,6 +19,18 @@ architecture should stay with focused TypeScript MCP services:
 - `apps/mcp-lecturer`: Manage assistant tools for lecturer read/draft/proposal
   workflows.
 
+## Progress
+
+- 2026-06-03: Slice 1 done. Added central tool policy helpers and per-tool
+  metadata for `apps/mcp-student` and `apps/mcp-lecturer`; server registration
+  now uses typed `toolDefinition(...)` helpers so tool names and annotations
+  stay tied. Evidence: focused policy Vitest `10/10` passed, Prettier passed,
+  `git diff --check` passed, standalone strict TypeScript check for the new
+  policy helpers passed. Full MCP package typechecks were attempted but blocked
+  locally by missing package symlinks in this temp worktree (`fastmcp`, `zod`,
+  `vitest`, `@apollo/client`, etc.); CI remains the authoritative package
+  check. Next: Slice 2 instrumented tool runner.
+
 ## What To Take Over
 
 ### 1. Central Tool Annotation Presets

@@ -14,6 +14,7 @@ import {
 } from './auth.js'
 import type { RuntimeSettings } from './config.js'
 import type { StudentPracticeService } from './service.js'
+import { toolDefinition } from './toolPolicy.js'
 
 const lookupSchema = z.object({
   chatbotId: z.string().min(1).describe('Chatbot assigned to the course'),
@@ -151,54 +152,46 @@ export function createStudentMcpServer(
   })
 
   server.addTool({
-    annotations: {
-      openWorldHint: false,
-      readOnlyHint: true,
-      title: 'Lookup Relevant Practice Stacks',
-    },
+    ...toolDefinition(
+      'lookup_relevant_practice_stacks',
+      'Lookup Relevant Practice Stacks'
+    ),
     description:
       'Find answer-safe practice-stack candidates related to the current chat topic.',
     execute: (args, context) =>
       runTool(context.session, (session) =>
         service.lookupRelevantPracticeStacks(args, session)
       ),
-    name: 'lookup_relevant_practice_stacks',
     parameters: lookupSchema,
     timeoutMs: 10_000,
   })
 
   server.addTool({
-    annotations: {
-      openWorldHint: false,
-      readOnlyHint: true,
-      title: 'Get Practice Stack For Quiz',
-    },
+    ...toolDefinition(
+      'get_practice_stack_for_quiz',
+      'Get Practice Stack For Quiz'
+    ),
     description:
       'Fetch full answer-safe render data for a selected practice stack.',
     execute: (args, context) =>
       runTool(context.session, (session) =>
         service.getPracticeStackForQuiz(args, session)
       ),
-    name: 'get_practice_stack_for_quiz',
     parameters: getQuizStackSchema,
     timeoutMs: 10_000,
   })
 
   server.addTool({
-    annotations: {
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: false,
-      readOnlyHint: false,
-      title: 'Submit Practice Stack Answer',
-    },
+    ...toolDefinition(
+      'submit_practice_stack_answer',
+      'Submit Practice Stack Answer'
+    ),
     description:
       'Submit a completed structured stack answer and return backend grading.',
     execute: (args, context) =>
       runTool(context.session, (session) =>
         service.submitPracticeStackAnswer(args, session)
       ),
-    name: 'submit_practice_stack_answer',
     parameters: submitSchema,
     timeoutMs: 30_000,
   })

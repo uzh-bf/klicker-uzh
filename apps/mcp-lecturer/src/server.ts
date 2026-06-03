@@ -20,20 +20,13 @@ import {
   questionDraftSchema,
   type LecturerReadService,
 } from './service.js'
+import {
+  LECTURER_MCP_TOOL_NAMES,
+  toolDefinition,
+  type LecturerMcpToolName,
+} from './toolPolicy.js'
 
-export const LECTURER_MCP_TOOL_NAMES = [
-  'klicker_lecturer_capabilities',
-  'klicker_lecturer_course_list',
-  'klicker_lecturer_course_get',
-  'klicker_lecturer_element_search',
-  'klicker_lecturer_element_get',
-  'klicker_lecturer_question_draft',
-  'klicker_lecturer_choices_draft',
-  'klicker_lecturer_feedback_draft',
-  'klicker_lecturer_element_create_draft_proposal',
-] as const
-
-export type LecturerMcpToolName = (typeof LECTURER_MCP_TOOL_NAMES)[number]
+export { LECTURER_MCP_TOOL_NAMES, type LecturerMcpToolName }
 
 type LecturerToolCapability = {
   name: LecturerMcpToolName
@@ -239,152 +232,118 @@ export function createLecturerMcpServer(
   })
 
   server.addTool({
-    annotations: {
-      openWorldHint: false,
-      readOnlyHint: true,
-      title: 'Lecturer MCP Capabilities',
-    },
+    ...toolDefinition(
+      'klicker_lecturer_capabilities',
+      'Lecturer MCP Capabilities'
+    ),
     description:
       'Return the current lecturer MCP service capabilities. This scaffold tool does not access Klicker data.',
     execute: async () => json(getLecturerCapabilities(settings)),
-    name: 'klicker_lecturer_capabilities',
     parameters: z.object({}),
     timeoutMs: 5_000,
   })
 
   server.addTool({
-    annotations: {
-      openWorldHint: false,
-      readOnlyHint: true,
-      title: 'List Lecturer Courses',
-    },
+    ...toolDefinition('klicker_lecturer_course_list', 'List Lecturer Courses'),
     description:
       'List courses readable by the authenticated lecturer. Returns compact metadata only and never includes PIN codes.',
     execute: (args, context) =>
       runReadTool(context.session, (session) =>
         service.listCourses(args, session)
       ),
-    name: 'klicker_lecturer_course_list',
     parameters: courseListSchema,
     timeoutMs: 10_000,
   })
 
   server.addTool({
-    annotations: {
-      openWorldHint: false,
-      readOnlyHint: true,
-      title: 'Get Lecturer Course',
-    },
+    ...toolDefinition('klicker_lecturer_course_get', 'Get Lecturer Course'),
     description:
       'Get compact metadata and activity counts for a course readable by the authenticated lecturer.',
     execute: (args, context) =>
       runReadTool(context.session, (session) =>
         service.getCourse(args, session)
       ),
-    name: 'klicker_lecturer_course_get',
     parameters: courseGetSchema,
     timeoutMs: 10_000,
   })
 
   server.addTool({
-    annotations: {
-      openWorldHint: false,
-      readOnlyHint: true,
-      title: 'Search Lecturer Elements',
-    },
+    ...toolDefinition(
+      'klicker_lecturer_element_search',
+      'Search Lecturer Elements'
+    ),
     description:
       'Search question elements readable by the authenticated lecturer. Results are capped and include plain-text snippets only.',
     execute: (args, context) =>
       runReadTool(context.session, (session) =>
         service.searchElements(args, session)
       ),
-    name: 'klicker_lecturer_element_search',
     parameters: elementSearchSchema,
     timeoutMs: 10_000,
   })
 
   server.addTool({
-    annotations: {
-      openWorldHint: false,
-      readOnlyHint: true,
-      title: 'Get Lecturer Element',
-    },
+    ...toolDefinition('klicker_lecturer_element_get', 'Get Lecturer Element'),
     description:
       'Get one question element readable by the authenticated lecturer. Text fields and options are capped.',
     execute: (args, context) =>
       runReadTool(context.session, (session) =>
         service.getElement(args, session)
       ),
-    name: 'klicker_lecturer_element_get',
     parameters: elementGetSchema,
     timeoutMs: 10_000,
   })
 
   server.addTool({
-    annotations: {
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: false,
-      readOnlyHint: true,
-      title: 'Draft Lecturer Question',
-    },
+    ...toolDefinition(
+      'klicker_lecturer_question_draft',
+      'Draft Lecturer Question'
+    ),
     description:
       'Create a validated draft-only question payload for SC, MC, or FREE_TEXT questions. This never persists data. If courseId is provided, the course must be readable by the authenticated lecturer.',
     execute: (args, context) =>
       runDraftTool(context.session, (session) =>
         service.createQuestionDraft(args, session)
       ),
-    name: 'klicker_lecturer_question_draft',
     parameters: questionDraftSchema,
     timeoutMs: 10_000,
   })
 
   server.addTool({
-    annotations: {
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: false,
-      readOnlyHint: true,
-      title: 'Draft Lecturer Choices',
-    },
+    ...toolDefinition(
+      'klicker_lecturer_choices_draft',
+      'Draft Lecturer Choices'
+    ),
     description:
       'Create validated draft-only choice scaffolding for a question. This never persists data.',
     execute: (args, context) =>
       runDraftTool(context.session, (session) =>
         service.createChoicesDraft(args, session)
       ),
-    name: 'klicker_lecturer_choices_draft',
     parameters: choicesDraftSchema,
     timeoutMs: 5_000,
   })
 
   server.addTool({
-    annotations: {
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: false,
-      readOnlyHint: true,
-      title: 'Draft Lecturer Feedback',
-    },
+    ...toolDefinition(
+      'klicker_lecturer_feedback_draft',
+      'Draft Lecturer Feedback'
+    ),
     description:
       'Create validated draft-only answer feedback scaffolding for a question and its choices. This never persists data.',
     execute: (args, context) =>
       runDraftTool(context.session, (session) =>
         service.createFeedbackDraft(args, session)
       ),
-    name: 'klicker_lecturer_feedback_draft',
     parameters: feedbackDraftSchema,
     timeoutMs: 5_000,
   })
 
   server.addTool({
-    annotations: {
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: false,
-      readOnlyHint: true,
-      title: 'Propose Draft Question Creation',
-    },
+    ...toolDefinition(
+      'klicker_lecturer_element_create_draft_proposal',
+      'Propose Draft Question Creation'
+    ),
     description:
       'Create a signed proposal for a DRAFT SC, MC, or FREE_TEXT question. This does not persist data; the lecturer must explicitly confirm the proposal in the Manage assistant UI.',
     execute: (args, context) =>
@@ -395,7 +354,6 @@ export function createLecturerMcpServer(
           proposalToken: await signProposalToken(settings, session, proposal),
         }
       }),
-    name: 'klicker_lecturer_element_create_draft_proposal',
     parameters: elementCreateDraftProposalSchema,
     timeoutMs: 10_000,
   })
